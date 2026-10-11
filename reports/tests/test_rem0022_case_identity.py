@@ -64,7 +64,7 @@ def test_parameter_cases_keep_distinct_hashes_and_one_base_name():
     assert len(index) == 2
     assert len({row["node_id_sha256"] for row in index}) == 2
     assert len({row["test"] for row in index}) == 1
-    assert "[" not in json.dumps(index)
+    assert all("[" not in value for row in index for value in row.values())
     verify_index(index, NODES, raw)
 
 
