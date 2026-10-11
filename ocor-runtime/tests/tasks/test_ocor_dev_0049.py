@@ -1872,9 +1872,27 @@ def test_concurrent_seals_each_download_their_own_index_snapshot(stack, agent_mo
     def existing() -> list[str]:
         return sorted(s["name"] for s in json.loads(urllib.request.urlopen(base, timeout=30).read())["result"])
 
+    def discard(name: str) -> None:
+        try:
+            urllib.request.urlopen(urllib.request.Request(f"{base}/{name}", method="DELETE"), timeout=30)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+
+    def colliding_names() -> list[str] | None:
+        # REM-0019 VF-001: only snapshot names returned by Qdrant count; an attempt in which a
+        # POST raised (e.g. HTTP 500 on the name collision) is cleaned up and retried, never
+        # turned into a name.
+        n = concurrently(naive_name)
+        created = [x for x in n if isinstance(x, str)]
+        if len(created) == len(n) and len(set(created)) < len(created):
+            return created
+        for name in set(created):
+            discard(name)
+        return None
+
     before = existing()
-    names = wait_for(lambda: (n := concurrently(naive_name)) and len(set(n)) < len(n) and n, 60, 1,
-                     "precondition: concurrent snapshots share a name")
+    names = wait_for(colliding_names, 60, 1, "precondition: concurrent snapshots share a name")
     for name in set(names):
         urllib.request.urlopen(urllib.request.Request(f"{base}/{name}", method="DELETE"), timeout=30)
     for round_ in range(3):  # repeated: a timing-dependent pass is not a pass (VF-001 cycle 5)
