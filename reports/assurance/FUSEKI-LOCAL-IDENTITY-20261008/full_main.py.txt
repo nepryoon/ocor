@@ -1,0 +1,33 @@
+import argparse,contextlib,json,os,subprocess,sys,time,signal
+from pathlib import Path
+parser=argparse.ArgumentParser();parser.add_argument('--execute',action='store_true');args=parser.parse_args()
+repo=Path('/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008')
+rem=repo.parent/'ocor-dev-rem-0017-ci-provision-spire';out=Path(__file__).parent/'full';out.mkdir()
+sys.path.insert(0,str(rem/'scripts'));import run_qualifying_campaign as gate
+from bootstrap_ci_environment import SessionRecorder,redact_campaign_log,collect_stack_diagnostics
+if not args.execute:print(json.dumps({'mode':'CHECK_ONLY','suite':'tests/','required_modules':['test_ocor_dev_0048']}));sys.exit(0)
+# Main has0048;0049 remains in its unmerged task branch. All tests under tests/
+# are executed without exclusions. The same unchanged fail-closed guards are reused.
+head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip();gate.verify_revision(repo,head)
+initial=gate.inspect_stack();assert len(initial)==11;gate.check_stack(initial,initial)
+recorder=SessionRecorder(repo);history={};process=None;start=time.monotonic();junit=out/'runtime_junit_post_approval.xml'
+command=[sys.executable,'-m','pytest','-v','--cov=src','--cov-report=term-missing',f'--cov-report=json:{out / "runtime_coverage_post_approval.json"}',f'--junitxml={junit}','tests/']
+try:
+ with (out/'post_remediation_runtime.log').open('w') as log:
+  process=subprocess.Popen(command,cwd=repo/'ocor-runtime',stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+  while process.poll() is None:
+   gate.check_stack(initial,gate.inspect_stack());gate.check_kubernetes_runtimes(history,gate.inspect_kubernetes_runtimes());gate.check_deadline(time.monotonic()-start);time.sleep(5)
+  gate.check_stack(initial,gate.inspect_stack());gate.check_kubernetes_runtimes(history,gate.inspect_kubernetes_runtimes());gate.check_deadline(time.monotonic()-start)
+ assert process.returncode==0, 'pytest exit code '+str(process.returncode)
+ gate.verify_revision(repo,head)
+ result={'status':'PASS','counts':gate.check_junit(junit,required_modules=['test_ocor_dev_0048']),'duration_seconds':time.monotonic()-start,'candidate_head':head,'required_modules':['test_ocor_dev_0048'],'po_decision_required':time.monotonic()-start>3600,'pytest_exit_code':process.returncode,'command':command,'unchanged_guard_source_head':'bc811afc2bc30023cd64051a638c632263760ecc'}
+ (out/'campaign_result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n');print(json.dumps(result))
+except BaseException as exc:
+ if process is not None and process.poll() is None:
+  os.killpg(process.pid,signal.SIGSTOP)
+ gate.collect_kubernetes_diagnostics(out/'kubernetes-diagnostics.log');collect_stack_diagnostics(repo,out/'docker-stats.log')
+ if process is not None:gate.stop(process,resume=True)
+ (out/'campaign_result.json').write_text(json.dumps({'status':'FAIL','error':str(exc)},indent=2,sort_keys=True)+'\n');raise
+finally:
+ recorder.finish();redact_campaign_log(repo,out/'post_remediation_runtime.log')
+ if junit.exists():redact_campaign_log(repo,junit)

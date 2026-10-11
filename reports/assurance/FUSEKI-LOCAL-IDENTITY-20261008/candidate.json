@@ -1,0 +1,628 @@
+{
+  "acceptance_criteria": [
+    "Only services[id=fuseki].build.output_sha256 changes; other services and verification code unchanged.",
+    "Actual locked base used; archive SHA512 verified before COPY and inside image build.",
+    "Previous/new ID, host, time, base/archive/Dockerfile digests recorded in companion lock and raw logs.",
+    "Real local identity bootstrap, full suite, typed positive/negative readiness and bounded fault recovery pass.",
+    "Affected sealed evidence is superseded by hash-bound requalification; originals remain unchanged."
+  ],
+  "acceptance_test": {
+    "command": [
+      "ocor-runtime/.venv/bin/python",
+      "-m",
+      "pytest",
+      "reports/tests/test_fuseki_local_identity.py",
+      "-q"
+    ],
+    "duration_seconds": 0.21437697899818886,
+    "exit_code": 0,
+    "label": "acceptance",
+    "raw_sha256": "19991ff1b5d6004c54edc99ee9d90444b45855bbc590e2fd911191426511f7fb"
+  },
+  "acquisition": {
+    "acquired_at": "2026-10-08T15:31:37.526118+00:00",
+    "archive_cache": "HIT; SHA512 rechecked before build",
+    "archive_provenance": {
+      "source": "https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz"
+    },
+    "base_image": "eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0",
+    "base_image_id": "sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0",
+    "base_layers": [
+      "sha256:767e56ba346ae714b6e6b816baa839051145ed78cfa0e4524a86cc287b0c4b00",
+      "sha256:f4292ee7002b6dec22aac937ffb0bfa41e219d088712a87520165ce266d45fb7",
+      "sha256:a7fc0d3cc487dc168bde3df1ffaea869ce5bfc92be0097ca1bb04b8757656195",
+      "sha256:06d0b36551384fa37d451bec8f24c6e2a96e08b256758c3d7bef96b6e7cde79b",
+      "sha256:55dea5fb63fb4a4aeb939a7eee3be1a0e6d43bb74c6c27196545131e96fe3845"
+    ],
+    "base_layers_match": true,
+    "bootstrap_sha256": "ffe644144af84b383f6f609fa80460ab73ba8131a4fef9f1c5aa33f8fe9aa1ff",
+    "build_iid": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+    "build_log_sha256": "85d896175dd23ae2c20d3005158d1fb4edbdde2a94a491d7c7a9ca682e6debab",
+    "build_recipe_in_main": false,
+    "build_recipe_path": "reports/assurance/FUSEKI-LOCAL-IDENTITY-20261008/build_recipe.txt",
+    "decision": "FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE (2026-10-08)",
+    "dockerfile_sha256": "8704d0e891f232c5f85a2b2cd59ccf3ee14905aeb4862452c92088f816051026",
+    "host": "nepryoon",
+    "implementer": "Codex (OpenAI)",
+    "main_head": "ef58743adebe717113832da1094224e5117d1c48",
+    "object_measured": "docker image inspect ocor/jena-fuseki:6.2.0 --format {{.Id}}; local engine manifest-index ID, distinct from exported config digest.",
+    "output_image": "ocor/jena-fuseki:6.2.0",
+    "output_sha256": "6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+    "previous_local_image_id": "sha256:9b62a4a03c0a87ec7853201382bda024ae0b5611cd963605870b7ab4fcbd479c",
+    "previous_output_sha256": "a1eb484a7d056a897c7bc832fb735b06136fc876aa90da3055d9882bc1b8d9e3",
+    "reason": "Riacquisizione locale dopo esercizio della ricetta CI e modifica autorizzata ADD\u2192COPY; nessun cambio macchina asserito.",
+    "schema_constraint": "infra/services.lock.json \u00e8 closed-schema; i metadati sono nel lock companion senza modificare validator o altri valori del lock dei servizi.",
+    "schema_version": "1.0",
+    "services_lock_only_changed_field": "services[id=fuseki].build.output_sha256",
+    "source_branch": "governed/ocor-dev-rem-0017-ci-provision-spire",
+    "source_head": "bc811afc2bc30023cd64051a638c632263760ecc",
+    "source_sha512": "ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132",
+    "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+    "validator_sha256": "a29870e67cac33d3d574b923293a558dd9490e1598ee87e743c9f34cd0bcda48",
+    "verifier": "Claude Code (Anthropic), pending independent context"
+  },
+  "base_sha": "ef58743adebe717113832da1094224e5117d1c48",
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "timeout --signal=TERM --kill-after=20s 600s docker build --no-cache --progress=plain --iidfile /home/luca/.ocor-codex/fuseki-identity-20261008/built-image.id -t ocor/jena-fuseki:6.2.0 /home/luca/.ocor-codex/fuseki-identity-20261008/build-context",
+      "exit_code": 0,
+      "raw_log": "build.log",
+      "raw_log_sha256": "85d896175dd23ae2c20d3005158d1fb4edbdde2a94a491d7c7a9ca682e6debab",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "duration_seconds": 0.11399367700505536,
+      "exit_code": 0,
+      "raw_log": "reset.log",
+      "raw_log_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "duration_seconds": 38.88302456100064,
+      "exit_code": 0,
+      "raw_log": "bootstrap.log",
+      "raw_log_sha256": "1a3dc6ef5a11cb0bc6d8f93dfc638ac23238c59ec8a0a948c7abae36ce7720a4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/fuseki-identity-20261008/register_control_plane.py",
+      "duration_seconds": 7.376365167991025,
+      "exit_code": 0,
+      "raw_log": "control-plane-registration.log",
+      "raw_log_sha256": "cb748d64b8b9857a1ab1cce13bde12b54511852326be77c9a0fdf7fe3cccc624",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.031956316001014784,
+      "exit_code": 0,
+      "raw_log": "sync-lint.log",
+      "raw_log_sha256": "0130e3d157616088f52f9bc1ab58d947cbec282fcb887bf53d9579ed249b194b",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/.ocor/bootstrap.env",
+      "duration_seconds": 1.3164359850052278,
+      "exit_code": 0,
+      "raw_log": "initialize.log",
+      "raw_log_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/.ocor/bootstrap.env",
+      "duration_seconds": 0.1639633680024417,
+      "exit_code": 0,
+      "raw_log": "fixtures.log",
+      "raw_log_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.668319322008756,
+      "exit_code": 0,
+      "raw_log": "health.log",
+      "raw_log_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/verify_external_services.py",
+      "duration_seconds": 0.1640641539997887,
+      "exit_code": 0,
+      "raw_log": "legacy-health.log",
+      "raw_log_sha256": "ab3a8fec40fa7e48634c716201b94f7391e90b41646f2db89c15bb62aae4cb84",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "duration_seconds": 0.0638627180014737,
+      "exit_code": 0,
+      "raw_log": "manifest.log",
+      "raw_log_sha256": "33b250e31b579c4b9fddb4378505961b804c72593f022dfe693cff06763a5bf4",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.6148408279987052,
+      "exit_code": 0,
+      "raw_log": "sdk-ci.log",
+      "raw_log_sha256": "1ce1fcfc864e2ea4b4bceca26df0e6e89291714583cde11fabdd466b38efa255",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.16422590000729542,
+      "exit_code": 0,
+      "raw_log": "sdk-build.log",
+      "raw_log_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/fuseki-identity-20261008/full_main.py --execute",
+      "duration_seconds": 378.7020046609978,
+      "exit_code": 0,
+      "raw_log": "full.log",
+      "raw_log_sha256": "a9957a2c72f63dec3eb01e814fe24fa59427b0f9ed13eb015d67f9e6265a12c4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "duration_seconds": 1.4664465980022214,
+      "exit_code": 0,
+      "raw_log": "teardown.log",
+      "raw_log_sha256": "59fb3d7ec5e6962e22d8eec1c704eecebc74055b479549a23e67dfd0e31ea8f2",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python -m pytest reports/tests/test_bootstrap_lock_validation.py reports/tests/test_autonomous_tooling_policy.py reports/tests/test_evidence_input_drift.py reports/tests/test_rccad_methodology.py reports/tests/test_validate_language_policy.py reports/tests/test_runtime_evidence_validator.py -q",
+      "duration_seconds": 1.8169323109905235,
+      "exit_code": 0,
+      "raw_log": "reports.log",
+      "raw_log_sha256": "5fb0a9ac1a227d17ffc0a0e5d9c8a733d185d0160c6c76a6dbb820ce2d0d1f29",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py terminusdb pause --bounded --execute --timeout 60",
+      "duration_seconds": 5.2219691180071095,
+      "exit_code": 0,
+      "raw_log": "fault-terminusdb.log",
+      "raw_log_sha256": "9b9a3da62d360a047a7138bee525e91e654820f54e5b144fe9e9dadaffb106de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py typedb pause --bounded --execute --timeout 60",
+      "duration_seconds": 10.280230454998673,
+      "exit_code": 0,
+      "raw_log": "fault-typedb.log",
+      "raw_log_sha256": "c0b94ff199f29634f117939daca3d1d1589d28ca08e664ba71f7c06253e991d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py fuseki pause --bounded --execute --timeout 60",
+      "duration_seconds": 5.221215013996698,
+      "exit_code": 0,
+      "raw_log": "fault-fuseki.log",
+      "raw_log_sha256": "537ea8ec1643585860d73e3548520fc8d3984d5e0c828501c3859468f63e9d5b",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py opa pause --bounded --execute --timeout 60",
+      "duration_seconds": 5.220889634001651,
+      "exit_code": 0,
+      "raw_log": "fault-opa.log",
+      "raw_log_sha256": "528c8fa3d9f9ef96918e3469d4555be5c35f63ae61772b1988257da795849a29",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py keycloak pause --bounded --execute --timeout 60",
+      "duration_seconds": 10.279269085003762,
+      "exit_code": 0,
+      "raw_log": "fault-keycloak.log",
+      "raw_log_sha256": "2d253027bb1df968836ad6796f64ef4d12c5c7f1da3d42417ac97a6c50644bd7",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py openbao pause --bounded --execute --timeout 60",
+      "duration_seconds": 5.171477620999212,
+      "exit_code": 0,
+      "raw_log": "fault-openbao.log",
+      "raw_log_sha256": "3a234a10c72a7e30afb8dae72cd57d879de03d17510ddae7bd2b26c837957fc1",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/fault_inject_test_environment.py spire-agent pause --bounded --execute --timeout 60",
+      "duration_seconds": 0.11400637098995503,
+      "exit_code": 0,
+      "raw_log": "fault-spire-agent.log",
+      "raw_log_sha256": "01d54a73e50c9164a332cd6a2ba3fe4edd23e3dff14b38406533b83ba75db943",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.568197358006728,
+      "exit_code": 0,
+      "raw_log": "health-final.log",
+      "raw_log_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest reports/tests/test_fuseki_local_identity.py -q",
+      "duration_seconds": 0.21437697899818886,
+      "exit_code": 0,
+      "raw_log": "acceptance.log",
+      "raw_log_sha256": "19991ff1b5d6004c54edc99ee9d90444b45855bbc590e2fd911191426511f7fb",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_authoritative_contract_conformance.py -q",
+      "duration_seconds": 4.271937005993095,
+      "exit_code": 0,
+      "raw_log": "linked-reports.log",
+      "raw_log_sha256": "e1760a02d714be0bbf7e4825e34fb8c0060eec1c57a4ed57d323d8d6f8bf823a",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/test_v12_candidate.py",
+      "duration_seconds": 0.16395393999118824,
+      "exit_code": 0,
+      "raw_log": "ci-report-test_v12_candidate.log",
+      "raw_log_sha256": "f7218fcb4d6d9eb96455ae799fb40975d7bbb544280020e52aaae35203e52f65",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/test_v12_semantics.py",
+      "duration_seconds": 0.03177428600611165,
+      "exit_code": 0,
+      "raw_log": "ci-report-test_v12_semantics.log",
+      "raw_log_sha256": "75c4edfe5af6250e80371c0f5034ac087aa4be25718aacbd6624a5b04bc71387",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/test_v12_release_gate.py",
+      "duration_seconds": 0.06373531499411911,
+      "exit_code": 0,
+      "raw_log": "ci-report-test_v12_release_gate.log",
+      "raw_log_sha256": "cd3251a03a7080cb030294186be49bd11a3e38859337d40917f68423ef9837a8",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/test_v12_approval_readiness.py",
+      "duration_seconds": 0.03166935000626836,
+      "exit_code": 0,
+      "raw_log": "ci-report-test_v12_approval_readiness.log",
+      "raw_log_sha256": "95342b0a46a93855bf18b556eed777488e10e9ff853e0d6d48fbc0252fb0c6ab",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/validate_openapi_governed.py",
+      "duration_seconds": 0.41426541600958444,
+      "exit_code": 0,
+      "raw_log": "ci-report-validate_openapi_governed.log",
+      "raw_log_sha256": "ea6c5eca432eef64c81bf3a2c7f6df5e41347fd50f65dba5f93a6924806d5d85",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/build_dec208_approval_manifest.py",
+      "duration_seconds": 0.03175009599362966,
+      "exit_code": 0,
+      "raw_log": "ci-report-build_dec208_approval_manifest.log",
+      "raw_log_sha256": "d407c7a2d56c16016f339bbfc9aa7b5b767db84f8fd27810535a116e763cd6ef",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/verify_dec208_authoritative_promotion.py",
+      "duration_seconds": 0.06386962599935941,
+      "exit_code": 0,
+      "raw_log": "ci-report-verify_dec208_authoritative_promotion.log",
+      "raw_log_sha256": "2a9d165534dd438bf42b4e04f33b55e988cc63b884843a23499a3f5620f00ac9",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python reports/tests/validate_openapi_remediation_c.py",
+      "duration_seconds": 0.7150320560031105,
+      "exit_code": 0,
+      "raw_log": "ci-report-validate_openapi_remediation_c.log",
+      "raw_log_sha256": "84e83aecc0f34f4e2b98fcba0189e9460ded9176aac75074bdd5a8c85e00e8d1",
+      "status": "PASS"
+    }
+  ],
+  "commit": "6cfaf8ed6f185862e7eca1cd5c5a9357e0cd5f0c",
+  "created_at": "2026-10-08T16:03:18.537599+00:00",
+  "environment": {
+    "backend_profile": "real ocor-bootstrap11 containers; local image identity exact; control-plane SPIRE entry registered at boundary",
+    "extras": [
+      "test",
+      "lint"
+    ],
+    "host": "nepryoon",
+    "node": "20.20.2",
+    "python": "3.12.11",
+    "uv": "0.12.5"
+  },
+  "full_campaign": {
+    "candidate_head": "cf0e31dae674c3b3deef29ed808a165a96f6b1f0",
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/fuseki-local-identity-20261008/ocor-runtime/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-v",
+      "--cov=src",
+      "--cov-report=term-missing",
+      "--cov-report=json:/home/luca/.ocor-codex/fuseki-identity-20261008/full/runtime_coverage_post_approval.json",
+      "--junitxml=/home/luca/.ocor-codex/fuseki-identity-20261008/full/runtime_junit_post_approval.xml",
+      "tests/"
+    ],
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 1101
+    },
+    "duration_seconds": 378.49970322899753,
+    "po_decision_required": false,
+    "pytest_exit_code": 0,
+    "required_modules": [
+      "test_ocor_dev_0048"
+    ],
+    "status": "PASS",
+    "unchanged_guard_source_head": "bc811afc2bc30023cd64051a638c632263760ecc"
+  },
+  "full_tested_head": "cf0e31dae674c3b3deef29ed808a165a96f6b1f0",
+  "historical_attempts": [
+    {
+      "attempt": "reset-attempt1",
+      "reason": "Required compose credentials absent in new worktree. Existing OCOR env file reused before retry.",
+      "result": "FAIL"
+    },
+    {
+      "attempt": "qualification-attempt1",
+      "errors": 186,
+      "failed": 2,
+      "passed": 913,
+      "reason": "Real SPIRE control-plane entry absent in standard bootstrap. Added governed unix:uid:0 entry and fetched SVID before fresh qualification; no product/test changes.",
+      "result": "FAIL",
+      "skipped": 0
+    },
+    {
+      "attempt": "reports archived recipe naming",
+      "failures": 1,
+      "passed": 52,
+      "reason": "Language policy classifies filenames beginning Dockerfile as code outside infra, even .txt; archived data renamed build_recipe.txt; validator unchanged.",
+      "status": "FAIL",
+      "subtests_passed": 11
+    },
+    {
+      "attempt": "linked-reports-unpinned",
+      "passed": 27,
+      "reason": "Shell lacked the isolated Node/tsc PATH. Rerun with pinned toolchain:29 PASS and0 skip.",
+      "skipped": 2,
+      "status": "NON_QUALIFYING"
+    }
+  ],
+  "implementer": "Codex (OpenAI)",
+  "independent_verification_result": {
+    "appended_at": "2026-10-08T16:32:32.334323+00:00",
+    "commands": [
+      {
+        "command": "git worktree add --detach /tmp/ocor-verify-<id>/wt 1e808f3824a3fae42bf279ea3e05a8f3d71dfe13",
+        "exit_code": 0,
+        "summary": "worktree detached all'HEAD esatto; diff ef58743..HEAD = 26 path, 4 commit"
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "inputs/ intatto"
+      },
+      {
+        "command": "git diff --name-status ef58743adebe717113832da1094224e5117d1c48..HEAD",
+        "exit_code": 0,
+        "summary": "solo aggiunte + modifiche a services.lock (1 riga output_sha256), EXECUTION_STATE/ITERATION_LOG/MODEL_HANDOFF, G2/MANIFEST (solo append), OCOR_PLAN_RUN_STATE, validate_ocor_development_plan.py (allowlist); nessun record sigillato modificato"
+      },
+      {
+        "command": "cd ocor-runtime && uv sync --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "ambiente isolato nel worktree"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest reports/tests/test_fuseki_local_identity.py -q",
+        "exit_code": 0,
+        "summary": "14 passed (1 positivo + 13 negativi: identita', base, SHA512, provenienza, altro valore del lock, tamper ricetta con hash ricalcolato, ricetta = Dockerfile bc811af, bootstrap/validator byte-identici a main)"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE --non-skipped --manifest reports/assurance/FUSEKI-LOCAL-IDENTITY-20261008/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-00{70,73,74,75,76,77,78,79} --non-skipped --manifest reports/evidence/G2/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "8/8 PASS"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --non-skipped",
+        "exit_code": 2,
+        "summary": "forma senza --task/--manifest non supportata dallo script (argparse); eseguita nelle forme per-task sopra"
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, drifted_tasks=[]"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref ef58743adebe717113832da1094224e5117d1c48",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK"
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base ef58743adebe717113832da1094224e5117d1c48",
+        "exit_code": 0,
+        "summary": "PASS: 26 changed paths; immutable surfaces untouched; task ledger stable"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --authorized-extension --base-ref ef58743adebe717113832da1094224e5117d1c48",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (tool opzionali); rigenera 2 report planning con la base ref (artefatto benigno, ripristinato nel worktree temporaneo)"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 69 source files (configurazione CI)"
+      },
+      {
+        "command": "python -m pytest reports/tests/{test_bootstrap_lock_validation,test_autonomous_tooling_policy,test_evidence_input_drift,test_rccad_methodology,test_validate_language_policy,test_runtime_evidence_validator,test_generate_contracts_reference_resolution,test_backlog_generator_reality_parity,test_language_migration_benchmark_harness,test_authoritative_contract_conformance}.py -q",
+        "exit_code": 0,
+        "summary": "82 passed, 11 subtests passed"
+      },
+      {
+        "command": "sha512sum <cache content-addressed REM17>/apache-jena-fuseki.tar.gz; curl archive.apache.org e downloads.apache.org .../apache-jena-fuseki-6.2.0.tar.gz.sha512",
+        "exit_code": 0,
+        "summary": "SHA512 ba65f586...a132 identico al lock e ai checksum ufficiali Apache; provenance.json della cache = dlcdn.apache.org (CDN ufficiale Apache, nessun mirror terzo)"
+      },
+      {
+        "command": "docker image inspect eclipse-temurin@sha256:db1689...73b0 / ocor/jena-fuseki:6.2.0; docker history",
+        "exit_code": 0,
+        "summary": "base Id = digest lockato, 5 layer identici al companion lock e prefisso dei layer dell'immagine; immagine Id sha256:6534156b...cc2b = output_sha256; history = ricetta COPY + ARG FUSEKI_SHA512 + USER 10001"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute; bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "primo tentativo con bootstrap.env della checkout principale fallito (CA SPIRE del path principale); rigenerato env locale: bootstrap PASS senza rebuild, controllo d'identita' invariato accetta l'immagine esatta; 11 container healthy, fuseki su Image 6534156b"
+      },
+      {
+        "command": "initialize_services.py; load_fixtures.py; register_control_plane.py.txt (letto prima); verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "tutti PASS; entry SPIRE control-plane unix:uid:0 identica a quella di REM17 bootstrap_ci_environment.py:388; SVID ottenuto; health typed con negativi FAIL_CLOSED"
+      },
+      {
+        "command": "pytest -v -rs tests/ (ocor-runtime) senza OCOR_LIVE_POSTGRES_DSN",
+        "exit_code": 1,
+        "summary": "1045 passed, 5 skipped, 51 errors: tutti per DSN assente nel mio ambiente (fail-closed atteso), non qualificante; ripetuto con ambiente come CI/run_dec211_evidence.py"
+      },
+      {
+        "command": "reset + bootstrap + init + fixtures + SPIRE + health, poi OCOR_LIVE_POSTGRES_DSN=...:55433 pytest -v -rs --junitxml tests/",
+        "exit_code": 0,
+        "summary": "1101 passed in 370.56s; JUnit: 0 skip/failure/error; test_ocor_dev_0048: 196 casi, 0 skip, 0 fail (controllo compensativo CI-0048-REAL-BACKEND); Fuseki ha servito 105 richieste reali"
+      },
+      {
+        "command": "scripts/fault_inject_test_environment.py fuseki pause --bounded --execute --timeout 60",
+        "exit_code": 0,
+        "summary": "detected+recovered PASS"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute; git worktree remove --force",
+        "exit_code": 0,
+        "summary": "0 container, 0 volumi, 0 reti ocor-bootstrap residui; worktree rimosso; checkout principale pulita"
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "Su HEAD l'entry fuseki dichiara dockerfile=infra/fuseki/Dockerfile (sha256 6018164d..., ADD da archive.apache.org) ma output_sha256=6534156b... e' l'immagine costruita dalla ricetta COPY di bc811af (build_recipe.txt sha256 8704d0e8...). Dopo il merge di questa unita' sola, il Dockerfile dichiarato nel lock di main non puo' produrre l'ID lockato; il legame e' solo nel companion lock (build_recipe_in_main=false). Il bootstrap resta fail-closed (rebuild da infra/fuseki -> 'identity differs'). Divergenza dichiarata nelle limitations e coerente con la decisione PO di change set separato da REM17.",
+        "id": "VF-001",
+        "path": "infra/services.lock.json:9-11",
+        "required_fix": "Nessun fix bloccante. Integrare la modifica ADD->COPY di REM17 prima o insieme alla prossima riacquisizione, oppure aggiungere al test di accettazione un controllo esplicito che registri la differenza hash Dockerfile main vs ricetta, cosi' che l'incoerenza temporanea sia verificata e non solo dichiarata.",
+        "severity": "low"
+      },
+      {
+        "blocking": false,
+        "evidence": "archive_cache='HIT; SHA512 rechecked before build' e' una stringa riassuntiva: il bundle qualification.log non contiene l'output grezzo del ricontrollo pre-COPY (cache_key/verified_sha512 di acquire_fuseki_archive.py). La verifica SHA512 e' comunque provata dal build.log (sha512sum -c: OK, step #7) e l'ho riacquisita in modo indipendente: cache e checksum ufficiali Apache coincidono con ba65f586...a132.",
+        "id": "VF-002",
+        "path": "infra/fuseki/local_identity.lock.json:3",
+        "required_fix": "Nelle prossime acquisizioni archiviare nel raw log l'output JSON dell'acquisizione (cache HIT/MISS, cache_key, source, verified_sha512) come richiesto da REM-0017-CI-ARCHIVE-ACQUISITION.",
+        "severity": "low"
+      },
+      {
+        "blocking": false,
+        "evidence": "Il diff aggiunge 19 path del change set all'allowlist extension_paths di un validator, mentre l'autorizzazione PO recita 'nessuna modifica validator/checker'. E' il meccanismo gia' usato dai precedenti change set governed (git log del file) e non indebolisce alcun controllo oltre all'ammissione esatta dei path del change set; il checker d'identita' (ocor_bootstrap_lib.py) e il bootstrap sono byte-identici a main (verificato dal test e da sha256).",
+        "id": "VF-003",
+        "path": "scripts/validate_ocor_development_plan.py:275-293",
+        "required_fix": "Nessun fix bloccante; esplicitare nella PR che la sola modifica a script e' l'allowlist di planning, distinta dal checker del lock oggetto del vincolo PO.",
+        "severity": "low"
+      }
+    ],
+    "head_sha": "1e808f3824a3fae42bf279ea3e05a8f3d71dfe13",
+    "implementer": "Codex (OpenAI)",
+    "not_executed": [
+      "ADVERSARIAL_CONFORMANCE con clone pulito da origin: non richiesto (review_type REMEDIATION); stack comunque azzerato e ricreato da zero con reset+bootstrap prima della suite qualificante.",
+      "Rebuild indipendente dell'immagine dalla ricetta: non eseguito di proposito per non sostituire l'immagine locale governata; l'ID non e' riproducibile bit-a-bit e nessuna rebuild-equality e' asserita. Identita' verificata su immagine presente, layer base, history e build.log.",
+      "CI esatta sull'HEAD e sigillo: fuori scope di questa verifica (iterazione di integrazione separata, nessuna PR aperta)."
+    ],
+    "request_id": "FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE-1e808f3824a3-0",
+    "review_type": "REMEDIATION",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_file_sha256": "f45427b97fe40cf4d58155324bc925bca0b26176520b3f063f4ef8444e27a970",
+    "verifier": {
+      "independence_limits": "processo e contesto separati; verifier Claude Code (Anthropic), implementatore Codex (OpenAI): modelli e fornitori diversi; nessun riassunto dell'implementatore usato come prova, tutti i controlli rieseguiti sullo stack reale ricreato.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code, sessione non interattiva, contesto pulito"
+    }
+  },
+  "inputs": {
+    "infra/fuseki/local_identity.lock.json": "1205874fb7525010e5868246b1ddd74f036241ba60ec91051718b0437188d720",
+    "infra/services.lock.json": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/assurance/FUSEKI-LOCAL-IDENTITY-20261008/build_recipe.txt": "8704d0e891f232c5f85a2b2cd59ccf3ee14905aeb4862452c92088f816051026",
+    "reports/tests/test_fuseki_local_identity.py": "f099bf785530a4f7aff1394d7d9034ee964dc32d25d1455fe7a98356d478fb1a",
+    "scripts/bootstrap_development_environment.py": "ffe644144af84b383f6f609fa80460ab73ba8131a4fef9f1c5aa33f8fe9aa1ff",
+    "scripts/ocor_bootstrap_lib.py": "a29870e67cac33d3d574b923293a558dd9490e1598ee87e743c9f34cd0bcda48",
+    "scripts/verify_external_services.py": "4e46a764c8a1588413cc0800797752177c11c5ab2da3afbaea47752847281c97"
+  },
+  "limitations": [
+    "Local output identity is machine-specific. Final COPY recipe is archived from published REM snapshot; main Dockerfile remains unchanged until separate REM acceptance. No clean-main recipe rebuild equality is asserted.",
+    "REM17 local candidate runtime crash remains unresolved; this unit does not repair or qualify REM17.",
+    "All existing NO-GO/evidence fences and completed63 remain unchanged."
+  ],
+  "negative_acceptance_criteria": [
+    "Incorrect identity/base/source/recipe/provenance and any other lock change are rejected by named acceptance cases.",
+    "No qualifying mock/skip/NOT_EXECUTED accepted."
+  ],
+  "raw_log_retention": {
+    "historical_missing_raw": "Repeated bootstrap-only stages reused some external log labels before the final bundle; prior digest summaries are historical, not independently reconstructible raw claims. Final qualifying logs and every full-suite raw log are retained.",
+    "qualifying_commands": "Latest successful observation per command label; hashes reacquired from the exact redacted logs in the bundle. Earlier summaries retained as historical-command-observations.json.",
+    "redaction_index": "redaction-index.json; private originals stay outside Git"
+  },
+  "raw_output_sha256": "e005ddf77ac399404dbd19532f25bc2b2e4ca765a6e0779fc7014a373c062d50",
+  "record_id": "FUSEKI-LOCAL-IDENTITY-20261008-6cfaf8ed6f18",
+  "result": "PASS",
+  "rollback": "Mechanically reviewed: new revert of isolated lock/companion/evidence changes. Never replace with an unverified local image; prior ID remains historical, not reasserted present.",
+  "runtime_tree_unchanged_since_full": true,
+  "schema_version": "1.0",
+  "scope": "Dedicated governed local image identity reacquisition; REM-0017 and0049 are not promoted.",
+  "sealed_at": "2026-10-08T16:32:32.334323+00:00",
+  "status": "SEALED_PENDING_CI_AND_INTEGRATION",
+  "supervision_invocation_erratum": {
+    "attempt": "qualification-attempt2",
+    "disposition": "Historical only. Complete fresh run using unchanged stack/deadline/JUnit guard functions and main guard0048; all tests/ executed.",
+    "pytest_counts": {
+      "errors": 0,
+      "failed": 0,
+      "passed": 1101,
+      "skipped": 0
+    },
+    "reason": "0049 candidate mode incorrectly selected for a main-derived identity branch without0049 module.",
+    "wrapper_exit_code": 1
+  },
+  "task_id": "FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE",
+  "tdd_exception": "Declarative local lock reacquisition; RCCAD test strategy permits configuration exception. Existing input-drift validator demonstrated RED8 mismatches before requalification. Positive/negative acceptance and real qualification remain mandatory.",
+  "temporary_ci_generated_artifacts": "Existing CI report scripts regenerated five tracked artifacts, including the existing DEC208 checksum manifest. Diffs preserved outside Git and all five restored byte-for-byte; no authoritative snapshot or approval change is part of the change set.",
+  "verifier": "Claude Code (Anthropic), claude-opus-5-5, separate process/context"
+}

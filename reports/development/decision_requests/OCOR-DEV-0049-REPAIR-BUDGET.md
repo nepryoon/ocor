@@ -35,3 +35,21 @@ Il mandato `OCOR-DEV-0049-REPAIR-6` del 2026-10-07 risolve la richiesta preceden
 Il verdetto `OCOR-DEV-0049-d0ac80a9d1d6-6` (d0ac80a9d1d603ca19ddbb2d5291e252b3d6ae2b, SHA-256 934e0f032daa67c0f6abee6e379c4569c0394c5e3b0c28dce05d799c005fc18c) è NO_GO: VF-001 medium bloccante per ordinamento seal/replay divergente dei tombstone; VF-002 low per copertura positiva journal-ahead. Nessun ciclo 7 autorizzato. Il task resta bloccato per budget; non viene chiesto implicitamente un nuovo ciclo. La decisione impone CONTINUE con REM-0017, poi 0050 e task indipendenti. Un futuro mandato PO è condizione necessaria soltanto per riaprire 0049. Dettagli ed esiti NOT_EXECUTED conservati nell’escalation.
 
 Riparazioni e verifier: Claude Code in processi/contesti separati (stesso modello; fallback); loop implementatore Codex. Nessuna sigillatura o promozione di claim.
+
+
+## 2026-10-07T16:57:52.731979+00:00 — Ciclo 7 concluso; nessun ciclo 8
+
+La decisione `OCOR-DEV-0049-REPAIR-7` ha autorizzato il ciclo 7 Codex;
+`OCOR-DEV-0049-VERIFIER-CURSOR` ne ha assegnato la verifica a Grok 4.7 (Cursor).
+La richiesta storica resta `RESOLVED_BY_PO_DECISION`: non viene riaperta come
+richiesta implicita di ciclo 8. Il verdetto `OCOR-DEV-0049-9d86abebc762-7`, HEAD `9d86abebc7626a36115540a2711772c1d2d19e23`,
+SHA-256 `bc8539a202ce6d88e711a7832e71cf78902ea5e6fee2cd3b609ffa8628ed8e7e`, è **NO_GO**, un finding `high` bloccante sul binding della
+receipt all’intera sequenza dei tombstone del journal firmato. Dettagli e azione
+minima non autorizzata nel record di escalation. Un’eventuale riapertura 0049
+resta riservata a una nuova decisione esplicita del Product Owner.
+
+Disposizione già decisa: escalation **solo 0049**, nessun ciclo 8; **CONTINUE**
+con REM-0017 repair 1, poi 0050/G5 secondo dipendenze. Non attendere una nuova
+decisione 0049 per lavorare su G5. Nessun merge/sigillo 0049 e nessuna promozione di claim.
+Riparazioni cicli 2–6 Claude Code, ciclo 7 Codex; verifier Grok 4.7 via Cursor,
+fornitore diverso in processo/contesto separati.

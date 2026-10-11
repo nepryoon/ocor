@@ -1,0 +1,769 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0021-retrieval-post-read-eligibility",
+    "decision": "Remediation di un difetto entro il mandato CC-OCOR-DELIVERY-COMPLETION (§7: remediation dei difetti con il primo REM-* libero verificato); origine: finding VF-002 del verdetto indipendente OCOR-DEV-0055-38b7734bd97f-0 (Grok 4.7 via Cursor)",
+    "id": "OCOR-DEV-REM-0021",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0021-RCCAD/OCOR-DEV-REM-0021.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "exit_code": 0,
+      "label": "reset",
+      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "exit_code": 0,
+      "label": "bootstrap",
+      "raw_sha256": "3373c180926486e0c0971331b42fb0f00c289f68caf2121af1759f51446f7cb6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "exit_code": 0,
+      "label": "health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python register_control_plane.py",
+      "exit_code": 0,
+      "label": "register",
+      "raw_sha256": "4fb06fc4ff58e49bfc8fb17243694f83bbbc1932cadf74693d2f9c493e46752d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 3.3,
+      "exit_code": 0,
+      "label": "health-now",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync",
+      "raw_sha256": "d934c97892c10c8200842e9b54932a67329525d168a0d9a8186b6c2e4f01d9b5",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.7,
+      "exit_code": 0,
+      "label": "sdk-ci",
+      "raw_sha256": "dfb11545ae70d45a8fb560f58fafcf348a8b07d85e3d1ba803be0b97bea1fa1e",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0021/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0051.py ocor-runtime/tests/tasks/test_ocor_dev_0052.py ocor-runtime/tests/tasks/test_ocor_dev_0053.py ocor-runtime/tests/tasks/test_ocor_dev_0054.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0021.py",
+      "duration_seconds": 221.9,
+      "exit_code": 0,
+      "label": "task-run-1",
+      "raw_sha256": "66ba6cd6cfb0c1f59c3002e33af15a27d8c6d18d78d82a3243beae15e3f00755",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 607,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0021/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0051.py ocor-runtime/tests/tasks/test_ocor_dev_0052.py ocor-runtime/tests/tasks/test_ocor_dev_0053.py ocor-runtime/tests/tasks/test_ocor_dev_0054.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0021.py",
+      "duration_seconds": 223.7,
+      "exit_code": 0,
+      "label": "task-run-2",
+      "raw_sha256": "f7c62d0b3c159117228efc17930a0db3ca1850292fc32d58eeb9f2b3b0579043",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 607,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0021/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0051.py ocor-runtime/tests/tasks/test_ocor_dev_0052.py ocor-runtime/tests/tasks/test_ocor_dev_0053.py ocor-runtime/tests/tasks/test_ocor_dev_0054.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0021.py",
+      "duration_seconds": 223.6,
+      "exit_code": 0,
+      "label": "task-run-3",
+      "raw_sha256": "378cc60ec5ad57603cb54f4ec092987070dfe3a645fbaeaa981ef3a4390596a9",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 607,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/rem-0021/task-junit-uv.xml tests/tasks/test_ocor_dev_0050.py tests/tasks/test_ocor_dev_0051.py tests/tasks/test_ocor_dev_0052.py tests/tasks/test_ocor_dev_0053.py tests/tasks/test_ocor_dev_0054.py tests/tasks/test_ocor_dev_rem_0020.py tests/tasks/test_ocor_dev_rem_0021.py",
+      "duration_seconds": 231.1,
+      "exit_code": 0,
+      "label": "task-validation-command",
+      "raw_sha256": "352b28d3945d7e166221d5f1f6c31584e5cfcb9716906ac57549cb4c18a88043",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 607,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "exit_code": 0,
+      "label": "task-teardown-delta",
+      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
+      "duration_seconds": 683.4,
+      "exit_code": 0,
+      "label": "full-suite-recorded",
+      "raw_sha256": "c3a382f5117f198c60238d2894fa8f8eec2fe93f6f619566a23e84cb17d4a50e",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1708,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the 0051/0052/0053 harnesses used by the memory suites; no container/network residue; nothing pre-existing removed",
+      "exit_code": 0,
+      "label": "full-resource-attribution",
+      "raw_sha256": "5c3b0e972a30b6a51d46236a9e67e45561e8de8e3a3d3d5d18395ce7e96200e8",
+      "status": "PASS"
+    },
+    {
+      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
+      "exit_code": 0,
+      "label": "full-resource-cleanup",
+      "raw_sha256": "a6076152e68f2c6d0cabdab9bd33f6c99aa8c45628bad2dbd1d5ba135493adf2",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "d896bfaae7a10ec97ec9e45157f975ff0aa08b18406d27bfb01be9aa0e4ae74d",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "4ef32b02733c640ba275e5de2c0f630d3ea2a6293bb124ad0dc2173d46e40541",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.6,
+      "exit_code": 0,
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.3,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0021/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0021-retrieval-post-read-eligibility",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (third of three consecutive runs of the 0050, 0051, 0052, 0053, 0054, REM-0020 and REM-0021 suites)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "87cdf2540cb42b88ba30def30259fdd589300f3be0542da6cf3e86f1557b82f6",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 607,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-validation-command (uv run, frozen lock)",
+      "exit_code": 0,
+      "label": "task-junit-uv",
+      "raw_sha256": "e077b9680c7b509faac2bdcca76ae343c05e8670ccd6ab3469eb1de78aa9d414",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 607,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "86d3652c140fc632ef2a9844f29434c4946d89913d1238455db67eb4f87818f5",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1708,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (75-minute cap, stack restart/OOM/exit guard)",
+      "exit_code": 0,
+      "label": "full-suite-runner-result",
+      "raw_sha256": "d5807bd44bb2c4288aaa54218302738094305c98d53a1c00830f86fe633cfcf0",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every mutant of the REM-0021 remediation in memory/retrieval.py must make the REM-0021, REM-0020 or 0052 suite fail",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "0c4bcd279b6aa5341012beaeb2983b32ee7add87db14b407fdbd0c12a64077ad",
+      "result": {
+        "failed": 0,
+        "killed": 6,
+        "mutants": 6
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: HEAD, clean worktree and sha256 of the mutated files before and after the probe (files restored)",
+      "exit_code": 0,
+      "label": "mutation-probe-context",
+      "raw_sha256": "07fd47927f34487d7ee496449a6394dbe6322aa26393afbf34da4ede4e93b14c",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: first mutation probe on the first draft of the tests (3 survivors; superseded by mutation-probe-result after the tests were strengthened, see tdd.REFACTOR)",
+      "exit_code": 0,
+      "informational": "superseded first probe, captured verbatim; its survivors are resolved by the strengthened tests and the replaced equivalent mutant (tdd.REFACTOR); the qualifying probe is mutation-probe-result",
+      "label": "mutation-probe-first-result",
+      "raw_sha256": "148bcb322cf3f395580f8d1991c15bbd68152bba673bf99ca71dabb545c3bf96",
+      "result": {
+        "killed": 3,
+        "mutants": 6,
+        "survived": 3
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: source of the mutation probe (mutant table)",
+      "exit_code": 0,
+      "label": "mutation-probe-script",
+      "raw_sha256": "6c47d3bbb69d5e605db1bb26edbb7ebd635b46eb69801c4bb11ee1e76cf9d3a1",
+      "status": "PASS"
+    }
+  ],
+  "commit": "0e76db2ac62d9b0225e4badb9ba5d9155cb15b67",
+  "created_at": "2026-10-10T08:26:39Z",
+  "environment": {
+    "acquired_at": "2026-10-10T08:26:39.876168+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "admission_and_retrieval": "records produced by the real OCOR-DEV-0050 MemoryAdmissionService, committed by the real 0051 MemoryStoreCoordinator (version 2 ports) and searched by the real 0052 MemorySearchService (REM-0020 version 2 ports, remediated by REM-0021); the 0053 and 0054 suites run unchanged over the same ports; the lifecycle versions (REVOKED, QUARANTINED, correction) are committed by the real 0051 MemoryStoreCoordinator exactly as the 0052 World.lifecycle helper does",
+      "content_cipher": "OpenBao quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641 disposable dev server per test module (transit aes256-gcm96 derived); removed in teardown",
+      "metadata_and_lexical": "PostgreSQL 16 of the ocor-bootstrap stack (postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20) via OCOR_LIVE_POSTGRES_DSN; one isolated schema per test world (metadata versions/pointers/heads, encrypted content, one lexical table per partition and representation version with the jsonb attributes column), dropped after each test",
+      "policy_stop_and_audit": "explicit test ports for MemoryRetrievalPolicy decisions, the stop epoch and the audit sink (as in 0052); the OPA decision itself is not the subject of this remediation; the policy-revocation case switches the test policy port to a denial during the read",
+      "vector_index": "Qdrant qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6 provisioned per test module by OCOR-DEV-0023's sealed QdrantHarness (tmpfs), one collection per partition and representation version created by the 0051 adapter (one segment, 1 MiB WAL in the 0052 worlds) with the eligibility payload beside the pointer; deleted after each test; image asserted equal to the lock"
+    },
+    "branch": "governed/ocor-dev-rem-0021-retrieval-post-read-eligibility",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute; images observed after the full suite",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript (steps sdk-ci, sdk-build)",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/rem-0021"
+  },
+  "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 OK sul worktree detached 3845e4af e riletto sulla checkout principale allo stesso contenuto di inputs/ (diff inputs vuoto)."
+      },
+      {
+        "command": "git diff --name-only 06620513d7543f084112854858e38fc54b6bd0c4..3845e4af0fc110aa3cc571e4517533d507c124c1",
+        "exit_code": 0,
+        "summary": "12 percorsi: retrieval.py, test_ocor_dev_rem_0021.py, assurance REM-0021, riqualifiche 0050/0052 rem0021, MANIFEST.json, OCOR_PLAN_RUN_STATE.json, allowlist di validate_ocor_development_plan.py. Diff inputs/ vuoto. I predecessori sigillati OCOR-DEV-0050.requalified-rem0020.json/.log e OCOR-DEV-0052.requalified.json/.log sono byte-identici a origin/main."
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute && scripts/bootstrap_development_environment.py --execute && initialize_services.py && load_fixtures.py && scripts/verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "La CA SPIRE della checkout principale e scaduta il 2026-10-08 e non e stata modificata. Il primo bootstrap che la riusava e fallito. Stack sano ottenuto con CA e .ocor/bootstrap.env generati solo nel worktree. Un join token stantio esportato nella shell ha fatto fallire l'agent dopo un reset; corretto unsetting OCOR_* e ricreando l'agent prima della suite qualificata. Health finale: 11 READY, status PASS, OOMKilled=false. Entry spiffe://ocor.test/ocor/control-plane registrata e SVID fetched prima della suite qualificata."
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<ocor-bootstrap-postgres> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs tests/tasks/test_ocor_dev_rem_0021.py tests/tasks/test_ocor_dev_rem_0020.py tests/tasks/test_ocor_dev_0052.py tests/tasks/test_ocor_dev_0050.py tests/tasks/test_ocor_dev_0051.py tests/tasks/test_ocor_dev_0053.py tests/tasks/test_ocor_dev_0054.py",
+        "exit_code": 0,
+        "summary": "607 passed, 0 failed, 0 skipped, 3 warnings in 229.55s. JUnit tests=607 failures=0 errors=0 skipped=0. Include REM-0021 (42), R2-R6 di REM-0020 e 0050-0054."
+      },
+      {
+        "command": "RED: worktree detached 7c46daf6d20029aadf6858ad3ccf8c8605056d7d pytest -q tests/tasks/test_ocor_dev_rem_0021.py",
+        "exit_code": 1,
+        "summary": "28 failed, 14 passed, 0 skipped in 17.86s. JUnit tests=42 failures=28 errors=0 skipped=0. Tutti i 28 fallimenti sono Failed: DID NOT RAISE MemoryRetrievalError. Il file di test e identico a HEAD; retrieval.py a quel commit non ha _require_unchanged."
+      },
+      {
+        "command": "probe live PostgreSQL 16.14 + Qdrant pinnato + OpenBao pinnato: revoca e DELETION_PENDING durante read_version, revoca di un hit precedente durante una lettura successiva, non-hit oltre top_k, stop epoch prevale sulla revoca simultanea",
+        "exit_code": 0,
+        "summary": "PROBE_OK. REVOKED head (2, COMMITTED, REVOKED, deletion None) visto da una connessione nuova: nessun hit, CANDIDATE_CHANGED, diniego auditato. DELETION_PENDING con deletion_epoch=1 stesso esito. Tre item: la revoca del primo durante la terza lettura elimina l'hit. Un cambiamento fuori da top_k non fa fallire la ricerca e i fattori di score restano valori reali > 0. Stop+revoca durante HYBRID produce STOP_EPOCH_MISMATCH. Spike del probe rimossi."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff 0.13.1, all checks passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Prima invocazione exit 1: No module named mypy, perche un uv sync del bootstrap aveva lasciato il venv senza extra lint. Dopo uv sync --frozen --extra test --extra lint: Success, 74 source files."
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0021-retrieval-post-read-eligibility",
+        "exit_code": 0,
+        "summary": "PASS: 12 changed paths; immutable surfaces untouched; task ledger stable"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, dynamic_assurance CI_REQUIRED, findings vuoti"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (markdownlint e renderer Mermaid opzionali del validator, exit 0). Non sono controlli obbligatori del verifier."
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 178 input, 68 task, 0 drift"
+      },
+      {
+        "command": "for t in OCOR-DEV-0050 OCOR-DEV-0051 OCOR-DEV-0052 OCOR-DEV-0053 OCOR-DEV-0054; do python3 scripts/validate_runtime_evidence.py --task $t --non-skipped --manifest reports/evidence/G5/MANIFEST.json; done",
+        "exit_code": 0,
+        "summary": "PASS per 0050, 0051, 0052, 0053 e 0054"
+      },
+      {
+        "command": "python3 ~/.ocor-codex/rem-0021/check_evidence.py <worktree> 3845e4af0fc110aa3cc571e4517533d507c124c1",
+        "exit_code": 0,
+        "summary": "PASS, errors vuoti. commit di codice 0e76db2ac62d9b0225e4badb9ba5d9155cb15b67, head 3845e4af0fc110aa3cc571e4517533d507c124c1, task_cases 607, full_suite_cases 1708, mutants 6. Claim fence dei tre record: E1=0, E2=0, PoC_GO=NO-GO, Production_readiness=NO_GO, runtime_conformance=NOT_ESTABLISHED."
+      },
+      {
+        "command": "PATH=<node-v24> OCOR_LIVE_POSTGRES_DSN=<ocor-bootstrap-postgres> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs tests/",
+        "exit_code": 1,
+        "summary": "Run non qualificante, prima della registrazione SPIRE e con node v24.5.0 sul PATH: 10 failed, 1512 passed, 186 errors, 0 skipped in 542.99s. 8 fallimenti in test_ocor_dev_0007 per v24.5.0!=v20.20.2. 0048: 8 passed, 2 failed, 186 errors, 0 skipped (fetch SVID fallito e entry control-plane assente). Nessun servizio OOMKilled. Non usata come esito del gate."
+      },
+      {
+        "command": "PATH=/home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin:$PATH OCOR_LIVE_POSTGRES_DSN=<ocor-bootstrap-postgres> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs tests/",
+        "exit_code": 0,
+        "summary": "Suite qualificata dopo entry SPIRE spiffe://ocor.test/ocor/control-plane e node v20.20.2: 1708 passed, 0 failed, 0 skipped, 3 warnings in 679.56s. JUnit tests=1708 failures=0 errors=0 skipped=0. test_ocor_dev_0048.py 196/196, test_ocor_dev_0007.py 51/51, REM-0021 42/42. Nessun servizio OOMKilled."
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute && docker volume rm <34 volumi anonimi creati durante le suite>",
+        "exit_code": 0,
+        "summary": "Teardown ocor-bootstrap PASS. 34 volumi anonimi comparsi rispetto allo snapshot pre-suite rimossi; delta residuo 0. Container ocor-spike del probe gia assenti. Worktree detached wt e red rimossi. Checkout principale ancora a 06620513, working tree pulito. Nessun container eci-dev-control-plane o open-webui presente prima o dopo."
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 e integrazione di OCOR-DEV-REM-0021",
+    "integration_condition": "Merge subordinato ai check obbligatori verdi sul commit di sigillo esatto; il verdetto qualifica il candidato indicato, con soli metadati di sigillo e hash successivi.",
+    "not_executed": [],
+    "original_implementer": "Claude Code (Anthropic), claude-opus-5-5 (0050 cycle 0, 0052, REM-0020); Codex (OpenAI) 0050 repair cycles 1-2",
+    "prior_verdicts": [],
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION (requalification of OCOR-DEV-0052 within OCOR-DEV-REM-0021)",
+    "verdict_created_at": "2026-10-10T09:15:22Z",
+    "verdict_file_sha256": "9c8c01387ff21cc2e6238baea77882904555373bf1af53a08782d2160c0f8d67",
+    "verdict_head_sha": "3845e4af0fc110aa3cc571e4517533d507c124c1",
+    "verdict_request_id": "OCOR-DEV-REM-0021-3845e4af0fc1-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore del ciclo 0: Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva (quota Codex esaurita). Verifier: Grok 4.7 (xAI) via Cursor CLI. Fornitori di modello diversi. Claude Code non verifica questo change set.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, sessione non interattiva"
+    }
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/retrieval.py": "72a8de786996d52b3beee3f3c0b516d409480396066005bd32ebe2d94fa41d76",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0052.py": "dec77625fe883e3410ad19403b348fb0dff4afd89bb82bae4e80f1cae62b71cd"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) e la password del DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {
+    "OCOR_LOCAL_POSTGRES_PASSWORD": 56,
+    "OCOR_SPIRE_JOIN_TOKEN": 1
+  },
+  "raw_output_sha256": "9c2720f3fc6e60d07c8f9a3906766db5f00b3c4ea0f73751418a015cd97bdfd8",
+  "record_id": "OCOR-DEV-0052-requalified-rem0021-0e76db2ac62d",
+  "reproducible_check": {
+    "checker_source_sha256": "4e9d3eee48e2457b3dbf0bb1170f60574f8209516826d0d2aba33138c930e7e7",
+    "command": "python3 /home/luca/.ocor-codex/rem-0021/check_evidence.py <repo> <head>",
+    "scope": "mechanical integrity and count reconstruction of the three records; does not constitute independent verification"
+  },
+  "requalification": {
+    "full_suite": "see commands full-suite-recorded / full-suite-junit / full-suite-runner-result",
+    "previous_inputs": {
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime/src/ocor_runtime/memory/retrieval.py": "0b0397d72d15e163bc412dc970c300c9f85450d7ef9e8e3353d3a7fc14ea30cd",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0052.py": "dec77625fe883e3410ad19403b348fb0dff4afd89bb82bae4e80f1cae62b71cd"
+    },
+    "reason": "memory/retrieval.py: MemorySearchService._materialize re-validates the complete eligibility of every ranked version after its content read and over every hit right before the receipt (OCOR-DEV-REM-0021, VF-002 of verdict OCOR-DEV-0055-38b7734bd97f-0); the pre-read check is unchanged and factored into _require_unchanged. test_ocor_dev_0052.py is byte-identical and every case passes; the remediation cases are in the REM-0021 record.",
+    "sealed_verdict_request_id": "OCOR-DEV-REM-0020-4f1c4ef439a1-0",
+    "superseded_evidence_sha256": "276374b4642cf270d845d1a6398befbb02707509eebb635bc88ed3df636463d3",
+    "superseded_raw_sha256": "df93b7d3226b457909195b18d6b262376363f6ea804b79bda10540663fa87286",
+    "superseded_record": "reports/evidence/G5/OCOR-DEV-0052.requalified.json",
+    "superseded_record_id": "OCOR-DEV-0052-requalified-rem0020-408eb1cb5c0e"
+  },
+  "requirement_coverage_note": "Component-level evidence only for the retrieval behaviours named in each case: FR-118 (structured/full-text/vector/hybrid retrieval with exact-version and representation/ranking pins) and FR-119 (policy before lookup and before materialisation; no influence of unauthorized items on content, existence, rank, count, explanation; explicit Authority for cross-project/domain/federated; cross-tenant denied; revocation, expiry, reclassification and stop-epoch races). Full verification of FR-118/FR-119 and of FGM-04/05/06/07/10/16/17 is allocated to G6 (OCOR-DEV-0061, reports/evidence/G6/<REQ>.json); BR-003 end-to-end mission-thread evidence is NOT_EXECUTED here (OCOR-DEV-0065/0069). E1=0/E2=0 and zero global Verified remain unchanged.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0052-STRUCTURED-FULL-TEXT-VECTOR-HYBRID-RETRIEVAL",
+      "command": "on real PostgreSQL (metadata, encrypted content, full-text), Qdrant (vector) and OpenBao transit: STRUCTURED reads the metadata authority with pinned filters (source kind, content schema, confidence, taint), FULL_TEXT and VECTOR rank by their own representation, HYBRID records lexical, vector, recency, confidence, source-quality, diversity and policy factors separately with final_score recomputable from the versioned profile; a parallel embedding representation is searched only under its own pin",
+      "real_backend_tests": [
+        "test_a_parallel_embedding_representation_is_searched_only_under_its_own_pin",
+        "test_full_text_and_vector_retrieval_rank_by_their_own_representation",
+        "test_hybrid_ranking_records_every_factor_separately",
+        "test_qualifying_backends_are_real_and_pinned",
+        "test_structured_retrieval_returns_exact_active_versions_with_pinned_filters",
+        "test_unit_index_double_is_not_used_by_qualifying_worlds"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 14,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_parallel_embedding_representation_is_searched_only_under_its_own_pin",
+        "test_a_valid_request_of_every_mode_is_accepted",
+        "test_full_text_and_vector_retrieval_rank_by_their_own_representation",
+        "test_hybrid_ranking_records_every_factor_separately",
+        "test_qualifying_backends_are_real_and_pinned",
+        "test_ranking_profiles_are_validated",
+        "test_structured_retrieval_returns_exact_active_versions_with_pinned_filters",
+        "test_unit_index_double_is_not_used_by_qualifying_worlds"
+      ],
+      "unit_fixture_tests": [
+        "test_a_valid_request_of_every_mode_is_accepted",
+        "test_ranking_profiles_are_validated"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0052-PINS-QUERY-REPRESENTATION-RANKING-FILTERS-EXACT-VERSIONS",
+      "command": "the audit receipt pins query contract, mode, kinds, scopes, text, query-vector digest, representation versions, filters, valid_at, top_k and ranking profile digest, plus every hit's exact version ref, item and content digest; every pinned dimension changes query_digest; identical state replays byte-identically, also across fresh adapters; a new version is a new exact pin and the earlier version stays readable; hits of another representation version fail closed",
+      "real_backend_tests": [
+        "test_retrieval_is_durable_across_fresh_adapters",
+        "test_the_receipt_pins_query_representation_ranking_filters_and_exact_versions"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 5,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_lexical_hit_of_another_representation_version_fails_closed",
+        "test_metrics_use_a_bounded_label_set",
+        "test_ranking_profile_and_query_contract_digests_pin_every_field",
+        "test_retrieval_is_durable_across_fresh_adapters",
+        "test_the_receipt_pins_query_representation_ranking_filters_and_exact_versions"
+      ],
+      "unit_fixture_tests": [
+        "test_a_lexical_hit_of_another_representation_version_fails_closed",
+        "test_metrics_use_a_bounded_label_set",
+        "test_ranking_profile_and_query_contract_digests_pin_every_field"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0052-POLICY-BEFORE-LOOKUP-AND-BEFORE-MATERIALISATION",
+      "command": "malformed requests, missing or foreign bindings and GCS mismatches are refused before policy and any index read; pre-query denial, stale bundle, unauthorized kind/scope and policy outage are audited and read no candidate; cross-project, cross-domain and federated retrieval open only with explicit Authority, cross-tenant stays denied; materialisation policy outage and unbound item digests fail closed",
+      "real_backend_tests": [
+        "test_explicit_authority_opens_cross_project_domain_and_federated_retrieval"
+      ],
+      "requirement_id": "FR-119",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 39,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_materialisation_policy_outage_fails_closed",
+        "test_a_missing_or_foreign_binding_is_refused",
+        "test_explicit_authority_opens_cross_project_domain_and_federated_retrieval",
+        "test_hits_whose_item_digest_differs_from_the_metadata_are_dropped",
+        "test_invalid_requests_fail_before_policy_or_any_index_read",
+        "test_pre_query_policy_failures_are_audited_and_read_no_candidate",
+        "test_unknown_stop_state_and_unaudited_answers_fail_closed"
+      ],
+      "unit_fixture_tests": [
+        "test_a_materialisation_policy_outage_fails_closed",
+        "test_a_missing_or_foreign_binding_is_refused",
+        "test_hits_whose_item_digest_differs_from_the_metadata_are_dropped",
+        "test_invalid_requests_fail_before_policy_or_any_index_read",
+        "test_pre_query_policy_failures_are_audited_and_read_no_candidate",
+        "test_unknown_stop_state_and_unaudited_answers_fail_closed"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0052-UNAUTHORIZED-ITEMS-NON-INTERFERENCE",
+      "command": "two real-backend worlds, one with 21 unauthorized items of distinct classes (compartment, mixed compartments, tenant, organization, marking, purpose, domain, project, run, agent, federated, quarantined, proposed, expired, not yet valid, validity elapsed, pending, revoked, materialisation-denied, other kind, reclassified): byte-identical responses, explanations and receipts in all four modes; indexes searched only inside authorized partitions; a query matching only unauthorized items is indistinguishable from no match; ineligible hits never displace eligible candidates",
+      "real_backend_tests": [
+        "test_a_query_matching_only_unauthorized_items_is_indistinguishable_from_no_match",
+        "test_unauthorized_items_affect_no_content_existence_rank_count_or_explanation"
+      ],
+      "requirement_id": "FR-119",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_query_matching_only_unauthorized_items_is_indistinguishable_from_no_match",
+        "test_ineligible_hits_are_skipped_until_the_pool_is_full_then_backpressure",
+        "test_unauthorized_items_affect_no_content_existence_rank_count_or_explanation"
+      ],
+      "unit_fixture_tests": [
+        "test_ineligible_hits_are_skipped_until_the_pool_is_full_then_backpressure"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0052-REVOCATION-EXPIRY-RECLASSIFICATION-AND-STOP-RACES",
+      "command": "revoked, expired (boundary clock) and reclassified items disappear from result, rank, count, normalisation and explanation; a SECRET caller sees only the reclassified head; a kill switch or delegation revocation between planning and materialisation fails closed with no hit and no success receipt",
+      "real_backend_tests": [
+        "test_a_delegation_revoked_or_kill_switch_raised_mid_search_leaves_no_influence",
+        "test_revocation_expiry_and_reclassification_remove_items_from_every_output"
+      ],
+      "requirement_id": "FR-119",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_delegation_revoked_or_kill_switch_raised_mid_search_leaves_no_influence",
+        "test_a_stop_epoch_change_before_materialisation_returns_no_hit",
+        "test_revocation_expiry_and_reclassification_remove_items_from_every_output"
+      ],
+      "unit_fixture_tests": [
+        "test_a_stop_epoch_change_before_materialisation_returns_no_hit"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0052-PARTIAL-AND-DRIFTED-PROJECTIONS-NEVER-MATERIALISED",
+      "command": "a version left PENDING by a Qdrant outage is never returned; a committed full-text projection tampered in PostgreSQL blocks materialisation with REPRESENTATION_NOT_READY and no success receipt",
+      "real_backend_tests": [
+        "test_partial_and_drifted_projections_are_never_materialised"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_partial_and_drifted_projections_are_never_materialised"
+      ],
+      "unit_fixture_tests": []
+    }
+  ],
+  "residual_risks": [
+    "Requalification of a sealed task at the remediation commit: the sealed record, its raw log and its verdict stay unchanged and historical; this record supersedes it for the drift and manifest checks only.",
+    "See the OCOR-DEV-REM-0021 record for the residual risks of the remediation."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 di OCOR-DEV-REM-0021",
+    "independence": "external loop only; separate process, context and provider",
+    "original_implementer_0050_0052_rem0020": "Claude Code (Anthropic), claude-opus-5-5 (0050 cycle 0, 0052, REM-0020); Codex (OpenAI) 0050 repair cycles 1-2",
+    "verifier": "Grok 4.7 (Cursor CLI; verifier: cursor) -- separate process, context and provider; Claude Code does not verify this change set"
+  },
+  "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted-data migration and no port change: test schemas, Qdrant collections and OpenBao mounts are disposable. Reverting restores the REM-0020 records (0050.requalified-rem0020, 0052.requalified) as the most recent ones once the REM-0021 requalification records are removed with the revert.",
+  "schema_version": "1.0",
+  "sealed_at": "2026-10-10T09:17:13.104114+00:00",
+  "status": "SEALED",
+  "supersedes": "OCOR-DEV-0052-requalified-rem0020-408eb1cb5c0e",
+  "task_id": "OCOR-DEV-0052"
+}

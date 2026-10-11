@@ -1,0 +1,15 @@
+import subprocess,json,time
+server=['docker','exec','ocor-bootstrap-spire-server-1','/opt/spire/bin/spire-server']
+agent=['docker','exec','ocor-bootstrap-spire-agent-1','/opt/spire/bin/spire-agent']
+def call(cmd):
+ r=subprocess.run(cmd,capture_output=True,text=True,timeout=30);r.check_returncode();return r.stdout
+agents=json.loads(call(server+['agent','list','-socketPath','/run/spire/sockets/server.sock','-output','json']))['agents']
+assert len(agents)==1 and agents[0]['id']['trust_domain']=='ocor.test'
+i=agents[0]['id']; parent='spiffe://'+i['trust_domain']+i['path']
+call(server+['entry','create','-socketPath','/run/spire/sockets/server.sock','-parentID',parent,'-spiffeID','spiffe://ocor.test/ocor/control-plane','-selector','unix:uid:0'])
+for attempt in range(5):
+ r=subprocess.run(agent+['api','fetch','x509','-socketPath','/run/spire/sockets/agent.sock','-output','json'],capture_output=True,text=True,timeout=15)
+ if r.returncode==0 and any(x.get('spiffe_id')=='spiffe://ocor.test/ocor/control-plane' for x in json.loads(r.stdout).get('svids',[])):
+  print(json.dumps({'status':'PASS','parent':parent,'spiffe_id':'spiffe://ocor.test/ocor/control-plane','selector':'unix:uid:0','svid_fetched':True,'private_material':'NOT_LOGGED'}));break
+ if attempt==4:raise RuntimeError('control-plane SVID unavailable')
+ time.sleep(2**attempt)

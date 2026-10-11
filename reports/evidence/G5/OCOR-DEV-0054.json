@@ -1,0 +1,716 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0054/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0054.py",
+      "duration_seconds": 23.7,
+      "exit_code": 0,
+      "label": "task-run-1",
+      "raw_sha256": "b12a82cd4ac0d43e989e16a54e778b5c529dab86a7e0dae66422e67572661f1a",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 89,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0054/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0054.py",
+      "duration_seconds": 23.8,
+      "exit_code": 0,
+      "label": "task-run-2",
+      "raw_sha256": "9f2f2ae9cbc28f16bf5883a71c9efe5298ef3081a0e2cd499cdd58639ee1c8c3",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 89,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0054/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0054.py",
+      "duration_seconds": 23.4,
+      "exit_code": 0,
+      "label": "task-run-3",
+      "raw_sha256": "3ce4d76e6e48380c38533a51a3280944f0635c3dcaf587c0045002138f4d8f91",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 89,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0054/task-junit-uv.xml tests/tasks/test_ocor_dev_0054.py",
+      "duration_seconds": 24.2,
+      "exit_code": 0,
+      "label": "task-validation-command",
+      "raw_sha256": "b4f8a160d024f28b96ed3505754619322e82dc643fe9569cc3aad3ea9502a56d",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 89,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "exit_code": 0,
+      "label": "task-teardown-delta",
+      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/ocor-dev-0054/mutation_probe.py /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054 /home/luca/.ocor-codex/ocor-dev-0054/mutation-probe.json",
+      "duration_seconds": 394.3,
+      "exit_code": 0,
+      "label": "mutation-probe",
+      "raw_sha256": "2e589f783f976368ca1cdbc0284318666dfc13af53620fee6ba00399d87a52ca",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
+      "duration_seconds": 632.9,
+      "exit_code": 0,
+      "label": "full-suite-recorded",
+      "raw_sha256": "4bd8a977aaf62965047bb9c077fa63305f2fe20c83d80947a92ea7fc5e7fa912",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1666,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the OCOR-DEV-0054 harness; no container/network residue; nothing pre-existing removed",
+      "exit_code": 0,
+      "label": "full-resource-attribution",
+      "raw_sha256": "22397959ade66559b1210ed4b48827ab72ed16d7a9c254cbf9fb61f17a5fcf2d",
+      "status": "PASS"
+    },
+    {
+      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
+      "exit_code": 0,
+      "label": "full-resource-cleanup",
+      "raw_sha256": "63b74103a37eb2a1777eb7b0f2601f0cd02a5b5cc14f6a6eab088efc886ab870",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "63cdbca8eb81ef93f2ae8cd4e7a6b643575fe3204468ff9710e3a0a9f237291c",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "4ef32b02733c640ba275e5de2c0f630d3ea2a6293bb124ad0dc2173d46e40541",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.6,
+      "exit_code": 0,
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.3,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "drift",
+      "raw_sha256": "7ad1d6803cfb0ed662f661b8377499399a42e16a0e493c9900b3d453464f64ca",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0054/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0054-consolidation-reflection-dissent-correction",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "1f5c61cd03b540d858259695016230223b2d8d9b1d4ce3237ab008a6d38ca284",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (the last of three consecutive task runs)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "2a010d9b1cd3643af850c117b99a01813b63ac9d1e04dc82054d188fdd417f8c",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 89,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "7d578acdb2e4cefcc9eebfd88375f38f057cc76bfc6e46e34c431b48516f0055",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1666,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (cap, stack restart/OOM guard)",
+      "exit_code": 0,
+      "label": "full-suite-runner-result",
+      "raw_sha256": "0be1c9cc864ff0fae48f0c00df752e45930d737099cd1142525bcd513b40b8da",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every mutant of memory/consolidation.py must make the task suite fail",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "f163ffb4106e87226caa3e0491d448b9184d9020fdb64c25462b0d767205b171",
+      "result": {
+        "failed": 0,
+        "killed": 45,
+        "mutants": 45
+      },
+      "status": "PASS"
+    }
+  ],
+  "commit": "aa3d158b5b3da95226a15b9a48a522a9494996fd",
+  "created_at": "2026-10-10T05:00:33Z",
+  "design": [
+    "MemoryConsolidationService.consolidate implements MemoryConsolidationPort for the closed OpenAPI MemoryConsolidationRequest (GovernedEnvelope + input_query_digest, input_item_refs, algorithm_ref/digest, target kind/scope, reviewer_policy_ref; unevaluated properties refused). The MemoryConsolidationJob (LLD v1.1 §2.8.5) binds operation, tenant, the caller isolation tuple without the per-request correlation id, input query digest, exact input refs and item digests, algorithm/model pins, profile, target kind/scope, reviewer policy and budget; its digest is the job identity, its ref the derived items' source_ref.",
+    "Only approved ConsolidationProfiles run: an implemented, pinned algorithm (claim-merge 1.0; algorithm_digest = digest of its specification), target kinds within EPISODIC/SEMANTIC/REFLECTION, reviewer policies mapping to PROPOSED or (only for profiles approved as automatic) ACTIVE, retention policy and input-count/byte budgets. PROCEDURAL, WORKING, PREFERENCE, DISSENT and TEAM_SHARED are never consolidation targets.",
+    "Inputs are resolved from the memory ledger and must be visible to the caller (tenant, organization, domain, purpose equal; compartments included; marking dominated) or the request fails with the same MEMORY_VERSION_NOT_FOUND problem as an unknown ref; then they must be the current, ACTIVE, valid head (else LIFECYCLE_TRANSITION_INVALID, MEMORY_TAINTED for QUARANTINED, POLICY_DENIED for expired). The live ConsolidationPolicy decision (bundle-bound) is taken before any content is read; content is read through the store coordinator and re-bound to the admitted item and content digests.",
+    "claim-merge groups the inputs' assertions by (subject, attribute): one canonical value becomes a statement citing every supporting version; several values become an UNRESOLVED conflict keeping every alternative and its supporting versions, ordered by canonical value bytes and never by support, and one separate DISSENT item per conflict (consolidates_refs = exactly the conflicting inputs). The derived item (new id bound to the job digest) cites every input by version ref, item digest and content digest, records the conflicts with their dissent refs and an uncertainty record (uncertainty_ref = its digest), has confidence floor6(min input confidence x statements/(statements+conflicts)), the union of the input taint plus DERIVED (and MODEL_GENERATED for REFLECTION), the conservative marking join, the shared scope owner, valid_until = earliest input valid_until, instruction_eligible false.",
+    "MemoryConsolidationService.correct corrects agreed statements of the current consolidated version by version n+1 (supersedes_ref and correction_of_ref = version n) carrying the same sources, conflicts, dissent refs and lineage; a correction touching a conflict key (DISSENT_ERASURE), citing anything outside the corrected version's sources (CORRECTION_SOURCE_REWRITE) or targeting a DISSENT item (DISSENT_IMMUTABLE) is refused. ConsolidationGuardPolicy wraps the admission policy: MEMORY_CONSOLIDATION items, new versions of consolidation-derived items and content rewrites of DISSENT items are permitted only for the exact item digest the service registered for the admission in progress.",
+    "Every derived item goes through the real admission service (closed schema, lineage, taint, marking, provenance resolved through ConsolidationReferenceResolver: the job/correction source and a provenance record covering it and every input evidence ref) and the real store coordinator. Completion order: derived items admitted and committed, success audit event recorded, then the job record appended; the receipt (OpenAPI OperationReceipt, audit_ref = digest of the audit event) exists only after both. Jobs are idempotent per (tenant, operation_id): a replay returns the recorded outcome (also after inputs were superseded), another job or operation kind conflicts, and a retry after a partial failure completes the same derived slots. The JournalConsolidationJobLedger is hash-chained, fsync'ed and flock-serialised.",
+    "Denials are audited (reason, detail, operation, GCS digest, binding, correlation, never payload content); an unaudited denial fails closed (AUDIT_UNAVAILABLE). Metrics use the bounded label set operation kind x {COMPLETED, REPLAYED, DENIED} x closed reason code."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-10T05:00:32.946852+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "admission_and_stores": "every input and derived version is admitted by the real OCOR-DEV-0050 MemoryAdmissionService (wrapped resolver and guard policy of this task) and committed by the real OCOR-DEV-0051 MemoryStoreCoordinator; lifecycle versions after admission (REVOKED) are appended through the ledger port and committed by the real coordinator, as the lifecycle coordinator (OCOR-DEV-0055) will",
+      "content_cipher": "OpenBao quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641 disposable dev server per test module (ocor-test-0054-openbao-*) with a generated root token (never logged); transit key aes256-gcm96 derived=true; removed in teardown; image asserted equal to the lock",
+      "content_store": "same PostgreSQL: content-addressed bytea objects sealed by OpenBao transit; inputs are read back decrypted through the 0051 store coordinator (committed, projections bound, digest checked)",
+      "job_ledger": "InMemoryConsolidationJobLedger per world and the durable hash-chained JournalConsolidationJobLedger on the local filesystem (cross-run case, tmp_path)",
+      "lexical_index": "same PostgreSQL: one table per partition and lexical representation version (0051 adapter); derived items declare STRUCTURED and FULL_TEXT representations",
+      "metadata_store": "PostgreSQL 16 of the ocor-bootstrap stack (postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20) via OCOR_LIVE_POSTGRES_DSN; one isolated schema ocor_t0054_<random> per test world (metadata, content, lexical tables), dropped after each test",
+      "policy_and_audit": "explicit test ports for ConsolidationPolicy decisions (recorded per test) and the audit sink; the OPA decision itself is not the subject of this task",
+      "vector_index": "Qdrant qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6 provisioned per test module by OCOR-DEV-0023's sealed spikes/vector_partition/oracle.py QdrantHarness (tmpfs storage, removed in teardown) through the 0052 compact adapter; consolidation inputs and outputs declare no VECTOR representation, so it is the coordinator's vector port only; image asserted equal to the lock"
+    },
+    "branch": "task/OCOR-DEV-0054-consolidation-reflection-dissent-correction",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute (prepare-steps.log); stack images observed after the full suite below",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript before the full suite (sdk-ci.log, sdk-build.log in the session log directory)",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/ocor-dev-0054"
+  },
+  "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 OK sul worktree detached 058c9c4f7d39d5c88a61c40b8382e19ee7f1f4fa; il diff base..HEAD non tocca inputs/"
+      },
+      {
+        "command": "git diff --name-status 5db5061a72accc92e194616bdef001dbbdaaf2ea..058c9c4f7d39d5c88a61c40b8382e19ee7f1f4fa",
+        "exit_code": 0,
+        "summary": "5 path: consolidation.py e test_ocor_dev_0054.py nuovi; MANIFEST.json e le due evidenze G5 di 0054. Nessun record G5 preesistente alterato (check_evidence: preservation PASS). Nessun secret nel diff."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff 0.13.1: All checks passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 74 source files (mypy 2.3.1, dopo uv sync --frozen --extra test --extra lint)"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti, AFF-001..AFF-010 PASS_STATIC_PRECHECK"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato usa un'estensione monitorata fuori dall'area autorizzata"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0054-consolidation-reflection-dissent-correction",
+        "exit_code": 0,
+        "summary": "PASS: 5 changed path(s); immutable surfaces untouched; task ledger stable"
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: checked_inputs 176, checked_tasks 67, drifted 0"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0054 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0054. Claim fence E1=0, E2=0, PoC_GO=NO-GO, Production_readiness=NO_GO, runtime_conformance=NOT_ESTABLISHED. commit aa3d158 e' antenato di HEAD; dopo di esso solo le evidenze."
+      },
+      {
+        "command": "python3 ~/.ocor-codex/ocor-dev-0054/check_evidence.py <worktree> 058c9c4f7d39d5c88a61c40b8382e19ee7f1f4fa",
+        "exit_code": 0,
+        "summary": "PASS: input hash e inputs tree al commit e a HEAD, raw log e JSONL, coppie comando/raw, manifest, JUnit 89/89 PASS mappati, suite 1666/0/0/0, 45/45 mutanti uccisi, validator --non-skipped"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute && scripts/bootstrap_development_environment.py --execute && initialize_services.py && load_fixtures.py && verify_external_services.py --execute --typed && register_control_plane",
+        "exit_code": 0,
+        "summary": "Stack ocor-bootstrap ricreato nel worktree. Il primo avvio SPIRE e' fallito perche' la CA della checkout principale era scaduta (notAfter 2026-10-08); CA disposable rigenerata solo nel worktree, env principale non modificato. Health PASS su 11 servizi, SVID control-plane fetched, OOM=false, restart_count=0. Ricycle identico prima della suite completa."
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> python -m pytest -q -p no:cacheprovider -rs --junitxml=<tmp>/task-junit.xml ocor-runtime/tests/tasks/test_ocor_dev_0054.py",
+        "exit_code": 0,
+        "summary": "89 passed, 0 failed, 0 skipped in 23.15s. JUnit tests=89 failures=0 errors=0 skipped=0. PostgreSQL 16 del bootstrap; Qdrant e OpenBao harness per modulo rimossi a fine modulo; nessun container residuo del task."
+      },
+      {
+        "command": "PATH=<node v20.20.2>:$PATH OCOR_LIVE_POSTGRES_DSN=<local generated credential> python -m pytest -q -rs --junitxml=<tmp>/full-junit.xml tests/ (cwd ocor-runtime, cap 75 min, dopo reset+bootstrap)",
+        "exit_code": 0,
+        "summary": "1666 passed, 0 failed, 0 skipped, 3 warnings in 602.33s. JUnit tests=1666 failures=0 errors=0 skipped=0. test_ocor_dev_0048: 196 passed, 0 skip. test_ocor_dev_0054: 89 passed, 0 skip. Nessun servizio OOM e nessun restart. Node v20.20.2 e tsc 7.0.2 della toolchain isolata. 18 volumi anonimi non montati creati dalla suite preesistente rimossi a fine sessione."
+      },
+      {
+        "command": "pytest probe: 40 alternative su una chiave; denial oltre max_inputs=8",
+        "exit_code": 0,
+        "summary": "Tutte e 40 le alternative preservate, ordinate per valore e non per supporto; confidence del derivato uguale a bounded_confidence(0.8, 0, 1)=0.0, non un sentinella. Il rifiuto di budget e' auditato, senza payload e senza scritture."
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva (quota Codex esaurita), ciclo 0 e integrazione",
+    "integration_condition": "Merge subordinato ai check obbligatori verdi sul commit di sigillo esatto; il verdetto qualifica il candidato indicato, con soli metadati di sigillo e manifest successivi.",
+    "not_executed": [],
+    "original_implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva",
+    "prior_verdicts": [],
+    "repair_cycle": 0,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-10T05:28:24Z",
+    "verdict_file_sha256": "67f66852ad0e991dc980e4028d400b54428ea063fd95798cb6dc045848499e41",
+    "verdict_head_sha": "058c9c4f7d39d5c88a61c40b8382e19ee7f1f4fa",
+    "verdict_request_id": "OCOR-DEV-0054-058c9c4f7d39-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore del ciclo 0: Claude Code (Anthropic), claude-opus-5-5. Verifier: Grok 4.7 via Cursor CLI. Fornitore e modello diversi dall'implementatore.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito"
+    }
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/consolidation.py": "487a27879db8d42f84f1c25317ad668a124e8051ab83cac1c3d379e9bd12142f",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0054.py": "8ab17e7ea9b0bc627ad420b3fa456a81b2ae950e5d74c44d46b57fbbbb5ef312"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 Part II §2.9 'Frequency or majority does not erase dissent' is applied strictly: a disagreement never yields a statement, whatever the support counts; the alternatives' order is by value so that position carries no majority signal. Resolving a conflict is not a correction: it needs a separate record (LLD v1.1 §2.8 'Dissent non può essere sovrascritto: la risoluzione crea un record separato'), which this task does not create.",
+    "input_query_digest is recorded and pinned in the job digest as the selection query identity; the selection actually consolidated is bound separately by the exact input refs and item digests (input_selection_digest). The service does not re-execute the query.",
+    "The job budget of LLD v1.1 §2.8.5 is carried by the approved profile (the OpenAPI request has no budget field) and recorded in the job; exceeding it is POLICY_DENIED/CONSOLIDATION_BUDGET_EXCEEDED (quota behaviour, never semantic downgrade, ADD §2.13).",
+    "Consolidation inputs must be visible under the caller's own isolation tuple with an identical purpose; cross-project/federated consolidation would need its own approved Authority profile and is not opened here. The target scope owner is taken from the inputs and must be shared by all of them.",
+    "Lifecycle status of outputs comes from the reviewer policy of the profile: ACTIVE only for profiles approved as automatic, PROPOSED otherwise; a correction keeps the status of the corrected version."
+  ],
+  "observations": [],
+  "raw_output_format": "JSONL: una riga per comando/artefatto/osservazione con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash, gli originali restano solo fuori da Git; DSN mostrato come <local generated credential>",
+  "raw_output_redactions": {},
+  "raw_output_sha256": "3b8625382753f711a19e783af94ca7c16d1cbd9190fcdfc95efca7cf467047f1",
+  "repair_cycle": 0,
+  "reproducible_check": {
+    "command": "python3 ~/.ocor-codex/ocor-dev-0054/check_evidence.py <repo> <head>",
+    "scope": "inputs (file e tree) a commit e HEAD, diff dopo il commit limitato alle evidenze, hash del raw log e di ogni voce JSONL, coppie comando/raw, hash del manifest e preservazione delle voci G5 preesistenti, conteggi per caso dalla JUnit nel raw log, tre run del task, suite completa, mutanti tutti uccisi, validate_runtime_evidence --non-skipped"
+  },
+  "requirement_coverage_note": "Component-level evidence only for the consolidation behaviours named in each case: FR-118 (FGM-03 consolidation into a new derived item with lineage and immutable sources; FGM-09 correction as a new immutable version), FR-010 (a dissenting hypothesis is preserved: FGM-13 conflict/dissent without majority merge), FR-174 (adversarial and failure-injection behaviour: dissent and evidence preserved, no unauthorized side effect, duplicate delivery and partial failures), FR-119 (non-interference of unauthorized inputs). Full verification of these requirements and of FGM-03/09/13 is allocated to G6 (OCOR-DEV-0062, reports/evidence/G6/<REQ>.json); BR-003 end-to-end mission-thread evidence is NOT_EXECUTED here (OCOR-DEV-0065/0069). E1=0/E2=0 and zero global Verified remain unchanged.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0054-CONSOLIDATION-NEW-DERIVED-ITEM-CITES-IMMUTABLE-SOURCES",
+      "command": "FGM-03 on real PostgreSQL (metadata, encrypted content, full-text), Qdrant and OpenBao transit: WORKING run memory consolidates into a NEW EPISODIC and a NEW SEMANTIC item (MEMORY_CONSOLIDATION, consolidates_refs = the exact input versions, derived_from_refs, job ref/digest as source, uncertainty record bound by uncertainty_ref, confidence never above the weakest input, union taint, conservative marking join, scope owner shared by every input); the payload cites every input by version ref, item digest and content digest; every input keeps its item digest, its stored bytes and its head; a reviewed profile yields PROPOSED outputs only; the request and receipt follow the OpenAPI MemoryConsolidationRequest/OperationReceipt",
+      "real_backend_tests": [
+        "test_a_reviewed_profile_produces_proposed_outputs_only",
+        "test_derived_marking_is_the_conservative_join_of_its_inputs",
+        "test_qualifying_backends_are_real_and_pinned",
+        "test_working_memory_consolidates_into_new_episodic_and_semantic_items"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 11,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_reviewed_profile_produces_proposed_outputs_only",
+        "test_bounded_confidence_never_exceeds_the_weakest_input",
+        "test_claim_merge_is_deterministic_under_permutation_and_cites_every_support",
+        "test_derived_marking_is_the_conservative_join_of_its_inputs",
+        "test_qualifying_backends_are_real_and_pinned",
+        "test_the_request_and_receipt_follow_the_openapi_contract",
+        "test_working_memory_consolidates_into_new_episodic_and_semantic_items"
+      ],
+      "unit_fixture_tests": [
+        "test_bounded_confidence_never_exceeds_the_weakest_input",
+        "test_claim_merge_is_deterministic_under_permutation_and_cites_every_support",
+        "test_the_request_and_receipt_follow_the_openapi_contract"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0054-CONFLICT-PRESERVED-AS-DISSENT-WITHOUT-MAJORITY-MERGE",
+      "command": "FGM-13 on the real backends: five reports 'open' against one 'closed' produce no statement for that key but an UNRESOLVED conflict keeping both alternatives with their own supporting versions, ordered by value and never by support, a separate DISSENT item (MEMORY_CONSOLIDATION, consolidates_refs = exactly the conflicting inputs) cited by the summary in derived_from_refs and conflicts[].dissent_ref, and a confidence reduced by the conflict; three-way and tied disagreements keep every alternative; agreed keys still become statements citing every supporting version",
+      "real_backend_tests": [
+        "test_a_three_way_and_a_tied_disagreement_keep_every_alternative",
+        "test_conflicts_preserve_minority_dissent_without_majority_merge"
+      ],
+      "requirement_id": "FR-010",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 4,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_self_contradicting_source_is_a_conflict_not_a_statement",
+        "test_a_three_way_and_a_tied_disagreement_keep_every_alternative",
+        "test_claim_merge_preserves_every_alternative_and_never_votes",
+        "test_conflicts_preserve_minority_dissent_without_majority_merge"
+      ],
+      "unit_fixture_tests": [
+        "test_a_self_contradicting_source_is_a_conflict_not_a_statement",
+        "test_claim_merge_preserves_every_alternative_and_never_votes"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0054-CORRECTION-NEW-VERSION-KEEPS-SOURCES-CONFLICTS-AND-DISSENT",
+      "command": "FGM-09 on the real backends: a correction of an agreed statement is version 2 of the consolidated item (supersedes_ref and correction_of_ref = version 1), with the same consolidates/derived_from lineage, the same cited sources and the same conflicts and dissent refs; version 1, every source and every DISSENT item keep their item digest, stored bytes and head; the correction envelope is closed",
+      "real_backend_tests": [
+        "test_a_correction_is_a_new_version_that_keeps_sources_conflicts_and_dissent"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_correction_envelope_is_closed",
+        "test_a_correction_is_a_new_version_that_keeps_sources_conflicts_and_dissent"
+      ],
+      "unit_fixture_tests": [
+        "test_a_correction_envelope_is_closed"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0054-CORRECTION-CANNOT-ERASE-DISSENT-REWRITE-SOURCES-OR-BECOME-AUTHORITY",
+      "command": "on the real backends: a correction that resolves either side of a conflict (DISSENT_ERASURE), cites a source outside the corrected version or an invented one (CORRECTION_SOURCE_REWRITE), targets a DISSENT item (DISSENT_IMMUTABLE), a plain memory item, an unknown or a superseded version, or is denied/unauthorized is refused, audited and writes nothing; a correction, a DISSENT content rewrite or a fabricated consolidation item submitted through plain admission is denied by the consolidation guard; REFLECTION output carries MODEL_GENERATED and is never instruction-eligible; no output is ever instruction-eligible and the module has no canonical, approval, lease, action or promotion path",
+      "real_backend_tests": [
+        "test_a_correction_cannot_erase_dissent_rewrite_sources_or_touch_dissent",
+        "test_a_directly_admitted_dissent_cannot_be_rewritten_by_a_new_version",
+        "test_correction_policy_and_authorization_fail_closed",
+        "test_derived_memory_and_dissent_cannot_be_admitted_or_rewritten_around_the_service",
+        "test_reflection_is_tainted_and_never_instruction_eligible"
+      ],
+      "requirement_id": "FR-174",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 6,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_correction_cannot_erase_dissent_rewrite_sources_or_touch_dissent",
+        "test_a_directly_admitted_dissent_cannot_be_rewritten_by_a_new_version",
+        "test_consolidation_has_no_authority_canonical_or_procedural_path",
+        "test_correction_policy_and_authorization_fail_closed",
+        "test_derived_memory_and_dissent_cannot_be_admitted_or_rewritten_around_the_service",
+        "test_reflection_is_tainted_and_never_instruction_eligible"
+      ],
+      "unit_fixture_tests": [
+        "test_consolidation_has_no_authority_canonical_or_procedural_path"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0054-APPROVED-PROFILES-LIVE-POLICY-AND-BUDGET-FAIL-CLOSED",
+      "command": "only approved profiles run (unknown algorithm, drifted algorithm digest, unapproved reviewer policy, unapproved or never-consolidated target kind such as PROCEDURAL/WORKING/DISSENT are refused); policy denial, outage, stale bundle and invalid decisions fail closed before any content read; input-count and byte budgets, an elapsed or elapsing deadline and unparseable inputs refuse before any write; every denial is audited with correlation and without payload content, and an unaudited denial fails closed; metrics use a bounded label set",
+      "real_backend_tests": [
+        "test_a_deadline_elapsing_during_the_job_writes_nothing",
+        "test_an_unaudited_denial_fails_closed",
+        "test_an_unparseable_input_is_refused_before_any_write",
+        "test_audit_events_carry_correlation_and_never_payload_content",
+        "test_metrics_use_a_bounded_label_set",
+        "test_policy_is_evaluated_before_any_content_read_and_fails_closed",
+        "test_the_profile_budget_bounds_inputs_and_bytes"
+      ],
+      "requirement_id": "FR-174",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 53,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_deadline_elapsing_during_the_job_writes_nothing",
+        "test_a_missing_or_foreign_binding_is_refused_and_audited",
+        "test_a_reviewer_policy_cannot_be_ambiguous_across_profiles",
+        "test_a_well_formed_input_parses",
+        "test_an_unaudited_denial_fails_closed",
+        "test_an_unparseable_input_is_refused_before_any_write",
+        "test_audit_events_carry_correlation_and_never_payload_content",
+        "test_invalid_jobs_are_refused_audited_and_write_nothing",
+        "test_metrics_use_a_bounded_label_set",
+        "test_only_approved_profile_shapes_can_be_declared",
+        "test_policy_is_evaluated_before_any_content_read_and_fails_closed",
+        "test_the_profile_budget_bounds_inputs_and_bytes",
+        "test_unparseable_inputs_are_refused"
+      ],
+      "unit_fixture_tests": [
+        "test_a_missing_or_foreign_binding_is_refused_and_audited",
+        "test_a_reviewer_policy_cannot_be_ambiguous_across_profiles",
+        "test_a_well_formed_input_parses",
+        "test_invalid_jobs_are_refused_audited_and_write_nothing",
+        "test_only_approved_profile_shapes_can_be_declared",
+        "test_unparseable_inputs_are_refused"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0054-INPUT-VISIBILITY-CURRENCY-AND-NON-INTERFERENCE",
+      "command": "on the real backends: inputs of another tenant, organization, domain or purpose, outside the caller compartments or above its marking are refused with exactly the same problem as unknown versions, before any policy call or content read; superseded, revoked, quarantined, proposed, expired or uncommitted inputs are refused; a target scope owner not shared by every input is refused",
+      "real_backend_tests": [
+        "test_an_uncommitted_input_is_never_read",
+        "test_inputs_must_be_current_active_valid_heads",
+        "test_the_target_scope_owner_must_be_shared_by_every_input",
+        "test_unknown_and_unauthorized_inputs_are_indistinguishable_and_read_nothing"
+      ],
+      "requirement_id": "FR-119",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 4,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_an_uncommitted_input_is_never_read",
+        "test_inputs_must_be_current_active_valid_heads",
+        "test_the_target_scope_owner_must_be_shared_by_every_input",
+        "test_unknown_and_unauthorized_inputs_are_indistinguishable_and_read_nothing"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-0054-IDEMPOTENT-REPLAY-AND-FAULT-COMPLETION",
+      "command": "duplicate delivery and failure injection on the real backends: a replay (other deadline or correlation id, even after an input was superseded) returns the recorded outcome without writing; the same operation with another job or operation kind conflicts; outcomes persist across runs in the hash-chained job journal over fresh adapters, and a tampered or torn journal fails closed; a content-store failure after the dissent write, an audit outage or a job-ledger outage return no receipt and the retry completes the same derived slots without duplicates; a derived slot squatted by another item is never adopted (DERIVED_SLOT_OCCUPIED); a dropped or re-digested journal entry fails closed",
+      "real_backend_tests": [
+        "test_a_job_interrupted_by_a_store_failure_is_completed_by_its_retry",
+        "test_a_replay_returns_the_recorded_outcome_and_a_reused_operation_conflicts",
+        "test_a_replay_survives_superseded_inputs",
+        "test_a_squatted_derived_slot_fails_closed_and_is_never_adopted",
+        "test_completed_jobs_persist_across_runs_and_the_journal_detects_tampering",
+        "test_distinct_jobs_never_share_derived_slots",
+        "test_no_receipt_without_audit_and_completion_record"
+      ],
+      "requirement_id": "FR-174",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 9,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_job_interrupted_by_a_store_failure_is_completed_by_its_retry",
+        "test_a_replay_returns_the_recorded_outcome_and_a_reused_operation_conflicts",
+        "test_a_replay_survives_superseded_inputs",
+        "test_a_squatted_derived_slot_fails_closed_and_is_never_adopted",
+        "test_completed_jobs_persist_across_runs_and_the_journal_detects_tampering",
+        "test_distinct_jobs_never_share_derived_slots",
+        "test_no_receipt_without_audit_and_completion_record",
+        "test_the_job_journal_chain_and_entry_digests_are_verified"
+      ],
+      "unit_fixture_tests": [
+        "test_the_job_journal_chain_and_entry_digests_are_verified"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "claim-merge is a deterministic structural algorithm over explicit (subject, attribute, value) assertions; no model-generated summarisation is implemented or claimed. REFLECTION output of this task is the same structural merge, tainted MODEL_GENERATED by rule.",
+    "Dissent resolution records, lifecycle transitions of derived items and their deletion cascade are not part of this task (OCOR-DEV-0055/0056); the guard denies new admitted versions of DISSENT items that change content but lifecycle versions appended by the coordinator are outside its path.",
+    "The ConsolidationReferenceResolver registry of job/correction provenance is in-process; a cross-run retry re-registers it before any new admission and replays need no resolution.",
+    "The PostgreSQL/Qdrant/OpenBao adapters are the 0051 test adapters; no production adapter under memory/adapters/ exists yet.",
+    "Test-level anonymous Docker volume leaks in pre-existing suites remain allocated to OCOR-DEV-REM-0018 (see the full-suite resource attribution); the 0054 task suite itself leaves no container, volume or network (task-teardown-delta)."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita)",
+    "independence": "external loop only; implementer did not run or simulate the verification",
+    "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor), processo e contesto separati, fornitore diverso"
+  },
+  "rollback_procedure_verified": "Mechanical review: the task adds two new files only (memory/consolidation.py, tests/tasks/test_ocor_dev_0054.py) plus evidence; rollback is a revert commit of the task commits. No persisted data migration: test schemas, Qdrant collections, OpenBao mounts and journals are disposable and removed in teardown; no existing module imports consolidation.py.",
+  "schema_version": "1.0",
+  "sealed_at": "2026-10-10T05:29:53.367466+00:00",
+  "status": "SEALED",
+  "task_id": "OCOR-DEV-0054",
+  "tdd": {
+    "GREEN": {
+      "command": "task-run-1..3 and task-validation-command (JUnit counts in commands)",
+      "raw_label": "task-run-3, task-junit"
+    },
+    "RED": {
+      "command": "pytest -q -p no:cacheprovider tests/tasks/test_ocor_dev_0054.py with ocor-runtime/src/ocor_runtime/memory/consolidation.py moved out of the worktree",
+      "exit_code": 2,
+      "observed": "collection error: ModuleNotFoundError ocor_runtime.memory.consolidation (claim-merge, profiles, job ledger, guard policy, consolidation and correction service did not exist)",
+      "raw_label": "tdd-red",
+      "raw_sha256": "41c091f5807b96bd73884d292b68c9dc5541ef2e8c9a1f25a89a14dad07dce28"
+    },
+    "REFACTOR": "First live run exposed one wrong test oracle (a marking below the caller context cannot be admitted, so the marking-join case now admits the lower input under an UNCLASSIFIED context and adds the negative and positive UNCLASSIFIED-caller cases). Before the first run the service was restructured so that a replay is answered before the currency checks of inputs and correction targets (an operation stays replayable after its inputs or target were superseded) and the job ledger outage is mapped to a closed problem. A preliminary mutation probe left seven survivors: two were redundant code and were removed (a deadline re-check identical to the admission service's own deadline check at the first derived admission; an operation-kind comparison implied by the job digest, which covers different closed structures for consolidation and correction); one was an equivalent mutant replaced by a meaningful one (the marking join equals the context marking because every input is dominated by the context; the mutant now takes one input's marking and is refused by admission as MARKING_DOWNGRADE); four exposed missing tests, now added (content rewrite of a directly admitted DISSENT item, a squatted derived slot never adopted, journal chain and entry digest verified separately).",
+    "mutation_probe": "45 mutants of memory/consolidation.py (majority merge, alternatives ordered by support, confidence not reduced, visibility ignoring tenant/organization/domain/purpose/compartments/marking, input currency/quarantine/lifecycle/validity unchecked, policy permit/bundle ignored, count/byte budgets ignored, target kind and profile target unchecked, algorithm digest unchecked, guard disabled or allowing dissent rewrite/fabricated consolidation, correction resolving conflicts/adding sources/targeting dissent/superseded/plain memory, correction dropping conflicts, replay ignoring the job digest, denial and completion not audited, job digest bound to the correlation id, summary citing no sources/one input/no dissent, dissent citing every input, reviewer status ignored, taint not inherited, marking taken from one input instead of the join, validity dropped, derived slot unchecked, journal chain/digest/torn line unchecked), each run against the task suite on the real backends: all killed (raw label mutation-probe-result)",
+    "ordering_note": "The RED run was captured on the final test file with consolidation.py removed; the implementation draft preceded the recorded RED run in this session, so no claim of strict test-first authorship is made. The mutation probe is the behaviour-level red evidence for each guard."
+  }
+}
