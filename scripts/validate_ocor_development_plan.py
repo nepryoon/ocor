@@ -475,7 +475,7 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0021-RCCAD/README.md",
         "reports/assurance/OCOR-DEV-REM-0021-RCCAD/OCOR-DEV-REM-0021.json",
         "reports/assurance/OCOR-DEV-REM-0021-RCCAD/OCOR-DEV-REM-0021.log",
-        "reports/assurance/OCOR-DEV-REM-0022-RCCAD/check_ci_evidence.py",
+        "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
         'reports/assurance/OCOR-DEV-REM-0022-RCCAD/ci-evidence-supersession.json',
