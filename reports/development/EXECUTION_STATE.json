@@ -1,10 +1,9 @@
 {
   "active_iteration": {
-    "branch": "governed/state-sync-rem-0019-marker-blocker",
-    "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_REM_0019",
+    "branch": "governed/state-sync-ocor-dev-0056-wip",
+    "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_0056",
     "decision_id": "DEC-210",
-    "phase": "OCOR_DEV_REM_0019_STABILITY_PO_DECISION_REQUIRED",
-    "source_reference": {
+    "inherited_rem0019_reference": {
       "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
       "campaign_ownership": "Processi ereditati della sessione precedente (campaign_driver2.sh, campaign_driver3.sh); nessun secondo stack avviato e nessun processo terminato da Codex. Eventuali run successivi sono raccolta diagnostica, non chiusura del difetto intermittente.",
       "code_commit": "63a0a939d84402af4ed91acd77de2dac341ee976",
@@ -114,8 +113,74 @@
       "verifier": "Grok 4.7 tramite Cursor CLI (verifier: cursor)",
       "worktree": ".ocor/worktrees/rem-0019"
     },
-    "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem-0019-marker-blocker"
+    "phase": "OCOR_DEV_0056_IMPLEMENTATION_WIP",
+    "source_reference": {
+      "artifacts": {
+        "WIP-log": {
+          "branch": "task/OCOR-DEV-0056-deletion-saga-restore-reconciliation",
+          "commit": "5edd6cdb526dab1be7d3f71d534b34622f870aee",
+          "path": "reports/evidence/G5/OCOR-DEV-0056.log",
+          "sha256": "c3df135e40d836fceebd3cc60f46ea66c607d5176ef26b752a384129afb40f68"
+        },
+        "red-behavior.log": {
+          "path": "/home/luca/.ocor-codex/ocor-dev-0056/red-behavior.log",
+          "sha256": "2d716139912214ea74a7dd8ec868f1feb173a858bd00c39feea418250cffcb2b"
+        },
+        "red-metadata.log": {
+          "path": "/home/luca/.ocor-codex/ocor-dev-0056/red-metadata.log",
+          "sha256": "5866c2d8bbe0f1a200a01be117e2251b34b270eaf782f0c0b5cc23935b3fe91e"
+        },
+        "red-roster.log": {
+          "path": "/home/luca/.ocor-codex/ocor-dev-0056/red-roster.log",
+          "sha256": "c911cc4a5e4fac654ba0abdd1f631fbe4292a5815d3ca824e49cdde7b88be50e"
+        },
+        "toolchain-isolated.json": {
+          "path": "/home/luca/.ocor-codex/ocor-dev-0056/toolchain-isolated.json",
+          "sha256": "6a03218afa28dd90f21254823c064eda7f29950b797b26324bf39c048a394161"
+        },
+        "unit-final.log": {
+          "path": "/home/luca/.ocor-codex/ocor-dev-0056/unit-final.log",
+          "sha256": "06e6de613f4cc662b22732ce328e6a86d961adbbbe95856aab9b7a6ec17e3ddf"
+        },
+        "unit-final.xml": {
+          "path": "/home/luca/.ocor-codex/ocor-dev-0056/unit-final.xml",
+          "sha256": "3ca0dbddb8222d4f272708dd083108cdae8a6da8d3f3bf2a369c7b1c012893f6"
+        }
+      },
+      "base_sha": "4251b43bbef4db1c8347a14309e4b2ba908bd7b6",
+      "branch": "task/OCOR-DEV-0056-deletion-saga-restore-reconciliation",
+      "head_sha": "5edd6cdb526dab1be7d3f71d534b34622f870aee",
+      "implementer": "Codex (OpenAI)",
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "limitations": [
+        "capture verifica integrit\u00e0 e ordine, non autenticit\u00e0; il provider di checkpoint deve essere autenticato e legato al recovery point prima della qualifica.",
+        "Il gate serve non \u00e8 ancora inserito automaticamente nel percorso runtime; sono provati soltanto composizione e rami unitari.",
+        "Finestra esterna tra ultimo controllo del checkpoint e ritorno non atomica: rischio residuo da provare/registrare, nessun claim FGM-17 chiuso."
+      ],
+      "red_commit": "0d1de3bdc198d4b1398754e4a885236d5e0aaa91",
+      "remaining_work": [
+        "Composizione obbligatoria del boundary di restore su tutti gli entry point; autenticazione e binding del checkpoint al recovery point, indipendente dal backup ripristinato.",
+        "Inventario completo e participant concreti per cache, repliche, export e backup ripristinati, oltre a metadata/content/indici/embedding gi\u00e0 riusati da 0055; prova di ogni copia e legal hold/shared object.",
+        "RED/GREEN e conformance dei rami restanti di replay e adapter; test live positivi/negativi/fault/riavvio sui backend pinned con zero skip, regression 0051/0052/0053/0055 applicabile.",
+        "Suite completa 75 min e reports/tests, gate finali, rollback, evidenza candidata JSON e manifest all HEAD finale; poi verify_request REMEDIATION/TASK_EVIDENCE secondo \u00a76 (0056: TASK_EVIDENCE, verifier claude)."
+      ],
+      "repair_cycle": 0,
+      "status": "WIP_IN_PROGRESS_NOT_QUALIFYING",
+      "unit_tests": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 66,
+        "qualifying_backend_cases": 0,
+        "skipped": 0
+      },
+      "verifier": "Claude Code (Anthropic), processo e contesto separati; non ancora richiesto",
+      "wip_evidence_paths": [
+        "reports/evidence/G5/OCOR-DEV-0056.log"
+      ],
+      "worktree": ".ocor/worktrees/ocor-dev-0056"
+    },
+    "task_id": "OCOR-DEV-0056",
+    "worktree": ".ocor/worktrees/state-sync-ocor-dev-0056-wip"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1621,7 +1686,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "7fc65b055c1993d75e8f21b157a54102068cfc6f",
+  "baseline_commit": "4251b43bbef4db1c8347a14309e4b2ba908bd7b6",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -4104,7 +4169,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "OCOR-DEV-0056:implementation appena lo stack ereditato \u00e8 libero: controllare ~/.ocor-codex/rem-0019-r1/{driver.progress,rerun190003.progress,isolated.progress} e i processi senza avviare un secondo stack; archiviare ogni esito come diagnostico, mai dichiarare chiusa la flake PGDMP con un rerun. REM-0019:repair_cycle 1 bloccato sulla decisione REM-0019-BACKUP-CIPHERTEXT-MARKER (richiesta versionata su governed/decision-request-rem-0019-ciphertext-marker@35b0317fbfe3880690581622732b091953e11563). Nessuna nuova verifica/sigillo REM-0019 finch\u00e9 il vincolo sulle asserzioni non \u00e8 risolto. Quando libero: worktree isolato task/OCOR-DEV-0056 da origin/main, leggere task e fonti, RED prima del codice; implementatore Codex, verifier Claude Code, salvo interventi dell implementatore di riserva (Cursor/Grok). REM-0017 e integrazione 0049 restano subordinati alla chiusura verificata REM-0019; G6 bloccato. Non modificare produzione 0049, inputs, record sigillati o gate.",
+  "next_executable_action": "OCOR-DEV-0056:implementation (ripresa WIP, repair_cycle 0): riprendere il worktree .ocor/worktrees/ocor-dev-0056, branch task/OCOR-DEV-0056-deletion-saga-restore-reconciliation@5edd6cdb526dab1be7d3f71d534b34622f870aee. Leggere remaining_work e limitations in MODEL_HANDOFF.source_reference. Prima di test live/suite: controllare i processi ereditati e ~/.ocor-codex/rem-0019-r1/{driver.progress,isolated.progress,rerun190003.progress}; nessun secondo stack o reset concorrente. Quando libero, reset_test_environment --execute, bootstrap pinned, health 11 READY; completare copie/restore/auth e test RED prima del codice; suite task <=45 min, completa <=75 min, stop immediato su restart/OOM, teardown. Solo con tutti i criteri qualificati preparare record+manifest ed esatta richiesta TASK_EVIDENCE (implementer Codex, verifier claude/Claude Code). REM-0019 resta bloccato su REM-0019-BACKUP-CIPHERTEXT-MARKER: nessun sigillo o nuova verifica grazie a un rerun verde. Se arriva la decisione rendendolo eseguibile, torna prioritario prima di REM-0017; PR #169/#176 e G6 rimangono bloccati. Nessun intervento su inputs o record sigillati.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -4147,7 +4212,7 @@
   },
   "ready_set_observation": {
     "basis": "approved hard_dependencies and completed_evidence_tasks on origin/main after this sync",
-    "observed_at": "2026-10-11T06:01:11Z",
+    "observed_at": "2026-10-11T06:37:35.266063Z",
     "ready": [
       "OCOR-DEV-0049",
       "OCOR-DEV-0056",
@@ -4159,8 +4224,8 @@
       "OCOR-DEV-0057"
     ],
     "reason": "OCOR-DEV-0055 sealed and merged (PR #202) after repair cycle 1 GO; OCOR-DEV-0056 (deps 0025, 0026, 0051, 0055) and OCOR-DEV-0057 (deps 0027, 0052, 0053, 0054, 0055) become ready by dependencies. Per PO decisions OCOR-DEV-0055-VF002-REMEDIATION and REM-0017-CI-0049-REMAINDER-CAP the order is REM-0019, then REM-0017, then 0056-0059. OCOR-DEV-0049 ready by dependencies but integration pending REM-0017 closure.",
-    "selected_unit": "OCOR-DEV-0056:implementation dopo rilascio dello stack ereditato",
-    "selection_reason": "REM-0019 bloccato sulla variazione di asserzione riservata al PO; REM-0017 non ha azione qualificante eseguibile; 0049 integrazione bloccata. Prosegue il lavoro G5 indipendente secondo mandato \u00a77."
+    "selected_unit": "OCOR-DEV-0056:implementation WIP",
+    "selection_reason": "REM-0019 bloccato sulla decisione PO del ciphertext marker; REM-0017 e integrazione 0049 dipendono dalla sua chiusura. Proseguita una unit\u00e0 G5 senza uso concorrente dello stack."
   },
   "remediation_status": {
     "CI-0048_REAL_BACKEND": {
@@ -5428,5 +5493,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-11T06:01:11Z"
+  "updated_at": "2026-10-11T06:37:35.266063Z"
 }
