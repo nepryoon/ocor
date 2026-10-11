@@ -1,0 +1,990 @@
+OCOR-DEV-0056 — WIP NON QUALIFICANTE
+Implementatore: Codex (OpenAI); verifier previsto: Claude Code (Anthropic).
+Task ancora IN_PROGRESS: nessun sigillo, nessuna richiesta di verifica.
+Backend reali, suite completa, firme/checkpoint provider, copie/cache/repliche/export/backup: NOT_EXECUTED o implementazione da completare.
+RED originale committato come 0d1de3b; i run falliti sono conservati.
+
+FILE red-checkpoint.log SHA256 ab852eaa1077f439c237b587a9201d481baa28eafbdc746951cf0ff3e8605b09
+
+==================================== ERRORS ====================================
+______________ ERROR collecting tests/tasks/test_ocor_dev_0056.py ______________
+ImportError while importing test module '/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0056/ocor-runtime/tests/tasks/test_ocor_dev_0056.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/home/luca/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:16: in <module>
+    from ocor_runtime.memory.deletion import (
+E   ModuleNotFoundError: No module named 'ocor_runtime.memory.deletion'
+=========================== short test summary info ============================
+ERROR ocor-runtime/tests/tasks/test_ocor_dev_0056.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.18s
+
+FILE red-behavior.log SHA256 2d716139912214ea74a7dd8ec868f1feb173a858bd00c39feea418250cffcb2b
+F.FFFFFFFFFFFFFFFFFFFFFFFFF                                              [100%]
+=================================== FAILURES ===================================
+_________ test_complete_journal_roundtrips_exact_order_and_checkpoint __________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_complete_journal_roundtri0')
+
+    def test_complete_journal_roundtrips_exact_order_and_checkpoint(tmp_path: Path) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        captured = DeletionJournalSnapshot.capture(path)
+        read = DeletionJournalSnapshot.read(path, expected=captured.checkpoint)
+        assert read == captured
+>       assert read.checkpoint.sequence == 4 and read.checkpoint.deletion_epoch == 2
+E       AssertionError: assert (0 == 4)
+E        +  where 0 = DeletionJournalCheckpoint(sequence=0, head='urn:sha256:0000000000000000000000000000000000000000000000000000000000000000', deletion_epoch=0).sequence
+E        +    where DeletionJournalCheckpoint(sequence=0, head='urn:sha256:0000000000000000000000000000000000000000000000000000000000000000', deletion_epoch=0) = DeletionJournalSnapshot(checkpoint=DeletionJournalCheckpoint(sequence=0, head='urn:sha256:0000000000000000000000000000000000000000000000000000000000000000', deletion_epoch=0), entries=()).checkpoint
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:56: AssertionError
+___ test_changed_journal_cannot_match_the_authority_checkpoint[valid-prefix] ___
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma0')
+attack = 'valid-prefix'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+______ test_changed_journal_cannot_match_the_authority_checkpoint[empty] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma1')
+attack = 'empty'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+___ test_changed_journal_cannot_match_the_authority_checkpoint[permutation] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma2')
+attack = 'permutation'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+_______ test_changed_journal_cannot_match_the_authority_checkpoint[torn] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma3')
+attack = 'torn'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+_______ test_changed_journal_cannot_match_the_authority_checkpoint[body] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma4')
+attack = 'body'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+___ test_changed_journal_cannot_match_the_authority_checkpoint[noncanonical] ___
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma5')
+attack = 'noncanonical'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+____ test_changed_journal_cannot_match_the_authority_checkpoint[duplicate] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_changed_journal_cannot_ma6')
+attack = 'duplicate'
+
+    @pytest.mark.parametrize("attack", ["valid-prefix", "empty", "permutation", "torn", "body", "noncanonical", "duplicate"])
+    def test_changed_journal_cannot_match_the_authority_checkpoint(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        lines = path.read_bytes().splitlines(keepends=True)
+        if attack == "valid-prefix":
+            altered = b"".join(lines[:2])
+        elif attack == "empty":
+            altered = b""
+        elif attack == "permutation":
+            altered = b"".join([lines[0], lines[2], lines[1], lines[3]])
+        elif attack == "torn":
+            altered = b"".join(lines)[:-2]
+        elif attack == "body":
+            altered = b"".join(lines).replace(b'"tenant-a"', b'"tenant-b"')
+        elif attack == "noncanonical":
+            altered = b"".join(lines).replace(b'{"', b'{ "', 1)
+        else:
+            altered = b"".join([*lines, lines[-1]])
+        path.write_bytes(altered)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:94: Failed
+___ test_an_entirely_rehashed_replacement_still_fails_the_pinned_checkpoint ____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_an_entirely_rehashed_repl0')
+
+    def test_an_entirely_rehashed_replacement_still_fails_the_pinned_checkpoint(tmp_path: Path) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        replacement = tmp_path / "replacement.jsonl"
+        source = JournalTombstoneStore(replacement)
+        source.append(entry("z", 1, TombstonePhase.STARTED))
+        source.append(entry("z", 1, TombstonePhase.COMPLETED))
+        source.append(entry("y", 2, TombstonePhase.STARTED))
+        source.append(entry("y", 2, TombstonePhase.INCOMPLETE))
+        path.write_bytes(replacement.read_bytes())
+>       with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:109: Failed
+_______________ test_each_checkpoint_member_is_checked[sequence] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_each_checkpoint_member_is0')
+field = 'sequence'
+
+    @pytest.mark.parametrize("field", ["sequence", "deletion_epoch", "head"])
+    def test_each_checkpoint_member_is_checked(tmp_path: Path, field: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        value = "urn:sha256:" + "b" * 64 if field == "head" else 99
+>       with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:119: Failed
+____________ test_each_checkpoint_member_is_checked[deletion_epoch] ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_each_checkpoint_member_is1')
+field = 'deletion_epoch'
+
+    @pytest.mark.parametrize("field", ["sequence", "deletion_epoch", "head"])
+    def test_each_checkpoint_member_is_checked(tmp_path: Path, field: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        value = "urn:sha256:" + "b" * 64 if field == "head" else 99
+>       with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:119: Failed
+_________________ test_each_checkpoint_member_is_checked[head] _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_each_checkpoint_member_is2')
+field = 'head'
+
+    @pytest.mark.parametrize("field", ["sequence", "deletion_epoch", "head"])
+    def test_each_checkpoint_member_is_checked(tmp_path: Path, field: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        value = "urn:sha256:" + "b" * 64 if field == "head" else 99
+>       with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:119: Failed
+_ test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[tenant_id-tenant-b] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_invalid_saga_history_is_r0')
+field = 'tenant_id', value = 'tenant-b'
+
+    @pytest.mark.parametrize("field,value", [
+        ("tenant_id", "tenant-b"),
+        ("partition_digests", ["urn:sha256:" + "b" * 64]),
+        ("version_refs", ["urn:ocor:memory:other:v1"]),
+        ("deletion_epoch", True),
+        ("participants", ["content", "content"]),
+        ("residue_counts", [["unknown", 1]]),
+    ])
+    def test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid(
+        tmp_path: Path, field: str, value: object,
+    ) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        records = [parse_i_json(line)["entry"] for line in path.read_bytes().splitlines()]
+        records[1][field] = value
+        rechain(path, records)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:149: Failed
+_ test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[partition_digests-value1] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_invalid_saga_history_is_r1')
+field = 'partition_digests'
+value = ['urn:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb']
+
+    @pytest.mark.parametrize("field,value", [
+        ("tenant_id", "tenant-b"),
+        ("partition_digests", ["urn:sha256:" + "b" * 64]),
+        ("version_refs", ["urn:ocor:memory:other:v1"]),
+        ("deletion_epoch", True),
+        ("participants", ["content", "content"]),
+        ("residue_counts", [["unknown", 1]]),
+    ])
+    def test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid(
+        tmp_path: Path, field: str, value: object,
+    ) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        records = [parse_i_json(line)["entry"] for line in path.read_bytes().splitlines()]
+        records[1][field] = value
+        rechain(path, records)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:149: Failed
+_ test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[version_refs-value2] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_invalid_saga_history_is_r2')
+field = 'version_refs', value = ['urn:ocor:memory:other:v1']
+
+    @pytest.mark.parametrize("field,value", [
+        ("tenant_id", "tenant-b"),
+        ("partition_digests", ["urn:sha256:" + "b" * 64]),
+        ("version_refs", ["urn:ocor:memory:other:v1"]),
+        ("deletion_epoch", True),
+        ("participants", ["content", "content"]),
+        ("residue_counts", [["unknown", 1]]),
+    ])
+    def test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid(
+        tmp_path: Path, field: str, value: object,
+    ) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        records = [parse_i_json(line)["entry"] for line in path.read_bytes().splitlines()]
+        records[1][field] = value
+        rechain(path, records)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:149: Failed
+_ test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[deletion_epoch-True] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_invalid_saga_history_is_r3')
+field = 'deletion_epoch', value = True
+
+    @pytest.mark.parametrize("field,value", [
+        ("tenant_id", "tenant-b"),
+        ("partition_digests", ["urn:sha256:" + "b" * 64]),
+        ("version_refs", ["urn:ocor:memory:other:v1"]),
+        ("deletion_epoch", True),
+        ("participants", ["content", "content"]),
+        ("residue_counts", [["unknown", 1]]),
+    ])
+    def test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid(
+        tmp_path: Path, field: str, value: object,
+    ) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        records = [parse_i_json(line)["entry"] for line in path.read_bytes().splitlines()]
+        records[1][field] = value
+        rechain(path, records)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:149: Failed
+_ test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[participants-value4] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_invalid_saga_history_is_r4')
+field = 'participants', value = ['content', 'content']
+
+    @pytest.mark.parametrize("field,value", [
+        ("tenant_id", "tenant-b"),
+        ("partition_digests", ["urn:sha256:" + "b" * 64]),
+        ("version_refs", ["urn:ocor:memory:other:v1"]),
+        ("deletion_epoch", True),
+        ("participants", ["content", "content"]),
+        ("residue_counts", [["unknown", 1]]),
+    ])
+    def test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid(
+        tmp_path: Path, field: str, value: object,
+    ) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        records = [parse_i_json(line)["entry"] for line in path.read_bytes().splitlines()]
+        records[1][field] = value
+        rechain(path, records)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:149: Failed
+_ test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[residue_counts-value5] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_invalid_saga_history_is_r5')
+field = 'residue_counts', value = [['unknown', 1]]
+
+    @pytest.mark.parametrize("field,value", [
+        ("tenant_id", "tenant-b"),
+        ("partition_digests", ["urn:sha256:" + "b" * 64]),
+        ("version_refs", ["urn:ocor:memory:other:v1"]),
+        ("deletion_epoch", True),
+        ("participants", ["content", "content"]),
+        ("residue_counts", [["unknown", 1]]),
+    ])
+    def test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid(
+        tmp_path: Path, field: str, value: object,
+    ) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        records = [parse_i_json(line)["entry"] for line in path.read_bytes().splitlines()]
+        records[1][field] = value
+        rechain(path, records)
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:149: Failed
+___ test_restored_service_starts_closed_and_only_opens_after_all_obligations ___
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_restored_service_starts_c0')
+
+    def test_restored_service_starts_closed_and_only_opens_after_all_obligations(tmp_path: Path) -> None:
+        gate, _, participant, _ = gate_world(tmp_path)
+        invoked: list[str] = []
+>       with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:200: Failed
+_______ test_failed_recovery_does_not_call_the_restored_service[residue] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_failed_recovery_does_not_0')
+fault = 'residue'
+
+    @pytest.mark.parametrize("fault", ["residue", "inventory-unavailable", "authority-unavailable", "journal-prefix"])
+    def test_failed_recovery_does_not_call_the_restored_service(tmp_path: Path, fault: str) -> None:
+        gate, authority, participant, restored = gate_world(tmp_path)
+        if fault == "residue":
+            participant.omit_y = True
+        elif fault == "inventory-unavailable":
+            participant.unavailable = True
+        elif fault == "authority-unavailable":
+            authority.unavailable = True
+        else:
+            restored.write_bytes(b"".join(restored.read_bytes().splitlines(keepends=True)[:2]))
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:220: Failed
+_ test_failed_recovery_does_not_call_the_restored_service[inventory-unavailable] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_failed_recovery_does_not_1')
+fault = 'inventory-unavailable'
+
+    @pytest.mark.parametrize("fault", ["residue", "inventory-unavailable", "authority-unavailable", "journal-prefix"])
+    def test_failed_recovery_does_not_call_the_restored_service(tmp_path: Path, fault: str) -> None:
+        gate, authority, participant, restored = gate_world(tmp_path)
+        if fault == "residue":
+            participant.omit_y = True
+        elif fault == "inventory-unavailable":
+            participant.unavailable = True
+        elif fault == "authority-unavailable":
+            authority.unavailable = True
+        else:
+            restored.write_bytes(b"".join(restored.read_bytes().splitlines(keepends=True)[:2]))
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:220: Failed
+_ test_failed_recovery_does_not_call_the_restored_service[authority-unavailable] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_failed_recovery_does_not_2')
+fault = 'authority-unavailable'
+
+    @pytest.mark.parametrize("fault", ["residue", "inventory-unavailable", "authority-unavailable", "journal-prefix"])
+    def test_failed_recovery_does_not_call_the_restored_service(tmp_path: Path, fault: str) -> None:
+        gate, authority, participant, restored = gate_world(tmp_path)
+        if fault == "residue":
+            participant.omit_y = True
+        elif fault == "inventory-unavailable":
+            participant.unavailable = True
+        elif fault == "authority-unavailable":
+            authority.unavailable = True
+        else:
+            restored.write_bytes(b"".join(restored.read_bytes().splitlines(keepends=True)[:2]))
+        with pytest.raises(DeletionRecoveryError):
+>           gate.reconcile()
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:221: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/src/ocor_runtime/memory/deletion.py:73: in reconcile
+    return DeletionReconciliationReceipt(self._authority.current(), 0)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Authority(path=PosixPath('/tmp/pytest-of-luca/pytest-294/test_failed_recovery_does_not_2/authority.jsonl'), unavailable=True)
+
+    def current(self):  # type: ignore[no-untyped-def]
+        if self.unavailable:
+>           raise ConnectionError("authority unavailable")
+E           ConnectionError: authority unavailable
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:162: ConnectionError
+___ test_failed_recovery_does_not_call_the_restored_service[journal-prefix] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_failed_recovery_does_not_3')
+fault = 'journal-prefix'
+
+    @pytest.mark.parametrize("fault", ["residue", "inventory-unavailable", "authority-unavailable", "journal-prefix"])
+    def test_failed_recovery_does_not_call_the_restored_service(tmp_path: Path, fault: str) -> None:
+        gate, authority, participant, restored = gate_world(tmp_path)
+        if fault == "residue":
+            participant.omit_y = True
+        elif fault == "inventory-unavailable":
+            participant.unavailable = True
+        elif fault == "authority-unavailable":
+            authority.unavailable = True
+        else:
+            restored.write_bytes(b"".join(restored.read_bytes().splitlines(keepends=True)[:2]))
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:220: Failed
+______ test_retry_reconciles_residue_but_never_reopens_on_a_prior_receipt ______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_retry_reconciles_residue_0')
+
+    def test_retry_reconciles_residue_but_never_reopens_on_a_prior_receipt(tmp_path: Path) -> None:
+        gate, _, participant, _ = gate_world(tmp_path)
+        participant.omit_y = True
+>       with pytest.raises(DeletionRecoveryError, match="DELETION_INCOMPLETE"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:229: Failed
+_______ test_a_new_authoritative_epoch_invalidates_an_already_open_gate ________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_a_new_authoritative_epoch0')
+
+    def test_a_new_authoritative_epoch_invalidates_an_already_open_gate(tmp_path: Path) -> None:
+        gate, authority, _, _ = gate_world(tmp_path)
+        gate.reconcile()
+        JournalTombstoneStore(authority.path).append(entry("z", 3, TombstonePhase.STARTED))
+        with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+>           gate.serve(lambda: pytest.fail("stale deletion epoch was served"))
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:244: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ocor-runtime/src/ocor_runtime/memory/deletion.py:76: in serve
+    return action()
+           ^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   gate.serve(lambda: pytest.fail("stale deletion epoch was served"))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: stale deletion epoch was served
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:244: Failed
+___ test_missing_duplicate_or_unnamed_participants_are_configuration_errors ____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-294/test_missing_duplicate_or_unna0')
+
+    def test_missing_duplicate_or_unnamed_participants_are_configuration_errors(tmp_path: Path) -> None:
+        _, authority, participant, restored = gate_world(tmp_path)
+        for participants in [(), (participant, participant)]:
+>           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE ValueError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:250: Failed
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_complete_journal_roundtrips_exact_order_and_checkpoint
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[valid-prefix]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[empty]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[permutation]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[torn]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[body]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[noncanonical]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_changed_journal_cannot_match_the_authority_checkpoint[duplicate]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_an_entirely_rehashed_replacement_still_fails_the_pinned_checkpoint
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_each_checkpoint_member_is_checked[sequence]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_each_checkpoint_member_is_checked[deletion_epoch]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_each_checkpoint_member_is_checked[head]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[tenant_id-tenant-b]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[partition_digests-value1]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[version_refs-value2]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[deletion_epoch-True]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[participants-value4]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid[residue_counts-value5]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_restored_service_starts_closed_and_only_opens_after_all_obligations
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_failed_recovery_does_not_call_the_restored_service[residue]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_failed_recovery_does_not_call_the_restored_service[inventory-unavailable]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_failed_recovery_does_not_call_the_restored_service[authority-unavailable]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_failed_recovery_does_not_call_the_restored_service[journal-prefix]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_retry_reconciles_residue_but_never_reopens_on_a_prior_receipt
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_a_new_authoritative_epoch_invalidates_an_already_open_gate
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_missing_duplicate_or_unnamed_participants_are_configuration_errors
+26 failed, 1 passed in 0.49s
+
+FILE red-roster.log SHA256 c911cc4a5e4fac654ba0abdd1f631fbe4292a5815d3ca824e49cdde7b88be50e
+...........................F.........                                    [100%]
+=================================== FAILURES ===================================
+____________ test_omitting_a_recorded_store_cannot_qualify_recovery ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-296/test_omitting_a_recorded_store0')
+
+    def test_omitting_a_recorded_store_cannot_qualify_recovery(tmp_path: Path) -> None:
+        _, authority, participant, restored = gate_world(tmp_path)
+        gate = DeletionRestoreGate(journal=restored, authority=authority, participants=(participant,))
+>       with pytest.raises(DeletionRecoveryError, match="DELETION_PARTICIPANT_MISSING"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:261: Failed
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_omitting_a_recorded_store_cannot_qualify_recovery
+1 failed, 36 passed in 0.36s
+
+FILE red-metadata.log SHA256 5866c2d8bbe0f1a200a01be117e2251b34b270eaf782f0c0b5cc23935b3fe91e
+.........................................................FFFFFFF         [100%]
+=================================== FAILURES ===================================
+___ test_metadata_replay_preserves_original_versions_epochs_events_and_audit ___
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_metadata_replay_preserves0')
+
+    def test_metadata_replay_preserves_original_versions_epochs_events_and_audit(tmp_path: Path) -> None:
+        replay, source, restored, tombstone = replay_world(tmp_path)
+        assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 1
+        replay.purge(tombstone)
+>       assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 3
+E       AssertionError: assert 1 == 3
+E        +  where 1 = latest_version('x')
+E        +    where latest_version = <ocor_runtime.memory.model.InMemoryMemoryVersionLedger object at 0x76738656d220>.latest_version
+E        +      where <ocor_runtime.memory.model.InMemoryMemoryVersionLedger object at 0x76738656d220> = <test_ocor_dev_0055.World object at 0x76738656d5b0>.ledger
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:477: AssertionError
+_____ test_replay_refuses_unbound_metadata_before_writing_anything[tenant] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_replay_refuses_unbound_me0')
+attack = 'tenant'
+
+    @pytest.mark.parametrize("attack", ["tenant", "partition", "epoch", "versions", "phase"])
+    def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path, attack: str) -> None:
+        replay, _, restored, tombstone = replay_world(tmp_path)
+        changes = {
+            "tenant": {"tenant_id": "tenant-b"},
+            "partition": {"partition_digests": ("urn:sha256:" + "b" * 64,)},
+            "epoch": {"deletion_epoch": 2},
+            "versions": {"version_refs": tombstone.version_refs[:-1]},
+            "phase": {"phase": TombstonePhase.INCOMPLETE},
+        }
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:497: Failed
+___ test_replay_refuses_unbound_metadata_before_writing_anything[partition] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_replay_refuses_unbound_me1')
+attack = 'partition'
+
+    @pytest.mark.parametrize("attack", ["tenant", "partition", "epoch", "versions", "phase"])
+    def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path, attack: str) -> None:
+        replay, _, restored, tombstone = replay_world(tmp_path)
+        changes = {
+            "tenant": {"tenant_id": "tenant-b"},
+            "partition": {"partition_digests": ("urn:sha256:" + "b" * 64,)},
+            "epoch": {"deletion_epoch": 2},
+            "versions": {"version_refs": tombstone.version_refs[:-1]},
+            "phase": {"phase": TombstonePhase.INCOMPLETE},
+        }
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:497: Failed
+_____ test_replay_refuses_unbound_metadata_before_writing_anything[epoch] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_replay_refuses_unbound_me2')
+attack = 'epoch'
+
+    @pytest.mark.parametrize("attack", ["tenant", "partition", "epoch", "versions", "phase"])
+    def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path, attack: str) -> None:
+        replay, _, restored, tombstone = replay_world(tmp_path)
+        changes = {
+            "tenant": {"tenant_id": "tenant-b"},
+            "partition": {"partition_digests": ("urn:sha256:" + "b" * 64,)},
+            "epoch": {"deletion_epoch": 2},
+            "versions": {"version_refs": tombstone.version_refs[:-1]},
+            "phase": {"phase": TombstonePhase.INCOMPLETE},
+        }
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:497: Failed
+____ test_replay_refuses_unbound_metadata_before_writing_anything[versions] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_replay_refuses_unbound_me3')
+attack = 'versions'
+
+    @pytest.mark.parametrize("attack", ["tenant", "partition", "epoch", "versions", "phase"])
+    def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path, attack: str) -> None:
+        replay, _, restored, tombstone = replay_world(tmp_path)
+        changes = {
+            "tenant": {"tenant_id": "tenant-b"},
+            "partition": {"partition_digests": ("urn:sha256:" + "b" * 64,)},
+            "epoch": {"deletion_epoch": 2},
+            "versions": {"version_refs": tombstone.version_refs[:-1]},
+            "phase": {"phase": TombstonePhase.INCOMPLETE},
+        }
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:497: Failed
+_____ test_replay_refuses_unbound_metadata_before_writing_anything[phase] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_replay_refuses_unbound_me4')
+attack = 'phase'
+
+    @pytest.mark.parametrize("attack", ["tenant", "partition", "epoch", "versions", "phase"])
+    def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path, attack: str) -> None:
+        replay, _, restored, tombstone = replay_world(tmp_path)
+        changes = {
+            "tenant": {"tenant_id": "tenant-b"},
+            "partition": {"partition_digests": ("urn:sha256:" + "b" * 64,)},
+            "epoch": {"deletion_epoch": 2},
+            "versions": {"version_refs": tombstone.version_refs[:-1]},
+            "phase": {"phase": TombstonePhase.INCOMPLETE},
+        }
+>       with pytest.raises(DeletionRecoveryError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:497: Failed
+__________ test_metadata_replay_reports_a_lost_commit_and_resumes_it ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-301/test_metadata_replay_reports_a0')
+
+    def test_metadata_replay_reports_a_lost_commit_and_resumes_it(tmp_path: Path) -> None:
+        replay, _, restored, tombstone = replay_world(tmp_path)
+        commit = restored.metadata.commit
+    
+        def lost_commit(*args, **kwargs):  # type: ignore[no-untyped-def]
+            raise ConnectionError("postgres unavailable")
+    
+        restored.metadata.commit = lost_commit
+>       with pytest.raises(ConnectionError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ConnectionError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:511: Failed
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_metadata_replay_preserves_original_versions_epochs_events_and_audit
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_replay_refuses_unbound_metadata_before_writing_anything[tenant]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_replay_refuses_unbound_metadata_before_writing_anything[partition]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_replay_refuses_unbound_metadata_before_writing_anything[epoch]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_replay_refuses_unbound_metadata_before_writing_anything[versions]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_replay_refuses_unbound_metadata_before_writing_anything[phase]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_metadata_replay_reports_a_lost_commit_and_resumes_it
+7 failed, 57 passed in 1.33s
+
+FILE green-checkpoint.log SHA256 5780c16cf3daccd39fb4fd7fe920c8f58ab9cb864daf6c3535aee43ea032a773
+...........F...............                                              [100%]
+=================================== FAILURES ===================================
+____________ test_each_checkpoint_member_is_checked[deletion_epoch] ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-295/test_each_checkpoint_member_is1')
+field = 'deletion_epoch'
+
+    @pytest.mark.parametrize("field", ["sequence", "deletion_epoch", "head"])
+    def test_each_checkpoint_member_is_checked(tmp_path: Path, field: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+        value = "urn:sha256:" + "b" * 64 if field == "head" else 99
+>       with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'CHECKPOINT_MISMATCH'
+E         Actual message: 'CHECKPOINT_INVALID'
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:119: AssertionError
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_each_checkpoint_member_is_checked[deletion_epoch]
+1 failed, 26 passed in 0.34s
+
+FILE green-extended.log SHA256 9807aa92e9a96cf561cd59799aee7a307e4133fccad15b6fa3d15d8e25eae2d2
+.......................................F.................                [100%]
+=================================== FAILURES ===================================
+_ test_malformed_hash_chains_and_entries_never_open_restore[noninteger-sequence] _
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-298/test_malformed_hash_chains_and2')
+attack = 'noninteger-sequence'
+
+    @pytest.mark.parametrize("attack", [
+        "unknown-chain-field", "bool-sequence", "noninteger-sequence", "digest-type", "bad-prev", "blank-line",
+        "missing-start", "after-completion", "timestamp", "empty-partitions", "malformed-partition",
+        "empty-versions", "zero-version", "empty-participants", "duplicate-partitions", "completed-residue",
+    ])
+    def test_malformed_hash_chains_and_entries_never_open_restore(tmp_path: Path, attack: str) -> None:
+        path = tmp_path / "journal.jsonl"
+        journal(path)
+        lines = path.read_bytes().splitlines()
+        first = parse_i_json(lines[0])
+        if attack == "unknown-chain-field":
+            first["undeclared"] = "value"
+        elif attack == "bool-sequence":
+            first["seq"] = True
+        elif attack == "noninteger-sequence":
+            first["seq"] = 1.0
+        elif attack == "digest-type":
+            first["entry_digest"] = None
+        elif attack == "bad-prev":
+            first["prev"] = "urn:sha256:" + "f" * 64
+        elif attack == "blank-line":
+            path.write_bytes(b"\n" + path.read_bytes())
+        else:
+            records = [parse_i_json(line)["entry"] for line in lines]
+            if attack == "missing-start":
+                records = records[1:]
+            elif attack == "after-completion":
+                records.insert(2, records[0])
+            else:
+                changes = {
+                    "timestamp": ("at", "not-a-time"),
+                    "empty-partitions": ("partition_digests", []),
+                    "malformed-partition": ("partition_digests", ["not-a-digest"]),
+                    "duplicate-partitions": ("partition_digests", ["urn:sha256:" + "a" * 64] * 2),
+                    "empty-versions": ("version_refs", []),
+                    "zero-version": ("version_refs", ["urn:ocor:memory:x:v0"]),
+                    "empty-participants": ("participants", []),
+                    "completed-residue": ("residue_counts", [["content", 1]]),
+                }
+                field, value = changes[attack]
+                records[1 if attack == "completed-residue" else 0][field] = value
+            rechain(path, records)
+        if attack in {"unknown-chain-field", "bool-sequence", "noninteger-sequence", "digest-type", "bad-prev"}:
+            path.write_bytes(canonical_bytes(first) + b"\n" + b"\n".join(lines[1:]) + b"\n")
+>       with pytest.raises(DeletionRecoveryError, match="JOURNAL_CORRUPTED"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DeletionRecoveryError
+
+ocor-runtime/tests/tasks/test_ocor_dev_0056.py:379: Failed
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0056.py::test_malformed_hash_chains_and_entries_never_open_restore[noninteger-sequence]
+1 failed, 56 passed in 1.34s
+
+FILE green-metadata.log SHA256 d9e2dfb0c9e9486a7111d5527d5e434a5a8909998da5422abbac7a0783cd38c7
+................................................................         [100%]
+64 passed in 0.77s
+
+FILE unit-final.log SHA256 06e6de613f4cc662b22732ce328e6a86d961adbbbe95856aab9b7a6ec17e3ddf
+..................................................................       [100%]
+66 passed in 1.21s
+
+FILE wip-journal-regression.log SHA256 8b329d451198ca2fe01da6e76f77ca686a66e3907fe241f84736a48d231bce35
+...                                                                      [100%]
+3 passed in 1.33s
+
+FILE ruff-final.log SHA256 82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18
+All checks passed!
+
+FILE mypy-final.log SHA256 b1d14a638cdcd6b7a7d5368e3cc2ca927b3e1f1b4e26cbe9b1844d7698aabdf2
+Success: no issues found in 76 source files
+
+FILE preflight-verify.log SHA256 61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413
+==============================================================================
+OCOR ADD — harness di verifica tool-backed
+oggetto: inputs/normative/OCOR_Architectural_Design_Document_v1.1.md
+sha256:  3e7532c7101e80c74b511cedc56a0563ca0938a3fe259911a91245cb19dedc7f
+==============================================================================
+[PASS] Integrità sorgenti
+       8 file, tutti i digest coincidono
+[PASS] JSON Schema — parsing e meta-validazione
+       5 schemi Draft 2020-12 validi: urn:ocor:schema:action-type-contract:1.0, urn:ocor:schema:canonical-ingestion-envelope:1.1, urn:ocor:schema:event-subscription-contract:1.0, urn:ocor:schema:mcp-tool-contract:1.1, urn:ocor:schema:signed-canonical-ir:1.0
+[PASS] OpenAPI — risoluzione $ref
+       OpenAPI 3.1.0 v1.1.0; 6 path, 25 schemi, 26 $ref; tutti i $ref risolti; schemi mai referenziati: nessuno
+[PASS] OpenAPI — validazione semantica con validator ufficiale
+       openapi-spec-validator==0.9.0; wheel SHA-256 222fecffc7714f6d0a6ad62c0e4b66cc2b7dbfafb7b93acfc6c308abbdb51af8; documento OpenAPI 3.1.0 valido
+[PASS] Protobuf — compilazione
+       protoc compila senza errori
+[PASS] Turtle/RDF — parsing
+       17 triple
+[PASS] Rami condizionali insoddisfacibili (classe RV-01)
+       nessun campo richiesto da un condizionale risulta non dichiarato
+[INFO] Rami condizionali da coprire con casi POSITIVI
+       il §7.1 del prompt richiede almeno un caso positivo per ramo — signed-canonical-ir=0; canonical-ingestion-envelope=4; mcp-tool-contract=11; action-type-contract=9; event-subscription-contract=0
+[PASS] FSM — bijezione diagramma/tabella
+       29 stati in corrispondenza
+[PASS] FSM — famiglia ACT-T
+       ACT-T01–T31 contigui, più le varianti a/b/c
+[INFO] FSM — stati terminali
+       stati senza archi uscenti non attesi: nessuno; stati di indeterminatezza privi di uscita: nessuno
+[PASS] Tracciabilità — allocazione in §7
+       DEC 181/196; BR 18/18; FR 174/174; NFR 93/93; ARC 23/23; CAP 25/26; ELM 103/103; RSK 60/60
+[PASS] Universo normativo
+       693 = 693 atteso
+[PASS] Rimandi di sezione
+       44 rimandi distinti, 59 sezioni; non risolti: nessuno
+[PASS] Evidence fence
+       'E1=0' ricorre 16 volte; claim probatori non supportati: nessuno
+[PASS] Nessun DEC-197 assegnato
+       3 occorrenze, tutte in forma negativa o come nome di file
+==============================================================================
+PASS 14  FAIL 0  NOT_EXECUTED 0
+==============================================================================
+referto JSON: reports/verify_report.json
+
+FILE preflight-drift.log SHA256 c6d0b2468297ad125ad0adb76996e69f4e5f53346feb618f665b847b43a248cb
+{
+  "checked_inputs": 180,
+  "checked_tasks": 69,
+  "drifted_inputs": 0,
+  "drifted_tasks": [],
+  "findings": [],
+  "status": "PASS"
+}

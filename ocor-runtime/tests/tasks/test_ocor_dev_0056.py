@@ -17,6 +17,8 @@ from ocor_runtime.memory.deletion import (
     DeletionJournalSnapshot,
     DeletionRecoveryError,
     DeletionRestoreGate,
+    MemoryDeletionMetadataReplay,
+    RestoredMemoryParticipant,
 )
 from ocor_runtime.memory.lifecycle import JournalTombstoneStore, TombstoneEntry, TombstonePhase
 
@@ -115,7 +117,7 @@ def test_each_checkpoint_member_is_checked(tmp_path: Path, field: str) -> None:
     path = tmp_path / "journal.jsonl"
     journal(path)
     checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
-    value = "urn:sha256:" + "b" * 64 if field == "head" else 99
+    value = "urn:sha256:" + "b" * 64 if field == "head" else (1 if field == "deletion_epoch" else 99)
     with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
         DeletionJournalSnapshot.read(path, expected=replace(checkpoint, **{field: value}))
 
@@ -166,7 +168,8 @@ class Authority:
 class Participant:
     name = "content"
 
-    def __init__(self) -> None:
+    def __init__(self, name: str = "content") -> None:
+        self.name = name
         self.present = {"x", "y"}
         self.unavailable = False
         self.omit_y = False
@@ -190,7 +193,10 @@ def gate_world(tmp_path: Path):  # type: ignore[no-untyped-def]
     restored.write_bytes(authoritative.read_bytes())
     participant = Participant()
     authority = Authority(authoritative)
-    gate = DeletionRestoreGate(journal=restored, authority=authority, participants=(participant,))
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority,
+        participants=(participant, Participant("native-projections")),
+    )
     return gate, authority, participant, restored
 
 
@@ -250,3 +256,300 @@ def test_missing_duplicate_or_unnamed_participants_are_configuration_errors(tmp_
         with pytest.raises(ValueError):
             DeletionRestoreGate(journal=restored, authority=authority, participants=participants)
 
+
+def test_omitting_a_recorded_store_cannot_qualify_recovery(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+    gate = DeletionRestoreGate(journal=restored, authority=authority, participants=(participant,))
+    with pytest.raises(DeletionRecoveryError, match="DELETION_PARTICIPANT_MISSING"):
+        gate.reconcile()
+    assert participant.calls == []
+
+
+def test_new_epoch_during_materialisation_discards_the_response(tmp_path: Path) -> None:
+    gate, authority, _, _ = gate_world(tmp_path)
+    gate.reconcile()
+
+    def materialise() -> str:
+        JournalTombstoneStore(authority.path).append(entry("z", 3, TombstonePhase.STARTED))
+        return "must not escape"
+
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.serve(materialise)
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: "must remain closed")
+
+
+def test_residue_created_during_materialisation_discards_the_response(tmp_path: Path) -> None:
+    gate, _, participant, _ = gate_world(tmp_path)
+    gate.reconcile()
+
+    def materialise() -> str:
+        participant.present.add("x")
+        return "must not escape"
+
+    with pytest.raises(DeletionRecoveryError, match="DELETION_INCOMPLETE"):
+        gate.serve(materialise)
+
+
+def test_a_missing_journal_and_failed_callback_leave_recovery_closed(tmp_path: Path) -> None:
+    gate, _, _, restored = gate_world(tmp_path)
+    gate.reconcile()
+
+    def failure() -> None:
+        raise TimeoutError("query unavailable")
+
+    with pytest.raises(TimeoutError):
+        gate.serve(failure)
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: "closed")
+    restored.unlink()
+    with pytest.raises(DeletionRecoveryError, match="JOURNAL_UNAVAILABLE"):
+        gate.reconcile()
+
+
+@pytest.mark.parametrize("field,value", [
+    ("sequence", True), ("sequence", -1), ("deletion_epoch", True),
+    ("deletion_epoch", -1), ("head", "not-a-digest"),
+])
+def test_malformed_checkpoints_are_not_authority(tmp_path: Path, field: str, value: object) -> None:
+    path = tmp_path / "journal.jsonl"
+    journal(path)
+    checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_INVALID"):
+        replace(checkpoint, **{field: value})
+
+
+def test_saga_outcomes_may_extend_version_refs_and_retry_under_the_same_epoch(tmp_path: Path) -> None:
+    path = tmp_path / "journal.jsonl"
+    source = JournalTombstoneStore(path)
+    source.append(entry("x", 1, TombstonePhase.STARTED))
+    source.append(replace(entry("x", 1, TombstonePhase.INCOMPLETE), residue_counts=(("content", 1),)))
+    source.append(replace(entry("x", 1, TombstonePhase.STARTED), operation_id="retry-x"))
+    source.append(replace(
+        entry("x", 1, TombstonePhase.COMPLETED),
+        version_refs=("urn:ocor:memory:x:v1", "urn:ocor:memory:x:v2"), operation_id="retry-x",
+    ))
+    snapshot = DeletionJournalSnapshot.capture(path)
+    assert snapshot.checkpoint.sequence == 4 and snapshot.checkpoint.deletion_epoch == 1
+    assert snapshot.obligations == (snapshot.entries[-1],)
+
+
+@pytest.mark.parametrize("attack", [
+    "unknown-chain-field", "bool-sequence", "noninteger-sequence", "digest-type", "bad-prev", "blank-line",
+    "missing-start", "after-completion", "timestamp", "empty-partitions", "malformed-partition",
+    "empty-versions", "zero-version", "empty-participants", "duplicate-partitions", "completed-residue",
+])
+def test_malformed_hash_chains_and_entries_never_open_restore(tmp_path: Path, attack: str) -> None:
+    path = tmp_path / "journal.jsonl"
+    journal(path)
+    lines = path.read_bytes().splitlines()
+    first = parse_i_json(lines[0])
+    if attack == "unknown-chain-field":
+        first["undeclared"] = "value"
+    elif attack == "bool-sequence":
+        first["seq"] = True
+    elif attack == "noninteger-sequence":
+        first["seq"] = 1.0
+    elif attack == "digest-type":
+        first["entry_digest"] = None
+    elif attack == "bad-prev":
+        first["prev"] = "urn:sha256:" + "f" * 64
+    elif attack == "blank-line":
+        path.write_bytes(b"\n" + path.read_bytes())
+    else:
+        records = [parse_i_json(line)["entry"] for line in lines]
+        if attack == "missing-start":
+            records = records[1:]
+        elif attack == "after-completion":
+            records.insert(2, records[0])
+        else:
+            changes = {
+                "timestamp": ("at", "not-a-time"),
+                "empty-partitions": ("partition_digests", []),
+                "malformed-partition": ("partition_digests", ["not-a-digest"]),
+                "duplicate-partitions": ("partition_digests", ["urn:sha256:" + "a" * 64] * 2),
+                "empty-versions": ("version_refs", []),
+                "zero-version": ("version_refs", ["urn:ocor:memory:x:v0"]),
+                "empty-participants": ("participants", []),
+                "completed-residue": ("residue_counts", [["content", 1]]),
+            }
+            field, value = changes[attack]
+            records[1 if attack == "completed-residue" else 0][field] = value
+        rechain(path, records)
+    if attack in {"unknown-chain-field", "bool-sequence", "noninteger-sequence", "digest-type", "bad-prev"}:
+        first_line = canonical_bytes(first)
+        if attack == "noninteger-sequence":
+            # canonical_bytes normalises 1.0 to 1: inject the wire form itself.
+            first_line = first_line.replace(b'"seq":1', b'"seq":1.0')
+        path.write_bytes(first_line + b"\n" + b"\n".join(lines[1:]) + b"\n")
+    with pytest.raises(DeletionRecoveryError, match="JOURNAL_CORRUPTED"):
+        DeletionJournalSnapshot.capture(path)
+
+
+def test_a_purge_failure_is_not_overruled_by_an_empty_inventory(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+
+    class FailedPurge(Participant):
+        def purge(self, tombstone: TombstoneEntry) -> None:
+            super().purge(tombstone)
+            raise ConnectionError("lost ack")
+
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority,
+        participants=(participant, FailedPurge("native-projections")),
+    )
+    with pytest.raises(DeletionRecoveryError, match="DELETION_INCOMPLETE"):
+        gate.reconcile()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: "closed")
+
+
+def test_authority_changed_during_purge_is_rechecked(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+
+    class ConcurrentDeletion(Participant):
+        def purge(self, tombstone: TombstoneEntry) -> None:
+            super().purge(tombstone)
+            if tombstone.memory_item_id == "x":
+                JournalTombstoneStore(authority.path).append(entry("z", 3, TombstonePhase.STARTED))
+
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority,
+        participants=(participant, ConcurrentDeletion("native-projections")),
+    )
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.reconcile()
+
+
+def test_authority_and_inventory_require_exact_port_types(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+
+    class InvalidInventory(Participant):
+        def residue(self, tombstone: TombstoneEntry):  # type: ignore[no-untyped-def]
+            return []  # not a verified empty tuple
+
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority,
+        participants=(participant, InvalidInventory("native-projections")),
+    )
+    with pytest.raises(DeletionRecoveryError, match="DELETION_INCOMPLETE"):
+        gate.reconcile()
+
+    class InvalidAuthority:
+        def current(self):  # type: ignore[no-untyped-def]
+            return {"deletion_epoch": 2}
+
+    gate = DeletionRestoreGate(journal=restored, authority=InvalidAuthority(), participants=(participant,))
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_INVALID"):
+        gate.reconcile()
+
+
+def test_checkpoint_digest_is_bound_to_all_three_members(tmp_path: Path) -> None:
+    path = tmp_path / "journal.jsonl"
+    journal(path)
+    checkpoint = DeletionJournalSnapshot.capture(path).checkpoint
+    assert checkpoint.digest == canonical_digest(checkpoint.to_mapping())
+    assert replace(checkpoint, sequence=5).digest != checkpoint.digest
+    assert replace(checkpoint, deletion_epoch=1).digest != checkpoint.digest
+    assert replace(checkpoint, head="urn:sha256:" + "b" * 64).digest != checkpoint.digest
+
+
+def replay_world(tmp_path: Path):  # type: ignore[no-untyped-def]
+    import test_ocor_dev_0055 as t55
+
+    path = tmp_path / "journal.jsonl"
+    source = t55.unit_world(tombstones=JournalTombstoneStore(path))
+    restored = t55.unit_world()
+    source.admit("x", t55.TEXT)
+    restored.admit("x", t55.TEXT)
+    source.delete("x", op="forget-x")
+    tombstone = DeletionJournalSnapshot.capture(path).obligations[0]
+    replay = MemoryDeletionMetadataReplay(
+        authoritative_metadata=source.metadata, authoritative_ledger=source.ledger,
+        restored_metadata=restored.metadata, restored_ledger=restored.ledger,
+    )
+    return replay, source, restored, tombstone
+
+
+def test_metadata_replay_preserves_original_versions_epochs_events_and_audit(tmp_path: Path) -> None:
+    replay, source, restored, tombstone = replay_world(tmp_path)
+    assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 1
+    replay.purge(tombstone)
+    assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 3
+    assert restored.status("x") == "DELETED"
+    assert replay.residue(tombstone) == ()
+    for version in range(1, 4):
+        assert restored.ledger.get("x", version).to_mapping() == source.ledger.get("x", version).to_mapping()
+        assert restored.metadata.get("x", version) == source.metadata.get("x", version)
+    replay.purge(tombstone)
+    assert restored.ledger.latest_version("x") == 3  # idempotent: no replacement events
+
+
+@pytest.mark.parametrize("attack", ["tenant", "partition", "epoch", "versions", "phase"])
+def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path, attack: str) -> None:
+    replay, _, restored, tombstone = replay_world(tmp_path)
+    changes = {
+        "tenant": {"tenant_id": "tenant-b"},
+        "partition": {"partition_digests": ("urn:sha256:" + "b" * 64,)},
+        "epoch": {"deletion_epoch": 2},
+        "versions": {"version_refs": tombstone.version_refs[:-1]},
+        "phase": {"phase": TombstonePhase.INCOMPLETE},
+    }
+    with pytest.raises(DeletionRecoveryError):
+        replay.purge(replace(tombstone, **changes[attack]))
+    assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 1
+    assert replay.residue(tombstone)
+
+
+def test_metadata_replay_reports_a_lost_commit_and_resumes_it(tmp_path: Path) -> None:
+    replay, _, restored, tombstone = replay_world(tmp_path)
+    commit = restored.metadata.commit
+
+    def lost_commit(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise ConnectionError("postgres unavailable")
+
+    restored.metadata.commit = lost_commit
+    with pytest.raises(ConnectionError):
+        replay.purge(tombstone)
+    assert replay.residue(tombstone)
+    restored.metadata.commit = commit
+    replay.purge(tombstone)
+    assert restored.status("x") == "DELETED" and replay.residue(tombstone) == ()
+
+
+def test_the_composed_recovery_gate_replays_then_purges_native_stores(tmp_path: Path) -> None:
+    import test_ocor_dev_0052 as t52
+    import test_ocor_dev_0055 as t55
+
+    replay, source, restored, tombstone = replay_world(tmp_path)
+    restored.admit("keep", t55.TEXT + " south")
+    source_path = tmp_path / "journal.jsonl"
+    restored_path = tmp_path / "restored.jsonl"
+    restored_path.write_bytes(source_path.read_bytes())
+    participants = [replay, *[
+        RestoredMemoryParticipant(metadata=restored.metadata, participant=p, binding=t52.binding(t55.CALLER))
+        for p in restored.participants()
+    ]]
+    gate = DeletionRestoreGate(journal=restored_path, authority=Authority(source_path), participants=participants)
+    before = restored.every_mode()
+    assert all("urn:ocor:memory:x:v1" in refs for refs in before.values())
+    gate.reconcile()
+    found = gate.serve(restored.every_mode)
+    assert all(refs == ["urn:ocor:memory:keep:v1"] for refs in found.values())
+    assert all(p.residue(tombstone) == () for p in participants)
+    assert source.status("x") == restored.status("x") == "DELETED"
+
+
+def test_restore_participants_validate_tenant_and_scope_before_purge(tmp_path: Path) -> None:
+    import test_ocor_dev_0052 as t52
+    import test_ocor_dev_0055 as t55
+
+    replay, _, restored, tombstone = replay_world(tmp_path)
+    replay.purge(tombstone)
+    participant = RestoredMemoryParticipant(
+        metadata=restored.metadata, participant=restored.participants()[0], binding=t52.binding(t55.CALLER),
+    )
+    for bad in [replace(tombstone, tenant_id="tenant-b"), replace(tombstone, partition_digests=("urn:sha256:" + "b" * 64,))]:
+        with pytest.raises(DeletionRecoveryError, match="RESTORE_BINDING_MISMATCH"):
+            participant.purge(bad)
+    assert t55.native_entries(restored, restored.ledger.get("x", 1)) == {"lexical": 1, "vector": 1}
