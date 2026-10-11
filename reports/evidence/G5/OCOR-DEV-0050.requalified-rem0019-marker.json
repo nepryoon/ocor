@@ -1,0 +1,126 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
+    "id": "OCOR-DEV-REM-0019",
+    "po_decision": "REM-0019-BACKUP-CIPHERTEXT-MARKER (2026-10-11)"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -v -ra ocor-runtime/tests/tasks/test_ocor_dev_0050.py (198 collected node IDs; see raw)",
+      "exit_code": 0,
+      "head_sha": "ee3062128e17c8d45f316c3d27fdef5365613b17",
+      "raw_sha256": "73aa3aaf44a68fe46f5ee51dc43dd4b631e0738cb0f2e948dad0ebcdc5c519bd",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 198,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref HEAD",
+      "exit_code": 0,
+      "note": "37 PASS; 2 optional NOT_EXECUTED remain explicitly reported in raw output.",
+      "status": "PASS"
+    }
+  ],
+  "commit": "ee3062128e17c8d45f316c3d27fdef5365613b17",
+  "created_at": "2026-10-11T07:05:56.351250+00:00",
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
+    "host": "nepryoon",
+    "python": "3.14.4",
+    "required_backends": "0050 uses its real filesystem journal and the normative JSON Schema; no external store substitution.",
+    "toolchain": [
+      {
+        "digest_matches": true,
+        "id": "docker",
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/docker",
+        "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "version": "Docker version 29.7.2, build a7dcaa6"
+      },
+      {
+        "digest_matches": true,
+        "id": "git",
+        "path": "/usr/bin/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "version": "git version 2.53.0"
+      },
+      {
+        "digest_matches": true,
+        "id": "github-cli",
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/gh",
+        "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "version": "gh version 2.99.0 (2026-09-01)"
+      },
+      {
+        "digest_matches": true,
+        "id": "node",
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/node",
+        "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "version": "v20.20.2"
+      },
+      {
+        "digest_matches": true,
+        "id": "python",
+        "path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "version": "Python 3.12.11"
+      },
+      {
+        "digest_matches": true,
+        "id": "ruff",
+        "path": "/home/luca/.local/bin/ruff",
+        "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "version": "ruff 0.13.1"
+      },
+      {
+        "digest_matches": true,
+        "id": "typescript",
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/tsc",
+        "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "version": "Version 7.0.2"
+      },
+      {
+        "digest_matches": true,
+        "id": "uv",
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/uv",
+        "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "version": "uv 0.12.5 (x86_64-unknown-linux-gnu)"
+      }
+    ]
+  },
+  "independent_verification": {
+    "status": "PENDING",
+    "verifier": "cursor"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/model.py": "6988c22f78b14a961027bb6cf3b3552882801e2f06cd54ba5513cc40bc8292ce",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0050.py": "dfc589768020a3bed1367e5ba62d575dff18b376ac858accd953165b8aee18cf",
+    "scripts/validate_ocor_development_plan.py": "373a8a10266231994641888cecc23d991540a3e613cfa11b11416f27d1671d72"
+  },
+  "limitations": [
+    "Candidate only; independent review pending with REM-0019. Full suite on final candidate not yet executed in this iteration. Existing historical GO remains historical."
+  ],
+  "raw_output_sha256": "d49d70399fb75f4309689203a369116ca13f7dadee2e9b0b73bb2e5d4c61c048",
+  "record_id": "OCOR-DEV-0050-requalified-rem0019-marker-ee3062128e17",
+  "requirement_ids": [],
+  "roles": {
+    "current_implementer": "Codex (OpenAI)",
+    "original_implementers": "Claude Code and Codex; historical sealed records unchanged",
+    "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor), pending independent review"
+  },
+  "schema_version": "1.0",
+  "status": "EVIDENCE_CANDIDATE",
+  "supersedes": "OCOR-DEV-0050-requalified-rem0021-0e76db2ac62d",
+  "task_id": "OCOR-DEV-0050"
+}
