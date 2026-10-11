@@ -1,0 +1,150 @@
+{
+  "assertion_correspondence": {
+    "authorized_replaced_assertions": 2,
+    "collected_cases": 390,
+    "other_assertions": "UNCHANGED_OR_CARRIER_RENAME",
+    "path": "reports/assurance/OCOR-DEV-REM-0019-RCCAD/assertion-map.json",
+    "sha256": "bf4ab69ac90858670ed1364f8a866882ffb6c07a1858b822dae399341527a027",
+    "test_functions": 72
+  },
+  "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "created_at": "2026-10-11T07:09:36.598669+00:00",
+  "failed_diagnostic_runs": [
+    "targeted: mutant writing every artifact plaintext collided on repeated empty artifacts before oracle; narrowed to leak one real dump; retained as FAIL, not a killed mutant.",
+    "requal-0050: path relative to pytest root used from repository root; exit 4, NOT_EXECUTED; corrected invocation 198 PASS.",
+    "reports indiscriminate collection: standalone scripts exit at import, NOT_EXECUTED.",
+    "reports CI suites before SDK provision: 1 FAIL, 46 PASS, 1 SKIP; pinned npm ci/build then rerun, no skipped case removed."
+  ],
+  "historical_diagnostic_attempts": {
+    "attempt1-order-seed-190003-alignment.json": "a04bcda35500904133c3e4b1bcc64ed609a51fa9eff501ce5b92dc06fbf73974",
+    "attempt1-order-seed-190003-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+    "attempt1-order-seed-190003-kind-diagnostics-private.log": "0b704e3bfe2d991689f9e7cf3076e6f8d556f00f4a2f7c5a7fa6019413eb8bfb",
+    "attempt1-order-seed-190003-marker-analysis.json": "9127903feccea839b3c8d74fd9a08fc11cf564a5dbe90ebeb052fc2cbb838e5b",
+    "attempt1-order-seed-190003-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+    "attempt1-order-seed-190003.json": "0abbf4999bfdde9ccaf360a1b978923d193f66e29628e240e22f34b747c2254d",
+    "attempt1-order-seed-190003.log": "e881e0b10abc944e4cad1552f8e897103c0f2a5dd796de2522e5439094d98b13",
+    "attempt1-order-seed-190003.order": "e723bb96f56f4e6ade80394eedc3f4922141e79f0bbd8f37a43baa8f79c5cf74",
+    "attempt1-order-seed-190003.out": "a4766a911674fb7080fcbf261220701d6bd1f7a0404ce16887653b0ba49b4767",
+    "attempt1-order-seed-190003.xml": "e837866bb29b70a155c7314ef9c013e9b838bed315edb5ef9087d9ce66874303"
+  },
+  "independent_verification": {
+    "status": "NOT_REQUESTED_INCOMPLETE_QUALIFICATION",
+    "verifier": "cursor"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0049.py": "44aa956b6f0fd6d8b577c96df2195085223a496ae69514b8a9cf630565117269",
+    "scripts/validate_ocor_development_plan.py": "373a8a10266231994641888cecc23d991540a3e613cfa11b11416f27d1671d72"
+  },
+  "integration_precheck": {
+    "base_ref": "origin/main",
+    "next_action": "Resolve the integration base/scope before final candidate review, preserving the authorized test-only REM diff and unchanged production 0049. Do not broaden the PO-specific allowlist to inherited product paths.",
+    "reason": "Governed branch inherits unmerged 0049 production/evidence; planning allowlist does not admit those paths. No PR or merge permitted with this FAIL.",
+    "status": "FAIL",
+    "unauthorized_paths": [
+      "deploy/helm/ocor-poc/Chart.yaml",
+      "deploy/helm/ocor-poc/compose.profiles.yaml",
+      "deploy/helm/ocor-poc/templates/_helpers.tpl",
+      "deploy/helm/ocor-poc/templates/backup-cronjob.yaml",
+      "deploy/helm/ocor-poc/templates/configmap.yaml",
+      "deploy/helm/ocor-poc/templates/deployment.yaml",
+      "deploy/helm/ocor-poc/templates/networkpolicy.yaml",
+      "deploy/helm/ocor-poc/templates/restore-drill-job.yaml",
+      "deploy/helm/ocor-poc/templates/serviceaccount.yaml",
+      "deploy/helm/ocor-poc/values.yaml",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0049.py",
+      "reports/evidence/G4/OCOR-DEV-0049.json",
+      "reports/evidence/G4/OCOR-DEV-0049.log"
+    ]
+  },
+  "local_gates": {
+    "HEAD_precheck": "10 commands exit 0 (plan --base-ref HEAD); dynamic assurance CI_REQUIRED",
+    "origin_main_plan": "FAIL; not counted as PASS",
+    "reports_pytest": {
+      "failed": 0,
+      "passed": 48,
+      "skipped": 0
+    },
+    "standalone_harnesses": {
+      "executed": 5,
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "local_targeted_result": {
+    "command": [
+      "uv",
+      "run",
+      "--project",
+      "ocor-runtime",
+      "--frozen",
+      "--extra",
+      "test",
+      "--extra",
+      "lint",
+      "pytest",
+      "-v",
+      "-ra",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/home/luca/.ocor-codex/rem-0019-marker/bt-targeted-final",
+      "--junitxml=/home/luca/.ocor-codex/rem-0019-marker/targeted-final.xml",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0049.py::test_backup_seals_an_encrypted_signed_immutable_recovery_point"
+    ],
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 1
+    },
+    "duration_seconds": 30.405222658999264,
+    "exit_code": 0,
+    "finished_at": "2026-10-11T07:06:43.025831+00:00",
+    "head_sha": "9a38548752e56e6239313a9dbe32e5578e638777",
+    "started_at": "2026-10-11T07:06:12.620626+00:00",
+    "watchdog_error": null
+  },
+  "negative_oracle_cases": 15,
+  "new_0050_requalification": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-marker.json",
+  "optional_valid_ciphertext_marker_control": {
+    "reason": "No deterministic valid ciphertext containing PGDMP reproduced without changing the pinned custodian; opaque ciphertext is authenticated rather than lexically constrained.",
+    "status": "NOT_EXECUTED"
+  },
+  "po_decision": "REM-0019-BACKUP-CIPHERTEXT-MARKER (2026-10-11), option 1",
+  "production_0049_changed": false,
+  "raw_output_sha256": "ddfbf63187bf58be00d8fdabd4d1e1b1956b4425304e47fb61db02154d28e527",
+  "remaining_mandatory": [
+    "Rerun the entire 390-case module in collection order, reverse order, and seeds 190001, 190002, 190003 on the final candidate; each <=45 min, zero skip and no restart/OOM.",
+    "Rerun all 119 dependency-derived isolated tests on the final candidate; verify node mapping and resource teardown.",
+    "Reset/bootstrap, register/fetch control-plane SVID, 11 READY; run full runtime suite <=75 min with OCOR_LIVE_POSTGRES_DSN, no skip, stop immediately on restart/OOM.",
+    "Append new REM-0019 and 0049 requalification records with explicit supersession, raw logs and final HEAD/hash/environment checks; preserve all sealed history.",
+    "Final gates (including drift and evidence), RCCAD before push; then REMEDIATION verify_request repair_cycle 1, verifier cursor/Grok. No PR for implementation until independent GO."
+  ],
+  "repair_cycle": 1,
+  "result": "NOT_EXECUTED_FULL_CAMPAIGN",
+  "roles": {
+    "implementers": [
+      "Claude Code (Anthropic): test isolation cycles 0/1",
+      "Codex (OpenAI): marker oracle repair within cycle 1"
+    ],
+    "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor); independent process/context, not launched"
+  },
+  "schema_version": "1.0",
+  "source_commit": "9a38548752e56e6239313a9dbe32e5578e638777",
+  "status": "WIP_REPAIR_IMPLEMENTED_QUALIFICATION_PENDING",
+  "task_id": "OCOR-DEV-REM-0019",
+  "worktree": ".ocor/worktrees/rem-0019"
+}

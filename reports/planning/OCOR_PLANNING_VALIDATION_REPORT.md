@@ -1,6 +1,6 @@
 # OCOR Planning Validation Report
 
-Validation commit/base: `origin/main`. Mechanical result: **PASS**.
+Validation commit/base: `task/OCOR-DEV-0049-rem0019-test-isolation`. Mechanical result: **PASS**.
 
 Checks: 37 PASS, 0 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never counted as PASS.
 
