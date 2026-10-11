@@ -621,14 +621,168 @@
     "watchdog_error": null
   },
   "independent_verification": {
-    "sealed": false,
-    "status": "PENDING_CURSOR_REVIEW"
+    "commands": [
+      {
+        "command": "git worktree add --detach /tmp/ocor-verify-OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition/wt a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "exit_code": 0,
+        "summary": "Worktree detached all'HEAD esatto a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8, poi rimosso."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 digest normativi OK. Il diff base..HEAD non tocca inputs/."
+      },
+      {
+        "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "Prima sync exit 0 con fallback hardlink e mypy non importabile; ripetuta con UV_LINK_MODE=copy, CPython 3.12.11, mypy 2.3.1 importabile."
+      },
+      {
+        "command": "python scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "Primo tentativo exit 1: nel worktree detached manca .ocor/bootstrap.env. Ripetuto con copia (non symlink) dell'env della checkout principale, hash sorgente invariato f17de420859997b2436dda830e2440f3b911fd31f24b4141eacd19b78d458cc4. Teardown finale exit 0: nessun container, volume o rete ocor-bootstrap residuo; spike storici non toccati."
+      },
+      {
+        "command": "python scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Env e CA SPIRE generati nel worktree dopo aver rimosso la copia dell'env principale, cosi' il bootstrap non riscrive la checkout. Stack avviato, status PASS. Seconda ricreazione prima della suite con Node pinned: exit 0."
+      },
+      {
+        "command": "python deploy/bootstrap/init/initialize_services.py --env-file .ocor/bootstrap.env",
+        "exit_code": 0,
+        "summary": "Inizializzazione PASS su entrambi i cicli di stack."
+      },
+      {
+        "command": "python deploy/bootstrap/fixtures/load_fixtures.py --env-file .ocor/bootstrap.env",
+        "exit_code": 0,
+        "summary": "Fixture PASS su entrambi i cicli."
+      },
+      {
+        "command": "python /home/luca/.ocor-codex/rem-0022/register_control_plane.py",
+        "exit_code": 0,
+        "summary": "Entry spiffe://ocor.test/ocor/control-plane registrata e SVID fetched. Materiale privato non riportato nel verdetto."
+      },
+      {
+        "command": "python scripts/verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "11 servizi READY, status PASS, immagini pinned, PostgreSQL e Kafka fail-closed. Durante le suite restart_count=0 e OOMKilled=false."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff 0.13.1, tutti i controlli superati."
+      },
+      {
+        "command": "python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Primo lancio exit 1: No module named mypy dopo la sync con hardlink. Dopo UV_LINK_MODE=copy: Success, 75 sorgenti."
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref 63184cb250c5b385b06c98c69a227937b8ae8fb4",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti, dynamic_assurance CI_REQUIRED."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione monitorata fuori dall'area autorizzata."
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base 63184cb250c5b385b06c98c69a227937b8ae8fb4",
+        "exit_code": 0,
+        "summary": "PASS: 23 path, superfici immutabili intatte, ledger dei task stabile. test_ocor_dev_0050.py invariato rispetto alla base."
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 63184cb250c5b385b06c98c69a227937b8ae8fb4",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 opzionali. Il comando ha riscritto due report di planning; ripristinati nel worktree prima della rimozione. Allowlist puntuale di REM-0022 presente."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 69 task, 180 input, 0 deriva."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS. Record OCOR-DEV-0050-rem0022-085d3fddbed0, raw sha256 8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946, input del test dfc589768020a3bed1367e5ba62d575dff18b376ac858accd953165b8aee18cf uguale all'HEAD. Il campo commit 085d3fddbed03b4fe23c0ea4edf4ba37d441d505 e' il commit di sorgente: i due commit successivi cambiano solo evidenza e stato."
+      },
+      {
+        "command": "python -m pytest -v -ra ocor-runtime/tests/",
+        "exit_code": 0,
+        "summary": "Con node v24.5.0 del PATH Cursor: exit 1, 8 failed in test_ocor_dev_0007 (asserzione v20.20.2), 1798 passed, 0 skipped; 0050 gia' 198 passed e 0048 196 passed. Rieseguita dopo reset/bootstrap con node 20.20.2 il cui SHA-256 6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd coincide con toolchain.lock: 1806 passed, 0 skipped, 688.51s."
+      },
+      {
+        "command": "python -m pytest -v -ra ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed in 4.77s, zero skip, sullo stack reale con Python 3.12.11."
+      }
+    ],
+    "created_at": "2026-10-11T21:00:17Z",
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "git diff 63184cb250c5b385b06c98c69a227937b8ae8fb4..a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit (model.py:1209) rilancia MemoryAdmissionError senza costruire audit_event (model.py:1321) e prima di ledger.append (model.py:1352). Il record sigillato precedente e questo hanno gli stessi 198 casi e gli stessi requirement_id. Disposition PO REM-0022-0050-ROLE-REVIEW-DISPOSITION: difetto preesistente, fuori dallo scope di regressione, tracciato in OCOR-DEV-REM-0023, non risolto.",
+        "id": "VF-001",
+        "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1209",
+        "required_fix": "Rimane a OCOR-DEV-REM-0023: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce. Non appartiene al sigillo di regressione di REM-0022.",
+        "severity": "medium"
+      }
+    ],
+    "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+    "integration_condition": "Il verdetto qualifica il candidato esatto a54ebb5; successivi commit ammessi soltanto per sigillo/manifest e sincronizzazione dei tre file di stato. Merge subordinato ai 13 required check verdi sul commit finale esatto.",
+    "not_executed": [],
+    "request_id": "OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition",
+    "sealed": true,
+    "status": "SEALED",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_file_sha256": "26504790d45bd292b066cce01ca95bc8d52a273d6f54d93fafd7175e5717a435",
+    "verdict_head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+    "verdict_request_id": "OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verification_scope": "SOLA REGRESSIONE: 198 test 0050 invariati dopo allowlist; integrita e supersession. Nessuna rivalutazione della conformita 0050.",
+    "verifier": {
+      "independence_limits": "Processo e contesto separati. Implementatore della riqualifica REM-0022 e dell'estensione puntuale dell'allowlist: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor. Non sono lo stesso modello. Implementatore originale di OCOR-DEV-0050: Claude Code. Nessun verifier lanciato dall'implementatore. Ambito: sola regressione dei 198 test invariati di OCOR-DEV-0050 e dell'evidenza content-addressed; il GO primario Claude su REM-0022/0019/0040 e il suo finding medium non bloccante sul retry di destroy restano intatti.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition/wt"
+    },
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore della riqualifica REM-0022 e dell'estensione puntuale dell'allowlist: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor. Non sono lo stesso modello. Implementatore originale di OCOR-DEV-0050: Claude Code. Nessun verifier lanciato dall'implementatore. Ambito: sola regressione dei 198 test invariati di OCOR-DEV-0050 e dell'evidenza content-addressed; il GO primario Claude su REM-0022/0019/0040 e il suo finding medium non bloccante sul retry di destroy restano intatti.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition/wt"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/model.py": "6988c22f78b14a961027bb6cf3b3552882801e2f06cd54ba5513cc40bc8292ce",
     "ocor-runtime/tests/tasks/test_ocor_dev_0050.py": "dfc589768020a3bed1367e5ba62d575dff18b376ac858accd953165b8aee18cf",
     "scripts/validate_ocor_development_plan.py": "608ef7467d8dbd28e95a5307dc48e231f42204c391dbb73258a894968ef74844"
+  },
+  "po_disposition": {
+    "VF-001": {
+      "disposition": "REJECTED_FALSE_POSITIVE_BY_PO",
+      "read_only_proof": {
+        "path": "/home/luca/.ocor-codex/rem0022-po-disposition/vf001-correction-proof.json",
+        "sha256": "edd07bf887364ee374965f576061be6e1295d1e87ad23b65976902cb6fc08c1e"
+      },
+      "reason": "Le righe 43-47 sono sorgente worker: 'postgresql://ocor:'+values['OCOR_LOCAL_POSTGRES_PASSWORD']+'@127.0.0.1:55433/ocor'. I 42 caratteri sono '+values['OCOR_LOCAL_POSTGRES_PASSWORD']+', non un valore segreto. Nessuna password letterale e presente nei log o nella storia pubblicata secondo la revisione del PO. Finding e verdetto restano storici, nessuna rigenerazione dei raw richiesta."
+    },
+    "VF-002": {
+      "disposition": "CONFIRMED_PREEXISTING_OUTSIDE_REM0022_SCOPE",
+      "remediation_id": "OCOR-DEV-REM-0023",
+      "scope": "Every admitMemory denial audited in audit authority, no version append, fail-closed audit failure; RED/GREEN real backends, new superseding 0050 record, public OpenAPI unchanged. Execute after REM-0019 and REM-0017, before 0056; mandatory G5 closure dependency. Not resolved and not part of this regression-only verdict."
+    },
+    "authority": "Luca Lillo, Product Owner; explicit current conversation instruction; self-contained repository review disposition",
+    "decision": "REM-0022-0050-ROLE-REVIEW-DISPOSITION (2026-10-11)",
+    "previous_verdict": {
+      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-0050-a54ebb56955b-0-rem0022-cursor-role-review.json",
+      "preserved": true,
+      "request_id": "OCOR-DEV-0050-a54ebb56955b-0-rem0022-cursor-role-review",
+      "sha256": "a17f06afc721d5a7c09ef6d40c54dabfe19ed8cc1796425d21bbd461e419d744",
+      "verdict": "NO_GO"
+    },
+    "repair_budget": "NO_REPAIR_CYCLE_CONSUMED_BY_PRIOR_NO_GO_OR_THIS_REVIEW",
+    "sequence": "After exact-head regression GO: seal REM-0022, required exact-green PR/merge and state sync; REM-0019 cycle1 with fresh full regression; REM-0017; merge 0049; REM-0023 before resume 0056."
   },
   "raw_output_sha256": "8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946",
   "record_id": "OCOR-DEV-0050-rem0022-085d3fddbed0",
@@ -1214,15 +1368,30 @@
       ]
     }
   ],
+  "residual_findings": [
+    {
+      "blocking": false,
+      "evidence": "git diff 63184cb250c5b385b06c98c69a227937b8ae8fb4..a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit (model.py:1209) rilancia MemoryAdmissionError senza costruire audit_event (model.py:1321) e prima di ledger.append (model.py:1352). Il record sigillato precedente e questo hanno gli stessi 198 casi e gli stessi requirement_id. Disposition PO REM-0022-0050-ROLE-REVIEW-DISPOSITION: difetto preesistente, fuori dallo scope di regressione, tracciato in OCOR-DEV-REM-0023, non risolto.",
+      "id": "VF-001",
+      "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1209",
+      "required_fix": "Rimane a OCOR-DEV-REM-0023: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce. Non appartiene al sigillo di regressione di REM-0022.",
+      "severity": "medium",
+      "source_request_id": "OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition",
+      "status": "OPEN_NONBLOCKING"
+    }
+  ],
   "result": "PASS",
   "roles": {
     "historical_0050_implementers": "Claude Code (Anthropic), reserve implementer; Codex repair cycles 1-2",
     "historical_0050_verifier": "Grok 4.7 (Cursor CLI)",
     "implementer": "Codex (OpenAI), REM-0022 code/tests and fresh requalifications",
-    "verifier": "Grok 4.7 (Cursor CLI), mandatory separate review because 0050 was touched by the reserve Claude Code implementer"
+    "integration_agent": "Codex (OpenAI)",
+    "verifier": "Grok 4.7; Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition/wt"
   },
   "rollback": "New revert of the change-set commits; no data migration or event semantics change. Preserve sealed historical records. Hygiene-dependent tasks remain blocked if reverted.",
   "schema_version": "1.0",
+  "sealed_at": "2026-10-11T21:04:49.829060+00:00",
+  "status": "SEALED",
   "superseded_record": {
     "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0021.json",
     "sha256": "7b2d4de2c4bf271a91e4a9a3c1e3eae299f80aaa10c8ffc770dece8c472cced2"

@@ -621,8 +621,156 @@
     "watchdog_error": null
   },
   "independent_verification": {
-    "sealed": false,
-    "status": "PENDING"
+    "commands": [
+      {
+        "command": "git worktree add --detach /tmp/ocor-verify-.../wt a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8; git diff --stat 63184cb..HEAD",
+        "exit_code": 0,
+        "summary": "23 file cambiati; codice solo in spikes/kafka_delivery/oracle.py, ocor-runtime/src/ocor_runtime/c5/backbone.py, nuovo test test_ocor_dev_rem_0022.py, scripts/validate_ocor_development_plan.py (solo aggiunta di path esatti all'allowlist, nessun predicato/wildcard); 085d3fd..HEAD tocca solo evidenza/stato"
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "tutti OK; nessun file di inputs/ nel diff; inputs tree 60a73de8 = inputs_tree registrato nell'evidenza"
+      },
+      {
+        "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "venv isolata, Python 3.12.11"
+      },
+      {
+        "command": "ruff check . (ruff 0.13.1 pinned)",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 75 source files"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref 63184cb250c5b385b06c98c69a227937b8ae8fb4",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base 63184cb250c5b385b06c98c69a227937b8ae8fb4",
+        "exit_code": 0,
+        "summary": "PASS: 23 changed paths; immutable surfaces untouched; task ledger stable"
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 63184cb250c5b385b06c98c69a227937b8ae8fb4",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (psycopg locale, branch protection API 403: preesistenti, non introdotti dal diff); i file di report riscritti dal validatore sono stati ripristinati con git checkout"
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 180 input, 69 task, 0 drift"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0022|OCOR-DEV-0019 (G2) / OCOR-DEV-0040 (G4) / OCOR-DEV-0050 (G5) --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS per tutti e quattro"
+      },
+      {
+        "command": "verifica hash evidenza (script ad hoc)",
+        "exit_code": 0,
+        "summary": "raw_output_sha256 = sha256 dei .log per REM-0022/0019/0040/0050; ogni command.raw_sha256 = sha256 dell'output nel raw log (24/24 per REM-0022, idem 0019/0040); input file-hash = HEAD; commit 085d3fd (ultimo commit di codice); claims E1=0,E2=0,Verified=0,PoC/Production NO-GO, runtime_conformance NOT_ESTABLISHED; join token SPIRE redatto; nessun segreto nel diff; record sigillati non modificati (solo i MANIFEST puntano ai nuovi record con supersedes esplicito); requirement_id/case_id di 0019 e 0040 identici ai record superseduti"
+      },
+      {
+        "command": "RED: test_ocor_dev_rem_0022.py contro oracle.py/backbone.py del base 63184cb (worktree temporaneo)",
+        "exit_code": 1,
+        "summary": "20 failed, 2 passed; il caso di successo fallisce per la ragione giusta: volume anonimo /etc/kafka/secrets posseduto rimasto dopo destroy(). Residuo creato dalla prova RED rimosso esattamente; inventario ripristinato"
+      },
+      {
+        "command": "python scripts/reset_test_environment.py --execute (env placeholder solo per l'interpolazione, poi eliminato) ; python scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "stack ocor-bootstrap ricreato da zero con env e CA SPIRE generati nel worktree; 11 container up/healthy"
+      },
+      {
+        "command": "python deploy/bootstrap/init/initialize_services.py --env-file .ocor/bootstrap.env; python deploy/bootstrap/fixtures/load_fixtures.py --env-file .ocor/bootstrap.env",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python /home/luca/.ocor-codex/rem-0022/register_control_plane.py",
+        "exit_code": 0,
+        "summary": "PASS, SVID control-plane reale ottenuto (output non loggato)"
+      },
+      {
+        "command": "python scripts/verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "PASS, tutti i servizi READY con controlli fail-closed"
+      },
+      {
+        "command": "python -m pytest -v -ra ocor-runtime/tests/tasks/test_ocor_dev_rem_0022.py test_ocor_dev_0019.py test_ocor_dev_0040.py test_ocor_dev_0041.py",
+        "exit_code": 0,
+        "summary": "45 passed (22+8+7+8), 0 skip, 209 s; 62 container cp-kafka@sha256:24cdd3a7 reali creati (docker events); inventario container/volumi/reti identico prima/dopo; 0 restart/OOM"
+      },
+      {
+        "command": "probe avversariale del verifier: destroy() con perdita di --volumes, poi retry di destroy()",
+        "exit_code": 0,
+        "summary": "primo destroy solleva 'owned resources remain after teardown' (corretto); il retry ritorna successo mentre il volume anonimo posseduto resta: vedi VF-001; volumi del probe rimossi"
+      },
+      {
+        "command": "python -m pytest --collect-only -q ocor-runtime/tests/",
+        "exit_code": 0,
+        "summary": "1806 test raccolti"
+      },
+      {
+        "command": "python -m pytest -v -ra ocor-runtime/tests/ (tentativo 1, PATH host)",
+        "exit_code": 1,
+        "summary": "1798 passed, 8 failed tutti in test_ocor_dev_0007 per node v24.21.0 dell'host invece di v20.20.2 pinned: errore d'ambiente del verifier, non del prodotto; tentativo conservato come diagnostico; stack poi azzerato e ricreato"
+      },
+      {
+        "command": "reset + bootstrap + init + fixtures + register + verify_external_services; python -m pytest -v -ra ocor-runtime/tests/ (tentativo 2, toolchain del lock: node 20.20.2 sha 62954886..., docker 29.7.2 sha e4538110...)",
+        "exit_code": 0,
+        "summary": "1806 passed, 0 failed, 0 skipped, 690 s (< 75 min); insieme eseguito = --collect-only (1806, nessun mancante/duplicato); test_ocor_dev_0048.py 196 PASSED, 0 skip (controllo compensativo CI-0048); watchdog: 0 restart, 0 OOM, nessun servizio uscito; inventario container/volumi/reti identico prima/dopo (zero residuo cp-kafka, prima 18 per suite)"
+      },
+      {
+        "command": "python scripts/reset_test_environment.py --execute (teardown finale); git worktree remove --force",
+        "exit_code": 0,
+        "summary": "stack rimosso; inventario Docker identico a quello iniziale (container, volumi, reti); container storici preesistenti preservati; .ocor generato eliminato"
+      }
+    ],
+    "created_at": "2026-10-11T17:48:38Z",
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "_cleanup_resources ricava i volumi anonimi solo da 'docker inspect' dei container ancora esistenti. Se un primo destroy() rimuove il container ma non il suo volume anonimo (riprodotto avvolgendo _run per omettere --volumes; in Docker lo stesso stato nasce da 'docker rm -v' che rimuove il container e poi fallisce sulla rimozione del volume), il primo destroy() solleva correttamente 'owned resources remain after teardown', ma il retry di destroy() trova container e volume nominato gia' assenti, ha anonymous=set() e RITORNA SUCCESSO mentre il volume anonimo /etc/kafka/secrets posseduto resta. Probe del verifier sul backend reale cp-kafka:7.6.0@sha256:24cdd3a7, entrambe le varianti: spike -> 'FIRST raised: KafkaSpikeError owned resources remain after teardown / RETRY: returned success / ANON_REMAINING_AFTER_RETRY [1b1bac9a...]'; backbone -> idem con [dc97f088...]. Il test test_residual_anonymous_mount_is_detected_even_after_command_success si ferma al primo raise e non esercita il retry; il docstring dichiara 'missing resources allow bounded retry'. Non bloccante: nessun chiamante attuale (fixture di 0019/0040/0041, test REM-0022) esegue un retry dopo un fallimento, le suite reali rieseguite non lasciano residui e tutti i criteri di accettazione testati risultano soddisfatti.",
+        "id": "VF-001",
+        "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+        "required_fix": "Rendere il retry fail-closed anche dopo la perdita del container: conservare i nomi dei volumi anonimi osservati (es. nell'istanza o nell'eccezione) oppure dichiarare in provision il mount /etc/kafka/secrets come volume etichettato con l'owner label, cosi' che _cleanup_resources possa enumerarlo e rimuoverlo per etichetta; aggiungere al test residual-anonymous il retry con asserzione che il volume anonimo sia rimosso o che il retry fallisca.",
+        "severity": "medium"
+      }
+    ],
+    "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+    "integration_condition": "Il verdetto qualifica il candidato esatto a54ebb5; successivi commit ammessi soltanto per sigillo/manifest e sincronizzazione dei tre file di stato. Merge subordinato ai 13 required check verdi sul commit finale esatto.",
+    "not_executed": [],
+    "request_id": "OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review",
+    "sealed": true,
+    "status": "SEALED",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_file_sha256": "f640f8a48bd5ac2e668841c5f27c6fff530ea9486082680383115484408fc22a",
+    "verdict_head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+    "verdict_request_id": "OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verification_scope": "REM-0022 lifecycle Kafka e riqualifiche 0019/0040; 0050 affidato al distinto verdict Cursor.",
+    "verifier": {
+      "independence_limits": "Processo e contesto separati; fornitore di modello diverso dall'implementatore (Codex/OpenAI, unico implementatore di REM-0022 e delle riqualifiche 0019/0040): implementatore e verifier NON sono lo stesso modello. Ambito primario: REM-0022, 0019, 0040. La riqualifica 0050 resta soggetta alla seconda review Cursor/Grok 4.7 richiesta dalla seal barrier; qui e' stata solo rieseguita come parte della suite completa (198 casi PASS), senza sostituire quel verdetto. Non ho modificato ne' sovrascritto il verdetto precedente OCOR-DEV-REM-0022-a54ebb56955b-0.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code (Anthropic), sessione non interattiva separata, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review"
+    },
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati; fornitore di modello diverso dall'implementatore (Codex/OpenAI, unico implementatore di REM-0022 e delle riqualifiche 0019/0040): implementatore e verifier NON sono lo stesso modello. Ambito primario: REM-0022, 0019, 0040. La riqualifica 0050 resta soggetta alla seconda review Cursor/Grok 4.7 richiesta dalla seal barrier; qui e' stata solo rieseguita come parte della suite completa (198 casi PASS), senza sostituire quel verdetto. Non ho modificato ne' sovrascritto il verdetto precedente OCOR-DEV-REM-0022-a54ebb56955b-0.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code (Anthropic), sessione non interattiva separata, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -680,15 +828,30 @@
       ]
     }
   ],
+  "residual_findings": [
+    {
+      "blocking": false,
+      "evidence": "_cleanup_resources ricava i volumi anonimi solo da 'docker inspect' dei container ancora esistenti. Se un primo destroy() rimuove il container ma non il suo volume anonimo (riprodotto avvolgendo _run per omettere --volumes; in Docker lo stesso stato nasce da 'docker rm -v' che rimuove il container e poi fallisce sulla rimozione del volume), il primo destroy() solleva correttamente 'owned resources remain after teardown', ma il retry di destroy() trova container e volume nominato gia' assenti, ha anonymous=set() e RITORNA SUCCESSO mentre il volume anonimo /etc/kafka/secrets posseduto resta. Probe del verifier sul backend reale cp-kafka:7.6.0@sha256:24cdd3a7, entrambe le varianti: spike -> 'FIRST raised: KafkaSpikeError owned resources remain after teardown / RETRY: returned success / ANON_REMAINING_AFTER_RETRY [1b1bac9a...]'; backbone -> idem con [dc97f088...]. Il test test_residual_anonymous_mount_is_detected_even_after_command_success si ferma al primo raise e non esercita il retry; il docstring dichiara 'missing resources allow bounded retry'. Non bloccante: nessun chiamante attuale (fixture di 0019/0040/0041, test REM-0022) esegue un retry dopo un fallimento, le suite reali rieseguite non lasciano residui e tutti i criteri di accettazione testati risultano soddisfatti.",
+      "id": "VF-001",
+      "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+      "required_fix": "Rendere il retry fail-closed anche dopo la perdita del container: conservare i nomi dei volumi anonimi osservati (es. nell'istanza o nell'eccezione) oppure dichiarare in provision il mount /etc/kafka/secrets come volume etichettato con l'owner label, cosi' che _cleanup_resources possa enumerarlo e rimuoverlo per etichetta; aggiungere al test residual-anonymous il retry con asserzione che il volume anonimo sia rimosso o che il retry fallisca.",
+      "severity": "medium",
+      "source_request_id": "OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review",
+      "status": "OPEN_NONBLOCKING"
+    }
+  ],
   "result": "PASS",
   "roles": {
     "historical_0050_implementers": "Claude Code (Anthropic), reserve implementer; Codex repair cycles 1-2",
     "historical_0050_verifier": "Grok 4.7 (Cursor CLI)",
     "implementer": "Codex (OpenAI), REM-0022 code/tests and fresh requalifications",
-    "verifier": "Claude Code (Anthropic), separate provider/process/context; not yet requested"
+    "integration_agent": "Codex (OpenAI)",
+    "verifier": "claude-opus-5-5; Claude Code (Anthropic), sessione non interattiva separata, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review"
   },
   "rollback": "New revert of the change-set commits; no data migration or event semantics change. Preserve sealed historical records. Hygiene-dependent tasks remain blocked if reverted.",
   "schema_version": "1.0",
+  "sealed_at": "2026-10-11T21:04:49.829060+00:00",
+  "status": "SEALED",
   "superseded_record": {
     "path": "reports/evidence/G2/OCOR-DEV-0019.requalified.json",
     "sha256": "a04c54f6629c16f193f9e099d4f85f481ecfce25a316c1c1ca2b8de90e5608f9"

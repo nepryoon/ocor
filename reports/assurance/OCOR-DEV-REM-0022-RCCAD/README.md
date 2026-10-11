@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0022 — Lifecycle e teardown Kafka
 
-Status: `CANDIDATE_PENDING_INDEPENDENT_VERIFICATION`. Nessun sigillo o chiusura. Il primo FAIL del gate di piano resta diagnostico; disposition risolta entro il mandato corrente §7, PR #214 chiusa senza merge. Gate e riqualifica finali richiesti prima della verifica.
+Status: `SEALED_PENDING_EXACT_GREEN_CI`. Candidato verificato `a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8`: GO Claude Code per REM-0022/0019/0040; GO Grok 4.7 via Cursor per la sola regressione 0050 autorizzata dal PO. Il finding sul retry del teardown resta `OPEN_NONBLOCKING`; il difetto preesistente di audit admission resta aperto in REM-0023. Nessun nuovo ciclo di riparazione. Il primo FAIL del gate di piano e i verdict precedenti restano storici.
 
 La suite completa di REM-0019 aveva lasciato quattro volumi anonimi attribuiti a
 `KafkaCli`, oltre a quattordici volumi senza prova sufficiente di ownership. La
@@ -51,5 +51,5 @@ sono obbligatori prima di sigillare o aprire la PR; nessun verifier è lanciato 
 Rollback: nuova revert del change set; nessuna migrazione dei dati, variazione di
 API o decisione normativa. Una revert mantiene bloccata la qualifica dipendente
 dall'igiene dello stack. Dopo chiusura verificata: REM-0019 ciclo 1, REM-0017,
-integrazione di 0049 e ripresa del WIP 0056. `E1=0`, `E2=0`, zero `Verified`,
+integrazione di 0049, REM-0023 e ripresa del WIP 0056. `E1=0`, `E2=0`, zero `Verified`,
 conformance `NOT_ESTABLISHED`, PoC/Production `NO-GO`; `inputs/` immutabile.
