@@ -1,6 +1,8 @@
 # REM-0022 — CI evidence supersession, repair 1
 
-Candidato distinto, non sigillato. I sorgenti Kafka e i 22 casi del task sono identici
+Status: `SEALED_PENDING_EXACT_GREEN_CI`. Due GO sul candidato esatto `a9d2ffe6f14799a678f935bd2eb939438bd0fae5`: Claude Code per REM-0022/0019/0040 e Grok 4.7 via Cursor per la sola regressione 0050. I sigilli includono identita/configurazione effettive, scope, finding e SHA256 del verdetto verbatim conservato dal loop. Nessuna suite nuova in questa unita di integrazione.
+
+Candidato distinto, sigillato. I sorgenti Kafka e i 22 casi del task sono identici
 al candidato verificato `a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8`. I quattro record
 sigillati del branch storico `e8449a91e7f1bb918905d81992db81e447e36e8a` restano
 immutabili; ogni nuovo record li collega tramite `supersedes` e commit/path/SHA256.
@@ -12,6 +14,7 @@ parametro, caso, asserzione, scanner o gate è rinominato, escluso o indebolito.
 Collection e JUnit devono coincidere esattamente, senza skip/failure/error.
 
 ```bash
+# Eseguire il checker nel worktree detached sul candidato non sigillato a9d2ffe6f147
 python reports/tests/check_rem0022_ci_evidence.py .
 python -m pytest -q reports/tests/test_rem0022_case_identity.py
 ```

@@ -12991,9 +12991,65 @@
     "raw_sha256": "929e2cec72ae2c28bb706ceff154e485072259a391999b1c5f4c541433ff806e",
     "watchdog_error": null
   },
+  "historical_seal_retrieval": {
+    "command": "git fetch origin refs/heads/governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+    "commit": "e8449a91e7f1bb918905d81992db81e447e36e8a",
+    "remote_ref": "refs/heads/governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+    "retention": "Keep remote ref; PR220 remains open until permanent reachability established. Low finding preserved OPEN_NONBLOCKING."
+  },
   "independent_verification": {
-    "sealed": false,
-    "status": "PENDING"
+    "created_at": "2026-10-11T23:41:59Z",
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "spikes/kafka_delivery/oracle.py:193 e ocor-runtime/src/ocor_runtime/c5/backbone.py:259 accumulano i volumi anonimi solo dai container ancora presenti in docker container ls. I blob HEAD di oracle.py, backbone.py e test_ocor_dev_rem_0022.py sono identici a a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 e a e8449a91e7f1bb918905d81992db81e447e36e8a. Le suite di questa review non hanno lasciato volumi. Finding primario del verdetto OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, sullo stesso HEAD.",
+        "id": "VF-001",
+        "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+        "required_fix": "Fuori dallo scope di questa regressione: remediation separata che registri i volumi anonimi alla creazione, o li rilevi per etichetta di proprieta, cosi che il retry di destroy resti fail-closed.",
+        "severity": "medium"
+      },
+      {
+        "blocking": false,
+        "evidence": "git merge-base --is-ancestor e8449a91e7f1bb918905d81992db81e447e36e8a a9d2ffe6f14799a678f935bd2eb939438bd0fae5 e falso. Il commit e HEAD di origin/governed/ocor-dev-rem-0022-kafka-resource-lifecycle. gh pr view 220: state OPEN, headRefOid e8449a91e7f1bb918905d81992db81e447e36e8a. La ref non e stata chiusa ne eliminata.",
+        "id": "VF-002",
+        "path": "reports/tests/check_rem0022_ci_evidence.py:71",
+        "required_fix": "Prima di chiudere PR #220 conservare e8449a91 raggiungibile con un tag o una ref protetta, oppure documentare la ref da cui recuperarlo.",
+        "severity": "low"
+      },
+      {
+        "blocking": false,
+        "evidence": "git diff della base verso HEAD non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit a model.py:1227 rilancia MemoryAdmissionError prima di _admit; audit_event e costruito solo a model.py:1321 e ledger.append solo a model.py:1352, sul percorso di successo. Stesso difetto gia aperto come residual del record 0050 e come OCOR-DEV-REM-0023. I 198 test sono invariati e verdi.",
+        "id": "VF-003",
+        "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1227",
+        "required_fix": "Resta a OCOR-DEV-REM-0023, dopo REM-0019 e REM-0017 e prima della ripresa di 0056: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce.",
+        "severity": "medium"
+      }
+    ],
+    "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+    "integration_condition": "GO riferito al candidato esatto a9d2ffe6f147; commit successivi limitati a sigillo/manifest/assurance e tre file di stato. Merge solo con tutti i 13 required SUCCESS sul commit finale esatto.",
+    "not_executed": [],
+    "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression.json",
+    "request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
+    "sealed": true,
+    "sha256": "97fac54caa6ec545feb0ddd133f644fa7fa31e2613a0e945d0e5867e3acfe6f5",
+    "status": "SEALED",
+    "verbatim_verdict_preserved": true,
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_file_sha256": "97fac54caa6ec545feb0ddd133f644fa7fa31e2613a0e945d0e5867e3acfe6f5",
+    "verdict_head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+    "verdict_request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verification_scope": "SOLA REGRESSIONE dei 198 test 0050 invariati dopo allowlist; integrita e supersession. Nessuna rivalutazione conformance 0050.",
+    "verifier": {
+      "independence_limits": "Processo e contesto separati. Implementatore della riqualifica REM-0022: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor. Non sono lo stesso modello. Implementatore originale di OCOR-DEV-0050: Claude Code. Il GO primario Claude OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, copre solo REM-0022/0019/0040 sullo stesso HEAD ed e stato controllato per hash, non riusato come prova dei 198 test. Ambito: sola regressione dei test invariati e dell'integrita di supersession, raw, hash e input. La conformance di 0050 non e stata rivalutata; il difetto di denial audit resta aperto in REM-0023.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression/wt"
+    },
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore della riqualifica REM-0022: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor. Non sono lo stesso modello. Implementatore originale di OCOR-DEV-0050: Claude Code. Il GO primario Claude OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, copre solo REM-0022/0019/0040 sullo stesso HEAD ed e stato controllato per hash, non riusato come prova dei 198 test. Ambito: sola regressione dei test invariati e dell'integrita di supersession, raw, hash e input. La conformance di 0050 non e stata rivalutata; il difetto di denial audit resta aperto in REM-0023.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression/wt"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -13753,12 +13809,32 @@
   "residual_findings": [
     {
       "blocking": false,
-      "evidence": "git diff 63184cb250c5b385b06c98c69a227937b8ae8fb4..a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit (model.py:1209) rilancia MemoryAdmissionError senza costruire audit_event (model.py:1321) e prima di ledger.append (model.py:1352). Il record sigillato precedente e questo hanno gli stessi 198 casi e gli stessi requirement_id. Disposition PO REM-0022-0050-ROLE-REVIEW-DISPOSITION: difetto preesistente, fuori dallo scope di regressione, tracciato in OCOR-DEV-REM-0023, non risolto.",
+      "evidence": "spikes/kafka_delivery/oracle.py:193 e ocor-runtime/src/ocor_runtime/c5/backbone.py:259 accumulano i volumi anonimi solo dai container ancora presenti in docker container ls. I blob HEAD di oracle.py, backbone.py e test_ocor_dev_rem_0022.py sono identici a a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 e a e8449a91e7f1bb918905d81992db81e447e36e8a. Le suite di questa review non hanno lasciato volumi. Finding primario del verdetto OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, sullo stesso HEAD.",
       "id": "VF-001",
-      "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1209",
-      "required_fix": "Rimane a OCOR-DEV-REM-0023: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce. Non appartiene al sigillo di regressione di REM-0022.",
+      "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+      "required_fix": "Fuori dallo scope di questa regressione: remediation separata che registri i volumi anonimi alla creazione, o li rilevi per etichetta di proprieta, cosi che il retry di destroy resti fail-closed.",
       "severity": "medium",
-      "source_request_id": "OCOR-DEV-0050-a54ebb56955b-0-rem0022-regression-po-disposition",
+      "source_request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
+      "status": "OPEN_NONBLOCKING"
+    },
+    {
+      "blocking": false,
+      "evidence": "git merge-base --is-ancestor e8449a91e7f1bb918905d81992db81e447e36e8a a9d2ffe6f14799a678f935bd2eb939438bd0fae5 e falso. Il commit e HEAD di origin/governed/ocor-dev-rem-0022-kafka-resource-lifecycle. gh pr view 220: state OPEN, headRefOid e8449a91e7f1bb918905d81992db81e447e36e8a. La ref non e stata chiusa ne eliminata.",
+      "id": "VF-002",
+      "path": "reports/tests/check_rem0022_ci_evidence.py:71",
+      "required_fix": "Prima di chiudere PR #220 conservare e8449a91 raggiungibile con un tag o una ref protetta, oppure documentare la ref da cui recuperarlo.",
+      "severity": "low",
+      "source_request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
+      "status": "OPEN_NONBLOCKING"
+    },
+    {
+      "blocking": false,
+      "evidence": "git diff della base verso HEAD non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit a model.py:1227 rilancia MemoryAdmissionError prima di _admit; audit_event e costruito solo a model.py:1321 e ledger.append solo a model.py:1352, sul percorso di successo. Stesso difetto gia aperto come residual del record 0050 e come OCOR-DEV-REM-0023. I 198 test sono invariati e verdi.",
+      "id": "VF-003",
+      "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1227",
+      "required_fix": "Resta a OCOR-DEV-REM-0023, dopo REM-0019 e REM-0017 e prima della ripresa di 0056: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce.",
+      "severity": "medium",
+      "source_request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
       "status": "OPEN_NONBLOCKING"
     }
   ],
@@ -13767,11 +13843,14 @@
   "roles": {
     "0050_regression_verifier": "Grok 4.7 via Cursor, separate third provider/process/context; original 0050 reserve implementer Claude Code, repairs 1-2 Codex",
     "implementer": "Codex (OpenAI): REM-0022 and fresh requalifications",
-    "primary_verifier": "Claude Code (Anthropic), separate provider/process/context, REM-0022/0019/0040 only"
+    "integration_agent": "Codex (OpenAI)",
+    "primary_verifier": "Claude Code (Anthropic), separate provider/process/context, REM-0022/0019/0040 only",
+    "verifier": "Grok 4.7; Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression/wt"
   },
   "rollback": "New revert of this change set; preserve sealed history and all unrelated evidence; no event/API semantic change.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-11T23:46:56.116528+00:00",
+  "status": "SEALED",
   "superseded_record": {
     "commit": "e8449a91e7f1bb918905d81992db81e447e36e8a",
     "disposition": "Metadata candidate superseded only; historical GO/sigillo unchanged. No claim promotion.",

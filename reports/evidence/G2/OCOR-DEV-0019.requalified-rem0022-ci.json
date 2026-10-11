@@ -12991,9 +12991,57 @@
     "raw_sha256": "929e2cec72ae2c28bb706ceff154e485072259a391999b1c5f4c541433ff806e",
     "watchdog_error": null
   },
+  "historical_seal_retrieval": {
+    "command": "git fetch origin refs/heads/governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+    "commit": "e8449a91e7f1bb918905d81992db81e447e36e8a",
+    "remote_ref": "refs/heads/governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+    "retention": "Keep remote ref; PR220 remains open until permanent reachability established. Low finding preserved OPEN_NONBLOCKING."
+  },
   "independent_verification": {
-    "sealed": false,
-    "status": "PENDING"
+    "created_at": "2026-10-11T22:48:00Z",
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "Finding preesistente preservato come OPEN_NONBLOCKING (residual_findings del record). Il codice \u00e8 byte-identico al candidato a54ebb5 dove il retry \u00e8 stato riprodotto: _cleanup_resources ricava i volumi anonimi solo dai container ancora esistenti, quindi un retry di destroy() dopo un primo teardown che ha rimosso il container ma non il suo volume anonimo restituisce successo lasciando il volume. Nessun chiamante attuale esegue il retry; le suite rieseguite qui non lasciano residui.",
+        "id": "VF-001",
+        "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+        "required_fix": "Fuori dallo scope di questa supersession di metadati: remediation separata che registri/etichetti i volumi anonimi alla creazione (o li rilevi tramite label di propriet\u00e0) affinch\u00e9 il retry resti fail-closed.",
+        "severity": "medium"
+      },
+      {
+        "blocking": false,
+        "evidence": "git merge-base --is-ancestor e8449a9 355490e e a9d2ffe6 -> falso: il commit sigillato superseduto \u00e8 raggiungibile solo dal branch governed/ocor-dev-rem-0022-kafka-resource-lifecycle (PR #220 aperta, non unita). Dopo il merge su main, se la PR viene chiusa e il branch eliminato, la riproduzione del check (e la verifica dell'hash del record superseduto) fallirebbe in un clone ordinario.",
+        "id": "VF-002",
+        "path": "reports/tests/check_rem0022_ci_evidence.py:79 (git_blob(superseded['commit'], ...)); superseded_record.commit e8449a91e7f1bb918905d81992db81e447e36e8a nei quattro record",
+        "required_fix": "Prima di chiudere PR #220 conservare e8449a9 raggiungibile (tag o ref protetto) oppure documentare la ref da cui recuperarlo; non bloccante per il sigillo.",
+        "severity": "low"
+      }
+    ],
+    "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+    "integration_condition": "GO riferito al candidato esatto a9d2ffe6f147; commit successivi limitati a sigillo/manifest/assurance e tre file di stato. Merge solo con tutti i 13 required SUCCESS sul commit finale esatto.",
+    "not_executed": [],
+    "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0022-a9d2ffe6f147-1.json",
+    "request_id": "OCOR-DEV-REM-0022-a9d2ffe6f147-1",
+    "sealed": true,
+    "sha256": "14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53",
+    "status": "SEALED",
+    "verbatim_verdict_preserved": true,
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_file_sha256": "14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53",
+    "verdict_head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+    "verdict_request_id": "OCOR-DEV-REM-0022-a9d2ffe6f147-1",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verification_scope": "REM-0022 e riqualifiche 0019/0040; regressione 0050 affidata al distinto GO Cursor sullo stesso HEAD.",
+    "verifier": {
+      "independence_limits": "Processo e contesto separati dall'implementatore. Implementatore Codex (OpenAI), verifier Claude Code (Anthropic): modelli e fornitori diversi. Lo stesso fornitore (Claude) ha emesso le verifiche storiche REM-0022 su a54ebb5; quel GO non \u00e8 stato usato come prova, tutto \u00e8 stato rieseguito su questo HEAD. Questo GO primario copre REM-0022/OCOR-DEV-0019/OCOR-DEV-0040; la review di sola regressione di OCOR-DEV-0050 (Cursor/Grok) resta obbligatoria e separata. Fuori scope e non dichiarati come superati: run CI GitHub sull'HEAD (resta condizione di merge) e review Cursor di regressione 0050.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code (Anthropic), sessione non interattiva separata, contesto pulito"
+    },
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati dall'implementatore. Implementatore Codex (OpenAI), verifier Claude Code (Anthropic): modelli e fornitori diversi. Lo stesso fornitore (Claude) ha emesso le verifiche storiche REM-0022 su a54ebb5; quel GO non \u00e8 stato usato come prova, tutto \u00e8 stato rieseguito su questo HEAD. Questo GO primario copre REM-0022/OCOR-DEV-0019/OCOR-DEV-0040; la review di sola regressione di OCOR-DEV-0050 (Cursor/Grok) resta obbligatoria e separata. Fuori scope e non dichiarati come superati: run CI GitHub sull'HEAD (resta condizione di merge) e review Cursor di regressione 0050.",
+      "model": "claude-opus-5-5",
+      "process": "Claude Code (Anthropic), sessione non interattiva separata, contesto pulito"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -13083,12 +13131,22 @@
   "residual_findings": [
     {
       "blocking": false,
-      "evidence": "_cleanup_resources ricava i volumi anonimi solo da 'docker inspect' dei container ancora esistenti. Se un primo destroy() rimuove il container ma non il suo volume anonimo (riprodotto avvolgendo _run per omettere --volumes; in Docker lo stesso stato nasce da 'docker rm -v' che rimuove il container e poi fallisce sulla rimozione del volume), il primo destroy() solleva correttamente 'owned resources remain after teardown', ma il retry di destroy() trova container e volume nominato gia' assenti, ha anonymous=set() e RITORNA SUCCESSO mentre il volume anonimo /etc/kafka/secrets posseduto resta. Probe del verifier sul backend reale cp-kafka:7.6.0@sha256:24cdd3a7, entrambe le varianti: spike -> 'FIRST raised: KafkaSpikeError owned resources remain after teardown / RETRY: returned success / ANON_REMAINING_AFTER_RETRY [1b1bac9a...]'; backbone -> idem con [dc97f088...]. Il test test_residual_anonymous_mount_is_detected_even_after_command_success si ferma al primo raise e non esercita il retry; il docstring dichiara 'missing resources allow bounded retry'. Non bloccante: nessun chiamante attuale (fixture di 0019/0040/0041, test REM-0022) esegue un retry dopo un fallimento, le suite reali rieseguite non lasciano residui e tutti i criteri di accettazione testati risultano soddisfatti.",
+      "evidence": "Finding preesistente preservato come OPEN_NONBLOCKING (residual_findings del record). Il codice \u00e8 byte-identico al candidato a54ebb5 dove il retry \u00e8 stato riprodotto: _cleanup_resources ricava i volumi anonimi solo dai container ancora esistenti, quindi un retry di destroy() dopo un primo teardown che ha rimosso il container ma non il suo volume anonimo restituisce successo lasciando il volume. Nessun chiamante attuale esegue il retry; le suite rieseguite qui non lasciano residui.",
       "id": "VF-001",
       "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
-      "required_fix": "Rendere il retry fail-closed anche dopo la perdita del container: conservare i nomi dei volumi anonimi osservati (es. nell'istanza o nell'eccezione) oppure dichiarare in provision il mount /etc/kafka/secrets come volume etichettato con l'owner label, cosi' che _cleanup_resources possa enumerarlo e rimuoverlo per etichetta; aggiungere al test residual-anonymous il retry con asserzione che il volume anonimo sia rimosso o che il retry fallisca.",
+      "required_fix": "Fuori dallo scope di questa supersession di metadati: remediation separata che registri/etichetti i volumi anonimi alla creazione (o li rilevi tramite label di propriet\u00e0) affinch\u00e9 il retry resti fail-closed.",
       "severity": "medium",
-      "source_request_id": "OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review",
+      "source_request_id": "OCOR-DEV-REM-0022-a9d2ffe6f147-1",
+      "status": "OPEN_NONBLOCKING"
+    },
+    {
+      "blocking": false,
+      "evidence": "git merge-base --is-ancestor e8449a9 355490e e a9d2ffe6 -> falso: il commit sigillato superseduto \u00e8 raggiungibile solo dal branch governed/ocor-dev-rem-0022-kafka-resource-lifecycle (PR #220 aperta, non unita). Dopo il merge su main, se la PR viene chiusa e il branch eliminato, la riproduzione del check (e la verifica dell'hash del record superseduto) fallirebbe in un clone ordinario.",
+      "id": "VF-002",
+      "path": "reports/tests/check_rem0022_ci_evidence.py:79 (git_blob(superseded['commit'], ...)); superseded_record.commit e8449a91e7f1bb918905d81992db81e447e36e8a nei quattro record",
+      "required_fix": "Prima di chiudere PR #220 conservare e8449a9 raggiungibile (tag o ref protetto) oppure documentare la ref da cui recuperarlo; non bloccante per il sigillo.",
+      "severity": "low",
+      "source_request_id": "OCOR-DEV-REM-0022-a9d2ffe6f147-1",
       "status": "OPEN_NONBLOCKING"
     }
   ],
@@ -13096,11 +13154,14 @@
   "roles": {
     "0050_regression_verifier": "Grok 4.7 via Cursor, separate third provider/process/context; original 0050 reserve implementer Claude Code, repairs 1-2 Codex",
     "implementer": "Codex (OpenAI): REM-0022 and fresh requalifications",
-    "primary_verifier": "Claude Code (Anthropic), separate provider/process/context, REM-0022/0019/0040 only"
+    "integration_agent": "Codex (OpenAI)",
+    "primary_verifier": "Claude Code (Anthropic), separate provider/process/context, REM-0022/0019/0040 only",
+    "verifier": "claude-opus-5-5; Claude Code (Anthropic), sessione non interattiva separata, contesto pulito"
   },
   "rollback": "New revert of this change set; preserve sealed history and all unrelated evidence; no event/API semantic change.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-11T23:46:56.116528+00:00",
+  "status": "SEALED",
   "superseded_record": {
     "commit": "e8449a91e7f1bb918905d81992db81e447e36e8a",
     "disposition": "Metadata candidate superseded only; historical GO/sigillo unchanged. No claim promotion.",
