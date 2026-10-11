@@ -1,16 +1,23 @@
 {
   "assumptions": [
-    "La priorit\u00e0 torna a REM-0019 perch\u00e9 0056 non usa lo stack; il suo WIP \u00e8 preservato.",
-    "Caso opzionale di ciphertext valido contenente PGDMP NOT_EXECUTED, nessun backend alterato."
+    "Current LOOP-ROLES requires Claude for Codex-only REM-0022; no authorization inferred from runner role routing.",
+    "Distinct role-review request ID suffix avoids overwriting immutable prior verdict on the same HEAD; repair_cycle remains 0.",
+    "No new test suite claimed: historical candidate/verifier results retained with their original hashes; current work validates state/preflight."
   ],
-  "base_sha": "51ed9966a538e538e67d4d1ad367793407e038e3",
-  "baseline_commit": "51ed9966a538e538e67d4d1ad367793407e038e3",
-  "branch": "governed/state-sync-rem-0019-hygiene-blocker",
+  "base_sha": "63184cb250c5b385b06c98c69a227937b8ae8fb4",
+  "baseline_commit": "63184cb250c5b385b06c98c69a227937b8ae8fb4",
+  "branch": "governed/state-sync-rem-0022-review-roles",
   "branch_evidence_paths": [
-    "reports/assurance/OCOR-DEV-REM-0019-RCCAD/marker-repair-WIP.json",
-    "reports/assurance/OCOR-DEV-REM-0019-RCCAD/marker-repair.log",
-    "reports/assurance/OCOR-DEV-REM-0019-RCCAD/assertion-map.json",
-    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-marker.json"
+    "reports/assurance/OCOR-DEV-REM-0022-RCCAD/OCOR-DEV-REM-0022.json",
+    "reports/assurance/OCOR-DEV-REM-0022-RCCAD/OCOR-DEV-REM-0022.log",
+    "reports/evidence/G2/OCOR-DEV-REM-0022.json",
+    "reports/evidence/G2/OCOR-DEV-REM-0022.log",
+    "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022.json",
+    "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022.log",
+    "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022.json",
+    "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022.log",
+    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022.json",
+    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022.log"
   ],
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -18,8 +25,11 @@
     "reports/development/ITERATION_LOG.md"
   ],
   "ci": {
-    "rem_0017_status": "NOT_QUALIFIED_AWAITING_REM_0019",
-    "rem_0019_status": "QUALIFICATION_BLOCKED_TEST_HYGIENE",
+    "candidate_status": "NOT_REQUESTED_BEFORE_REQUIRED_REVIEWS",
+    "existing_open_prs_unchanged": [
+      169,
+      176
+    ],
     "state_sync_status": "CI_REQUIRED_BEFORE_EXACT_HEAD_MERGE"
   },
   "claims": {
@@ -32,13 +42,127 @@
   "commands_run": [
     {
       "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
+        "scripts/bootstrap_development_environment.py",
+        "--execute",
+        "--timeout",
+        "600"
+      ],
+      "duration_seconds": 36.597,
+      "exit_code": 0,
+      "label": "bootstrap",
+      "raw_sha256": "db96466d288ae7f9c4ee6c8754cfb70755476b50ccbaa6ccbeba1be4d002c0b1"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
+        "deploy/bootstrap/init/initialize_services.py",
+        "--env-file",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem-0022-review-roles/.ocor/bootstrap.env"
+      ],
+      "duration_seconds": 1.522,
+      "exit_code": 0,
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
+        "deploy/bootstrap/fixtures/load_fixtures.py",
+        "--env-file",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem-0022-review-roles/.ocor/bootstrap.env"
+      ],
+      "duration_seconds": 0.145,
+      "exit_code": 0,
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
+        "/home/luca/.ocor-codex/rem-0022/register_control_plane.py"
+      ],
+      "duration_seconds": 3.28,
+      "exit_code": 0,
+      "label": "svid",
+      "raw_sha256": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
+        "scripts/verify_external_services.py",
+        "--execute",
+        "--typed"
+      ],
+      "duration_seconds": 2.733,
+      "exit_code": 0,
+      "label": "typed-health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
+        "scripts/reset_test_environment.py",
+        "--execute"
+      ],
+      "duration_seconds": 1.461,
+      "exit_code": 0,
+      "label": "teardown",
+      "raw_sha256": "2c31b728c8482096ebb8f4107262ebcb467e6552238301de6faa59b55494c1f5"
+    }
+  ],
+  "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
+  "current_task": "Reconcile observed supplemental Cursor verdict and request mandated primary Claude review, same unchanged candidate",
+  "evidence_paths": [],
+  "evidence_paths_definition": "Candidate evidence remains exclusively on the immutable source branch; hashes and exact commit in source_reference, no candidate copied or sealed in state sync",
+  "exact_next_action": "OCOR-DEV-REM-0022:verification \u2014 external loop executes OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review with Claude Code on unchanged candidate a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8. Previous Cursor/Grok GO remains supplemental, immutable, not the required primary role. No seal or implementation PR. After Claude GO, request separate Cursor/Grok final review of OCOR-DEV-0050.requalified-rem0022 on the same HEAD; both exact-head GO verdicts required before sealing, exact-green CI merge and immediate state sync. With NO_GO apply ordinary REM-0022 budget. After verified closure resume REM-0019 repair_cycle 1 with fresh full regression, then REM-0017, 0049 integration and preserved 0056 WIP. No claim promotion.",
+  "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+  "head_sha_resolver": "Source candidate HEAD; state-sync HEAD resolved using git, no candidate mutation",
+  "independent_verification": {
+    "additional_required": {
+      "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+      "identity": "Grok 4.7 (Cursor CLI), independent provider/process/context",
+      "reason": "0050 touched by reserve Claude Code implementer",
+      "status": "NOT_REQUESTED",
+      "task_id": "OCOR-DEV-0050",
+      "verifier": "cursor"
+    },
+    "no_cycle_consumed_by_role_review": true,
+    "primary": {
+      "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+      "identity": "Claude Code (Anthropic), independent provider/process/context",
+      "request_id": "OCOR-DEV-REM-0022-a54ebb56955b-0-claude-role-review",
+      "status": "REQUEST_STAGED_FOR_EXTERNAL_LOOP",
+      "verifier": "claude"
+    },
+    "repair_cycle": 0,
+    "seal_barrier": "Require primary Claude GO for REM-0022/0019/0040 plus separate Cursor GO for final 0050 requalification, both on unchanged a54ebb56955b before sealing or implementation PR",
+    "status": "PENDING_REQUIRED_CLAUDE_AND_CURSOR_0050_REVIEWS",
+    "supplemental_review": {
+      "disposition": "SUPPLEMENTAL_ONLY_ROLE_MISMATCH: actual Cursor/Grok is not required primary Claude for Codex-only REM-0022; 0050 final verdict explicitly excluded",
+      "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+      "identity": {
+        "independence_limits": "Implementatore di REM-0022 e delle riqualificazioni correnti: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor CLI, fornitore, processo e contesto diversi; non e lo stesso modello. La riqualificazione finale di OCOR-DEV-0050 resta un riesame distinto sullo stesso HEAD; questa sessione ha rieseguito la suite che include quei test.",
+        "model": "Grok 4.7",
+        "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+      },
+      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0022-a54ebb56955b-0.json",
+      "request_id": "OCOR-DEV-REM-0022-a54ebb56955b-0",
+      "sha256": "bd74c2887cd198f4def6aca2762528af47263445c50bd12a3c5f7184a5d2ced4",
+      "verdict": "GO_FOR_EVIDENCE_SEAL"
+    }
+  },
+  "local_gate_results": [
+    {
+      "command": [
         "sha256sum",
         "-c",
         "inputs/normative/SHA256SUMS"
       ],
+      "duration_seconds": 0.004,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-inputs.log",
-      "name": "inputs"
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
     },
     {
       "command": [
@@ -46,78 +170,85 @@
         "check",
         "."
       ],
+      "duration_seconds": 0.033,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-ruff.log",
-      "name": "ruff"
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "-m",
         "mypy",
         "--strict"
       ],
+      "duration_seconds": 3.02,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-mypy.log",
-      "name": "mypy"
+      "label": "mypy",
+      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "scripts/validate_rccad.py",
         "--base-ref",
-        "51ed9966a538e538e67d4d1ad367793407e038e3"
+        "63184cb250c5b385b06c98c69a227937b8ae8fb4"
       ],
+      "duration_seconds": 0.265,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-rccad.log",
-      "name": "rccad"
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "scripts/validate_ocor_change_scope.py",
         "--base",
-        "51ed9966a538e538e67d4d1ad367793407e038e3",
+        "63184cb250c5b385b06c98c69a227937b8ae8fb4",
         "--branch",
-        "governed/state-sync-rem-0019-hygiene-blocker"
+        "governed/state-sync-rem-0022-review-roles"
       ],
+      "duration_seconds": 0.064,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-scope.log",
-      "name": "scope"
+      "label": "scope",
+      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "scripts/validate_ocor_development_plan.py",
         "--authorized-extension",
         "--base-ref",
-        "51ed9966a538e538e67d4d1ad367793407e038e3"
+        "63184cb250c5b385b06c98c69a227937b8ae8fb4"
       ],
+      "duration_seconds": 0.114,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-plan.log",
-      "name": "plan"
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "scripts/validate_language_policy.py"
       ],
+      "duration_seconds": 0.032,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-language.log",
-      "name": "language"
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "scripts/validate_evidence_input_drift.py"
       ],
+      "duration_seconds": 0.064,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-drift.log",
-      "name": "drift"
+      "label": "drift",
+      "raw_sha256": "c6d0b2468297ad125ad0adb76996e69f4e5f53346feb618f665b847b43a248cb"
     },
     {
       "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022/ocor-runtime/.venv/bin/python",
         "scripts/validate_runtime_evidence.py",
         "--task",
         "OCOR-DEV-0055",
@@ -125,99 +256,15 @@
         "reports/evidence/G5/MANIFEST.json",
         "--non-skipped"
       ],
+      "duration_seconds": 0.032,
       "exit_code": 0,
-      "log": "/home/luca/.ocor-codex/rem-0019-r1m/hygiene-state-gate-runtime-evidence.log",
-      "name": "runtime-evidence"
+      "label": "runtime-evidence",
+      "raw_sha256": "3399c2d629a1321f5e7b66a42d9c6d8d32c12fcddc59d9182890270802c734e5"
     }
   ],
-  "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "REM-0019: campaign complete; full-run qualification blocked by owned Kafka anonymous volumes; REM-0022 registered",
-  "evidence_paths": [],
-  "evidence_paths_definition": "No candidate evidence was copied into this state-sync checkout; every WIP artifact is referenced by source_reference.artifacts with branch, exact SHA and content digest.",
-  "exact_next_action": "OCOR-DEV-REM-0022:implementation: new governed/ branch from origin/main in an isolated worktree; read versioned scope, demonstrate real pinned Kafka anonymous-volume leak RED in both lifecycle helpers with mount provenance, correct owned-resource lifecycle and qualify/requalify OCOR-DEV-0019 and OCOR-DEV-0040 with new superseding evidence, then request Claude Code verification. After verified closure resume REM-0019 repair_cycle 1 with fresh full regression and exact-head evidence, verifier Cursor/Grok; then REM-0017, integration 0049 and preserved 0056 WIP. No independent request on the hygiene-failed run.",
-  "head_sha": "60c859a8c61c541f7bce89ab0b5d6a4e27c62ab1",
-  "head_sha_resolver": "source_reference.head_sha identifies WIP source; state-sync HEAD resolved by git at verification",
-  "independent_verification": {
-    "identity": "Grok 4.7 (Cursor CLI), independent provider/process/context",
-    "status": "NOT_REQUESTED",
-    "verifier": "cursor"
-  },
-  "local_full_suite": {
-    "counts": {
-      "errors": 0,
-      "failures": 0,
-      "skipped": 0,
-      "tests": 2174
-    },
-    "duration_seconds": 2891.2086069819925,
-    "head_sha": "60c859a8c61c541f7bce89ab0b5d6a4e27c62ab1",
-    "pytest_result": {
-      "command": [
-        "uv",
-        "run",
-        "--project",
-        "ocor-runtime",
-        "--frozen",
-        "--extra",
-        "test",
-        "--extra",
-        "lint",
-        "pytest",
-        "-v",
-        "-ra",
-        "-p",
-        "no:cacheprovider",
-        "--basetemp=/home/luca/.ocor-codex/rem-0019-r1m/bt-full",
-        "--junitxml=/home/luca/.ocor-codex/rem-0019-r1m/full.xml",
-        "ocor-runtime/tests/"
-      ],
-      "counts": {
-        "errors": 0,
-        "failures": 0,
-        "skipped": 0,
-        "tests": 2174
-      },
-      "duration_seconds": 2891.2086069819925,
-      "exit_code": 0,
-      "finished_at": "2026-10-11T14:13:29.746251+00:00",
-      "head_sha": "60c859a8c61c541f7bce89ab0b5d6a4e27c62ab1",
-      "started_at": "2026-10-11T13:25:18.537659+00:00",
-      "watchdog_error": null
-    },
-    "status": "PASS",
-    "teardown_exit_code": 0,
-    "union": {
-      "collected": 2174,
-      "duplicated": [],
-      "executed": 2174,
-      "missing": [],
-      "unexpected": []
-    }
-  },
-  "local_gate_results": {
-    "reports_regression": "48/48 PASS, zero skip; 5 documentary scripts PASS",
-    "resource_audit": "FAIL, qualification blocked",
-    "state_sync": "9/9 PASS_LOCAL_PRECHECK; required CI still pending on final HEAD"
-  },
-  "migration_rollback_result": "No production 0049 or semantic change; no sealed evidence rewritten. Owned-resource cleanup completed only for four provenance-proven volumes; original audit FAIL preserved, fourteen unknown volumes untouched.",
+  "migration_rollback_result": "State-only reconciliation. Candidate HEAD and prior verdict preserved; no sealed record or runtime modification. No repair cycle consumed.",
   "po_decisions_pending": [],
-  "requirement_ids": [
-    "BR-003",
-    "FR-156",
-    "NFR-041",
-    "NFR-042",
-    "NFR-043",
-    "NFR-065",
-    "NFR-067"
-  ],
-  "roles": [
-    "Claude Code (Anthropic), test isolation/VF-001 and inherited campaign",
-    "Codex (OpenAI), backup oracle and present qualification orchestration",
-    "Grok 4.7 (Cursor CLI), separate provider/process/context"
-  ],
-  "schema_version": "1.0",
-  "security_observability_notes": "Schema chiuso, AES-GCM autenticato, digest firmati e sorgenti fixture. Secrets fuori da Git. Nessun claim runtime/FGM promosso.",
-  "source_reference": {
+  "previous_rem0019_reference": {
     "artifacts": {
       "HANDOFF.md": {
         "path": "/home/luca/.ocor-codex/rem-0019-r1m/HANDOFF.md",
@@ -778,6 +825,188 @@
     },
     "worktree": ".ocor/worktrees/rem-0019"
   },
+  "requirement_ids": [
+    "BR-003",
+    "FR-068",
+    "FR-069",
+    "FR-070",
+    "FR-071",
+    "FR-074",
+    "FR-084",
+    "NFR-012"
+  ],
+  "roles": {
+    "0050_required_verifier": "Grok 4.7 (Cursor CLI), reserve implementer rule",
+    "actual_supplemental_verifier": "Grok 4.7 (Cursor CLI)",
+    "implementer": "Codex (OpenAI)",
+    "required_primary_verifier": "Claude Code (Anthropic)"
+  },
+  "schema_version": "1.0",
+  "security_observability_notes": "All credential material stays in ignored worktree-local env/CA; structured redacted logs; exact Docker inventory before/after preflight equal; no unrelated resources mutated",
+  "session_artifacts": {
+    "bootstrap.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/bootstrap.log",
+      "sha256": "db96466d288ae7f9c4ee6c8754cfb70755476b50ccbaa6ccbeba1be4d002c0b1"
+    },
+    "fixtures.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/fixtures.log",
+      "sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4"
+    },
+    "health.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/health.json",
+      "sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3"
+    },
+    "initialize.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/initialize.log",
+      "sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533"
+    },
+    "preflight-commands.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/preflight-commands.json",
+      "sha256": "7bcc78d98b6e05b45368341c27652c77651076c91fb3cb5cba3014d84b339526"
+    },
+    "preflight-driver-initial-java-format-diagnostic.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/preflight-driver-initial-java-format-diagnostic.log",
+      "sha256": "65b35c6e5a3708b43be2e37f0484b5e5bbe1880931a90c414f77811a81b587d6"
+    },
+    "preflight-driver.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/preflight-driver.log",
+      "sha256": "8da5dd8fa1fa18b3e1f9d22adba97c1223c91c001e9fe349deef30624cbaedf9"
+    },
+    "preflight-result.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/preflight-result.json",
+      "sha256": "5f1235e325146d71477ffc8121fb078da39bb1b020716a79075cd4128f799351"
+    },
+    "preflight.py": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/preflight.py",
+      "sha256": "78a44543af58c07f1490738f3642aa8f4fd9c8da50e22f9150760a17538cd39e"
+    },
+    "request-staged.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/request-staged.json",
+      "sha256": "16fa4ee1920081e2871b7ae9708ed3e7e712ce0ce6e4c9a6ebee04f7d5d0ecef"
+    },
+    "resource-union.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/resource-union.json",
+      "sha256": "952d8a313fbd82af448c54fca570b29eed618c21f4379d80d63c21b0306ecf32"
+    },
+    "stack-summary.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/stack-summary.json",
+      "sha256": "5a39d8c0cb2a8bc9fa4859d76972565f020a8fdfe878649409a273ee1ee58455"
+    },
+    "state-gates.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/state-gates.json",
+      "sha256": "8920574c56fb77cb5ac82f1f54278053d3e45b3c6e154c510a71c74f41b35b2f"
+    },
+    "state_gates.py": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/state_gates.py",
+      "sha256": "5d35a86eea261a57cfbfe6ff0bc3b42017f1e0195fda4864edda1c0a366dd9bd"
+    },
+    "state_update.py": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/state_update.py",
+      "sha256": "854b0986ae6da8fd37327a50bd7c56c18e0aee74972a1d25074b622e77b8dc42"
+    },
+    "svid.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/svid.log",
+      "sha256": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0"
+    },
+    "teardown.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/teardown.log",
+      "sha256": "2c31b728c8482096ebb8f4107262ebcb467e6552238301de6faa59b55494c1f5"
+    },
+    "toolchain.json": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/toolchain.json",
+      "sha256": "e3620f1057822a7592f2c7d1919adf1a775a829d452ed9a33cc9346f607cd6a6"
+    },
+    "typed-health.log": {
+      "path": "/home/luca/.ocor-codex/rem-0022-review-roles/typed-health.log",
+      "sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3"
+    }
+  },
+  "source_reference": {
+    "artifacts": {
+      "reports/assurance/OCOR-DEV-REM-0022-RCCAD/OCOR-DEV-REM-0022.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/assurance/OCOR-DEV-REM-0022-RCCAD/OCOR-DEV-REM-0022.json",
+        "sha256": "a9182ead9220623471fa9db8fa436c0c11c6f072035285d481f843d0060cfe91"
+      },
+      "reports/assurance/OCOR-DEV-REM-0022-RCCAD/OCOR-DEV-REM-0022.log": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/assurance/OCOR-DEV-REM-0022-RCCAD/OCOR-DEV-REM-0022.log",
+        "sha256": "8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946"
+      },
+      "reports/development/EXECUTION_STATE.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/development/EXECUTION_STATE.json",
+        "sha256": "e430bfc2fd6913d84b2d3d2afcd0ed00c272404e7ca21834f0be9993937d26d9"
+      },
+      "reports/development/ITERATION_LOG.md": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/development/ITERATION_LOG.md",
+        "sha256": "f10b23281f818d4c9256eafa797f6ab75af41e7f9935746e51e7693e4f2f9ce3"
+      },
+      "reports/development/MODEL_HANDOFF.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/development/MODEL_HANDOFF.json",
+        "sha256": "924725e64fa84cadbbda9151e9e3a957f22896aae76c97db1f2ed44efec315d6"
+      },
+      "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022.json",
+        "sha256": "39de742a2c06c3b623dc51d6e5159c318e21037d68dd24b4911ed6db157e2108"
+      },
+      "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022.log": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022.log",
+        "sha256": "8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946"
+      },
+      "reports/evidence/G2/OCOR-DEV-REM-0022.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G2/OCOR-DEV-REM-0022.json",
+        "sha256": "a9182ead9220623471fa9db8fa436c0c11c6f072035285d481f843d0060cfe91"
+      },
+      "reports/evidence/G2/OCOR-DEV-REM-0022.log": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G2/OCOR-DEV-REM-0022.log",
+        "sha256": "8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946"
+      },
+      "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022.json",
+        "sha256": "c2cd986317e63ea4737900411a862f0a7459149678d9f5002fb18af38d4e7e75"
+      },
+      "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022.log": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022.log",
+        "sha256": "8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946"
+      },
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022.json": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022.json",
+        "sha256": "b77a19c5c3af21f36c8099aa6af93fb734a7b24ec29647502a825b1d210fdac0"
+      },
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022.log": {
+        "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+        "commit": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+        "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022.log",
+        "sha256": "8a808334693733134416bc98fd3409432c61370a90ad3ee95038b3b14c0de946"
+      }
+    },
+    "base_sha": "63184cb250c5b385b06c98c69a227937b8ae8fb4",
+    "branch": "governed/ocor-dev-rem-0022-kafka-resource-lifecycle",
+    "head_sha": "a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8",
+    "worktree": ".ocor/worktrees/rem-0022"
+  },
   "suspended_0056_reference": {
     "artifacts": {
       "WIP-log": {
@@ -843,17 +1072,16 @@
     ],
     "worktree": ".ocor/worktrees/ocor-dev-0056"
   },
-  "task_id": "OCOR-DEV-REM-0019",
+  "task_id": "OCOR-DEV-REM-0022",
   "teardown": {
-    "original_audit_preserved": true,
-    "owned_volume_count": 4,
-    "session_cleanup_status": "PASS_SESSION_CLEANUP_ONLY",
-    "status": "FAIL_PER_TEST_TEARDOWN"
+    "before_equals_after": true,
+    "status": "PASS"
   },
   "unresolved_blockers": [
-    "REM-0022: per-test Kafka anonymous-volume lifecycle defect; 14 new unattributed volumes preserved pending ownership proof",
-    "REM-0019 and REM-0017 independent qualification/integration still pending"
+    "Required primary Claude review pending",
+    "0050 final Cursor review pending",
+    "REM-0019/REM-0017/0049 integration depend on verified REM-0022 closure"
   ],
-  "updated_at": "2026-10-11T14:17:28.633461+00:00",
-  "worktree": ".ocor/worktrees/state-sync-rem-0019-marker-candidate"
+  "updated_at": "2026-10-11T16:55:01.113429+00:00",
+  "worktree": ".ocor/worktrees/state-sync-rem-0022-review-roles"
 }
