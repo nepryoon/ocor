@@ -6,9 +6,9 @@
     "REM-0017-CI-0049-REMAINDER-CAP resolved by PO with option 2: REM-0019 executes before REM-0017 CI reruns.",
     "REM18 underlying teardown defect remains open."
   ],
-  "base_sha": "826c892e1c58a92a8da7a5dabe7b4ab8f04eb3c0",
-  "baseline_commit": "826c892e1c58a92a8da7a5dabe7b4ab8f04eb3c0",
-  "branch": "governed/state-sync-rem-0019-candidate-awaiting-verification",
+  "base_sha": "583f23dd8442fad963368ccae3ddc12fba4edd33",
+  "baseline_commit": "583f23dd8442fad963368ccae3ddc12fba4edd33",
+  "branch": "governed/state-sync-rem-0019-repair1-in-progress",
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -16,7 +16,7 @@
   ],
   "ci": {
     "rem_0017_status": "NOT_QUALIFIED_AWAITING_REM_0019",
-    "rem_0019_status": "CANDIDATE_PUSHED_NO_PR_AWAITING_VERDICT",
+    "rem_0019_status": "REPAIR1_IN_PROGRESS_NO_PR",
     "state_sync_status": "CI_REQUIRED_BEFORE_EXACT_HEAD_MERGE"
   },
   "ci_observations": {
@@ -194,19 +194,23 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0019 candidato 9099f7b6a677 in attesa di verifica indipendente (OCOR-DEV-REM-0019-9099f7b6a677-0)",
+  "current_task": "OCOR-DEV-REM-0019 ciclo di riparazione 1 in corso (campagna sul commit 63a0a93); handoff prima del limite di tempo dell iterazione",
   "evidence_paths": [],
-  "exact_next_action": "OCOR-DEV-REM-0019:integration dopo il verdetto ~/.ocor-codex/verdicts/OCOR-DEV-REM-0019-9099f7b6a677-0.json (head 9099f7b6a677cc9695dec61150340911271bde5a, verifier Cursor/Grok). Con GO_FOR_EVIDENCE_SEAL: sigillo del record REM e del record di riqualifica di 0049 (solo independent_verification, sealed_at, status e hash nel manifest G4) sul branch governed/ocor-dev-rem-0019-0049-test-isolation; il branch non si integra da solo su main (radicato su df444af): REM-0017 fissa l HEAD sigillato di REM-0019 al posto di df444af per la partizione del modulo 0049 e l integrazione di 0049 (PR #176) segue la chiusura verificata di REM-0017. Con NO_GO: ciclo di riparazione 1 di 2 sullo stesso branch. Poi OCOR-DEV-REM-0017 (CI con 0049 partizionato come gli altri moduli, caso Helm in parte propria, ogni parte entro 45 minuti), poi 0056-0059. RVW-03, INFO-A, INFO-C, REM-0018 aperti e non bloccano G5. F2 verso FGM-16; finestra residua VF-001 di 0055 verso FGM-17; VF-004 di 0055 aperto non assegnato.",
+  "exact_next_action": "OCOR-DEV-REM-0019:implementation, ciclo di riparazione 1 (ripresa): la campagna sul commit 63a0a93 gira staccata (~/.ocor-codex/rem-0019-r1/campaign_driver2.sh, 119 isolati): attendere DONE in driver.progress senza avviare un secondo stack (se isolated exit != 0: diagnosticare l ultimo iso-NNN, spostarlo in attempts/ e riprendere). Poi rieseguire il seed 190003 (tentativo 1 non qualificante, falso positivo PGDMP): docker restart ocor-bootstrap-fuseki-1 se la sua RSS supera ~1,5 GB, verify_external_services, python3 ~/.ocor-codex/rem-0019-r1/modules.py order-seed-190003. Un run FAIL per infrastruttura (OOM di fuseki, containerd del nodo kind) va registrato in attempts/ (aggiungerlo ad ATTEMPTS in build_evidence.py) e rieseguito, mai rietichettato. Con 5 run del modulo e 119 isolati verdi, nel worktree .ocor/worktrees/rem-0019: python3 ~/.ocor-codex/rem-0019-r1/assertion_identity.py . df444af855e884d7783612b302e008b90105fe13 63a0a939d84402af4ed91acd77de2dac341ee976 > ~/.ocor-codex/rem-0019-r1/assertion-identity.json; python3 ~/.ocor-codex/rem-0019-r1/build_evidence.py <worktree> ~/.ocor-codex/rem-0019-r1 63a0a939d84402af4ed91acd77de2dac341ee976; make_readme.py <worktree>; commit dell evidenza; check_evidence.py <worktree> HEAD > check-final.json (PASS); gates.py final; push; build_request.py (REMEDIATION, repair_cycle 1, verifier Cursor/Grok); state_sync_candidate.py in un branch governed/. Poi OCOR-DEV-REM-0017, poi 0056-0059. RVW-03, INFO-A, INFO-C, REM-0018 aperti e non bloccano G5.",
   "head_sha": "git:HEAD",
   "head_sha_resolver": "git rev-parse HEAD on versioned handoff branch",
   "independent_verification": {
-    "request_id": "OCOR-DEV-REM-0019-9099f7b6a677-0",
-    "status": "REQUESTED",
+    "previous_request": "OCOR-DEV-REM-0019-9099f7b6a677-0 NO_GO",
+    "request_id": null,
+    "status": "NOT_REQUESTED_YET",
     "verifier": "cursor"
   },
   "local_full_suite": "Branch REM: CI-recipe parts on 12836ed \u2014 main 1363 PASS (exact union); candidate part 1 389 PASS 1780 s, part 3 1101 PASS; Helm part NOT_EXECUTED locally",
   "local_gate_results": "see ITERATION_LOG entry of this sync (RCCAD, scope, language, plan, drift, digest)",
   "migration_rollback_result": "State-only change; rollback = revert the state-sync merge commit.",
+  "po_decisions_pending": [
+    "REM-0019-BACKUP-CIPHERTEXT-MARKER"
+  ],
   "rem_0017_candidate": {
     "branch": "governed/ocor-dev-rem-0017-ci-provision-spire",
     "branch_evidence_paths": [
@@ -231,22 +235,11 @@
   "security_observability_notes": "No secret handled; only GitHub API observations stored outside the repository with SHA-256.",
   "source_reference": {
     "base": "df444af855e884d7783612b302e008b90105fe13",
-    "base_rationale": "test_ocor_dev_0049.py esiste solo sul candidato sigillato di OCOR-DEV-0049 (df444af, GO b14e4bf, PR #176) e 0049 si integra dopo la chiusura verificata di REM-0017: il branch parte dal candidato e REM-0017 ne fissera l HEAD verificato al posto di df444af.",
     "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
-    "branch_evidence_paths": [
-      "reports/assurance/OCOR-DEV-REM-0019-RCCAD/OCOR-DEV-REM-0019.json",
-      "reports/assurance/OCOR-DEV-REM-0019-RCCAD/OCOR-DEV-REM-0019.log",
-      "reports/assurance/OCOR-DEV-REM-0019-RCCAD/README.md",
-      "reports/evidence/G4/OCOR-DEV-0049.requalified-rem0019.json",
-      "reports/evidence/G4/OCOR-DEV-0049.requalified-rem0019.log",
-      "reports/evidence/G4/MANIFEST.json"
-    ],
-    "candidate_head": "9099f7b6a677cc9695dec61150340911271bde5a",
-    "code_commit": "4c21be312bebd80f2d30f37c7a2febd5afb1aa5b",
-    "code_scope": "git diff --name-only df444af..4c21be3 = solo ocor-runtime/tests/tasks/test_ocor_dev_0049.py; produzione di 0049 invariata",
-    "design": "fixture tested (backup + restore isolato nel vault condiviso), reopen_pending, reopened, fault_observed, untested_ops e fresh_tested_ops (carrier Compose propri), agent.py scritto dalla fixture stack; backup e restore nei propri vault; 390 casi, asserzioni identiche (confronto AST su 72 funzioni)",
-    "isolated_runs": "119/119 PASS, un processo per caso dipendente, zero residui",
-    "local_gates_on_candidate_head": "inputs 8/8, ruff, mypy strict, language, RCCAD, scope, piano, drift, runtime-evidence 0049 (nuovo record), harness: tutti exit 0; check_evidence riproducibile PASS",
+    "campaign": "nohup ~/.ocor-codex/rem-0019-r1/campaign_driver.sh (modules.py), poi campaign_driver2.sh (restart preventivo di fuseki, salute, campaign.py isolated); stato in modules.progress, isolated.progress, driver.progress (DONE alla fine)",
+    "code_commit": "63a0a939d84402af4ed91acd77de2dac341ee976",
+    "isolated_runs": "3/119 eseguiti, 3 PASS",
+    "local_gates_on_code_commit": "inputs 8/8, ruff, mypy strict, language, RCCAD, scope, piano, drift, runtime-evidence 0049, harness: tutti exit 0",
     "module_runs": {
       "order-collection": {
         "counts": {
@@ -255,7 +248,7 @@
           "skipped": 0,
           "tests": 390
         },
-        "duration_seconds": 2356.6,
+        "duration_seconds": 2412.0,
         "ok": true
       },
       "order-reverse": {
@@ -265,7 +258,7 @@
           "skipped": 0,
           "tests": 390
         },
-        "duration_seconds": 2407.3,
+        "duration_seconds": 2411.5,
         "ok": true
       },
       "order-seed-190001": {
@@ -275,7 +268,7 @@
           "skipped": 0,
           "tests": 390
         },
-        "duration_seconds": 2387.9,
+        "duration_seconds": 2400.4,
         "ok": true
       },
       "order-seed-190002": {
@@ -285,27 +278,42 @@
           "skipped": 0,
           "tests": 390
         },
-        "duration_seconds": 2417.4,
+        "duration_seconds": 2362.1,
         "ok": true
       },
       "order-seed-190003": {
         "counts": {
           "errors": 0,
-          "failures": 0,
+          "failures": 1,
           "skipped": 0,
           "tests": 390
         },
-        "duration_seconds": 2392.7,
-        "ok": true
+        "duration_seconds": 2350.8,
+        "ok": false
       }
     },
     "non_qualifying_attempts": {
-      "order-reverse attempt 1": "389/390 PASS; FAIL del caso Helm per SIGSEGV di containerd nel nodo kind alle 14:45:00Z (tick */15), capture-kafka exit 255: difetto locale REM-0017-KIND-CONTAINERD-CRASH, non dipendenza d ordine; registrato nel record REM, rieseguito (order-reverse PASS), mai rietichettato"
+      "order-seed-190002 attempt 1": "interrotto dal watchdog dopo 138 casi PASS: ocor-bootstrap-fuseki-1 ucciso dall OOM killer del proprio cgroup (2 GiB) alle 04:00:37Z; fuseki riavviato, seed 190002 rieseguito: 390/390 PASS",
+      "order-seed-190003 attempt 1": "389/390: falso positivo dell asserzione sigillata di 0049 alla riga 1813 (b PGDMP not in blob): il base64 del ciphertext transit contiene PGDMP per caso (~0,94% per esecuzione); asserzione non modificata (vincolo stesse asserzioni), decision request REM-0019-BACKUP-CIPHERTEXT-MARKER; seed 190003 da rieseguire"
     },
-    "red": "su df444af 8/8 gruppi isolati o riordinati FAIL (readiness, agent.py, telemetria di fault, mutative non riaperto, receipt gia presente, reopen gia consumato)",
-    "session_dir": "/home/luca/.ocor-codex/rem-0019 (fuori dal repository)",
+    "prior_verdict": {
+      "findings": [
+        "VF-001 (high): la precondizione di test_concurrent_seals_each_download_their_own_index_snapshot contava un HTTPError catturato come nome di snapshot (seed 190001 e 190003 del verifier: DELETE con l eccezione nell URL)"
+      ],
+      "head_sha": "9099f7b6a677cc9695dec61150340911271bde5a",
+      "not_executed": [
+        "suite completa: OOM di fuseki nel run del verifier",
+        "controllo compensativo CI-0048: SPIRE senza identita di workload"
+      ],
+      "request_id": "OCOR-DEV-REM-0019-9099f7b6a677-0",
+      "verdict": "NO_GO",
+      "verifier": "Grok 4.7 via Cursor CLI"
+    },
+    "red_green_vf001": "HTTP 500 iniettato su uno dei quattro POST (plugin di sessione inject500.py): RED FAIL InvalidURL sul modulo del ciclo 0, GREEN PASS sul commit 63a0a93",
+    "repair_cycle": 1,
+    "repair_fix": "solo i nomi restituiti da Qdrant contano nella precondizione; un tentativo con POST sollevato o senza collisione cancella gli snapshot creati e si ritenta entro lo stesso limite di 60 s",
+    "session_dir": "/home/luca/.ocor-codex/rem-0019-r1 (fuori dal repository; ciclo 0 in /home/luca/.ocor-codex/rem-0019)",
     "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor)",
-    "verify_request": "OCOR-DEV-REM-0019-9099f7b6a677-0",
     "worktree": ".ocor/worktrees/rem-0019"
   },
   "task_id": "OCOR-DEV-REM-0019",
@@ -335,6 +343,6 @@
     "REM-0017-KIND-CONTAINERD-CRASH",
     "RVW-03"
   ],
-  "updated_at": "2026-10-10T18:30:13Z",
-  "worktree": ".ocor/worktrees/state-sync-rem-0019-candidate"
+  "updated_at": "2026-10-11T05:35:59Z",
+  "worktree": ".ocor/worktrees/state-sync-rem-0019-repair1-progress"
 }
