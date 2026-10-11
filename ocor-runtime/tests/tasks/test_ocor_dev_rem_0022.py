@@ -180,3 +180,92 @@ def test_mismatched_run_volume_and_foreign_labels_are_refused(lifecycle, monkeyp
         assert_absent(lifecycle)
     finally:
         docker("volume", "rm", foreign)
+
+
+def test_interrupted_initializer_is_removed_with_all_mounts(lifecycle, monkeypatch):
+    error = subprocess.TimeoutExpired
+    def interrupted(*args, **kwargs):
+        if args[:2] == ("docker", "run") and "--rm" in args:
+            command = list(args)
+            command[command.index("--rm")] = "--detach"
+            command[command.index("--entrypoint") + 1] = "sleep"
+            index = next(i for i, arg in enumerate(command) if arg.startswith("confluentinc/cp-kafka:"))
+            command = command[:index + 1] + ["60"]
+            lifecycle["record"](*command, **kwargs)
+            raise error(command, 45)
+        return lifecycle["record"](*args, **kwargs)
+    monkeypatch.setattr(lifecycle["module"], "_run", interrupted)
+    with pytest.raises(error):
+        provision(lifecycle)
+    assert_absent(lifecycle)
+
+
+def test_foreign_container_label_is_rejected_before_any_removal(lifecycle, monkeypatch):
+    suffix = uuid.uuid4().hex[:12]
+    name = lifecycle["prefix"] + suffix
+    volume = lifecycle["prefix"] + "data-" + suffix
+    docker("volume", "create", "--label", f"{LABEL}={name}", volume)
+    lifecycle["mounts"][volume] = {"container": name, "destination": "/var/lib/kafka/data", "image": backbone.KAFKA_IMAGE}
+    command = ["docker", "run", "--detach", "--name", name, "--label", f"{LABEL}=foreign", "--volume", f"{volume}:/var/lib/kafka/data", "--entrypoint", "sleep", backbone.KAFKA_IMAGE, "60"]
+    lifecycle["record"](*command)
+    monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
+    value = lifecycle["cls"](name) if lifecycle["module"] is oracle else lifecycle["cls"]("unused", container=name)
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    with pytest.raises(error, match="refusing.*foreign container"):
+        value.destroy(volume)
+    assert exists("container", name) and exists("volume", volume)
+
+
+def test_non_owned_container_name_is_refused(lifecycle):
+    value = lifecycle["cls"]("foreign") if lifecycle["module"] is oracle else lifecycle["cls"]("unused", container="foreign")
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    with pytest.raises(error, match="refusing"):
+        value.destroy("foreign")
+
+
+def test_preexisting_volume_is_never_reused_or_deleted(lifecycle, monkeypatch):
+    ident = uuid.uuid4()
+    volume = lifecycle["prefix"] + "data-" + ident.hex[:12]
+    docker("volume", "create", volume)
+    monkeypatch.setattr(lifecycle["module"], "uuid", types.SimpleNamespace(uuid4=lambda: ident))
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    try:
+        with pytest.raises(error, match="refusing.*existing lifecycle"):
+            provision(lifecycle)
+        assert exists("volume", volume)
+        assert not exists("container", lifecycle["prefix"] + ident.hex[:12])
+    finally:
+        docker("volume", "rm", volume)
+
+
+def test_named_volume_removal_failure_can_be_retried(lifecycle, monkeypatch):
+    monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
+    value, volume = provision(lifecycle)
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    def fail(*args, **kwargs):
+        if args[:3] == ("docker", "volume", "rm"):
+            raise error("injected data-volume removal failure")
+        return lifecycle["record"](*args, **kwargs)
+    monkeypatch.setattr(lifecycle["module"], "_run", fail)
+    with pytest.raises(error, match="injected data-volume removal failure"):
+        value.destroy(volume)
+    assert exists("volume", volume)
+    assert not any(exists("container", n) for n in lifecycle["containers"])
+    monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
+    value.destroy(volume)
+    assert_absent(lifecycle)
+
+
+def test_residual_anonymous_mount_is_detected_even_after_command_success(lifecycle, monkeypatch):
+    monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
+    value, volume = provision(lifecycle)
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    def omit_volumes(*args, **kwargs):
+        if args[:2] == ("docker", "rm"):
+            args = tuple(a for a in args if a != "--volumes")
+        return lifecycle["record"](*args, **kwargs)
+    monkeypatch.setattr(lifecycle["module"], "_run", omit_volumes)
+    with pytest.raises(error, match="owned resources remain after teardown"):
+        value.destroy(volume)
+    assert any(exists("volume", n) for n, m in lifecycle["mounts"].items() if m["destination"] == "/etc/kafka/secrets")
+    # Fixture diagnostic cleanup is limited to this test's observed mounts.

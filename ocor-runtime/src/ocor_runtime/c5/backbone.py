@@ -24,6 +24,7 @@ OCOR-DEV-0037's TypeDB adapter).
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 import uuid
@@ -181,15 +182,22 @@ class CanonicalEventBackbone:
         suffix = uuid.uuid4().hex[:12]
         container = f"ocor-c5-backbone-{suffix}"
         volume = f"ocor-c5-backbone-data-{suffix}"
-        _run("docker", "volume", "create", volume)
+        existing_volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        existing_containers = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
+        if volume in existing_volumes or {container, f"{container}-init"} & existing_containers:
+            raise KafkaBackboneError("refusing to reuse existing lifecycle resources")
+        completed = False
         try:
+            _run("docker", "volume", "create", "--label", f"ocor.kafka.lifecycle.owner={container}", volume)
             _run(
-                "docker", "run", "--rm", "--user", "root", "--entrypoint", "chown",
+                "docker", "run", "--rm", "--name", f"{container}-init",
+                "--label", f"ocor.kafka.lifecycle.owner={container}", "--user", "root", "--entrypoint", "chown",
                 "--volume", f"{volume}:/var/lib/kafka/data", KAFKA_IMAGE, "-R", "appuser:appuser",
                 "/var/lib/kafka/data",
             )
             _run(
-                "docker", "run", "--detach", "--name", container, "--hostname", "kafka",
+                "docker", "run", "--detach", "--label", f"ocor.kafka.lifecycle.owner={container}",
+                "--name", container, "--hostname", "kafka",
                 "--security-opt", "no-new-privileges:true",
                 "--volume", f"{volume}:/var/lib/kafka/data",
                 "--env", "CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk",
@@ -208,32 +216,68 @@ class CanonicalEventBackbone:
                 KAFKA_IMAGE,
                 timeout=60,
             )
-        except Exception:
-            _run("docker", "volume", "rm", volume)
-            raise
-        backbone = cls(topic, container=container)
-        deadline = time.monotonic() + 90
-        last_error: KafkaBackboneError | None = None
-        while time.monotonic() < deadline:
-            try:
-                backbone._exec("kafka-broker-api-versions", "--bootstrap-server", BOOTSTRAP)
-                backbone.initialize()
-                return backbone, container, volume
-            except KafkaBackboneError as error:
-                last_error = error
-                time.sleep(1)
-        backbone.destroy(volume)
-        raise KafkaBackboneError(f"isolated Kafka did not become ready: {last_error}")
+            backbone = cls(topic, container=container)
+            deadline = time.monotonic() + 90
+            last_error: KafkaBackboneError | None = None
+            while time.monotonic() < deadline:
+                try:
+                    backbone._exec("kafka-broker-api-versions", "--bootstrap-server", BOOTSTRAP)
+                    backbone.initialize()
+                    completed = True
+                    return backbone, container, volume
+                except KafkaBackboneError as error:
+                    last_error = error
+                    time.sleep(1)
+            raise KafkaBackboneError(f"isolated Kafka did not become ready: {last_error}")
+        finally:
+            if not completed:
+                cls._cleanup_resources(container, volume)
 
     def destroy(self, volume: str) -> None:
-        """Removes only resources whose exact generated names belong
-        to this run."""
-        if not self._container.startswith("ocor-c5-backbone-"):
-            raise KafkaBackboneError("refusing to destroy a non-backbone container")
-        if not volume.startswith("ocor-c5-backbone-data-"):
-            raise KafkaBackboneError("refusing to destroy a non-backbone volume")
-        _run("docker", "rm", "--force", self._container)
-        _run("docker", "volume", "rm", volume)
+        """Remove this run's resources; missing resources allow bounded retry."""
+        self._cleanup_resources(self._container, volume)
+
+    @staticmethod
+    def _cleanup_resources(container: str, volume: str) -> None:
+        """Verify ownership before mutation, remove anonymous mounts and fail closed.
+
+        The init command can time out after Docker has created it. Both generated
+        containers are inspected and removed by immutable ID. Named volumes are
+        never pruned; only the matching ownership-labelled data volume is removed.
+        """
+        prefix = "ocor-c5-backbone-"
+        suffix = container.removeprefix(prefix)
+        if not container.startswith(prefix) or re.fullmatch(r"[0-9a-f]{12}", suffix) is None:
+            raise KafkaBackboneError("refusing to destroy a non-owned container")
+        if volume != f"{prefix}data-{suffix}":
+            raise KafkaBackboneError("refusing to destroy a mismatched run volume")
+        label = "ocor.kafka.lifecycle.owner"
+        # Enumerate names rather than treating an inspect failure as 'absent'.
+        names = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
+        volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        entries = []
+        anonymous = set()
+        for name in (f"{container}-init", container):
+            if name in names:
+                entry = json.loads(_run("docker", "inspect", name))[0]
+                if (entry["Config"].get("Labels") or {}).get(label) != container:
+                    raise KafkaBackboneError("refusing to destroy a foreign container")
+                entries.append(entry)
+                for mount in entry["Mounts"]:
+                    if mount["Type"] == "volume" and mount["Name"] != volume:
+                        anonymous.add(mount["Name"])
+        if volume in volumes:
+            entry = json.loads(_run("docker", "volume", "inspect", volume))[0]
+            if (entry.get("Labels") or {}).get(label) != container:
+                raise KafkaBackboneError("refusing to destroy a foreign volume")
+        for entry in entries:
+            _run("docker", "rm", "--force", "--volumes", entry["Id"])
+        if volume in volumes:
+            _run("docker", "volume", "rm", volume)
+        remaining_containers = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
+        remaining_volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        if {container, f"{container}-init"} & remaining_containers or (anonymous | {volume}) & remaining_volumes:
+            raise KafkaBackboneError("owned resources remain after teardown")
 
     def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
         command = ["docker", "exec"]
