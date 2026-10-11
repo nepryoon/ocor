@@ -44,6 +44,46 @@
     "ocor-runtime/tests/tasks/test_ocor_dev_0049.py": "44aa956b6f0fd6d8b577c96df2195085223a496ae69514b8a9cf630565117269",
     "scripts/validate_ocor_development_plan.py": "373a8a10266231994641888cecc23d991540a3e613cfa11b11416f27d1671d72"
   },
+  "integration_precheck": {
+    "base_ref": "origin/main",
+    "next_action": "Resolve the integration base/scope before final candidate review, preserving the authorized test-only REM diff and unchanged production 0049. Do not broaden the PO-specific allowlist to inherited product paths.",
+    "reason": "Governed branch inherits unmerged 0049 production/evidence; planning allowlist does not admit those paths. No PR or merge permitted with this FAIL.",
+    "status": "FAIL",
+    "unauthorized_paths": [
+      "deploy/helm/ocor-poc/Chart.yaml",
+      "deploy/helm/ocor-poc/compose.profiles.yaml",
+      "deploy/helm/ocor-poc/templates/_helpers.tpl",
+      "deploy/helm/ocor-poc/templates/backup-cronjob.yaml",
+      "deploy/helm/ocor-poc/templates/configmap.yaml",
+      "deploy/helm/ocor-poc/templates/deployment.yaml",
+      "deploy/helm/ocor-poc/templates/networkpolicy.yaml",
+      "deploy/helm/ocor-poc/templates/restore-drill-job.yaml",
+      "deploy/helm/ocor-poc/templates/serviceaccount.yaml",
+      "deploy/helm/ocor-poc/values.yaml",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0049.py",
+      "reports/evidence/G4/OCOR-DEV-0049.json",
+      "reports/evidence/G4/OCOR-DEV-0049.log"
+    ]
+  },
+  "local_gates": {
+    "HEAD_precheck": "10 commands exit 0 (plan --base-ref HEAD); dynamic assurance CI_REQUIRED",
+    "origin_main_plan": "FAIL; not counted as PASS",
+    "reports_pytest": {
+      "failed": 0,
+      "passed": 48,
+      "skipped": 0
+    },
+    "standalone_harnesses": {
+      "executed": 5,
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
   "local_targeted_result": {
     "command": [
       "uv",
@@ -85,7 +125,7 @@
   },
   "po_decision": "REM-0019-BACKUP-CIPHERTEXT-MARKER (2026-10-11), option 1",
   "production_0049_changed": false,
-  "raw_output_sha256": "ae9167326f892361a45ede2ee2e79ac1f768b46f2324c264d7ce24377d2855b7",
+  "raw_output_sha256": "ddfbf63187bf58be00d8fdabd4d1e1b1956b4425304e47fb61db02154d28e527",
   "remaining_mandatory": [
     "Rerun the entire 390-case module in collection order, reverse order, and seeds 190001, 190002, 190003 on the final candidate; each <=45 min, zero skip and no restart/OOM.",
     "Rerun all 119 dependency-derived isolated tests on the final candidate; verify node mapping and resource teardown.",
