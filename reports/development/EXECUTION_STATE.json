@@ -1,17 +1,27 @@
 {
   "active_iteration": {
-    "branch": "governed/state-sync-rem-0019-repair1-in-progress",
+    "branch": "governed/state-sync-rem-0019-marker-blocker",
     "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_REM_0019",
     "decision_id": "DEC-210",
-    "phase": "OCOR_DEV_REM_0019_REPAIR1_IN_PROGRESS",
+    "phase": "OCOR_DEV_REM_0019_STABILITY_PO_DECISION_REQUIRED",
     "source_reference": {
-      "base": "df444af855e884d7783612b302e008b90105fe13",
       "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
-      "campaign": "nohup ~/.ocor-codex/rem-0019-r1/campaign_driver.sh (modules.py), poi campaign_driver2.sh (restart preventivo di fuseki, salute, campaign.py isolated); stato in modules.progress, isolated.progress, driver.progress (DONE alla fine)",
+      "campaign_ownership": "Processi ereditati della sessione precedente (campaign_driver2.sh, campaign_driver3.sh); nessun secondo stack avviato e nessun processo terminato da Codex. Eventuali run successivi sono raccolta diagnostica, non chiusura del difetto intermittente.",
       "code_commit": "63a0a939d84402af4ed91acd77de2dac341ee976",
-      "isolated_runs": "3/119 eseguiti, 3 PASS",
-      "local_gates_on_code_commit": "inputs 8/8, ruff, mypy strict, language, RCCAD, scope, piano, drift, runtime-evidence 0049, harness: tutti exit 0",
-      "module_runs": {
+      "decision_request": {
+        "branch": "governed/decision-request-rem-0019-ciphertext-marker",
+        "commit": "35b0317fbfe3880690581622732b091953e11563",
+        "integration_status": "WIP_PUBLISHED_PLAN_ALLOWLIST_FAIL; nessuna PR o merge del documento, estensione chirurgica e riqualifica 0050 rinviate. Il testo integrale della disposition \u00e8 anche in ITERATION_LOG versionato su main dopo lo state sync.",
+        "path": "reports/development/decision_requests/REM-0019-BACKUP-CIPHERTEXT-MARKER.md",
+        "sha256": "3d3fe2a008a8d70ce166c04afa764a6ec27c30541f335791c8dc6d6f5f0f8591"
+      },
+      "implementer": "Claude Code (Anthropic), implementatore di riserva, cicli 0 e 1; Codex (OpenAI) coordina questa diagnosi e lo state sync, non modifica il codice",
+      "isolated_runs_snapshot": {
+        "executed": 41,
+        "passed": 41,
+        "required": 119
+      },
+      "module_runs_snapshot": {
         "order-collection": {
           "counts": {
             "errors": 0,
@@ -20,7 +30,14 @@
             "tests": 390
           },
           "duration_seconds": 2412.0,
-          "ok": true
+          "exit": 0,
+          "label": "order-collection",
+          "ok": true,
+          "residue": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          }
         },
         "order-reverse": {
           "counts": {
@@ -30,7 +47,14 @@
             "tests": 390
           },
           "duration_seconds": 2411.5,
-          "ok": true
+          "exit": 0,
+          "label": "order-reverse",
+          "ok": true,
+          "residue": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          }
         },
         "order-seed-190001": {
           "counts": {
@@ -40,7 +64,14 @@
             "tests": 390
           },
           "duration_seconds": 2400.4,
-          "ok": true
+          "exit": 0,
+          "label": "order-seed-190001",
+          "ok": true,
+          "residue": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          }
         },
         "order-seed-190002": {
           "counts": {
@@ -50,7 +81,14 @@
             "tests": 390
           },
           "duration_seconds": 2362.1,
-          "ok": true
+          "exit": 0,
+          "label": "order-seed-190002",
+          "ok": true,
+          "residue": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          }
         },
         "order-seed-190003": {
           "counts": {
@@ -60,35 +98,24 @@
             "tests": 390
           },
           "duration_seconds": 2350.8,
-          "ok": false
+          "exit": 1,
+          "label": "order-seed-190003",
+          "ok": false,
+          "residue": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          }
         }
       },
-      "non_qualifying_attempts": {
-        "order-seed-190002 attempt 1": "interrotto dal watchdog dopo 138 casi PASS: ocor-bootstrap-fuseki-1 ucciso dall OOM killer del proprio cgroup (2 GiB) alle 04:00:37Z; fuseki riavviato, seed 190002 rieseguito: 390/390 PASS",
-        "order-seed-190003 attempt 1": "389/390: falso positivo dell asserzione sigillata di 0049 alla riga 1813 (b PGDMP not in blob): il base64 del ciphertext transit contiene PGDMP per caso (~0,94% per esecuzione); asserzione non modificata (vincolo stesse asserzioni), decision request REM-0019-BACKUP-CIPHERTEXT-MARKER; seed 190003 da rieseguire"
-      },
-      "prior_verdict": {
-        "findings": [
-          "VF-001 (high): la precondizione di test_concurrent_seals_each_download_their_own_index_snapshot contava un HTTPError catturato come nome di snapshot (seed 190001 e 190003 del verifier: DELETE con l eccezione nell URL)"
-        ],
-        "head_sha": "9099f7b6a677cc9695dec61150340911271bde5a",
-        "not_executed": [
-          "suite completa: OOM di fuseki nel run del verifier",
-          "controllo compensativo CI-0048: SPIRE senza identita di workload"
-        ],
-        "request_id": "OCOR-DEV-REM-0019-9099f7b6a677-0",
-        "verdict": "NO_GO",
-        "verifier": "Grok 4.7 via Cursor CLI"
-      },
-      "red_green_vf001": "HTTP 500 iniettato su uno dei quattro POST (plugin di sessione inject500.py): RED FAIL InvalidURL sul modulo del ciclo 0, GREEN PASS sul commit 63a0a93",
+      "observed_at": "2026-10-11T06:01:11Z",
+      "qualification": "BLOCKED_PO_DECISION_REQUIRED; seed190003 389 PASS / 1 FAIL / 0 skip (2350.8 s); un rerun PASS non elimina la flake.",
       "repair_cycle": 1,
-      "repair_fix": "solo i nomi restituiti da Qdrant contano nella precondizione; un tentativo con POST sollevato o senza collisione cancella gli snapshot creati e si ritenta entro lo stesso limite di 60 s",
-      "session_dir": "/home/luca/.ocor-codex/rem-0019-r1 (fuori dal repository; ciclo 0 in /home/luca/.ocor-codex/rem-0019)",
-      "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor)",
+      "verifier": "Grok 4.7 tramite Cursor CLI (verifier: cursor)",
       "worktree": ".ocor/worktrees/rem-0019"
     },
     "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem-0019-repair1-progress"
+    "worktree": ".ocor/worktrees/state-sync-rem-0019-marker-blocker"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1594,7 +1621,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "583f23dd8442fad963368ccae3ddc12fba4edd33",
+  "baseline_commit": "7fc65b055c1993d75e8f21b157a54102068cfc6f",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -2731,6 +2758,116 @@
         "campaign": "nohup ~/.ocor-codex/rem-0019-r1/campaign_driver.sh (modules.py), poi campaign_driver2.sh (restart preventivo di fuseki, salute, campaign.py isolated); stato in modules.progress, isolated.progress, driver.progress (DONE alla fine)",
         "code_commit": "63a0a939d84402af4ed91acd77de2dac341ee976",
         "isolated_runs": "3/119 eseguiti, 3 PASS",
+        "latest_stability_observation": {
+          "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
+          "campaign_ownership": "Processi ereditati della sessione precedente (campaign_driver2.sh, campaign_driver3.sh); nessun secondo stack avviato e nessun processo terminato da Codex. Eventuali run successivi sono raccolta diagnostica, non chiusura del difetto intermittente.",
+          "code_commit": "63a0a939d84402af4ed91acd77de2dac341ee976",
+          "decision_request": {
+            "branch": "governed/decision-request-rem-0019-ciphertext-marker",
+            "commit": "35b0317fbfe3880690581622732b091953e11563",
+            "integration_status": "WIP_PUBLISHED_PLAN_ALLOWLIST_FAIL; nessuna PR o merge del documento, estensione chirurgica e riqualifica 0050 rinviate. Il testo integrale della disposition \u00e8 anche in ITERATION_LOG versionato su main dopo lo state sync.",
+            "path": "reports/development/decision_requests/REM-0019-BACKUP-CIPHERTEXT-MARKER.md",
+            "sha256": "3d3fe2a008a8d70ce166c04afa764a6ec27c30541f335791c8dc6d6f5f0f8591"
+          },
+          "implementer": "Claude Code (Anthropic), implementatore di riserva, cicli 0 e 1; Codex (OpenAI) coordina questa diagnosi e lo state sync, non modifica il codice",
+          "isolated_runs_snapshot": {
+            "executed": 41,
+            "passed": 41,
+            "required": 119
+          },
+          "module_runs_snapshot": {
+            "order-collection": {
+              "counts": {
+                "errors": 0,
+                "failures": 0,
+                "skipped": 0,
+                "tests": 390
+              },
+              "duration_seconds": 2412.0,
+              "exit": 0,
+              "label": "order-collection",
+              "ok": true,
+              "residue": {
+                "containers": [],
+                "networks": [],
+                "volumes": []
+              }
+            },
+            "order-reverse": {
+              "counts": {
+                "errors": 0,
+                "failures": 0,
+                "skipped": 0,
+                "tests": 390
+              },
+              "duration_seconds": 2411.5,
+              "exit": 0,
+              "label": "order-reverse",
+              "ok": true,
+              "residue": {
+                "containers": [],
+                "networks": [],
+                "volumes": []
+              }
+            },
+            "order-seed-190001": {
+              "counts": {
+                "errors": 0,
+                "failures": 0,
+                "skipped": 0,
+                "tests": 390
+              },
+              "duration_seconds": 2400.4,
+              "exit": 0,
+              "label": "order-seed-190001",
+              "ok": true,
+              "residue": {
+                "containers": [],
+                "networks": [],
+                "volumes": []
+              }
+            },
+            "order-seed-190002": {
+              "counts": {
+                "errors": 0,
+                "failures": 0,
+                "skipped": 0,
+                "tests": 390
+              },
+              "duration_seconds": 2362.1,
+              "exit": 0,
+              "label": "order-seed-190002",
+              "ok": true,
+              "residue": {
+                "containers": [],
+                "networks": [],
+                "volumes": []
+              }
+            },
+            "order-seed-190003": {
+              "counts": {
+                "errors": 0,
+                "failures": 1,
+                "skipped": 0,
+                "tests": 390
+              },
+              "duration_seconds": 2350.8,
+              "exit": 1,
+              "label": "order-seed-190003",
+              "ok": false,
+              "residue": {
+                "containers": [],
+                "networks": [],
+                "volumes": []
+              }
+            }
+          },
+          "observed_at": "2026-10-11T06:01:11Z",
+          "qualification": "BLOCKED_PO_DECISION_REQUIRED; seed190003 389 PASS / 1 FAIL / 0 skip (2350.8 s); un rerun PASS non elimina la flake.",
+          "repair_cycle": 1,
+          "verifier": "Grok 4.7 tramite Cursor CLI (verifier: cursor)",
+          "worktree": ".ocor/worktrees/rem-0019"
+        },
         "local_gates_on_code_commit": "inputs 8/8, ruff, mypy strict, language, RCCAD, scope, piano, drift, runtime-evidence 0049, harness: tutti exit 0",
         "module_runs": {
           "order-collection": {
@@ -2788,6 +2925,7 @@
           "order-seed-190002 attempt 1": "interrotto dal watchdog dopo 138 casi PASS: ocor-bootstrap-fuseki-1 ucciso dall OOM killer del proprio cgroup (2 GiB) alle 04:00:37Z; fuseki riavviato, seed 190002 rieseguito: 390/390 PASS",
           "order-seed-190003 attempt 1": "389/390: falso positivo dell asserzione sigillata di 0049 alla riga 1813 (b PGDMP not in blob): il base64 del ciphertext transit contiene PGDMP per caso (~0,94% per esecuzione); asserzione non modificata (vincolo stesse asserzioni), decision request REM-0019-BACKUP-CIPHERTEXT-MARKER; seed 190003 da rieseguire"
         },
+        "prior_next_action_superseded": "Rerun seed190003 resta solo diagnostico: non cancella il FAIL o chiude il finding intermittente.",
         "prior_verdict": {
           "findings": [
             "VF-001 (high): la precondizione di test_concurrent_seals_each_download_their_own_index_snapshot contava un HTTPError catturato come nome di snapshot (seed 190001 e 190003 del verifier: DELETE con l eccezione nell URL)"
@@ -2821,7 +2959,7 @@
         "observation": "run 37952580435/37952580531/37952580779 su 4e97cd3: split per nodo FAIL nelle parti 2-4 di conditional-infrastructure-0049",
         "path": "reports/development/EXECUTION_STATE.json"
       },
-      "status": "REPAIR1_IN_PROGRESS",
+      "status": "REPAIR1_BLOCKED_PO_DECISION_REQUIRED",
       "verified_free_id": "grep REM-0019 su tutti i ref locali e origin: nessuna occorrenza (2026-10-09)"
     },
     {
@@ -2890,16 +3028,27 @@
       "verified_free_id": "git grep su origin/main e tutti i ref: massimo REM-0020, nessun branch/PR 0021 (2026-10-10)"
     },
     {
-      "blocked_tasks": [],
-      "decision_request": "REM-0019-BACKUP-CIPHERTEXT-MARKER.md",
-      "decision_request_location": "/home/luca/.ocor-codex/decision_requests/REM-0019-BACKUP-CIPHERTEXT-MARKER.md (fuori dal repository; da archiviare nel change set governed di integrazione di REM-0019/0049 insieme all allowlist di piano)",
-      "id": "REM-0019-BACKUP-CIPHERTEXT-MARKER",
-      "non_blocking": true,
-      "observation": "test_backup_seals_an_encrypted_signed_immutable_recovery_point (asserzione sigillata di 0049, riga 1813: b PGDMP not in blob) fallisce per caso quando il base64 del ciphertext transit contiene PGDMP: ~0,94% per esecuzione su ~10,1 M caratteri base64 (ciclo 1 di REM-0019, seed 190003 tentativo 1, offset 6274804)",
-      "options": [
-        "Controllo strutturale piu forte: chunk vault:v1:<base64>, marcatori assenti dalla cornice e dal payload decodificato (raccomandata; variazione puntuale delle asserzioni di un caso)",
-        "Asserzione invariata, falso positivo come rischio residuo registrato e rieseguito (non raccomandata)"
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0019",
+        "OCOR-DEV-REM-0017",
+        "OCOR-DEV-0049"
       ],
+      "decision_request": "reports/development/decision_requests/REM-0019-BACKUP-CIPHERTEXT-MARKER.md",
+      "decision_request_location": "governed/decision-request-rem-0019-ciphertext-marker@35b0317fbfe3880690581622732b091953e11563:reports/development/decision_requests/REM-0019-BACKUP-CIPHERTEXT-MARKER.md",
+      "decision_request_sha256": "3d3fe2a008a8d70ce166c04afa764a6ec27c30541f335791c8dc6d6f5f0f8591",
+      "does_not_block": [
+        "OCOR-DEV-0056",
+        "OCOR-DEV-0057"
+      ],
+      "id": "REM-0019-BACKUP-CIPHERTEXT-MARKER",
+      "non_blocking": false,
+      "observation": "test_backup_seals_an_encrypted_signed_immutable_recovery_point (asserzione sigillata di 0049, riga 1813: b PGDMP not in blob) fallisce per caso quando il base64 del ciphertext transit contiene PGDMP: ~0,94% per esecuzione su ~10,1 M caratteri base64 (ciclo 1 di REM-0019, seed 190003 tentativo 1, offset 6274804)",
+      "observed_at": "2026-10-11T06:01:11Z",
+      "options": [
+        "Autorizzare una variazione puntuale del test (390 casi e produzione invariati): verifica strutturale e decrittazione autenticata/digest; RED/GREEN deterministico e verifier indipendente.",
+        "Mantenere l asserzione: qualifica bloccata; nessun rerun fino al verde come soluzione."
+      ],
+      "resolution_required": "Decisione puntuale PO: stesse asserzioni in REM-0017-CI-0049-REMAINDER-CAP; niente PASS qualificante per un test intermittente.",
       "scope": "Variazione puntuale di un asserzione sigillata di OCOR-DEV-0049, oltre il vincolo stesse asserzioni della decisione REM-0017-CI-0049-REMAINDER-CAP",
       "status": "OPEN_PO_DECISION_REQUIRED"
     }
@@ -2982,7 +3131,7 @@
     "OCOR-DEV-0054",
     "OCOR-DEV-0055"
   ],
-  "current_gate": "OCOR_DEV_REM_0019_REPAIR1_IN_PROGRESS",
+  "current_gate": "OCOR_DEV_REM_0019_STABILITY_PO_DECISION_REQUIRED",
   "historical_terminal_loop_disposition": {
     "available_next_work": "OCOR-DEV-REM-0017, poi OCOR-DEV-0050",
     "loop_status": "TERMINAL_BLOCKED",
@@ -3955,7 +4104,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "OCOR-DEV-REM-0019:implementation, ciclo di riparazione 1 (ripresa): la campagna sul commit 63a0a93 gira staccata (~/.ocor-codex/rem-0019-r1/campaign_driver2.sh, 119 isolati): attendere DONE in driver.progress senza avviare un secondo stack (se isolated exit != 0: diagnosticare l ultimo iso-NNN, spostarlo in attempts/ e riprendere). Poi rieseguire il seed 190003 (tentativo 1 non qualificante, falso positivo PGDMP): docker restart ocor-bootstrap-fuseki-1 se la sua RSS supera ~1,5 GB, verify_external_services, python3 ~/.ocor-codex/rem-0019-r1/modules.py order-seed-190003. Un run FAIL per infrastruttura (OOM di fuseki, containerd del nodo kind) va registrato in attempts/ (aggiungerlo ad ATTEMPTS in build_evidence.py) e rieseguito, mai rietichettato. Con 5 run del modulo e 119 isolati verdi, nel worktree .ocor/worktrees/rem-0019: python3 ~/.ocor-codex/rem-0019-r1/assertion_identity.py . df444af855e884d7783612b302e008b90105fe13 63a0a939d84402af4ed91acd77de2dac341ee976 > ~/.ocor-codex/rem-0019-r1/assertion-identity.json; python3 ~/.ocor-codex/rem-0019-r1/build_evidence.py <worktree> ~/.ocor-codex/rem-0019-r1 63a0a939d84402af4ed91acd77de2dac341ee976; make_readme.py <worktree>; commit dell evidenza; check_evidence.py <worktree> HEAD > check-final.json (PASS); gates.py final; push; build_request.py (REMEDIATION, repair_cycle 1, verifier Cursor/Grok); state_sync_candidate.py in un branch governed/. Poi OCOR-DEV-REM-0017, poi 0056-0059. RVW-03, INFO-A, INFO-C, REM-0018 aperti e non bloccano G5.",
+  "next_executable_action": "OCOR-DEV-0056:implementation appena lo stack ereditato \u00e8 libero: controllare ~/.ocor-codex/rem-0019-r1/{driver.progress,rerun190003.progress,isolated.progress} e i processi senza avviare un secondo stack; archiviare ogni esito come diagnostico, mai dichiarare chiusa la flake PGDMP con un rerun. REM-0019:repair_cycle 1 bloccato sulla decisione REM-0019-BACKUP-CIPHERTEXT-MARKER (richiesta versionata su governed/decision-request-rem-0019-ciphertext-marker@35b0317fbfe3880690581622732b091953e11563). Nessuna nuova verifica/sigillo REM-0019 finch\u00e9 il vincolo sulle asserzioni non \u00e8 risolto. Quando libero: worktree isolato task/OCOR-DEV-0056 da origin/main, leggere task e fonti, RED prima del codice; implementatore Codex, verifier Claude Code, salvo interventi dell implementatore di riserva (Cursor/Grok). REM-0017 e integrazione 0049 restano subordinati alla chiusura verificata REM-0019; G6 bloccato. Non modificare produzione 0049, inputs, record sigillati o gate.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -3998,14 +4147,20 @@
   },
   "ready_set_observation": {
     "basis": "approved hard_dependencies and completed_evidence_tasks on origin/main after this sync",
-    "observed_at": "2026-10-11T05:35:59Z",
+    "observed_at": "2026-10-11T06:01:11Z",
     "ready": [
       "OCOR-DEV-0049",
       "OCOR-DEV-0056",
       "OCOR-DEV-0057"
     ],
+    "ready_tasks": [
+      "OCOR-DEV-0049",
+      "OCOR-DEV-0056",
+      "OCOR-DEV-0057"
+    ],
     "reason": "OCOR-DEV-0055 sealed and merged (PR #202) after repair cycle 1 GO; OCOR-DEV-0056 (deps 0025, 0026, 0051, 0055) and OCOR-DEV-0057 (deps 0027, 0052, 0053, 0054, 0055) become ready by dependencies. Per PO decisions OCOR-DEV-0055-VF002-REMEDIATION and REM-0017-CI-0049-REMAINDER-CAP the order is REM-0019, then REM-0017, then 0056-0059. OCOR-DEV-0049 ready by dependencies but integration pending REM-0017 closure.",
-    "selected_unit": "OCOR-DEV-REM-0019:implementation (ciclo di riparazione 1 in corso)"
+    "selected_unit": "OCOR-DEV-0056:implementation dopo rilascio dello stack ereditato",
+    "selection_reason": "REM-0019 bloccato sulla variazione di asserzione riservata al PO; REM-0017 non ha azione qualificante eseguibile; 0049 integrazione bloccata. Prosegue il lavoro G5 indipendente secondo mandato \u00a77."
   },
   "remediation_status": {
     "CI-0048_REAL_BACKEND": {
@@ -4531,8 +4686,8 @@
   "repository": "nepryoon/ocor-detailed-design",
   "schema_version": "1.0",
   "state_sync_ci": {
-    "final_head_rule": "13 required SUCCESS on exact final HEAD; merge --match-head-commit; do not transfer prior CI.",
-    "qualification_scope": "Soli stato/handoff/log dell avanzamento del ciclo 1 di OCOR-DEV-REM-0019 (nessuna evidenza sigillata, nessun task completato).",
+    "final_head_rule": "13 required SUCCESS on exact final HEAD; merge --match-head-commit; no bypass.",
+    "qualification_scope": "Stato/handoff/log della diagnosi: nessuna evidenza o task qualificato. Documento di decision request pubblicato in branch separato, non mergiato.",
     "status": "CI_REQUIRED_BEFORE_EXACT_HEAD_MERGE"
   },
   "state_sync_ci_history": [
@@ -5258,6 +5413,14 @@
       "observation_source": "PR205 mergiata verificata su main. Nessuna qualifica CI trasferita al presente branch.",
       "pull_request": 205,
       "status": "MERGED"
+    },
+    {
+      "head_sha": "d9bd9f4c03746f360680a131fae698f44deaba4a",
+      "merge_commit": "7fc65b055c1993d75e8f21b157a54102068cfc6f",
+      "observation_source": "gh pr view 206: MERGED, 13 check obbligatori SUCCESS; nessun risultato trasferito al presente branch.",
+      "pull_request": 206,
+      "required_checks": 13,
+      "status": "MERGED"
     }
   ],
   "status": "IN_PROGRESS",
@@ -5265,5 +5428,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-11T05:35:59Z"
+  "updated_at": "2026-10-11T06:01:11Z"
 }
