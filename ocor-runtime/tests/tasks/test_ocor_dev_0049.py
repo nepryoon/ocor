@@ -1787,10 +1787,114 @@ def _backup_transit(env: dict[str, str], operation: str, body: dict) -> dict:
 
 
 def _assert_encrypted_backup_artifact(blob: bytes, artifact: dict, env: dict[str, str]) -> bytes:
-    """Characterization of the previous lexical oracle (RED before the PO-authorized repair)."""
-    assert b"PGDMP" not in blob and b"tenant-a" not in blob and b"evt-del" not in blob
-    assert all(c.startswith("vault:v1:") for c in json.loads(blob)["chunks"])
-    return b""
+    """Independent closed-envelope oracle, PO REM-0019-BACKUP-CIPHERTEXT-MARKER.
+    Ciphertext characters are opaque: only authenticated decryption proves confidentiality.
+    The signed manifest binds both the ciphertext and the entire ordered plaintext artifact.
+    """
+    def unique_fields(pairs: list) -> dict:
+        obj = {}
+        for key, value in pairs:
+            assert key not in obj, "BACKUP_ENVELOPE: duplicate field"
+            obj[key] = value
+        return obj
+
+    try:
+        envelope = json.loads(blob, object_pairs_hook=unique_fields)
+    except (ValueError, UnicodeError) as exc:
+        raise AssertionError("BACKUP_ENVELOPE: invalid JSON") from exc
+    assert type(envelope) is dict and set(envelope) == {"key", "chunks"}, "BACKUP_ENVELOPE: closed schema"
+    assert envelope["key"] == "ocor-poc-backup-enc", "BACKUP_ENVELOPE: unexpected encryption key"
+    assert blob == canonical_bytes(envelope), "BACKUP_ENVELOPE: noncanonical frame or extra content"
+    assert hashlib.sha256(blob).hexdigest() == artifact["ciphertext_sha256"], "BACKUP_CIPHERTEXT_DIGEST"
+    assert type(artifact["bytes"]) is int and artifact["bytes"] >= 0, "BACKUP_LENGTH: invalid manifest length"
+    chunks = envelope["chunks"]
+    assert type(chunks) is list and len(chunks) == max(1, (artifact["bytes"] + 1048575) // 1048576), \
+        "BACKUP_CHUNKS: missing or extra chunk"
+    assert all(type(c) is str for c in chunks), "BACKUP_CHUNKS: expected strings"
+    assert len(set(chunks)) == len(chunks), "BACKUP_CHUNKS: duplicate chunk"
+    frame = canonical_bytes({"key": envelope["key"], "chunks": []})
+    assert all(marker not in frame and marker not in artifact["name"].encode()
+               for marker in (b"PGDMP", b"tenant-a", b"evt-del")), "BACKUP_FRAME: plaintext outside ciphertext"
+    recovered = []
+    for index, chunk in enumerate(chunks):
+        assert re.fullmatch(r"vault:v1:[A-Za-z0-9+/]+={0,2}", chunk), "BACKUP_CHUNK: invalid transit envelope"
+        encoded = chunk.removeprefix("vault:v1:")
+        try:
+            ciphertext = base64.b64decode(encoded, validate=True)
+        except ValueError as exc:
+            raise AssertionError("BACKUP_CHUNK: invalid base64") from exc
+        assert len(ciphertext) >= 28 and base64.b64encode(ciphertext).decode() == encoded, \
+            "BACKUP_CHUNK: invalid AES-GCM nonce/ciphertext/tag frame"
+        try:
+            result = _backup_transit(env, "decrypt", {"ciphertext": chunk})
+        except urllib.error.HTTPError as exc:
+            if exc.code == 400:
+                raise AssertionError("BACKUP_AUTHENTICATION: transit rejected chunk") from exc
+            raise  # an unavailable mandatory custodian is a failure, never a passing negative
+        try:
+            plaintext = base64.b64decode(result["plaintext"], validate=True)
+        except (KeyError, ValueError, TypeError) as exc:
+            raise AssertionError("BACKUP_AUTHENTICATION: invalid custodian response") from exc
+        length = min(1048576, max(0, artifact["bytes"] - index * 1048576))
+        assert len(plaintext) == length, "BACKUP_LENGTH: missing, duplicated or reordered plaintext"
+        recovered.append(plaintext)
+    plaintext = b"".join(recovered)
+    assert hashlib.sha256(plaintext).hexdigest() == artifact["plaintext_sha256"], "BACKUP_PLAINTEXT_DIGEST"
+    return plaintext
+
+
+def _assert_backup_plaintext_sources(plaintexts: dict[str, bytes]) -> None:
+    """Bind decrypted artifacts to the known drill source, independently of the seal code."""
+    for name in ("postgresql/ocor.dump", "postgresql/ocor_poc_drill.dump"):
+        assert plaintexts[name].startswith(b"PGDMP"), "source is a real PostgreSQL custom dump"
+    assert b"tenant-a" in plaintexts["memory/memory-items.csv"]
+    assert b"evt-del" in plaintexts["memory/memory-deletion-journal.csv"]
+    items = list(csv.DictReader(io.StringIO(plaintexts["memory/memory-items.csv"].decode())))
+    expected = []
+    for n in range(1, 6):
+        tenant, compartment = drill_scope(n)
+        deletion_epoch = {2: "6", 4: "7"}.get(n, "")
+        expected.append({"item_id": f"m{n}", "tenant_id": tenant, "compartments": json.dumps([compartment]),
+                         "representation_version": "2", "lifecycle_epoch": "3",
+                         "lifecycle_state": "deleted" if deletion_epoch else "active",
+                         "deletion_epoch": deletion_epoch, "content_ref": f"cas:sha256:m{n}",
+                         "classification_marking_ref": DRILL_MARKING,
+                         "governed_context_digest": drill_gcs(tenant, compartment)})
+    assert items == expected
+    journal = list(csv.DictReader(io.StringIO(plaintexts["memory/memory-deletion-journal.csv"].decode())))
+    assert journal == [{"event_id": "evt-del-m2", "item_id": "m2", "deletion_epoch": "6"},
+                       {"event_id": "evt-del-m4", "item_id": "m4", "deletion_epoch": "7"}]
+    assert json.loads(plaintexts["profile/profile.json"]) == compose_profile()
+
+
+def _kill_plaintext_backup_mutant(stack) -> None:
+    """Exercise the real seal with only its fixture-mounted source mutated; production is untouched."""
+    original = 'blob = canonical({"chunks": chunks, "key": keys["encryption"]})'
+    source = agent_source()
+    assert source.count(original) == 1, "mutation must reach exactly the real backup write"
+    override = stack.work / "plaintext-backup-mutant.yaml"
+    override.write_text(yaml.safe_dump({"configs": {"ocor-ops-agent": {
+        # Leak one artifact so identical empty captures do not collide in write_immutable
+        # before the confidentiality oracle observes the defect.
+        "content": source.replace(original, 'blob = data if name == "postgresql/ocor_poc_drill.dump" '
+                                  'else canonical({"chunks": chunks, "key": keys["encryption"]})')}}}))
+    project = f"ocor-poc-backup-mutant-{uuid.uuid4().hex[:6]}"
+    vault = stack.work / f"vault-mutant-{uuid.uuid4().hex[:6]}"
+    vault.mkdir()
+    try:
+        code, logs = stack.run_stage(project, "backup", "ocor-backup-seal", vault=vault, extra_files=(override,))
+        assert code == 0, logs  # not killed by setup or an unrelated capture failure
+        points = list((vault / "recovery-points").iterdir())
+        assert len(points) == 1
+        manifest = json.loads((points[0] / "manifest.json").read_bytes())
+        artifact = next(a for a in manifest["artifacts"] if a["name"] == "postgresql/ocor_poc_drill.dump")
+        blob = (points[0] / "objects" / f"{artifact['ciphertext_sha256']}.enc").read_bytes()
+        assert blob.startswith(b"PGDMP")
+        with pytest.raises(AssertionError, match="BACKUP_ENVELOPE"):
+            _assert_encrypted_backup_artifact(blob, artifact, stack.env)
+        print("real backup plaintext writer mutant killed")
+    finally:
+        stack.down(project)
 
 
 def _exercise_encrypted_backup_oracle(env: dict[str, str]) -> None:
@@ -1831,8 +1935,19 @@ def _exercise_encrypted_backup_oracle(env: dict[str, str]) -> None:
         "extra-chunk": canonical_bytes({**envelope, "chunks": chunks + chunks[:1]}),
         "reordered-chunks": canonical_bytes({**envelope, "chunks": list(reversed(chunks))}),
     }
+    expected_reasons = {
+        "plaintext": "BACKUP_ENVELOPE", "plaintext-disguised-as-transit": "BACKUP_AUTHENTICATION",
+        "extra-envelope-field": "BACKUP_ENVELOPE", "outside-ciphertext-marker": "BACKUP_ENVELOPE",
+        "missing-envelope-key": "BACKUP_ENVELOPE", "duplicate-envelope-key": "BACKUP_ENVELOPE",
+        "wrong-key": "BACKUP_ENVELOPE", "malformed-json": "BACKUP_ENVELOPE",
+        "chunk-not-a-string": "BACKUP_CHUNKS", "invalid-chunk-base64": "BACKUP_CHUNK",
+        "altered-ciphertext-byte": "BACKUP_AUTHENTICATION", "missing-chunk": "BACKUP_CHUNKS",
+        "duplicated-chunk": "BACKUP_CHUNKS", "extra-chunk": "BACKUP_CHUNKS",
+        "reordered-chunks": "BACKUP_LENGTH",
+    }
+    assert set(expected_reasons) == set(mutants)
     for label, blob in mutants.items():
-        with pytest.raises(AssertionError, match="BACKUP_"):
+        with pytest.raises(AssertionError, match=expected_reasons[label]):
             check(blob)
         print(f"backup oracle mutant rejected: {label}")
     assert check(canonical_bytes(envelope)) == data
@@ -1882,6 +1997,7 @@ def test_backup_seals_an_encrypted_signed_immutable_recovery_point(stack):
     signature = (rp / "manifest.sig").read_text()
     assert transit_verify(stack.env, raw, signature) is True
     assert transit_verify(stack.env, raw.replace(b"PRESENT", b"ABSENT_"), signature) is False
+    _kill_plaintext_backup_mutant(stack)
 
 
 def test_capture_fails_explicitly_when_the_database_is_unreachable(stack):
