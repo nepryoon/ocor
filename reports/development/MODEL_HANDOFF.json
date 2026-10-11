@@ -3,9 +3,9 @@
     "La priorit\u00e0 torna a REM-0019 perch\u00e9 0056 non usa lo stack; il suo WIP \u00e8 preservato.",
     "Caso opzionale di ciphertext valido contenente PGDMP NOT_EXECUTED, nessun backend alterato."
   ],
-  "base_sha": "a32c9bfa7cc5cffc6d724eb9f1ab598848525289",
-  "baseline_commit": "a32c9bfa7cc5cffc6d724eb9f1ab598848525289",
-  "branch": "governed/state-sync-rem-0019-marker-campaign",
+  "base_sha": "0aa2076ea8960abb25412b88e85c6d28332f89cd",
+  "baseline_commit": "0aa2076ea8960abb25412b88e85c6d28332f89cd",
+  "branch": "governed/state-sync-rem-0019-qualification-resume",
   "branch_evidence_paths": [
     "reports/assurance/OCOR-DEV-REM-0019-RCCAD/marker-repair-WIP.json",
     "reports/assurance/OCOR-DEV-REM-0019-RCCAD/marker-repair.log",
@@ -19,7 +19,7 @@
   ],
   "ci": {
     "rem_0017_status": "NOT_QUALIFIED_AWAITING_REM_0019",
-    "rem_0019_status": "MARKER_CAMPAIGN_IN_PROGRESS_NO_PR",
+    "rem_0019_status": "QUALIFICATION_IN_PROGRESS_NO_PR",
     "state_sync_status": "CI_REQUIRED_BEFORE_EXACT_HEAD_MERGE"
   },
   "claims": {
@@ -32,89 +32,116 @@
   "commands_run": [
     {
       "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "counts": "8/8 OK",
+      "exit_code": 0
+    },
+    {
+      "command": "scripts/verify.py --json (isolated state-sync worktree, Python 3.12.11)",
+      "counts": "14 PASS, 0 FAIL, 0 NOT_EXECUTED",
+      "exit_code": 0
+    },
+    {
+      "command": "scripts/validate_evidence_input_drift.py",
+      "counts": "69 tasks, 180 inputs, 0 drift",
+      "exit_code": 0
+    },
+    {
+      "command": "toolchain digest/version read-only check",
+      "counts": "8/8 host/repository binaries match lock",
+      "exit_code": 0
+    },
+    {
+      "command": "scripts/verify_external_services.py --execute --typed",
+      "counts": "all 11 containers healthy; all typed service groups READY",
+      "exit_code": 0
+    },
+    {
+      "command": "scripts/verify_external_services.py --execute --typed --env-file ...",
+      "exit_code": 2,
+      "note": "Unsupported CLI argument, corrected once; not a health PASS",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "command": "validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
+      "counts": "36 PASS, 1 FAIL, 2 NOT_EXECUTED",
+      "exit_code": 1
+    },
+    {
+      "command": "validate_ocor_development_plan.py --authorized-extension --base-ref df444af855e884d7783612b302e008b90105fe13",
+      "counts": "36 PASS, 1 FAIL, 2 NOT_EXECUTED",
+      "exit_code": 1
+    },
+    {
+      "command": "require_full.py before the full regression",
+      "exit_code": 1,
+      "note": "No full-worker-result.json; candidate/request must remain blocked",
+      "status": "EXPECTED_REJECTION"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
       "exit_code": 0,
-      "label": "inputs",
-      "log": "gate-marker-wip-inputs.log"
+      "label": "inputs"
     },
     {
       "command": "ruff check .",
       "exit_code": 0,
-      "label": "ruff",
-      "log": "gate-marker-wip-ruff.log",
-      "note": "ruff 0.13.1 of the locked environment"
+      "label": "ruff"
     },
     {
       "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python -m mypy --strict",
       "exit_code": 0,
-      "label": "mypy",
-      "log": "gate-marker-wip-mypy.log"
+      "label": "mypy"
     },
     {
       "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
       "exit_code": 0,
-      "label": "language",
-      "log": "gate-marker-wip-language.log"
+      "label": "language"
     },
     {
       "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
       "exit_code": 0,
-      "label": "rccad",
-      "log": "gate-marker-wip-rccad.log",
-      "note": "base = sealed 0049 candidate (branch root)"
+      "label": "rccad"
     },
     {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0019-0049-test-isolation",
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/state-sync-rem-0019-qualification-resume",
       "exit_code": 0,
-      "label": "scope",
-      "log": "gate-marker-wip-scope.log"
+      "label": "scope"
     },
     {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref HEAD",
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
       "exit_code": 0,
-      "label": "plan",
-      "log": "gate-marker-wip-plan.log",
-      "note": "as on task branches (--base-ref HEAD); the governed-PR allowlist of the new assurance paths is an integration-time step (residual risk)"
+      "label": "plan"
     },
     {
       "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
       "exit_code": 0,
-      "label": "drift",
-      "log": "gate-marker-wip-drift.log"
+      "label": "drift"
     },
     {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0055 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
       "exit_code": 0,
-      "label": "runtime-evidence",
-      "log": "gate-marker-wip-runtime-evidence.log"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python scripts/verify.py --json",
-      "exit_code": 0,
-      "label": "verify-harness",
-      "log": "gate-marker-wip-verify-harness.log"
+      "label": "runtime-evidence"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0019 ciclo marker (riparazione 1): campagna sul candidato 60c859a in corso; handoff prima del limite di tempo",
+  "current_task": "OCOR-DEV-REM-0019: ripresa qualifica ciclo 1; cinque ordini PASS, isolati in corso, regressione completa obbligatoria accodata",
   "evidence_paths": [],
   "evidence_paths_definition": "No candidate evidence was copied into this state-sync checkout; every WIP artifact is referenced by source_reference.artifacts with branch, exact SHA and content digest.",
-  "exact_next_action": "OCOR-DEV-REM-0019:implementation, ciclo marker (riparazione 1), ripresa: seguire /home/luca/.ocor-codex/rem-0019-r1m/HANDOFF.md. La campagna sul candidato 60c859a gira staccata (driver3.sh): attendere DONE in driver.progress senza avviare un secondo stack; un run fallito va spostato in attempts/ con diagnosis.json e rieseguito, mai rietichettato. Con 5 ordini e 119 isolati verdi: assertion_identity.py, build_evidence.py <worktree> 2d6d2370fa1495bd2b23770665696e59cd548e01 60c859a8c61c541f7bce89ab0b5d6a4e27c62ab1, make_readme.py, commit dell evidenza (.r1-marker), check_evidence.py (PASS), gates.py final (10/10), push, build_request.py (REMEDIATION, repair_cycle 1, verifier cursor), ripristino del tag Fuseki governato, state_sync_candidate.py in un branch governed/. Poi OCOR-DEV-REM-0017, merge 0049, 0056 (WIP 5edd6cd) e 0057-0059. RVW-03, INFO-A, INFO-C, REM-0018 aperti e non bloccano G5.",
+  "exact_next_action": "OCOR-DEV-REM-0019:qualification \u2014 riprendere /home/luca/.ocor-codex/rem-0019-r1m/HANDOFF.md e lo stato versionato. Non avviare reset o suite concorrenti: driver4.sh completa i 119 isolati, full_after_isolated.py attende DONE e 119 PASS (timeout 3h), poi reset/bootstrap ricetta pinned CI, SVID/health, collect e suite completa 75 min con DSN/Node/Python pinnati, union JUnit, teardown fail-closed e ripristino tag Fuseki. Leggere full-worker-result.json: FAIL richiede diagnosi e conservazione dei log; >60 min richiede decision request senza alzare il tetto. Con PASS, completare build_evidence.py/check_evidence.py/make_readme.py/state_sync_candidate.py includendo il run completo e relativi raw/hash e rimuovendo le note ereditate che lo dichiarano non richiesto; require_full.py impone il prerequisito. Risolvere base/branch di integrazione: il piano su origin/main e sul vecchio base df444af fallisce; non allargare allowlist produzione, non usare HEAD come gate di integrazione. Preparare separazione tra diff test del task 0049 e diff governato dei record/allowlist; gate verdi sulla base reale della PR. build_request.py richiede anche integration-base-gate.json PASS sull esatto HEAD e comando non HEAD. Solo dopo tutti i gate, nuova REMEDIATION repair_cycle 1 verifier cursor/Grok, mai avviare verifier. Poi REM-0017, integrazione 0049 e 0056 WIP preservato; nessuna chiusura normativa o claim promosso.",
   "head_sha": "60c859a8c61c541f7bce89ab0b5d6a4e27c62ab1",
   "head_sha_resolver": "source_reference.head_sha identifies WIP source; state-sync HEAD resolved by git at verification",
   "independent_verification": {
     "previous_request": "OCOR-DEV-REM-0019-9099f7b6a677-0 NO_GO",
     "request_id": null,
-    "status": "NOT_REQUESTED_YET",
+    "status": "NOT_REQUESTED",
     "verifier": "cursor"
   },
-  "local_full_suite": "NOT_EXECUTED; full campaign pending, no qualification inferred",
+  "local_full_suite": "NOT_EXECUTED; bounded sequential worker scheduled after inherited isolated campaign",
   "local_gate_results": {
-    "0050": "198 PASS / 0 SKIP",
-    "HEAD_precheck": "10 exit 0",
-    "document_harnesses": "5 exit 0",
-    "origin_main_plan": "FAIL (inherited unmerged 0049 paths)",
-    "reports_pytest": "48 PASS / 0 FAIL / 0 SKIP",
-    "targeted_backup": "1 PASS / 0 SKIP, real OpenBao/PostgreSQL/Kafka/Qdrant"
+    "candidate_real_base": "FAIL preserved",
+    "full_runtime": "NOT_EXECUTED pending sequential worker",
+    "plan_optional_checks": "2 NOT_EXECUTED, not PASS",
+    "state_sync": "9/9 exit 0 (ruff/mypy strict, language, RCCAD, scope, plan real main base, drift, runtime-evidence, inputs)"
   },
   "migration_rollback_result": "Produzione 0049 e inputs invariati; rollback del test/allowlist tramite nuovo revert; drill completo NOT_EXECUTED. Nessun record sigillato riscritto.",
   "po_decisions_pending": [],
@@ -128,22 +155,99 @@
     "NFR-067"
   ],
   "roles": [
-    "Claude Code (Anthropic), riserva: isolamento test cicli 0/1",
-    "Codex (OpenAI): riparazione puntuale oracolo backup nel ciclo 1",
-    "Grok 4.7 via Cursor CLI (verifier: cursor), processo e contesto separati; NON RICHIESTO"
+    "Claude Code (Anthropic), test isolation/VF-001 and inherited campaign",
+    "Codex (OpenAI), backup oracle and present qualification orchestration",
+    "Grok 4.7 (Cursor CLI), separate provider/process/context"
   ],
   "schema_version": "1.0",
   "security_observability_notes": "Schema chiuso, AES-GCM autenticato, digest firmati e sorgenti fixture. Secrets fuori da Git. Nessun claim runtime/FGM promosso.",
   "source_reference": {
+    "artifacts": {
+      "build_evidence.py": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/build_evidence.py",
+        "sha256": "a111a52f68ecb4f9236091811f27f458cd031b29424a90324ae11429df0edf12"
+      },
+      "build_request.py": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/build_request.py",
+        "sha256": "8333c63cff7ab49b817db36a3691055862f551d273dee29473e98aa5fa7dced7"
+      },
+      "full_after_isolated.py": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/full_after_isolated.py",
+        "sha256": "11632ab4293913b6d40431d438ba59bc1c3a022cb0496ba992747058e7eaad25"
+      },
+      "require_full.py": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/require_full.py",
+        "sha256": "72f88db2bd8c470e076fc49f72b508e39858e1a6ab381b90572541b7677aa537"
+      },
+      "resume-guard-before-full.log": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-guard-before-full.log",
+        "sha256": "c974c548b17b1fd976490ba77ca99e645cf1e3f5473c9f1db2c7499562f9b8a4"
+      },
+      "resume-plan-main.log": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-plan-main.log",
+        "sha256": "62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90"
+      },
+      "resume-plan-main.md": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-plan-main.md",
+        "sha256": "b5837416c6219e4836b7b3e9aaf4fe2474a7ec6f32aeb91baa236bac4a73d77e"
+      },
+      "resume-plan-rem-base.log": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-plan-rem-base.log",
+        "sha256": "62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90"
+      },
+      "resume-plan-rem-base.md": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-plan-rem-base.md",
+        "sha256": "03bd1c6194fc329d2df775fc44fbbdf78cebb31a3f931550bdbfcddeb2921ac6"
+      },
+      "resume-preflight-drift.log": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-preflight-drift.log",
+        "sha256": "c6d0b2468297ad125ad0adb76996e69f4e5f53346feb618f665b847b43a248cb"
+      },
+      "resume-preflight-verify.log": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-preflight-verify.log",
+        "sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+      },
+      "resume-toolchain.json": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-toolchain.json",
+        "sha256": "66e146650643e1c6e0dbdefc45a3a8732d08f6a4dafb38cbdf02e51c6777b327"
+      },
+      "resume-typed-health-corrected.log": {
+        "path": "/home/luca/.ocor-codex/rem-0019-r1m/resume-typed-health-corrected.log",
+        "sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3"
+      }
+    },
     "base": "df444af855e884d7783612b302e008b90105fe13",
     "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
-    "campaign": "nohup ~/.ocor-codex/rem-0019-r1m/driver3.sh (dopo driver2.sh): stato in driver.progress (DONE alla fine), modules.progress, isolated.progress",
+    "campaign_driver": "driver4.sh; driver.progress, isolated.progress in /home/luca/.ocor-codex/rem-0019-r1m",
     "campaign_head": "60c859a8c61c541f7bce89ab0b5d6a4e27c62ab1",
     "code_commit": "2d6d2370fa1495bd2b23770665696e59cd548e01",
-    "evidence_scripts": "build_evidence.py, make_readme.py, check_evidence.py, build_request.py, state_sync_candidate.py in /home/luca/.ocor-codex/rem-0019-r1m, provati a secco sui dati del ciclo 1",
-    "handoff_file": "/home/luca/.ocor-codex/rem-0019-r1m/HANDOFF.md",
-    "isolated_runs": "0/119 eseguiti, 0 PASS",
-    "local_gates_on_campaign_head": "gates-code 10/10 exit 0 (inputs, ruff, mypy strict, language, RCCAD, scope, piano --base-ref HEAD, drift, runtime-evidence 0050, harness)",
+    "full_worker": {
+      "entrypoint": "/home/luca/.ocor-codex/rem-0019-r1m/full_after_isolated.py",
+      "full_suite_limit_seconds": 4500,
+      "pid": 579828,
+      "progress": "/home/luca/.ocor-codex/rem-0019-r1m/full-worker.progress",
+      "result": "/home/luca/.ocor-codex/rem-0019-r1m/full-worker-result.json",
+      "status": "WAITING_ISOLATED",
+      "teardown_required": true,
+      "wait_limit_seconds": 10800
+    },
+    "gate_disposition": {
+      "full_runtime": "NOT_EXECUTED; worker waits for 119/119 isolated PASS",
+      "head_only_plan": "PASS_LOCAL_PRECHECK_ONLY, not integration acceptance",
+      "independent_verification": "NOT_REQUESTED",
+      "main_base_plan": "FAIL: 13 inherited 0049 paths",
+      "rem_base_plan": "FAIL: 21 paths include already merged G5 and remediated test"
+    },
+    "implementers": [
+      "Claude Code (Anthropic), test isolation/VF-001 and inherited campaign",
+      "Codex (OpenAI), backup oracle and present qualification orchestration"
+    ],
+    "isolated_runs": {
+      "executed": 14,
+      "expected": 119,
+      "observed_at": "2026-10-11T12:13:03.609017+00:00",
+      "passed": 14
+    },
     "module_runs": {
       "order-collection": {
         "counts": {
@@ -184,18 +288,21 @@
         },
         "duration_seconds": 2429.1,
         "ok": true
+      },
+      "order-seed-190003": {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "duration_seconds": 2386.6,
+        "ok": true
       }
     },
-    "non_qualifying_attempts_marker_cycle": [
-      "attempt1-order-collection",
-      "attempt1-order-seed-190001"
-    ],
-    "po_decision": "REM-0019-BACKUP-CIPHERTEXT-MARKER (2026-10-11, opzione 1); non consuma un ciclo",
+    "po_decision": "REM-0019-BACKUP-CIPHERTEXT-MARKER (2026-10-11, opzione 1); repair_cycle 1 unchanged",
     "repair_cycle": 1,
-    "repair_fix": "oracolo strutturale del backup (Codex, RED ac71229, GREEN 2d6d237): schema chiuso, chunk vault:v1: legati al manifest firmato, decrittazione autenticata sul transit OpenBao reale, digest del plaintext, sorgenti decifrate legate al drill, 15 negativi deterministici, mutante del sigillo reale in chiaro ucciso",
-    "session_dir": "/home/luca/.ocor-codex/rem-0019-r1m (fuori dal repository)",
-    "stack_recipe": "ricetta CI di REM-0017 (prepare.py prep2, Fuseki JVM_ARGS -Xms128m -Xmx1G), come nei cicli 0 e 1; riavvio preventivo di Fuseki prima di ogni run e degli isolati",
-    "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor; ~/.ocor-codex/verifier_override OCOR-DEV-REM-0019-* cursor)",
+    "verifier": "Grok 4.7 (Cursor CLI), separate provider/process/context",
     "worktree": ".ocor/worktrees/rem-0019"
   },
   "suspended_0056_reference": {
@@ -265,14 +372,14 @@
   },
   "task_id": "OCOR-DEV-REM-0019",
   "teardown": {
-    "containers": [],
-    "networks": [],
-    "volumes": []
+    "full_worker_cleanup": "reset_test_environment --execute and tag restoration in finally; result required before qualification",
+    "status": "INHERITED_CAMPAIGN_ACTIVE_DO_NOT_RESET"
   },
   "unresolved_blockers": [
-    "Qualifica completa REM-0019 ancora richiesta",
-    "Precheck plan origin/main FAIL per base ereditata 0049; da risolvere senza indebolire gate"
+    "119 isolated runs incomplete",
+    "Mandatory full regression and evidence assembly pending",
+    "Both real-base planning prechecks FAIL; actual integration diff/base must be resolved"
   ],
-  "updated_at": "2026-10-11T11:14:51Z",
-  "worktree": ".ocor/worktrees/state-sync-rem-0019-marker-campaign"
+  "updated_at": "2026-10-11T12:14:44.554030+00:00",
+  "worktree": ".ocor/worktrees/state-sync-rem-0019-qualification-resume"
 }
