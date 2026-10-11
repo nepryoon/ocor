@@ -59,7 +59,9 @@ from __future__ import annotations
 
 import base64
 import calendar
+import csv
 import hashlib
+import io
 import json
 import os
 import re
@@ -1775,6 +1777,67 @@ def drill_live_items(live: list[int]) -> dict:
             "scope_digest": hashlib.sha256(canonical_bytes(sorted(rows, key=canonical_bytes))).hexdigest()}
 
 
+def _backup_transit(env: dict[str, str], operation: str, body: dict) -> dict:
+    request = urllib.request.Request(
+        f"http://127.0.0.1:8200/v1/ocor-poc-transit/{operation}/ocor-poc-backup-enc",
+        method="POST", data=json.dumps(body).encode(),
+        headers={"X-Vault-Token": env["OCOR_LOCAL_OPENBAO_TOKEN"], "Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.loads(response.read())["data"]
+
+
+def _assert_encrypted_backup_artifact(blob: bytes, artifact: dict, env: dict[str, str]) -> bytes:
+    """Characterization of the previous lexical oracle (RED before the PO-authorized repair)."""
+    assert b"PGDMP" not in blob and b"tenant-a" not in blob and b"evt-del" not in blob
+    assert all(c.startswith("vault:v1:") for c in json.loads(blob)["chunks"])
+    return b""
+
+
+def _exercise_encrypted_backup_oracle(env: dict[str, str]) -> None:
+    """Within the existing case: deterministic negatives against the real OpenBao custodian.
+    No new collected case, backend replacement or dependence on another test's result.
+    Rehash mutated blobs so authentication/structure, rather than the outer hash, reject them.
+    """
+    data = b"PGDMP tenant-a evt-del\n" + b"a" * 1048576
+    pieces = [data[i:i + 1048576] for i in range(0, len(data), 1048576)]
+    chunks = [_backup_transit(env, "encrypt", {"plaintext": base64.b64encode(p).decode()})["ciphertext"]
+              for p in pieces]
+    envelope = {"key": "ocor-poc-backup-enc", "chunks": chunks}
+    entry = {"name": "oracle-source", "bytes": len(data), "plaintext_sha256": hashlib.sha256(data).hexdigest()}
+
+    def check(blob: bytes) -> bytes:
+        return _assert_encrypted_backup_artifact(
+            blob, {**entry, "ciphertext_sha256": hashlib.sha256(blob).hexdigest()}, env)
+
+    raw = base64.b64decode(chunks[0].removeprefix("vault:v1:"), validate=True)
+    changed = bytes([raw[0] ^ 1]) + raw[1:]
+    altered = "vault:v1:" + base64.b64encode(changed).decode()
+    mutants = {
+        "plaintext": data,
+        "plaintext-disguised-as-transit": canonical_bytes({**envelope, "chunks": [
+            "vault:v1:" + base64.b64encode(p).decode() for p in pieces]}),
+        "extra-envelope-field": canonical_bytes({**envelope, "unexpected": "leak"}),
+        "outside-ciphertext-marker": canonical_bytes({**envelope, "unexpected": "tenant-a"}),
+        "missing-envelope-key": canonical_bytes({"chunks": chunks}),
+        "duplicate-envelope-key": b'{"key":"ocor-poc-backup-enc","key":"ocor-poc-backup-enc","chunks":'
+                                  + json.dumps(chunks).encode() + b'}',
+        "wrong-key": canonical_bytes({**envelope, "key": "other"}),
+        "malformed-json": b'{"chunks":',
+        "chunk-not-a-string": canonical_bytes({**envelope, "chunks": [3, chunks[1]]}),
+        "invalid-chunk-base64": canonical_bytes({**envelope, "chunks": ["vault:v1:!", chunks[1]]}),
+        "altered-ciphertext-byte": canonical_bytes({**envelope, "chunks": [altered, chunks[1]]}),
+        "missing-chunk": canonical_bytes({**envelope, "chunks": chunks[:-1]}),
+        "duplicated-chunk": canonical_bytes({**envelope, "chunks": [chunks[0], chunks[0]]}),
+        "extra-chunk": canonical_bytes({**envelope, "chunks": chunks + chunks[:1]}),
+        "reordered-chunks": canonical_bytes({**envelope, "chunks": list(reversed(chunks))}),
+    }
+    for label, blob in mutants.items():
+        with pytest.raises(AssertionError, match="BACKUP_"):
+            check(blob)
+        print(f"backup oracle mutant rejected: {label}")
+    assert check(canonical_bytes(envelope)) == data
+
+
 def test_backup_seals_an_encrypted_signed_immutable_recovery_point(stack):
     project = f"ocor-poc-backup-{uuid.uuid4().hex[:6]}"
     vault = stack.work / f"vault-backup-{uuid.uuid4().hex[:6]}"  # REM-0019: its own vault
@@ -1806,12 +1869,14 @@ def test_backup_seals_an_encrypted_signed_immutable_recovery_point(stack):
     assert {"postgresql/ocor.dump", "postgresql/ocor_poc_drill.dump", "kafka/offsets.txt",
             "qdrant/ocor_poc_drill_memory.snapshot", "memory/memory-deletion-journal.csv",
             "opa/policies.json"} <= names
+    _exercise_encrypted_backup_oracle(stack.env)
+    plaintexts = {}
     for artifact in manifest["artifacts"]:
         blob_path = rp / "objects" / f"{artifact['ciphertext_sha256']}.enc"
         blob = blob_path.read_bytes()
         assert blob_path.stat().st_mode & 0o777 == 0o444
-        assert b"PGDMP" not in blob and b"tenant-a" not in blob and b"evt-del" not in blob
-        assert all(c.startswith("vault:v1:") for c in json.loads(blob)["chunks"])
+        plaintexts[artifact["name"]] = _assert_encrypted_backup_artifact(blob, artifact, stack.env)
+    _assert_backup_plaintext_sources(plaintexts)
     with pytest.raises(PermissionError):
         (rp / "manifest.json").write_bytes(b"{}")
     signature = (rp / "manifest.sig").read_text()
