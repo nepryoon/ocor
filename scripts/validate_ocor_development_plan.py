@@ -272,6 +272,10 @@ def main() -> int:
     changed = subprocess.run(["git", "diff", "--name-only", args.base_ref, "--"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
+        # CC-OCOR-DELIVERY-COMPLETION section 7: exact authorized REM-0022
+        # source and governance disposition; no broader spike path admission.
+        "spikes/kafka_delivery/oracle.py",
+        "reports/development/decision_requests/REM-0022-KAFKA-ORACLE-PLAN-SCOPE.md",
         'infra/fuseki/local_identity.lock.json',
         'reports/tests/test_fuseki_local_identity.py',
         'reports/development/decision_requests/FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE.md',

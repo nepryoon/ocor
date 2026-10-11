@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0022 — Lifecycle e teardown Kafka
 
-Status: `BLOCKED_PLAN_SCOPE`. Nessun sigillo o chiusura. Il gate sulla main reale respinge il sorgente Kafka assente nell allowlist; decision request `REM-0022-KAFKA-ORACLE-PLAN-SCOPE`. Test e integrita locale PASS non qualificano integrazione o verifica indipendente.
+Status: `CANDIDATE_PENDING_INDEPENDENT_VERIFICATION`. Nessun sigillo o chiusura. Il primo FAIL del gate di piano resta diagnostico; disposition risolta entro il mandato corrente §7, PR #214 chiusa senza merge. Gate e riqualifica finali richiesti prima della verifica.
 
 La suite completa di REM-0019 aveva lasciato quattro volumi anonimi attribuiti a
 `KafkaCli`, oltre a quattordici volumi senza prova sufficiente di ownership. La
@@ -26,8 +26,8 @@ di successo del broker. I casi di residuo volutamente indotto verificano il
 rifiuto e ripuliscono soltanto i mount osservati del test. Questo cleanup non
 nasconde un fallimento di teardown del percorso positivo.
 
-La nuova allowlist del validator di piano elenca solo il modulo di test e i
-file di evidenza di questa remediation. Non cambia alcun controllo e richiede
+La nuova allowlist del validator di piano elenca esattamente il modulo di test, i
+file di evidenza, il sorgente Kafka già autorizzato e il relativo record di disposition. Non cambia alcun controllo e richiede
 la riqualifica di 0050; il self-hash del validator nel planning state è riallineato.
 Le riqualifiche di 0019, 0040 e 0050 hanno nuovi raw log, hash riacquisiti e
 `supersedes` esplicito. I record sigillati e i relativi log restano byte-identici.
