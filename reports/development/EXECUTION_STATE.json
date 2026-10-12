@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac",
-    "branch": "governed/state-sync-rem0019-full-observation-20261012",
+    "baseline_commit": "60e0e1213996fc750567866c0348a496cff817ec",
+    "branch": "governed/state-sync-rem0019-order-observation-20261012",
     "checkpoint": {
       "attempt4_diagnosis_archive": {
         "path": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/historic-attempt4-full/diagnosis.json",
@@ -84,9 +84,7 @@
       },
       "current_unit": {
         "full_infrastructure_reruns_total": 2,
-        "full_valid_component_sha256": "071d64592ac79c15778b84c02992443baeb3ba48d47e8c52b57c7f3c8a6e640b",
-        "identity_proof_sha256": "c5cfee24aa6dbde3b14049552b44e1411a28c842c6e200283af713f4a480f366",
-        "observation_sha256": "1a22b1dc249661fcb7c01d8cd3602c0fb97c44ec027e877561e03fb4acbaa6c4",
+        "identity_proof_sha256": "07bfa75f10d3e3fbc32eec28f10419b152aaea4f9a672ba97d83f7469ac646c5",
         "preflight": {
           "drift_inputs": 186,
           "drift_tasks": 69,
@@ -95,10 +93,12 @@
           "status": "PASS"
         },
         "reruns_started": 0,
-        "scope": "Read-only unchanged supervisor adoption; verify full exact union and zero owned residue; preserve valid attempt3 and diagnostics; checkpoint only, no source/test/harness edit.",
-        "session_artifacts": "/home/luca/.ocor-codex/rem0019-full-observation-20261012"
+        "scope": "Read-only serial campaign adoption, failure diagnosis/archive, queued PO decision and state sync. No source/test/harness edits or reruns.",
+        "session_artifacts": "/home/luca/.ocor-codex/rem0019-order-observation-20261012",
+        "toolchain_proof_sha256": "2987dc78d4712ad0491bccb691340e9ed90736b6df372fda7fbdef0a21238e96"
       },
       "driver_status": {
+        "error": "failed module-campaign",
         "full": {
           "counts": {
             "errors": 0,
@@ -118,8 +118,85 @@
         },
         "head_sha": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
         "repair_cycle": 1,
-        "status": "RUNNING"
+        "status": "FAIL",
+        "teardown_exit_code": 0
       },
+      "failed_order_diagnosis": {
+        "attempt": 1,
+        "cause": "Watchdog docker exec systemctl observation fails while owned kind node is removed at module teardown; compatible with historic full attempt4 stop-before-destroy race. All390 test bodies/JUnit pass, process interrupted by watchdog SIGINT during coherence_ops cleanup; no qualifying PASS.",
+        "claims": "E1/E2/Verified/NO-GO unchanged",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "counts_in_qualification_totals": false,
+        "current_resource_counts": {
+          "containers": 23,
+          "networks": 5,
+          "volumes": 364
+        },
+        "duration_seconds": 2419.439637331,
+        "exit_code": 130,
+        "new_resources_after_teardown": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "observed_at": "2026-10-12T17:58:22.780376+00:00",
+        "pending_runs": [
+          "order-collection valid attempt",
+          "order-reverse",
+          "order-seed-190001",
+          "order-seed-190002",
+          "order-seed-190003",
+          "119 isolated"
+        ],
+        "policy": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12)",
+        "proofs": {
+          "events": "node5c4a3536 die(exit137)17:54:04.475715312Z and destroy17:54:05.936134330Z, 1.460419s apart; owned name and kind label; no oom/restart event in captured interval",
+          "exact_remover_process_identity": "NOT_EXECUTED: failure path did not retain matching /proc remover identity; do not assert stronger attribution",
+          "healthy_inspects": "95 private node inspect snapshots, last running/OOMfalse/RestartCount0",
+          "junit": "390 exact requested identities and order; zero failure/error/skipped elements",
+          "log": "390 passed summary followed by KeyboardInterrupt in coherence_ops docker rm teardown"
+        },
+        "qualified_attempt": false,
+        "raw_sha256": {
+          "driver-result.json": "a161c3c0776412ffaab0ca57eadf013be29092daed18754c7e638677f0d82249",
+          "driver.progress": "793ad8f1a5691eb170a1b4bca60b8c1c1900378260f1cba524ca2ee5400cc90c",
+          "kind-removal-events.jsonl": "d7cbac7b9cc743267232b9f82b430d502f63dcf20a6b47843d5ef399ea818807",
+          "modules.progress": "f5c7329fab0fa17281774048c2f9bae7803d6f81ac1b9606596a0694ee14be00",
+          "order-collection-alignment.json": "95bdb35a87128ff06b17b6602a458e597cb6687ab99a6f659d1c3e2c461deeec",
+          "order-collection-diagnostics.log": "8e39094f7b9f712e444fb38b32bdf789393093924551fd43618d12ce6814815c",
+          "order-collection-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+          "order-collection-kind-diagnostics-private.log": "d001d1689b285f5d18ce66a3805145d700ac214c3bf7666b1065a8d07bea4fff",
+          "order-collection-kind-watchdog.log": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "order-collection-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-collection.json": "e4f997d9ae22803f81b3dd73611d4a273058c5b222e98cd9bf660ecc67530588",
+          "order-collection.log": "65f073de137d8aa8d01015870a67d419d1c6bd27a91b712b3ee8e8a25969741a",
+          "order-collection.order": "fe68e5fc7d310fa861d080399cea4dea95e2749eac9ee4fe8cfe1e553262c52c",
+          "order-collection.out": "bc5731a87cb7859157b36ff33aad2e7a4696509d5b47910143004c923bff6f64",
+          "order-collection.xml": "925fa0b4ead61e2a6af500ce073c7d63a602306b65589d717f8fcfb0aa20a5d4",
+          "session-resources-after.json": "00707d83ddf868fcb43c8c84ae905cae23175b892f9f6143c6ea68cfbb8c43fc",
+          "teardown.log": "2bd80699959fb1b3e8f835ce485b3ab18123c893745062b448143845135e409c"
+        },
+        "removed_session_resources": {
+          "containers": 11,
+          "networks": 1,
+          "volumes": 4
+        },
+        "reruns_started": 0,
+        "retained_valid_component": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/full/attempt-3/valid-component.json",
+        "retry_disposition": "STOP_AND_QUEUE_PO_DECISION: same observation/removal class recurs across historic full and current module; no blind retry or harness change.",
+        "run": "order-collection",
+        "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
+        "status": "FAIL_INFRASTRUCTURE_OBSERVATION_NONQUALIFYING",
+        "teardown_exit_code": 0,
+        "watchdog_error": "Command '['docker', 'exec', '5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1."
+      },
+      "failed_order_diagnosis_archive": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/diagnosis.json",
+      "failed_order_diagnosis_sha256": "4cee2086930f8fca1ab751399d1f87a09a708dea2810bd96a15a7ff5d0c10547",
       "failed_run_diagnosis": {
         "cause": "Host Docker/containerd package upgrade interrupts daemon at 2026-10-12T06:29:38Z..06:29:54Z; docker ps fails, campaign watchdog SIGINT; distinct from prior pinned-kind containerd SIGSEGV. No cause attributed to repository code.",
         "counts": {
@@ -356,12 +433,31 @@
         "status": "PASS"
       },
       "module_case_count": 390,
-      "observed_at": "2026-10-12T17:00:26.486424+00:00",
-      "qualification": "PENDING_COMPLETE_INDEPENDENCE_CAMPAIGN; full component PASS only, no independent verification requested",
+      "observed_at": "2026-10-12T18:01:46.143622+00:00",
+      "qualification": "FAIL_INFRASTRUCTURE_OBSERVATION_PO_DECISION_REQUIRED; full component retained, no complete qualification",
+      "queued_decision_request": {
+        "branch": "governed/decision-request-rem0019-teardown-observation",
+        "head_sha": "8be2b87a936bbc52909ae0e489d65a68dbc1fbac",
+        "id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+        "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+        "local_gate": {
+          "fail_count": 1,
+          "optional_not_executed": 2,
+          "pass_count": 36,
+          "plan": "FAIL_NEW_PATH_NOT_IN_EXACT_ALLOWLIST",
+          "rccad": "PASS_LOCAL_PRECHECK"
+        },
+        "path": "reports/development/decision_requests/REM-0019-KIND-TEARDOWN-OBSERVATION.md",
+        "pull_request": 232,
+        "sha256": "27c162d0fc5a7dca25e5e8c2a18553090e859eaac7ca7f33f8eed08a834f8d17",
+        "status": "OPEN_PO_DECISION_REQUIRED",
+        "text": "# REM-0019-KIND-TEARDOWN-OBSERVATION\n\nStato: `OPEN_PO_DECISION_REQUIRED` \u2014 2026-10-12.\n\n## Contesto e fatti\n\nLa campagna seriale di REM-0019, ciclo di riparazione 1, usa il commit\n`8842ab2658b9eee201fa1bd26d267a9f23c22df5`. Il full attempt-3 \u00e8 una componente\nvalida conservata: 2196 casi, zero failure/error/skip, unione JUnit esatta e zero\nresidui. I due tentativi full precedenti restano diagnostici, senza conteggi\nqualificanti trasferiti.\n\nIl run `order-collection` del 2026-10-12 termina con exit 130 dopo 2419,44 secondi.\nJUnit contiene esattamente i 390 casi richiesti, nell'ordine richiesto, con zero\nfailure/error/skip. Il log riporta `390 passed`, seguito da `KeyboardInterrupt`\ndurante il teardown della fixture `coherence_ops`. **Il run \u00e8 FAIL diagnostico,\nnon PASS qualificante**, perch\u00e9 il watchdog ha interrotto il processo.\n\nIl watchdog fallisce `docker exec <node UUID> systemctl show containerd` durante\nla rimozione del nodo kind owned `5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b`.\nGli eventi Docker registrano `die` (exit 137) alle 17:54:04,475715312 UTC e\n`destroy` alle 17:54:05,936134330 UTC: intervallo 1,460419 secondi, nome\n`ocor-poc-control-plane` e label del cluster `ocor-poc`. Nell'intervallo acquisito\nnon ci sono eventi OOM/restart; 95 snapshot privati precedenti mostrano il nodo\nrunning, OOM false e RestartCount 0. Il processo preciso di rimozione non \u00e8 stato\nregistrato nel ramo di errore: questo controllo \u00e8 `NOT_EXECUTED`; non si afferma\nuna prova pi\u00f9 forte dell'attribuzione.\n\nIl comportamento \u00e8 compatibile con la classe di race fra osservazione e teardown\ngi\u00e0 diagnosticata nel full storico attempt-4. L'adapter locale di osservazione\ninvariato non ha registrato un'eccezione valida di rimozione (`owned_node_observation_removals=[]`).\nLa ricorrenza su pi\u00f9 run richiede stop e decision request secondo\n`QUALIFICATION-CAMPAIGN-INFRA-RERUN` del 2026-10-12; nessun retry \u00e8 stato avviato.\n\nIl teardown finale del supervisor ha exit 0. Il confronto con l'inventario\nimmediatamente precedente agli ordini prova zero nuove risorse residue: rimosse\n11 risorse container, una rete e quattro volumi dello stack di sessione;\npreservati 23 container, cinque reti e 364 volumi preesistenti. Non \u00e8 un motivo\nper qualificare il run interrotto. Gli altri quattro ordini e i 119 isolati sono\n`NOT_EXECUTED` in questa campagna.\n\n## Prove riproducibili\n\n- Archivio diagnostico immutabile:\n  `/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/`.\n- `diagnosis.json` SHA256:\n  `4cee2086930f8fca1ab751399d1f87a09a708dea2810bd96a15a7ff5d0c10547`;\n  contiene hash dei raw, JUnit, comando, exit, durate, inventari e limiti della prova.\n- Full valido:\n  `attempts/full/attempt-3/valid-component.json`, gi\u00e0 collegato allo stato versionato.\n- Diagnostico storico per confronto:\n  `attempts/historic-attempt4-full/diagnosis.json`.\n- Ricontrollare SHA256 dei file elencati in `raw_sha256`, conteggi/identit\u00e0/ordine\n  JUnit e `watchdog_error` nei metadati; confrontare gli inventari con\n  `full-resources-after.json` e `session-resources-after.json`.\n\n## Opzioni e raccomandazione\n\n1. **Raccomandata:** autorizzare una correzione limitata alla sola osservazione del\n   teardown, con prove deterministiche positive/negative prima dell'uso. Legare\n   l'intento di rimozione al processo kind del gruppo pytest, allo stesso UUID e\n   all'evento destroy; la finestra di osservazione deve essere bounded. Nodo\n   esistente senza intento provato, crash, OOM, restart, cambio PID o timeout\n   continuano a fallire chiusi. Nessuna modifica a codice/test di produzione,\n   criteri, immagini, versioni, timer o check obbligatori.\n   Conservare il full verde solo se un confronto dimostra che la modifica tocca\n   esclusivamente osservazione/smontaggio e non l'esecuzione dei test; altrimenti\n   ricominciare l'intera campagna. Ripetere il solo ordine fallito al massimo due\n   volte, mantenendo questo tentativo diagnostico; poi gli ordini residui e gli isolati.\n2. Risolvere prima l'orchestrazione nel change set governato di REM-0017 e riprendere\n   la campagna quando esiste una condizione infrastrutturale materialmente nuova,\n   con la stessa dimostrazione di scope e conservazione delle prove.\n\nNon si raccomanda di considerare PASS l'exit 130, ignorare il watchdog,\nriclassificare i conteggi diagnostici o ripetere senza una condizione cambiata.\n\n## Impatto e integrazione\n\nBloccati la qualifica/verifica/sigillo di REM-0019, la nuova campagna CI di\nREM-0017, l'integrazione di 0049 e la sequenza successiva subordinata alla loro\nchiusura. Resta eseguibile la diagnosi infrastrutturale di REM-0017 gi\u00e0 autorizzata\ncon l'opzione 1 di `REM-0017-KIND-CONTAINERD-CRASH`, senza modifica di immagini o\nversioni e senza avviare la campagna bloccata. Non consumato un nuovo ciclo di\nriparazione: REM-0019 resta al ciclo 1.\n\nQuesto nuovo percorso della decision request non \u00e8 nell'allowlist esatta del piano\nsu main. La richiesta \u00e8 pubblicata su un branch governato separato; il gate del\npiano rimane FAIL sul percorso nuovo. Lo stato/handoff principali riportano\nintegralmente disposizione e riferimento al commit della richiesta con un change\nset di soli metadati. Nessuna allowlist o evidenza sigillata viene modificata per\nfar passare il controllo. La futura aggiunta puntuale richiede riqualifica 0050;\nil difetto di denial audit resta REM-0023.\n\nImplementatore: Codex; isolamento/VF-001 storici: Claude Code di riserva; verifier\nprevisto: Grok 4.7 tramite Cursor, processo e contesto separati. Nessuna verifica\nindipendente richiesta durante il blocco. `E1=0`, `E2=0`, `Verified=0`, claim\n`NO-GO`, input e record sigillati invariati.\n",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/pull/232"
+      },
       "required_isolated_cases": 119,
       "required_module_orders": 5,
       "rerun_policy": {
-        "application": "Full second and last retry is valid; retain it without repeating while five orders and119 isolated continue at identical source/harness.",
+        "application": "No order rerun started; failed attempt preserved with diagnosis. Full valid component retained, no further qualification while same-class recurrence unresolved.",
         "decision": "QUALIFICATION-CAMPAIGN-INFRA-RERUN",
         "decision_date": "2026-10-12",
         "eligibility": [
@@ -391,10 +487,18 @@
             "max_infrastructure_reruns": 2,
             "valid_attempt": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/full/attempt-3/valid-component.json",
             "valid_attempt_sha256": "071d64592ac79c15778b84c02992443baeb3ba48d47e8c52b57c7f3c8a6e640b"
+          },
+          "order-collection": {
+            "diagnostic_attempts": [
+              "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/diagnosis.json"
+            ],
+            "reruns_used": 0,
+            "status": "FAIL_NONQUALIFYING_STOP_PO_DECISION",
+            "valid_attempt": null
           }
         },
         "same_cause_multiple_runs": "STOP_AND_OPEN_PO_DECISION_REQUEST",
-        "status": "FULL_ATTEMPT3_PASS_COMPONENT_ONLY_INDEPENDENCE_PENDING"
+        "status": "STOP_RECURRENT_TEARDOWN_OBSERVATION_CLASS_PO_DECISION_REQUIRED"
       },
       "rerun_policy_sha256": "64b1dc823a51a3fecc380050dbf49d47b4d0a5df2035a843f91e59d76b42617d",
       "roles": {
@@ -402,24 +506,152 @@
         "verifier": "Grok 4.7 via Cursor CLI (cursor), independent loop only; historic Claude Code reserve implementation requires third provider"
       },
       "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
-      "stack_ownership": "Only existing serial supervisor11336 owns bootstrap, all campaign resources and final teardown; full component completed with identical before/after inventory.",
+      "stack_ownership": "Supervisor11336 exited after reset teardown exit0; zero new owned residue verified; bootstrap session resources removed, historical23 containers/5 networks/364 volumes preserved.",
       "uncompleted_required_runs": "NOT_EXECUTED_OR_RUNNING; no PASS inferred"
     },
-    "implementer_this_unit": "Codex (OpenAI): read-only adoption, exact full-run qualification component and state checkpoint; historic Claude Code reserve isolation/VF-001 and Codex oracle preserved",
-    "independent_verification": "NOT_REQUESTED_PENDING_COMPLETE_QUALIFICATION",
+    "implementer_this_unit": "Codex: read-only campaign observation, failed teardown diagnosis and decision/state sync; no repair of tests/production/harness",
+    "independent_verification": "NOT_REQUESTED_QUALIFICATION_BLOCKED",
     "known_preseal_gate_failure": "0050 input drift from authorized exact-path allowlist; fresh regression-only superseding record mandatory, not waived.",
-    "phase": "QUALIFICATION_FULL_PASS_INDEPENDENCE_RUNNING",
+    "local_state_gates": {
+      "base_sha": "60e0e1213996fc750567866c0348a496cff817ec",
+      "branch": "governed/state-sync-rem0019-order-observation-20261012",
+      "gates": [
+        {
+          "command": [
+            "sha256sum",
+            "-c",
+            "inputs/normative/SHA256SUMS"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.003,
+          "exit_code": 0,
+          "label": "inputs",
+          "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+        },
+        {
+          "command": [
+            "ruff",
+            "check",
+            "."
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.024,
+          "exit_code": 0,
+          "label": "ruff",
+          "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "-m",
+            "mypy",
+            "--strict"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 3.298,
+          "exit_code": 0,
+          "label": "mypy",
+          "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "scripts/validate_rccad.py",
+            "--base-ref",
+            "60e0e1213996fc750567866c0348a496cff817ec"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.25,
+          "exit_code": 0,
+          "label": "rccad",
+          "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_change_scope.py",
+            "--base",
+            "60e0e1213996fc750567866c0348a496cff817ec",
+            "--branch",
+            "governed/state-sync-rem0019-order-observation-20261012"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.038,
+          "exit_code": 0,
+          "label": "scope",
+          "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_development_plan.py",
+            "--authorized-extension",
+            "--base-ref",
+            "60e0e1213996fc750567866c0348a496cff817ec"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.107,
+          "exit_code": 0,
+          "label": "plan",
+          "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "scripts/validate_language_policy.py"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.031,
+          "exit_code": 0,
+          "label": "language",
+          "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "scripts/validate_evidence_input_drift.py"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.069,
+          "exit_code": 0,
+          "label": "drift",
+          "raw_sha256": "3c1c06170d86b870ef4f7ae264857263adccfde225c6fc7e61b6169f91f06941"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0055",
+            "--manifest",
+            "reports/evidence/G5/MANIFEST.json",
+            "--non-skipped"
+          ],
+          "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+          "duration_seconds": 0.021,
+          "exit_code": 0,
+          "label": "runtime-evidence",
+          "raw_sha256": "3399c2d629a1321f5e7b66a42d9c6d8d32c12fcddc59d9182890270802c734e5"
+        }
+      ],
+      "generated_outputs_restored": [
+        "reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md",
+        "reports/planning/OCOR_PLAN_RUN_STATE.json"
+      ],
+      "status": "PASS"
+    },
+    "phase": "QUALIFICATION_FAILED_RECURRENT_TEARDOWN_OBSERVATION_PO_DECISION_REQUIRED",
     "preflight": {
       "services": 11,
       "status": "PASS",
       "toolchain_entries": 9
     },
     "repair_cycle": 1,
-    "session_artifacts": "/home/luca/.ocor-codex/rem0019-full-observation-20261012",
+    "session_artifacts": "/home/luca/.ocor-codex/rem0019-order-observation-20261012",
     "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
     "source_worktree": ".ocor/worktrees/rem-0019",
     "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem0019-full-observation-20261012"
+    "worktree": ".ocor/worktrees/state-sync-rem0019-order-observation-20261012"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1925,7 +2157,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac",
+  "baseline_commit": "60e0e1213996fc750567866c0348a496cff817ec",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -3206,7 +3438,82 @@
         "stack_ownership": "Existing serial supervisor PID/PGID630308 owns stack/test resources and final teardown. Original worker teardown removed all session-created resources. First authorized infrastructure-only retry runs identical scripts and owns bootstrap/test resources plus final teardown; no concurrent stack.",
         "uncompleted_required_runs": "NOT_EXECUTED_OR_RUNNING; no PASS inferred"
       },
+      "current_failure_diagnosis": {
+        "attempt": 1,
+        "cause": "Watchdog docker exec systemctl observation fails while owned kind node is removed at module teardown; compatible with historic full attempt4 stop-before-destroy race. All390 test bodies/JUnit pass, process interrupted by watchdog SIGINT during coherence_ops cleanup; no qualifying PASS.",
+        "claims": "E1/E2/Verified/NO-GO unchanged",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "counts_in_qualification_totals": false,
+        "current_resource_counts": {
+          "containers": 23,
+          "networks": 5,
+          "volumes": 364
+        },
+        "duration_seconds": 2419.439637331,
+        "exit_code": 130,
+        "new_resources_after_teardown": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "observed_at": "2026-10-12T17:58:22.780376+00:00",
+        "pending_runs": [
+          "order-collection valid attempt",
+          "order-reverse",
+          "order-seed-190001",
+          "order-seed-190002",
+          "order-seed-190003",
+          "119 isolated"
+        ],
+        "policy": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12)",
+        "proofs": {
+          "events": "node5c4a3536 die(exit137)17:54:04.475715312Z and destroy17:54:05.936134330Z, 1.460419s apart; owned name and kind label; no oom/restart event in captured interval",
+          "exact_remover_process_identity": "NOT_EXECUTED: failure path did not retain matching /proc remover identity; do not assert stronger attribution",
+          "healthy_inspects": "95 private node inspect snapshots, last running/OOMfalse/RestartCount0",
+          "junit": "390 exact requested identities and order; zero failure/error/skipped elements",
+          "log": "390 passed summary followed by KeyboardInterrupt in coherence_ops docker rm teardown"
+        },
+        "qualified_attempt": false,
+        "raw_sha256": {
+          "driver-result.json": "a161c3c0776412ffaab0ca57eadf013be29092daed18754c7e638677f0d82249",
+          "driver.progress": "793ad8f1a5691eb170a1b4bca60b8c1c1900378260f1cba524ca2ee5400cc90c",
+          "kind-removal-events.jsonl": "d7cbac7b9cc743267232b9f82b430d502f63dcf20a6b47843d5ef399ea818807",
+          "modules.progress": "f5c7329fab0fa17281774048c2f9bae7803d6f81ac1b9606596a0694ee14be00",
+          "order-collection-alignment.json": "95bdb35a87128ff06b17b6602a458e597cb6687ab99a6f659d1c3e2c461deeec",
+          "order-collection-diagnostics.log": "8e39094f7b9f712e444fb38b32bdf789393093924551fd43618d12ce6814815c",
+          "order-collection-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+          "order-collection-kind-diagnostics-private.log": "d001d1689b285f5d18ce66a3805145d700ac214c3bf7666b1065a8d07bea4fff",
+          "order-collection-kind-watchdog.log": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "order-collection-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-collection.json": "e4f997d9ae22803f81b3dd73611d4a273058c5b222e98cd9bf660ecc67530588",
+          "order-collection.log": "65f073de137d8aa8d01015870a67d419d1c6bd27a91b712b3ee8e8a25969741a",
+          "order-collection.order": "fe68e5fc7d310fa861d080399cea4dea95e2749eac9ee4fe8cfe1e553262c52c",
+          "order-collection.out": "bc5731a87cb7859157b36ff33aad2e7a4696509d5b47910143004c923bff6f64",
+          "order-collection.xml": "925fa0b4ead61e2a6af500ce073c7d63a602306b65589d717f8fcfb0aa20a5d4",
+          "session-resources-after.json": "00707d83ddf868fcb43c8c84ae905cae23175b892f9f6143c6ea68cfbb8c43fc",
+          "teardown.log": "2bd80699959fb1b3e8f835ce485b3ab18123c893745062b448143845135e409c"
+        },
+        "removed_session_resources": {
+          "containers": 11,
+          "networks": 1,
+          "volumes": 4
+        },
+        "reruns_started": 0,
+        "retained_valid_component": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/full/attempt-3/valid-component.json",
+        "retry_disposition": "STOP_AND_QUEUE_PO_DECISION: same observation/removal class recurs across historic full and current module; no blind retry or harness change.",
+        "run": "order-collection",
+        "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
+        "status": "FAIL_INFRASTRUCTURE_OBSERVATION_NONQUALIFYING",
+        "teardown_exit_code": 0,
+        "watchdog_error": "Command '['docker', 'exec', '5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1."
+      },
       "decision": "Presa d'atto PO sul vincolo d'ordine di 0049 (2026-10-09)",
+      "decision_request_id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
       "id": "OCOR-DEV-REM-0019",
       "implementation": {
         "artifacts": {
@@ -3764,7 +4071,7 @@
         },
         "worktree": ".ocor/worktrees/rem-0019"
       },
-      "next_action": "OCOR-DEV-REM-0019:repair1-qualification-monitor \u2014 adopt unchanged serial attempt5 /home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/run.sh (launch PID/PGID630308; confirm /proc identity before any signal). Read driver.progress/full.log, then modules.progress/isolated.progress/driver-result.json; no second stack or competing reset. Source 8842ab2658b9eee201fa1bd26d267a9f23c22df5 in .ocor/worktrees/rem-0019 unchanged;  recorded only as components. Apply PO QUALIFICATION-CAMPAIGN-INFRA-RERUN 2026-10-12: a proven infrastructure-only failing run may be rerun alone at most twice with identical source/input/execution-harness hashes in /home/luca/.ocor-codex/rem0019-adoption-20261012/campaign-identity.json; preserve attempts/<run>/<attempt>/diagnosis.json and raw hashes, exclude failed counts, reset and verify no owned residue before retry. Assertion/code failures never infrastructure; same cause on another REQUIRED RUN or third infrastructure failure of the FULL requires decision request; previous full crashes and diagnostic histories remain open, never erased. Observation/teardown-only harness repair needs recorded proof; execution-affecting repair requires full campaign restart. Do not interrupt current run or relabel attempt4. Require exact JUnit collection/order union for full2196, five390 orders and119 isolated, zero fail/error/skip/residue/restart/OOM; full75/task45min, >60min full requires duration request. After complete PASS, align staging to current main preserving execution-tree identity; retarget/validate draft assemble.py and check.py in ~/.ocor-codex/rem0019-codex-20261012 to attempt5, archive valid and diagnostic attempts; append new unsealed REM19/0049 and REGRESSION_ONLY0050 supersessions (198 unchanged tests), verify final HEAD/branch/input/tree/raw hashes, run final gates incl drift and actual integration-base scope/plan, RCCAD before push; submit exact-head Cursor/Grok requests without launching verifier. REM19 repair_cycle1 unchanged. VerifiedREM19 -> REM17 ->0049 integration->REM23 before preserved0056 WIP. No claim/fence promotion.",
+      "next_action": "OCOR-DEV-REM-0017:authorized-infrastructure-diagnosis \u2014 resume option1 of REM-0017-KIND-CONTAINERD-CRASH in .ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire using existing diagnostic logs, same pinned image/version; do not start CI/qualification or change REM-0019 harness while REM-0019-KIND-TEARDOWN-OBSERVATION is OPEN_PO_DECISION_REQUIRED. REM-0019 repair_cycle1 source8842ab2658b9eee201fa1bd26d267a9f23c22df5 unchanged; supervisor11336 exited. Retain full attempt3 PASS2196 and all diagnostic attempts. order-collection attempt1 is FAIL exit130, despite390 test bodies/JUnit PASS; no counts transferred, no retry started; remaining4 orders/119isolated NOT_EXECUTED. Read decision request draftPR232 at 8be2b87a936bbc52909ae0e489d65a68dbc1fbac and versioned diagnosis before any resumption. Same teardown-observation class recurs in historic full: PO infra-rerun rule requires decision, no blind retries. After resolved infrastructure authority, prove observation-only scope to retain full or rerun entire campaign; then all required orders/isolated, exact JUnit identity/order, zero skip/fail/error/restart/OOM/residue, final teardown. Request verifier only after complete fresh final-head evidence and REGRESSION_ONLY0050 supersession198 unchanged tests; historic Claude Code reserve isolation/VF-001 and Codex oracle/qualification; verifier Grok4.7(Cursor). VerifiedREM19 ->REM17 ->0049 integration ->REM23 before preserved0056 WIP. E1/E2/Verified and NO-GO unchanged.",
       "non_blocking": false,
       "po_decision": {
         "date": "2026-10-10",
@@ -3784,7 +4091,7 @@
         "observation": "run 37952580435/37952580531/37952580779 su 4e97cd3: split per nodo FAIL nelle parti 2-4 di conditional-infrastructure-0049",
         "path": "reports/development/EXECUTION_STATE.json"
       },
-      "status": "WIP_FRESH_QUALIFICATION_RUNNING_AFTER_LOCAL_OBSERVATION_REPAIR",
+      "status": "BLOCKED_RECURRENT_INFRASTRUCTURE_PO_DECISION_REQUIRED",
       "verified_free_id": "grep REM-0019 su tutti i ref locali e origin: nessuna occorrenza (2026-10-09)"
     },
     {
@@ -4497,6 +4804,116 @@
       },
       "status": "OPEN_IMPLEMENTATION_REQUIRED",
       "verifier": "Claude Code for Codex-only REM scope; Cursor/Grok 4.7 for 0050, originally touched by reserve Claude Code"
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0019 qualification",
+        "OCOR-DEV-REM-0017 qualifying CI campaign",
+        "OCOR-DEV-0049 integration",
+        "ordered follow-on delivery"
+      ],
+      "decision_request": {
+        "branch": "governed/decision-request-rem0019-teardown-observation",
+        "head_sha": "8be2b87a936bbc52909ae0e489d65a68dbc1fbac",
+        "id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+        "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+        "local_gate": {
+          "fail_count": 1,
+          "optional_not_executed": 2,
+          "pass_count": 36,
+          "plan": "FAIL_NEW_PATH_NOT_IN_EXACT_ALLOWLIST",
+          "rccad": "PASS_LOCAL_PRECHECK"
+        },
+        "path": "reports/development/decision_requests/REM-0019-KIND-TEARDOWN-OBSERVATION.md",
+        "pull_request": 232,
+        "sha256": "27c162d0fc5a7dca25e5e8c2a18553090e859eaac7ca7f33f8eed08a834f8d17",
+        "status": "OPEN_PO_DECISION_REQUIRED",
+        "text": "# REM-0019-KIND-TEARDOWN-OBSERVATION\n\nStato: `OPEN_PO_DECISION_REQUIRED` \u2014 2026-10-12.\n\n## Contesto e fatti\n\nLa campagna seriale di REM-0019, ciclo di riparazione 1, usa il commit\n`8842ab2658b9eee201fa1bd26d267a9f23c22df5`. Il full attempt-3 \u00e8 una componente\nvalida conservata: 2196 casi, zero failure/error/skip, unione JUnit esatta e zero\nresidui. I due tentativi full precedenti restano diagnostici, senza conteggi\nqualificanti trasferiti.\n\nIl run `order-collection` del 2026-10-12 termina con exit 130 dopo 2419,44 secondi.\nJUnit contiene esattamente i 390 casi richiesti, nell'ordine richiesto, con zero\nfailure/error/skip. Il log riporta `390 passed`, seguito da `KeyboardInterrupt`\ndurante il teardown della fixture `coherence_ops`. **Il run \u00e8 FAIL diagnostico,\nnon PASS qualificante**, perch\u00e9 il watchdog ha interrotto il processo.\n\nIl watchdog fallisce `docker exec <node UUID> systemctl show containerd` durante\nla rimozione del nodo kind owned `5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b`.\nGli eventi Docker registrano `die` (exit 137) alle 17:54:04,475715312 UTC e\n`destroy` alle 17:54:05,936134330 UTC: intervallo 1,460419 secondi, nome\n`ocor-poc-control-plane` e label del cluster `ocor-poc`. Nell'intervallo acquisito\nnon ci sono eventi OOM/restart; 95 snapshot privati precedenti mostrano il nodo\nrunning, OOM false e RestartCount 0. Il processo preciso di rimozione non \u00e8 stato\nregistrato nel ramo di errore: questo controllo \u00e8 `NOT_EXECUTED`; non si afferma\nuna prova pi\u00f9 forte dell'attribuzione.\n\nIl comportamento \u00e8 compatibile con la classe di race fra osservazione e teardown\ngi\u00e0 diagnosticata nel full storico attempt-4. L'adapter locale di osservazione\ninvariato non ha registrato un'eccezione valida di rimozione (`owned_node_observation_removals=[]`).\nLa ricorrenza su pi\u00f9 run richiede stop e decision request secondo\n`QUALIFICATION-CAMPAIGN-INFRA-RERUN` del 2026-10-12; nessun retry \u00e8 stato avviato.\n\nIl teardown finale del supervisor ha exit 0. Il confronto con l'inventario\nimmediatamente precedente agli ordini prova zero nuove risorse residue: rimosse\n11 risorse container, una rete e quattro volumi dello stack di sessione;\npreservati 23 container, cinque reti e 364 volumi preesistenti. Non \u00e8 un motivo\nper qualificare il run interrotto. Gli altri quattro ordini e i 119 isolati sono\n`NOT_EXECUTED` in questa campagna.\n\n## Prove riproducibili\n\n- Archivio diagnostico immutabile:\n  `/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/`.\n- `diagnosis.json` SHA256:\n  `4cee2086930f8fca1ab751399d1f87a09a708dea2810bd96a15a7ff5d0c10547`;\n  contiene hash dei raw, JUnit, comando, exit, durate, inventari e limiti della prova.\n- Full valido:\n  `attempts/full/attempt-3/valid-component.json`, gi\u00e0 collegato allo stato versionato.\n- Diagnostico storico per confronto:\n  `attempts/historic-attempt4-full/diagnosis.json`.\n- Ricontrollare SHA256 dei file elencati in `raw_sha256`, conteggi/identit\u00e0/ordine\n  JUnit e `watchdog_error` nei metadati; confrontare gli inventari con\n  `full-resources-after.json` e `session-resources-after.json`.\n\n## Opzioni e raccomandazione\n\n1. **Raccomandata:** autorizzare una correzione limitata alla sola osservazione del\n   teardown, con prove deterministiche positive/negative prima dell'uso. Legare\n   l'intento di rimozione al processo kind del gruppo pytest, allo stesso UUID e\n   all'evento destroy; la finestra di osservazione deve essere bounded. Nodo\n   esistente senza intento provato, crash, OOM, restart, cambio PID o timeout\n   continuano a fallire chiusi. Nessuna modifica a codice/test di produzione,\n   criteri, immagini, versioni, timer o check obbligatori.\n   Conservare il full verde solo se un confronto dimostra che la modifica tocca\n   esclusivamente osservazione/smontaggio e non l'esecuzione dei test; altrimenti\n   ricominciare l'intera campagna. Ripetere il solo ordine fallito al massimo due\n   volte, mantenendo questo tentativo diagnostico; poi gli ordini residui e gli isolati.\n2. Risolvere prima l'orchestrazione nel change set governato di REM-0017 e riprendere\n   la campagna quando esiste una condizione infrastrutturale materialmente nuova,\n   con la stessa dimostrazione di scope e conservazione delle prove.\n\nNon si raccomanda di considerare PASS l'exit 130, ignorare il watchdog,\nriclassificare i conteggi diagnostici o ripetere senza una condizione cambiata.\n\n## Impatto e integrazione\n\nBloccati la qualifica/verifica/sigillo di REM-0019, la nuova campagna CI di\nREM-0017, l'integrazione di 0049 e la sequenza successiva subordinata alla loro\nchiusura. Resta eseguibile la diagnosi infrastrutturale di REM-0017 gi\u00e0 autorizzata\ncon l'opzione 1 di `REM-0017-KIND-CONTAINERD-CRASH`, senza modifica di immagini o\nversioni e senza avviare la campagna bloccata. Non consumato un nuovo ciclo di\nriparazione: REM-0019 resta al ciclo 1.\n\nQuesto nuovo percorso della decision request non \u00e8 nell'allowlist esatta del piano\nsu main. La richiesta \u00e8 pubblicata su un branch governato separato; il gate del\npiano rimane FAIL sul percorso nuovo. Lo stato/handoff principali riportano\nintegralmente disposizione e riferimento al commit della richiesta con un change\nset di soli metadati. Nessuna allowlist o evidenza sigillata viene modificata per\nfar passare il controllo. La futura aggiunta puntuale richiede riqualifica 0050;\nil difetto di denial audit resta REM-0023.\n\nImplementatore: Codex; isolamento/VF-001 storici: Claude Code di riserva; verifier\nprevisto: Grok 4.7 tramite Cursor, processo e contesto separati. Nessuna verifica\nindipendente richiesta durante il blocco. `E1=0`, `E2=0`, `Verified=0`, claim\n`NO-GO`, input e record sigillati invariati.\n",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/pull/232"
+      },
+      "diagnosis": {
+        "attempt": 1,
+        "cause": "Watchdog docker exec systemctl observation fails while owned kind node is removed at module teardown; compatible with historic full attempt4 stop-before-destroy race. All390 test bodies/JUnit pass, process interrupted by watchdog SIGINT during coherence_ops cleanup; no qualifying PASS.",
+        "claims": "E1/E2/Verified/NO-GO unchanged",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "counts_in_qualification_totals": false,
+        "current_resource_counts": {
+          "containers": 23,
+          "networks": 5,
+          "volumes": 364
+        },
+        "duration_seconds": 2419.439637331,
+        "exit_code": 130,
+        "new_resources_after_teardown": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "observed_at": "2026-10-12T17:58:22.780376+00:00",
+        "pending_runs": [
+          "order-collection valid attempt",
+          "order-reverse",
+          "order-seed-190001",
+          "order-seed-190002",
+          "order-seed-190003",
+          "119 isolated"
+        ],
+        "policy": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12)",
+        "proofs": {
+          "events": "node5c4a3536 die(exit137)17:54:04.475715312Z and destroy17:54:05.936134330Z, 1.460419s apart; owned name and kind label; no oom/restart event in captured interval",
+          "exact_remover_process_identity": "NOT_EXECUTED: failure path did not retain matching /proc remover identity; do not assert stronger attribution",
+          "healthy_inspects": "95 private node inspect snapshots, last running/OOMfalse/RestartCount0",
+          "junit": "390 exact requested identities and order; zero failure/error/skipped elements",
+          "log": "390 passed summary followed by KeyboardInterrupt in coherence_ops docker rm teardown"
+        },
+        "qualified_attempt": false,
+        "raw_sha256": {
+          "driver-result.json": "a161c3c0776412ffaab0ca57eadf013be29092daed18754c7e638677f0d82249",
+          "driver.progress": "793ad8f1a5691eb170a1b4bca60b8c1c1900378260f1cba524ca2ee5400cc90c",
+          "kind-removal-events.jsonl": "d7cbac7b9cc743267232b9f82b430d502f63dcf20a6b47843d5ef399ea818807",
+          "modules.progress": "f5c7329fab0fa17281774048c2f9bae7803d6f81ac1b9606596a0694ee14be00",
+          "order-collection-alignment.json": "95bdb35a87128ff06b17b6602a458e597cb6687ab99a6f659d1c3e2c461deeec",
+          "order-collection-diagnostics.log": "8e39094f7b9f712e444fb38b32bdf789393093924551fd43618d12ce6814815c",
+          "order-collection-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+          "order-collection-kind-diagnostics-private.log": "d001d1689b285f5d18ce66a3805145d700ac214c3bf7666b1065a8d07bea4fff",
+          "order-collection-kind-watchdog.log": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "order-collection-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-collection.json": "e4f997d9ae22803f81b3dd73611d4a273058c5b222e98cd9bf660ecc67530588",
+          "order-collection.log": "65f073de137d8aa8d01015870a67d419d1c6bd27a91b712b3ee8e8a25969741a",
+          "order-collection.order": "fe68e5fc7d310fa861d080399cea4dea95e2749eac9ee4fe8cfe1e553262c52c",
+          "order-collection.out": "bc5731a87cb7859157b36ff33aad2e7a4696509d5b47910143004c923bff6f64",
+          "order-collection.xml": "925fa0b4ead61e2a6af500ce073c7d63a602306b65589d717f8fcfb0aa20a5d4",
+          "session-resources-after.json": "00707d83ddf868fcb43c8c84ae905cae23175b892f9f6143c6ea68cfbb8c43fc",
+          "teardown.log": "2bd80699959fb1b3e8f835ce485b3ab18123c893745062b448143845135e409c"
+        },
+        "removed_session_resources": {
+          "containers": 11,
+          "networks": 1,
+          "volumes": 4
+        },
+        "reruns_started": 0,
+        "retained_valid_component": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/full/attempt-3/valid-component.json",
+        "retry_disposition": "STOP_AND_QUEUE_PO_DECISION: same observation/removal class recurs across historic full and current module; no blind retry or harness change.",
+        "run": "order-collection",
+        "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
+        "status": "FAIL_INFRASTRUCTURE_OBSERVATION_NONQUALIFYING",
+        "teardown_exit_code": 0,
+        "watchdog_error": "Command '['docker', 'exec', '5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1."
+      },
+      "does_not_block": [
+        "REM-0017 previously authorized infrastructure diagnosis option1",
+        "existing WIP preservation",
+        "independent work with no governed-order conflict"
+      ],
+      "id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+      "recorded_at": "2026-10-12T18:01:46.143622+00:00",
+      "repair_cycle": 1,
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "claims": {
@@ -4587,28 +5004,28 @@
     "reason": "Disposizione puntuale OCOR-DEV-0049-REPAIR-CLAUDE-AUTO: ultimo ciclo 5 NO_GO. Non equivale a tutto il backlog bloccato."
   },
   "latest_ci_evidence": {
-    "head_sha": "6ea880127f7f48e994b2105e7dda8aaf01993c92",
-    "merge_commit": "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac",
-    "observed_at": "2026-10-12T17:00:26.486424+00:00",
-    "pull_request": 230,
-    "qualification_scope": "Previous state checkpoint only; full runtime component qualification separate; no complete REM-0019 qualification",
-    "raw_observation_sha256": "7f5d28ca09b1bcccc100bd0ebe4cd6f12abc391762ff99815ca74c209a82f117",
+    "head_sha": "d0e005188544216414c3dc9d882e738058733330",
+    "merge_commit": "60e0e1213996fc750567866c0348a496cff817ec",
+    "observed_at": "2026-10-12T18:01:46.143622+00:00",
+    "pull_request": 231,
+    "qualification_scope": "Previous state-only checkpoint; order-collection FAIL and complete REM-0019 qualification pending",
+    "raw_observation_sha256": "1e18cc49538043eaed870d7730c926bc549e13f4b6978ba00dde1c1912dedacf",
     "required_passed": 13,
     "required_total": 13,
     "run_ids": [
-      38276075146,
-      38276075201,
-      38276075375,
-      38276075446,
-      38276075540,
-      38276075650,
-      38276075674
+      38281520350,
+      38281520462,
+      38281520575,
+      38281520577,
+      38281520687,
+      38281520698,
+      38281520876
     ],
     "status": "PASS_STATE_SYNC_ONLY"
   },
   "local_gate_results": {
-    "base_sha": "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac",
-    "branch": "governed/state-sync-rem0019-full-observation-20261012",
+    "base_sha": "60e0e1213996fc750567866c0348a496cff817ec",
+    "branch": "governed/state-sync-rem0019-order-observation-20261012",
     "gates": [
       {
         "command": [
@@ -4616,7 +5033,7 @@
           "-c",
           "inputs/normative/SHA256SUMS"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
         "duration_seconds": 0.003,
         "exit_code": 0,
         "label": "inputs",
@@ -4628,8 +5045,8 @@
           "check",
           "."
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.008,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 0.024,
         "exit_code": 0,
         "label": "ruff",
         "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
@@ -4641,8 +5058,8 @@
           "mypy",
           "--strict"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.105,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 3.298,
         "exit_code": 0,
         "label": "mypy",
         "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c"
@@ -4652,10 +5069,10 @@
           "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
           "scripts/validate_rccad.py",
           "--base-ref",
-          "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac"
+          "60e0e1213996fc750567866c0348a496cff817ec"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.244,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 0.25,
         "exit_code": 0,
         "label": "rccad",
         "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
@@ -4665,12 +5082,12 @@
           "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
           "scripts/validate_ocor_change_scope.py",
           "--base",
-          "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac",
+          "60e0e1213996fc750567866c0348a496cff817ec",
           "--branch",
-          "governed/state-sync-rem0019-full-observation-20261012"
+          "governed/state-sync-rem0019-order-observation-20261012"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.033,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 0.038,
         "exit_code": 0,
         "label": "scope",
         "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
@@ -4681,10 +5098,10 @@
           "scripts/validate_ocor_development_plan.py",
           "--authorized-extension",
           "--base-ref",
-          "a6ab09dcea1ee021b8c2dc5c994698cfbe0fceac"
+          "60e0e1213996fc750567866c0348a496cff817ec"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.094,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 0.107,
         "exit_code": 0,
         "label": "plan",
         "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
@@ -4694,7 +5111,7 @@
           "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
           "scripts/validate_language_policy.py"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
         "duration_seconds": 0.031,
         "exit_code": 0,
         "label": "language",
@@ -4705,8 +5122,8 @@
           "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0019/ocor-runtime/.venv/bin/python",
           "scripts/validate_evidence_input_drift.py"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.065,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 0.069,
         "exit_code": 0,
         "label": "drift",
         "raw_sha256": "3c1c06170d86b870ef4f7ae264857263adccfde225c6fc7e61b6169f91f06941"
@@ -4721,8 +5138,8 @@
           "reports/evidence/G5/MANIFEST.json",
           "--non-skipped"
         ],
-        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-full-observation-20261012",
-        "duration_seconds": 0.024,
+        "cwd": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0019-order-observation-20261012",
+        "duration_seconds": 0.021,
         "exit_code": 0,
         "label": "runtime-evidence",
         "raw_sha256": "3399c2d629a1321f5e7b66a42d9c6d8d32c12fcddc59d9182890270802c734e5"
@@ -5845,7 +6262,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "OCOR-DEV-REM-0019:repair1-independence-campaign-monitor \u2014 adopt existing serial supervisor PID/PGID11336 (start_ticks111304; verify /proc identity before any signal) at /home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/run.sh. Full attempt3 is PASS component only:2196 exact collected/JUnit union, zero fail/error/skip, unchanged resource inventory; attempts/full/attempt-1 and attempt-2 remain diagnostic and contribute zero counts. Source8842ab2658b9eee201fa1bd26d267a9f23c22df5 and execution-harness digests unchanged. Do not rerun the successful full, start another stack or reset resources owned by the live supervisor. Read driver.progress, modules.progress, order-*.json, isolated.progress and driver-result.json; require all five orders of390 cases and119 isolated, exact JUnit identity/order checks, zero skip/fail/error/residue/restart/OOM and final owned teardown. Task cap45min, full75min. QUALIFICATION-CAMPAIGN-INFRA-RERUN: maximum2 same-harness retries for an eligible failed run, diagnostics preserved; same cause affecting multiple runs or third infrastructure failure requires decision request; assertion/code failures never infrastructure. After entire campaign PASS align staging to current origin/main preserving execution-tree identities, retarget ~/.ocor-codex/rem0019-codex-20261012/assemble.py and check.py, archive selected/diagnostic attempts; append unsealed REM19/0049 and REGRESSION_ONLY0050 supersessions198 unchanged tests. Reacquire final commit/branch/input/tree/raw hashes, final gates including drift and actual integration-base scope/plan, RCCAD before push. Request exact-head Cursor/Grok4.7 review through verify_request.json, never launch the verifier. REM19 repair_cycle1; historic Claude Code reserve isolation/VF-001 and Codex oracle/qualification, independent verifier Grok4.7(Cursor). VerifiedREM19 -> REM17 ->0049 integration ->REM23 before preserved0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "OCOR-DEV-REM-0017:authorized-infrastructure-diagnosis \u2014 resume option1 of REM-0017-KIND-CONTAINERD-CRASH in .ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire using existing diagnostic logs, same pinned image/version; do not start CI/qualification or change REM-0019 harness while REM-0019-KIND-TEARDOWN-OBSERVATION is OPEN_PO_DECISION_REQUIRED. REM-0019 repair_cycle1 source8842ab2658b9eee201fa1bd26d267a9f23c22df5 unchanged; supervisor11336 exited. Retain full attempt3 PASS2196 and all diagnostic attempts. order-collection attempt1 is FAIL exit130, despite390 test bodies/JUnit PASS; no counts transferred, no retry started; remaining4 orders/119isolated NOT_EXECUTED. Read decision request draftPR232 at 8be2b87a936bbc52909ae0e489d65a68dbc1fbac and versioned diagnosis before any resumption. Same teardown-observation class recurs in historic full: PO infra-rerun rule requires decision, no blind retries. After resolved infrastructure authority, prove observation-only scope to retain full or rerun entire campaign; then all required orders/isolated, exact JUnit identity/order, zero skip/fail/error/restart/OOM/residue, final teardown. Request verifier only after complete fresh final-head evidence and REGRESSION_ONLY0050 supersession198 unchanged tests; historic Claude Code reserve isolation/VF-001 and Codex oracle/qualification; verifier Grok4.7(Cursor). VerifiedREM19 ->REM17 ->0049 integration ->REM23 before preserved0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -6569,9 +6986,7 @@
           },
           "current_unit": {
             "full_infrastructure_reruns_total": 2,
-            "full_valid_component_sha256": "071d64592ac79c15778b84c02992443baeb3ba48d47e8c52b57c7f3c8a6e640b",
-            "identity_proof_sha256": "c5cfee24aa6dbde3b14049552b44e1411a28c842c6e200283af713f4a480f366",
-            "observation_sha256": "1a22b1dc249661fcb7c01d8cd3602c0fb97c44ec027e877561e03fb4acbaa6c4",
+            "identity_proof_sha256": "07bfa75f10d3e3fbc32eec28f10419b152aaea4f9a672ba97d83f7469ac646c5",
             "preflight": {
               "drift_inputs": 186,
               "drift_tasks": 69,
@@ -6580,10 +6995,12 @@
               "status": "PASS"
             },
             "reruns_started": 0,
-            "scope": "Read-only unchanged supervisor adoption; verify full exact union and zero owned residue; preserve valid attempt3 and diagnostics; checkpoint only, no source/test/harness edit.",
-            "session_artifacts": "/home/luca/.ocor-codex/rem0019-full-observation-20261012"
+            "scope": "Read-only serial campaign adoption, failure diagnosis/archive, queued PO decision and state sync. No source/test/harness edits or reruns.",
+            "session_artifacts": "/home/luca/.ocor-codex/rem0019-order-observation-20261012",
+            "toolchain_proof_sha256": "2987dc78d4712ad0491bccb691340e9ed90736b6df372fda7fbdef0a21238e96"
           },
           "driver_status": {
+            "error": "failed module-campaign",
             "full": {
               "counts": {
                 "errors": 0,
@@ -6603,8 +7020,85 @@
             },
             "head_sha": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
             "repair_cycle": 1,
-            "status": "RUNNING"
+            "status": "FAIL",
+            "teardown_exit_code": 0
           },
+          "failed_order_diagnosis": {
+            "attempt": 1,
+            "cause": "Watchdog docker exec systemctl observation fails while owned kind node is removed at module teardown; compatible with historic full attempt4 stop-before-destroy race. All390 test bodies/JUnit pass, process interrupted by watchdog SIGINT during coherence_ops cleanup; no qualifying PASS.",
+            "claims": "E1/E2/Verified/NO-GO unchanged",
+            "counts": {
+              "errors": 0,
+              "failures": 0,
+              "skipped": 0,
+              "tests": 390
+            },
+            "counts_in_qualification_totals": false,
+            "current_resource_counts": {
+              "containers": 23,
+              "networks": 5,
+              "volumes": 364
+            },
+            "duration_seconds": 2419.439637331,
+            "exit_code": 130,
+            "new_resources_after_teardown": {
+              "containers": [],
+              "networks": [],
+              "volumes": []
+            },
+            "observed_at": "2026-10-12T17:58:22.780376+00:00",
+            "pending_runs": [
+              "order-collection valid attempt",
+              "order-reverse",
+              "order-seed-190001",
+              "order-seed-190002",
+              "order-seed-190003",
+              "119 isolated"
+            ],
+            "policy": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12)",
+            "proofs": {
+              "events": "node5c4a3536 die(exit137)17:54:04.475715312Z and destroy17:54:05.936134330Z, 1.460419s apart; owned name and kind label; no oom/restart event in captured interval",
+              "exact_remover_process_identity": "NOT_EXECUTED: failure path did not retain matching /proc remover identity; do not assert stronger attribution",
+              "healthy_inspects": "95 private node inspect snapshots, last running/OOMfalse/RestartCount0",
+              "junit": "390 exact requested identities and order; zero failure/error/skipped elements",
+              "log": "390 passed summary followed by KeyboardInterrupt in coherence_ops docker rm teardown"
+            },
+            "qualified_attempt": false,
+            "raw_sha256": {
+              "driver-result.json": "a161c3c0776412ffaab0ca57eadf013be29092daed18754c7e638677f0d82249",
+              "driver.progress": "793ad8f1a5691eb170a1b4bca60b8c1c1900378260f1cba524ca2ee5400cc90c",
+              "kind-removal-events.jsonl": "d7cbac7b9cc743267232b9f82b430d502f63dcf20a6b47843d5ef399ea818807",
+              "modules.progress": "f5c7329fab0fa17281774048c2f9bae7803d6f81ac1b9606596a0694ee14be00",
+              "order-collection-alignment.json": "95bdb35a87128ff06b17b6602a458e597cb6687ab99a6f659d1c3e2c461deeec",
+              "order-collection-diagnostics.log": "8e39094f7b9f712e444fb38b32bdf789393093924551fd43618d12ce6814815c",
+              "order-collection-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+              "order-collection-kind-diagnostics-private.log": "d001d1689b285f5d18ce66a3805145d700ac214c3bf7666b1065a8d07bea4fff",
+              "order-collection-kind-watchdog.log": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+              "order-collection-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+              "order-collection.json": "e4f997d9ae22803f81b3dd73611d4a273058c5b222e98cd9bf660ecc67530588",
+              "order-collection.log": "65f073de137d8aa8d01015870a67d419d1c6bd27a91b712b3ee8e8a25969741a",
+              "order-collection.order": "fe68e5fc7d310fa861d080399cea4dea95e2749eac9ee4fe8cfe1e553262c52c",
+              "order-collection.out": "bc5731a87cb7859157b36ff33aad2e7a4696509d5b47910143004c923bff6f64",
+              "order-collection.xml": "925fa0b4ead61e2a6af500ce073c7d63a602306b65589d717f8fcfb0aa20a5d4",
+              "session-resources-after.json": "00707d83ddf868fcb43c8c84ae905cae23175b892f9f6143c6ea68cfbb8c43fc",
+              "teardown.log": "2bd80699959fb1b3e8f835ce485b3ab18123c893745062b448143845135e409c"
+            },
+            "removed_session_resources": {
+              "containers": 11,
+              "networks": 1,
+              "volumes": 4
+            },
+            "reruns_started": 0,
+            "retained_valid_component": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/full/attempt-3/valid-component.json",
+            "retry_disposition": "STOP_AND_QUEUE_PO_DECISION: same observation/removal class recurs across historic full and current module; no blind retry or harness change.",
+            "run": "order-collection",
+            "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
+            "status": "FAIL_INFRASTRUCTURE_OBSERVATION_NONQUALIFYING",
+            "teardown_exit_code": 0,
+            "watchdog_error": "Command '['docker', 'exec', '5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1."
+          },
+          "failed_order_diagnosis_archive": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/diagnosis.json",
+          "failed_order_diagnosis_sha256": "4cee2086930f8fca1ab751399d1f87a09a708dea2810bd96a15a7ff5d0c10547",
           "failed_run_diagnosis": {
             "cause": "Host Docker/containerd package upgrade interrupts daemon at 2026-10-12T06:29:38Z..06:29:54Z; docker ps fails, campaign watchdog SIGINT; distinct from prior pinned-kind containerd SIGSEGV. No cause attributed to repository code.",
             "counts": {
@@ -6841,12 +7335,31 @@
             "status": "PASS"
           },
           "module_case_count": 390,
-          "observed_at": "2026-10-12T17:00:26.486424+00:00",
-          "qualification": "PENDING_COMPLETE_INDEPENDENCE_CAMPAIGN; full component PASS only, no independent verification requested",
+          "observed_at": "2026-10-12T18:01:46.143622+00:00",
+          "qualification": "FAIL_INFRASTRUCTURE_OBSERVATION_PO_DECISION_REQUIRED; full component retained, no complete qualification",
+          "queued_decision_request": {
+            "branch": "governed/decision-request-rem0019-teardown-observation",
+            "head_sha": "8be2b87a936bbc52909ae0e489d65a68dbc1fbac",
+            "id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+            "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+            "local_gate": {
+              "fail_count": 1,
+              "optional_not_executed": 2,
+              "pass_count": 36,
+              "plan": "FAIL_NEW_PATH_NOT_IN_EXACT_ALLOWLIST",
+              "rccad": "PASS_LOCAL_PRECHECK"
+            },
+            "path": "reports/development/decision_requests/REM-0019-KIND-TEARDOWN-OBSERVATION.md",
+            "pull_request": 232,
+            "sha256": "27c162d0fc5a7dca25e5e8c2a18553090e859eaac7ca7f33f8eed08a834f8d17",
+            "status": "OPEN_PO_DECISION_REQUIRED",
+            "text": "# REM-0019-KIND-TEARDOWN-OBSERVATION\n\nStato: `OPEN_PO_DECISION_REQUIRED` \u2014 2026-10-12.\n\n## Contesto e fatti\n\nLa campagna seriale di REM-0019, ciclo di riparazione 1, usa il commit\n`8842ab2658b9eee201fa1bd26d267a9f23c22df5`. Il full attempt-3 \u00e8 una componente\nvalida conservata: 2196 casi, zero failure/error/skip, unione JUnit esatta e zero\nresidui. I due tentativi full precedenti restano diagnostici, senza conteggi\nqualificanti trasferiti.\n\nIl run `order-collection` del 2026-10-12 termina con exit 130 dopo 2419,44 secondi.\nJUnit contiene esattamente i 390 casi richiesti, nell'ordine richiesto, con zero\nfailure/error/skip. Il log riporta `390 passed`, seguito da `KeyboardInterrupt`\ndurante il teardown della fixture `coherence_ops`. **Il run \u00e8 FAIL diagnostico,\nnon PASS qualificante**, perch\u00e9 il watchdog ha interrotto il processo.\n\nIl watchdog fallisce `docker exec <node UUID> systemctl show containerd` durante\nla rimozione del nodo kind owned `5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b`.\nGli eventi Docker registrano `die` (exit 137) alle 17:54:04,475715312 UTC e\n`destroy` alle 17:54:05,936134330 UTC: intervallo 1,460419 secondi, nome\n`ocor-poc-control-plane` e label del cluster `ocor-poc`. Nell'intervallo acquisito\nnon ci sono eventi OOM/restart; 95 snapshot privati precedenti mostrano il nodo\nrunning, OOM false e RestartCount 0. Il processo preciso di rimozione non \u00e8 stato\nregistrato nel ramo di errore: questo controllo \u00e8 `NOT_EXECUTED`; non si afferma\nuna prova pi\u00f9 forte dell'attribuzione.\n\nIl comportamento \u00e8 compatibile con la classe di race fra osservazione e teardown\ngi\u00e0 diagnosticata nel full storico attempt-4. L'adapter locale di osservazione\ninvariato non ha registrato un'eccezione valida di rimozione (`owned_node_observation_removals=[]`).\nLa ricorrenza su pi\u00f9 run richiede stop e decision request secondo\n`QUALIFICATION-CAMPAIGN-INFRA-RERUN` del 2026-10-12; nessun retry \u00e8 stato avviato.\n\nIl teardown finale del supervisor ha exit 0. Il confronto con l'inventario\nimmediatamente precedente agli ordini prova zero nuove risorse residue: rimosse\n11 risorse container, una rete e quattro volumi dello stack di sessione;\npreservati 23 container, cinque reti e 364 volumi preesistenti. Non \u00e8 un motivo\nper qualificare il run interrotto. Gli altri quattro ordini e i 119 isolati sono\n`NOT_EXECUTED` in questa campagna.\n\n## Prove riproducibili\n\n- Archivio diagnostico immutabile:\n  `/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/`.\n- `diagnosis.json` SHA256:\n  `4cee2086930f8fca1ab751399d1f87a09a708dea2810bd96a15a7ff5d0c10547`;\n  contiene hash dei raw, JUnit, comando, exit, durate, inventari e limiti della prova.\n- Full valido:\n  `attempts/full/attempt-3/valid-component.json`, gi\u00e0 collegato allo stato versionato.\n- Diagnostico storico per confronto:\n  `attempts/historic-attempt4-full/diagnosis.json`.\n- Ricontrollare SHA256 dei file elencati in `raw_sha256`, conteggi/identit\u00e0/ordine\n  JUnit e `watchdog_error` nei metadati; confrontare gli inventari con\n  `full-resources-after.json` e `session-resources-after.json`.\n\n## Opzioni e raccomandazione\n\n1. **Raccomandata:** autorizzare una correzione limitata alla sola osservazione del\n   teardown, con prove deterministiche positive/negative prima dell'uso. Legare\n   l'intento di rimozione al processo kind del gruppo pytest, allo stesso UUID e\n   all'evento destroy; la finestra di osservazione deve essere bounded. Nodo\n   esistente senza intento provato, crash, OOM, restart, cambio PID o timeout\n   continuano a fallire chiusi. Nessuna modifica a codice/test di produzione,\n   criteri, immagini, versioni, timer o check obbligatori.\n   Conservare il full verde solo se un confronto dimostra che la modifica tocca\n   esclusivamente osservazione/smontaggio e non l'esecuzione dei test; altrimenti\n   ricominciare l'intera campagna. Ripetere il solo ordine fallito al massimo due\n   volte, mantenendo questo tentativo diagnostico; poi gli ordini residui e gli isolati.\n2. Risolvere prima l'orchestrazione nel change set governato di REM-0017 e riprendere\n   la campagna quando esiste una condizione infrastrutturale materialmente nuova,\n   con la stessa dimostrazione di scope e conservazione delle prove.\n\nNon si raccomanda di considerare PASS l'exit 130, ignorare il watchdog,\nriclassificare i conteggi diagnostici o ripetere senza una condizione cambiata.\n\n## Impatto e integrazione\n\nBloccati la qualifica/verifica/sigillo di REM-0019, la nuova campagna CI di\nREM-0017, l'integrazione di 0049 e la sequenza successiva subordinata alla loro\nchiusura. Resta eseguibile la diagnosi infrastrutturale di REM-0017 gi\u00e0 autorizzata\ncon l'opzione 1 di `REM-0017-KIND-CONTAINERD-CRASH`, senza modifica di immagini o\nversioni e senza avviare la campagna bloccata. Non consumato un nuovo ciclo di\nriparazione: REM-0019 resta al ciclo 1.\n\nQuesto nuovo percorso della decision request non \u00e8 nell'allowlist esatta del piano\nsu main. La richiesta \u00e8 pubblicata su un branch governato separato; il gate del\npiano rimane FAIL sul percorso nuovo. Lo stato/handoff principali riportano\nintegralmente disposizione e riferimento al commit della richiesta con un change\nset di soli metadati. Nessuna allowlist o evidenza sigillata viene modificata per\nfar passare il controllo. La futura aggiunta puntuale richiede riqualifica 0050;\nil difetto di denial audit resta REM-0023.\n\nImplementatore: Codex; isolamento/VF-001 storici: Claude Code di riserva; verifier\nprevisto: Grok 4.7 tramite Cursor, processo e contesto separati. Nessuna verifica\nindipendente richiesta durante il blocco. `E1=0`, `E2=0`, `Verified=0`, claim\n`NO-GO`, input e record sigillati invariati.\n",
+            "url": "https://github.com/nepryoon/ocor-detailed-design/pull/232"
+          },
           "required_isolated_cases": 119,
           "required_module_orders": 5,
           "rerun_policy": {
-            "application": "Full second and last retry is valid; retain it without repeating while five orders and119 isolated continue at identical source/harness.",
+            "application": "No order rerun started; failed attempt preserved with diagnosis. Full valid component retained, no further qualification while same-class recurrence unresolved.",
             "decision": "QUALIFICATION-CAMPAIGN-INFRA-RERUN",
             "decision_date": "2026-10-12",
             "eligibility": [
@@ -6876,10 +7389,18 @@
                 "max_infrastructure_reruns": 2,
                 "valid_attempt": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/full/attempt-3/valid-component.json",
                 "valid_attempt_sha256": "071d64592ac79c15778b84c02992443baeb3ba48d47e8c52b57c7f3c8a6e640b"
+              },
+              "order-collection": {
+                "diagnostic_attempts": [
+                  "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-1/diagnosis.json"
+                ],
+                "reruns_used": 0,
+                "status": "FAIL_NONQUALIFYING_STOP_PO_DECISION",
+                "valid_attempt": null
               }
             },
             "same_cause_multiple_runs": "STOP_AND_OPEN_PO_DECISION_REQUEST",
-            "status": "FULL_ATTEMPT3_PASS_COMPONENT_ONLY_INDEPENDENCE_PENDING"
+            "status": "STOP_RECURRENT_TEARDOWN_OBSERVATION_CLASS_PO_DECISION_REQUIRED"
           },
           "rerun_policy_sha256": "64b1dc823a51a3fecc380050dbf49d47b4d0a5df2035a843f91e59d76b42617d",
           "roles": {
@@ -6887,7 +7408,7 @@
             "verifier": "Grok 4.7 via Cursor CLI (cursor), independent loop only; historic Claude Code reserve implementation requires third provider"
           },
           "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
-          "stack_ownership": "Only existing serial supervisor11336 owns bootstrap, all campaign resources and final teardown; full component completed with identical before/after inventory.",
+          "stack_ownership": "Supervisor11336 exited after reset teardown exit0; zero new owned residue verified; bootstrap session resources removed, historical23 containers/5 networks/364 volumes preserved.",
           "uncompleted_required_runs": "NOT_EXECUTED_OR_RUNNING; no PASS inferred"
         },
         "head_sha": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
@@ -6908,7 +7429,7 @@
           "supervision": "Original diagnose.py supervisor exited with Codex quota stop; Claude Code reserve adopted orphaned process groups with unchanged deadline/criteria/teardown; teardown exit0, inventory before==after."
         },
         "new_repair_cycle_consumed": false,
-        "next_action": "OCOR-DEV-REM-0019:repair1-independence-campaign-monitor \u2014 adopt existing serial supervisor PID/PGID11336 (start_ticks111304; verify /proc identity before any signal) at /home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/run.sh. Full attempt3 is PASS component only:2196 exact collected/JUnit union, zero fail/error/skip, unchanged resource inventory; attempts/full/attempt-1 and attempt-2 remain diagnostic and contribute zero counts. Source8842ab2658b9eee201fa1bd26d267a9f23c22df5 and execution-harness digests unchanged. Do not rerun the successful full, start another stack or reset resources owned by the live supervisor. Read driver.progress, modules.progress, order-*.json, isolated.progress and driver-result.json; require all five orders of390 cases and119 isolated, exact JUnit identity/order checks, zero skip/fail/error/residue/restart/OOM and final owned teardown. Task cap45min, full75min. QUALIFICATION-CAMPAIGN-INFRA-RERUN: maximum2 same-harness retries for an eligible failed run, diagnostics preserved; same cause affecting multiple runs or third infrastructure failure requires decision request; assertion/code failures never infrastructure. After entire campaign PASS align staging to current origin/main preserving execution-tree identities, retarget ~/.ocor-codex/rem0019-codex-20261012/assemble.py and check.py, archive selected/diagnostic attempts; append unsealed REM19/0049 and REGRESSION_ONLY0050 supersessions198 unchanged tests. Reacquire final commit/branch/input/tree/raw hashes, final gates including drift and actual integration-base scope/plan, RCCAD before push. Request exact-head Cursor/Grok4.7 review through verify_request.json, never launch the verifier. REM19 repair_cycle1; historic Claude Code reserve isolation/VF-001 and Codex oracle/qualification, independent verifier Grok4.7(Cursor). VerifiedREM19 -> REM17 ->0049 integration ->REM23 before preserved0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+        "next_action": "OCOR-DEV-REM-0017:authorized-infrastructure-diagnosis \u2014 resume option1 of REM-0017-KIND-CONTAINERD-CRASH in .ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire using existing diagnostic logs, same pinned image/version; do not start CI/qualification or change REM-0019 harness while REM-0019-KIND-TEARDOWN-OBSERVATION is OPEN_PO_DECISION_REQUIRED. REM-0019 repair_cycle1 source8842ab2658b9eee201fa1bd26d267a9f23c22df5 unchanged; supervisor11336 exited. Retain full attempt3 PASS2196 and all diagnostic attempts. order-collection attempt1 is FAIL exit130, despite390 test bodies/JUnit PASS; no counts transferred, no retry started; remaining4 orders/119isolated NOT_EXECUTED. Read decision request draftPR232 at 8be2b87a936bbc52909ae0e489d65a68dbc1fbac and versioned diagnosis before any resumption. Same teardown-observation class recurs in historic full: PO infra-rerun rule requires decision, no blind retries. After resolved infrastructure authority, prove observation-only scope to retain full or rerun entire campaign; then all required orders/isolated, exact JUnit identity/order, zero skip/fail/error/restart/OOM/residue, final teardown. Request verifier only after complete fresh final-head evidence and REGRESSION_ONLY0050 supersession198 unchanged tests; historic Claude Code reserve isolation/VF-001 and Codex oracle/qualification; verifier Grok4.7(Cursor). VerifiedREM19 ->REM17 ->0049 integration ->REM23 before preserved0056 WIP. E1/E2/Verified and NO-GO unchanged.",
         "prior_attempts": [
           {
             "directory": "/home/luca/.ocor-codex/rem0019-resume-20261012",
@@ -7030,7 +7551,7 @@
           "status": "FIRST_INFRASTRUCTURE_RERUN_STARTED_NO_COUNTS_TRANSFERRED"
         },
         "repair_cycle": 1,
-        "status": "FULL_COMPONENT_PASS_INDEPENDENCE_PENDING"
+        "status": "FAILED_MODULE_OBSERVATION_PO_DECISION_REQUIRED"
       },
       "decision_request": {
         "branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
@@ -9686,5 +10207,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-12T17:00:26.486424+00:00"
+  "updated_at": "2026-10-12T18:01:46.143622+00:00"
 }
