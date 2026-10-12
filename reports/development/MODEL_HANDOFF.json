@@ -130,11 +130,10 @@
     "Only one serial stack/pytest campaign; state checkpoint does not claim completion.",
     "Final candidate assembly requires all new fresh runs and gates, independent GO, then REM17 prerequisite and exact CI integration."
   ],
-  "base_sha": "78d297c12cbd0c6f14ef3a9f831658e9c50d3d0f",
-  "baseline_commit": "78d297c12cbd0c6f14ef3a9f831658e9c50d3d0f",
-  "branch": "governed/info-c-concurrency-conformance-audit",
+  "base_sha": "d098ed7474a3341ce74cb21aad186d9ed3cb3db2",
+  "baseline_commit": "d098ed7474a3341ce74cb21aad186d9ed3cb3db2",
+  "branch": "governed/state-sync-rem0024-decision-request",
   "changed_paths": [
-    "reports/development/decision_requests/INFO-C.md",
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
     "reports/development/ITERATION_LOG.md"
@@ -718,14 +717,14 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "INFO-C: targeted concurrency conformance audit of c5/backbone.py, c5/operations.py, c8/tool_runtime.py; REM-0026 and REM-0027 registration; decision request closure",
+  "current_task": "OCOR-DEV-REM-0024: pre-implementation conformance check, decision request REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240), REM-0028 registration",
   "evidence_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
     "reports/development/ITERATION_LOG.md"
   ],
-  "exact_next_action": "REM-0024:implementation \u2014 next coherent unit from origin/main while REM-0019/REM-0017 stay blocked: OCOR-DEV-REM-0024 (break-glass conformance, G6 dependency) per EXECUTION_STATE remediation_status.REM_0024_BREAK_GLASS_CONFORMANCE; then OCOR-DEV-REM-0025 (C5 isolation-scoped dedup), then OCOR-DEV-REM-0026 (C5 durable/atomic dedup, sequence watermark and tenant quota, after REM-0025 on the same files) and OCOR-DEV-REM-0027 (C8 preemptive kill switch, per-dispatch stop fence, lease bound to stop_epoch); all four are mandatory G6 dependencies, not blocking 0049 or G5. REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236); after that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
-  "head_sha": "12c7758332c022d767c0f526158328da0d4271e3",
+  "exact_next_action": "REM-0025:implementation \u2014 next coherent unit from origin/main while REM-0019/REM-0017 and REM-0024/REM-0028 wait for PO decisions: OCOR-DEV-REM-0025 (C5 isolation-scoped dedup, G6 dependency) per EXECUTION_STATE remediation_status.REM_0025_C5_ISOLATION_SCOPED_DEDUP; then OCOR-DEV-REM-0026 (after REM-0025 on the same files) and OCOR-DEV-REM-0027 (C8 preemptive kill switch). OCOR-DEV-REM-0024 (break-glass) and OCOR-DEV-REM-0028 (Human Gate / emergency-stop reset approver re-validation) blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); after that decision: one allowlist change set closing the pending decision request files with 0050 regression-only requalification, then REM-0024 implementation per the decided options. REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "head_sha": "d098ed7474a3341ce74cb21aad186d9ed3cb3db2",
   "head_sha_resolver": "git rev-parse HEAD on this metadata branch; base is exact main before metadata commit",
   "infoa_audit_unit": {
     "audit_record": "reports/development/decision_requests/INFO-A.md",
@@ -1614,7 +1613,7 @@
     "id": "OCOR-DEV-REM-0024",
     "source": "RVW-03",
     "state_key": "remediation_status.REM_0024_BREAK_GLASS_CONFORMANCE",
-    "status": "OPEN_IMPLEMENTATION_REQUIRED"
+    "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED"
   },
   "registered_remediation_rem0025": {
     "id": "OCOR-DEV-REM-0025",
@@ -1631,6 +1630,11 @@
     "id": "OCOR-DEV-REM-0027",
     "state_key": "REM_0027_C8_PREEMPTIVE_KILL_SWITCH",
     "status": "OPEN_IMPLEMENTATION_REQUIRED"
+  },
+  "registered_remediation_rem0028": {
+    "id": "OCOR-DEV-REM-0028",
+    "state_key": "remediation_status.REM_0028_APPROVER_AUTHORITY_REVALIDATION",
+    "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED"
   },
   "rem0019_teardown_observation_unit": {
     "execution": {
@@ -1693,6 +1697,26 @@
       "sha256": "45f3c566bcb539843fb0ad559e12716395686cd760326578987ef56030c6cd77",
       "status": "FAIL_INFRASTRUCTURE_NONQUALIFYING"
     }
+  },
+  "rem0024_decision_request_unit": {
+    "baseline_commit": "d098ed7474a3341ce74cb21aad186d9ed3cb3db2",
+    "branch": "governed/state-sync-rem0024-decision-request",
+    "decision_request": {
+      "branch": "governed/decision-request-rem0024-principal-authority",
+      "head_sha": "f07b9190d685d4a5876e6c59011b08fd80001cd0",
+      "id": "REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY",
+      "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+      "path": "reports/development/decision_requests/REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY.md",
+      "pull_request": 240,
+      "sha256": "4b7b7a9841b51c6dbf6b630771ee668f197ec1153be8aa835f0566a8ac169d96",
+      "status": "OPEN_PO_DECISION_REQUIRED"
+    },
+    "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): REM-0024 pre-implementation conformance check, decision request, REM-0028 class registration",
+    "independent_verification": "NOT_REQUESTED: decision request and registration only, no product code, test or evidence changed; REM-0024/REM-0028 implementation by reserve Claude Code will be verified by Cursor/Grok, else per LOOP-ROLES",
+    "phase": "REM_0024_BLOCKED_PO_DECISION_REQUESTED",
+    "session_artifacts": "/home/luca/.ocor-codex/rem0024-decision-request-20261012",
+    "task_id": "OCOR-DEV-REM-0024",
+    "worktree": ".ocor/worktrees/state-sync-rem0024-decision-request"
   },
   "requirement_ids": [
     "BR-003",
@@ -1818,8 +1842,18 @@
       "pull_request": 236,
       "sha256": "ac7493ac2bd0988bc51561c5c084af380a69ed78dcf882a7a5f52d14c137ec09",
       "status": "OPEN_PO_DECISION_REQUIRED"
+    },
+    {
+      "branch": "governed/decision-request-rem0024-principal-authority",
+      "head_sha": "f07b9190d685d4a5876e6c59011b08fd80001cd0",
+      "id": "REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY",
+      "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+      "path": "reports/development/decision_requests/REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY.md",
+      "pull_request": 240,
+      "sha256": "4b7b7a9841b51c6dbf6b630771ee668f197ec1153be8aa835f0566a8ac169d96",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-12T21:13:51.011370+00:00",
-  "worktree": ".ocor/worktrees/info-c-audit"
+  "updated_at": "2026-10-12T21:42:55.104536+00:00",
+  "worktree": ".ocor/worktrees/state-sync-rem0024-decision-request"
 }
