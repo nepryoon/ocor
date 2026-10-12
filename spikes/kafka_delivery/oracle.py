@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import time
 import uuid
@@ -86,12 +87,19 @@ class KafkaCli:
             "confluentinc/cp-kafka:7.6.0@"
             "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047"
         )
-        _run("docker", "volume", "create", volume)
+        existing_volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        existing_containers = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
+        if volume in existing_volumes or {container, f"{container}-init"} & existing_containers:
+            raise KafkaSpikeError("refusing to reuse existing lifecycle resources")
+        completed = False
         try:
+            _run("docker", "volume", "create", "--label", f"ocor.kafka.lifecycle.owner={container}", volume)
             _run(
                 "docker",
                 "run",
                 "--rm",
+                "--name", f"{container}-init",
+                "--label", f"ocor.kafka.lifecycle.owner={container}",
                 "--user",
                 "root",
                 "--entrypoint",
@@ -107,6 +115,7 @@ class KafkaCli:
                 "docker",
                 "run",
                 "--detach",
+                "--label", f"ocor.kafka.lifecycle.owner={container}",
                 "--name",
                 container,
                 "--hostname",
@@ -144,29 +153,65 @@ class KafkaCli:
                 image,
                 timeout=60,
             )
-        except Exception:
-            _run("docker", "volume", "rm", volume)
-            raise
-        kafka = cls(container)
-        deadline = time.monotonic() + 90
-        while time.monotonic() < deadline:
-            try:
-                kafka.assert_real_broker()
-                return kafka, volume
-            except KafkaSpikeError:
-                time.sleep(1)
-        kafka.destroy(volume)
-        raise KafkaSpikeError("isolated Kafka did not become ready")
+            kafka = cls(container)
+            deadline = time.monotonic() + 90
+            while time.monotonic() < deadline:
+                try:
+                    kafka.assert_real_broker()
+                    completed = True
+                    return kafka, volume
+                except KafkaSpikeError:
+                    time.sleep(1)
+            raise KafkaSpikeError("isolated Kafka did not become ready")
+        finally:
+            if not completed:
+                cls._cleanup_resources(container, volume)
 
     def destroy(self, volume: str) -> None:
-        """Remove only resources whose exact generated names belong to this run."""
+        """Remove this run's resources; missing resources allow bounded retry."""
+        self._cleanup_resources(self.container, volume)
 
-        if not self.container.startswith("ocor-spike-0019-"):
-            raise KafkaSpikeError("refusing to destroy a non-spike container")
-        if not volume.startswith("ocor-spike-0019-data-"):
-            raise KafkaSpikeError("refusing to destroy a non-spike volume")
-        _run("docker", "rm", "--force", self.container)
-        _run("docker", "volume", "rm", volume)
+    @staticmethod
+    def _cleanup_resources(container: str, volume: str) -> None:
+        """Verify ownership before mutation, remove anonymous mounts and fail closed.
+
+        The init command can time out after Docker has created it. Both generated
+        containers are inspected and removed by immutable ID. Named volumes are
+        never pruned; only the matching ownership-labelled data volume is removed.
+        """
+        prefix = "ocor-spike-0019-"
+        suffix = container.removeprefix(prefix)
+        if not container.startswith(prefix) or re.fullmatch(r"[0-9a-f]{12}", suffix) is None:
+            raise KafkaSpikeError("refusing to destroy a non-owned container")
+        if volume != f"{prefix}data-{suffix}":
+            raise KafkaSpikeError("refusing to destroy a mismatched run volume")
+        label = "ocor.kafka.lifecycle.owner"
+        # Enumerate names rather than treating an inspect failure as 'absent'.
+        names = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
+        volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        entries = []
+        anonymous = set()
+        for name in (f"{container}-init", container):
+            if name in names:
+                entry = json.loads(_run("docker", "inspect", name))[0]
+                if (entry["Config"].get("Labels") or {}).get(label) != container:
+                    raise KafkaSpikeError("refusing to destroy a foreign container")
+                entries.append(entry)
+                for mount in entry["Mounts"]:
+                    if mount["Type"] == "volume" and mount["Name"] != volume:
+                        anonymous.add(mount["Name"])
+        if volume in volumes:
+            entry = json.loads(_run("docker", "volume", "inspect", volume))[0]
+            if (entry.get("Labels") or {}).get(label) != container:
+                raise KafkaSpikeError("refusing to destroy a foreign volume")
+        for entry in entries:
+            _run("docker", "rm", "--force", "--volumes", entry["Id"])
+        if volume in volumes:
+            _run("docker", "volume", "rm", volume)
+        remaining_containers = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
+        remaining_volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        if {container, f"{container}-init"} & remaining_containers or (anonymous | {volume}) & remaining_volumes:
+            raise KafkaSpikeError("owned resources remain after teardown")
 
     def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
         command = ["docker", "exec"]
