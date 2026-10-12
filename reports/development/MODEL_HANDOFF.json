@@ -3,277 +3,16 @@
     "Candidate, sealed records and verdicts immutable in this state-only unit.",
     "Primary Claude GO covers REM-0022/0019/0040 only; 0050 regression Cursor still pending."
   ],
-  "base_sha": "8a5081f6030c297eb58188f681c4c125b06918db",
-  "baseline_commit": "8a5081f6030c297eb58188f681c4c125b06918db",
-  "branch": "governed/ocor-dev-rem-0022-ci-evidence-supersession",
+  "base_sha": "808ad78359cdc7a7975d583b5285c94db55c4e78",
+  "baseline_commit": "808ad78359cdc7a7975d583b5285c94db55c4e78",
+  "branch": "governed/state-sync-rem0022-ci-sealed",
   "branch_evidence_paths": [
     "reports/evidence/G2/OCOR-DEV-REM-0022.ci-evidence-supersession.json",
     "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022-ci.json",
     "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022-ci.json",
     "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022-ci.json"
   ],
-  "candidate_gate_results": [],
-  "changed_paths": [
-    "ocor-runtime/src/ocor_runtime/c5/backbone.py",
-    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0022.py",
-    "reports/assurance/OCOR-DEV-REM-0022-RCCAD/README.md",
-    "reports/assurance/OCOR-DEV-REM-0022-RCCAD/ci-evidence-supersession.json",
-    "reports/assurance/OCOR-DEV-REM-0022-RCCAD/ci-evidence-supersession.log",
-    "reports/development/EXECUTION_STATE.json",
-    "reports/development/ITERATION_LOG.md",
-    "reports/development/MODEL_HANDOFF.json",
-    "reports/evidence/G2/MANIFEST.json",
-    "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022-ci.json",
-    "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022-ci.log",
-    "reports/evidence/G2/OCOR-DEV-REM-0022.ci-evidence-supersession.json",
-    "reports/evidence/G2/OCOR-DEV-REM-0022.ci-evidence-supersession.log",
-    "reports/evidence/G4/MANIFEST.json",
-    "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022-ci.json",
-    "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022-ci.log",
-    "reports/evidence/G5/MANIFEST.json",
-    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022-ci.json",
-    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022-ci.log",
-    "reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md",
-    "reports/planning/OCOR_PLAN_RUN_STATE.json",
-    "reports/tests/check_rem0022_ci_evidence.py",
-    "reports/tests/test_rem0022_case_identity.py",
-    "scripts/validate_ocor_development_plan.py",
-    "spikes/kafka_delivery/oracle.py"
-  ],
-  "ci": {
-    "required_checks": 13,
-    "ruleset": 23412233,
-    "status": "PENDING_EXACT_GREEN_SEAL_HEAD"
-  },
-  "claims": {
-    "E1": 0,
-    "E2": 0,
-    "PoC_GO": "NO-GO",
-    "Production_readiness": "NO-GO",
-    "runtime_conformance": "NOT_ESTABLISHED"
-  },
-  "commands_run": [
-    {
-      "command": [
-        "sha256sum",
-        "-c",
-        "inputs/normative/SHA256SUMS"
-      ],
-      "duration_seconds": 0.003,
-      "exit_code": 0,
-      "label": "inputs",
-      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "scripts/verify.py",
-        "--json"
-      ],
-      "duration_seconds": 0.359,
-      "exit_code": 0,
-      "label": "verify",
-      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "scripts/validate_evidence_input_drift.py"
-      ],
-      "duration_seconds": 0.071,
-      "exit_code": 0,
-      "label": "drift",
-      "raw_sha256": "3c1c06170d86b870ef4f7ae264857263adccfde225c6fc7e61b6169f91f06941"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "scripts/reset_test_environment.py",
-        "--execute"
-      ],
-      "duration_seconds": 0.091,
-      "exit_code": 0,
-      "label": "reset",
-      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "scripts/bootstrap_development_environment.py",
-        "--execute",
-        "--timeout",
-        "600"
-      ],
-      "duration_seconds": 34.973,
-      "exit_code": 0,
-      "label": "bootstrap",
-      "raw_sha256": "5062b61e5cae0f3d3f6af34ff952b9ec0cdce8e607f28a8f2406fd638e28f033"
-    },
-    {
-      "command": [
-        "uv",
-        "sync",
-        "--project",
-        "ocor-runtime",
-        "--frozen",
-        "--extra",
-        "test",
-        "--extra",
-        "lint"
-      ],
-      "duration_seconds": 0.021,
-      "exit_code": 0,
-      "label": "sync-lint",
-      "raw_sha256": "ae686a7598d0a6f3cae20ca164a12c24cffe43dd8c5adafc40cfeeed23bc29bc"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "deploy/bootstrap/init/initialize_services.py",
-        "--env-file",
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/.ocor/bootstrap.env"
-      ],
-      "duration_seconds": 1.369,
-      "exit_code": 0,
-      "label": "initialize",
-      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "deploy/bootstrap/fixtures/load_fixtures.py",
-        "--env-file",
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/.ocor/bootstrap.env"
-      ],
-      "duration_seconds": 0.164,
-      "exit_code": 0,
-      "label": "fixtures",
-      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "/home/luca/.ocor-codex/rem0022-ci-evidence/register_control_plane.py"
-      ],
-      "duration_seconds": 7.379,
-      "exit_code": 0,
-      "label": "svid",
-      "raw_sha256": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "scripts/verify_external_services.py",
-        "--execute",
-        "--typed"
-      ],
-      "duration_seconds": 2.754,
-      "exit_code": 0,
-      "label": "typed-health",
-      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
-        "scripts/reset_test_environment.py",
-        "--execute"
-      ],
-      "duration_seconds": 1.472,
-      "exit_code": 0,
-      "label": "teardown",
-      "raw_sha256": "2c31b728c8482096ebb8f4107262ebcb467e6552238301de6faa59b55494c1f5"
-    }
-  ],
-  "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "REM-0022: integrazione dei sigilli distinti con GO Claude e Cursor",
-  "evidence_paths": [
-    "reports/evidence/G2/OCOR-DEV-REM-0022.ci-evidence-supersession.json",
-    "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022-ci.json",
-    "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022-ci.json",
-    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022-ci.json"
-  ],
-  "evidence_paths_definition": "New distinct sealed records; originals on main and historical e8449a9 untouched.",
-  "exact_next_action": "OCOR-DEV-REM-0022:integration \u2014 await all 13 required checks SUCCESS on exact sealed HEAD; one rerun only for transient infrastructure, never deterministic FAIL. Merge --merge --match-head-commit, verify record/raw/source/hash invariance; immediate governed state sync. Then REM-0019 repair_cycle1 fresh full regression, REM-0017, 0049 integration, REM-0023 before preserved 0056 WIP. Preserve sealed e8449a9 and remote historical ref/PR220. No claim promotion.",
-  "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
-  "head_sha_resolver": "head_sha is independently reviewed candidate; final seal HEAD resolved by git rev-parse governed/ocor-dev-rem-0022-ci-evidence-supersession",
-  "independent_verification": {
-    "primary": {
-      "created_at": "2026-10-11T22:48:00Z",
-      "findings": [
-        {
-          "blocking": false,
-          "evidence": "Finding preesistente preservato come OPEN_NONBLOCKING (residual_findings del record). Il codice \u00e8 byte-identico al candidato a54ebb5 dove il retry \u00e8 stato riprodotto: _cleanup_resources ricava i volumi anonimi solo dai container ancora esistenti, quindi un retry di destroy() dopo un primo teardown che ha rimosso il container ma non il suo volume anonimo restituisce successo lasciando il volume. Nessun chiamante attuale esegue il retry; le suite rieseguite qui non lasciano residui.",
-          "id": "VF-001",
-          "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
-          "required_fix": "Fuori dallo scope di questa supersession di metadati: remediation separata che registri/etichetti i volumi anonimi alla creazione (o li rilevi tramite label di propriet\u00e0) affinch\u00e9 il retry resti fail-closed.",
-          "severity": "medium"
-        },
-        {
-          "blocking": false,
-          "evidence": "git merge-base --is-ancestor e8449a9 355490e e a9d2ffe6 -> falso: il commit sigillato superseduto \u00e8 raggiungibile solo dal branch governed/ocor-dev-rem-0022-kafka-resource-lifecycle (PR #220 aperta, non unita). Dopo il merge su main, se la PR viene chiusa e il branch eliminato, la riproduzione del check (e la verifica dell'hash del record superseduto) fallirebbe in un clone ordinario.",
-          "id": "VF-002",
-          "path": "reports/tests/check_rem0022_ci_evidence.py:79 (git_blob(superseded['commit'], ...)); superseded_record.commit e8449a91e7f1bb918905d81992db81e447e36e8a nei quattro record",
-          "required_fix": "Prima di chiudere PR #220 conservare e8449a9 raggiungibile (tag o ref protetto) oppure documentare la ref da cui recuperarlo; non bloccante per il sigillo.",
-          "severity": "low"
-        }
-      ],
-      "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
-      "not_executed": [],
-      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0022-a9d2ffe6f147-1.json",
-      "request_id": "OCOR-DEV-REM-0022-a9d2ffe6f147-1",
-      "sha256": "14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53",
-      "verbatim_verdict_preserved": true,
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verifier": {
-        "independence_limits": "Processo e contesto separati dall'implementatore. Implementatore Codex (OpenAI), verifier Claude Code (Anthropic): modelli e fornitori diversi. Lo stesso fornitore (Claude) ha emesso le verifiche storiche REM-0022 su a54ebb5; quel GO non \u00e8 stato usato come prova, tutto \u00e8 stato rieseguito su questo HEAD. Questo GO primario copre REM-0022/OCOR-DEV-0019/OCOR-DEV-0040; la review di sola regressione di OCOR-DEV-0050 (Cursor/Grok) resta obbligatoria e separata. Fuori scope e non dichiarati come superati: run CI GitHub sull'HEAD (resta condizione di merge) e review Cursor di regressione 0050.",
-        "model": "claude-opus-5-5",
-        "process": "Claude Code (Anthropic), sessione non interattiva separata, contesto pulito"
-      }
-    },
-    "regression_0050": {
-      "created_at": "2026-10-11T23:41:59Z",
-      "findings": [
-        {
-          "blocking": false,
-          "evidence": "spikes/kafka_delivery/oracle.py:193 e ocor-runtime/src/ocor_runtime/c5/backbone.py:259 accumulano i volumi anonimi solo dai container ancora presenti in docker container ls. I blob HEAD di oracle.py, backbone.py e test_ocor_dev_rem_0022.py sono identici a a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 e a e8449a91e7f1bb918905d81992db81e447e36e8a. Le suite di questa review non hanno lasciato volumi. Finding primario del verdetto OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, sullo stesso HEAD.",
-          "id": "VF-001",
-          "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
-          "required_fix": "Fuori dallo scope di questa regressione: remediation separata che registri i volumi anonimi alla creazione, o li rilevi per etichetta di proprieta, cosi che il retry di destroy resti fail-closed.",
-          "severity": "medium"
-        },
-        {
-          "blocking": false,
-          "evidence": "git merge-base --is-ancestor e8449a91e7f1bb918905d81992db81e447e36e8a a9d2ffe6f14799a678f935bd2eb939438bd0fae5 e falso. Il commit e HEAD di origin/governed/ocor-dev-rem-0022-kafka-resource-lifecycle. gh pr view 220: state OPEN, headRefOid e8449a91e7f1bb918905d81992db81e447e36e8a. La ref non e stata chiusa ne eliminata.",
-          "id": "VF-002",
-          "path": "reports/tests/check_rem0022_ci_evidence.py:71",
-          "required_fix": "Prima di chiudere PR #220 conservare e8449a91 raggiungibile con un tag o una ref protetta, oppure documentare la ref da cui recuperarlo.",
-          "severity": "low"
-        },
-        {
-          "blocking": false,
-          "evidence": "git diff della base verso HEAD non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit a model.py:1227 rilancia MemoryAdmissionError prima di _admit; audit_event e costruito solo a model.py:1321 e ledger.append solo a model.py:1352, sul percorso di successo. Stesso difetto gia aperto come residual del record 0050 e come OCOR-DEV-REM-0023. I 198 test sono invariati e verdi.",
-          "id": "VF-003",
-          "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1227",
-          "required_fix": "Resta a OCOR-DEV-REM-0023, dopo REM-0019 e REM-0017 e prima della ripresa di 0056: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce.",
-          "severity": "medium"
-        }
-      ],
-      "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
-      "not_executed": [],
-      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression.json",
-      "request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
-      "sha256": "97fac54caa6ec545feb0ddd133f644fa7fa31e2613a0e945d0e5867e3acfe6f5",
-      "verbatim_verdict_preserved": true,
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verifier": {
-        "independence_limits": "Processo e contesto separati. Implementatore della riqualifica REM-0022: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor. Non sono lo stesso modello. Implementatore originale di OCOR-DEV-0050: Claude Code. Il GO primario Claude OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, copre solo REM-0022/0019/0040 sullo stesso HEAD ed e stato controllato per hash, non riusato come prova dei 198 test. Ambito: sola regressione dei test invariati e dell'integrita di supersession, raw, hash e input. La conformance di 0050 non e stata rivalutata; il difetto di denial audit resta aperto in REM-0023.",
-        "model": "Grok 4.7",
-        "process": "Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression/wt"
-      }
-    },
-    "status": "BOTH_EXACT_HEAD_GO"
-  },
-  "local_gate_results": [
+  "candidate_gate_results": [
     {
       "base_sha": "355490ecd5fc28db999b1374c9adeddf95c64e23",
       "command": [
@@ -462,7 +201,371 @@
       "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
     }
   ],
-  "migration_rollback_result": "No source/schema/data migration; revert state sync with new commit if needed; preserve all candidate and historical hashes.",
+  "changed_paths": [
+    "reports/development/EXECUTION_STATE.json",
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/ITERATION_LOG.md"
+  ],
+  "ci": {
+    "branch": "governed/ocor-dev-rem-0022-ci-evidence-supersession",
+    "candidate_commit": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+    "head_sha": "9b766c0366e4278f51dffaf5ef97b1acc1e928d4",
+    "merge_commit": "808ad78359cdc7a7975d583b5285c94db55c4e78",
+    "observed_at": "2026-10-12T00:06:07.880473+00:00",
+    "pull_request": 223,
+    "qualification_scope": "Independent Claude REM-0022/0019/0040 GO and Cursor regression-only0050 GO on exact candidate; final sealed HEAD only metadata/state changes; 13 exact required checks SUCCESS; no runtime/global claim promotion.",
+    "raw_observation_sha256": "fcad7ff737681e6f5fdd7d65bcd501158a94d8e0aa1d748b1fa4e6011d2b6d10",
+    "required_passed": 13,
+    "required_total": 13,
+    "rerun_count": 0,
+    "run_ids": [
+      38185627718,
+      38185627720,
+      38185627721,
+      38185627728,
+      38185627747,
+      38185627853
+    ],
+    "status": "PASS_EXACT_HEAD_MERGED"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands_run": [
+    {
+      "command": [
+        "sha256sum",
+        "-c",
+        "inputs/normative/SHA256SUMS"
+      ],
+      "duration_seconds": 0.003,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/verify.py",
+        "--json"
+      ],
+      "duration_seconds": 0.359,
+      "exit_code": 0,
+      "label": "verify",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_evidence_input_drift.py"
+      ],
+      "duration_seconds": 0.071,
+      "exit_code": 0,
+      "label": "drift",
+      "raw_sha256": "3c1c06170d86b870ef4f7ae264857263adccfde225c6fc7e61b6169f91f06941"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/reset_test_environment.py",
+        "--execute"
+      ],
+      "duration_seconds": 0.091,
+      "exit_code": 0,
+      "label": "reset",
+      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/bootstrap_development_environment.py",
+        "--execute",
+        "--timeout",
+        "600"
+      ],
+      "duration_seconds": 34.973,
+      "exit_code": 0,
+      "label": "bootstrap",
+      "raw_sha256": "5062b61e5cae0f3d3f6af34ff952b9ec0cdce8e607f28a8f2406fd638e28f033"
+    },
+    {
+      "command": [
+        "uv",
+        "sync",
+        "--project",
+        "ocor-runtime",
+        "--frozen",
+        "--extra",
+        "test",
+        "--extra",
+        "lint"
+      ],
+      "duration_seconds": 0.021,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "ae686a7598d0a6f3cae20ca164a12c24cffe43dd8c5adafc40cfeeed23bc29bc"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "deploy/bootstrap/init/initialize_services.py",
+        "--env-file",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/.ocor/bootstrap.env"
+      ],
+      "duration_seconds": 1.369,
+      "exit_code": 0,
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "deploy/bootstrap/fixtures/load_fixtures.py",
+        "--env-file",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/.ocor/bootstrap.env"
+      ],
+      "duration_seconds": 0.164,
+      "exit_code": 0,
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "/home/luca/.ocor-codex/rem0022-ci-evidence/register_control_plane.py"
+      ],
+      "duration_seconds": 7.379,
+      "exit_code": 0,
+      "label": "svid",
+      "raw_sha256": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/verify_external_services.py",
+        "--execute",
+        "--typed"
+      ],
+      "duration_seconds": 2.754,
+      "exit_code": 0,
+      "label": "typed-health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/reset_test_environment.py",
+        "--execute"
+      ],
+      "duration_seconds": 1.472,
+      "exit_code": 0,
+      "label": "teardown",
+      "raw_sha256": "2c31b728c8482096ebb8f4107262ebcb467e6552238301de6faa59b55494c1f5"
+    }
+  ],
+  "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
+  "current_task": "REM-0022: integrazione verified merged e state sync; REM-0019 ripresa qualifica ciclo1",
+  "evidence_paths": [
+    "reports/development/EXECUTION_STATE.json",
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/ITERATION_LOG.md"
+  ],
+  "evidence_paths_definition": "State-sync artifacts in current branch; immutable sealed artifacts on main listed in branch_evidence_paths/source_reference.",
+  "exact_next_action": "OCOR-DEV-REM-0019:repair1-qualification-resume \u2014 use preserved .ocor/worktrees/rem-0019 on governed/ocor-dev-rem-0019-0049-test-isolation. Read main state and previous_rem0019_reference, ~/.ocor-codex/rem-0019-r1m/HANDOFF.md and historical NO_GO/marker diagnostic. Merge latest origin/main into preserved WIP without force-push, retaining complete test/fixture and structural ciphertext repair; production0049 unchanged. Preserve existing task stage .ocor/worktrees/rem0019-task-stage and governed evidence stage .ocor/worktrees/rem0019-governed-stage, with exact tree equivalence and scope gates; do not merge governance into task before scope CI. REM-0022 verified and merged now supplies owned Kafka cleanup; never delete unknown historical volumes. Before qualifying run: reset --execute -> pinned bootstrap -> init/fixtures -> real control-plane SVID -> sync --extra test --extra lint -> 11 READY. Rerun ENTIRE independence campaign on final source commit: collection order, reverse, seeds190001/190002/190003 and all119 dependency-derived isolated tests, preserving all390 original0049 cases/assertions except PO-approved stronger ciphertext assertion plus deterministic negatives/mutant. New full runtime/reports regression required, zero skip/fail/error/residue/restart/OOM, full75/task45min and collection/JUnit exact union. Update distinct superseding evidence/allowlist/input hashes and exact-head candidate requests; verifier Cursor/Grok for0049 and tasks touched by reserve Claude, Claude Code for Codex-only scopes. Do not reuse diagnostic or old-source runs as qualifying evidence. No verifier launched by implementer; external loop only. Then verified REM-0019 closure -> REM-0017 CI repartition/reruns -> 0049 integration -> REM-0023 admission denial audit -> preserved0056, then0057\u20130059. E1/E2/Verified/claims unchanged.",
+  "head_sha": "808ad78359cdc7a7975d583b5285c94db55c4e78",
+  "head_sha_resolver": "Merged implementation baseline; state-only final HEAD via git rev-parse governed/state-sync-rem0022-ci-sealed",
+  "independent_verification": {
+    "primary": {
+      "created_at": "2026-10-11T22:48:00Z",
+      "findings": [
+        {
+          "blocking": false,
+          "evidence": "Finding preesistente preservato come OPEN_NONBLOCKING (residual_findings del record). Il codice \u00e8 byte-identico al candidato a54ebb5 dove il retry \u00e8 stato riprodotto: _cleanup_resources ricava i volumi anonimi solo dai container ancora esistenti, quindi un retry di destroy() dopo un primo teardown che ha rimosso il container ma non il suo volume anonimo restituisce successo lasciando il volume. Nessun chiamante attuale esegue il retry; le suite rieseguite qui non lasciano residui.",
+          "id": "VF-001",
+          "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+          "required_fix": "Fuori dallo scope di questa supersession di metadati: remediation separata che registri/etichetti i volumi anonimi alla creazione (o li rilevi tramite label di propriet\u00e0) affinch\u00e9 il retry resti fail-closed.",
+          "severity": "medium"
+        },
+        {
+          "blocking": false,
+          "evidence": "git merge-base --is-ancestor e8449a9 355490e e a9d2ffe6 -> falso: il commit sigillato superseduto \u00e8 raggiungibile solo dal branch governed/ocor-dev-rem-0022-kafka-resource-lifecycle (PR #220 aperta, non unita). Dopo il merge su main, se la PR viene chiusa e il branch eliminato, la riproduzione del check (e la verifica dell'hash del record superseduto) fallirebbe in un clone ordinario.",
+          "id": "VF-002",
+          "path": "reports/tests/check_rem0022_ci_evidence.py:79 (git_blob(superseded['commit'], ...)); superseded_record.commit e8449a91e7f1bb918905d81992db81e447e36e8a nei quattro record",
+          "required_fix": "Prima di chiudere PR #220 conservare e8449a9 raggiungibile (tag o ref protetto) oppure documentare la ref da cui recuperarlo; non bloccante per il sigillo.",
+          "severity": "low"
+        }
+      ],
+      "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+      "not_executed": [],
+      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0022-a9d2ffe6f147-1.json",
+      "request_id": "OCOR-DEV-REM-0022-a9d2ffe6f147-1",
+      "sha256": "14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53",
+      "verbatim_verdict_preserved": true,
+      "verdict": "GO_FOR_EVIDENCE_SEAL",
+      "verifier": {
+        "independence_limits": "Processo e contesto separati dall'implementatore. Implementatore Codex (OpenAI), verifier Claude Code (Anthropic): modelli e fornitori diversi. Lo stesso fornitore (Claude) ha emesso le verifiche storiche REM-0022 su a54ebb5; quel GO non \u00e8 stato usato come prova, tutto \u00e8 stato rieseguito su questo HEAD. Questo GO primario copre REM-0022/OCOR-DEV-0019/OCOR-DEV-0040; la review di sola regressione di OCOR-DEV-0050 (Cursor/Grok) resta obbligatoria e separata. Fuori scope e non dichiarati come superati: run CI GitHub sull'HEAD (resta condizione di merge) e review Cursor di regressione 0050.",
+        "model": "claude-opus-5-5",
+        "process": "Claude Code (Anthropic), sessione non interattiva separata, contesto pulito"
+      }
+    },
+    "regression_0050": {
+      "created_at": "2026-10-11T23:41:59Z",
+      "findings": [
+        {
+          "blocking": false,
+          "evidence": "spikes/kafka_delivery/oracle.py:193 e ocor-runtime/src/ocor_runtime/c5/backbone.py:259 accumulano i volumi anonimi solo dai container ancora presenti in docker container ls. I blob HEAD di oracle.py, backbone.py e test_ocor_dev_rem_0022.py sono identici a a54ebb56955b81a2174cb8b3dc14d0775dcf8bb8 e a e8449a91e7f1bb918905d81992db81e447e36e8a. Le suite di questa review non hanno lasciato volumi. Finding primario del verdetto OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, sullo stesso HEAD.",
+          "id": "VF-001",
+          "path": "spikes/kafka_delivery/oracle.py:193; ocor-runtime/src/ocor_runtime/c5/backbone.py:259",
+          "required_fix": "Fuori dallo scope di questa regressione: remediation separata che registri i volumi anonimi alla creazione, o li rilevi per etichetta di proprieta, cosi che il retry di destroy resti fail-closed.",
+          "severity": "medium"
+        },
+        {
+          "blocking": false,
+          "evidence": "git merge-base --is-ancestor e8449a91e7f1bb918905d81992db81e447e36e8a a9d2ffe6f14799a678f935bd2eb939438bd0fae5 e falso. Il commit e HEAD di origin/governed/ocor-dev-rem-0022-kafka-resource-lifecycle. gh pr view 220: state OPEN, headRefOid e8449a91e7f1bb918905d81992db81e447e36e8a. La ref non e stata chiusa ne eliminata.",
+          "id": "VF-002",
+          "path": "reports/tests/check_rem0022_ci_evidence.py:71",
+          "required_fix": "Prima di chiudere PR #220 conservare e8449a91 raggiungibile con un tag o una ref protetta, oppure documentare la ref da cui recuperarlo.",
+          "severity": "low"
+        },
+        {
+          "blocking": false,
+          "evidence": "git diff della base verso HEAD non modifica ocor-runtime/src/ocor_runtime/memory/model.py. MemoryAdmissionService.admit a model.py:1227 rilancia MemoryAdmissionError prima di _admit; audit_event e costruito solo a model.py:1321 e ledger.append solo a model.py:1352, sul percorso di successo. Stesso difetto gia aperto come residual del record 0050 e come OCOR-DEV-REM-0023. I 198 test sono invariati e verdi.",
+          "id": "VF-003",
+          "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1227",
+          "required_fix": "Resta a OCOR-DEV-REM-0023, dopo REM-0019 e REM-0017 e prima della ripresa di 0056: su ogni rifiuto di admitMemory scrivere il denial audit senza appendere una versione e fallire chiuso se l'audit non riesce.",
+          "severity": "medium"
+        }
+      ],
+      "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+      "not_executed": [],
+      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression.json",
+      "request_id": "OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression",
+      "sha256": "97fac54caa6ec545feb0ddd133f644fa7fa31e2613a0e945d0e5867e3acfe6f5",
+      "verbatim_verdict_preserved": true,
+      "verdict": "GO_FOR_EVIDENCE_SEAL",
+      "verifier": {
+        "independence_limits": "Processo e contesto separati. Implementatore della riqualifica REM-0022: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor. Non sono lo stesso modello. Implementatore originale di OCOR-DEV-0050: Claude Code. Il GO primario Claude OCOR-DEV-REM-0022-a9d2ffe6f147-1, sha256 14e961ec14b8d22e0dc213993a06e9c64203bb35c03976f2cb1dfb84d0859d53, copre solo REM-0022/0019/0040 sullo stesso HEAD ed e stato controllato per hash, non riusato come prova dei 198 test. Ambito: sola regressione dei test invariati e dell'integrita di supersession, raw, hash e input. La conformance di 0050 non e stata rivalutata; il difetto di denial audit resta aperto in REM-0023.",
+        "model": "Grok 4.7",
+        "process": "Cursor CLI, sessione non interattiva, contesto pulito; worktree detached all'HEAD esatto sotto /tmp/ocor-verify-OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression/wt"
+      }
+    },
+    "status": "BOTH_EXACT_HEAD_GO"
+  },
+  "local_gate_results": [
+    {
+      "command": [
+        "sha256sum",
+        "-c",
+        "inputs/normative/SHA256SUMS"
+      ],
+      "duration_seconds": 0.004,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+    },
+    {
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "duration_seconds": 0.033,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "-m",
+        "mypy",
+        "--strict"
+      ],
+      "duration_seconds": 2.919,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_rccad.py",
+        "--base-ref",
+        "808ad78359cdc7a7975d583b5285c94db55c4e78"
+      ],
+      "duration_seconds": 0.315,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_ocor_change_scope.py",
+        "--base",
+        "808ad78359cdc7a7975d583b5285c94db55c4e78",
+        "--branch",
+        "governed/state-sync-rem0022-ci-sealed"
+      ],
+      "duration_seconds": 0.114,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_ocor_development_plan.py",
+        "--authorized-extension",
+        "--base-ref",
+        "808ad78359cdc7a7975d583b5285c94db55c4e78"
+      ],
+      "duration_seconds": 0.114,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_language_policy.py"
+      ],
+      "duration_seconds": 0.032,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_evidence_input_drift.py"
+      ],
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "label": "drift",
+      "raw_sha256": "3c1c06170d86b870ef4f7ae264857263adccfde225c6fc7e61b6169f91f06941"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0022-ci-evidence/ocor-runtime/.venv/bin/python",
+        "scripts/validate_runtime_evidence.py",
+        "--task",
+        "OCOR-DEV-0055",
+        "--manifest",
+        "reports/evidence/G5/MANIFEST.json",
+        "--non-skipped"
+      ],
+      "duration_seconds": 0.032,
+      "exit_code": 0,
+      "label": "runtime-evidence",
+      "raw_sha256": "3399c2d629a1321f5e7b66a42d9c6d8d32c12fcddc59d9182890270802c734e5"
+    }
+  ],
+  "migration_rollback_result": "No migration: rollback via new revert of PR223 with affected qualification blocked and requalification; never modify historical seals.",
   "nonblocking_findings": [
     {
       "blocking": false,
@@ -857,12 +960,14 @@
         "ok": true
       }
     },
+    "next_action": "OCOR-DEV-REM-0019:repair1-qualification-resume \u2014 use preserved .ocor/worktrees/rem-0019 on governed/ocor-dev-rem-0019-0049-test-isolation. Read main state and previous_rem0019_reference, ~/.ocor-codex/rem-0019-r1m/HANDOFF.md and historical NO_GO/marker diagnostic. Merge latest origin/main into preserved WIP without force-push, retaining complete test/fixture and structural ciphertext repair; production0049 unchanged. Preserve existing task stage .ocor/worktrees/rem0019-task-stage and governed evidence stage .ocor/worktrees/rem0019-governed-stage, with exact tree equivalence and scope gates; do not merge governance into task before scope CI. REM-0022 verified and merged now supplies owned Kafka cleanup; never delete unknown historical volumes. Before qualifying run: reset --execute -> pinned bootstrap -> init/fixtures -> real control-plane SVID -> sync --extra test --extra lint -> 11 READY. Rerun ENTIRE independence campaign on final source commit: collection order, reverse, seeds190001/190002/190003 and all119 dependency-derived isolated tests, preserving all390 original0049 cases/assertions except PO-approved stronger ciphertext assertion plus deterministic negatives/mutant. New full runtime/reports regression required, zero skip/fail/error/residue/restart/OOM, full75/task45min and collection/JUnit exact union. Update distinct superseding evidence/allowlist/input hashes and exact-head candidate requests; verifier Cursor/Grok for0049 and tasks touched by reserve Claude, Claude Code for Codex-only scopes. Do not reuse diagnostic or old-source runs as qualifying evidence. No verifier launched by implementer; external loop only. Then verified REM-0019 closure -> REM-0017 CI repartition/reruns -> 0049 integration -> REM-0023 admission denial audit -> preserved0056, then0057\u20130059. E1/E2/Verified/claims unchanged.",
     "next_qualification_rule": "Fix and independently verify REM-0022 first, requalify OCOR-DEV-0019 without rewriting sealed history, then fresh reset/bootstrap/full suite on the combined final candidate; rerun affected independence cases/campaign if the immutable candidate changes. No PASS transferred from this failed hygiene run.",
     "not_executed": [
       "Independent verification and candidate assembly: blocked by per-test teardown defect",
       "Optional valid ciphertext containing PGDMP: no deterministic reproduction without changing the custodian"
     ],
     "po_decision": "REM-0019-BACKUP-CIPHERTEXT-MARKER (2026-10-11), option 1; repair_cycle 1 unchanged",
+    "qualification_blocker_disposition": "Kafka owned-volume teardown remediation verified and merged PR223; new complete qualifying runs mandatory, old diagnostics preserved.",
     "qualification_status": "BLOCKED_OWNED_RESOURCES_REMAIN_AFTER_TEST_TEARDOWN",
     "repair_cycle": 1,
     "reports_regression": {
@@ -1257,11 +1362,13 @@
     "primary_verifier": "Claude Code (Anthropic), separate provider/process/context, REM-0022/0019/0040 only"
   },
   "schema_version": "1.0",
-  "security_observability_notes": "Kafka teardown retry and historical ref remain OPEN_NONBLOCKING. Admission denial audit remains OPEN REM-0023, mandatory G5 closure. 0050 review ONLY regression, no conformance assertion.",
+  "security_observability_notes": "Kafka normal/bootstrap/timeout cleanup verified and merged; retry and historical ref findings OPEN_NONBLOCKING. Admission refusal audit OPEN REM23. Unknown historical volumes preserved. Original0049 production unchanged; REM19 qualifying campaign pending. E1/E2/Verified/global NO-GO invariants preserved.",
   "session_artifacts": "/home/luca/.ocor-codex/rem0022-ci-integration",
   "source_reference": {
     "branch": "governed/ocor-dev-rem-0022-ci-evidence-supersession",
-    "head_sha": "a9d2ffe6f14799a678f935bd2eb939438bd0fae5",
+    "head_sha": "9b766c0366e4278f51dffaf5ef97b1acc1e928d4",
+    "merge_commit": "808ad78359cdc7a7975d583b5285c94db55c4e78",
+    "pull_request": 223,
     "record_hashes": {
       "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0022-ci.json": "4510ece8ecd715bcddadb81ee1fb7f08ba05278a3495a91721738cb9be25aa97",
       "reports/evidence/G2/OCOR-DEV-REM-0022.ci-evidence-supersession.json": "5abdf8a4990b35b37079d78dc4a9207a26f656b33571c27116535e75a82882be",
@@ -1276,7 +1383,7 @@
     ],
     "runtime_source_equivalence": "Kafka source/test bytes equal a54ebb5; unchanged scanner/criteria. New metadata test/checker and exact allowlist entries only.",
     "source_commit": "7c6daa7b3c3ac1dd80924fb39decd2e961db1e32",
-    "status": "SEALED_PENDING_EXACT_GREEN_CI",
+    "status": "SEALED_VERIFIED_MERGED",
     "superseded_sealed_head": "e8449a91e7f1bb918905d81992db81e447e36e8a",
     "worktree": ".ocor/worktrees/rem-0022-ci-evidence"
   },
@@ -1352,12 +1459,20 @@
   },
   "unresolved_blockers": [
     {
-      "id": "OCOR-DEV-REM-0022",
-      "next_action": "OCOR-DEV-0050:rem0022-ci-regression-verification \u2014 external loop executes OCOR-DEV-0050-a9d2ffe6f147-0-rem0022-ci-regression with Grok 4.7 via Cursor on unchanged exact candidate a9d2ffe6f14799a678f935bd2eb939438bd0fae5. Scope ONLY regression of 198 unchanged 0050 tests after exact-path allowlist additions, plus evidence integrity/supersession; no 0050 conformance reassessment. Primary Claude Code GO for REM-0022/0019/0040 acquired on this SAME HEAD. Both GO barriers required before sealing distinct records and opening supersession PR. Preserve sealed e8449a9, remote branch governed/ocor-dev-rem-0022-kafka-resource-lifecycle and open PR220 until permanent reachability is established. Medium Kafka teardown retry finding OPEN_NONBLOCKING, low historical-ref finding OPEN_NONBLOCKING with fetch ref documented. Admission denial audit OPEN in REM-0023, outside regression scope. After exact-head Cursor GO: seal distinct records with actual verifier identities and findings; open supersession PR; all 13 required checks SUCCESS on exact HEAD; merge --match-head-commit and immediate state sync. Then REM-0019 repair1 fresh full regression, REM-0017, merge 0049, REM-0023 before preserved 0056 WIP. No new repair cycle consumed by this state/review-request unit. E1/E2/Verified/claims unchanged.",
-      "status": "PRIMARY_GO_PENDING_CURSOR_0050_REGRESSION"
+      "id": "OCOR-DEV-REM-0019",
+      "next_action": "OCOR-DEV-REM-0019:repair1-qualification-resume \u2014 use preserved .ocor/worktrees/rem-0019 on governed/ocor-dev-rem-0019-0049-test-isolation. Read main state and previous_rem0019_reference, ~/.ocor-codex/rem-0019-r1m/HANDOFF.md and historical NO_GO/marker diagnostic. Merge latest origin/main into preserved WIP without force-push, retaining complete test/fixture and structural ciphertext repair; production0049 unchanged. Preserve existing task stage .ocor/worktrees/rem0019-task-stage and governed evidence stage .ocor/worktrees/rem0019-governed-stage, with exact tree equivalence and scope gates; do not merge governance into task before scope CI. REM-0022 verified and merged now supplies owned Kafka cleanup; never delete unknown historical volumes. Before qualifying run: reset --execute -> pinned bootstrap -> init/fixtures -> real control-plane SVID -> sync --extra test --extra lint -> 11 READY. Rerun ENTIRE independence campaign on final source commit: collection order, reverse, seeds190001/190002/190003 and all119 dependency-derived isolated tests, preserving all390 original0049 cases/assertions except PO-approved stronger ciphertext assertion plus deterministic negatives/mutant. New full runtime/reports regression required, zero skip/fail/error/residue/restart/OOM, full75/task45min and collection/JUnit exact union. Update distinct superseding evidence/allowlist/input hashes and exact-head candidate requests; verifier Cursor/Grok for0049 and tasks touched by reserve Claude, Claude Code for Codex-only scopes. Do not reuse diagnostic or old-source runs as qualifying evidence. No verifier launched by implementer; external loop only. Then verified REM-0019 closure -> REM-0017 CI repartition/reruns -> 0049 integration -> REM-0023 admission denial audit -> preserved0056, then0057\u20130059. E1/E2/Verified/claims unchanged.",
+      "status": "FRESH_QUALIFICATION_PENDING"
+    },
+    {
+      "id": "OCOR-DEV-REM-0017",
+      "status": "AFTER_VERIFIED_REM0019"
+    },
+    {
+      "id": "OCOR-DEV-REM-0023",
+      "status": "OPEN_AFTER_REM0019_REM0017_BEFORE0056"
     }
   ],
-  "updated_at": "2026-10-11T23:46:56.116528+00:00",
+  "updated_at": "2026-10-12T00:06:07.880473+00:00",
   "verifier_routing": {
     "existing_exact_id_override": true,
     "publication": "After exact-green state sync merge; external loop launches verifier.",
@@ -1365,5 +1480,5 @@
     "runner_and_prompt_unchanged": true,
     "verifier": "cursor"
   },
-  "worktree": ".ocor/worktrees/rem-0022-ci-evidence"
+  "worktree": ".ocor/worktrees/state-sync-rem0022-ci-sealed"
 }
