@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "e8be85d3eee246997747f09a9b9f46b4f0b99884",
-    "branch": "governed/rvw-03-breakglass-conformance-audit",
+    "baseline_commit": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
+    "branch": "governed/state-sync-rem0019-teardown-resume-20261012",
     "checkpoint": {
       "changed_product_paths": [],
       "diagnosis_path": "/home/luca/.ocor-codex/rem0017-offline-diagnosis-20261012/diagnosis.json",
@@ -324,8 +324,8 @@
       "qualifying_runs_started": 0,
       "reruns_started": 0
     },
-    "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): RVW-03 documentary conformance audit, REM-0024 registration, decision request closure and state sync",
-    "independent_verification": "NOT_REQUESTED_DOCUMENTARY_AUDIT_ONLY",
+    "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted)",
+    "independent_verification": "not requested: harness observation change and diagnostics only, no qualifying result; REM-0019 verifier remains Grok 4.7 (Cursor)",
     "local_state_gates": {
       "base_sha": "2710c1b9f6c1deddee3a5156b9627dbb92727178",
       "branch": "governed/rem0017-infrastructure-diagnosis-20261012",
@@ -454,13 +454,75 @@
       ],
       "status": "PASS"
     },
-    "phase": "RVW03_AUDIT_COMPLETED_REM0024_REGISTERED",
+    "phase": "REM-0019 teardown-observation decision executed; qualification stopped on recurrent infrastructure cause",
     "preflight": {
       "services": 11,
       "status": "PASS",
       "toolchain_entries": 9
     },
-    "repair_cycle": 0,
+    "rem0019_teardown_observation_unit": {
+      "execution": {
+        "authority": "PO decision REM-0019-KIND-TEARDOWN-OBSERVATION (2026-10-12) option 1",
+        "campaign": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
+        "decision_request_closure": "PENDING: file on draft PR #232 is closed together with the new request in one allowlist change set with 0050 regression-only requalification",
+        "harness_change_record": {
+          "changed_files": [
+            "watchdog_safe.py",
+            "run_nodes.py (sampler start/stop + 2 observation fields)"
+          ],
+          "path": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/harness-change-record.json",
+          "retained_full_attempt3": "valid component 2196 retained",
+          "sha256": "14293e2679756745eb7cb6f519900a885d09bffd65e1e85007f6a7813c8e55e5",
+          "unchanged_execution": "pytest command/env/orders/limits/runtime checks/teardown byte-identical; modules.py campaign.py driver.py prepare.py unchanged"
+        },
+        "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted)",
+        "proofs": {
+          "green_v2": {
+            "result": "OK 14/14",
+            "sha256": "59eac45878d9289bef80e6843121094fe3c3b51a93eaf12e9095665e8f271347"
+          },
+          "real_docker_kind_probe": {
+            "result": "PASS 4/4, inventory unchanged",
+            "sha256": "d7d1661cab05148a7d66c7194e7352cbaa995c250dba80715ab002687d728c38"
+          },
+          "red_docker29_message": {
+            "result": "FAILED on pre-fix copy",
+            "sha256": "00143aa64c044916c6d58a2aa328a235eb4ced92e3b151f4f1031ddd7ae0d76e"
+          },
+          "red_v1": {
+            "result": "FAILED failures=4 errors=4 of 13",
+            "sha256": "00d1d0e918a6b8f755138b139a0d1fee0e524080d2aeffcddc118a138eddfeb2"
+          },
+          "v1_suites_on_v2": {
+            "result": "9/11: all v1 negatives fatal; 2 v1 positives without bound remover superseded by decision",
+            "sha256": "8f67bf0b89b9fd82a5988059814e7ea299c4e9f13a365a51a310a43f14fd1252"
+          }
+        },
+        "v1_defects_found": [
+          "Docker CLI 29 lowercase \"error: no such object\" never matched by v1",
+          "v1 rejected node still Running during docker rm -f and did not bind intent continuously"
+        ],
+        "window_seconds": 30.0
+      },
+      "new_decision_request": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
+      "order_collection_attempt2": {
+        "cause": "pinned kindest/node v1.33.1 containerd SIGSEGV 20:08:58Z during kind create of Helm fixture (387/390); restart detected by unchanged runtime check",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 386
+        },
+        "counts_in_qualification_totals": false,
+        "exit_code": 130,
+        "path": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-2/diagnosis.json",
+        "reruns_used": 1,
+        "residue": "kind node + /var volume + bootstrap network left (fixture setup not in try/finally); removed with kind delete and docker network rm; inventory == before",
+        "sha256": "45f3c566bcb539843fb0ad559e12716395686cd760326578987ef56030c6cd77",
+        "status": "FAIL_INFRASTRUCTURE_NONQUALIFYING"
+      }
+    },
+    "repair_cycle": 1,
     "rvw03_audit_unit": {
       "audit_record": "reports/development/decision_requests/RVW-03.md",
       "implementer": "Claude Code (reserve loop implementer)",
@@ -468,11 +530,11 @@
       "session_artifacts": "/home/luca/.ocor-codex/rvw03-audit-20261012",
       "status": "AUDIT_COMPLETE_DOCUMENTARY_NO_EVIDENCE"
     },
-    "session_artifacts": "/home/luca/.ocor-codex/rvw03-audit-20261012",
-    "source_commit": "e8be85d3eee246997747f09a9b9f46b4f0b99884",
-    "source_worktree": ".ocor/worktrees/rvw-03-audit",
-    "task_id": "RVW-03",
-    "worktree": ".ocor/worktrees/rvw-03-audit"
+    "session_artifacts": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
+    "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
+    "source_worktree": ".ocor/worktrees/rem-0019",
+    "task_id": "OCOR-DEV-REM-0019",
+    "worktree": ".ocor/worktrees/state-sync-rem0019-teardown-resume-20261012"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1978,7 +2040,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "e8be85d3eee246997747f09a9b9f46b4f0b99884",
+  "baseline_commit": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -3339,8 +3401,24 @@
         "teardown_exit_code": 0,
         "watchdog_error": "Command '['docker', 'exec', '5c4a35360270771bb6e28a8ce78d0a9c51d5add23f1dc0f35474c71a7e3aa76b', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1."
       },
+      "current_failure_diagnosis_attempt2": {
+        "cause": "pinned kindest/node v1.33.1 containerd SIGSEGV 20:08:58Z during kind create of Helm fixture (387/390); restart detected by unchanged runtime check",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 386
+        },
+        "counts_in_qualification_totals": false,
+        "exit_code": 130,
+        "path": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/attempts/order-collection/attempt-2/diagnosis.json",
+        "reruns_used": 1,
+        "residue": "kind node + /var volume + bootstrap network left (fixture setup not in try/finally); removed with kind delete and docker network rm; inventory == before",
+        "sha256": "45f3c566bcb539843fb0ad559e12716395686cd760326578987ef56030c6cd77",
+        "status": "FAIL_INFRASTRUCTURE_NONQUALIFYING"
+      },
       "decision": "Presa d'atto PO sul vincolo d'ordine di 0049 (2026-10-09)",
-      "decision_request_id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+      "decision_request_id": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
       "id": "OCOR-DEV-REM-0019",
       "implementation": {
         "artifacts": {
@@ -3898,7 +3976,7 @@
         },
         "worktree": ".ocor/worktrees/rem-0019"
       },
-      "next_action": "OCOR-DEV-REM-0017:authorized-infrastructure-diagnosis \u2014 resume option1 of REM-0017-KIND-CONTAINERD-CRASH in .ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire using existing diagnostic logs, same pinned image/version; do not start CI/qualification or change REM-0019 harness while REM-0019-KIND-TEARDOWN-OBSERVATION is OPEN_PO_DECISION_REQUIRED. REM-0019 repair_cycle1 source8842ab2658b9eee201fa1bd26d267a9f23c22df5 unchanged; supervisor11336 exited. Retain full attempt3 PASS2196 and all diagnostic attempts. order-collection attempt1 is FAIL exit130, despite390 test bodies/JUnit PASS; no counts transferred, no retry started; remaining4 orders/119isolated NOT_EXECUTED. Read decision request draftPR232 at 8be2b87a936bbc52909ae0e489d65a68dbc1fbac and versioned diagnosis before any resumption. Same teardown-observation class recurs in historic full: PO infra-rerun rule requires decision, no blind retries. After resolved infrastructure authority, prove observation-only scope to retain full or rerun entire campaign; then all required orders/isolated, exact JUnit identity/order, zero skip/fail/error/restart/OOM/residue, final teardown. Request verifier only after complete fresh final-head evidence and REGRESSION_ONLY0050 supersession198 unchanged tests; historic Claude Code reserve isolation/VF-001 and Codex oracle/qualification; verifier Grok4.7(Cursor). VerifiedREM19 ->REM17 ->0049 integration ->REM23 before preserved0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+      "next_action": "Await PO decision REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE; no rerun or harness change before it.",
       "non_blocking": false,
       "po_decision": {
         "date": "2026-10-10",
@@ -3919,6 +3997,49 @@
         "path": "reports/development/EXECUTION_STATE.json"
       },
       "status": "BLOCKED_RECURRENT_INFRASTRUCTURE_PO_DECISION_REQUIRED",
+      "teardown_observation_execution": {
+        "authority": "PO decision REM-0019-KIND-TEARDOWN-OBSERVATION (2026-10-12) option 1",
+        "campaign": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
+        "decision_request_closure": "PENDING: file on draft PR #232 is closed together with the new request in one allowlist change set with 0050 regression-only requalification",
+        "harness_change_record": {
+          "changed_files": [
+            "watchdog_safe.py",
+            "run_nodes.py (sampler start/stop + 2 observation fields)"
+          ],
+          "path": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/harness-change-record.json",
+          "retained_full_attempt3": "valid component 2196 retained",
+          "sha256": "14293e2679756745eb7cb6f519900a885d09bffd65e1e85007f6a7813c8e55e5",
+          "unchanged_execution": "pytest command/env/orders/limits/runtime checks/teardown byte-identical; modules.py campaign.py driver.py prepare.py unchanged"
+        },
+        "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted)",
+        "proofs": {
+          "green_v2": {
+            "result": "OK 14/14",
+            "sha256": "59eac45878d9289bef80e6843121094fe3c3b51a93eaf12e9095665e8f271347"
+          },
+          "real_docker_kind_probe": {
+            "result": "PASS 4/4, inventory unchanged",
+            "sha256": "d7d1661cab05148a7d66c7194e7352cbaa995c250dba80715ab002687d728c38"
+          },
+          "red_docker29_message": {
+            "result": "FAILED on pre-fix copy",
+            "sha256": "00143aa64c044916c6d58a2aa328a235eb4ced92e3b151f4f1031ddd7ae0d76e"
+          },
+          "red_v1": {
+            "result": "FAILED failures=4 errors=4 of 13",
+            "sha256": "00d1d0e918a6b8f755138b139a0d1fee0e524080d2aeffcddc118a138eddfeb2"
+          },
+          "v1_suites_on_v2": {
+            "result": "9/11: all v1 negatives fatal; 2 v1 positives without bound remover superseded by decision",
+            "sha256": "8f67bf0b89b9fd82a5988059814e7ea299c4e9f13a365a51a310a43f14fd1252"
+          }
+        },
+        "v1_defects_found": [
+          "Docker CLI 29 lowercase \"error: no such object\" never matched by v1",
+          "v1 rejected node still Running during docker rm -f and did not bind intent continuously"
+        ],
+        "window_seconds": 30.0
+      },
       "verified_free_id": "grep REM-0019 su tutti i ref locali e origin: nessuna occorrenza (2026-10-09)"
     },
     {
@@ -4737,10 +4858,83 @@
         "existing WIP preservation",
         "independent work with no governed-order conflict"
       ],
+      "execution": {
+        "authority": "PO decision REM-0019-KIND-TEARDOWN-OBSERVATION (2026-10-12) option 1",
+        "campaign": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
+        "decision_request_closure": "PENDING: file on draft PR #232 is closed together with the new request in one allowlist change set with 0050 regression-only requalification",
+        "harness_change_record": {
+          "changed_files": [
+            "watchdog_safe.py",
+            "run_nodes.py (sampler start/stop + 2 observation fields)"
+          ],
+          "path": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/harness-change-record.json",
+          "retained_full_attempt3": "valid component 2196 retained",
+          "sha256": "14293e2679756745eb7cb6f519900a885d09bffd65e1e85007f6a7813c8e55e5",
+          "unchanged_execution": "pytest command/env/orders/limits/runtime checks/teardown byte-identical; modules.py campaign.py driver.py prepare.py unchanged"
+        },
+        "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted)",
+        "proofs": {
+          "green_v2": {
+            "result": "OK 14/14",
+            "sha256": "59eac45878d9289bef80e6843121094fe3c3b51a93eaf12e9095665e8f271347"
+          },
+          "real_docker_kind_probe": {
+            "result": "PASS 4/4, inventory unchanged",
+            "sha256": "d7d1661cab05148a7d66c7194e7352cbaa995c250dba80715ab002687d728c38"
+          },
+          "red_docker29_message": {
+            "result": "FAILED on pre-fix copy",
+            "sha256": "00143aa64c044916c6d58a2aa328a235eb4ced92e3b151f4f1031ddd7ae0d76e"
+          },
+          "red_v1": {
+            "result": "FAILED failures=4 errors=4 of 13",
+            "sha256": "00d1d0e918a6b8f755138b139a0d1fee0e524080d2aeffcddc118a138eddfeb2"
+          },
+          "v1_suites_on_v2": {
+            "result": "9/11: all v1 negatives fatal; 2 v1 positives without bound remover superseded by decision",
+            "sha256": "8f67bf0b89b9fd82a5988059814e7ea299c4e9f13a365a51a310a43f14fd1252"
+          }
+        },
+        "v1_defects_found": [
+          "Docker CLI 29 lowercase \"error: no such object\" never matched by v1",
+          "v1 rejected node still Running during docker rm -f and did not bind intent continuously"
+        ],
+        "window_seconds": 30.0
+      },
       "id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+      "po_decision": {
+        "date": "2026-10-12",
+        "option": 1,
+        "source": "PO decision text in the loop instructions"
+      },
       "recorded_at": "2026-10-12T18:01:46.143622+00:00",
       "repair_cycle": 1,
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "RESOLVED_BY_PO_DECISION_EXECUTED_CLOSURE_PENDING_ALLOWLIST"
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0019 qualification",
+        "OCOR-DEV-REM-0017 qualifying CI campaign",
+        "OCOR-DEV-0049 integration",
+        "ordered follow-on delivery"
+      ],
+      "branch": "governed/decision-request-rem0019-kind-containerd-segv",
+      "does_not_block": [
+        "INFO-A audit",
+        "INFO-C audit",
+        "OCOR-DEV-REM-0024"
+      ],
+      "head_sha": "d6b4a1772c0f6e1c59e7ef49f7b7442695b9c439",
+      "id": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
+      "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+      "path": "reports/development/decision_requests/REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE.md",
+      "pull_request": 236,
+      "recommendation": "option 1: digest-pinned kindest/node v1.33.x whose containerd is built with a Go release containing the vgetrandom fix (#73141/#73144), plus kind fixture setup inside try/finally, new REM-0019 commit and full fresh campaign",
+      "recorded_at": "2026-10-12T20:12:34.905502+00:00",
+      "repair_cycle": 1,
+      "sha256": "ac7493ac2bd0988bc51561c5c084af380a69ed78dcf882a7a5f52d14c137ec09",
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "text": "# REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE\n\nStato: `OPEN_PO_DECISION_REQUIRED` \u2014 2026-10-12.\n\n## Contesto e fatti\n\nLa decisione `REM-0019-KIND-TEARDOWN-OBSERVATION` (opzione 1) \u00e8 stata eseguita il\n2026-10-12 da Claude Code, implementatore di riserva del loop:\n\n- adapter di osservazione v2 (`watchdog_safe.py`) nella campagna\n  `/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/`: la rimozione del nodo kind\n  \u00e8 accettata solo se legata al processo `kind delete cluster --name ocor-poc` del gruppo\n  pytest (campionato da `/proc` ogni 0,2 s), allo stesso UUID e all'evento `destroy`,\n  entro una finestra dichiarata di 30 s;\n- prove deterministiche: RED della v1 (`red-teardown-v1.log`, 4 failure e 4 error su 13),\n  GREEN della v2 14/14, negativi della v1 tutti ancora fatali sulla v2; prova reale con\n  Docker e binario kind veri, 4/4 (`probe-teardown-real.json`, inventario invariato);\n- la prova reale ha trovato un secondo difetto della v1: il CLI Docker 29 stampa\n  `error: no such object: <id>` (minuscolo), quindi la v1 non riconosceva mai l'assenza\n  del nodo. Corretto con un caso RED/GREEN dedicato;\n- `harness-change-record.json` (SHA256\n  `14293e2679756745eb7cb6f519900a885d09bffd65e1e85007f6a7813c8e55e5`): cambiano solo\n  `watchdog_safe.py` e, in `run_nodes.py`, l'avvio/arresto del campionatore e due campi\n  di osservazione. Comando pytest, ambiente, ordini, limiti, controlli di runtime e\n  teardown sono identici; la full attempt-3 (2196) resta valida.\n\nRipetizione di `order-collection` (tentativo 2, unica ripetizione usata su due):\npreflight PASS con 11 servizi, collezione identica a quella della full conservata.\nExit 130 dopo 1510 s: **FAIL infrastrutturale, non qualificante**. JUnit ha 386 casi,\nzero failure/error/skip; nessuna asserzione fallita. Alle 20:08:58Z `containerd` del nodo\n`kindest/node:v1.33.1` (digest `050072256b9a\u2026`) termina con\n`code=dumped, status=11/SEGV` durante `kind create` della fixture del caso Helm\n(posizione 387 su 390); systemd lo riavvia (`NRestarts=1`) e il controllo di runtime\ninvariato ferma il run. L'adapter v2 non \u00e8 coinvolto (nessuna sonda fallita, nessun\nrifiuto o rimozione registrati).\n\n\u00c8 la stessa causa della full attempt-1 di questa campagna (SEGV alle 05:44:57Z, creazione\ndella sandbox del backup manuale) e di `REM-0017-KIND-CONTAINERD-CRASH`, la cui diagnosi\noffline localizza il fault in `runtime.mallocgcSmallNoscan+0xd8` con catena\n`mexit -> vgetrandomPutState -> growslice -> mallocgc`, binario compilato con Go 1.24.2.\n`QUALIFICATION-CAMPAIGN-INFRA-RERUN` impone di fermarsi quando la stessa causa colpisce\npi\u00f9 run: nessuna ulteriore ripetizione \u00e8 stata avviata.\n\n### Correlazione con un difetto Go noto (fonte esterna, non prova locale)\n\nIl difetto upstream Go #73141/#73144 descrive esattamente questo meccanismo: lo stato\nvgetrandom di una M distrutta veniva rilasciato in `mdestroy` dopo il rilascio della P,\nquindi con allocazione vietata. Il sintomo \u00e8 un SIGSEGV senza output n\u00e9 stack trace,\ndiagnosticabile solo da core. La correzione \u00e8 stata riportata sul ramo 1.24 dopo la\n1.24.2 ed \u00e8 presente come patch nei pacchetti delle distribuzioni\n([patch vgetrandom per Go 1.24](https://ftp.riken.jp/Linux/gentoo-portage/dev-lang/go/files/go-1.24-vgetrandom.patch),\n[patch Debian golang-1.24 1.24.2-2](https://sources.debian.org/patches/golang-1.24/1.24.2-2)).\nIl percorso richiede il vDSO `getrandom` (kernel Linux \u2265 6.11): l'host locale usa il\nkernel 7.0.0-38. Questo spiegherebbe perch\u00e9 il crash compare in locale. La correlazione\n\u00e8 un'inferenza: il fix non \u00e8 stato provato qui e nessuna mitigazione \u00e8 stata tentata.\n\n### Residuo osservato (difetto separato, nell'ambito di REM-0019)\n\nLo SIGINT \u00e8 arrivato durante `kind create`, nella fase di setup della fixture `kind` di\n`test_ocor_dev_0049.py`. Quella fixture cancella il cluster solo nel `finally` dopo lo\n`yield`, quindi non lo cancella se il setup viene interrotto. Sono rimasti il nodo\n`ocor-poc-control-plane`, il suo volume `/var` e la rete `ocor-bootstrap_ocor-bootstrap`\nche il nodo teneva occupata. `reset_test_environment.py` ha riportato PASS anche se la\nrete era ancora in uso. Il residuo \u00e8 stato rilevato da `modules.py` (`ok=false`) e\nrimosso con `kind delete cluster --name ocor-poc` e `docker network rm`, entrambi su\nrisorse OCOR; l'inventario finale \u00e8 identico a quello iniziale. Correggerlo cambia il\ncodice di test di 0049, quindi richiede di rifare l'intera campagna.\n\n## Prove riproducibili\n\n- `attempts/order-collection/attempt-2/diagnosis.json`, SHA256\n  `45f3c566bcb539843fb0ad559e12716395686cd760326578987ef56030c6cd77`, con hash dei raw,\n  journal privato di containerd, inspect ed eventi del nodo residuo, inventario dopo la\n  pulizia.\n- `attempts/order-collection/attempt-1/diagnosis.json` (osservazione, v1) e\n  `attempts/full/attempt-1/diagnosis.json` (SEGV) restano diagnostici e invariati.\n- Diagnosi offline REM-0017: `/home/luca/.ocor-codex/rem0017-offline-diagnosis-20261012/diagnosis.json`.\n\n## Opzioni e raccomandazione\n\n1. **Raccomandata:** autorizzare per la sola esecuzione locale della campagna un'immagine\n   `kindest/node` con lo stesso Kubernetes v1.33.x e un containerd compilato con Go\n   contenente il fix (\u2265 la patch release 1.24 che include #73141/#73144), fissata per\n   digest e verificata (versione Go del binario containerd letta da `go version -m`\n   sull'immagine). La modifica cambia `KIND_NODE_IMAGE` nel test di 0049, quindi rientra\n   in REM-0019 con un nuovo commit. Nello stesso commit si corregge il residuo: la\n   creazione del cluster passa dentro `try/finally`. Poi si rif\u00e0 l'intera campagna\n   (full, 5 ordini, 119 isolati) sul nuovo commit, con l'adapter v2 invariato. Il ciclo\n   di riparazione non va consumato, perch\u00e9 il difetto \u00e8 infrastrutturale.\n2. Mitigazione d'ambiente senza cambiare immagine: avviare la campagna su un host o una\n   VM con kernel < 6.11 (senza vDSO getrandom), oppure su runner CI, e registrare il\n   kernel nell'evidenza. Il residuo della fixture va comunque corretto con un commit\n   di test.\n3. Correggere soltanto il residuo della fixture e ripetere la campagna con l'immagine\n   invariata, accettando una probabilit\u00e0 di SEGV per run che resta non controllata.\n   Non raccomandata: i run da 40 minuti continuerebbero a fallire in modo casuale.\n\nSono escluse: ignorare il riavvio di containerd, considerare PASS l'exit 130, trasferire\nconteggi dai tentativi diagnostici, ripetere senza una condizione cambiata.\n\n## Impatto e integrazione\n\nRestano bloccati la qualifica, la verifica e il sigillo di REM-0019, la nuova campagna CI\ndi REM-0017, l'integrazione di 0049 e la sequenza successiva. Restano eseguibili\nindipendentemente gli audit `INFO-A` e `INFO-C` e `REM-0024`. REM-0019 resta al ciclo 1.\nLa chiusura di `REM-0019-KIND-TEARDOWN-OBSERVATION` (eseguita nella sostanza) e questo\nnuovo percorso richiedono l'aggiunta puntuale all'allowlist del piano, con la riqualifica\ndi regressione di 0050. Si propone un unico change set per entrambi i file.\n\nImplementatore: Claude Code di riserva (quota Codex esaurita). Verifier previsto per\nREM-0019: Grok 4.7 tramite Cursor, in un processo separato. `E1=0`, `E2=0`,\n`Verified=0`, claim `NO-GO`, input e record sigillati invariati.\n"
     }
   ],
   "claims": {
@@ -6089,7 +6283,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "INFO-A:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-A (2026-10-05) read ADD v1.3 \u00a71.4 and the Canonical Ingestion Envelope section, inspect c5/backbone.py dedup keyed on idempotency_key only, decide on normative text and code whether dedup honours the full isolation key (tenant and Governed Context); if one tenant's event can make another's be discarded, register a remediation with the next repository-wide verified free REM ID (after REM-0024) with cross-tenant positive/negative tests as G6 dependency, else document why conformant; record the reused-key/different-payload limit as a note for a future normative decision (no C5 replay semantic change); close INFO-A.md citing the PO decision. Then INFO-C audit. REM-0024 (break-glass conformance, G6 dependency) is registered and executable after the audits when no higher-priority unit is executable. REM-0019 repair_cycle1 source 8842ab2658b9eee201fa1bd26d267a9f23c22df5, REM-0017 and 0049 integration stay blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-TEARDOWN-OBSERVATION (draft PR #232); no qualification retry or harness change. Order after resolution unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "INFO-A:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-A (2026-10-05) audit c5/backbone.py deduplication against the full isolation key (tenant and Governed Context) on ADD v1.3 \u00a71.4 and the Canonical Ingestion Envelope section; register a REM with the next repository-wide verified free ID (after REM-0024) if cross-tenant discard is possible, else document conformance; record the reused-key/different-payload limit as a note; close INFO-A.md. Then INFO-C, then REM-0024. REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5): PO decision REM-0019-KIND-TEARDOWN-OBSERVATION executed (observation adapter v2, proofs, full attempt-3 retained); order-collection attempt-2 FAIL_INFRASTRUCTURE (kind containerd SEGV, same cause as full attempt-1) -> stopped per QUALIFICATION-CAMPAIGN-INFRA-RERUN; blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). After that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -10438,5 +10632,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-12T19:02:41.152906+00:00"
+  "updated_at": "2026-10-12T20:12:34.905502+00:00"
 }
