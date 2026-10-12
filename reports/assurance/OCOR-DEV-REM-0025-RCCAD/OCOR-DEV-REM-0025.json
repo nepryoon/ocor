@@ -1,0 +1,669 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0025-c5-isolation-scoped-dedup",
+    "decision": "Product Owner decision INFO-A (2026-10-05, option 1 plus conformance check) executed by the INFO-A audit of 2026-10-12, which registered OCOR-DEV-REM-0025 as the first free REM id; mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
+    "id": "OCOR-DEV-REM-0025",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0025-RCCAD/OCOR-DEV-REM-0025.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "exit_code": 0,
+      "label": "reset",
+      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "exit_code": 0,
+      "label": "bootstrap",
+      "raw_sha256": "75df57a9169f979cd6bb85678a9ee53338ecdccb64b8504f5da24df23e386be0",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "exit_code": 0,
+      "label": "health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python register_control_plane.py",
+      "exit_code": 0,
+      "label": "register",
+      "raw_sha256": "4fb06fc4ff58e49bfc8fb17243694f83bbbc1932cadf74693d2f9c493e46752d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.7,
+      "exit_code": 0,
+      "label": "health-now",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync",
+      "raw_sha256": "a5c9a900c0896172b304aac3590868023b900988fe4eb5d8745a32a8d4f6affb",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.6,
+      "exit_code": 0,
+      "label": "sdk-ci",
+      "raw_sha256": "3dd4723405cca53d890994d4b51f225d4e2530f831cd4325c546a759c15865d6",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0025/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0040.py ocor-runtime/tests/tasks/test_ocor_dev_0041.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 229.5,
+      "exit_code": 0,
+      "label": "task-run-1",
+      "raw_sha256": "502a54046c65f3b0f44b3e670862b39021f4a8a15fb28e967eab017cd337e87c",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 224,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0025/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0040.py ocor-runtime/tests/tasks/test_ocor_dev_0041.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 229.9,
+      "exit_code": 0,
+      "label": "task-run-2",
+      "raw_sha256": "952076ee156d00e05a0b3cac5e2417051ad710fa58d021db533f5ce894d4e854",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 224,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0025/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0040.py ocor-runtime/tests/tasks/test_ocor_dev_0041.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 230.2,
+      "exit_code": 0,
+      "label": "task-run-3",
+      "raw_sha256": "c1335dc0500d016fdde228704ab1799d15bb2e9b75a839450c3f2e4545428a02",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 224,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/rem-0025/task-junit-uv.xml tests/tasks/test_ocor_dev_0040.py tests/tasks/test_ocor_dev_0041.py tests/tasks/test_ocor_dev_rem_0025.py tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 230.4,
+      "exit_code": 0,
+      "label": "task-validation-command",
+      "raw_sha256": "20619e53d4e1b34ffbb8cb4829079d15e4fb95e8916bc3d6ec42bc1296a4e49a",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 224,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "exit_code": 0,
+      "label": "task-teardown-delta",
+      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
+      "duration_seconds": 783.1,
+      "exit_code": 0,
+      "label": "full-suite-recorded",
+      "raw_sha256": "914b8ad293101fa8c551fe0871b4ba7baf9a28d8407e80153fb1ae0ff8abbaf3",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1817,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the C5 backbone (ocor-c5-backbone-*) or 0050 harnesses used by this change set; no container/network residue; nothing pre-existing removed",
+      "exit_code": 0,
+      "label": "full-resource-attribution",
+      "raw_sha256": "cd8832bc9fa05cf40435cd41089c8f1d62b996f867addc29f18880036a53ce7e",
+      "status": "PASS"
+    },
+    {
+      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
+      "exit_code": 0,
+      "label": "full-resource-cleanup",
+      "raw_sha256": "9a1caedb7034fd14e1cfb1cdd08c5f38ca57b8f24ec080df4c18fb567b90c291",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "b1b5b5b9c1ae010c87b51f8416faff90fbb17abb5503022c7f6f9c4b77a19629",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.4,
+      "exit_code": 0,
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.3,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0025-c5-isolation-scoped-dedup",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0025/ocor-runtime/.venv/bin/python -m pytest --collect-only -q -p no:cacheprovider tests/ (cwd ocor-runtime, same HEAD) compared with the testcases of full-suite-recorded JUnit: identical multiset, no duplicate, no missing",
+      "duration_seconds": 0.7,
+      "exit_code": 0,
+      "label": "full-collection-union",
+      "raw_sha256": "bcbb95938f17c547f12bd086f84a58389de3ee372a8c323d615b74301082c3a5",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (third of three consecutive runs of the 0040, 0041, REM-0025 and 0050 suites)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "1f621dd1a2e1a50dba40e0e82ff117e7035a7e0472196c6b9fc955174e93a2da",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 224,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-validation-command (uv run, frozen lock)",
+      "exit_code": 0,
+      "label": "task-junit-uv",
+      "raw_sha256": "f7939d5701eeecb44a7426bd17c6eec8ff1edbd3e8ab8a5ac0eb92b89facadf1",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 224,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "5725ace3a3444e1dcbe5aecfbdfccf36319837667947a5a75504a319304a8954",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1817,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (75-minute cap, stack restart/OOM/exit guard)",
+      "exit_code": 0,
+      "label": "full-suite-runner-result",
+      "raw_sha256": "3a12d6c512524469554714b82cc31fd6a88f6f0d0964d54838ed434e34a0b19c",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every mutant of the REM-0025 remediation in c5/backbone.py must make the REM-0025 suite fail; source restored byte-identical, worktree clean",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "64748d68f5a10d8c3373e471a45539a356f4d80da4244c8f7ae5ff1cb7b0e841",
+      "result": {
+        "failed": 0,
+        "killed": 5,
+        "mutants": 5
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: source of the mutation probe (mutant table)",
+      "exit_code": 0,
+      "label": "mutation-probe-script",
+      "raw_sha256": "944136d285a5af89342b58f428e78942db50486a154be53ffb3159965f0a9bbe",
+      "status": "PASS"
+    }
+  ],
+  "commit": "a433d127399112eed6d84bb68bdcb35ee3563599",
+  "created_at": "2026-10-12T22:51:37Z",
+  "design": [
+    "CanonicalEventBackbone: _seen_idempotency_keys: set[tuple[context, idempotency_key]]; _last_sequence: dict[tuple[context, aggregate_ref], int]; context = governed_context_digest.",
+    "publish(): schema check (unchanged) -> context guard (MISSING_CONTEXT, quarantined) -> per-context dedup (no-op) -> per-context ordering (OUT_OF_ORDER, quarantined) -> real Kafka produce -> state update."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-12T22:51:17.808824+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "event_backbone": "real single-node KRaft Kafka broker confluentinc/cp-kafka:7.6.0@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047 self-provisioned per test by CanonicalEventBackbone.provision (ownership-labelled container and volume, own topic with 3 partitions) and removed by destroy() in teardown; the 0040, 0041 and REM-0025 suites drive it through the real kafka-console-producer/consumer and kafka-get-offsets CLIs; no mock of the backbone boundary",
+      "memory_regression_0050": "OCOR-DEV-0050 suite unchanged on the ocor-bootstrap stack (PostgreSQL postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20 via OCOR_LIVE_POSTGRES_DSN), regression-only requalification"
+    },
+    "branch": "governed/ocor-dev-rem-0025-c5-isolation-scoped-dedup",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute; images observed after the full suite",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript (steps sdk-ci, sdk-build)",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/rem-0025"
+  },
+  "findings_scope": {
+    "P1": "fixed: CanonicalEventBackbone._seen_idempotency_keys is keyed by (governed_context_digest, idempotency_key); an event of context B reusing context A's key is published, not dropped",
+    "P2": "fixed by the same change: EventOperationsCoordinator.publish_with_backpressure and replay delegate to CanonicalEventBackbone.publish; operations.py is unchanged",
+    "P3": "fixed: CanonicalEventBackbone._last_sequence is keyed by (governed_context_digest, aggregate_ref); ordering is enforced per context, never across contexts",
+    "fail_closed": "an envelope whose governed_context_digest is not a non-empty string (reachable through publish() with a directly constructed envelope; from_mapping already rejected it) is quarantined MISSING_CONTEXT before any dedup or ordering lookup",
+    "operations_py_class_check": "EventOperationsCoordinator keys attempts, poison quarantine and operator release by event_id. ADD v1.3 section 3.2 defines event_id as format uuid (one identifier per event) and the delivery contract deduplicates on event_id (dedup_key const event_id), so that state is per event identity, not a shared logical key across contexts; no change, no OCOR-DEV-0041 requalification (validate_evidence_input_drift.py confirms 0041 has no drifted input)",
+    "unchanged": "same-context replay is a safe no-op (0040 test unchanged and green); same-context non-advancing sequence is OUT_OF_ORDER; Kafka record key (aggregate_ref) and partitioning; envelope fields; no same-key/different-payload conflict detection (INFO-A option 1); dedup stays in memory (durable dedup is OCOR-DEV-REM-0026 per INFO-C)"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/c5/backbone.py": "332ec35a547e62e6190f9902c580d956e00bd1ae796d7a922b2afe5894a7a835",
+    "ocor-runtime/src/ocor_runtime/c5/operations.py": "922a9984d263cf8bd4a316781d88307b9668248962491799fd017f2effbb95b5",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0040.py": "32812186ccc1b5e2034e046000e866043335939a6756a9b61f09f1b16c144abc",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0041.py": "0315f2c380f0bd0bd20213edeb4dd52f4ac86812f18f537d14c0c68b5b55418e",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py": "383cd2ed92cff9f2b0326612bcf2834585fa2c025e9cc3ec881752a5d276e045",
+    "scripts/validate_ocor_development_plan.py": "30fdee8062b4d5cb541c5ba82512e222bf7ff3691b02e97a34921f1e40e1b88d"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 section 1.4: every event belongs to exactly one GovernedContext; indexes are not shared across incompatible isolation tuples. Section 3.2: idempotency_key deduplicates the logical event; ordering only per ordering key. Two events of different contexts are never the same logical event, so dedup and ordering state are scoped by context.",
+    "Chosen key: the PoC CanonicalIngestionEnvelope carries the context only as governed_context_digest, the digest of the whole GovernedContext (which includes the isolation tuple). Equal digest implies equal isolation tuple; two digests with an equal isolation tuple but different other GovernedContext fields are treated as different contexts. This errs toward publishing a possible duplicate rather than dropping or quarantining another context's event (no silent cross-context loss); full isolation-tuple construction from the envelope is outside the 14-field PoC envelope and outside this remediation."
+  ],
+  "origin_finding": {
+    "audit": "reports/development/decision_requests/INFO-A.md (2026-10-12): P1 cross-context same idempotency_key silently dropped; P2 the same through EventOperationsCoordinator (backpressure and DLQ replay path), no dead letter; P3 cross-context same aggregate_ref quarantined OUT_OF_ORDER",
+    "decision": "Product Owner decision INFO-A (2026-10-05), option 1: no change of C5 replay semantics; conformance check of the dedup against the full isolation key",
+    "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py:172-173,312-342 (origin/main 12c7758, sha256 d34a3609907905001a6780242f88e257d7707d05a1a20ade791b6880bf75c914)",
+    "registration": "EXECUTION_STATE remediation_status.REM_0025_C5_ISOLATION_SCOPED_DEDUP (allocated 2026-10-12, next free id verified)"
+  },
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) e la password del DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {
+    "OCOR_SPIRE_JOIN_TOKEN": 1
+  },
+  "raw_output_sha256": "cbab6d40e44fb921bcb510ed5ac905674b61e140130de552ae7c364b1d6b1c8a",
+  "record_id": "OCOR-DEV-REM-0025-a433d1273991",
+  "repair_cycle": 0,
+  "reproducible_check": {
+    "checker_source_sha256": "c62bf4082da3724d3c900d4634d2ef4301e64334f51714e2fecf930652580845",
+    "command": "python3 /home/luca/.ocor-codex/rem-0025/check_evidence.py <repo> <head>",
+    "scope": "mechanical integrity and count reconstruction of the three records; does not constitute independent verification"
+  },
+  "requalifications": [
+    {
+      "record": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.json",
+      "record_sha256": "f101bbe7ae4998749d0bf1ead2f4b6871a65db976f867d92c8b06f5ad2e57a13",
+      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0022-ci.json",
+      "task_id": "OCOR-DEV-0040"
+    },
+    {
+      "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0025.json",
+      "record_sha256": "4f964c1fff05a0390060673a1bf14a65984674ccbce3eef4cd6b7080e840d178",
+      "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0022-ci.json",
+      "task_id": "OCOR-DEV-0050"
+    }
+  ],
+  "requirement_coverage_note": "Component-level evidence only for the C5 backbone behaviours named in each case (FR-070 governed context, FR-071 ordering, FR-074 idempotency). Full verification of the ingestion requirements (BA-07, FR-069..FR-075) is allocated to G6; E1=0/E2=0 and zero global Verified remain unchanged.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-REM-0025-P1-CROSS-CONTEXT-SAME-IDEMPOTENCY-KEY-PUBLISHES-BOTH",
+      "command": "two Governed Contexts reusing one idempotency_key both reach the real topic (exact record set read from Kafka end offsets), no quarantine; replaying each afterwards adds nothing (RED on c2f9e50: context B's event silently dropped)",
+      "finding": "P1",
+      "real_backend_tests": [
+        "test_each_context_keeps_its_own_replay_no_op_after_a_cross_context_key_reuse",
+        "test_p1_same_idempotency_key_in_two_contexts_publishes_both_events"
+      ],
+      "requirement_id": "FR-074",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "5e2964d6e0255672ad7d8f092873eea31556e384da8051f953fc553913b79dfd",
+        "704cdd7d152c3c28461daa76b21c845ef9ff359b6f93ae388912d086c671db00"
+      ],
+      "tests": [
+        "test_each_context_keeps_its_own_replay_no_op_after_a_cross_context_key_reuse",
+        "test_p1_same_idempotency_key_in_two_contexts_publishes_both_events"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0025-SAME-CONTEXT-REPLAY-STILL-A-SAFE-NO-OP",
+      "command": "same context and same idempotency_key: exactly one record on the real topic, no quarantine (positive guard of the unchanged INFO-A option-1 behaviour; passes on c2f9e50 too)",
+      "finding": "INFO-A option 1",
+      "real_backend_tests": [
+        "test_same_idempotency_key_in_the_same_context_is_still_a_safe_no_op"
+      ],
+      "requirement_id": "FR-074",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "fd134fa8b06ab7983de61c8ecb0b6753367495660ef1f69ae263badc28441aff"
+      ],
+      "tests": [
+        "test_same_idempotency_key_in_the_same_context_is_still_a_safe_no_op"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0025-P3-ORDERING-PER-CONTEXT-NEVER-ACROSS-CONTEXTS",
+      "command": "same aggregate_ref in two contexts: context B sequence 1 after context A sequence 5 is accepted; inside one context a non-advancing sequence (lower or equal) is still quarantined OUT_OF_ORDER and never reaches the topic, while each context advances only its own watermark (RED on c2f9e50: OUT_OF_ORDER from the other context's sequence)",
+      "finding": "P3",
+      "real_backend_tests": [
+        "test_out_of_order_within_one_context_is_still_quarantined_beside_another_context",
+        "test_p3_same_aggregate_ref_in_two_contexts_is_ordered_per_context"
+      ],
+      "requirement_id": "FR-071",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "bc225b3325c3f27f4cdc1aff28b815ad3543da51bfe2f10c71ebdd8bab6c7079",
+        "bd9f3000f4e527a97127db56e02341cf592dddfc5bbd07e853a12d7f9fe406c0"
+      ],
+      "tests": [
+        "test_out_of_order_within_one_context_is_still_quarantined_beside_another_context",
+        "test_p3_same_aggregate_ref_in_two_contexts_is_ordered_per_context"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0025-P2-OPERATIONS-PATH-AND-DLQ-REPLAY-NOT-SUPPRESSED",
+      "command": "through EventOperationsCoordinator: publish_with_backpressure of both contexts reusing a key delivers both with no dead letter; replay of a context-B dead letter is published although context A used the key; replay of an already-durable same-context event stays a no-op (RED on c2f9e50: context B's record missing)",
+      "finding": "P2",
+      "real_backend_tests": [
+        "test_dlq_replay_of_an_already_durable_same_context_event_is_still_a_no_op",
+        "test_dlq_replay_of_context_b_is_not_suppressed_by_context_a",
+        "test_p2_operations_path_publishes_both_contexts_for_a_reused_key"
+      ],
+      "requirement_id": "FR-074",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "e64666612b551953f52d7862d8513cc59d44e3e26fa1b5b64f5de512b6f6803b",
+        "a598d7c1493c362e2a7c2b28513bef4f243b2e340d936e06001b803f34ab439c",
+        "a2a86efb76c5ee8ea53878dea7fe93cb1e318089c8dae9ee16c42722d2443392"
+      ],
+      "tests": [
+        "test_dlq_replay_of_an_already_durable_same_context_event_is_still_a_no_op",
+        "test_dlq_replay_of_context_b_is_not_suppressed_by_context_a",
+        "test_p2_operations_path_publishes_both_contexts_for_a_reused_key"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0025-UNDETERMINABLE-CONTEXT-FAILS-CLOSED",
+      "command": "governed_context_digest empty, None or non-string: BackboneError MISSING_CONTEXT, quarantined, nothing published, never deduplicated against shared state (RED on c2f9e50: DID NOT RAISE, dropped as a replay of the shared key)",
+      "finding": "negative criterion",
+      "real_backend_tests": [
+        "test_an_undeterminable_context_fails_closed_and_is_never_published"
+      ],
+      "requirement_id": "FR-070",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "8f494aeb89845abc4865726fc3a4c956514813299b5890f4b20cee17bbe8299d",
+        "155378a6300c84a0880869809652005e2899a1d0a10b3c4c28155b7c4fdb9afe",
+        "3c8d982d89528fce8f816e7efa446274487277d4599024897020c1b0cc829280"
+      ],
+      "tests": [
+        "test_an_undeterminable_context_fails_closed_and_is_never_published"
+      ],
+      "unit_fixture_tests": []
+    }
+  ],
+  "residual_risks": [
+    "Dedup and ordering state are in memory and lost on restart (LLD v1.1 section 6 'deduplica durable'): allocated to OCOR-DEV-REM-0026 (INFO-C), which must preserve this isolation scoping.",
+    "Same-key/different-payload reuse inside one context is still dropped as a replay without quarantine or audit (INFO-A option 1, note for a future normative decision).",
+    "Two GovernedContext digests that share the isolation tuple are deduplicated separately (see normative_interpretations): possible duplicate publication, never silent loss.",
+    "The quarantine list of one backbone instance is shared across contexts (an append-only record, not dedup/ordering state); exposure of quarantine to callers is not policy-filtered by this component.",
+    "CanonicalEventBackbone and EventOperationsCoordinator are not yet used by other ocor-runtime modules (INFO-A audit); G6 ingestion qualification (BA-07, FR-069..FR-075) depends on them.",
+    "Pre-existing unlabelled ocor-c5-backbone-data-* volumes from 2026-10-05/2026-10-10 (a2b1cae0ce01, a23cf416488e, b69a00ab4e6c) are not created by this session and were not touched."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 di OCOR-DEV-REM-0025",
+    "independence": "external loop only; separate process, context and provider",
+    "original_implementer_0040_0050": "OCOR-DEV-0040: original implementer per its sealed record; OCOR-DEV-0050: Claude Code cycle 0, Codex repair cycles 1-2",
+    "verifier": "Grok 4.7 (Cursor CLI; verifier: cursor) -- separate process, context and provider; Claude Code does not verify this change set (LOOP-ROLES: Cursor/Grok when the reserve Claude Code implements)"
+  },
+  "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted-data migration and no port or envelope change: brokers and topics are disposable per test. Reverting restores the REM-0022 CI records (0040.requalified-rem0022-ci, 0050.requalified-rem0022-ci) as the most recent ones once the REM-0025 requalification records are removed with the revert.",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "task_id": "OCOR-DEV-REM-0025",
+  "tdd": {
+    "GREEN": {
+      "command": "task-run-1..3 and task-validation-command over the 0040, 0041, REM-0025 and 0050 suites (JUnit counts in commands)",
+      "raw_label": "task-run-3, task-junit"
+    },
+    "RED": {
+      "aborted_attempt": "A first RED launch in the candidate worktree was stopped by the implementer before completion because the fix was being edited in the same worktree; its partial log (red-aborted-diagnostic.log, one F) is not evidence. Its orphan broker container/volume (ocor-c5-backbone-a149f9b8497e, created by that run) were removed through the backbone's own ownership-checked cleanup; the RED was then run in the separate worktree above.",
+      "command": "detached worktree .ocor/worktrees/rem-0025-red of the tests-only commit 2116ec686604dfe3f00430e328150f74a1336e81 (parent origin/main c2f9e5046f77bc6b005d37938ba329cc757fee1f) with its own venv (uv sync --frozen --extra test --extra lint); the run prints HEAD, the diff against origin/main and whether backbone.py equals origin/main, then python -m pytest -q -p no:cacheprovider tests/tasks/test_ocor_dev_rem_0025.py on real self-provisioned Kafka brokers",
+      "exit_code": 1,
+      "junit_raw_sha256": "8b4e8d97e184d157923938561578b8d7e21e3ae35baed99ca5cbad7a6e9df63c",
+      "observed": "10 cases FAIL on the unremediated backbone for the defect: P1 and the per-context replay case (context B record missing from the topic), P2 through EventOperationsCoordinator (record missing, no dead letter), both DLQ replay cases (context B record missing), P3 and the interleaved case (BackboneError OUT_OF_ORDER from the other context's sequence), and the 3 undeterminable-context cases (DID NOT RAISE: the envelope fell back to the shared key and was dropped as a replay). 1 case PASSES as expected: the same-context replay no-op, which guards the INFO-A option-1 behaviour.",
+      "outcomes": {
+        "test_an_undeterminable_context_fails_closed_and_is_never_published[empty]": "FAIL",
+        "test_an_undeterminable_context_fails_closed_and_is_never_published[non-string]": "FAIL",
+        "test_an_undeterminable_context_fails_closed_and_is_never_published[none]": "FAIL",
+        "test_dlq_replay_of_an_already_durable_same_context_event_is_still_a_no_op": "FAIL",
+        "test_dlq_replay_of_context_b_is_not_suppressed_by_context_a": "FAIL",
+        "test_each_context_keeps_its_own_replay_no_op_after_a_cross_context_key_reuse": "FAIL",
+        "test_out_of_order_within_one_context_is_still_quarantined_beside_another_context": "FAIL",
+        "test_p1_same_idempotency_key_in_two_contexts_publishes_both_events": "FAIL",
+        "test_p2_operations_path_publishes_both_contexts_for_a_reused_key": "FAIL",
+        "test_p3_same_aggregate_ref_in_two_contexts_is_ordered_per_context": "FAIL",
+        "test_same_idempotency_key_in_the_same_context_is_still_a_safe_no_op": "PASS"
+      },
+      "raw_label": "tdd-red, tdd-red-junit",
+      "raw_sha256": "eeec2bc445add5e27dffd10dc38c630c7434d830c9147ccba5fec850ce17a6a6"
+    },
+    "REFACTOR": "None beyond the minimal fix: three keyed lookups/updates and one fail-closed guard in CanonicalEventBackbone.publish; no public signature changed.",
+    "mutation_probe": "5 mutants of the remediation (dedup ignoring the context, sequence watermark ignoring the context, no fail-closed context guard, empty context accepted, same-context replay no longer a no-op) run against the REM-0025 suite on real brokers in the separate detached worktree at the exact campaign commit; all killed; source restored byte-identical, worktree clean (raw label mutation-probe-result). An earlier identical probe at the fix commit aee560d (5/5 killed) is kept outside the repository as a diagnostic; the qualifying one is at the campaign commit, which differs from aee560d only in the planning allowlist and plan self-hash",
+    "ordering_note": "Test-first: the REM-0025 cases are the first commit of the change set and were run RED on the unremediated backbone.py (tests-only commit) before the fix commit; the RED raw log prints the commit, its diff against origin/main and the byte identity of backbone.py with origin/main."
+  },
+  "test_case_identity": "test_case_sha256 = sha256 of the exact pytest node id (ocor-runtime/<classname as path>.py::<name>) of each JUnit testcase stored verbatim in the raw log; tests holds base names"
+}
