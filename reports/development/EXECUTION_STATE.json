@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
-    "branch": "governed/info-a-c5-dedup-conformance-audit",
+    "baseline_commit": "78d297c12cbd0c6f14ef3a9f831658e9c50d3d0f",
+    "branch": "governed/info-c-concurrency-conformance-audit",
     "checkpoint": {
       "changed_product_paths": [],
       "diagnosis_path": "/home/luca/.ocor-codex/rem0017-offline-diagnosis-20261012/diagnosis.json",
@@ -336,6 +336,16 @@
       "task_id": "INFO-A",
       "worktree": ".ocor/worktrees/info-a-audit"
     },
+    "infoc_audit_unit": {
+      "baseline_commit": "78d297c12cbd0c6f14ef3a9f831658e9c50d3d0f",
+      "branch": "governed/info-c-concurrency-conformance-audit",
+      "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): INFO-C targeted concurrency conformance audit, REM-0026/REM-0027 registration, decision request closure",
+      "independent_verification": "NOT_REQUESTED: documentary audit and registration only, no product code, test or evidence changed",
+      "phase": "INFO_C_AUDIT_COMPLETED_REMEDIATIONS_REGISTERED",
+      "session_artifacts": "/home/luca/.ocor-codex/infoc-audit-20261012",
+      "task_id": "INFO-C",
+      "worktree": ".ocor/worktrees/info-c-audit"
+    },
     "local_state_gates": {
       "base_sha": "2710c1b9f6c1deddee3a5156b9627dbb92727178",
       "branch": "governed/rem0017-infrastructure-diagnosis-20261012",
@@ -544,7 +554,7 @@
     "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
     "source_worktree": ".ocor/worktrees/rem-0019",
     "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/info-a-audit"
+    "worktree": ".ocor/worktrees/info-c-audit"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -2050,7 +2060,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
+  "baseline_commit": "78d297c12cbd0c6f14ef3a9f831658e9c50d3d0f",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -2086,9 +2096,13 @@
       "id": "INFO-C",
       "non_blocking": true,
       "po_decision": "INFO-C (2026-10-05)",
-      "resolution": "Decisione esplicita ricevuta; audit/remediation e chiusura del record in unit\u00e0 governata distinta, non eseguiti in questo state sync.",
+      "remediation_ids": [
+        "OCOR-DEV-REM-0026",
+        "OCOR-DEV-REM-0027"
+      ],
+      "resolution": "PO decision INFO-C (2026-10-05) executed 2026-10-12: targeted audit on code and LLD v1.1 \u00a76/\u00a74.3, ADD v1.3 \u00a75.5 in INFO-C.md; classes are the sole PoC implementations (no src caller, qualified in G6) and treated as live path (fail-closed). Violable: C5 dedup/sequence not durable across restart and not atomic under concurrent publish (watermark regresses), per-tenant quota RMW exceeded and counter -1 (probe on real Kafka); C8 no stop re-check after guard, tool effect 10.5 s after stop, pre-stop lease re-enabled after reset. Decision request closed RESOLVED; OCOR-DEV-REM-0026 and OCOR-DEV-REM-0027 registered as mandatory G6 dependencies.",
       "scope": "Clarify whether the in-memory reference classes require a thread-safety guarantee.",
-      "status": "PO_DECISION_RECEIVED_EXECUTION_PENDING"
+      "status": "RESOLVED_AUDITED_REMEDIATION_REGISTERED"
     },
     {
       "blocked_tasks": [],
@@ -6294,7 +6308,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "INFO-C:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-C (2026-10-05) audit, on code and LLD v1.1 \u00a76/\u00a74.3, (1) c5/backbone.py in-memory dedup vs 'deduplica durable' (coordinate with INFO-A record: backbone not in live PoC path, isolation-scoped dedup already assigned to REM-0025, do not duplicate it), (2) c5/operations.py backpressure read-modify-write vs 'watermark monotono', (3) c8/tool_runtime.py stop-check/execute window vs 'kill switch preemptive' and stop_epoch; for each state live-path vs reference-only and whether the invariant can be violated; register a REM with the next repository-wide verified free ID (after REM-0025) only where in live path and violable; write outcome in INFO-C.md and close it. Then REM-0024 and REM-0025 (G6 dependencies, executable while REM-0019/REM-0017 stay blocked). REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236); after that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "REM-0024:implementation \u2014 next coherent unit from origin/main while REM-0019/REM-0017 stay blocked: OCOR-DEV-REM-0024 (break-glass conformance, G6 dependency) per EXECUTION_STATE remediation_status.REM_0024_BREAK_GLASS_CONFORMANCE; then OCOR-DEV-REM-0025 (C5 isolation-scoped dedup), then OCOR-DEV-REM-0026 (C5 durable/atomic dedup, sequence watermark and tenant quota, after REM-0025 on the same files) and OCOR-DEV-REM-0027 (C8 preemptive kill switch, per-dispatch stop fence, lease bound to stop_epoch); all four are mandatory G6 dependencies, not blocking 0049 or G5. REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236); after that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9882,6 +9896,179 @@
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical 0040/0041 seals untouched.",
       "scope": "Align CanonicalEventBackbone dedup and per-aggregate sequence state to the isolation key of ADD v1.3 \u00a71.4/\u00a73.2: _seen_idempotency_keys keyed by idempotency_key only and _last_sequence keyed by aggregate_ref only let one Governed Context silently drop (P1, P2 via EventOperationsCoordinator) or quarantine OUT_OF_ORDER (P3) another context's event. Scope both by the envelope's isolation context (in the PoC envelope the governed_context_digest is the only carried context; the implementer documents the chosen key against \u00a71.4 and fails closed when it is missing). Same-context replay remains a safe no-op.",
       "status": "OPEN_IMPLEMENTATION_REQUIRED"
+    },
+    "REM_0026_C5_DURABLE_ATOMIC_DEDUP_AND_QUOTA": {
+      "acceptance_criteria": [
+        "RED before code reproducing R1, R2, K1, K2 and Q1 as failing tests on the real self-provisioned Kafka broker (no mock of the backbone boundary); concurrency cases use real threads with deterministic interleaving, not timing luck.",
+        "After restart (new instance on the same broker/topic) a replayed idempotency key is a safe no-op and a non-advancing sequence is OUT_OF_ORDER; positive cases: first publish and advancing sequence accepted after restart.",
+        "Under concurrent publish of the same envelope exactly one record is written; under concurrent sequences for one aggregate the recorded watermark never regresses and a non-advancing sequence is OUT_OF_ORDER.",
+        "Per-tenant quota never exceeded under concurrency (positive: up to quota admitted; negative: quota+1 refused BACKPRESSURE_EXCEEDED) and the counter returns to 0, never negative, including on publish failure.",
+        "Fresh superseding records for OCOR-DEV-0040 and OCOR-DEV-0041 (and any task whose most recent record has a changed file among inputs, per validate_evidence_input_drift.py); historical seals untouched; full runtime regression zero skip, exact JUnit/collection union, 75/45-minute caps.",
+        "Independent verification on the exact final HEAD; verifier per LOOP-ROLES (Claude Code if implemented by Codex; Cursor/Grok if the reserve Claude Code implements it)."
+      ],
+      "allocation_evidence": {
+        "checked_at": "2026-10-12T21:13:51.011370+00:00",
+        "method": "git grep REM-00NN over every local and origin ref, ~/.ocor-codex files and gh PR titles/bodies/branches: highest used OCOR-DEV-REM-0025; REM-0026 and REM-0027 zero hits",
+        "next_free_id": "OCOR-DEV-REM-0026"
+      },
+      "audit_probe": {
+        "path": "/home/luca/.ocor-codex/infoc-audit-20261012/probe_c5.py",
+        "result_path": "/home/luca/.ocor-codex/infoc-audit-20261012/probe-c5-result.json",
+        "result_sha256": "b41d78dbab065fc0f06de932a7475d0d5a639d9526f8fff52226d02142200d39",
+        "sha256": "d8a619866382d41f93542607aa898331558758f808ed8bcd6f463475c1461dce",
+        "status": "READ_ONLY_OBSERVATION_NOT_QUALIFYING"
+      },
+      "audit_record": "reports/development/decision_requests/INFO-C.md",
+      "authorization": "INFO-C (2026-10-05), explicit Product Owner decision; DEC-210/DEC-211",
+      "blocked_tasks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0061",
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065",
+        "OCOR-DEV-0066",
+        "OCOR-DEV-0067",
+        "OCOR-DEV-0068",
+        "OCOR-DEV-0069"
+      ],
+      "code_reference": "ocor-runtime/src/ocor_runtime/c5/backbone.py:172-173,312-342 (sha256 d34a3609907905001a6780242f88e257d7707d05a1a20ade791b6880bf75c914); ocor-runtime/src/ocor_runtime/c5/operations.py:81-90 (sha256 922a9984d263cf8bd4a316781d88307b9668248962491799fd017f2effbb95b5) at 78d297c",
+      "does_not_block": [
+        "OCOR-DEV-0049",
+        "G5"
+      ],
+      "execution_order": "After OCOR-DEV-REM-0025 (same files; preserve its isolation scoping); must close (verified) before any G6 task starts.",
+      "expected_file_areas": [
+        "ocor-runtime/src/ocor_runtime/c5/backbone.py",
+        "ocor-runtime/src/ocor_runtime/c5/operations.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+        "reports/assurance/OCOR-DEV-REM-0026-RCCAD/",
+        "reports/evidence/G4/OCOR-DEV-REM-0026.json",
+        "reports/evidence/G4/OCOR-DEV-REM-0026.log",
+        "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0026.json",
+        "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0026.log",
+        "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.json",
+        "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.log",
+        "reports/evidence/G4/MANIFEST.json",
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/MODEL_HANDOFF.json",
+        "reports/development/ITERATION_LOG.md",
+        "scripts/validate_ocor_development_plan.py (only exact new allowlist paths; validator semantics unchanged)"
+      ],
+      "hard_dependencies": [
+        "OCOR-DEV-REM-0025"
+      ],
+      "id": "OCOR-DEV-REM-0026",
+      "implementer": "loop implementer (Codex), planned",
+      "in_live_poc_path": true,
+      "live_path_classification": "sole PoC implementation of the normative function, qualified by G6; no caller in ocor-runtime/src today; treated as live path under the fail-closed interpretation recorded in INFO-C.md",
+      "maximum_repair_cycles": 2,
+      "negative_acceptance_criteria": [
+        "No change of C5 replay semantics and no same-key/different-payload conflict detection (PO decision INFO-A option 1).",
+        "REM-0025 isolation scoping not weakened; no exactly-once end-to-end claim.",
+        "No existing test, gate, threshold or sealed record weakened or rewritten; NOT_EXECUTED stays NOT_EXECUTED."
+      ],
+      "normative_references": [
+        "docs/OCOR_LLD_v1.1.md \u00a72.5, \u00a76",
+        "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md \u00a72.2 (C5), \u00a73.2"
+      ],
+      "recorded_at": "2026-10-12T21:13:51.011370+00:00",
+      "repair_cycle": 0,
+      "requalification_required": [
+        "OCOR-DEV-0040",
+        "OCOR-DEV-0041",
+        "any other task flagged by validate_evidence_input_drift.py"
+      ],
+      "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
+      "scope": "Align CanonicalEventBackbone and EventOperationsCoordinator to LLD v1.1 \u00a76 (C4/C5 ordering per aggregate/partition, watermark monotone, durable dedup) and \u00a72.5 (per-tenant quota; replay never publishes a canonical effect twice). Today _seen_idempotency_keys and _last_sequence (backbone.py:172-173) are per-instance memory, lost on restart, and check (312, 317-318) and update (341-342) straddle the Kafka write without a lock; the per-tenant in-flight counter (operations.py:81-90) is an unlocked read-modify-write. Probe on real Kafka: R1 replay after restart publishes a duplicate; R2 stale sequence accepted after restart; K1 two concurrent identical publishes give 2 records; K2 concurrent sequences 5 and 4 both accepted and the recorded watermark regresses to 4; Q1 quota 1 admits 2 concurrent publishes and leaves the counter at -1. Make dedup and per-aggregate sequence state durable across restarts (recoverable from the durable journal or a durable store; implementer documents the choice against LLD) and atomic under concurrent publish; make the quota check-and-increment and the decrement atomic. Preserve REM-0025 isolation scoping; no change of replay semantics.",
+      "status": "OPEN_IMPLEMENTATION_REQUIRED"
+    },
+    "REM_0027_C8_PREEMPTIVE_KILL_SWITCH": {
+      "acceptance_criteria": [
+        "RED before code reproducing C8-1, C8-2 and C8-3 (and the per-tool capability case) as failing tests with the real in-process collaborators and a separate stopping thread; no mock of the stop controller or capability authority.",
+        "Negative: stop accepted at any point before a tool dispatch (including between tools of one expression) produces no effect of that tool and a STOP_BOUND_DENIED-family refusal; positive: no stop, all tools run and the receipt carries the current epoch.",
+        "Measured bound: from stop acceptance to last tool effect <= 10 s under a deliberately slow tool (cancellation where the contract allows, otherwise bounded deadline), with the measurement recorded.",
+        "A lease issued before a stop is refused after reset (negative) while a lease issued at the new epoch is accepted (positive); the epoch is taken from the trusted controller, not from the caller.",
+        "Every tool invoked by the expression is covered by the presented lease (negative: unauthorized second tool refused with no effect; positive: authorized tools run).",
+        "Fresh superseding record for OCOR-DEV-0047 (and OCOR-DEV-0044 if c6/safety.py changes, and any task flagged by validate_evidence_input_drift.py); historical seals untouched; full runtime regression zero skip, exact JUnit/collection union, 75/45-minute caps.",
+        "Independent verification on the exact final HEAD; verifier per LOOP-ROLES (Claude Code if implemented by Codex; Cursor/Grok if the reserve Claude Code implements it)."
+      ],
+      "allocation_evidence": {
+        "checked_at": "2026-10-12T21:13:51.011370+00:00",
+        "method": "git grep REM-00NN over every local and origin ref, ~/.ocor-codex files and gh PR titles/bodies/branches: highest used OCOR-DEV-REM-0025; REM-0026 and REM-0027 zero hits",
+        "next_free_id": "OCOR-DEV-REM-0027"
+      },
+      "audit_probe": {
+        "path": "/home/luca/.ocor-codex/infoc-audit-20261012/probe_c8.py",
+        "result_path": "/home/luca/.ocor-codex/infoc-audit-20261012/probe-c8-result.json",
+        "result_sha256": "762da6c655d68d1e837601c213da79b33687eb7f0796e2268dd038e093691042",
+        "sha256": "fa02e6ff0109367130427d6a99efef907b25f33dd5665959913242516029bf75",
+        "status": "READ_ONLY_OBSERVATION_NOT_QUALIFYING"
+      },
+      "audit_record": "reports/development/decision_requests/INFO-C.md",
+      "authorization": "INFO-C (2026-10-05), explicit Product Owner decision; DEC-210/DEC-211",
+      "blocked_tasks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0061",
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065",
+        "OCOR-DEV-0066",
+        "OCOR-DEV-0067",
+        "OCOR-DEV-0068",
+        "OCOR-DEV-0069"
+      ],
+      "code_reference": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py:103-125 (sha256 2055f82ee14e5d65d4fa06ec70df3e69ebd25be33124f3110a8fa4e23e0b26ea) at 78d297c; c6_capabilities.py CapabilityLease (no stop_epoch); c6/safety.py guard_dispatch",
+      "does_not_block": [
+        "OCOR-DEV-0049",
+        "G5"
+      ],
+      "execution_order": "Independent of REM-0025/REM-0026; after REM-0024 if both touch c6/safety.py; must close (verified) before any G6 task starts.",
+      "expected_file_areas": [
+        "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "ocor-runtime/src/ocor_runtime/c8_agent.py (only the sandbox tool-dispatch hook)",
+        "ocor-runtime/src/ocor_runtime/c6_capabilities.py (only if the lease-epoch binding requires it)",
+        "ocor-runtime/src/ocor_runtime/c6/safety.py (only if required)",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "reports/assurance/OCOR-DEV-REM-0027-RCCAD/",
+        "reports/evidence/G4/OCOR-DEV-REM-0027.json",
+        "reports/evidence/G4/OCOR-DEV-REM-0027.log",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.log",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0027.json (only if c6/safety.py changes)",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0027.log (only if c6/safety.py changes)",
+        "reports/evidence/G4/MANIFEST.json",
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/MODEL_HANDOFF.json",
+        "reports/development/ITERATION_LOG.md",
+        "scripts/validate_ocor_development_plan.py (only exact new allowlist paths; validator semantics unchanged)"
+      ],
+      "hard_dependencies": [],
+      "id": "OCOR-DEV-REM-0027",
+      "implementer": "loop implementer (Codex), planned",
+      "in_live_poc_path": true,
+      "live_path_classification": "sole PoC implementation of the normative function, qualified by G6; no caller in ocor-runtime/src today; treated as live path under the fail-closed interpretation recorded in INFO-C.md",
+      "maximum_repair_cycles": 2,
+      "negative_acceptance_criteria": [
+        "No generic thread-safety rewrite and no semantic change beyond LLD v1.1 \u00a74.3/\u00a76 and ADD v1.3 \u00a75.5 (PO decision INFO-C).",
+        "No caller-supplied time or epoch accepted as authority; no existing test, gate, threshold or sealed record weakened or rewritten.",
+        "Coordinate with OCOR-DEV-REM-0024 if both change c6/safety.py; NOT_EXECUTED stays NOT_EXECUTED."
+      ],
+      "normative_references": [
+        "docs/OCOR_LLD_v1.1.md \u00a74.3, \u00a76, \u00a77 (FGM-17)",
+        "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md \u00a72.2 (C8), \u00a75.5"
+      ],
+      "recorded_at": "2026-10-12T21:13:51.011370+00:00",
+      "repair_cycle": 0,
+      "requalification_required": [
+        "OCOR-DEV-0047",
+        "OCOR-DEV-0044 (only if c6/safety.py changes)",
+        "any other task flagged by validate_evidence_input_drift.py"
+      ],
+      "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
+      "scope": "Align ToolCallRuntime to LLD v1.1 \u00a74.3 and \u00a76 (C8 kill switch preemptive) and ADD v1.3 \u00a75.5 (stop denies new mutative tool calls, revokes capability leases in the local boundary, target <=10 s). Today invoke checks the stop once (tool_runtime.py:119), then charges the budget (123) and runs the whole sandbox expression (125), which may call several registered tools with no wall-clock bound and no stop re-check; CapabilityLease carries no stop_epoch and the epoch passed to invoke is caller-chosen. Probe: C8-1 stop accepted after the guard does not prevent the effect (receipt epoch 0, controller 1 STOPPING); C8-2 second tool of the same expression produces its effect 10.5 s after stop acceptance; C8-3 a lease issued at epoch 0 is accepted after stop and dual-control reset at epoch 2. Class check from the same dispatch point: the lease authorizes tool:<tool_name> but the expression can call any registered tool. Fence every tool dispatch atomically against the trusted stop epoch, cancel or bound in-flight calls so the last effect stays within <=10 s, bind leases to the stop epoch so a reset never re-enables a pre-stop lease, and authorize every tool actually called. If the lease-epoch binding needs a public contract change, write a decision request instead of inventing it.",
+      "status": "OPEN_IMPLEMENTATION_REQUIRED"
     }
   },
   "repository": "nepryoon/ocor-detailed-design",
@@ -10724,5 +10911,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-12T20:42:10.241239+00:00"
+  "updated_at": "2026-10-12T21:13:51.011370+00:00"
 }
