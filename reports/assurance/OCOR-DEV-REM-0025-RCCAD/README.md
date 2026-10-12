@@ -1,8 +1,11 @@
 # OCOR-DEV-REM-0025-RCCAD — C5: deduplica e ordinamento indicizzati dal contesto di isolamento
 
-- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` (verifier: Grok 4.7 via Cursor CLI,
-  processo, contesto e fornitore separati; Claude Code, implementatore di riserva, non verifica
-  questo change set — `LOOP-ROLES`).
+- **Status**: `SEALED` (2026-10-12T23:50:28.981451+00:00) dopo il verdetto `GO_FOR_EVIDENCE_SEAL`
+  `OCOR-DEV-REM-0025-4e9f51a16664-0` (verifier: Grok 4.7 via Cursor CLI, processo, contesto e fornitore
+  separati; Claude Code, implementatore di riserva, non verifica questo change set — `LOOP-ROLES`),
+  nessun finding e nessun `NOT_EXECUTED` sull'HEAD `4e9f51a166644685831a46cc6204719df88acc35`; SHA256 del verdetto `b2629746008a134b05074bf9267c09f2e01fb526653179ef4bdd194ecc7ec950`.
+  Sigillate anche le riqualifiche 0040/0050: cambiano soltanto i metadati del sigillo e gli hash
+  nei manifest G4/G5 e nel record.
 - **Fonte**: decisione del Product Owner `INFO-A` (2026-10-05, opzione 1 più verifica di
   conformità) e audit del 2026-10-12 in `reports/development/decision_requests/INFO-A.md`, che ha
   registrato `OCOR-DEV-REM-0025` come primo identificativo libero

@@ -425,6 +425,134 @@
     "uv": "0.12.5",
     "worktree": ".ocor/worktrees/rem-0025"
   },
+  "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 digest normativi OK sull'HEAD 4e9f51a"
+      },
+      {
+        "command": "git diff --name-status c2f9e5046f77bc6b005d37938ba329cc757fee1f..4e9f51a166644685831a46cc6204719df88acc35",
+        "exit_code": 0,
+        "summary": "13 path; inputs/ intatto; operations.py e i test 0040/0041 byte-identici; sigilli storici rem0022-ci invariati"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed (ruff 0.13.1)"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 75 source files"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti"
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (strumenti opzionali, conteggio invariato); side effect sul report ripristinato"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0025-c5-isolation-scoped-dedup",
+        "exit_code": 0,
+        "summary": "PASS su albero pulito: 13 path, superfici immutabili intatte"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione fuori area autorizzata"
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 182 input, 69 task, drifted_inputs 0"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0040 --manifest reports/evidence/G4/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS evidenza qualificante 0040"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS evidenza qualificante 0050"
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "harness PASS 14 FAIL 0 NOT_EXECUTED 0"
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/rem-0025/check_evidence.py <wt> 4e9f51a166644685831a46cc6204719df88acc35",
+        "exit_code": 0,
+        "summary": "PASS meccanico; non usato come unica prova"
+      },
+      {
+        "command": "pytest tests/tasks/test_ocor_dev_rem_0025.py at 2116ec6 (RED, broker Kafka reale)",
+        "exit_code": 1,
+        "summary": "10 failed, 1 passed, 0 skipped: P1/P2/DLQ record mancante, P3 OUT_OF_ORDER dall'altro contesto, contesto vuoto DID NOT RAISE; il no-op stesso contesto passa"
+      },
+      {
+        "command": "pytest tests/tasks/test_ocor_dev_rem_0025.py tests/tasks/test_ocor_dev_0040.py tests/tasks/test_ocor_dev_0041.py",
+        "exit_code": 0,
+        "summary": "26 passed, 0 skipped in 221.65s su Kafka auto-provisionato digest 24cdd3a7; nessun container residuo"
+      },
+      {
+        "command": "probe indipendente su broker reale (chiave e aggregate condivisi, payload diverso, watermark, dedup non durevole)",
+        "exit_code": 0,
+        "summary": "4 controlli comportamentali verdi; il replay DLQ di contesto vuoto solleva MISSING_CONTEXT senza pubblicare (dead letter non registrata: comportamento preesistente di replay)"
+      },
+      {
+        "command": "scripts/bootstrap_development_environment.py --execute --timeout 600 (primo tentativo con env della checkout principale)",
+        "exit_code": 2,
+        "summary": "SPIRE exited 1: CA preesistente non validabile; env principale non modificato"
+      },
+      {
+        "command": "scripts/bootstrap_development_environment.py --execute --timeout 600 (env e CA isolati nel worktree)",
+        "exit_code": 0,
+        "summary": "stack ocor-bootstrap avviato; init, fixture, register e health PASS; 9 voci di report tutte READY (11 container); immagini pinned coincidenti con il record"
+      },
+      {
+        "command": "pytest tests/tasks/test_ocor_dev_0050.py (venv e uv run --frozen)",
+        "exit_code": 0,
+        "summary": "198 passed, 0 skipped in 4.69s su PostgreSQL postgres@sha256:33f923b05f64"
+      },
+      {
+        "command": "pytest tests/tasks/test_ocor_dev_0048.py",
+        "exit_code": 0,
+        "summary": "196 passed, 0 skipped in 130.97s sullo stack reale; nessuna nuova esclusione nel diff"
+      },
+      {
+        "command": "pytest tests/ (cwd ocor-runtime, DSN locale, PATH toolchain c5resume)",
+        "exit_code": 0,
+        "summary": "1817 passed, 0 skipped, 0 failed in 777.26s; unione esatta con pytest --collect-only; nessun OOM e restart_count 0; inventario volumi/container invariato"
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 e integrazione di OCOR-DEV-REM-0025",
+    "integration_condition": "Merge subordinato ai check obbligatori verdi sul commit di sigillo esatto; il verdetto qualifica il candidato indicato, con soli metadati di sigillo e hash successivi.",
+    "not_executed": [],
+    "original_implementer": "Claude Code (Anthropic), claude-opus-5-5 (0050 cycle 0); Codex (OpenAI) 0050 repair cycles 1-2",
+    "prior_verdicts": [],
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION (requalification of OCOR-DEV-0050 within OCOR-DEV-REM-0025)",
+    "verdict_created_at": "2026-10-12T23:48:45Z",
+    "verdict_file_sha256": "b2629746008a134b05074bf9267c09f2e01fb526653179ef4bdd194ecc7ec950",
+    "verdict_head_sha": "4e9f51a166644685831a46cc6204719df88acc35",
+    "verdict_request_id": "OCOR-DEV-REM-0025-4e9f51a16664-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore del ciclo 0: Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva (quota Codex esaurita). Verifier: Grok 4.7 (xAI) via Cursor CLI. Fornitori di modello diversi. Claude Code non verifica questo change set.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/model.py": "6988c22f78b14a961027bb6cf3b3552882801e2f06cd54ba5513cc40bc8292ce",
@@ -916,7 +1044,8 @@
   },
   "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted-data migration and no port or envelope change: brokers and topics are disposable per test. Reverting restores the REM-0022 CI records (0040.requalified-rem0022-ci, 0050.requalified-rem0022-ci) as the most recent ones once the REM-0025 requalification records are removed with the revert.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-12T23:50:28.981451+00:00",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-0050-rem0022-ci-7c6daa7b3c3a",
   "task_id": "OCOR-DEV-0050",
   "test_case_identity": "test_case_sha256 = sha256 of the exact pytest node id (ocor-runtime/<classname as path>.py::<name>) of each JUnit testcase stored verbatim in the raw log; tests holds base names"
