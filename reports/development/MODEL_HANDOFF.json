@@ -130,10 +130,11 @@
     "Only one serial stack/pytest campaign; state checkpoint does not claim completion.",
     "Final candidate assembly requires all new fresh runs and gates, independent GO, then REM17 prerequisite and exact CI integration."
   ],
-  "base_sha": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
-  "baseline_commit": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
-  "branch": "governed/state-sync-rem0019-teardown-resume-20261012",
+  "base_sha": "12c7758332c022d767c0f526158328da0d4271e3",
+  "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
+  "branch": "governed/info-a-c5-dedup-conformance-audit",
   "changed_paths": [
+    "reports/development/decision_requests/INFO-A.md",
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
     "reports/development/ITERATION_LOG.md"
@@ -717,15 +718,22 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "REM-0019: execute PO decision REM-0019-KIND-TEARDOWN-OBSERVATION; resume stopped by recurrent kind containerd SEGV; decision request REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
+  "current_task": "INFO-A: targeted C5 dedup conformance check against the isolation key, REM-0025 registration, decision request closure",
   "evidence_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
     "reports/development/ITERATION_LOG.md"
   ],
-  "exact_next_action": "INFO-A:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-A (2026-10-05) audit c5/backbone.py deduplication against the full isolation key (tenant and Governed Context) on ADD v1.3 \u00a71.4 and the Canonical Ingestion Envelope section; register a REM with the next repository-wide verified free ID (after REM-0024) if cross-tenant discard is possible, else document conformance; record the reused-key/different-payload limit as a note; close INFO-A.md. Then INFO-C, then REM-0024. REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5): PO decision REM-0019-KIND-TEARDOWN-OBSERVATION executed (observation adapter v2, proofs, full attempt-3 retained); order-collection attempt-2 FAIL_INFRASTRUCTURE (kind containerd SEGV, same cause as full attempt-1) -> stopped per QUALIFICATION-CAMPAIGN-INFRA-RERUN; blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). After that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
-  "head_sha": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
+  "exact_next_action": "INFO-C:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-C (2026-10-05) audit, on code and LLD v1.1 \u00a76/\u00a74.3, (1) c5/backbone.py in-memory dedup vs 'deduplica durable' (coordinate with INFO-A record: backbone not in live PoC path, isolation-scoped dedup already assigned to REM-0025, do not duplicate it), (2) c5/operations.py backpressure read-modify-write vs 'watermark monotono', (3) c8/tool_runtime.py stop-check/execute window vs 'kill switch preemptive' and stop_epoch; for each state live-path vs reference-only and whether the invariant can be violated; register a REM with the next repository-wide verified free ID (after REM-0025) only where in live path and violable; write outcome in INFO-C.md and close it. Then REM-0024 and REM-0025 (G6 dependencies, executable while REM-0019/REM-0017 stay blocked). REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236); after that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "head_sha": "12c7758332c022d767c0f526158328da0d4271e3",
   "head_sha_resolver": "git rev-parse HEAD on this metadata branch; base is exact main before metadata commit",
+  "infoa_audit_unit": {
+    "audit_record": "reports/development/decision_requests/INFO-A.md",
+    "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted)",
+    "independent_verification": "not requested: documentary audit and registration only, no product code or evidence changed; REM-0025 will be verified by Cursor/Grok if reserve Claude Code implements it, else per LOOP-ROLES",
+    "probe_resources": "probe self-provisioned and destroyed its own Kafka container/volume (3 runs); 3 pre-existing unlabeled ocor-c5-backbone-data-* volumes (created 2026-10-05/10-10, not by this session) left untouched",
+    "session_artifacts": "/home/luca/.ocor-codex/infoa-audit-20261012"
+  },
   "integration_staging": {
     "governed_branch": "governed/ocor-dev-rem-0019-evidence-stage",
     "governed_head_sha": "bec9b598d5e7c766f28feb36cd7466e747c1ee90",
@@ -1598,6 +1606,12 @@
     "state_key": "remediation_status.REM_0024_BREAK_GLASS_CONFORMANCE",
     "status": "OPEN_IMPLEMENTATION_REQUIRED"
   },
+  "registered_remediation_rem0025": {
+    "id": "OCOR-DEV-REM-0025",
+    "source": "INFO-A",
+    "state_key": "remediation_status.REM_0025_C5_ISOLATION_SCOPED_DEDUP",
+    "status": "OPEN_IMPLEMENTATION_REQUIRED"
+  },
   "rem0019_teardown_observation_unit": {
     "execution": {
       "authority": "PO decision REM-0019-KIND-TEARDOWN-OBSERVATION (2026-10-12) option 1",
@@ -1683,7 +1697,7 @@
   },
   "schema_version": "1.0",
   "security_observability_notes": "Private core and secret files never published. Metadata includes bounded address/frame/source facts and hashes, no memory dumps. All11 pinned services READY before teardown; resources before==after. No source/test/harness/lock/image/version change, no claims promotion.",
-  "session_artifacts": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
+  "session_artifacts": "/home/luca/.ocor-codex/infoa-audit-20261012",
   "source_branch": "governed/ocor-dev-rem-0019-0049-test-isolation",
   "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
   "source_worktree": ".ocor/worktrees/rem-0019",
@@ -1786,6 +1800,6 @@
       "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-12T20:12:34.905502+00:00",
-  "worktree": ".ocor/worktrees/state-sync-rem0019-teardown-resume-20261012"
+  "updated_at": "2026-10-12T20:42:10.241239+00:00",
+  "worktree": ".ocor/worktrees/info-a-audit"
 }

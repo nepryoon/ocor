@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
-    "branch": "governed/state-sync-rem0019-teardown-resume-20261012",
+    "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
+    "branch": "governed/info-a-c5-dedup-conformance-audit",
     "checkpoint": {
       "changed_product_paths": [],
       "diagnosis_path": "/home/luca/.ocor-codex/rem0017-offline-diagnosis-20261012/diagnosis.json",
@@ -326,6 +326,16 @@
     },
     "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted)",
     "independent_verification": "not requested: harness observation change and diagnostics only, no qualifying result; REM-0019 verifier remains Grok 4.7 (Cursor)",
+    "infoa_audit_unit": {
+      "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
+      "branch": "governed/info-a-c5-dedup-conformance-audit",
+      "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): INFO-A conformance check, REM-0025 registration, decision request closure",
+      "independent_verification": "NOT_REQUESTED: documentary audit and registration only, no product code, test or evidence changed",
+      "phase": "INFO_A_AUDIT_COMPLETED_REMEDIATION_REGISTERED",
+      "session_artifacts": "/home/luca/.ocor-codex/infoa-audit-20261012",
+      "task_id": "INFO-A",
+      "worktree": ".ocor/worktrees/info-a-audit"
+    },
     "local_state_gates": {
       "base_sha": "2710c1b9f6c1deddee3a5156b9627dbb92727178",
       "branch": "governed/rem0017-infrastructure-diagnosis-20261012",
@@ -534,7 +544,7 @@
     "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
     "source_worktree": ".ocor/worktrees/rem-0019",
     "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem0019-teardown-resume-20261012"
+    "worktree": ".ocor/worktrees/info-a-audit"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -2040,7 +2050,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "8ca837bb98b567090696c6dfe6a8939c5d699a8d",
+  "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -2065,9 +2075,10 @@
       "id": "INFO-A",
       "non_blocking": true,
       "po_decision": "INFO-A (2026-10-05)",
-      "resolution": "Decisione esplicita ricevuta; audit/remediation e chiusura del record in unit\u00e0 governata distinta, non eseguiti in questo state sync.",
+      "remediation_id": "OCOR-DEV-REM-0025",
+      "resolution": "PO decision INFO-A (2026-10-05, option 1) executed 2026-10-12: no change to C5 replay semantics, reused-key/different-payload limit recorded as note for a future normative decision; conformance check in INFO-A.md found dedup keyed on idempotency_key only and sequence state keyed on aggregate_ref only, so one Governed Context can silently drop or quarantine another's event (probe P1-P3 on real Kafka); decision request closed RESOLVED; remediation OCOR-DEV-REM-0025 registered as mandatory G6 dependency.",
       "scope": "Clarify whether C5 must detect same-key/different-payload conflicts (stronger idempotency invariant) or the key-only short-circuit is sufficient.",
-      "status": "PO_DECISION_RECEIVED_EXECUTION_PENDING"
+      "status": "RESOLVED_AUDITED_REMEDIATION_REGISTERED"
     },
     {
       "blocked_tasks": [],
@@ -6283,7 +6294,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "INFO-A:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-A (2026-10-05) audit c5/backbone.py deduplication against the full isolation key (tenant and Governed Context) on ADD v1.3 \u00a71.4 and the Canonical Ingestion Envelope section; register a REM with the next repository-wide verified free ID (after REM-0024) if cross-tenant discard is possible, else document conformance; record the reused-key/different-payload limit as a note; close INFO-A.md. Then INFO-C, then REM-0024. REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5): PO decision REM-0019-KIND-TEARDOWN-OBSERVATION executed (observation adapter v2, proofs, full attempt-3 retained); order-collection attempt-2 FAIL_INFRASTRUCTURE (kind containerd SEGV, same cause as full attempt-1) -> stopped per QUALIFICATION-CAMPAIGN-INFRA-RERUN; blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). After that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "INFO-C:targeted-conformance-audit \u2014 next coherent governed unit from origin/main: per PO decision INFO-C (2026-10-05) audit, on code and LLD v1.1 \u00a76/\u00a74.3, (1) c5/backbone.py in-memory dedup vs 'deduplica durable' (coordinate with INFO-A record: backbone not in live PoC path, isolation-scoped dedup already assigned to REM-0025, do not duplicate it), (2) c5/operations.py backpressure read-modify-write vs 'watermark monotono', (3) c8/tool_runtime.py stop-check/execute window vs 'kill switch preemptive' and stop_epoch; for each state live-path vs reference-only and whether the invariant can be violated; register a REM with the next repository-wide verified free ID (after REM-0025) only where in live path and violable; write outcome in INFO-C.md and close it. Then REM-0024 and REM-0025 (G6 dependencies, executable while REM-0019/REM-0017 stay blocked). REM-0019 (cycle 1, source 8842ab2658b9eee201fa1bd26d267a9f23c22df5) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236); after that decision: one allowlist change set closing both REM-0019 decision request files with 0050 regression-only requalification, then the decided REM-0019 action. Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9790,6 +9801,87 @@
       "scope": "Align BreakGlassController/BreakGlassGrant to ADD v1.3 \u00a75.4-5.5 and LLD v1.1 \u00a71.1/\u00a74.2. PO points: (1) authorize accepts only grants issued by the controller and verifiable (signed or registered), a grant built outside grant() is refused; (2) at every use approvers re-validated against IdentityRegistry: existing, active, human, distinct, requester not among approvers; (3) window checked on the boundary trusted clock, never on a caller-provided instant (grant and authorize); (4) TTL <= 15 min, no automatic renewal (already satisfied: keep, regression tests only); (5) revocation and expiry fail-closed (logic satisfied, re-prove with trusted time and verified grants). Audit gaps from the same normative text: named capabilities bound to the grant and authorize restricted to them; role quorum Security Duty Officer + affected Domain Owner; synchronous immutable audit and immediate alert per use, fail-closed. Before modifying, re-confirm each point against the normative text; document instead of implementing any point found satisfied elsewhere or not required. If role/human/active representation or audit/alert integration needs a contract or semantic change, write a decision request instead of inventing it.",
       "scope_extension_rule": "c2_identity.py stays unchanged unless proven necessary; if changed, requalify every task whose sealed inputs include it. Class check of c6/human_gate.py:149 (existence-only approver check): if confirmed, separate REM with its own verified free ID, not widened here.",
       "status": "OPEN_IMPLEMENTATION_REQUIRED"
+    },
+    "REM_0025_C5_ISOLATION_SCOPED_DEDUP": {
+      "acceptance_criteria": [
+        "RED before code reproducing probe observations P1, P2 and P3 as failing tests on the real self-provisioned Kafka broker (no mock of the backbone boundary).",
+        "Dedup state keyed by the envelope's isolation context plus idempotency_key, and per-aggregate sequence state keyed by the isolation context plus aggregate_ref; an event of context B is never dropped or quarantined because of state produced by context A.",
+        "Positive and negative cross-tenant cases for every conditional branch of publish and replay: same key across contexts both delivered; same key same context still a safe no-op (existing 0040 test unchanged and green); same aggregate_ref across contexts both accepted; out-of-order within one context still OUT_OF_ORDER; DLQ replay of context B not suppressed by context A.",
+        "Fresh superseding record for OCOR-DEV-0040 (latest record inputs include c5/backbone.py) and for OCOR-DEV-0041 if c5/operations.py changes; historical seals untouched; full runtime regression zero skip, exact JUnit/collection union, 75/45-minute caps.",
+        "Independent verification on the exact final HEAD; verifier per LOOP-ROLES (Claude Code if implemented by Codex; Cursor/Grok if the reserve Claude Code implements it)."
+      ],
+      "allocation_evidence": {
+        "checked_at": "2026-10-12T20:42:10.241239+00:00",
+        "method": "git grep REM[-_]0025 over every local and origin ref, ~/.ocor-codex files and gh PR search: zero hits (only this session's own log); highest used OCOR-DEV-REM-0024",
+        "next_free_id": "OCOR-DEV-REM-0025"
+      },
+      "audit_probe": {
+        "path": "/home/luca/.ocor-codex/infoa-audit-20261012/probe.py",
+        "result_path": "/home/luca/.ocor-codex/infoa-audit-20261012/probe-result.json",
+        "result_sha256": "d869fda55b537ea9f0f0ea1395c68a9f9f0157b64fcb68704909be1b83d443db",
+        "sha256": "c14b939e09193667d2a8ea7c0e724df243c55d526f2042d5113bd5a3f3b3ceab",
+        "status": "READ_ONLY_OBSERVATION_NOT_QUALIFYING"
+      },
+      "audit_record": "reports/development/decision_requests/INFO-A.md",
+      "authorization": "INFO-A (2026-10-05), explicit Product Owner decision; DEC-210/DEC-211",
+      "blocked_tasks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0061",
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065",
+        "OCOR-DEV-0066",
+        "OCOR-DEV-0067",
+        "OCOR-DEV-0068",
+        "OCOR-DEV-0069"
+      ],
+      "code_reference": "ocor-runtime/src/ocor_runtime/c5/backbone.py:172-173,312-342 at 12c7758 (sha256 d34a3609907905001a6780242f88e257d7707d05a1a20ade791b6880bf75c914)",
+      "does_not_block": [
+        "OCOR-DEV-0049",
+        "G5"
+      ],
+      "execution_order": "Executable after the INFO-C audit unit and REM-0024 when REM-0019/REM-0017 remain blocked; must close (verified) before any G6 task starts.",
+      "expected_file_areas": [
+        "ocor-runtime/src/ocor_runtime/c5/backbone.py",
+        "ocor-runtime/src/ocor_runtime/c5/operations.py (only if the replay path requires it)",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
+        "scripts/validate_ocor_development_plan.py (only exact new allowlist paths; validator semantics unchanged)",
+        "reports/assurance/OCOR-DEV-REM-0025-RCCAD/",
+        "reports/evidence/G4/OCOR-DEV-REM-0025.json",
+        "reports/evidence/G4/OCOR-DEV-REM-0025.log",
+        "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.json",
+        "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.log",
+        "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0025.json (only if c5/operations.py changes)",
+        "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0025.log (only if c5/operations.py changes)",
+        "reports/evidence/G4/MANIFEST.json",
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/MODEL_HANDOFF.json",
+        "reports/development/ITERATION_LOG.md"
+      ],
+      "hard_dependencies": [],
+      "id": "OCOR-DEV-REM-0025",
+      "implementer": "loop implementer (Codex), planned",
+      "in_live_poc_path": false,
+      "maximum_repair_cycles": 2,
+      "negative_acceptance_criteria": [
+        "No same-key/different-payload conflict detection or any other change of C5 replay semantics (PO decision INFO-A option 1); the reused-key limit stays a note for a future normative decision.",
+        "No silent cross-context drop or cross-context OUT_OF_ORDER quarantine; an envelope whose isolation context cannot be determined fails closed rather than sharing global state.",
+        "Durable dedup across restarts is not added here unless the INFO-C audit assigns it; no existing test, gate, threshold or sealed record weakened or rewritten; NOT_EXECUTED stays NOT_EXECUTED."
+      ],
+      "normative_references": [
+        "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md \u00a71.4, \u00a73.0.1, \u00a73.2",
+        "docs/OCOR_LLD_v1.1.md \u00a72.5, \u00a76"
+      ],
+      "recorded_at": "2026-10-12T20:42:10.241239+00:00",
+      "repair_cycle": 0,
+      "requalification_required": [
+        "OCOR-DEV-0040",
+        "OCOR-DEV-0041 (only if c5/operations.py changes)"
+      ],
+      "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical 0040/0041 seals untouched.",
+      "scope": "Align CanonicalEventBackbone dedup and per-aggregate sequence state to the isolation key of ADD v1.3 \u00a71.4/\u00a73.2: _seen_idempotency_keys keyed by idempotency_key only and _last_sequence keyed by aggregate_ref only let one Governed Context silently drop (P1, P2 via EventOperationsCoordinator) or quarantine OUT_OF_ORDER (P3) another context's event. Scope both by the envelope's isolation context (in the PoC envelope the governed_context_digest is the only carried context; the implementer documents the chosen key against \u00a71.4 and fails closed when it is missing). Same-context replay remains a safe no-op.",
+      "status": "OPEN_IMPLEMENTATION_REQUIRED"
     }
   },
   "repository": "nepryoon/ocor-detailed-design",
@@ -10632,5 +10724,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-12T20:12:34.905502+00:00"
+  "updated_at": "2026-10-12T20:42:10.241239+00:00"
 }
