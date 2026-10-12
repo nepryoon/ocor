@@ -169,8 +169,13 @@ class CanonicalEventBackbone:
     def __init__(self, topic: str, *, container: str) -> None:
         self._topic = topic
         self._container = container
-        self._last_sequence: dict[str, int] = {}
-        self._seen_idempotency_keys: set[str] = set()
+        # Dedup and ordering state is scoped by the envelope's isolation
+        # context (ADD v1.3 sections 1.4 and 3.2): one Governed Context can
+        # never drop or quarantine another context's event. The PoC envelope
+        # carries the context as ``governed_context_digest``, the digest of
+        # the whole GovernedContext (isolation tuple included).
+        self._last_sequence: dict[tuple[str, str], int] = {}
+        self._seen_idempotency_keys: set[tuple[str, str]] = set()
         self._quarantine: list[QuarantinedEnvelope] = []
 
     @classmethod
@@ -309,12 +314,19 @@ class CanonicalEventBackbone:
             self._quarantine.append(QuarantinedEnvelope("UNKNOWN_SCHEMA", envelope.to_mapping()))
             raise BackboneError("UNKNOWN_SCHEMA", f"{envelope.schema_ref!r} is not a registered schema")
 
-        if envelope.idempotency_key in self._seen_idempotency_keys:
-            # already durably published once; a safe no-op replay, not
-            # a duplicate canonical effect and not a quarantine event.
+        context = envelope.governed_context_digest
+        if not isinstance(context, str) or not context:
+            # an undeterminable isolation context never falls back to
+            # shared state: fail closed before any dedup or ordering lookup.
+            self._quarantine.append(QuarantinedEnvelope("MISSING_CONTEXT", envelope.to_mapping()))
+            raise BackboneError("MISSING_CONTEXT", "governed_context_digest must be a non-empty string")
+
+        if (context, envelope.idempotency_key) in self._seen_idempotency_keys:
+            # already durably published once in this context; a safe no-op
+            # replay, not a duplicate canonical effect and not a quarantine event.
             return
 
-        last = self._last_sequence.get(envelope.aggregate_ref)
+        last = self._last_sequence.get((context, envelope.aggregate_ref))
         if last is not None and envelope.sequence <= last:
             self._quarantine.append(QuarantinedEnvelope("OUT_OF_ORDER", envelope.to_mapping()))
             raise BackboneError(
@@ -338,8 +350,8 @@ class CanonicalEventBackbone:
             "key.separator=|",
             input_text=line + "\n",
         )
-        self._last_sequence[envelope.aggregate_ref] = envelope.sequence
-        self._seen_idempotency_keys.add(envelope.idempotency_key)
+        self._last_sequence[(context, envelope.aggregate_ref)] = envelope.sequence
+        self._seen_idempotency_keys.add((context, envelope.idempotency_key))
 
     def consume(self, count: int) -> tuple[DeliveredRecord, ...]:
         command = [
