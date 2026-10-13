@@ -415,6 +415,7 @@ def main() -> int:
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0021.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0022.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0079.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0080.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0081.py",
@@ -475,6 +476,14 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0021-RCCAD/README.md",
         "reports/assurance/OCOR-DEV-REM-0021-RCCAD/OCOR-DEV-REM-0021.json",
         "reports/assurance/OCOR-DEV-REM-0021-RCCAD/OCOR-DEV-REM-0021.log",
+        # OCOR-DEV-REM-0025 (INFO-A): remediation record, OCOR-DEV-0040 and 0050 requalifications.
+        "reports/assurance/OCOR-DEV-REM-0025-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0025-RCCAD/OCOR-DEV-REM-0025.json",
+        "reports/assurance/OCOR-DEV-REM-0025-RCCAD/OCOR-DEV-REM-0025.log",
+        "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.json",
+        "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0025.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0025.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
