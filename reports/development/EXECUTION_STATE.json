@@ -1,8 +1,8 @@
 {
   "active_iteration": {
-    "baseline_commit": "299a6a6c2122c5c79ad2e87131b8fe327275931b",
-    "branch": "governed/state-sync-rem0027-candidate",
-    "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_REM_0026_SEALED",
+    "baseline_commit": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+    "branch": "governed/state-sync-rem0019-po-allowlist-candidate",
+    "change_set": "CC-OCOR-DELIVERY-COMPLETION__REM0019_PO_DECISION_ALLOWLIST",
     "checkpoint": {
       "changed_product_paths": [],
       "diagnosis_path": "/home/luca/.ocor-codex/rem0017-offline-diagnosis-20261012/diagnosis.json",
@@ -325,8 +325,8 @@
       "qualifying_runs_started": 0,
       "reruns_started": 0
     },
-    "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted)",
-    "independent_verification": "not requested: harness observation change and diagnostics only, no qualifying result; REM-0019 verifier remains Grok 4.7 (Cursor)",
+    "implementer_this_unit": "Codex (OpenAI)",
+    "independent_verification": "Requested to external loop only, Grok 4.7 Cursor; no verifier launched",
     "infoa_audit_unit": {
       "baseline_commit": "12c7758332c022d767c0f526158328da0d4271e3",
       "branch": "governed/info-a-c5-dedup-conformance-audit",
@@ -475,11 +475,149 @@
       ],
       "status": "PASS"
     },
-    "phase": "OCOR_DEV_REM_0026_SEALED_STATE_SYNC",
+    "phase": "ALLOWLIST_CANDIDATE_AWAITING_REGRESSION_ONLY_REVIEW",
     "preflight": {
       "services": 11,
       "status": "PASS",
       "toolchain_entries": 9
+    },
+    "rem0019_po_allowlist_unit": {
+      "authorization": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE 2026-10-13; REM-0019-KIND-TEARDOWN-OBSERVATION 2026-10-12",
+      "base_sha": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+      "branch": "governed/rem0019-po-decision-allowlist",
+      "gates": [
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_rccad.py",
+            "--base-ref",
+            "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3"
+          ],
+          "duration_seconds": 0.264,
+          "exit_code": 0,
+          "label": "rccad",
+          "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_language_policy.py"
+          ],
+          "duration_seconds": 0.032,
+          "exit_code": 0,
+          "label": "language",
+          "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_change_scope.py",
+            "--base",
+            "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+            "--branch",
+            "governed/rem0019-po-decision-allowlist"
+          ],
+          "duration_seconds": 0.032,
+          "exit_code": 0,
+          "label": "scope",
+          "raw_sha256": "88c0d481a031f712a9e5d46006b51a9c4185b52316e0129926a9c7940cf5f433"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_development_plan.py",
+            "--base-ref",
+            "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+            "--authorized-extension"
+          ],
+          "duration_seconds": 0.114,
+          "exit_code": 0,
+          "label": "plan",
+          "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+        },
+        {
+          "command": [
+            "sha256sum",
+            "-c",
+            "inputs/normative/SHA256SUMS"
+          ],
+          "duration_seconds": 0.004,
+          "exit_code": 0,
+          "label": "inputs",
+          "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_evidence_input_drift.py"
+          ],
+          "duration_seconds": 0.064,
+          "exit_code": 0,
+          "label": "drift",
+          "raw_sha256": "8d00685467e94c964a17c6993ae5b186d797cca192f89b4c4a6357bef69ceef4"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0050",
+            "--manifest",
+            "reports/evidence/G5/MANIFEST.json",
+            "--non-skipped"
+          ],
+          "duration_seconds": 0.032,
+          "exit_code": 0,
+          "label": "runtime-evidence",
+          "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
+        }
+      ],
+      "head_sha": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
+      "historical_0050_implementer": "Claude Code reserve cycle 0; Codex repairs 1-2",
+      "implementer": "Codex (OpenAI), this unit",
+      "not_executed": [
+        "kind image acquisition/qualification",
+        "REM-0019 fixture repair and new campaign",
+        "REM-0027 repair",
+        "REM-0024/REM-0028 implementation",
+        "independent verification and evidence seal"
+      ],
+      "recorded_at": "2026-10-13T06:37:21.085269+00:00",
+      "records": [
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.log"
+      ],
+      "repair_cycle": 0,
+      "request_id": "OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist",
+      "results": {
+        "full_duration_seconds": 933.5,
+        "full_resources_cleaned": true,
+        "full_tests": 1834,
+        "status": "PASS",
+        "task_tests": 198,
+        "zero_skip": true
+      },
+      "review_scope": "REGRESSION_ONLY; unchanged 0050 code/tests pass after exact allowlist. No reassessment of conformance or REM-0023 closure.",
+      "session_artifacts": "/home/luca/.ocor-codex/rem0019-po-allowlist-20261013",
+      "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+      "teardown": {
+        "added": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "duration_seconds": 1.533,
+        "exit_code": 0,
+        "inventory_equals_session_start": true,
+        "preexisting_removed": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "status": "PASS"
+      },
+      "verifier": "Grok 4.7 via Cursor CLI (cursor), external loop only, separate provider/process/context, 0050 touched by reserve implementer Claude Code",
+      "worktree": ".ocor/worktrees/rem0019-po-allowlist"
     },
     "rem0019_teardown_observation_unit": {
       "execution": {
@@ -715,8 +853,8 @@
     "session_artifacts": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
     "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
     "source_worktree": ".ocor/worktrees/rem-0019",
-    "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem0027-candidate"
+    "task_id": "OCOR-DEV-0050",
+    "worktree": ".ocor/worktrees/state-sync-rem0019-po-allowlist-candidate"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -2222,7 +2360,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "299a6a6c2122c5c79ad2e87131b8fe327275931b",
+  "baseline_commit": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -4163,6 +4301,7 @@
         },
         "worktree": ".ocor/worktrees/rem-0019"
       },
+      "minimal_unblock_action": "After allowlist candidate integration, implement PO-authorized official image and fixture cleanup, then new full/5 orders/119 isolated on final code/test commit; no historical counts transferred",
       "next_action": "Await PO decision REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE; no rerun or harness change before it.",
       "non_blocking": false,
       "po_decision": {
@@ -4183,7 +4322,7 @@
         "observation": "run 37952580435/37952580531/37952580779 su 4e97cd3: split per nodo FAIL nelle parti 2-4 di conditional-infrastructure-0049",
         "path": "reports/development/EXECUTION_STATE.json"
       },
-      "status": "BLOCKED_RECURRENT_INFRASTRUCTURE_PO_DECISION_REQUIRED",
+      "status": "PO_AUTHORIZED_FRESH_CAMPAIGN_PENDING",
       "teardown_observation_execution": {
         "authority": "PO decision REM-0019-KIND-TEARDOWN-OBSERVATION (2026-10-12) option 1",
         "campaign": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
@@ -5089,6 +5228,7 @@
         "window_seconds": 30.0
       },
       "id": "REM-0019-KIND-TEARDOWN-OBSERVATION",
+      "integration_status": "v2 already executed by reserve; acquired document and exact allowlist pending candidate review",
       "po_decision": {
         "date": "2026-10-12",
         "option": 1,
@@ -5096,7 +5236,7 @@
       },
       "recorded_at": "2026-10-12T18:01:46.143622+00:00",
       "repair_cycle": 1,
-      "status": "RESOLVED_BY_PO_DECISION_EXECUTED_CLOSURE_PENDING_ALLOWLIST"
+      "status": "RESOLVED_BY_PO_DECISION_EXECUTED_CLOSURE_PENDING_INTEGRATION"
     },
     {
       "blocked_tasks": [
@@ -5113,14 +5253,19 @@
       ],
       "head_sha": "d6b4a1772c0f6e1c59e7ef49f7b7442695b9c439",
       "id": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
-      "integration_status": "DRAFT_NOT_INTEGRABLE_NEW_PATH_PLAN_FAIL_NO_ALLOWLIST_CHANGE",
+      "integration_status": "Decision document and exact allowlist on pending independently reviewed candidate; image/fixture/campaign NOT_EXECUTED",
       "path": "reports/development/decision_requests/REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE.md",
+      "po_decision": {
+        "date": "2026-10-13",
+        "id": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
+        "option": 1
+      },
       "pull_request": 236,
       "recommendation": "option 1: digest-pinned kindest/node v1.33.x whose containerd is built with a Go release containing the vgetrandom fix (#73141/#73144), plus kind fixture setup inside try/finally, new REM-0019 commit and full fresh campaign",
       "recorded_at": "2026-10-12T20:12:34.905502+00:00",
       "repair_cycle": 1,
       "sha256": "ac7493ac2bd0988bc51561c5c084af380a69ed78dcf882a7a5f52d14c137ec09",
-      "status": "OPEN_PO_DECISION_REQUIRED",
+      "status": "RESOLVED_BY_PO_DECISION_EXECUTION_PENDING",
       "text": "# REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE\n\nStato: `OPEN_PO_DECISION_REQUIRED` \u2014 2026-10-12.\n\n## Contesto e fatti\n\nLa decisione `REM-0019-KIND-TEARDOWN-OBSERVATION` (opzione 1) \u00e8 stata eseguita il\n2026-10-12 da Claude Code, implementatore di riserva del loop:\n\n- adapter di osservazione v2 (`watchdog_safe.py`) nella campagna\n  `/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5/`: la rimozione del nodo kind\n  \u00e8 accettata solo se legata al processo `kind delete cluster --name ocor-poc` del gruppo\n  pytest (campionato da `/proc` ogni 0,2 s), allo stesso UUID e all'evento `destroy`,\n  entro una finestra dichiarata di 30 s;\n- prove deterministiche: RED della v1 (`red-teardown-v1.log`, 4 failure e 4 error su 13),\n  GREEN della v2 14/14, negativi della v1 tutti ancora fatali sulla v2; prova reale con\n  Docker e binario kind veri, 4/4 (`probe-teardown-real.json`, inventario invariato);\n- la prova reale ha trovato un secondo difetto della v1: il CLI Docker 29 stampa\n  `error: no such object: <id>` (minuscolo), quindi la v1 non riconosceva mai l'assenza\n  del nodo. Corretto con un caso RED/GREEN dedicato;\n- `harness-change-record.json` (SHA256\n  `14293e2679756745eb7cb6f519900a885d09bffd65e1e85007f6a7813c8e55e5`): cambiano solo\n  `watchdog_safe.py` e, in `run_nodes.py`, l'avvio/arresto del campionatore e due campi\n  di osservazione. Comando pytest, ambiente, ordini, limiti, controlli di runtime e\n  teardown sono identici; la full attempt-3 (2196) resta valida.\n\nRipetizione di `order-collection` (tentativo 2, unica ripetizione usata su due):\npreflight PASS con 11 servizi, collezione identica a quella della full conservata.\nExit 130 dopo 1510 s: **FAIL infrastrutturale, non qualificante**. JUnit ha 386 casi,\nzero failure/error/skip; nessuna asserzione fallita. Alle 20:08:58Z `containerd` del nodo\n`kindest/node:v1.33.1` (digest `050072256b9a\u2026`) termina con\n`code=dumped, status=11/SEGV` durante `kind create` della fixture del caso Helm\n(posizione 387 su 390); systemd lo riavvia (`NRestarts=1`) e il controllo di runtime\ninvariato ferma il run. L'adapter v2 non \u00e8 coinvolto (nessuna sonda fallita, nessun\nrifiuto o rimozione registrati).\n\n\u00c8 la stessa causa della full attempt-1 di questa campagna (SEGV alle 05:44:57Z, creazione\ndella sandbox del backup manuale) e di `REM-0017-KIND-CONTAINERD-CRASH`, la cui diagnosi\noffline localizza il fault in `runtime.mallocgcSmallNoscan+0xd8` con catena\n`mexit -> vgetrandomPutState -> growslice -> mallocgc`, binario compilato con Go 1.24.2.\n`QUALIFICATION-CAMPAIGN-INFRA-RERUN` impone di fermarsi quando la stessa causa colpisce\npi\u00f9 run: nessuna ulteriore ripetizione \u00e8 stata avviata.\n\n### Correlazione con un difetto Go noto (fonte esterna, non prova locale)\n\nIl difetto upstream Go #73141/#73144 descrive esattamente questo meccanismo: lo stato\nvgetrandom di una M distrutta veniva rilasciato in `mdestroy` dopo il rilascio della P,\nquindi con allocazione vietata. Il sintomo \u00e8 un SIGSEGV senza output n\u00e9 stack trace,\ndiagnosticabile solo da core. La correzione \u00e8 stata riportata sul ramo 1.24 dopo la\n1.24.2 ed \u00e8 presente come patch nei pacchetti delle distribuzioni\n([patch vgetrandom per Go 1.24](https://ftp.riken.jp/Linux/gentoo-portage/dev-lang/go/files/go-1.24-vgetrandom.patch),\n[patch Debian golang-1.24 1.24.2-2](https://sources.debian.org/patches/golang-1.24/1.24.2-2)).\nIl percorso richiede il vDSO `getrandom` (kernel Linux \u2265 6.11): l'host locale usa il\nkernel 7.0.0-38. Questo spiegherebbe perch\u00e9 il crash compare in locale. La correlazione\n\u00e8 un'inferenza: il fix non \u00e8 stato provato qui e nessuna mitigazione \u00e8 stata tentata.\n\n### Residuo osservato (difetto separato, nell'ambito di REM-0019)\n\nLo SIGINT \u00e8 arrivato durante `kind create`, nella fase di setup della fixture `kind` di\n`test_ocor_dev_0049.py`. Quella fixture cancella il cluster solo nel `finally` dopo lo\n`yield`, quindi non lo cancella se il setup viene interrotto. Sono rimasti il nodo\n`ocor-poc-control-plane`, il suo volume `/var` e la rete `ocor-bootstrap_ocor-bootstrap`\nche il nodo teneva occupata. `reset_test_environment.py` ha riportato PASS anche se la\nrete era ancora in uso. Il residuo \u00e8 stato rilevato da `modules.py` (`ok=false`) e\nrimosso con `kind delete cluster --name ocor-poc` e `docker network rm`, entrambi su\nrisorse OCOR; l'inventario finale \u00e8 identico a quello iniziale. Correggerlo cambia il\ncodice di test di 0049, quindi richiede di rifare l'intera campagna.\n\n## Prove riproducibili\n\n- `attempts/order-collection/attempt-2/diagnosis.json`, SHA256\n  `45f3c566bcb539843fb0ad559e12716395686cd760326578987ef56030c6cd77`, con hash dei raw,\n  journal privato di containerd, inspect ed eventi del nodo residuo, inventario dopo la\n  pulizia.\n- `attempts/order-collection/attempt-1/diagnosis.json` (osservazione, v1) e\n  `attempts/full/attempt-1/diagnosis.json` (SEGV) restano diagnostici e invariati.\n- Diagnosi offline REM-0017: `/home/luca/.ocor-codex/rem0017-offline-diagnosis-20261012/diagnosis.json`.\n\n## Opzioni e raccomandazione\n\n1. **Raccomandata:** autorizzare per la sola esecuzione locale della campagna un'immagine\n   `kindest/node` con lo stesso Kubernetes v1.33.x e un containerd compilato con Go\n   contenente il fix (\u2265 la patch release 1.24 che include #73141/#73144), fissata per\n   digest e verificata (versione Go del binario containerd letta da `go version -m`\n   sull'immagine). La modifica cambia `KIND_NODE_IMAGE` nel test di 0049, quindi rientra\n   in REM-0019 con un nuovo commit. Nello stesso commit si corregge il residuo: la\n   creazione del cluster passa dentro `try/finally`. Poi si rif\u00e0 l'intera campagna\n   (full, 5 ordini, 119 isolati) sul nuovo commit, con l'adapter v2 invariato. Il ciclo\n   di riparazione non va consumato, perch\u00e9 il difetto \u00e8 infrastrutturale.\n2. Mitigazione d'ambiente senza cambiare immagine: avviare la campagna su un host o una\n   VM con kernel < 6.11 (senza vDSO getrandom), oppure su runner CI, e registrare il\n   kernel nell'evidenza. Il residuo della fixture va comunque corretto con un commit\n   di test.\n3. Correggere soltanto il residuo della fixture e ripetere la campagna con l'immagine\n   invariata, accettando una probabilit\u00e0 di SEGV per run che resta non controllata.\n   Non raccomandata: i run da 40 minuti continuerebbero a fallire in modo casuale.\n\nSono escluse: ignorare il riavvio di containerd, considerare PASS l'exit 130, trasferire\nconteggi dai tentativi diagnostici, ripetere senza una condizione cambiata.\n\n## Impatto e integrazione\n\nRestano bloccati la qualifica, la verifica e il sigillo di REM-0019, la nuova campagna CI\ndi REM-0017, l'integrazione di 0049 e la sequenza successiva. Restano eseguibili\nindipendentemente gli audit `INFO-A` e `INFO-C` e `REM-0024`. REM-0019 resta al ciclo 1.\nLa chiusura di `REM-0019-KIND-TEARDOWN-OBSERVATION` (eseguita nella sostanza) e questo\nnuovo percorso richiedono l'aggiunta puntuale all'allowlist del piano, con la riqualifica\ndi regressione di 0050. Si propone un unico change set per entrambi i file.\n\nImplementatore: Claude Code di riserva (quota Codex esaurita). Verifier previsto per\nREM-0019: Grok 4.7 tramite Cursor, in un processo separato. `E1=0`, `E2=0`,\n`Verified=0`, claim `NO-GO`, input e record sigillati invariati.\n"
     },
     {
@@ -5158,10 +5303,18 @@
         "REM-0019/REM-0017 chain"
       ],
       "id": "REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY",
+      "integration_status": "Decision read from current PO mandate; REM-0024 and REM-0028 now authorized, not implemented in this unit",
+      "po_decision": {
+        "Q1": 1,
+        "Q2": 1,
+        "Q3": 1,
+        "condition": "Authority attributes exclusively read from IdentityRegistry; requester/approver cannot set or modify them",
+        "date": "2026-10-13"
+      },
       "recommendation": "Q1 option 1 (reserved scalar IdentityRecord attributes principal_kind/status/roles, grant domain, fail-closed, no contract or c2_identity change); Q2 option 1 (adapt only the 0044 break-glass test functions, same assertions/reason codes, requalify 0044); Q3 option 1 (REM-0028 after REM-0024)",
       "recorded_at": "2026-10-12T21:42:55.104536+00:00",
       "scope": "Representation and authority of approver human kind, active status and roles (ADD v1.3 \u00a75.4 Security Duty Officer + affected Domain Owner, \u00a75.5; LLD v1.1 \u00a74.2) absent from identity-record.schema.json v1.2 and c2_identity; registered REM-0024 criterion 'existing 0044 tests unchanged' conflicts with trusted time, mandatory requester and named capabilities.",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "RESOLVED_BY_PO_DECISION_EXECUTION_PENDING"
     }
   ],
   "claims": {
@@ -6512,7 +6665,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "REM-0027:integration after the independent verdict OCOR-DEV-REM-0027-f48452c64777-0 (verifier Grok 4.7 via Cursor; ~/.ocor-codex/verdicts/OCOR-DEV-REM-0027-f48452c64777-0.json): with GO_FOR_EVIDENCE_SEAL seal the three records (REM-0027, 0047/0050 .requalified-rem0027) and both manifests on branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch (head f48452c64777), open the governed PR, wait for every required check on the exact head, merge --match-head-commit, then state sync; with NO_GO repair (budget 2 cycles). OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "OCOR-DEV-0050:integration, REGRESSION_ONLY REM-0019 PO decision allowlist; await OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist from Grok 4.7 via Cursor (historical 0050 reserve implementer Claude Code), on exact candidate 0e6d1d738af0378f826bde1330f55ced1ad985bf. GO: seal only the new regression record, manifest and verdict, open governed PR, require exact-head green checks, merge, state sync; then REM-0019 cycle 1: verify official kindest/node Kubernetes v1.33.x digest, containerd and Go build version with upstream vgetrandom fix before use; fixture create inside try/finally plus interrupted-setup test; production 0049 unchanged; new full + five orders + 119 isolated with observation v2 unchanged, all historic runs diagnostic and no count transfer. REM-0017 ->0049 integration ->REM-0023 ->0056; REM-0027 repairs VF-001/002/003 deferred to independent work slot, budget 2 (none consumed).",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -6559,8 +6712,8 @@
       "OCOR-DEV-0056",
       "OCOR-DEV-0057"
     ],
-    "observed_at": "2026-10-12T05:52:38.893485+00:00",
-    "priority": "PO REM19 ->REM17 ->0049 integration ->REM23 before0056; no new G5 unit selected",
+    "observed_at": "2026-10-13T06:37:21.085269+00:00",
+    "priority": "Authorized REM-0019 allowlist regression review -> REM-0019 -> REM-0017 ->0049 integration -> REM-0023 ->0056; REM-0027 candidate NO_GO remains unsealed and not a G5 barrier",
     "source": "origin/main completed_evidence_tasks and approved backlog"
   },
   "remediation_status": {
@@ -7438,6 +7591,144 @@
       "status": "COMPLETE",
       "validator": "scripts/validate_evidence_input_drift.py"
     },
+    "REM0019_PO_DECISION_ALLOWLIST": {
+      "authorization": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE 2026-10-13; REM-0019-KIND-TEARDOWN-OBSERVATION 2026-10-12",
+      "base_sha": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+      "branch": "governed/rem0019-po-decision-allowlist",
+      "gates": [
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_rccad.py",
+            "--base-ref",
+            "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3"
+          ],
+          "duration_seconds": 0.264,
+          "exit_code": 0,
+          "label": "rccad",
+          "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_language_policy.py"
+          ],
+          "duration_seconds": 0.032,
+          "exit_code": 0,
+          "label": "language",
+          "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_change_scope.py",
+            "--base",
+            "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+            "--branch",
+            "governed/rem0019-po-decision-allowlist"
+          ],
+          "duration_seconds": 0.032,
+          "exit_code": 0,
+          "label": "scope",
+          "raw_sha256": "88c0d481a031f712a9e5d46006b51a9c4185b52316e0129926a9c7940cf5f433"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_development_plan.py",
+            "--base-ref",
+            "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+            "--authorized-extension"
+          ],
+          "duration_seconds": 0.114,
+          "exit_code": 0,
+          "label": "plan",
+          "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+        },
+        {
+          "command": [
+            "sha256sum",
+            "-c",
+            "inputs/normative/SHA256SUMS"
+          ],
+          "duration_seconds": 0.004,
+          "exit_code": 0,
+          "label": "inputs",
+          "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_evidence_input_drift.py"
+          ],
+          "duration_seconds": 0.064,
+          "exit_code": 0,
+          "label": "drift",
+          "raw_sha256": "8d00685467e94c964a17c6993ae5b186d797cca192f89b4c4a6357bef69ceef4"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+            "scripts/validate_runtime_evidence.py",
+            "--task",
+            "OCOR-DEV-0050",
+            "--manifest",
+            "reports/evidence/G5/MANIFEST.json",
+            "--non-skipped"
+          ],
+          "duration_seconds": 0.032,
+          "exit_code": 0,
+          "label": "runtime-evidence",
+          "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
+        }
+      ],
+      "head_sha": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
+      "historical_0050_implementer": "Claude Code reserve cycle 0; Codex repairs 1-2",
+      "implementer": "Codex (OpenAI), this unit",
+      "not_executed": [
+        "kind image acquisition/qualification",
+        "REM-0019 fixture repair and new campaign",
+        "REM-0027 repair",
+        "REM-0024/REM-0028 implementation",
+        "independent verification and evidence seal"
+      ],
+      "recorded_at": "2026-10-13T06:37:21.085269+00:00",
+      "records": [
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.log"
+      ],
+      "repair_cycle": 0,
+      "request_id": "OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist",
+      "results": {
+        "full_duration_seconds": 933.5,
+        "full_resources_cleaned": true,
+        "full_tests": 1834,
+        "status": "PASS",
+        "task_tests": 198,
+        "zero_skip": true
+      },
+      "review_scope": "REGRESSION_ONLY; unchanged 0050 code/tests pass after exact allowlist. No reassessment of conformance or REM-0023 closure.",
+      "session_artifacts": "/home/luca/.ocor-codex/rem0019-po-allowlist-20261013",
+      "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+      "teardown": {
+        "added": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "duration_seconds": 1.533,
+        "exit_code": 0,
+        "inventory_equals_session_start": true,
+        "preexisting_removed": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "status": "PASS"
+      },
+      "verifier": "Grok 4.7 via Cursor CLI (cursor), external loop only, separate provider/process/context, 0050 touched by reserve implementer Claude Code",
+      "worktree": ".ocor/worktrees/rem0019-po-allowlist"
+    },
     "REM_0019_MARKER_REPAIR": {
       "artifacts": {
         "reports/assurance/OCOR-DEV-REM-0019-RCCAD/assertion-map.json": {
@@ -8161,6 +8452,150 @@
         "task_head_sha": "a5c7e681937f2746639a5d980f077072ec9bba02",
         "task_worktree": ".ocor/worktrees/rem0019-task-stage"
       },
+      "po_decision_20261013": {
+        "allowlist_unit": {
+          "authorization": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE 2026-10-13; REM-0019-KIND-TEARDOWN-OBSERVATION 2026-10-12",
+          "base_sha": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+          "branch": "governed/rem0019-po-decision-allowlist",
+          "gates": [
+            {
+              "command": [
+                "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+                "scripts/validate_rccad.py",
+                "--base-ref",
+                "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3"
+              ],
+              "duration_seconds": 0.264,
+              "exit_code": 0,
+              "label": "rccad",
+              "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+            },
+            {
+              "command": [
+                "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+                "scripts/validate_language_policy.py"
+              ],
+              "duration_seconds": 0.032,
+              "exit_code": 0,
+              "label": "language",
+              "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+            },
+            {
+              "command": [
+                "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+                "scripts/validate_ocor_change_scope.py",
+                "--base",
+                "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+                "--branch",
+                "governed/rem0019-po-decision-allowlist"
+              ],
+              "duration_seconds": 0.032,
+              "exit_code": 0,
+              "label": "scope",
+              "raw_sha256": "88c0d481a031f712a9e5d46006b51a9c4185b52316e0129926a9c7940cf5f433"
+            },
+            {
+              "command": [
+                "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+                "scripts/validate_ocor_development_plan.py",
+                "--base-ref",
+                "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+                "--authorized-extension"
+              ],
+              "duration_seconds": 0.114,
+              "exit_code": 0,
+              "label": "plan",
+              "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+            },
+            {
+              "command": [
+                "sha256sum",
+                "-c",
+                "inputs/normative/SHA256SUMS"
+              ],
+              "duration_seconds": 0.004,
+              "exit_code": 0,
+              "label": "inputs",
+              "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+            },
+            {
+              "command": [
+                "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+                "scripts/validate_evidence_input_drift.py"
+              ],
+              "duration_seconds": 0.064,
+              "exit_code": 0,
+              "label": "drift",
+              "raw_sha256": "8d00685467e94c964a17c6993ae5b186d797cca192f89b4c4a6357bef69ceef4"
+            },
+            {
+              "command": [
+                "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem0019-po-allowlist/ocor-runtime/.venv/bin/python",
+                "scripts/validate_runtime_evidence.py",
+                "--task",
+                "OCOR-DEV-0050",
+                "--manifest",
+                "reports/evidence/G5/MANIFEST.json",
+                "--non-skipped"
+              ],
+              "duration_seconds": 0.032,
+              "exit_code": 0,
+              "label": "runtime-evidence",
+              "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
+            }
+          ],
+          "head_sha": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
+          "historical_0050_implementer": "Claude Code reserve cycle 0; Codex repairs 1-2",
+          "implementer": "Codex (OpenAI), this unit",
+          "not_executed": [
+            "kind image acquisition/qualification",
+            "REM-0019 fixture repair and new campaign",
+            "REM-0027 repair",
+            "REM-0024/REM-0028 implementation",
+            "independent verification and evidence seal"
+          ],
+          "recorded_at": "2026-10-13T06:37:21.085269+00:00",
+          "records": [
+            "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.json",
+            "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.log"
+          ],
+          "repair_cycle": 0,
+          "request_id": "OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist",
+          "results": {
+            "full_duration_seconds": 933.5,
+            "full_resources_cleaned": true,
+            "full_tests": 1834,
+            "status": "PASS",
+            "task_tests": 198,
+            "zero_skip": true
+          },
+          "review_scope": "REGRESSION_ONLY; unchanged 0050 code/tests pass after exact allowlist. No reassessment of conformance or REM-0023 closure.",
+          "session_artifacts": "/home/luca/.ocor-codex/rem0019-po-allowlist-20261013",
+          "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+          "teardown": {
+            "added": {
+              "containers": [],
+              "networks": [],
+              "volumes": []
+            },
+            "duration_seconds": 1.533,
+            "exit_code": 0,
+            "inventory_equals_session_start": true,
+            "preexisting_removed": {
+              "containers": [],
+              "networks": [],
+              "volumes": []
+            },
+            "status": "PASS"
+          },
+          "verifier": "Grok 4.7 via Cursor CLI (cursor), external loop only, separate provider/process/context, 0050 touched by reserve implementer Claude Code",
+          "worktree": ".ocor/worktrees/rem0019-po-allowlist"
+        },
+        "authorization": "Official kindest/node Kubernetes v1.33.x pinned digest; verify containerd and Go build version with vgetrandom fix before use; create inside fixture try/finally plus proof of cleanup on interrupted setup; fresh full/five orders/119 isolated, observation v2 unchanged; previous attempts diagnostic with no transferred counts; cycle 1 unchanged",
+        "id": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE",
+        "image_fixture_campaign_status": "NOT_EXECUTED",
+        "option": 1
+      },
       "qualification_campaign": "Five module orders PASS, isolated 61/119 PASS at 2026-10-11T12:44:52.502089+00:00; full runtime NOT_EXECUTED pending sequential worker",
       "qualification_observation": {
         "artifacts": {
@@ -8728,7 +9163,7 @@
         "volumes": []
       },
       "source_commit": "9a38548752e56e6239313a9dbe32e5578e638777",
-      "status": "WIP_REPAIR_IMPLEMENTED_FRESH_QUALIFICATION_READY",
+      "status": "PO_AUTHORIZED_FRESH_CAMPAIGN_PENDING",
       "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor), processo e contesto separati; NON RICHIESTO",
       "worktree": ".ocor/worktrees/rem-0019"
     },
@@ -10021,6 +10456,17 @@
         "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md \u00a75.4, \u00a75.5",
         "docs/OCOR_LLD_v1.1.md \u00a71.1, \u00a74.2"
       ],
+      "po_decision_20261013": {
+        "condition": "Reserved scalar attributes principal_kind/status/roles from IdentityRegistry only, fail closed, explicit domain; callers/signers cannot set/update approval authority; negative request attributes/self-registration/role spoof cases, registry write authority residual or decision request; only nine 0044 break-glass functions/fixtures adjusted with same cases/assertions/reasons and explicit mapping; requalify0044/0047 as required; REM-0028 separate after REM-0024, mandatory before G6",
+        "id": "REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY",
+        "options": {
+          "Q1": 1,
+          "Q2": 1,
+          "Q3": 1
+        },
+        "priority": "When no ready work on REM19 ->REM17 ->0049 ->REM23 ->0056, before G6",
+        "status": "NOT_EXECUTED"
+      },
       "recorded_at": "2026-10-12T19:02:41.152906+00:00",
       "repair_cycle": 0,
       "requalification_required": [
@@ -10030,7 +10476,7 @@
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical 0044/0047 seals untouched.",
       "scope": "Align BreakGlassController/BreakGlassGrant to ADD v1.3 \u00a75.4-5.5 and LLD v1.1 \u00a71.1/\u00a74.2. PO points: (1) authorize accepts only grants issued by the controller and verifiable (signed or registered), a grant built outside grant() is refused; (2) at every use approvers re-validated against IdentityRegistry: existing, active, human, distinct, requester not among approvers; (3) window checked on the boundary trusted clock, never on a caller-provided instant (grant and authorize); (4) TTL <= 15 min, no automatic renewal (already satisfied: keep, regression tests only); (5) revocation and expiry fail-closed (logic satisfied, re-prove with trusted time and verified grants). Audit gaps from the same normative text: named capabilities bound to the grant and authorize restricted to them; role quorum Security Duty Officer + affected Domain Owner; synchronous immutable audit and immediate alert per use, fail-closed. Before modifying, re-confirm each point against the normative text; document instead of implementing any point found satisfied elsewhere or not required. If role/human/active representation or audit/alert integration needs a contract or semantic change, write a decision request instead of inventing it.",
       "scope_extension_rule": "c2_identity.py stays unchanged unless proven necessary; if changed, requalify every task whose sealed inputs include it. Class check of c6/human_gate.py:149 (existence-only approver check): if confirmed, separate REM with its own verified free ID, not widened here.",
-      "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED"
+      "status": "PO_AUTHORIZED_IMPLEMENTATION_PENDING"
     },
     "REM_0025_C5_ISOLATION_SCOPED_DEDUP": {
       "acceptance_criteria": [
@@ -10473,6 +10919,46 @@
       "id": "OCOR-DEV-REM-0027",
       "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted), cycle 0",
       "in_live_poc_path": true,
+      "latest_verdict": {
+        "disposition": "No seal/integration. Two ordinary materially different repair cycles available, none executed. Candidate implemented by Claude Code reserve; verifier stays Cursor/Grok even if Codex repairs it. Defer behind PO priority REM-0019/REM-0017/0049/REM-0023/0056.",
+        "findings": [
+          {
+            "blocking": true,
+            "evidence": "Probe probe_late_mutative_effect sul worktree f48452c: tool slow_restart dorme 12 s e poi registra l'effetto mutativo; uno stop accettato da un thread separato a 0.3 s fa ritornare invoke in 0.004 s con STOP_BOUND_DENIED ed execution_unknown=True; l'effetto 'svc' arriva 11.7 s dopo lo stop; il tool successivo non parte. Il test qualificante test_a_stop_during_a_slow_non_cooperative_tool_refuses_the_next_tool_within_the_target registra il tool lento con mutative=False, quindi non misura l'effetto in-flight e asserisce solo effects==[] e la latenza del rifiuto. _dispatch (tool_runtime.py:285-304) marca il thread daemon, imposta cancelled e ritorna senza join: la deadline e lo stop abbandonano l'attesa, non l'effetto.",
+            "id": "VF-001",
+            "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py:291",
+            "required_fix": "L'ultimo effetto mutativo di un tool lento non cooperante deve restare entro 10 s dall'accettazione dello stop. Il test qualificante deve registrare il timestamp di un effetto mutativo (mutative=True) e fallire se supera il target. Un residual che rinvia a FGM-17 non chiude il criterio: FGM-17 richiede nessuna tool influence successiva e OutcomeReconciler non e' collegato.",
+            "severity": "high"
+          },
+          {
+            "blocking": true,
+            "evidence": "Probe probe_none_parent_delegation: issue() prima di bind_stop_controller lascia parent.stop_epoch null; dopo activate, drain e reset dual-control l'epoch del controller e' 2; issue(parent=parent, subject=agent-1) riesce con child.stop_epoch=2; invoke('restart_service(name)') produce effects=['svc']. La stessa delega da un parent con stop_epoch 0 e' rifiutata (probe_bound_parent_delegation). Il ramo e' fail-open in _validate_delegation.",
+            "id": "VF-002",
+            "path": "ocor-runtime/src/ocor_runtime/c6_capabilities.py:208",
+            "required_fix": "Con l'authority legata a un controller, la delega deve richiedere parent.stop_epoch == child.stop_epoch. Un parent con stop_epoch assente va rifiutato, non trattato come compatibile con l'epoch successivo al reset.",
+            "severity": "high"
+          },
+          {
+            "blocking": true,
+            "evidence": "Probe probe_authorize_old_lease: lease emessa a epoch 0 dopo il bind; dopo il reset (epoch 2) CapabilityAuthority.authorize ritorna ok con stop_epoch 0 e revoked_at null, mentre invoke sulla stessa lease ritorna STOP_BOUND_DENIED. Lo stop non revoca la lease nel ledger. authorize() e' il gate usato da c6/engine.py:125, c8/orchestrator.py:118, c7_emission.py:153 e c8_agent.py execute_sandboxed: se condividono l'authority legata da ToolCallRuntime, la lease pre-stop resta utilizzabile.",
+            "id": "VF-003",
+            "path": "ocor-runtime/src/ocor_runtime/c6_capabilities.py:237",
+            "required_fix": "authorize() sull'authority legata al controller deve rifiutare una lease con stop_epoch assente o diverso dall'epoch corrente, e rifiutare quando il controller non e' NORMAL. Il reset non deve lasciare la lease pre-stop attiva nel ledger.",
+            "severity": "high"
+          }
+        ],
+        "head_sha": "f48452c647772a6dd0ab17fdbd88e8543113ed57",
+        "not_executed": [],
+        "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0027-f48452c64777-0.json",
+        "request_id": "OCOR-DEV-REM-0027-f48452c64777-0",
+        "sha256": "7ede0b41dedf577803cb9f5c48bd6ca85d054dcafdabc1a05cc319c08ba47cfe",
+        "verdict": "NO_GO",
+        "verifier": {
+          "independence_limits": "processo e contesto separati; implementatore Claude Code (Anthropic, claude-opus) e verifier Grok 4.7 via Cursor CLI sono modelli di fornitori diversi",
+          "model": "Grok 4.7",
+          "process": "Cursor CLI, contesto pulito, sessione non interattiva"
+        }
+      },
       "live_path_classification": "sole PoC implementation of the normative function, qualified by G6; no caller in ocor-runtime/src today; treated as live path under the fail-closed interpretation recorded in INFO-C.md",
       "maximum_repair_cycles": 2,
       "negative_acceptance_criteria": [
@@ -10493,7 +10979,7 @@
       ],
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
       "scope": "Align ToolCallRuntime to LLD v1.1 \u00a74.3 and \u00a76 (C8 kill switch preemptive) and ADD v1.3 \u00a75.5 (stop denies new mutative tool calls, revokes capability leases in the local boundary, target <=10 s). Today invoke checks the stop once (tool_runtime.py:119), then charges the budget (123) and runs the whole sandbox expression (125), which may call several registered tools with no wall-clock bound and no stop re-check; CapabilityLease carries no stop_epoch and the epoch passed to invoke is caller-chosen. Probe: C8-1 stop accepted after the guard does not prevent the effect (receipt epoch 0, controller 1 STOPPING); C8-2 second tool of the same expression produces its effect 10.5 s after stop acceptance; C8-3 a lease issued at epoch 0 is accepted after stop and dual-control reset at epoch 2. Class check from the same dispatch point: the lease authorizes tool:<tool_name> but the expression can call any registered tool. Fence every tool dispatch atomically against the trusted stop epoch, cancel or bound in-flight calls so the last effect stays within <=10 s, bind leases to the stop epoch so a reset never re-enables a pre-stop lease, and authorize every tool actually called. If the lease-epoch binding needs a public contract change, write a decision request instead of inventing it.",
-      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION"
+      "status": "NO_GO_REPAIR_REQUIRED_DEFERRED_PO_PRIORITY"
     },
     "REM_0028_APPROVER_AUTHORITY_REVALIDATION": {
       "acceptance_criteria": [
@@ -10560,6 +11046,7 @@
         "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md \u00a75.4, \u00a75.5",
         "docs/OCOR_LLD_v1.1.md \u00a71.1, \u00a74.1, \u00a74.3"
       ],
+      "po_decision_20261013": "REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY Q3 option1, Q1 condition included; separate after REM-0024 before G6",
       "recorded_at": "2026-10-12T21:42:55.104536+00:00",
       "repair_cycle": 0,
       "requalification_required": [
@@ -10569,7 +11056,7 @@
       ],
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
       "scope": "Class instance of RVW-03 point 2/3 outside BreakGlassController: Human Gate signatories and emergency-stop reset approvers are checked for registry existence only, roles are self-declared on the signature, and validity uses caller-supplied instants. Align to ADD v1.3 \u00a75.4 (independent human approvers, role quorum, SoD) and LLD v1.1 \u00a71.1 using the representation decided for REM-0024.",
-      "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED"
+      "status": "PO_AUTHORIZED_IMPLEMENTATION_PENDING"
     }
   },
   "repository": "nepryoon/ocor-detailed-design",
@@ -11413,5 +11900,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-13T04:48:44.077419+00:00"
+  "updated_at": "2026-10-13T06:37:21.085269+00:00"
 }
