@@ -431,3 +431,39 @@ def test_a_lease_revoked_during_the_expression_refuses_the_next_tool() -> None:
 
     assert refused.value.reason_code == "CAPABILITY_DENIED"
     assert harness.names() == ["note"]
+
+
+def test_a_lease_issued_before_a_stop_cannot_delegate_after_the_reset() -> None:
+    harness = Harness()
+    parent = harness.lease("restart_service")  # issued at epoch 0
+    harness.accept_stop()
+    harness.reset()
+
+    with pytest.raises(AuthorizationError):
+        harness.authority.issue(
+            subject="agent-2",
+            capabilities=["tool:restart_service"],
+            resources=["restart_service"],
+            issued_at=NOW,
+            ttl=timedelta(minutes=5),
+            parent=parent,
+        )
+
+
+def test_a_lease_of_the_current_epoch_still_delegates() -> None:
+    harness = Harness()
+    harness.accept_stop()
+    harness.reset()
+    parent = harness.lease("restart_service")
+
+    child = harness.authority.issue(
+        subject="agent-2",
+        capabilities=["tool:restart_service"],
+        resources=["restart_service"],
+        issued_at=NOW,
+        ttl=timedelta(minutes=5),
+        parent=parent,
+    )
+
+    assert child.parent_lease_id == parent.lease_id
+    assert getattr(child, "stop_epoch", None) == harness.stop.epoch == 2
