@@ -32,6 +32,76 @@
       "status": "RUNNING"
     },
     "claims": "E1=0,E2=0,Verified=0,NO-GO unchanged",
+    "claude_reserve_resume": {
+      "archive_note": "archive_components.py = Codex archive_completed_components.py with valid_attempt attempt-2 for order-seed-190001 only",
+      "chain": "/home/luca/.ocor-codex/rem0019-claude-resume-20261013",
+      "chain_progress": "2026-10-13T18:34:58Z START\n2026-10-13T18:46:38Z ORPHAN_GONE\n2026-10-13T18:46:38Z PREPARE\n2026-10-13T18:47:30Z MODULES\n2026-10-13T21:03:24Z ISOLATED\n2026-10-13T22:23:01Z DONE\n2026-10-13T22:23:23Z FINISH\n2026-10-13T22:23:24Z FINISHED rc=0\n",
+      "coordinator_death": "driver.py (SIGSTOPped pid 72060), modules.py and run_nodes.py for order-seed-190001 terminated with the Codex session at 18:31:50Z; pytest group survived",
+      "diagnostic_attempt": {
+        "counts_in_totals": false,
+        "diagnosis_sha256": "d3e6ed8144a878a3485378d5b42e79ecbec1fd1d164bd635246823e4c78e6a02",
+        "path": "attempts/order-seed-190001/attempt-1",
+        "policy": "QUALIFICATION-CAMPAIGN-INFRA-RERUN: orchestration cause, same commit/harness, stack reset before the single repetition"
+      },
+      "driver_equivalent_result": {
+        "coordination": {
+          "chain_progress": "2026-10-13T18:34:58Z START\n2026-10-13T18:46:38Z ORPHAN_GONE\n2026-10-13T18:46:38Z PREPARE\n2026-10-13T18:47:30Z MODULES\n2026-10-13T21:03:24Z ISOLATED\n2026-10-13T22:23:01Z DONE\n2026-10-13T22:23:23Z FINISH\n",
+          "closed_by": "finish.py (reserve implementer Claude Code), same checks as driver.py post-phase",
+          "diagnostic_attempts": [
+            "attempts/order-seed-190001/attempt-1 (orphaned by coordinator death)"
+          ],
+          "driver_pid_72060": "terminated with the Codex implementer session at 2026-10-13T18:31:50Z after full + order-collection + order-reverse",
+          "resumed_phases": "modules.py order-seed-190001 order-seed-190002 order-seed-190003; campaign.py isolated (unchanged primitives)"
+        },
+        "final_inventory": {
+          "baseline": "preflight-1/resources-before.json (session start, before the first stack)",
+          "kind_node_present": false,
+          "new_resources": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          },
+          "owned_compose_containers": []
+        },
+        "full": {
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 2224
+          },
+          "duration_seconds": 3550.1106735240005,
+          "status": "PASS",
+          "union": {
+            "collected": 2224,
+            "duplicated": [],
+            "executed": 2224,
+            "missing": [],
+            "unexpected": []
+          }
+        },
+        "head_sha": "6e1c4b050ac610a22673d6f559e424a01705189c",
+        "repair_cycle": 1,
+        "status": "PASS",
+        "teardown_exit_code": 0
+      },
+      "harness_unchanged": "run_nodes/modules/campaign/prepare/driver/watchdog_safe sha256 equal to harness-identity.json",
+      "isolated_progress": {
+        "done": 119,
+        "of": 119,
+        "ok": 119
+      },
+      "preflight_2": {
+        "commands_sha256": "8c63738e23d822e0e1ce7edf1e6a1a833f34ff7b6750caf858dcb2cbd885f56a",
+        "original_preserved_in": "preflight-1/",
+        "result": {
+          "services": 11,
+          "status": "PASS",
+          "toolchain_entries": 9
+        }
+      },
+      "unit": "Claude Code reserve implementer, 2026-10-13T18:31Z (Codex usage-limit stop)"
+    },
     "counts_from_previous_commits": 0,
     "environment_preflight": {
       "baseline_drift": 0,
@@ -147,8 +217,8 @@
       }
     },
     "image_proof_sha256": "fb76b356f55cd73ddd26eb3f8ad19127a813b68021a99d588d86a3932e390f1f",
-    "implementer_this_unit": "Codex (OpenAI): verified image selection and interrupted kind fixture cleanup; earlier REM19 implementation and observationv2 by reserve Claude Code",
-    "independent_verification": "NOT_REQUESTED: WIP, mandatory fresh campaign and evidence assembly pending",
+    "implementer_this_unit": "Claude Code (reserve, Codex quota exhausted): campaign resume/adoption only; no source, test, harness or gate change",
+    "independent_verification": "NOT_REQUESTED_PENDING_EVIDENCE_ASSEMBLY",
     "integration_staging": {
       "execution_trees_identical": true,
       "governed_branch": "governed/ocor-dev-rem-0019-evidence-stage",
@@ -164,7 +234,7 @@
       250,
       252
     ],
-    "phase": "FRESH_QUALIFICATION_WITH_VERIFIED_KIND_NODE_IMAGE",
+    "phase": "FRESH_QUALIFICATION_CAMPAIGN_COMPLETE_EVIDENCE_ASSEMBLY_PENDING",
     "phase_boundary_checkpoint": {
       "action": "TOP_LEVEL_ORCHESTRATOR_PAUSED_AT_PHASE_BOUNDARY",
       "at": "2026-10-13T17:56:58.595020+00:00",
@@ -222,6 +292,7 @@
           },
           "status": "PASS"
         },
+        "result_sha256": "79599d0d4613787e2f92d6f6226c1154ce2e2caa9627ebe54db6ed0bdd27f0fd",
         "status": "PASS_COMPONENT_ONLY",
         "union": {
           "collected": 2224,
@@ -231,6 +302,15 @@
           "unexpected": []
         },
         "valid_attempt": "attempt-1"
+      },
+      "isolated-119": {
+        "components": 119,
+        "duration_seconds_total": 4746.6,
+        "manifest_format": "sorted lines \"<label> <sha256 of result.json>\\n\"",
+        "manifest_sha256": "e9e6f1e8cfc30753bf4e090fc0bec4d7773c05e1d0d279bc3734ef25b19f7010",
+        "per_component_results": "attempts/iso-NNN/attempt-1/result.json",
+        "status": "PASS_COMPONENT_ONLY",
+        "valid_attempt": "attempt-1 each"
       },
       "order-collection": {
         "campaign_status": "Complete only when all required components and final teardown PASS.",
@@ -257,6 +337,7 @@
           "networks": [],
           "volumes": []
         },
+        "result_sha256": "c2a651bc4a548b47b1ea15c1756d54de4b7ecb726aafda4cb86bf29dcd7c14e9",
         "status": "PASS_COMPONENT_ONLY",
         "valid_attempt": "attempt-1"
       },
@@ -285,11 +366,99 @@
           "networks": [],
           "volumes": []
         },
+        "result_sha256": "65b9e41b8319c3970af76cbb93a5d4538da78670d50de91575cd7ee84699075e",
+        "status": "PASS_COMPONENT_ONLY",
+        "valid_attempt": "attempt-1"
+      },
+      "order-seed-190001": {
+        "campaign_status": "Complete only when all required components and final teardown PASS.",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "duration_seconds": 2374.964933198,
+        "head_sha": "6e1c4b050ac610a22673d6f559e424a01705189c",
+        "label": "order-seed-190001",
+        "raw_sha256": {
+          "harness-identity.json": "458a6cbe6c287a31c6bcbc3ee95095eb95daa75f555adc2b4dee22a4568b4c12",
+          "order-seed-190001-alignment.json": "02f95dfc3cd01df7ae0b2fc427932a56e6dbea3b4259027656ea6996722ce57e",
+          "order-seed-190001-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-seed-190001.json": "1727b3ccdb52ca76c1d172398b69cfa0464794037eba07a69313ce78f2ebe8a7",
+          "order-seed-190001.log": "73a52de09d43ff2e6119ef38eb387b273d386d167b14d092e6636a873b25293b",
+          "order-seed-190001.order": "83985293f2eeb2ed0b3c2232b62bc6e62b137ed676c92a2d0c51e2e9fbd60c1a",
+          "order-seed-190001.xml": "4da3323c21c03d641efd3607e6b3210341b035f9d72c80ccba1adb1710d3d218"
+        },
+        "residue": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "result_sha256": "4a716217ebb3ef624baa12076f1864033f78e85a7f488d3a99820943375d5298",
+        "status": "PASS_COMPONENT_ONLY",
+        "valid_attempt": "attempt-2"
+      },
+      "order-seed-190002": {
+        "campaign_status": "Complete only when all required components and final teardown PASS.",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "duration_seconds": 2393.099464585999,
+        "head_sha": "6e1c4b050ac610a22673d6f559e424a01705189c",
+        "label": "order-seed-190002",
+        "raw_sha256": {
+          "harness-identity.json": "458a6cbe6c287a31c6bcbc3ee95095eb95daa75f555adc2b4dee22a4568b4c12",
+          "order-seed-190002-alignment.json": "0e4ad4dac7e326ebd504359cc847859556be2aa874b4cc27e7627bd135713107",
+          "order-seed-190002-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-seed-190002.json": "d7e722949a185b6118c84ffb6062db956cafcd5b0355779d552d87cbc54ab4db",
+          "order-seed-190002.log": "a3201040dbbe6328c4505af5e07c66f4e29abe9e989ee97d179e06835e397753",
+          "order-seed-190002.order": "ad0ca585e3d9218666a1fc647de4f33591d74d1d5c2220bb5e1d11c778d9d9af",
+          "order-seed-190002.xml": "4c9f78497081c5128009667d2017e0cf85ee8d2763a62b22ee13707e93adc744"
+        },
+        "residue": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "result_sha256": "d8e6f171bd25bd8dd32a97cfee20929e89de814ab1413c87074e43ca6a800676",
+        "status": "PASS_COMPONENT_ONLY",
+        "valid_attempt": "attempt-1"
+      },
+      "order-seed-190003": {
+        "campaign_status": "Complete only when all required components and final teardown PASS.",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "duration_seconds": 2354.9870085559996,
+        "head_sha": "6e1c4b050ac610a22673d6f559e424a01705189c",
+        "label": "order-seed-190003",
+        "raw_sha256": {
+          "harness-identity.json": "458a6cbe6c287a31c6bcbc3ee95095eb95daa75f555adc2b4dee22a4568b4c12",
+          "order-seed-190003-alignment.json": "9767be7d6b3063e83a5f1ee3b7e662e5c7fd016c56cb7d55ab505a38e15f6d28",
+          "order-seed-190003-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-seed-190003.json": "bbc5b563a1691dfa0551b98e67c7d29cdabee9d82a359919c7111bd6317122d1",
+          "order-seed-190003.log": "ca15944244f5ecd58697993576a42c856a1845414669aa00b8929753e13db802",
+          "order-seed-190003.order": "e723bb96f56f4e6ade80394eedc3f4922141e79f0bbd8f37a43baa8f79c5cf74",
+          "order-seed-190003.xml": "19a497fb72defac81dea892d4bb776ac0806b077d5b53971ac906865d9bf92d8"
+        },
+        "residue": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "result_sha256": "bccc5f7d7de95c0e85cdd589a8477d329df295ec08b35d1d967b0970d3566f3b",
         "status": "PASS_COMPONENT_ONLY",
         "valid_attempt": "attempt-1"
       }
     },
-    "verifier": "Grok4.7 via Cursor CLI, external loop only, task touched by reserve Claude Code",
+    "verifier": "Grok 4.7 via Cursor CLI (external loop only); not Claude Code",
     "worktree": ".ocor/worktrees/state-sync-rem0019-kind-fixed-20261013"
   },
   "backlog_escalations": {
@@ -3752,7 +3921,7 @@
         "observation": "run 37952580435/37952580531/37952580779 su 4e97cd3: split per nodo FAIL nelle parti 2-4 di conditional-infrastructure-0049",
         "path": "reports/development/EXECUTION_STATE.json"
       },
-      "status": "FRESH_QUALIFICATION_IN_PROGRESS_ON_VERIFIED_NEW_NODE_IMAGE",
+      "status": "FRESH_QUALIFICATION_CAMPAIGN_COMPLETE_EVIDENCE_ASSEMBLY_PENDING",
       "teardown_observation_execution": {
         "authority": "PO decision REM-0019-KIND-TEARDOWN-OBSERVATION (2026-10-12) option 1",
         "campaign": "/home/luca/.ocor-codex/rem0019-resume-20261012-attempt5",
@@ -6108,7 +6277,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "Complete exact-commit REM-0019 fresh full, collection/reverse/seed190001/190002/190003 and119 isolated in /home/luca/.ocor-codex/rem0019-resume-20261013-kind-fixed on 6e1c4b050ac610a22673d6f559e424a01705189c; only qualified zero-skip/zero-residue runs count. Keep observationv2 byte-identical; archive any failure with diagnosis before bounded infrastructure rerun. Assemble new REM19 and0049 requalification plus0050 regression records; reconcile task/governed staging; request Cursor/Grok independent verification. Integrate reviewed allowlist PR251 only after exact required checks green. Then REM17 ->0049 integration ->REM23 ->0056. REM27 cycle1 NO_GO remains, one repair available after priority path.",
+  "next_executable_action": "REM-0019 campaign on 6e1c4b0 complete (full + 5 orders + 119 isolated, driver-equivalent PASS, teardown 0): assemble new REM-0019 record, 0049 requalification and 0050 regression-only records from /home/luca/.ocor-codex/rem0019-resume-20261013-kind-fixed (review the DRAFT assemblers in ~/.ocor-codex/rem0019-kind-fix-20261013 against the facts: driver-result coordination block, preflight-1/2, seed-190001 attempt-2), reconcile task/governed staging, run gates, then write verify_request for Cursor/Grok. Then integrate #251 when checks green (CI 30-min cap blocker persists on PRs to main), REM17 -> 0049 -> REM23 -> 0056; REM27 one repair left; REM24/28 before G6.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8225,7 +8394,7 @@
         "volumes": []
       },
       "source_commit": "6e1c4b050ac610a22673d6f559e424a01705189c",
-      "status": "FRESH_QUALIFICATION_IN_PROGRESS_NEW_KIND_NODE_COMMIT",
+      "status": "FRESH_QUALIFICATION_CAMPAIGN_COMPLETE_EVIDENCE_ASSEMBLY_PENDING",
       "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor), processo e contesto separati; NON RICHIESTO",
       "worktree": ".ocor/worktrees/rem-0019"
     },
@@ -11039,5 +11208,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-13T18:00:39.497185+00:00"
+  "updated_at": "2026-10-13T22:23:49.742347+00:00"
 }
