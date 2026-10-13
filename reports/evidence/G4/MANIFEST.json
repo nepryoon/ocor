@@ -81,23 +81,23 @@
       "task_id": "OCOR-DEV-0039-RAW"
     },
     {
-      "path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "sha256": "32002e09441a39f204fdff4f2ccc6e2a20a77d66f905d4bb807a250e756e8866",
+      "path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "sha256": "cc358e8091997e062ef42bcef34ccd2e9b75c8a9d1c5605e437fb76fe38f737e",
       "task_id": "OCOR-DEV-0040"
     },
     {
-      "path": "OCOR-DEV-0040.requalified-rem0025.log",
-      "sha256": "cbab6d40e44fb921bcb510ed5ac905674b61e140130de552ae7c364b1d6b1c8a",
+      "path": "OCOR-DEV-0040.requalified-rem0026.log",
+      "sha256": "e9984c6c63a740a63becb582a238718912fb2877e94951e6aa9676bd2e4a57b3",
       "task_id": "OCOR-DEV-0040-RAW"
     },
     {
-      "path": "OCOR-DEV-0041.json",
-      "sha256": "d5ab92377260d4d5c9a373b109940092e99854399b505db587d90e367b456e58",
+      "path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "sha256": "549f75b91c83bd284625637992bfbf80f7cc0013526d93e27038767e4c870939",
       "task_id": "OCOR-DEV-0041"
     },
     {
-      "path": "OCOR-DEV-0041.log",
-      "sha256": "a5e621b1faa348ca0c182278495aa3b7ae702b8f060f0782049c11ea38865554",
+      "path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "sha256": "e9984c6c63a740a63becb582a238718912fb2877e94951e6aa9676bd2e4a57b3",
       "task_id": "OCOR-DEV-0041-RAW"
     },
     {
@@ -623,87 +623,6 @@
       "requirement_id": "BR-003",
       "status": "PASS",
       "task_id": "OCOR-DEV-0039"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-VALID-EVENT-PUBLISHES-THROUGH-BACKPRESSURE",
-      "command": "a valid event publishes through the bounded per-tenant admission quota and is delivered by the real backbone with no dead letter recorded",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "FR-064",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-BACKPRESSURE-REFUSES-ADMISSION-AT-QUOTA",
-      "command": "a tenant already at its bounded in-flight quota is refused admission before ever touching the real backbone",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "NFR-028",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-FAILED-PUBLISH-RECORDED-AS-IMMUTABLE-PERMANENT-DEAD-LETTER",
-      "command": "a real publish failure against the live backbone is recorded as an immutable PERMANENT dead letter with the real failure's own reason_code",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "FR-065",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-REPEATED-FAILURES-CLASSIFIED-POISON",
-      "command": "the same event failing 3 times against the real backbone is classified POISON and quarantined",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "FR-065",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-POISON-BLOCKED-WITHOUT-OPERATOR-RELEASE",
-      "command": "a POISON-classified dead letter cannot be replayed without an explicit, separate operator release",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "FR-072",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-OPERATOR-RELEASE-STILL-BLOCKED-BY-INCOMPATIBLE-SCHEMA",
-      "command": "operator release of a POISON event does not bypass the real backbone's own schema compatibility check on replay",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "FR-072",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-REPLAY-BLOCKED-BY-LOST-MARKING-LIKE-A-FRESH-PUBLISH",
-      "command": "a replay whose reconstructed envelope has lost its classification marking is blocked exactly like a fresh publish would be, never bypassed",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "FR-072",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-VALID-REPLAY-PRESERVES-EVENT-ID-NO-DOUBLE-PUBLISH",
-      "command": "replaying a dead letter for an already-durable idempotency key preserves the original event_id and never creates a second real record on the live topic",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "NFR-079",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
-    },
-    {
-      "case_id": "OCOR-DEV-0041-REGRESSION",
-      "command": "full local pytest regression with a real live PostgreSQL DSN set, no new failures versus the pre-existing sandbox baseline",
-      "evidence_path": "OCOR-DEV-0041.json",
-      "raw_output_path": "OCOR-DEV-0041.log",
-      "requirement_id": "BR-003",
-      "status": "PASS",
-      "task_id": "OCOR-DEV-0041"
     },
     {
       "case_id": "OCOR-DEV-0042-RUNTIME-TABLE-HAS-ALL-44-UNIQUE-TRANSITIONS",
@@ -3156,8 +3075,8 @@
     {
       "case_id": "OCOR-DEV-0040-REGISTERED-SCHEMA-EVENT-PUBLISHES-AND-PRESERVES-ALL-FIELDS",
       "command": "a registered-schema event publishes and is consumed back from the real broker preserving event_id, correlation_id, causation_id, classification_marking_ref and idempotency_key exactly",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "FR-069",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
@@ -3165,8 +3084,8 @@
     {
       "case_id": "OCOR-DEV-0040-PARTITION-ORDER-PRESERVED-FOR-ONE-AGGREGATE",
       "command": "5 sequential events for the same aggregate all land in the identical real Kafka partition and are delivered back in publish order",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "FR-068",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
@@ -3174,8 +3093,8 @@
     {
       "case_id": "OCOR-DEV-0040-UNKNOWN-SCHEMA-QUARANTINED",
       "command": "an envelope naming an unregistered schema is quarantined and never reaches the real Kafka topic",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "FR-084",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
@@ -3183,8 +3102,8 @@
     {
       "case_id": "OCOR-DEV-0040-MISSING-GOVERNED-CONTEXT-QUARANTINED",
       "command": "an envelope missing a required governed-context field (correlation_id) is quarantined before any real publish is attempted",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "FR-070",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
@@ -3192,8 +3111,8 @@
     {
       "case_id": "OCOR-DEV-0040-OUT-OF-ORDER-AGGREGATE-EFFECT-QUARANTINED",
       "command": "an event whose sequence does not advance past the aggregate's last published sequence is quarantined and never reaches the real topic, verified by consuming and confirming only the correct, in-order event landed",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "FR-071",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
@@ -3201,8 +3120,8 @@
     {
       "case_id": "OCOR-DEV-0040-IDEMPOTENCY-KEY-REPLAY-IS-SAFE-NO-OP",
       "command": "a replayed idempotency key never creates a second real record on the topic",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "FR-074",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
@@ -3210,20 +3129,101 @@
     {
       "case_id": "OCOR-DEV-0040-KAFKA-UNREACHABILITY-FAILS-CLOSED",
       "command": "a real, nonexistent broker container fails closed with KafkaBackboneError rather than a fabricated success",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "NFR-012",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
     },
     {
       "case_id": "OCOR-DEV-0040-REGRESSION",
-      "command": "Fresh full regression at the REM-0025 commit: exact collect/JUnit union (full-collection-union); zero failure/error/skip (full-suite-recorded).",
-      "evidence_path": "OCOR-DEV-0040.requalified-rem0025.json",
-      "raw_output_path": "OCOR-DEV-0040.requalified-rem0025.log",
+      "command": "Fresh full regression at the REM-0026 commit: exact collect/JUnit union (full-collection-union); zero failure/error/skip (full-suite-recorded).",
+      "evidence_path": "OCOR-DEV-0040.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0040.requalified-rem0026.log",
       "requirement_id": "BR-003",
       "status": "PASS",
       "task_id": "OCOR-DEV-0040"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-VALID-EVENT-PUBLISHES-THROUGH-BACKPRESSURE",
+      "command": "a valid event publishes through the bounded per-tenant admission quota and is delivered by the real backbone with no dead letter recorded",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "FR-064",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-BACKPRESSURE-REFUSES-ADMISSION-AT-QUOTA",
+      "command": "a tenant already at its bounded in-flight quota is refused admission (BACKPRESSURE_EXCEEDED) before ever touching the real backbone",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "NFR-028",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-FAILED-PUBLISH-RECORDED-AS-IMMUTABLE-PERMANENT-DEAD-LETTER",
+      "command": "a real publish failure (unknown schema) against the live backbone is recorded as an immutable PERMANENT dead letter with the real failure's own reason_code",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "FR-065",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-REPEATED-FAILURES-CLASSIFIED-POISON",
+      "command": "the same event failing 3 times against the real backbone is classified POISON and quarantined",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "FR-065",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-POISON-BLOCKED-WITHOUT-OPERATOR-RELEASE",
+      "command": "a POISON-classified dead letter cannot be replayed without an explicit, separate operator release (OPERATOR_GATE_CLOSED)",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "FR-072",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-OPERATOR-RELEASE-STILL-BLOCKED-BY-INCOMPATIBLE-SCHEMA",
+      "command": "operator release of a POISON event does not bypass the real backbone's own schema compatibility check on replay (UNKNOWN_SCHEMA)",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "FR-072",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-REPLAY-BLOCKED-BY-LOST-MARKING-LIKE-A-FRESH-PUBLISH",
+      "command": "a replay whose reconstructed envelope has lost its classification marking is blocked exactly like a fresh publish would be (MISSING_CONTEXT), never bypassed",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "FR-072",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-VALID-REPLAY-PRESERVES-EVENT-ID-NO-DOUBLE-PUBLISH",
+      "command": "replaying a dead letter for an already-durable idempotency key preserves the original event_id and never creates a second real record on the live topic",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "NFR-079",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "case_id": "OCOR-DEV-0041-REGRESSION",
+      "command": "Fresh full regression at the REM-0026 commit: exact collect/JUnit union (full-collection-union); zero failure/error/skip (full-suite-recorded).",
+      "evidence_path": "OCOR-DEV-0041.requalified-rem0026.json",
+      "raw_output_path": "OCOR-DEV-0041.requalified-rem0026.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0041"
     }
   ],
   "schema_version": "1.0"

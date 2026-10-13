@@ -1,0 +1,789 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0026-c5-durable-atomic-dedup-quota",
+    "decision": "Product Owner decision INFO-A (2026-10-05, option 1 plus conformance check) executed by the INFO-A audit of 2026-10-12, which registered OCOR-DEV-REM-0026 as the first free REM id; mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
+    "id": "OCOR-DEV-REM-0026",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0026-RCCAD/OCOR-DEV-REM-0026.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "exit_code": 0,
+      "label": "reset",
+      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "exit_code": 0,
+      "label": "bootstrap",
+      "raw_sha256": "cdcd6db4f9e8cb88d644559033c4b4242c5f0c779a7751474bbd24c47984317f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "exit_code": 0,
+      "label": "health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python register_control_plane.py",
+      "exit_code": 0,
+      "label": "register",
+      "raw_sha256": "4fb06fc4ff58e49bfc8fb17243694f83bbbc1932cadf74693d2f9c493e46752d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.7,
+      "exit_code": 0,
+      "label": "health-now",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync",
+      "raw_sha256": "2323992bfddeedc61f4f1e709571557f443ecd7f39e6e9feb43032468f34fa6f",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.6,
+      "exit_code": 0,
+      "label": "sdk-ci",
+      "raw_sha256": "54d3e77ecb32b77dc4273b3b43d933b391f9dd9316cb202a01623f543a9adb19",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0026/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0040.py ocor-runtime/tests/tasks/test_ocor_dev_0041.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 390.4,
+      "exit_code": 0,
+      "label": "task-run-1",
+      "raw_sha256": "30fbfcea1e549cead7b9add2b0e7e075928d6166f2c1848ec4bb69efd8d8c900",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 241,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0026/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0040.py ocor-runtime/tests/tasks/test_ocor_dev_0041.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 390.3,
+      "exit_code": 0,
+      "label": "task-run-2",
+      "raw_sha256": "331c703810f3f50b96d2dc4602d6d5d82abdbf205c0099595dc435c171f6b657",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 241,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0026/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0040.py ocor-runtime/tests/tasks/test_ocor_dev_0041.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 388.9,
+      "exit_code": 0,
+      "label": "task-run-3",
+      "raw_sha256": "1eabef2e827e45c9bce66d20cd72fa5a6c33ede27b9bb4e8f1f09439199f9e79",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 241,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/rem-0026/task-junit-uv.xml tests/tasks/test_ocor_dev_0040.py tests/tasks/test_ocor_dev_0041.py tests/tasks/test_ocor_dev_rem_0025.py tests/tasks/test_ocor_dev_rem_0026.py tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 390.3,
+      "exit_code": 0,
+      "label": "task-validation-command",
+      "raw_sha256": "de94e27297df61d0daf3f1b1d322f840f0266a15ff8934509fce19d9f03426e3",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 241,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "exit_code": 0,
+      "label": "task-teardown-delta",
+      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
+      "duration_seconds": 943.6,
+      "exit_code": 0,
+      "label": "full-suite-recorded",
+      "raw_sha256": "9b17837020b78a62d04c270f6dd7cf0ec26d12c73c0c526e2d58cde77ec86c74",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1834,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the C5 backbone (ocor-c5-backbone-*) or 0050 harnesses used by this change set; no container/network residue; nothing pre-existing removed",
+      "exit_code": 0,
+      "label": "full-resource-attribution",
+      "raw_sha256": "716feb30cac312eb84869aba9fac2a009e5ce398348ec180d45dc2b17fb8bbdd",
+      "status": "PASS"
+    },
+    {
+      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
+      "exit_code": 0,
+      "label": "full-resource-cleanup",
+      "raw_sha256": "9a1caedb7034fd14e1cfb1cdd08c5f38ca57b8f24ec080df4c18fb567b90c291",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.4,
+      "exit_code": 0,
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.3,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0026-c5-durable-atomic-dedup-quota",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0026/ocor-runtime/.venv/bin/python -m pytest --collect-only -q -p no:cacheprovider tests/ (cwd ocor-runtime, same HEAD) compared with the testcases of full-suite-recorded JUnit: identical multiset, no duplicate, no missing",
+      "duration_seconds": 0.7,
+      "exit_code": 0,
+      "label": "full-collection-union",
+      "raw_sha256": "908dde2096a772d420c13d4d351522c6c9d7ac25c5229528868117ccfe9cd0e8",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (third of three consecutive runs of the 0040, 0041, REM-0025, REM-0026 and 0050 suites)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "b36870c64c055c77e56f7876f2cf2f10dd2b45a5e5e126820ccba47698eee4c5",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 241,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-validation-command (uv run, frozen lock)",
+      "exit_code": 0,
+      "label": "task-junit-uv",
+      "raw_sha256": "99b8c3aea08eaa8a9a7b70ad55b9583efbea6981741c177cd91a3d29d5daebed",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 241,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "53a36f291b9ca7b9122c6662a715ceaa4f9991de6a3c1639f772c62cb4e7c643",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1834,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (75-minute cap, stack restart/OOM/exit guard)",
+      "exit_code": 0,
+      "label": "full-suite-runner-result",
+      "raw_sha256": "2ff83cb0be984deb2004513ae43ba2cba270f60aff1f7f06a9e262e7ca512fd5",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every mutant of the REM-0026 remediation in c5/backbone.py and c5/operations.py must make the REM-0026 suite fail; sources restored byte-identical, worktree clean",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "e78c287775f2c8fb5c752de9c7592d8fb059a2bb5c920d4f7e688bf9e5dfc6a9",
+      "result": {
+        "failed": 0,
+        "killed": 8,
+        "mutants": 8
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: source of the mutation probe (mutant table)",
+      "exit_code": 0,
+      "label": "mutation-probe-script",
+      "raw_sha256": "f0b3b50073c7c93970d8db151e7f14bba9dbeeb8840c9d0c6c0287133ab37c69",
+      "status": "PASS"
+    }
+  ],
+  "commit": "5e1935e931261eec3ffa23a6bcdeb58a167f0d9b",
+  "created_at": "2026-10-13T01:54:49Z",
+  "design": [
+    "Durable dedup and watermark: the Kafka topic (acks=all, idempotent producer) is the durable journal. CanonicalEventBackbone keeps _seen_idempotency_keys and _last_sequence only as a cache of it, flagged by _recovered. Recovery reads earliest and latest offsets of every partition (kafka-get-offsets --time -2 / -1), consumes exactly the retained records and rebuilds keys and the maximum sequence per (governed_context_digest, aggregate_ref). This choice needs no new store or dependency and keeps the state consistent with what is actually durable (LLD v1.1 section 6 'deduplica durable').",
+    "When recovery runs: before an instance's first publish (restart), and after any KafkaBackboneError from the write, whose outcome is unknown. initialize() creates the topic with --create, which fails on an existing topic, so a just-created journal is known empty and needs no read.",
+    "Atomicity: publish() takes one threading.Lock around recovery, dedup check, ordering check, real Kafka write and state update. Schema and context guards stay before the lock (no shared state). Publishes through one instance are serialized (one console-producer call at a time).",
+    "EventOperationsCoordinator: one threading.Lock around the quota read/check/increment, around the decrement in finally, and around the per-event attempt counter; the backbone publish itself runs outside that lock."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-13T01:44:05.155930+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "event_backbone": "real single-node KRaft Kafka broker confluentinc/cp-kafka:7.6.0@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047 self-provisioned by CanonicalEventBackbone.provision (ownership-labelled container and volume) and removed by destroy() in teardown: per test in the 0040, 0041 and REM-0025 suites, once per module in the REM-0026 suite with a fresh 3-partition topic per test; all drive it through the real kafka-console-producer/consumer, kafka-topics and kafka-get-offsets CLIs; no mock of the backbone boundary (observation and fault-injection instruments subclass the real backbone and always call the real broker)",
+      "memory_regression_0050": "OCOR-DEV-0050 suite unchanged on the ocor-bootstrap stack (PostgreSQL postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20 via OCOR_LIVE_POSTGRES_DSN), regression-only requalification"
+    },
+    "branch": "governed/ocor-dev-rem-0026-c5-durable-atomic-dedup-quota",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute; images observed after the full suite",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript (steps sdk-ci, sdk-build)",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/rem-0026"
+  },
+  "findings_scope": {
+    "K1": "fixed: dedup check, real Kafka write and state update run under one per-instance lock; a concurrent identical publish finds the key recorded and is a no-op",
+    "K2": "fixed: the ordering check and watermark update run under the same lock; the watermark never regresses and the late lower sequence is OUT_OF_ORDER",
+    "Q1": "fixed: EventOperationsCoordinator reads, checks and increments the per-tenant in-flight count under one lock and decrements it under the same lock in finally, only after its own increment, so it never exceeds the quota and never goes negative, including on publish failure",
+    "R1": "fixed: the topic is the durable journal; an instance rebuilds (governed_context_digest, idempotency_key) dedup keys from every record on the topic before its first publish, so a replay after restart is a no-op",
+    "R2": "fixed: the same recovery rebuilds the per-(governed_context_digest, aggregate_ref) watermark as the maximum recorded sequence; a non-advancing sequence after restart is OUT_OF_ORDER",
+    "class_check": "EventOperationsCoordinator's per-event attempt counter (POISON threshold) is the same read-modify-write class and is now updated under the same lock; dead letters and poison set use single atomic appends/adds",
+    "fail_closed": "an unreadable journal record, a missing topic or an offsets answer naming no partition of the topic raise KafkaBackboneError before any write; there is no fallback to empty state",
+    "unchanged": "C5 replay semantics (INFO-A option 1: same-context replay a safe no-op, no same-key/different-payload detection); REM-0025 isolation scoping of dedup and ordering (recovered state is keyed identically); envelope fields, Kafka record key and partitioning; quota/DLQ/poison/operator-gate behaviour without concurrency; public signatures",
+    "unknown_write_outcome": "a failed Kafka write (KafkaBackboneError) marks the state unrecovered: the next publish rebuilds it from the journal, so a lost acknowledgement followed by a retry never writes a duplicate"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/c5/backbone.py": "4ac4baa2fde0096091eb6369d035b5135101d8626f32235741d1d57ff6847c8c",
+    "ocor-runtime/src/ocor_runtime/c5/operations.py": "ba76dd18820e36881169699cc08ef84da9b19f75fde079a7e3835673e4e47c86",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0040.py": "32812186ccc1b5e2034e046000e866043335939a6756a9b61f09f1b16c144abc",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0041.py": "0315f2c380f0bd0bd20213edeb4dd52f4ac86812f18f537d14c0c68b5b55418e",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py": "383cd2ed92cff9f2b0326612bcf2834585fa2c025e9cc3ec881752a5d276e045",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py": "50e94e6098ba6dadc61eca8feb4efcd275c931ca7997dffedc2a9f4671bb156f",
+    "scripts/validate_ocor_development_plan.py": "bf633fc2bccb64419247aea1c313481892f75b3a0175ea4ea110a2318ed0d88a"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "LLD v1.1 section 6 'C4/C5: ordering per aggregate/partition; watermark monotono; deduplica durable': the C5 watermark is the per-aggregate sequence state (INFO-C record), durable means it survives an instance restart; section 2.5 'Backpressure applica quote per tenant' is a bound on concurrent in-flight publishes per tenant, so it must hold under concurrency.",
+    "Scope of atomicity: per backbone instance. The instance is the single active producer of its topic; LLD v1.1 section 1.5/2.3 make the C3 outbox relay the single writer of canonical events. Two live instances publishing to one topic at the same time are not serialized with each other (see residual_risks); sequential hand-over between instances is covered by the recovery."
+  ],
+  "origin_finding": {
+    "audit": "reports/development/decision_requests/INFO-C.md (2026-10-12): R1 replay after restart publishes a duplicate; R2 stale sequence accepted after restart; K1 two concurrent identical publishes give 2 records; K2 concurrent sequences 5 and 4 both accepted and the recorded watermark regresses to 4; Q1 quota 1 admits 2 concurrent publishes and leaves the counter at -1",
+    "decision": "Product Owner decision INFO-C (2026-10-05): targeted concurrency conformance audit against LLD v1.1 section 6 and section 4.3; remediation where the class is on the live path and the invariant is violable",
+    "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py and c5/operations.py at origin/main c0bbf8a (backbone.py already scoped by REM-0025)",
+    "registration": "EXECUTION_STATE remediation_status.REM_0026_C5_DURABLE_ATOMIC_DEDUP_AND_QUOTA (allocated 2026-10-12, next free id verified; hard dependency OCOR-DEV-REM-0025 merged at c0fe81d)"
+  },
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) e la password del DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {
+    "OCOR_SPIRE_JOIN_TOKEN": 1
+  },
+  "raw_output_sha256": "e9984c6c63a740a63becb582a238718912fb2877e94951e6aa9676bd2e4a57b3",
+  "record_id": "OCOR-DEV-REM-0026-5e1935e93126",
+  "repair_cycle": 0,
+  "reproducible_check": {
+    "checker_source_sha256": "8589276d65e76e79ec14bc4651b360aa1dac8096e0c2da2d09c034507ee45417",
+    "command": "python3 /home/luca/.ocor-codex/rem-0026/check_evidence.py <repo> <head>",
+    "scope": "mechanical integrity and count reconstruction of the four records; does not constitute independent verification"
+  },
+  "requalifications": [
+    {
+      "record": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0026.json",
+      "record_sha256": "cc358e8091997e062ef42bcef34ccd2e9b75c8a9d1c5605e437fb76fe38f737e",
+      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.json",
+      "task_id": "OCOR-DEV-0040"
+    },
+    {
+      "record": "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.json",
+      "record_sha256": "549f75b91c83bd284625637992bfbf80f7cc0013526d93e27038767e4c870939",
+      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0041.json",
+      "task_id": "OCOR-DEV-0041"
+    },
+    {
+      "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json",
+      "record_sha256": "6d03b0838136e7001bdd7f503e999dbf0b80da7a2e53857b2a7abc75ad268712",
+      "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0025.json",
+      "task_id": "OCOR-DEV-0050"
+    }
+  ],
+  "requirement_coverage_note": "Component-level evidence only for the C5 behaviours named in each case (FR-070 governed context, FR-071 ordering, FR-074 idempotency, NFR-079 no double publish, NFR-028 tenant quota, FR-065 failure classification). Full verification of the ingestion requirements (BA-07, FR-069..FR-075) is allocated to G6; E1=0/E2=0 and zero global Verified remain unchanged.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-REM-0026-R1-DURABLE-DEDUP-ACROSS-RESTART",
+      "command": "a new backbone instance on the same real broker and topic rebuilds dedup from the journal: replaying an already-durable idempotency_key is a no-op (exactly one record by Kafka end offsets), a new key is published once and then deduplicated (RED on c0bbf8a: the replay after restart wrote a second record)",
+      "finding": "R1",
+      "real_backend_tests": [
+        "test_r1_positive_first_publish_of_a_new_key_after_restart_is_written",
+        "test_r1_replayed_key_after_restart_is_a_safe_no_op"
+      ],
+      "requirement_id": "FR-074",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "a348ca81c16599c983af0812ceb8dd7a88158de4600086a8b50054ac8077f1d7",
+        "9508bed304a960db3cd205a2420abbaccd75012e500166807006b1a246c7a29b"
+      ],
+      "tests": [
+        "test_r1_positive_first_publish_of_a_new_key_after_restart_is_written",
+        "test_r1_replayed_key_after_restart_is_a_safe_no_op"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-R2-MONOTONE-WATERMARK-ACROSS-RESTART",
+      "command": "after a restart a lower or equal sequence for the aggregate is quarantined OUT_OF_ORDER and never reaches the topic; an advancing sequence is accepted and advances the watermark, which a further restart recovers (RED on c0bbf8a: stale sequence 4 and equal sequence 5 accepted after restart)",
+      "finding": "R2",
+      "real_backend_tests": [
+        "test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances",
+        "test_r2_stale_or_equal_sequence_after_restart_is_out_of_order"
+      ],
+      "requirement_id": "FR-071",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "d7006f29b37c51604c2ee84b25c7b4f2d03022dd9e99fe1590b33921800773d4",
+        "4f63625a45657297163112ebb32a40b4f3178104e8c9eaf7d6414da94976f705"
+      ],
+      "tests": [
+        "test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances",
+        "test_r2_stale_or_equal_sequence_after_restart_is_out_of_order"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-RESTART-RECOVERY-KEEPS-REM-0025-ISOLATION-SCOPING",
+      "command": "recovered state stays keyed by governed_context_digest: after a restart another context reusing the key and aggregate is published, the same-context replay is a no-op, stale sequences of each aggregate of context A are OUT_OF_ORDER (RED on c0bbf8a: stale sequences accepted after restart)",
+      "finding": "REM-0025 preserved",
+      "real_backend_tests": [
+        "test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025"
+      ],
+      "requirement_id": "FR-070",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "98ef7222ebbb933c33804cac4eaa2d4bce181829a471fb244ebdfb415d99d183"
+      ],
+      "tests": [
+        "test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-UNREADABLE-OR-MISSING-JOURNAL-FAILS-CLOSED",
+      "command": "a non-canonical record on the journal, a topic that does not exist, or an offsets answer naming no partition of the topic make publish fail closed with KafkaBackboneError, repeatedly, publishing nothing and quarantining nothing: never a fallback to empty state (RED on c0bbf8a: DID NOT RAISE for the first two; the third, a local failure-handling instrument over the real offsets query, was added after the first mutation probe and has no RED because the guarded branch is new)",
+      "finding": "negative criterion",
+      "real_backend_tests": [
+        "test_a_missing_journal_fails_closed",
+        "test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed",
+        "test_an_unreadable_journal_fails_closed_and_publishes_nothing"
+      ],
+      "requirement_id": "FR-074",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "5f2758d5664ab16b3d3cbda71648f819b1572adfdac9d8732582a64d8d391226",
+        "e70d3c70243b6d689a6d3bfec3405af1f8f1f913b58644864bdad59f35a442cc",
+        "ab3f56e1991be5d9b85d274137e5ef44868f8d0c6deb8dd2ab87a5c939c90a28"
+      ],
+      "tests": [
+        "test_a_missing_journal_fails_closed",
+        "test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed",
+        "test_an_unreadable_journal_fails_closed_and_publishes_nothing"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-UNKNOWN-WRITE-OUTCOME-NEVER-DUPLICATES",
+      "command": "fault injection on the real write: after a lost acknowledgement the retry of the same envelope is a no-op (state rebuilt from the journal) and the watermark holds; a write that never reached the broker is published exactly once on retry (RED on c0bbf8a: the lost-ACK retry wrote a duplicate, sequences [1, 2, 2]; the never-reached case is a positive control and passes there too)",
+      "finding": "lost ACK",
+      "real_backend_tests": [
+        "test_a_lost_acknowledgement_is_recovered_without_a_duplicate",
+        "test_a_write_that_never_reached_the_broker_is_published_once_on_retry"
+      ],
+      "requirement_id": "NFR-079",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "e17643ca36b60e065c46a6601cde575d97b7a6b62d53c7a505db634f07cb357b",
+        "31e80385d2d27ec080c51e8906d09680c740787f41c26952db1529062401c34d"
+      ],
+      "tests": [
+        "test_a_lost_acknowledgement_is_recovered_without_a_duplicate",
+        "test_a_write_that_never_reached_the_broker_is_published_once_on_retry"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-K1-CONCURRENT-SAME-ENVELOPE-EXACTLY-ONE-RECORD",
+      "command": "two real threads publish the same envelope while the first Kafka write is held until the second publish has arrived: exactly one record; three distinct concurrent events are all written (RED on c0bbf8a: two records for one idempotency_key; the distinct-events case is a positive control)",
+      "finding": "K1",
+      "real_backend_tests": [
+        "test_concurrent_publishes_of_distinct_events_are_all_written",
+        "test_k1_concurrent_publish_of_the_same_envelope_writes_exactly_one_record"
+      ],
+      "requirement_id": "FR-074",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "c7ee15625c35013307a559f9ddf17231141473fbcd66b74a2b4111158dddc33d",
+        "151d174e0ca022a9e26c96bba69c90e227bc3c4670295afe297f63ed262f8966"
+      ],
+      "tests": [
+        "test_concurrent_publishes_of_distinct_events_are_all_written",
+        "test_k1_concurrent_publish_of_the_same_envelope_writes_exactly_one_record"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-K2-CONCURRENT-WATERMARK-NEVER-REGRESSES",
+      "command": "sequence 5 is held inside its Kafka write while sequence 4 arrives: 4 is quarantined OUT_OF_ORDER, the topic holds [3, 5] and the watermark stays 5 in the instance and after a restart (RED on c0bbf8a: both accepted)",
+      "finding": "K2",
+      "real_backend_tests": [
+        "test_k2_concurrent_sequences_never_regress_the_watermark"
+      ],
+      "requirement_id": "FR-071",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "bed333f90fa7d0e854feda401bb4661933b4c75053645702748e1e3d51a9c183"
+      ],
+      "tests": [
+        "test_k2_concurrent_sequences_never_regress_the_watermark"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-Q1-TENANT-QUOTA-ATOMIC-AND-NEVER-NEGATIVE",
+      "command": "with the counter read held until a competing read is possible and admitted publishes held in flight until every caller is resolved: quota 1 admits exactly one of two, quota 2 admits two of three and refuses the third BACKPRESSURE_EXCEEDED; the counter never exceeds the quota, never goes negative and returns to 0 after governed rejections and a backend write failure (RED on c0bbf8a: both admitted, counter -1)",
+      "finding": "Q1",
+      "real_backend_tests": [
+        "test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes",
+        "test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish",
+        "test_the_in_flight_counter_returns_to_zero_after_publish_failures"
+      ],
+      "requirement_id": "NFR-028",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "570b317fc18afc9a196ba7d077a81e52617d5f7336d09f18aa5ceec10a25866a",
+        "4cbc7cce4782f77ed44dcba37c91168c11355c0e202be54f766aff11ad8edc5b",
+        "c672d75e0df1f418406f4e8d8b18967750730d30242f06b1f7f3c782e019aeb0"
+      ],
+      "tests": [
+        "test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes",
+        "test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish",
+        "test_the_in_flight_counter_returns_to_zero_after_publish_failures"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0026-ATTEMPT-COUNT-ATOMIC",
+      "command": "two concurrent failing publishes of one event record attempts 1 and 2, never 1 and 1, so the POISON threshold counts every attempt (RED on c0bbf8a: attempts [1, 1])",
+      "finding": "class check",
+      "real_backend_tests": [
+        "test_concurrent_failures_of_one_event_count_every_attempt"
+      ],
+      "requirement_id": "FR-065",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "54971ca1d2aac2174e91e19cc506d797e2b52497043866930ca01a843baaad2d"
+      ],
+      "tests": [
+        "test_concurrent_failures_of_one_event_count_every_attempt"
+      ],
+      "unit_fixture_tests": []
+    }
+  ],
+  "residual_risks": [
+    "Two concurrently live backbone instances on one topic are not serialized with each other: each recovers the journal once, so a record written by the other after that point is not seen until the next unknown write outcome or restart. Cross-instance exclusion (Kafka transactions with fencing or a durable lock) is outside REM-0026 (acceptance criteria: restart and in-instance concurrency); the PoC has one producer per topic.",
+    "Recovery reads every retained record of the topic once per instance start: cost grows with the topic. A signed checkpoint bounding the replay (LLD v1.1 section 2.5 'Checkpoint lega topic/partition/offset') is not introduced here.",
+    "Records removed by Kafka retention are no longer deduplicated after a restart (recovery starts from the earliest retained offset). The PoC topics use the broker default retention; no retention-aware dedup store is introduced.",
+    "Publishes through one instance are serialized by the lock (one console-producer call at a time): bounded throughput in the PoC, acceptable for the component's role; not a performance claim.",
+    "Same-key/different-payload reuse inside one context is still dropped as a replay without quarantine or audit (INFO-A option 1, note for a future normative decision).",
+    "CanonicalEventBackbone and EventOperationsCoordinator are not yet used by other ocor-runtime modules (INFO-A/INFO-C audits); G6 ingestion qualification (BA-07, FR-069..FR-075) depends on them.",
+    "Pre-existing unlabelled ocor-c5-backbone-data-* volumes from 2026-10-05/2026-10-10 are not created by this session and were not touched."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 di OCOR-DEV-REM-0026",
+    "independence": "external loop only; separate process, context and provider",
+    "original_implementer_0040_0041_0050": "OCOR-DEV-0040 and OCOR-DEV-0041: original implementer per their sealed records; OCOR-DEV-0050: Claude Code cycle 0, Codex repair cycles 1-2",
+    "verifier": "Grok 4.7 (Cursor CLI; verifier: cursor) -- separate process, context and provider; Claude Code does not verify this change set (LOOP-ROLES: Cursor/Grok when the reserve Claude Code implements)"
+  },
+  "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted-data migration and no port or envelope change: brokers and topics are disposable per test. Reverting restores the REM-0025 records of 0040 and 0050 and the original 0041 record as the most recent ones once the REM-0026 requalification records are removed with the revert.",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "task_id": "OCOR-DEV-REM-0026",
+  "tdd": {
+    "GREEN": {
+      "command": "task-run-1..3 and task-validation-command over the 0040, 0041, REM-0025, REM-0026 and 0050 suites (JUnit counts in commands)",
+      "raw_label": "task-run-3, task-junit"
+    },
+    "RED": {
+      "command": "detached worktree .ocor/worktrees/rem-0026-red of the tests-only commit 034e53d156b9c8b2323a41a52db89ddd8f21c2a4 (parent origin/main c0bbf8a65c9beec274e322b220ab8858e51e3a52) with its own venv (uv sync --frozen --extra test --extra lint); the run prints HEAD, the diff against origin/main and whether backbone.py and operations.py equal origin/main, then python -m pytest -q -p no:cacheprovider -rA tests/tasks/test_ocor_dev_rem_0026.py on a real self-provisioned Kafka broker",
+      "exit_code": 1,
+      "instrument_defect_attempt": "A first RED run of an earlier version of the tests-only commit (7066431, never pushed, amended to 034e53d) showed that the HeldReadCounter instrument took its value after the rendezvous, so the four quota/attempt cases did not force the read/read interleaving and passed on the unremediated code (9 FAIL / 7 PASS). The instrument was corrected to read before the rendezvous and the RED repeated on 034e53d; the first run is kept outside the repository as a diagnostic (red-attempt1-instrument-defect/) and is not evidence.",
+      "junit_raw_sha256": "b5438a8cda45eaa193883f65823442c739a7fcc59cb14a216508d0af61e55296",
+      "observed": "13 cases FAIL on the unremediated code for the defect, each on a behavioural assertion: R1 replay after restart (second record), R2 stale/equal sequence and the advancing-then-restart case (DID NOT RAISE OUT_OF_ORDER after restart), restart keeping REM-0025 scoping, unreadable and missing journal (DID NOT RAISE), lost acknowledgement (sequences [1, 2, 2]), K1 (two records), K2 ({5: None, 4: None}), Q1 and quota-two (both/all admitted), counter after failures (counter not back to 0), attempts ([1, 1]). 3 positive controls PASS as expected: first publish of a new key after restart, write that never reached the broker, concurrent distinct events.",
+      "outcomes": {
+        "test_a_lost_acknowledgement_is_recovered_without_a_duplicate": "FAIL",
+        "test_a_missing_journal_fails_closed": "FAIL",
+        "test_a_write_that_never_reached_the_broker_is_published_once_on_retry": "PASS",
+        "test_an_unreadable_journal_fails_closed_and_publishes_nothing": "FAIL",
+        "test_concurrent_failures_of_one_event_count_every_attempt": "FAIL",
+        "test_concurrent_publishes_of_distinct_events_are_all_written": "PASS",
+        "test_k1_concurrent_publish_of_the_same_envelope_writes_exactly_one_record": "FAIL",
+        "test_k2_concurrent_sequences_never_regress_the_watermark": "FAIL",
+        "test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes": "FAIL",
+        "test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish": "FAIL",
+        "test_r1_positive_first_publish_of_a_new_key_after_restart_is_written": "PASS",
+        "test_r1_replayed_key_after_restart_is_a_safe_no_op": "FAIL",
+        "test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances": "FAIL",
+        "test_r2_stale_or_equal_sequence_after_restart_is_out_of_order": "FAIL",
+        "test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025": "FAIL",
+        "test_the_in_flight_counter_returns_to_zero_after_publish_failures": "FAIL"
+      },
+      "raw_label": "tdd-red, tdd-red-junit",
+      "raw_sha256": "5eb4ac1c44f1c3b92d00d5b929ea3df1425581c00704312bc68112596468e2d4"
+    },
+    "REFACTOR": "None beyond the fix: one lock and a journal recovery in CanonicalEventBackbone, one lock in EventOperationsCoordinator; no public signature changed.",
+    "mutation_probe": "8 mutants of the remediation (no journal recovery on restart, backbone critical section unlocked, unknown write outcome keeping stale state, recovered dedup ignoring the context, unreadable journal falling back to empty, empty offsets answer treated as an empty journal, quota read-modify-write unlocked, quota admitting one over the limit) run against the REM-0026 suite on real brokers in a separate detached worktree at the exact campaign commit; all killed; sources restored byte-identical, worktree clean (raw label mutation-probe-result). A first probe at 2a264d2 killed 7 of 8: the empty-offsets mutant survived because on the pinned broker a missing topic already fails the offsets query; test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed was added (5e1935e) to cover that branch. The first probe is kept outside the repository as a diagnostic.",
+    "ordering_note": "Test-first: the REM-0026 cases are the first commit of the change set and were run RED on the unremediated backbone.py and operations.py (tests-only commit) before the fix commit 8f7a680; the RED raw log prints the commit, its diff against origin/main and the byte identity of both files with origin/main."
+  },
+  "test_case_identity": "test_case_sha256 = sha256 of the exact pytest node id (ocor-runtime/<classname as path>.py::<name>) of each JUnit testcase stored verbatim in the raw log; tests holds base names"
+}
