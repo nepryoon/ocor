@@ -520,10 +520,123 @@
     "zero_skip": true
   },
   "independent_verification": {
-    "model": "Grok 4.7",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 digest normativi OK su HEAD 0e6d1d738af0378f826bde1330f55ced1ad985bf; inputs tree identico a base e a c873ba100ac1189914a5f4c7a49f3cf91c3adc78 (60a73de8e47b38e94aeb0e2b8dedc689fab6eb35)."
+      },
+      {
+        "command": "git diff --name-only fbdec1ea4ad36ce77d26a319e91958a139d9e8e3..HEAD e prova AST extension_paths",
+        "exit_code": 0,
+        "summary": "Sette path. Nessun cambiamento in inputs/, ocor-runtime/src o ocor-runtime/tests. Il runtime tree e' identico da base ad HEAD. Rimuovendo esattamente i quattro membri dell'allowlist, l'AST di scripts/validate_ocor_development_plan.py coincide con la baseline (dump sha256 d5765ed4429eedea1746428ee783484175da932b4c380fc6e13afd8969a15358). Il digest del validator d591c7dee398e98c2e42df54eb7d074ca9a33df71ffc9b19ca2c8857a461e7b0 e' lo stesso in ab9b87d, c873ba1 e HEAD ed e' quello registrato in OCOR_PLAN_RUN_STATE.json. Tra ab9b87d e c873ba1 cambia solo lo stato di planning (FAIL diagnostico ripristinato a PASS, semantica invariata a parte il digest). Tra c873ba1 e HEAD cambiano solo MANIFEST e i due artefatti nuovi."
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/rem0019-po-allowlist-20261013/check_evidence.py . 0e6d1d738af0378f826bde1330f55ced1ad985bf",
+        "exit_code": 1,
+        "summary": "Fallisce solo su git branch --show-current vuoto nel worktree detached imposto al verifier. Equivalente verificato: environment.branch e' governed/rem0019-po-decision-allowlist e quel ref, locale e origin, e' esattamente HEAD. Tutte le altre asserzioni dello script sono state rieseguite: raw sha256 541023960037b152994d87746f7039b94c84853a581912b3238054ae4020cdf3, 58 righe con hash coerenti, comandi PASS, JUnit 0050 198 e full 1834 senza failure/error/skipped e unione esatta con la collection, requirement_results copre tutti i 198 hash, supersedes il record rem0026, input di model.py e del test invariati, claim E1=0 E2=0, nessun file sorgente o di test nel diff, sigillo rem0026 ancora presente e hash-identico al manifest precedente."
+      },
+      {
+        "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "Eseguito nel worktree prima dei gate e di nuovo dopo il bootstrap, perche' bootstrap rilancia uv sync solo con --extra test e rimuove mypy."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0. Evidence fence E1=0 senza claim probatori non supportati."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+        "exit_code": 0,
+        "summary": "Sul tree pulito: PASS, 7 path, superfici immutabili intatte, ledger stabile. Una esecuzione intermedia contava 8 path perche' il validator di planning aveva riscritto in locale due file di report; sono stati ripristinati e non fanno parte del commit."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref fbdec1ea4ad36ce77d26a319e91958a139d9e8e3 --authorized-extension",
+        "exit_code": 0,
+        "summary": "verdict PASS, 37 PASS e 2 NOT_EXECUTED interni al piano (tool opzionali gia' nello stato approvato), 84 task. Lo stato committato resta PASS con lo stesso conteggio."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, zero drift."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0050. Il manifest sposta solo i puntatori 0050 sul nuovo candidato; gli altri artefatti sono invariati e i file sigillati rem0026 restano byte-identici."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff 0.13.1, nessun finding."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 75 source files, dopo il ripristino dell'extra lint. Il primo tentativo e' uscito 1 solo perche' il bootstrap aveva rimosso il modulo mypy."
+      },
+      {
+        "command": "PYTHONPATH=scripts ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Stack ocor-bootstrap avviato da inventario vuoto (nessun container ocor-bootstrap prima). Fuseki locale sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b coincide col lock. PostgreSQL immagine postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20, server 16.14, utente ocor, porta host 55433, autenticazione fail-closed. 11 container, restart 0, OOMKilled false. Credenziali generate nel worktree, assenti dal diff."
+      },
+      {
+        "command": "initialize_services.py && load_fixtures.py && verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "Init PASS, fixture PASS, health PASS. Tutti i gruppi tipizzati READY, incluso postgresql fail-closed e spiffe-spire. SVID di control-plane registrato dopo la prima suite, fetch PASS, materiale privato non registrato."
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<credenziale del PostgreSQL pinned> ocor-runtime/.venv/bin/python -m pytest -v -rs ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed in 4.79s, zero failure, error e skipped. L'ordine dei nodeid JUnit coincide con la collection registrata nel raw log. I byte del test e di memory/model.py sono identici alla base e al record rem0026."
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<credenziale pinned> ocor-runtime/.venv/bin/python -m pytest -v -rs ocor-runtime/tests/",
+        "exit_code": 1,
+        "summary": "Primo tentativo, ambiente incompleto: 1834 raccolti, 1638 passed, 10 failed, 186 errors, 0 skipped, 833.30s, nessun restart e nessun OOM. Gli 8 failure sono test_ocor_dev_0007 che esige node v20.20.2 e ha trovato il node v24.5.0 del runtime Cursor sul PATH. I 2 failure e 186 error sono test_ocor_dev_0048 in setup perche' la SVID di control-plane non era ancora registrata. Nessuna asserzione di prodotto di 0050 e' fallita."
+      },
+      {
+        "command": "PATH=<node v20.20.2 pinned> pytest ocor-runtime/tests/tasks/test_ocor_dev_0007.py ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+        "exit_code": 0,
+        "summary": "Ripetizione dopo SVID e node il cui binario ha sha256 6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd, uguale all'integrity del lock, versione v20.20.2. 247 passed in 144.30s (51 di 0007 e 196 di 0048), zero failure, error e skipped. Copre tutti i 196 casi falliti o in errore del primo tentativo. Unione con i 1587 passaggi delle altre suite: 1834, zero skip."
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute && git worktree remove --force",
+        "exit_code": 0,
+        "summary": "Container, rete e volumi ocor-bootstrap rimossi. Nessun nome di container nuovo rispetto all'inventario precedente. Worktree detached rimosso. La checkout principale resta su fbdec1ea senza modifiche."
+      }
+    ],
+    "findings": [],
+    "implementer": "Codex (OpenAI), allowlist and regression-only requalification; integration by Codex",
+    "integration_condition": "Only seal metadata and manifest hash changed after exact-head verdict. Merge requires all mandatory checks green on the exact seal commit. REM-0023 remains OPEN; this record does not reassess 0050 conformance.",
+    "not_executed": [],
+    "original_implementer": "Claude Code reserve cycle 0; Codex repairs 1-2",
+    "repair_cycle": 0,
+    "review_type": "TASK_EVIDENCE (0050 regression-only within REM-0019 PO decision allowlist)",
     "scope": "REGRESSION_ONLY",
-    "status": "PENDING",
-    "verifier": "cursor"
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-13T08:14:58Z",
+    "verdict_file_sha256": "d75e2b0a7c8fb186e3bb9b0b1e543e4b27c4e2e6371c417a3a6daefa4bc89422",
+    "verdict_head_sha": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
+    "verdict_request_id": "OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore di questo change set: Codex (OpenAI). Verifier: Grok 4.7 via Cursor, fornitore diverso. Il task 0050 e' stato toccato anche da Claude Code nel ciclo di riserva; questa unita' e' solo la regressione dell'allowlist e non rivaluta la conformance di 0050. Immagine kind, fixture, campagna REM-0019 e riparazioni REM-0027 restano fuori da questa unita', come disposto dal review_scope. Il difetto preesistente di audit sui dinieghi di admission resta REM-0023 OPEN e non blocca questa riqualifica di regressione.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito, worktree detached"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -1009,7 +1122,8 @@
     "status": "PASS_MECHANICAL"
   },
   "schema_version": "1.0",
-  "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-13T08:21:42.332585+00:00",
+  "status": "SEALED_AFTER_INDEPENDENT_VERIFICATION",
   "supersedes": "OCOR-DEV-0050-requalified-rem0026-5e1935e93126",
   "task_id": "OCOR-DEV-0050",
   "test_case_identity": "sha256 of exact node id ocor-runtime/<classname as path>.py::<name> from the captured JUnit; grouping rematched against this run",
