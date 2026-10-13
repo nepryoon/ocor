@@ -5346,3 +5346,8 @@ Gate documentali: rccad PASS_LOCAL_PRECHECK, scope/language/ruff PASS, mypy 69 s
 Campagna `/home/luca/.ocor-codex/rem0019-resume-20261013-kind-fixed`, commit `6e1c4b0`: full attempt-1 PASS_COMPONENT_ONLY, 2224/2224, failure/error/skip zero, unione esatta e inventario Docker identico, 3550,11 s (59m10s). Archivio content-addressed `attempts/full/attempt-1/result.json`; nessun conteggio trasferito dai vecchi tentativi. Driver prosegue con cinque ordini e119 isolati, esito globale RUNNING. Test Helm reale PASS, containerd PID invariato e NRestarts0 fino al teardown; fixture nuova smonta il nodo.
 
 PR #253 HEAD `5740c5e`: rccad-methodology SUCCESS (run38423601572); delivery-activation e validation-closure CANCELLED (run38423601493 e38423601282) al limite circa30min, errore “The operation was canceled.” nei log dei job completi. Raw e diagnosi conservati con hash privati; nessun rerun su causa invariata, nessun merge. Nessuna qualifica CI dichiarata. E1/E2/Verified e NO-GO invariati.
+
+
+### Checkpoint primo ordine — campagna kind-fix
+
+`order-collection` attempt-1: PASS_COMPONENT_ONLY,390/390, zero failure/error/skip,ordine JUnit identico alla lista dei390 nodeid e residui zero (container,reti,volumi). Durata2406,8s, sotto2700s. Archivio content-addressed `rem0019-resume-20261013-kind-fixed/attempts/order-collection/attempt-1/result.json`; fonte6e1c4b0 e harness immutati. Driver prepara l’ordine inverso, poi tre seed e119isolati. Nessun PASS finale/verifica/sigillo; counts precedenti non trasferiti, E1/E2/Verified/NO-GO invariati.

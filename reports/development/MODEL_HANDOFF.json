@@ -171,6 +171,7 @@
       "status": "RUNNING"
     },
     "claims": "E1=0,E2=0,Verified=0,NO-GO unchanged",
+    "counts_from_previous_commits": 0,
     "environment_preflight": {
       "baseline_drift": 0,
       "baseline_drift_inputs": 182,
@@ -307,33 +308,78 @@
     "qualifying_counts_transferred": 0,
     "repair_cycle": 1,
     "session_artifacts": "/home/luca/.ocor-codex/rem0019-resume-20261013-kind-fixed",
-    "state_sync_ci": {
-      "checks": [
-        {
-          "cause": "Cancelled at configured30-minute job cap during complete suite; matches already known gate blocker; no rerun or timer change in this unit.",
-          "check": "delivery-activation",
-          "completedAt": "2026-10-13T16:07:29Z",
-          "conclusion": "CANCELLED",
-          "proof_lines": [
-            "delivery-activation\tExecute complete runtime suite with PostgreSQL\t2026-10-13T16:07:24.6310387Z ##[error]The operation was canceled."
-          ],
-          "startedAt": "2026-10-13T15:37:08Z"
-        },
-        {
-          "cause": "Cancelled at configured30-minute job cap during complete suite; matches already known gate blocker; no rerun or timer change in this unit.",
-          "check": "validation-closure",
-          "completedAt": "2026-10-13T16:07:37Z",
-          "conclusion": "CANCELLED",
-          "proof_lines": [
-            "validation-closure\tRun complete runtime, BA, EV and live PostgreSQL campaigns\t2026-10-13T16:07:23.6077816Z ##[error]The operation was canceled."
-          ],
-          "startedAt": "2026-10-13T15:37:07Z"
-        }
-      ],
-      "head_sha": "5740c5ee2908b99b67b43fdd8ca382510ce190b4",
-      "qualifying": false
-    },
     "task_id": "OCOR-DEV-REM-0019",
+    "valid_components": {
+      "full": {
+        "campaign_status": "RUNNING_PENDING_FIVE_ORDERS_AND_119_ISOLATED",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 2224
+        },
+        "duration_seconds": 3550.1106735240005,
+        "head_sha": "6e1c4b050ac610a22673d6f559e424a01705189c",
+        "label": "full",
+        "prior_campaign_counts_transferred": 0,
+        "raw_sha256": {
+          "full-collected.json": "dd8a8afc00c7c517ef993d0fae6d8c540c32764e0d39182a90fdc36523e7e8bd",
+          "full-collection.log": "3ea6f4f73884cd3ba69c75287690461a62c7723afb4feae9632acc89a578b20b",
+          "full-resource-audit.json": "658e96aa1711061e8b425cc0b8aec2277a72bfbfa54faa5e02a0d88676323858",
+          "full-resources-after.json": "ad773c2e56f996974891d8b73c6d6d0d53884c45371a6602d75d15ace4881f85",
+          "full-resources-before.json": "ad773c2e56f996974891d8b73c6d6d0d53884c45371a6602d75d15ace4881f85",
+          "full.json": "b0993208fabc79ea10cbe1d774ccbb4599df13b53e6383f4b4896f0db2c080eb",
+          "full.log": "50bc117f4adcbaf63cf503c3a523aa8ad37a9135b8bcabf1b6957610aa70ea7c",
+          "full.xml": "95c246ba1d0ccd59cfd4510511666b92eec9335b5c88fabc35eff005fd7fb9f0",
+          "harness-identity.json": "458a6cbe6c287a31c6bcbc3ee95095eb95daa75f555adc2b4dee22a4568b4c12"
+        },
+        "resources": {
+          "new_resources": {
+            "containers": [],
+            "networks": [],
+            "volumes": []
+          },
+          "status": "PASS"
+        },
+        "status": "PASS_COMPONENT_ONLY",
+        "union": {
+          "collected": 2224,
+          "duplicated": [],
+          "executed": 2224,
+          "missing": [],
+          "unexpected": []
+        },
+        "valid_attempt": "attempt-1"
+      },
+      "order-collection": {
+        "campaign_status": "Complete only when all required components and final teardown PASS.",
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 390
+        },
+        "duration_seconds": 2406.7999107840005,
+        "head_sha": "6e1c4b050ac610a22673d6f559e424a01705189c",
+        "label": "order-collection",
+        "raw_sha256": {
+          "harness-identity.json": "458a6cbe6c287a31c6bcbc3ee95095eb95daa75f555adc2b4dee22a4568b4c12",
+          "order-collection-alignment.json": "7c60260452d5a42bd348106a4cc6d61cb7bc1672c88a569062b0edc336548e30",
+          "order-collection-residue.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+          "order-collection.json": "49283d8c3db02b2246831aac02a3ce5bf7dcaead72cd342e9eeeb57131a4678d",
+          "order-collection.log": "ca8ed90bfa9b65e66b4b9c13406bd6ec9690ba76340dd905ab787e4249f34f41",
+          "order-collection.order": "fe68e5fc7d310fa861d080399cea4dea95e2749eac9ee4fe8cfe1e553262c52c",
+          "order-collection.xml": "0eec3bd450147ba4f826bb6762583f41b29d441bbabdcad7b691aab8ea71897a"
+        },
+        "residue": {
+          "containers": [],
+          "networks": [],
+          "volumes": []
+        },
+        "status": "PASS_COMPONENT_ONLY",
+        "valid_attempt": "attempt-1"
+      }
+    },
     "verifier": "Grok4.7 via Cursor CLI, external loop only, task touched by reserve Claude Code",
     "worktree": ".ocor/worktrees/rem-0019"
   },
@@ -2916,6 +2962,6 @@
       "status": "OPEN_IMPLEMENTATION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-13T16:21:01.913882+00:00",
+  "updated_at": "2026-10-13T17:11:44.972880+00:00",
   "worktree": ".ocor/worktrees/state-sync-rem0019-kind-fixed-20261013"
 }
