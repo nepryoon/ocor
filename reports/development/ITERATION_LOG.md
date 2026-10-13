@@ -5247,3 +5247,14 @@ Gate documentali: rccad PASS_LOCAL_PRECHECK, scope/language/ruff PASS, mypy 69 s
 - Richiesta di verifica indipendente `OCOR-DEV-REM-0025-4e9f51a16664-0` (REMEDIATION, ciclo 0): verifier Grok 4.7 via Cursor, non Claude Code (regola dell'implementatore di riserva). Nessuna PR del candidato aperta prima del verdetto.
 - Invariati: E1=0, E2=0, Verified=0, claim NO-GO e input; blocchi PO `REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE` (#236) e `REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY` (#240); ordine REM-0019 → REM-0017 → 0049 → REM-0023 → 0056.
 - Prossima azione: integrazione di REM-0025 al verdetto; nel frattempo REM-0027 (implementazione); REM-0026 dopo il merge di REM-0025.
+
+
+## 2026-10-13T00:11:10.940878+00:00 — REM-0025: sigillo del verdetto indipendente e merge (PR #243)
+
+- Unità unica di Claude Code come implementatore di riserva del loop (quota Codex esaurita), fase di integrazione di `OCOR-DEV-REM-0025` da `origin/main` `dbefac9` (merge PR #242), come da `next_executable_action`.
+- Verdetto `OCOR-DEV-REM-0025-4e9f51a16664-0` (REMEDIATION, ciclo 0): `GO_FOR_EVIDENCE_SEAL`, nessun finding e nessun `NOT_EXECUTED`, sull'HEAD `4e9f51a`; verifier Grok 4.7 via Cursor CLI (fornitore diverso), non Claude Code. SHA256 del file del verdetto `b2629746…`.
+- Sigillo `f0b0b09` figlio diretto dell'HEAD verificato: cambiano solo `independent_verification`, `sealed_at` e `status: SEALED` del record di remediation e delle riqualifiche 0040/0050, i loro hash nei manifest G4/G5 e nel record di remediation, e la riga di status del README. Codice, test, input e raw log byte-identici. Gate locali sul sigillo: digest 8/8, RCCAD, scope (13 path), language, drift (0 su 182), runtime-evidence 0040/0050, piano 37 PASS e 2 NOT_EXECUTED opzionali (side effect sui report di piano ripristinato).
+- PR #243: 13/13 check obbligatori verdi sull'HEAD esatto, merge `--match-head-commit` in `c0fe81d`; invarianti del sigillo su `main`: PASS.
+- `REM_0025_C5_ISOLATION_SCOPED_DEDUP` chiusa. Sbloccata `OCOR-DEV-REM-0026` (stessi file).
+- Invariati: E1=0, E2=0, Verified=0, claim NO-GO e input; blocchi PO `REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE` (#236) e `REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY` (#240); ordine REM-0019 → REM-0017 → 0049 → REM-0023 → 0056.
+- Prossima azione: REM-0026 (implementazione), oppure REM-0027.
