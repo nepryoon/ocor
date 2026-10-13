@@ -130,9 +130,9 @@
     "Only one serial stack/pytest campaign; state checkpoint does not claim completion.",
     "Final candidate assembly requires all new fresh runs and gates, independent GO, then REM17 prerequisite and exact CI integration."
   ],
-  "base_sha": "c2f9e5046f77bc6b005d37938ba329cc757fee1f",
-  "baseline_commit": "c2f9e5046f77bc6b005d37938ba329cc757fee1f",
-  "branch": "governed/state-sync-rem0025-candidate",
+  "base_sha": "c0fe81d5c6f2012106c6abd6348243c0fbf584aa",
+  "baseline_commit": "c0fe81d5c6f2012106c6abd6348243c0fbf584aa",
+  "branch": "governed/state-sync-rem0025-sealed",
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -717,13 +717,13 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0025: implementation cycle 0 complete, candidate 4e9f51a16664 on governed/ocor-dev-rem-0025-c5-isolation-scoped-dedup awaiting independent verification OCOR-DEV-REM-0025-4e9f51a16664-0",
+  "current_task": "OCOR-DEV-REM-0025: sealed (verdict OCOR-DEV-REM-0025-4e9f51a16664-0 GO, Grok 4.7 via Cursor) and merged via PR #243 at c0fe81d5c6f2012106c6abd6348243c0fbf584aa",
   "evidence_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
     "reports/development/ITERATION_LOG.md"
   ],
-  "exact_next_action": "REM-0025:integration after the independent verdict OCOR-DEV-REM-0025-4e9f51a16664-0 (verifier Grok 4.7 via Cursor; ~/.ocor-codex/verdicts/OCOR-DEV-REM-0025-4e9f51a16664-0.json): with GO_FOR_EVIDENCE_SEAL seal the three records (REM-0025, 0040.requalified-rem0025, 0050.requalified-rem0025) and both manifests on branch governed/ocor-dev-rem-0025-c5-isolation-scoped-dedup (head 4e9f51a16664), open the governed PR, wait for every required check on the exact head, merge --match-head-commit, then state sync; with NO_GO repair (budget 2 cycles). While the verdict is pending, the next coherent unit is OCOR-DEV-REM-0027:implementation (C8 preemptive kill switch, independent of REM-0025/REM-0026, c8/tool_runtime.py) from origin/main; OCOR-DEV-REM-0026 starts only after REM-0025 is merged (hard dependency, same files). OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "exact_next_action": "OCOR-DEV-REM-0026:implementation (C5 durable/atomic dedup and tenant quota, LLD v1.1 \u00a76/\u00a72.5, hard dependency REM-0025 now merged at c0fe81d5c6f2) from origin/main; alternatively OCOR-DEV-REM-0027:implementation (C8 preemptive kill switch, independent). Verifier per LOOP-ROLES (Cursor/Grok if the reserve Claude Code implements; Claude Code if Codex implements). OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "head_sha": "c2f9e5046f77bc6b005d37938ba329cc757fee1f",
   "head_sha_resolver": "git rev-parse HEAD on this metadata branch; base is exact main before metadata commit",
   "infoa_audit_unit": {
@@ -1766,6 +1766,45 @@
     "task_id": "OCOR-DEV-REM-0025",
     "worktree": ".ocor/worktrees/state-sync-rem0025-candidate"
   },
+  "rem0025_integration_unit": {
+    "merge_commit": "c0fe81d5c6f2012106c6abd6348243c0fbf584aa",
+    "merged_at_observation": "2026-10-13T00:11:10.918263+00:00",
+    "pull_request": 243,
+    "requalified": [
+      "OCOR-DEV-0040 (reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.json)",
+      "OCOR-DEV-0050 (reports/evidence/G5/OCOR-DEV-0050.requalified-rem0025.json, regression only)"
+    ],
+    "required_checks": {
+      "passed": 13,
+      "run_ids": [
+        38324280970,
+        38324281048,
+        38324281074,
+        38324281091,
+        38324281120,
+        38324281130,
+        38324281155
+      ],
+      "total": 13
+    },
+    "seal_commit": "f0b0b09b244ba2a34dba3224706a7bbdb433623b",
+    "seal_invariants_on_main": "PASS",
+    "sealed_record_sha256": {
+      "reports/assurance/OCOR-DEV-REM-0025-RCCAD/OCOR-DEV-REM-0025.json": "e1d746d050e71c6152fa2a939c3315d3a0139315f6c5942e7d7783aab53d744e",
+      "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0025.json": "32002e09441a39f204fdff4f2ccc6e2a20a77d66f905d4bb807a250e756e8866",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0025.json": "fc501a37d6643bef46e5b1036fc502fbb6b4f4da30779074a91dec0a8313917e"
+    },
+    "verdict": {
+      "findings": [],
+      "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer",
+      "not_executed": [],
+      "request_id": "OCOR-DEV-REM-0025-4e9f51a16664-0",
+      "sha256": "b2629746008a134b05074bf9267c09f2e01fb526653179ef4bdd194ecc7ec950",
+      "status": "GO_FOR_EVIDENCE_SEAL",
+      "verifier": "Grok 4.7 (Cursor CLI)"
+    },
+    "verified_head": "4e9f51a166644685831a46cc6204719df88acc35"
+  },
   "requirement_ids": [
     "BR-003",
     "FR-156",
@@ -1902,6 +1941,6 @@
       "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-12T22:53:25.989146+00:00",
-  "worktree": ".ocor/worktrees/state-sync-rem0025-candidate"
+  "updated_at": "2026-10-13T00:11:10.940878+00:00",
+  "worktree": ".ocor/worktrees/state-sync-rem0025-sealed"
 }
