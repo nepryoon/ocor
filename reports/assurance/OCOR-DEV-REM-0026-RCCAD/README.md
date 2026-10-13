@@ -1,8 +1,11 @@
 # OCOR-DEV-REM-0026-RCCAD — C5: deduplica e watermark durevoli e atomici, quota per tenant atomica
 
-- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION`. Verifier: Grok 4.7 via Cursor CLI
-  (processo, contesto e fornitore separati); Claude Code, implementatore di riserva, non verifica
-  questo change set (`LOOP-ROLES`).
+- **Status**: `SEALED` (2026-10-13T03:12:18.896068+00:00) dopo il verdetto `GO_FOR_EVIDENCE_SEAL`
+  `OCOR-DEV-REM-0026-054b6eb12731-0` (verifier: Grok 4.7 via Cursor CLI, processo, contesto e fornitore
+  separati; Claude Code, implementatore di riserva, non verifica questo change set — `LOOP-ROLES`),
+  nessun finding e nessun `NOT_EXECUTED` sull'HEAD `054b6eb12731f48085235e341ee36109190f2a51`; SHA256 del verdetto `4435af8f5dafebbb056d38909eb37f6503a504979bb78efdc08b1c0f4018652c`.
+  Sigillate anche le riqualifiche 0040/0041/0050: cambiano soltanto i metadati del sigillo e gli hash
+  nei manifest G4/G5 e nel record.
 - **Fonte**: decisione del Product Owner `INFO-C` (2026-10-05) e audit del 2026-10-12 in
   `reports/development/decision_requests/INFO-C.md`, che ha registrato `OCOR-DEV-REM-0026` come primo
   identificativo libero (`EXECUTION_STATE` → `remediation_status.REM_0026_C5_DURABLE_ATOMIC_DEDUP_AND_QUOTA`).
