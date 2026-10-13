@@ -44,7 +44,7 @@ from ocor_runtime.c6.safety import EmergencyStopController
 from ocor_runtime.c6_capabilities import CapabilityAuthority, CapabilityLease
 from ocor_runtime.c8 import tool_runtime as tool_runtime_module
 from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError
-from ocor_runtime.c8_agent import StrictSandbox, TokenBudget
+from ocor_runtime.c8_agent import AgentKernel, StrictSandbox, TokenBudget
 from ocor_runtime.errors import AuthorizationError
 from ocor_runtime.kernel.governed_context import GovernedContext
 
@@ -88,6 +88,8 @@ class Harness:
 
     def __init__(self, *, deadline: timedelta | None = None) -> None:
         self.effects: list[tuple[str, str, float]] = []
+        self.settled: dict[str, threading.Event] = {}
+        self.swallowed: list[BaseException] = []
         self.stop_accepted_at: float | None = None
         self.finished = threading.Event()
         self.sandbox = StrictSandbox()
@@ -103,14 +105,30 @@ class Harness:
         )
 
     def tool(self, name: str, body: Callable[[str], None] | None = None, *, mutative: bool = True) -> None:
+        settled = self.settled.setdefault(name, threading.Event())
+
         def call(value: str) -> str:
-            if body is not None:
-                body(value)
-            if mutative:
-                self.effects.append((name, value, time.monotonic()))
-            return f"{name} {value}"
+            try:
+                if body is not None:
+                    body(value)
+                if mutative:
+                    self.effects.append((name, value, time.monotonic()))
+                return f"{name} {value}"
+            finally:
+                settled.set()
 
         self.sandbox.register_tool(name, call)
+
+    def wait_settled(self, name: str) -> None:
+        """Wait until the tool callable has really returned or raised on
+        its worker, so that a late effect, if any, is already journalled."""
+        assert self.settled[name].wait(SLOW_SECONDS + 5.0), f"tool {name!r} never settled"
+
+    def late_effects(self) -> list[tuple[str, str, float]]:
+        """Effects journalled more than the containment target after the
+        stop was accepted (ADD v1.3 section 5.5: <=10 s)."""
+        assert self.stop_accepted_at is not None
+        return [effect for effect in self.effects if effect[2] - self.stop_accepted_at > CONTAINMENT_TARGET_SECONDS]
 
     def lease(self, *tools: str) -> CapabilityLease:
         return self.authority.issue(
@@ -176,6 +194,25 @@ def slow_non_cooperative(harness: Harness) -> Callable[[str], None]:
     def body(_: str) -> None:
         try:
             time.sleep(SLOW_SECONDS)
+        finally:
+            harness.finished.set()
+
+    return body
+
+
+def slow_non_cooperative_swallowing_errors(harness: Harness) -> Callable[[str], None]:
+    """A non-cooperative tool with a broad ``except Exception`` (a common
+    retry/cleanup idiom): it never calls the cancellation checkpoint and
+    swallows every ordinary error raised while it waits."""
+
+    def body(_: str) -> None:
+        try:
+            deadline = time.monotonic() + SLOW_SECONDS
+            while time.monotonic() < deadline:
+                try:
+                    time.sleep(0.05)
+                except Exception as error:  # noqa: BLE001 - the idiom under test
+                    harness.swallowed.append(error)
         finally:
             harness.finished.set()
 
@@ -264,22 +301,65 @@ def test_a_stop_accepted_between_two_tools_of_one_expression_prevents_the_second
 
 
 def test_a_stop_during_a_slow_non_cooperative_tool_refuses_the_next_tool_within_the_target() -> None:
+    # VF-001 (verdict OCOR-DEV-REM-0027-f48452c64777-0): the slow tool is
+    # mutative -- its effect is journalled, with its timestamp, only after
+    # the non-cooperative wait, i.e. later than the target after the stop.
     harness = Harness()
-    harness.tool("slow_lookup", slow_non_cooperative(harness), mutative=False)
+    harness.tool("slow_restart", slow_non_cooperative(harness))
     harness.tool("restart_service")
-    lease = harness.lease("slow_lookup", "restart_service")
+    lease = harness.lease("slow_restart", "restart_service")
     harness.accept_stop_later(STOP_AFTER_SECONDS)
 
     with pytest.raises(ToolRuntimeError) as refused:
-        harness.invoke("[slow_lookup(name), restart_service(name)]", lease)
+        harness.invoke("[slow_restart(name), restart_service(name)]", lease, tool_name="slow_restart")
     returned_at = time.monotonic()
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
+    harness.wait_settled("slow_restart")
 
     assert refused.value.reason_code == "STOP_BOUND_DENIED"
     assert getattr(refused.value, "execution_unknown", False) is True
     assert harness.stop_accepted_at is not None
     assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    assert harness.late_effects() == []
     assert harness.effects == []
+
+
+def test_a_stop_during_a_non_cooperative_tool_that_swallows_errors_still_prevents_its_late_effect() -> None:
+    harness = Harness()
+    harness.tool("slow_restart", slow_non_cooperative_swallowing_errors(harness))
+    harness.tool("restart_service")
+    lease = harness.lease("slow_restart", "restart_service")
+    harness.accept_stop_later(STOP_AFTER_SECONDS)
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.invoke("[slow_restart(name), restart_service(name)]", lease, tool_name="slow_restart")
+    returned_at = time.monotonic()
+    assert harness.finished.wait(SLOW_SECONDS + 5.0)
+    harness.wait_settled("slow_restart")
+    settled_at = time.monotonic()
+
+    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.execution_unknown is True
+    assert harness.stop_accepted_at is not None
+    assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    # preempted at its next interpreter step, not after its own 11 s wait
+    assert settled_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    assert harness.swallowed == []
+    assert harness.late_effects() == []
+    assert harness.effects == []
+
+
+def test_a_fast_non_cooperative_tool_without_any_stop_still_produces_its_effect() -> None:
+    harness = Harness(deadline=timedelta(seconds=2))
+    harness.tool("short_restart", lambda _: time.sleep(0.3))
+    harness.tool("restart_service")
+    lease = harness.lease("short_restart", "restart_service")
+
+    receipt = harness.invoke("[short_restart(name), restart_service(name)]", lease, tool_name="short_restart")
+    harness.wait_settled("short_restart")
+
+    assert receipt.result == ["short_restart svc", "restart_service svc"]
+    assert harness.names() == ["short_restart", "restart_service"]
 
 
 def test_a_stop_during_a_slow_cooperative_tool_cancels_it_with_no_effect() -> None:
@@ -304,19 +384,22 @@ def test_a_stop_during_a_slow_cooperative_tool_cancels_it_with_no_effect() -> No
 
 def test_a_slow_tool_without_any_stop_is_bounded_by_the_call_deadline() -> None:
     harness = Harness()
-    harness.tool("slow_lookup", slow_non_cooperative(harness), mutative=False)
+    harness.tool("slow_restart", slow_non_cooperative(harness))
     harness.tool("restart_service")
-    lease = harness.lease("slow_lookup", "restart_service")
+    lease = harness.lease("slow_restart", "restart_service")
     started = time.monotonic()
 
     with pytest.raises(ToolRuntimeError) as refused:
-        harness.invoke("[slow_lookup(name), restart_service(name)]", lease, tool_name="slow_lookup")
+        harness.invoke("[slow_restart(name), restart_service(name)]", lease, tool_name="slow_restart")
     returned_at = time.monotonic()
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
+    harness.wait_settled("slow_restart")
 
     assert refused.value.reason_code == "TOOL_DEADLINE_EXCEEDED"
     assert getattr(refused.value, "execution_unknown", False) is True
     assert returned_at - started <= CONTAINMENT_TARGET_SECONDS
+    # no mutative effect once the call deadline has expired
+    assert [effect for effect in harness.effects if effect[2] - started > CONTAINMENT_TARGET_SECONDS] == []
     assert harness.effects == []
 
 
@@ -482,3 +565,136 @@ def test_a_command_fenced_before_the_stop_is_refused_even_with_a_fresh_lease() -
 
     assert refused.value.reason_code == "STOP_BOUND_DENIED"
     assert harness.effects == []
+
+
+# --- VF-002: a parent bound to no epoch cannot delegate on a bound authority -------
+
+
+def unbound_parent_and_harness() -> tuple[Harness, CapabilityLease]:
+    """A lease issued by the authority before it was bound to the runtime's
+    controller (``stop_epoch`` absent), then the authority is bound."""
+    authority = CapabilityAuthority(issuer="rem-0027-late-bound")
+    parent = authority.issue(
+        subject="agent-1", capabilities=["tool:restart_service"], resources=["restart_service"], issued_at=NOW, ttl=timedelta(hours=1)
+    )
+    harness = Harness()
+    harness.authority = authority
+    harness.runtime = ToolCallRuntime(sandbox=harness.sandbox, authority=authority, marking_engine=harness.marking, stop=harness.stop)
+    harness.tool("restart_service")
+    assert parent.stop_epoch is None
+    return harness, parent
+
+
+def delegate(harness: Harness, parent: CapabilityLease, subject: str = "agent-1") -> CapabilityLease:
+    return harness.authority.issue(
+        subject=subject,
+        capabilities=["tool:restart_service"],
+        resources=["restart_service"],
+        issued_at=NOW,
+        ttl=timedelta(minutes=5),
+        parent=parent,
+    )
+
+
+def test_a_parent_bound_to_no_epoch_cannot_delegate_after_a_stop_and_reset() -> None:
+    harness, parent = unbound_parent_and_harness()
+    harness.accept_stop()
+    harness.reset()
+
+    with pytest.raises(AuthorizationError):
+        delegate(harness, parent)
+
+    assert harness.effects == []
+
+
+def test_a_parent_bound_to_no_epoch_cannot_delegate_even_without_a_stop() -> None:
+    harness, parent = unbound_parent_and_harness()
+
+    with pytest.raises(AuthorizationError):
+        delegate(harness, parent)
+
+
+def test_a_child_of_a_parent_of_the_current_epoch_runs_its_tool() -> None:
+    harness = Harness()
+    harness.tool("restart_service")
+    parent = harness.lease("restart_service")
+
+    child = delegate(harness, parent)
+    receipt = harness.invoke("restart_service(name)", child)
+
+    assert child.stop_epoch == parent.stop_epoch == harness.stop.epoch == 0
+    assert receipt.stop_epoch == 0
+    assert harness.names() == ["restart_service"]
+
+
+# --- VF-003: the bound authority itself refuses stale leases ------------------------
+
+
+def test_the_bound_authority_refuses_a_pre_stop_lease_after_the_reset_and_revokes_it_in_its_ledger() -> None:
+    harness = Harness()
+    lease = harness.lease("restart_service")  # epoch 0
+    harness.accept_stop()
+    activation = harness.stop.history[0]
+    harness.reset()
+
+    with pytest.raises(AuthorizationError):
+        harness.authority.authorize(lease, "tool:restart_service", "restart_service", at=NOW, subject="agent-1")
+    recorded = harness.authority.get(lease.lease_id)
+
+    assert recorded is not None
+    assert recorded.revoked_at is not None
+    assert recorded.revoked_at == max(activation.at, lease.issued_at)
+    assert not recorded.is_active(NOW)
+
+
+def test_the_bound_authority_refuses_every_lease_while_the_stop_is_active() -> None:
+    harness = Harness()
+    lease = harness.lease("restart_service")
+    harness.accept_stop()
+
+    with pytest.raises(AuthorizationError):
+        harness.authority.authorize(lease, "tool:restart_service", "restart_service", at=NOW, subject="agent-1")
+    harness.stop.finish_draining(at=NOW)
+    with pytest.raises(AuthorizationError):
+        harness.authority.authorize(lease, "tool:restart_service", "restart_service", at=NOW, subject="agent-1")
+
+
+def test_the_bound_authority_refuses_a_lease_bound_to_no_epoch() -> None:
+    harness, parent = unbound_parent_and_harness()
+
+    with pytest.raises(AuthorizationError):
+        harness.authority.authorize(parent, "tool:restart_service", "restart_service", at=NOW, subject="agent-1")
+
+
+def test_the_bound_authority_authorizes_a_lease_of_the_current_epoch_after_the_reset() -> None:
+    harness = Harness()
+    harness.accept_stop()
+    harness.reset()
+    lease = harness.lease("restart_service")
+
+    authorized = harness.authority.authorize(lease, "tool:restart_service", "restart_service", at=NOW, subject="agent-1")
+
+    assert authorized.stop_epoch == harness.stop.epoch == 2
+    assert authorized.revoked_at is None
+
+
+def test_another_gate_sharing_the_bound_authority_refuses_a_pre_stop_lease() -> None:
+    # c8_agent.AgentKernel.execute_sandboxed is one of the other callers of
+    # CapabilityAuthority.authorize (with c6/engine.py, c8/orchestrator.py
+    # and c7_emission.py): sharing the authority bound by ToolCallRuntime,
+    # it inherits the stop binding.
+    harness = Harness()
+    kernel = AgentKernel(sandbox=harness.sandbox, capability_authority=harness.authority, subject="agent-1")
+    stale = harness.authority.issue(
+        subject="agent-1", capabilities=["agent:sandbox"], resources=["agent-1"], issued_at=NOW, ttl=timedelta(hours=1)
+    )
+    assert kernel.execute_sandboxed("1 + 1", lease=stale, at=NOW) == 2
+    harness.accept_stop()
+    harness.reset()
+    fresh = harness.authority.issue(
+        subject="agent-1", capabilities=["agent:sandbox"], resources=["agent-1"], issued_at=NOW, ttl=timedelta(hours=1)
+    )
+
+    with pytest.raises(AuthorizationError):
+        kernel.execute_sandboxed("1 + 1", lease=stale, at=NOW)
+    assert kernel.execute_sandboxed("1 + 1", lease=fresh, at=NOW) == 2
