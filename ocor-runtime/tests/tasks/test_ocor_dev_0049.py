@@ -3072,8 +3072,8 @@ def test_logs_and_traces_carry_governed_fields_and_no_secrets(stack, fault_obser
 
 
 KIND_CLUSTER = "ocor-poc"
-KIND_NODE_IMAGE = ("kindest/node:v1.33.1@sha256:"
-                   "050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f")
+KIND_NODE_IMAGE = ("kindest/node:v1.33.4@sha256:"
+                   "25a6018e48dfcaee478f4a59af81157a437f15e6e140bf103f85a2e7cd0cbbf2")
 KIND_VAULT_ROOT = Path.home() / ".ocor-poc" / "kind-vault"
 
 
@@ -3091,74 +3091,98 @@ def kind(stack):
     host (outside the cluster fault domain) and attached to the bootstrap network."""
     clusters = subprocess.run([tool("kind"), "get", "clusters"], capture_output=True, text=True, check=False)
     created = KIND_CLUSTER not in clusters.stdout.split()
-    if created:
-        KIND_VAULT_ROOT.mkdir(parents=True, exist_ok=True)
-        config = stack.work / "kind.yaml"
-        config.write_text(yaml.safe_dump({
-            "kind": "Cluster", "apiVersion": "kind.x-k8s.io/v1alpha4",
-            "nodes": [{"role": "control-plane", "image": KIND_NODE_IMAGE,
-                       "extraMounts": [{"hostPath": str(KIND_VAULT_ROOT), "containerPath": "/ocor-vault"}]}]}))
-        result = subprocess.run([tool("kind"), "create", "cluster", "--name", KIND_CLUSTER, "--config", str(config),
-                                 "--wait", "180s"], capture_output=True, text=True, check=False, timeout=600)
-        assert result.returncode == 0, result.stderr
-    node = f"{KIND_CLUSTER}-control-plane"
-    subprocess.run(["docker", "network", "connect", BOOTSTRAP_NETWORK, node], capture_output=True, check=False)
-    images = set(helm_profile()["images"]["pins"].values()) | {OTHER_OPS_IMAGE}
-    for image in sorted(images):
-        for attempt in range(3):
-            if subprocess.run(["docker", "exec", node, "crictl", "inspecti", image], capture_output=True).returncode == 0:
-                break
-            subprocess.run(["docker", "exec", node, "crictl", "pull", image], capture_output=True, timeout=900)
-            time.sleep(attempt * 5)
-        assert subprocess.run(["docker", "exec", node, "crictl", "inspecti", image],
-                              capture_output=True).returncode == 0, f"image {image} unavailable in kind"
-    run = uuid.uuid4().hex[:6]
-    namespace = f"ocor-poc-{run}"
-    vault = KIND_VAULT_ROOT / run
-    vault.mkdir(parents=True)
-    bootstrap = json.loads(subprocess.run(["docker", "network", "inspect", BOOTSTRAP_NETWORK], capture_output=True,
-                                          text=True, check=True).stdout)[0]
-    aliases = {}
-    for container in bootstrap["Containers"].values():
-        match = re.fullmatch(r"ocor-bootstrap-(.+)-1", container["Name"])
-        if match and match.group(1) in BOOTSTRAP_SERVICES:
-            aliases[match.group(1)] = container["IPv4Address"].split("/")[0]
-    kubectl("create", "namespace", namespace)
-    kubectl("-n", namespace, "create", "secret", "generic", "ocor-poc-ops",
-            f"--from-literal=OCOR_OPENBAO_TOKEN={stack.env['OCOR_LOCAL_OPENBAO_TOKEN']}",
-            f"--from-literal=OCOR_OPS_OPERATOR_TOKEN={stack.operator_token}",
-            f"--from-literal=PGPASSWORD={stack.env['OCOR_LOCAL_POSTGRES_PASSWORD']}")
-    storage = stack.work / f"vault-{run}.yaml"
-    storage.write_text(yaml.safe_dump_all([
-        {"apiVersion": "v1", "kind": "PersistentVolume", "metadata": {"name": namespace},
-         "spec": {"capacity": {"storage": "2Gi"}, "accessModes": ["ReadWriteOnce"], "storageClassName": "ocor-vault",
-                  "persistentVolumeReclaimPolicy": "Retain", "hostPath": {"path": f"/ocor-vault/{run}"},
-                  "claimRef": {"namespace": namespace, "name": "ocor-poc-vault"}}},
-        {"apiVersion": "v1", "kind": "PersistentVolumeClaim", "metadata": {"name": "ocor-poc-vault",
-                                                                           "namespace": namespace},
-         "spec": {"accessModes": ["ReadWriteOnce"], "storageClassName": "ocor-vault", "volumeName": namespace,
-                  "resources": {"requests": {"storage": "2Gi"}}}}]))
-    kubectl("apply", "-f", str(storage))
-    values = stack.work / f"values-{run}.yaml"
-    values.write_text(yaml.safe_dump({"operational": {
-        "secretName": "ocor-poc-ops", "vault": {"existingClaim": "ocor-poc-vault"},
-        "runAsUser": os.getuid(),
-        "hostAliases": [{"ip": ip, "hostnames": [name]} for name, ip in sorted(aliases.items())]}}))
-    ctx = {"namespace": namespace, "vault": vault, "values": values, "release": "ocor-poc"}
+    assert clusters.returncode == 0, clusters.stdout + clusters.stderr
+    namespace = None
+    vault = None
     try:
+        if created:
+            KIND_VAULT_ROOT.mkdir(parents=True, exist_ok=True)
+            config = stack.work / "kind.yaml"
+            config.write_text(yaml.safe_dump({
+                "kind": "Cluster", "apiVersion": "kind.x-k8s.io/v1alpha4",
+                "nodes": [{"role": "control-plane", "image": KIND_NODE_IMAGE,
+                           "extraMounts": [{"hostPath": str(KIND_VAULT_ROOT), "containerPath": "/ocor-vault"}]}]}))
+            result = subprocess.run([tool("kind"), "create", "cluster", "--name", KIND_CLUSTER, "--config", str(config),
+                                     "--wait", "180s"], capture_output=True, text=True, check=False, timeout=600)
+            assert result.returncode == 0, result.stderr
+        node = f"{KIND_CLUSTER}-control-plane"
+        subprocess.run(["docker", "network", "connect", BOOTSTRAP_NETWORK, node], capture_output=True, check=False)
+        images = set(helm_profile()["images"]["pins"].values()) | {OTHER_OPS_IMAGE}
+        for image in sorted(images):
+            for attempt in range(3):
+                if subprocess.run(["docker", "exec", node, "crictl", "inspecti", image], capture_output=True).returncode == 0:
+                    break
+                subprocess.run(["docker", "exec", node, "crictl", "pull", image], capture_output=True, timeout=900)
+                time.sleep(attempt * 5)
+            assert subprocess.run(["docker", "exec", node, "crictl", "inspecti", image],
+                                  capture_output=True).returncode == 0, f"image {image} unavailable in kind"
+        run = uuid.uuid4().hex[:6]
+        namespace = f"ocor-poc-{run}"
+        vault = KIND_VAULT_ROOT / run
+        vault.mkdir(parents=True)
+        bootstrap = json.loads(subprocess.run(["docker", "network", "inspect", BOOTSTRAP_NETWORK], capture_output=True,
+                                              text=True, check=True).stdout)[0]
+        aliases = {}
+        for container in bootstrap["Containers"].values():
+            match = re.fullmatch(r"ocor-bootstrap-(.+)-1", container["Name"])
+            if match and match.group(1) in BOOTSTRAP_SERVICES:
+                aliases[match.group(1)] = container["IPv4Address"].split("/")[0]
+        kubectl("create", "namespace", namespace)
+        kubectl("-n", namespace, "create", "secret", "generic", "ocor-poc-ops",
+                f"--from-literal=OCOR_OPENBAO_TOKEN={stack.env['OCOR_LOCAL_OPENBAO_TOKEN']}",
+                f"--from-literal=OCOR_OPS_OPERATOR_TOKEN={stack.operator_token}",
+                f"--from-literal=PGPASSWORD={stack.env['OCOR_LOCAL_POSTGRES_PASSWORD']}")
+        storage = stack.work / f"vault-{run}.yaml"
+        storage.write_text(yaml.safe_dump_all([
+            {"apiVersion": "v1", "kind": "PersistentVolume", "metadata": {"name": namespace},
+             "spec": {"capacity": {"storage": "2Gi"}, "accessModes": ["ReadWriteOnce"], "storageClassName": "ocor-vault",
+                      "persistentVolumeReclaimPolicy": "Retain", "hostPath": {"path": f"/ocor-vault/{run}"},
+                      "claimRef": {"namespace": namespace, "name": "ocor-poc-vault"}}},
+            {"apiVersion": "v1", "kind": "PersistentVolumeClaim", "metadata": {"name": "ocor-poc-vault",
+                                                                               "namespace": namespace},
+             "spec": {"accessModes": ["ReadWriteOnce"], "storageClassName": "ocor-vault", "volumeName": namespace,
+                      "resources": {"requests": {"storage": "2Gi"}}}}]))
+        kubectl("apply", "-f", str(storage))
+        values = stack.work / f"values-{run}.yaml"
+        values.write_text(yaml.safe_dump({"operational": {
+            "secretName": "ocor-poc-ops", "vault": {"existingClaim": "ocor-poc-vault"},
+            "runAsUser": os.getuid(),
+            "hostAliases": [{"ip": ip, "hostnames": [name]} for name, ip in sorted(aliases.items())]}}))
+        ctx = {"namespace": namespace, "vault": vault, "values": values, "release": "ocor-poc"}
         result = subprocess.run([tool("helm"), "--kube-context", f"kind-{KIND_CLUSTER}", "install", "ocor-poc",
                                  str(CHART_DIR), "-n", namespace, "-f", str(values)],
                                 capture_output=True, text=True, check=False, timeout=300)
         assert result.returncode == 0, result.stderr
         yield ctx
     finally:
-        kubectl("delete", "namespace", namespace, "--wait=true", check=False, timeout=300)
-        kubectl("delete", "pv", namespace, check=False)
-        if created and os.environ.get("OCOR_KEEP_KIND") != "1":
-            subprocess.run([tool("kind"), "delete", "cluster", "--name", KIND_CLUSTER], capture_output=True,
-                           check=False, timeout=300)
-        make_writable(vault)
-        shutil.rmtree(vault, ignore_errors=True)
+        # Setup may fail before namespace/vault exist, including an interrupted
+        # kind create which already owns a node, its /var volume and attachment.
+        # Each cleanup still runs when an earlier cleanup fails.
+        try:
+            if namespace is not None:
+                try:
+                    kubectl("delete", "namespace", namespace, "--wait=true", check=False, timeout=300)
+                finally:
+                    kubectl("delete", "pv", namespace, check=False)
+        finally:
+            try:
+                if created:
+                    deleted = subprocess.run(
+                        [tool("kind"), "delete", "cluster", "--name", KIND_CLUSTER],
+                        capture_output=True, text=True, check=False, timeout=300,
+                    )
+                    assert deleted.returncode == 0, deleted.stdout + deleted.stderr
+                    remaining = subprocess.run(
+                        ["docker", "inspect", f"{KIND_CLUSTER}-control-plane"],
+                        capture_output=True, text=True, check=False, timeout=30,
+                    )
+                    assert remaining.returncode != 0 and "no such object" in remaining.stderr.lower(), (
+                        "owned kind node remains or absence is unverified: " + remaining.stdout + remaining.stderr
+                    )
+            finally:
+                if vault is not None:
+                    make_writable(vault)
+                    shutil.rmtree(vault, ignore_errors=True)
 
 
 def pod_name(ns: str, component: str) -> str:

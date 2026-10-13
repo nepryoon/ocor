@@ -16,6 +16,7 @@ since it delegates to the backbone's own idempotency-key handling.
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -66,6 +67,9 @@ class EventOperationsCoordinator:
         self._poisoned_event_ids: set[str] = set()
         self._operator_released_event_ids: set[str] = set()
         self._attempts_by_event_id: dict[str, int] = {}
+        # Guards every read-modify-write of the counters above, so the quota
+        # holds under concurrent publish and the in-flight count never goes negative.
+        self._lock = threading.Lock()
 
     @property
     def dead_letters(self) -> tuple[DeadLetter, ...]:
@@ -78,20 +82,24 @@ class EventOperationsCoordinator:
         """Admits at most ``max_in_flight_per_tenant`` concurrent
         publishes per tenant; a tenant already at quota is refused
         before ever touching the real backbone."""
-        in_flight = self._in_flight_by_tenant.get(tenant, 0)
-        if in_flight >= self._max_in_flight_per_tenant:
-            raise OperationsError(
-                "BACKPRESSURE_EXCEEDED", f"tenant {tenant!r} is at its bounded in-flight quota of {self._max_in_flight_per_tenant}"
-            )
-        self._in_flight_by_tenant[tenant] = in_flight + 1
+        with self._lock:
+            in_flight = self._in_flight_by_tenant.get(tenant, 0)
+            if in_flight >= self._max_in_flight_per_tenant:
+                raise OperationsError(
+                    "BACKPRESSURE_EXCEEDED",
+                    f"tenant {tenant!r} is at its bounded in-flight quota of {self._max_in_flight_per_tenant}",
+                )
+            self._in_flight_by_tenant[tenant] = in_flight + 1
         try:
             self._publish_and_record(envelope)
         finally:
-            self._in_flight_by_tenant[tenant] -= 1
+            with self._lock:
+                self._in_flight_by_tenant[tenant] -= 1
 
     def _publish_and_record(self, envelope: CanonicalIngestionEnvelope) -> None:
-        attempts = self._attempts_by_event_id.get(envelope.event_id, 0) + 1
-        self._attempts_by_event_id[envelope.event_id] = attempts
+        with self._lock:
+            attempts = self._attempts_by_event_id.get(envelope.event_id, 0) + 1
+            self._attempts_by_event_id[envelope.event_id] = attempts
         try:
             self._backbone.publish(envelope)
         except BackboneError as error:
