@@ -5339,3 +5339,10 @@ Gate documentali: rccad PASS_LOCAL_PRECHECK, scope/language/ruff PASS, mypy 69 s
 - Difetto separato `OCOR-DEV-REM-0029` verificato libero su 350 ref e registrato nello stato: reset dichiara PASS con rete ancora occupata; script fuori dalle aree di REM-0019. Nessuna modifica al reset in questa unità; dipendenza G6, senza interrompere il percorso prioritario. Decisione REM-0024 del PO ricevuta e registrata come risolta con implementazione pendente; nessun nuovo DEC.
 - CI precedente #249/#250/#251/#252 bloccata dal tetto di 30 minuti; nessun rerun aggiuntivo, merge o bypass qui. #251 resta il sigillo di regressione 0050 già revisionato GO, sul suo HEAD esatto. Stato/handoff canonici; claims E1=0, E2=0, Verified=0 e NO-GO invariati.
 - Implementatore di questo fix: Codex; contributi precedenti REM-0019/adapter v2: Claude Code di riserva; verifier effettivo previsto: Grok 4.7 (Cursor), processo e contesto separati, avviato soltanto dal loop esterno dopo campagna e candidato completi. Prossima azione nello stato/handoff: completare la campagna nuova, poi evidenza/riqualifiche e richiesta indipendente.
+
+
+### Checkpoint full del 2026-10-13 — nuovo commit kind-fix
+
+Campagna `/home/luca/.ocor-codex/rem0019-resume-20261013-kind-fixed`, commit `6e1c4b0`: full attempt-1 PASS_COMPONENT_ONLY, 2224/2224, failure/error/skip zero, unione esatta e inventario Docker identico, 3550,11 s (59m10s). Archivio content-addressed `attempts/full/attempt-1/result.json`; nessun conteggio trasferito dai vecchi tentativi. Driver prosegue con cinque ordini e119 isolati, esito globale RUNNING. Test Helm reale PASS, containerd PID invariato e NRestarts0 fino al teardown; fixture nuova smonta il nodo.
+
+PR #253 HEAD `5740c5e`: rccad-methodology SUCCESS (run38423601572); delivery-activation e validation-closure CANCELLED (run38423601493 e38423601282) al limite circa30min, errore “The operation was canceled.” nei log dei job completi. Raw e diagnosi conservati con hash privati; nessun rerun su causa invariata, nessun merge. Nessuna qualifica CI dichiarata. E1/E2/Verified e NO-GO invariati.
