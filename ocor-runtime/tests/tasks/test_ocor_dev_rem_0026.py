@@ -358,6 +358,28 @@ def test_a_missing_journal_fails_closed(broker: str) -> None:
     assert absent.quarantine == ()
 
 
+class ForeignOffsetsBackbone(CanonicalEventBackbone):
+    """Local failure-handling instrument (not qualifying for the broker itself):
+    the real offsets query runs, but its answer is replaced by one that names
+    no partition of this topic -- e.g. another topic's offsets."""
+
+    def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
+        output = super()._exec(*args, input_text=input_text, timeout=timeout)
+        if args and args[0] == "kafka-get-offsets":
+            return "".join(f"ocor-rem0026-foreign-topic:{line.split(':', 1)[1]}\n" for line in output.splitlines() if ":" in line)
+        return output
+
+
+def test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed(topic: str, broker: str) -> None:
+    backbone = ForeignOffsetsBackbone(topic, container=broker)
+
+    with pytest.raises(KafkaBackboneError):
+        backbone.publish(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:foreign", sequence=1))
+
+    assert backbone.quarantine == ()
+    assert topic_record_count(backbone) == 0
+
+
 # Write failures: an unknown write outcome never yields a duplicate
 
 
