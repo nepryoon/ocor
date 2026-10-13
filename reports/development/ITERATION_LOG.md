@@ -5351,3 +5351,10 @@ PR #253 HEAD `5740c5e`: rccad-methodology SUCCESS (run38423601572); delivery-act
 ### Checkpoint primo ordine — campagna kind-fix
 
 `order-collection` attempt-1: PASS_COMPONENT_ONLY,390/390, zero failure/error/skip,ordine JUnit identico alla lista dei390 nodeid e residui zero (container,reti,volumi). Durata2406,8s, sotto2700s. Archivio content-addressed `rem0019-resume-20261013-kind-fixed/attempts/order-collection/attempt-1/result.json`; fonte6e1c4b0 e harness immutati. Driver prepara l’ordine inverso, poi tre seed e119isolati. Nessun PASS finale/verifica/sigillo; counts precedenti non trasferiti, E1/E2/Verified/NO-GO invariati.
+
+
+### Checkpoint ordine inverso e confine di fase
+
+`order-reverse` attempt-1 PASS_COMPONENT_ONLY:390/390, zero failure/error/skip,2425,27s (<2700s), ordine JUnit identico alla lista inversa e zero residui. Full2224 e due ordini restano componenti validi sul commit6e1c4b0; nessun PASS globale. Preparazione seed190001 (Helm posizione268),poi190002/190003.
+
+Pianificazione del limite di invocazione6h: i119isolati storici richiedono4757–5256s (79–88min, sola stima di durata,zero conteggi trasferiti). Il solo orchestratore superiore `driver.py` PID72060 è sospeso mentre attende `modules.py`, per evitare l’avvio automatico dei119 oltre il limite di sessione. `modules.py`, ogni pytest e `run_nodes.py` continuano indisturbati; codice/harness/input/comandi/ordini e limiti45/75min immutati. Dopo i cinque ordini: checkpoint pulito,teardown e ripresa dei119 con gli stessi file congelati nella prossima unità. Nessun run qualificante interrotto o rietichettato.
