@@ -272,6 +272,11 @@ def main() -> int:
     changed = subprocess.run(["git", "diff", "--name-only", args.base_ref, "--"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
+        # PO 2026-10-13: two REM-0019 decision requests and 0050 regression-only evidence.
+        "reports/development/decision_requests/REM-0019-KIND-TEARDOWN-OBSERVATION.md",
+        "reports/development/decision_requests/REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE.md",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-po-allowlist.log",
         # CC-OCOR-DELIVERY-COMPLETION section 7: exact authorized REM-0022
         # source and governance disposition; no broader spike path admission.
         "spikes/kafka_delivery/oracle.py",
