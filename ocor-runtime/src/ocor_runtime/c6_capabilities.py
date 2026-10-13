@@ -6,10 +6,21 @@ import threading
 import uuid
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from typing import Iterable, Protocol
+from typing import Iterable, Protocol, Sequence
 
 from .c3_store import require_aware
 from .errors import AuthorizationError, OCORError, TemporalGuardViolation
+
+
+class StopEpochEvent(Protocol):
+    """One accepted transition of the emergency-stop FSM, e.g.
+    ``c6.safety.StopEvent``."""
+
+    @property
+    def epoch(self) -> int: ...
+
+    @property
+    def at(self) -> datetime: ...
 
 
 class StopEpochAuthority(Protocol):
@@ -19,7 +30,16 @@ class StopEpochAuthority(Protocol):
     @property
     def epoch(self) -> int: ...
 
+    @property
+    def history(self) -> Sequence[StopEpochEvent]: ...
+
     def guard_dispatch(self, *, fenced_epoch: int) -> None: ...
+
+
+class StopEpochDenied(AuthorizationError):
+    """A lease refused by an authority bound to an emergency-stop
+    controller: bound to no epoch or to a superseded one, or the stop is
+    not ``NORMAL`` (ADD v1.3 section 5.5; LLD v1.1 section 4.3)."""
 
 
 def _capability_matches(grant: str, requested: str) -> bool:
@@ -124,7 +144,13 @@ class CapabilityAuthority:
         self._leases: dict[str, CapabilityLease] = {}
         self._uses: dict[str, int] = {}
         self._lock = threading.RLock()
-        self._stop = stop
+        self._stop: StopEpochAuthority | None = None
+        # epoch observed when the authority was bound, and last epoch at
+        # which the ledger was swept for leases a stop has superseded
+        self._bound_epoch = 0
+        self._swept_epoch = 0
+        if stop is not None:
+            self.bind_stop_controller(stop)
 
     @property
     def stop_controller(self) -> StopEpochAuthority | None:
@@ -137,8 +163,50 @@ class CapabilityAuthority:
         with self._lock:
             if self._stop is None:
                 self._stop = stop
+                self._bound_epoch = self._swept_epoch = stop.epoch
             elif self._stop is not stop:
                 raise ValueError("capability authority is already bound to another emergency-stop controller")
+
+    def _sweep_superseded_leases(self) -> None:
+        """LLD v1.1 section 4.3: accepting the stop revokes leases, and a
+        reset does not re-enable them. Once the bound controller has moved
+        past the epoch the ledger last saw, every lease bound to an older
+        epoch (or, issued before the binding, to none) is recorded as
+        revoked at the accepted stop that superseded it. Caller holds
+        ``self._lock``."""
+        stop = self._stop
+        if stop is None:
+            return
+        current = stop.epoch
+        if current == self._swept_epoch:
+            return
+        events = tuple(stop.history)
+        for lease_id, lease in tuple(self._leases.items()):
+            if lease.revoked_at is not None:
+                continue
+            lease_epoch = self._bound_epoch if lease.stop_epoch is None else lease.stop_epoch
+            if lease_epoch == current:
+                continue
+            superseding = next((event for event in events if event.epoch > lease_epoch), None)
+            if superseding is None:
+                continue
+            accepted_at = require_aware(superseding.at, field="stop event at")
+            self._leases[lease_id] = replace(lease, revoked_at=max(accepted_at, lease.issued_at))
+        self._swept_epoch = current
+
+    def _require_current_stop_epoch(self, lease: CapabilityLease) -> None:
+        """On a bound authority a lease is usable only at the controller's
+        current epoch and only while the stop is ``NORMAL``. Caller holds
+        ``self._lock``."""
+        stop = self._stop
+        if stop is None:
+            return
+        if lease.stop_epoch is None:
+            raise StopEpochDenied("capability lease is not bound to an emergency-stop epoch")
+        try:
+            stop.guard_dispatch(fenced_epoch=lease.stop_epoch)
+        except OCORError as error:
+            raise StopEpochDenied(f"capability lease is fenced by the emergency stop: {error}") from error
 
     def _current_stop_epoch(self) -> int | None:
         stop = self.stop_controller
@@ -173,6 +241,7 @@ class CapabilityAuthority:
         authoritative_parent: CapabilityLease | None = None
         if parent is not None:
             with self._lock:
+                self._sweep_superseded_leases()
                 authoritative_parent = self._leases.get(parent.lease_id)
             if authoritative_parent is None:
                 raise AuthorizationError("delegating parent lease is not authoritative")
@@ -205,8 +274,10 @@ class CapabilityAuthority:
     def _validate_delegation(parent: CapabilityLease, child: CapabilityLease) -> None:
         if child.issued_at < parent.issued_at:
             raise AuthorizationError("delegated lease predates its parent")
+        if child.stop_epoch is not None and parent.stop_epoch is None:
+            raise StopEpochDenied("delegating parent lease is not bound to an emergency-stop epoch")
         if parent.stop_epoch is not None and child.stop_epoch != parent.stop_epoch:
-            raise AuthorizationError("delegating parent lease is bound to another emergency-stop epoch")
+            raise StopEpochDenied("delegating parent lease is bound to another emergency-stop epoch")
         if child.not_before < parent.not_before or child.expires_at > parent.expires_at:
             raise AuthorizationError("delegated lease exceeds its parent time window")
         if any(
@@ -222,11 +293,13 @@ class CapabilityAuthority:
 
     def get(self, lease_id: str) -> CapabilityLease | None:
         with self._lock:
+            self._sweep_superseded_leases()
             return self._leases.get(lease_id)
 
     def revoke(self, lease_id: str, *, at: datetime) -> CapabilityLease:
         instant = require_aware(at, field="at")
         with self._lock:
+            self._sweep_superseded_leases()
             lease = self._leases[lease_id]
             if lease.revoked_at is not None:
                 return lease
@@ -247,9 +320,11 @@ class CapabilityAuthority:
         instant = require_aware(at, field="at")
         lease_id = lease if isinstance(lease, str) else lease.lease_id
         with self._lock:
+            self._sweep_superseded_leases()
             authoritative = self._leases.get(lease_id)
             if authoritative is None:
                 raise AuthorizationError("capability lease is unknown to its authority")
+            self._require_current_stop_epoch(authoritative)
             if not authoritative.allows(
                 capability, resource, at=instant, subject=subject
             ):

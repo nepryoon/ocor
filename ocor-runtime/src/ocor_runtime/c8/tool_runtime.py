@@ -48,16 +48,29 @@ OCOR-DEV-REM-0027 (LLD v1.1 sections 1.4, 4.3 and 6; ADD v1.3 section
   while it runs, or the per-call deadline (at most the ``<=10 s``
   containment target), cancels it cooperatively through
   ``cancellation_checkpoint`` and refuses the call at once with
-  ``execution_unknown`` set -- a tool that does not cooperate cannot be
-  preempted by the interpreter, so its outcome is reported as unknown
-  (ADD v1.3 section 5.5 points 4-6), and no further tool of the
-  expression is ever dispatched.
+  ``execution_unknown`` set (ADD v1.3 section 5.5 points 4-6), and no
+  further tool of the expression is ever dispatched;
+* a tool that does not cooperate is preempted (repair 1, VF-001 of the
+  verdict ``OCOR-DEV-REM-0027-f48452c64777-0``): the runtime raises
+  ``ToolPreempted`` -- a ``BaseException``, so an ordinary ``except
+  Exception`` in the tool cannot swallow it -- asynchronously in the
+  worker thread, which stops the tool at its next interpreter step,
+  before any effect that would follow a blocking wait.
+
+Residual limit, declared rather than claimed closed: in-process
+preemption acts between interpreter steps. A registered tool that
+catches ``BaseException`` or performs its effect inside a single native
+call that is already running cannot be preempted here; its outcome stays
+``execution_unknown`` and goes to reconciliation (ADD v1.3 section 5.5
+points 5-6). Tools are registered by the platform, never by the model,
+whose expressions cannot catch exceptions.
 """
 
 from __future__ import annotations
 
 import ast
 import contextvars
+import ctypes
 import threading
 import time
 from dataclasses import dataclass
@@ -67,7 +80,7 @@ from typing import Any, Callable, Mapping
 from ..c3_store import require_aware
 from ..c4_marking import MarkingEngine, MarkingSet
 from ..c6.safety import EmergencyStopController, SafetyError
-from ..c6_capabilities import CapabilityAuthority, CapabilityLease
+from ..c6_capabilities import CapabilityAuthority, CapabilityLease, StopEpochDenied
 from ..c8_agent import StrictSandbox, TokenBudget
 from ..errors import AuthorizationError, OCORError
 from ..kernel.governed_context import GovernedContext
@@ -93,9 +106,86 @@ class ToolCancelled(OCORError):
     its call has been cancelled by an accepted stop or by the deadline."""
 
 
+class ToolPreempted(BaseException):
+    """Raised asynchronously in the worker thread of a dispatched tool that
+    did not stop at its cancellation: a ``BaseException`` so that an
+    ordinary ``except Exception`` in the tool cannot swallow it."""
+
+
+# CPython's PyThreadState_SetAsyncExc, called with the GIL held: one
+# prototype schedules an exception in a thread, the other (NULL) clears it.
+_set_async_exc = ctypes.PYFUNCTYPE(ctypes.c_int, ctypes.c_ulong, ctypes.py_object)(
+    ("PyThreadState_SetAsyncExc", ctypes.pythonapi)
+)
+_clear_async_exc = ctypes.PYFUNCTYPE(ctypes.c_int, ctypes.c_ulong, ctypes.c_void_p)(
+    ("PyThreadState_SetAsyncExc", ctypes.pythonapi)
+)
+
+
+class _ToolWorker:
+    """The supervised worker thread of one tool dispatch. ``preempt`` and
+    ``_retire`` share a lock, so an asynchronous exception is only ever
+    scheduled in the worker while the tool call is still running -- never
+    in a thread that has retired (whose identifier may be reused)."""
+
+    def __init__(self, name: str, call: Callable[[], Any], dispatched: _DispatchedCall) -> None:
+        self._call = call
+        self._dispatched = dispatched
+        self._lock = threading.Lock()
+        self._retired = False
+        self._preempted = False
+        self.done = threading.Event()
+        self.outcome: dict[str, Any] = {}
+        self._thread = threading.Thread(
+            target=contextvars.copy_context().run, args=(self._run,), name=f"ocor-c8-tool-{name}", daemon=True
+        )
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def _run(self) -> None:
+        try:
+            try:
+                _DISPATCHED_CALL.set(self._dispatched)
+                self.outcome["result"] = self._call()
+            except BaseException as error:  # noqa: BLE001 - re-raised on the calling thread
+                self.outcome["error"] = error
+        except ToolPreempted as late:
+            # preempted after the tool returned, while its outcome was stored
+            self.outcome["error"] = late
+        finally:
+            # retired inline: a pending preemption can only be raised inside
+            # this try, and none is scheduled once ``_retired`` is set
+            try:
+                with self._lock:
+                    self._retired = True
+                    _clear_async_exc(threading.get_ident(), None)
+            except ToolPreempted as late:
+                self.outcome.setdefault("error", late)
+                with self._lock:
+                    self._retired = True
+            finally:
+                self.done.set()
+
+    def preempt(self) -> bool:
+        """Schedule ``ToolPreempted`` once in the running tool. Returns
+        whether the tool was still running."""
+        with self._lock:
+            ident = self._thread.ident
+            if self._retired or ident is None:
+                return False
+            if not self._preempted:
+                self._preempted = True
+                _set_async_exc(ident, ToolPreempted)
+            return True
+
+
 DEFAULT_TOOL_CALL_DEADLINE = timedelta(seconds=5)
 CONTAINMENT_TARGET = timedelta(seconds=10)
 _SUPERVISION_INTERVAL_SECONDS = 0.01
+# time a cancelled tool has to reach a cancellation checkpoint before it is
+# preempted; far below the containment target
+_COOPERATIVE_GRACE_SECONDS = 0.25
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,6 +276,8 @@ class ToolCallRuntime:
             authorized = self._authority.authorize(
                 lease, f"tool:{tool_name}", tool_name, at=instant, subject=context.effective_principal_id, consume=True
             )
+        except StopEpochDenied as error:
+            raise ToolRuntimeError("STOP_BOUND_DENIED", str(error)) from error
         except AuthorizationError as error:
             raise ToolRuntimeError("CAPABILITY_DENIED", str(error)) from error
 
@@ -251,6 +343,8 @@ class ToolCallRuntime:
     def _authorize_tool(self, lease_id: str, name: str, *, subject: str, at: datetime) -> None:
         try:
             self._authority.authorize(lease_id, f"tool:{name}", name, at=at, subject=subject)
+        except StopEpochDenied as error:
+            raise ToolRuntimeError("STOP_BOUND_DENIED", f"tool {name!r} is fenced by the emergency stop: {error}") from error
         except AuthorizationError as error:
             raise ToolRuntimeError("CAPABILITY_DENIED", f"tool {name!r} is not covered by the lease: {error}") from error
 
@@ -270,36 +364,24 @@ class ToolCallRuntime:
         self._fence(fenced_epoch)
 
         dispatched = _DispatchedCall(stop=self._stop, fenced_epoch=fenced_epoch, cancelled=threading.Event())
-        outcome: dict[str, Any] = {}
-        done = threading.Event()
-
-        def run() -> None:
-            _DISPATCHED_CALL.set(dispatched)
-            try:
-                outcome["result"] = call()
-            except BaseException as error:  # noqa: BLE001 - re-raised on the calling thread below
-                outcome["error"] = error
-            finally:
-                done.set()
-
-        worker = threading.Thread(target=contextvars.copy_context().run, args=(run,), name=f"ocor-c8-tool-{name}", daemon=True)
+        worker = _ToolWorker(name, call, dispatched)
         deadline = time.monotonic() + self._deadline_seconds
         worker.start()
-        while not done.wait(_SUPERVISION_INTERVAL_SECONDS):
+        while not worker.done.wait(_SUPERVISION_INTERVAL_SECONDS):
             if _stop_accepted(self._stop, fenced_epoch):
-                dispatched.cancelled.set()
+                self._cancel(worker, dispatched)
                 raise ToolRuntimeError(
                     "STOP_BOUND_DENIED",
-                    f"emergency stop accepted while tool {name!r} was running: cancelled if it cooperates, "
-                    "otherwise its outcome is EXECUTION_UNKNOWN",
+                    f"emergency stop accepted while tool {name!r} was running: cancelled, or preempted if it "
+                    "does not cooperate; its outcome is EXECUTION_UNKNOWN",
                     execution_unknown=True,
                 )
             if time.monotonic() >= deadline:
-                dispatched.cancelled.set()
+                self._cancel(worker, dispatched)
                 raise ToolRuntimeError(
                     "TOOL_DEADLINE_EXCEEDED",
-                    f"tool {name!r} exceeded its {self._deadline_seconds} s deadline: cancelled if it cooperates, "
-                    "otherwise its outcome is EXECUTION_UNKNOWN",
+                    f"tool {name!r} exceeded its {self._deadline_seconds} s deadline: cancelled, or preempted if it "
+                    "does not cooperate; its outcome is EXECUTION_UNKNOWN",
                     execution_unknown=True,
                 )
         if _stop_accepted(self._stop, fenced_epoch):
@@ -308,6 +390,14 @@ class ToolCallRuntime:
                 f"emergency stop accepted while tool {name!r} was running; its outcome is EXECUTION_UNKNOWN",
                 execution_unknown=True,
             )
-        if "error" in outcome:
-            raise outcome["error"]
-        return outcome["result"]
+        if "error" in worker.outcome:
+            raise worker.outcome["error"]
+        return worker.outcome["result"]
+
+    @staticmethod
+    def _cancel(worker: _ToolWorker, dispatched: _DispatchedCall) -> None:
+        """Cooperative cancellation first; a tool still running after the
+        cooperative grace is preempted."""
+        dispatched.cancelled.set()
+        if not worker.done.wait(_COOPERATIVE_GRACE_SECONDS):
+            worker.preempt()
