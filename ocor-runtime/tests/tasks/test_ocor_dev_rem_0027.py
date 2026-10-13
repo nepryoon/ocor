@@ -632,19 +632,29 @@ def test_a_child_of_a_parent_of_the_current_epoch_runs_its_tool() -> None:
 
 def test_the_bound_authority_refuses_a_pre_stop_lease_after_the_reset_and_revokes_it_in_its_ledger() -> None:
     harness = Harness()
-    lease = harness.lease("restart_service")  # epoch 0
+    issued_at = datetime.now(UTC) - timedelta(minutes=1)
+    lease = harness.authority.issue(
+        subject="agent-1",
+        capabilities=["tool:restart_service"],
+        resources=["restart_service"],
+        issued_at=issued_at,
+        ttl=timedelta(hours=1),
+    )  # epoch 0
     harness.accept_stop()
     activation = harness.stop.history[0]
     harness.reset()
+    later = activation.at + timedelta(seconds=1)
 
     with pytest.raises(AuthorizationError):
-        harness.authority.authorize(lease, "tool:restart_service", "restart_service", at=NOW, subject="agent-1")
+        harness.authority.authorize(lease, "tool:restart_service", "restart_service", at=later, subject="agent-1")
     recorded = harness.authority.get(lease.lease_id)
 
+    assert lease.stop_epoch == 0
     assert recorded is not None
-    assert recorded.revoked_at is not None
-    assert recorded.revoked_at == max(activation.at, lease.issued_at)
-    assert not recorded.is_active(NOW)
+    # revoked at the accepted stop, not at the reset nor at the later check
+    assert activation.at > issued_at
+    assert recorded.revoked_at == activation.at
+    assert not recorded.is_active(later)
 
 
 def test_the_bound_authority_refuses_every_lease_while_the_stop_is_active() -> None:
