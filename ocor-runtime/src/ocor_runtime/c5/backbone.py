@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import threading
 import time
 import uuid
 from collections.abc import Mapping
@@ -164,14 +165,33 @@ class CanonicalEventBackbone:
     own partitioner preserves per-aggregate order. Quarantine records
     every governed rejection without ever publishing it. Self-
     provisions its own real, isolated, single-node KRaft broker, so it
-    never depends on a shared, externally-provisioned Kafka service."""
+    never depends on a shared, externally-provisioned Kafka service.
+
+    Dedup and the per-aggregate watermark are durable and atomic (LLD v1.1
+    section 6, "watermark monotono; deduplica durable"): the topic itself is
+    the durable journal, and the in-memory state is only a cache of it,
+    rebuilt from the whole topic before an instance's first publish (a
+    restart) and after any write whose outcome is unknown (a lost
+    acknowledgement). Check, write and update run under one lock, so
+    concurrent publishes through an instance never both pass the check. The
+    instance is the topic's single active producer: two live instances
+    publishing to one topic at the same time are not serialized with each
+    other."""
 
     def __init__(self, topic: str, *, container: str) -> None:
         self._topic = topic
         self._container = container
-        self._last_sequence: dict[str, int] = {}
-        self._seen_idempotency_keys: set[str] = set()
+        # Dedup and ordering state is scoped by the envelope's isolation
+        # context (ADD v1.3 sections 1.4 and 3.2): one Governed Context can
+        # never drop or quarantine another context's event. The PoC envelope
+        # carries the context as ``governed_context_digest``, the digest of
+        # the whole GovernedContext (isolation tuple included).
+        self._last_sequence: dict[tuple[str, str], int] = {}
+        self._seen_idempotency_keys: set[tuple[str, str]] = set()
         self._quarantine: list[QuarantinedEnvelope] = []
+        self._lock = threading.Lock()
+        # False until the state above has been rebuilt from the journal.
+        self._recovered = False
 
     @classmethod
     def provision(cls, topic: str) -> tuple[CanonicalEventBackbone, str, str]:
@@ -291,6 +311,48 @@ class CanonicalEventBackbone:
             "kafka-topics", "--bootstrap-server", BOOTSTRAP, "--create", "--topic", self._topic,
             "--partitions", "3", "--replication-factor", "1",
         )
+        # ``--create`` fails on an existing topic, so the journal is new and empty.
+        with self._lock:
+            self._last_sequence.clear()
+            self._seen_idempotency_keys.clear()
+            self._recovered = True
+
+    def _offsets(self, time_spec: str) -> dict[int, int]:
+        output = self._exec(
+            "kafka-get-offsets", "--bootstrap-server", BOOTSTRAP, "--topic", self._topic, "--time", time_spec
+        )
+        offsets: dict[int, int] = {}
+        for line in output.splitlines():
+            parts = line.split(":")
+            if len(parts) == 3 and parts[0] == self._topic:
+                offsets[int(parts[1])] = int(parts[2])
+        if not offsets:
+            raise KafkaBackboneError(f"journal topic {self._topic!r} reports no partitions")
+        return offsets
+
+    def _recover_from_journal(self) -> None:
+        """Rebuild dedup keys and per-aggregate watermarks from every record
+        on the topic; any unreadable record fails closed, never falling back
+        to empty state."""
+        earliest = self._offsets("-2")
+        latest = self._offsets("-1")
+        if earliest.keys() != latest.keys():
+            raise KafkaBackboneError(f"journal topic {self._topic!r} changed partitions during recovery")
+        count = sum(latest[partition] - earliest[partition] for partition in latest)
+        try:
+            records = self.consume(count) if count else ()
+        except (BackboneError, ValueError) as error:
+            raise KafkaBackboneError(f"journal topic {self._topic!r} holds an unreadable record: {error}") from error
+        seen: set[tuple[str, str]] = set()
+        last: dict[tuple[str, str], int] = {}
+        for record in records:
+            value = record.envelope
+            seen.add((value.governed_context_digest, value.idempotency_key))
+            key = (value.governed_context_digest, value.aggregate_ref)
+            last[key] = max(value.sequence, last.get(key, value.sequence))
+        self._seen_idempotency_keys = seen
+        self._last_sequence = last
+        self._recovered = True
 
     @property
     def quarantine(self) -> tuple[QuarantinedEnvelope, ...]:
@@ -309,37 +371,55 @@ class CanonicalEventBackbone:
             self._quarantine.append(QuarantinedEnvelope("UNKNOWN_SCHEMA", envelope.to_mapping()))
             raise BackboneError("UNKNOWN_SCHEMA", f"{envelope.schema_ref!r} is not a registered schema")
 
-        if envelope.idempotency_key in self._seen_idempotency_keys:
-            # already durably published once; a safe no-op replay, not
-            # a duplicate canonical effect and not a quarantine event.
-            return
+        context = envelope.governed_context_digest
+        if not isinstance(context, str) or not context:
+            # an undeterminable isolation context never falls back to
+            # shared state: fail closed before any dedup or ordering lookup.
+            self._quarantine.append(QuarantinedEnvelope("MISSING_CONTEXT", envelope.to_mapping()))
+            raise BackboneError("MISSING_CONTEXT", "governed_context_digest must be a non-empty string")
 
-        last = self._last_sequence.get(envelope.aggregate_ref)
-        if last is not None and envelope.sequence <= last:
-            self._quarantine.append(QuarantinedEnvelope("OUT_OF_ORDER", envelope.to_mapping()))
-            raise BackboneError(
-                "OUT_OF_ORDER", f"sequence {envelope.sequence} does not advance past {last} for {envelope.aggregate_ref!r}"
-            )
+        with self._lock:
+            if not self._recovered:
+                self._recover_from_journal()
 
-        line = f"{envelope.aggregate_ref}|{json.dumps(envelope.to_mapping(), sort_keys=True, separators=(',', ':'))}"
-        self._exec(
-            "kafka-console-producer",
-            "--bootstrap-server",
-            BOOTSTRAP,
-            "--topic",
-            self._topic,
-            "--producer-property",
-            "acks=all",
-            "--producer-property",
-            "enable.idempotence=true",
-            "--property",
-            "parse.key=true",
-            "--property",
-            "key.separator=|",
-            input_text=line + "\n",
-        )
-        self._last_sequence[envelope.aggregate_ref] = envelope.sequence
-        self._seen_idempotency_keys.add(envelope.idempotency_key)
+            if (context, envelope.idempotency_key) in self._seen_idempotency_keys:
+                # already durably published once in this context; a safe no-op
+                # replay, not a duplicate canonical effect and not a quarantine event.
+                return
+
+            last = self._last_sequence.get((context, envelope.aggregate_ref))
+            if last is not None and envelope.sequence <= last:
+                self._quarantine.append(QuarantinedEnvelope("OUT_OF_ORDER", envelope.to_mapping()))
+                raise BackboneError(
+                    "OUT_OF_ORDER",
+                    f"sequence {envelope.sequence} does not advance past {last} for {envelope.aggregate_ref!r}",
+                )
+
+            line = f"{envelope.aggregate_ref}|{json.dumps(envelope.to_mapping(), sort_keys=True, separators=(',', ':'))}"
+            try:
+                self._exec(
+                    "kafka-console-producer",
+                    "--bootstrap-server",
+                    BOOTSTRAP,
+                    "--topic",
+                    self._topic,
+                    "--producer-property",
+                    "acks=all",
+                    "--producer-property",
+                    "enable.idempotence=true",
+                    "--property",
+                    "parse.key=true",
+                    "--property",
+                    "key.separator=|",
+                    input_text=line + "\n",
+                )
+            except KafkaBackboneError:
+                # the record may be durable even though the write failed (a lost
+                # acknowledgement): rebuild from the journal before the next publish.
+                self._recovered = False
+                raise
+            self._last_sequence[(context, envelope.aggregate_ref)] = envelope.sequence
+            self._seen_idempotency_keys.add((context, envelope.idempotency_key))
 
     def consume(self, count: int) -> tuple[DeliveredRecord, ...]:
         command = [
