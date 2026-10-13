@@ -132,7 +132,7 @@
   ],
   "base_sha": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
   "baseline_commit": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
-  "branch": "governed/state-sync-rem0019-po-allowlist-candidate",
+  "branch": "governed/state-sync-rem0019-allowlist-checkpoint",
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -683,9 +683,9 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-0050 regression-only requalification for REM-0019 PO decision allowlist, candidate awaiting external Cursor/Grok review",
+  "current_task": "REM-0019 allowlist interrupted checkpoint recovered; external regression-only review ready",
   "evidence_paths": [],
-  "exact_next_action": "OCOR-DEV-0050:integration, REGRESSION_ONLY REM-0019 PO decision allowlist; await OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist from Grok 4.7 via Cursor (historical 0050 reserve implementer Claude Code), on exact candidate 0e6d1d738af0378f826bde1330f55ced1ad985bf. GO: seal only the new regression record, manifest and verdict, open governed PR, require exact-head green checks, merge, state sync; then REM-0019 cycle 1: verify official kindest/node Kubernetes v1.33.x digest, containerd and Go build version with upstream vgetrandom fix before use; fixture create inside try/finally plus interrupted-setup test; production 0049 unchanged; new full + five orders + 119 isolated with observation v2 unchanged, all historic runs diagnostic and no count transfer. REM-0017 ->0049 integration ->REM-0023 ->0056; REM-0027 repairs VF-001/002/003 deferred to independent work slot, budget 2 (none consumed).",
+  "exact_next_action": "Await external Cursor/Grok verdict OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist on candidate 0e6d1d738af0378f826bde1330f55ced1ad985bf (REGRESSION_ONLY). PR #249: 12/13 check verdi, rerun autorizzato 2 ancora in corso, nessun merge; attendere esito senza terzo rerun. GO: seal the new 0050 regression record/manifest, open governed candidate PR, require all 13 exact-head checks, merge, state sync. Then REM-0019 cycle1 image/fixture/new campaign ->REM-0017 ->0049 integration ->REM-0023 ->0056. REM-0027 NO_GO remains open, no repair consumed; E1/E2/Verified and NO-GO unchanged.",
   "head_sha": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
   "head_sha_resolver": "Candidate source head recorded in rem0019_po_allowlist_unit; state sync head: git rev-parse HEAD",
   "infoa_audit_unit": {
@@ -844,7 +844,7 @@
     ],
     "status": "PASS"
   },
-  "migration_rollback_result": "No runtime or data migration. New revert commit; exact four allowlist constants removal restores baseline AST. Historical evidence/diagnostics retained.",
+  "migration_rollback_result": "No runtime/data migration. State-only rollback by new revert commit; candidate, original diagnostics and historical seals unchanged.",
   "previous_rem0019_reference": {
     "artifacts": {
       "HANDOFF.md": {
@@ -1606,6 +1606,145 @@
     "state_key": "remediation_status.REM_0028_APPROVER_AUTHORITY_REVALIDATION",
     "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED"
   },
+  "rem0019_allowlist_checkpoint": {
+    "base_sha": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
+    "candidate_branch": "governed/rem0019-po-decision-allowlist",
+    "candidate_head": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
+    "ci_disposition": "PR #249: 12/13 check verdi, rerun autorizzato 2 ancora in corso, nessun merge; attendere esito senza terzo rerun",
+    "ci_final": {
+      "head_sha": "d4e2492c760c310e2fd8993ba0cf0ce3d785411a",
+      "observed_at": "2026-10-13T07:35:06.457031+00:00",
+      "passed": [
+        "backend-compatibility-not-ba-evidence",
+        "contract",
+        "evidence",
+        "fgm-contract-readiness-not-runtime-evidence",
+        "integration-postgresql",
+        "mandatory-gates",
+        "rccad-methodology",
+        "supply-chain",
+        "tooling-policy",
+        "type-and-lint-gate",
+        "unit",
+        "validation-closure"
+      ],
+      "pending": [
+        "delivery-activation"
+      ],
+      "required_checks": [
+        "backend-compatibility-not-ba-evidence",
+        "contract",
+        "delivery-activation",
+        "evidence",
+        "fgm-contract-readiness-not-runtime-evidence",
+        "integration-postgresql",
+        "mandatory-gates",
+        "rccad-methodology",
+        "supply-chain",
+        "tooling-policy",
+        "type-and-lint-gate",
+        "unit",
+        "validation-closure"
+      ],
+      "rerun_attempt": 2,
+      "run_ids": [
+        38357869700,
+        38357869716,
+        38357869721,
+        38357869728,
+        38357869734,
+        38357869786
+      ],
+      "status": "PENDING"
+    },
+    "ci_pr": 249,
+    "diagnosis": {
+      "attempt": 1,
+      "cause": "30-minute job timeout while rendering Mermaid; suite completed before cancellation, Fuseki acquisition/build consumed 6m49s",
+      "created_at": "2026-10-13T07:23:31.141942+00:00",
+      "disposition": "One authorized rerun of failed job on same head. No timeout/workflow/test/skip alteration; second failure requires escalation and no third attempt.",
+      "evidence_lines": {
+        "mermaid_started": 1029,
+        "operation_canceled": 1045,
+        "test_result": 1009
+      },
+      "head_sha": "d4e2492c760c310e2fd8993ba0cf0ce3d785411a",
+      "pr": 249,
+      "raw_log": "/home/luca/.ocor-codex/rem0019-allowlist-checkpoint-20261013/ci-attempt1.log",
+      "raw_sha256": "a09ad8c0f1279c373e99ce0477dfecbeab7a16f599e32c513579822e1147f434",
+      "run_id": 38357869786,
+      "status": "INFRASTRUCTURE_JOB_TIMEOUT_NOT_QUALIFYING",
+      "test_result": {
+        "failed": 0,
+        "passed": 1645,
+        "qualifying": false,
+        "seconds": 1293.26,
+        "skipped": 189
+      }
+    },
+    "implementer": "Codex (OpenAI), checkpoint recovery and verification dispatch only",
+    "pending_po_decisions": [],
+    "preflight": {
+      "services": 11,
+      "status": "PASS",
+      "toolchain_entries": 9
+    },
+    "qualifying_tests_this_checkpoint": "NOT_EXECUTED: no source or test changes; prior candidate campaign retained and hash/union/AST/HEAD check repeated PASS",
+    "raw_sha256": {
+      "bootstrap.log": "069ffc83152d205dec7e426546b498214107fd43c78d99d568cebd942c0c2282",
+      "bounded-fuseki-process.log": "570df867a47f7711dbe4ef8d8a5d2239313f822b148a401324a66bb290552c7c",
+      "bounded-fuseki-profile.log": "44f9cf037870442a89823c01e78533f39e7c81c8f565fae64dcbcb3621229bf9",
+      "ci-attempt1.log": "a09ad8c0f1279c373e99ce0477dfecbeab7a16f599e32c513579822e1147f434",
+      "ci-final.json": "efca70e231529e9da839fba70caefa3055912ae3623dc4e165fd8b7ef9a5e019",
+      "ci-rerun-acquisition.json": "da034ffaa1bc101fd9c78f5499b05f3b97bffd4d677bfd32d01417a9761e9619",
+      "ci-snapshots.json": "4f8d461f385e54b314c80aed43e003731c0cf30596c986f365d91399d46aef3a",
+      "ci-watch.log": "1711392ba9b4db875c5e2d066cfe2a8d5d30e74d0ed226e093b25c26ce52723b",
+      "diagnosis.json": "6d0657215a680944b9be821425507faea369bba3ddb161652d2c0098bfb13833",
+      "drift.log": "8d00685467e94c964a17c6993ae5b186d797cca192f89b4c4a6357bef69ceef4",
+      "environment-final.json": "29e458db87777ef21c96354f4bd44950f068b1b95b19753d087c4fb2114c073a",
+      "fixtures.log": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "health.json": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "initialize.log": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "preflight-commands.json": "69e61c3adc03d6d1a2f60945dfbff77d062750bf9f0508c6dad2848ca21450fb",
+      "preflight-result.json": "5f1235e325146d71477ffc8121fb078da39bb1b020716a79075cd4128f799351",
+      "reset.log": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "resource-profile.json": "655b30734feafc09abb28ce8f554a8ab406f0a0bf152589ad5788712218ccd43",
+      "resources-before.json": "598f1744328a280beac0f390df3942f8df32fdbda16eea64ed1351a75607ce37",
+      "restore-verify-report.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "session-reset.log": "0a997481d14b030c846b7859aa19a9c74b5e2bdd914fdaab9767724e33c738cf",
+      "session-resources-after.json": "598f1744328a280beac0f390df3942f8df32fdbda16eea64ed1351a75607ce37",
+      "session-teardown.json": "a6e7b574652d1e66621bbd70fbf8497055efa89b67b140046b63741d6aee2d83",
+      "stack-summary.json": "96c100658aff8efdee77282f0809f12b85e29672ab03e7f77685f2862166ebd3",
+      "sync-lint.log": "233a2346f978c8c103d163ce16788d75f540af93cc63f292ac594d4ffb8c63d6",
+      "toolchain.json": "9373d32acd2009a2070e10941cfba6d92f6a219dca20dfeda29b698e91122e6b",
+      "typed-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "verify.log": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "verify_request.ready.json": "06345703ec2a5084765add674214483e0f8fcde53f6b38750fc3ab80e121584e"
+    },
+    "request_id": "OCOR-DEV-0050-0e6d1d738af0-0-rem0019-po-allowlist",
+    "review_scope": "REGRESSION_ONLY; original 0050 conformance not reassessed; REM-0023 remains open",
+    "runtime_changes": [],
+    "session_artifacts": "/home/luca/.ocor-codex/rem0019-allowlist-checkpoint-20261013",
+    "teardown": {
+      "added": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      },
+      "duration_seconds": 1.54,
+      "exit_code": 0,
+      "inventory_equals_session_start": true,
+      "preexisting_removed": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      },
+      "status": "PASS"
+    },
+    "updated_at": "2026-10-13T07:35:06.617497+00:00",
+    "verifier": "Grok 4.7 via Cursor, external loop; 0050 historical reserve Claude Code implementer"
+  },
   "rem0019_po_allowlist_unit": {
     "authorization": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE 2026-10-13; REM-0019-KIND-TEARDOWN-OBSERVATION 2026-10-12",
     "base_sha": "fbdec1ea4ad36ce77d26a319e91958a139d9e8e3",
@@ -2056,9 +2195,8 @@
     "NFR-048"
   ],
   "roles": {
-    "historical_0050_implementer": "Claude Code reserve cycle 0; Codex repairs 1-2",
-    "implementer": "Codex (OpenAI), this unit",
-    "verifier": "Grok 4.7 via Cursor CLI (cursor), external loop only, separate provider/process/context, 0050 touched by reserve implementer Claude Code"
+    "implementer": "Codex (OpenAI), checkpoint only",
+    "verifier": "Grok 4.7 (Cursor), external loop, historical 0050 reserve Claude Code"
   },
   "rvw03_audit_unit": {
     "audit_record": "reports/development/decision_requests/RVW-03.md",
@@ -2067,7 +2205,7 @@
     "session_artifacts": "/home/luca/.ocor-codex/rvw03-audit-20261012"
   },
   "schema_version": "1.0",
-  "security_observability_notes": "No secret in published raw; real stack reset/bootstrap/health before suite, stop on restart/OOM, cap75min. REM-0023 and REM-0027 remain OPEN; E1/E2/Verified and NO-GO unchanged.",
+  "security_observability_notes": "No source/test/validator/workflow/lock/immutable evidence changes; E1/E2/Verified and NO-GO unchanged. CI skips kept as nonqualifying; diagnostic failure preserved.",
   "session_artifacts": "/home/luca/.ocor-codex/rem0019-po-allowlist-20261013",
   "source_branch": "governed/rem0019-po-decision-allowlist",
   "source_commit": "0e6d1d738af0378f826bde1330f55ced1ad985bf",
@@ -2139,12 +2277,13 @@
   },
   "task_id": "OCOR-DEV-0050",
   "test_results": {
-    "full_duration_seconds": 933.5,
-    "full_resources_cleaned": true,
-    "full_tests": 1834,
-    "status": "PASS",
-    "task_tests": 198,
-    "zero_skip": true
+    "bootstrap": "PASS 11 services",
+    "drift": "PASS",
+    "harness": "PASS 14/14",
+    "normative_digest": "PASS 8/8",
+    "qualifying_suite": "NOT_EXECUTED this checkpoint; retained candidate 198/198 + 1834/1834 checked by digest and exact JUnit union",
+    "teardown": "PASS zero owned residue",
+    "toolchain": "PASS 9 entries"
   },
   "unresolved_blockers": [
     {
@@ -2165,6 +2304,6 @@
       "status": "OPEN_IMPLEMENTATION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-13T06:37:21.085269+00:00",
-  "worktree": ".ocor/worktrees/state-sync-rem0019-po-allowlist-candidate"
+  "updated_at": "2026-10-13T07:35:06.617497+00:00",
+  "worktree": ".ocor/worktrees/state-sync-rem0019-allowlist-checkpoint"
 }
