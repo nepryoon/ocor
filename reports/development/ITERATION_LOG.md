@@ -5271,3 +5271,14 @@ Gate documentali: rccad PASS_LOCAL_PRECHECK, scope/language/ruff PASS, mypy 69 s
 - Osservazione: su `main` `validate_runtime_evidence.py --task OCOR-DEV-0041 --non-skipped` fallisce (`command result.failed is not a valid zero: 2`) perché il record originale di 0041 riporta 2 fallimenti preesistenti nella regressione; il record di riqualifica REM-0026 (0 fallimenti, 0 skip) supera lo stesso controllo sul branch del candidato. Nessun record sigillato modificato.
 - Invariati: E1=0, E2=0, Verified=0, claim NO-GO e input; blocchi PO `REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE` (#236) e `REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY` (#240); ordine REM-0019 → REM-0017 → 0049 → REM-0023 → 0056.
 - Prossima azione: integrazione di REM-0026 al verdetto; nel frattempo REM-0027 (implementazione).
+
+
+## 2026-10-13T03:40:00.320251+00:00 — REM-0026: sigillo del verdetto indipendente e merge (PR #246)
+
+- Unità unica di Claude Code come implementatore di riserva del loop (quota Codex esaurita), fase di integrazione di `OCOR-DEV-REM-0026` da `origin/main` `2c130ff` (merge PR #245), come da `next_executable_action`.
+- Verdetto `OCOR-DEV-REM-0026-054b6eb12731-0` (REMEDIATION, ciclo 0): `GO_FOR_EVIDENCE_SEAL`, nessun finding e nessun `NOT_EXECUTED`, sull'HEAD `054b6eb`; verifier Grok 4.7 via Cursor CLI (fornitore diverso), non Claude Code. SHA256 del file del verdetto `4435af8f…`.
+- Sigillo `5adc5df` figlio diretto dell'HEAD verificato: cambiano solo `independent_verification`, `sealed_at` e `status: SEALED` del record di remediation e delle riqualifiche 0040/0041/0050, i loro hash nei manifest G4/G5 e nel record di remediation, e la riga di status del README. Codice, test, input e raw log byte-identici. Gate locali sul sigillo: digest 8/8, RCCAD, ruff, scope (16 path), language, drift, runtime-evidence 0040/0041/0050, piano 37 PASS e 2 NOT_EXECUTED opzionali (side effect sui report di piano ripristinato).
+- PR #246: 13/13 check obbligatori verdi sull'HEAD esatto, merge `--match-head-commit` in `d6231b2`; invarianti del sigillo su `main`: PASS.
+- `REM_0026_C5_DURABLE_ATOMIC_DEDUP_AND_QUOTA` chiusa (dipendenza G6 soddisfatta per C5).
+- Invariati: E1=0, E2=0, Verified=0, claim NO-GO e input; blocchi PO `REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE` (#236) e `REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY` (#240); ordine REM-0019 → REM-0017 → 0049 → REM-0023 → 0056.
+- Prossima azione: REM-0027 (implementazione, kill switch preemptive C8).
