@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "c0fe81d5c6f2012106c6abd6348243c0fbf584aa",
-    "branch": "governed/state-sync-rem0025-sealed",
+    "baseline_commit": "c0bbf8a65c9beec274e322b220ab8858e51e3a52",
+    "branch": "governed/state-sync-rem0026-candidate",
     "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_REM_0025_SEALED",
     "checkpoint": {
       "changed_product_paths": [],
@@ -609,6 +609,54 @@
       "task_id": "OCOR-DEV-REM-0025",
       "worktree": ".ocor/worktrees/state-sync-rem0025-candidate"
     },
+    "rem0026_implementation_unit": {
+      "baseline_commit": "c0bbf8a65c9beec274e322b220ab8858e51e3a52",
+      "branch": "governed/state-sync-rem0026-candidate",
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0026-c5-durable-atomic-dedup-quota",
+        "code_commit": "5e1935e931261eec3ffa23a6bcdeb58a167f0d9b",
+        "commits": {
+          "evidence": "054b6eb12731f48085235e341ee36109190f2a51",
+          "extra_fail_closed_case": "5e1935e931261eec3ffa23a6bcdeb58a167f0d9b",
+          "fix": "8f7a680",
+          "plan_allowlist": "2a264d2",
+          "red_tests": "034e53d156b9c8b2323a41a52db89ddd8f21c2a4"
+        },
+        "head_sha": "054b6eb12731f48085235e341ee36109190f2a51",
+        "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer (Codex quota exhausted)",
+        "records": [
+          "reports/assurance/OCOR-DEV-REM-0026-RCCAD/OCOR-DEV-REM-0026.json",
+          "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0026.json",
+          "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json"
+        ],
+        "repair_cycle": 0,
+        "requalified": [
+          "OCOR-DEV-0040 (c5/backbone.py)",
+          "OCOR-DEV-0041 (c5/operations.py; supersedes the original record 0bbf02e)",
+          "OCOR-DEV-0050 (regression-only: planning allowlist input)"
+        ],
+        "results": {
+          "full_suite": "1834/1834 in 943.5 s, exact collect/JUnit union, zero skip, stack unchanged, inventory equal",
+          "gates": "ruff, mypy strict, harness 14 PASS, plan PASS (37 + 2 optional NOT_EXECUTED), rccad, language, scope (16 paths), drift PASS, runtime-evidence 0040/0041/0050, digests 8/8",
+          "mutation_probe": "8/8 killed at the campaign commit 5e1935e, sources restored (first probe at 2a264d2: 7/8, surviving empty-offsets mutant covered by the case added in 5e1935e)",
+          "red": "13 FAIL for the defect (behavioural assertions) / 3 positive controls PASS on 034e53d, separate worktree; an earlier unpublished RED (7066431) with a defective counter instrument kept as diagnostic",
+          "reproducible_check": "python3 /home/luca/.ocor-codex/rem-0026/check_evidence.py <repo> 054b6eb12731f48085235e341ee36109190f2a51 -> PASS",
+          "task_suites": "0040+0041+REM-0025+REM-0026+0050 241/241 x3 plus uv run, zero skip, no residue"
+        },
+        "review_type": "REMEDIATION",
+        "session_artifacts": "/home/luca/.ocor-codex/rem-0026",
+        "verifier": "Grok 4.7 via Cursor CLI (separate process, context and provider); Claude Code does not verify this change set",
+        "verify_request_id": "OCOR-DEV-REM-0026-054b6eb12731-0"
+      },
+      "candidate_worktree": ".ocor/worktrees/rem-0026",
+      "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): OCOR-DEV-REM-0026 implementation cycle 0",
+      "independent_verification": "REQUESTED OCOR-DEV-REM-0026-054b6eb12731-0 (Grok 4.7 via Cursor)",
+      "phase": "REM_0026_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+      "session_artifacts": "/home/luca/.ocor-codex/rem-0026",
+      "task_id": "OCOR-DEV-REM-0026",
+      "worktree": ".ocor/worktrees/state-sync-rem0026-candidate"
+    },
     "repair_cycle": 1,
     "rvw03_audit_unit": {
       "audit_record": "reports/development/decision_requests/RVW-03.md",
@@ -621,7 +669,7 @@
     "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
     "source_worktree": ".ocor/worktrees/rem-0019",
     "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem0025-candidate"
+    "worktree": ".ocor/worktrees/state-sync-rem0026-candidate"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -2127,7 +2175,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "c0fe81d5c6f2012106c6abd6348243c0fbf584aa",
+  "baseline_commit": "c0bbf8a65c9beec274e322b220ab8858e51e3a52",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6417,7 +6465,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "OCOR-DEV-REM-0026:implementation (C5 durable/atomic dedup and tenant quota, LLD v1.1 \u00a76/\u00a72.5, hard dependency REM-0025 now merged at c0fe81d5c6f2) from origin/main; alternatively OCOR-DEV-REM-0027:implementation (C8 preemptive kill switch, independent). Verifier per LOOP-ROLES (Cursor/Grok if the reserve Claude Code implements; Claude Code if Codex implements). OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "REM-0026:integration after the independent verdict OCOR-DEV-REM-0026-054b6eb12731-0 (verifier Grok 4.7 via Cursor; ~/.ocor-codex/verdicts/OCOR-DEV-REM-0026-054b6eb12731-0.json): with GO_FOR_EVIDENCE_SEAL seal the four records (REM-0026, 0040/0041/0050 .requalified-rem0026) and both manifests on branch governed/ocor-dev-rem-0026-c5-durable-atomic-dedup-quota (head 054b6eb12731), open the governed PR, wait for every required check on the exact head, merge --match-head-commit, then state sync; with NO_GO repair (budget 2 cycles). While the verdict is pending, the next coherent unit is OCOR-DEV-REM-0027:implementation (C8 preemptive kill switch, c8/tool_runtime.py, independent of REM-0026) from origin/main. OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -10133,7 +10181,51 @@
         "OCOR-DEV-0068",
         "OCOR-DEV-0069"
       ],
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0026-c5-durable-atomic-dedup-quota",
+        "code_commit": "5e1935e931261eec3ffa23a6bcdeb58a167f0d9b",
+        "commits": {
+          "evidence": "054b6eb12731f48085235e341ee36109190f2a51",
+          "extra_fail_closed_case": "5e1935e931261eec3ffa23a6bcdeb58a167f0d9b",
+          "fix": "8f7a680",
+          "plan_allowlist": "2a264d2",
+          "red_tests": "034e53d156b9c8b2323a41a52db89ddd8f21c2a4"
+        },
+        "head_sha": "054b6eb12731f48085235e341ee36109190f2a51",
+        "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer (Codex quota exhausted)",
+        "recorded_at": "2026-10-13T01:56:22.574749+00:00",
+        "records": [
+          "reports/assurance/OCOR-DEV-REM-0026-RCCAD/OCOR-DEV-REM-0026.json",
+          "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0026.json",
+          "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json"
+        ],
+        "repair_cycle": 0,
+        "requalified": [
+          "OCOR-DEV-0040 (c5/backbone.py)",
+          "OCOR-DEV-0041 (c5/operations.py; supersedes the original record 0bbf02e)",
+          "OCOR-DEV-0050 (regression-only: planning allowlist input)"
+        ],
+        "results": {
+          "full_suite": "1834/1834 in 943.5 s, exact collect/JUnit union, zero skip, stack unchanged, inventory equal",
+          "gates": "ruff, mypy strict, harness 14 PASS, plan PASS (37 + 2 optional NOT_EXECUTED), rccad, language, scope (16 paths), drift PASS, runtime-evidence 0040/0041/0050, digests 8/8",
+          "mutation_probe": "8/8 killed at the campaign commit 5e1935e, sources restored (first probe at 2a264d2: 7/8, surviving empty-offsets mutant covered by the case added in 5e1935e)",
+          "red": "13 FAIL for the defect (behavioural assertions) / 3 positive controls PASS on 034e53d, separate worktree; an earlier unpublished RED (7066431) with a defective counter instrument kept as diagnostic",
+          "reproducible_check": "python3 /home/luca/.ocor-codex/rem-0026/check_evidence.py <repo> 054b6eb12731f48085235e341ee36109190f2a51 -> PASS",
+          "task_suites": "0040+0041+REM-0025+REM-0026+0050 241/241 x3 plus uv run, zero skip, no residue"
+        },
+        "review_type": "REMEDIATION",
+        "session_artifacts": "/home/luca/.ocor-codex/rem-0026",
+        "verifier": "Grok 4.7 via Cursor CLI (separate process, context and provider); Claude Code does not verify this change set",
+        "verify_request_id": "OCOR-DEV-REM-0026-054b6eb12731-0"
+      },
       "code_reference": "ocor-runtime/src/ocor_runtime/c5/backbone.py:172-173,312-342 (sha256 d34a3609907905001a6780242f88e257d7707d05a1a20ade791b6880bf75c914); ocor-runtime/src/ocor_runtime/c5/operations.py:81-90 (sha256 922a9984d263cf8bd4a316781d88307b9668248962491799fd017f2effbb95b5) at 78d297c",
+      "design_decisions": {
+        "atomicity": "one lock per CanonicalEventBackbone around recovery, checks, real write and update; one lock in EventOperationsCoordinator around quota check/increment, decrement and per-event attempt counter",
+        "durable_journal": "the Kafka topic is the durable journal; dedup keys and per-(governed_context_digest, aggregate_ref) watermarks are rebuilt from every retained record before an instance's first publish and after any failed write (unknown outcome)",
+        "fail_closed": "unreadable journal record, missing topic or offsets answer naming no partition of the topic -> KafkaBackboneError, nothing written, no fallback to empty state",
+        "scope_of_atomicity": "per instance (single active producer per topic); two concurrently live instances on one topic: declared residual risk outside the acceptance criteria"
+      },
       "does_not_block": [
         "OCOR-DEV-0049",
         "G5"
@@ -10160,7 +10252,7 @@
         "OCOR-DEV-REM-0025"
       ],
       "id": "OCOR-DEV-REM-0026",
-      "implementer": "loop implementer (Codex), planned",
+      "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted), cycle 0",
       "in_live_poc_path": true,
       "live_path_classification": "sole PoC implementation of the normative function, qualified by G6; no caller in ocor-runtime/src today; treated as live path under the fail-closed interpretation recorded in INFO-C.md",
       "maximum_repair_cycles": 2,
@@ -10182,7 +10274,7 @@
       ],
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
       "scope": "Align CanonicalEventBackbone and EventOperationsCoordinator to LLD v1.1 \u00a76 (C4/C5 ordering per aggregate/partition, watermark monotone, durable dedup) and \u00a72.5 (per-tenant quota; replay never publishes a canonical effect twice). Today _seen_idempotency_keys and _last_sequence (backbone.py:172-173) are per-instance memory, lost on restart, and check (312, 317-318) and update (341-342) straddle the Kafka write without a lock; the per-tenant in-flight counter (operations.py:81-90) is an unlocked read-modify-write. Probe on real Kafka: R1 replay after restart publishes a duplicate; R2 stale sequence accepted after restart; K1 two concurrent identical publishes give 2 records; K2 concurrent sequences 5 and 4 both accepted and the recorded watermark regresses to 4; Q1 quota 1 admits 2 concurrent publishes and leaves the counter at -1. Make dedup and per-aggregate sequence state durable across restarts (recoverable from the durable journal or a durable store; implementer documents the choice against LLD) and atomic under concurrent publish; make the quota check-and-increment and the decrement atomic. Preserve REM-0025 isolation scoping; no change of replay semantics.",
-      "status": "OPEN_IMPLEMENTATION_REQUIRED"
+      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION"
     },
     "REM_0027_C8_PREEMPTIVE_KILL_SWITCH": {
       "acceptance_criteria": [
@@ -11189,5 +11281,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-13T00:11:10.940878+00:00"
+  "updated_at": "2026-10-13T01:56:22.574749+00:00"
 }
