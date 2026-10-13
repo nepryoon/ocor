@@ -6,10 +6,20 @@ import threading
 import uuid
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import Iterable, Protocol
 
 from .c3_store import require_aware
-from .errors import AuthorizationError, TemporalGuardViolation
+from .errors import AuthorizationError, OCORError, TemporalGuardViolation
+
+
+class StopEpochAuthority(Protocol):
+    """The trusted emergency-stop epoch a lease is bound to (LLD v1.1
+    sections 1.4 and 4.3), e.g. ``c6.safety.EmergencyStopController``."""
+
+    @property
+    def epoch(self) -> int: ...
+
+    def guard_dispatch(self, *, fenced_epoch: int) -> None: ...
 
 
 def _capability_matches(grant: str, requested: str) -> bool:
@@ -48,6 +58,7 @@ class CapabilityLease:
     revoked_at: datetime | None = None
     parent_lease_id: str | None = None
     max_uses: int | None = None
+    stop_epoch: int | None = None
 
     def __post_init__(self) -> None:
         if not self.lease_id or not self.subject or not self.issuer:
@@ -69,6 +80,10 @@ class CapabilityLease:
                 raise TemporalGuardViolation("lease cannot be revoked before issuance")
         if self.max_uses is not None and self.max_uses <= 0:
             raise ValueError("max_uses must be positive")
+        if self.stop_epoch is not None and (
+            not isinstance(self.stop_epoch, int) or isinstance(self.stop_epoch, bool) or self.stop_epoch < 0
+        ):
+            raise ValueError("stop_epoch must be a non-negative integer")
 
     def is_active(self, at: datetime) -> bool:
         instant = require_aware(at, field="at")
@@ -97,13 +112,44 @@ class CapabilityLease:
 class CapabilityAuthority:
     """Authoritative issuer and usage ledger for capability leases."""
 
-    def __init__(self, issuer: str = "ocor-capability-authority") -> None:
+    def __init__(
+        self,
+        issuer: str = "ocor-capability-authority",
+        *,
+        stop: StopEpochAuthority | None = None,
+    ) -> None:
         if not issuer:
             raise ValueError("issuer must be non-empty")
         self.issuer = issuer
         self._leases: dict[str, CapabilityLease] = {}
         self._uses: dict[str, int] = {}
         self._lock = threading.RLock()
+        self._stop = stop
+
+    @property
+    def stop_controller(self) -> StopEpochAuthority | None:
+        with self._lock:
+            return self._stop
+
+    def bind_stop_controller(self, stop: StopEpochAuthority) -> None:
+        """Bind every lease issued from now on to ``stop``'s epoch. An
+        authority serves exactly one emergency-stop controller."""
+        with self._lock:
+            if self._stop is None:
+                self._stop = stop
+            elif self._stop is not stop:
+                raise ValueError("capability authority is already bound to another emergency-stop controller")
+
+    def _current_stop_epoch(self) -> int | None:
+        stop = self.stop_controller
+        if stop is None:
+            return None
+        epoch = stop.epoch
+        try:
+            stop.guard_dispatch(fenced_epoch=epoch)
+        except OCORError as error:
+            raise AuthorizationError(f"emergency stop is active, no capability lease is issued: {error}") from error
+        return epoch
 
     def issue(
         self,
@@ -132,6 +178,7 @@ class CapabilityAuthority:
                 raise AuthorizationError("delegating parent lease is not authoritative")
             if not authoritative_parent.is_active(starts):
                 raise AuthorizationError("delegating parent lease is inactive")
+        stop_epoch = self._current_stop_epoch()
         lease = CapabilityLease(
             lease_id=lease_id or str(uuid.uuid4()),
             subject=subject,
@@ -143,6 +190,7 @@ class CapabilityAuthority:
             issuer=self.issuer,
             parent_lease_id=authoritative_parent.lease_id if authoritative_parent else None,
             max_uses=max_uses,
+            stop_epoch=stop_epoch,
         )
         if authoritative_parent is not None:
             self._validate_delegation(authoritative_parent, lease)
@@ -157,6 +205,8 @@ class CapabilityAuthority:
     def _validate_delegation(parent: CapabilityLease, child: CapabilityLease) -> None:
         if child.issued_at < parent.issued_at:
             raise AuthorizationError("delegated lease predates its parent")
+        if parent.stop_epoch is not None and child.stop_epoch != parent.stop_epoch:
+            raise AuthorizationError("delegating parent lease is bound to another emergency-stop epoch")
         if child.not_before < parent.not_before or child.expires_at > parent.expires_at:
             raise AuthorizationError("delegated lease exceeds its parent time window")
         if any(

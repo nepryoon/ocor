@@ -155,6 +155,9 @@ class TokenBudget:
             self._reservations.pop(reservation.reservation_id, None)
 
 
+ToolDispatch = Callable[[str, Callable[[], Any]], Any]
+
+
 class StrictSandbox:
     """A small AST interpreter with no imports, attributes, mutation or builtins."""
 
@@ -200,7 +203,17 @@ class StrictSandbox:
             raise SandboxViolation(f"sandbox tool is already registered: {name!r}")
         self._tools[name] = tool
 
-    def execute(self, expression: str, bindings: Mapping[str, Any] | None = None) -> Any:
+    def execute(
+        self,
+        expression: str,
+        bindings: Mapping[str, Any] | None = None,
+        *,
+        dispatch: ToolDispatch | None = None,
+    ) -> Any:
+        """Evaluate ``expression``. When ``dispatch`` is given, every
+        registered tool call is handed to it as ``dispatch(name, call)``
+        instead of being called directly: the hook decides whether and how
+        ``call`` runs, and any exception it raises propagates unchanged."""
         if not isinstance(expression, str) or not expression.strip():
             raise SandboxViolation("sandbox input must be a non-empty expression")
         if len(expression) > self.max_source_characters:
@@ -220,6 +233,7 @@ class StrictSandbox:
             self._tools,
             operations=self.max_operations,
             max_result_characters=self.max_result_characters,
+            dispatch=dispatch,
         )
         return evaluator.evaluate(tree.body)
 
@@ -252,11 +266,13 @@ class _ExpressionEvaluator:
         *,
         operations: int,
         max_result_characters: int,
+        dispatch: ToolDispatch | None = None,
     ) -> None:
         self.bindings = bindings
         self.tools = tools
         self.operations = operations
         self.max_result_characters = max_result_characters
+        self.dispatch = dispatch
 
     def _spend(self) -> None:
         self.operations -= 1
@@ -378,10 +394,16 @@ class _ExpressionEvaluator:
                 str(keyword.arg): self.evaluate(keyword.value)
                 for keyword in node.keywords
             }
-            try:
-                result = self.tools[node.func.id](*copy.deepcopy(args), **copy.deepcopy(kwargs))
-            except Exception as exc:
-                raise SandboxViolation(f"sandbox tool {node.func.id!r} failed: {exc}") from exc
+            name = node.func.id
+            tool = self.tools[name]
+
+            def call() -> Any:
+                try:
+                    return tool(*copy.deepcopy(args), **copy.deepcopy(kwargs))
+                except Exception as exc:
+                    raise SandboxViolation(f"sandbox tool {name!r} failed: {exc}") from exc
+
+            result = call() if self.dispatch is None else self.dispatch(name, call)
             return self._bounded(copy.deepcopy(result))
         raise SandboxViolation(f"forbidden syntax: {type(node).__name__}")
 
