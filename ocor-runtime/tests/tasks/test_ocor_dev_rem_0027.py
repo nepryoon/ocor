@@ -467,3 +467,18 @@ def test_a_lease_of_the_current_epoch_still_delegates() -> None:
 
     assert child.parent_lease_id == parent.lease_id
     assert getattr(child, "stop_epoch", None) == harness.stop.epoch == 2
+
+
+def test_a_command_fenced_before_the_stop_is_refused_even_with_a_fresh_lease() -> None:
+    harness = Harness()
+    harness.tool("restart_service")
+    command_epoch = harness.stop.epoch  # the command was prepared at epoch 0
+    harness.accept_stop()
+    harness.reset()
+    lease = harness.lease("restart_service")  # a fresh lease of the current epoch 2
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.invoke("restart_service(name)", lease, stop_epoch=command_epoch)
+
+    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert harness.effects == []
