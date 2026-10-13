@@ -90,6 +90,7 @@ class Harness:
         self.effects: list[tuple[str, str, float]] = []
         self.settled: dict[str, threading.Event] = {}
         self.swallowed: list[BaseException] = []
+        self.cooperative_exits: list[str] = []
         self.stop_accepted_at: float | None = None
         self.finished = threading.Event()
         self.sandbox = StrictSandbox()
@@ -227,6 +228,11 @@ def slow_cooperative(harness: Harness) -> Callable[[str], None]:
                 checkpoint()
                 time.sleep(0.05)
             checkpoint()
+        except BaseException as error:
+            # how the tool left: through its own checkpoint (cooperative) or
+            # preempted by the runtime
+            harness.cooperative_exits.append(type(error).__name__)
+            raise
         finally:
             harness.finished.set()
 
@@ -379,6 +385,7 @@ def test_a_stop_during_a_slow_cooperative_tool_cancels_it_with_no_effect() -> No
     assert harness.stop_accepted_at is not None
     assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
     assert finished_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    assert harness.cooperative_exits == ["ToolCancelled"]
     assert harness.effects == []
 
 
@@ -415,6 +422,9 @@ def test_a_cooperative_tool_past_the_call_deadline_is_cancelled_with_no_effect()
 
     assert refused.value.reason_code == "TOOL_DEADLINE_EXCEEDED"
     assert time.monotonic() - started <= 3.0
+    # the deadline reaches the tool through its cooperative checkpoint before
+    # any preemption
+    assert harness.cooperative_exits == ["ToolCancelled"]
     assert harness.effects == []
 
 
@@ -528,6 +538,33 @@ def test_a_lease_issued_before_a_stop_cannot_delegate_after_the_reset() -> None:
             capabilities=["tool:restart_service"],
             resources=["restart_service"],
             issued_at=NOW,
+            ttl=timedelta(minutes=5),
+            parent=parent,
+        )
+
+
+def test_a_pre_stop_lease_cannot_delegate_with_a_backdated_issuance_after_the_reset() -> None:
+    # the child's issuance instant is the caller's: backdated inside the
+    # parent's life before the stop, the parent still looks active then, so
+    # only the epoch comparison refuses the delegation
+    harness = Harness()
+    issued_at = datetime.now(UTC) - timedelta(minutes=2)
+    parent = harness.authority.issue(
+        subject="agent-1",
+        capabilities=["tool:restart_service"],
+        resources=["restart_service"],
+        issued_at=issued_at,
+        ttl=timedelta(hours=1),
+    )  # epoch 0
+    harness.accept_stop()
+    harness.reset()
+
+    with pytest.raises(AuthorizationError):
+        harness.authority.issue(
+            subject="agent-2",
+            capabilities=["tool:restart_service"],
+            resources=["restart_service"],
+            issued_at=issued_at + timedelta(minutes=1),
             ttl=timedelta(minutes=5),
             parent=parent,
         )
