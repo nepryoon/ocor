@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "d6231b213283591e9a06222f1309cb7612f9ff9a",
-    "branch": "governed/state-sync-rem0026-sealed",
+    "baseline_commit": "299a6a6c2122c5c79ad2e87131b8fe327275931b",
+    "branch": "governed/state-sync-rem0027-candidate",
     "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_REM_0026_SEALED",
     "checkpoint": {
       "changed_product_paths": [],
@@ -657,6 +657,53 @@
       "task_id": "OCOR-DEV-REM-0026",
       "worktree": ".ocor/worktrees/state-sync-rem0026-candidate"
     },
+    "rem0027_implementation_unit": {
+      "baseline_commit": "299a6a6c2122c5c79ad2e87131b8fe327275931b",
+      "branch": "governed/state-sync-rem0027-candidate",
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
+        "code_commit": "72ecedd6798088c38f361c5774cdbf55722e32b8",
+        "commits": {
+          "delegation_cases": "1c83a98",
+          "evidence": "f48452c647772a6dd0ab17fdbd88e8543113ed57",
+          "fix": "7075300",
+          "plan_allowlist": "59ea191",
+          "red_tests": "0249a28fc0939b6dd3f396fd9615672bab1f10f3",
+          "stale_command_case": "72ecedd6798088c38f361c5774cdbf55722e32b8"
+        },
+        "head_sha": "f48452c647772a6dd0ab17fdbd88e8543113ed57",
+        "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer (Codex quota exhausted)",
+        "records": [
+          "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json",
+          "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json"
+        ],
+        "repair_cycle": 0,
+        "requalified": [
+          "OCOR-DEV-0047 (c8/tool_runtime.py; supersedes the original record b70dcb2)",
+          "OCOR-DEV-0050 (regression-only: planning allowlist input)"
+        ],
+        "results": {
+          "full_suite": "1855/1855 in 963.7 s, exact collect/JUnit union, zero skip, stack unchanged, inventory equal",
+          "gates": "ruff, mypy strict, harness 14 PASS, plan PASS (37 + 2 optional NOT_EXECUTED), rccad, language, scope (15 paths), drift PASS, runtime-evidence 0047/0050, digests 8/8",
+          "mutation_probe": "14/14 killed at the campaign commit 72ecedd, sources restored (first probe at 1c83a98: 13/14, surviving caller-epoch-trusted mutant covered by the case added in 72ecedd)",
+          "red": "16 FAIL (12 behavioural for the defect, 4 for the absent deadline API) / 2 positive controls PASS on 0249a28, separate worktree; supplementary RED of the later cases: delegation cases FAIL, stale-command case passes (regression guard)",
+          "reproducible_check": "python3 /home/luca/.ocor-codex/rem-0027/check_evidence.py <repo> f48452c647772a6dd0ab17fdbd88e8543113ed57 -> PASS",
+          "task_suites": "0047+REM-0027+0050 230/230 x3 plus uv run, zero skip, no residue"
+        },
+        "review_type": "REMEDIATION",
+        "session_artifacts": "/home/luca/.ocor-codex/rem-0027",
+        "verifier": "Grok 4.7 via Cursor CLI (separate process, context and provider); Claude Code does not verify this change set",
+        "verify_request_id": "OCOR-DEV-REM-0027-f48452c64777-0"
+      },
+      "candidate_worktree": ".ocor/worktrees/rem-0027",
+      "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): OCOR-DEV-REM-0027 implementation cycle 0",
+      "independent_verification": "REQUESTED OCOR-DEV-REM-0027-f48452c64777-0 (Grok 4.7 via Cursor)",
+      "phase": "REM_0027_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+      "session_artifacts": "/home/luca/.ocor-codex/rem-0027",
+      "task_id": "OCOR-DEV-REM-0027",
+      "worktree": ".ocor/worktrees/state-sync-rem0027-candidate"
+    },
     "repair_cycle": 1,
     "rvw03_audit_unit": {
       "audit_record": "reports/development/decision_requests/RVW-03.md",
@@ -669,7 +716,7 @@
     "source_commit": "8842ab2658b9eee201fa1bd26d267a9f23c22df5",
     "source_worktree": ".ocor/worktrees/rem-0019",
     "task_id": "OCOR-DEV-REM-0019",
-    "worktree": ".ocor/worktrees/state-sync-rem0026-sealed"
+    "worktree": ".ocor/worktrees/state-sync-rem0027-candidate"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -2175,7 +2222,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "d6231b213283591e9a06222f1309cb7612f9ff9a",
+  "baseline_commit": "299a6a6c2122c5c79ad2e87131b8fe327275931b",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6465,7 +6512,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "OCOR-DEV-REM-0027:implementation (C8 preemptive kill switch, LLD v1.1 \u00a74.3/\u00a76, ADD v1.3 \u00a75.5; c8/tool_runtime.py; no hard dependencies) from origin/main d6231b213283. Verifier per LOOP-ROLES (Cursor/Grok if the reserve Claude Code implements; Claude Code if Codex implements). OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
+  "next_executable_action": "REM-0027:integration after the independent verdict OCOR-DEV-REM-0027-f48452c64777-0 (verifier Grok 4.7 via Cursor; ~/.ocor-codex/verdicts/OCOR-DEV-REM-0027-f48452c64777-0.json): with GO_FOR_EVIDENCE_SEAL seal the three records (REM-0027, 0047/0050 .requalified-rem0027) and both manifests on branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch (head f48452c64777), open the governed PR, wait for every required check on the exact head, merge --match-head-commit, then state sync; with NO_GO repair (budget 2 cycles). OCOR-DEV-REM-0024/REM-0028 blocked by OPEN_PO_DECISION_REQUIRED REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (draft PR #240); REM-0019 (cycle 1, source 8842ab2) blocked by OPEN_PO_DECISION_REQUIRED REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (draft PR #236). Order unchanged: REM-0019 -> REM-0017 -> 0049 integration -> REM-0023 before 0056 WIP. E1/E2/Verified and NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -10353,7 +10400,51 @@
         "OCOR-DEV-0068",
         "OCOR-DEV-0069"
       ],
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
+        "code_commit": "72ecedd6798088c38f361c5774cdbf55722e32b8",
+        "commits": {
+          "delegation_cases": "1c83a98",
+          "evidence": "f48452c647772a6dd0ab17fdbd88e8543113ed57",
+          "fix": "7075300",
+          "plan_allowlist": "59ea191",
+          "red_tests": "0249a28fc0939b6dd3f396fd9615672bab1f10f3",
+          "stale_command_case": "72ecedd6798088c38f361c5774cdbf55722e32b8"
+        },
+        "head_sha": "f48452c647772a6dd0ab17fdbd88e8543113ed57",
+        "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer (Codex quota exhausted)",
+        "recorded_at": "2026-10-13T04:48:44.077419+00:00",
+        "records": [
+          "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json",
+          "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json"
+        ],
+        "repair_cycle": 0,
+        "requalified": [
+          "OCOR-DEV-0047 (c8/tool_runtime.py; supersedes the original record b70dcb2)",
+          "OCOR-DEV-0050 (regression-only: planning allowlist input)"
+        ],
+        "results": {
+          "full_suite": "1855/1855 in 963.7 s, exact collect/JUnit union, zero skip, stack unchanged, inventory equal",
+          "gates": "ruff, mypy strict, harness 14 PASS, plan PASS (37 + 2 optional NOT_EXECUTED), rccad, language, scope (15 paths), drift PASS, runtime-evidence 0047/0050, digests 8/8",
+          "mutation_probe": "14/14 killed at the campaign commit 72ecedd, sources restored (first probe at 1c83a98: 13/14, surviving caller-epoch-trusted mutant covered by the case added in 72ecedd)",
+          "red": "16 FAIL (12 behavioural for the defect, 4 for the absent deadline API) / 2 positive controls PASS on 0249a28, separate worktree; supplementary RED of the later cases: delegation cases FAIL, stale-command case passes (regression guard)",
+          "reproducible_check": "python3 /home/luca/.ocor-codex/rem-0027/check_evidence.py <repo> f48452c647772a6dd0ab17fdbd88e8543113ed57 -> PASS",
+          "task_suites": "0047+REM-0027+0050 230/230 x3 plus uv run, zero skip, no residue"
+        },
+        "review_type": "REMEDIATION",
+        "session_artifacts": "/home/luca/.ocor-codex/rem-0027",
+        "verifier": "Grok 4.7 via Cursor CLI (separate process, context and provider); Claude Code does not verify this change set",
+        "verify_request_id": "OCOR-DEV-REM-0027-f48452c64777-0"
+      },
       "code_reference": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py:103-125 (sha256 2055f82ee14e5d65d4fa06ec70df3e69ebd25be33124f3110a8fa4e23e0b26ea) at 78d297c; c6_capabilities.py CapabilityLease (no stop_epoch); c6/safety.py guard_dispatch",
+      "design_decisions": {
+        "epoch_bound_leases": "ToolCallRuntime binds its CapabilityAuthority to its EmergencyStopController; every lease records the trusted stop_epoch (LLD 1.4), issuance refused while the stop is not NORMAL, a lease of another epoch or of none refused, the caller's stop_epoch only compared with the lease's, no delegation from a pre-stop lease",
+        "per_tool_capability": "every registered tool called by the expression must be covered by the lease: static preflight before budget charge, re-authorization at each dispatch",
+        "preemptive_dispatch": "StrictSandbox dispatch hook; each tool call fenced on the current epoch and run on a worker thread supervised every 10 ms; accepted stop or per-call deadline (default 5 s, max 10 s) refuses at once with execution_unknown; cooperative cancellation through cancellation_checkpoint()",
+        "residual": "a non-cooperating tool cannot be preempted by the interpreter (effect may land after the refusal; reconciliation in C6, tracked to FGM-17); lease time window still at the caller-supplied instant; full signed single-use lease of LLD 1.4 not introduced",
+        "unchanged": "c6/safety.py byte-identical (0044 not requalified, REM-0024 untouched); public contracts unchanged"
+      },
       "does_not_block": [
         "OCOR-DEV-0049",
         "G5"
@@ -10380,7 +10471,7 @@
       ],
       "hard_dependencies": [],
       "id": "OCOR-DEV-REM-0027",
-      "implementer": "loop implementer (Codex), planned",
+      "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted), cycle 0",
       "in_live_poc_path": true,
       "live_path_classification": "sole PoC implementation of the normative function, qualified by G6; no caller in ocor-runtime/src today; treated as live path under the fail-closed interpretation recorded in INFO-C.md",
       "maximum_repair_cycles": 2,
@@ -10402,7 +10493,7 @@
       ],
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
       "scope": "Align ToolCallRuntime to LLD v1.1 \u00a74.3 and \u00a76 (C8 kill switch preemptive) and ADD v1.3 \u00a75.5 (stop denies new mutative tool calls, revokes capability leases in the local boundary, target <=10 s). Today invoke checks the stop once (tool_runtime.py:119), then charges the budget (123) and runs the whole sandbox expression (125), which may call several registered tools with no wall-clock bound and no stop re-check; CapabilityLease carries no stop_epoch and the epoch passed to invoke is caller-chosen. Probe: C8-1 stop accepted after the guard does not prevent the effect (receipt epoch 0, controller 1 STOPPING); C8-2 second tool of the same expression produces its effect 10.5 s after stop acceptance; C8-3 a lease issued at epoch 0 is accepted after stop and dual-control reset at epoch 2. Class check from the same dispatch point: the lease authorizes tool:<tool_name> but the expression can call any registered tool. Fence every tool dispatch atomically against the trusted stop epoch, cancel or bound in-flight calls so the last effect stays within <=10 s, bind leases to the stop epoch so a reset never re-enables a pre-stop lease, and authorize every tool actually called. If the lease-epoch binding needs a public contract change, write a decision request instead of inventing it.",
-      "status": "OPEN_IMPLEMENTATION_REQUIRED"
+      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION"
     },
     "REM_0028_APPROVER_AUTHORITY_REVALIDATION": {
       "acceptance_criteria": [
@@ -11322,5 +11413,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-13T03:40:00.320251+00:00"
+  "updated_at": "2026-10-13T04:48:44.077419+00:00"
 }
