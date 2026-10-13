@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0019-RCCAD — OCOR-DEV-0049: ogni test eseguibile da solo e in qualsiasi ordine
 
-- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` (verifier dichiarato: Grok 4.7 via Cursor CLI, processo, contesto e
+- **Status**: `WIP_FRESH_QUALIFICATION_IN_PROGRESS` (verifier dichiarato: Grok 4.7 via Cursor CLI, processo, contesto e
   fornitore separati; Claude Code, implementatore, non verifica questo change set).
 - **Fonte**: presa d'atto PO del 2026-10-09 sul vincolo d'ordine di `test_ocor_dev_0049.py` e decisione
   PO `REM-0017-CI-0049-REMAINDER-CAP` (2026-10-10, opzione 2: nessun tetto speciale, si correggono prima i
@@ -91,3 +91,27 @@ Tentativo non qualificante registrato e rieseguito: `attempt1-order-reverse` (38
 Nessun test escluso, saltato o indebolito; nessuna modifica a `inputs/`, a gate, workflow o ruleset.
 `E1=0`, `E2=0`, nessun requisito `Verified`; runtime conformance `NOT_ESTABLISHED`, PoC-GO e Production
 readiness `NO-GO`.
+
+
+## Ripresa 2026-10-13 — immagine kind e cleanup del setup
+
+Decisione PO `REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE`, opzione 1. Codice di test
+`6e1c4b050ac610a22673d6f559e424a01705189c`: stessa minor Kubernetes v1.33, immagine ufficiale
+v1.33.4 fissata a `sha256:25a6018e48dfcaee478f4a59af81157a437f15e6e140bf103f85a2e7cd0cbbf2`,
+containerd v2.1.3 compilato con Go1.24.4 (lettura diretta `go version -m`; backport
+upstream #73144 in Go1.24.3). Creazione e intero setup della fixture nel try/finally.
+Prove locali RED 5 FAIL/3 PASS, GREEN 8/8; prova live con interruzione dopo l'attacco
+alla rete: RED lascia nodo/volume, GREEN ripristina l'inventario iniziale.
+Sorgenti delle prove, versioni, digest e hash dei raw nel campo `kind_node_repair`
+del record WIP. Produzione 0049 e 390 casi/asserzioni immutati da questa correzione.
+
+Tutte le tabelle e i conteggi precedenti in questa pagina sono storia diagnostica
+per il nuovo commit: nessun conteggio trasferito. Campagna nuova full (2224 raccolti),
+cinque ordini e 119 isolati in corso; nessun PASS finale o candidato sigillabile.
+Adapter di osservazione v2 byte-identico, 14/14 prove deterministiche verdi.
+Ciclo 1 invariato. Difetto del reset con rete occupata fuori scope: REM-0029 separata.
+
+Implementatore di questa correzione: Codex (OpenAI); precedenti contributi di
+Claude Code di riserva conservati. Verifier: Grok 4.7 tramite Cursor CLI, avviato
+soltanto dal loop esterno dopo il completamento dell'evidenza e dei gate.
+E1=0, E2=0, Verified=0 e claim NO-GO invariati.
