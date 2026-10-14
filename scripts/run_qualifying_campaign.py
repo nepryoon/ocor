@@ -176,7 +176,7 @@ def classify_readiness_gate(name: str, state: dict[str, Any], logs: dict[str, An
                 entry = json.loads(payload)
             except ValueError:
                 continue
-            trace = entry.get("trace", {})
+            trace = entry.get("span", {})
             if trace.get("operation") == "readiness_scan":
                 if (trace.get("status") == "DENY" and trace.get("reason_code") == "RESTORE_UNTESTED"
                         and trace.get("ready_reasons") == ["RESTORE_UNTESTED"]):

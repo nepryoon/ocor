@@ -63,7 +63,7 @@ def test_readiness_classification_is_diagnostic_and_requires_restore_gate(tmp_pa
             state = {'Health': {'Log': [{'ExitCode': 1, 'Output': f'HTTP Error {http}: Service Unavailable'}]}}
             output = json.dumps(state) + ' 0'
         elif argv[:2] == ['docker', 'logs']:
-            output = json.dumps({'event': 'trace', 'trace': {'operation': 'readiness_scan',
+            output = json.dumps({'operation': 'span', 'span': {'operation': 'readiness_scan',
                                'reason_code': reason, 'ready_reasons': [reason], 'status': 'DENY'}})
         else:
             output = ''
