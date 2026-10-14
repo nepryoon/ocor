@@ -337,6 +337,20 @@ class ProbeTimeoutObservation(unittest.TestCase):
             self.assertEqual(removals[0]['node_id'], ID)
 
 
+def assert_governed_workflow(path, before, after):
+    """Accept only the PO's exact pin/N update; every other byte stays checked."""
+    if path == '.github/workflows/ocor-validation-closure.yml':
+        prefix, suffix = before.split('  conditional-infrastructure-0049-part:', 1)
+        assert suffix.count('a0ee43d4e502f3589cd857cfec4238eab13fe8e7') == 4
+        suffix = suffix.replace('a0ee43d4e502f3589cd857cfec4238eab13fe8e7',
+                                'beab1b4cc16d0678ce5554fcebd6495b328f5342')
+        suffix = suffix.replace('matrix.part }}/4', 'matrix.part }}/5')
+        suffix = suffix.replace('part: [1, 2, 3, 4]', 'part: [1, 2, 3, 4, 5]')
+        suffix = suffix.replace('--shard-count 4', '--shard-count 5')
+        before = prefix + '  conditional-infrastructure-0049-part:' + suffix
+    assert before == after, 'Workflow drift: ' + path
+
+
 def observation_only_proof():
     """Reproducible AST comparison to the last unqualified CI source.
 
@@ -391,14 +405,40 @@ def observation_only_proof():
     workflows = {}
     for p in sorted((root / '.github/workflows').glob('*.yml')):
         relative = str(p.relative_to(root))
-        assert source(relative, True) == source(relative), 'Workflow drift: ' + relative
+        assert_governed_workflow(relative, source(relative, True), source(relative))
         workflows[relative] = hashlib.sha256(p.read_bytes()).hexdigest()
     return {'baseline': baseline, 'functions': results, 'workflows_unchanged': workflows,
             'campaign_constants_identical': True, 'window_poll_sample_identical': True,
-            'normalisation': 'Only latency wrapper and two diagnostic export fields removed; no pytest, selection, partition, timer, ceiling or gate change.'}
+            'normalisation': 'Only latency wrapper and two diagnostic export fields removed from AST. Workflows require the exact PO-authorised 0049 pin and N=5 delta; all other bytes, timers and gates identical.',
+            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts'}
 
 
 class ExecutionInvariants(unittest.TestCase):
+    def test_workflow_invariant_rejects_every_unapproved_change(self):
+        root = Path(__file__).resolve().parents[2]
+        path = '.github/workflows/ocor-validation-closure.yml'
+        before = subprocess.check_output(['git', '-C', str(root), 'show',
+                  '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0:' + path], text=True)
+        current = (root / path).read_text()
+        assert_governed_workflow(path, before, current)
+        for old, new in [
+            ('beab1b4cc16d0678ce5554fcebd6495b328f5342', 'a0ee43d4e502f3589cd857cfec4238eab13fe8e7'),
+            ('--shard-count 5', '--shard-count 4'),
+            ('part: [1, 2, 3, 4, 5]', 'part: [1, 2, 3, 4]'),
+            ('timeout-minutes: 75', 'timeout-minutes: 76'),
+            ('--timeout 600', '--timeout 601'),
+            ('--aggregate reports/tests/candidate-0049-parts', '--aggregate reports/tests/wrong-parts'),
+            ('needs: conditional-infrastructure-0049-part', 'needs: []'),
+            ('if: always()', 'if: success()'),
+        ]:
+            with self.subTest(change=old):
+                self.assertIn(old, current)
+                with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
+                    assert_governed_workflow(path, before, current.replace(old, new, 1))
+        # No pin/N exception in any other workflow.
+        with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
+            assert_governed_workflow('.github/workflows/ocor-rccad.yml', 'unchanged', 'changed')
+
     def test_execution_ast_and_workflows_are_identical(self):
         proof = observation_only_proof()
         self.assertTrue(proof['functions']['main']['identical'])
