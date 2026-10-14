@@ -42,7 +42,7 @@ from ocor_runtime.c6.safety import (
     EmergencyStopController,
     SafetyError,
 )
-from ocor_runtime.errors import IdentityConflictError
+from ocor_runtime.errors import IdentityConflictError, TemporalGuardViolation
 from ocor_runtime.kernel.governance import InMemoryTrustedClock
 
 NOW = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
@@ -430,9 +430,11 @@ def test_missing_mandatory_grant_fields_are_refused(controller: BreakGlassContro
 
 
 @pytest.mark.parametrize("ttl", [timedelta(0), timedelta(seconds=-1), MAX_BREAK_GLASS_TTL + timedelta(seconds=1)])
-def test_a_ttl_outside_the_bound_is_refused(controller: BreakGlassController, ttl: timedelta) -> None:
+def test_a_ttl_outside_the_bound_is_refused(controller: BreakGlassController, audit: RecordingAuditSink, ttl: timedelta) -> None:
     with pytest.raises(ValueError, match="ttl"):
         _grant(controller, ttl=ttl)
+    assert audit.kinds() == ["BREAK_GLASS_GRANT_DENIED"]
+    assert audit.events[0]["reason_code"] == "BREAK_GLASS_GRANT_INVALID"
 
 
 def test_a_grant_id_can_never_be_reissued(controller: BreakGlassController, clock: InMemoryTrustedClock) -> None:
@@ -671,7 +673,7 @@ def test_a_naive_trusted_instant_fails_closed(
     clock = SettableClock(NOW.replace(tzinfo=None))
     controller = BreakGlassController(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TemporalGuardViolation):
         _grant(controller)
 
 
