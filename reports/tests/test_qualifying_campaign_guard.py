@@ -591,6 +591,57 @@ def test_collection_failure_is_not_an_empty_selection(tmp_path):
         GUARD.collect_nodeids(tmp_path, ['tests/'])
 
 
+@pytest.mark.parametrize('selection', [['tests/'], ['tests/test_imports.py::test_repository_imports']])
+def test_collection_and_execution_resolve_the_selected_repository(tmp_path, monkeypatch, selection):
+    """Explicit parts must import root packages without another module's side effects."""
+    import subprocess
+    repository = tmp_path / 'candidate'
+    suite = repository / 'ocor-runtime'
+    (suite / 'tests').mkdir(parents=True)
+    (suite / 'src').mkdir()
+    (repository / 'spikes').mkdir()
+    (repository / 'spikes/__init__.py').write_text('SOURCE = "candidate"\n')
+    (suite / 'src/local_runtime.py').write_text('SOURCE = "candidate-runtime"\n')
+    (suite / 'tests/test_imports.py').write_text(
+        'import spikes\nimport local_runtime\n'
+        'def test_repository_imports():\n'
+        '    assert spikes.SOURCE == "candidate"\n'
+        '    assert local_runtime.SOURCE == "candidate-runtime"\n')
+    # Model an inherited implementer checkout; the candidate must take precedence.
+    inherited = tmp_path / 'implementer'
+    (inherited / 'spikes').mkdir(parents=True)
+    (inherited / 'spikes/__init__.py').write_text('raise RuntimeError("foreign checkout")\n')
+    monkeypatch.setenv('PYTHONPATH', str(inherited))
+    collected = GUARD.collect_nodeids(suite, selection)
+    assert collected == ['tests/test_imports.py::test_repository_imports']
+    result = subprocess.run(
+        [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider', *collected],
+        cwd=suite, env=GUARD.pytest_environment(suite), capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert '1 passed' in result.stdout
+
+
+def test_explicit_collection_imports_root_without_inherited_pythonpath(tmp_path, monkeypatch):
+    suite = tmp_path / 'ocor-runtime'
+    (suite / 'tests').mkdir(parents=True)
+    (tmp_path / 'root_module.py').write_text('VALUE = 42\n')
+    (suite / 'tests/test_root.py').write_text(
+        'from root_module import VALUE\ndef test_value():\n    assert VALUE == 42\n')
+    monkeypatch.delenv('PYTHONPATH', raising=False)
+    assert GUARD.collect_nodeids(suite, ['tests/test_root.py::test_value']) == [
+        'tests/test_root.py::test_value']
+
+
+def test_repository_path_does_not_mask_a_real_collection_failure(tmp_path, monkeypatch):
+    suite = tmp_path / 'ocor-runtime'
+    (suite / 'tests').mkdir(parents=True)
+    (tmp_path / 'root_module.py').write_text('raise RuntimeError("real root import failure")\n')
+    (suite / 'tests/test_root.py').write_text('import root_module\ndef test_value():\n    pass\n')
+    monkeypatch.delenv('PYTHONPATH', raising=False)
+    with pytest.raises(GUARD.CampaignError, match='real root import failure'):
+        GUARD.collect_nodeids(suite, ['tests/test_root.py::test_value'])
+
+
 def test_part_budget_is_45_minutes_and_30_minutes_requires_rebalancing():
     assert GUARD.check_deadline(1799, limit=GUARD.PART_LIMIT_SECONDS, threshold=GUARD.PART_REBALANCE_SECONDS) is False
     assert GUARD.check_deadline(1801, limit=GUARD.PART_LIMIT_SECONDS, threshold=GUARD.PART_REBALANCE_SECONDS) is True
@@ -746,6 +797,7 @@ def test_part_runs_only_its_verified_selection(tmp_path, monkeypatch):
     launched = []
     def launch(command, *, stdout, **kwargs):
         launched.append(command)
+        assert kwargs['env'] == GUARD.pytest_environment(Path(kwargs['cwd']))
         stdout.write('ok\n')
         (output / 'runtime_junit_post_approval.xml').write_text(junit_xml(selected))
         (Path(kwargs['cwd']) / '.coverage').write_text('data')

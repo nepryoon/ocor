@@ -148,10 +148,21 @@ def partition_digest(parts: list[list[str]]) -> str:
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
 
 
+def pytest_environment(directory: Path) -> dict[str, str]:
+    """Resolve runtime and root packages from the suite's own checkout in every phase."""
+    suite = directory.resolve()
+    environment = os.environ.copy()
+    paths = [str(suite / "src"), str(suite.parent)]
+    if inherited := environment.get("PYTHONPATH"):
+        paths.append(inherited)
+    environment["PYTHONPATH"] = os.pathsep.join(paths)
+    return environment
+
+
 def collect_nodeids(directory: Path, selection: list[str]) -> list[str]:
     """Node IDs pytest collects in ``directory``; any collection error fails closed."""
     result = subprocess.run([sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *selection],
-                            cwd=directory, capture_output=True, text=True, timeout=600, check=False)
+                            cwd=directory, env=pytest_environment(directory), capture_output=True, text=True, timeout=600, check=False)
     nodeids = [line for line in result.stdout.splitlines() if "::" in line and not line.startswith(" ")]
     if result.returncode or not nodeids or len(nodeids) != len(set(nodeids)):
         raise CampaignError(f"pytest collection failed (exit {result.returncode}): {result.stdout[-2000:]}{result.stderr[-2000:]}")
@@ -517,7 +528,9 @@ def main() -> int:
         kubernetes_history: dict[str, dict[str, Any]] = {}
         start = time.monotonic()
         with (output / "post_remediation_runtime.log").open("w") as log:
-            process = subprocess.Popen(command, cwd=suite_repository / "ocor-runtime", stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            process = subprocess.Popen(command, cwd=suite_repository / "ocor-runtime",
+                                       env=pytest_environment(suite_repository / "ocor-runtime"),
+                                       stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             observer_thread = kind_observer.start_sampler(process.pid, qualification_kind_binary(suite_repository))
             while process.poll() is None:
                 check_stack(initial, inspect_stack())
