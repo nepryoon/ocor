@@ -18,7 +18,7 @@
       "source_sha256": "cd6d6016083a17fe9d2c2ecc06d46de0ff809f997a39d474ce39b15f27cf432e"
     },
     "baseline_commit": "19ef2a2d76c794c1e665ed4ced681ad8c94b2e9a",
-    "branch": "governed/state-sync-rem0024-writer-authority",
+    "branch": "governed/state-sync-rem0024-candidate",
     "decision_request": {
       "blocked_tasks": [
         "OCOR-DEV-0060",
@@ -241,6 +241,71 @@
         "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     ],
+    "rem0024_implementation_unit": {
+      "baseline_commit": "19ef2a2d76c794c1e665ed4ced681ad8c94b2e9a",
+      "branch": "governed/state-sync-rem0024-candidate",
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0024-break-glass-conformance",
+        "code_commit": "9faac98a86534cd3f7d804737611a62aa157a01b",
+        "commits": {
+          "adapt_0044_tests": "8bb22ae",
+          "evidence": "22b93473024cfabb3d013f3516a57eff289c8c0a",
+          "fix": "5292054",
+          "plan_allowlist": "9faac98a86534cd3f7d804737611a62aa157a01b",
+          "red_tests": "1a09bce5dcccf69e3c92b9fa125756fe2b9d308b",
+          "refactor": "f2b091d"
+        },
+        "head_sha": "22b93473024cfabb3d013f3516a57eff289c8c0a",
+        "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer (Codex quota exhausted)",
+        "records": [
+          "reports/assurance/OCOR-DEV-REM-0024-RCCAD/OCOR-DEV-REM-0024.json",
+          "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0024.json",
+          "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0024.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.json"
+        ],
+        "repair_cycle": 0,
+        "requalified": [
+          "OCOR-DEV-0044 (c6/safety.py and the nine break-glass tests adapted under PO Q2; supersedes the original record f0e7c16)",
+          "OCOR-DEV-0047 (regression: imports c6/safety.py; supersedes its original record)",
+          "OCOR-DEV-0050 (regression-only: planning allowlist input)"
+        ],
+        "results": {
+          "full_suite": "1933/1933 in 1054.3 s (75-min local cap), exact collect/JUnit union, zero skip, stack unchanged, Docker inventory equal before/after",
+          "gates": "ruff, mypy strict, harness 14 PASS, plan PASS (37 + 2 optional NOT_EXECUTED), rccad, language, scope (16 paths), drift PASS, runtime-evidence 0044/0047/0050, digests 8/8",
+          "mutation_probe": "15/15 killed at the campaign commit 9faac98, each mutant in a scratch copy, worktree untouched (first probe at 5292054: 13/15, leading to refactor f2b091d)",
+          "red": "99/99 REM-0024 cases not passing on 1a09bce in a separate detached worktree (TypeError: conformant interface absent) plus the RVW-03 probe on the same source: P1, P2, P3, X1 AUTHORIZED",
+          "reproducible_check": "python3 /home/luca/.ocor-codex/rem-0024-impl/check_evidence.py <repo> 22b93473024cfabb3d013f3516a57eff289c8c0a -> PASS",
+          "summary": "stack resettato e riavviato (11 servizi READY); suite 0044+0047+REM-0024+0050 337/337 \u00d73 pi\u00f9 `uv run`, zero skip, nessun residuo; suite completa 1933/1933 in 1054,3 s con unione esatta collezione/JUnit, stack invariato e inventario Docker identico prima e dopo; mutanti 15/15 uccisi; gate ruff, mypy strict, harness 14 PASS, plan, rccad, language, scope, drift, runtime-evidence 0044/0047/0050, digest 8/8 tutti verdi; `check_evidence.py` PASS sull'HEAD `22b9347`. Teardown di fine sessione: stack rimosso, delta zero di container, volumi e reti.",
+          "task_suites": "0044+0047+REM-0024+0050 337/337 x3 plus uv run, zero skip, no residue"
+        },
+        "review_type": "REMEDIATION",
+        "session_artifacts": "/home/luca/.ocor-codex/rem-0024-impl",
+        "verifier": "Grok 4.7 via Cursor CLI (separate process, context and provider); Claude Code does not verify this change set",
+        "verify_request_id": "OCOR-DEV-REM-0024-22b93473024c-0"
+      },
+      "candidate_worktree": ".ocor/worktrees/rem-0024",
+      "implementer_this_unit": "Claude Code (reserve loop implementer, Codex quota exhausted): OCOR-DEV-REM-0024 implementation cycle 0",
+      "independent_verification": "REQUESTED OCOR-DEV-REM-0024-22b93473024c-0 (Grok 4.7 via Cursor)",
+      "main_ci_30_minute_cap_observation": {
+        "attempts": 2,
+        "cause": "job timeout-minutes 30 reached during the complete runtime suite; Build and start Fuseki 468-942 s (Apache archive download, no content-addressed cache on main), suite step cancelled after 794-1271 s; rccad-methodology passed both attempts",
+        "disposition": "no further rerun of #263; this state sync is stacked on its head and includes it",
+        "failed_checks": [
+          "delivery-activation",
+          "validation-closure"
+        ],
+        "head": "2159ef62c4ef3074e0f4ae8ad108c0ae97db7144",
+        "pr": 263,
+        "runs": [
+          38529280570,
+          38529280596
+        ]
+      },
+      "phase": "REM_0024_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+      "session_artifacts": "/home/luca/.ocor-codex/rem-0024-impl",
+      "task_id": "OCOR-DEV-REM-0024",
+      "worktree": ".ocor/worktrees/state-sync-rem0024-candidate"
+    },
     "repair_cycle": 0,
     "roles": {
       "historical_contribution": "Claude Code reserve performed RVW-03 and original REM-0024 pre-implementation audit; no product code authored in either audit",
@@ -498,7 +563,7 @@
       "scope": "characterisation only; not REM24 acceptance or task requalification",
       "skipped": 0
     },
-    "worktree": ".ocor/worktrees/state-sync-rem0024-writer-authority"
+    "worktree": ".ocor/worktrees/state-sync-rem0024-candidate"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -6829,7 +6894,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "Continue OCOR-DEV-REM-0024 implementation in .ocor/worktrees/rem-0024, branch governed/ocor-dev-rem-0024-break-glass-conformance at baseline19ef2a2, after reading this versioned audit. Q1/Q2/Q3 remain resolved under PO2026-10-13: IdentityRegistry-only principal_kind/status/canonical roles and explicit domain; no request path may write attributes; controller-registered grant, requester exclusion, TrustedClock, named capabilities, synchronous audit and immediate alert, expiry/revoke fail-closed. Define RED before code; adapt only the nine approved0044 break-glass functions/fixtures with one-to-one cases/reason codes, requalify0044/0047 and other drifted tasks with new supersessions, full zero-skip gates, exact-head request with Codex implementer, historical reserve Claude audit and Cursor/Grok verifier. Keep writer authority risk/request262 OPEN beforeG6; no inferred network exploit or assigned campaign coverage. No repaired code or acceptance is claimed by this audit. REM28 remains OPEN afterREM24; REM29 and lastREM27 are other executable work, coordinated on safety.py. REM17 stays immutable7cd5f7a/DRAFT169 blocked on KIND-INSPECT-TIMEOUT: no retry, verification/seal/merge. Priority path REM17 ->0049 ->REM19 ->REM23 ->0056 unchanged; REM30 only after0049 beforeG6 outside campaigns/repairs/merges. Re-bootstrap with fresh session-local SPIRE CA if needed; disposed all owned stack resources. Inputs/E1/E2/Verified/NO-GO unchanged.",
+  "next_executable_action": "OCOR-DEV-REM-0024:integration after the independent verdict OCOR-DEV-REM-0024-22b93473024c-0 (verifier Grok 4.7 via Cursor; ~/.ocor-codex/verdicts/OCOR-DEV-REM-0024-22b93473024c-0.json): with GO_FOR_EVIDENCE_SEAL seal the four records (REM-0024, 0044/0047/0050 .requalified-rem0024) and both manifests on branch governed/ocor-dev-rem-0024-break-glass-conformance (head 22b93473024c), open the governed PR, wait for every required check on the exact head, merge --match-head-commit, then state sync; with NO_GO repair (budget 2 cycles). While the verdict is pending the next ready unit is OCOR-DEV-REM-0029 or the last REM-0027 cycle (REM-0028 depends on REM-0024 and stays after its verified closure). Writer-authority decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (draft PR #262) stays OPEN before G6. REM-0017 candidate 7cd5f7a/DRAFT PR #169 stays blocked on REM-0017-CI-KIND-INSPECT-TIMEOUT (draft PR #260): no retry, verification, seal or merge. Priority path REM-0017 -> 0049 -> REM-0019 -> REM-0023 -> 0056 unchanged; REM-0030 only after 0049 and before G6. Inputs/E1/E2/Verified/NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -6872,9 +6937,9 @@
   },
   "previous_active_iteration_reference": {
     "baseline_commit": "19ef2a2d76c794c1e665ed4ced681ad8c94b2e9a",
-    "path": "reports/development/EXECUTION_STATE.json",
-    "phase": "CI_FAIL_KIND_INSPECT_TIMEOUT_OPEN_PO_DECISION_REQUIRED",
-    "task_id": "OCOR-DEV-REM-0017"
+    "branch": "governed/state-sync-rem0024-writer-authority",
+    "phase": "PRE_IMPLEMENTATION_WRITER_AUTHORITY_AUDIT_COMPLETE",
+    "superseded_at": "2026-10-14T08:37:56.841937+00:00"
   },
   "previous_candidate_ci": {
     "diagnosis": "/home/luca/.ocor-codex/rem0017-ci-diagnosis-20261014/attempts/ci-f438098c17a3-0049-part3/diagnosis.json sha256 b560aa72884dcc0f9c8ed729b64abc704b4a66385460deaae8f24175894f9752",
@@ -10834,6 +10899,46 @@
         "recorded_at": "2026-10-12T21:42:55.104536+00:00",
         "status": "RESOLVED_PO_DECISION"
       },
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0024-break-glass-conformance",
+        "code_commit": "9faac98a86534cd3f7d804737611a62aa157a01b",
+        "commits": {
+          "adapt_0044_tests": "8bb22ae",
+          "evidence": "22b93473024cfabb3d013f3516a57eff289c8c0a",
+          "fix": "5292054",
+          "plan_allowlist": "9faac98a86534cd3f7d804737611a62aa157a01b",
+          "red_tests": "1a09bce5dcccf69e3c92b9fa125756fe2b9d308b",
+          "refactor": "f2b091d"
+        },
+        "head_sha": "22b93473024cfabb3d013f3516a57eff289c8c0a",
+        "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve loop implementer (Codex quota exhausted)",
+        "recorded_at": "2026-10-14T08:37:56.841937+00:00",
+        "records": [
+          "reports/assurance/OCOR-DEV-REM-0024-RCCAD/OCOR-DEV-REM-0024.json",
+          "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0024.json",
+          "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0024.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.json"
+        ],
+        "repair_cycle": 0,
+        "requalified": [
+          "OCOR-DEV-0044 (c6/safety.py and the nine break-glass tests adapted under PO Q2; supersedes the original record f0e7c16)",
+          "OCOR-DEV-0047 (regression: imports c6/safety.py; supersedes its original record)",
+          "OCOR-DEV-0050 (regression-only: planning allowlist input)"
+        ],
+        "results": {
+          "full_suite": "1933/1933 in 1054.3 s (75-min local cap), exact collect/JUnit union, zero skip, stack unchanged, Docker inventory equal before/after",
+          "gates": "ruff, mypy strict, harness 14 PASS, plan PASS (37 + 2 optional NOT_EXECUTED), rccad, language, scope (16 paths), drift PASS, runtime-evidence 0044/0047/0050, digests 8/8",
+          "mutation_probe": "15/15 killed at the campaign commit 9faac98, each mutant in a scratch copy, worktree untouched (first probe at 5292054: 13/15, leading to refactor f2b091d)",
+          "red": "99/99 REM-0024 cases not passing on 1a09bce in a separate detached worktree (TypeError: conformant interface absent) plus the RVW-03 probe on the same source: P1, P2, P3, X1 AUTHORIZED",
+          "reproducible_check": "python3 /home/luca/.ocor-codex/rem-0024-impl/check_evidence.py <repo> 22b93473024cfabb3d013f3516a57eff289c8c0a -> PASS",
+          "summary": "stack resettato e riavviato (11 servizi READY); suite 0044+0047+REM-0024+0050 337/337 \u00d73 pi\u00f9 `uv run`, zero skip, nessun residuo; suite completa 1933/1933 in 1054,3 s con unione esatta collezione/JUnit, stack invariato e inventario Docker identico prima e dopo; mutanti 15/15 uccisi; gate ruff, mypy strict, harness 14 PASS, plan, rccad, language, scope, drift, runtime-evidence 0044/0047/0050, digest 8/8 tutti verdi; `check_evidence.py` PASS sull'HEAD `22b9347`. Teardown di fine sessione: stack rimosso, delta zero di container, volumi e reti.",
+          "task_suites": "0044+0047+REM-0024+0050 337/337 x3 plus uv run, zero skip, no residue"
+        },
+        "review_type": "REMEDIATION",
+        "session_artifacts": "/home/luca/.ocor-codex/rem-0024-impl",
+        "verifier": "Grok 4.7 via Cursor CLI (separate process, context and provider); Claude Code does not verify this change set",
+        "verify_request_id": "OCOR-DEV-REM-0024-22b93473024c-0"
+      },
       "class_check_human_gate": {
         "evidence": "c6/human_gate.py:149 existence-only approver check, GateSignature.role self-declared (line 92), caller at/signed_at (line 153); c6/safety.py EmergencyStopController.request_reset lines 152-159 same class",
         "registered_as": "OCOR-DEV-REM-0028",
@@ -10865,7 +10970,7 @@
       "hard_dependencies": [],
       "id": "OCOR-DEV-REM-0024",
       "implementation_not_blocked_by_writer_risk": true,
-      "implementer": "Codex (OpenAI), this audit; implementation next",
+      "implementer": "Claude Code (reserve loop implementer, Codex quota exhausted), cycle 0",
       "in_live_poc_path": false,
       "maximum_repair_cycles": 2,
       "negative_acceptance_criteria": [
@@ -10900,7 +11005,8 @@
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical 0044/0047 seals untouched.",
       "scope": "Align BreakGlassController/BreakGlassGrant to ADD v1.3 \u00a75.4-5.5 and LLD v1.1 \u00a71.1/\u00a74.2. PO points: (1) authorize accepts only grants issued by the controller and verifiable (signed or registered), a grant built outside grant() is refused; (2) at every use approvers re-validated against IdentityRegistry: existing, active, human, distinct, requester not among approvers; (3) window checked on the boundary trusted clock, never on a caller-provided instant (grant and authorize); (4) TTL <= 15 min, no automatic renewal (already satisfied: keep, regression tests only); (5) revocation and expiry fail-closed (logic satisfied, re-prove with trusted time and verified grants). Audit gaps from the same normative text: named capabilities bound to the grant and authorize restricted to them; role quorum Security Duty Officer + affected Domain Owner; synchronous immutable audit and immediate alert per use, fail-closed. Before modifying, re-confirm each point against the normative text; document instead of implementing any point found satisfied elsewhere or not required. If role/human/active representation or audit/alert integration needs a contract or semantic change, write a decision request instead of inventing it.",
       "scope_extension_rule": "c2_identity.py stays unchanged unless proven necessary; if changed, requalify every task whose sealed inputs include it. Class check of c6/human_gate.py:149 (existence-only approver check): if confirmed, separate REM with its own verified free ID, not widened here.",
-      "status": "OPEN_IMPLEMENTATION_REQUIRED",
+      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+      "test_file_area_extension": "ocor-runtime/tests/tasks/test_ocor_dev_0044.py (only the nine break-glass functions and their fixtures) added to the change-set areas under PO decision REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY Q2; reports/assurance/OCOR-DEV-REM-0024-RCCAD/ holds the remediation record (the alternative reports/evidence/G4/OCOR-DEV-REM-0024.* paths were not used); reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.* and G5/MANIFEST.json added for the regression-only 0050 requalification that the planning allowlist change requires",
       "writer_authority_audit": {
         "authority_boundary_requirement": "OPEN_NO_ASSIGNED_QUALIFYING_CAMPAIGN",
         "observations": {
@@ -12530,5 +12636,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-14T07:34:02.402344+00:00"
+  "updated_at": "2026-10-14T08:37:56.841937+00:00"
 }
