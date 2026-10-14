@@ -1,7 +1,7 @@
 # OCOR-DEV-REM-0032-RCCAD — 0049: healthcheck dei relay senza saturazione della CPU
 
-- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION`. Verifier: Grok 4.7 via Cursor CLI (processo, contesto e fornitore separati);
-  Claude Code, implementatore di riserva, non verifica questo change set (`LOOP-ROLES`).
+- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` (repair cycle 1). Verifier: Grok 4.7 via Cursor CLI (processo, contesto e fornitore separati);
+  Codex (riparazione 1) e Claude Code (ciclo 0) non verificano questo change set (`LOOP-ROLES`).
 - **Fonte**: decisione del Product Owner `REM-0017-CI-0049-RELAY-PROBE-REMEDIATION` (2026-10-14), che
   risolve `REM-0017-CI-0049-RELAY-HEALTH-OPTION2` con l'opzione 1 e anticipa `OCOR-DEV-REM-0032` (già
   registrata) prima del merge di 0049.
@@ -35,7 +35,7 @@ chart Helm (non contiene relay: il difetto non vi è presente), test di 0049 e d
 e gate di campagna e CI. Il digest SHA256 del documento Compose canonico senza l'healthcheck dei relay e
 senza `OCOR_RELAY_FLOW_PORT` coincide con quello del task stage.
 
-## Prove
+## Prove del ciclo 0 (diagnostiche per VF-001)
 
 Metodo di limitazione della CPU: every scenario container pinned with cpuset 0-3 (4 host cores); healthcheck execs inherit the relay cgroup; synthetic load = 8 single-thread busy loops, one container each, same cpuset; three Compose projects x 10 relays started concurrently with up --wait.
 
@@ -67,7 +67,7 @@ Metodo di limitazione della CPU: every scenario container pinned with cpuset 0-3
 - `OCOR-DEV-0050`, sola regressione (l'allowlist del validator di piano è un suo input sigillato):
   record `reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032.json`, `supersedes`
   `OCOR-DEV-0050-requalified-rem0026-5e1935e93126`.
-- Suite della REM nella campagna: 7 PASS, 0 FAIL, 0 skip, 441 s. Residui delle risorse Docker: zero dopo ogni run.
+- Suite della REM del ciclo 0: 7 PASS, 0 FAIL, 0 skip, 441 s; diagnostica per VF-001, sostituita dalla prova della riparazione 1. Residui delle risorse Docker: zero dopo ogni run.
 
 ## Rischi residui e limiti
 
@@ -77,3 +77,29 @@ Metodo di limitazione della CPU: every scenario container pinned with cpuset 0-3
 
 Nessun record sigillato modificato. Nessun nuovo `DEC-*`. `E1=0`, `E2=0`, nessun requisito `Verified`;
 runtime conformance `NOT_ESTABLISHED`, PoC-GO e Production readiness `NO-GO`. Nessuna modifica a `inputs/`.
+
+## Riparazione 1 — VF-001 (Codex)
+
+Il NO_GO `OCOR-DEV-REM-0032-5645ac703362-0` resta storico. Il verifier ha riprodotto
+due volte timeout senza raggiungere i 15 fallimenti consecutivi del probe originale.
+Le prove della suite REM del ciclo 0 sono diagnostiche rispetto a questo finding.
+
+La priorità relativa dei soli carichi sintetici è ora dichiarata: otto processi,
+CPU shares 8192 ciascuno, stessi quattro core dei trenta relay. Docker e cgroup
+sono letti per tutti i container; nessun timer, peso o comando dei relay cambia.
+Questo è un confine di contesa sostenuta sintetica, non una stima del carico esatto CI.
+
+- `red2-red`: 30 relay unhealthy, up [1, 1, 1], CPU 1.26 core, zero residui.
+
+- `red3-red`: 30 relay unhealthy, up [1, 1, 1], CPU 1.21 core, zero residui.
+
+- `rem-red`: 30 relay unhealthy, up [1, 1, 1], CPU 1.208 core, zero residui.
+
+- `rem-green`: 0 relay unhealthy, up [0, 0, 0], CPU 0.203 core, zero residui.
+
+Le due riproduzioni RED consecutive e la suite REM sono sul commit `9b76eb5e3df07d3774eec15634ff1abce8a7c1c3`.
+La campagna runtime (2224 casi; tre suite 0049 da 390 casi) resta quella di Claude Code
+a `04b9dcb`, con hash degli alberi di esecuzione identici, comandi, log ed ambiente
+originali conservati; i file di riqualifica e i manifest non cambiano. Il nuovo
+instrumento è usato soltanto dalla suite REM, rieseguita integralmente. Nessun test
+0049 o REM-0019 cambia. Verifier richiesto: Grok 4.7 via Cursor, contesto separato.
