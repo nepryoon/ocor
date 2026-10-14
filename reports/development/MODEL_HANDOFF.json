@@ -850,7 +850,7 @@
     "status": "OPEN_PO_DECISION_REQUIRED"
   },
   "evidence_paths": [],
-  "exact_next_action": "OCOR-DEV-REM-0024:integration after the independent verdict OCOR-DEV-REM-0024-22b93473024c-0 (verifier Grok 4.7 via Cursor; ~/.ocor-codex/verdicts/OCOR-DEV-REM-0024-22b93473024c-0.json): with GO_FOR_EVIDENCE_SEAL seal the four records (REM-0024, 0044/0047/0050 .requalified-rem0024) and both manifests on branch governed/ocor-dev-rem-0024-break-glass-conformance (head 22b93473024c), open the governed PR, wait for every required check on the exact head, merge --match-head-commit, then state sync; with NO_GO repair (budget 2 cycles). While the verdict is pending the next ready unit is OCOR-DEV-REM-0029 or the last REM-0027 cycle (REM-0028 depends on REM-0024 and stays after its verified closure). Writer-authority decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (draft PR #262) stays OPEN before G6. REM-0017 candidate 7cd5f7a/DRAFT PR #169 stays blocked on REM-0017-CI-KIND-INSPECT-TIMEOUT (draft PR #260): no retry, verification, seal or merge. Priority path REM-0017 -> 0049 -> REM-0019 -> REM-0023 -> 0056 unchanged; REM-0030 only after 0049 and before G6. Inputs/E1/E2/Verified/NO-GO unchanged.",
+  "exact_next_action": "Governed CI repair unit (autonomous under the mandate section 7, 'riparazioni CI che non indeboliscono alcun gate'): on a new governed/ branch from origin/main raise timeout-minutes from 30 to 75 only on the three jobs that run the complete runtime suite on main (ocor-rccad.yml rccad-methodology, ocor-delivery-activation.yml delivery-activation, ocor-validation-closure.yml validation-closure), applying the PO decision REM-0017-CI-CAMPAIGN-BUDGET (2026-10-07: complete-suite cap 75 minutes locally and in CI); no step, case, skip rule, gate or required check changes; the three workflows are not sealed inputs of any evidence record and are already in the planning allowlist; record the measurements of #263/#264 (Fuseki 468-942 s, suites cancelled after 794-1271 s). Then rerun/realign PR #264 (includes #263) and merge it on the exact head. Then OCOR-DEV-REM-0024:integration after the independent verdict OCOR-DEV-REM-0024-22b93473024c-0 (Grok 4.7 via Cursor): with GO_FOR_EVIDENCE_SEAL seal the four records and both manifests on governed/ocor-dev-rem-0024-break-glass-conformance (head 22b93473024c), PR, all required checks on the exact head, merge --match-head-commit, state sync; with NO_GO repair (budget 2 cycles). REM-0028 after verified REM-0024; REM-0029 or the last REM-0027 cycle are other ready work. Writer-authority decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (draft PR #262) stays OPEN before G6. REM-0017 candidate 7cd5f7a/DRAFT PR #169 stays blocked on REM-0017-CI-KIND-INSPECT-TIMEOUT (draft PR #260): it must realign the three workflows with main when it resumes. Priority path REM-0017 -> 0049 -> REM-0019 -> REM-0023 -> 0056 unchanged; REM-0030 only after 0049 and before G6. Inputs/E1/E2/Verified/NO-GO unchanged.",
   "head_sha": "19ef2a2d76c794c1e665ed4ced681ad8c94b2e9a",
   "head_sha_resolver": "git rev-parse HEAD",
   "head_sha_role": "read-only audit target exact baseline; current state-sync commit resolved by git rev-parse HEAD",
@@ -1960,6 +1960,27 @@
     },
     "phase": "REM_0024_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
     "session_artifacts": "/home/luca/.ocor-codex/rem-0024-impl",
+    "state_sync_ci_observation": {
+      "conclusion": "all three full-suite jobs cancelled at timeout-minutes 30; every other required check PASS",
+      "disposition": "no rerun: five consecutive cancellations on #263/#264 at the same cap with the suite alone needing more than 20 min on the runner; systematic, not transient",
+      "fuseki_seconds": {
+        "delivery-activation": 675,
+        "rccad-methodology": 818,
+        "validation-closure": 545
+      },
+      "head": "71186514e4f1505eccfaee7ea146f64786ab5807",
+      "pr": 264,
+      "runs": {
+        "delivery-activation": 38536545388,
+        "rccad-methodology": 38536545270,
+        "validation-closure": 38536545269
+      },
+      "suite_cancelled_after_seconds": {
+        "delivery-activation": 1067,
+        "rccad-methodology": 898,
+        "validation-closure": 1187
+      }
+    },
     "task_id": "OCOR-DEV-REM-0024",
     "worktree": ".ocor/worktrees/state-sync-rem0024-candidate"
   },
@@ -2339,6 +2360,6 @@
     "REM-0017-CI-KIND-INSPECT-TIMEOUT",
     "REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY beforeG6, non-blocking for REM24 implementation"
   ],
-  "updated_at": "2026-10-14T08:37:56.841937+00:00",
+  "updated_at": "2026-10-14T09:09:35.002631+00:00",
   "worktree": ".ocor/worktrees/state-sync-rem0024-candidate"
 }
