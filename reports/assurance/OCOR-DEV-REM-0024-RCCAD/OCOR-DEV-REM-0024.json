@@ -1,0 +1,1049 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0024-break-glass-conformance",
+    "decision": "Product Owner decisions RVW-03 (2026-10-05) and REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (2026-10-13, Q1/Q2/Q3 option 1 with the Q1 condition); the RVW-03 audit of 2026-10-12 registered OCOR-DEV-REM-0024 as the first free REM id; mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
+    "id": "OCOR-DEV-REM-0024",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0024-RCCAD/OCOR-DEV-REM-0024.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "exit_code": 0,
+      "label": "reset",
+      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "exit_code": 0,
+      "label": "bootstrap",
+      "raw_sha256": "a2e8fde56211e7cc80fcabdc5fd55c354590f737d572607500fae2e9a5bc0d28",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/.ocor/bootstrap.env",
+      "exit_code": 0,
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "exit_code": 0,
+      "label": "health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python register_control_plane.py",
+      "exit_code": 0,
+      "label": "register",
+      "raw_sha256": "4fb06fc4ff58e49bfc8fb17243694f83bbbc1932cadf74693d2f9c493e46752d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.7,
+      "exit_code": 0,
+      "label": "health-now",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync",
+      "raw_sha256": "a5c9a900c0896172b304aac3590868023b900988fe4eb5d8745a32a8d4f6affb",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.8,
+      "exit_code": 0,
+      "label": "sdk-ci",
+      "raw_sha256": "4b1429f45443ded190156ff30af168d17f25eb7a736f6d185fea7d94236d2023",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0024-impl/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0044.py ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 5.3,
+      "exit_code": 0,
+      "label": "task-run-1",
+      "raw_sha256": "9623adc1b623eec37e22ae3537bc9ad15707e421089f43a646e38b3ccd466d4f",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 337,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0024-impl/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0044.py ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 5.2,
+      "exit_code": 0,
+      "label": "task-run-2",
+      "raw_sha256": "b34b8114c7c1d5d61d7f63e77e481df9795bad75f56c1024de014c327cc2605d",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 337,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0024-impl/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0044.py ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 5.1,
+      "exit_code": 0,
+      "label": "task-run-3",
+      "raw_sha256": "4f7fa67ec2f85fe9065fdd1b37a09009090fbcb9b23b1503fe9fa2f08e47f3c1",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 337,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/rem-0024-impl/task-junit-uv.xml tests/tasks/test_ocor_dev_0044.py tests/tasks/test_ocor_dev_0047.py tests/tasks/test_ocor_dev_rem_0024.py tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 5.1,
+      "exit_code": 0,
+      "label": "task-validation-command",
+      "raw_sha256": "4f7fa67ec2f85fe9065fdd1b37a09009090fbcb9b23b1503fe9fa2f08e47f3c1",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 337,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "exit_code": 0,
+      "label": "task-teardown-delta",
+      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
+      "duration_seconds": 1054.5,
+      "exit_code": 0,
+      "label": "full-suite-recorded",
+      "raw_sha256": "3a44e5a6a3eb23360d9caadd25a08909d29e9897eabe66c6c69c82a5a5e56f83",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1933,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the 0050 harnesses used by this change set (0044, 0047 and REM-0024 are in-memory); no container/network residue; nothing pre-existing removed",
+      "exit_code": 0,
+      "label": "full-resource-attribution",
+      "raw_sha256": "230e58b48a487d0a9677b8daa09170ffb1f0ac9ef1b019c6b3d9d0eede4c1bfe",
+      "status": "PASS"
+    },
+    {
+      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
+      "exit_code": 0,
+      "label": "full-resource-cleanup",
+      "raw_sha256": "9a1caedb7034fd14e1cfb1cdd08c5f38ca57b8f24ec080df4c18fb567b90c291",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "0b105d5c53993200b4e9ffd3128e65e3bdbb3f6343e69a34711e81822d6238b0",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.5,
+      "exit_code": 0,
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.3,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0024-break-glass-conformance",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0024/ocor-runtime/.venv/bin/python -m pytest --collect-only -q -p no:cacheprovider tests/ (cwd ocor-runtime, same HEAD) compared with the testcases of full-suite-recorded JUnit: identical multiset, no duplicate, no missing",
+      "duration_seconds": 0.8,
+      "exit_code": 0,
+      "label": "full-collection-union",
+      "raw_sha256": "38821977636dbf0cc423fe5048b0a0fe2bb65000c821367314b3d869986e98a7",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (third of three consecutive runs of the 0044, 0047, REM-0024 and 0050 suites)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "f31e6fd59d73a05bcb352a0d9c01eee0c05c66fe835c1d9f545010134a24d306",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 337,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-validation-command (uv run, frozen lock)",
+      "exit_code": 0,
+      "label": "task-junit-uv",
+      "raw_sha256": "cff395cb2a57406ebc475b53fc0986eba978dfc8aec85727080f8ac680f2b4f2",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 337,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "f4f2072144c79da7ab1dde3d1f3258f6b2cd9d159d27a10342b797a18761f7ce",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1933,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (75-minute cap, stack restart/OOM/exit guard)",
+      "exit_code": 0,
+      "label": "full-suite-runner-result",
+      "raw_sha256": "5c1b4aed1fb5e031602dfd6445d658cd31e3ba880fca816904941c6753d93ae4",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every mutant of the REM-0024 remediation in c6/safety.py, written into a scratch copy, must make the REM-0024 or 0044 suite fail; worktree source never modified, worktree clean",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "0f5e7a73981acf8f74539c7b4ea1ff5f87aa650dc4b633a5ed28405c69fb6834",
+      "result": {
+        "failed": 0,
+        "killed": 15,
+        "mutants": 15
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: source of the mutation probe (mutant table)",
+      "exit_code": 0,
+      "label": "mutation-probe-script",
+      "raw_sha256": "87cb9fa8a040cb2f9b01d0f665906871b2b5be1c23d6cbf494fd6faf2a60e69a",
+      "status": "PASS"
+    }
+  ],
+  "commit": "9faac98a86534cd3f7d804737611a62aa157a01b",
+  "created_at": "2026-10-14T08:19:57Z",
+  "design": [
+    "BreakGlassGrant: grant_id, requester, reason, incident_ref, scope, domain, capabilities (frozenset), approvers (sorted pair), granted_at, ttl; structural validation in __post_init__ (ValueError), no authority by itself.",
+    "BreakGlassController(identities: PrincipalDirectory, stop, clock: TrustedClock, audit: BreakGlassAuditSink, alerts: BreakGlassAlertSink); PrincipalDirectory is the read-only get() surface that IdentityRegistry already provides.",
+    "grant(): trusted now -> under lock: mandatory fields, grant-id reuse, forbidden capabilities, principals (requester, approvers, quorum) -> BreakGlassGrant -> audit GRANTED -> alert (failure: audit GRANT_WITHDRAWN, refuse) -> register. Every refusal audited as GRANT_DENIED with its reason code.",
+    "authorize(): trusted now -> under lock: issued and unaltered -> revoked -> expiry (auto-revoke) -> not yet valid -> forbidden -> named -> emergency stop -> review reference -> principals re-validated -> audit USE_AUTHORIZED -> alert (failure: audit USE_WITHDRAWN, refuse) -> BreakGlassUse. Every refusal audited as USE_DENIED with its reason code.",
+    "revoke(): issued check -> revocation recorded -> audit REVOKED (failure raises, revocation holds)."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-14T08:19:57.925525+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "break_glass": "BreakGlassController is a pure in-memory C6 component (like the sealed OCOR-DEV-0044 slice): its boundary ports are the identity registry (the real c2_identity.IdentityRegistry, plus a mutable read-only directory to model authoritative record changes between grant and use), the trusted clock (kernel.governance.InMemoryTrustedClock, or a settable clock to model a rewound or naive instant), and the synchronous audit and alert sinks (recording doubles that can be made to fail). No external service is involved; no external boundary is mocked.",
+      "c8_regression_0047": "OCOR-DEV-0047 suite unchanged (in-memory C8 tool runtime over the unchanged EmergencyStopController), regression requalification",
+      "memory_regression_0050": "OCOR-DEV-0050 suite unchanged on the ocor-bootstrap stack (PostgreSQL postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20 via OCOR_LIVE_POSTGRES_DSN), regression-only requalification"
+    },
+    "branch": "governed/ocor-dev-rem-0024-break-glass-conformance",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute; images observed after the full suite",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript (steps sdk-ci, sdk-build)",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/rem-0024"
+  },
+  "findings_scope": {
+    "audit_and_alert": "added: grants, uses, refusals, revocations and automatic expiry revocations are appended synchronously to an injected audit sink; grants and uses raise an immediate alert on an injected alert sink; an audit failure fails the operation closed (BREAK_GLASS_AUDIT_UNAVAILABLE), an alert failure withdraws the grant or use with a WITHDRAWN audit event (BREAK_GLASS_ALERT_UNAVAILABLE)",
+    "named_capabilities": "fixed (X1): the grant carries a non-empty set of named capabilities; forbidden capabilities are refused at grant and at use; authorize refuses any capability not named in the grant (BREAK_GLASS_CAPABILITY_NOT_GRANTED)",
+    "point_1_issued_grants_only": "fixed: BreakGlassController registers every grant it issues; authorize and revoke honour only a grant equal to the registered one (BREAK_GLASS_GRANT_NOT_ISSUED for a hand-built grant, a grant of another controller or one altered after issuance in capabilities, ttl, granted_at, scope, domain or requester)",
+    "point_2_principals_revalidated": "fixed: at grant time and at every use the requester must be a resolved ACTIVE principal and never an approver; the two approvers must be distinct, resolved, principal_kind HUMAN, status ACTIVE, and jointly hold SECURITY_DUTY_OFFICER and DOMAIN_OWNER:<grant domain> on distinct approvers; attributes are read only from the registry record; absent or malformed principal_kind/roles fail closed (BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID), status absent or not ACTIVE is inactive",
+    "point_3_trusted_time": "fixed: the controller takes a kernel.governance.TrustedClock; grant and authorize accept no instant parameter (TypeError on at=); a naive trusted instant fails closed (TemporalGuardViolation); an instant before issuance is refused (BREAK_GLASS_NOT_YET_VALID)",
+    "point_4_ttl_no_renewal": "already satisfied, kept and re-proved: TTL in (0, 15 min], a grant id is never reissued (BREAK_GLASS_GRANT_ID_REUSED), the public surface is grant/authorize/revoke only",
+    "point_5_revocation_and_expiry": "re-proved with trusted time and issued grants: revoked or expired grants deny with BREAK_GLASS_EXPIRED; expiry revokes for good (a rewound clock never revives the grant); a revocation holds even when its audit append fails",
+    "q1_po_condition": "the controller has no write path to the registry and grant takes no attribute, role or kind parameter (TypeError); role tokens placed in reason/scope/incident text are ignored; a requester or approver cannot update its own immutable registry record (IdentityConflictError) and the grant stays refused. GateSignature.role belongs to the Human Gate (REM-0028) and is not part of break-glass. The registry's lack of writer authority for new records is the open decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (draft PR #262), not closed here",
+    "unchanged": "EmergencyStopController (request_reset class finding is REM-0028), OutcomeReconciler, c2_identity.py, human_gate.py, every other 0044 test, the 0047 tests and code"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/c6/safety.py": "027f125d6bbab5ad6eff8e6d195e8745425cd15e7444297b1b300a9bebebf764",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0044.py": "16e001abfa478556ead8e990a5c3161a90e32ada7c86eb2156db5758bba96194",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py": "978dbc1d1322d3ecc78b9bb76bfc8d3662f75a757e2d358fff64a5cc840acfb3",
+    "scripts/validate_ocor_development_plan.py": "7ad14e04d2f59e5d1b97f9be2e7d9f44fbdf62c29759743a09f342bfeecb5e74"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 section 5.4 break-glass quorum 'Security Duty Officer + affected Domain Owner' and 'Requester non approva': SECURITY_DUTY_OFFICER and DOMAIN_OWNER:<grant domain> held by the two distinct approvers (one approver holding both roles covers only one), requester never among them; the grant carries the affected domain explicitly (PO Q1).",
+    "ADD v1.3 section 5.5 'Delegation eccezionale firmata': satisfied as 'registered by the controller' per PO point 1 ('firmati o registrati dal controller'); no signature scheme introduced.",
+    "LLD v1.1 section 1.1: effective principal and authority attributes are derived from authoritative identity, never accepted from client input: principal attributes only from the registry record (PO Q1 condition).",
+    "Principal attribute convention (PO Q1 option 1) is a PoC interpretation on identity-record v1.2 scalar attributes, not a contract extension: principal_kind HUMAN|WORKLOAD, status ACTIVE (anything else or absent = inactive), roles = sorted, unique, single-space separated tokens.",
+    "Requester: any resolved ACTIVE principal (human or workload) may request; only humans approve. Fail-closed reading: an unresolved or inactive requester is refused.",
+    "Alert scope: grants and uses are alerted (ADD 5.5 'alert immediato'); refusals and revocations are audited only."
+  ],
+  "origin_finding": {
+    "audit": "reports/development/decision_requests/RVW-03.md (2026-10-12) with the read-only probe ~/.ocor-codex/rvw03-audit-20261012/probe.py (sha256 350797f5...): P1 a grant built outside grant() with unregistered approvers AUTHORIZED; P2 a workload principal accepted as approver, no requester concept; P3 an expired grant re-authorized by a caller back-dated instant and a grant future-dated by the caller; X1 a capability outside the grant scope AUTHORIZED; P4 (TTL bound, no renewal) and P5 (expiry and revocation fail-closed) already satisfied",
+    "decision": "Product Owner decision RVW-03 (2026-10-05): align BreakGlassController to ADD v1.3 sections 5.4-5.5 and LLD v1.1 section 4.2 (points 1-5); Product Owner decision REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY (2026-10-13): Q1 option 1 with the PO condition (principal kind, status and roles only from IdentityRegistry), Q2 option 1 (only the nine 0044 break-glass test functions and their fixtures adapted), Q3 option 1 (REM-0028 separate, after REM-0024)",
+    "path": "ocor-runtime/src/ocor_runtime/c6/safety.py:191-282 at 2710c1b (sha256 d241be276c3e1a9c4c335d9d950439536f5f8065193aa83cce9fff519e0cbe83; unchanged up to origin/main 19ef2a2d76c794c1e665ed4ced681ad8c94b2e9a)",
+    "registration": "EXECUTION_STATE remediation_status.REM_0024_BREAK_GLASS_CONFORMANCE (allocated 2026-10-12, next free id verified)"
+  },
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) e la password del DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {
+    "OCOR_SPIRE_JOIN_TOKEN": 1
+  },
+  "raw_output_sha256": "7ac39d3f59c2280295019ce490351e5ceffcefa0a275a000e6b12a03f7609ed4",
+  "record_id": "OCOR-DEV-REM-0024-9faac98a8653",
+  "repair_cycle": 0,
+  "reproducible_check": {
+    "checker_source_sha256": "e2db035d8598aa11988b7309a1b03f35bd85e95ba2362a0d76428746a3e152c2",
+    "command": "python3 /home/luca/.ocor-codex/rem-0024-impl/check_evidence.py <repo> <head>",
+    "scope": "mechanical integrity and count reconstruction of the four records; does not constitute independent verification"
+  },
+  "requalifications": [
+    {
+      "record": "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0024.json",
+      "record_sha256": "d3b47c1b8abddf9d48b8b1a2f2d42ce53cb842f76157e787cf2141002a668d4a",
+      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0044.json",
+      "task_id": "OCOR-DEV-0044"
+    },
+    {
+      "record": "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0024.json",
+      "record_sha256": "e3fef17248693460758a2fba9a541849009cbeaf7d32c7a53d7bf9a993608759",
+      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0047.json",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.json",
+      "record_sha256": "01f4c8eaea81f349a9fa2df1e770eda9928ab9300abbc2b7cd2e6aef963daa8c",
+      "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json",
+      "task_id": "OCOR-DEV-0050"
+    }
+  ],
+  "requirement_coverage_note": "Component-level evidence only for the break-glass behaviours named in each case (FR-139 governed break-glass, NFR-081 dual control, bounded, expiring and audited break-glass). FR-139 is registered with phase MVP; full verification of FR-108, FR-134, FR-139, FR-146 and NFR-081 is allocated to G6 (OCOR-DEV-0063); E1=0/E2=0 and zero global Verified remain unchanged.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-REM-0024-P1-ONLY-ISSUED-UNALTERED-GRANTS-AUTHORIZE",
+      "command": "a grant built outside grant() (unregistered or well-formed approvers), a grant of another controller, an issued grant altered in capabilities/ttl/granted_at/scope/domain/requester, and revoking a never-issued grant: BREAK_GLASS_GRANT_NOT_ISSUED; the unaltered issued grant still authorizes (RED probe on 19ef2a2: forged grant AUTHORIZED)",
+      "finding": "P1 / PO point 1",
+      "real_backend_tests": [
+        "test_a_grant_built_outside_the_controller_never_authorizes",
+        "test_a_grant_issued_by_another_controller_never_authorizes",
+        "test_a_well_formed_copy_of_valid_fields_is_still_not_issued",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes",
+        "test_revoking_a_grant_that_was_never_issued_is_refused"
+      ],
+      "requirement_id": "FR-139",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 10,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "46b26c05667d2fa464a556908222d6684c7c6ca75b55745b4f1fc798338bf601",
+        "a52cf9b26d94c2630b4456b8de065ecfe2f839f492b50d03ea039ffb365450fc",
+        "9b30f9aae916ff1cfc9039abeb0d0136140b913dd138dbaafd478987843abc5e",
+        "4c9e821eebf78d9eb9fbc0058ad121b1b65bb66d4859c68a4db105a120dcf941",
+        "32d323bb24269a563e70ecf00bfdab61b68b998d74f08bd4e2920d4dca99bc5e",
+        "91ae7653a474d69b0e535e31f27d07e322bac2a4bfc6cfdfb418e54982454566",
+        "bbfdb25f3dc664d1f353fc99a3cb95e07c27fb294e083a6ff0264c260c2d95c4",
+        "39dfce1f0aa85bd9a684041ce76e37e0cc3562aa0334e8f1ec94493ff2c9da62",
+        "8d16a5a5daa56a06ed9fb2e45069422de3c1c71e1a1685dd81537d8147fa0acf",
+        "c3035d34d491532856e34284c62336ab64a1c3ca6091246406a0751826d9a047"
+      ],
+      "tests": [
+        "test_a_grant_built_outside_the_controller_never_authorizes",
+        "test_a_grant_issued_by_another_controller_never_authorizes",
+        "test_a_well_formed_copy_of_valid_fields_is_still_not_issued",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes",
+        "test_revoking_a_grant_that_was_never_issued_is_refused"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-P2-PRINCIPALS-FROM-REGISTRY-HUMAN-ACTIVE-DISTINCT-NOT-REQUESTER",
+      "command": "requester resolved ACTIVE and never an approver; exactly two distinct approvers, resolved, principal_kind HUMAN, status ACTIVE; absent or malformed principal_kind/roles fail closed; an active workload may request but never approve (RED probe on 19ef2a2: workload approver AUTHORIZED, no requester parameter)",
+      "finding": "P2 / PO point 2, Q1",
+      "real_backend_tests": [
+        "test_a_workload_principal_can_never_approve",
+        "test_an_active_workload_may_request_but_never_approve",
+        "test_an_approver_whose_status_is_not_active_is_refused",
+        "test_an_unresolved_approver_is_refused",
+        "test_an_unresolved_inactive_or_missing_requester_is_refused",
+        "test_exactly_two_approvers_are_required",
+        "test_missing_or_malformed_principal_attributes_fail_closed",
+        "test_the_requester_can_never_approve_its_own_break_glass",
+        "test_two_distinct_approvers_are_required"
+      ],
+      "requirement_id": "NFR-081",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 18,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "4916ab0b50dabdc575e0f8f895c0cda6ab6ed62d325bbfac9a725f710b47bbcc",
+        "3ae23af5d531808e420b161c78c55ccaf593067723eddb8a1553ff23b84e9a94",
+        "49cee52dc701a28b934648a95501c03d48de2cf06d2b1c7dbd6330717d80d416",
+        "539017c2efc7e36e68c75b6c7880effb8b61b2fcc9fde7b82ae567149af09a11",
+        "8a2d0c98e736473a331f998bf278875af3f6bdab0bcd3e66b3fe47639a34956d",
+        "1d242615b38f1a1fefb81d0ee2e8c80deda45021e5f88800a55f0331f52e8981",
+        "a464f99a827e82852c5970db07dbe8b4bb565b44ce09e583507280e87777d256",
+        "9bd8864d9e8875c4c463fa208d964e55e8ecdca21057ae988999232fe58d999f",
+        "35ef5523ae0f8dcb6132572a33b4b0623f6bddce3ce2780799e62157b0f1ee55",
+        "04a5ccc5516905cc78fc0b38116f64a9bd824490d87529d518c326763725e584",
+        "61c07812107a3dcc3fd43dcda3a83337ca4612ec7799074faa0169008ab4702e",
+        "3c48ebc49e289028d7287c1df8d1a3508e3107323e357076d65ab85396408630",
+        "5073851c08f649a9c8411b8e1c6920cbecb7624d91cc464a1ef1287b96ea4b20",
+        "dc0d6750583fc30b75b40f63b5789e510e1aef6f8fe5dc6545aebc243feb152a",
+        "3c63dd843d95a01397b429965cb12355df3b028d150bc5390e90e3f1ffd82aaa",
+        "421e632acf73603ef231258d18b535bce5cff96e67de6aadb563ff894bdc6ef4",
+        "5f7135821547ac41939d5a72bbddc1304c4a90dc28bafacf031fb6dab8f2121f",
+        "4cff2c7e7d9047e34343bf7611857445fdbfe4ffaf521b4b50efa4e1cb6c896d"
+      ],
+      "tests": [
+        "test_a_workload_principal_can_never_approve",
+        "test_an_active_workload_may_request_but_never_approve",
+        "test_an_approver_whose_status_is_not_active_is_refused",
+        "test_an_unresolved_approver_is_refused",
+        "test_an_unresolved_inactive_or_missing_requester_is_refused",
+        "test_exactly_two_approvers_are_required",
+        "test_missing_or_malformed_principal_attributes_fail_closed",
+        "test_the_requester_can_never_approve_its_own_break_glass",
+        "test_two_distinct_approvers_are_required"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-ROLE-QUORUM-SECURITY-DUTY-OFFICER-PLUS-AFFECTED-DOMAIN-OWNER",
+      "command": "SECURITY_DUTY_OFFICER and DOMAIN_OWNER:<grant domain> on two distinct approvers in either order are accepted; two officers, an owner of another domain, no officer, or one approver holding both roles beside an approver holding neither: BREAK_GLASS_ROLE_QUORUM_UNMET",
+      "finding": "ADD 5.4 quorum / Q1",
+      "real_backend_tests": [
+        "test_an_approver_holding_both_roles_may_cover_one_of_them",
+        "test_one_approver_holding_both_roles_cannot_satisfy_the_quorum_alone",
+        "test_the_affected_domain_is_taken_from_the_grant",
+        "test_the_role_quorum_is_satisfied_in_either_approver_order",
+        "test_the_security_duty_officer_plus_affected_domain_owner_quorum_is_enforced"
+      ],
+      "requirement_id": "NFR-081",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 7,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "19ffa08668013dff5b440d44c8b6a2c67691fbaa41fc0a6b57e3e22a094b5739",
+        "d1e6dac2d8139615787b4b8b3e97af92b71ebfdc8b4f3c6e5749f766c85df581",
+        "24b6c10a7ce0ac26e418552c049da2f93ced774b9dfa5d4e553a642ad158fff9",
+        "5bb6c47a965aa80801cfaf7ffdcfa10a2f441446e25d5c68f93a6313b9326ac8",
+        "bcde1287f82d10060d5337085dc2bae174f1e3a692aa790eb9735f023224f21a",
+        "bf2aeb88f7e39bc09f7cf70f7502f7a65f1791858a239c581c73bd598b687b0b",
+        "f2d432f6b28f668b61cf62d983f9417a04c5a9d39e02faf4131aa1ce358f75d6"
+      ],
+      "tests": [
+        "test_an_approver_holding_both_roles_may_cover_one_of_them",
+        "test_one_approver_holding_both_roles_cannot_satisfy_the_quorum_alone",
+        "test_the_affected_domain_is_taken_from_the_grant",
+        "test_the_role_quorum_is_satisfied_in_either_approver_order",
+        "test_the_security_duty_officer_plus_affected_domain_owner_quorum_is_enforced"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-Q1-CONDITION-ATTRIBUTES-ONLY-FROM-THE-REGISTRY",
+      "command": "attribute, role or kind parameters in the grant request are rejected (TypeError); role tokens in reason/scope/incident text are ignored; a requester or approver cannot update its own immutable registry record (IdentityConflictError) and the grant stays refused; grant/authorize/revoke never write the registry",
+      "finding": "PO Q1 condition",
+      "real_backend_tests": [
+        "test_a_requester_cannot_update_its_record_into_an_approver",
+        "test_principal_attributes_declared_in_the_request_are_never_accepted",
+        "test_role_tokens_smuggled_into_request_text_fields_are_ignored",
+        "test_the_controller_never_writes_principal_records"
+      ],
+      "requirement_id": "NFR-081",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 7,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "c9741b4479765cedc07fd45023f92dc715228d241f46cf1972b3c486f010a424",
+        "aabd17eed167efc2370f118642c67cd7b8f12341bd71245fbb1faf6ff0d1df5b",
+        "4148bda74e3d41a2739ea8e092536f2f46532d898a650a37020a3959b2633a0d",
+        "e074ed08101c044cfd545935fe2a73bda56451e69d8afe9ab20280bb4cc3795d",
+        "74080b5789fc47ea7d4e705afa1285b01b8f73146f147eb3a2c1af59f87faaf0",
+        "2ec70f4c673f286ea04f70755eceb14111a73c9482d22e660f4729964805f1c4",
+        "fe2f3a2823a764eedd511804639b2a4d629f4a8d93f24444318aaeb69f141626"
+      ],
+      "tests": [
+        "test_a_requester_cannot_update_its_record_into_an_approver",
+        "test_principal_attributes_declared_in_the_request_are_never_accepted",
+        "test_role_tokens_smuggled_into_request_text_fields_are_ignored",
+        "test_the_controller_never_writes_principal_records"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-P2-USE-TIME-REVALIDATION-OF-EVERY-PRINCIPAL",
+      "command": "after a successful first use, an approver removed, suspended, turned workload, stripped of its owner role or given malformed roles, or a requester disabled or removed in the authoritative directory makes the next use fail with the matching reason code; unchanged principals keep authorizing while unrelated records change",
+      "finding": "P2 / PO point 2",
+      "real_backend_tests": [
+        "test_principals_are_revalidated_against_the_registry_at_every_use",
+        "test_unchanged_principals_keep_authorizing_on_a_changing_directory"
+      ],
+      "requirement_id": "NFR-081",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 8,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "f55ecf5480c6991f80d3f1c2ff49b667e3093462c53e09fe295d20dc0a7b2ac2",
+        "3951c0a4d00d8470b32c0ad6a0831cbbd80ef73a45c7417adf2a361cae37b481",
+        "aa84c58bfc66aa61b8444c208c13b48be2adfc4741171b7f52aef6e0c7bbe861",
+        "9f03158a78f31d71d4977d7d244ca09e915f0eb4ab86f20b8ce724809a0e35ca",
+        "56e9dc92ea26151fc6c82511e968826eebb462c37c039aa30772926947cc5ae6",
+        "7ede817698f5ede9185076e203582bd7d4052a4beecd845bb16fae73c31c70bf",
+        "f9ac15eb2790737e52f508e5da2a1b65d4a1393ef17efbeffb598f7abba64678",
+        "263b3620c5d66a5c1b7df2bdd48e6e2c88642679a42423af2ba8022ace19b672"
+      ],
+      "tests": [
+        "test_principals_are_revalidated_against_the_registry_at_every_use",
+        "test_unchanged_principals_keep_authorizing_on_a_changing_directory"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-P3-TRUSTED-CLOCK-ONLY-NO-CALLER-INSTANT",
+      "command": "grant and authorize take no instant (TypeError on at=); granted_at and every use come from the injected trusted clock; the window closes exactly at expiry; an instant before issuance is BREAK_GLASS_NOT_YET_VALID; a naive trusted instant fails closed (RED probe on 19ef2a2: back-dated and future-dated caller instants AUTHORIZED)",
+      "finding": "P3 / PO point 3",
+      "real_backend_tests": [
+        "test_a_naive_trusted_instant_fails_closed",
+        "test_a_trusted_instant_before_issuance_is_refused",
+        "test_a_valid_grant_is_issued_on_the_trusted_clock_audited_and_alerted",
+        "test_authorize_accepts_no_caller_supplied_instant",
+        "test_grant_accepts_no_caller_supplied_instant",
+        "test_the_grant_window_follows_the_trusted_clock",
+        "test_the_window_closes_exactly_at_expiry_on_the_trusted_clock"
+      ],
+      "requirement_id": "FR-139",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 7,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "5765dcc58bfb9ad1f30af4406f1bad3f226ba3a4211cb53da8b8f622fe8aaf8f",
+        "4f2b3d2fc6a12d69fd2d053f39ca2b41da4884960c8f32034e99735db659ae90",
+        "cd89b07ff7483041baddadce97071806eee9641d4af6e611bb2a68951793fdbe",
+        "7e50a7d09995e82338c30c1aa8dd44efb75fbb2218fd137978f7054cc5333099",
+        "14681763fe115f7a7774823f90ffb06134638da72ba622e2a2d8e9ef7c500010",
+        "5397a22d30d2b3ece8511105d489a1314c75bfe68a958591b9486d2fe9effc37",
+        "acb08c1f56ede4fcf9eefa2f80fbf20133f4c93af21ecbe42a496c0249ae7f37"
+      ],
+      "tests": [
+        "test_a_naive_trusted_instant_fails_closed",
+        "test_a_trusted_instant_before_issuance_is_refused",
+        "test_a_valid_grant_is_issued_on_the_trusted_clock_audited_and_alerted",
+        "test_authorize_accepts_no_caller_supplied_instant",
+        "test_grant_accepts_no_caller_supplied_instant",
+        "test_the_grant_window_follows_the_trusted_clock",
+        "test_the_window_closes_exactly_at_expiry_on_the_trusted_clock"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-TTL-BOUND-NO-RENEWAL-EXPIRY-AND-REVOCATION-FAIL-CLOSED",
+      "command": "TTL in (0, 15 min] with the bound accepted and 0, negative or 15 min + 1 s refused and audited; a grant id is never reissued and the public surface is grant/authorize/revoke; expiry revokes for good even if the trusted clock is rewound; revocation denies immediately, is audited, and holds when its audit append fails",
+      "finding": "PO points 4 and 5",
+      "real_backend_tests": [
+        "test_a_grant_id_can_never_be_reissued",
+        "test_a_revocation_holds_even_when_its_audit_append_fails",
+        "test_a_revoked_grant_denies_immediately_and_the_revocation_is_audited",
+        "test_a_ttl_of_exactly_fifteen_minutes_is_accepted",
+        "test_a_ttl_outside_the_bound_is_refused",
+        "test_expiry_revokes_automatically_and_a_rewound_clock_never_revives_the_grant",
+        "test_there_is_no_renewal_path"
+      ],
+      "requirement_id": "FR-139",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 9,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "d04aadd6d58caed889e9ee9634f80a980d273fd5e8430a7102c592bf28afc866",
+        "6a1f38184f755cc13275c3add141ed527e12c81d3864f0ff438ac99ce1a55499",
+        "7cb1367d69fdb29fd3eb924a7645a243da69fe9a295bfa6d3dcea3673595cda7",
+        "10e93eba55cc480839c82ec602256a62b9b92bba78aeb035dbcb2bca8d1c0e04",
+        "2c37f1a4c17636f35af4877762344a4db0fdf0c53583b456ee3e98bd9e9a4250",
+        "cfcbb6436d91b6984fbc4e36abfcfab355bf801a33a14786b890a80f6e21c560",
+        "fded2cc9a260fe88b5e8d4f0274964a7244980f6d156969d36f65b7d74f93397",
+        "74a306baf7dc7e7621b9e7764e9cddb07cba6edd93aec22f0efbd6225d15f5ba",
+        "e64be3fd52e0955335f907bc95c2a2b0d5a14cbafadb5c37b437ccb96e34cf74"
+      ],
+      "tests": [
+        "test_a_grant_id_can_never_be_reissued",
+        "test_a_revocation_holds_even_when_its_audit_append_fails",
+        "test_a_revoked_grant_denies_immediately_and_the_revocation_is_audited",
+        "test_a_ttl_of_exactly_fifteen_minutes_is_accepted",
+        "test_a_ttl_outside_the_bound_is_refused",
+        "test_expiry_revokes_automatically_and_a_rewound_clock_never_revives_the_grant",
+        "test_there_is_no_renewal_path"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-X1-NAMED-CAPABILITIES-AND-FORBIDDEN-LIST",
+      "command": "a grant needs named capabilities, reason, incident, scope and domain; none of the eight forbidden capabilities can be named or used; a named capability authorizes, an unnamed one is BREAK_GLASS_CAPABILITY_NOT_GRANTED; an active emergency stop and a missing review reference still refuse (RED probe on 19ef2a2: capability outside the scope AUTHORIZED)",
+      "finding": "X1 / ADD 5.5",
+      "real_backend_tests": [
+        "test_a_capability_not_named_in_the_grant_is_refused",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant",
+        "test_a_forbidden_capability_is_refused_at_use",
+        "test_a_grant_without_named_capabilities_is_refused",
+        "test_an_issued_grant_authorizes_a_named_capability_with_audit_and_alert",
+        "test_break_glass_never_overrides_an_active_emergency_stop",
+        "test_every_use_requires_a_review_reference",
+        "test_missing_mandatory_grant_fields_are_refused"
+      ],
+      "requirement_id": "FR-139",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 25,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "80cf7222eae37c6f616018f9de891c7ac7af7de6c580abf33fa59db8162a37ff",
+        "36d8302dd85d0681d448a3f636050bde081c5a2f08de20a398c6e050d1dc1452",
+        "3d121e4abefc0866f5447de9224869b6101008a2e37888ca2f3f96fb1de2e670",
+        "cfa30c5d0ed4e243177a4e07aa2bbfcc5de54dc3202c824e88b731b0e3d3ebf1",
+        "a4652c8e10b3fbf1f50f948b7fd1361f4174506ede90fb5e708fad1c9ee8024b",
+        "7bd63993b2f4469907484ab1407769add0f0a54308baf87b3fce02e0c7d6c2a5",
+        "f8400dc0ce961707d6509a661f823e1ac725bd2480e45210f3162ae656ed1d00",
+        "2c00ac81f6431b91bc6dfdc786444a371285f3eca8d9a6e1dcdfeebf5cba5408",
+        "56459207cd33642e34518e350e218c1e3f5296f9366f2bdf3f608cdfb30d692a",
+        "1d4f9836678fddedb50b0d6cf1e07b1ea3fb79588237c52124adacf926c423f3",
+        "d4b836df03fc9e70da2d730631f5557a1829909bfbeb872d6e3ccd5bae932912",
+        "6b8aba42101e3e1d0a4a347e946b8da919334935b0db02b3f44c525dbf334a5f",
+        "9c03e8b84d66a8f3d269efa7c091a2850866ce8ce9f972cbcc2ab0f9032e53b0",
+        "c8c764415bf05476ad00ba6eaed0cd2b3806c3088565115bee5bc5831213cc83",
+        "ef053841a9493dcf430f0b5e8cf48c8915ff2cfec2c0a756fced9f27b7157cd5",
+        "0c3d66bd356ae06dc61bf3563f8957eb71a589fdad24ca2e312a52ccb92c794c",
+        "6b8d69b25832fe9d8c1f04d514b46964dcefa28418c8b3db1e9814176746a58c",
+        "1378e9dfd31a6a84a66896b6ba925d3997365bf0497498a284bb94906c0ac7c7",
+        "31768be7d0d77bf773c83ad5826935b764cce2928e84472cf0890f1878d79a08",
+        "f948da71a727f13310e95bfdf7df0d4e8b86635c8bcc4d36f896970c599f8269",
+        "862bfe4dce5ed7d1ce7d70271fad8c1e221289dc4eba803b801949c0a7940480",
+        "30f1017fc5dd0aeb1115d701a8d6f5379d564ee4deb9728c25fde2edab1bc204",
+        "4e8624da7b0ae7981a2c73b0e18e66ebe583ec3cb04a84076c62f81bac56780a",
+        "368486db77aa3181f7d00473076c0d2161f5b4667d064d2aaca7c9fa7a65b9cb",
+        "02d28dd2fee4e341ebd92ce6660f086fe48dab69029d2e3ae37323e1bab068c9"
+      ],
+      "tests": [
+        "test_a_capability_not_named_in_the_grant_is_refused",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant",
+        "test_a_forbidden_capability_is_refused_at_use",
+        "test_a_grant_without_named_capabilities_is_refused",
+        "test_an_issued_grant_authorizes_a_named_capability_with_audit_and_alert",
+        "test_break_glass_never_overrides_an_active_emergency_stop",
+        "test_every_use_requires_a_review_reference",
+        "test_missing_mandatory_grant_fields_are_refused"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0024-SYNCHRONOUS-AUDIT-AND-IMMEDIATE-ALERT-FAIL-CLOSED",
+      "command": "grants and uses are audited before they take effect and alerted immediately; an audit failure refuses the grant or use (BREAK_GLASS_AUDIT_UNAVAILABLE), an alert failure withdraws it with a WITHDRAWN audit event (BREAK_GLASS_ALERT_UNAVAILABLE) and the grant is never registered; refused grants and uses are audited with their reason code and stay refused when the audit fails",
+      "finding": "ADD 5.5 / LLD 4.2",
+      "real_backend_tests": [
+        "test_a_grant_whose_alert_fails_is_withdrawn_and_never_issued",
+        "test_a_grant_whose_audit_append_fails_is_never_issued",
+        "test_a_refused_grant_is_audited_with_its_reason",
+        "test_a_refused_grant_whose_audit_fails_is_still_refused",
+        "test_a_refused_use_is_audited_with_its_reason",
+        "test_a_refused_use_whose_audit_fails_is_still_refused",
+        "test_a_use_whose_alert_fails_is_withdrawn_and_refused",
+        "test_a_use_whose_audit_append_fails_is_refused"
+      ],
+      "requirement_id": "NFR-081",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 8,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "b677553a424e3d430980debecba8feb70bad48f63551fed6b27421ab6f0e476d",
+        "523a0a84711801b9f1e1a1983a413ba16a1affa336484ddcfdc7b4ac6e444438",
+        "93efbc495c03179a8a5c371f3b842b2b1fd2753e42070dfbeec788e44dea6edd",
+        "4d264cb42162c3925655c85ddf7ffbc344a769630c90ff337c564a140ee72434",
+        "a869a112319b109b2cf51907f0a3e9e8dcb3f8b5e772477a0ae43286ac3321de",
+        "3c99aade283ed9d777fbc124ffa280bbda5945b694a8237a29f0ab195e3ab507",
+        "df364a06258fea5199ebe0714e038967a3b29c685a701e8881b5602420497052",
+        "a025d9f4abc92454b33a8bc12e734ac56e5b41fb3643758ae3eb4ad3ad8b17a9"
+      ],
+      "tests": [
+        "test_a_grant_whose_alert_fails_is_withdrawn_and_never_issued",
+        "test_a_grant_whose_audit_append_fails_is_never_issued",
+        "test_a_refused_grant_is_audited_with_its_reason",
+        "test_a_refused_grant_whose_audit_fails_is_still_refused",
+        "test_a_refused_use_is_audited_with_its_reason",
+        "test_a_refused_use_whose_audit_fails_is_still_refused",
+        "test_a_use_whose_alert_fails_is_withdrawn_and_refused",
+        "test_a_use_whose_audit_append_fails_is_refused"
+      ],
+      "unit_fixture_tests": []
+    }
+  ],
+  "residual_risks": [
+    "Writer authority of IdentityRegistry for new records (a first writer can register a new principal with self-declared privileged attributes): open decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (draft PR #262), required before G6; this remediation reads the registry only and does not close it.",
+    "The concrete IdentityRegistry is immutable per record, so deactivation or role removal between grant and use is exercised with a mutable read-only directory implementing the same get() surface; no lifecycle API for principal records exists yet.",
+    "Audit and alert sinks are ports: durability and immutability of a production audit store and delivery of the alert are properties of the injected implementations, not of this component; G6 qualification (FR-108, FR-134, FR-139, FR-146, NFR-081) must bind them to real backends.",
+    "Post-review is structural (mandatory review reference on every use) but no review workflow exists; LLD 'review obbligatoria' completion is outside this remediation.",
+    "Emergency-stop reset (request_reset: existence-only approvers, caller instant) and the Human Gate (GateSignature.role, caller instants) remain as found: OCOR-DEV-REM-0028, after this remediation.",
+    "BreakGlassController is not yet wired into a live PoC path (in_live_poc_path false in the registration); runtime conformance is NOT_ESTABLISHED."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 di OCOR-DEV-REM-0024",
+    "independence": "external loop only; separate process, context and provider",
+    "original_implementer_0044_0047_0050": "OCOR-DEV-0044 and 0047: original implementers per their sealed records; OCOR-DEV-0050: Claude Code cycle 0, Codex repair cycles 1-2",
+    "pre_implementation_audits": "RVW-03 audit (2026-10-12) and decision request REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY: Claude Code (reserve); writer-authority audit and decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (2026-10-14, draft PR #262): Codex",
+    "verifier": "Grok 4.7 (Cursor CLI; verifier: cursor) -- separate process, context and provider; Claude Code does not verify this change set (LOOP-ROLES: Cursor/Grok when the reserve Claude Code implements)"
+  },
+  "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted-data migration; the break-glass state is in memory. Reverting restores the sealed OCOR-DEV-0044 and OCOR-DEV-0047 records and OCOR-DEV-0050.requalified-rem0026 as the most recent ones once the REM-0024 requalification records are removed with the revert.",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "task_id": "OCOR-DEV-REM-0024",
+  "tdd": {
+    "GREEN": {
+      "command": "task-run-1..3 and task-validation-command over the 0044, 0047, REM-0024 and 0050 suites (JUnit counts in commands)",
+      "raw_label": "task-run-3, task-junit"
+    },
+    "RED": {
+      "command": "detached worktree .ocor/worktrees/rem-0024-red at the tests-only commit 1a09bce5dcccf69e3c92b9fa125756fe2b9d308b (parent origin/main 19ef2a2d76c794c1e665ed4ced681ad8c94b2e9a); the run prints HEAD, parent, the diff, whether c6/safety.py equals the parent and the imported module path, then python -m pytest -q -p no:cacheprovider -rfE tests/tasks/test_ocor_dev_rem_0024.py, then the RVW-03 probe on the same unremediated source",
+      "exit_code": 1,
+      "junit_raw_sha256": "79461fd950438a6fd68984cb6d826a72a24fccc8375c903213f5584f9380999d",
+      "observed": "all 99 REM-0024 cases fail on the unremediated safety.py: 88 at fixture setup and 11 in the body, every one with TypeError because the unremediated BreakGlassController/grant/authorize take no trusted clock, audit or alert sink, no requester, domain or capabilities (the conformant interface does not exist). Because an interface error cannot by itself show the behavioural defects, the same raw log carries the RVW-03 probe re-run on the same unremediated source: P1 forged grant AUTHORIZED, P2 workload approver AUTHORIZED and no requester parameter, P3 back-dated and future-dated caller instants AUTHORIZED, X1 capability outside the scope AUTHORIZED (identical to the registered audit result sha256 ad81c6db...).",
+      "outcomes": {
+        "test_a_capability_not_named_in_the_grant_is_refused": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[access_outside_compartment]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[authorize_r3_without_quorum]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[change_release_pin]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[create_decision]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[disable_audit]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[disable_provenance]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[ignore_emergency_stop]": "FAIL",
+        "test_a_forbidden_capability_can_never_be_named_in_a_grant[reduce_marking]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[access_outside_compartment]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[authorize_r3_without_quorum]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[change_release_pin]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[create_decision]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[disable_audit]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[disable_provenance]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[ignore_emergency_stop]": "FAIL",
+        "test_a_forbidden_capability_is_refused_at_use[reduce_marking]": "FAIL",
+        "test_a_grant_built_outside_the_controller_never_authorizes": "FAIL",
+        "test_a_grant_id_can_never_be_reissued": "FAIL",
+        "test_a_grant_issued_by_another_controller_never_authorizes": "FAIL",
+        "test_a_grant_whose_alert_fails_is_withdrawn_and_never_issued": "FAIL",
+        "test_a_grant_whose_audit_append_fails_is_never_issued": "FAIL",
+        "test_a_grant_without_named_capabilities_is_refused": "FAIL",
+        "test_a_naive_trusted_instant_fails_closed": "FAIL",
+        "test_a_refused_grant_is_audited_with_its_reason": "FAIL",
+        "test_a_refused_grant_whose_audit_fails_is_still_refused": "FAIL",
+        "test_a_refused_use_is_audited_with_its_reason": "FAIL",
+        "test_a_refused_use_whose_audit_fails_is_still_refused": "FAIL",
+        "test_a_requester_cannot_update_its_record_into_an_approver": "FAIL",
+        "test_a_revocation_holds_even_when_its_audit_append_fails": "FAIL",
+        "test_a_revoked_grant_denies_immediately_and_the_revocation_is_audited": "FAIL",
+        "test_a_trusted_instant_before_issuance_is_refused": "FAIL",
+        "test_a_ttl_of_exactly_fifteen_minutes_is_accepted": "FAIL",
+        "test_a_ttl_outside_the_bound_is_refused[ttl0]": "FAIL",
+        "test_a_ttl_outside_the_bound_is_refused[ttl1]": "FAIL",
+        "test_a_ttl_outside_the_bound_is_refused[ttl2]": "FAIL",
+        "test_a_use_whose_alert_fails_is_withdrawn_and_refused": "FAIL",
+        "test_a_use_whose_audit_append_fails_is_refused": "FAIL",
+        "test_a_valid_grant_is_issued_on_the_trusted_clock_audited_and_alerted": "FAIL",
+        "test_a_well_formed_copy_of_valid_fields_is_still_not_issued": "FAIL",
+        "test_a_workload_principal_can_never_approve": "FAIL",
+        "test_an_active_workload_may_request_but_never_approve": "FAIL",
+        "test_an_approver_holding_both_roles_may_cover_one_of_them": "FAIL",
+        "test_an_approver_whose_status_is_not_active_is_refused[urn:ocor:human:no-status]": "FAIL",
+        "test_an_approver_whose_status_is_not_active_is_refused[urn:ocor:human:suspended]": "FAIL",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes[capabilities]": "FAIL",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes[domain]": "FAIL",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes[granted_at]": "FAIL",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes[requester]": "FAIL",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes[scope]": "FAIL",
+        "test_an_issued_grant_altered_after_issuance_never_authorizes[ttl]": "FAIL",
+        "test_an_issued_grant_authorizes_a_named_capability_with_audit_and_alert": "FAIL",
+        "test_an_unresolved_approver_is_refused": "FAIL",
+        "test_an_unresolved_inactive_or_missing_requester_is_refused[]": "FAIL",
+        "test_an_unresolved_inactive_or_missing_requester_is_refused[urn:ocor:human:inactive-requester]": "FAIL",
+        "test_an_unresolved_inactive_or_missing_requester_is_refused[urn:ocor:human:never-registered]": "FAIL",
+        "test_authorize_accepts_no_caller_supplied_instant": "FAIL",
+        "test_break_glass_never_overrides_an_active_emergency_stop": "FAIL",
+        "test_every_use_requires_a_review_reference": "FAIL",
+        "test_exactly_two_approvers_are_required": "FAIL",
+        "test_expiry_revokes_automatically_and_a_rewound_clock_never_revives_the_grant": "FAIL",
+        "test_grant_accepts_no_caller_supplied_instant": "FAIL",
+        "test_missing_mandatory_grant_fields_are_refused[domain]": "FAIL",
+        "test_missing_mandatory_grant_fields_are_refused[incident_ref]": "FAIL",
+        "test_missing_mandatory_grant_fields_are_refused[reason]": "FAIL",
+        "test_missing_mandatory_grant_fields_are_refused[scope]": "FAIL",
+        "test_missing_or_malformed_principal_attributes_fail_closed[urn:ocor:human:bad-kind]": "FAIL",
+        "test_missing_or_malformed_principal_attributes_fail_closed[urn:ocor:human:duplicate-roles]": "FAIL",
+        "test_missing_or_malformed_principal_attributes_fail_closed[urn:ocor:human:empty-token-roles]": "FAIL",
+        "test_missing_or_malformed_principal_attributes_fail_closed[urn:ocor:human:no-kind]": "FAIL",
+        "test_missing_or_malformed_principal_attributes_fail_closed[urn:ocor:human:non-string-roles]": "FAIL",
+        "test_missing_or_malformed_principal_attributes_fail_closed[urn:ocor:human:unsorted-roles]": "FAIL",
+        "test_one_approver_holding_both_roles_cannot_satisfy_the_quorum_alone": "FAIL",
+        "test_principal_attributes_declared_in_the_request_are_never_accepted[declared0]": "FAIL",
+        "test_principal_attributes_declared_in_the_request_are_never_accepted[declared1]": "FAIL",
+        "test_principal_attributes_declared_in_the_request_are_never_accepted[declared2]": "FAIL",
+        "test_principal_attributes_declared_in_the_request_are_never_accepted[declared3]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[approver-became-workload]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[approver-removed]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[approver-suspended]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[owner-role-removed]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[requester-disabled]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[requester-removed]": "FAIL",
+        "test_principals_are_revalidated_against_the_registry_at_every_use[roles-malformed]": "FAIL",
+        "test_revoking_a_grant_that_was_never_issued_is_refused": "FAIL",
+        "test_role_tokens_smuggled_into_request_text_fields_are_ignored": "FAIL",
+        "test_the_affected_domain_is_taken_from_the_grant": "FAIL",
+        "test_the_controller_never_writes_principal_records": "FAIL",
+        "test_the_grant_window_follows_the_trusted_clock": "FAIL",
+        "test_the_requester_can_never_approve_its_own_break_glass[approvers0]": "FAIL",
+        "test_the_requester_can_never_approve_its_own_break_glass[approvers1]": "FAIL",
+        "test_the_role_quorum_is_satisfied_in_either_approver_order": "FAIL",
+        "test_the_security_duty_officer_plus_affected_domain_owner_quorum_is_enforced[no-security-duty-officer]": "FAIL",
+        "test_the_security_duty_officer_plus_affected_domain_owner_quorum_is_enforced[owner-of-another-domain]": "FAIL",
+        "test_the_security_duty_officer_plus_affected_domain_owner_quorum_is_enforced[two-security-duty-officers]": "FAIL",
+        "test_the_window_closes_exactly_at_expiry_on_the_trusted_clock": "FAIL",
+        "test_there_is_no_renewal_path": "FAIL",
+        "test_two_distinct_approvers_are_required": "FAIL",
+        "test_unchanged_principals_keep_authorizing_on_a_changing_directory": "FAIL"
+      },
+      "preliminary_run": "a first RED run in the candidate worktree right after the tests-only commit (same 11 failed / 88 errors, same TypeError) is kept outside the repository as a diagnostic; the qualifying RED is the separate detached worktree above",
+      "raw_label": "tdd-red, tdd-red-junit",
+      "raw_sha256": "bb178c496b8f2d4fabcce8021af4fd15194b96472b536e4b85441639f1610421"
+    },
+    "REFACTOR": "f2b091d moves the grant-id reuse check, principal validation, audit, alert and registration of grant() under one controller lock, removing a redundant second check that a mutant showed untested; behaviour unchanged",
+    "mutation_probe": "15 mutants of the remediation (issued-grant check, expiry, use-time revalidation, requester exclusion, role quorum, HUMAN check, ACTIVE check, named capability, audit failure swallowed, alert failure swallowed, automatic revocation at expiry, not-yet-valid, unsorted roles accepted, grant-id reissue, revocation after audit) each written into a scratch copy of ocor-runtime and run against the REM-0024 and 0044 suites at the exact campaign commit: all killed, worktree source never modified (raw label mutation-probe-result). An earlier probe at 5292054 killed 13/15 (one mutant text did not match, the redundant check survived), leading to the refactor f2b091d; it is kept outside the repository as a diagnostic",
+    "ordering_note": "Test-first: the REM-0024 cases are the first commit of the change set and were run RED on the unremediated safety.py (tests-only commit) before the 0044 adaptation and the fix commits."
+  },
+  "test_adaptation_0044": {
+    "authority": "PO decision REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY Q2 option 1",
+    "changes": "each grant call adds requester (urn:ocor:human:c), domain (ops) and capabilities ({restart_service}) and drops at=NOW; each authorize call drops at=...; the expiry case advances the trusted clock by 6 minutes instead of passing NOW + 6 min; the controller fixture injects InMemoryTrustedClock(NOW) and recording audit/alert sinks over a new break_glass_identities fixture whose a/b/c records carry the Q1 attributes (a SECURITY_DUTY_OFFICER, b DOMAIN_OWNER:ops, c requester); the shared identities fixture and the stop/reconciler tests are byte-identical",
+    "functions": [
+      "test_a_valid_grant_authorizes_an_allowed_capability_with_mandatory_review",
+      "test_a_grant_without_two_distinct_approvers_is_refused",
+      "test_a_grant_with_an_unresolved_approver_is_refused",
+      "test_a_ttl_beyond_the_maximum_is_refused_at_construction",
+      "test_an_expired_grant_denies_even_though_it_was_valid_when_first_used",
+      "test_a_revoked_grant_denies_immediately",
+      "test_forbidden_capabilities_are_never_authorized_by_break_glass",
+      "test_break_glass_can_never_override_an_active_emergency_stop",
+      "test_a_use_without_a_review_reference_is_refused"
+    ],
+    "mapping": "one-to-one: same nine function names (13 collected cases with the five parametrized forbidden capabilities), same assertions, same reason codes (BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS, ValueError match 'ttl', BREAK_GLASS_EXPIRED, BREAK_GLASS_FORBIDDEN_CAPABILITY, BREAK_GLASS_STOP_ACTIVE, BREAK_GLASS_REVIEW_REQUIRED); no case removed, merged, skipped or weakened"
+  },
+  "test_case_identity": "test_case_sha256 = sha256 of the exact pytest node id (ocor-runtime/<classname as path>.py::<name>) of each JUnit testcase stored verbatim in the raw log; tests holds base names"
+}
