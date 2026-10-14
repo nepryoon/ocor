@@ -639,8 +639,128 @@
     }
   },
   "independent_verification": {
-    "status": "PENDING",
-    "verifier": "cursor"
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 OK sulla worktree detached 90b30fff"
+      },
+      {
+        "command": "uv run --project ocor-runtime --extra test --extra lint python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "uv run --project ocor-runtime --extra test --extra lint python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 75 source files. Il primo tentativo era uscito 1 perche bootstrap aveva eseguito uv sync --extra test senza lint e rimosso mypy; rieseguito dopo uv sync --frozen --extra test --extra lint"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione monitorata fuori dall'area autorizzata"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base fbdec1ea4ad36ce77d26a319e91958a139d9e8e3 --head HEAD",
+        "exit_code": 0,
+        "summary": "PASS: 33 path cambiati rispetto a main; superfici immutabili intatte"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0049"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0050"
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: checked_inputs 182, drifted_inputs 0, drifted_tasks vuoto"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref a0ee43d4e502f3589cd857cfec4238eab13fe8e7",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK"
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref a0ee43d4e502f3589cd857cfec4238eab13fe8e7",
+        "exit_code": 0,
+        "summary": "verdict PASS, counts PASS 37 e NOT_EXECUTED 2 interni al validatore. I due file di planning riscritti dal validatore sono stati ripristinati con git checkout; worktree pulita"
+      },
+      {
+        "command": "python /home/luca/.ocor-codex/rem0019-assembly-20261014/check_clean_clone.py . 90b30fff981935cb48f63a890ec13f33190591e8",
+        "exit_code": 0,
+        "summary": "PASS full 2224, isolated 119, modules 1950, regression_0050 198; source_head 6e1c4b050ac610a22673d6f559e424a01705189c. Il controllo lessicale opzionale del marker ciphertext nel record candidato resta NOT_EXECUTED per la deroga PO (cifratura autenticata, non vincolo lessicale PGDMP) e non e contato come superato"
+      },
+      {
+        "command": "python scripts/reset_test_environment.py --execute && python scripts/bootstrap_development_environment.py",
+        "exit_code": 0,
+        "summary": "Primo bootstrap exit 2: la CA SPIRE della checkout principale era scaduta il 2026-10-08 e SPIRE 1.15.3 l'ha rifiutata. Retry con CA usa-e-getta di 2 giorni solo nella worktree (.ocor/spire, env privato gitignored): reset, bootstrap, init, fixtures e verify_external_services --typed tutti exit 0, status PASS, 9 gruppi READY. La checkout principale non e stata modificata"
+      },
+      {
+        "command": "python -m unittest test_teardown_observation_v2",
+        "exit_code": 0,
+        "summary": "14 test OK, inclusi crash, OOM, restart, nodo vivo senza intento e finestra scaduta. Prima invocazione con path assoluto exit 1 per ModuleNotFoundError di unittest, non per un test"
+      },
+      {
+        "command": "python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0049.py",
+        "exit_code": 1,
+        "summary": "389 passed, 1 failed, 0 skipped in 2098.72s. Nodo fallito: test_seal_and_restore_tied_epoch_tombstones_are_locale_independent[9-7], timeout readyz, concomitante a fuseki OOMKilled exit 137 (limite 2 GiB, JVM a 4.0 GiB senza l'overlay di campagna -Xmx1G). Non e un fallimento di asserzione del prodotto"
+      },
+      {
+        "command": "python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0049.py::test_seal_and_restore_tied_epoch_tombstones_are_locale_independent",
+        "exit_code": 0,
+        "summary": "2 passed in 307.92s dopo overlay compose JVM_ARGS=-Xms128m -Xmx1G. Fuseki rimasto running, OOMKilled false, RestartCount 0"
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=postgresql://ocor@127.0.0.1:55433/ocor python -m pytest -q -p no:cacheprovider ocor-runtime/tests/",
+        "exit_code": 1,
+        "summary": "2224 eseguiti, 0 skipped, 10 failed, 186 errors, 2028 passed in 3682.15s. JUnit: 0049 390/390 passed; 0050 198/198 passed. Gli 8 fail di test_ocor_dev_0007 confrontano node v24.5.0 del PATH Cursor con il pin v20.20.2. I 2 fail e 186 error di test_ocor_dev_0048 sono WORKLOAD_IDENTITY_UNAVAILABLE: lo script di bootstrap del repository non registra spiffe://ocor.test/ocor/control-plane, a differenza del bootstrap CI di campagna. Fuseki durante la run: running, OOMKilled false, RestartCount 0. Il cluster kind ocor-poc non e rimasto. Una run precedente senza DSN e stata interrotta e non e qualificante"
+      },
+      {
+        "command": "PATH=/home/luca/.ocor-codex/c5resume/toolchain/bin:$PATH python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0007.py::test_number_serialization_matches_node_ecmascript_boundary",
+        "exit_code": 0,
+        "summary": "node v20.20.2; 8 passed in 0.25s"
+      },
+      {
+        "command": "python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+        "exit_code": 0,
+        "summary": "Dopo entry create della SVID control-plane con lo stesso parent, spiffeID e selector unix:uid:0 del bootstrap CI di campagna, e fetch confermato: 196 passed, 0 skipped, 0 failed in 123.87s"
+      },
+      {
+        "command": "python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed, 0 skipped in 4.69s"
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code reserve: isolation/VF-001 and observationv2; Codex: backup oracle, verified official kind image and interruption-safe fixture, initial qualification; Claude Code reserve: campaign adoption/completion after Codex coordinator termination; Codex: final evidence assembly",
+    "integration_condition": "REM19 verified and sealed in dedicated staged branch; main integration remains pending REM17 and exact-head required green checks. Original0049 task code merges before governed evidence; no governance merged into task.",
+    "integration_implementer": "Codex (OpenAI), seal and staging only; no product or test change",
+    "not_executed": [],
+    "repair_cycle": 1,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-14T00:42:38Z",
+    "verdict_file_sha256": "ab73c069a892b5f189a5f865f5bd9370572e00e105be5582919f0a15ba625d30",
+    "verdict_head_sha": "90b30fff981935cb48f63a890ec13f33190591e8",
+    "verdict_request_id": "OCOR-DEV-REM-0019-90b30fff9819-1",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verification_run_limitations": "Verifier first full run is diagnostic (Node PATH and missing SPIRE entry); follow-up pinned Node, real SPIRE/control-plane and0048/0050 checks passed. Original candidate full2224/0 skip and five390-case orders/119 isolated runs retain their recorded identities. No diagnostic counts promoted.",
+    "verifier": "cursor",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore: Codex (OpenAI) per oracolo ciphertext, immagine kind ufficiale, fixture e campagna iniziale, piu Claude Code di riserva per isolamento, osservazione v2 e completamento campagna. Verifier: Grok 4.7 tramite Cursor CLI. Non sono lo stesso modello ne lo stesso fornitore. Nessun riassunto di implementazione usato come prova. E1=0, E2=0, Verified=0, runtime conformance NOT_ESTABLISHED, PoC/Production NO-GO. Il controllo lessicale opzionale del ciphertext valido nel record candidato resta NOT_EXECUTED e non e contato come superato. La prova go version -m di containerd (Go 1.24.4, containerd 2.1.3) e stata confrontata con l'hash archiviato; il controllo sorgente marcato PASS_REFERENCE_NOT_EXECUTED non e stato trattato come audit del sorgente eseguito.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, processo e contesto separati dall'implementatore"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -3895,7 +4015,8 @@
   },
   "rollback_procedure_verified": "Mechanically reviewed: new revert commit of REM-0019 test changes; production and persistent data unchanged.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-14T00:47:35.529232+00:00",
+  "status": "SEALED",
   "superseded_record": {
     "path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json",
     "sha256": "3b3f9829ff16a1495d6c9a898d1eea38060d35f70f37bc139d00c2831d9ffddc"

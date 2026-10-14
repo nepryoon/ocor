@@ -1,7 +1,6 @@
 # OCOR-DEV-REM-0019-RCCAD — OCOR-DEV-0049: ogni test eseguibile da solo e in qualsiasi ordine
 
-- **Status**: `WIP_FRESH_QUALIFICATION_IN_PROGRESS` (verifier dichiarato: Grok 4.7 via Cursor CLI, processo, contesto e
-  fornitore separati; Claude Code, implementatore, non verifica questo change set).
+- **Status**: `SEALED` (2026-10-14T00:47:35.529232+00:00), dopo `GO_FOR_EVIDENCE_SEAL` `OCOR-DEV-REM-0019-90b30fff9819-1` su `90b30fff981935cb48f63a890ec13f33190591e8`, verifier Grok 4.7 via Cursor CLI. Sigillo su branch dedicato; integrazione su `main` pendente dopo REM-0017 e check obbligatori verdi. Le campagne precedenti riportate sotto restano diagnostiche; la campagna qualificante finale è nel record `.r1-marker.json`.
 - **Fonte**: presa d'atto PO del 2026-10-09 sul vincolo d'ordine di `test_ocor_dev_0049.py` e decisione
   PO `REM-0017-CI-0049-REMAINDER-CAP` (2026-10-10, opzione 2: nessun tetto speciale, si correggono prima i
   test di 0049). Identificativo verificato libero il 2026-10-09 (`git grep` su tutti i ref).
@@ -115,3 +114,7 @@ Implementatore di questa correzione: Codex (OpenAI); precedenti contributi di
 Claude Code di riserva conservati. Verifier: Grok 4.7 tramite Cursor CLI, avviato
 soltanto dal loop esterno dopo il completamento dell'evidenza e dei gate.
 E1=0, E2=0, Verified=0 e claim NO-GO invariati.
+
+## Sigillo 2026-10-14 — campagna finale e verdetto indipendente
+
+Verdetto `OCOR-DEV-REM-0019-90b30fff9819-1`, SHA256 `ab73c069a892b5f189a5f865f5bd9370572e00e105be5582919f0a15ba625d30`. Campagna qualificante su `6e1c4b050ac610a22673d6f559e424a01705189c`: full 2224/2224, cinque ordini 390/390 ciascuno e 119 isolati, zero skip e zero residui. Riqualifica 0050 di sola regressione (198 casi invariati), difetto audit di diniego ancora REM-0023. Codex e Claude Code di riserva hanno contribuito alla riparazione; verifier Grok 4.7 (Cursor), contesto separato. In questa unità Codex modifica soltanto metadati di sigillo, README e hash dei manifest; raw log, prove e record storici invariati. Il run completo iniziale del verifier con problemi di PATH/SPIRE resta diagnostico, con i successivi controlli registrati integralmente nel verdetto. Integrazione task prima, governance dopo; mai governance nel branch task prima dello scope CI. E1=0, E2=0, Verified=0 e NO-GO invariati.
