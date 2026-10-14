@@ -110,6 +110,20 @@ def test_health_observer_artifact_manifest_binds_raw_digest(tmp_path):
     assert manifest['artifacts'][writer.path.name] == hashlib.sha256(writer.path.read_bytes()).hexdigest()
 
 
+def test_failed_health_observer_does_not_change_successful_pytest(tmp_path, monkeypatch):
+    output, json = stub_completed_campaign(tmp_path, monkeypatch, seconds=1)
+    class FailedObserver:
+        returncode = 2
+        def poll(self):
+            return 2
+        def wait(self, **kwargs):
+            return 2
+    monkeypatch.setattr(GUARD, 'start_health_observer', lambda *args: FailedObserver())
+    assert GUARD.main() == 0
+    assert json.loads((output / 'campaign_result.json').read_text())['status'] == 'PASS'
+    assert json.loads((output / 'health-observer-manifest.json').read_text())['observer_exit_code'] == 2
+
+
 def test_running_same_incarnation_is_accepted():
     GUARD.check_stack({'service': state()}, {'service': state()})
 
@@ -421,6 +435,8 @@ def stub_completed_campaign(tmp_path, monkeypatch, *, seconds, recorder_error=Fa
             if recorder_error:
                 raise ci.BootstrapError("event capture failed")
     monkeypatch.setattr(GUARD.kind_observer, "start_sampler", lambda *args: None)
+    # Separate diagnostic port; existing supervisor assertions stay identical.
+    monkeypatch.setattr(GUARD, "start_health_observer", lambda *args: None)
     class Process:
         pid = 99999
         returncode = 0

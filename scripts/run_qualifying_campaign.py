@@ -14,9 +14,12 @@ import heapq
 import json
 import shutil
 import os
+import re
+import select
 import signal
 import subprocess
 import sys
+import threading
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter
@@ -25,7 +28,7 @@ from typing import Any
 
 import observe_kind_teardown as kind_observer
 
-from bootstrap_ci_environment import SessionRecorder, collect_stack_diagnostics, redact_campaign_log
+from bootstrap_ci_environment import SessionRecorder, collect_stack_diagnostics, redact, redact_campaign_log
 
 
 FULL_SUITE_LIMIT_SECONDS = 4500
@@ -33,6 +36,231 @@ PO_DECISION_THRESHOLD_SECONDS = 3600
 PART_LIMIT_SECONDS = 2700
 PART_REBALANCE_SECONDS = 1800
 PART_ARTIFACTS = ("partition.json", "campaign_result.json", "runtime_junit_post_approval.xml", "runtime_coverage.data")
+
+# PO REM-0017-CI-0049-RELAY-HEALTH: observation only. These limits apply to
+# diagnostic work, never to pytest, the campaign clock or the qualifying gate.
+HEALTH_DATA_LIMIT = 16 * 1024 * 1024
+HEALTH_COMMAND_LIMIT = 256 * 1024
+HEALTH_SAMPLE_SECONDS = 5
+
+
+class HealthJournal:
+    """Bounded, immediately redacted diagnostic data shared by observer threads."""
+
+    def __init__(self, output: Path, secrets: list[str], *, max_bytes: int = HEALTH_DATA_LIMIT):
+        self.path = output / "health-observer.jsonl"
+        self.secrets = secrets
+        self.max_bytes = max_bytes
+        self.bytes_written = 0
+        self.truncated = False
+        self.lock = threading.Lock()
+
+    def write(self, record: dict[str, Any]) -> None:
+        text = (json.dumps({"observed_unix_ns": time.time_ns(), **record}, sort_keys=True) + "\n")
+        data = redact(text, self.secrets).encode()
+        with self.lock:
+            if self.bytes_written + len(data) > self.max_bytes:
+                self.truncated = True
+                return
+            with self.path.open("ab") as log:
+                log.write(data)
+            self.bytes_written += len(data)
+
+
+def health_command(command: list[str], *, timeout: float = 5, max_bytes: int = HEALTH_COMMAND_LIMIT) -> dict[str, Any]:
+    """Read-only diagnostics with bounded pipe buffering, output and duration."""
+    result: dict[str, Any] = {"command": command, "output": "", "exit_code": None, "truncated": False}
+    process: subprocess.Popen[bytes] | None = None
+    data = bytearray()
+    try:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        assert process.stdout is not None
+        deadline = time.monotonic() + timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                result["error"] = "TIMEOUT"
+                break
+            readable, _, _ = select.select([process.stdout], [], [], min(remaining, 0.1))
+            if readable:
+                chunk = os.read(process.stdout.fileno(), min(65536, max_bytes - len(data) + 1))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                if len(data) > max_bytes:
+                    del data[max_bytes:]
+                    result["truncated"] = True
+                    break
+            elif process.poll() is not None:
+                break
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        result["error"] = str(exc)
+    finally:
+        if process is not None:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=1)
+            result["exit_code"] = process.returncode
+            if process.stdout is not None:
+                process.stdout.close()
+    result["output"] = data.decode(errors="replace")
+    return result
+
+
+def observe_health_event(event: dict[str, Any], journal: HealthJournal) -> None:
+    actor = event.get("Actor", {})
+    attributes = actor.get("Attributes", {})
+    name, identity = attributes.get("name", ""), actor.get("ID", "")
+    if (event.get("Type") != "container" or event.get("Action") != "health_status: unhealthy"
+            or not isinstance(name, str) or not re.fullmatch(r"ocor-poc-[A-Za-z0-9_.-]+", name)
+            or not isinstance(identity, str) or not re.fullmatch(r"[0-9a-f]{64}", identity)):
+        return
+    # Persist the event first; inspect by immutable UUID before any slower logs
+    # or stats. Do not read Env/configuration, which can contain credentials.
+    journal.write({"kind": "unhealthy_event", "identity": identity, "name": name,
+                   "docker_time_ns": event.get("timeNano")})
+    journal.write({"kind": "docker_diagnostic", **health_command([
+        "docker", "inspect", "--format", '{{json .State}} {{json .RestartCount}}', identity])})
+    commands = [["docker", "logs", "--timestamps", "--tail", "200", identity]]
+    service = attributes.get("com.docker.compose.service", "")
+    if isinstance(service, str) and service.startswith("ocor-relay-"):
+        upstream = service.removeprefix("ocor-relay-")
+        if upstream in {"terminusdb", "typedb", "fuseki", "opa", "keycloak", "openbao", "kafka", "postgres", "qdrant"}:
+            # Fixed PoC recipe uses this dedicated project's service name.
+            commands.append(["docker", "inspect", "--format", '{{json .State}} {{json .RestartCount}}', f"ocor-bootstrap-{upstream}-1"])
+            commands.append(["docker", "logs", "--timestamps", "--tail", "200", f"ocor-bootstrap-{upstream}-1"])
+    stack = health_command(["docker", "ps", "-aq", "--filter", "label=com.docker.compose.project=ocor-bootstrap"])
+    ids = stack["output"].split()
+    if stack["exit_code"] == 0 and ids and all(re.fullmatch(r"[0-9a-f]{12,64}", value) for value in ids):
+        commands.append(["docker", "stats", "--no-stream", "--format", "{{json .}}", identity, *ids[:11]])
+    else:
+        journal.write({"kind": "stack_inventory", **stack})
+        commands.append(["docker", "stats", "--no-stream", "--format", "{{json .}}", identity])
+    # Capture the state immediately, before inventory/stats can delay it.
+    for command in commands:
+        journal.write({"kind": "docker_diagnostic", **health_command(command)})
+
+
+def runner_health_sample() -> dict[str, Any]:
+    memory = {}
+    for line in Path("/proc/meminfo").read_text().splitlines():
+        key, value = line.split(":", 1)
+        if key in {"MemTotal", "MemAvailable", "MemFree", "SwapTotal", "SwapFree"}:
+            memory[key] = int(value.split()[0])
+    return {"kind": "runner_sample", "sample_interval_seconds": HEALTH_SAMPLE_SECONDS,
+            "load_average": list(os.getloadavg()), "cpu_count": os.cpu_count(),
+            "cpu_ticks": [int(value) for value in Path("/proc/stat").read_text().splitlines()[0].split()[1:]],
+            "memory_kib": memory}
+
+
+def run_health_observer(output: Path, timeout: int, since: int) -> int:
+    """Separate process: errors here are diagnostic and never gate decisions."""
+    output.mkdir(parents=True, exist_ok=True)
+    repository = Path(__file__).resolve().parents[1]
+    secrets = []
+    env_file = repository / ".ocor/bootstrap.env"
+    if env_file.is_file():
+        secrets = [line.split("=", 1)[1] for line in env_file.read_text().splitlines()
+                   if "=" in line and line.split("=", 1)[0].endswith(("TOKEN", "PASSWORD"))]
+    journal = HealthJournal(output, secrets)
+    finished = threading.Event()
+    signal.signal(signal.SIGTERM, lambda *_: finished.set())
+    start = time.monotonic()
+    deadline = start + timeout
+
+    def sample() -> None:
+        while not finished.is_set() and time.monotonic() < deadline:
+            try:
+                journal.write(runner_health_sample())
+            except (OSError, ValueError) as exc:
+                journal.write({"kind": "observer_error", "error": str(exc)})
+            finished.wait(HEALTH_SAMPLE_SECONDS)
+
+    sampler = threading.Thread(target=sample, daemon=True)
+    sampler.start()
+    events: subprocess.Popen[bytes] | None = None
+    try:
+        # Replay events since launch to cover listener startup, never previous runs.
+        events = subprocess.Popen(["docker", "events", "--since", str(since),
+                                   "--filter", "type=container", "--filter", "event=health_status: unhealthy",
+                                   "--format", "{{json .}}"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        assert events.stdout is not None
+        pending = bytearray()
+        while not finished.is_set() and time.monotonic() < deadline:
+            ready, _, _ = select.select([events.stdout], [], [], 0.5)
+            if ready:
+                data = os.read(events.stdout.fileno(), 65536)
+                if not data:
+                    raise OSError("Docker health event stream ended")
+                pending.extend(data)
+                while b"\n" in pending:
+                    line, _, pending = pending.partition(b"\n")
+                    try:
+                        event = json.loads(line)
+                        if not isinstance(event, dict):
+                            raise ValueError("Docker event must be an object")
+                        observe_health_event(event, journal)
+                    except (ValueError, TypeError, AttributeError) as exc:
+                        journal.write({"kind": "observer_error", "error": str(exc)})
+                if len(pending) > HEALTH_COMMAND_LIMIT:
+                    raise ValueError("Docker event line exceeds observer byte limit")
+        if not finished.is_set():
+            journal.write({"kind": "observer_error", "error": "OBSERVER_TIMEOUT"})
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        journal.write({"kind": "observer_error", "error": str(exc)})
+    finally:
+        finished.set()
+        sampler.join(timeout=1)
+        if events is not None:
+            if events.poll() is None:
+                events.kill()
+            events.wait(timeout=1)
+            if events.stdout is not None:
+                events.stdout.close()
+        (output / "health-observer-status.json").write_text(json.dumps({
+            "status": "DIAGNOSTIC_ONLY", "bytes_written": journal.bytes_written,
+            "truncated": journal.truncated, "max_bytes": HEALTH_DATA_LIMIT,
+            "command_max_bytes": HEALTH_COMMAND_LIMIT, "command_timeout_seconds": 5,
+            "sample_interval_seconds": HEALTH_SAMPLE_SECONDS, "timeout_seconds": timeout,
+        }, indent=2, sort_keys=True) + "\n")
+    return 0
+
+
+def start_health_observer(output: Path, limit: int) -> subprocess.Popen[Any] | None:
+    try:
+        return subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "--execute", "--observe-health",
+                                 "--output-dir", str(output), "--observer-timeout", str(limit + 60),
+                                 "--observer-since", str(int(time.time()))],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    except (OSError, subprocess.SubprocessError) as exc:
+        try:
+            (output / "health-observer-status.json").write_text(json.dumps({
+                "status": "OBSERVER_START_FAILED_DIAGNOSTIC_ONLY", "error": str(exc)}, indent=2, sort_keys=True) + "\n")
+        except OSError:
+            print(json.dumps({"health_observer_error": str(exc), "status": "DIAGNOSTIC_ONLY"}), file=sys.stderr)
+        return None
+
+
+def finish_health_observer(process: subprocess.Popen[Any] | None, output: Path) -> None:
+    """Never raise into the qualifying gate, including on observer crashes."""
+    try:
+        if process is not None:
+            if process.poll() is None:
+                process.terminate()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=1)
+        artifacts = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                     for path in output.glob("health-observer*") if path.is_file() and path.name != "health-observer-manifest.json"}
+        (output / "health-observer-manifest.json").write_text(json.dumps({
+            "status": "DIAGNOSTIC_ONLY", "observer_exit_code": process.returncode if process is not None else None,
+            "artifacts": artifacts, "interpretation": "REM-0017-CI-0049-RELAY-HEALTH (2026-10-14), option 1",
+        }, indent=2, sort_keys=True) + "\n")
+    except (OSError, subprocess.SubprocessError) as exc:
+        # Even inability to write diagnostic output cannot change pytest's result.
+        print(json.dumps({"health_observer_error": str(exc), "status": "DIAGNOSTIC_ONLY"}), file=sys.stderr)
 
 # Partition weights only; they never select or exclude a test. Mean seconds per
 # case of each test function >= 3 s in the GitHub-runner PASS of candidate
@@ -457,7 +685,14 @@ def main() -> int:
     parser.add_argument("--shard-count", type=int, help="number N >= 2 of deterministic CI parts")
     parser.add_argument("--shard-index", type=int, help="1-based part executed on this runner's own stack")
     parser.add_argument("--aggregate", type=Path, metavar="PARTS_DIR", help="verify the parts' union against --collect-only")
+    parser.add_argument("--observe-health", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--observer-timeout", type=int, default=FULL_SUITE_LIMIT_SECONDS + 60, help=argparse.SUPPRESS)
+    parser.add_argument("--observer-since", type=int, default=0, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.observe_health:
+        if not args.execute or not 1 <= args.observer_timeout <= FULL_SUITE_LIMIT_SECONDS + 60:
+            parser.error("health observation requires --execute and a bounded timeout")
+        return run_health_observer(args.output_dir.resolve(), args.observer_timeout, args.observer_since or int(time.time()))
     if bool(args.repository) != bool(args.expected_head):
         parser.error("--repository and --expected-head must be supplied together")
     if args.shard_count is not None and args.shard_count < 2:
@@ -501,6 +736,7 @@ def main() -> int:
     process: subprocess.Popen[Any] | None = None
     recorder: SessionRecorder | None = None
     observer_thread = None
+    health_observer = None
     decision_required = False
     try:
         if args.expected_head:
@@ -525,6 +761,7 @@ def main() -> int:
             raise CampaignError(f"expected 11 mandatory containers, found {len(initial)}")
         check_stack(initial, initial)
         recorder = SessionRecorder(repository)
+        health_observer = start_health_observer(output, limit)
         kubernetes_history: dict[str, dict[str, Any]] = {}
         start = time.monotonic()
         with (output / "post_remediation_runtime.log").open("w") as log:
@@ -582,6 +819,7 @@ def main() -> int:
     finally:
         if process is not None:
             stop(process)
+        finish_health_observer(health_observer, output)
         if observer_thread is not None:
             kind_observer.stop_sampler(observer_thread)
             (output / "kind-teardown-observations.json").write_text(json.dumps({
