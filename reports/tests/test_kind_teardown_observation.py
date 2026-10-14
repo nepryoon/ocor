@@ -221,5 +221,119 @@ class TeardownObservation(unittest.TestCase):
                     self.assertIsNone(adapter.owned_remover())
 
 
+class ProbeTimeoutObservation(unittest.TestCase):
+    """PO REM-0017-CI-KIND-INSPECT-TIMEOUT: the probe is not the window."""
+
+    def exercise(self, pending, *, failed_command=None, events=('destroy',), removers=True):
+        clock = Clock()
+        command = failed_command or ['docker', 'inspect', ID]
+        scenario = Docker(clock, [], events=events)
+        scenario.first = False
+        responses = iter(pending)
+        calls = []
+
+        def run(argv, **kwargs):
+            calls.append((argv, kwargs))
+            if argv[:2] == ['docker', 'inspect']:
+                row = next(responses, 'TIMEOUT')
+                if row == 'TIMEOUT':
+                    clock.sleep(10)
+                    raise subprocess.TimeoutExpired(argv, 10)
+                if row is not None:
+                    return subprocess.CompletedProcess(argv, 0, json.dumps([row]), '')
+            return scenario.run(argv, **kwargs)
+
+        first = True
+
+        def inspector():
+            nonlocal first
+            if first:
+                first = False
+                clock.sleep(10)
+                raise subprocess.TimeoutExpired(command, 10)
+            return {}
+
+        samples = [dict(REMOVER, first_seen=T0, last_seen=T0 + 20)] if removers else []
+        with patch.object(subprocess, 'run', run), patch.object(adapter, '_now', clock.now), \
+                patch.object(adapter, '_sleep', clock.sleep), patch.object(adapter, 'PYTEST_PGID', PGID), \
+                patch.object(adapter, 'REMOVER_OBSERVATIONS', samples), \
+                patch.object(adapter, 'PROBE_OBSERVATIONS', [], create=True) as probes, \
+                patch.object(adapter, 'REMOVALS', []) as removals, \
+                patch.object(adapter, 'REJECTIONS', []) as rejections:
+            try:
+                result = adapter.inspect_kubernetes_runtimes(inspector)
+                return result, list(removals), list(probes), calls
+            finally:
+                self.rejections = list(rejections)
+                self.elapsed = clock.now() - T0
+
+    def test_inspect_and_exec_timeout_then_proven_absence_accepted(self):
+        for command in (['docker', 'inspect', ID], ['docker', 'exec', ID, 'systemctl', 'show', 'containerd']):
+            with self.subTest(command=command):
+                result, removals, probes, calls = self.exercise(['TIMEOUT', None], failed_command=command)
+                self.assertEqual(result, {})
+                self.assertEqual(removals[0]['status'], 'OWNED_KIND_TEARDOWN_OBSERVED')
+                self.assertEqual(removals[0]['failed_probe'], command)
+                self.assertTrue(probes)
+                self.assertTrue(all('duration_seconds' in p and 'started_at' in p and 'finished_at' in p for p in probes))
+                self.assertTrue(all(options['timeout'] == 10 for _, options in calls))
+
+    def test_timeout_node_present_at_window_expiry_rejected(self):
+        with self.assertRaises(subprocess.TimeoutExpired):
+            self.exercise([state(True)] * 100)
+        self.assertEqual(self.rejections[-1]['reason'], 'WINDOW_EXPIRED_NODE_PRESENT')
+        self.assertIn('observed_at', self.rejections[-1])
+
+    def test_daemon_timeout_expires_without_removal_proof(self):
+        with self.assertRaises(subprocess.TimeoutExpired):
+            self.exercise(['TIMEOUT'] * 4)
+        self.assertEqual(self.rejections[-1]['reason'], 'WINDOW_EXPIRED_DAEMON_UNAVAILABLE')
+        self.assertLessEqual(self.elapsed, adapter.WINDOW_SECONDS + 10)
+
+    def test_timeout_absence_without_destroy_or_remover_rejected(self):
+        for kwargs, reason in ((dict(events=()), 'OWNED_DESTROY_EVENT_MISSING'),
+                               (dict(removers=False), 'NO_OWNED_REMOVER_IN_PYTEST_GROUP')):
+            with self.subTest(reason=reason), self.assertRaises(subprocess.TimeoutExpired):
+                self.exercise([None], **kwargs)
+            self.assertEqual(self.rejections[-1]['reason'], reason)
+
+    def test_timeout_oom_or_restart_state_and_event_rejected(self):
+        for row in (state(False, oom=True), state(True, restarts=1)):
+            with self.subTest(row=row), self.assertRaises(subprocess.TimeoutExpired):
+                self.exercise([row, None])
+            self.assertEqual(self.rejections[-1]['reason'], 'OOM_OR_RESTART_STATE')
+        for action in ('oom', 'restart'):
+            with self.subTest(action=action), self.assertRaises(subprocess.TimeoutExpired):
+                self.exercise([None], events=(action, 'destroy'))
+            self.assertEqual(self.rejections[-1]['reason'], 'OOM_OR_RESTART_EVENT')
+
+    def test_foreign_timeout_is_not_suppressed(self):
+        for command in (['docker', 'ps'], ['docker', 'inspect', 'unowned-name'], ['other', 'exec', ID]):
+            with self.subTest(command=command), self.assertRaises(subprocess.TimeoutExpired):
+                self.exercise([None], failed_command=command)
+            self.assertEqual(self.rejections, [])
+
+    def test_confirm_missing_node_timeout_enters_same_proof_path(self):
+        clock = Clock()
+        scenario = Docker(clock, [None])
+        scenario.first = False
+        original_run = scenario.run
+        first = True
+
+        def run(command, **kwargs):
+            nonlocal first
+            if first:
+                first = False
+                clock.sleep(10)
+                raise subprocess.TimeoutExpired(command, 10)
+            return original_run(command, **kwargs)
+
+        with patch.object(subprocess, 'run', run), patch.object(adapter, '_now', clock.now), \
+                patch.object(adapter, 'PYTEST_PGID', PGID), patch.object(adapter, 'REMOVALS', []) as removals, \
+                patch.object(adapter, 'REMOVER_OBSERVATIONS', [dict(REMOVER, first_seen=T0, last_seen=T0 + 9)]):
+            adapter.confirm_missing_node(ID)
+            self.assertEqual(removals[0]['node_id'], ID)
+
+
 if __name__ == '__main__':
     unittest.main()

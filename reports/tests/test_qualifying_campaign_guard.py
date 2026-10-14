@@ -47,6 +47,38 @@ def test_health_observer_records_event_before_container_can_be_destroyed(tmp_pat
     assert '[REDACTED]' in writer.path.read_text()
 
 
+@pytest.mark.parametrize('name,http,reason,classification', [
+    ('ocor-poc-tested-123-ocor-ops-1', 503, 'RESTORE_UNTESTED', 'EXPECTED_READINESS_GATE'),
+    ('ocor-poc-tested-123-ocor-relay-fuseki-1', 503, 'RESTORE_UNTESTED', 'UNCLASSIFIED'),
+    ('ocor-poc-tested-123-ocor-ops-1', 500, 'RESTORE_UNTESTED', 'UNCLASSIFIED'),
+    ('ocor-poc-tested-123-ocor-ops-1', 503, 'POLICY_UNAVAILABLE', 'UNCLASSIFIED'),
+    ('ocor-poc-tested-123-ocor-ops-1', 503, None, 'UNCLASSIFIED'),
+])
+def test_readiness_classification_is_diagnostic_and_requires_restore_gate(tmp_path, monkeypatch, name, http, reason, classification):
+    import json
+    writer = GUARD.HealthJournal(tmp_path, [])
+
+    def command(argv):
+        if argv[:2] == ['docker', 'inspect']:
+            state = {'Health': {'Log': [{'ExitCode': 1, 'Output': f'HTTP Error {http}: Service Unavailable'}]}}
+            output = json.dumps(state) + ' 0'
+        elif argv[:2] == ['docker', 'logs']:
+            output = json.dumps({'event': 'trace', 'trace': {'operation': 'readiness_scan',
+                               'reason_code': reason, 'ready_reasons': [reason], 'status': 'DENY'}})
+        else:
+            output = ''
+        return {'command': argv, 'exit_code': 0, 'output': output, 'truncated': False}
+
+    monkeypatch.setattr(GUARD, 'health_command', command)
+    GUARD.observe_health_event(health_event(name), writer)
+    rows = [json.loads(line) for line in writer.path.read_text().splitlines()]
+    classified = [r for r in rows if r['kind'] == 'unhealthy_classification']
+    assert len(classified) == 1
+    assert classified[0]['classification'] == classification
+    assert classified[0]['affects_test_outcome'] is False
+    GUARD.check_stack({'service': globals()['state']()}, {'service': globals()['state']()})
+
+
 @pytest.mark.parametrize('event', [health_event('open-webui'), health_event(action='die'),
                                   {'Type': 'network'}, health_event(name='ocor-poc-fake;other')])
 def test_health_observer_ignores_unrelated_or_malformed_events(tmp_path, monkeypatch, event):
