@@ -4,12 +4,9 @@ The smallest contract-compliant slice of LLD v1.1 sections 4.2/4.3 and
 6's normative safety obligations, layered on the sealed 44-transition
 table (OCOR-DEV-0042, ``ocor_runtime.c6.fsm``, reused unmodified) and
 the sealed Human Gate dual-control coordinator (OCOR-DEV-0043,
-``ocor_runtime.c6.human_gate``, reused unmodified only conceptually --
-break-glass's own two-distinct-human requirement mirrors, but does not
-import, Human Gate's separation-of-duties dedup, since break-glass has
-no notion of distinct required roles). Reuses the sealed
-``ocor_runtime.c2_identity.IdentityRegistry`` (unmodified) to refuse an
-unresolved break-glass approver.
+``ocor_runtime.c6.human_gate``, reused unmodified only conceptually).
+Reads the sealed ``ocor_runtime.c2_identity.IdentityRegistry``
+(unmodified) to resolve and re-validate break-glass principals.
 
 Three real safety mechanisms, each producing immutable evidence:
 
@@ -23,18 +20,25 @@ Three real safety mechanisms, each producing immutable evidence:
   re-enables a lease issued before it. Reset requires dual control
   (two distinct, resolved human approvers).
 * ``BreakGlassController`` -- a bounded, dual-human-approved
-  exceptional grant (LLD 4.2): requires a typed reason, an incident
-  reference, a minimal scope, exactly two distinct resolved human
-  approvers, and a TTL bounded by ``MAX_BREAK_GLASS_TTL``.
-  ``authorize`` is a pure function of (grant, capability, at) re-run
-  on every use -- an expired grant, one already revoked, one
-  requesting a capability on the fixed ``FORBIDDEN_BREAK_GLASS_CAPABILITIES``
-  denylist (create a Decision, reduce marking, disable
-  provenance/audit, ignore emergency stop, change the release pin,
-  authorize R3 without quorum, or access outside compartment), or one
-  used while an emergency stop is active, is refused every time, never
-  only at grant time. Every successful use requires a non-empty review
-  reference, making the LLD's "review obbligatoria" structural.
+  exceptional grant (ADD v1.3 sections 5.4-5.5, LLD 4.2, aligned by
+  OCOR-DEV-REM-0024): requires a requester, a typed reason, an
+  incident reference, a minimal scope, the affected domain, named
+  capabilities, and two distinct human approvers who are never the
+  requester and together hold ``SECURITY_DUTY_OFFICER`` and
+  ``DOMAIN_OWNER:<domain>`` -- kind, status and roles read only from
+  the identity registry. TTL is bounded by ``MAX_BREAK_GLASS_TTL`` and
+  never renewed. ``authorize`` honours only grants this controller
+  issued, re-validates every principal on every use, decides validity
+  on the injected trusted clock (never a caller instant), restricts
+  use to the named capabilities and never allows one on the fixed
+  ``FORBIDDEN_BREAK_GLASS_CAPABILITIES`` denylist (create a Decision,
+  reduce marking, disable provenance/audit, ignore emergency stop,
+  change the release pin, authorize R3 without quorum, or access
+  outside compartment), nor any use while an emergency stop is active.
+  Every use requires a non-empty review reference, making the LLD's
+  "review obbligatoria" structural; grants, uses, refusals and
+  revocations are audited synchronously and grants and uses alerted
+  immediately, failing closed.
 * ``OutcomeReconciler`` -- LLD ``ACT-T18a``/``T18b``/``T20a``-``c``/
   ``T21``-``T21e``/``T24``/``T25``'s ambiguous-outcome and compensation
   reconciliation path: an ambiguous timeout suspends retry and opens
@@ -49,14 +53,18 @@ Three real safety mechanisms, each producing immutable evidence:
 
 from __future__ import annotations
 
+import re
 import threading
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Protocol
 
-from ..c2_identity import IdentityRegistry
+from ..c2_identity import IdentityRecord, IdentityRegistry
 from ..c3_store import require_aware
 from ..errors import OCORError
+from ..kernel.governance import TrustedClock
 
 MAX_BREAK_GLASS_TTL = timedelta(minutes=15)
 
@@ -189,26 +197,44 @@ class EmergencyStopController:
 
 @dataclass(frozen=True, slots=True)
 class BreakGlassGrant:
+    """A break-glass grant as issued by ``BreakGlassController.grant``.
+
+    Constructing one directly yields a well-formed value with no
+    authority: ``authorize`` only honours a grant equal to the one the
+    controller itself issued and registered."""
+
     grant_id: str
+    requester: str
     reason: str
     incident_ref: str
     scope: str
+    domain: str
+    capabilities: frozenset[str]
     approvers: tuple[str, str]
     granted_at: datetime
     ttl: timedelta
 
     def __post_init__(self) -> None:
         require_aware(self.granted_at, field="granted_at")
+        object.__setattr__(self, "capabilities", frozenset(self.capabilities))
         if not self.grant_id:
             raise ValueError("a BreakGlassGrant requires a grant_id")
+        if not self.requester:
+            raise ValueError("a BreakGlassGrant requires a requester")
         if not self.reason:
             raise ValueError("a BreakGlassGrant requires a typed reason")
         if not self.incident_ref:
             raise ValueError("a BreakGlassGrant requires an incident_ref")
         if not self.scope:
             raise ValueError("a BreakGlassGrant requires a minimal scope")
-        if len(set(self.approvers)) != 2:
+        if not self.domain or any(character.isspace() for character in self.domain):
+            raise ValueError("a BreakGlassGrant requires the affected domain")
+        if not self.capabilities or not all(isinstance(name, str) and name for name in self.capabilities):
+            raise ValueError("a BreakGlassGrant requires at least one named capability")
+        if len(self.approvers) != 2 or len(set(self.approvers)) != 2:
             raise ValueError("a BreakGlassGrant requires exactly two distinct human approvers")
+        if self.requester in self.approvers:
+            raise ValueError("the requester of a BreakGlassGrant can never approve it")
         if self.ttl <= timedelta(0) or self.ttl > MAX_BREAK_GLASS_TTL:
             raise ValueError(f"break-glass ttl must be positive and at most {MAX_BREAK_GLASS_TTL}")
 
@@ -229,57 +255,286 @@ class BreakGlassUse:
     used_at: datetime
 
 
+class PrincipalDirectory(Protocol):
+    """Read-only view of the authoritative identity registry
+    (``IdentityRegistry`` satisfies it). The controller never writes
+    principal records."""
+
+    def get(self, canonical_id: str) -> IdentityRecord | None:
+        """Return the canonical record, or ``None`` when unresolved."""
+
+
+class BreakGlassAuditSink(Protocol):
+    def record(self, event: Mapping[str, object]) -> None:
+        """Durably append one immutable audit event; raising fails the operation closed."""
+
+
+class BreakGlassAlertSink(Protocol):
+    def alert(self, event: Mapping[str, object]) -> None:
+        """Deliver one immediate alert; raising fails the operation closed."""
+
+
+# PoC convention on the reserved scalar ``attributes`` of identity-record
+# v1.2 (PO decision REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY, Q1): an
+# interpretation, not a contract extension.
+PRINCIPAL_KIND_ATTRIBUTE = "principal_kind"
+STATUS_ATTRIBUTE = "status"
+ROLES_ATTRIBUTE = "roles"
+PRINCIPAL_KINDS = frozenset({"HUMAN", "WORKLOAD"})
+ACTIVE_STATUS = "ACTIVE"
+SECURITY_DUTY_OFFICER_ROLE = "SECURITY_DUTY_OFFICER"
+DOMAIN_OWNER_ROLE_PREFIX = "DOMAIN_OWNER:"
+_ROLE_TOKEN = re.compile(r"[A-Z][A-Z0-9_]*(?::\S+)?")
+
+
+@dataclass(frozen=True, slots=True)
+class _Principal:
+    canonical_id: str
+    kind: str
+    active: bool
+    roles: frozenset[str]
+
+
+def _read_principal(directory: PrincipalDirectory, canonical_id: str) -> _Principal | None:
+    """Principal kind, status and roles read exclusively from the
+    registry record; absent or malformed attributes fail closed."""
+
+    record = directory.get(canonical_id)
+    if record is None:
+        return None
+    attributes = record.attributes
+    kind = attributes.get(PRINCIPAL_KIND_ATTRIBUTE)
+    if kind not in PRINCIPAL_KINDS:
+        raise SafetyError("BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID", f"{canonical_id!r} has no valid {PRINCIPAL_KIND_ATTRIBUTE}")
+    raw_roles = attributes.get(ROLES_ATTRIBUTE, "")
+    if not isinstance(raw_roles, str):
+        raise SafetyError("BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID", f"{canonical_id!r} has non-string {ROLES_ATTRIBUTE}")
+    tokens = raw_roles.split(" ") if raw_roles else []
+    if (
+        any(_ROLE_TOKEN.fullmatch(token) is None for token in tokens)
+        or tokens != sorted(tokens)
+        or len(set(tokens)) != len(tokens)
+    ):
+        raise SafetyError(
+            "BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID",
+            f"{canonical_id!r} {ROLES_ATTRIBUTE} must be sorted, unique, single-space separated role tokens",
+        )
+    return _Principal(
+        canonical_id=canonical_id,
+        kind=str(kind),
+        active=attributes.get(STATUS_ATTRIBUTE) == ACTIVE_STATUS,
+        roles=frozenset(tokens),
+    )
+
+
+def _event(kind: str, grant: BreakGlassGrant | None, at: datetime, **fields: object) -> dict[str, object]:
+    event: dict[str, object] = {"event": kind, "at": at.isoformat()}
+    if grant is not None:
+        event.update(
+            grant_id=grant.grant_id,
+            requester=grant.requester,
+            approvers=list(grant.approvers),
+            domain=grant.domain,
+            scope=grant.scope,
+            incident_ref=grant.incident_ref,
+            capabilities=sorted(grant.capabilities),
+            expires_at=grant.expires_at.isoformat(),
+        )
+    event.update(fields)
+    return event
+
+
 class BreakGlassController:
-    def __init__(self, *, identities: IdentityRegistry, stop: EmergencyStopController) -> None:
+    """Issues, authorizes and revokes break-glass grants (ADD v1.3
+    sections 5.4-5.5, LLD v1.1 sections 1.1/4.2).
+
+    * Only grants issued by this controller and unaltered since are
+      honoured; a grant id is never reissued, so there is no renewal.
+    * Time is the boundary's ``TrustedClock``; no operation accepts a
+      caller instant. Expiry revokes the grant for good.
+    * Requester and approvers are (re)validated against the registry
+      at grant time and at every use: approvers resolved, ``HUMAN``,
+      ``ACTIVE``, distinct, never the requester, covering
+      ``SECURITY_DUTY_OFFICER`` + ``DOMAIN_OWNER:<grant domain>``.
+    * Every grant, use, refusal and revocation is appended to the audit
+      sink synchronously; grants and uses also raise an immediate
+      alert. An audit or alert failure fails the operation closed.
+    """
+
+    def __init__(
+        self,
+        *,
+        identities: PrincipalDirectory,
+        stop: EmergencyStopController,
+        clock: TrustedClock,
+        audit: BreakGlassAuditSink,
+        alerts: BreakGlassAlertSink,
+    ) -> None:
         self._identities = identities
         self._stop = stop
+        self._clock = clock
+        self._audit = audit
+        self._alerts = alerts
+        self._lock = threading.RLock()
+        self._issued: dict[str, BreakGlassGrant] = {}
         self._revoked_grant_ids: set[str] = set()
+
+    def _now(self) -> datetime:
+        return require_aware(self._clock.now(), field="trusted clock")
+
+    def _append(self, event: Mapping[str, object], *, cause: BaseException | None = None) -> None:
+        try:
+            self._audit.record(event)
+        except Exception as exc:
+            raise SafetyError("BREAK_GLASS_AUDIT_UNAVAILABLE", f"audit append of {event['event']} failed") from (cause or exc)
+
+    def _refuse(self, kind: str, grant: BreakGlassGrant | None, at: datetime, error: SafetyError, **fields: object) -> SafetyError:
+        self._append(_event(kind, grant, at, reason_code=error.reason_code, **fields), cause=error)
+        return error
+
+    def _validate_principals(self, requester: str, approvers: tuple[str, ...], domain: str) -> None:
+        if len(approvers) != 2 or len(set(approvers)) != 2:
+            raise SafetyError("BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS", "break-glass requires exactly two distinct human approvers")
+        if requester in approvers:
+            raise SafetyError("BREAK_GLASS_REQUESTER_CANNOT_APPROVE", "the requester can never approve its own break-glass")
+        requesting = _read_principal(self._identities, requester) if requester else None
+        if requesting is None or not requesting.active:
+            raise SafetyError("BREAK_GLASS_REQUESTER_INVALID", f"requester {requester!r} is not a resolved active principal")
+        principals: list[_Principal] = []
+        for approver in approvers:
+            principal = _read_principal(self._identities, approver)
+            if principal is None:
+                raise SafetyError("BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS", f"unresolved approver: {approver!r}")
+            if principal.kind != "HUMAN":
+                raise SafetyError("BREAK_GLASS_APPROVER_NOT_HUMAN", f"approver {approver!r} is not a human principal")
+            if not principal.active:
+                raise SafetyError("BREAK_GLASS_APPROVER_INACTIVE", f"approver {approver!r} is not active")
+            principals.append(principal)
+        owner_role = DOMAIN_OWNER_ROLE_PREFIX + domain
+        first, second = principals
+        if not (
+            (SECURITY_DUTY_OFFICER_ROLE in first.roles and owner_role in second.roles)
+            or (SECURITY_DUTY_OFFICER_ROLE in second.roles and owner_role in first.roles)
+        ):
+            raise SafetyError(
+                "BREAK_GLASS_ROLE_QUORUM_UNMET",
+                f"break-glass requires a {SECURITY_DUTY_OFFICER_ROLE} and the affected {owner_role}, held by distinct approvers",
+            )
 
     def grant(
         self,
         *,
         grant_id: str,
+        requester: str,
         reason: str,
         incident_ref: str,
         scope: str,
-        approvers: tuple[str, str],
-        at: datetime,
+        domain: str,
+        capabilities: frozenset[str],
+        approvers: tuple[str, ...],
         ttl: timedelta,
     ) -> BreakGlassGrant:
-        instant = require_aware(at, field="at")
-        distinct = sorted(set(approvers))
-        if len(distinct) != 2:
-            raise SafetyError("BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS", "break-glass requires exactly two distinct human approvers")
-        for principal in distinct:
-            if self._identities.get(principal) is None:
-                raise SafetyError("BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS", f"unresolved approver: {principal!r}")
-        first, second = distinct
-        return BreakGlassGrant(
-            grant_id=grant_id,
-            reason=reason,
-            incident_ref=incident_ref,
-            scope=scope,
-            approvers=(first, second),
-            granted_at=instant,
-            ttl=ttl,
-        )
+        instant = self._now()
+        request = {"grant_id": grant_id, "requester": requester, "approvers": list(approvers), "domain": domain}
+        try:
+            if not (grant_id and reason and incident_ref and scope and domain and capabilities):
+                raise SafetyError(
+                    "BREAK_GLASS_GRANT_INVALID", "grant id, typed reason, incident, minimal scope, affected domain and named capabilities are mandatory"
+                )
+            forbidden = sorted(set(capabilities) & FORBIDDEN_BREAK_GLASS_CAPABILITIES)
+            if forbidden:
+                raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never grant {forbidden}")
+            self._validate_principals(requester, tuple(approvers), domain)
+            with self._lock:
+                if grant_id in self._issued:
+                    raise SafetyError("BREAK_GLASS_GRANT_ID_REUSED", f"grant {grant_id!r} was already issued; break-glass is never renewed")
+        except SafetyError as error:
+            raise self._refuse("BREAK_GLASS_GRANT_DENIED", None, instant, error, **request) from error
+        first, second = sorted(approvers)
+        try:
+            issued = BreakGlassGrant(
+                grant_id=grant_id,
+                requester=requester,
+                reason=reason,
+                incident_ref=incident_ref,
+                scope=scope,
+                domain=domain,
+                capabilities=frozenset(capabilities),
+                approvers=(first, second),
+                granted_at=instant,
+                ttl=ttl,
+            )
+        except ValueError as invalid:
+            self._append(_event("BREAK_GLASS_GRANT_DENIED", None, instant, reason_code="BREAK_GLASS_GRANT_INVALID", detail=str(invalid), **request), cause=invalid)
+            raise
+        with self._lock:
+            if grant_id in self._issued:
+                raise SafetyError("BREAK_GLASS_GRANT_ID_REUSED", f"grant {grant_id!r} was already issued; break-glass is never renewed")
+            granted = _event("BREAK_GLASS_GRANTED", issued, instant, reason=reason)
+            self._append(granted)
+            try:
+                self._alerts.alert(granted)
+            except Exception as exc:
+                alert_error = SafetyError("BREAK_GLASS_ALERT_UNAVAILABLE", f"immediate alert for grant {grant_id!r} failed; grant withdrawn")
+                self._append(_event("BREAK_GLASS_GRANT_WITHDRAWN", issued, instant, reason_code=alert_error.reason_code), cause=exc)
+                raise alert_error from exc
+            self._issued[grant_id] = issued
+        return issued
+
+    def _require_issued(self, grant: BreakGlassGrant) -> None:
+        if self._issued.get(grant.grant_id) != grant:
+            raise SafetyError("BREAK_GLASS_GRANT_NOT_ISSUED", f"grant {grant.grant_id!r} was not issued by this controller or was altered")
 
     def revoke(self, grant: BreakGlassGrant) -> None:
-        self._revoked_grant_ids.add(grant.grant_id)
+        instant = self._now()
+        with self._lock:
+            self._require_issued(grant)
+            # The revocation takes effect before, and independently of,
+            # its audit append: a failing audit store never keeps a
+            # grant usable.
+            self._revoked_grant_ids.add(grant.grant_id)
+            self._append(_event("BREAK_GLASS_REVOKED", grant, instant))
 
-    def authorize(self, grant: BreakGlassGrant, *, capability: str, review_ref: str, at: datetime) -> BreakGlassUse:
-        instant = require_aware(at, field="at")
-        if grant.grant_id in self._revoked_grant_ids:
-            raise SafetyError("BREAK_GLASS_EXPIRED", f"grant {grant.grant_id!r} was revoked")
-        if instant >= grant.expires_at:
-            raise SafetyError("BREAK_GLASS_EXPIRED", f"grant {grant.grant_id!r} expired at {grant.expires_at.isoformat()}")
-        if capability in FORBIDDEN_BREAK_GLASS_CAPABILITIES:
-            raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never authorize {capability!r}")
-        if self._stop.status is not StopStatus.NORMAL:
-            raise SafetyError("BREAK_GLASS_STOP_ACTIVE", "break-glass can never override an active emergency stop")
-        if not review_ref:
-            raise SafetyError("BREAK_GLASS_REVIEW_REQUIRED", "every break-glass use requires a mandatory review reference")
-        return BreakGlassUse(grant_id=grant.grant_id, capability=capability, review_ref=review_ref, used_at=instant)
+    def authorize(self, grant: BreakGlassGrant, *, capability: str, review_ref: str) -> BreakGlassUse:
+        instant = self._now()
+        with self._lock:
+            try:
+                self._require_issued(grant)
+                if grant.grant_id in self._revoked_grant_ids:
+                    raise SafetyError("BREAK_GLASS_EXPIRED", f"grant {grant.grant_id!r} was revoked")
+                if instant >= grant.expires_at:
+                    # Automatic revocation at expiry: a later (or rewound)
+                    # trusted instant can never revive the grant.
+                    self._revoked_grant_ids.add(grant.grant_id)
+                    self._append(_event("BREAK_GLASS_EXPIRED_REVOKED", grant, instant))
+                    raise SafetyError("BREAK_GLASS_EXPIRED", f"grant {grant.grant_id!r} expired at {grant.expires_at.isoformat()}")
+                if instant < grant.granted_at:
+                    raise SafetyError("BREAK_GLASS_NOT_YET_VALID", f"grant {grant.grant_id!r} is valid from {grant.granted_at.isoformat()}")
+                if capability in FORBIDDEN_BREAK_GLASS_CAPABILITIES:
+                    raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never authorize {capability!r}")
+                if capability not in grant.capabilities:
+                    raise SafetyError("BREAK_GLASS_CAPABILITY_NOT_GRANTED", f"{capability!r} is not a capability named in grant {grant.grant_id!r}")
+                if self._stop.status is not StopStatus.NORMAL:
+                    raise SafetyError("BREAK_GLASS_STOP_ACTIVE", "break-glass can never override an active emergency stop")
+                if not review_ref:
+                    raise SafetyError("BREAK_GLASS_REVIEW_REQUIRED", "every break-glass use requires a mandatory review reference")
+                self._validate_principals(grant.requester, grant.approvers, grant.domain)
+            except SafetyError as error:
+                raise self._refuse(
+                    "BREAK_GLASS_USE_DENIED", None, instant, error, grant_id=grant.grant_id, capability=capability, review_ref=review_ref
+                ) from error
+            authorized = _event("BREAK_GLASS_USE_AUTHORIZED", grant, instant, capability=capability, review_ref=review_ref)
+            self._append(authorized)
+            try:
+                self._alerts.alert(authorized)
+            except Exception as exc:
+                alert_error = SafetyError("BREAK_GLASS_ALERT_UNAVAILABLE", f"immediate alert for a use of {grant.grant_id!r} failed; use withdrawn")
+                self._append(
+                    _event("BREAK_GLASS_USE_WITHDRAWN", grant, instant, capability=capability, review_ref=review_ref, reason_code=alert_error.reason_code),
+                    cause=exc,
+                )
+                raise alert_error from exc
+            return BreakGlassUse(grant_id=grant.grant_id, capability=capability, review_ref=review_ref, used_at=instant)
 
 
 class OutcomeStatus(str, Enum):
