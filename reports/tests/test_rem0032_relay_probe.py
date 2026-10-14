@@ -15,7 +15,7 @@ Live cases (real Docker, the digest-pinned image, the Compose file under test):
 * negative controls: a relay whose listener dies after `start_period` becomes unhealthy
   within 30 s; a relay probed on a port it does not serve never becomes healthy;
 * RED/GREEN: the CPU-limited scenario of `rem0032_relay_scenario.py` (three projects, 4
-  pinned cores, 8 single-thread loads) drives relays unhealthy with the a0ee43d probe and
+  pinned cores, 8 single-thread loads with CPU shares 8192 each) drives relays unhealthy with the a0ee43d probe and
   keeps every relay healthy with the probe under test.
 """
 
@@ -222,11 +222,21 @@ def test_dead_relay_after_start_period_turns_unhealthy_within_bound(tmp_path):
 def _scenario(compose_path: Path, label: str, out: Path) -> dict[str, Any]:
     proc = subprocess.run([sys.executable, str(SCENARIO), "--compose", str(compose_path), "--env-file",
                            str(_env_file()), "--label", label, "--projects", "3", "--cpuset", "0-3", "--load", "8",
-                           "--observe", "120", "--out", str(out)], capture_output=True, text=True, check=False,
+                           "--load-shares", "8192", "--observe", "120", "--out", str(out)], capture_output=True, text=True, check=False,
                           timeout=900)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     result = json.loads(out.read_text())
     assert result["residue"] == [], result["residue"]
+    # Fix the offered contention instead of depending on the host scheduler's spare CPU.
+    # 8 * 8192 shares = 64 default-weight runnable competitors on the same four cores.
+    # The old ~231 ms probe cannot fit its 3 s timeout under sustained contention;
+    # the ~21 ms TCP-only probe can. Neither relay shares nor probe timers are changed.
+    resources = result["cpu_resources"]
+    assert len(resources["loads"]) == 8 and len(resources["relays"]) == 30
+    assert all(r["cpuset"] == "0-3" and r["shares"] == 8192 for r in resources["loads"].values())
+    assert all(r["cpuset"] == "0-3" and r["shares"] == 0 for r in resources["relays"].values())
+    assert all(r["quota"] == 0 and r["nano_cpus"] == 0
+               for group in resources.values() for r in group.values())
     return result
 
 
