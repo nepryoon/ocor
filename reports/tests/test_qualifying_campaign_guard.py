@@ -67,6 +67,21 @@ def test_health_observer_records_missing_container_and_upstream_without_changing
         GUARD.check_stack({'service': state()}, {})
 
 
+@pytest.mark.parametrize('service', ['terminusdb', 'typedb', 'fuseki', 'opa', 'keycloak',
+                                   'openbao', 'postgresql', 'kafka', 'qdrant', 'spire-server'])
+def test_health_observer_captures_every_actual_poc_relay_upstream(tmp_path, monkeypatch, service):
+    writer = GUARD.HealthJournal(tmp_path, [])
+    calls = []
+    def command(argv):
+        calls.append(argv)
+        return {'command': argv, 'exit_code': 0, 'output': '', 'truncated': False}
+    monkeypatch.setattr(GUARD, 'health_command', command)
+    event = health_event()
+    event['Actor']['Attributes']['com.docker.compose.service'] = 'ocor-relay-' + service
+    GUARD.observe_health_event(event, writer)
+    assert ['docker', 'logs', '--timestamps', '--tail', '200', 'ocor-bootstrap-' + service + '-1'] in calls
+
+
 def test_health_observer_has_a_total_byte_budget(tmp_path):
     writer = GUARD.HealthJournal(tmp_path, [], max_bytes=1000)
     for _ in range(100):
