@@ -59,53 +59,60 @@ x-relay: &relay
     - {source: ocor-poc-profile, target: /etc/ocor/profile.json}
   command: [python3, /opt/ocor/ocor_ops_agent.py, relay, --profile, /etc/ocor/profile.json,
             --upstream-template, "${OCOR_BOOTSTRAP_PROJECT:-ocor-bootstrap}-{host}-1"]
+  # Liveness of the relay listener (OCOR-DEV-REM-0032): a TCP connect from bash to the
+  # port of the relay's own allowed flow, `OCOR_RELAY_FLOW_PORT` (the port of its entry
+  # in `isolation.allowedFlows`). It neither starts the ops agent nor re-validates the
+  # profile, which the relay already validated at startup. A dead relay refuses the
+  # connect and is unhealthy within retries x interval (15 s); a hung probe within
+  # retries x (interval + timeout) (30 s).
   healthcheck:
-    test: [CMD, python3, /opt/ocor/ocor_ops_agent.py, relay-probe, --profile, /etc/ocor/profile.json]
-    interval: 2s
+    test: [CMD, bash, -c, 'exec 3<>"/dev/tcp/127.0.0.1/$${OCOR_RELAY_FLOW_PORT:?}"']
+    interval: 3s
     timeout: 3s
-    retries: 15
+    retries: 5
+    start_period: 60s
 
 services:
   # One relay per allowed flow; the alias on `site` is the destination name.
   ocor-relay-terminusdb:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: terminusdb}
+    environment: {OCOR_RELAY_FLOW_HOST: terminusdb, OCOR_RELAY_FLOW_PORT: "6363"}
     networks: {bootstrap: {}, site: {aliases: [terminusdb]}}
   ocor-relay-typedb:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: typedb}
+    environment: {OCOR_RELAY_FLOW_HOST: typedb, OCOR_RELAY_FLOW_PORT: "8000"}
     networks: {bootstrap: {}, site: {aliases: [typedb]}}
   ocor-relay-fuseki:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: fuseki}
+    environment: {OCOR_RELAY_FLOW_HOST: fuseki, OCOR_RELAY_FLOW_PORT: "3030"}
     networks: {bootstrap: {}, site: {aliases: [fuseki]}}
   ocor-relay-opa:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: opa}
+    environment: {OCOR_RELAY_FLOW_HOST: opa, OCOR_RELAY_FLOW_PORT: "8181"}
     networks: {bootstrap: {}, site: {aliases: [opa]}}
   ocor-relay-keycloak:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: keycloak}
+    environment: {OCOR_RELAY_FLOW_HOST: keycloak, OCOR_RELAY_FLOW_PORT: "9000"}
     networks: {bootstrap: {}, site: {aliases: [keycloak]}}
   ocor-relay-openbao:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: openbao}
+    environment: {OCOR_RELAY_FLOW_HOST: openbao, OCOR_RELAY_FLOW_PORT: "8200"}
     networks: {bootstrap: {}, site: {aliases: [openbao]}}
   ocor-relay-postgresql:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: postgresql}
+    environment: {OCOR_RELAY_FLOW_HOST: postgresql, OCOR_RELAY_FLOW_PORT: "5432"}
     networks: {bootstrap: {}, site: {aliases: [postgresql]}}
   ocor-relay-kafka:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: kafka}
+    environment: {OCOR_RELAY_FLOW_HOST: kafka, OCOR_RELAY_FLOW_PORT: "29092"}
     networks: {bootstrap: {}, site: {aliases: [kafka]}}
   ocor-relay-qdrant:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: qdrant}
+    environment: {OCOR_RELAY_FLOW_HOST: qdrant, OCOR_RELAY_FLOW_PORT: "6333"}
     networks: {bootstrap: {}, site: {aliases: [qdrant]}}
   ocor-relay-spire-server:
     <<: *relay
-    environment: {OCOR_RELAY_FLOW_HOST: spire-server}
+    environment: {OCOR_RELAY_FLOW_HOST: spire-server, OCOR_RELAY_FLOW_PORT: "8081"}
     networks: {bootstrap: {}, site: {aliases: [spire-server]}}
 
   ocor-ops:
