@@ -8,7 +8,13 @@ the scenario (relays and the optional synthetic load) is pinned with `cpuset` to
 same four host cores (`--cpuset`, default `0-3`); healthcheck execs run inside the
 relay cgroup and inherit the pin. The synthetic load (`--load N`) is N single-thread
 busy loops, each in its own container (own CFS group, like the separate processes of
-the CI runner), pinned to the same cores.
+the CI runner), pinned to the same cores. `--load-shares` declares their relative CPU
+weight (Docker default 1024). The qualifying scenario fixes eight competitors at
+8192 shares: 64 default-weight equivalents, keeping the old CPU-heavy probes over
+their timeout throughout the observation window instead of occasional startup
+spikes. This is a synthetic sustained-contention boundary, not an estimate of the
+runner's exact background workload. The relay weights and healthchecks are untouched.
+Actual CPU settings are read back from Docker for every load and every relay.
 
 The scenario only reads the Compose file under test; it adds an override that sets
 `cpuset` on the relays and nothing else, so healthcheck, command, image, networks and
@@ -76,6 +82,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     projects = [f"rem0032-{args.label}-{i}" for i in range(1, args.projects + 1)]
     result: dict[str, Any] = {
         "compose": str(compose_path), "cpuset": args.cpuset, "label": args.label, "load_processes": args.load,
+        "load_shares": args.load_shares,
         "observe_seconds": args.observe, "projects": projects, "relays_per_project": len(relays),
         "relay_healthcheck": compose.get("x-relay", {}).get("healthcheck"),
         "started_at": time.time(),
@@ -107,7 +114,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     try:
         for name in load_names:
             docker("run", "-d", "--rm", "--name", name, "--label", f"{LABEL}={args.label}", "--cpuset-cpus",
-                   args.cpuset, "--network", "none", "--entrypoint", "python3", IMAGE, "-c", "while True: pass",
+                   args.cpuset, "--cpu-shares", str(args.load_shares), "--network", "none", "--entrypoint", "python3", IMAGE, "-c", "while True: pass",
                    check=True)
         time.sleep(2 if load_names else 0)
 
@@ -134,6 +141,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             for cid in docker("ps", "-q", "--no-trunc", "--filter", f"label=com.docker.compose.project={p}").stdout.split():
                 name = docker("inspect", "-f", "{{.Name}}", cid).stdout.strip().lstrip("/")
                 ids[name] = cid
+        def cpu_resources(names: list[str]) -> dict[str, Any]:
+            entries = json.loads(docker("inspect", *names, check=True).stdout)
+            return {e["Name"].lstrip("/"): {"cpuset": e["HostConfig"]["CpusetCpus"],
+                    "shares": e["HostConfig"]["CpuShares"], "quota": e["HostConfig"]["CpuQuota"],
+                    "nano_cpus": e["HostConfig"]["NanoCpus"]} for e in entries}
+
+        result["cpu_resources"] = {"loads": cpu_resources(load_names) if load_names else {},
+                                   "relays": cpu_resources(list(ids))}
         usage0 = {n: cgroup_usage_usec(c) for n, c in ids.items()}
         t0 = time.time()
         time.sleep(args.observe)
@@ -227,11 +242,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--projects", type=int, default=3)
     parser.add_argument("--cpuset", default="0-3")
     parser.add_argument("--load", type=int, default=0)
+    parser.add_argument("--load-shares", type=int, default=1024,
+                        help="relative CPU weight of each load container, relay weight unchanged")
     parser.add_argument("--observe", type=int, default=90)
     parser.add_argument("--wait-timeout", type=int, default=240)
     parser.add_argument("--probe-cost", type=int, default=0, help="measure CPU per probe over N execs instead")
     parser.add_argument("--out", required=True)
     args = parser.parse_args(argv)
+    if not 2 <= args.load_shares <= 262144:
+        parser.error("--load-shares must be within Docker's CPU shares range 2..262144")
     if args.probe_cost:
         cost = probe_cost(args)
         Path(args.out).write_text(json.dumps(cost, indent=2, sort_keys=True) + "\n")
