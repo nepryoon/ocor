@@ -6,6 +6,8 @@ delete process of the running pytest group, the same node UUID and its Docker
 destroy event inside the declared bounded window. Crash, OOM, restart, PID change,
 live node without intent, expired window and missing event stay fatal.
 """
+import ast
+import hashlib
 import json
 import os
 import subprocess
@@ -333,6 +335,75 @@ class ProbeTimeoutObservation(unittest.TestCase):
                 patch.object(adapter, 'REMOVER_OBSERVATIONS', [dict(REMOVER, first_seen=T0, last_seen=T0 + 9)]):
             adapter.confirm_missing_node(ID)
             self.assertEqual(removals[0]['node_id'], ID)
+
+
+def observation_only_proof():
+    """Reproducible AST comparison to the last unqualified CI source.
+
+    Normalisation removes only the two newly exported diagnostic fields and
+    unwraps the latency recorder back to subprocess.run; every call argument
+    remains in the AST, including the ten-second timeout and check flag.
+    """
+    root = Path(__file__).resolve().parents[2]
+    baseline = '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0'
+
+    def source(path, old=False):
+        return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True) if old else (root / path).read_text()
+
+    class DiagnosticsOnly(ast.NodeTransformer):
+        def visit_Call(self, node):
+            self.generic_visit(node)
+            if ast.unparse(node.func) == 'kind_observer.run_probe':
+                node.func = ast.parse('subprocess.run', mode='eval').body
+            return node
+
+        def visit_Dict(self, node):
+            self.generic_visit(node)
+            if any(isinstance(k, ast.Constant) and k.value == 'removals' for k in node.keys):
+                retained = [(k, v) for k, v in zip(node.keys, node.values, strict=True)
+                            if not (isinstance(k, ast.Constant) and k.value in {'remover_observations', 'probe_observations'})]
+                node.keys = [k for k, _ in retained]
+                node.values = [v for _, v in retained]
+            return node
+
+    path = 'scripts/run_qualifying_campaign.py'
+    before, after = ast.parse(source(path, True)), ast.parse(source(path))
+    before_functions = {n.name: n for n in before.body if isinstance(n, ast.FunctionDef)}
+    after_functions = {n.name: n for n in after.body if isinstance(n, ast.FunctionDef)}
+    results = {}
+    for name, node in before_functions.items():
+        if name == 'observe_health_event':
+            continue  # diagnostic child only, never consumed by gates
+        previous = ast.dump(node, include_attributes=False)
+        current = ast.dump(DiagnosticsOnly().visit(after_functions[name]), include_attributes=False)
+        assert previous == current, 'Execution-affecting AST drift: ' + name
+        results[name] = {'before_sha256': hashlib.sha256(previous.encode()).hexdigest(),
+                         'after_sha256': hashlib.sha256(current.encode()).hexdigest(), 'identical': True}
+    def assignments(tree):
+        return ast.dump(ast.Module(body=[n for n in tree.body if isinstance(n, ast.Assign)], type_ignores=[]), include_attributes=False)
+    assert assignments(before) == assignments(after), 'Campaign constants drift'
+    for variable in ('WINDOW_SECONDS', 'POLL_SECONDS', 'SAMPLE_SECONDS'):
+        def value(old):
+            tree = ast.parse(source('scripts/observe_kind_teardown.py', old))
+            return next(ast.dump(n.value) for n in tree.body if isinstance(n, ast.Assign)
+                        and any(isinstance(t, ast.Name) and t.id == variable for t in n.targets))
+        assert value(True) == value(False), variable + ' drift'
+    workflows = {}
+    for p in sorted((root / '.github/workflows').glob('*.yml')):
+        relative = str(p.relative_to(root))
+        assert source(relative, True) == source(relative), 'Workflow drift: ' + relative
+        workflows[relative] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return {'baseline': baseline, 'functions': results, 'workflows_unchanged': workflows,
+            'campaign_constants_identical': True, 'window_poll_sample_identical': True,
+            'normalisation': 'Only latency wrapper and two diagnostic export fields removed; no pytest, selection, partition, timer, ceiling or gate change.'}
+
+
+class ExecutionInvariants(unittest.TestCase):
+    def test_execution_ast_and_workflows_are_identical(self):
+        proof = observation_only_proof()
+        self.assertTrue(proof['functions']['main']['identical'])
+        self.assertTrue(proof['functions']['partition']['identical'])
+        self.assertTrue(proof['functions']['check_kubernetes_runtimes']['identical'])
 
 
 if __name__ == '__main__':

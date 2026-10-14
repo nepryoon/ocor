@@ -76,7 +76,7 @@ def test_readiness_classification_is_diagnostic_and_requires_restore_gate(tmp_pa
     assert len(classified) == 1
     assert classified[0]['classification'] == classification
     assert classified[0]['affects_test_outcome'] is False
-    GUARD.check_stack({'service': globals()['state']()}, {'service': globals()['state']()})
+    GUARD.check_stack({'service': state()}, {'service': state()})
 
 
 @pytest.mark.parametrize('event', [health_event('open-webui'), health_event(action='die'),
@@ -169,6 +169,20 @@ def test_failed_health_observer_does_not_change_successful_pytest(tmp_path, monk
     assert GUARD.main() == 0
     assert json.loads((output / 'campaign_result.json').read_text())['status'] == 'PASS'
     assert json.loads((output / 'health-observer-manifest.json').read_text())['observer_exit_code'] == 2
+
+
+def test_kind_diagnostics_export_remover_probe_latency_and_rejection_times(tmp_path, monkeypatch):
+    output, json = stub_completed_campaign(tmp_path, monkeypatch, seconds=1)
+    monkeypatch.setattr(GUARD.kind_observer, 'start_sampler', lambda *args: object())
+    monkeypatch.setattr(GUARD.kind_observer, 'stop_sampler', lambda *args: None)
+    monkeypatch.setattr(GUARD.kind_observer, 'REMOVER_OBSERVATIONS', [{'pid': 41, 'pgid': 42, 'first_seen': 100}])
+    monkeypatch.setattr(GUARD.kind_observer, 'PROBE_OBSERVATIONS', [{'duration_seconds': 10, 'started_at': 'start', 'finished_at': 'end'}])
+    monkeypatch.setattr(GUARD.kind_observer, 'REJECTIONS', [{'reason': 'EVENTS_UNAVAILABLE', 'observed_at': 'rejection'}])
+    assert GUARD.main() == 0
+    report = json.loads((output / 'kind-teardown-observations.json').read_text())
+    assert report['remover_observations'][0]['pid'] == 41
+    assert report['probe_observations'][0]['duration_seconds'] == 10
+    assert report['rejections'][0]['observed_at'] == 'rejection'
 
 
 def test_running_same_incarnation_is_accepted():
@@ -564,10 +578,10 @@ def test_kubernetes_runtime_inventory_is_confined_to_owned_cluster(monkeypatch):
     def run(command, **kwargs):
         calls.append(command)
         if command[:2] == ['docker', 'ps']:
-            return SimpleNamespace(stdout='node-id\n')
+            return SimpleNamespace(returncode=0, stdout='node-id\n')
         if command[:2] == ['docker', 'inspect']:
-            return SimpleNamespace(stdout='[{"Id":"node-id","Name":"/ocor-poc-control-plane","State":{"Running":true},"Config":{"Labels":{"io.x-k8s.kind.cluster":"ocor-poc"}}}]')
-        return SimpleNamespace(stdout='ActiveState=active\nMainPID=111\nNRestarts=0\n')
+            return SimpleNamespace(returncode=0, stdout='[{"Id":"node-id","Name":"/ocor-poc-control-plane","State":{"Running":true},"Config":{"Labels":{"io.x-k8s.kind.cluster":"ocor-poc"}}}]')
+        return SimpleNamespace(returncode=0, stdout='ActiveState=active\nMainPID=111\nNRestarts=0\n')
     monkeypatch.setattr(GUARD.subprocess, 'run', run)
     assert len(GUARD.inspect_kubernetes_runtimes()) == 2
     assert calls[0][-1] == 'label=io.x-k8s.kind.cluster=ocor-poc'
@@ -578,9 +592,9 @@ def test_kubernetes_runtime_inventory_rejects_foreign_name(monkeypatch):
     from types import SimpleNamespace
     def run(command, **kwargs):
         if command[:2] == ['docker', 'ps']:
-            return SimpleNamespace(stdout='foreign-id\n')
+            return SimpleNamespace(returncode=0, stdout='foreign-id\n')
         if command[:2] == ['docker', 'inspect']:
-            return SimpleNamespace(stdout='[{"Id":"foreign-id","Name":"/open-webui","State":{"Running":true},"Config":{"Labels":{"io.x-k8s.kind.cluster":"ocor-poc"}}}]')
+            return SimpleNamespace(returncode=0, stdout='[{"Id":"foreign-id","Name":"/open-webui","State":{"Running":true},"Config":{"Labels":{"io.x-k8s.kind.cluster":"ocor-poc"}}}]')
         pytest.fail('foreign container must never be entered')
     monkeypatch.setattr(GUARD.subprocess, 'run', run)
     with pytest.raises(GUARD.CampaignError, match='scope'):

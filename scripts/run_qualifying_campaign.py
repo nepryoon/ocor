@@ -119,8 +119,9 @@ def observe_health_event(event: dict[str, Any], journal: HealthJournal) -> None:
     # or stats. Do not read Env/configuration, which can contain credentials.
     journal.write({"kind": "unhealthy_event", "identity": identity, "name": name,
                    "docker_time_ns": event.get("timeNano")})
-    journal.write({"kind": "docker_diagnostic", **health_command([
-        "docker", "inspect", "--format", '{{json .State}} {{json .RestartCount}}', identity])})
+    health_state = health_command([
+        "docker", "inspect", "--format", '{{json .State}} {{json .RestartCount}}', identity])
+    journal.write({"kind": "docker_diagnostic", **health_state})
     commands = [["docker", "logs", "--timestamps", "--tail", "200", identity]]
     service = attributes.get("com.docker.compose.service", "")
     if isinstance(service, str) and service.startswith("ocor-relay-"):
@@ -137,8 +138,53 @@ def observe_health_event(event: dict[str, Any], journal: HealthJournal) -> None:
         journal.write({"kind": "stack_inventory", **stack})
         commands.append(["docker", "stats", "--no-stream", "--format", "{{json .}}", identity])
     # Capture the state immediately, before inventory/stats can delay it.
+    relay_logs = {}
     for command in commands:
-        journal.write({"kind": "docker_diagnostic", **health_command(command)})
+        diagnostic = health_command(command)
+        journal.write({"kind": "docker_diagnostic", **diagnostic})
+        if command[:2] == ["docker", "logs"] and command[-1] == identity:
+            relay_logs = diagnostic
+    journal.write({"kind": "unhealthy_classification", "identity": identity, "name": name,
+                   "classification": classify_readiness_gate(name, health_state, relay_logs),
+                   "affects_test_outcome": False})
+
+
+def classify_readiness_gate(name: str, state: dict[str, Any], logs: dict[str, Any]) -> str:
+    """PO readiness interpretation: classify only the approved ops /readyz gate.
+
+    The fixed ops healthcheck calls /readyz. Its HTTP 503 Health.Log and the
+    same container's structured readiness_scan must corroborate RESTORE_UNTESTED.
+    Missing, truncated, malformed or contradictory diagnostics stay UNCLASSIFIED.
+    This function is never consumed by a qualifying gate.
+    """
+    if (not re.fullmatch(r"ocor-poc-.+-ocor-ops-[A-Za-z0-9_.-]+", name)
+            or state.get("exit_code") != 0 or logs.get("exit_code") != 0
+            or state.get("truncated") or logs.get("truncated")):
+        return "UNCLASSIFIED"
+    try:
+        health, _ = json.JSONDecoder().raw_decode(state["output"])
+        entries = health["Health"]["Log"]
+        # Only the most recent failed health observation may identify this event.
+        latest = entries[-1]
+        if latest["ExitCode"] == 0 or "HTTP Error 503:" not in latest["Output"]:
+            return "UNCLASSIFIED"
+        for line in reversed(logs["output"].splitlines()):
+            # Docker --timestamps prefixes an RFC3339 timestamp; keep plain JSON
+            # usable for local deterministic diagnostic tests as well.
+            payload = line[line.find("{"):]
+            try:
+                entry = json.loads(payload)
+            except ValueError:
+                continue
+            trace = entry.get("trace", {})
+            if trace.get("operation") == "readiness_scan":
+                if (trace.get("status") == "DENY" and trace.get("reason_code") == "RESTORE_UNTESTED"
+                        and trace.get("ready_reasons") == ["RESTORE_UNTESTED"]):
+                    return "EXPECTED_READINESS_GATE"
+                return "UNCLASSIFIED"
+    except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+        pass
+    return "UNCLASSIFIED"
 
 
 def runner_health_sample() -> dict[str, Any]:
@@ -589,18 +635,18 @@ def inspect_kubernetes_runtimes_raw() -> dict[str, dict[str, Any]]:
     A containerd restart does not change Docker's container RestartCount.
     Nodes may appear and disappear as the Kubernetes fixture starts and tears down.
     """
-    ids = subprocess.run(["docker", "ps", "-q", "--filter", "label=io.x-k8s.kind.cluster=ocor-poc"],
+    ids = kind_observer.run_probe(["docker", "ps", "-q", "--filter", "label=io.x-k8s.kind.cluster=ocor-poc"],
                          capture_output=True, text=True, timeout=10, check=True).stdout.split()
     if not ids:
         return {}
-    raw = subprocess.run(["docker", "inspect", *ids], capture_output=True, text=True, timeout=10, check=True).stdout
+    raw = kind_observer.run_probe(["docker", "inspect", *ids], capture_output=True, text=True, timeout=10, check=True).stdout
     current = {}
     for node in json.loads(raw):
         if (not node["Name"].startswith("/ocor-poc-")
                 or node["Config"]["Labels"].get("io.x-k8s.kind.cluster") != "ocor-poc"):
             raise CampaignError("Kubernetes node outside owned scope")
         for service in ("containerd", "kubelet"):
-            result = subprocess.run(["docker", "exec", node["Id"], "systemctl", "show", service,
+            result = kind_observer.run_probe(["docker", "exec", node["Id"], "systemctl", "show", service,
                                      "--property=ActiveState,MainPID,NRestarts"],
                                     capture_output=True, text=True, timeout=10, check=True)
             values = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
@@ -825,6 +871,8 @@ def main() -> int:
             (output / "kind-teardown-observations.json").write_text(json.dumps({
                 "removals": kind_observer.REMOVALS, "rejections": kind_observer.REJECTIONS,
                 "window_seconds": kind_observer.WINDOW_SECONDS,
+                "remover_observations": kind_observer.REMOVER_OBSERVATIONS,
+                "probe_observations": kind_observer.PROBE_OBSERVATIONS,
             }, indent=2, sort_keys=True) + "\n")
         recorder_error = None
         if recorder is not None:

@@ -6,7 +6,9 @@ to the `kind delete cluster --name ocor-poc` process of the running pytest group
 (sampled continuously from /proc), to the same node UUID and to that UUID's Docker
 `destroy` event, inside the declared bounded window WINDOW_SECONDS. Still fatal:
 node present without proven intent, crash, OOM, restart, PID change (unchanged
-original checks), timeout/expired window and missing event.
+original checks), expired window and missing event. Under PO
+REM-0017-CI-KIND-INSPECT-TIMEOUT (2026-10-14), a single probe timeout enters
+the same proof path; it does not extend the window or the ten-second probe.
 
 Only observation changes against v1; no runtime, restart, PID, OOM or deadline
 check of the borrowed repository implementation is modified, and the pytest
@@ -32,6 +34,7 @@ SAMPLE_SECONDS = 0.2
 REMOVALS: list[dict[str, Any]] = []
 REJECTIONS: list[dict[str, Any]] = []
 REMOVER_OBSERVATIONS: list[dict[str, Any]] = []
+PROBE_OBSERVATIONS: list[dict[str, Any]] = []
 PROC = Path('/proc')
 KIND_BINARY = Path(__file__).resolve().parents[1] / '.ocor/tools/bin/kind'
 PYTEST_PGID: int | None = None
@@ -85,6 +88,7 @@ def start_sampler(pgid: int, kind_binary: Path | None = None) -> threading.Threa
     REMOVER_OBSERVATIONS.clear()
     REMOVALS.clear()
     REJECTIONS.clear()
+    PROBE_OBSERVATIONS.clear()
     _stop.clear()
     thread = threading.Thread(target=_sample, daemon=True)
     thread.start()
@@ -107,6 +111,23 @@ def _iso(stamp: float) -> str:
     return datetime.fromtimestamp(stamp, UTC).isoformat()
 
 
+def run_probe(command: list[str], **options: Any) -> subprocess.CompletedProcess[str]:
+    """Observe latency without changing a probe's arguments, cadence or timeout."""
+    started = _now()
+    monotonic_start = time.monotonic()
+    observation: dict[str, Any] = {'command': command, 'started_at': _iso(started)}
+    try:
+        result: subprocess.CompletedProcess[str] = subprocess.run(command, **options)
+        observation['returncode'] = result.returncode
+        return result
+    except (subprocess.SubprocessError, OSError) as exc:
+        observation.update(error_type=type(exc).__name__, error=str(exc))
+        raise
+    finally:
+        observation.update(finished_at=_iso(_now()), duration_seconds=time.monotonic() - monotonic_start)
+        PROBE_OBSERVATIONS.append(observation)
+
+
 def _reject(exc: BaseException, reason: str, **facts: Any) -> NoReturn:
     REJECTIONS.append({'reason': reason, 'observed_at': _iso(_now()), 'error': str(exc), **facts})
     raise exc
@@ -127,7 +148,7 @@ def inspect_kubernetes_runtimes(inspector: Callable[[], dict[str, dict[str, Any]
     since = _now()
     try:
         return inspector()
-    except subprocess.CalledProcessError as exc:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
         command = exc.cmd
         if not isinstance(command, list) or command[:2] not in (['docker', 'exec'], ['docker', 'inspect']):
             raise
@@ -136,11 +157,26 @@ def inspect_kubernetes_runtimes(inspector: Callable[[], dict[str, dict[str, Any]
         node = command[2]
         if len(node) != 64 or any(c not in '0123456789abcdef' for c in node):
             raise
-        states = []
+        states: list[dict[str, Any]] = []
         deadline = since + WINDOW_SECONDS
         while True:
-            probe = subprocess.run(['docker', 'inspect', node], capture_output=True, text=True, timeout=10, check=False)
+            if _now() >= deadline:
+                reason = ('WINDOW_EXPIRED_NODE_PRESENT' if states and 'running' in states[-1]
+                          else 'WINDOW_EXPIRED_DAEMON_UNAVAILABLE')
+                _reject(exc, reason, node_id=node, states=states[-5:],
+                        window_seconds=WINDOW_SECONDS)
+            try:
+                probe = run_probe(['docker', 'inspect', node], capture_output=True, text=True, timeout=10, check=False)
+            except subprocess.TimeoutExpired:
+                states.append({'probe': 'TIMEOUT', 'at': _iso(_now())})
+                if _now() >= deadline:
+                    _reject(exc, 'WINDOW_EXPIRED_DAEMON_UNAVAILABLE', node_id=node, states=states[-5:],
+                            window_seconds=WINDOW_SECONDS)
+                _sleep(POLL_SECONDS)
+                continue
             if absent_node(probe, node):
+                if _now() > deadline:
+                    _reject(exc, 'WINDOW_EXPIRED_ABSENCE', node_id=node, window_seconds=WINDOW_SECONDS)
                 break
             if probe.returncode != 0:
                 _reject(exc, 'AMBIGUOUS_INSPECT', node_id=node, stderr=probe.stderr[-500:])
@@ -160,9 +196,12 @@ def inspect_kubernetes_runtimes(inspector: Callable[[], dict[str, dict[str, Any]
                         window_seconds=WINDOW_SECONDS)
             _sleep(POLL_SECONDS)
         until = _now()
-        events = subprocess.run(['docker', 'events', '--since', _iso(since - WINDOW_SECONDS), '--until', _iso(until),
+        try:
+            events = run_probe(['docker', 'events', '--since', _iso(since - WINDOW_SECONDS), '--until', _iso(until),
                                  '--filter', 'container=' + node, '--format', '{{json .}}'],
                                 capture_output=True, text=True, timeout=10, check=False)
+        except subprocess.TimeoutExpired:
+            _reject(exc, 'EVENTS_UNAVAILABLE', node_id=node, detail='event probe timeout')
         if events.returncode != 0:
             _reject(exc, 'EVENTS_UNAVAILABLE', node_id=node, stderr=events.stderr[-500:])
         owned = []
@@ -210,7 +249,7 @@ def confirm_missing_node(node: str) -> None:
             first = False
             # Produce a real failed inspect, then consume its actual UUID/error
             # through the same v2 proof path; do not fabricate a failed command.
-            subprocess.run(["docker", "inspect", node], capture_output=True,
+            run_probe(["docker", "inspect", node], capture_output=True,
                            text=True, timeout=10, check=True)
             raise TeardownObservationError("known node still present without a proven removal: " + node)
         return {}
