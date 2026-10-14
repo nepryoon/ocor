@@ -1,8 +1,8 @@
 # OCOR Planning Validation Report
 
-Validation commit/base: `origin/main`. Mechanical result: **FAIL**.
+Validation commit/base: `origin/main`. Mechanical result: **PASS**.
 
-Checks: 36 PASS, 1 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never counted as PASS.
+Checks: 37 PASS, 0 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never counted as PASS.
 
 ## Mechanical checks
 
@@ -44,7 +44,7 @@ Checks: 36 PASS, 1 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never co
 | external markdownlint | `NOT_EXECUTED` | "NOT_EXECUTED: markdownlint executable unavailable; deterministic fallback executed" |
 | external Mermaid renderer | `NOT_EXECUTED` | "NOT_EXECUTED: mmdc executable unavailable; node/edge fallback executed" |
 | immutable evidence claims | `PASS` | [] |
-| artifact hashes | `FAIL` | ["reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md"] |
+| artifact hashes | `PASS` | [] |
 | inputs immutability | `PASS` | "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35" |
 | authorized planning-only diff | `PASS` | [] |
 
