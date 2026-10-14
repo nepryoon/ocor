@@ -19,6 +19,97 @@ def state(*, running=True, oom=False, restarts=0, identity='abc'):
     return {'Id': identity, 'RestartCount': restarts, 'State': {'Running': running, 'OOMKilled': oom}}
 
 
+def health_event(name='ocor-poc-tested-123-ocor-relay-fuseki-1', action='health_status: unhealthy'):
+    return {'Type': 'container', 'Action': action, 'Actor': {'ID': 'a' * 64,
+            'Attributes': {'name': name, 'com.docker.compose.service': 'ocor-relay-fuseki'}}}
+
+
+def test_health_observer_records_event_before_container_can_be_destroyed(tmp_path, monkeypatch):
+    import json
+    calls = []
+    writer = GUARD.HealthJournal(tmp_path, ['generated-secret'])
+
+    def command(argv):
+        # Snapshot the journal before any potentially racing Docker read.
+        calls.append((argv, writer.path.read_text()))
+        return {'command': argv, 'exit_code': 0, 'output': 'Health.Log generated-secret', 'truncated': False}
+
+    monkeypatch.setattr(GUARD, 'health_command', command)
+    GUARD.observe_health_event(health_event(), writer)
+    records = [json.loads(line) for line in writer.path.read_text().splitlines()]
+    assert records[0]['kind'] == 'unhealthy_event'
+    assert all('unhealthy_event' in contents for _, contents in calls)
+    assert calls[0][0][:2] == ['docker', 'inspect']
+    assert any(c[:2] == ['docker', 'logs'] and c[-1] == 'a' * 64 for c, _ in calls)
+    assert any(c[:2] == ['docker', 'logs'] and c[-1] == 'ocor-bootstrap-fuseki-1' for c, _ in calls)
+    assert any(c[:2] == ['docker', 'stats'] for c, _ in calls)
+    assert 'generated-secret' not in writer.path.read_text()
+    assert '[REDACTED]' in writer.path.read_text()
+
+
+@pytest.mark.parametrize('event', [health_event('open-webui'), health_event(action='die'),
+                                  {'Type': 'network'}, health_event(name='ocor-poc-fake;other')])
+def test_health_observer_ignores_unrelated_or_malformed_events(tmp_path, monkeypatch, event):
+    writer = GUARD.HealthJournal(tmp_path, [])
+    monkeypatch.setattr(GUARD, 'health_command', lambda _: pytest.fail('unrelated Docker read'))
+    GUARD.observe_health_event(event, writer)
+    assert not writer.path.exists()
+
+
+def test_health_observer_records_missing_container_and_upstream_without_changing_gate(tmp_path, monkeypatch):
+    writer = GUARD.HealthJournal(tmp_path, [])
+    monkeypatch.setattr(GUARD, 'health_command', lambda argv: {
+        'command': argv, 'exit_code': 1, 'output': 'No such container', 'truncated': False})
+    GUARD.observe_health_event(health_event(), writer)
+    assert 'No such container' in writer.path.read_text()
+    GUARD.check_stack({'service': state()}, {'service': state()})
+    with pytest.raises(GUARD.CampaignError):
+        GUARD.check_stack({'service': state()}, {})
+
+
+def test_health_observer_has_a_total_byte_budget(tmp_path):
+    writer = GUARD.HealthJournal(tmp_path, [], max_bytes=1000)
+    for _ in range(100):
+        writer.write({'kind': 'runner_sample', 'data': 'x' * 200})
+    assert writer.path.stat().st_size <= 1000
+    assert writer.truncated
+
+
+def test_health_command_times_out_and_limits_untrusted_output():
+    result = GUARD.health_command([sys.executable, '-c', 'import time; time.sleep(5)'], timeout=0.1)
+    assert result['error'] == 'TIMEOUT'
+    result = GUARD.health_command([sys.executable, '-c', "print('x' * 100000)"], max_bytes=1000)
+    assert len(result['output'].encode()) <= 1000
+    assert result['truncated']
+
+
+def test_health_observer_start_failure_is_diagnostic_only(tmp_path, monkeypatch):
+    def unavailable(*args, **kwargs):
+        raise OSError('observer unavailable')
+    monkeypatch.setattr(GUARD.subprocess, 'Popen', unavailable)
+    assert GUARD.start_health_observer(tmp_path, 2700) is None
+    assert 'observer unavailable' in (tmp_path / 'health-observer-status.json').read_text()
+
+
+def test_health_observer_runner_sample_includes_cpu_load_and_memory():
+    sample = GUARD.runner_health_sample()
+    assert sample['sample_interval_seconds'] == 5
+    assert len(sample['load_average']) == 3
+    assert len(sample['cpu_ticks']) >= 4
+    assert sample['memory_kib']['MemTotal'] > 0
+    assert sample['memory_kib']['MemAvailable'] >= 0
+
+
+def test_health_observer_artifact_manifest_binds_raw_digest(tmp_path):
+    import hashlib
+    import json
+    writer = GUARD.HealthJournal(tmp_path, [])
+    writer.write({'kind': 'unhealthy_event', 'identity': 'a' * 64})
+    GUARD.finish_health_observer(None, tmp_path)
+    manifest = json.loads((tmp_path / 'health-observer-manifest.json').read_text())
+    assert manifest['artifacts'][writer.path.name] == hashlib.sha256(writer.path.read_bytes()).hexdigest()
+
+
 def test_running_same_incarnation_is_accepted():
     GUARD.check_stack({'service': state()}, {'service': state()})
 
