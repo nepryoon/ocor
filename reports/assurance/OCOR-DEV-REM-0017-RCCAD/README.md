@@ -434,3 +434,10 @@ senza fallimenti e si ferma al tetto di 45 minuti (2716 s). Parte Helm 1106 s PA
 altri moduli 445 s PASS; aggregatori fail-closed. Non qualificante; decision request
 nell'addendum della DR `REM-0017-CI-CAMPAIGN-DURATION` (opzione raccomandata: tetto
 specifico per l'unità 0049). Nessuna richiesta di verifica indipendente inviata.
+
+
+### 2026-10-14 — ripresa: isolamento0049 qualificato e osservazione del teardown
+
+Nuovo candidato `repair-1-resume-20261014.json`: FULL1834/zero skip, portfolio137 più8 subtest, regressione-only0050 di198 casi invariati; SHA512 Apache reale su miss e hit, kind1.33.4/containerd2.1.3/Go1.24.4 verificati. CI in4 parti con Helm esclusivo sul task stage accettato a0ee43d4e502f3589cd857cfec4238eab13fe8e7. Lo split del modulo0049 segue REM19 GO; nessun test di0049 modificato inREM17. Nuovo codice Codex; addenda storici del Claude Code di riserva preservati. Verifier pianificato Cursor/Grok per regola dei task toccati dalla riserva e per0049; non lanciato. Nessun sigillo, nessuna chiusura REM17: esecuzione CI esatta, teardown/live Helm e verifica indipendente restano obbligatori. Status CANDIDATE_AWAITING_EXACT_HEAD_CI; E1/E2/Verified/NO-GO invariati.
+
+0072 riqualificato con preflight9/9 reale e manifest-only, senza promuovere una validazione statica a conformità runtime; nuovo record supersede il candidato archive-requalified. Gate drift finale: zero deriva su183input/69task. Teardown: zero nuove risorse e zero risorse del progetto. Piano37PASS e2NOT_EXECUTED opzionali dichiarati.
