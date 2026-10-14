@@ -179,3 +179,10 @@ aumenta N" non può ridurlo e il tetto di 45 minuti lo boccia. Decisione richies
 Impatto: REM-0017 resta non qualificato; integrazione di 0049 e task G6
 restano bloccati come oggi. G5 prosegue (`OCOR-DEV-0052`). Nessun tetto,
 test o criterio cambiato. Registrato da Claude Code (implementatore di riserva).
+
+
+## 2026-10-14 — attuazione REM-0017-CI-0049-REMAINDER-CAP, opzione 2
+
+La decisione PO del 2026-10-10 risolve l'addendum con opzione 2: nessun tetto speciale. REM-0019 ha GO indipendente su 90b30fff981935cb48f63a890ec13f33190591e8 e sigillo in PR254; il task stage a0ee43d4e502f3589cd857cfec4238eab13fe8e7 conserva i soli test accettati per la CI. Nessun record storico viene riscritto. Il pin CI viene sostituito con quel task stage. I 390 casi sono indivisibili soltanto all'interno del singolo node ID parametrizzato: Helm ha una parte esclusiva, gli altri 389 si distribuiscono con gli altri moduli in quattro parti complete. Tetto2700s per parte, soglia1800s per ribilanciamento, unione esatta, zero skip, teardown fail-closed invariati. La presa d'atto sull'indivisibilità del modulo (2026-10-09) è superata.
+
+Status: RESOLVED_PO_DECISION_IMPLEMENTED_PENDING_EXACT_HEAD_CI. Prove RED/GREEN e acquisizione Apache/cache reale presenti nel nuovo candidato REM17. La campagna locale del branch non sostituisce le quattro parti CI del candidato0049. Il precedente NO_GO e i timeout restano diagnostici. Nessun rerun identico di7d8e0fd. Verifier pianificato Cursor/Grok per0049 e per il change set REM17 toccato dal Claude Code di riserva negli addenda storici; nuova implementazione Codex. Nessun verifier avviato. E1=0,E2=0,Verified=0,NO-GO invariati.
