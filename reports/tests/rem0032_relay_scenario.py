@@ -10,11 +10,12 @@ relay cgroup and inherit the pin. The synthetic load (`--load N`) is N single-th
 busy loops, each in its own container (own CFS group, like the separate processes of
 the CI runner), pinned to the same cores. `--load-shares` declares their relative CPU
 weight (Docker default 1024). The qualifying scenario fixes eight competitors at
-8192 shares: 64 default-weight equivalents, keeping the old CPU-heavy probes over
+8192 shares, keeping the old CPU-heavy probes over
 their timeout throughout the observation window instead of occasional startup
 spikes. This is a synthetic sustained-contention boundary, not an estimate of the
 runner's exact background workload. The relay weights and healthchecks are untouched.
-Actual CPU settings are read back from Docker for every load and every relay.
+Actual CPU settings are read back from Docker for every load and every relay,
+including the kernel's cgroup-v2 weight rather than assuming Docker's conversion.
 
 The scenario only reads the Compose file under test; it adds an override that sets
 `cpuset` on the relays and nothing else, so healthcheck, command, image, networks and
@@ -145,7 +146,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             entries = json.loads(docker("inspect", *names, check=True).stdout)
             return {e["Name"].lstrip("/"): {"cpuset": e["HostConfig"]["CpusetCpus"],
                     "shares": e["HostConfig"]["CpuShares"], "quota": e["HostConfig"]["CpuQuota"],
-                    "nano_cpus": e["HostConfig"]["NanoCpus"]} for e in entries}
+                    "nano_cpus": e["HostConfig"]["NanoCpus"],
+                    "cgroup_weight": int(Path(f"/sys/fs/cgroup/system.slice/docker-{e['Id']}.scope/cpu.weight").read_text())}
+                    for e in entries}
 
         result["cpu_resources"] = {"loads": cpu_resources(load_names) if load_names else {},
                                    "relays": cpu_resources(list(ids))}

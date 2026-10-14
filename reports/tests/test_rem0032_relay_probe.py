@@ -228,15 +228,17 @@ def _scenario(compose_path: Path, label: str, out: Path) -> dict[str, Any]:
     result = json.loads(out.read_text())
     assert result["residue"] == [], result["residue"]
     # Fix the offered contention instead of depending on the host scheduler's spare CPU.
-    # 8 * 8192 shares = 64 default-weight runnable competitors on the same four cores.
-    # The old ~231 ms probe cannot fit its 3 s timeout under sustained contention;
-    # the ~21 ms TCP-only probe can. Neither relay shares nor probe timers are changed.
+    # Docker maps shares to cgroup-v2 weights: read both back rather than assuming a ratio.
+    # Neither relay shares nor probe timers are changed. Both probes face this same load.
     resources = result["cpu_resources"]
     assert len(resources["loads"]) == 8 and len(resources["relays"]) == 30
     assert all(r["cpuset"] == "0-3" and r["shares"] == 8192 for r in resources["loads"].values())
     assert all(r["cpuset"] == "0-3" and r["shares"] == 0 for r in resources["relays"].values())
     assert all(r["quota"] == 0 and r["nano_cpus"] == 0
                for group in resources.values() for r in group.values())
+    assert min(r["cgroup_weight"] for r in resources["loads"].values()) > max(
+        r["cgroup_weight"] for r in resources["relays"].values())
+    assert set(result["up"]) == set(result["projects"])
     return result
 
 
