@@ -750,6 +750,8 @@ def main() -> int:
         "scripts/acquire_fuseki_archive.py",
         "scripts/run_qualifying_campaign.py",
         "scripts/observe_kind_teardown.py",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0017-20261014.json",
+        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0017-20261014.log",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/repair-1-resume-20261014.json",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/repair-1-resume-20261014.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0017-20261014.json",
