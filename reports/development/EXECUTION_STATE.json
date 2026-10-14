@@ -6,10 +6,10 @@
       "skipped": 0
     },
     "0072_requalification": "actual9-tool preflight and manifest validation PASS; contracts are not runtime conformance",
-    "baseline_commit": "5aa05a0db4c77df905ecd6628cc08c4f72dbf4e6",
-    "branch": "governed/state-sync-rem0017-local-ci-20261014",
+    "baseline_commit": "39955b892147973694eee2191b193ecacdc56383",
+    "branch": "governed/state-sync-rem0017-import-fix-20261014",
     "candidate_branch": "governed/ocor-dev-rem-0017-ci-provision-spire",
-    "candidate_head_sha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
+    "candidate_head_sha": "f438098c17a392948b8d0158019fb924837a6c68",
     "candidate_worktree": ".ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire",
     "ci_attempts": [
       {
@@ -22,6 +22,16 @@
         "rerun_requested": false,
         "result": "FAIL",
         "run_id": 38499234761
+      },
+      {
+        "check": "conditional-infrastructure-0049 part 3/4",
+        "decision_request": "REM-0017-CI-0049-RELAY-HEALTH",
+        "diagnosis_sha256": "b560aa72884dcc0f9c8ed729b64abc704b4a66385460deaae8f24175894f9752",
+        "head_sha": "f438098c17a392948b8d0158019fb924837a6c68",
+        "infrastructure": "NOT_ESTABLISHED",
+        "rerun_requested": false,
+        "result": "FAIL",
+        "run_id": 38503096600
       }
     ],
     "ci_observation": [
@@ -1824,7 +1834,7 @@
       "verifier_decision": "OCOR-DEV-0049-VERIFIER-CURSOR (2026-10-07)"
     }
   },
-  "baseline_commit": "5aa05a0db4c77df905ecd6628cc08c4f72dbf4e6",
+  "baseline_commit": "39955b892147973694eee2191b193ecacdc56383",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5061,6 +5071,21 @@
       "non_blocking": true,
       "scope": "reset_test_environment.py reports PASS when Docker compose down exits0 but owned network remains in use. Outside test/fixture-only REM-0019 scope; separated per PO decision 2026-10-13.",
       "status": "OPEN_IMPLEMENTATION_REQUIRED"
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0017",
+        "OCOR-DEV-0049",
+        "OCOR-DEV-REM-0019",
+        "OCOR-DEV-REM-0023",
+        "OCOR-DEV-0056"
+      ],
+      "decision_request": "reports/development/decision_requests/REM-0017-CI-0049-RELAY-HEALTH.md",
+      "draft_pr": 257,
+      "id": "REM-0017-CI-0049-RELAY-HEALTH",
+      "non_blocking": false,
+      "scope": "Recurring CI-only docker compose 'dependency failed to start: ocor-relay-* is unhealthy' in 0049 parts (f438098 part3 relay-fuseki; 4e97cd3 part4 seven relays). Cause NOT_ESTABLISHED; fix would touch sealed 0049 deploy code; no rerun under QUALIFICATION-CAMPAIGN-INFRA-RERUN.",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "claims": {
@@ -5142,67 +5167,26 @@
     "OCOR-DEV-0055"
   ],
   "current_candidate_ci": {
+    "diagnosis": "/home/luca/.ocor-codex/rem0017-ci-diagnosis-20261014/attempts/ci-f438098c17a3-0049-part3/diagnosis.json sha256 b560aa72884dcc0f9c8ed729b64abc704b4a66385460deaae8f24175894f9752",
     "draft_pr": 169,
-    "head_sha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-    "independent_verification": "NOT_REQUESTED_PENDING_CI",
-    "runs": [
-      {
-        "conclusion": "skipped",
-        "databaseId": 38499742187,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "completed",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742187",
-        "workflowName": "OCOR auto-merge on green"
-      },
-      {
-        "conclusion": "",
-        "databaseId": 38499742200,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "pending",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742200",
-        "workflowName": "OCOR governance and validation closure"
-      },
-      {
-        "conclusion": "success",
-        "databaseId": 38499742224,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "completed",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742224",
-        "workflowName": "OCOR supply-chain gates"
-      },
-      {
-        "conclusion": "success",
-        "databaseId": 38499742280,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "completed",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742280",
-        "workflowName": "OCOR tooling and bootstrap policy"
-      },
-      {
-        "conclusion": "",
-        "databaseId": 38499742216,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "in_progress",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742216",
-        "workflowName": "OCOR autonomous delivery controls"
-      },
-      {
-        "conclusion": "",
-        "databaseId": 38499742243,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "queued",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742243",
-        "workflowName": "OCOR PoC layered mandatory gates"
-      },
-      {
-        "conclusion": "",
-        "databaseId": 38499742249,
-        "headSha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
-        "status": "in_progress",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38499742249",
-        "workflowName": "OCOR RCCAD methodology gates"
-      }
-    ]
+    "head_composition": "f438098 = merge of origin/main 39955b8 into 27dee31 keeping main's state files; code identical to de63f41",
+    "head_sha": "f438098c17a392948b8d0158019fb924837a6c68",
+    "independent_verification": "NOT_REQUESTED_CI_FAIL_PO_DECISION_PENDING",
+    "previous_head": {
+      "head_sha": "313ae7933545d5b09e5fa6375aa4180431b5e7d2",
+      "result": "FAIL_DIAGNOSTIC part3 collection ModuleNotFoundError spikes (fixed de63f41, Codex); 0049 part1 supervisor docker inspect timeout NOT_ESTABLISHED"
+    },
+    "result": "FAIL: conditional-infrastructure-0049 part3/4 setup ERROR (relay-fuseki unhealthy), aggregators validation-closure and conditional-infrastructure-0049 FAIL from it; all rccad/delivery/closure parts 1-4 and other required checks PASS",
+    "run_ids": [
+      "38503096173",
+      "38503096215",
+      "38503096559",
+      "38503096585",
+      "38503096600",
+      "38503096923",
+      "38503097088"
+    ],
+    "source_commit": "de63f41cb1ca21c7efdd6cbf67599f67bdd2cb0b"
   },
   "current_gate": "REM0019_VERIFIED_SEALED_STAGING_REM0017_NEXT",
   "historical_terminal_loop_disposition": {
@@ -6520,7 +6504,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "REM17: inspect draft PR169 313ae7933545d5b09e5fa6375aa4180431b5e7d2 and newly triggered CI attempt1 (all13 required checks plus conditional-infrastructure-0049 four parts and exact2224-test union). Keep all failing attempts diagnostic. One infrastructure rerun only if proven by logs; never rerun assertion failures to obtain green. With exact-head CI green, submit repair_cycle1 REMEDIATION verify_request to Cursor/Grok (historical reserve-Claude task contribution and0049), covering new REM17 and regression-only0050/0072 records; do not launch verifier. No seal or merge before fresh exact-head GO. Then verifiedREM17 -> task0049/main exact-green scope -> retarget/align PR254 governance/main preserving seals -> REM23 -> preserved0056. While CI is external/pending, other ready nonconflicting REM work may proceed according to PO priorities. REM27 one repair remains; REM24/28/29 beforeG6. Inputs/E1/E2/Verified/NO-GO unchanged.",
+  "next_executable_action": "REM17 blocked on PO decision REM-0017-CI-0049-RELAY-HEALTH (draft PR257): candidate f438098 on draft PR169 has all full-suite parts and 11 other required checks PASS (import fix de63f41 confirmed); only conditional-infrastructure-0049 part3/4 FAIL by setup ERROR (relay-fuseki unhealthy, 620 PASS/1 error/0 skip), cause NOT_ESTABLISHED and recurring (4e97cd3 2026-10-09). No rerun, no metadata-only head, no verify_request until exact-head CI green. On the PO decision execute it on governed/ocor-dev-rem-0017-ci-provision-spire, then exact-head CI, then repair_cycle1 REMEDIATION verify_request to Cursor/Grok (historical reserve-Claude contribution); no seal/merge before fresh exact-head GO. Then verifiedREM17 -> task0049/main exact-green -> PR254 REM19 governance/main preserving seals -> REM23 -> preserved0056. While REM17 waits: ready nonconflicting work REM24 (decision REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY), then REM28, REM29; REM27 one repair remains; all before G6. Inputs/E1/E2/Verified/NO-GO unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -11790,5 +11774,5 @@
     "loop_status": "CONTINUE",
     "reason": "0049 GO_FOR_EVIDENCE_SEAL, PR176 CI FAIL/non mergiata; REM17 prioritario eseguibile con budget PO, G5 pronto. Nessun ciclo9."
   },
-  "updated_at": "2026-10-14T02:19:33.038695+00:00"
+  "updated_at": "2026-10-14T04:05:00+00:00"
 }
