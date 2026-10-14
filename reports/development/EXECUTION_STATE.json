@@ -8288,9 +8288,10 @@
       "open_health_contract_risk": {
         "activation": "First relay unhealthy with probe timeouts and runner saturation in previous60s -> allocate next free0049 deploy REM, after0049 merge beforeG6",
         "reference": "REM-0017-OPS-READINESS-UNHEALTHY-INTERPRETATION (2026-10-14)",
+        "remediation_id": "OCOR-DEV-REM-0032",
         "risk_register_ids_closed": false,
         "scope": "Relay-probe load sensitivity; ops RESTORE_UNTESTED readiness health is designed gate",
-        "status": "OPEN_UNASSIGNED"
+        "status": "OPEN_REMEDIATION_REGISTERED"
       },
       "owned_kind_observation_race": {
         "evidence": {
@@ -12616,6 +12617,52 @@
       "scope": "Authenticated and authorised IdentityRegistry provisioning boundary (principal, authority, policy), distinct from grant/authorize/signature; requester and approvers cannot write. Inventory consumers before modifications; identity-record schema and Q1 convention unchanged.",
       "status": "OPEN_IMPLEMENTATION_REQUIRED",
       "work_started": false
+    },
+    "REM_0032_0049_RELAY_PROBE_LOAD_BUDGET": {
+      "acceptance_criteria": [
+        "RED reproducible under CPU limitation",
+        "GREEN startup and sustained relay health with positive/negative real-stack controls",
+        "Health/readiness fail closed for an actual unavailable relay/backend",
+        "0049 requalification and applicable regressions with explicit supersession; zero skip/residue; independent verifier"
+      ],
+      "activation_evidence": {
+        "case": "same relay typedb cohort Health.Log shows3s timeouts, CPU100% for each5s delta of prior60s, load13.7-21 on4CPU; minimum10.7GiB available; no OOM/restart in captured state",
+        "diagnosis_sha256": "9e13ee6da25926e43d6b8f3053725f3323e16381d0f0d384d88d6a22f851544c",
+        "head_sha": "fad37b47fb25c6a6125df9fd31451f3e3f359036",
+        "limitation": [
+          "Exact failing typedb container was destroyed before queued observer inspect; its Health.Log is unavailable. Same typedb probe cohort, Docker unhealthy event of exact UUID, fixture Compose failure and 60s CPU samples are present; no missing observation is labelled PASS."
+        ],
+        "run_attempt": 1,
+        "run_id": 38548656297,
+        "source_artifacts_manifest_sha256": "dbcfb163877444665afcba3708ee4dda14247a543c5b67e0c04b440976dca497"
+      },
+      "allocation_evidence": {
+        "exit_code": 1,
+        "matches": [],
+        "pattern": "OCOR-DEV-REM-0032|REM_0032",
+        "previous_reserved_id": "OCOR-DEV-REM-0031",
+        "refs_checked": 374,
+        "reservation_commit": "85d575bbf53f4dbddc84b13f7510ebd74c3db90c",
+        "stderr": ""
+      },
+      "authorization": "REM-0017-OPS-READINESS-UNHEALTHY-INTERPRETATION (2026-10-14), activated first observed relay timeout under saturated runner",
+      "claims_unchanged": true,
+      "execution_order": "After0049 merge and beforeG6; existing queue priorities unchanged",
+      "expected_file_areas": [
+        "deploy/helm/ocor-poc/compose.profiles.yaml",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0032.py",
+        "new0049 requalification and REM0032 reports/evidence only"
+      ],
+      "g6_dependency": true,
+      "hard_dependencies": [
+        "OCOR-DEV-0049"
+      ],
+      "id": "OCOR-DEV-REM-0032",
+      "new_decision_ids": false,
+      "recorded_at": "2026-10-14T11:04:06.698107+00:00",
+      "scope": "Reproduce relay probe health failure under CPU-limited real pinned stack (RED); add start_period and probe budgets consistent with PoC startup times; fail-closed readiness and existing cases/criteria preserved; new0049 requalification with explicit supersession, historic seals intact",
+      "status": "OPEN_WAITING_0049_MAIN_INTEGRATION",
+      "work_started": false
     }
   },
   "repository": "nepryoon/ocor-detailed-design",
@@ -13488,5 +13535,5 @@
     "reason": "Executable queue remains; current REM17 qualification checkpoint does not block all remaining work",
     "status": "SUPERSEDED_LOOP_CONTINUES"
   },
-  "updated_at": "2026-10-14T11:00:28.959615+00:00"
+  "updated_at": "2026-10-14T11:04:06.698107+00:00"
 }
