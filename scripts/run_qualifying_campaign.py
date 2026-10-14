@@ -125,7 +125,7 @@ def observe_health_event(event: dict[str, Any], journal: HealthJournal) -> None:
     service = attributes.get("com.docker.compose.service", "")
     if isinstance(service, str) and service.startswith("ocor-relay-"):
         upstream = service.removeprefix("ocor-relay-")
-        if upstream in {"terminusdb", "typedb", "fuseki", "opa", "keycloak", "openbao", "kafka", "postgres", "qdrant"}:
+        if upstream in {"terminusdb", "typedb", "fuseki", "opa", "keycloak", "openbao", "kafka", "postgresql", "qdrant", "spire-server"}:
             # Fixed PoC recipe uses this dedicated project's service name.
             commands.append(["docker", "inspect", "--format", '{{json .State}} {{json .RestartCount}}', f"ocor-bootstrap-{upstream}-1"])
             commands.append(["docker", "logs", "--timestamps", "--tail", "200", f"ocor-bootstrap-{upstream}-1"])
