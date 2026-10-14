@@ -436,40 +436,41 @@ class BreakGlassController:
     ) -> BreakGlassGrant:
         instant = self._now()
         request = {"grant_id": grant_id, "requester": requester, "approvers": list(approvers), "domain": domain}
-        try:
-            if not (grant_id and reason and incident_ref and scope and domain and capabilities):
-                raise SafetyError(
-                    "BREAK_GLASS_GRANT_INVALID", "grant id, typed reason, incident, minimal scope, affected domain and named capabilities are mandatory"
-                )
-            forbidden = sorted(set(capabilities) & FORBIDDEN_BREAK_GLASS_CAPABILITIES)
-            if forbidden:
-                raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never grant {forbidden}")
-            self._validate_principals(requester, tuple(approvers), domain)
-            with self._lock:
+        with self._lock:
+            try:
+                if not (grant_id and reason and incident_ref and scope and domain and capabilities):
+                    raise SafetyError(
+                        "BREAK_GLASS_GRANT_INVALID",
+                        "grant id, typed reason, incident, minimal scope, affected domain and named capabilities are mandatory",
+                    )
                 if grant_id in self._issued:
                     raise SafetyError("BREAK_GLASS_GRANT_ID_REUSED", f"grant {grant_id!r} was already issued; break-glass is never renewed")
-        except SafetyError as error:
-            raise self._refuse("BREAK_GLASS_GRANT_DENIED", None, instant, error, **request) from error
-        first, second = sorted(approvers)
-        try:
-            issued = BreakGlassGrant(
-                grant_id=grant_id,
-                requester=requester,
-                reason=reason,
-                incident_ref=incident_ref,
-                scope=scope,
-                domain=domain,
-                capabilities=frozenset(capabilities),
-                approvers=(first, second),
-                granted_at=instant,
-                ttl=ttl,
-            )
-        except ValueError as invalid:
-            self._append(_event("BREAK_GLASS_GRANT_DENIED", None, instant, reason_code="BREAK_GLASS_GRANT_INVALID", detail=str(invalid), **request), cause=invalid)
-            raise
-        with self._lock:
-            if grant_id in self._issued:
-                raise SafetyError("BREAK_GLASS_GRANT_ID_REUSED", f"grant {grant_id!r} was already issued; break-glass is never renewed")
+                forbidden = sorted(set(capabilities) & FORBIDDEN_BREAK_GLASS_CAPABILITIES)
+                if forbidden:
+                    raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never grant {forbidden}")
+                self._validate_principals(requester, tuple(approvers), domain)
+            except SafetyError as error:
+                raise self._refuse("BREAK_GLASS_GRANT_DENIED", None, instant, error, **request) from error
+            first, second = sorted(approvers)
+            try:
+                issued = BreakGlassGrant(
+                    grant_id=grant_id,
+                    requester=requester,
+                    reason=reason,
+                    incident_ref=incident_ref,
+                    scope=scope,
+                    domain=domain,
+                    capabilities=frozenset(capabilities),
+                    approvers=(first, second),
+                    granted_at=instant,
+                    ttl=ttl,
+                )
+            except ValueError as invalid:
+                self._append(
+                    _event("BREAK_GLASS_GRANT_DENIED", None, instant, reason_code="BREAK_GLASS_GRANT_INVALID", detail=str(invalid), **request),
+                    cause=invalid,
+                )
+                raise
             granted = _event("BREAK_GLASS_GRANTED", issued, instant, reason=reason)
             self._append(granted)
             try:
