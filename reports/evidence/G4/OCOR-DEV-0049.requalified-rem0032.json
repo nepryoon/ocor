@@ -466,6 +466,140 @@
     "host": "local Linux host, Docker 29.9.0, 14 CPU, 30 GiB",
     "toolchain_path": "~/.ocor-codex/c5resume/toolchain/bin (node 20.20.2, locked docker client)"
   },
+  "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 OK; git diff base..HEAD su inputs vuoto; inputs tree 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35"
+      },
+      {
+        "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "venv isolato nel worktree detached, 43 pacchetti"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 75 source files"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref a0ee43d4e502f3589cd857cfec4238eab13fe8e7",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti"
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base a0ee43d4e502f3589cd857cfec4238eab13fe8e7 --head HEAD",
+        "exit_code": 0,
+        "summary": "PASS; diff committato 15 file, superfici immutabili intatte"
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, 182 input, 69 task, zero drift"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --base-ref a0ee43d4e502f3589cd857cfec4238eab13fe8e7 --authorized-extension",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (markdownlint e Mermaid assenti); FAIL iniziale solo per il log di bootstrap creato dal verifier, rimosso prima del riesame"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --manifest reports/evidence/G4/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0"
+      },
+      {
+        "command": "git rev-parse degli alberi .github deploy infra ocor-runtime/src ocor-runtime/tests scripts su 04b9dcb 5645ac7 9b76eb5 4f0bd4d",
+        "exit_code": 0,
+        "summary": "i sei alberi coincidono con i digest dichiarati; 9b76eb5..HEAD tocca solo i tre file di assurance"
+      },
+      {
+        "command": "pytest reports/tests/test_rem0032_relay_probe.py::test_red_task_stage_probe_turns_relays_unhealthy_under_cpu_limit",
+        "exit_code": 0,
+        "summary": "prima RED isolata: 1 passed in 212.36s; residuo rem0032 assente"
+      },
+      {
+        "command": "pytest stessa RED con REM0032_SCENARIO_OUT",
+        "exit_code": 0,
+        "summary": "seconda RED consecutiva: 30/30 unhealthy, up [1,1,1], CPU 1.211 core, load weight 532 shares 8192 cpuset 0-3, relay weight 100 shares 0, residue []"
+      },
+      {
+        "command": "pytest -ra reports/tests/test_rem0032_relay_probe.py",
+        "exit_code": 0,
+        "summary": "7 passed, 0 skipped, 0 failed in 439.23s; dead relay 14.259s dopo start_period 60s; RED di suite 30 unhealthy probe python; GREEN 30 healthy probe bash, CPU 0.203, up [0,0,0], residue []"
+      },
+      {
+        "command": "rem0032_relay_scenario.py --probe-cost 40 prima e dopo",
+        "exit_code": 0,
+        "summary": "prima 231.27 ms CPU/probe (python relay-probe); dopo 19.97 ms (bash TCP); metodo cgroup dichiarato"
+      },
+      {
+        "command": "docker exec bash unset OCOR_RELAY_FLOW_PORT sul relay opa del file sotto test",
+        "exit_code": 0,
+        "summary": "relay healthy; variabile assente exit 127 parameter null or not set; variabile impostata exit 0; residuo rimosso"
+      },
+      {
+        "command": "reset_test_environment.py --execute && bootstrap_ci_environment.py --execute --timeout 300 (ricetta fad37b47, sha256 515300f8)",
+        "exit_code": 0,
+        "summary": "stack ocor-bootstrap ricreato due volte nel worktree con credenziali locali nuove; 11 servizi, health PASS, zero restart/OOM; env della checkout principale non modificato"
+      },
+      {
+        "command": "pytest --collect-only -q ocor-runtime/tests/",
+        "exit_code": 0,
+        "summary": "2224 test raccolti"
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<stack> uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -ra ocor-runtime/tests/",
+        "exit_code": 0,
+        "summary": "2224 passed, 0 skipped, 0 failed, 3 warnings in 3874.73s; JUnit: 0049=390, 0048=196, 0050=198; nessuno OOM/restart dello stack"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "container, rete e volumi ocor-bootstrap rimossi; nessun cluster kind e nessun residuo rem0032/ocor-poc"
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, reserve implementer of the loop (Codex quota exhausted), repair cycle 0 of OCOR-DEV-REM-0032; every step of this campaign was executed by Claude Code",
+    "integration_agent": "Codex (OpenAI), evidence seal only",
+    "integration_condition": "Seal on the exact reviewed task-stage lineage; metadata/README status/manifest hashes only. Next separate REM-0017 unit pins this sealed HEAD and rebalances the >30-minute part, aligns main and runs the single authorised new CI pair. This seal does not establish CI qualification or main integration. 0049 cycles2-6/8 Claude Code, cycle7 Codex; REM0032 cycle0/runtime campaign Claude Code, repair1/seal Codex, independent verifier Grok4.7 via Cursor. Historical seals, E1/E2/Verified/NO-GO unchanged.",
+    "not_executed": [
+      "Coppia CI REM-0017 sull'HEAD esatto con il nuovo pin: il Product Owner la colloca dopo GO e sigillo (REM-0017-CI-0049-RELAY-PROBE-REMEDIATION)"
+    ],
+    "repair_cycle": 1,
+    "review_type": "REMEDIATION (superseding requalification within REM-0032; 0050 regression only)",
+    "verdict_created_at": "2026-10-14T22:07:00Z",
+    "verdict_file_sha256": "5a7853bfe09573f2d67cf4e695752e67cdebba4777d456b8517a520f39e2b697",
+    "verdict_head_sha": "4f0bd4d63e8bc4260f39fb2cae9cc6f6b285bcba",
+    "verdict_request_id": "OCOR-DEV-REM-0032-4f0bd4d63e8b-1",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "processo e contesto separati; repair cycle 1 di Codex (OpenAI), cycle 0 e campagna di Claude Code (Anthropic); verifier Grok 4.7 via Cursor, fornitore diverso da entrambi",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, processo separato"
+    }
+  },
   "inputs": {
     "deploy/helm/ocor-poc/Chart.yaml": "b6731d8de4effda2421dec13e73acc9f3207af1e95a140f5ef363879f3dd8e8b",
     "deploy/helm/ocor-poc/compose.profiles.yaml": "2c309837b700129f38fd85099276970085a0b3629bf810b89535ff015a99ab43",
@@ -2177,7 +2311,8 @@
   },
   "rollback_procedure_verified": "Mechanical: revert the REM-0032 commits; the task-stage healthcheck returns and the previous 0049 record becomes the most recent again once this record is removed.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-14T23:05:43.165560+00:00",
+  "status": "SEALED",
   "superseded_record": {
     "path": "reports/evidence/G4/OCOR-DEV-0049.json",
     "sha256": "c2355d6d25714fb21b03f473c330d997e3ba4749bfc123ae490c4938c6c2683f"

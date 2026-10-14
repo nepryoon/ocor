@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0032-RCCAD — 0049: healthcheck dei relay senza saturazione della CPU
 
-- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` (repair cycle 1). Verifier: Grok 4.7 via Cursor CLI (processo, contesto e fornitore separati);
+- **Status**: `SEALED` (repair cycle 1; task stage, CI REM-0017 e integrazione ancora da eseguire). Verifier: Grok 4.7 via Cursor CLI (processo, contesto e fornitore separati);
   Codex (riparazione 1) e Claude Code (ciclo 0) non verificano questo change set (`LOOP-ROLES`).
 - **Fonte**: decisione del Product Owner `REM-0017-CI-0049-RELAY-PROBE-REMEDIATION` (2026-10-14), che
   risolve `REM-0017-CI-0049-RELAY-HEALTH-OPTION2` con l'opzione 1 e anticipa `OCOR-DEV-REM-0032` (già
@@ -103,3 +103,21 @@ a `04b9dcb`, con hash degli alberi di esecuzione identici, comandi, log ed ambie
 originali conservati; i file di riqualifica e i manifest non cambiano. Il nuovo
 instrumento è usato soltanto dalla suite REM, rieseguita integralmente. Nessun test
 0049 o REM-0019 cambia. Verifier richiesto: Grok 4.7 via Cursor, contesto separato.
+
+## Verifica indipendente e sigillo
+
+GO `OCOR-DEV-REM-0032-4f0bd4d63e8b-1` del 2026-10-14, HEAD esatto
+`4f0bd4d63e8bc4260f39fb2cae9cc6f6b285bcba`: Grok 4.7 via Cursor CLI,
+processo e contesto separati e fornitore diverso da entrambi gli implementatori.
+Ciclo 0 e campagna runtime: Claude Code di riserva; riparazione 1 e sigillo: Codex.
+Il verifier ha riprodotto due RED consecutive, la suite REM (7 PASS), il costo CPU
+e la suite completa (2224 PASS, zero skip), senza finding. I risultati originali
+restano attribuiti ai propri commit, log, ambiente ed esecutore.
+
+Il sigillo aggiorna soltanto metadati di verifica, stato di questi tre record nuovi,
+README e hash dei due record di riqualifica nei manifest; raw log, implementazione,
+test, harness, workflow, lock e sigilli storici byte-identici all'HEAD verificato.
+Resta `NOT_EXECUTED` la coppia CI REM-0017 con il nuovo pin: viene eseguita
+nella prossima unità separata, con il ribilanciamento N già autorizzato e gli esiti
+fissati dalla decisione PO. Nessuna integrazione su main o chiusura di REM-0017/0049
+è inferita da questo sigillo. Il recinto delle evidenze resta invariato.
