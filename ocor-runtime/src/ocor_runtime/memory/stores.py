@@ -32,6 +32,12 @@ Implements the ``MemoryMetadataStore``, ``MemoryContentStore``,
 * ``MemoryStoreCoordinator.reconcile`` rolls complete pending versions forward,
   retracts the projections and content of incomplete ones, and removes every
   unbound index entry and unreferenced content object (fail closed).
+* Version 2 index and metadata ports (OCOR-DEV-REM-0020) store the version's
+  ``index_attributes`` beside each entry and evaluate an
+  ``EligibilityPredicate`` inside the backend query; a commit retires the
+  projections of the item's predecessor, so only the head is searchable
+  (LLD v1.1 §2.8.4).  A lookup made inside an ``eligibility_scope`` on an index
+  that cannot evaluate the predicate fails closed.
 
 The module is backend-free (``OCOR_LANGUAGE_POLICY.md`` row 8): stores, indexes
 and the content cipher are ports.  Policy evaluation and the derivation of the
@@ -45,12 +51,14 @@ import hashlib
 import hmac
 import math
 import struct
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from ..kernel.canonical import canonical_digest, format_utc_timestamp, parse_utc_timestamp
 from ..kernel.governance import TrustedClock
@@ -860,6 +868,219 @@ class MemoryVectorIndexPort(Protocol):
 
 
 # --------------------------------------------------------------------------
+# Eligibility attributes and predicates (index port version 2, OCOR-DEV-REM-0020)
+# --------------------------------------------------------------------------
+
+INDEX_ATTRIBUTES_VERSION = "urn:ocor:memory-index-attributes:1"
+# "No upper bound" for valid_until/expires_at; below 2**53 so that every
+# backend compares it exactly as an integer or as a double.
+UNBOUNDED_US = 9_000_000_000_000_000
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+def _micros(instant: datetime) -> int:
+    if not isinstance(instant, datetime) or instant.utcoffset() is None:
+        raise MemoryStoreError(
+            "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "instant must be an aware timestamp"
+        )
+    return (instant - _EPOCH) // timedelta(microseconds=1)
+
+
+def index_attributes(item: GovernedMemoryItem) -> dict[str, object]:
+    """Eligibility attributes of one version, stored beside its index entries.
+
+    Everything but ``superseded`` is immutable for a version (every semantic
+    change is a new version); ``superseded`` becomes true when a later
+    version of the item commits, so a searchable projection is only ever the
+    item's head.  The attributes never replace the pointer: hits are still
+    bound to committed metadata and re-validated before materialisation.
+    """
+
+    return {
+        "memory_item_id": item.memory_item_id,
+        "memory_version": item.memory_version,
+        "memory_kind": item.memory_kind.value,
+        "memory_scope": item.memory_scope.value,
+        "source_kind": item.source_kind.value,
+        "content_schema_ref": item.content_schema_ref,
+        "confidence": float(item.confidence),
+        "taint_labels": sorted(item.taint_labels),
+        "lifecycle_status": item.lifecycle_status.value,
+        "deleted": item.deletion_epoch is not None,
+        "valid_from_us": _micros(item.valid_from),
+        "valid_until_us": UNBOUNDED_US if item.valid_until is None else _micros(item.valid_until),
+        "expires_at_us": UNBOUNDED_US if item.expires_at is None else _micros(item.expires_at),
+        "superseded": False,
+    }
+
+
+@dataclass(frozen=True, slots=True)
+class EligibilityPredicate:
+    """The eligibility predicates a search pushes into every index query.
+
+    A version matches when it is the item's head (not ``superseded``),
+    ``ACTIVE``, not deleted, of a requested kind and scope, valid at
+    ``valid_at``, unexpired at ``now`` and accepted by the structured filters.
+    ``accepts`` is the reference semantics every adapter must reproduce.
+    """
+
+    memory_kinds: frozenset[str]
+    memory_scopes: frozenset[str]
+    valid_at: datetime
+    now: datetime
+    source_kinds: frozenset[str] | None = None
+    content_schema_refs: frozenset[str] | None = None
+    min_confidence: float | None = None
+    exclude_taint_labels: frozenset[str] = frozenset()
+
+    def __post_init__(self) -> None:
+        if not self.memory_kinds or not self.memory_scopes:
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "kinds and scopes must not be empty"
+            )
+        _micros(self.valid_at)
+        _micros(self.now)
+
+    @property
+    def valid_at_us(self) -> int:
+        return _micros(self.valid_at)
+
+    @property
+    def now_us(self) -> int:
+        return _micros(self.now)
+
+    def accepts(self, attributes: Mapping[str, object]) -> bool:
+        try:
+            if (
+                attributes["superseded"] is not False
+                or attributes["deleted"] is not False
+                or attributes["lifecycle_status"] != "ACTIVE"
+                or attributes["memory_kind"] not in self.memory_kinds
+                or attributes["memory_scope"] not in self.memory_scopes
+            ):
+                return False
+            valid_from, valid_until, expires_at = (
+                attributes["valid_from_us"],
+                attributes["valid_until_us"],
+                attributes["expires_at_us"],
+            )
+            if not all(isinstance(v, int) for v in (valid_from, valid_until, expires_at)):
+                return False
+            assert isinstance(valid_from, int) and isinstance(valid_until, int)
+            assert isinstance(expires_at, int)
+            if not valid_from <= self.valid_at_us < valid_until or expires_at <= self.now_us:
+                return False
+            if self.source_kinds is not None and attributes["source_kind"] not in self.source_kinds:
+                return False
+            if (
+                self.content_schema_refs is not None
+                and attributes["content_schema_ref"] not in self.content_schema_refs
+            ):
+                return False
+            confidence = attributes["confidence"]
+            if self.min_confidence is not None and (
+                not isinstance(confidence, (int, float)) or confidence < self.min_confidence
+            ):
+                return False
+            labels = attributes["taint_labels"]
+            if not isinstance(labels, list):
+                return False
+            return not self.exclude_taint_labels & set(labels)
+        except KeyError:
+            return False  # an entry without the attribute record is never eligible
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "attributes_version": INDEX_ATTRIBUTES_VERSION,
+            "memory_kinds": sorted(self.memory_kinds),
+            "memory_scopes": sorted(self.memory_scopes),
+            "valid_at": format_utc_timestamp(self.valid_at),
+            "now": format_utc_timestamp(self.now),
+            "source_kinds": None if self.source_kinds is None else sorted(self.source_kinds),
+            "content_schema_refs": None
+            if self.content_schema_refs is None
+            else sorted(self.content_schema_refs),
+            "min_confidence": self.min_confidence,
+            "exclude_taint_labels": sorted(self.exclude_taint_labels),
+        }
+
+
+@runtime_checkable
+class EligibilityIndexPort(Protocol):
+    """Version 2 of the lexical and vector index ports.
+
+    ``upsert`` additionally takes ``attributes=index_attributes(item)``, stored
+    beside (never inside) the pointer payload: ``get``, ``read_back`` and
+    ``entries`` keep returning the pointer payload only.
+    """
+
+    def search_eligible(
+        self,
+        partition: MemoryPartition,
+        representation_version: str,
+        query: str | Sequence[float],
+        *,
+        where: EligibilityPredicate,
+        limit: int,
+        offset: int,
+    ) -> Sequence[IndexHit]:
+        """Ranked page of the partition restricted by ``where`` inside the backend query."""
+
+    def score_entries(
+        self,
+        partition: MemoryPartition,
+        representation_version: str,
+        query: str | Sequence[float],
+        store_refs: Sequence[str],
+    ) -> Mapping[str, float]:
+        """The backend's own score of ``query`` for exactly these entries (0 when unmatched)."""
+
+    def retire(
+        self,
+        partition: MemoryPartition,
+        representation_version: str,
+        memory_item_id: str,
+        below_version: int,
+    ) -> None:
+        """Mark every entry of the item older than ``below_version`` as ``superseded``."""
+
+
+@runtime_checkable
+class EligibilityMetadataStore(Protocol):
+    """Version 2 of the metadata store: eligibility predicates inside the query."""
+
+    def eligible_versions(
+        self, partition_digest: str, where: EligibilityPredicate
+    ) -> tuple[StoredVersion, ...]:
+        """Committed head versions of the partition whose item matches ``where``."""
+
+
+_ELIGIBILITY: ContextVar[EligibilityPredicate | None] = ContextVar(
+    "ocor_memory_eligibility_predicate", default=None
+)
+
+
+@contextmanager
+def eligibility_scope(predicate: EligibilityPredicate) -> Iterator[None]:
+    """Push ``predicate`` into every candidate lookup made inside the block.
+
+    Lookups keep their signature (subclasses such as the embedding lifecycle
+    coordinator override them); a lookup that runs inside a scope must search
+    a version 2 index or fail closed.
+    """
+
+    if not isinstance(predicate, EligibilityPredicate):
+        raise MemoryStoreError(
+            "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "eligibility predicate is invalid"
+        )
+    token = _ELIGIBILITY.set(predicate)
+    try:
+        yield
+    finally:
+        _ELIGIBILITY.reset(token)
+
+
+# --------------------------------------------------------------------------
 # Coordinator
 # --------------------------------------------------------------------------
 
@@ -970,6 +1191,15 @@ def _not_ready(detail: str, message: str) -> MemoryStoreError:
     return MemoryStoreError("REPRESENTATION_NOT_READY", detail, message)
 
 
+def _eligible_index(index: object) -> EligibilityIndexPort:
+    # A predicate that cannot be pushed into the backend query fails closed.
+    if not isinstance(index, EligibilityIndexPort):
+        raise _not_ready(
+            "INDEX_PREDICATES_UNSUPPORTED", "the index cannot evaluate eligibility predicates"
+        )
+    return index
+
+
 class MemoryStoreCoordinator:
     """Commits admitted versions across the four stores with one visibility switch."""
 
@@ -1028,6 +1258,8 @@ class MemoryStoreCoordinator:
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata returned another stage")
         if stored.state is VersionState.COMMITTED:
             self._verify_committed(stored)
+            # A replayed commit also repairs a retirement lost after the switch.
+            self._retire_predecessors(stored.staged)
             return self._receipt(stored)
         partition = staged.partition
         item = record.item
@@ -1058,7 +1290,48 @@ class MemoryStoreCoordinator:
             ) from exc
         if committed.state is not VersionState.COMMITTED:
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata commit was not applied")
+        self._retire_predecessors(committed.staged)
         return self._receipt(committed)
+
+    def _retire_predecessors(self, staged: StagedVersion) -> None:
+        """Make the previous version's projections unsearchable (LLD v1.1 §2.8.4).
+
+        Runs after the visibility switch, so a failure leaves the predecessor
+        searchable but never served: every hit is still bound to the head and
+        re-validated.  The commit then fails closed and a replay retries it.
+        """
+
+        if staged.memory_version < 2:
+            return
+        layouts: set[tuple[MemoryPartition, RepresentationKind, str]] = set()
+        for stored in (
+            self._metadata.get(staged.memory_item_id, staged.memory_version - 1),
+            StoredVersion(staged, VersionState.COMMITTED, None),
+        ):
+            if stored is None:
+                continue
+            for pointer in stored.staged.pointers:
+                if pointer.representation_kind is not RepresentationKind.STRUCTURED:
+                    layouts.add(
+                        (
+                            stored.staged.partition,
+                            pointer.representation_kind,
+                            pointer.representation_version,
+                        )
+                    )
+        try:
+            for partition, kind, version in sorted(
+                layouts, key=lambda layout: (layout[0].digest, layout[1].value, layout[2])
+            ):
+                index = self._index(kind)
+                if isinstance(index, EligibilityIndexPort):
+                    index.retire(partition, version, staged.memory_item_id, staged.memory_version)
+        except Exception as exc:  # noqa: BLE001 -- a lost retirement fails closed
+            raise _not_ready(
+                "PREDECESSOR_NOT_RETIRED",
+                f"{staged.memory_version_ref} committed; predecessor projections not retired: "
+                f"{type(exc).__name__}",
+            ) from exc
 
     def _prepare(
         self,
@@ -1238,14 +1511,33 @@ class MemoryStoreCoordinator:
         payload = pointer.to_mapping()
         if pointer.representation_kind is RepresentationKind.FULL_TEXT:
             assert document is not None
-            self._lexical.upsert(
-                partition, self._limits.lexical_profile, pointer.store_ref, payload, document
-            )
+            if isinstance(self._lexical, EligibilityIndexPort):
+                self._lexical.upsert(
+                    partition,
+                    self._limits.lexical_profile,
+                    pointer.store_ref,
+                    payload,
+                    document,
+                    attributes=index_attributes(item),  # type: ignore[call-arg]
+                )
+            else:
+                self._lexical.upsert(
+                    partition, self._limits.lexical_profile, pointer.store_ref, payload, document
+                )
         elif pointer.representation_kind is RepresentationKind.VECTOR:
             assert vector is not None
-            self._vector.upsert(
-                partition, VectorProfile.for_item(item), pointer.store_ref, payload, vector
-            )
+            profile = VectorProfile.for_item(item)
+            if isinstance(self._vector, EligibilityIndexPort):
+                self._vector.upsert(
+                    partition,
+                    profile,
+                    pointer.store_ref,
+                    payload,
+                    vector,
+                    attributes=index_attributes(item),  # type: ignore[call-arg]
+                )
+            else:
+                self._vector.upsert(partition, profile, pointer.store_ref, payload, vector)
         else:
             return  # STRUCTURED is the metadata record itself.
         if not self._projection_bound(partition, item, pointer):
@@ -1353,9 +1645,16 @@ class MemoryStoreCoordinator:
         if not isinstance(query, str) or not query.strip():
             raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is empty")
         version = self._limits.lexical_profile.representation_version
+        where = _ELIGIBILITY.get()
+        index = self._lexical
 
         def page(offset: int) -> Sequence[IndexHit]:
-            return self._lexical.search(
+            if where is not None:
+                return _eligible_index(index).search_eligible(
+                    partition, version, query, where=where,
+                    limit=self._limits.page_size, offset=offset,
+                )
+            return index.search(
                 partition, version, query, limit=self._limits.page_size, offset=offset
             )
 
@@ -1382,13 +1681,91 @@ class MemoryStoreCoordinator:
                 "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector does not fit the profile"
             )
         version = profile.representation_version
+        where = _ELIGIBILITY.get()
+        index = self._vector
 
         def page(offset: int) -> Sequence[IndexHit]:
-            return self._vector.search(
+            if where is not None:
+                return _eligible_index(index).search_eligible(
+                    partition, version, values, where=where,
+                    limit=self._limits.page_size, offset=offset,
+                )
+            return index.search(
                 partition, version, values, limit=self._limits.page_size, offset=offset
             )
 
         return self._bound_candidates(partition, RepresentationKind.VECTOR, version, page, limit)
+
+    def lexical_scores(
+        self, partition: MemoryPartition, query: str, pointers: Sequence[RepresentationPointer]
+    ) -> dict[str, float]:
+        """The lexical index's own score of ``query`` for committed pointers of the partition."""
+
+        if not isinstance(query, str) or not query.strip():
+            raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is empty")
+        version = self._limits.lexical_profile.representation_version
+        return self._scores(
+            partition, RepresentationKind.FULL_TEXT, version, self._lexical, query, pointers
+        )
+
+    def vector_scores(
+        self,
+        partition: MemoryPartition,
+        profile: VectorProfile,
+        vector: Sequence[float],
+        pointers: Sequence[RepresentationPointer],
+    ) -> dict[str, float]:
+        """The vector index's own similarity of ``vector`` for committed pointers of the partition."""
+
+        values = [float(v) for v in vector]
+        if len(values) != profile.embedding_dimensions or not all(map(math.isfinite, values)):
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector does not fit the profile"
+            )
+        return self._scores(
+            partition,
+            RepresentationKind.VECTOR,
+            profile.representation_version,
+            self._vector,
+            values,
+            pointers,
+        )
+
+    def _scores(
+        self,
+        partition: MemoryPartition,
+        kind: RepresentationKind,
+        representation_version: str,
+        index: MemoryLexicalIndexPort | MemoryVectorIndexPort,
+        query: str | Sequence[float],
+        pointers: Sequence[RepresentationPointer],
+    ) -> dict[str, float]:
+        refs: list[str] = []
+        for pointer in pointers:
+            registered = self._metadata.pointer(pointer.store_ref)
+            if (
+                pointer.partition_digest != partition.digest
+                or pointer.representation_kind is not kind
+                or pointer.representation_version != representation_version
+                or registered is None
+                or registered != (pointer, VersionState.COMMITTED)
+            ):
+                raise _not_ready("POINTER_UNBOUND", "a scored pointer is not committed here")
+            refs.append(pointer.store_ref)
+        if not refs:
+            return {}
+        scores = _eligible_index(index).score_entries(
+            partition, representation_version, query, sorted(set(refs))
+        )
+        result: dict[str, float] = {}
+        for ref in refs:
+            score = scores.get(ref)
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                raise _not_ready("PROJECTION_DRIFT", "a committed projection has no score")
+            if not math.isfinite(score):
+                raise _not_ready("PROJECTION_DRIFT", "a committed projection score is invalid")
+            result[ref] = float(score)
+        return result
 
     def _bound_candidates(
         self,
@@ -1535,6 +1912,7 @@ class MemoryStoreCoordinator:
                 stage_digest=staged.stage_digest,
                 committed_at=format_utc_timestamp(self._clock.now()),
             )
+            self._retire_predecessors(staged)
             return _Outcome.COMPLETED
         # Not protected as in flight: the index and content sweeps that follow
         # remove every projection and content object this version left behind.
@@ -1593,6 +1971,10 @@ class MemoryStoreCoordinator:
 __all__ = [
     "BoundHit",
     "ContentCipher",
+    "EligibilityIndexPort",
+    "EligibilityMetadataStore",
+    "EligibilityPredicate",
+    "INDEX_ATTRIBUTES_VERSION",
     "IndexEntry",
     "IndexHit",
     "LexicalProfile",
@@ -1615,6 +1997,8 @@ __all__ = [
     "VectorProfile",
     "VersionState",
     "content_object_ref",
+    "eligibility_scope",
+    "index_attributes",
     "lexical_document",
     "lexical_representation_digest",
     "predecessor_not_committed",

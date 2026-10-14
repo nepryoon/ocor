@@ -1,0 +1,761 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0055-r1/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0055.py",
+      "duration_seconds": 56.2,
+      "exit_code": 0,
+      "label": "task-run-1",
+      "raw_sha256": "2ab2d0b73aa9d28ed8886631cecb98012141cbaf33dffaf00770b7a13a702590",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0055-r1/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0055.py",
+      "duration_seconds": 53.4,
+      "exit_code": 0,
+      "label": "task-run-2",
+      "raw_sha256": "3295d06b9973654cf2d2d6f0ada45b7dff9dcbd43aabdfea18db1e4a0bc01204",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0055-r1/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0055.py",
+      "duration_seconds": 56.1,
+      "exit_code": 0,
+      "label": "task-run-3",
+      "raw_sha256": "5e9bcd4261ec0076eeab458a2cc69db06c133c4a97c09cf5c1c82a328aff73a4",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/ocor-dev-0055-r1/task-junit-uv.xml tests/tasks/test_ocor_dev_0055.py",
+      "duration_seconds": 54.9,
+      "exit_code": 0,
+      "label": "task-validation-command",
+      "raw_sha256": "4b20ba612f4684365c849b957baa6f09dbf49bf92ad8c836dece5b38f2539f49",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "exit_code": 0,
+      "label": "task-teardown-delta",
+      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python /home/luca/.ocor-codex/ocor-dev-0055-r1/mutation_probe.py /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055 /home/luca/.ocor-codex/ocor-dev-0055-r1/mutation-probe.json",
+      "exit_code": 0,
+      "label": "mutation-probe",
+      "raw_sha256": "846da16caf9783e86b7937776e752875e447810754902e8b387975ba9ff90839",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
+      "duration_seconds": 733.8,
+      "exit_code": 0,
+      "label": "full-suite-recorded",
+      "raw_sha256": "ad3093aec6d4394d10d278af5df04056c285706d237746d7b47a68cd9e6f5e74",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1784,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the OCOR-DEV-0055 harness; no container/network residue; nothing pre-existing removed",
+      "exit_code": 0,
+      "label": "full-resource-attribution",
+      "raw_sha256": "5306a2f1cb488786b99b2a0ba645e584b8bfbfbdd3b18a2cc8720836b88bde37",
+      "status": "PASS"
+    },
+    {
+      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
+      "exit_code": 0,
+      "label": "full-resource-cleanup",
+      "raw_sha256": "c1eaec3014519fdeaea49734aecec96bac3de06d50faafe8d9f247150454571c",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "sync-lint",
+      "raw_sha256": "0b105d5c53993200b4e9ffd3128e65e3bdbb3f6343e69a34711e81822d6238b0",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.6,
+      "exit_code": 0,
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+      "duration_seconds": 0.2,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.3,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "drift",
+      "raw_sha256": "7f34412482a315b5e0e2fbbaaa30b1ca2a6a4cfbb35a0715ae01063615055155",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0055/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
+      "duration_seconds": 0.1,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.0,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (the last of three consecutive task runs)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "8492fdf378cc9c5c84f4ea9a8c5052b70e97cf4b5b6d9cd3521c09cb3c020bec",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "c493ec50850862fd3663b8918a52274055d6aff1c000c0875c50872525bfb4c5",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1784,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (cap, stack restart/OOM guard)",
+      "exit_code": 0,
+      "label": "full-suite-runner-result",
+      "raw_sha256": "fc8a93a1b4087b754491884ec217252b92aa889edf6cf1a7a350734da9de60dc",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every mutant of memory/lifecycle.py must make the task suite fail",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "59fbb583b88e3f9521859648d82207a460e1ee46ccac8b394555de9046e1dc8c",
+      "result": {
+        "failed": 0,
+        "killed": 52,
+        "mutants": 52
+      },
+      "status": "PASS"
+    }
+  ],
+  "commit": "2d414d7bc3e1c770897e69d4a106dc789ed92c3e",
+  "created_at": "2026-10-10T10:26:42Z",
+  "design": [
+    "MemoryLifecycleCoordinator implements the LLD v1.1 §2.8.1 MemoryLifecycleCoordinator for the closed OpenAPI MemoryLifecycleRequest (transitionMemoryLifecycle) and MemoryDeletionRequest (requestMemoryDeletion) plus two governed jobs, enforce_expiry and enforce_retention. The FSM is exactly ADD v1.3 Part II §2.10 (the test parses the normative block and compares it with TRANSITIONS).",
+    "A transition is a new immutable version of the item: the head mapping with memory_version+1, supersedes_ref = head, lifecycle_status = target, created_at = boundary clock, correction_of_ref/legal_hold_ref/prior_lifecycle_status/deletion_epoch reset and re-set only as the target requires; content, provenance and every isolation attribute are unchanged, so the version stays in the item's partition. It is appended to the memory version ledger as one record with its lifecycle event (operation, request digest, from/to, reason, hold, epoch) and its audit event, then committed by the real store coordinator with the predecessor's verified content and the embedding re-derived by the pinned model and checked against embedding_digest; the coordinator retires the predecessor's projections. Retrieval (0052/REM-0020), embedding rebuild (0053) and consolidation (0054) serve only an ACTIVE head, inside the backend query, so exclusion is effective from the commit. Parallel representations of the partition are invalidated by the same transition.",
+    "Visibility: the caller sees the item only with the same tenant, organization, domain and purpose, compartments covering the item's and a marking dominating it; otherwise the item is refused exactly like an unknown id. The live LifecyclePolicy decision must be permitted and bound to the context policy bundle. Reason codes are bounded upper-case codes, never free text; DELETION_PENDING needs a forgetting trigger of ADD §2.10. DELETED and DELETION_INCOMPLETE are saga-only. Re-opening (target ACTIVE) reads the stop epoch before building the version and re-reads it after the content and embedding verification, immediately before the ledger append (repair cycle 1, VF-001): any change fails closed with STOP_EPOCH_MISMATCH/STOP_EPOCH_CHANGED and nothing is written; this covers QUARANTINED -> ACTIVE and a released LEGAL_HOLD -> ACTIVE, the only paths that write an ACTIVE head. Exclusions do not depend on the stop state.",
+    "Retrieval of a version excluded while its content is being read (repair cycle 1, VF-002): OCOR-DEV-REM-0021 re-validates eligibility after every read_version; this task proves it end to end with its own MemoryLifecycleCoordinator committing REVOKED, EXPIRED, SUPERSEDED or a deletion saga inside the search read, in every retrieval mode: CANDIDATE_CHANGED, no hit, audited denial, no success receipt; a read without lifecycle changes returns the unchanged result.",
+    "Legal hold: LEGAL_HOLD needs a legal_hold_ref that the LegalHoldRegistry reports as an active hold of the item's tenant; the version records legal_hold_ref and prior_lifecycle_status. While the item is LEGAL_HOLD, deletion, forgetting and leaving the hold are refused with LEGAL_HOLD_ACTIVE until the registry reports the hold released; then only the recorded prior disposition or DELETION_PENDING is accepted. The retention sweep reports held items as protected and never touches them.",
+    "Deletion saga: the epoch is reserved in the tombstone journal (STARTED; a retry from DELETION_INCOMPLETE reuses its epoch), a content-free DELETION_PENDING version (STRUCTURED only, no embedding fields, deletion_epoch) is committed in the metadata store and the native projections of every earlier version are retired, then every DeletionParticipant purges and re-reads its residue: native lexical/vector entries of every version, parallel embedding descriptors and entries (0053 invalidate), private content objects in every partition of the item (an object referenced by an undeleted item is retained and counted), and any configured cache/replica/export participant. No residue: DELETED version plus COMPLETED tombstone; residue: DELETION_INCOMPLETE version plus INCOMPLETE tombstone with per-participant residue counts and a FAILED receipt. Tombstones carry item id, tenant, partition digests, version refs, epoch, phase, reason, operation, participant names, residue counts and the retained count, never content or content digests.",
+    "Sweeps: enforce_expiry transitions every visible ACTIVE head with expires_at at or before the boundary clock to EXPIRED; enforce_retention forgets every visible item whose configured retention horizon elapsed since its first admission. Selection is ordered by due instant then item id; an optional limit defers the rest; each item uses its own idempotent operation id; the job is audited.",
+    "LifecycleGuardPolicy wraps the admission policy: a new version is admitted only on a PROPOSED, ACTIVE or QUARANTINED head, so admission cannot re-open a revoked, expired, superseded, held or forgotten item.",
+    "Idempotency: each operation_id binds one request digest (operation, item, version, target, reason, hold, GCS digest); a replay returns the recorded receipt and completes an interrupted commit or saga, another request under the same id is MEMORY_IDEMPOTENCY_CONFLICT/OPERATION_REUSED. Every refusal is audited (reason, detail, operation, item id, GCS digest, binding, correlation); an unaudited denial or transition fails closed with AUDIT_UNAVAILABLE and the transition is completed by its replay. Metrics use the bounded label set operation x {COMPLETED, REPLAYED, DENIED, INCOMPLETE} x closed reason code or participant name."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-10T10:26:42.515638+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "admission_stores_retrieval": "items are admitted by the real OCOR-DEV-0050 MemoryAdmissionService (policy wrapped by this task's LifecycleGuardPolicy), stored by the real OCOR-DEV-0053 EmbeddingLifecycleCoordinator (0051 coordinator plus pinned parallel representations) and searched by the real OCOR-DEV-0052/0053 retrieval services in STRUCTURED, FULL_TEXT, VECTOR, HYBRID and parallel-v2 VECTOR mode",
+      "content_cipher": "OpenBao quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641 disposable dev server per test module (ocor-test-0055-openbao-*) with a generated root token (never logged); transit key aes256-gcm96 derived=true; removed in teardown; image asserted equal to the lock",
+      "content_store": "same PostgreSQL: content-addressed bytea objects sealed by OpenBao transit; lifecycle versions re-read their content through the 0051/0053 coordinator (committed, projections bound, decrypted, digest checked); the deletion saga deletes the objects and the test re-reads the table",
+      "ledgers": "InMemoryMemoryVersionLedger / InMemoryTombstoneStore per world, and the durable hash-chained JournalMemoryVersionLedger and JournalTombstoneStore on the local filesystem (journal and cross-run cases, tmp_path)",
+      "lexical_index": "same PostgreSQL: one table per partition and lexical representation version (0051 adapter, version 2 eligibility attributes); entries of every version are inspected directly before and after each transition and saga",
+      "metadata_store": "PostgreSQL 16 of the ocor-bootstrap stack (postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20) via OCOR_LIVE_POSTGRES_DSN; one isolated schema ocor_t0055_<random> per test world (metadata, content, lexical tables, representation descriptors), dropped after each test",
+      "policy_holds_stop_audit": "explicit test ports for LifecyclePolicy decisions, the LegalHoldRegistry (holds placed and lifted per test), the stop epoch and the audit sink; one deletion participant (replica) is an explicit fault-injection port; OPA, the legal-hold authority and the kill switch themselves are not the subject of this task",
+      "vector_index": "Qdrant qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6 provisioned per test module by OCOR-DEV-0023's sealed spikes/vector_partition/oracle.py QdrantHarness (tmpfs storage, removed in teardown) through the 0052 compact adapter, for the native v1 vector projection and the 0053 parallel v2 representation; image asserted equal to the lock"
+    },
+    "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute (prepare-steps.log); stack images observed after the full suite below",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript before the full suite (sdk-ci.log, sdk-build.log in the session log directory)",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/ocor-dev-0055"
+  },
+  "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "tutti i digest normativi OK sul worktree detached 48705277f453"
+      },
+      {
+        "command": "git diff --name-only origin/main HEAD",
+        "exit_code": 0,
+        "summary": "cinque path: lifecycle.py, test_ocor_dev_0055.py, MANIFEST.json, OCOR-DEV-0055.json, OCOR-DEV-0055.log; retrieval.py identico a origin/main; blob sigillato OCOR-DEV-0052.json invariato; voci preesistenti del manifest preservate"
+      },
+      {
+        "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "ambiente isolato nel worktree detached"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti"
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
+        "exit_code": 0,
+        "summary": "PASS: 5 path, superfici immutabili intatte"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+        "exit_code": 0,
+        "summary": "verdict PASS; il comando ha riscritto due file di planning nel worktree e sono stati ripristinati a HEAD prima della sonda di mutazione"
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, drifted_inputs 0"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0055 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 ~/.ocor-codex/ocor-dev-0055-r1/check_evidence.py <wt> 48705277f453d8574eb6fe66c1b035e2f8a506f1",
+        "exit_code": 0,
+        "summary": "PASS: 76 casi task, suite registrata 1784/0/0, 52 mutanti uccisi, branch corretto, input invariati fra commit 2d414d7 e HEAD"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 75 source files"
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute (prima del primo bootstrap, env assente)",
+        "exit_code": 1,
+        "summary": "compose down rifiutato per variabili OCOR_LOCAL_* assenti; nessun container ocor-bootstrap esisteva. CA e bootstrap.env generati solo nel worktree, checkout principale non modificata"
+      },
+      {
+        "command": "python3 scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "stack ocor-bootstrap avviato, 11 servizi, immagine Fuseki locale uguale al lock, OOMKilled false; init, fixture e SVID control-plane PASS"
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<dsn> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs tests/tasks/test_ocor_dev_0055.py tests/tasks/test_ocor_dev_rem_0021.py",
+        "exit_code": 0,
+        "summary": "118 passed, 0 failed, 0 skipped in 80.87s su PostgreSQL 16.14 postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20; nessun container, volume o rete lasciato"
+      },
+      {
+        "command": "pytest /tmp/.../probe_test.py (LEGAL_HOLD durante read_version, stop durante embed, finestra nell'append, retention oltre il limite, fattori di score)",
+        "exit_code": 1,
+        "summary": "7 passed, 1 failed. Fallisce solo l'asserzione della sonda sui fattori: FULL_TEXT restituisce un hit e lexical 1.0 e' la normalizzazione sul massimo del pool (retrieval.py), non un sentinella. LEGAL_HOLD in ogni modo, stop durante embed_query, retention di 25 item con limit 4 e la finestra dichiarata dentro append sono verdi"
+      },
+      {
+        "command": "pytest -q -rs tests/tasks/test_ocor_dev_0048.py",
+        "exit_code": 0,
+        "summary": "196 passed, 0 failed, 0 skipped in 136.19s sullo stack reale dopo initialize e SVID control-plane"
+      },
+      {
+        "command": "prima suite completa, watchdog su paused/unhealthy",
+        "exit_code": 99,
+        "summary": "interrotta a circa 28% perche' un test ha messo in pause ocor-bootstrap-openbao-1 (fault injection di OCOR-DEV-0024), OOMKilled false; non e' la run qualificante"
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute && python3 scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "reset e bootstrap ripetuti prima della suite completa; 11 servizi running, health BAD vuoto, SVID control-plane fetched, node v20.20.2"
+      },
+      {
+        "command": "PATH=<node-v20.20.2> OCOR_LIVE_POSTGRES_DSN=<dsn> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs tests",
+        "exit_code": 0,
+        "summary": "1784 passed, 0 failed, 0 skipped in 733.19s; nessuna esclusione; nessun OOMKilled"
+      },
+      {
+        "command": "mutation probe lifecycle.py, 52 mutanti, pytest -x sulla suite 0055, poi ripristino del sorgente",
+        "exit_code": 0,
+        "summary": "52/52 uccisi, zero sopravvissuti; stop-recheck-removed, stop-recheck-before-content-io, reopen-without-stop e stop-change-ignored uccisi; hash del sorgente ripristinato"
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva (quota Codex esaurita), cicli 0, 1 e integrazione",
+    "integration_condition": "Merge subordinato ai check obbligatori verdi sul commit di sigillo esatto; il verdetto qualifica il candidato indicato, con soli metadati di sigillo e manifest successivi.",
+    "not_executed": [],
+    "original_implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva",
+    "prior_verdicts": [
+      {
+        "findings": 4,
+        "request_id": "OCOR-DEV-0055-38b7734bd97f-0",
+        "verdict": "NO_GO"
+      }
+    ],
+    "repair_cycle": 1,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-10T11:25:16Z",
+    "verdict_file_sha256": "e2f0285547177bc0fba52429f69955edb7f95e65cd68f8f9915909a15dd10474",
+    "verdict_head_sha": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
+    "verdict_request_id": "OCOR-DEV-0055-48705277f453-1",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore dei cicli 0 e 1: Claude Code (Anthropic), claude-opus-5-5. Verifier di entrambi i cicli: Grok 4.7 via Cursor CLI. Fornitore e modello diversi dall'implementatore.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/lifecycle.py": "7edc06445a093859ffb8c0d3d0d7824fc3935fc191e96f58e9053d61a2afc11b",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0055.py": "1d886798949b8395ff58d0d448056b8cb1ec67192c7413dd1155e7e5774026e0"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 Part II §2.5 lists the changes that create a new version; lifecycle transitions are represented the same way (new immutable version with the target status), as already anticipated by the OCOR-DEV-0052/0053 test helpers, because the closed GovernedMemoryItem carries lifecycle_status, legal_hold_ref, prior_lifecycle_status and deletion_epoch and the admission service admits only PROPOSED/ACTIVE/QUARANTINED. No contract changes.",
+    "The FSM edge LEGAL_HOLD -> DELETION_PENDING coexists with 'Legal hold blocks deletion' (§2.10): it is accepted only after the hold authority reports the hold released (fail-closed reading). LEGAL_HOLD -> prior disposition likewise needs the release. QUARANTINED -> LEGAL_HOLD is not an edge of §2.10 and is refused although the schema's prior_lifecycle_status enum lists QUARANTINED (ADD precedence).",
+    "Deletion scope: ALL_VERSIONS is implemented; LATEST_VERSION, PROJECT_SCOPE and PRINCIPAL_SCOPE are refused with UNSUPPORTED_CAPABILITY (fail closed, no partial deletion). Restore reconciliation from tombstones, caches, replicas, exports and backups beyond the configured participants are OCOR-DEV-0056/0059.",
+    "Exclusions (revocation, expiry, hold, quarantine, forgetting) never wait on the stop state: a kill switch cannot keep excluded memory retrievable. Re-opening to ACTIVE requires a readable, unchanged stop epoch.",
+    "Retention runs from the first admission of the item (created_at of version 1) under the retention_policy_ref of the head and the configured horizon (ADD §2.13); an unconfigured horizon is reported as unresolved and never deleted. Expiry uses expires_at only; valid_until bounds validity, not existence."
+  ],
+  "observations": [],
+  "raw_output_format": "JSONL: una riga per comando/artefatto/osservazione con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash, gli originali restano solo fuori da Git; DSN mostrato come <local generated credential>",
+  "raw_output_redactions": {
+    "OCOR_LOCAL_POSTGRES_PASSWORD": 16
+  },
+  "raw_output_sha256": "45c6f9fdeec9b8082413fbe228ca77bc202c4f0933052915466f0d2185a7ea2d",
+  "repair_cycle": 1,
+  "repairs_verdict": {
+    "findings": {
+      "VF-001": "repaired in lifecycle.py (stop epoch re-read right before the append); residual non-atomic window declared towards FGM-17, not closed",
+      "VF-002": "repaired by OCOR-DEV-REM-0021 (PR #200) merged into the task branch; live case with this task's MemoryLifecycleCoordinator added in test_ocor_dev_0055.py",
+      "VF-003": "environment.branch corrected to the real task branch; record and manifest hashes recomputed",
+      "VF-004": "membership inference via retained digests recorded as an open, unassigned residual risk; FGM-16 covers only the cross-compartment case"
+    },
+    "po_decision": "OCOR-DEV-0055-VF002-REMEDIATION (2026-10-10)",
+    "request_id": "OCOR-DEV-0055-38b7734bd97f-0",
+    "verdict": "NO_GO",
+    "verdict_sha256": "ee4f5e68ed6ce4efa8effe77ff66cf6106c731c1ce48d8307b9602eca483bf1a"
+  },
+  "reproducible_check": {
+    "command": "python3 ~/.ocor-codex/ocor-dev-0055-r1/check_evidence.py <repo> <head>",
+    "scope": "inputs (file e tree) a commit e HEAD, diff dopo il commit limitato alle evidenze, hash del raw log e di ogni voce JSONL, coppie comando/raw, hash del manifest e preservazione delle voci G5 preesistenti, conteggi per caso dalla JUnit nel raw log, tre run del task, suite completa, mutanti tutti uccisi, validate_runtime_evidence --non-skipped"
+  },
+  "requirement_coverage_note": "Component-level evidence only for the lifecycle behaviours named in each case: FR-118 (memory that is revoked or expired is not retrievable; lifecycle as immutable versions; fail-closed, idempotent, durable transitions), FR-038 (memory governed and isolated from retrieval: excluded items never influence results; admission guard), FR-135 (expiry, legal-hold override, complete purge with minimised retained audit/tombstone, retention). Full verification of these requirements and of FGM-10/11/12/19 is allocated to G6 (OCOR-DEV-0061/0062, reports/evidence/G6/<REQ>.json); BR-003 end-to-end mission-thread evidence is NOT_EXECUTED here (OCOR-DEV-0065/0069). E1=0/E2=0 and zero global Verified remain unchanged.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0055-REVOCATION-AND-EXPIRY-DETERMINISTICALLY-EXCLUDE",
+      "command": "FGM-10 on real PostgreSQL 16 (metadata, encrypted content, full-text index, representation descriptors), Qdrant 1.15.1 (native and parallel vector indexes) and OpenBao 2.6.2 transit: a revocation is version n+1 (supersedes_ref = head, same content, lifecycle_status REVOKED) committed through the real 0053 coordinator; version n stays byte-identical; the item leaves STRUCTURED, FULL_TEXT, VECTOR, HYBRID and the parallel v2 representation (descriptor invalidated) while every other hit is unchanged; expiry sweeps select by expires_at then item id, are bounded by a limit (rest deferred), are idempotent and identical on a twin world; REVOKED/EXPIRED never re-open (FSM of ADD v1.3 Part II §2.10 parsed from the normative text and compared exactly); re-opening a QUARANTINED item needs a readable stop epoch that is unchanged when re-read after the content read, right before the append (an epoch changed inside read_version refuses with nothing written), while an exclusion never waits on the stop state; REVOKED, EXPIRED or SUPERSEDED committed by this coordinator while retrieval reads the item's content leaves no hit in any mode (CANDIDATE_CHANGED, audited denial, no receipt) and a read without changes returns the unchanged result",
+      "real_backend_tests": [
+        "test_a_lifecycle_exclusion_committed_during_the_search_read_leaves_no_hit",
+        "test_a_search_without_lifecycle_changes_during_the_read_is_unchanged",
+        "test_a_stop_epoch_changed_during_the_content_read_refuses_reopening_before_any_write",
+        "test_an_exclusion_never_waits_on_a_stop_epoch_changed_during_the_content_read",
+        "test_expiry_is_deterministic_bounded_and_never_reopens",
+        "test_qualifying_backends_are_real_and_pinned",
+        "test_reopening_requires_a_readable_unchanged_stop_epoch_but_exclusion_never_waits",
+        "test_revocation_is_a_new_immutable_version_that_leaves_every_output"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 24,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_lifecycle_exclusion_committed_during_the_search_read_leaves_no_hit",
+        "test_a_search_without_lifecycle_changes_during_the_read_is_unchanged",
+        "test_a_stop_epoch_changed_during_the_content_read_refuses_reopening_before_any_write",
+        "test_a_valid_transition_request_of_the_closed_envelope_is_accepted",
+        "test_an_exclusion_never_waits_on_a_stop_epoch_changed_during_the_content_read",
+        "test_expiry_is_deterministic_bounded_and_never_reopens",
+        "test_qualifying_backends_are_real_and_pinned",
+        "test_reopening_requires_a_readable_unchanged_stop_epoch_but_exclusion_never_waits",
+        "test_revocation_is_a_new_immutable_version_that_leaves_every_output",
+        "test_the_fsm_is_exactly_the_one_of_add_part_ii_section_2_10"
+      ],
+      "unit_fixture_tests": [
+        "test_a_valid_transition_request_of_the_closed_envelope_is_accepted",
+        "test_the_fsm_is_exactly_the_one_of_add_part_ii_section_2_10"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0055-EXCLUDED-ITEMS-NEVER-INFLUENCE-RESULTS-OR-CACHES",
+      "command": "FGM-10/FGM-16 on the real backends: a world whose strongest matches are held, revoked, superseded or deleted returns exactly the same refs, final scores, score factors and explanation count in every retrieval mode as a twin world that never contained them, and the raw backend query (search_eligible, predicate in the WHERE clause) carries no excluded entry; retrieval keeps no cache and the parallel representation is invalidated; a new version cannot be admitted on an excluded head (LifecycleGuardPolicy); unknown and invisible items (other compartment, purpose or a dominating marking) are refused identically",
+      "real_backend_tests": [
+        "test_excluded_items_do_not_influence_rank_scores_counts_or_explanations"
+      ],
+      "requirement_id": "FR-038",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_excluded_items_do_not_influence_rank_scores_counts_or_explanations",
+        "test_missing_binding_unknown_and_invisible_items_are_refused_alike",
+        "test_the_admission_guard_refuses_a_new_version_on_an_excluded_head"
+      ],
+      "unit_fixture_tests": [
+        "test_missing_binding_unknown_and_invisible_items_are_refused_alike",
+        "test_the_admission_guard_refuses_a_new_version_on_an_excluded_head"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0055-LEGAL-HOLD-BLOCKS-DELETION-AND-RESTORES-PRIOR-DISPOSITION",
+      "command": "FGM-11 on the real backends: LEGAL_HOLD records legal_hold_ref and prior_lifecycle_status and needs an active hold of the item's tenant (unknown, foreign or released holds refused); while held, requestMemoryDeletion, a forgetting transition and the retention sweep are refused or report the item as held, and content, native entries and ledger stay unchanged; leaving the hold needs the registry to report it released (outage fails closed) and restores exactly the prior disposition (ACTIVE becomes searchable again, REVOKED stays excluded; a release to ACTIVE with the stop epoch changed during the content read is refused with nothing written), or enters deletion",
+      "real_backend_tests": [
+        "test_a_hold_must_be_an_active_hold_of_the_items_tenant",
+        "test_a_hold_on_an_excluded_item_restores_that_exclusion",
+        "test_a_stop_epoch_changed_during_the_content_read_refuses_a_hold_release_to_active",
+        "test_legal_hold_blocks_deletion_and_release_restores_the_prior_disposition"
+      ],
+      "requirement_id": "FR-135",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 6,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_hold_must_be_an_active_hold_of_the_items_tenant",
+        "test_a_hold_on_an_excluded_item_restores_that_exclusion",
+        "test_a_stop_epoch_changed_during_the_content_read_refuses_a_hold_release_to_active",
+        "test_legal_hold_blocks_deletion_and_release_restores_the_prior_disposition"
+      ],
+      "unit_fixture_tests": []
+    },
+    {
+      "case_id": "OCOR-DEV-0055-DELETION-SAGA-PURGES-AND-WRITES-NON-CONTENT-TOMBSTONE",
+      "command": "FGM-12 on the real backends: the saga reserves a deletion epoch, commits a content-free DELETION_PENDING version (retrieval closed at once), purges native lexical/vector entries of every version, parallel descriptors and private content objects in every partition of the item (also after reclassification), retains an object still referenced by an undeleted item, re-reads the residue and only then commits DELETED with a durable, hash-chained, content-free tombstone; old exact versions fail closed; a failing replica participant leaves DELETION_INCOMPLETE (FAILED receipt, residue counts, absent from retrieval) until a governed retry under the same epoch completes it; unsupported deletion scopes and non-trigger reasons are refused; a saga started while retrieval reads the item's content leaves no hit",
+      "real_backend_tests": [
+        "test_a_deletion_saga_started_during_the_search_read_leaves_no_hit",
+        "test_a_partial_deletion_stays_incomplete_and_closed_until_a_retry_completes_it",
+        "test_forgetting_a_reclassified_item_purges_every_partition_of_its_versions",
+        "test_the_deletion_saga_purges_every_store_and_writes_a_non_content_tombstone"
+      ],
+      "requirement_id": "FR-135",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 15,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_deletion_saga_started_during_the_search_read_leaves_no_hit",
+        "test_a_partial_deletion_stays_incomplete_and_closed_until_a_retry_completes_it",
+        "test_deletion_epochs_are_reserved_in_order_and_completion_is_terminal",
+        "test_forgetting_a_reclassified_item_purges_every_partition_of_its_versions",
+        "test_invalid_deletion_requests_change_nothing_and_are_audited",
+        "test_participants_must_be_named_uniquely",
+        "test_the_deletion_saga_purges_every_store_and_writes_a_non_content_tombstone",
+        "test_the_tombstone_journal_survives_reopen_and_detects_tampering",
+        "test_tombstone_entries_are_closed_canonical_records"
+      ],
+      "unit_fixture_tests": [
+        "test_deletion_epochs_are_reserved_in_order_and_completion_is_terminal",
+        "test_invalid_deletion_requests_change_nothing_and_are_audited",
+        "test_participants_must_be_named_uniquely",
+        "test_the_tombstone_journal_survives_reopen_and_detects_tampering",
+        "test_tombstone_entries_are_closed_canonical_records"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0055-RETENTION-SELECTION-DETERMINISTIC-HELD-PROTECTED",
+      "command": "FGM-19 on the real backends: the retention sweep forgets items whose configured horizon elapsed since their first admission, ordered by due instant then item id and bounded by a limit, assigns deletion epochs in that order, reports held items as protected and PROPOSED or unconfigured-horizon items as unresolved without deleting them; forgetting triggers and the OpenAPI lifecycle/deletion request shapes are the declared vocabulary",
+      "real_backend_tests": [
+        "test_retention_forgets_deterministically_and_protects_held_items",
+        "test_retention_with_an_unconfigured_horizon_is_reported_never_deleted"
+      ],
+      "requirement_id": "FR-135",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_forgetting_triggers_and_reason_codes_are_the_declared_vocabulary",
+        "test_retention_forgets_deterministically_and_protects_held_items",
+        "test_retention_with_an_unconfigured_horizon_is_reported_never_deleted"
+      ],
+      "unit_fixture_tests": [
+        "test_forgetting_triggers_and_reason_codes_are_the_declared_vocabulary"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0055-FAIL-CLOSED-AUDITED-IDEMPOTENT-AND-DURABLE",
+      "command": "failure injection on the real backends: a store failure after the ledger append and a crash inside the saga after DELETION_PENDING leave the item excluded or unchanged and the replay of the same operation completes it, while another operation is refused (HEAD_NOT_COMMITTED, DELETION_IN_PROGRESS); a lifecycle version whose embedding the pinned model does not reproduce is refused before any write (EMBEDDING_NOT_REPRODUCIBLE); lifecycle state, tombstones and operation ids persist across fresh adapters over the journal ledger; closed envelopes, bounded reason codes, deadline, GCS binding, stale versions, policy denial/outage/stale bundle are refused before any write; every refusal is an audited denial and an unaudited denial or transition fails closed; metrics are bounded; the module has no backend client and no authority path",
+      "real_backend_tests": [
+        "test_a_non_reproducible_embedding_refuses_the_transition_before_any_write",
+        "test_an_interrupted_transition_or_saga_is_completed_by_its_replay",
+        "test_every_lifecycle_refusal_on_the_real_stack_is_an_audited_denial",
+        "test_lifecycle_state_is_durable_across_fresh_adapters"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 25,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_non_reproducible_embedding_refuses_the_transition_before_any_write",
+        "test_an_interrupted_transition_or_saga_is_completed_by_its_replay",
+        "test_an_unaudited_denial_and_an_unaudited_transition_fail_closed",
+        "test_every_lifecycle_refusal_on_the_real_stack_is_an_audited_denial",
+        "test_invalid_transition_requests_change_nothing_and_are_audited",
+        "test_lifecycle_state_is_durable_across_fresh_adapters",
+        "test_metrics_use_a_bounded_label_set",
+        "test_policy_denial_stale_bundle_and_outage_fail_closed_before_any_write",
+        "test_the_module_has_no_canonical_authority_or_backend_client"
+      ],
+      "unit_fixture_tests": [
+        "test_an_unaudited_denial_and_an_unaudited_transition_fail_closed",
+        "test_invalid_transition_requests_change_nothing_and_are_audited",
+        "test_metrics_use_a_bounded_label_set",
+        "test_policy_denial_stale_bundle_and_outage_fail_closed_before_any_write",
+        "test_the_module_has_no_canonical_authority_or_backend_client"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "Item metadata of every version (including content digests) stays in the hash-chained version ledger and in metadata after deletion; content, projections and representations are purged and the tombstone is content-free. Membership inference on low-entropy content through retained digests is an OPEN, UNASSIGNED residual risk (PO decision OCOR-DEV-0055-VF002-REMEDIATION, VF-004): it is not mitigated by OCOR-DEV-0056 or OCOR-DEV-0059, whose criteria do not cover metadata minimisation or membership inference; FGM-16 covers only the cross-compartment case. To be re-examined at the closure of G5.",
+    "Stop-epoch race (VF-001, tracked towards FGM-17, NOT closed): the stop epoch comes from an external control plane, so the re-read immediately before the ledger append and the append are not atomic; a stop committed in the window between that re-read and the append can still let one re-opening to ACTIVE be written. The window is bounded to the in-process append call; exclusions never depend on the stop state.",
+    "A failure between the ledger append and the store commit leaves the previous head served until the replay of the same operation; the caller receives the failure. Exclusion is effective from the commit.",
+    "LifecycleGuardPolicy protects admission only where it is composed into the admission policy chain (as in the tests); production wiring is outside this task.",
+    "The PostgreSQL/Qdrant/OpenBao adapters are the 0051/0053 test adapters; no production adapter under memory/adapters/ exists yet.",
+    "Test-level anonymous Docker volume leaks in pre-existing suites remain allocated to OCOR-DEV-REM-0018 (see the full-suite resource attribution); the 0055 task suite itself leaves no container, volume or network (task-teardown-delta)."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), cicli 0 e 1 (riparazione)",
+    "independence": "external loop only; implementer did not run or simulate the verification",
+    "verifier": "Grok 4.7 via Cursor CLI (verifier: cursor), processo e contesto separati, fornitore diverso; verdetto del ciclo 0 OCOR-DEV-0055-38b7734bd97f-0 NO_GO (VF-001..VF-004)"
+  },
+  "rollback_procedure_verified": "Mechanical review: the task adds two new files only (memory/lifecycle.py, tests/tasks/test_ocor_dev_0055.py) plus evidence; rollback is a revert commit of the task commits. No persisted data migration: test schemas, Qdrant collections, OpenBao mounts and journals are disposable and removed in teardown; no existing module imports lifecycle.py.",
+  "schema_version": "1.0",
+  "sealed_at": "2026-10-10T11:26:44.393410+00:00",
+  "status": "SEALED",
+  "supersedes_candidate": "38b7734bd97f6932f5c5f10d3d71047436b54daf (unsealed cycle-0 candidate, same path, replaced on the task branch)",
+  "task_id": "OCOR-DEV-0055",
+  "tdd": {
+    "GREEN": {
+      "command": "task-run-1..3 and task-validation-command (JUnit counts in commands)",
+      "raw_label": "task-run-3, task-junit"
+    },
+    "RED": {
+      "command": "pytest -q -p no:cacheprovider tests/tasks/test_ocor_dev_0055.py with ocor-runtime/src/ocor_runtime/memory/lifecycle.py moved out of the worktree (repair cycle 0)",
+      "exit_code": 2,
+      "observed": "collection error: ModuleNotFoundError ocor_runtime.memory.lifecycle (lifecycle coordinator, legal hold, sweeps, deletion saga, tombstone journal and admission guard did not exist)",
+      "raw_label": "tdd-red",
+      "raw_sha256": "d9cd1265db157dd516424e42be1de55bea4425201cf378a9409cab7a9a77ce29"
+    },
+    "RED_repair_cycle_1": {
+      "VF-001": {
+        "command": "pytest -q -p no:cacheprovider tests/tasks/test_ocor_dev_0055.py -k during_the_content_read on test commits ac17252/f9b1190 with the unrepaired lifecycle.py (real backends)",
+        "exit_code": 1,
+        "observed": "test_a_stop_epoch_changed_during_the_content_read_refuses_reopening_before_any_write and test_a_stop_epoch_changed_during_the_content_read_refuses_a_hold_release_to_active: DID NOT RAISE MemoryAdmissionError (the epoch changed inside read_version was not re-read before the append); the exclusion case passed as expected",
+        "raw_label": "tdd-red-cycle-1-vf001",
+        "raw_sha256": "c420b300cf812ecba0325107798e4dfbb1645ed9e9871da54d0f2761931fc5db"
+      },
+      "VF-002": {
+        "command": "pytest -q -p no:cacheprovider tests/tasks/test_ocor_dev_0055.py -k 'during_the_search_read or without_lifecycle_changes' with memory/retrieval.py temporarily restored to the cycle-0 candidate 38b7734 (before OCOR-DEV-REM-0021), then restored to origin/main",
+        "exit_code": 1,
+        "observed": "13 DID NOT RAISE MemoryRetrievalError (12 exclusions REVOKED/EXPIRED/SUPERSEDED x 4 modes and the deletion saga committed by this task's MemoryLifecycleCoordinator during the search read returned the excluded version as a hit); the 4 positive cases passed. On the merged REM-0021 retrieval the same cases pass.",
+        "raw_label": "tdd-red-cycle-1-vf002",
+        "raw_sha256": "0517aadf23822158995cc7c3946f4e667f16046ff0b7c66e4c5426c66e28574c"
+      },
+      "repaired_by": "VF-001: commits 148325c (re-read after the content read, right before the append) and 2d414d7 (the now redundant re-read before the content I/O removed; mutant stop-recheck-before-content-io reproduces the cycle-0 behaviour and is killed). VF-002: OCOR-DEV-REM-0021 (PR #200, merged as 98debb3) brought into the task branch by merge cf85671 of origin/main 1584b5e; no change to retrieval.py on this branch."
+    },
+    "REFACTOR": "",
+    "mutation_probe": "52 mutants of memory/lifecycle.py (completed-tombstone-not-terminal, completion-not-audited, concurrent-saga-allowed, content-not-deleted, deadline-ignored, deletion-scope-unchecked, deletion-trigger-unchecked, deletion-version-keeps-projections, denial-not-audited, due-not-checked, embedding-not-verified, epoch-not-reserved-in-order, expiry-of-non-active, forgetting-trigger-unchecked, fsm-unchecked, guard-disabled, held-item-forgettable, held-not-protected-in-sweep, hold-exit-unchecked, hold-not-validated, hold-ref-accepted-anywhere, hold-release-not-required, incomplete-reported-deleted, journal-chain-unchecked, journal-digest-unchecked, journal-torn-write-accepted, policy-bundle-ignored, policy-permit-ignored, predecessors-not-retired, prior-disposition-ignored, reason-code-free-text, reopen-without-stop, replay-ignores-request, representations-not-invalidated, residue-ignored, retention-from-latest-version, retry-takes-new-epoch, saga-status-reachable-directly, selection-not-ordered, shared-content-ignored-other-items, shared-content-retained-even-if-deleted, stale-version-accepted, stop-change-ignored, stop-recheck-before-content-io, stop-recheck-removed, sweep-limit-ignored, sweep-not-audited, uncommitted-head-accepted, visibility-ignores-compartments, visibility-ignores-marking, visibility-ignores-purpose, visibility-ignores-tenant), each run against the task suite on the real backends: 52 killed (raw label mutation-probe-result)",
+    "ordering_note": "The RED run was captured on the final test file with lifecycle.py removed; the implementation draft preceded the recorded RED run in this session, so no claim of strict test-first authorship is made. The mutation probe is the behaviour-level red evidence for each guard."
+  }
+}

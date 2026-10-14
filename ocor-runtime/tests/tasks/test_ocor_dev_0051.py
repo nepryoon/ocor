@@ -69,6 +69,7 @@ from ocor_runtime.memory.model import (
     memory_version_ref,
 )
 from ocor_runtime.memory.stores import (
+    EligibilityPredicate,
     IndexEntry,
     IndexHit,
     LexicalProfile,
@@ -85,6 +86,7 @@ from ocor_runtime.memory.stores import (
     VectorProfile,
     VersionState,
     content_object_ref,
+    index_attributes,
     lexical_document,
     lexical_representation_digest,
     predecessor_not_committed,
@@ -372,6 +374,19 @@ class MemMetadata:
     def partitions(self) -> tuple[MemoryPartition, ...]:
         return tuple({s.staged.partition.digest: s.staged.partition for s in self.rows.values()}.values())
 
+    def eligible_versions(self, partition_digest: str, where: EligibilityPredicate) -> tuple[StoredVersion, ...]:
+        """Port v2: committed head versions matching ``where`` (reference semantics)."""
+
+        found = []
+        for (item_id, version), stored in sorted(self.rows.items()):
+            if stored.staged.partition.digest != partition_digest or stored.state is not VersionState.COMMITTED:
+                continue
+            if self.heads.get(item_id) != version:
+                continue
+            if where.accepts(index_attributes(stored.staged.verify())):
+                found.append(stored)
+        return tuple(found)
+
 
 class MemContent:
     def __init__(self) -> None:
@@ -395,16 +410,42 @@ class MemContent:
 
 
 class MemIndex:
-    """Lexical (token overlap) or vector (dot product) fixture index."""
+    """Lexical (token overlap) or vector (dot product) fixture index (port v2)."""
 
     def __init__(self) -> None:
         self.entries_by_layout: dict[tuple[str, str], dict[str, tuple[Mapping[str, object], Any]]] = {}
+        self.attributes_by_layout: dict[tuple[str, str], dict[str, dict[str, object]]] = {}
         self.writes = 0
 
-    def upsert(self, partition: MemoryPartition, profile: Any, store_ref: str, payload: Mapping[str, object], data: Any) -> None:
+    def upsert(
+        self, partition: MemoryPartition, profile: Any, store_ref: str, payload: Mapping[str, object], data: Any,
+        *, attributes: Mapping[str, object] | None = None,
+    ) -> None:
         self.writes += 1
         layout = (partition.digest, profile.representation_version)
         self.entries_by_layout.setdefault(layout, {})[store_ref] = (dict(payload), data)
+        if attributes is not None:
+            self.attributes_by_layout.setdefault(layout, {})[store_ref] = dict(attributes)
+
+    def search_eligible(
+        self, partition: MemoryPartition, representation_version: str, query: Any, *,
+        where: EligibilityPredicate, limit: int, offset: int,
+    ) -> Sequence[IndexHit]:
+        attributes = self.attributes_by_layout.get((partition.digest, representation_version), {})
+        hits = self.search(partition, representation_version, query, limit=10**9, offset=0)
+        return [hit for hit in hits if where.accepts(attributes.get(hit.store_ref, {}))][offset : offset + limit]
+
+    def score_entries(
+        self, partition: MemoryPartition, representation_version: str, query: Any, store_refs: Sequence[str]
+    ) -> Mapping[str, float]:
+        entries = self.entries_by_layout.get((partition.digest, representation_version), {})
+        return {ref: self._score(entries[ref][1], query) for ref in store_refs if ref in entries}
+
+    def retire(self, partition: MemoryPartition, representation_version: str, memory_item_id: str, below_version: int) -> None:
+        for attributes in self.attributes_by_layout.get((partition.digest, representation_version), {}).values():
+            version = attributes["memory_version"]
+            if attributes["memory_item_id"] == memory_item_id and isinstance(version, int) and version < below_version:
+                attributes["superseded"] = True
 
     def _score(self, data: Any, query: Any) -> float:
         if isinstance(query, str):
@@ -859,6 +900,59 @@ class OpenBaoTransitCipher:
         return base64.b64decode(data["data"]["plaintext"])
 
 
+def _attribute_sql(column: str, where: EligibilityPredicate) -> tuple[str, list[Any]]:
+    """The eligibility predicate as SQL over an ``index_attributes`` jsonb column."""
+
+    a = column
+    clauses = [
+        f"({a}->>'superseded') = 'false'", f"({a}->>'deleted') = 'false'", f"{a}->>'lifecycle_status' = 'ACTIVE'",
+        f"{a}->>'memory_kind' = ANY(%s)", f"{a}->>'memory_scope' = ANY(%s)",
+        f"({a}->>'valid_from_us')::bigint <= %s", f"({a}->>'valid_until_us')::bigint > %s",
+        f"({a}->>'expires_at_us')::bigint > %s",
+    ]
+    params: list[Any] = [sorted(where.memory_kinds), sorted(where.memory_scopes), where.valid_at_us, where.valid_at_us, where.now_us]
+    if where.source_kinds is not None:
+        clauses.append(f"{a}->>'source_kind' = ANY(%s)")
+        params.append(sorted(where.source_kinds))
+    if where.content_schema_refs is not None:
+        clauses.append(f"{a}->>'content_schema_ref' = ANY(%s)")
+        params.append(sorted(where.content_schema_refs))
+    if where.min_confidence is not None:
+        clauses.append(f"({a}->>'confidence')::float8 >= %s")
+        params.append(where.min_confidence)
+    if where.exclude_taint_labels:
+        clauses.append(f"NOT ({a}->'taint_labels' ?| %s)")
+        params.append(sorted(where.exclude_taint_labels))
+    return " AND ".join(clauses), params
+
+
+def _item_sql(where: EligibilityPredicate) -> tuple[str, list[Any]]:
+    """The eligibility predicate as SQL over the stored item of a metadata version."""
+
+    i = "(v.body::jsonb -> 'item')"
+    clauses = [
+        f"{i}->>'deletion_epoch' IS NULL", f"{i}->>'lifecycle_status' = 'ACTIVE'",
+        f"{i}->>'memory_kind' = ANY(%s)", f"{i}->>'memory_scope' = ANY(%s)",
+        f"({i}->>'valid_from')::timestamptz <= %s",
+        f"({i}->>'valid_until' IS NULL OR ({i}->>'valid_until')::timestamptz > %s)",
+        f"({i}->>'expires_at' IS NULL OR ({i}->>'expires_at')::timestamptz > %s)",
+    ]
+    params: list[Any] = [sorted(where.memory_kinds), sorted(where.memory_scopes), where.valid_at, where.valid_at, where.now]
+    if where.source_kinds is not None:
+        clauses.append(f"{i}->>'source_kind' = ANY(%s)")
+        params.append(sorted(where.source_kinds))
+    if where.content_schema_refs is not None:
+        clauses.append(f"{i}->>'content_schema_ref' = ANY(%s)")
+        params.append(sorted(where.content_schema_refs))
+    if where.min_confidence is not None:
+        clauses.append(f"({i}->>'confidence')::float8 >= %s")
+        params.append(where.min_confidence)
+    if where.exclude_taint_labels:
+        clauses.append(f"NOT ({i}->'taint_labels' ?| %s)")
+        params.append(sorted(where.exclude_taint_labels))
+    return " AND ".join(clauses), params
+
+
 def _layout_name(prefix: str, partition_digest: str, representation_version: str) -> str:
     return prefix + hashlib.sha256(f"{partition_digest}|{representation_version}".encode()).hexdigest()[:40]
 
@@ -1019,6 +1113,21 @@ class PostgresStores:
             rows = conn.execute(f'SELECT body FROM "{self.schema}".partitions ORDER BY partition_digest').fetchall()
         return tuple(MemoryPartition.from_mapping(json.loads(row[0])) for row in rows)
 
+    def eligible_versions(self, partition_digest: str, where: EligibilityPredicate) -> tuple[StoredVersion, ...]:
+        """Port v2: committed head versions whose stored item matches ``where``, in the WHERE clause."""
+
+        predicate, params = _item_sql(where)
+        s = self.schema
+        with self.connect() as conn:
+            rows = conn.execute(
+                f'SELECT v.body, v.staged_at, v.state, v.committed_at FROM "{s}".versions v '
+                f'JOIN "{s}".heads h ON h.memory_item_id = v.memory_item_id AND h.head_version = v.memory_version '
+                f"WHERE v.partition_digest = %s AND v.state = 'COMMITTED' AND {predicate} "
+                "ORDER BY v.memory_item_id, v.memory_version",
+                (partition_digest, *params),
+            ).fetchall()
+        return tuple(self._row(row) for row in rows)
+
 
 class PostgresContentStore:
     def __init__(self, stores: PostgresStores) -> None:
@@ -1052,7 +1161,12 @@ class PostgresContentStore:
 
 
 class PostgresLexicalIndex:
-    """One physical table per partition and lexical representation version."""
+    """One physical table per partition and lexical representation version (port v2).
+
+    The ``attributes`` column holds ``index_attributes`` beside the pointer
+    payload; ``search_eligible`` evaluates the eligibility predicate in the
+    same statement as the full-text match and the ranking.
+    """
 
     def __init__(self, stores: PostgresStores) -> None:
         self._s = stores
@@ -1066,14 +1180,17 @@ class PostgresLexicalIndex:
         ).fetchone()
         return None if row is None else str(row[0])
 
-    def upsert(self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str) -> None:
+    def upsert(
+        self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str,
+        *, attributes: Mapping[str, object] | None = None,
+    ) -> None:
         s, table = self._s.schema, self.table(partition, profile.representation_version)
         with self._s.connect() as conn, conn.transaction():
             conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"{s}.{table}",))
             if self._layout(conn, table) is None:
                 conn.execute(
                     f'CREATE TABLE "{s}"."{table}" (store_ref text PRIMARY KEY, payload text NOT NULL, '
-                    "document text NOT NULL, tsv tsvector NOT NULL)"
+                    "document text NOT NULL, tsv tsvector NOT NULL, attributes jsonb NOT NULL DEFAULT '{}'::jsonb)"
                 )
                 conn.execute(f'CREATE INDEX "{table}_tsv" ON "{s}"."{table}" USING GIN (tsv)')
                 conn.execute(
@@ -1081,10 +1198,10 @@ class PostgresLexicalIndex:
                     (table, partition.digest, profile.representation_version, profile.text_search_configuration),
                 )
             conn.execute(
-                f'INSERT INTO "{s}"."{table}" VALUES (%s, %s, %s, to_tsvector(%s::regconfig, %s)) '
+                f'INSERT INTO "{s}"."{table}" VALUES (%s, %s, %s, to_tsvector(%s::regconfig, %s), %s::jsonb) '
                 "ON CONFLICT (store_ref) DO NOTHING",
                 (store_ref, canonical_bytes(dict(payload)).decode(), document,
-                 profile.text_search_configuration, document),
+                 profile.text_search_configuration, document, json.dumps(dict(attributes or {}))),
             )
 
     def search(self, partition: MemoryPartition, representation_version: str, query: str, *, limit: int, offset: int) -> Sequence[IndexHit]:
@@ -1100,6 +1217,52 @@ class PostgresLexicalIndex:
                 (config, query, limit, offset),
             ).fetchall()
         return [IndexHit(row[0], json.loads(row[1]), float(row[2])) for row in rows]
+
+    def search_eligible(
+        self, partition: MemoryPartition, representation_version: str, query: str, *,
+        where: EligibilityPredicate, limit: int, offset: int,
+    ) -> Sequence[IndexHit]:
+        s, table = self._s.schema, self.table(partition, representation_version)
+        predicate, params = _attribute_sql("attributes", where)
+        with self._s.connect() as conn:
+            config = self._layout(conn, table)
+            if config is None:
+                return []
+            rows = conn.execute(
+                f'SELECT store_ref, payload, ts_rank_cd(tsv, q) AS score FROM "{s}"."{table}", '
+                f"plainto_tsquery(%s::regconfig, %s) AS q WHERE tsv @@ q AND {predicate} "
+                "ORDER BY score DESC, store_ref ASC LIMIT %s OFFSET %s",
+                (config, query, *params, limit, offset),
+            ).fetchall()
+        return [IndexHit(row[0], json.loads(row[1]), float(row[2])) for row in rows]
+
+    def score_entries(
+        self, partition: MemoryPartition, representation_version: str, query: str, store_refs: Sequence[str]
+    ) -> Mapping[str, float]:
+        """``ts_rank_cd`` of exactly these entries; 0 for a document the query does not match."""
+
+        s, table = self._s.schema, self.table(partition, representation_version)
+        with self._s.connect() as conn:
+            config = self._layout(conn, table)
+            if config is None:
+                return {}
+            rows = conn.execute(
+                f'SELECT store_ref, CASE WHEN tsv @@ q THEN ts_rank_cd(tsv, q) ELSE 0 END FROM "{s}"."{table}", '
+                "plainto_tsquery(%s::regconfig, %s) AS q WHERE store_ref = ANY(%s)",
+                (config, query, list(store_refs)),
+            ).fetchall()
+        return {row[0]: float(row[1]) for row in rows}
+
+    def retire(self, partition: MemoryPartition, representation_version: str, memory_item_id: str, below_version: int) -> None:
+        s, table = self._s.schema, self.table(partition, representation_version)
+        with self._s.connect() as conn:
+            if self._layout(conn, table) is None:
+                return
+            conn.execute(
+                f'UPDATE "{s}"."{table}" SET attributes = jsonb_set(attributes, \'{{superseded}}\', \'true\'::jsonb) '
+                "WHERE attributes->>'memory_item_id' = %s AND (attributes->>'memory_version')::integer < %s",
+                (memory_item_id, below_version),
+            )
 
     def get(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> Mapping[str, object] | None:
         s, table = self._s.schema, self.table(partition, representation_version)
@@ -1142,7 +1305,12 @@ class PostgresLexicalIndex:
 
 
 class QdrantVectorIndex:
-    """One Qdrant collection per partition and vector representation version."""
+    """One Qdrant collection per partition and vector representation version (port v2).
+
+    ``index_attributes`` are stored under the ``eligibility`` payload key beside
+    the pointer; ``search_eligible`` passes the eligibility predicate to
+    Qdrant as the query's payload filter.
+    """
 
     def __init__(self, endpoint: str, namespace: str) -> None:
         self.endpoint = endpoint
@@ -1162,7 +1330,10 @@ class QdrantVectorIndex:
         if status != 200:
             raise RuntimeError(f"Qdrant {what} -> {status}")
 
-    def upsert(self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float]) -> None:
+    def upsert(
+        self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float],
+        *, attributes: Mapping[str, object] | None = None,
+    ) -> None:
         name = self.collection(partition, profile.representation_version)
         status, _ = self._call("GET", f"/collections/{name}")
         if status == 404:
@@ -1178,9 +1349,83 @@ class QdrantVectorIndex:
         status, _ = self._call(
             "PUT",
             f"/collections/{name}/points?wait=true",
-            {"points": [{"id": self.point_id(store_ref), "vector": list(vector), "payload": {"store_ref": store_ref, "pointer": dict(payload)}}]},
+            {"points": [{"id": self.point_id(store_ref), "vector": list(vector), "payload": {
+                "store_ref": store_ref, "pointer": dict(payload), **({"eligibility": dict(attributes)} if attributes is not None else {}),
+            }}]},
         )
         self._require(status, "upsert")
+
+    @staticmethod
+    def eligibility_filter(where: EligibilityPredicate) -> dict[str, Any]:
+        """The eligibility predicate as a Qdrant payload filter."""
+
+        e = "eligibility."
+        must: list[dict[str, Any]] = [
+            {"key": e + "superseded", "match": {"value": False}},
+            {"key": e + "deleted", "match": {"value": False}},
+            {"key": e + "lifecycle_status", "match": {"value": "ACTIVE"}},
+            {"key": e + "memory_kind", "match": {"any": sorted(where.memory_kinds)}},
+            {"key": e + "memory_scope", "match": {"any": sorted(where.memory_scopes)}},
+            {"key": e + "valid_from_us", "range": {"lte": where.valid_at_us}},
+            {"key": e + "valid_until_us", "range": {"gt": where.valid_at_us}},
+            {"key": e + "expires_at_us", "range": {"gt": where.now_us}},
+        ]
+        if where.source_kinds is not None:
+            must.append({"key": e + "source_kind", "match": {"any": sorted(where.source_kinds)}})
+        if where.content_schema_refs is not None:
+            must.append({"key": e + "content_schema_ref", "match": {"any": sorted(where.content_schema_refs)}})
+        if where.min_confidence is not None:
+            must.append({"key": e + "confidence", "range": {"gte": where.min_confidence}})
+        query_filter: dict[str, Any] = {"must": must}
+        if where.exclude_taint_labels:
+            query_filter["must_not"] = [{"key": e + "taint_labels", "match": {"any": sorted(where.exclude_taint_labels)}}]
+        return query_filter
+
+    def search_eligible(
+        self, partition: MemoryPartition, representation_version: str, vector: Sequence[float], *,
+        where: EligibilityPredicate, limit: int, offset: int,
+    ) -> Sequence[IndexHit]:
+        name = self.collection(partition, representation_version)
+        status, data = self._call(
+            "POST", f"/collections/{name}/points/query",
+            {"query": list(vector), "filter": self.eligibility_filter(where), "limit": limit, "offset": offset,
+             "with_payload": True, "with_vector": False},
+        )
+        if status == 404:
+            return []
+        self._require(status, "filtered query")
+        return self._hits(data["result"]["points"])
+
+    def score_entries(
+        self, partition: MemoryPartition, representation_version: str, vector: Sequence[float], store_refs: Sequence[str]
+    ) -> Mapping[str, float]:
+        """Qdrant's own similarity for exactly these points (``has_id`` filter)."""
+
+        if not store_refs:
+            return {}
+        name = self.collection(partition, representation_version)
+        status, data = self._call(
+            "POST", f"/collections/{name}/points/query",
+            {"query": list(vector), "filter": {"must": [{"has_id": [self.point_id(ref) for ref in store_refs]}]},
+             "limit": len(store_refs), "with_payload": True, "with_vector": False},
+        )
+        if status == 404:
+            return {}
+        self._require(status, "scoring query")
+        wanted = set(store_refs)
+        return {hit.store_ref: hit.score for hit in self._hits(data["result"]["points"]) if hit.store_ref in wanted}
+
+    def retire(self, partition: MemoryPartition, representation_version: str, memory_item_id: str, below_version: int) -> None:
+        name = self.collection(partition, representation_version)
+        status, _ = self._call(
+            "POST", f"/collections/{name}/points/payload?wait=true",
+            {"payload": {"superseded": True}, "key": "eligibility", "filter": {"must": [
+                {"key": "eligibility.memory_item_id", "match": {"value": memory_item_id}},
+                {"key": "eligibility.memory_version", "range": {"lt": below_version}},
+            ]}},
+        )
+        if status != 404:
+            self._require(status, "retire")
 
     UNBOUND_POINT = "urn:ocor:unbound-point:"
 
@@ -1788,8 +2033,8 @@ class AcknowledgeWithoutWriting(PostgresLexicalIndex):
 class PersistAnotherPointer(PostgresLexicalIndex):
     """Real PostgreSQL index that persists a different (downgraded) pointer."""
 
-    def upsert(self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str) -> None:
-        super().upsert(partition, profile, store_ref, {**payload, "classification_marking_ref": M_UNCLASSIFIED}, document)
+    def upsert(self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str, **kwargs: Any) -> None:
+        super().upsert(partition, profile, store_ref, {**payload, "classification_marking_ref": M_UNCLASSIFIED}, document, **kwargs)
 
 
 @pytest.mark.parametrize("index_type", [AcknowledgeWithoutWriting, PersistAnotherPointer], ids=["lost-write", "wrong-pointer"])
@@ -1853,15 +2098,15 @@ SUBSTITUTED_DOCUMENT = "unrelated lexicon token zzzqqq"
 class PersistAnotherDocument(PostgresLexicalIndex):
     """Real PostgreSQL index that keeps the pointer but indexes another document."""
 
-    def upsert(self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str) -> None:
-        super().upsert(partition, profile, store_ref, payload, SUBSTITUTED_DOCUMENT)
+    def upsert(self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str, **kwargs: Any) -> None:
+        super().upsert(partition, profile, store_ref, payload, SUBSTITUTED_DOCUMENT, **kwargs)
 
 
 class PersistBasisVector(QdrantVectorIndex):
     """Real Qdrant index that keeps the pointer but persists another vector."""
 
-    def upsert(self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float]) -> None:
-        super().upsert(partition, profile, store_ref, payload, [1.0] + [0.0] * (len(vector) - 1))
+    def upsert(self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float], **kwargs: Any) -> None:
+        super().upsert(partition, profile, store_ref, payload, [1.0] + [0.0] * (len(vector) - 1), **kwargs)
 
 
 def one_binary32_ulp(value: float) -> float:
@@ -1872,8 +2117,8 @@ def one_binary32_ulp(value: float) -> float:
 class PersistOneUlpOff(QdrantVectorIndex):
     """Real Qdrant index whose persisted vector differs by one binary32 ulp in one component."""
 
-    def upsert(self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float]) -> None:
-        super().upsert(partition, profile, store_ref, payload, [one_binary32_ulp(vector[0]), *vector[1:]])
+    def upsert(self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float], **kwargs: Any) -> None:
+        super().upsert(partition, profile, store_ref, payload, [one_binary32_ulp(vector[0]), *vector[1:]], **kwargs)
 
 
 @pytest.mark.parametrize(
