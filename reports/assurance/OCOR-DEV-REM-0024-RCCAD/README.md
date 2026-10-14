@@ -1,6 +1,6 @@
 # OCOR-DEV-REM-0024-RCCAD — C6: break-glass conforme ad ADD v1.3 §5.4–5.5 e LLD v1.1 §4.2
 
-- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION`. Verifier: Grok 4.7 via Cursor CLI
+- **Status**: `SEALED` (integrazione subordinata ai check obbligatori sullo stesso HEAD). Verifier: Grok 4.7 via Cursor CLI
   (processo, contesto e fornitore separati); Claude Code, implementatore di riserva, non verifica
   questo change set (`LOOP-ROLES`).
 - **Fonte**: decisione del Product Owner `RVW-03` (2026-10-05) e audit del 2026-10-12 in
@@ -67,3 +67,15 @@ eseguito su una copia del sorgente; la prima prova (13 su 15) ha portato al refa
   `reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.json` (con i rispettivi `.log`, byte-identici al
   raw della campagna): riqualifiche con `supersedes` esplicito; i manifest G4 e G5 puntano ai nuovi record.
 - Controllo meccanico riproducibile: vedi `reproducible_check` nel record (non è verifica indipendente).
+
+## Verifica indipendente e sigillo
+
+GO `OCOR-DEV-REM-0024-22b93473024c-0` del 2026-10-14, su
+`22b93473024cfabb3d013f3516a57eff289c8c0a`: Grok 4.7 via Cursor CLI, processo, contesto
+e fornitore separati da Claude Code, implementatore di riserva. Nessun finding bloccante.
+Il verifier ha riprodotto la suite completa: 1.933 PASS, zero skip; 0048: 196 PASS,
+0050: 198 PASS. Codex ha applicato soltanto i metadati di sigillo e aggiornato gli hash
+dei nuovi record nei manifest. Sorgenti, test, raw log e sigilli storici invariati.
+Il rischio del primo writer del registry resta aperto; la decisione del PO
+`REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY` (2026-10-14, opzione 1) ne autorizza una
+remediation separata dopo REM-0028, obbligatoria prima di G6. Nessun claim promosso.

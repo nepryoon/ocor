@@ -444,6 +444,153 @@
     "q1_po_condition": "the controller has no write path to the registry and grant takes no attribute, role or kind parameter (TypeError); role tokens placed in reason/scope/incident text are ignored; a requester or approver cannot update its own immutable registry record (IdentityConflictError) and the grant stays refused. GateSignature.role belongs to the Human Gate (REM-0028) and is not part of break-glass. The registry's lack of writer authority for new records is the open decision request REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (draft PR #262), not closed here",
     "unchanged": "EmergencyStopController (request_reset class finding is REM-0028), OutcomeReconciler, c2_identity.py, human_gate.py, every other 0044 test, the 0047 tests and code"
   },
+  "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i file normativi OK; inputs/ intatto."
+      },
+      {
+        "command": "git worktree add --detach /tmp/ocor-verify-OCOR-DEV-REM-0024-22b93473024c-0/wt 22b93473024cfabb3d013f3516a57eff289c8c0a",
+        "exit_code": 0,
+        "summary": "Worktree detached all'HEAD richiesto. Diff base..HEAD: 16 path; safety.py, i nove test break-glass di 0044, test REM-0024, allowlist del piano, hash del piano, evidenze e manifest G4/G5."
+      },
+      {
+        "command": "cd ocor-runtime && .venv/bin/python -m pytest -q -p no:cacheprovider tests/tasks/test_ocor_dev_rem_0024.py tests/tasks/test_ocor_dev_0044.py tests/tasks/test_ocor_dev_0047.py",
+        "exit_code": 0,
+        "summary": "139 passed in 0.24s, zero skip. uv sync --frozen --extra test --extra lint nel worktree, exit 0."
+      },
+      {
+        "command": "ruff check . && ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "ruff: all checks passed. mypy strict: no issues in 75 source files."
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti, AFF-001..010 PASS_STATIC_PRECHECK."
+      },
+      {
+        "command": "python3 scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "verdict PASS, 37 PASS, 2 NOT_EXECUTED opzionali del piano, 84 task."
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0024-break-glass-conformance",
+        "exit_code": 0,
+        "summary": "PASS: 17 changed paths; superfici immutabili intatte; ledger dei task stabile. Allowlist solo dei path di questo change set; semantica del validatore invariata."
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, 182 input, 69 task, drifted_tasks vuoto. 0050 riqualificato perch\u00e9 l'input sigillato validate_ocor_development_plan.py \u00e8 cambiato; 0047 \u00e8 regressione (importa safety.py) con test invariati."
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione monitorata fuori dall'area autorizzata."
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0044 --manifest reports/evidence/G4/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS qualifying evidence OCOR-DEV-0044."
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0047 --manifest reports/evidence/G4/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS qualifying evidence OCOR-DEV-0047."
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS qualifying evidence OCOR-DEV-0050."
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/rem-0024-impl/check_evidence.py . 22b93473024cfabb3d013f3516a57eff289c8c0a",
+        "exit_code": 0,
+        "summary": "PASS meccanico: commit codice 9faac98, head 22b9347, 337 casi di task, suite 1933, 15 mutanti. Non usato come unica prova."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "Harness 14 PASS, 0 FAIL, 0 NOT_EXECUTED. Il referto ha riscritto due file di planning e verify_report.json; ripristinati con git checkout prima del verdetto. Worktree pulito."
+      },
+      {
+        "command": "PYTHONPATH=red/ocor-runtime/src pytest tests/tasks/test_ocor_dev_rem_0024.py (worktree 1a09bce)",
+        "exit_code": 1,
+        "summary": "RED atteso e riprodotto: 11 failed, 88 errors, 99 casi non passano. Causa TypeError: BreakGlassController.__init__() got an unexpected keyword argument 'clock'. Codice importato da safety.py di 1a09bce."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+        "exit_code": 1,
+        "summary": "Primo teardown fallito: nel worktree detached manca .ocor/bootstrap.env e compose non interpola i segreti. Nessuno stack ocor-bootstrap era in esecuzione. File della checkout principale non modificato."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS. Bootstrap ha generato .ocor/bootstrap.env nel solo worktree (credenziali nuove, checkout principale intatta). Fuseki image id uguale al lock sha256:6534156b8d8f. Digest dei servizi allineati a infra/services.lock.json."
+      },
+      {
+        "command": "initialize_services.py && load_fixtures.py && verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "Init PASS, fixture PASS, health PASS: 9 gruppi READY (11 container ocor-bootstrap), postgres unauthenticated FAIL_CLOSED, immagini pinned."
+      },
+      {
+        "command": "register_control_plane.py (copia da reports/assurance/FUSEKI-LOCAL-IDENTITY-20261008/register_control_plane.py.txt, eseguita da /tmp)",
+        "exit_code": 0,
+        "summary": "Entry SPIRE spiffe://ocor.test/ocor/control-plane, selector unix:uid:0, SVID fetched. Necessaria prima di 0048; il primo lancio di 0048 senza entry ha dato 2 failed e 186 errors solo in quel file (WORKLOAD_IDENTITY_UNAVAILABLE), zero skip, mentre 0044/0047/REM-0024/0050 erano gi\u00e0 verdi."
+      },
+      {
+        "command": "pytest -q -rs tests/tasks/test_ocor_dev_0048.py (stack ocor-bootstrap, dopo la registrazione SPIRE)",
+        "exit_code": 0,
+        "summary": "196 passed in 136.91s, JUnit skipped=0 failures=0 errors=0. Controllo compensativo CI-0048-REAL-BACKEND soddisfatto. Nessuna nuova esclusione nel diff."
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed in 4.80s, zero skip, PostgreSQL 127.0.0.1:55433 dello stack appena avviato."
+      },
+      {
+        "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> ocor-runtime/.venv/bin/python -m pytest -q -rs --tb=line tests/ (cwd ocor-runtime, PATH con toolchain c5resume)",
+        "exit_code": 0,
+        "summary": "1933 passed, 3 warnings, 0 skipped, 1117.74s, sotto il tetto di 75 minuti. Nessun container ocor-bootstrap OOMKilled o riavviato. JUnit 1933/0/0/0."
+      },
+      {
+        "command": "pytest --collect-only -q tests/ confrontato con il JUnit della suite",
+        "exit_code": 0,
+        "summary": "1933 raccolti, multiset identico al JUnit, zero duplicati, zero mancanti."
+      },
+      {
+        "command": "probe avversariale in-process su BreakGlassController all'HEAD",
+        "exit_code": 0,
+        "summary": "Attributi solo dal registry (TypeError sui kwargs di ruolo). Quorum e dominio case-sensitive rifiutati. Clock del chiamante rifiutato dall'API. Grant forgiato non autorizzato. Primo register() di un principal nuovo riesce: rischio residuo gi\u00e0 registrato verso REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY, non attribuito ad altre campagne. Dopo alert fallito il grant non \u00e8 usabile; un successivo grant() con lo stesso id riesce perch\u00e9 l'id ritirato non \u00e8 in _issued: non \u00e8 un rinnovo automatico di un grant emesso."
+      },
+      {
+        "command": "docker compose down dello stack creato (reset_test_environment.py --execute, env del worktree)",
+        "exit_code": 0,
+        "summary": "Teardown PASS. Nessun container ocor-bootstrap rimasto. Inventario container/volumi/reti prima e dopo la suite identico."
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita), ciclo 0 di OCOR-DEV-REM-0024",
+    "integration_agent": "Codex (OpenAI)",
+    "integration_condition": "Exact candidate reviewed; subsequent changes limited to independent verification/seal metadata, README status and manifest hashes. Merge requires all 13 named mandatory checks successful on the exact sealed HEAD.",
+    "not_executed": [],
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "verdict_created_at": "2026-10-14T09:44:44Z",
+    "verdict_file_sha256": "c688fa2b8238026e0c6b195f2c80008791b19a7cc40c27fcab863640af4cfce9",
+    "verdict_head_sha": "22b93473024cfabb3d013f3516a57eff289c8c0a",
+    "verdict_request_id": "OCOR-DEV-REM-0024-22b93473024c-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. L'implementatore di questo change set \u00e8 Claude Code (Anthropic, claude-opus-5-5), implementatore di riserva del loop perch\u00e9 la quota Codex \u00e8 esaurita. Il verifier \u00e8 Grok 4.7 tramite Cursor CLI: fornitore e modello diversi dall'implementatore.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, sessione non interattiva"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/c6/safety.py": "027f125d6bbab5ad6eff8e6d195e8745425cd15e7444297b1b300a9bebebf764",
@@ -908,7 +1055,8 @@
   },
   "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted-data migration; the break-glass state is in memory. Reverting restores the sealed OCOR-DEV-0044 and OCOR-DEV-0047 records and OCOR-DEV-0050.requalified-rem0026 as the most recent ones once the REM-0024 requalification records are removed with the revert.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-14T12:30:29.175340+00:00",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-REM-0024",
   "tdd": {
     "GREEN": {
