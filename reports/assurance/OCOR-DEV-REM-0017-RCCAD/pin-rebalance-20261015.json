@@ -1,0 +1,867 @@
+{
+  "base_sha": "8c5f96376c12d264a0761eb19928f01d668dec40",
+  "candidate0049": {
+    "head_sha": "beab1b4cc16d0678ce5554fcebd6495b328f5342",
+    "local_qualification_reference": "reports/assurance/OCOR-DEV-REM-0032-RCCAD/OCOR-DEV-REM-0032.json at sealed stage; historical full2224 and task390x3 retained on original runtime commit04b9dcb. Current exact N=5 CI still mandatory; no counts transferred from failed REM0017 runs.",
+    "sealed_remediation": "OCOR-DEV-REM-0032"
+  },
+  "ci_budget": {
+    "allowed": "One new exact-head pair: first attempt plus at most one rerun of only a failed part for a proven infrastructure cause other than relay probes. No retry for relay-related case failure, assertions or unknown cause.",
+    "ci_poll_interval_seconds": 60,
+    "ci_wait_max_seconds": 5400,
+    "required_checks": "13 names on exact HEAD plus qualifying conditional-infrastructure-0049 union"
+  },
+  "ci_outcomes": [
+    "GREEN without relay unhealthy and with Helm owned-removal proof qualifies",
+    "GREEN with relay unhealthy without case effect qualifies with open risk",
+    "Relay unhealthy causing case failure: no rerun; decision request",
+    "Other proven infrastructure cause: at most one failed-part rerun, no assertions or unknown cause"
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/scripts/run_qualifying_campaign.py",
+        "--execute",
+        "--output-dir",
+        "/home/luca/.ocor-codex/rem0017-pin-rebalance-20261015/full-main"
+      ],
+      "exit_code": 0,
+      "result": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1933
+      },
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "--junitxml=/home/luca/.ocor-codex/rem0017-pin-rebalance-20261015/regression0050.xml"
+      ],
+      "exit_code": 0,
+      "result": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 198
+      },
+      "status": "PASS"
+    }
+  ],
+  "commit": "ced9d9b3bf97cd91b389828b5872af5aed00da57",
+  "commit_role": "Final report-test and declarative workflow source; runtime full source and exact execution-tree equality recorded separately. Packaging only adds evidence. All inputs/raw digests to be reacquired on published HEAD before external verification.",
+  "created_at": "2026-10-14T23:58:11.336949+00:00",
+  "diagnostic_attempts": [
+    {
+      "cause": "One expected merged planning-allowlist hash drift in0050; new regression supersession, old records intact",
+      "raw": "drift-before.log",
+      "status": "FAIL_DIAGNOSTIC"
+    },
+    {
+      "cause": "Historical invariant required old pin/N; adapted to exact PO delta with additional negative cases. No test removed or ignored.",
+      "raw": "portfolio.log",
+      "status": "FAIL_DIAGNOSTIC"
+    }
+  ],
+  "environment": {
+    "acquired_at": "2026-10-14T23:58:11.336949+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "running": true
+      }
+    },
+    "branch": "governed/ocor-dev-rem-0017-ci-provision-spire",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "services": 11,
+    "toolchain": {
+      "tools": [
+        {
+          "digest_match": true,
+          "id": "docker",
+          "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/docker",
+          "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+          "version": "Docker version 29.7.2, build a7dcaa6",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "git",
+          "path": "/usr/bin/git",
+          "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+          "version": "git version 2.53.0",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "github-cli",
+          "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/gh",
+          "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+          "version": "gh version 2.99.0 (2026-09-01)\nhttps://github.com/cli/cli/releases/tag/v2.99.0",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "expected_version": "21.0.8+9",
+          "id": "java",
+          "version": "jdk-21.0.8+9",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "node",
+          "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/node",
+          "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+          "version": "v20.20.2",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "python",
+          "path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+          "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+          "version": "Python 3.12.11",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "ruff",
+          "path": "/home/luca/.local/bin/ruff",
+          "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+          "version": "ruff 0.13.1",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "typescript",
+          "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/tsc",
+          "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+          "version": "Version 7.0.2",
+          "version_match": true
+        },
+        {
+          "digest_match": true,
+          "id": "uv",
+          "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/uv",
+          "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+          "version": "uv 0.12.5 (x86_64-unknown-linux-gnu)",
+          "version_match": true
+        }
+      ]
+    }
+  },
+  "execution_ast_proof": {
+    "authorised_workflow_delta": "REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts",
+    "baseline": "7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0",
+    "campaign_constants_identical": true,
+    "functions": {
+      "aggregate": {
+        "after_sha256": "ad05adaff870d8bde106baadcaee53fdc9b82d5497052ac618d6d817449df042",
+        "before_sha256": "ad05adaff870d8bde106baadcaee53fdc9b82d5497052ac618d6d817449df042",
+        "identical": true
+      },
+      "check_deadline": {
+        "after_sha256": "c2115d369c343033014ab506da0dc9f71ca8cbc579e26e15089ffde6c3928eb5",
+        "before_sha256": "c2115d369c343033014ab506da0dc9f71ca8cbc579e26e15089ffde6c3928eb5",
+        "identical": true
+      },
+      "check_junit": {
+        "after_sha256": "7afc8b3f31c48404bdd7dd8500afc549e77c6e7b6ce36f30822229bc731b7304",
+        "before_sha256": "7afc8b3f31c48404bdd7dd8500afc549e77c6e7b6ce36f30822229bc731b7304",
+        "identical": true
+      },
+      "check_kubernetes_runtimes": {
+        "after_sha256": "1fdb28a6ec9adcfee6f18834edb94a8ec708160d7765ac28105c63b8cfbb72a5",
+        "before_sha256": "1fdb28a6ec9adcfee6f18834edb94a8ec708160d7765ac28105c63b8cfbb72a5",
+        "identical": true
+      },
+      "check_stack": {
+        "after_sha256": "cc8d2a70c65ac0f082d7547f8e2a8426a39866be4895decb5fa810b0ea6d2d6b",
+        "before_sha256": "cc8d2a70c65ac0f082d7547f8e2a8426a39866be4895decb5fa810b0ea6d2d6b",
+        "identical": true
+      },
+      "collect_kubernetes_diagnostics": {
+        "after_sha256": "0cd932a70ef439e2de53335d9a07f0895daa33d963cdff68b45d4c19b4af801e",
+        "before_sha256": "0cd932a70ef439e2de53335d9a07f0895daa33d963cdff68b45d4c19b4af801e",
+        "identical": true
+      },
+      "collect_nodeids": {
+        "after_sha256": "d5cb759819d96129959219cc09f1e65382f4c10dad31f8f6ea93d9b53ae5dc22",
+        "before_sha256": "d5cb759819d96129959219cc09f1e65382f4c10dad31f8f6ea93d9b53ae5dc22",
+        "identical": true
+      },
+      "collection_digest": {
+        "after_sha256": "b0845f2aab0e3db2da6578a7136123dd9f449044611ca09b81346e18709c13ab",
+        "before_sha256": "b0845f2aab0e3db2da6578a7136123dd9f449044611ca09b81346e18709c13ab",
+        "identical": true
+      },
+      "combine_coverage": {
+        "after_sha256": "24a2a35de49109101676ee72599b9cda7124afb17582c604b2c9264bda6cc583",
+        "before_sha256": "24a2a35de49109101676ee72599b9cda7124afb17582c604b2c9264bda6cc583",
+        "identical": true
+      },
+      "finish_health_observer": {
+        "after_sha256": "59c2fb2ce0e1768178a16413b48fcd28905ce7c7adf720b0a48e71442d5861de",
+        "before_sha256": "59c2fb2ce0e1768178a16413b48fcd28905ce7c7adf720b0a48e71442d5861de",
+        "identical": true
+      },
+      "health_command": {
+        "after_sha256": "25bf04d1437292336a70885de2751927466f69ea3908c13870a59ffd8f8bab5b",
+        "before_sha256": "25bf04d1437292336a70885de2751927466f69ea3908c13870a59ffd8f8bab5b",
+        "identical": true
+      },
+      "inspect_kubernetes_runtimes": {
+        "after_sha256": "23daef20d100465d48ac85d85d4a2aa82f9a00a9743320b6a5d48f1aca296303",
+        "before_sha256": "23daef20d100465d48ac85d85d4a2aa82f9a00a9743320b6a5d48f1aca296303",
+        "identical": true
+      },
+      "inspect_kubernetes_runtimes_raw": {
+        "after_sha256": "0bbaa8777aedaa47f361b0ee2c640173001294cee6937ef8b79475d949936f58",
+        "before_sha256": "0bbaa8777aedaa47f361b0ee2c640173001294cee6937ef8b79475d949936f58",
+        "identical": true
+      },
+      "inspect_stack": {
+        "after_sha256": "8fb8410034e225841fc3a587d78a89290c6d467631b752ce91774ee20b0ff7f8",
+        "before_sha256": "8fb8410034e225841fc3a587d78a89290c6d467631b752ce91774ee20b0ff7f8",
+        "identical": true
+      },
+      "junit_cases": {
+        "after_sha256": "baf8ac58b9464f55be7699b57ebad2266f70cdda32d3669f3c2bc798f6a4fc6f",
+        "before_sha256": "baf8ac58b9464f55be7699b57ebad2266f70cdda32d3669f3c2bc798f6a4fc6f",
+        "identical": true
+      },
+      "junit_identity": {
+        "after_sha256": "f137fddaa848fff1c02550b204317c3bf7316dc9afb359e0bf6b3d7a3555ba83",
+        "before_sha256": "f137fddaa848fff1c02550b204317c3bf7316dc9afb359e0bf6b3d7a3555ba83",
+        "identical": true
+      },
+      "main": {
+        "after_sha256": "b6140bc86b01589d966c68eb89a547e0017197ef65418dc2249cb2dde47f6a77",
+        "before_sha256": "b6140bc86b01589d966c68eb89a547e0017197ef65418dc2249cb2dde47f6a77",
+        "identical": true
+      },
+      "node_weight": {
+        "after_sha256": "8f092815a325d100c5b2529b38bb0ab5e6430638a23b90366e15da5fb5058d65",
+        "before_sha256": "8f092815a325d100c5b2529b38bb0ab5e6430638a23b90366e15da5fb5058d65",
+        "identical": true
+      },
+      "partition": {
+        "after_sha256": "d97672761d167a297ffbdfa6996a14885c610b19aa4158c23bd6e3630a059c79",
+        "before_sha256": "d97672761d167a297ffbdfa6996a14885c610b19aa4158c23bd6e3630a059c79",
+        "identical": true
+      },
+      "partition_digest": {
+        "after_sha256": "69a9db1fdcb53b1579c9db0599f5086607d01123f5146237367220d5bb9c921c",
+        "before_sha256": "69a9db1fdcb53b1579c9db0599f5086607d01123f5146237367220d5bb9c921c",
+        "identical": true
+      },
+      "partition_units": {
+        "after_sha256": "57629b962a5683bb37b06b6f80808a36759933e9de0be8a9a7c2c9c1f2266a9e",
+        "before_sha256": "57629b962a5683bb37b06b6f80808a36759933e9de0be8a9a7c2c9c1f2266a9e",
+        "identical": true
+      },
+      "pytest_environment": {
+        "after_sha256": "8270d7b925623a2090318d48f221f42a9de93ed07aa89ceef2b78fcbd9c356c6",
+        "before_sha256": "8270d7b925623a2090318d48f221f42a9de93ed07aa89ceef2b78fcbd9c356c6",
+        "identical": true
+      },
+      "qualification_kind_binary": {
+        "after_sha256": "ccf82b56ecd9b938038f35589caf59c4f99332c19bdb697a7874e052ab4415cc",
+        "before_sha256": "ccf82b56ecd9b938038f35589caf59c4f99332c19bdb697a7874e052ab4415cc",
+        "identical": true
+      },
+      "run_health_observer": {
+        "after_sha256": "d4a17ca7875da325b61235124c53b8ba937ba465e9b289ecb48504add2434241",
+        "before_sha256": "d4a17ca7875da325b61235124c53b8ba937ba465e9b289ecb48504add2434241",
+        "identical": true
+      },
+      "runner_health_sample": {
+        "after_sha256": "50e2029cf7d775b017e5bf5aea422b2724fb87fde03c5c99274fbfdd756435c0",
+        "before_sha256": "50e2029cf7d775b017e5bf5aea422b2724fb87fde03c5c99274fbfdd756435c0",
+        "identical": true
+      },
+      "start_health_observer": {
+        "after_sha256": "1c27e0a20aaf797fb238fb805742825210bdf67eaf6af8d52f041cdc781e154b",
+        "before_sha256": "1c27e0a20aaf797fb238fb805742825210bdf67eaf6af8d52f041cdc781e154b",
+        "identical": true
+      },
+      "stop": {
+        "after_sha256": "4881c3a042ae14f71393983fdbc403ad3bf3f0579153b388d4385d654c6e0767",
+        "before_sha256": "4881c3a042ae14f71393983fdbc403ad3bf3f0579153b388d4385d654c6e0767",
+        "identical": true
+      },
+      "verify_revision": {
+        "after_sha256": "662a0dd7d7064a2d38412b2db3335ce91b87b22db6572d8695d2dec7e2a433aa",
+        "before_sha256": "662a0dd7d7064a2d38412b2db3335ce91b87b22db6572d8695d2dec7e2a433aa",
+        "identical": true
+      }
+    },
+    "normalisation": "Only latency wrapper and two diagnostic export fields removed from AST. Workflows require the exact PO-authorised 0049 pin and N=5 delta; all other bytes, timers and gates identical.",
+    "window_poll_sample_identical": true,
+    "workflows_unchanged": {
+      ".github/workflows/ocor-auto-merge.yml": "c3d90ec2b956ce0e859ec8fec61e9d1cf0458b9c6d6977aefc741b2b36b20b06",
+      ".github/workflows/ocor-delivery-activation.yml": "a1045082d0351daa822eb6a5a25f4ddc71f96fff186eef65b84a622ad4617865",
+      ".github/workflows/ocor-lld-add-alignment.yml": "c9adf5ac14aefb944e33c6948cf2238b1f6355d4fb744a1fc23ac26ade44e6dc",
+      ".github/workflows/ocor-poc-ci.yml": "9b209460e757a91f809aa1f68064191a5dfa9f5f730a14b574076b64fd27e553",
+      ".github/workflows/ocor-rccad.yml": "0065583fc3da5f2f15b7925c0b60055dd696b97010f6667d3337a38db82ed23d",
+      ".github/workflows/ocor-supply-chain.yml": "fdbb6e60eba00232e3ea73c7eddb2be32355a51c7a3444db4c7d55b237e1261c",
+      ".github/workflows/ocor-tooling-bootstrap.yml": "d9f63d4fbb3f93d3e467a5faaf116b6167623ac6ec804cf495f9c65153835b0b",
+      ".github/workflows/ocor-validation-closure.yml": "1d6e3f8d937efd0eff02b6ccba42e5a86b0408a3920e72d30d4ad13291f1d0d9"
+    }
+  },
+  "full_execution_tree_equivalence": {
+    ".github": {
+      "final_tree": "728462d1793048d9242057a99349758e3756d489",
+      "full_tree": "728462d1793048d9242057a99349758e3756d489"
+    },
+    "deploy": {
+      "final_tree": "773139c1746c07240d95cb41d6c76abb19663e5e",
+      "full_tree": "773139c1746c07240d95cb41d6c76abb19663e5e"
+    },
+    "infra": {
+      "final_tree": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "full_tree": "7aca9c88936775231146c60f5781a5c33fd93ebf"
+    },
+    "inputs": {
+      "final_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "full_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35"
+    },
+    "ocor-runtime": {
+      "final_tree": "9acb3fd6f9e16255000dd6723c6e57496d4960b9",
+      "full_tree": "9acb3fd6f9e16255000dd6723c6e57496d4960b9"
+    },
+    "scripts": {
+      "final_tree": "d5adff67ec61ef28aa06bd578fbbfcce06e2bcc7",
+      "full_tree": "d5adff67ec61ef28aa06bd578fbbfcce06e2bcc7"
+    }
+  },
+  "full_source_head": "1532db66a41a0f016a2b520b05e73d4683c8c532",
+  "independent_verification": {
+    "status": "NOT_REQUESTED_PENDING_EXACT_HEAD_CI",
+    "verifier": "cursor"
+  },
+  "inputs": {
+    ".github/workflows/ocor-delivery-activation.yml": "a1045082d0351daa822eb6a5a25f4ddc71f96fff186eef65b84a622ad4617865",
+    ".github/workflows/ocor-rccad.yml": "0065583fc3da5f2f15b7925c0b60055dd696b97010f6667d3337a38db82ed23d",
+    ".github/workflows/ocor-validation-closure.yml": "1d6e3f8d937efd0eff02b6ccba42e5a86b0408a3920e72d30d4ad13291f1d0d9",
+    "infra/fuseki/Dockerfile": "8704d0e891f232c5f85a2b2cd59ccf3ee14905aeb4862452c92088f816051026",
+    "infra/services.lock.json": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "infra/toolchain.lock.json": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/tests/test_ci_fuseki_archive.py": "c677cae7b400e3e56adaf7af88526e79938339871de08669e700b5bccefc2763",
+    "reports/tests/test_fuseki_archive_acquisition.py": "963d1624508c675d6b2c1fbc48f23818e4a39635e2fd2f806188465498033c4b",
+    "reports/tests/test_kind_teardown_observation.py": "a518a1679ca4f56ee30c8398c8137913d588daa697b57d0328987fdb5bbc8b0f",
+    "reports/tests/test_qualifying_campaign_guard.py": "58918211a59b5c9e363f8a0e0c9dad8a968168292925d5af5a3f5e6a28c5e50f",
+    "scripts/acquire_fuseki_archive.py": "8ec95e9842f765f10d827130927334bc679ec5d6c0b8384eb4e6e63754140c43",
+    "scripts/bootstrap_ci_environment.py": "515300f82583ff42b2db74a3f1057df27604b3cc0421d56c5ac99f842003181a",
+    "scripts/bootstrap_development_environment.py": "62468bcc8912ae36761d2a860f16b5177e18728ecda06a89004d9c38f6e35a74",
+    "scripts/observe_kind_teardown.py": "fe2afe84b9a3b24cd9448a2360df1fbbb7595d88832632d4e0d90f12cafac376",
+    "scripts/run_qualifying_campaign.py": "43f5572335e9e7d65a17f7d9d97f23803ba5b80c9131aafe038b7b4524f110ac",
+    "scripts/validate_ocor_development_plan.py": "4a37bd2eccd2f5ca78c297753b48fd34efd47dc180419afe2ad84076a02e72a4"
+  },
+  "local_full": {
+    "candidate_head": null,
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 1933
+    },
+    "duration_seconds": 1075.5125271529978,
+    "po_decision_required": false,
+    "required_modules": [
+      "test_ocor_dev_0048"
+    ],
+    "status": "PASS"
+  },
+  "local_gates": [
+    {
+      "command": [
+        "sha256sum",
+        "-c",
+        "inputs/normative/SHA256SUMS"
+      ],
+      "duration_seconds": 0.0024366699944948778,
+      "exit_code": 0,
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/verify.py",
+        "--json"
+      ],
+      "duration_seconds": 0.3944729819922941,
+      "exit_code": 0,
+      "label": "verify",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+    },
+    {
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "duration_seconds": 0.011192609003046528,
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "-m",
+        "mypy",
+        "--strict"
+      ],
+      "duration_seconds": 0.12025051499949768,
+      "exit_code": 0,
+      "label": "mypy",
+      "raw_sha256": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_rccad.py",
+        "--base-ref",
+        "origin/main"
+      ],
+      "duration_seconds": 0.24346232401148882,
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_language_policy.py"
+      ],
+      "duration_seconds": 0.025368002010509372,
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_ocor_change_scope.py",
+        "--base",
+        "origin/main",
+        "--head",
+        "HEAD",
+        "--branch",
+        "governed/ocor-dev-rem-0017-ci-provision-spire"
+      ],
+      "duration_seconds": 0.039854905000538565,
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "070054fe2ed820da424d31248af5428cbef1f7910e8058a8bfe9c294e4e55b99"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_ocor_development_plan.py",
+        "--authorized-extension",
+        "--base-ref",
+        "origin/main"
+      ],
+      "duration_seconds": 0.09384803399734665,
+      "exit_code": 0,
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_evidence_input_drift.py"
+      ],
+      "duration_seconds": 0.06557068999973126,
+      "exit_code": 0,
+      "label": "drift",
+      "raw_sha256": "6a2861410a46020b8c9d5c8e142bd7c876bf01941c25af556dd860f590596b7b"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_runtime_evidence.py",
+        "--task",
+        "OCOR-DEV-0050",
+        "--non-skipped",
+        "--manifest",
+        "reports/evidence/G5/MANIFEST.json"
+      ],
+      "duration_seconds": 0.02108180199866183,
+      "exit_code": 0,
+      "label": "runtime0050",
+      "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "scripts/validate_runtime_evidence.py",
+        "--task",
+        "OCOR-DEV-0072",
+        "--non-skipped",
+        "--manifest",
+        "reports/evidence/G2/MANIFEST.json"
+      ],
+      "duration_seconds": 0.02122281800257042,
+      "exit_code": 0,
+      "label": "runtime0072",
+      "raw_sha256": "dc02de336b090d616cc4f87d4b6bb69885d731a292e64c3ed2ea838a0807edb7"
+    },
+    {
+      "command": [
+        "git",
+        "restore",
+        "reports/verify_report.json"
+      ],
+      "duration_seconds": 0.0030574120028177276,
+      "exit_code": 0,
+      "label": "restore-verify",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "not_executed_controls": [
+    "Exact final-head CI qualification: PENDING",
+    "Independent review and evidence seal: NOT_EXECUTED"
+  ],
+  "partition": {
+    "Helm_isolated": true,
+    "candidate_head": "beab1b4cc16d0678ce5554fcebd6495b328f5342",
+    "collected": 2224,
+    "collection_sha256": "67e91aadac83ad5516537a3ceca6b6f3aae98da8b3eb3dea074d6268bb0a003c",
+    "exact_union": {
+      "duplicate": 0,
+      "missing": 0,
+      "unexpected": 0
+    },
+    "harness_sha256": "43f5572335e9e7d65a17f7d9d97f23803ba5b80c9131aafe038b7b4524f110ac",
+    "new_parts": [
+      {
+        "part": 1,
+        "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
+        "selected_weight_seconds": 1200,
+        "tests": 1
+      },
+      {
+        "part": 2,
+        "selected_sha256": "d520c0196d8a2200a42bd20bdb3e95cefe1391d4bb2ff4ded690864bf898216f",
+        "selected_weight_seconds": 612.4,
+        "tests": 496
+      },
+      {
+        "part": 3,
+        "selected_sha256": "0cb66960c53669abba489b57bde4615d11bd5c4e06633a5fecb54c9e6b78db40",
+        "selected_weight_seconds": 612.4,
+        "tests": 486
+      },
+      {
+        "part": 4,
+        "selected_sha256": "45ce8dc80799fbac003ae9778c8e1425964bcfad7d7fc008980295bebe833acd",
+        "selected_weight_seconds": 612.4,
+        "tests": 608
+      },
+      {
+        "part": 5,
+        "selected_sha256": "530a31c6b92dd5a49c473f33447ef861d706951429bc5346c05ad938ca5e5945",
+        "selected_weight_seconds": 612.3,
+        "tests": 633
+      }
+    ],
+    "old_parts": [
+      {
+        "part": 1,
+        "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
+        "selected_weight_seconds": 1200,
+        "tests": 1
+      },
+      {
+        "part": 2,
+        "selected_sha256": "62d91df23821667e2b053245b65638a36b3710108d98c7980b544d7a62d1a0d2",
+        "selected_weight_seconds": 816.5,
+        "tests": 731
+      },
+      {
+        "part": 3,
+        "selected_sha256": "082eab8206c306fe8b5834f9225b3344448d6c1b33cbb21c80deb1f410694999",
+        "selected_weight_seconds": 816.5,
+        "tests": 621
+      },
+      {
+        "part": 4,
+        "selected_sha256": "cd067ab4e4a41d4fcc6240a695c72137395e00c4679bef32d483d49ad9170667",
+        "selected_weight_seconds": 816.5,
+        "tests": 871
+      }
+    ],
+    "part_limit_seconds": 2700,
+    "partition_sha256": "40cff632a1196dbbae827832e2b4bef36af335fab193ecfd9acd677e8cfdf31a",
+    "per_part_collection_matches_selected": true,
+    "rebalance_threshold_seconds": 1800,
+    "status": "PASS",
+    "weights": "Existing preregistered measurements unchanged; prediction only, CI durations must be observed"
+  },
+  "po_decisions": [
+    "REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14)",
+    "REM-0017-CI-CAMPAIGN-DURATION (2026-10-09)",
+    "CANDIDATE-INTEGRATION-STATE-FREEZE (2026-10-14)",
+    "REM-0017-CI-KIND-INSPECT-TIMEOUT (2026-10-14)"
+  ],
+  "qualification_driver_sha256": {
+    "check_workflow.py": "d4e939ac32e43dd22ce77729d527d0b87f65635bb9e5c39a21a3865003cc2f66",
+    "partition_proof.py": "a5077b326d67bc952f47e1b0bc975884ffc181e9749287abd73b399e58b71b0b",
+    "preflight.py": "b581c6fb6ef598480f45d1e32090a4c360cbb8d036ef78e025ede5f75cd6914c",
+    "regress0050.py": "b216d2ce7aabe86158c68108aacd096dd21fd788397a5e40fac56957500ccd67",
+    "run_full.py": "035ad0fe7015b65d97373ae1506fe362b26efb862b96f0320ff67bb63edbb14f"
+  },
+  "raw_files": {
+    "ast-workflow-invariance.json": "5351aac8740b3d5e4e41894d1093f3a52d21eaa1775c28c9e52d2da0cf3d4b0d",
+    "bootstrap.log": "457878001f889c7ab2c0dedab290a86a6b9287acdc73b55a825688c17cc70ac5",
+    "bounded-fuseki-process.log": "d496cf3616bce133ef541b45831624d86bc005232919101349c4873c0a2e540a",
+    "bounded-fuseki-profile.log": "44f9cf037870442a89823c01e78533f39e7c81c8f565fae64dcbcb3621229bf9",
+    "drift-before.log": "e01dba99e39dc6eb1fd4e67fd01013df94368b90ff47665fe1d28bbbaabc75fa",
+    "drift.log": "6a2861410a46020b8c9d5c8e142bd7c876bf01941c25af556dd860f590596b7b",
+    "fixtures.log": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+    "full-exit.json": "ae8c840a660b4e38081538069c4b58889e7f697b366fbff2a5ca29e67d7cf178",
+    "full-main/campaign_result.json": "3d544f3131b50c447284f8620c1989692ada159564872b1bb9b37c6fc938c595",
+    "full-main/health-observer-manifest.json": "7112a01f042b9564ea5d8d4435e795bf30db7c93f6541ec599eb9cb39213a0c6",
+    "full-main/health-observer-status.json": "6fa94e3078079b6131a489e9d9e6b0b49f91cdec5856788fe0d6bd0283798e8d",
+    "full-main/health-observer.jsonl": "40ca78a8cbc0ad8f21e35f1496f9f2cf2f868504654b742e8af465bb8af07073",
+    "full-main/kind-teardown-observations.json": "28f29cadafb0cf7a99b02552043e82cda11108398c07c04c160e155cb2ca3ce3",
+    "full-main/post_remediation_runtime.log": "4b550a7c961f4c93f1cf950bc892af5d0463a7e892cfe7ab77db9fc9a0d64ebf",
+    "full-main/runtime_coverage_post_approval.json": "7f623c2f7ca63d8442100d12e6ae138765ce1b4186ed3f098be6c3903da89ee1",
+    "full-main/runtime_junit_post_approval.xml": "6616a1fe5d704c7bbea2596a1a25a70e0d66d110e1205117e09f4ceed9826005",
+    "full-source-equivalence.json": "d415786ae17626b04f35b9afd9d43f5233f65789e1349740b107339d40cba81f",
+    "gates.json": "43b99509d7869965d520d356edd7a64e2b71c6aebdc2e9510e40b65704272092",
+    "health.json": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+    "initialize.log": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+    "inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+    "iteration-contract.json": "0bc06d4185c7ff71b996a5c1f3a6898d36928a1145a5463461b0a46f4e417e94",
+    "language.log": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+    "main-checks.json": "e83cfac35507982a40cfeb776ce85aa0367e7646f81fe857df4a6c841ea8a170",
+    "main-pr272.json": "e95bbf7abfc389ecce1ff545e8d3b3f8bb95ec379a29f52d74d8c6bc6c18fe29",
+    "mypy.log": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd",
+    "partition-proof.json": "3a3a0173e1e18cb8cbe2cd01456bc5080c7e25824eafc1a939db58954e582549",
+    "partition-proof.log": "270187896665c51428fd6cc384592abf2425ec4002d66485d22dae3b18c81af1",
+    "periodic-stack.jsonl": "1dcfff0b79b481812bbc8e341f62f6cf24aa6ac12f16e958651dd6aaa689bfbf",
+    "plan-source.log": "62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90",
+    "plan.log": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+    "portfolio-green.log": "1c04769dc77c7b0b2ed4d3c854c4cd5538d36738d140d6d2bcbd154b15f7f42b",
+    "portfolio-green.xml": "96029efe4bf6a0dbd9836c22af17d70ccf3f856116300b7b4a75c116f89f1a14",
+    "portfolio.log": "402deedb11225c3511a1e338dc77d9736d316900e6378eca7a3bd8bf2074c852",
+    "portfolio.xml": "831a83807c2926e61380e00d9cf42bca1851604552bdcad84d3893e3f32fe919",
+    "preflight-commands.json": "6d49e7f5ed18655b4d4aacd7fde7935d35e1b3151f39cd67681f20aa0bb7e2f3",
+    "preflight-result.json": "5f1235e325146d71477ffc8121fb078da39bb1b020716a79075cd4128f799351",
+    "rccad-source.log": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+    "rccad.log": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+    "regression0050-exit.json": "66987521e4c2a53b81e1fd2582385e152710fdf660a944917c2b923611252aad",
+    "regression0050.log": "346db2cfcef42a8b3ae1429d85b7352f4c4d5077ebbb936e8d4c58ff9fc3c564",
+    "regression0050.xml": "137e4278502879d155e94bd3b39c5941d0ab3b4d237d12af313f359f1273434c",
+    "reset.log": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+    "restore-verify-report.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "restore-verify.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "runtime0050.log": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
+    "runtime0072.log": "dc02de336b090d616cc4f87d4b6bb69885d731a292e64c3ed2ea838a0807edb7",
+    "scope.log": "070054fe2ed820da424d31248af5428cbef1f7910e8058a8bfe9c294e4e55b99",
+    "session-teardown.json": "46fd2d38b06f20132a915989737a1e72324af42c836320e898cce33661254e03",
+    "session-teardown.log": "42ea8cba40f0308db611385f069b5472c2747cf218065c673c63f1c28e692831",
+    "stack-summary.json": "c4c11323536a321507eae39d78cb6d9554890cb09b6d1f2bab2b6a18e32b787e",
+    "svid.log": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0",
+    "sync-lint.log": "4d9312eb95aeb2d9c7e3befa815a9c19679f532390fa660b0ac94bb8e6933f03",
+    "toolchain.json": "8379203baf796be34226b9670a5800d7fa3f02a08f3533776f78be0f78f58080",
+    "toolchain0072.log": "a190f8ce95fa3d0f583878750ddb9cf9f599bf32cb73e53597b220e7a2fa2869",
+    "typed-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+    "verify.log": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+    "workflow-green.json": "81ec1c3fbf928d845574fb13b56859e2fb05ed06f5e3f54819e257306bedef59",
+    "workflow-proof-final.json": "81ec1c3fbf928d845574fb13b56859e2fb05ed06f5e3f54819e257306bedef59",
+    "workflow-red.log": "b76901183625bab3028e873f9d9ceb8084b4ea972e1592ed49fc026b0313325e"
+  },
+  "raw_output_format": "Verbatim RAW_FILE / END_RAW_FILE blocks, individually SHA256-bound",
+  "raw_output_path": "reports/assurance/OCOR-DEV-REM-0017-RCCAD/pin-rebalance-20261015.log",
+  "raw_output_sha256": "fd83cc6fa9bdb8c54f9b752150cdeaa966dd0816923da4b9c5850ae0483e2312",
+  "record_id": "OCOR-DEV-REM-0017-pin-rebalance-ced9d9b3bf97",
+  "repair_cycle": 1,
+  "retained0072": {
+    "all_input_digests_match": true,
+    "current_gate_commands": [
+      "scripts/preflight_environment.py",
+      "scripts/verify_external_services.py --manifest-only"
+    ],
+    "reason": "Every recorded input unchanged; no new requalification required by this pin/N update",
+    "record_path": "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0017-20261014.json"
+  },
+  "roles": {
+    "0049_lineage": "repair cycles 2-6 and 8 Claude Code; cycle 7 Codex; REM0032 cycle0/runtime campaign Claude Code reserve and repair1 Codex; verifier Grok4.7 via Cursor. Historical identities unchanged.",
+    "historical_reserve_contribution": "Claude Code reserve contributed to REM-0017; previous actors, commits, logs and counts preserved",
+    "implementer": "Codex (OpenAI), pin/rebalance, workflow invariance proof and current qualification",
+    "independent_verifier_launched": false,
+    "planned_verifier": "Grok 4.7 via Cursor CLI, separate process/context/provider; external loop only",
+    "verifier": "cursor"
+  },
+  "rollback": "New revert of this governed change; no data migration or historical rewrite. Candidate does not imply0049 acceptance or evidence promotion.",
+  "schema_version": "1.0",
+  "session_teardown": {
+    "after_counts": {
+      "containers": 24,
+      "networks": 5,
+      "volumes": 366
+    },
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+      "scripts/reset_test_environment.py",
+      "--execute"
+    ],
+    "exit_code": 0,
+    "new_resources_remaining": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "owned_bootstrap_resources_remaining": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "raw_sha256": "42ea8cba40f0308db611385f069b5472c2747cf218065c673c63f1c28e692831",
+    "scope": "only authorized OCOR resources; pre-existing stale OCOR reset is not relabelled as preservation",
+    "status": "PASS"
+  },
+  "status": "CANDIDATE_AWAITING_EXACT_HEAD_CI",
+  "superseded_path": "reports/assurance/OCOR-DEV-REM-0017-RCCAD/kind-timeout-20261014.json",
+  "superseded_sha256": "7ca78d58d603a27b84862ba23e2e410aeb6603765452699ed5e45e2fe8090a7a",
+  "supersedes": "OCOR-DEV-REM-0017-kind-timeout-9ad17720beb2",
+  "supersession_scope": "Unsealed REM0017 candidate only. Prior failed CI stays diagnostic with original counts. Historical seals untouched.",
+  "task_id": "OCOR-DEV-REM-0017",
+  "tdd": {
+    "GREEN": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 202,
+      "raw_sha256": "1c04769dc77c7b0b2ed4d3c854c4cd5538d36738d140d6d2bcbd154b15f7f42b",
+      "skipped": 0,
+      "subtests_passed": 27
+    },
+    "RED": {
+      "exit_code": 1,
+      "raw_sha256": "b76901183625bab3028e873f9d9ceb8084b4ea972e1592ed49fc026b0313325e",
+      "workflow_contract": "workflow-red.log"
+    },
+    "declarative_exception": "Pin and N assignment are declarative configuration, not runtime semantics; exact executable workflow contract fails before update and passes after. Existing report invariant failed on the expressly authorised delta; it now requires exactly that delta and rejects timer/gate/unapproved pin changes.",
+    "invariant_RED": {
+      "failed": 1,
+      "passed": 200,
+      "raw_sha256": "402deedb11225c3511a1e338dc77d9736d316900e6378eca7a3bd8bf2074c852",
+      "skipped": 0,
+      "subtests_passed": 19
+    }
+  },
+  "workflow_delta": {
+    "baseline": "0f38a88",
+    "permitted_changes": [
+      "0049 pin a0ee43d -> beab1b4",
+      "0049 deterministic parts 4 ->5"
+    ],
+    "status": "PASS",
+    "unchanged": [
+      "harness",
+      "part/fulls timer and thresholds",
+      "exact-union gate",
+      "all other jobs and workflow steps",
+      "readiness",
+      "runtime/tests",
+      "kind observer"
+    ],
+    "workflow_sha256": "1d6e3f8d937efd0eff02b6ccba42e5a86b0408a3920e72d30d4ad13291f1d0d9"
+  }
+}

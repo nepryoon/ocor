@@ -451,3 +451,28 @@ HEAD313ae79 fallisce in raccolta nella parte3 dei tre job completi: import di sp
 ### 2026-10-14 — osservazione dei relay, decisione PO opzione 1
 
 Candidato `relay-observation-20261014.json` da sorgente `4d030f7`: RED11 e RED di classe2 (PostgreSQL/SPIRE), GREEN123, portfolio163 più8subtest; full1834 e regressione-only0050 di198 casi invariati, zero skip. Prova Docker unhealthy/healthy reale, cattura prima della rimozione, CPU/load/mem ogni5s, output bounded;23funzioni preesistenti e workflow invarianti salvo hook diagnostici. Tutti i gate locali PASS, piano37PASS/2NOT_EXECUTED opzionali, drift0/183input/69task, teardown senza residui nuovi/owned. Primo full PASS su sorgente precedente conservato senza trasferire conteggi; tentativo senza stack dopo preflight drift FAIL conservato e driver corretto fail-closed. Implementatore Codex; riserva Claude Code storica; verifier previsto Cursor/Grok4.7, non avviato. CI esatta e GO indipendente ancora richiesti; sigilli storici ed E1/E2/Verified/NO-GO intatti.
+
+
+### 2026-10-15 — pin REM-0032 sigillato e ribilanciamento autorizzato
+
+Nuovo candidato `pin-rebalance-20261015.json`: pin TEST-INFRA-006 a
+`beab1b4cc16d0678ce5554fcebd6495b328f5342`, REM-0032 sigillata, e cinque
+parti deterministiche per la sua campagna; Helm resta separato. I tre job
+completi del branch mantengono quattro parti. Unione dei 2224 nodi verificata
+in collection per ogni nuova parte; harness, timer, tetti e gate invariati.
+L'asserzione storica dei workflow ora richiede esattamente il delta pin/N
+autorizzato dal PO; nuovi negativi respingono pin, matrice, timer, dipendenze
+e unione alterati. RED diagnostico conservato; GREEN 202 test e 27 subtest,
+zero skip. Full locale 1933 PASS in 1075.51 secondi, zero failure/error/skip;
+regressione-only0050 198 PASS invariati, con nuovo record e supersession.
+Gli input di0072 restano identici: record storico conservato, preflight e
+manifest rieseguiti. Gate locali e teardown PASS, nessuna risorsa nuova/owned
+residua. Implementatore Codex, contributi storici Claude Code di riserva
+preservati; verifier previsto Grok4.7 via Cursor, solo loop esterno.
+
+CI esatta, verifica indipendente, sigillo e integrazione restano da acquisire:
+questo record locale non chiude REM-0017. Vale la sola nuova coppia CI della
+decisione PO relay-probe remediation, con esiti1–4 preregistrati nel record;
+nessun trasferimento di conteggi dalle CI fallite precedenti. Dal push al
+mergePR169 o alla registrazione del FAIL: nessun merge su main, stato incluso.
+E1=0,E2=0,Verified=0 e tutti i NO-GO invariati; inputs e sigilli storici intatti.
