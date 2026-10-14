@@ -373,13 +373,13 @@ jobs:
     # A passing run exercises the guard; it does not accept the candidate's integration.
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
-    name: conditional-infrastructure-0049 part ${{ matrix.part }}/4
+    name: conditional-infrastructure-0049 part ${{ matrix.part }}/5
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3, 4]
+        part: [1, 2, 3, 4, 5]
     env:
       PYTHONHASHSEED: "0"
       TZ: UTC
@@ -443,7 +443,7 @@ jobs:
       - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: a0ee43d4e502f3589cd857cfec4238eab13fe8e7
+          ref: beab1b4cc16d0678ce5554fcebd6495b328f5342
           path: .ocor/candidate-0049
           persist-credentials: false
 
@@ -506,7 +506,7 @@ jobs:
       - name: Run this part of the immutable candidate FULL suite with TEST-INFRA-005 and 006
         run: |
           set -euo pipefail
-          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository .ocor/candidate-0049 --expected-head a0ee43d4e502f3589cd857cfec4238eab13fe8e7 --shard-index ${{ matrix.part }} --shard-count 4 --output-dir reports/tests/candidate-0049-part-${{ matrix.part }}
+          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository .ocor/candidate-0049 --expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342 --shard-index ${{ matrix.part }} --shard-count 5 --output-dir reports/tests/candidate-0049-part-${{ matrix.part }}
 
       - name: Teardown candidate-owned resources and the disposable stack
         if: always()
@@ -570,7 +570,7 @@ jobs:
       - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: a0ee43d4e502f3589cd857cfec4238eab13fe8e7
+          ref: beab1b4cc16d0678ce5554fcebd6495b328f5342
           path: .ocor/candidate-0049
           persist-credentials: false
 
@@ -588,7 +588,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p reports/tests
-          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository .ocor/candidate-0049 --expected-head a0ee43d4e502f3589cd857cfec4238eab13fe8e7 --shard-count 4 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
+          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository .ocor/candidate-0049 --expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342 --shard-count 5 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
 
       - name: Upload candidate guard execution (not an evidence seal)
         if: always()
