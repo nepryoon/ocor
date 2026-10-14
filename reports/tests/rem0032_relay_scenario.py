@@ -180,6 +180,45 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     return result
 
 
+def probe_cost(args: argparse.Namespace) -> dict[str, Any]:
+    """CPU cost of one probe of the file under test, on one idle relay without cpuset/load:
+    cgroup CPU of N back-to-back execs of the exact healthcheck command, minus the idle
+    rate of the same container (its own scheduled healthchecks) over an equal window."""
+    compose_path = Path(args.compose).resolve()
+    doc = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
+    test = doc["x-relay"]["healthcheck"]["test"]
+    argv = test[1:] if test[0] == "CMD" else ["/bin/sh", "-c", test[1]]
+    argv = [a.replace("$$", "$") for a in argv]
+    work = Path(tempfile.mkdtemp(prefix="rem0032-cost-"))
+    (work / "vault").mkdir()
+    env = compose_env(Path(args.env_file), work / "vault")
+    project = f"rem0032-cost-{args.label}"
+    files = ["-f", str(compose_path)]
+    try:
+        up = subprocess.run(["docker", "compose", "-p", project, *files, "--profile", "observability", "up", "-d",
+                             "--wait", "ocor-relay-opa"], capture_output=True, text=True, env=env, timeout=300)
+        assert up.returncode == 0, up.stdout + up.stderr
+        name = f"{project}-ocor-relay-opa-1"
+        cid = docker("inspect", "-f", "{{.Id}}", name, check=True).stdout.strip()
+        u0, t0 = cgroup_usage_usec(cid), time.time()
+        for _ in range(args.probe_cost):
+            docker("exec", name, *argv, check=True)
+        u1, t1 = cgroup_usage_usec(cid), time.time()
+        time.sleep(t1 - t0)
+        u2, t2 = cgroup_usage_usec(cid), time.time()
+        assert None not in (u0, u1, u2)
+        idle_rate = (u2 - u1) / (t2 - t1)
+        per_probe = ((u1 - u0) - idle_rate * (t1 - t0)) / args.probe_cost / 1000
+        return {"compose": str(compose_path), "label": args.label, "probe_argv": argv, "execs": args.probe_cost,
+                "exec_window_seconds": round(t1 - t0, 3), "cpu_ms_per_probe": round(per_probe, 2),
+                "wall_ms_per_probe": round((t1 - t0) / args.probe_cost * 1000, 2),
+                "idle_cpu_ms_per_second": round(idle_rate / 1000, 2),
+                "method": "container cgroup usage_usec; exec CPU minus idle-rate x window; no cpuset, no load"}
+    finally:
+        subprocess.run(["docker", "compose", "-p", project, *files, "--profile", "observability", "down", "-v",
+                        "--remove-orphans", "-t", "2"], capture_output=True, env=env, timeout=300, check=False)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--compose", required=True)
@@ -190,8 +229,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--load", type=int, default=0)
     parser.add_argument("--observe", type=int, default=90)
     parser.add_argument("--wait-timeout", type=int, default=240)
+    parser.add_argument("--probe-cost", type=int, default=0, help="measure CPU per probe over N execs instead")
     parser.add_argument("--out", required=True)
     args = parser.parse_args(argv)
+    if args.probe_cost:
+        cost = probe_cost(args)
+        Path(args.out).write_text(json.dumps(cost, indent=2, sort_keys=True) + "\n")
+        print(json.dumps(cost))
+        return 0
     result = run(args)
     Path(args.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps({k: result[k] for k in ("label", "unhealthy_containers", "relay_cpu_cores_in_window", "residue")}
