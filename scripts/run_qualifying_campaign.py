@@ -23,6 +23,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+import observe_kind_teardown as kind_observer
+
 from bootstrap_ci_environment import SessionRecorder, collect_stack_diagnostics, redact_campaign_log
 
 
@@ -37,11 +39,12 @@ PART_ARTIFACTS = ("partition.json", "campaign_result.json", "runtime_junit_post_
 # df444af (run on head f55b210, runtime JUnit SHA-256 4ba26f004afe9541...);
 # the Helm case waits for a real */15 CronJob tick, so it carries its worst case.
 DEFAULT_TEST_WEIGHT = 0.1
-# Nodes that may leave their module's part: the Helm case runs on its own kind
-# cluster and passed alone (CI run 37952580435, conditional-infrastructure-0049 part 1/4).
-SEPARABLE_NODES = frozenset({
-    "tests/tasks/test_ocor_dev_0049.py::test_helm_profile_on_kubernetes_backs_up_restores_and_gates_readiness",
-})
+# REM19 independent GO on 90b30fff9819 qualifies isolated 0049 cases.
+# PO REM-0017-CI-0049-REMAINDER-CAP (2026-10-10) supersedes whole-module
+# assignment for 0049 only. Helm always gets its own runner and pinned cluster.
+HELM_NODE = "tests/tasks/test_ocor_dev_0049.py::test_helm_profile_on_kubernetes_backs_up_restores_and_gates_readiness"
+INDEPENDENT_MODULES = frozenset({"tests/tasks/test_ocor_dev_0049.py"})
+SEPARABLE_NODES = frozenset({HELM_NODE})
 MEASURED_WEIGHTS = {
     "tests.mission_thread.test_first_governed_slice::test_a_real_kafka_broker_restart_during_the_event_step_is_detected_and_recovers": 22,
     "tests.mission_thread.test_first_governed_slice::test_causal_receipt_reproduces_identically_with_the_same_pinned_inputs": 11,
@@ -156,22 +159,19 @@ def collect_nodeids(directory: Path, selection: list[str]) -> list[str]:
 
 
 def partition_units(nodeids: list[str]) -> list[list[str]]:
-    """Whole test modules in collection order; only proven-separable nodes stand alone.
-
-    Modules may carry order-dependent state between their tests (CI run
-    37952580435: splitting test_ocor_dev_0049 by node broke its restore and
-    readiness state), so a module is never split across parts.
-    """
+    """Keep other modules whole; qualified 0049 cases are independent units."""
     units: dict[str, list[str]] = {}
     for node in nodeids:
-        units.setdefault(node if node in SEPARABLE_NODES else node.split("::", 1)[0], []).append(node)
+        module = node.split("::", 1)[0]
+        units.setdefault(node if module in INDEPENDENT_MODULES else module, []).append(node)
     return list(units.values())
 
 
 def partition(nodeids: list[str], count: int) -> list[list[str]]:
-    """Longest-processing-time assignment of whole units; ties broken by first node ID and part index.
+    """Reserve Helm, then balance whole units deterministically across other parts.
 
-    Each part keeps pytest's collection order, so relative order is unchanged.
+    Each part keeps collection order. The exact-union gate still accepts every
+    collected node exactly once; only assignment changes.
     """
     if count < 2:
         raise CampaignError("the suite must run in at least 2 parts")
@@ -179,11 +179,15 @@ def partition(nodeids: list[str], count: int) -> list[list[str]]:
         raise CampaignError(f"cannot partition {len(nodeids)} collected tests into {count} nonempty parts")
     if len({junit_identity(node) for node in nodeids}) != len(nodeids):
         raise CampaignError("collected node IDs are not uniquely identifiable in JUnit")
-    units = partition_units(nodeids)
-    if len(units) < count:
-        raise CampaignError(f"cannot partition {len(units)} units into {count} nonempty parts")
-    loads = [(0.0, index) for index in range(count)]
+    reserved = [HELM_NODE] if HELM_NODE in nodeids else []
+    units = partition_units([node for node in nodeids if node not in reserved])
+    first = 1 if reserved else 0
+    if len(units) < count - first:
+        raise CampaignError(f"cannot partition {len(units) + first} units into {count} nonempty parts")
+    loads = [(0.0, index) for index in range(first, count)]
     assigned: list[list[str]] = [[] for _ in range(count)]
+    if reserved:
+        assigned[0] = reserved
     for unit in sorted(units, key=lambda item: (-sum(map(node_weight, item)), item[0])):
         load, index = heapq.heappop(loads)
         assigned[index].extend(unit)
@@ -340,7 +344,7 @@ def inspect_stack() -> dict[str, Any]:
     return {entry["Name"]: entry for entry in json.loads(raw)}
 
 
-def inspect_kubernetes_runtimes() -> dict[str, dict[str, Any]]:
+def inspect_kubernetes_runtimes_raw() -> dict[str, dict[str, Any]]:
     """Observe systemd inside only the disposable OCOR kind nodes.
 
     A containerd restart does not change Docker's container RestartCount.
@@ -369,6 +373,22 @@ def inspect_kubernetes_runtimes() -> dict[str, dict[str, Any]]:
     return current
 
 
+def inspect_kubernetes_runtimes() -> dict[str, dict[str, Any]]:
+    return kind_observer.inspect_kubernetes_runtimes(inspect_kubernetes_runtimes_raw)
+
+
+def qualification_kind_binary(repository: Path) -> Path:
+    for parent in (repository, *repository.parents):
+        binary = parent / ".ocor/tools/bin/kind"
+        if binary.is_file():
+            return binary.resolve()
+    found = shutil.which("kind")
+    if found:
+        return Path(found).resolve()
+    # An absent official binary cannot prove intended removal.
+    return repository / ".ocor/tools/bin/kind"
+
+
 def check_kubernetes_runtimes(history: dict[str, dict[str, Any]], current: dict[str, dict[str, Any]]) -> None:
     for identity, after in current.items():
         before = history.get(identity)
@@ -379,6 +399,14 @@ def check_kubernetes_runtimes(history: dict[str, dict[str, Any]], current: dict[
             raise CampaignError(f"Kubernetes service restarted or failed: {identity}")
         if not initializing_kubelet and after["active"] == "active" and after["pid"] > 0:
             history[identity] = after
+
+    # Absence in docker ps is not proof of an intended teardown. Every UUID
+    # previously observed must have the same v2 remover/destroy proof.
+    missing = set(history) - set(current)
+    for node in sorted({identity.split(":", 1)[0] for identity in missing}):
+        kind_observer.confirm_missing_node(node)
+    for identity in missing:
+        del history[identity]
 
 
 def collect_kubernetes_diagnostics(output: Path) -> None:
@@ -461,6 +489,7 @@ def main() -> int:
     command = [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing", f"--cov-report=json:{output / 'runtime_coverage_post_approval.json'}", f"--junitxml={junit}"]
     process: subprocess.Popen[Any] | None = None
     recorder: SessionRecorder | None = None
+    observer_thread = None
     decision_required = False
     try:
         if args.expected_head:
@@ -489,6 +518,7 @@ def main() -> int:
         start = time.monotonic()
         with (output / "post_remediation_runtime.log").open("w") as log:
             process = subprocess.Popen(command, cwd=suite_repository / "ocor-runtime", stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            observer_thread = kind_observer.start_sampler(process.pid, qualification_kind_binary(suite_repository))
             while process.poll() is None:
                 check_stack(initial, inspect_stack())
                 current = inspect_kubernetes_runtimes()
@@ -514,7 +544,7 @@ def main() -> int:
         (output / "campaign_result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
         print(json.dumps(result))
         return 0
-    except (CampaignError, OSError, subprocess.SubprocessError, KeyError, ValueError) as exc:
+    except (CampaignError, kind_observer.TeardownObservationError, OSError, subprocess.SubprocessError, KeyError, ValueError) as exc:
         # Suspend the owned pytest process group immediately. Preserve the node
         # for diagnostics, then deliver SIGINT before resuming fixture teardown.
         frozen = False
@@ -539,6 +569,12 @@ def main() -> int:
     finally:
         if process is not None:
             stop(process)
+        if observer_thread is not None:
+            kind_observer.stop_sampler(observer_thread)
+            (output / "kind-teardown-observations.json").write_text(json.dumps({
+                "removals": kind_observer.REMOVALS, "rejections": kind_observer.REJECTIONS,
+                "window_seconds": kind_observer.WINDOW_SECONDS,
+            }, indent=2, sort_keys=True) + "\n")
         recorder_error = None
         if recorder is not None:
             try:

@@ -329,7 +329,9 @@ def stub_completed_campaign(tmp_path, monkeypatch, *, seconds, recorder_error=Fa
         def finish(self):
             if recorder_error:
                 raise ci.BootstrapError("event capture failed")
+    monkeypatch.setattr(GUARD.kind_observer, "start_sampler", lambda *args: None)
     class Process:
+        pid = 99999
         returncode = 0
         def poll(self):
             return 0
@@ -373,12 +375,15 @@ def test_malformed_ownership_event_cannot_silently_lose_attribution(event):
     assert recorder.errors
 
 
-def test_kubernetes_runtime_initial_start_and_clean_shutdown_are_allowed():
+def test_kubernetes_runtime_initial_start_and_proven_shutdown_are_allowed(monkeypatch):
     history = {}
     GUARD.check_kubernetes_runtimes(history, {'node:containerd': {'restarts': 0, 'active': 'activating', 'pid': 0}})
     GUARD.check_kubernetes_runtimes(history, {'node:containerd': {'restarts': 0, 'active': 'active', 'pid': 111}})
     GUARD.check_kubernetes_runtimes(history, {'node:containerd': {'restarts': 0, 'active': 'active', 'pid': 111}})
-    GUARD.check_kubernetes_runtimes(history, {})  # Fixture-owned node removed normally.
+    seen = []
+    monkeypatch.setattr(GUARD.kind_observer, 'confirm_missing_node', seen.append)
+    GUARD.check_kubernetes_runtimes(history, {})
+    assert seen == ['node'] and history == {}
 
 
 @pytest.mark.parametrize('current', [
@@ -498,23 +503,34 @@ def module_of(node):
     return node.split('::', 1)[0]
 
 
-def test_modules_are_never_split_except_proven_separable_nodes():
-    # CI run 37952580435 (head 4e97cd3): splitting test_ocor_dev_0049 by node broke
-    # its order-dependent restore/readiness state; modules stay whole and ordered.
+def test_modules_are_never_split_except_qualified_0049():
+    # PO 2026-10-10 supersedes the indivisible 0049 constraint after REM19 GO.
     for count in (2, 3, 4):
         parts = GUARD.partition(NODEIDS, count)
         owner = {}
         for index, part in enumerate(parts):
             for node in part:
-                if node in GUARD.SEPARABLE_NODES:
+                if module_of(node) == "tests/tasks/test_ocor_dev_0049.py":
                     continue
                 assert owner.setdefault(module_of(node), index) == index, node
-    parts = GUARD.partition(NODEIDS, 3)
-    helm_part = next(part for part in parts if HELM in part)
-    assert helm_part == [HELM]
-    rest = next(part for part in parts if 'tests/tasks/test_ocor_dev_0049.py::test_restore_replay_is_deterministic' in part)
-    assert rest.index('tests/tasks/test_ocor_dev_0049.py::test_restore_replay_is_deterministic') < rest.index(
-        'tests/tasks/test_ocor_dev_0049.py::test_custodian_signed_receipt_time_branches[future]')
+        assert next(part for part in parts if HELM in part) == [HELM]
+
+
+def test_qualified_0049_cases_split_and_helm_has_its_own_part():
+    nodes = [HELM] + [f"tests/tasks/test_ocor_dev_0049.py::test_case[{k}]" for k in range(389)]
+    parts = GUARD.partition(nodes, 4)
+    assert next(part for part in parts if HELM in part) == [HELM]
+    assert sorted(node for part in parts for node in part) == sorted(nodes)
+    assert sum(bool(part) for part in parts) == 4
+    assert max(len(part) for part in parts if HELM not in part) == 130
+
+
+def test_helm_is_reserved_even_if_other_tests_are_heavier(monkeypatch):
+    monkeypatch.setattr(GUARD, "node_weight", lambda node: 1 if node == HELM else 10000)
+    nodes = [HELM, "one.py::test_one", "two.py::test_two", "three.py::test_three"]
+    parts = GUARD.partition(nodes, 3)
+    assert next(part for part in parts if HELM in part) == [HELM]
+    assert sorted(node for part in parts for node in part) == sorted(nodes)
 
 
 def test_partition_requires_more_units_than_parts():
@@ -734,6 +750,7 @@ def test_part_runs_only_its_verified_selection(tmp_path, monkeypatch):
         (output / 'runtime_junit_post_approval.xml').write_text(junit_xml(selected))
         (Path(kwargs['cwd']) / '.coverage').write_text('data')
         class Process:
+            pid = 99999
             returncode = 0
             def poll(self):
                 return 0
@@ -758,3 +775,13 @@ def test_part_whose_selection_collects_differently_fails_before_execution(tmp_pa
     (tmp_path / 'ocor-runtime').mkdir()
     assert GUARD.main() == 1
     assert 'selection' in json.loads((output / 'campaign_result.json').read_text())['error']
+
+
+def test_known_node_disappearance_cannot_qualify_without_removal_proof(monkeypatch):
+    history = {"node:containerd": {"restarts": 0, "active": "active", "pid": 111}}
+    def reject(node):
+        raise GUARD.kind_observer.TeardownObservationError("no removal proof")
+    monkeypatch.setattr(GUARD.kind_observer, "confirm_missing_node", reject)
+    with pytest.raises(GUARD.kind_observer.TeardownObservationError, match="proof"):
+        GUARD.check_kubernetes_runtimes(history, {})
+    assert "node:containerd" in history

@@ -21,7 +21,7 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from typing import Any
 
-from ocor_bootstrap_lib import BootstrapError, load_json, root
+from ocor_bootstrap_lib import BootstrapError, load_json, root, run
 
 SOURCES = (
     "https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz",
@@ -166,17 +166,35 @@ def build_context(repository: Path, archive: Path) -> Iterator[Path]:
         yield context
 
 
+def build_ci_image(repository: Path, *, timeout: float = 600) -> dict[str, object]:
+    """Download, verify and build within ONE 600-second budget, without retries."""
+    deadline = time.monotonic() + timeout
+    archive, provenance = acquire(repository, timeout=timeout)
+    with build_context(repository, archive) as context:
+        result = run(
+            ["docker", "build", "-t", "ocor/jena-fuseki:ci", str(context)],
+            cwd=repository, timeout=max(1, int(remaining(deadline))),
+        )
+    if result.returncode:
+        raise BootstrapError(f"verified Fuseki build failed: {result.stderr[-2000:]}")
+    remaining(deadline)
+    return {"status": "PASS", "image": "ocor/jena-fuseki:ci", **provenance}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--github-output", action="store_true", help="print cache key/path without mutation")
+    parser.add_argument("--build-ci-image", action="store_true", help="build CI Fuseki from verified bytes; requires --execute")
     args = parser.parse_args()
     try:
         repository = root()
         if args.github_output:
             info = cache_info(repository)
             print(f"key={info['key']}\npath={info['path']}")
+        elif args.execute and args.build_ci_image:
+            print(json.dumps(build_ci_image(repository, timeout=args.timeout), sort_keys=True))
         elif args.execute:
             acquire(repository, timeout=args.timeout)
         else:

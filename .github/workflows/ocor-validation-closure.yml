@@ -16,13 +16,13 @@ jobs:
   validation-closure-part:
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
-    name: validation-closure part ${{ matrix.part }}/3
+    name: validation-closure part ${{ matrix.part }}/4
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3]
+        part: [1, 2, 3, 4]
     env:
       PYTHONHASHSEED: "0"
       TZ: UTC
@@ -131,7 +131,7 @@ jobs:
 
 
       - name: Execute this zero-skip part of the complete runtime campaign on the real stack
-        run: ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --shard-index ${{ matrix.part }} --shard-count 3 --output-dir reports/tests/closure-part-${{ matrix.part }}
+        run: ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --shard-index ${{ matrix.part }} --shard-count 4 --output-dir reports/tests/closure-part-${{ matrix.part }}
 
       - name: Teardown this disposable stack
         if: always()
@@ -306,7 +306,7 @@ jobs:
           set -euo pipefail
           PY=.venv/bin/python
           # The parts' union must equal pytest --collect-only on this HEAD, with zero skips.
-          "$PY" ../scripts/run_qualifying_campaign.py --execute --aggregate ../reports/tests/closure-parts --shard-count 3 --output-dir ../reports/tests
+          "$PY" ../scripts/run_qualifying_campaign.py --execute --aggregate ../reports/tests/closure-parts --shard-count 4 --output-dir ../reports/tests
           "$PY" -m pytest -v --junitxml=../reports/tests/ba_junit_post_approval.xml tests/backend_assumptions/ | tee ../reports/tests/post_remediation_ba.log
           "$PY" -m pytest -v --junitxml=../reports/tests/ev_junit_post_approval.xml tests/acceptance_ev/ | tee ../reports/tests/post_remediation_ev.log
           "$PY" -m pytest -v --junitxml=../reports/tests/postgres_junit_post_approval.xml tests/integration/test_postgres_outbox_live.py | tee ../reports/tests/post_remediation_postgres.log
@@ -314,7 +314,7 @@ jobs:
       - name: Execute conditional report guards and campaign supervisor tests
         run: |
           set -euo pipefail
-          ocor-runtime/.venv/bin/python -m pytest -v --junitxml=reports/tests/guards_junit.xml reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py | tee reports/tests/ci_guards.log
+          ocor-runtime/.venv/bin/python -m pytest -v --junitxml=reports/tests/guards_junit.xml reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py | tee reports/tests/ci_guards.log
           ocor-runtime/.venv/bin/python - <<'PYTHON'
           import sys
           from pathlib import Path
@@ -373,13 +373,13 @@ jobs:
     # A passing run exercises the guard; it does not accept the candidate's integration.
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
-    name: conditional-infrastructure-0049 part ${{ matrix.part }}/3
+    name: conditional-infrastructure-0049 part ${{ matrix.part }}/4
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3]
+        part: [1, 2, 3, 4]
     env:
       PYTHONHASHSEED: "0"
       TZ: UTC
@@ -443,7 +443,7 @@ jobs:
       - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: df444af855e884d7783612b302e008b90105fe13
+          ref: a0ee43d4e502f3589cd857cfec4238eab13fe8e7
           path: .ocor/candidate-0049
           persist-credentials: false
 
@@ -506,7 +506,7 @@ jobs:
       - name: Run this part of the immutable candidate FULL suite with TEST-INFRA-005 and 006
         run: |
           set -euo pipefail
-          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository .ocor/candidate-0049 --expected-head df444af855e884d7783612b302e008b90105fe13 --shard-index ${{ matrix.part }} --shard-count 3 --output-dir reports/tests/candidate-0049-part-${{ matrix.part }}
+          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository .ocor/candidate-0049 --expected-head a0ee43d4e502f3589cd857cfec4238eab13fe8e7 --shard-index ${{ matrix.part }} --shard-count 4 --output-dir reports/tests/candidate-0049-part-${{ matrix.part }}
 
       - name: Teardown candidate-owned resources and the disposable stack
         if: always()
@@ -570,7 +570,7 @@ jobs:
       - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: df444af855e884d7783612b302e008b90105fe13
+          ref: a0ee43d4e502f3589cd857cfec4238eab13fe8e7
           path: .ocor/candidate-0049
           persist-credentials: false
 
@@ -588,7 +588,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p reports/tests
-          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository .ocor/candidate-0049 --expected-head df444af855e884d7783612b302e008b90105fe13 --shard-count 3 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
+          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository .ocor/candidate-0049 --expected-head a0ee43d4e502f3589cd857cfec4238eab13fe8e7 --shard-count 4 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
 
       - name: Upload candidate guard execution (not an evidence seal)
         if: always()
