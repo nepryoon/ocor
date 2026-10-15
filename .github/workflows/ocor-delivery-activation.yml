@@ -221,6 +221,13 @@ jobs:
               print(f"{package}=={version(package)}")
           PY
 
+      - name: Reject immutable-path and task-ledger regressions
+        run: >-
+          ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py
+          --base "${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}"
+          --head "${{ github.sha }}"
+          --branch "${{ github.head_ref || github.ref_name }}"
+
       - name: Acquire official checksum-pinned Kubernetes qualification tools
         run: |
           set -euo pipefail
@@ -272,13 +279,6 @@ jobs:
           path: ${{ steps.fuseki-key.outputs.path }}
           key: ${{ steps.fuseki-key.outputs.key }}
 
-
-      - name: Reject immutable-path and task-ledger regressions
-        run: >-
-          ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py
-          --base "${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}"
-          --head "${{ github.sha }}"
-          --branch "${{ github.head_ref || github.ref_name }}"
 
       - name: Validate language policy (DEC-212)
         run: |
