@@ -1,6 +1,6 @@
 # REM-0017-CI-ARCHIVE-ACQUISITION
 
-Status: OPEN_PO_DECISION_REQUIRED. Data: 2026-10-08T09:40:15.212131+00:00.
+Status: RESOLVED_BY_PO_DECISION (2026-10-08). Data richiesta originale: 2026-10-08T09:40:15.212131+00:00.
 Implementatore Codex; verifier previsto Claude Code, non richiesto.
 
 La PR169 draft sul source HEAD `40c9c0925970f7e2b9d5217d1af3e8d2a950be68` fallisce prima dell'avvio dello stack:
@@ -65,3 +65,25 @@ Raw RCCAD SHA256d6083bf4369e02ac6d20e3ef1444b320fb3bab2421a3d64dbe85f167cf9f9a1f
 closure cade569b43e1802439ee5ade9d0fba011391994c0bbbfb941d298b33d059b681;
 delivery87c9c49652ec80f1bd4c7bb70389eb97ef030b1b20e292da36e42dfedba442c0.
 Il PASS delivery40c9 è storico, non trasferito al finale.
+
+
+## Risoluzione del Product Owner — 2026-10-08
+
+Status corrente: RESOLVED_PO_DECISION_IMPLEMENTATION_IN_PROGRESS. La decisione
+REM-0017-CI-ARCHIVE-ACQUISITION autorizza l'acquisizione verificata e la cache
+content-addressed. L'unica autorità sui byte è lo SHA512 già fissato nel lock.
+Su miss si usano, in ordine, dlcdn.apache.org, downloads.apache.org e
+archive.apache.org; checksum prima di ogni uso, rifiuto fail-closed di cache
+corrotta e redirect esterni ad Apache. Il Dockerfile copia gli stessi byte
+verificati e conserva il RUN SHA512. I quattro job che avviano lo stack
+usano solo GitHub Actions cache del repository, con action restore/save
+fissate al commit0057852bfaa89a56745cba8c7296529d2fc39830 (v4.3.0 verificato
+sul repository ufficiale actions/cache). Nessuna restore-key parziale.
+
+Provisioning CI entro600s complessivi, suite FULL75m/task45m, stop su
+restart/OOM e zero skip invariati. Dopo questo cambiamento pertinente è
+autorizzata una nuova coppia CI (primo tentativo e un solo rerun).
+La risoluzione della decisione non qualifica REM17: occorrono campagne
+e CI esatte verdi, verifica Claude Code e sigillo separato. Implementatore
+Codex/OpenAI. Identità locale Fuseki da riacquisire nel change set dedicato
+autorizzato FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE; lock e checker invariati qui.

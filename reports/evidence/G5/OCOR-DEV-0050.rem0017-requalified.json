@@ -1,0 +1,386 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "duration_seconds": 0.11399430900928564,
+      "exit_code": 0,
+      "label": "main-reset",
+      "raw_sha256": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "duration_seconds": 47.86036552398582,
+      "exit_code": 0,
+      "label": "main-bootstrap",
+      "raw_sha256": "3dbb90a679725f2fc532aee30a9b93eab09faf3efa27b9fc5e82084e4bbcf4c3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.5681230089976452,
+      "exit_code": 0,
+      "label": "main-health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --output-dir /home/luca/.ocor-codex/rem0017-realign-20261009/phase1/main-full",
+      "duration_seconds": 373.73881665000226,
+      "exit_code": 0,
+      "label": "main-full",
+      "raw_sha256": "73d3d3b5e835c52a626fb3dbe08261051cb8aabf1244da4693e9da7a3b3e6c85",
+      "status": "PASS"
+    },
+    {
+      "command": "archived file campaign_result.json",
+      "exit_code": 0,
+      "label": "main-full-campaign-result",
+      "raw_sha256": "c8dc44684a8af18d136dca40c0fa4d2c99c2c75c0beb5d625f66245662019def",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=/home/luca/.ocor-codex/rem0017-realign-20261009/phase1/task-0050-junit.xml ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "duration_seconds": 4.870742163009709,
+      "exit_code": 0,
+      "label": "task-0050",
+      "raw_sha256": "d70de6bae384164e351327e2547b94d4820c78bbb8c3fd51b6e9466fd193d965",
+      "status": "PASS"
+    },
+    {
+      "command": "archived file task-0050-junit.xml",
+      "exit_code": 0,
+      "label": "task-0050-junit",
+      "raw_sha256": "19212988cca61e0863ed862e562e2c5bb009b6a2a091c861213edfbae61b63f3",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 2.067397157981759,
+      "exit_code": 0,
+      "label": "main-teardown",
+      "raw_sha256": "ad2be92accbbe8abde0d51bdbc42922f04b7a95db4c912b503ade0f2b3400501",
+      "status": "PASS"
+    }
+  ],
+  "commit": "98974928d914538cb4694d4ebfd4777e3920511d",
+  "commit_role": "code commit whose input hashes are recorded; the runtime tree is identical to the full-tested head",
+  "created_at": "2026-10-09T04:48:01.626903+00:00",
+  "environment": {
+    "backend_profile": "real ocor-bootstrap 11 containers, pinned images of infra/services.lock.json",
+    "extras": [
+      "test",
+      "lint"
+    ],
+    "fuseki_image_identity": {
+      "after_ci_recipe": "sha256:2e770ba3b9a5f8ef42f68125d863951871af31081ad6737536fe1e0d7a91868c",
+      "after_dev_bootstrap": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+      "before": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+      "before_dev_bootstrap": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+      "restored_governed_tag": true
+    },
+    "host": "nepryoon",
+    "node": "20.20.2",
+    "python": "3.12.11",
+    "uv": "0.12.5"
+  },
+  "full_tested_head": "730759b05cce544dab518a479f931fbf07f5c55d",
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/model.py": "6988c22f78b14a961027bb6cf3b3552882801e2f06cd54ba5513cc40bc8292ce",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0050.py": "dfc589768020a3bed1367e5ba62d575dff18b376ac858accd953165b8aee18cf",
+    "scripts/validate_ocor_development_plan.py": "5290ea58d3ae3ed84d967880a5b7b30fc27fcf0de8424d2497812fc7a80a5558"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "raw_output_format": "JSONL: archived command output with exact SHA256 of the archived UTF-8 bytes; generated credentials are explicitly redacted before archival, with sensitive original copies retained only outside Git.",
+  "raw_output_sha256": "114bd1af5c0cdb17bffe390e0a49eb82ebd6e2d10edcb3b82e149fe3dfcc742e",
+  "record_id": "OCOR-DEV-0050-rem0017-requalified-98974928d914",
+  "requalification": {
+    "full_suite": {
+      "candidate_head": null,
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1299
+      },
+      "duration_seconds": 373.5184716460062,
+      "po_decision_required": false,
+      "required_modules": [
+        "test_ocor_dev_0048"
+      ],
+      "status": "PASS"
+    },
+    "model_and_test_unchanged": {
+      "ocor-runtime/src/ocor_runtime/memory/model.py": true,
+      "ocor-runtime/tests/tasks/test_ocor_dev_0050.py": true
+    },
+    "previous_inputs": {
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime/src/ocor_runtime/memory/model.py": "6988c22f78b14a961027bb6cf3b3552882801e2f06cd54ba5513cc40bc8292ce",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0050.py": "dfc589768020a3bed1367e5ba62d575dff18b376ac858accd953165b8aee18cf",
+      "scripts/validate_ocor_development_plan.py": "059eca7bf08891573614664e9944f085fba05142705b82572218d829f1ee9dcb"
+    },
+    "previous_record_path": "reports/evidence/G5/OCOR-DEV-0050.requalified.json",
+    "reason": "Merge of origin/main into the REM-0017 candidate adds six REM paths to the planning-validator allowlist; scripts/validate_ocor_development_plan.py is a recorded input of the sealed 0050 requalification. No product, test or validation logic of 0050 changed.",
+    "task_suite": {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0017-ci-provision-spire/ocor-runtime/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-v",
+        "--junitxml=/home/luca/.ocor-codex/rem0017-realign-20261009/phase1/task-0050-junit.xml",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0050.py"
+      ],
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 198
+      }
+    }
+  },
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0050-CLOSED-CONTRACT-EVERY-CONDITIONAL-BRANCH",
+      "command": "closed GovernedMemoryItem: exact normative field set, every allOf branch positive+negative against the normative JSON Schema and the runtime, every required field, malformed values, aliases, canonical round trip",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 73,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_every_required_field_missing_is_rejected_by_schema_and_runtime",
+        "test_every_schema_conditional_branch_has_a_positive_and_a_negative_case",
+        "test_malformed_fields_are_rejected_identically_by_schema_and_runtime",
+        "test_round_trip_is_exact_and_set_order_does_not_change_the_digest",
+        "test_runtime_is_stricter_than_format_annotation_on_timestamps",
+        "test_the_domain_scope_and_non_vector_representation_need_no_conditional_binding",
+        "test_the_runtime_field_set_is_exactly_the_normative_closed_schema",
+        "test_undeclared_fields_and_aliases_are_rejected"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-CAPABILITY-MATRIX-ALL-KINDS-AND-SCOPES",
+      "command": "all 56 kind/scope pairs declared explicitly; every one of the 8 kinds and 7 scopes has a supported pair",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_capability_matrix_declares_all_56_pairs_and_covers_every_kind_and_scope"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-EVERY-SUPPORTED-PAIR-ADMITTED-WITH-PROVENANCE-AND-AUDIT",
+      "command": "every supported pair admitted: schema-valid persisted item, evidence/provenance refs, policy decision and correlation in the audit event, receipt valid against the OpenAPI MemoryReceipt",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 46,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_every_supported_kind_scope_pair_is_admitted_with_audit_and_provenance"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-UNSUPPORTED-PAIR-REJECTED-BEFORE-PERSISTENCE",
+      "command": "every unsupported pair fails with UNSUPPORTED_CAPABILITY and zero ledger appends",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 10,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_every_unsupported_pair_fails_with_unsupported_capability_before_persistence"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-MISSING-METADATA-INVALID-KIND-SCOPE-REJECTED-BEFORE-PERSISTENCE",
+      "command": "missing provenance/evidence/marking/taint, invalid kind/scope, envelope, lifecycle, kind semantics, digest, boundary-clock and reference-resolution failures rejected with zero appends",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 8,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_admission_enters_the_lifecycle_only_at_proposed_active_or_quarantined",
+        "test_content_digest_must_bind_the_payload",
+        "test_expired_evidence_is_refused_on_the_boundary_clock",
+        "test_kind_semantics_are_enforced",
+        "test_missing_metadata_invalid_kind_and_invalid_scope_never_reach_the_ledger",
+        "test_source_evidence_and_provenance_must_resolve_under_the_same_gcs",
+        "test_temporal_and_retention_rules_use_the_boundary_clock_not_caller_values",
+        "test_the_admission_envelope_is_closed_and_the_deadline_uses_the_boundary_clock"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-GCS-BINDING-AND-COMPARTMENT-ISOLATION",
+      "command": "binding required; tenant/compartment/purpose/owner/policy/GCS digest must equal the authenticated eleven-field GCS",
+      "requirement_id": "FR-006",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_authentication_and_gcs_binding_are_required"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-CONSERVATIVE-MARKING-AND-CROSS-SCOPE-LINEAGE-DENIAL",
+      "command": "marking dominates the join of context and inputs; inputs above context and cross-tenant/compartment lineage denied",
+      "requirement_id": "NFR-006",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_lineage_cannot_cross_tenant_or_unauthorized_compartments",
+        "test_marking_is_the_conservative_join_and_cannot_be_downgraded"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-PROHIBITED-CONTENT-AND-TAINT-NON-LAUNDERING",
+      "command": "hidden reasoning, secrets, credentials, tokens and raw conversation refused; required taint per source kind; taint inherited along lineage",
+      "requirement_id": "NFR-048",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 23,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_every_source_kind_requires_its_taint_label",
+        "test_prohibited_and_unregistered_content_classes_are_rejected",
+        "test_reflection_is_always_model_generated_tainted",
+        "test_secrets_credentials_tokens_and_hidden_reasoning_inside_allowed_classes_are_refused",
+        "test_taint_is_inherited_along_lineage_and_cannot_be_laundered"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-MEMORY-NEVER-GRANTS-INSTRUCTION-AUTHORITY",
+      "command": "instruction eligibility only for PROCEDURAL memory with a separate, exact, current approval by another principal; model-generated content never eligible",
+      "requirement_id": "FR-113",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_only_procedural_human_or_external_content_may_be_instruction_eligible",
+        "test_procedural_instruction_eligibility_needs_a_separate_exact_current_approval"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-POLICY-AND-AUTHORITY-FAIL-CLOSED",
+      "command": "federation Authority required; policy deny/stale/outage and resolver outage fail closed with a policy-safe Problem",
+      "requirement_id": "NFR-016",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 6,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_federated_scope_requires_an_applicable_federation_policy",
+        "test_policy_denial_staleness_and_outage_fail_closed",
+        "test_policy_is_never_consulted_for_a_candidate_rejected_earlier",
+        "test_resolver_outage_fails_closed"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-IMMUTABLE-VERSIONS-IDEMPOTENCY-AND-EXACT-REPLAY",
+      "command": "idempotent replay, digest conflict, overwrite refused before persistence, contiguous supersession lineage, thread race with one winner, ledger-level gap/slot/key guards",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 19,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_correction_creates_a_new_immutable_version_with_exact_version_replay",
+        "test_concurrent_writers_of_the_same_next_version_cannot_both_win",
+        "test_lineage_must_be_contiguous_and_bound_to_the_same_item",
+        "test_mutable_overwrite_of_an_admitted_version_is_rejected_before_persistence",
+        "test_same_idempotency_key_and_digest_returns_the_original_receipt",
+        "test_same_idempotency_key_revalidates_payload_before_returning_receipt",
+        "test_same_idempotency_key_revalidates_the_current_content_registry",
+        "test_same_idempotency_key_with_a_different_digest_is_a_conflict",
+        "test_the_ledger_itself_refuses_gaps_occupied_slots_and_reused_keys",
+        "test_the_ledger_refuses_a_record_whose_receipt_or_audit_was_altered"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0050-CROSS-RUN-DURABLE-JOURNAL-AND-INTEGRITY",
+      "command": "versions persist across separate interpreter processes with exact replay; rejected candidates leave the journal byte-identical; process race one winner; tamper, torn write, removal and reorder detected fail closed",
+      "requirement_id": "FR-140",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 7,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_torn_unacknowledged_write_blocks_the_journal",
+        "test_admitted_versions_persist_across_runs_and_replay_exactly",
+        "test_memory_identifiers_are_backend_free_and_opaque",
+        "test_rejected_candidates_leave_the_journal_byte_identical",
+        "test_removed_or_reordered_entries_break_the_chain",
+        "test_separate_processes_racing_for_the_same_version_cannot_overwrite",
+        "test_tampering_with_an_acknowledged_version_is_detected_fail_closed"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "Requalification of unchanged runtime inputs only; no requirement promoted to Verified, E1/E2 unchanged.",
+    "Independent verification and exact-head CI pending; previous sealed records remain immutable."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita)",
+    "verifier": "Grok 4.7 (Cursor CLI; verifier: cursor), pending independent verification of OCOR-DEV-REM-0017"
+  },
+  "rollback": "Revert the requalification commit; the superseded sealed record becomes current again. No data migration.",
+  "runtime_tree_unchanged_since_full": true,
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "supersedes": "OCOR-DEV-0050-requalified-repair2-b6b9f141ff0f",
+  "supersedes_sha256": "3441ba1d36568d296fa64d66c1174c07e832056b2f27f6221dc05ee2acc2a8c6",
+  "task_id": "OCOR-DEV-0050"
+}
