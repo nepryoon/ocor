@@ -1,0 +1,72 @@
+{{- $compose := include "ocor-poc.compose" . | fromJson -}}
+{{- $capturePg := index $compose "services" "ocor-backup-capture-postgresql" "command" 0 -}}
+{{- $captureKafka := index $compose "services" "ocor-backup-capture-kafka" "command" 0 -}}
+# Authority-aware backup every 15 minutes (RPO <= 15 min): capture -> encrypt ->
+# sign -> immutable write to the vault claim outside the workload fault domain.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-backup
+  labels:
+    {{- include "ocor-poc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: {{ .Values.operational.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            {{- include "ocor-poc.labels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ .Release.Name }}-ops
+          automountServiceAccountToken: false
+          {{- include "ocor-poc.podSecurity" . | nindent 10 }}
+          initContainers:
+            - name: capture-postgresql
+              image: {{ include "ocor-poc.image" (list . "postgresql") }}
+              command: [sh, -ec, {{ $capturePg | replace "$$" "$" | quote }}]
+              env:
+                - {name: PGHOST, value: postgresql}
+                - {name: PGUSER, value: ocor}
+                - {name: MEMORY_DB, value: {{ .Values.ocor.backup.memory.sources.database | quote }}}
+                - name: PGPASSWORD
+                  valueFrom: {secretKeyRef: {name: {{ include "ocor-poc.secret" . }}, key: PGPASSWORD}}
+              {{- include "ocor-poc.containerSecurity" . | nindent 14 }}
+              volumeMounts:
+                - {name: staging, mountPath: /staging}
+                - {name: agent, mountPath: /opt/ocor/table-digest.sql, subPath: table-digest.sql, readOnly: true}
+                - {name: tmp, mountPath: /tmp}
+            - name: capture-kafka
+              image: {{ include "ocor-poc.image" (list . "kafka") }}
+              command: [sh, -ec, {{ $captureKafka | replace "$$" "$" | quote }}]
+              {{- include "ocor-poc.containerSecurity" . | nindent 14 }}
+              volumeMounts:
+                - {name: staging, mountPath: /staging}
+                - {name: tmp, mountPath: /tmp}
+          containers:
+            - name: seal
+              image: {{ include "ocor-poc.image" (list . "ops") }}
+              command: [sh, -ec, "python3 /opt/ocor/ocor_ops_agent.py init-keys --profile /etc/ocor/profile.json && exec python3 /opt/ocor/ocor_ops_agent.py seal --profile /etc/ocor/profile.json --vault /vault --staging /staging"]
+              env:
+                {{- include "ocor-poc.opsEnv" . | nindent 16 }}
+              {{- include "ocor-poc.containerSecurity" . | nindent 14 }}
+              volumeMounts:
+                - {name: agent, mountPath: /opt/ocor/ocor_ops_agent.py, subPath: ocor_ops_agent.py, readOnly: true}
+                - {name: agent, mountPath: /etc/ocor/profile.json, subPath: profile.json, readOnly: true}
+                - {name: staging, mountPath: /staging}
+                - {name: vault, mountPath: /vault}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: agent
+              configMap: {name: {{ .Release.Name }}-ops}
+            - name: staging
+              emptyDir: {medium: Memory, sizeLimit: 1Gi}
+            - name: vault
+              persistentVolumeClaim: {claimName: {{ include "ocor-poc.vault" . }}}
+            - name: tmp
+              emptyDir: {}

@@ -1,0 +1,244 @@
+# OCOR PoC single-site profile (ADD v1.3 Part I §6, Part II §2.13; LLD v1.1 §5).
+# Design Target / Candidate Implementation. No runtime conformance, no
+# Production readiness, no E1/E2 promotion is claimed by this file.
+#
+# `ocor` is the profile contract CONSUMED at runtime by the ocor-ops agent
+# (rendered as profile.json into the ConfigMap). The agent refuses to start on
+# any violation (LLD v1.1 §5.2) and derives readiness, telemetry, backup,
+# restore and the safe-degraded posture from it. The Compose overlay carries
+# the same contract as its `ocor-poc-profile` config (drift-tested).
+ocor:
+  profile:
+    id: poc
+    singleSite: true
+    release: ocor-poc-0.2.0
+    deploymentTarget: "Design Target / Candidate Implementation"
+
+  isolation:
+    networkPolicyDefaultDeny: true
+    egressPublicNetwork: false
+    zeroSaaSAndCallHome: true
+    namespacePerSubsystem: true
+    serviceAccountPerSubsystem: true
+    syntheticCompartmentsMin: 2
+    rootCaOutsideClusterFaultDomain: true
+    backupVaultOutsideClusterFaultDomain: true
+    # Readiness is denied while any of these public endpoints is reachable.
+    egressDenyProbes: ["1.1.1.1:443", "registry.npmjs.org:443"]
+    # The only intra-site flows admitted by the default-deny network.
+    allowedFlows:
+      - {host: terminusdb, port: 6363}
+      - {host: typedb, port: 8000}
+      - {host: fuseki, port: 3030}
+      - {host: opa, port: 8181}
+      - {host: keycloak, port: 9000}
+      - {host: openbao, port: 8200}
+      - {host: postgresql, port: 5432}
+      - {host: kafka, port: 29092}
+      - {host: qdrant, port: 6333}
+      - {host: spire-server, port: 8081}
+
+  images:
+    digestPinned: true
+    signatureVerifiedBeforeAdmission: true
+    registry: local
+    publicNetworkDependencyAtRuntime: false
+    pins:
+      ops: python:3.11@sha256:c7220863385ee39fb6d822da81f4469d0cd33ff893d92ce94105e5c3f4b95fe2
+      postgresql: postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20
+      kafka: confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047
+      qdrant: qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6
+
+  resourceClasses: [CONTROL, INTERACTIVE, BATCH, AUDIT]
+  resourceIsolation:
+    c6ControlAuditSharesCausalBatchPool: false
+
+  observability:
+    exportersLocal: true
+    probeIntervalSeconds: 5
+    driftScanIntervalSeconds: 60
+    releaseMismatchBlocksMutativeCommand: true
+    metrics:
+      exporter: prometheus
+      set:
+        - latency_p50_p95_p99_per_contract
+        - error_deny_approval_expiry_rate
+        - projection_lag_watermark_checksum
+        - commit_outbox_retry
+        - constraint_violation
+        - action_fsm_saga_execution_unknown
+        - audit_gap
+        - queue_run_time_budget
+        - model_seed_scenario_ttl
+        - configuration_schema_release_drift
+    logs:
+      fields: [correlation_id, component, operation, release, policy_digest, reason_code]
+      keepClassificationMarking: true
+      excludeClassifiedPayload: true
+    traces:
+      fields:
+        - trace_id
+        - correlation_id
+        - causation_id
+        - governed_context_digest
+        - effective_principal_id
+        - actor_chain
+        - tenant_id
+        - organization_id
+        - domain_id
+        - compartments
+        - classification_marking_ref
+        - purpose
+        - policy_bundle_digest
+        - ontology_release_digest
+        - canonical_commit
+        - projection_watermark
+        - policy_decision_id
+        - scenario_id
+        - model_digest
+        - action_state
+
+  backup:
+    rpoMinutes: 15
+    rtoHours: 4
+    encrypted: true
+    signed: true
+    immutable: true
+    contentAddressed: true
+    authorityAware: true
+    offClusterFaultDomain: true
+    tested: true
+    authorityClasses:
+      - definition
+      - canonical
+      - event
+      - action
+      - governance
+      - audit
+      - model_scenario
+      - projection
+      - key_custody
+    keys:
+      transitMount: ocor-poc-transit
+      encryption: ocor-poc-backup-enc
+      signing: ocor-poc-backup-sign
+    memory:
+      metadataRef: memory-metadata
+      contentRefs: true
+      representationVersions: true
+      lifecycleEpochs: true
+      deletionEpochs: true
+      journalCheckpoints: true
+      auditRefs: true
+      boundToSameRecoveryPoint: true
+      # Drill binding until the G5 memory stores exist (DEC-208 fence: no
+      # kind/scope/lifecycle is introduced here).
+      sources:
+        database: ocor_poc_drill
+        metadataTable: memory_item
+        journalTable: memory_deletion_journal
+        indexCollection: ocor_poc_drill_memory
+
+  restore:
+    isolatedNetwork: true
+    receiptMaxAgeHours: 168
+    steps:
+      - containment_and_emergency_stop
+      - select_signed_recovery_point_within_rpo
+      - verify_trust_manifest_digest_signatures_dual_control
+      - restore_oaC_ir_policy_config_model_manifests
+      - restore_canonical_event_action_audit_same_cut
+      - replay_memory_deletion_tombstones_before_reopen_retrieval
+      - rebuild_logic_projection_and_w3c_boundary
+      - reconcile_outbox_offset_checksum_saga_receipt
+      - assign_execution_unknown_to_unprovable_effects
+      - run_conformance_security_mission_thread_replay
+      - require_human_authorization_to_reopen_mutative
+    replay:
+      usesOriginalEventIds: true
+      emitsNoExternalEffects: true
+      seed: 49
+      pins: [ontology_release, compiler_logic_bundle, canonical_commit, event_schema, model_digest, policy_digest, seed, assumptions, ordering]
+    recoveryGate:
+      - revision
+      - watermark
+      - orphan_duplicate
+      - marking
+      - gcs
+      - deletion_resurrection
+      - projection_drift_or_stale_deletion_epoch
+      - sample_semantic_digest
+
+  resourceLimits:
+    itemCount: 100000
+    payloadSizeBytes: 1048576
+    embeddingDimensions: 1536
+    topK: 100
+    consolidationConcurrency: 4
+    indexSizeBytes: 1073741824
+    retentionHorizonDays: 30
+    quotaBehavior:
+      onExceed: quota_backpressure
+      semanticDowngrade: false
+
+  safeDegraded:
+    faults:
+      - fault: idp_or_policy_engine_unavailable
+        behavior: [no_new_governed_operations, authorized_reads_only_if_policy_snapshot_valid]
+      - fault: canonical_writer_unavailable
+        behavior: [events_durably_queued, no_canonical_commit_confirmation, mutations_suspended]
+      - fault: broker_unavailable
+        behavior: [outbox_retained_relayed_later, no_projection_freshness_claim]
+      - fault: projection_lag_or_failure
+        behavior: [PROJECTION_NOT_READY_or_STALE_CONTEXT, high_impact_blocked]
+      - fault: audit_append_unavailable
+        behavior: [no_new_mutative_command]
+      - fault: action_adapter_timeout
+        behavior: [EXECUTION_UNKNOWN, status_inquiry_or_reconciliation_only, no_blind_retry]
+      - fault: edge_partition
+        behavior: [read_analyze_simulate_on_pinned_snapshot, explicit_staleness, no_high_impact]
+      - fault: emergency_stop
+        behavior: [new_mutative_capabilities_denied_within_10_seconds]
+
+  health:
+    probeTypes: [liveness, readiness]
+    probeTimeoutSeconds: 3
+    # Semantic probes executed by the agent on every mandatory dependency.
+    dependencies:
+      - {name: terminusdb, host: terminusdb, port: 6363, mandatory: true, faultClass: canonical_writer_unavailable, probe: {kind: http, path: /api/ok, expectStatus: [200]}}
+      - {name: typedb, host: typedb, port: 8000, mandatory: true, faultClass: projection_lag_or_failure, probe: {kind: http, path: /health, expectStatus: [200, 204]}}
+      - {name: fuseki, host: fuseki, port: 3030, mandatory: true, faultClass: projection_lag_or_failure, probe: {kind: http, path: "/$/ping", expectStatus: [200]}}
+      - {name: opa, host: opa, port: 8181, mandatory: true, faultClass: idp_or_policy_engine_unavailable, probe: {kind: http, path: /health, expectStatus: [200]}}
+      - {name: keycloak, host: keycloak, port: 9000, mandatory: true, faultClass: idp_or_policy_engine_unavailable, probe: {kind: http, path: /health/ready, expectStatus: [200], expectBody: '"status": "UP"'}}
+      - {name: openbao, host: openbao, port: 8200, mandatory: true, faultClass: idp_or_policy_engine_unavailable, probe: {kind: http, path: /v1/sys/health, expectStatus: [200]}}
+      - {name: postgresql, host: postgresql, port: 5432, mandatory: true, faultClass: audit_append_unavailable, additionalFaultClasses: [canonical_writer_unavailable], probe: {kind: postgres_startup, user: ocor, database: ocor}}
+      - {name: kafka, host: kafka, port: 29092, mandatory: true, faultClass: broker_unavailable, probe: {kind: kafka_api_versions}}
+      - {name: qdrant, host: qdrant, port: 6333, mandatory: true, faultClass: projection_lag_or_failure, probe: {kind: http, path: /readyz, expectStatus: [200]}}
+      - {name: spire-server, host: spire-server, port: 8081, mandatory: true, faultClass: idp_or_policy_engine_unavailable, probe: {kind: tls_spiffe}}
+
+# Kubernetes wiring of the Helm profile. Every workload image (Deployment, backup
+# CronJob, restore Job) is rendered from `ocor.images.pins`, the pins the release
+# binding of recovery points and receipts covers: there is no separate image
+# setting, and rendering fails on a pin that is not `name@sha256:<64 hex>` or on
+# any `operational.*Image` override. Nothing is fetched from a public network at
+# runtime.
+operational:
+  replicas: 1
+  runAsUser: 1000
+  # Secret holding OCOR_OPENBAO_TOKEN, OCOR_OPS_OPERATOR_TOKEN and PGPASSWORD;
+  # created out of band, never rendered from values.
+  secretName: ""
+  # Backup vault outside the workload fault domain: a pre-existing claim not
+  # owned by this release (rendering fails when it is not provided).
+  vault:
+    existingClaim: ""
+  backup:
+    schedule: "*/15 * * * *"
+  restoreDrill:
+    enabled: false
+    # Recovery point to restore (id written by the backup job); empty = latest.
+    recoveryPoint: ""
+  # Intra-site endpoints of the mandatory dependencies (hostname -> IP). The
+  # default-deny NetworkPolicy admits exactly one address/port pair per entry of
+  # `ocor.isolation.allowedFlows` (rendering fails when an address is missing).
+  hostAliases: []

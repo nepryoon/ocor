@@ -1,0 +1,14 @@
+{{- $compose := include "ocor-poc.compose" . | fromJson -}}
+{{- range $role, $_ := .Values.ocor.images.pins }}{{ $checked := include "ocor-poc.image" (list $ $role) }}{{ end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-ops
+  labels:
+    {{- include "ocor-poc.labels" . | nindent 4 }}
+data:
+  # The profile contract consumed by the agent at startup (fail-closed).
+  profile.json: {{ .Values.ocor | toJson | quote }}
+  # Single source: the `configs` of compose.profiles.yaml.
+  ocor_ops_agent.py: {{ index $compose "configs" "ocor-ops-agent" "content" | quote }}
+  table-digest.sql: {{ index $compose "configs" "ocor-table-digest" "content" | quote }}
