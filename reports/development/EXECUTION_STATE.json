@@ -47,11 +47,13 @@
       "id": "HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH",
       "observed_head": "ccb372272631a2e0500f57c87ec56cd7409a4652",
       "path": "reports/development/decision_requests/HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH.md",
+      "pull_request": 282,
       "recorded_at": "2026-10-15T13:48:00.980336+00:00",
       "resolution_required": "Explicit PO disposition of the changed resume checkpoint; do not rewrite history.",
       "scope": "Resume precondition only; not a new normative dependency. REM0028 pause and queue priorities unchanged.",
       "sha256": "446568121de6771f1636a9185ee5188cb8e898303acddee437dd56249333ea69",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "url": "https://github.com/nepryoon/ocor-detailed-design/pull/282"
     },
     "evidence_paths": [],
     "expected_resume_head": "3c8f2eba711cac1a180ae36df452dc0707efe205",
@@ -89,33 +91,10 @@
     "paused_rem0028_head": "19747383d3d570b2ffbb503a1878c49d140b8032",
     "phase": "STOPPED_RESUME_PRECONDITION_HEAD_MISMATCH",
     "previous_checkpoint": "2c31ae59d05cbcfd26801dd632a600e845baaea5",
-    "publication": "Branch checkpoint only; no PR, CI, verifier or merge started this iteration.",
+    "publication": "Draft PR282 publishes the existing decision request; state checkpoint only, no candidate push, verifier or merge.",
     "resume_precondition_recheck": {
-      "candidate_ci": "PR281 exact ccb372272631a2e0500f57c87ec56cd7409a4652: all 13 named required checks completed/success; pre-existing CI only",
-      "expected_rem0033_head": "3c8f2eba711cac1a180ae36df452dc0707efe205",
-      "gates": [
-        {
-          "command": [
-            "sha256sum",
-            "-c",
-            "inputs/normative/SHA256SUMS"
-          ],
-          "exit_code": 0,
-          "label": "inputs",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/inputs.log",
-          "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
-        },
-        {
-          "command": [
-            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-            "scripts/verify.py",
-            "--json"
-          ],
-          "exit_code": 0,
-          "label": "verify",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/verify.log",
-          "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
-        },
+      "candidate_observation": "PR281 remains ccb3722; no new candidate CI requested; historical CI is not new qualification",
+      "checkpoint_gates": [
         {
           "command": [
             "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
@@ -125,7 +104,7 @@
           ],
           "exit_code": 0,
           "label": "rccad",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/rccad.log",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-published-20261015T135949Z/rccad.log",
           "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
         },
         {
@@ -135,7 +114,7 @@
           ],
           "exit_code": 0,
           "label": "language",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/language.log",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-published-20261015T135949Z/language.log",
           "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
         },
         {
@@ -147,7 +126,7 @@
           ],
           "exit_code": 0,
           "label": "scope",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/scope.log",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-published-20261015T135949Z/scope.log",
           "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
         },
         {
@@ -160,29 +139,27 @@
           ],
           "exit_code": 0,
           "label": "plan",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/plan.log",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-published-20261015T135949Z/plan.log",
           "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
-        },
-        {
-          "command": [
-            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-            "scripts/validate_evidence_input_drift.py"
-          ],
-          "exit_code": 0,
-          "label": "drift",
-          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/drift.log",
-          "raw_sha256": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031"
         }
       ],
-      "observed_at": "2026-10-15T13:56:13.627830+00:00",
+      "decision_request_pull_request": 282,
+      "expected_rem0033_head": "3c8f2eba711cac1a180ae36df452dc0707efe205",
+      "gate_observation": {
+        "drift": "PASS 70 tasks; 194 inputs; zero drift",
+        "inputs": "PASS 8/8",
+        "verify": "PASS 14; 0 FAIL; 0 NOT_EXECUTED",
+        "worktree": ".ocor/worktrees/dr-rem0033-resume-head-mismatch"
+      },
+      "observed_at": "2026-10-15T13:59:33.827566+00:00",
       "observed_rem0033_head": "ccb372272631a2e0500f57c87ec56cd7409a4652",
-      "publication": "Existing remote decision request a27b8fc retained; no duplicate request, candidate mutation or new PR",
+      "publication": "Existing remote request a27b8fc exposed as draft PR282; no candidate mutation",
       "rem0028_head": "19747383d3d570b2ffbb503a1878c49d140b8032",
       "repair_cycles_consumed": 0,
       "result": "MISMATCH_STOP_REQUIRED",
-      "runtime_campaign": "NOT_EXECUTED: explicit PO stop",
+      "runtime_campaign": "NOT_EXECUTED: HOST-REBOOT-RESUME-ITER27 point1 explicit PO stop",
       "stack_actions": "NOT_EXECUTED: no session resources created",
-      "verdict_source": "Previous versioned checkpoint; no fresh verdict file available in this invocation"
+      "verdict_source": "Previous versioned checkpoint; no verdict file available in this invocation"
     },
     "roles": {
       "candidate_lineage": "Claude Code (Anthropic): original REM0033 harness; Codex (OpenAI): post-reboot qualification already recorded at ccb3722",
@@ -191,7 +168,7 @@
     },
     "stack_actions": "NOT_EXECUTED: explicit stop; no resources created or removed",
     "task_id": "OCOR-DEV-REM-0033",
-    "updated_at": "2026-10-15T13:56:13.627830+00:00",
+    "updated_at": "2026-10-15T13:59:33.827566+00:00",
     "worktree": ".ocor/worktrees/state-sync-rem0033-head-mismatch"
   },
   "backlog_escalations": {
@@ -5061,11 +5038,13 @@
       "id": "HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH",
       "observed_head": "ccb372272631a2e0500f57c87ec56cd7409a4652",
       "path": "reports/development/decision_requests/HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH.md",
+      "pull_request": 282,
       "recorded_at": "2026-10-15T13:48:00.980336+00:00",
       "resolution_required": "Explicit PO disposition of the changed resume checkpoint; do not rewrite history.",
       "scope": "Resume precondition only; not a new normative dependency. REM0028 pause and queue priorities unchanged.",
       "sha256": "446568121de6771f1636a9185ee5188cb8e898303acddee437dd56249333ea69",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "url": "https://github.com/nepryoon/ocor-detailed-design/pull/282"
     }
   ],
   "checkpoint_consolidation": {
@@ -18360,5 +18339,5 @@
     "reason": "Executable REM32 and other remediation work remain; project not terminally blocked",
     "status": "SUPERSEDED_LOOP_CONTINUES"
   },
-  "updated_at": "2026-10-15T13:56:13.627830+00:00"
+  "updated_at": "2026-10-15T13:59:33.827566+00:00"
 }
