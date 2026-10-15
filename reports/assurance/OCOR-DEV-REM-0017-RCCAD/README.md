@@ -476,3 +476,22 @@ decisione PO relay-probe remediation, con esiti1–4 preregistrati nel record;
 nessun trasferimento di conteggi dalle CI fallite precedenti. Dal push al
 mergePR169 o alla registrazione del FAIL: nessun merge su main, stato incluso.
 E1=0,E2=0,Verified=0 e tutti i NO-GO invariati; inputs e sigilli storici intatti.
+
+### 2026-10-15 — CI esatta qualificante, verifica indipendente e sigillo
+
+CI dell'HEAD esatto `022585a69b357160ccc5706aa932a3b5968dd5d1` (PR #169, run
+38657398740/743/750/759/771/780, primo tentativo, nessun rerun): esito 1 della
+decisione PO relay-probe remediation. 13 check obbligatori verdi; unione 0049
+2224/2224 in cinque parti (massimo 1205 s) e 1933/1933 in quattro parti per
+rccad/activation/closure; zero mancanti, duplicati, skip, fail o error; zero relay
+unhealthy; sei eventi `EXPECTED_READINESS_GATE` su `ocor-ops` senza effetto sui casi;
+rimozione `OWNED_KIND_TEARDOWN_OBSERVED` nella parte Helm; cache Fuseki HIT con SHA512
+del lock in ogni parte.
+
+GO `OCOR-DEV-REM-0017-022585a69b35-1` del 2026-10-15 sullo stesso HEAD: Grok 4.7 via
+Cursor CLI, processo e contesto separati, fornitore diverso dall'implementatore (Codex).
+Claude Code di riserva ha scritto soltanto la richiesta di verifica e questo sigillo.
+Il sigillo aggiorna solo metadati e stato dei due record nuovi, questo README e l'hash
+del record 0050 nel manifest G5; raw log, codice, test, harness, workflow e lock sono
+byte-identici all'HEAD qualificato. Il merge della PR #169 richiede ancora i 13 check
+verdi sull'HEAD sigillato. E1=0, E2=0, Verified=0 e tutti i NO-GO invariati.
