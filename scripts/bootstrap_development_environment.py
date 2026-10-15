@@ -8,7 +8,10 @@ import json
 import re
 import secrets
 import sys
+import time
 from pathlib import Path
+
+from acquire_fuseki_archive import acquire, build_context, remaining
 
 from ocor_bootstrap_lib import BootstrapError, load_json, retry, root, run, validate_locks
 
@@ -92,11 +95,14 @@ def main() -> int:
             timeout=30,
         )
         if present.returncode or present.stdout.strip() != expected_image_id:
-            build = retry(
-                ["docker", "build", "--no-cache", "-t", "ocor/jena-fuseki:6.2.0", "infra/fuseki"],
-                cwd=repository,
-                timeout=args.timeout,
-            )
+            deadline = time.monotonic() + args.timeout
+            archive, _ = acquire(repository, timeout=args.timeout)
+            with build_context(repository, archive) as context:
+                build = run(
+                    ["docker", "build", "--no-cache", "-t", "ocor/jena-fuseki:6.2.0", str(context)],
+                    cwd=repository,
+                    timeout=max(1, int(remaining(deadline))),
+                )
             if build.returncode:
                 raise BootstrapError(f"Fuseki build failed: {build.stderr[-1000:]}")
             rebuilt = run(
