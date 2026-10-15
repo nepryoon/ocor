@@ -10,106 +10,268 @@ permissions:
   contents: read
 
 jobs:
-  delivery-activation:
+  delivery-activation-part:
+    # One deterministic part of the complete suite on its own runner and full
+    # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
+    name: delivery-activation part ${{ matrix.part }}/4
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: ocor
-          POSTGRES_PASSWORD: ocor
-          POSTGRES_DB: ocor
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ocor -d ocor"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
     env:
-      OCOR_LIVE_POSTGRES_DSN: postgresql://ocor:ocor@127.0.0.1:5432/ocor
       PYTHONHASHSEED: "0"
       TZ: UTC
     steps:
       - name: Checkout exact revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
-      - name: Build and start Fuseki
-        run: |
-          set -euo pipefail
-          docker build -t ocor/jena-fuseki:ci infra/fuseki
-          docker run -d --name ocor-bootstrap-fuseki-1 -p 3030:3030 ocor/jena-fuseki:ci
-          timeout 90 bash -c 'until curl -sf http://127.0.0.1:3030/$/ping >/dev/null; do sleep 2; done'
-
-      - name: Pre-pull pinned service images (bounded retry)
-        run: |
-          set -euo pipefail
-          pull_with_retry() {
-            ref="$1"; attempt=1; max=5
-            until docker pull "$ref"; do
-              if [ "$attempt" -ge "$max" ]; then
-                echo "docker pull failed after ${max} attempts: ${ref}" >&2
-                return 1
-              fi
-              echo "docker pull attempt ${attempt} failed for ${ref}; retrying in $((attempt * attempt))s" >&2
-              sleep "$((attempt * attempt))"
-              attempt="$((attempt + 1))"
-            done
-          }
-          pull_with_retry typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f
-          pull_with_retry openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff
-          pull_with_retry quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067
-          pull_with_retry quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641
-
-      - name: Start real TypeDB
-        run: |
-          set -euo pipefail
-          docker run -d --name ocor-bootstrap-typedb-1 -p 1729:1729 -p 8000:8000 \
-            typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f
-          timeout 90 bash -c 'until curl -sf http://127.0.0.1:8000/health >/dev/null; do sleep 2; done'
-
-      - name: Start real identity/policy control-plane services (OPA, Keycloak, OpenBao)
-        run: |
-          set -euo pipefail
-          docker run -d --name ocor-bootstrap-opa-1 -p 8181:8181 \
-            openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff \
-            run --server --addr 0.0.0.0:8181
-          docker run -d --name ocor-bootstrap-keycloak-1 -p 8080:8080 \
-            -e KC_BOOTSTRAP_ADMIN_USERNAME=ocor-admin \
-            -e KC_BOOTSTRAP_ADMIN_PASSWORD=ci-only-password \
-            quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067 \
-            start-dev --http-port=8080
-          docker run -d --name ocor-bootstrap-openbao-1 -p 8200:8200 --cap-add=IPC_LOCK \
-            -e BAO_ADDR=http://127.0.0.1:8200 \
-            -e BAO_DEV_ROOT_TOKEN_ID=ci-only-token \
-            quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641 \
-            server -dev -dev-listen-address=0.0.0.0:8200
-          timeout 90 bash -c 'until curl -sf http://127.0.0.1:8181/health >/dev/null; do sleep 2; done'
-          timeout 90 bash -c 'until curl -sf http://127.0.0.1:8200/v1/sys/health >/dev/null; do sleep 2; done'
-          timeout 120 bash -c 'until curl -sf http://127.0.0.1:8080/realms/master/.well-known/openid-configuration >/dev/null; do sleep 3; done'
-
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12.11"
 
       - name: Set up pinned Node oracle
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20.20.2"
 
-      - name: Install pinned uv
-        uses: astral-sh/setup-uv@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.12.5"
           enable-cache: true
 
-      - name: Synchronize frozen test environment
+      - name: Install and verify pinned ruff executable
+        run: |
+          set -euo pipefail
+          uv tool install ruff==0.13.1
+          tool_bin="$(uv tool dir --bin)"
+          echo "$tool_bin" >> "$GITHUB_PATH"
+          "$tool_bin/ruff" --version
+          python - "$tool_bin/ruff" <<'PYTHON'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          lock = json.loads(Path('infra/toolchain.lock.json').read_text())
+          entry = next(tool for tool in lock['tools'] if tool['id'] == 'ruff')
+          actual = hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()
+          if actual != entry['integrity']:
+              raise SystemExit('Installed ruff digest differs from the governed lock')
+          print(f"ruff {entry['version']}: SHA-256 matches governed lock")
+          PYTHON
+
+      - name: Synchronize locked runtime environment
         working-directory: ocor-runtime
-        run: uv sync --frozen --extra test
+        run: |
+          set -euo pipefail
+          uv sync --frozen --extra test --extra lint
+          .venv/bin/python --version
+          .venv/bin/python - <<'PY'
+          from importlib.metadata import version
+          for package in ("openapi-spec-validator", "rdflib", "psycopg", "pytest"):
+              print(f"{package}=={version(package)}")
+          PY
+
+      - name: Acquire official checksum-pinned Kubernetes qualification tools
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/provision_qualification_tools.py --execute | tee reports/tests/ci_qualification_tools.log
+
+      - name: Build pinned TypeScript SDK and oracle
+        working-directory: ocor-runtime/sdk/typescript
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          echo "$(pwd)/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Reset or positively verify absence of the previous stack
+        run: python3 scripts/bootstrap_ci_environment.py --teardown --execute
+
+      - name: Resolve governed Fuseki content address
+        id: fuseki-key
+        run: python3 scripts/acquire_fuseki_archive.py --github-output >> "$GITHUB_OUTPUT"
+
+      - name: Restore exact SHA512-addressed Fuseki archive
+        id: fuseki-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.fuseki-key.outputs.path }}
+          key: ${{ steps.fuseki-key.outputs.key }}
+
+      - name: Provision the full pinned disposable stack
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600 | tee reports/tests/ci_bootstrap.log
+          ocor-runtime/.venv/bin/python - <<'PYTHON'
+          import os
+          from pathlib import Path
+          env_file = Path('.ocor/bootstrap.env').resolve()
+          values = dict(line.split('=', 1) for line in env_file.read_text().splitlines() if '=' in line)
+          with open(os.environ['GITHUB_ENV'], 'a') as target:
+              target.write(f"OCOR_BOOTSTRAP_ENV={env_file}\n")
+              target.write(f"OCOR_LIVE_POSTGRES_DSN=postgresql://ocor:{values['OCOR_LOCAL_POSTGRES_PASSWORD']}@127.0.0.1:55433/ocor\n")
+          for key, value in values.items():
+              if key.endswith(('PASSWORD', 'TOKEN')):
+                  print(f'::add-mask::{value}')
+          PYTHON
+
+      - name: Save verified Fuseki archive in this repository cache
+        if: success() && steps.fuseki-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.fuseki-key.outputs.path }}
+          key: ${{ steps.fuseki-key.outputs.key }}
+
+
+      - name: Execute this zero-skip part of the complete runtime regression on the real stack
+        run: ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --shard-index ${{ matrix.part }} --shard-count 4 --output-dir reports/tests/activation-part-${{ matrix.part }}
+
+      - name: Teardown this disposable stack
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p reports/tests
+          python3 scripts/bootstrap_ci_environment.py --teardown --execute | tee reports/tests/ci_teardown.log
+          test -z "$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)"
+          test -z "$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)"
+
+      - name: Upload part results and teardown (aggregator input, not an evidence seal)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ocor-activation-full-part-${{ matrix.part }}-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            reports/tests/ci_*.log
+            reports/tests/activation-part-${{ matrix.part }}/
+
+  delivery-activation:
+    # Aggregator keeps the required check name; ruleset 23412233 is unchanged.
+    needs: delivery-activation-part
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      PYTHONHASHSEED: "0"
+      TZ: UTC
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+
+      - name: Reject missing, failed or cancelled parts
+        run: |
+          set -euo pipefail
+          test "${{ needs.delivery-activation-part.result }}" = success
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Set up pinned Node oracle
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20.20.2"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.12.5"
+          enable-cache: true
+
+      - name: Install and verify pinned ruff executable
+        run: |
+          set -euo pipefail
+          uv tool install ruff==0.13.1
+          tool_bin="$(uv tool dir --bin)"
+          echo "$tool_bin" >> "$GITHUB_PATH"
+          "$tool_bin/ruff" --version
+          python - "$tool_bin/ruff" <<'PYTHON'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          lock = json.loads(Path('infra/toolchain.lock.json').read_text())
+          entry = next(tool for tool in lock['tools'] if tool['id'] == 'ruff')
+          actual = hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest()
+          if actual != entry['integrity']:
+              raise SystemExit('Installed ruff digest differs from the governed lock')
+          print(f"ruff {entry['version']}: SHA-256 matches governed lock")
+          PYTHON
+
+      - name: Synchronize locked runtime environment
+        working-directory: ocor-runtime
+        run: |
+          set -euo pipefail
+          uv sync --frozen --extra test --extra lint
+          .venv/bin/python --version
+          .venv/bin/python - <<'PY'
+          from importlib.metadata import version
+          for package in ("openapi-spec-validator", "rdflib", "psycopg", "pytest"):
+              print(f"{package}=={version(package)}")
+          PY
+
+      - name: Acquire official checksum-pinned Kubernetes qualification tools
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/provision_qualification_tools.py --execute | tee reports/tests/ci_qualification_tools.log
+
+      - name: Build pinned TypeScript SDK and oracle
+        working-directory: ocor-runtime/sdk/typescript
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          echo "$(pwd)/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Reset or positively verify absence of the previous stack
+        run: python3 scripts/bootstrap_ci_environment.py --teardown --execute
+
+      - name: Resolve governed Fuseki content address
+        id: fuseki-key
+        run: python3 scripts/acquire_fuseki_archive.py --github-output >> "$GITHUB_OUTPUT"
+
+      - name: Restore exact SHA512-addressed Fuseki archive
+        id: fuseki-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.fuseki-key.outputs.path }}
+          key: ${{ steps.fuseki-key.outputs.key }}
+
+      - name: Provision the full pinned disposable stack
+        run: |
+          set -euo pipefail
+          ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600 | tee reports/tests/ci_bootstrap.log
+          ocor-runtime/.venv/bin/python - <<'PYTHON'
+          import os
+          from pathlib import Path
+          env_file = Path('.ocor/bootstrap.env').resolve()
+          values = dict(line.split('=', 1) for line in env_file.read_text().splitlines() if '=' in line)
+          with open(os.environ['GITHUB_ENV'], 'a') as target:
+              target.write(f"OCOR_BOOTSTRAP_ENV={env_file}\n")
+              target.write(f"OCOR_LIVE_POSTGRES_DSN=postgresql://ocor:{values['OCOR_LOCAL_POSTGRES_PASSWORD']}@127.0.0.1:55433/ocor\n")
+          for key, value in values.items():
+              if key.endswith(('PASSWORD', 'TOKEN')):
+                  print(f'::add-mask::{value}')
+          PYTHON
+
+      - name: Save verified Fuseki archive in this repository cache
+        if: success() && steps.fuseki-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.fuseki-key.outputs.path }}
+          key: ${{ steps.fuseki-key.outputs.key }}
+
 
       - name: Reject immutable-path and task-ledger regressions
         run: >-
@@ -129,18 +291,21 @@ jobs:
           PY=ocor-runtime/.venv/bin/python
           "$PY" scripts/ocor_autonomous_delivery.py --validate
           "$PY" scripts/ocor_autonomous_delivery.py --dry-run
-          "$PY" scripts/ocor_autonomous_delivery.py --next
+          # PO mandate: runner validation uses only --validate and --dry-run.
 
       - name: Test repository protection and runner controls
         run: >-
-          uv run --project ocor-runtime --frozen pytest -q
+          uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q
           ocor-runtime/tests/tasks/test_ocor_dev_0001.py
 
-      - name: Execute complete runtime suite with PostgreSQL
-        run: >-
-          uv run --project ocor-runtime --frozen pytest -q
-          --junitxml=reports/tests/activation_runtime_junit.xml
-          ocor-runtime/tests/
+      - name: Download every part of the parallel complete suite
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: ocor-activation-full-part-*-${{ github.sha }}
+          path: reports/tests/activation-parts
+
+      - name: Aggregate parts and prove their union equals pytest --collect-only on this HEAD
+        run: ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/activation-parts --shard-count 4 --output-dir reports/tests/activation-full
 
       - name: Lint approved planning Markdown
         run: >-
@@ -154,3 +319,23 @@ jobs:
           --output /tmp/ocor-dependency-dag.svg
           --puppeteerConfigFile .github/mermaid-puppeteer.json
           --quiet
+
+      - name: Teardown this disposable stack
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p reports/tests
+          python3 scripts/bootstrap_ci_environment.py --teardown --execute | tee reports/tests/ci_teardown.log
+          test -z "$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)"
+          test -z "$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)"
+
+      - name: Upload real-stack regression and teardown results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ocor-activation-full-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            reports/tests/ci_*.log
+            reports/tests/activation-full/
