@@ -108,3 +108,35 @@ def test_ci_build_deadline_cannot_start_docker_after_acquisition(tmp_path, monke
     monkeypatch.setattr(acquisition, "run", lambda *a, **kw: pytest.fail("expired build budget"))
     with pytest.raises(BootstrapError, match="budget"):
         acquisition.build_ci_image(tmp_path)
+
+
+SCOPE_GATES = ("validate_ocor_change_scope.py", "validate_ocor_development_plan.py")
+WORKTREE_WRITERS = ("tee reports/tests/", "> reports/tests/", "=reports/tests/", "--output-dir reports/tests/",
+                    "--output reports/tests/", "bootstrap_ci_environment.py --execute",
+                    "provision_qualification_tools.py --execute")
+
+
+@pytest.mark.parametrize("path", sorted((ROOT / ".github/workflows").glob("*.yml")), ids=lambda p: p.name)
+def test_scope_gates_run_before_any_step_writes_into_the_worktree(path):
+    """The scope and plan gates count untracked files: they must see only the checked-out commit.
+
+    A CI log written under reports/tests/ before the gate is an untracked path that the
+    task-branch scope check reports as unowned, so the gate must run before any writer.
+    """
+    workflow = yaml.safe_load(path.read_text())
+    for job_name, job in workflow["jobs"].items():
+        runs = [step.get("run", "") or "" for step in job.get("steps", [])]
+        gates = [i for i, run in enumerate(runs) if any(gate in run for gate in SCOPE_GATES)]
+        writers = [i for i, run in enumerate(runs) if any(writer in run for writer in WORKTREE_WRITERS)]
+        for gate in gates:
+            assert not [w for w in writers if w < gate], f"{path.name}:{job_name}: scope gate after a worktree writer"
+
+
+def test_scope_gate_order_check_rejects_a_writer_before_the_gate():
+    """Negative control: the check above fails on the ordering that broke task PRs."""
+    job = {"steps": [{"run": "x | tee reports/tests/ci_bootstrap.log"},
+                     {"run": "python scripts/validate_ocor_change_scope.py --base b --head h --branch task/x"}]}
+    runs = [s["run"] for s in job["steps"]]
+    gates = [i for i, r in enumerate(runs) if any(g in r for g in SCOPE_GATES)]
+    writers = [i for i, r in enumerate(runs) if any(w in r for w in WORKTREE_WRITERS)]
+    assert any(w < g for g in gates for w in writers)
