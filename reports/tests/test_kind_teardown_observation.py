@@ -337,8 +337,25 @@ class ProbeTimeoutObservation(unittest.TestCase):
             self.assertEqual(removals[0]['node_id'], ID)
 
 
+SCOPE_STEP = '      - name: Reject immutable-path and task-ledger regressions\n'
+SCOPE_ANCHOR = '      - name: Acquire official checksum-pinned Kubernetes qualification tools\n'
+
+
+def move_scope_gate_before_provisioning(text):
+    """The 0049 integration CI repair: the aggregator's scope step, byte for byte, moves before
+    the first worktree writer (qualification tools, SDK build, stack provisioning)."""
+    start = text.index(SCOPE_STEP)
+    end = text.index('      - name: Validate language policy (DEC-212)\n', start)
+    block, rest = text[start:end], text[:start] + text[end:]
+    anchors = [i for i in range(len(rest)) if rest.startswith(SCOPE_ANCHOR, i)]
+    assert len(anchors) == 2, 'aggregator anchor not unique'
+    return rest[:anchors[1]] + block + rest[anchors[1]:]
+
+
 def assert_governed_workflow(path, before, after):
-    """Accept only the PO's exact pin/N update; every other byte stays checked."""
+    """Accept only the PO's exact pin/N update and the scope-gate reorder; every other byte stays checked."""
+    if path == '.github/workflows/ocor-delivery-activation.yml':
+        before = move_scope_gate_before_provisioning(before)
     if path == '.github/workflows/ocor-validation-closure.yml':
         prefix, suffix = before.split('  conditional-infrastructure-0049-part:', 1)
         assert suffix.count('a0ee43d4e502f3589cd857cfec4238eab13fe8e7') == 4
@@ -410,7 +427,7 @@ def observation_only_proof():
     return {'baseline': baseline, 'functions': results, 'workflows_unchanged': workflows,
             'campaign_constants_identical': True, 'window_poll_sample_identical': True,
             'normalisation': 'Only latency wrapper and two diagnostic export fields removed from AST. Workflows require the exact PO-authorised 0049 pin and N=5 delta; all other bytes, timers and gates identical.',
-            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts'}
+            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts; 0049 integration CI repair: delivery-activation scope gate moved byte-identically before the first worktree writer'}
 
 
 class ExecutionInvariants(unittest.TestCase):
@@ -435,6 +452,27 @@ class ExecutionInvariants(unittest.TestCase):
                 self.assertIn(old, current)
                 with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
                     assert_governed_workflow(path, before, current.replace(old, new, 1))
+        # The scope-gate reorder is the only accepted delivery-activation delta.
+        path = '.github/workflows/ocor-delivery-activation.yml'
+        before = subprocess.check_output(['git', '-C', str(root), 'show',
+                  '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0:' + path], text=True)
+        current = (root / path).read_text()
+        assert_governed_workflow(path, before, current)
+        block_start = current.index(SCOPE_STEP)
+        block_end = current.index('\n\n', block_start) + 2
+        block = current[block_start:block_end]
+        unmoved = current[:block_start] + current[block_end:]
+        writer = unmoved.index('      - name: Save verified Fuseki archive in this repository cache\n')
+        for label, changed in [
+            ('scope gate back after provisioning', unmoved[:writer] + block + unmoved[writer:]),
+            ('scope gate removed', unmoved),
+            ('scope gate base changed', current.replace("github.event.before || 'origin/main'", "'origin/main'", 1)),
+            ('timeout changed', current.replace('timeout-minutes: 110', 'timeout-minutes: 111', 1)),
+        ]:
+            with self.subTest(change=label):
+                self.assertNotEqual(changed, current)
+                with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
+                    assert_governed_workflow(path, before, changed)
         # No pin/N exception in any other workflow.
         with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
             assert_governed_workflow('.github/workflows/ocor-rccad.yml', 'unchanged', 'changed')
