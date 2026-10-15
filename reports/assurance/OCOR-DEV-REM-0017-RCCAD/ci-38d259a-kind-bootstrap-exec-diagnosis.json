@@ -1,0 +1,177 @@
+{
+  "artifact": {
+    "files": {
+      "campaign_result.json": "aa3e3cc129c3d881d70e27af197129b7809c3cda57497646833fd763fa85ca7b",
+      "docker-stats.log": "ac83eddf89d90a66a88716299219c4d3981a0595772046254b4ca9d0a82b68d8",
+      "health-observer-manifest.json": "8a0b7cf3671223d757f42f70f30d48e55b857b1897e64db0558c7f834c0821f4",
+      "health-observer-status.json": "f4eaeb9b6ecf45986133070c3e7f16afa89d6ddc14879ca785d5eecc22ef0a3e",
+      "health-observer.jsonl": "bc2217fac13fed3991a775d8e47868dedf8b74e07a4ead8af433f4790a28e78e",
+      "kind-teardown-observations.json": "0a1e1b261fe20abc86216b84fbb5ffc1d8e4e8a2b8e2eade7433853bd056368c",
+      "kubernetes-diagnostics.log": "c9eca414381c8bd88f7ad15bdb6fa6711dd88bb31fdefa138780c4a01854451d",
+      "kubernetes-runtime.log": "ea1e6572a06da201f219653dca431bc234333f3d44dd2cd649cbb75d6bf7c337",
+      "partition.json": "a7bb0b8f1b00a073c6670e2c273461c219f09b1403040377754eea28510baafe",
+      "post_remediation_runtime.log": "5f19c7cf521ea447a86b26e59660dc473c7cdab0d3c34df5f9324dfacffe3b5a",
+      "runtime_junit_post_approval.xml": "b67f9e8fd99e712284b6a74c46db1eb43b868d0b366bdf9d0b0694eb23edd8f3"
+    },
+    "id": 11943371100,
+    "zip_sha256": "08a62d2c0e325af4dece0abcec427fd1422939447c8dc78270f7ac712947d4ff"
+  },
+  "branch": "governed/state-sync-rem0017-pin-rebalance-20261015",
+  "campaign_result": {
+    "error": "Command '['docker', 'exec', 'b51e2022fd3ea4d924781fd93d5ef65d35bc86c37d62eb7a970665461d147ec0', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1.",
+    "po_decision_required": false,
+    "status": "FAIL"
+  },
+  "candidate_0049_head": "beab1b4cc16d0678ce5554fcebd6495b328f5342",
+  "facts": [
+    "First docker exec systemctl show containerd on the newly observed kind node at 01:48:26.229Z returned exit 1 in 39 ms (stderr not captured by the probe).",
+    "Node then present, running, OOMKilled false, RestartCount 0 for the whole 30 s v2 window (59 inspect probes, all exit 0); v2 rejected WINDOW_EXPIRED_NODE_PRESENT at 01:48:56.62Z, fail-closed by design.",
+    "The re-probe at 01:48:56.65Z (exact same exec) returned 0 for containerd and kubelet; diagnostics show containerd PID 118, restarts 0.",
+    "Node journal shows kubeadm bootstrap in progress (kubelet stopped/started at 01:48:37, API server not yet reachable): the first exec raced systemd/node bootstrap.",
+    "pytest interrupted by the supervisor after 70.24 s: no test ran to completion, no assertion failed; teardown PASS with zero residue.",
+    "Same execution trees (workflow, harness, candidate 0049 beab1b4) passed the Helm part on 022585a (run 38657398743, OWNED_KIND_TEARDOWN_OBSERVED recorded) and on the sealed HEAD 5115e2e (job success)."
+  ],
+  "head_sha": "38d259a08580efd78ee621cb3ce91b65f370570d",
+  "id": "CI-0049-KIND-BOOTSTRAP-EXEC-PROBE",
+  "job": "conditional-infrastructure-0049 part 1/5",
+  "job_id": 116202218769,
+  "job_log_sha256": "075c0f4c47fee7f0c0810addba5dbdbaaa49c9e3b22046667ddb0bdacb3097d5",
+  "not_established": "Exact stderr of the failing exec (not captured); whether the cause is systemd not yet running PID1 bus or another transient Docker exec failure.",
+  "observed_at": "2026-10-15T01:49:04Z",
+  "probe_sequence_excerpt": [
+    {
+      "command": [
+        "docker",
+        "ps",
+        "-q",
+        "--filter",
+        "label=io.x-k8s.kind.cluster=ocor-poc"
+      ],
+      "duration_seconds": 0.018316796999954477,
+      "finished_at": "2026-10-15T01:47:50.683264+00:00",
+      "returncode": 0,
+      "started_at": "2026-10-15T01:47:50.664969+00:00"
+    },
+    {
+      "command": [
+        "docker",
+        "ps",
+        "-q",
+        "--filter",
+        "label=io.x-k8s.kind.cluster=ocor-poc"
+      ],
+      "duration_seconds": 0.01206602299998849,
+      "finished_at": "2026-10-15T01:47:55.735113+00:00",
+      "returncode": 0,
+      "started_at": "2026-10-15T01:47:55.723067+00:00"
+    },
+    {
+      "command": [
+        "docker",
+        "ps",
+        "-q",
+        "--filter",
+        "label=io.x-k8s.kind.cluster=ocor-poc"
+      ],
+      "duration_seconds": 0.017426419999992504,
+      "finished_at": "2026-10-15T01:48:00.803440+00:00",
+      "returncode": 0,
+      "started_at": "2026-10-15T01:48:00.786060+00:00"
+    },
+    {
+      "command": [
+        "docker",
+        "inspect",
+        "b51e2022fd3ea4d924781fd93d5ef65d35bc86c37d62eb7a970665461d147ec0"
+      ],
+      "duration_seconds": 0.016338223000047947,
+      "finished_at": "2026-10-15T01:48:26.805322+00:00",
+      "returncode": 0,
+      "started_at": "2026-10-15T01:48:26.789022+00:00"
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "b51e2022fd3ea4d924781fd93d5ef65d35bc86c37d62eb7a970665461d147ec0",
+        "systemctl",
+        "show",
+        "containerd",
+        "--property=ActiveState,MainPID,NRestarts"
+      ],
+      "duration_seconds": 0.046239121000041905,
+      "finished_at": "2026-10-15T01:48:56.700087+00:00",
+      "returncode": 0,
+      "started_at": "2026-10-15T01:48:56.653867+00:00"
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "b51e2022fd3ea4d924781fd93d5ef65d35bc86c37d62eb7a970665461d147ec0",
+        "systemctl",
+        "show",
+        "kubelet",
+        "--property=ActiveState,MainPID,NRestarts"
+      ],
+      "duration_seconds": 0.041185238999958074,
+      "finished_at": "2026-10-15T01:48:56.741290+00:00",
+      "returncode": 0,
+      "started_at": "2026-10-15T01:48:56.700132+00:00"
+    }
+  ],
+  "pull_request": 273,
+  "rejections": [
+    {
+      "error": "Command '['docker', 'exec', 'b51e2022fd3ea4d924781fd93d5ef65d35bc86c37d62eb7a970665461d147ec0', 'systemctl', 'show', 'containerd', '--property=ActiveState,MainPID,NRestarts']' returned non-zero exit status 1.",
+      "node_id": "b51e2022fd3ea4d924781fd93d5ef65d35bc86c37d62eb7a970665461d147ec0",
+      "observed_at": "2026-10-15T01:48:56.620765+00:00",
+      "reason": "WINDOW_EXPIRED_NODE_PRESENT",
+      "states": [
+        {
+          "at": "2026-10-15T01:48:54.022326+00:00",
+          "oom": false,
+          "restarts": 0,
+          "running": true,
+          "status": "running"
+        },
+        {
+          "at": "2026-10-15T01:48:54.542054+00:00",
+          "oom": false,
+          "restarts": 0,
+          "running": true,
+          "status": "running"
+        },
+        {
+          "at": "2026-10-15T01:48:55.071604+00:00",
+          "oom": false,
+          "restarts": 0,
+          "running": true,
+          "status": "running"
+        },
+        {
+          "at": "2026-10-15T01:48:55.604904+00:00",
+          "oom": false,
+          "restarts": 0,
+          "running": true,
+          "status": "running"
+        },
+        {
+          "at": "2026-10-15T01:48:56.120647+00:00",
+          "oom": false,
+          "restarts": 0,
+          "running": true,
+          "status": "running"
+        }
+      ],
+      "window_seconds": 30.0
+    }
+  ],
+  "removals": [],
+  "required_check": false,
+  "rerun": "NOT_EXECUTED (PO REM-0017-CI-KIND-INSPECT-TIMEOUT outcome 3: v2 rejection in the Helm part forbids rerun)",
+  "schema_version": "1.0",
+  "test": "tests/tasks/test_ocor_dev_0049.py::test_helm_profile_on_kubernetes_backs_up_restores_and_gates_readiness",
+  "window_seconds": 30.0,
+  "workflow_run": 38667351904
+}
