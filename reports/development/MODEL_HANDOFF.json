@@ -2,11 +2,12 @@
   "assumptions": [
     "No merge until all13 mandatory checks completed/success by name on exact sealed candidate head.",
     "REM19 repair_cycle1 retained; deterministic scanner finding is a governance blocker, not an infrastructure retry.",
-    "REM28 Q1/Q2/Q3 decisions resolved and REM24 merged; no new decision on the same authority questions is needed."
+    "REM28 Q1/Q2/Q3 decisions resolved and REM24 merged; no new decision on the same authority questions is needed.",
+    "Existing kind bootstrap exec PO decision now proven to block validation-closure and all protected merges; ready implementations remain executable. New checkpoint has no PR/CI until the condition changes."
   ],
   "base_sha": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
   "baseline_commit": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
-  "branch": "governed/state-sync-rem0019-integration-20261015",
+  "branch": "governed/state-sync-rem0019-ci-failure-20261015",
   "branch_evidence_paths": [
     {
       "branch": "governed/ocor-dev-rem-0019-evidence-stage",
@@ -37,6 +38,12 @@
       "head_sha": "25d3564458e61136fe376943fd3c07d66ebd6595",
       "path": "reports/development/decision_requests/REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER.md",
       "sha256": "971be400778163c096d65249e7654e778aaffcf8198ad6e42335ece83a53632c"
+    },
+    {
+      "branch": "governed/decision-request-ci-0049-kind-bootstrap-exec-probe",
+      "head_sha": "4653ac71ab1b523651d074e968c144ee4e65d3b0",
+      "path": "reports/development/decision_requests/CI-0049-KIND-BOOTSTRAP-EXEC-PROBE.md",
+      "sha256": "ef4f37dbf1709cbb1b1500bc944063bd89524247817bfd445ae9e885f4aaf14b"
     }
   ],
   "changed_paths": [
@@ -46,7 +53,7 @@
   ],
   "checkpoint": {
     "baseline_commit": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
-    "branch": "governed/state-sync-rem0019-integration-20261015",
+    "branch": "governed/state-sync-rem0019-ci-failure-20261015",
     "branch_evidence_paths": [
       {
         "branch": "governed/ocor-dev-rem-0019-evidence-stage",
@@ -77,6 +84,12 @@
         "head_sha": "25d3564458e61136fe376943fd3c07d66ebd6595",
         "path": "reports/development/decision_requests/REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER.md",
         "sha256": "971be400778163c096d65249e7654e778aaffcf8198ad6e42335ece83a53632c"
+      },
+      {
+        "branch": "governed/decision-request-ci-0049-kind-bootstrap-exec-probe",
+        "head_sha": "4653ac71ab1b523651d074e968c144ee4e65d3b0",
+        "path": "reports/development/decision_requests/CI-0049-KIND-BOOTSTRAP-EXEC-PROBE.md",
+        "sha256": "ef4f37dbf1709cbb1b1500bc944063bd89524247817bfd445ae9e885f4aaf14b"
       }
     ],
     "campaign_background_processes_remaining": false,
@@ -441,8 +454,8 @@
         "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     ],
-    "next_action": "OCOR-DEV-REM-0028:implementation, as the authorized higher-priority integration path has no executable action: REM24 is verified and merged (PR267), its Q1/Q2/Q3 PO authority questions are resolved, and REM19 PR254 is blocked only by REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (draft PR279). Start a new governed/ worktree from current origin/main after mandatory reads/preflight; read REM_0028_APPROVER_AUTHORITY_REVALIDATION in EXECUTION_STATE for scope/criteria plus PO REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY, Q3 with Q1 condition. Inventory HumanGateCoordinator.validate and EmergencyStopController.request_reset; RED before code for registry-derived HUMAN/ACTIVE/required roles, spoofed GateSignature.role, requester separation, trusted boundary clock and revocation; preserve identity-record schema and Q1 convention; change only authorized files and the specifically authorized0043/0044 tests/fixtures. Requalify0043/0044 and all drifted sealed inputs with supersession, plus regression-only0050 if allowlist changes. Full local suite75min/task45min, zero skip, stack hygiene, local gates; then external verification request (Claude Code for new Codex-only REM28; Cursor/Grok for any requalification touching reserve-Claude lineage). Never start verifier. Keep PR254 draft at sealed0addbaa99c3f pending PO disposition; do not modify historical0e37bcb00cd5 record, scanner, thresholds, test selections or request same-head rerun. Seal and historical campaigns remain valid only for their recorded scope, CI FAIL not PASS. After PO resolution resume13 exact named checks and main integration, then separateCI TEST-INFRA006 retirement ->REM23 ->0056 WIP5edd6cd without force-push ->0057 ->0058 ->0059 ->REM30, other ready units per PO queue. CI-0049-KIND-BOOTSTRAP-EXEC-PROBE also pending. G6 blocked by mandated REM dependencies. State only governed/state-sync-*; inputs/E1/E2/Verified/NO-GO unchanged.",
-    "phase": "INTEGRATION_SEALED_BLOCKED_PO_DECISION_SCANNER",
+    "next_action": "Resume from the VERSIONED checkpoint governed/state-sync-rem0019-ci-failure-20261015 (commit through git rev-parse on that branch); main remains 9b4d3be8ec5bd785b02072a99037dd801b53d9a5. State PR280 at b50dd030c32ed6476ed31fa63993a06448d5fb4a is draft and FAIL, not merged: validation-closure requires conditional-infrastructure-0049 success, whose Helm part refused bootstrap exec with WINDOW_EXPIRED_NODE_PRESENT. This is the existing OPEN PO decision CI-0049-KIND-BOOTSTRAP-EXEC-PROBE, updated in PR274; no rerun or new metadata HEAD submitted to chase green. Do not wait on or requalify this failed HEAD. OCOR-DEV-REM-0028:implementation, as the authorized higher-priority integration path has no executable action: REM24 is verified and merged (PR267), its Q1/Q2/Q3 PO authority questions are resolved, and REM19 PR254 is blocked only by REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (draft PR279). Start a new governed/ worktree from current origin/main after mandatory reads/preflight; read REM_0028_APPROVER_AUTHORITY_REVALIDATION in EXECUTION_STATE for scope/criteria plus PO REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY, Q3 with Q1 condition. Inventory HumanGateCoordinator.validate and EmergencyStopController.request_reset; RED before code for registry-derived HUMAN/ACTIVE/required roles, spoofed GateSignature.role, requester separation, trusted boundary clock and revocation; preserve identity-record schema and Q1 convention; change only authorized files and the specifically authorized0043/0044 tests/fixtures. Requalify0043/0044 and all drifted sealed inputs with supersession, plus regression-only0050 if allowlist changes. Full local suite75min/task45min, zero skip, stack hygiene, local gates; then external verification request (Claude Code for new Codex-only REM28; Cursor/Grok for any requalification touching reserve-Claude lineage). Never start verifier. Keep PR254 draft at sealed0addbaa99c3f pending PO disposition; do not modify historical0e37bcb00cd5 record, scanner, thresholds, test selections or request same-head rerun. Seal and historical campaigns remain valid only for their recorded scope, CI FAIL not PASS. After PO resolution resume13 exact named checks and main integration, then separateCI TEST-INFRA006 retirement ->REM23 ->0056 WIP5edd6cd without force-push ->0057 ->0058 ->0059 ->REM30, other ready units per PO queue. CI-0049-KIND-BOOTSTRAP-EXEC-PROBE also pending. G6 blocked by mandated REM dependencies. State only governed/state-sync-*; inputs/E1/E2/Verified/NO-GO unchanged. Implementation of ready units may continue, but ALL merges requiring validation-closure are blocked by the existing kind-probe PO decision until an authorized correction is qualified. Keep checkpoint/state changes versioned separately; do not claim main contains this unmerged state, do not launch CI on another metadata HEAD as a retry, and do not write global TERMINAL_BLOCKED while implementation/verification work remains executable. Consolidate the state checkpoints only after the CI blocking condition changes.",
+    "phase": "INTEGRATION_BLOCKED_STATE_CI_FAIL_CHECKPOINT",
     "preflight": {
       "services": 11,
       "status": "PASS",
@@ -513,6 +526,139 @@
       "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
       "status": "PASS"
     },
+    "state_sync_ci": {
+      "cause": "validation-closure depends on conditional-infrastructure-0049 and tests its result == success; four validation suite parts passed but conditional Helm refused WINDOW_EXPIRED_NODE_PRESENT following docker exec systemctl show containerd exit1 on live bootstrapping node",
+      "checks": [
+        {
+          "conclusion": "success",
+          "id": 116291444246,
+          "name": "contract",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444246"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291444334,
+          "name": "unit",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444334"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291444414,
+          "name": "integration-postgresql",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444414"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291444407,
+          "name": "backend-compatibility-not-ba-evidence",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444407"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291445060,
+          "name": "evidence",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291445060"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291924688,
+          "name": "mandatory-gates",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291924688"
+        },
+        {
+          "conclusion": "success",
+          "id": 116299999199,
+          "name": "rccad-methodology",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636284/job/116299999199"
+        },
+        {
+          "conclusion": "success",
+          "id": 116300387502,
+          "name": "delivery-activation",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636307/job/116300387502"
+        },
+        {
+          "conclusion": "failure",
+          "id": 116300760193,
+          "name": "validation-closure",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636096/job/116300760193"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291442864,
+          "name": "supply-chain",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636079/job/116291442864"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291443600,
+          "name": "type-and-lint-gate",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636120/job/116291443600"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291443187,
+          "name": "tooling-policy",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636120/job/116291443187"
+        },
+        {
+          "conclusion": "success",
+          "id": 116291444372,
+          "name": "fgm-contract-readiness-not-runtime-evidence",
+          "status": "completed",
+          "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444372"
+        }
+      ],
+      "closure_job": 116300760193,
+      "diagnostic_hashes": {
+        "state-conditional-helm.log": "331e9562fb9e3c2ed4443a4dbe74ba838902ca559f9408e544bb49c75a02b0e4",
+        "state-helm-artifact/candidate-0049-part-1/kind-teardown-observations.json": "247227a25e7e820e29f92addc6ad434c735c4e7ad2f8d9e9aeadc940142b97e1",
+        "state-validation-closure-failure.log": "a7c7000c0fa6cb0c0403e12937950cc346d5b59a45663ec740269a5376b36297"
+      },
+      "erratum": "The non-ruleset name of the conditional job does not imply nonblocking: it propagates to a mandatory check. Historical text claiming no merge blocked is corrected here and in the append-only PR274 addendum.",
+      "head_sha": "b50dd030c32ed6476ed31fa63993a06448d5fb4a",
+      "helm_artifact": 11953484622,
+      "helm_job": 116291443520,
+      "new_checkpoint_ci": "NOT_EXECUTED_NOT_REQUESTED: this new checkpoint is pushed without a PR or CI as preservation, not an attempt to get green on the same executable tree",
+      "observation_sha256": "1558b141cf4b4823a0d1a744902d7618e5f81615e8f2ae25fea76a7a2c1f3925",
+      "observed_at": "2026-10-15T07:27:39.859343+00:00",
+      "pull_request": 280,
+      "remaining_workflow_cancel": {
+        "observed_at": "2026-10-15T07:26:24.681832+00:00",
+        "reason": "validation-closure failed through conditional Helm bootstrap exec refusal; known open PO decision, no rerun, no qualifying incomplete cases",
+        "runs": [
+          {
+            "exit_code": 0,
+            "output": "\u2713 Request to cancel workflow 38695636307 submitted.\n",
+            "previous_status": "in_progress",
+            "run_id": 38695636307
+          }
+        ]
+      },
+      "rerun_requested": false,
+      "run_ids": [
+        38695636079,
+        38695636096,
+        38695636120,
+        38695636125,
+        38695636284,
+        38695636307,
+        38695636323
+      ],
+      "status": "FAIL_NOT_MERGED"
+    },
     "task_id": "OCOR-DEV-REM-0019",
     "verification": {
       "blocking_findings": 0,
@@ -524,7 +670,7 @@
       "verdict_sha256": "34abbfdb186e467e78118bfc63106fc2d66625a21157265b950b4a3984956e27"
     },
     "verification_request_id": "OCOR-DEV-REM-0019-88ba930bd66d-1-integration",
-    "worktree": ".ocor/worktrees/state-sync-rem0019-integration-20261015"
+    "worktree": ".ocor/worktrees/state-sync-rem0019-ci-failure-20261015"
   },
   "claims": {
     "E1": 0,
@@ -688,7 +834,7 @@
     "reports/evidence/G4/OCOR-DEV-0049.requalified-rem0032.json",
     "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.json"
   ],
-  "exact_next_action": "OCOR-DEV-REM-0028:implementation, as the authorized higher-priority integration path has no executable action: REM24 is verified and merged (PR267), its Q1/Q2/Q3 PO authority questions are resolved, and REM19 PR254 is blocked only by REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (draft PR279). Start a new governed/ worktree from current origin/main after mandatory reads/preflight; read REM_0028_APPROVER_AUTHORITY_REVALIDATION in EXECUTION_STATE for scope/criteria plus PO REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY, Q3 with Q1 condition. Inventory HumanGateCoordinator.validate and EmergencyStopController.request_reset; RED before code for registry-derived HUMAN/ACTIVE/required roles, spoofed GateSignature.role, requester separation, trusted boundary clock and revocation; preserve identity-record schema and Q1 convention; change only authorized files and the specifically authorized0043/0044 tests/fixtures. Requalify0043/0044 and all drifted sealed inputs with supersession, plus regression-only0050 if allowlist changes. Full local suite75min/task45min, zero skip, stack hygiene, local gates; then external verification request (Claude Code for new Codex-only REM28; Cursor/Grok for any requalification touching reserve-Claude lineage). Never start verifier. Keep PR254 draft at sealed0addbaa99c3f pending PO disposition; do not modify historical0e37bcb00cd5 record, scanner, thresholds, test selections or request same-head rerun. Seal and historical campaigns remain valid only for their recorded scope, CI FAIL not PASS. After PO resolution resume13 exact named checks and main integration, then separateCI TEST-INFRA006 retirement ->REM23 ->0056 WIP5edd6cd without force-push ->0057 ->0058 ->0059 ->REM30, other ready units per PO queue. CI-0049-KIND-BOOTSTRAP-EXEC-PROBE also pending. G6 blocked by mandated REM dependencies. State only governed/state-sync-*; inputs/E1/E2/Verified/NO-GO unchanged.",
+  "exact_next_action": "Resume from the VERSIONED checkpoint governed/state-sync-rem0019-ci-failure-20261015 (commit through git rev-parse on that branch); main remains 9b4d3be8ec5bd785b02072a99037dd801b53d9a5. State PR280 at b50dd030c32ed6476ed31fa63993a06448d5fb4a is draft and FAIL, not merged: validation-closure requires conditional-infrastructure-0049 success, whose Helm part refused bootstrap exec with WINDOW_EXPIRED_NODE_PRESENT. This is the existing OPEN PO decision CI-0049-KIND-BOOTSTRAP-EXEC-PROBE, updated in PR274; no rerun or new metadata HEAD submitted to chase green. Do not wait on or requalify this failed HEAD. OCOR-DEV-REM-0028:implementation, as the authorized higher-priority integration path has no executable action: REM24 is verified and merged (PR267), its Q1/Q2/Q3 PO authority questions are resolved, and REM19 PR254 is blocked only by REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (draft PR279). Start a new governed/ worktree from current origin/main after mandatory reads/preflight; read REM_0028_APPROVER_AUTHORITY_REVALIDATION in EXECUTION_STATE for scope/criteria plus PO REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY, Q3 with Q1 condition. Inventory HumanGateCoordinator.validate and EmergencyStopController.request_reset; RED before code for registry-derived HUMAN/ACTIVE/required roles, spoofed GateSignature.role, requester separation, trusted boundary clock and revocation; preserve identity-record schema and Q1 convention; change only authorized files and the specifically authorized0043/0044 tests/fixtures. Requalify0043/0044 and all drifted sealed inputs with supersession, plus regression-only0050 if allowlist changes. Full local suite75min/task45min, zero skip, stack hygiene, local gates; then external verification request (Claude Code for new Codex-only REM28; Cursor/Grok for any requalification touching reserve-Claude lineage). Never start verifier. Keep PR254 draft at sealed0addbaa99c3f pending PO disposition; do not modify historical0e37bcb00cd5 record, scanner, thresholds, test selections or request same-head rerun. Seal and historical campaigns remain valid only for their recorded scope, CI FAIL not PASS. After PO resolution resume13 exact named checks and main integration, then separateCI TEST-INFRA006 retirement ->REM23 ->0056 WIP5edd6cd without force-push ->0057 ->0058 ->0059 ->REM30, other ready units per PO queue. CI-0049-KIND-BOOTSTRAP-EXEC-PROBE also pending. G6 blocked by mandated REM dependencies. State only governed/state-sync-*; inputs/E1/E2/Verified/NO-GO unchanged. Implementation of ready units may continue, but ALL merges requiring validation-closure are blocked by the existing kind-probe PO decision until an authorized correction is qualified. Keep checkpoint/state changes versioned separately; do not claim main contains this unmerged state, do not launch CI on another metadata HEAD as a retry, and do not write global TERMINAL_BLOCKED while implementation/verification work remains executable. Consolidate the state checkpoints only after the CI blocking condition changes.",
   "head_sha": "0addbaa99c3f13d39cb64c1e9aee73ca45eed3cd",
   "head_sha_role": "sealed candidate HEAD, CI FAIL and not merged; state-sync HEAD resolved through git rev-parse",
   "migration_rollback_result": "No data migration or runtime changes; new revert commit is the rollback, never rewrite historical records or main history.",
@@ -711,7 +857,7 @@
     "verifier": "Grok 4.7 via Cursor CLI; GO OCOR-DEV-REM-0019-88ba930bd66d-1-integration; external loop, separate process/context/provider"
   },
   "schema_version": "1.0",
-  "security_observability_notes": "Three lexical matches are historical synthetic pytest parameters. Values not reproduced in decision request. All seals/raw retained; scanner and gate unchanged; no rerun. Local reset/bootstrap and typed health passed9toolchain/11services, teardown0owned/new. Candidate PR254 draft. No verifier launched by implementer.",
+  "security_observability_notes": "Three lexical matches are historical synthetic pytest parameters. Values not reproduced in decision request. All seals/raw retained; scanner and gate unchanged; no rerun. Local reset/bootstrap and typed health passed9toolchain/11services, teardown0owned/new. Candidate PR254 draft. No verifier launched by implementer. Mandatory validation-closure inherits conditional Helm failure; prior nonblocking interpretation corrected. No rerun, gate change or metadata CI retry. This checkpoint is versioned but not on main.",
   "session_teardown": {
     "after_counts": {
       "containers": 24,
@@ -737,6 +883,139 @@
     "raw_sha256": "498ce3a29a7629e04adb76163494fd79dc77fbb4adfdccd193ad080a10043b5b",
     "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
     "status": "PASS"
+  },
+  "state_sync_ci": {
+    "cause": "validation-closure depends on conditional-infrastructure-0049 and tests its result == success; four validation suite parts passed but conditional Helm refused WINDOW_EXPIRED_NODE_PRESENT following docker exec systemctl show containerd exit1 on live bootstrapping node",
+    "checks": [
+      {
+        "conclusion": "success",
+        "id": 116291444246,
+        "name": "contract",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444246"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291444334,
+        "name": "unit",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444334"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291444414,
+        "name": "integration-postgresql",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444414"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291444407,
+        "name": "backend-compatibility-not-ba-evidence",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444407"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291445060,
+        "name": "evidence",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291445060"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291924688,
+        "name": "mandatory-gates",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291924688"
+      },
+      {
+        "conclusion": "success",
+        "id": 116299999199,
+        "name": "rccad-methodology",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636284/job/116299999199"
+      },
+      {
+        "conclusion": "success",
+        "id": 116300387502,
+        "name": "delivery-activation",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636307/job/116300387502"
+      },
+      {
+        "conclusion": "failure",
+        "id": 116300760193,
+        "name": "validation-closure",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636096/job/116300760193"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291442864,
+        "name": "supply-chain",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636079/job/116291442864"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291443600,
+        "name": "type-and-lint-gate",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636120/job/116291443600"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291443187,
+        "name": "tooling-policy",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636120/job/116291443187"
+      },
+      {
+        "conclusion": "success",
+        "id": 116291444372,
+        "name": "fgm-contract-readiness-not-runtime-evidence",
+        "status": "completed",
+        "url": "https://github.com/nepryoon/ocor-detailed-design/actions/runs/38695636323/job/116291444372"
+      }
+    ],
+    "closure_job": 116300760193,
+    "diagnostic_hashes": {
+      "state-conditional-helm.log": "331e9562fb9e3c2ed4443a4dbe74ba838902ca559f9408e544bb49c75a02b0e4",
+      "state-helm-artifact/candidate-0049-part-1/kind-teardown-observations.json": "247227a25e7e820e29f92addc6ad434c735c4e7ad2f8d9e9aeadc940142b97e1",
+      "state-validation-closure-failure.log": "a7c7000c0fa6cb0c0403e12937950cc346d5b59a45663ec740269a5376b36297"
+    },
+    "erratum": "The non-ruleset name of the conditional job does not imply nonblocking: it propagates to a mandatory check. Historical text claiming no merge blocked is corrected here and in the append-only PR274 addendum.",
+    "head_sha": "b50dd030c32ed6476ed31fa63993a06448d5fb4a",
+    "helm_artifact": 11953484622,
+    "helm_job": 116291443520,
+    "new_checkpoint_ci": "NOT_EXECUTED_NOT_REQUESTED: this new checkpoint is pushed without a PR or CI as preservation, not an attempt to get green on the same executable tree",
+    "observation_sha256": "1558b141cf4b4823a0d1a744902d7618e5f81615e8f2ae25fea76a7a2c1f3925",
+    "observed_at": "2026-10-15T07:27:39.859343+00:00",
+    "pull_request": 280,
+    "remaining_workflow_cancel": {
+      "observed_at": "2026-10-15T07:26:24.681832+00:00",
+      "reason": "validation-closure failed through conditional Helm bootstrap exec refusal; known open PO decision, no rerun, no qualifying incomplete cases",
+      "runs": [
+        {
+          "exit_code": 0,
+          "output": "\u2713 Request to cancel workflow 38695636307 submitted.\n",
+          "previous_status": "in_progress",
+          "run_id": 38695636307
+        }
+      ]
+    },
+    "rerun_requested": false,
+    "run_ids": [
+      38695636079,
+      38695636096,
+      38695636120,
+      38695636125,
+      38695636284,
+      38695636307,
+      38695636323
+    ],
+    "status": "FAIL_NOT_MERGED"
   },
   "state_sync_ci_observation_contract": {
     "maximum_wait_seconds": 5400,
@@ -919,12 +1198,12 @@
       "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-15T06:57:07.230812+00:00",
+  "updated_at": "2026-10-15T07:28:54.945997+00:00",
   "verification_request": {
     "head_sha": "88ba930bd66d06f83f2d4b7d1fbd69bf831e09a2",
     "request_id": "OCOR-DEV-REM-0019-88ba930bd66d-1-integration",
     "status": "GO_FOR_EVIDENCE_SEAL_RECEIVED_SEAL_APPLIED_CI_FAIL",
     "verifier": "cursor (Grok4.7)"
   },
-  "worktree": ".ocor/worktrees/state-sync-rem0019-integration-20261015"
+  "worktree": ".ocor/worktrees/state-sync-rem0019-ci-failure-20261015"
 }
