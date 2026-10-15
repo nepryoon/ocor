@@ -490,6 +490,13 @@ def main() -> int:
         # OCOR-DEV-0049 integration: 0050 regression after the merged REM-0032/REM-0017 allowlist.
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.log",
+        # PO 2026-10-15 CI-0049-KIND-BOOTSTRAP-EXEC-PROBE (option 1): exact OCOR-DEV-REM-0033 paths.
+        "reports/development/decision_requests/CI-0049-KIND-BOOTSTRAP-EXEC-PROBE.md",
+        "reports/assurance/OCOR-DEV-REM-0017-RCCAD/ci-38d259a-kind-bootstrap-exec-diagnosis.json",
+        "reports/assurance/OCOR-DEV-REM-0033-RCCAD/OCOR-DEV-REM-0033.json",
+        "reports/assurance/OCOR-DEV-REM-0033-RCCAD/OCOR-DEV-REM-0033.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0033-20261015.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0033-20261015.log",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/evidence.json",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/raw.log",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/repair-1.json",
