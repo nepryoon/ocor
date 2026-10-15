@@ -91,8 +91,20 @@
     "previous_checkpoint": "2c31ae59d05cbcfd26801dd632a600e845baaea5",
     "publication": "Branch checkpoint only; no PR, CI, verifier or merge started this iteration.",
     "resume_precondition_recheck": {
+      "candidate_ci": "PR281 exact ccb372272631a2e0500f57c87ec56cd7409a4652: all 13 named required checks completed/success; pre-existing CI only",
       "expected_rem0033_head": "3c8f2eba711cac1a180ae36df452dc0707efe205",
       "gates": [
+        {
+          "command": [
+            "sha256sum",
+            "-c",
+            "inputs/normative/SHA256SUMS"
+          ],
+          "exit_code": 0,
+          "label": "inputs",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/inputs.log",
+          "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+        },
         {
           "command": [
             "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
@@ -101,7 +113,55 @@
           ],
           "exit_code": 0,
           "label": "verify",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/verify.log",
           "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+            "scripts/validate_rccad.py",
+            "--base-ref",
+            "origin/main"
+          ],
+          "exit_code": 0,
+          "label": "rccad",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/rccad.log",
+          "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+            "scripts/validate_language_policy.py"
+          ],
+          "exit_code": 0,
+          "label": "language",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/language.log",
+          "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_change_scope.py",
+            "--branch",
+            "governed/state-sync-rem0033-head-mismatch-20261015"
+          ],
+          "exit_code": 0,
+          "label": "scope",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/scope.log",
+          "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+            "scripts/validate_ocor_development_plan.py",
+            "--authorized-extension",
+            "--base-ref",
+            "origin/main"
+          ],
+          "exit_code": 0,
+          "label": "plan",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/plan.log",
+          "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
         },
         {
           "command": [
@@ -110,17 +170,19 @@
           ],
           "exit_code": 0,
           "label": "drift",
+          "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/drift.log",
           "raw_sha256": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031"
         }
       ],
-      "observed_at": "2026-10-15T13:53:40.859384+00:00",
+      "observed_at": "2026-10-15T13:56:13.627830+00:00",
       "observed_rem0033_head": "ccb372272631a2e0500f57c87ec56cd7409a4652",
-      "publication": "Existing published decision request a27b8fc retained; no duplicate request or candidate mutation",
+      "publication": "Existing remote decision request a27b8fc retained; no duplicate request, candidate mutation or new PR",
       "rem0028_head": "19747383d3d570b2ffbb503a1878c49d140b8032",
       "repair_cycles_consumed": 0,
       "result": "MISMATCH_STOP_REQUIRED",
       "runtime_campaign": "NOT_EXECUTED: explicit PO stop",
-      "stack_actions": "NOT_EXECUTED: no session resources created"
+      "stack_actions": "NOT_EXECUTED: no session resources created",
+      "verdict_source": "Previous versioned checkpoint; no fresh verdict file available in this invocation"
     },
     "roles": {
       "candidate_lineage": "Claude Code (Anthropic): original REM0033 harness; Codex (OpenAI): post-reboot qualification already recorded at ccb3722",
@@ -129,7 +191,7 @@
     },
     "stack_actions": "NOT_EXECUTED: explicit stop; no resources created or removed",
     "task_id": "OCOR-DEV-REM-0033",
-    "updated_at": "2026-10-15T13:53:40.859384+00:00",
+    "updated_at": "2026-10-15T13:56:13.627830+00:00",
     "worktree": ".ocor/worktrees/state-sync-rem0033-head-mismatch"
   },
   "backlog_escalations": {
@@ -17276,10 +17338,10 @@
   "repository": "nepryoon/ocor-detailed-design",
   "schema_version": "1.0",
   "state_sync_ci": {
-    "branch": "governed/state-sync-rem0033-reboot-resume-20261015",
-    "scope": "Only three state files; no state-sync PR opened or merged this implementation iteration. Candidate PR281 has13required checks success; consolidate state sync after candidate integration, preserving PR280 historical log.",
+    "branch": "governed/state-sync-rem0033-head-mismatch-20261015",
+    "scope": "Resume stop only; no PR/CI/merge launched. Existing published decision request retained.",
     "status": "NOT_EXECUTED_CHECKPOINT_BRANCH_ONLY",
-    "updated_at": "2026-10-15T13:27:49.493427+00:00"
+    "updated_at": "2026-10-15T13:56:13.627830+00:00"
   },
   "state_sync_ci_history": [
     {
@@ -18298,5 +18360,5 @@
     "reason": "Executable REM32 and other remediation work remain; project not terminally blocked",
     "status": "SUPERSEDED_LOOP_CONTINUES"
   },
-  "updated_at": "2026-10-15T13:53:40.859384+00:00"
+  "updated_at": "2026-10-15T13:56:13.627830+00:00"
 }

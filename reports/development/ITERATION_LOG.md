@@ -5798,3 +5798,12 @@ E1=0,E2=0,Verified=0 eNO-GO invariati; candidatoREM17 non sigillato/mergiato/ver
 - Fetch: main pulita e allineata a `9b4d3be`; PR #281 ancora su `ccb3722`, CI preesistente verde. NO_GO e VF-001 risultano dal checkpoint versionato precedente; nessun nuovo verifier avviato, nessun verdetto scritto.
 - Checksum 8/8 PASS; verify 14 PASS e drift PASS rieseguiti. Campagna e stack NOT_EXECUTED per arresto esplicito; nessun processo in background né risorsa creata. Nessun ciclo consumato. Il riavvio del 2026-10-15 resta interruzione infrastrutturale, senza conteggi PASS/FAIL.
 - Prossima azione: disposition PO della discrepanza di HEAD prima di riprendere REM-0033; richiesta pubblicata e stato sul branch governato preservati. Inputs, sigilli, E1=0, E2=0, Verified e claim NO-GO invariati.
+
+
+## 2026-10-15T13:56:13.627830+00:00 — REM-0033: checkpoint di arresto e richiesta esistente preservati
+
+- Prima azione Codex: REM-0033 `ccb3722` diverso dal checkpoint `3c8f2eb`; REM-0028 coincide con `1974738`. Applicato `HOST-REBOOT-RESUME-ITER27` punto 1; nessuna modifica ai candidati né nuova campagna.
+- Richiesta esistente `HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH` sul branch remoto `governed/decision-request-rem0033-resume-head-mismatch`, commit `a27b8fc`, conservata senza duplicazione. Main pulita e allineata a `9b4d3be` dopo fetch; PR #281 sullo stesso HEAD, 13 check obbligatori verdi preesistenti (fra i run `38738364442`). Il NO_GO/VF-001 resta quello riportato nel checkpoint versionato precedente; nessun verdetto locale nuovo disponibile, nessun verifier avviato.
+- Checksum normativi 8/8, verify 14 PASS e drift 70 task/194 input PASS rieseguiti. Stack e test runtime NOT_EXECUTED per arresto prescritto. Nessuna attesa o attività in background avviata, nessuna risorsa creata, nessun ciclo di riparazione consumato. Il reboot delle 13:20 CEST resta interruzione infrastrutturale senza conteggi PASS/FAIL.
+- Prossima azione: disposition PO sul checkpoint REM-0033 prima della ripresa; poi ciclo 1 per VF-001 e verifica esterna Cursor/Grok. REM-0028 resta ferma; coda invariata. Stato soltanto nel branch governato separato. Inputs, sigilli, E1=0, E2=0, Verified e claim NO-GO invariati.
+- Gate dello state checkpoint: RCCAD `PASS_LOCAL_PRECHECK`, language/scope/drift PASS; piano `PASS` (37 PASS, 2 NOT_EXECUTED mantenuti). Log e digest in `~/.ocor-codex/rem0033-stop-recheck-20261015/gates.json`; output di pianificazione rigenerati ripristinati perché fuori scope. Nessuna nuova PR o CI avviata.
