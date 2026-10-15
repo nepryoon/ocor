@@ -5790,3 +5790,11 @@ E1=0,E2=0,Verified=0 eNO-GO invariati; candidatoREM17 non sigillato/mergiato/ver
 - Ripreso il checkpoint versionato `c314b956`; conservata la decision request esistente `HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH` (`a27b8fc`), senza duplicarla. Fetch completato; main pulita e allineata a `9b4d3be`; PR #281 ancora sullo stesso HEAD. Verdetto Cursor/Grok NO_GO preservato; nessuna nuova richiesta o esecuzione del verifier.
 - Checksum normativi 8/8 PASS; verify 14 PASS; drift 70 task e 194 input PASS nel worktree di stato. Campagna, stack e test runtime NOT_EXECUTED per arresto esplicito; nessuna risorsa o attesa in background avviata, zero cicli di riparazione consumati. Il reboot delle 13:20 CEST resta interruzione infrastrutturale, senza nuovi conteggi PASS/FAIL.
 - Prossima azione invariata: disposition del PO sul checkpoint REM-0033 prima di qualsiasi ripresa; dopo autorizzazione, riparazione VF-001 ciclo 1 e verifica esterna Cursor/Grok. Stato e handoff aggiornati soltanto nel branch governato; inputs, record sigillati, E1=0, E2=0, Verified=0 e claim NO-GO invariati.
+
+
+## 2026-10-15T13:53:40.859384+00:00 — REM-0033: arresto di ripresa riconfermato
+
+- Codex: prima verifica locale REM-0033 `ccb3722` anziché `3c8f2eb`; REM-0028 `1974738` conforme. Applicato HOST-REBOOT-RESUME-ITER27 punto 1; richiesta esistente `HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH` su commit `a27b8fc` conservata, senza duplicazione. Nessun branch candidato modificato.
+- Fetch: main pulita e allineata a `9b4d3be`; PR #281 ancora su `ccb3722`, CI preesistente verde. NO_GO e VF-001 risultano dal checkpoint versionato precedente; nessun nuovo verifier avviato, nessun verdetto scritto.
+- Checksum 8/8 PASS; verify 14 PASS e drift PASS rieseguiti. Campagna e stack NOT_EXECUTED per arresto esplicito; nessun processo in background né risorsa creata. Nessun ciclo consumato. Il riavvio del 2026-10-15 resta interruzione infrastrutturale, senza conteggi PASS/FAIL.
+- Prossima azione: disposition PO della discrepanza di HEAD prima di riprendere REM-0033; richiesta pubblicata e stato sul branch governato preservati. Inputs, sigilli, E1=0, E2=0, Verified e claim NO-GO invariati.

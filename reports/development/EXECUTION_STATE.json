@@ -91,20 +91,36 @@
     "previous_checkpoint": "2c31ae59d05cbcfd26801dd632a600e845baaea5",
     "publication": "Branch checkpoint only; no PR, CI, verifier or merge started this iteration.",
     "resume_precondition_recheck": {
-      "decision": "HOST-REBOOT-RESUME-ITER27",
-      "evidence_input_drift": "PASS 70 tasks / 194 inputs / zero drift",
       "expected_rem0033_head": "3c8f2eba711cac1a180ae36df452dc0707efe205",
-      "independent_verifier": "NOT_LAUNCHED; existing Cursor/Grok NO_GO preserved",
-      "inputs": "PASS 8/8",
-      "observed_at": "2026-10-15T13:51:13.283235+00:00",
+      "gates": [
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+            "scripts/verify.py",
+            "--json"
+          ],
+          "exit_code": 0,
+          "label": "verify",
+          "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+        },
+        {
+          "command": [
+            "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+            "scripts/validate_evidence_input_drift.py"
+          ],
+          "exit_code": 0,
+          "label": "drift",
+          "raw_sha256": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031"
+        }
+      ],
+      "observed_at": "2026-10-15T13:53:40.859384+00:00",
       "observed_rem0033_head": "ccb372272631a2e0500f57c87ec56cd7409a4652",
-      "publication": "Existing decision request and state checkpoint preserved; no duplicate decision request or candidate change",
+      "publication": "Existing published decision request a27b8fc retained; no duplicate request or candidate mutation",
       "rem0028_head": "19747383d3d570b2ffbb503a1878c49d140b8032",
       "repair_cycles_consumed": 0,
       "result": "MISMATCH_STOP_REQUIRED",
       "runtime_campaign": "NOT_EXECUTED: explicit PO stop",
-      "stack_actions": "NOT_EXECUTED: no session resources created",
-      "verify": "PASS 14/14 in state worktree"
+      "stack_actions": "NOT_EXECUTED: no session resources created"
     },
     "roles": {
       "candidate_lineage": "Claude Code (Anthropic): original REM0033 harness; Codex (OpenAI): post-reboot qualification already recorded at ccb3722",
@@ -113,7 +129,7 @@
     },
     "stack_actions": "NOT_EXECUTED: explicit stop; no resources created or removed",
     "task_id": "OCOR-DEV-REM-0033",
-    "updated_at": "2026-10-15T13:48:00.980336+00:00",
+    "updated_at": "2026-10-15T13:53:40.859384+00:00",
     "worktree": ".ocor/worktrees/state-sync-rem0033-head-mismatch"
   },
   "backlog_escalations": {
@@ -18282,5 +18298,5 @@
     "reason": "Executable REM32 and other remediation work remain; project not terminally blocked",
     "status": "SUPERSEDED_LOOP_CONTINUES"
   },
-  "updated_at": "2026-10-15T13:51:13.283235+00:00"
+  "updated_at": "2026-10-15T13:53:40.859384+00:00"
 }
