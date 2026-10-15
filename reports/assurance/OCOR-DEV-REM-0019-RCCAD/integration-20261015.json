@@ -176,8 +176,121 @@
     "verdict": "GO_FOR_EVIDENCE_SEAL"
   },
   "independent_verification": {
-    "status": "REQUESTED_PENDING",
-    "verifier": "cursor"
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 OK; inputs/ invariato"
+      },
+      {
+        "command": "git diff --name-status 9b4d3be8ec5bd785b02072a99037dd801b53d9a5..88ba930bd66d06f83f2d4b7d1fbd69bf831e09a2 e confronto alberi/AST/sigilli",
+        "exit_code": 0,
+        "summary": "24 path, tutti in reports/ o nell'allowlist del validatore di piano. Alberi ocor-runtime, deploy, infra, .github, inputs, reports/tests identici a main. EXECUTION_STATE, MODEL_HANDOFF e ITERATION_LOG identici. AST del validatore identico salvo unione di 19 path REM-0019. 357 record di main e 314 del candidato sigillato 5453075 byte-identici. Autorita' G4 invariata (primo artifact 0049 resta rem0032); G5 sposta solo i 12 risultati 0050 sul nuovo record. df444af e a0ee43d sono antenati. Nessun secret letterale nel diff."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0; evidence fence E1=0"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed; ruff 0.13.1 digest b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref 9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato fuori dall'area autorizzata"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base 9b4d3be8ec5bd785b02072a99037dd801b53d9a5 --head HEAD --branch governed/ocor-dev-rem-0019-evidence-stage",
+        "exit_code": 0,
+        "summary": "PASS: 24 path; superfici immutabili intatte"
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
+        "exit_code": 0,
+        "summary": "PASS 37, FAIL 0. Due NOT_EXECUTED interni e opzionali (markdownlint, mmdc) con fallback deterministico, non conteggiati come PASS. Side effect sul report di piano ripristinato."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: drifted_inputs 0"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS sul primo artifact 0049, OCOR-DEV-0049.requalified-rem0032.json"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS sul nuovo record OCOR-DEV-0050.requalified-rem0019-integration-20261015.json; hash del raw coincidente"
+      },
+      {
+        "command": "python3 scripts/bootstrap_development_environment.py --execute --timeout 600 (primo tentativo, env della checkout)",
+        "exit_code": 2,
+        "summary": "SPIRE rifiuta la CA della checkout, scaduta il 2026-10-08. File della checkout non modificato."
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute && bootstrap con CA usa e getta nel worktree",
+        "exit_code": 0,
+        "summary": "Stack ocor-bootstrap avviato. 11 servizi READY, image id coincidenti con il lock e con l'evidenza, oom=false, restart=0. PostgreSQL 16 su 127.0.0.1:55433. DSN acquisito dall'env copiato, mai stampato."
+      },
+      {
+        "command": "python scripts/verify_external_services.py --typed --execute --timeout 120",
+        "exit_code": 0,
+        "summary": "PASS: terminusdb, typedb, fuseki, opa-keycloak, openbao, spiffe-spire, postgresql, kafka, qdrant READY"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -ra ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed, 0 skipped, 0 failed in 4.71s con OCOR_LIVE_POSTGRES_DSN impostato. Node id identici al JUnit registrato e al record superseduto rem0032-integration. Nessun secret nell'output."
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute (teardown finale)",
+        "exit_code": 0,
+        "summary": "Container e volumi ocor-bootstrap creati dal verifier rimossi"
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "ocor-runtime/src/ocor_runtime/memory/model.py e' identico a main (albero ocor-runtime 8aa0ab104133e5a930f0fff2d058325dd37c12fe). MemoryAdmissionService.admit (riga 1209) rilancia MemoryAdmissionError in riga 1227-1230 prima di costruire audit_event (riga 1321) e prima di ledger.append (riga 1352). Il record di regressione dichiara REM0023 OPEN e non modifica i 198 casi. Disposition PO REM-0022-0050-ROLE-REVIEW-DISPOSITION: difetto preesistente, fuori dallo scope di questa riqualifica di sola regressione.",
+        "id": "VF-001",
+        "path": "ocor-runtime/src/ocor_runtime/memory/model.py:1209",
+        "required_fix": "Resta a OCOR-DEV-REM-0023, remediation separata: su ogni rifiuto di admitMemory scrivere l'audit di diniego senza appendere una versione e fallire chiuso se l'audit non riesce. Non appartiene al sigillo di questa integrazione.",
+        "severity": "medium"
+      }
+    ],
+    "historical_implementers": "OCOR-DEV-0049 repair cycles 2-6 and 8 Claude Code, cycle7 Codex; REM0019 Codex plus Claude Code reserve; historical identities unchanged",
+    "implementer": "Codex (OpenAI): REM0019 evidence integration, regression-only 0050 requalification and seal",
+    "integration_condition": "Only these new records status/sealed_at/roles/independent_verification and G5 manifest hash change at seal; historical records, raw digests, execution trees remain byte-identical. All13 required checks on the exact sealed HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "repair_cycle": 1,
+    "scope": "REM0019 evidence-only integration and REGRESSION_ONLY0050; no new 0050 conformance review. VF-001 remains tracked by REM0023 under PO disposition REM-0022-0050-ROLE-REVIEW-DISPOSITION.",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-15T06:46:52Z",
+    "verdict_file_sha256": "34abbfdb186e467e78118bfc63106fc2d66625a21157265b950b4a3984956e27",
+    "verdict_head_sha": "88ba930bd66d06f83f2d4b7d1fbd69bf831e09a2",
+    "verdict_request_id": "OCOR-DEV-REM-0019-88ba930bd66d-1-integration",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 via Cursor CLI (external loop; separate process/context/provider)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatore dell'integrazione: Codex (OpenAI). Verifier: Grok 4.7 tramite Cursor CLI. Fornitori di modello diversi. Le riparazioni storiche di OCOR-DEV-0049 restano di Claude Code; non sono rieseguite come nuova campagna.",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, sessione non interattiva"
+    }
   },
   "invariants": {
     "allowlist_additions": [
@@ -471,11 +584,13 @@
     "independent_verifier_launched": false,
     "planned_verifier": "Grok 4.7 via Cursor CLI, external loop in separate process/context/provider; required for 0049 lineage and tasks touched by Claude Code reserve",
     "rem0019_implementers": "Codex plus Claude Code reserve: historical contributions, original verdict and sealed campaign retained unchanged",
-    "verifier": "cursor"
+    "verification_execution": "Performed by the external loop, never launched or simulated by the implementer",
+    "verifier": "cursor (Grok 4.7), external loop; GO received"
   },
   "rollback": "Revert the governed integration through a new revert commit; no migration or history rewrite, historical records remain intact.",
   "schema_version": "1.0",
   "scope": "Integration of the sealed REM0019 evidence stage with current main; no production/test/harness/workflow/lock changes against main. Planning allowlist union and exact record paths only; new regression-only0050 record. No new repair cycle.",
+  "sealed_at": "2026-10-15T06:49:58.721621+00:00",
   "sealed_source_head": "5453075bb8407db88f687a0137f54d1bc7cedb18",
   "session_teardown": {
     "after_counts": {
@@ -503,7 +618,7 @@
     "scope": "only authorized OCOR resources; initial reset of pre-existing stale OCOR resources remains recorded, not relabelled as preservation",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-REM-0019",
   "tdd": {
     "reason": "No runtime/test logic modification; allowlist constant change validated by AST identity and unchanged0050 live regression. Initial stale validator hash FAIL and drift FAIL retained diagnostically, never labelled PASS.",
