@@ -5817,3 +5817,11 @@ E1=0,E2=0,Verified=0 eNO-GO invariati; candidatoREM17 non sigillato/mergiato/ver
 - Checksum 8/8 PASS, verify 14 PASS, drift 70 task/194 input PASS nel worktree della richiesta. Stack, campagne e test runtime NOT_EXECUTED per arresto esplicito; nessuna risorsa né processo locale in background creati. Zero cicli di riparazione consumati.
 - Prossima azione: disposition PO della discrepanza di HEAD tramite #282 prima di riprendere REM-0033; dopo la disposition, VF-001 ciclo 1 e verifica esterna Grok 4.7 via Cursor (harness originario della riserva Claude Code, qualifica post-reboot Codex). REM-0028 ferma; ordine della coda invariato. Stato solo sul branch governato separato. Inputs, sigilli, E1=0, E2=0, Verified e claim NO-GO invariati.
 - Gate del checkpoint: RCCAD PASS_LOCAL_PRECHECK; language/scope PASS; piano PASS (37 PASS, 2 NOT_EXECUTED preservati). Raw e digest in `~/.ocor-codex/rem0033-stop-published-20261015T135949Z/gates.json`; output di pianificazione rigenerati ripristinati perché fuori scope.
+
+
+## 2026-10-15T14:02:18.252736+00:00 — REM-0033: verifica del vincolo di ripresa
+
+- Codex: prima verifica REM-0033 `ccb3722` contro `3c8f2eb` (MISMATCH), REM-0028 `1974738` conforme. Applicato HOST-REBOOT-RESUME-ITER27 punto 1; richiesta già pubblicata nella PR #282 conservata senza duplicazione. Nessun candidato modificato.
+- Main pulita e allineata a `9b4d3be` dopo fetch. Verdetto esterno `OCOR-DEV-REM-0033-ccb372272631-0` NO_GO, VF-001 high bloccante, Cursor/Grok: letto senza modifiche; nessun verifier avviato.
+- Checksum normativi 8/8 PASS; verify e drift rieseguiti, exit 0; raw e digest in `/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/gates.json`. Stack, campagne e test runtime NOT_EXECUTED per arresto prescritto; nessuna risorsa o processo locale in background creati. Il reboot resta interruzione infrastrutturale senza conteggi PASS/FAIL.
+- Prossima azione: Attendere la disposition del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282) prima di riprendere REM-0033 da un checkpoint autorizzato; poi riparare VF-001, ciclo 1, e richiedere verifica esterna Cursor/Grok. REM-0028 ferma; nessuna riscrittura della storia. Nessun ciclo di riparazione consumato. Inputs, sigilli, E1=0, E2=0, Verified e claim NO-GO invariati.

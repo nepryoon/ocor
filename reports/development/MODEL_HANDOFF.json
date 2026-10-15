@@ -89,6 +89,30 @@
       "sha256": "8c96a137233e5e95fec8177c8cd87d02c8b8328c7d120bb4b55e420fa2c43f48",
       "verdict": "NO_GO"
     },
+    "last_resume_recheck_at": "2026-10-15T14:02:18.252736+00:00",
+    "last_resume_recheck_gates": [
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+          "scripts/verify.py",
+          "--json"
+        ],
+        "exit_code": 0,
+        "label": "verify",
+        "raw_path": "/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/verify.log",
+        "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+          "scripts/validate_evidence_input_drift.py"
+        ],
+        "exit_code": 0,
+        "label": "drift",
+        "raw_path": "/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/drift.log",
+        "raw_sha256": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031"
+      }
+    ],
     "local_gate_results": [
       {
         "command": "sha256sum -c inputs/normative/SHA256SUMS",
@@ -106,7 +130,7 @@
         "result": "PASS"
       }
     ],
-    "next_action": "Obtain PO disposition of HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH before resuming REM-0033: expected 3c8f2eb, observed ccb372272631a2e0500f57c87ec56cd7409a4652 (PR281). Preserve both branches and prior campaign; no reset/rebase/force-push. After explicit checkpoint confirmation, repair VF-001 of OCOR-DEV-REM-0033-ccb372272631-0 in ordinary repair cycle1, qualify the changed harness and request external Cursor/Grok verification. REM0028 remains paused at1974738; scanner -> REM0019 -> REM0023 ->0056 queue unchanged.",
+    "next_action": "Attendere la disposition del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282) prima di riprendere REM-0033 da un checkpoint autorizzato; poi riparare VF-001, ciclo 1, e richiedere verifica esterna Cursor/Grok. REM-0028 ferma; nessuna riscrittura della storia.",
     "paused_rem0028_head": "19747383d3d570b2ffbb503a1878c49d140b8032",
     "phase": "STOPPED_RESUME_PRECONDITION_HEAD_MISMATCH",
     "previous_checkpoint": "2c31ae59d05cbcfd26801dd632a600e845baaea5",
@@ -200,72 +224,14 @@
   "commands_run": [
     {
       "command": [
-        "sha256sum",
-        "-c",
-        "inputs/normative/SHA256SUMS"
-      ],
-      "exit_code": 0,
-      "label": "inputs",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/inputs.log",
-      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
-    },
-    {
-      "command": [
         "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
         "scripts/verify.py",
         "--json"
       ],
       "exit_code": 0,
       "label": "verify",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/verify.log",
+      "raw_path": "/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/verify.log",
       "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-        "scripts/validate_rccad.py",
-        "--base-ref",
-        "origin/main"
-      ],
-      "exit_code": 0,
-      "label": "rccad",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/rccad.log",
-      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-        "scripts/validate_language_policy.py"
-      ],
-      "exit_code": 0,
-      "label": "language",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/language.log",
-      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-        "scripts/validate_ocor_change_scope.py",
-        "--branch",
-        "governed/state-sync-rem0033-head-mismatch-20261015"
-      ],
-      "exit_code": 0,
-      "label": "scope",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/scope.log",
-      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-        "scripts/validate_ocor_development_plan.py",
-        "--authorized-extension",
-        "--base-ref",
-        "origin/main"
-      ],
-      "exit_code": 0,
-      "label": "plan",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/plan.log",
-      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
     },
     {
       "command": [
@@ -274,16 +240,16 @@
       ],
       "exit_code": 0,
       "label": "drift",
-      "raw_path": "/home/luca/.ocor-codex/rem0033-stop-recheck-20261015/drift.log",
+      "raw_path": "/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/drift.log",
       "raw_sha256": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
   "current_task": "OCOR-DEV-REM-0033:resume-precondition",
   "evidence_paths": [],
-  "exact_next_action": "Obtain PO disposition of HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH before resuming REM-0033: expected 3c8f2eb, observed ccb372272631a2e0500f57c87ec56cd7409a4652 (PR281). Preserve both branches and prior campaign; no reset/rebase/force-push. After explicit checkpoint confirmation, repair VF-001 of OCOR-DEV-REM-0033-ccb372272631-0 in ordinary repair cycle1, qualify the changed harness and request external Cursor/Grok verification. REM0028 remains paused at1974738; scanner -> REM0019 -> REM0023 ->0056 queue unchanged.",
-  "head_sha": "d4860a64dc01fb7e4bcdb3f0d3fe9a0666524957",
-  "head_sha_role": "parent of the current state checkpoint; resolve final state-sync commit with git rev-parse HEAD",
+  "exact_next_action": "Attendere la disposition del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282) prima di riprendere REM-0033 da un checkpoint autorizzato; poi riparare VF-001, ciclo 1, e richiedere verifica esterna Cursor/Grok. REM-0028 ferma; nessuna riscrittura della storia.",
+  "head_sha": "9b5729f5d1826b4c58ff81dfd1f71254acc0de2e",
+  "head_sha_role": "Committed state checkpoint before the current read-only resume recheck; candidate remains ccb372272631a2e0500f57c87ec56cd7409a4652.",
   "migration_rollback_result": "No code, data migration or stack actions; preserve both task branches; checkpoint-only commits are additive.",
   "next_task": "OCOR-DEV-REM-0033",
   "requirement_ids": [
@@ -323,6 +289,6 @@
       "url": "https://github.com/nepryoon/ocor-detailed-design/pull/282"
     }
   ],
-  "updated_at": "2026-10-15T13:59:33.827566+00:00",
+  "updated_at": "2026-10-15T14:02:18.252736+00:00",
   "worktree": ".ocor/worktrees/state-sync-rem0033-head-mismatch"
 }
