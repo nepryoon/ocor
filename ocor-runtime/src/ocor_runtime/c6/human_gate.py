@@ -151,6 +151,7 @@ class HumanGateCoordinator:
         at: datetime | None = None,
         control_check: Callable[[], None] | None = None,
     ) -> Approval:
+        signature_set = tuple(signatures)
         instant = require_aware(self._clock.now(), field="trusted clock")
         excluded = {proposer_id}
         if policy.excluded_principal_id:
@@ -159,7 +160,7 @@ class HumanGateCoordinator:
         valid_principals: set[str] = set()
         role_candidates: dict[str, set[str]] = {role: set() for role in policy.required_roles}
 
-        for signature in signatures:
+        for signature in signature_set:
             principal = signature.principal_id
             if signature.action_id != action_id:
                 continue
@@ -207,6 +208,13 @@ class HumanGateCoordinator:
 
         if control_check is not None:
             control_check()
+            # Policy I/O may advance time or change identity authority. Only
+            # the final fresh validation may publish an Approval. The frozen
+            # tuple also supports single-pass signature iterators safely.
+            return self.validate(
+                action_id=action_id, proposer_id=proposer_id, policy=policy,
+                signatures=signature_set, scope=scope,
+            )
 
         approver = ",".join(sorted(valid_principals))
         return Approval(action_id=action_id, approver=approver, approved=True, approved_at=instant)

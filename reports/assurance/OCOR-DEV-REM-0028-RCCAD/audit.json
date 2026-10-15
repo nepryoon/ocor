@@ -27,73 +27,73 @@
     {
       "condition": "policy.excluded_principal_id",
       "function": "validate",
-      "line": 156,
+      "line": 157,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "len(valid_principals) < policy.minimum_signatories",
       "function": "validate",
-      "line": 181,
+      "line": 182,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "missing_roles",
       "function": "validate",
-      "line": 205,
+      "line": 206,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "control_check is not None",
       "function": "validate",
-      "line": 208,
+      "line": 209,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "signature.action_id != action_id",
       "function": "validate",
-      "line": 164,
+      "line": 165,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "principal in excluded",
       "function": "validate",
-      "line": 166,
+      "line": 167,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "roles is None or signature.role not in roles",
       "function": "validate",
-      "line": 169,
+      "line": 170,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "signature.scope != scope",
       "function": "validate",
-      "line": 171,
+      "line": 172,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "not timedelta(0) <= instant - signature.signed_at < policy.ttl",
       "function": "validate",
-      "line": 173,
+      "line": 174,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "signature.role in policy.required_roles",
       "function": "validate",
-      "line": 178,
+      "line": 179,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "principal in visited",
       "function": "validate",
-      "line": 193,
+      "line": 194,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "previous is None or assign(previous, visited)",
       "function": "validate",
-      "line": 197,
+      "line": 198,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
@@ -185,6 +185,11 @@
       "negative": "test_real_dual_role_holder_still_cannot_fill_two_role_slots (second human OBSERVER, genuinely insufficient role coverage)",
       "positive": "test_valid_distinct_role_assignment_is_independent_of_signature_order [False, True]",
       "rule": "distinct-role assignment independent of signature order"
+    },
+    {
+      "negative": "test_control_check_cannot_leave_a_stale_approval [clock,registry]",
+      "positive": "test_control_check_revalidation_retains_a_generator_and_calls_control_once",
+      "rule": "fresh authority and clock after optional blocking control"
     }
   ],
   "consumer_inventory": {
@@ -196,6 +201,13 @@
     ],
     "live_poc_wiring": false,
     "method": "rg -n HumanGateCoordinator|request_reset over ocor-runtime, reports/tests and scripts"
+  },
+  "control_revalidation_tdd": {
+    "deselected": 51,
+    "failed": 2,
+    "passed": 1,
+    "red_log_sha256": "403f2fce69ac98e70228af4d5e457b3211c93f00a4244998f9b2fae1b542117c",
+    "scope": "Diagnostic targeted RED only; optional control can expire signatures or revoke identity. Final validation freezes iterables, re-reads authority/time and invokes control exactly once."
   },
   "normative_refs": [
     "ADD v1.3 5.4/5.5",
@@ -295,7 +307,7 @@
     "source_head": "07c59762fd13078ccc2e480c0eb1e367fb8a3afc"
   },
   "source_head": "4ce8a5cb8f03b885d31ddb2998b17644ac10f956",
-  "source_head_role": "Source before the matching correction, whose diff and final source commit are bound by the final evidence record.",
+  "source_head_role": "Earlier source reference; code and audit final source commit are bound by the final evidence record. Conditional branch inventory below describes final code.",
   "task_id": "OCOR-DEV-REM-0028",
   "time_disposition": "HumanGate boundary clock injected at construction, not per request. Future signatures and exact-expiry signatures refuse. GateSignature.role selects an act of signing and must be independently present in registry roles; it never grants the role."
 }

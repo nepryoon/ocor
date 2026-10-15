@@ -259,3 +259,30 @@ def test_distinct_role_matching_agrees_with_exhaustive_assignment_oracle() -> No
                 assert not expected, f'false denial for graph {mask}'
             else:
                 assert outcome.approved and expected, f'false approval for graph {mask}'
+
+
+@pytest.mark.parametrize('change', ['clock', 'registry'])
+def test_control_check_cannot_leave_a_stale_approval(change: str) -> None:
+    registry = directory()
+    clock = InMemoryTrustedClock(NOW)
+    gate = HumanGateCoordinator(identities=registry, clock=clock)
+    def change_during_control() -> None:
+        if change == 'clock':
+            clock.advance(timedelta(minutes=10))
+        else:
+            # Fault in the actual retained registry, not a fake get() result.
+            with registry._lock:
+                registry._records.pop('a')
+    with pytest.raises(HumanGateError, match='QUORUM_NOT_MET'):
+        gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)),
+                      signatures=iter(signatures()), scope='scope', control_check=change_during_control)
+
+
+def test_control_check_revalidation_retains_a_generator_and_calls_control_once() -> None:
+    registry = directory()
+    clock = InMemoryTrustedClock(NOW)
+    called: list[bool] = []
+    gate = HumanGateCoordinator(identities=registry, clock=clock)
+    outcome = gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)),
+                            signatures=iter(signatures()), scope='scope', control_check=lambda: called.append(True))
+    assert outcome.approved and called == [True]
