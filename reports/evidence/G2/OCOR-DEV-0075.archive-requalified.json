@@ -1,0 +1,87 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "commit": "c3357b439cd1462de71e1a5772f4d3d0f03b7150",
+  "commit_role": "Final implementation snapshot; subsequent report/state-only commit is the exact independent review head. Current task input hashes reacquired below.",
+  "created_at": "2026-10-08T14:24:15.348500+00:00",
+  "environment": {
+    "backend_profile": "real ocor-bootstrap; locked base and archive recipe; local output identity pending separate governed update",
+    "extras": [
+      "test",
+      "lint"
+    ],
+    "host": "nepryoon",
+    "node": "20.20.2",
+    "python": "3.12.11",
+    "toolchain_preflight": "9/9 pinned version+digest PASS",
+    "uv": "0.12.5"
+  },
+  "implementer": "Codex (OpenAI)",
+  "inputs": {
+    "deploy/bootstrap/compose.yaml": "9d9141e55b5b06d52d6a49ca1245bcbc54dfff058669fa92cae56f76b4994d83",
+    "infra/fuseki/Dockerfile": "8704d0e891f232c5f85a2b2cd59ccf3ee14905aeb4862452c92088f816051026",
+    "infra/services.lock.json": "890eb12d4c6e1bdd50df12a1ed11eebc859b4dff47ff3b4ecdbceae3c66978e8",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "scripts/acquire_fuseki_archive.py": "4daa3479eef8b17f76025cfb9d1b788ad564356bc1de2a6c18286842a54fee81",
+    "scripts/fault_inject_test_environment.py": "0142a33cd2d666c3f76b398b9bef6f8132030287bffd4415df411e4d1fedc4f4",
+    "scripts/verify_external_services.py": "4e46a764c8a1588413cc0800797752177c11c5ab2da3afbaea47752847281c97"
+  },
+  "raw_output_sha256": "ac03fff1c14ac1e34f2a61dafbe8125209b9da6e853b9720b2d260811505cf41",
+  "record_id": "OCOR-DEV-0075-archive-requalified-c3357b439cd1",
+  "requalification": {
+    "previous_inputs": {
+      "deploy/bootstrap/compose.yaml": "9d9141e55b5b06d52d6a49ca1245bcbc54dfff058669fa92cae56f76b4994d83",
+      "infra/fuseki/Dockerfile": "6018164d72dc46426414b4186ae5173c3fe801bd1923def389b52439048eff65",
+      "infra/services.lock.json": "890eb12d4c6e1bdd50df12a1ed11eebc859b4dff47ff3b4ecdbceae3c66978e8",
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "scripts/fault_inject_test_environment.py": "0142a33cd2d666c3f76b398b9bef6f8132030287bffd4415df411e4d1fedc4f4",
+      "scripts/verify_external_services.py": "4e46a764c8a1588413cc0800797752177c11c5ab2da3afbaea47752847281c97"
+    },
+    "re_ran_command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+    "reason": "PO REM-0017-CI-ARCHIVE-ACQUISITION (2026-10-08): verified archive COPY replaces remote ADD; same source bytes and base; real typed readiness repeated",
+    "source_refinement": "read1 plus per-receive deadline, qualified by new real MISS/HIT in live-stream-acquisition.log"
+  },
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0075-REAL-READINESS",
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "requirement_id": "BR-003",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "residual_risks": [
+    "This task qualifies provisioning, readiness, API reachability and bounded recovery of the real Fuseki service; it does not qualify OCOR-DEV-0018 RDF/JSON-LD/SHACL semantics or runtime conformance.",
+    "The development service intentionally uses an ephemeral in-memory dataset; deterministic fixture, backup and disaster-recovery qualification remain assigned to downstream tasks.",
+    "Local bootstrap output_sha256 identity is NOT_EXECUTED in this change set, differs as recorded, and requires separate PO-authorized FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE. Real typed readiness uses the existing governed build-recipe contract; no local identity PASS asserted."
+  ],
+  "result": "PASS",
+  "rollback": "Executed task-scoped pause/unpause and restart recovery against the disposable Fuseki container. Evidence-only repository change is reverted through a new revert commit; no production state or persistent volume was changed.",
+  "schema_version": 1.0,
+  "status": "REQUALIFIED_PENDING_INDEPENDENT_REMEDIATION_REVIEW",
+  "supersedes": "OCOR-DEV-0075-requalified-b920411a8aa5",
+  "supersedes_sha256": "e3737930ad6da2473f03f12a715cf8501b8415520d8d38a3a3aa4497e26f4ab6",
+  "task_id": "OCOR-DEV-0075",
+  "verifier": "Claude Code (Anthropic), pending separate context"
+}
