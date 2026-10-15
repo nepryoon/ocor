@@ -196,9 +196,188 @@
       ]
     }
   },
+  "exact_head_ci_qualification": {
+    "acquired_by": "Claude Code reserve, foreground named-check observation (LOOP-NONINTERACTIVE-WAITS)",
+    "acquisition_file": "gov276-ci-latest.json (external loop workspace, not in repository)",
+    "acquisition_file_sha256": "6a482062ce3b8d5dfe04cd75636f5e7ebe4806916813dbac93999f8f0f3cf198",
+    "head_sha": "90c668faf2b77faaab9728685dcc1ac4eb25969e",
+    "observed_at": "2026-10-15T05:07:52.331051+00:00",
+    "required_checks": [
+      {
+        "conclusion": "success",
+        "id": 116244337105,
+        "name": "contract"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244336923,
+        "name": "unit"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337132,
+        "name": "integration-postgresql"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337120,
+        "name": "backend-compatibility-not-ba-evidence"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337360,
+        "name": "evidence"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244520268,
+        "name": "mandatory-gates"
+      },
+      {
+        "conclusion": "success",
+        "id": 116251183240,
+        "name": "rccad-methodology"
+      },
+      {
+        "conclusion": "success",
+        "id": 116251384055,
+        "name": "delivery-activation"
+      },
+      {
+        "conclusion": "success",
+        "id": 116251230219,
+        "name": "validation-closure"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337036,
+        "name": "supply-chain"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337330,
+        "name": "type-and-lint-gate"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337533,
+        "name": "tooling-policy"
+      },
+      {
+        "conclusion": "success",
+        "id": 116244337137,
+        "name": "fgm-contract-readiness-not-runtime-evidence"
+      }
+    ],
+    "run_ids": [
+      38680699450,
+      38680699451,
+      38680699453,
+      38680699500,
+      38680699502,
+      38680699526,
+      38680699568
+    ],
+    "status": "PASS (13 required checks completed/success by name on the exact reviewed HEAD)"
+  },
   "independent_verification": {
-    "status": "REQUESTED_PENDING",
-    "verifier": "cursor"
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8 file normativi OK; inputs immutati fra 16c26ab e HEAD"
+      },
+      {
+        "command": "git diff --stat beab1b4cc16d0678ce5554fcebd6495b328f5342 HEAD -- reports/assurance/OCOR-DEV-REM-0032-RCCAD reports/evidence/G4/OCOR-DEV-0049.requalified-rem0032.json reports/evidence/G4/OCOR-DEV-0049.requalified-rem0032.log reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032.json reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032.log reports/tests/rem0032_relay_scenario.py reports/tests/test_rem0032_relay_probe.py deploy/helm ocor-runtime",
+        "exit_code": 0,
+        "summary": "I path REM-0032 elencati sono byte-identici a beab1b4 (diff vuoto, blob uguali, incluso README). deploy/helm e ocor-runtime differiscono da beab1b4 solo per safety.py, test_ocor_dev_0044.py e test_ocor_dev_rem_0024.py, gia' su main d64aded e invariati fra 16c26ab e HEAD"
+      },
+      {
+        "command": "git diff --stat 999ff06 HEAD",
+        "exit_code": 0,
+        "summary": "6 path: G5/MANIFEST.json, record e log 0050 integration-20261015, due report di piano, e due righe di allowlist piu' il commento in scripts/validate_ocor_development_plan.py"
+      },
+      {
+        "command": "git diff --name-status d64adedff6937272737c695711fc90ecf39c1482 16c26ab2ac097f1042d76d28d88b1b95e9ad8bdc",
+        "exit_code": 0,
+        "summary": "Esattamente 14 path di 0049. 13 blob identici a beab1b4. G4/MANIFEST.json non e' byte-identico a beab1b4: merge a tre vie che conserva la supersessione REM-0024 di 0044/0047 gia' su main e punta i risultati 0049 al record task-owned, senza i path REM-0032"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 16c26ab2ac097f1042d76d28d88b1b95e9ad8bdc --head HEAD --branch governed/ocor-dev-rem-0032-integration",
+        "exit_code": 0,
+        "summary": "PASS: 16 path cambiati; superfici immutabili intatte; ledger dei task stabile"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base d64adedff6937272737c695711fc90ecf39c1482 --head 16c26ab2ac097f1042d76d28d88b1b95e9ad8bdc --branch task/OCOR-DEV-0049-poc-deployment-observability-backup-safe-degradation",
+        "exit_code": 0,
+        "summary": "PASS: 14 path cambiati; superfici immutabili intatte; ledger dei task stabile"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 16c26ab2ac097f1042d76d28d88b1b95e9ad8bdc",
+        "exit_code": 0,
+        "summary": "PASS 37, FAIL 0, NOT_EXECUTED 2 opzionali. L'allowlist di HEAD e' l'unione esatta di beab1b4 e d64aded piu' i due path del record 0050. Il duplicato preesistente FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE.md e' ereditato da main, non introdotto. Con il base SHA completo il validator riscrive solo la stringa del ref nel report; con il ref abbreviato 16c26ab il report committato e' punto fisso. File ripristinati"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 69 task, 183 input, 0 drift"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: evidenza qualificante OCOR-DEV-0050. Il manifest G5 aggiunge i due artifact nuovi e sostituisce 12 requirement_results da pin-rebalance a integration-20261015, stessi case_id, nessun elemento alterato, file sigillati invariati"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: evidenza qualificante OCOR-DEV-0049. G4 a HEAD coincide con il merge 999ff06; nessun file di record sigillato modificato"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref 16c26ab2ac097f1042d76d28d88b1b95e9ad8bdc",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, dynamic_assurance CI_REQUIRED, findings vuoti"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione monitorata fuori area autorizzata"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files"
+      },
+      {
+        "command": "verifica del record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.json contro il raw log",
+        "exit_code": 0,
+        "summary": "34 sezioni RAW_FILE con SHA256 coerente. JUnit 198 test, failures 0, errors 0, skipped 0, timestamp 2026-10-15T02:54:46Z, source_head cdf8819 uguale al campo commit. Somma dei requirement_results 198/0/0 e nomi dei test in bijezione con lo JUnit. inputs_tree 60a73de8 e gli hash di model.py, test_ocor_dev_0050.py e validate_ocor_development_plan.py coincidono con cdf8819 e HEAD. supersedes il record sigillato pin-rebalance, sha256 4d7441aa verificato. Claim E1=0 E2=0 Verified=0 PoC/Production NO-GO runtime NOT_ESTABLISHED. Health 9 servizi READY, 11 container con restart 0. Tentativo su d038a22 conservato con hash, 198 passed, non conteggiato. Riesecuzione pytest non richiesta: il comando di validazione la marca opzionale"
+      }
+    ],
+    "findings": [],
+    "implementer": "Claude Code reserve (claude-opus-5-5): integration routing and regression-only requalification",
+    "integration_agent": "Claude Code reserve (Codex quota exhausted), evidence seal only",
+    "integration_condition": "Seal on the exact reviewed lineage: metadata (status, sealed_at, roles, independent_verification, exact_head_ci_qualification) and the G5 manifest hash only; execution trees byte-identical to the reviewed HEAD 90c668f. The sealed HEAD needs the 13 required checks green before merge with --match-head-commit. Historical seals, E1/E2/Verified/NO-GO unchanged.",
+    "not_executed": [],
+    "repair_cycle": 1,
+    "review_type": "REMEDIATION (regression-only 0050 requalification of the OCOR-DEV-0049 integration)",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-15T05:20:04Z",
+    "verdict_file_sha256": "5d6fc834eb6fab28047e1cb16b435bacddcc46fea4cb5e916947ac25df815eff",
+    "verdict_head_sha": "90c668faf2b77faaab9728685dcc1ac4eb25969e",
+    "verdict_request_id": "OCOR-DEV-REM-0032-90c668faf2b7-1-integration",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verification_request_author": "Claude Code reserve (Codex quota exhausted)",
+    "verifier": "Grok 4.7 (Cursor CLI)",
+    "verifier_configuration": {
+      "independence_limits": "processo e contesto separati; implementatore Claude Code (claude-opus-5-5), verifier Grok 4.7 via Cursor CLI, fornitori diversi",
+      "model": "Grok 4.7",
+      "process": "Cursor CLI, contesto pulito, sessione non interattiva"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -842,13 +1021,14 @@
   "roles": {
     "0049_lineage": "repair cycles 2-6 and 8 Claude Code; cycle 7 Codex; REM0032 cycle0/runtime campaign Claude Code reserve and repair1 Codex; verifier Grok 4.7 via Cursor. Historical identities unchanged.",
     "implementer": "Claude Code reserve (claude-opus-5-5, Codex quota exhausted): integration routing and this regression-only requalification",
-    "independent_verifier_launched": false,
+    "independent_verifier_launched": true,
     "original_0050_implementer": "Claude Code reserve; production and 198 tests unchanged",
     "planned_verifier": "Grok 4.7 via Cursor CLI, separate process/context/provider; external loop only",
-    "verifier": "cursor"
+    "verifier": "cursor (Grok 4.7), external loop"
   },
   "rollback": "Revert of the governed merge on main; no data migration, no history rewrite, sealed records untouched.",
   "schema_version": "1.0",
+  "sealed_at": "2026-10-15T05:22:55.861193+00:00",
   "session_teardown": {
     "after_counts": {
       "containers": 24,
@@ -875,7 +1055,7 @@
     "scope": "only authorized OCOR resources; pre-existing non-OCOR resources untouched",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "superseded_path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0017-pin-rebalance-20261015.json",
   "superseded_sha256": "4d7441aa68ecbc5cf9e1c3c40185ec78d3fa297d11a2b677f491abab6a1a0a45",
   "supersedes": "OCOR-DEV-0050-regression-rem0017-pin-rebalance-ced9d9b3bf97",
