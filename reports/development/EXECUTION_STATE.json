@@ -70,27 +70,38 @@
       "sha256": "8c96a137233e5e95fec8177c8cd87d02c8b8328c7d120bb4b55e420fa2c43f48",
       "verdict": "NO_GO"
     },
-    "last_resume_recheck_at": "2026-10-15T14:02:18.252736+00:00",
+    "last_resume_recheck_at": "2026-10-15T14:06:16.302707+00:00",
     "last_resume_recheck_gates": [
       {
         "command": [
-          "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+          "sha256sum",
+          "-c",
+          "inputs/normative/SHA256SUMS"
+        ],
+        "exit_code": 0,
+        "label": "inputs",
+        "raw_path": "/home/luca/.ocor-codex/rem0033-terminal-checkpoint-20261015T1405Z/inputs.log",
+        "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+      },
+      {
+        "command": [
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
           "scripts/verify.py",
           "--json"
         ],
         "exit_code": 0,
         "label": "verify",
-        "raw_path": "/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/verify.log",
+        "raw_path": "/home/luca/.ocor-codex/rem0033-terminal-checkpoint-20261015T1405Z/verify.log",
         "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
       },
       {
         "command": [
-          "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+          "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python",
           "scripts/validate_evidence_input_drift.py"
         ],
         "exit_code": 0,
         "label": "drift",
-        "raw_path": "/home/luca/.ocor-codex/rem0033-resume-stop-20261015T140217Z/drift.log",
+        "raw_path": "/home/luca/.ocor-codex/rem0033-terminal-checkpoint-20261015T1405Z/drift.log",
         "raw_sha256": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031"
       }
     ],
@@ -111,9 +122,10 @@
         "result": "PASS"
       }
     ],
-    "next_action": "Attendere la disposition del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282) prima di riprendere REM-0033 da un checkpoint autorizzato; poi riparare VF-001, ciclo 1, e richiedere verifica esterna Cursor/Grok. REM-0028 ferma; nessuna riscrittura della storia.",
+    "loop_status": "TERMINAL_BLOCKED",
+    "next_action": "Attendere la disposition esplicita del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282); dopo lo sblocco verificare gli HEAD autorizzati e riparare VF-001 di REM-0033, ciclo 1, con nuova verifica esterna Grok 4.7 via Cursor. Nessuna campagna o merge prima dello sblocco; REM-0028 resta ferma.",
     "paused_rem0028_head": "19747383d3d570b2ffbb503a1878c49d140b8032",
-    "phase": "STOPPED_RESUME_PRECONDITION_HEAD_MISMATCH",
+    "phase": "TERMINAL_BLOCKED_RESUME_CHECKPOINT_DISPOSITION_REQUIRED",
     "previous_checkpoint": "2c31ae59d05cbcfd26801dd632a600e845baaea5",
     "publication": "Draft PR282 publishes the existing decision request; state checkpoint only, no candidate push, verifier or merge.",
     "resume_precondition_recheck": {
@@ -192,6 +204,13 @@
     },
     "stack_actions": "NOT_EXECUTED: explicit stop; no resources created or removed",
     "task_id": "OCOR-DEV-REM-0033",
+    "terminal_report": {
+      "branch": "governed/decision-request-rem0033-resume-head-mismatch",
+      "commit": "44f94af659f2a952423bfabb55024dad7844726b",
+      "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
+      "pull_request": 282,
+      "sha256": "e332effe60357f4f5aee39ae3828e57f7f93f9694ee2760207c39758d01a391e"
+    },
     "updated_at": "2026-10-15T13:59:33.827566+00:00",
     "worktree": ".ocor/worktrees/state-sync-rem0033-head-mismatch"
   },
@@ -6776,7 +6795,7 @@
       "status": "MERGED"
     }
   },
-  "next_executable_action": "Attendere la disposition del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282) prima di riprendere REM-0033 da un checkpoint autorizzato; poi riparare VF-001, ciclo 1, e richiedere verifica esterna Cursor/Grok. REM-0028 ferma; nessuna riscrittura della storia.",
+  "next_executable_action": "Attendere la disposition esplicita del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282); dopo lo sblocco verificare gli HEAD autorizzati e riparare VF-001 di REM-0033, ciclo 1, con nuova verifica esterna Grok 4.7 via Cursor. Nessuna campagna o merge prima dello sblocco; REM-0028 resta ferma.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -18359,9 +18378,10 @@
   ],
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
-    "loop_status": "CONTINUE",
-    "reason": "Executable REM32 and other remediation work remain; project not terminally blocked",
-    "status": "SUPERSEDED_LOOP_CONTINUES"
+    "decision_request": "HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH",
+    "next_action": "Attendere la disposition esplicita del PO su HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PR #282); dopo lo sblocco verificare gli HEAD autorizzati e riparare VF-001 di REM-0033, ciclo 1, con nuova verifica esterna Grok 4.7 via Cursor. Nessuna campagna o merge prima dello sblocco; REM-0028 resta ferma.",
+    "reason": "Condizione esplicita di arresto PO HOST-REBOOT-RESUME-ITER27 punto 1 ripetuta senza cambiamenti; nessuna ripresa autorizzata. Nessun nuovo vincolo normativo o consumo del budget.",
+    "status": "TERMINAL_BLOCKED"
   },
-  "updated_at": "2026-10-15T14:02:18.252736+00:00"
+  "updated_at": "2026-10-15T14:06:16.302707+00:00"
 }
