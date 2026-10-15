@@ -487,6 +487,9 @@ def main() -> int:
         "reports/evidence/G4/OCOR-DEV-0049.requalified-rem0032.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032.log",
+        # OCOR-DEV-0049 integration: 0050 regression after the merged REM-0032/REM-0017 allowlist.
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.log",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/evidence.json",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/raw.log",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/repair-1.json",
