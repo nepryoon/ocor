@@ -5782,3 +5782,11 @@ E1=0,E2=0,Verified=0 eNO-GO invariati; candidatoREM17 non sigillato/mergiato/ver
 - Stato e handoff ereditano il checkpoint non integrato `2c31ae5`, conservandone integralmente il log storico; stato solo su branch `governed/state-sync-*`. Nessuna nuova unità avviata, REM0028 ferma e ordine della coda invariato. Nessun ciclo di riparazione consumato.
 - Prossima azione: Obtain PO disposition of HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH before resuming REM-0033: expected 3c8f2eb, observed ccb372272631a2e0500f57c87ec56cd7409a4652 (PR281). Preserve both branches and prior campaign; no reset/rebase/force-push. After explicit checkpoint confirmation, repair VF-001 of OCOR-DEV-REM-0033-ccb372272631-0 in ordinary repair cycle1, qualify the changed harness and request external Cursor/Grok verification. REM0028 remains paused at1974738; scanner -> REM0019 -> REM0023 ->0056 queue unchanged.
 - Inputs intatti; E1=0, E2=0, zero Verified, runtime NOT_ESTABLISHED, PoC e Production NO-GO invariati.
+
+
+## 2026-10-15T13:51:13.283235+00:00 — REM-0033: riconferma della precondizione di arresto
+
+- Prima verifica della nuova invocazione: REM-0033 ancora `ccb372272631a2e0500f57c87ec56cd7409a4652`, diverso da `3c8f2eb` richiesto; REM-0028 ancora `1974738`, coincidente. Applicato `HOST-REBOOT-RESUME-ITER27` punto 1; nessuna modifica ai branch candidati.
+- Ripreso il checkpoint versionato `c314b956`; conservata la decision request esistente `HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH` (`a27b8fc`), senza duplicarla. Fetch completato; main pulita e allineata a `9b4d3be`; PR #281 ancora sullo stesso HEAD. Verdetto Cursor/Grok NO_GO preservato; nessuna nuova richiesta o esecuzione del verifier.
+- Checksum normativi 8/8 PASS; verify 14 PASS; drift 70 task e 194 input PASS nel worktree di stato. Campagna, stack e test runtime NOT_EXECUTED per arresto esplicito; nessuna risorsa o attesa in background avviata, zero cicli di riparazione consumati. Il reboot delle 13:20 CEST resta interruzione infrastrutturale, senza nuovi conteggi PASS/FAIL.
+- Prossima azione invariata: disposition del PO sul checkpoint REM-0033 prima di qualsiasi ripresa; dopo autorizzazione, riparazione VF-001 ciclo 1 e verifica esterna Cursor/Grok. Stato e handoff aggiornati soltanto nel branch governato; inputs, record sigillati, E1=0, E2=0, Verified=0 e claim NO-GO invariati.
