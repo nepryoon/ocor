@@ -157,17 +157,27 @@ class EmergencyStopController:
             self._history.append(event)
             return event
 
-    def request_reset(self, *, approvers: tuple[str, str], identities: IdentityRegistry, at: datetime) -> StopEvent:
-        instant = require_aware(at, field="at")
+    def request_reset(
+        self, *, approvers: tuple[str, str], identities: IdentityRegistry, requester: str, at: datetime | None = None
+    ) -> StopEvent:
+        # No temporal window is specified for reset; its event timestamp comes
+        # from the local boundary UTC clock, never the compatibility ``at``.
+        from datetime import UTC
+
+        from .human_gate import _active_human_roles
+
+        instant = datetime.now(UTC)
         distinct = set(approvers)
-        if len(distinct) != 2:
-            raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset requires exactly two distinct human approvers")
-        for principal in distinct:
-            if identities.get(principal) is None:
-                raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", f"unresolved approver: {principal!r}")
+        if len(approvers) != 2 or len(distinct) != 2 or not requester or requester in distinct:
+            raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset requires two distinct human approvers, independent of the requester")
         with self._lock:
             if self._status is not StopStatus.STOPPED:
                 raise SafetyError("INVALID_STOP_TRANSITION", f"cannot request reset from {self._status.value}")
+            # Fresh authority reads immediately before the state transition.
+            # Request, signature and grant cannot set registry attributes.
+            for principal in distinct:
+                if _active_human_roles(identities.get(principal)) is None:
+                    raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset approver is not a resolved active human with valid attributes")
             self._status = StopStatus.RESET_PENDING
             event = StopEvent(epoch=self._epoch, status=self._status, reason="reset requested", at=instant)
             self._history.append(event)

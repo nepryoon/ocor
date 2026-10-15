@@ -24,6 +24,7 @@ from ocor_runtime.c6.engine import ActionProposal, Decision, GovernedActionEngin
 from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
+from ocor_runtime.kernel.governance import InMemoryTrustedClock
 from ocor_runtime.security.ports import ControlName, SecurityControlError
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -42,13 +43,18 @@ PROPOSER = "urn:ocor:human:proposer"
 def identities() -> IdentityRegistry:
     registry = IdentityRegistry()
     for canonical_id in ("urn:ocor:human:risk-owner", "urn:ocor:human:compliance", "urn:ocor:human:extra"):
-        registry.register(IdentityRecord(canonical_id=canonical_id))
+        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "COMPLIANCE RISK_OWNER" if canonical_id.endswith("extra") else ("COMPLIANCE" if canonical_id.endswith("compliance") else "RISK_OWNER")}))
     return registry
 
 
 @pytest.fixture
-def coordinator(identities: IdentityRegistry) -> HumanGateCoordinator:
-    return HumanGateCoordinator(identities=identities)
+def clock() -> InMemoryTrustedClock:
+    return InMemoryTrustedClock(NOW)
+
+
+@pytest.fixture
+def coordinator(identities: IdentityRegistry, clock: InMemoryTrustedClock) -> HumanGateCoordinator:
+    return HumanGateCoordinator(identities=identities, clock=clock)
 
 
 def policy(**overrides: object) -> ApprovalPolicy:
@@ -164,6 +170,7 @@ def test_an_unresolved_signatory_is_never_counted(coordinator: HumanGateCoordina
 
 def test_dual_control_a_resolution_that_was_valid_can_be_denied_again_at_dispatch_time(
     coordinator: HumanGateCoordinator,
+    clock: InMemoryTrustedClock,
 ) -> None:
     """The task's own core claim: the identical check is re-run,
     unmodified, at both resolution and dispatch. A signature that was
@@ -178,7 +185,7 @@ def test_dual_control_a_resolution_that_was_valid_can_be_denied_again_at_dispatc
     )
     assert resolution.approved is True
 
-    dispatch_time = NOW + timedelta(hours=1)
+    dispatch_time = clock.advance(timedelta(hours=1))
     with pytest.raises(HumanGateError) as excinfo:
         coordinator.validate(
             action_id=ACTION_ID, proposer_id=PROPOSER, policy=short_ttl, signatures=signatures, scope=SCOPE, at=dispatch_time
