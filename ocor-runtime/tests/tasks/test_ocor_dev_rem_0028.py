@@ -201,10 +201,10 @@ def test_real_dual_role_holder_still_cannot_fill_two_role_slots() -> None:
     registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'})
     values = signatures()
     values[1] = GateSignature(action_id='action', principal_id='a', role='NATIONAL_APPROVER', scope='scope', signed_at=NOW)
-    # Second human keeps headcount sufficient but supplies only the same role
-    # as a's first signature; missing role must be due to distinct role holders.
-    registry.register(IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER'}))
-    values.append(GateSignature(action_id='action', principal_id='extra', role='DOMAIN_APPROVER', scope='scope', signed_at=NOW))
+    # Second human keeps headcount sufficient but holds no required role;
+    # only a could cover either of the two required role slots.
+    registry.register(IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'OBSERVER'}))
+    values.append(GateSignature(action_id='action', principal_id='extra', role='OBSERVER', scope='scope', signed_at=NOW))
     with pytest.raises(HumanGateError, match='MISSING_REQUIRED_ROLE'):
         HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW)).validate(
             action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)), signatures=values, scope='scope')
@@ -218,3 +218,16 @@ def test_scoped_role_token_preserves_the_approved_q1_domain_syntax() -> None:
     assert gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(frozenset({role}), 1, timedelta(minutes=10)), signatures=values, scope='scope').approved
     with pytest.raises(HumanGateError, match='MISSING_REQUIRED_ROLE'):
         gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(frozenset({'DOMAIN_OWNER:other'}), 1, timedelta(minutes=10)), signatures=values, scope='scope')
+
+
+@pytest.mark.parametrize('reverse', [False, True])
+def test_valid_distinct_role_assignment_is_independent_of_signature_order(reverse: bool) -> None:
+    registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'})
+    registry.register(IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER'}))
+    values = [GateSignature(action_id='action', principal_id=p, role=r, scope='scope', signed_at=NOW)
+              for p, r in [('a', 'DOMAIN_APPROVER'), ('a', 'NATIONAL_APPROVER'), ('extra', 'DOMAIN_APPROVER')]]
+    if reverse:
+        values.reverse()
+    approval = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW)).validate(
+        action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)), signatures=values, scope='scope')
+    assert approval.approved and approval.approver == 'a,extra'

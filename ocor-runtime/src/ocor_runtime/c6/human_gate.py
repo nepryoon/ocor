@@ -157,7 +157,7 @@ class HumanGateCoordinator:
             excluded.add(policy.excluded_principal_id)
 
         valid_principals: set[str] = set()
-        role_covered_by: dict[str, str] = {}
+        role_candidates: dict[str, set[str]] = {role: set() for role in policy.required_roles}
 
         for signature in signatures:
             principal = signature.principal_id
@@ -175,19 +175,33 @@ class HumanGateCoordinator:
 
             valid_principals.add(principal)
 
-            if signature.role in policy.required_roles and signature.role not in role_covered_by:
-                already_covers_a_different_role = any(
-                    other_principal == principal for other_role, other_principal in role_covered_by.items() if other_role != signature.role
-                )
-                if not already_covers_a_different_role:
-                    role_covered_by[signature.role] = principal
+            if signature.role in policy.required_roles:
+                role_candidates[signature.role].add(principal)
 
         if len(valid_principals) < policy.minimum_signatories:
             raise HumanGateError(
                 "QUORUM_NOT_MET",
                 f"{len(valid_principals)} distinct valid signatory(ies), {policy.minimum_signatories} required",
             )
-        missing_roles = policy.required_roles - role_covered_by.keys()
+        # A distinct human per required role, independent of signature order.
+        # A first-fit assignment can falsely reject a valid quorum when one
+        # human holds both roles and another can cover only one of them.
+        role_by_principal: dict[str, str] = {}
+
+        def assign(role: str, visited: set[str]) -> bool:
+            for principal in sorted(role_candidates[role]):
+                if principal in visited:
+                    continue
+                visited.add(principal)
+                previous = role_by_principal.get(principal)
+                if previous is None or assign(previous, visited):
+                    role_by_principal[principal] = role
+                    return True
+            return False
+
+        for role in sorted(policy.required_roles):
+            assign(role, set())
+        missing_roles = policy.required_roles - set(role_by_principal.values())
         if missing_roles:
             raise HumanGateError("MISSING_REQUIRED_ROLE", f"no distinct valid signatory for: {sorted(missing_roles)}")
 

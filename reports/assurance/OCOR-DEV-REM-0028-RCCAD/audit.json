@@ -33,19 +33,19 @@
     {
       "condition": "len(valid_principals) < policy.minimum_signatories",
       "function": "validate",
-      "line": 185,
+      "line": 181,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "missing_roles",
       "function": "validate",
-      "line": 191,
+      "line": 205,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
       "condition": "control_check is not None",
       "function": "validate",
-      "line": 194,
+      "line": 208,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
@@ -79,15 +79,21 @@
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
-      "condition": "signature.role in policy.required_roles and signature.role not in role_covered_by",
+      "condition": "signature.role in policy.required_roles",
       "function": "validate",
       "line": 178,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
-      "condition": "not already_covers_a_different_role",
+      "condition": "principal in visited",
       "function": "validate",
-      "line": 182,
+      "line": 193,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "previous is None or assign(previous, visited)",
+      "function": "validate",
+      "line": 197,
       "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
     },
     {
@@ -174,6 +180,11 @@
       "negative": "test_real_dual_role_holder_still_cannot_fill_two_role_slots",
       "positive": "test_scoped_role_token_preserves_the_approved_q1_domain_syntax",
       "rule": "genuine dual-role holder cannot occupy both role slots; approved scoped tokens retained"
+    },
+    {
+      "negative": "test_real_dual_role_holder_still_cannot_fill_two_role_slots (second human OBSERVER, genuinely insufficient role coverage)",
+      "positive": "test_valid_distinct_role_assignment_is_independent_of_signature_order [False, True]",
+      "rule": "distinct-role assignment independent of signature order"
     }
   ],
   "consumer_inventory": {
@@ -211,6 +222,13 @@
       "status": "OPEN_EXISTING_COMPONENT_LIMIT"
     }
   ],
+  "role_matching_tdd": {
+    "disposition": "First-fit inherited algorithm rejected a feasible role assignment; augmenting matching enforces distinct humans without rejecting order-equivalent valid quorums.",
+    "failed": 1,
+    "passed": 2,
+    "red_log_sha256": "5a475c96253dc013ffbb277a3215e44dbeeae1c865f84ef701349408dc8a90b1",
+    "selection_status": "Targeted RED only,47 deselected not qualifying; final full suite selects all cases."
+  },
   "roles": {
     "implementer": "Codex (OpenAI), no reserve contribution to REM0028",
     "primary_verifier": "Claude Code, external loop only; REM0028 behavior",
@@ -276,7 +294,8 @@
     "safety_other_code_unchanged": true,
     "source_head": "07c59762fd13078ccc2e480c0eb1e367fb8a3afc"
   },
-  "source_head": "07c59762fd13078ccc2e480c0eb1e367fb8a3afc",
+  "source_head": "4ce8a5cb8f03b885d31ddb2998b17644ac10f956",
+  "source_head_role": "Source before the matching correction, whose diff and final source commit are bound by the final evidence record.",
   "task_id": "OCOR-DEV-REM-0028",
   "time_disposition": "HumanGate boundary clock injected at construction, not per request. Future signatures and exact-expiry signatures refuse. GateSignature.role selects an act of signing and must be independently present in registry roles; it never grants the role."
 }
