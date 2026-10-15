@@ -231,3 +231,31 @@ def test_valid_distinct_role_assignment_is_independent_of_signature_order(revers
     approval = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW)).validate(
         action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)), signatures=values, scope='scope')
     assert approval.approved and approval.approver == 'a,extra'
+
+
+def test_distinct_role_matching_agrees_with_exhaustive_assignment_oracle() -> None:
+    """All 512 three-human/three-role graphs, both signature orders.
+
+    The oracle enumerates complete assignments independently of the runtime's
+    augmenting matcher. No boundary or identity record is replaced by a mock.
+    """
+    import itertools
+    required = ('ROLE_A', 'ROLE_B', 'ROLE_C')
+    people = ('p0', 'p1', 'p2')
+    for mask in range(1 << 9):
+        edges = {(p, r) for i, (p, r) in enumerate(itertools.product(people, required)) if mask & (1 << i)}
+        expected = any(all((person, role) in edges for person, role in zip(assignment, required))
+                       for assignment in itertools.permutations(people))
+        registry = IdentityRegistry()
+        for person in people:
+            registry.register(IdentityRecord(canonical_id=person, attributes={
+                'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': ' '.join(sorted(r for p, r in edges if p == person))}))
+        values = [GateSignature(action_id='action', principal_id=p, role=r, scope='scope', signed_at=NOW) for p, r in sorted(edges)]
+        gate = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW))
+        for ordered in (values, list(reversed(values))):
+            try:
+                outcome = gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(frozenset(required), 1, timedelta(minutes=10)), signatures=ordered, scope='scope')
+            except HumanGateError:
+                assert not expected, f'false denial for graph {mask}'
+            else:
+                assert outcome.approved and expected, f'false approval for graph {mask}'
