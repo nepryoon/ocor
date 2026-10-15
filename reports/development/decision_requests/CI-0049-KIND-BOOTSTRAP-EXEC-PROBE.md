@@ -70,3 +70,42 @@ E2=0, Verified=0 e tutti i NO-GO invariati.
 
 Questa PR è DRAFT di sola richiesta: nessuna estensione dell'allowlist del piano in questo
 branch, quindi il gate del piano può rifiutare i nuovi path.
+
+
+## Addendum 2026-10-15 — ricorrenza su PR #280 e impatto sul gate obbligatorio
+
+Nessuna nuova domanda normativa: le opzioni già aperte restano invariate.
+Nuova occorrenza sullo state sync REM-0019, HEAD
+`b50dd030c32ed6476ed31fa63993a06448d5fb4a`, run `38695636096`, parte Helm
+`conditional-infrastructure-0049 part 1/5`, job `116291443520`, artifact
+`11953484622`. Il primo probe `docker exec … systemctl show containerd` sul nodo
+`3d93a821ec8746bc2457bfe837c923272793654452565f6b777144ce41c613a8`
+fallisce con exit 1 alle 07:01:19Z in 36,6 ms. Il percorso v2 rileva il nodo
+ancora presente, running, senza OOM o restart, e rifiuta con
+`WINDOW_EXPIRED_NODE_PRESENT` alle 07:01:49Z (finestra 30 s). Nessuna rimozione
+qualificante; teardown del progetto e inventario finale PASS, zero residui.
+Nessun rerun, come previsto per questa firma di rifiuto v2.
+
+**Erratum sull'impatto:** il fatto che il job condizionale abbia un nome non
+incluso nei 13 check del ruleset non lo rende non bloccante. In
+`.github/workflows/ocor-validation-closure.yml`, `validation-closure` dipende
+anche da `conditional-infrastructure-0049` (riga 158) e ne richiede il risultato
+success (riga 178). Su questo HEAD le quattro parti di validation sono success,
+ma il check obbligatorio `validation-closure`, job `116300760193`, è FAIL sul
+confronto `test "failure" = success`. Questa dipendenza smentisce la precedente
+lettura del record di stato secondo cui la richiesta non bloccava i merge.
+La PR #280 resta non integrabile: nessun gate ignorato o modificato, nessun
+risultato globale PASS dichiarato. Le unità non dipendenti possono procedere in
+worktree isolati, ma anche le loro integrazioni richiederanno lo stesso gate.
+
+Prove SHA256:
+
+- log parte Helm: `331e9562fb9e3c2ed4443a4dbe74ba838902ca559f9408e544bb49c75a02b0e4`;
+- `kind-teardown-observations.json`: `247227a25e7e820e29f92addc6ad434c735c4e7ad2f8d9e9aeadc940142b97e1`;
+- log aggregatore obbligatorio: `a7c7000c0fa6cb0c0403e12937950cc346d5b59a45663ec740269a5376b36297`.
+
+Resta invariato l'ambito delle opzioni della richiesta: nessuna correzione del
+probe, aumento di timer, esclusione di test o modifica del workflow applicata.
+E1/E2/Verified/NO-GO e tutti i sigilli storici invariati. Autore dell'addendum:
+Codex, implementatore del loop. La nuova domanda sui marcatori sintetici di un
+record sigillato è separata (`REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER`, PR #279).
