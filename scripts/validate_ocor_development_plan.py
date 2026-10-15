@@ -527,7 +527,8 @@ def main() -> int:
         "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.log",
-        # REM-0028, PO Q3: exact evidence and regression-only0050 records.
+        # REM-0028, PO Q3: exact test, evidence and regression-only0050 records.
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py",
         "reports/assurance/OCOR-DEV-REM-0028-RCCAD/README.md",
         "reports/assurance/OCOR-DEV-REM-0028-RCCAD/audit.json",
         "reports/evidence/G4/OCOR-DEV-REM-0028.json",
