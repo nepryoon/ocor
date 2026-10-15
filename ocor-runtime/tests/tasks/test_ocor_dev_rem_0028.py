@@ -195,3 +195,26 @@ def test_invalid_clock_is_fail_closed() -> None:
     gate = HumanGateCoordinator(identities=directory(), clock=UnavailableClock())
     with pytest.raises(RuntimeError, match='trusted clock unavailable'):
         gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)), signatures=signatures(), scope='scope')
+
+
+def test_real_dual_role_holder_still_cannot_fill_two_role_slots() -> None:
+    registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'})
+    values = signatures()
+    values[1] = GateSignature(action_id='action', principal_id='a', role='NATIONAL_APPROVER', scope='scope', signed_at=NOW)
+    # Second human keeps headcount sufficient but supplies only the same role
+    # as a's first signature; missing role must be due to distinct role holders.
+    registry.register(IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER'}))
+    values.append(GateSignature(action_id='action', principal_id='extra', role='DOMAIN_APPROVER', scope='scope', signed_at=NOW))
+    with pytest.raises(HumanGateError, match='MISSING_REQUIRED_ROLE'):
+        HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW)).validate(
+            action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)), signatures=values, scope='scope')
+
+
+def test_scoped_role_token_preserves_the_approved_q1_domain_syntax() -> None:
+    role = 'DOMAIN_OWNER:urn:ocor:domain:ops'
+    registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': role})
+    values = [GateSignature(action_id='action', principal_id='a', role=role, scope='scope', signed_at=NOW)]
+    gate = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW))
+    assert gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(frozenset({role}), 1, timedelta(minutes=10)), signatures=values, scope='scope').approved
+    with pytest.raises(HumanGateError, match='MISSING_REQUIRED_ROLE'):
+        gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(frozenset({'DOMAIN_OWNER:other'}), 1, timedelta(minutes=10)), signatures=values, scope='scope')

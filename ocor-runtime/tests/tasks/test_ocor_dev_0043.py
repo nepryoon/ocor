@@ -43,7 +43,7 @@ PROPOSER = "urn:ocor:human:proposer"
 def identities() -> IdentityRegistry:
     registry = IdentityRegistry()
     for canonical_id in ("urn:ocor:human:risk-owner", "urn:ocor:human:compliance", "urn:ocor:human:extra"):
-        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "COMPLIANCE RISK_OWNER" if canonical_id.endswith("extra") else ("COMPLIANCE" if canonical_id.endswith("compliance") else "RISK_OWNER")}))
+        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "COMPLIANCE RISK_OWNER" if canonical_id.endswith("extra") else ("COMPLIANCE" if canonical_id.endswith("compliance") else "COMPLIANCE RISK_OWNER")}))
     return registry
 
 

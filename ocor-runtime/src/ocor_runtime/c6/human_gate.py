@@ -112,7 +112,7 @@ class GateSignature:
         )
 
 
-_ROLE_TOKEN = re.compile(r"[A-Z][A-Z0-9_]*(?::[^\s:]+)?")
+_ROLE_TOKEN = re.compile(r"[A-Z][A-Z0-9_]*(?::\S+)?")
 
 
 def _active_human_roles(record: IdentityRecord | None) -> frozenset[str] | None:
