@@ -200,7 +200,7 @@ def inspect_kubernetes_runtimes(inspector: Callable[[], dict[str, dict[str, Any]
     container_pids: dict[str, Any] = {}
     while True:
         try:
-            return inspector()
+            return _require_observed_nodes(inspector(), container_pids)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             command = exc.cmd
             if not isinstance(command, list) or command[:2] not in (['docker', 'exec'], ['docker', 'inspect']):
@@ -216,7 +216,24 @@ def inspect_kubernetes_runtimes(inspector: Callable[[], dict[str, dict[str, Any]
                 continue
             # Exactly one fresh snapshot: no recursion or suppressed failure. The
             # original fail-closed service checks consume this result.
-            return inspector()
+            return _require_observed_nodes(inspector(), container_pids)
+
+
+def _require_observed_nodes(snapshot: dict[str, dict[str, Any]],
+                            container_pids: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """An observed UUID cannot disappear on the fresh snapshot without v2 proof.
+
+    The campaign history may still be empty during bootstrap. Retain the UUIDs
+    seen in this inspection, including across successful runtime-probe recovery.
+    A missing node is rejected; a recovery observation alone is no removal proof.
+    """
+    for node in container_pids:
+        if any(row['node_id'] == node for row in REMOVALS):
+            continue
+        if any(node + ':' + service not in snapshot for service in RUNTIME_SERVICES):
+            _reject(TeardownObservationError('observed node missing after probe recovery: ' + node),
+                    'RECOVERED_NODE_MISSING_FROM_SNAPSHOT', node_id=node)
+    return snapshot
 
 
 def _observe_failed_probe(exc: subprocess.CalledProcessError | subprocess.TimeoutExpired, command: list[str],

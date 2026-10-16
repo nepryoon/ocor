@@ -353,18 +353,21 @@ class BootstrapExecProbe(unittest.TestCase):
     (and zero NRestarts if the node was admitted). Docker is simulated; nothing here
     qualifies an OCOR backend or a runtime case."""
 
-    def exercise(self, nodes, probes, *, kubelet='ActiveState=active\nMainPID=7\nNRestarts=0\n', env_file=None):
+    def exercise(self, nodes, probes, *, kubelet='ActiveState=active\nMainPID=7\nNRestarts=0\n', env_file=None, disappear_after_recovery=False):
         """nodes: docker inspect <ID> rows during the window (last repeats);
         probes: containerd results in order, (code, stdout, stderr) or 'TIMEOUT' (last repeats)."""
         clock = Clock()
         nodes, probes = list(nodes), list(probes)
         calls = []
+        snapshots = 0
 
         def run(argv, **kwargs):
+            nonlocal snapshots
             calls.append((list(argv), dict(kwargs)))
             code, out, err = 0, '', ''
             if argv[:2] == ['docker', 'ps']:
-                out = ID + '\n'
+                snapshots += 1
+                out = '' if disappear_after_recovery and snapshots > 1 else ID + '\n'
             elif argv[:2] == ['docker', 'inspect']:
                 row = nodes.pop(0) if len(nodes) > 1 else nodes[0]
                 if row is None:
@@ -451,6 +454,17 @@ class BootstrapExecProbe(unittest.TestCase):
         self.assertEqual(self.recoveries, [])
 
     # ---- negative -------------------------------------------------------------------------
+
+    def test_disappearance_after_recovery_with_empty_history_is_rejected(self):
+        # VF-001: the UUID was seen during recovery, then fresh docker ps is empty.
+        # No previous campaign snapshot exists to call confirm_missing_node for it.
+        with self.assertRaises(adapter.TeardownObservationError):
+            self.exercise([booting()], [self.FAIL, self.ACTIVE], disappear_after_recovery=True)
+        self.assertEqual(self.rejections[-1]['reason'], 'RECOVERED_NODE_MISSING_FROM_SNAPSHOT')
+        self.assertEqual(self.rejections[-1]['node_id'], ID)
+        self.assertEqual(len(self.recoveries), 1)
+        self.assertEqual(self.removals, [])
+        self.assertLess(self.elapsed, adapter.WINDOW_SECONDS)
 
     def test_probe_failing_until_window_expiry_is_rejected(self):
         with self.assertRaises(subprocess.CalledProcessError):
