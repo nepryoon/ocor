@@ -1,6 +1,6 @@
 # HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH
 
-Stato: `OPEN_PO_DECISION_REQUIRED`. Rilevazione: 2026-10-15T13:47:08.820958+00:00. Autore: Codex.
+Stato: `RESOLVED_PO_DECISION_OPTION_1` (disposition PO 2026-10-15). Rilevazione: 2026-10-15T13:47:08.820958+00:00. Autore: Codex.
 
 ## Contesto
 
@@ -43,3 +43,32 @@ Dopo la disposition del PO: verificare nuovamente gli HEAD e riprendere il check
 
 Checksum normativi in questa iterazione: `PASS` 8/8. Stack, suite e qualifica runtime: `NOT_EXECUTED` per arresto prescritto. Nessun container creato, avviato o rimosso. Il reboot del 2026-10-15 13:20 CEST resta interruzione infrastrutturale, senza conteggi PASS/FAIL; i run successivi preesistenti non sono ripetuti qui.
 Inputs intatti; E1=0, E2=0, zero requisiti globali Verified, runtime NOT_ESTABLISHED, PoC e Production NO-GO invariati. Nessun nuovo DEC.
+
+## Disposition del Product Owner — 2026-10-15 (opzione 1)
+
+`HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH` supersede soltanto il punto 1 della decisione
+operativa di ripresa: il controllo di uguaglianza era unico, è già stato assolto alle
+13:45 CEST e non va più ripetuto. La discrepanza nasce dalla formulazione dell'istruzione,
+non da un difetto. Gli altri punti, incluso il carattere infrastrutturale del reboot,
+restano validi.
+
+Il checkpoint autorizzato è `ccb372272631a2e0500f57c87ec56cd7409a4652`; si conserva tutta
+la storia, senza reset, rebase distruttivi o force-push. REM-0028 resta ferma a `1974738`
+fino all'integrazione di REM-0033. Il ciclo 1 corregge VF-001 con RED prima del codice,
+rifiuto fail-closed o prova v2 completa dopo il recupero; mappa vuota mai equivalente a
+successo in quel percorso. Finestra 30 s, timeout, timer e gate invariati. Le prove del
+cambio di harness precedono una nuova verifica esterna Cursor/Grok.
+
+Esecuzione Codex (OpenAI), 2026-10-16 UTC: RED `TeardownObservationError not raised`, poi
+riparazione `bb5b20940548662b5f621a2d6fae6a9848cd9066`; 167 test e 42 subtest GREEN.
+Checkpoint pubblicato sul branch candidato: `beeaf5e` (discendente di `ccb3722`). Full
+locale e regressione 0050 sul nuovo albero: `NOT_EXECUTED`, bootstrap Keycloak bloccato
+dalla porta host 8080 occupata dal proxy di agente Antigravity, non modificato. Nessuna
+richiesta di verifica o sigillo fino alla qualifica locale completa. Record del checkpoint:
+`reports/assurance/OCOR-DEV-REM-0033-RCCAD/OCOR-DEV-REM-0033.json` sul branch candidato.
+
+Questa richiesta è risolta; il precedente arresto TERMINAL_BLOCKED per la discrepanza
+non è più attivo. L'impedimento di porta è distinto e non riapre il controllo di HEAD.
+Ordine invariato: REM-0033 → scanner → REM-0019 → REM-0023 → 0056 e successivi.
+Ruoli secondo `LOOP-AGENT-ROTATION` (2026-10-16): implementatori REM-0033 Claude Code
+(Anthropic) e Codex (OpenAI); verifier previsto Grok 4.7 via Cursor (xAI), esterno.
