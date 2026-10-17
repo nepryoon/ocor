@@ -12,7 +12,12 @@
     "branch": "governed/ocor-dev-rem-0033-kind-bootstrap-exec-probe",
     "changed_paths": [
       "reports/assurance/OCOR-DEV-REM-0017-RCCAD/ci-38d259a-kind-bootstrap-exec-diagnosis.json",
+      "reports/assurance/OCOR-DEV-REM-0033-RCCAD/OCOR-DEV-REM-0033.json",
+      "reports/assurance/OCOR-DEV-REM-0033-RCCAD/OCOR-DEV-REM-0033.log",
       "reports/development/decision_requests/CI-0049-KIND-BOOTSTRAP-EXEC-PROBE.md",
+      "reports/evidence/G5/MANIFEST.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0033-20261015.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0033-20261015.log",
       "reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md",
       "reports/planning/OCOR_PLAN_RUN_STATE.json",
       "reports/tests/test_kind_teardown_observation.py",
@@ -30,12 +35,13 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "code_commit": "3a4b31257214dfab81de8a2371faba451804db8f",
-  "commit": "3c8f2eba711cac1a180ae36df452dc0707efe205",
-  "commit_role": "Source HEAD exercised by the full local suite and the 0050 regression; the evidence commit adds only these records, the G5 manifest entries and nothing executable.",
-  "created_at": "2026-10-15T12:53:12.701773+00:00",
+  "code_commit": "bb5b20940548662b5f621a2d6fae6a9848cd9066",
+  "commit": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+  "commit_role": "Exact immutable source HEAD exercised by repair1 full and regression; final publication changes evidence only and is bound by execution-tree continuity.",
+  "created_at": "2026-10-17T06:44:19.791921+00:00",
   "design": {
     "exported_diagnostics": "kind-teardown-observations.json gains bootstrap_recoveries (node, service, initial failure, retries, states, admitted, container PID); rejections carry the failed probe, initial failure and last retries",
+    "repair1_snapshot_guard": "Observed node UUIDs must have both runtime entries in every fresh snapshot unless v2 removal proof already exists. Missing UUID raises TeardownObservationError and RECOVERED_NODE_MISSING_FROM_SNAPSHOT. The chosen disposition rejects; it never equates probe recovery with removal.",
     "retry_rule": "at each 0.5 s poll, after docker inspect proves the same identity, running, OOMKilled=false, RestartCount=0 and an unchanged container State.Pid, the same probe (same argv, timeout 10 s, check=False) is repeated once; accepted only if it returns 0 with ActiveState=active before the deadline since+30 s; an admitted node (ocor-bootstrap network attached) also needs NRestarts=0; then a fresh snapshot is taken under the same deadline and consumed by the unchanged check_kubernetes_runtimes",
     "retry_scope": "only the exact runtime probe [docker, exec, <64-hex owned node>, systemctl, show, containerd|kubelet, --property=ActiveState,MainPID,NRestarts]; any other exec or inspect keeps the unchanged v2 absence/destroy/remover path",
     "stderr_capture": "run_probe records exit code and stderr for every failed probe (non-zero result, CalledProcessError, TimeoutExpired); stderr is redacted with the bootstrap.env TOKEN/PASSWORD values, private-key blocks and NAME=value assignments for TOKEN/PASSWORD/SECRET names, then bounded to the last 500 characters",
@@ -87,7 +93,7 @@
   ],
   "drift_scope": "validate_evidence_input_drift: no sealed latest record binds the two harness scripts or the harness test files; only 0050 binds the plan validator",
   "environment": {
-    "acquired_at": "2026-10-15T12:53:12.701773+00:00",
+    "acquired_at": "2026-10-17T06:44:19.791921+00:00",
     "backend_images": {
       "ocor-bootstrap-fuseki-1": {
         "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
@@ -160,7 +166,7 @@
     "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
     "python": "3.12.11",
     "services": 11,
-    "stack_observed_at": "preflight before the full suite; supervisor stack checks every 5 s during it",
+    "stack_observed_at": "Fresh reset/bootstrap/typed health before run; 5 s fail-closed supervision during full suite; removed after regression.",
     "toolchain": {
       "tools": [
         {
@@ -253,6 +259,70 @@
       "before": "43f5572335e9e7d65a17f7d9d97f23803ba5b80c9131aafe038b7b4524f110ac"
     }
   },
+  "historical_cycle0_tdd": {
+    "cases": {
+      "diagnostic": [
+        "failed exec records bounded redacted stderr and exit code",
+        "successful probes carry no stderr"
+      ],
+      "negative": [
+        "probe failing until window expiry",
+        "probe never active (activating, failed, malformed)",
+        "OOM, restart and container PID change during the window",
+        "admitted node with NRestarts > 0",
+        "unadmitted recovered restart still rejected by the original checks",
+        "identity mismatch",
+        "other exec commands not retried"
+      ],
+      "positive": [
+        "failed bootstrap probe then success inside window accepted",
+        "admitted node with zero NRestarts accepted",
+        "probe timeout then success accepted",
+        "failed probe then intended removal keeps the v2 proof path"
+      ]
+    },
+    "green": {
+      "raw": "green.log",
+      "result": "166 passed (test_kind_teardown_observation.py 37, test_qualifying_campaign_guard.py 129), 42 subtests, zero skip",
+      "sha256": "3e0c2564d43b1f3d8ed1c426184b3b86479c527794fcfe2b88c7f6104c7a707c"
+    },
+    "red": {
+      "failed_for_expected_reason": "positives rejected WINDOW_EXPIRED_NODE_PRESENT by the old v2 path; new reason codes and stderr fields absent",
+      "method": "final test file run against scripts/ of base 9b4d3be in a scratch copy (git archive), -k BootstrapExecProbe",
+      "passing_before_fix": "five negatives already fail-closed on the old code (window expiry, never active, removal proof, identity mismatch, other exec commands)",
+      "raw": "red-final.log",
+      "result": "8 failed, 5 passed",
+      "sha256": "8aa976339e53186d7b7477d5250ff0cf871447dd5d50ecdf7db11f7cf5d9eb7a"
+    }
+  },
+  "historical_live_bootstrap_observation": {
+    "live-new.json": {
+      "bootstrap_recoveries": 0,
+      "create_exit_code": 0,
+      "delete_exit_code": 0,
+      "errors": 0,
+      "failed_probe_stderr": [],
+      "failed_probes": 0,
+      "rejections": [],
+      "residue": []
+    },
+    "live-old.json": {
+      "bootstrap_recoveries": 0,
+      "create_exit_code": 0,
+      "delete_exit_code": 0,
+      "errors": 0,
+      "failed_probe_stderr": [],
+      "failed_probes": 0,
+      "rejections": [],
+      "residue": []
+    }
+  },
+  "historical_qualification_reference": {
+    "blob": "94de552a572ad515842ba8895f2aeff982ac8fe4",
+    "commit": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+    "counts_transferred": false,
+    "description": "Cycle0 post-reboot run and prior external-port blocker retained in Git; current counts come only from this repair1 campaign."
+  },
   "host_reboot_resume": {
     "base_sha": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
     "claims": {
@@ -294,32 +364,10 @@
   },
   "id_allocation": "First free REM-* verified read-only on 2026-10-15 across every remote ref, ~/.ocor-codex JSON files and verdicts: zero occurrences of REM-0033 (REM-0032 highest in use; REM-0099 appears only as a range bound in a decision text).",
   "independent_verification": {
-    "status": "REQUESTED_PENDING",
+    "status": "PENDING_REQUEST",
     "verifier": "cursor"
   },
   "interrupted_raw_archived_locally": "../attempts/full-3-host-reboot (each original file hash in diagnosis.json; interrupted raw not qualifying)",
-  "live_bootstrap_observation": {
-    "live-new.json": {
-      "bootstrap_recoveries": 0,
-      "create_exit_code": 0,
-      "delete_exit_code": 0,
-      "errors": 0,
-      "failed_probe_stderr": [],
-      "failed_probes": 0,
-      "rejections": [],
-      "residue": []
-    },
-    "live-old.json": {
-      "bootstrap_recoveries": 0,
-      "create_exit_code": 0,
-      "delete_exit_code": 0,
-      "errors": 0,
-      "failed_probe_stderr": [],
-      "failed_probes": 0,
-      "rejections": [],
-      "residue": []
-    }
-  },
   "local_duration_decision_request": {
     "blocks_current_qualification": false,
     "decision_branch": "governed/decision-request-rem0033-local-full-duration",
@@ -450,12 +498,13 @@
     "status": "OPEN_PO_DECISION_REQUIRED"
   },
   "local_full": {
+    "candidate_head": null,
     "command": [
       "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
       "scripts/run_qualifying_campaign.py",
       "--execute",
       "--output-dir",
-      "/home/luca/.ocor-codex/rem0033-20261015/resume-20261015/full"
+      "/home/luca/.ocor-codex/rem0033-resume-20261017/full"
     ],
     "counts": {
       "errors": 0,
@@ -463,18 +512,53 @@
       "skipped": 0,
       "tests": 2323
     },
-    "duration_seconds": 3724.311452528,
-    "head": "3c8f2eba711cac1a180ae36df452dc0707efe205",
+    "duration_seconds": 4093.359320845004,
+    "head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
     "kind_observation": {
       "bootstrap_recoveries": [],
-      "failed_probes": 2,
-      "probe_observations": 1419,
       "rejections": [],
       "removals": [
         "OWNED_KIND_TEARDOWN_OBSERVED"
       ]
     },
     "limit_seconds": 4500,
+    "parent_exit_capture": {
+      "exit_code": null,
+      "recovery_proof": {
+        "acquired_at": "2026-10-17T06:43:32.997876+00:00",
+        "code_tree_continuity": {
+          "execution_objects": 394,
+          "source_head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+          "status": "PASS_REACQUIRED_SAME_HEAD_AND_ALL_OBJECTS"
+        },
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 2323
+        },
+        "duration_notification": "REM-0033-LOCAL-FULL-DURATION remains open; this run 4093.359s >3600s and <4500s. No cap changed.",
+        "duration_seconds": 4093.359320845004,
+        "manual_interruption": "External loop stopped at 2026-10-17T05:44:06Z; the independent campaign process completed at 2026-10-17T06:20:52Z. No counts from an incomplete test run are used.",
+        "parent_exit_code": "NOT_CAPTURED_PARENT_INTERRUPTED",
+        "process_status": "NO_CAMPAIGN_OR_PYTEST_PROCESS_REMAINS",
+        "pytest_exit_evidence": "run_qualifying_campaign.main writes PASS only after checking process.returncode==0, JUnit, final stack and kind state; finish preserves PASS unless teardown fails. All final observation files and final redacted JUnit present.",
+        "raw_sha256": {
+          "full/campaign_result.json": "b76809c0a5b76c2847d4f97ccc5416b29aee205d8fdf8743a16f39c5f74d7e07",
+          "full/health-observer-manifest.json": "70ac92d214677b1d99ab7e4c1d04d60fc382b98912bf5896f4899cee0dfa21b6",
+          "full/health-observer-status.json": "e748542ef49af0a6e96d85494fdf8d88fb508636f26e42c5f61b86ba773b8ce2",
+          "full/health-observer.jsonl": "6dbd359b24926746826f14aed0ec8d50aa0b6a1a0fb7413f5312f62f4da1f4de",
+          "full/kind-teardown-observations.json": "99b08a2004731d68b0eed32f4390d515597973686cc66d9325b0b579b81209e0",
+          "full/kubernetes-runtime.log": "4c69c5435f247f68142f69a1c054b2cd0eefa3dfc5b99760e7409cfb951d492d",
+          "full/post_remediation_runtime.log": "4724143ebfad7d24c7193956e853da7ff80b3d55430caceb1c0c3d184d9e85b4",
+          "full/runtime_coverage_post_approval.json": "b9b40f5619eb67be80573be1f4c63a0de86867a7d968df6eb7d4fc97404e657c",
+          "full/runtime_junit_post_approval.xml": "025401830e15c187aaa599c362e0a381531ae6224ac5398619fa06e7e05deceb"
+        },
+        "source_head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+        "status": "COMPLETED_HARNESS_RESULT_RECOVERED"
+      },
+      "status": "NOT_CAPTURED_PARENT_INTERRUPTED"
+    },
     "po_decision_required": true,
     "required_modules": [
       "test_ocor_dev_0048",
@@ -489,7 +573,7 @@
         "-c",
         "inputs/normative/SHA256SUMS"
       ],
-      "duration_seconds": 0.0028523289997792745,
+      "duration_seconds": 0.003940709997550584,
       "exit_code": 0,
       "label": "inputs",
       "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
@@ -500,7 +584,7 @@
         "scripts/verify.py",
         "--json"
       ],
-      "duration_seconds": 0.40206346500008294,
+      "duration_seconds": 0.36242291500093415,
       "exit_code": 0,
       "label": "verify",
       "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
@@ -511,7 +595,7 @@
         "check",
         "."
       ],
-      "duration_seconds": 0.010154615999908856,
+      "duration_seconds": 0.00840918900212273,
       "exit_code": 0,
       "label": "ruff",
       "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
@@ -523,7 +607,7 @@
         "mypy",
         "--strict"
       ],
-      "duration_seconds": 0.212223731999984,
+      "duration_seconds": 0.09842616799869575,
       "exit_code": 0,
       "label": "mypy",
       "raw_sha256": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd"
@@ -535,7 +619,7 @@
         "--base-ref",
         "9b4d3be"
       ],
-      "duration_seconds": 0.30545581499995933,
+      "duration_seconds": 0.25344491000578273,
       "exit_code": 0,
       "label": "rccad",
       "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
@@ -545,7 +629,7 @@
         "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
         "scripts/validate_language_policy.py"
       ],
-      "duration_seconds": 0.02418897100005779,
+      "duration_seconds": 0.024000183002499398,
       "exit_code": 0,
       "label": "language",
       "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
@@ -561,10 +645,10 @@
         "--branch",
         "governed/ocor-dev-rem-0033-kind-bootstrap-exec-probe"
       ],
-      "duration_seconds": 0.032233523000058995,
+      "duration_seconds": 0.03670572199916933,
       "exit_code": 0,
       "label": "scope",
-      "raw_sha256": "764df0bd576e436d4f40fd96b4e4b20341fd7850a4315ef7e6dbfa100dc0fea8"
+      "raw_sha256": "b240c8a659bae9a394b5c8b358a4fbdb5e73cfa1a4e43facfa75c9b1e29e15ff"
     },
     {
       "command": [
@@ -574,7 +658,7 @@
         "--base-ref",
         "9b4d3be"
       ],
-      "duration_seconds": 0.10115974300015296,
+      "duration_seconds": 0.09223911199660506,
       "exit_code": 0,
       "label": "plan",
       "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
@@ -589,7 +673,7 @@
         "--manifest",
         "reports/evidence/G4/MANIFEST.json"
       ],
-      "duration_seconds": 0.02328323200003979,
+      "duration_seconds": 0.0210187299962854,
       "exit_code": 0,
       "label": "runtime0049",
       "raw_sha256": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25"
@@ -604,26 +688,10 @@
         "--manifest",
         "reports/evidence/G5/MANIFEST.json"
       ],
-      "duration_seconds": 0.021916278999924543,
+      "duration_seconds": 0.02203018199361395,
       "exit_code": 0,
       "label": "runtime0050",
       "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
-        "-m",
-        "pytest",
-        "-q",
-        "-p",
-        "no:cacheprovider",
-        "reports/tests/test_kind_teardown_observation.py",
-        "reports/tests/test_qualifying_campaign_guard.py"
-      ],
-      "duration_seconds": 2.6774125740000727,
-      "exit_code": 0,
-      "label": "harness-tests",
-      "raw_sha256": "a3f96fa6b2cb9f0e6725010e03c5dc4979dd093e27cb3b4bf1d66a4a40ea4cfb"
     },
     {
       "command": [
@@ -631,7 +699,7 @@
         "restore",
         "reports/verify_report.json"
       ],
-      "duration_seconds": 0.002766135999991093,
+      "duration_seconds": 0.002540568995755166,
       "exit_code": 0,
       "label": "restore-verify",
       "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -642,15 +710,16 @@
         "status",
         "--porcelain"
       ],
-      "duration_seconds": 0.005332656999826213,
+      "duration_seconds": 0.0049848109993035905,
       "exit_code": 0,
       "label": "status",
       "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],
+  "local_gates_applicability": "Mandatory gates reacquired this session after full/regression; deterministic harness test results preserved on the unchanged repair1 execution tree. Final evidence mutations receive final validators separately.",
   "not_executed": [
-    "Exact-head CI qualification: PENDING",
-    "Independent verification (Grok 4.7 via Cursor) and evidence seal: PENDING"
+    "Exact publication-head CI: PENDING",
+    "Independent verifier and evidence seal: PENDING"
   ],
   "origin_finding": {
     "diagnosis": "reports/assurance/OCOR-DEV-REM-0017-RCCAD/ci-38d259a-kind-bootstrap-exec-diagnosis.json",
@@ -679,54 +748,24 @@
     "superseded_draft_pull_request": 274
   },
   "publication_proof": {
-    "junit_cases_compared": 2700,
-    "only_published_case_names_hashed": true,
-    "proof_sha256": "4e52af931a28256a01d0b82c0be6a984b3d172e02b89cfe0489f3d174cabe84a",
-    "raw_block_hashes_valid": true,
-    "rule": "REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), prospective new-evidence rule; no scanner exception or scanner code change in REM0033",
-    "source_raws_unchanged": true,
-    "status": "PASS"
+    "method": "Recompute each RAW_FILE digest and all source/raw/manifest hashes; command recorded in final request.",
+    "status": "REACQUIRE_ON_FINAL_PUBLICATION_HEAD"
   },
   "publication_transforms": {
-    "attempts/full-1/full/post_remediation_runtime.log": {
-      "case_identities_hashed": 2323,
-      "published_sha256": "766eaf9bcd85fe3036534c2b879b956ee60b24fcc5393574a6abef152dc7d94f",
-      "source_sha256": "8f78896ea41830bb8f8575d21dcfbe11dc71333fa0d58a5842b4ff6a4bb96612"
-    },
-    "attempts/full-2/full/post_remediation_runtime.log": {
-      "case_identities_hashed": 2323,
-      "published_sha256": "36b2f6f1fea195498531208bef3f280ca07c5dd9df20b861b2427eeb9997b520",
-      "source_sha256": "a381c5a183e59e943f9e4d3c430254ddf96ea5a6a2bd62cf88b3d64072bb45d0"
-    },
     "full/post_remediation_runtime.log": {
       "case_identities_hashed": 2323,
-      "published_sha256": "d5c7a77e1447577c3f70338e7533f40b75e8362e7cf5c30c5d10a804e3f4b171",
-      "source_sha256": "8cd0b1c422deb00df7eadc6d18bcf77e9cf7d293f92d9a6a7e29c85932d89beb"
+      "published_sha256": "7d9d7001b6e82f9412c029ab072e86dbffa99796dec62b91744b1da1e1fe58ad",
+      "source_sha256": "4724143ebfad7d24c7193956e853da7ff80b3d55430caceb1c0c3d184d9e85b4"
     },
     "full/runtime_junit_post_approval.xml": {
       "case_identities_hashed": 2323,
-      "published_sha256": "5d7839d0fa51a74e04e17f1cf2d8c789684da99c83cb2fad0d4a1896981c1982",
-      "source_sha256": "b7fc8f20a8d237b6ed1ccf8a5b85eb675980d1e0793554cd69ffe6ff551a0c6a"
-    },
-    "green.log": {
-      "case_identities_hashed": 166,
-      "published_sha256": "3e0c2564d43b1f3d8ed1c426184b3b86479c527794fcfe2b88c7f6104c7a707c",
-      "source_sha256": "2c3ecad8ca75eed140d6803b3d04fdf371ee8d8b0886632b1f7a482c73710f38"
-    },
-    "green.xml": {
-      "case_identities_hashed": 166,
-      "published_sha256": "ceff5b5386406c4b6e9ddbf1ff2527f6fcda9b0095cf51a30be70949c3e20f1f",
-      "source_sha256": "adbf110b3efb3f8c3449ede7cc4763c360169fd472941069918f6bd6f2719cff"
-    },
-    "red-final.xml": {
-      "case_identities_hashed": 13,
-      "published_sha256": "c28edf6ab35d3013d5d0772af9d3491a707272b0856d021f2f374b33f9f22a1a",
-      "source_sha256": "3b23ccb2f111dda231f9e17e97bfe6262aba20cb01047b8c63e70423bd6e4696"
+      "published_sha256": "765bbd173e296bf15f4bc1d94263bd722a4a48c3977b6c64460a6d9c4b120862",
+      "source_sha256": "025401830e15c187aaa599c362e0a381531ae6224ac5398619fa06e7e05deceb"
     },
     "regression0050.xml": {
       "case_identities_hashed": 198,
-      "published_sha256": "1c35ecfdf60958233c107aec379f47b664819ac2ab236f327c2e148c880bf51f",
-      "source_sha256": "33817db2e2472b0c8340c8a0185f1a9e5d25b1e390b8065fea6b5296ef6b82c2"
+      "published_sha256": "12d7857d2b3f151d9ea3c0ceb40751b399204936acb8df6de68a547430ce300d",
+      "source_sha256": "30b02cbb560502cf91191648a7ef977b88b73cf9d77239555fa6c825f0375e71"
     }
   },
   "qualification_plan": {
@@ -739,42 +778,23 @@
     "prior_recurrences": "PR #273 and PR #280 occurrences stay diagnostic and transfer no counts"
   },
   "raw_files": {
-    "attempts/full-1/diagnosis.json": "3eba01e081dc3e8503d9a34e307694839636844710f7f6c95c95ceee4014ae20",
-    "attempts/full-1/full-exit.json": "682e3c278a645bfa22cb1cc2d55d496bba3aacd3c7f2fdd9b4107ed399b95082",
-    "attempts/full-1/full/campaign_result.json": "39fac72a2d7b7bfae4a16e6977f104f941372c90eee6212c7143da80f726f2c6",
-    "attempts/full-1/full/kind-teardown-observations.json": "8eee1eb1e29212e103e4e002fb8cf79f20ddf55e3bbd221a788a4b650fe52ddd",
-    "attempts/full-1/full/post_remediation_runtime.log": "766eaf9bcd85fe3036534c2b879b956ee60b24fcc5393574a6abef152dc7d94f",
-    "attempts/full-2/diagnosis.json": "8697d726946c8156cc8f934a7ae41a431e877eefbf0865762086e9d6d4424cdc",
-    "attempts/full-2/dns-burst-kind.log": "0c72397d7db4b60550204dfb3e8a20b31220605a7cb52c8902b7a53c637b3845",
-    "attempts/full-2/dockerd-resolver-errors.log": "3bc4637d642e73589beb5529ce98763c8fd870a450cf7268bb76437fa130f005",
-    "attempts/full-2/full-exit.json": "922d1f43d1c64d4b4c68d41120c7dc52e2fedf876e5fcc61c3c354468053e55d",
-    "attempts/full-2/full/campaign_result.json": "39fac72a2d7b7bfae4a16e6977f104f941372c90eee6212c7143da80f726f2c6",
-    "attempts/full-2/full/kind-teardown-observations.json": "062e8b404f5fa6e1fdf1015bfe5b7f5069c5c364e63580eb86c0bc20eaeb1f97",
-    "attempts/full-2/full/post_remediation_runtime.log": "36b2f6f1fea195498531208bef3f280ca07c5dd9df20b861b2427eeb9997b520",
-    "attempts/full-3-host-reboot/diagnosis.json": "65bfe0b8af068a2e73127c5699a38f98f9cb9b7d7c6e9d29acb8db428512935e",
-    "attempts/preflight-1/preflight-commands.json": "d4e72b31f52428dcc58b2e1cd1e6d042196f81cac2b110c8c38851649d2d029e",
-    "attempts/preflight-1/preflight-result.json": "d53be36e84a40af294ee5490a181d141f39d27f5c7aa335a8b6b4c51a6590743",
-    "attempts/preflight-1/reset.log": "6d0d6f2246ab9c4ca742f17c6063da9132245347d5413313256613985f5f017f",
-    "attempts/preflight-rerun-drift-expected/baseline-drift.log": "c04b02a2b47c3a85d4090ccbf6b09acb7d164565495a4912fa739fe341a7b3f5",
-    "attempts/preflight-rerun-drift-expected/preflight.out": "29616ce70563982d4b8af99b1fa17d35095e8d9eed738677713fde683b55b551",
-    "baseline-drift.log": "c04b02a2b47c3a85d4090ccbf6b09acb7d164565495a4912fa739fe341a7b3f5",
+    "baseline-drift.log": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031",
     "bootstrap.log": "5aa7932040e2cf81bbfcceecbe6a9a5610c407bc96c6158377c94d520e842427",
-    "bounded-fuseki-process.log": "5e405efe072163fbc069e6f99b21c2c667dadaaba6846019e9c1c5cc4dc092e4",
+    "bounded-fuseki-process.log": "d0924acc9668452e35543bba94788268a1bb0bd02c7b318a276d0fdcc0c2e4da",
     "bounded-fuseki-profile.log": "44f9cf037870442a89823c01e78533f39e7c81c8f565fae64dcbcb3621229bf9",
-    "dns-monitor.log": "b4ff40b9cfabd1cd33bc3141296f4b8a847614fa43fc019d86501e5af29d59fd",
-    "duration-decision.json": "4b1d3a3dfa04d051b4307130323b9b2c85b9d50c8a3c2331873df258947d8de0",
-    "execution-invariance-proof.json": "c9ba1cd9e69764af193b98799914067ed73fcb8b3de1ef922041178919d5070d",
+    "execution-tree-at-launch.json": "ca229f462b5a4208639f2379b75496985bcedbb28ac9519b8aab9f0a425fa581",
     "fixtures.log": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
-    "full-driver.log": "c66a3bd5316eea01bdef1e0d858ac17c8290125c00f70d548745fef4b868902a",
-    "full-exit.json": "812e42df971aea60966fd9fd1271364b9001fb006c4658acfe8bdf51c203545d",
-    "full/campaign_result.json": "4997ff3bbfa63b55a2e5bb0e6a385ab8b3b312d2d7815d7ec409d3c3445b9235",
-    "full/health-observer.jsonl": "d463b169b3eefd5aab5badeb0f3ca3fc86d128cab45abfce58abf4c6ea69a5f9",
-    "full/kind-teardown-observations.json": "b35770ed2f984f8b9d95115aff41c19b1e7f9a3ac0a49d03435ead278bc37c14",
-    "full/kubernetes-runtime.log": "b6ec1a130e80e70b06a79a83c4dfad8b72e24485f9d3175ac4effb9c1ca2f6c0",
-    "full/post_remediation_runtime.log": "d5c7a77e1447577c3f70338e7533f40b75e8362e7cf5c30c5d10a804e3f4b171",
-    "full/runtime_junit_post_approval.xml": "5d7839d0fa51a74e04e17f1cf2d8c789684da99c83cb2fad0d4a1896981c1982",
-    "gates/gates.json": "34c099bb9ab85abbe3f48f526001840a0fcf73a9fc22b78cd133efae33d610e1",
-    "gates/harness-tests.log": "a3f96fa6b2cb9f0e6725010e03c5dc4979dd093e27cb3b4bf1d66a4a40ea4cfb",
+    "full-exit.json": "1c53e2d41cba20cc9d7061eb5c0a1b904132341ed207eeaa5c2544b61e21ad6e",
+    "full/campaign_result.json": "b76809c0a5b76c2847d4f97ccc5416b29aee205d8fdf8743a16f39c5f74d7e07",
+    "full/health-observer-manifest.json": "70ac92d214677b1d99ab7e4c1d04d60fc382b98912bf5896f4899cee0dfa21b6",
+    "full/health-observer-status.json": "e748542ef49af0a6e96d85494fdf8d88fb508636f26e42c5f61b86ba773b8ce2",
+    "full/health-observer.jsonl": "6dbd359b24926746826f14aed0ec8d50aa0b6a1a0fb7413f5312f62f4da1f4de",
+    "full/kind-teardown-observations.json": "99b08a2004731d68b0eed32f4390d515597973686cc66d9325b0b579b81209e0",
+    "full/kubernetes-runtime.log": "4c69c5435f247f68142f69a1c054b2cd0eefa3dfc5b99760e7409cfb951d492d",
+    "full/post_remediation_runtime.log": "7d9d7001b6e82f9412c029ab072e86dbffa99796dec62b91744b1da1e1fe58ad",
+    "full/runtime_coverage_post_approval.json": "b9b40f5619eb67be80573be1f4c63a0de86867a7d968df6eb7d4fc97404e657c",
+    "full/runtime_junit_post_approval.xml": "765bbd173e296bf15f4bc1d94263bd722a4a48c3977b6c64460a6d9c4b120862",
+    "gates/gates.json": "ebb93bdf8a06163f5e4e6fd18d6058a2362520e76c14812a7e14f543f34523d1",
     "gates/inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
     "gates/language.log": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
     "gates/mypy.log": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd",
@@ -784,40 +804,39 @@
     "gates/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
     "gates/runtime0049.log": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25",
     "gates/runtime0050.log": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
-    "gates/scope.log": "764df0bd576e436d4f40fd96b4e4b20341fd7850a4315ef7e6dbfa100dc0fea8",
+    "gates/scope.log": "b240c8a659bae9a394b5c8b358a4fbdb5e73cfa1a4e43facfa75c9b1e29e15ff",
     "gates/status.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "gates/verify.log": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-    "green.log": "3e0c2564d43b1f3d8ed1c426184b3b86479c527794fcfe2b88c7f6104c7a707c",
-    "green.xml": "ceff5b5386406c4b6e9ddbf1ff2527f6fcda9b0095cf51a30be70949c3e20f1f",
     "health.json": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
-    "helm-live-containerd-journal.log": "f5086fad031acc75938880b96a67fc3314c7c12494b4ca77398cc921a2befac6",
-    "helm-live-containers.json": "a4c97b9a79eab7e8effe44ef89e7f14b3e1262a33c292e7eaaecc9b089aae882",
     "initialize.log": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
     "inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
-    "live-new.json": "feddfcb7e7a8d476fc786dde62e49fe688103396044b027ac751513338c8b87e",
-    "live-new.out": "8f114acee9b404687f9d7730d2c0068c8fe0460daf18a24d85e64ac23f7c4c4c",
-    "live-old.json": "60d6911e9f89666915144aee721bc47e77f0133cc6c5b970a764b266bc6103c3",
-    "live-old.out": "4d51c491b0efae9408a80601c09050379a6b9471937c2770653550150e7a527a",
-    "preflight-commands.json": "96e0d983d06f796e1abf4bee920964d3b861c195f9491eafffcc4e47a031e5e5",
+    "preflight-commands.json": "6e1f8779437ac36d5727e80a63b353737a3647e1dc170a7615b22b30169595b3",
     "preflight-result.json": "5f1235e325146d71477ffc8121fb078da39bb1b020716a79075cd4128f799351",
-    "reboot-proof.json": "ebb829ef768fd2c9f94f4626f0870a4803d869671073ad6110a7422f7052122b",
-    "red-final.log": "8aa976339e53186d7b7477d5250ff0cf871447dd5d50ecdf7db11f7cf5d9eb7a",
-    "red-final.xml": "c28edf6ab35d3013d5d0772af9d3491a707272b0856d021f2f374b33f9f22a1a",
-    "reset.log": "ee92aa157d15971d7ce7cdd58554d9591980e46ab32acc1f81354b7c416688d7",
-    "resume-contract.json": "76c4d1403f4c3d96e3faeba94c81cbe8aa8a4bece0dc2762d2c815eeb0697efe",
-    "session-teardown.json": "4e3cf01a3f8f91b4bf684ef3ec5800caeb3aa35c36337e2bde7cd5d36889b433",
-    "session-teardown.log": "93e4d1ff40ce20c36c524291766b57763e0df2e589cb308947dc461e6f047cb6",
-    "stack-summary.json": "0d6fa14c59a1ae893b72b7717c89737d2afb5962106b2fdd9d4f2b59bc63de9e",
+    "recovered-full-result.json": "adec6ff9b7b0d06e5aae30c49a7d2d8c0e7390af28567d803e129c46556499b4",
+    "regression0050-exit.json": "b9b5780156ccb51e63d7c2fbceb59a3f55a28b8816f37ec04813194d75e4dd00",
+    "regression0050-stack-observations.json": "f3ffac8dd90d157a206a0ee8f34ba14f374fae454eb99f6e005b8c2474747775",
+    "regression0050.log": "f6cc8810afcfb8bf66b6c251ba99870b410eb7f0802a56863fac87cbef7101d6",
+    "regression0050.xml": "12d7857d2b3f151d9ea3c0ceb40751b399204936acb8df6de68a547430ce300d",
+    "repair1-prior/green-final.log": "90370e1c9b9eaff37c401f2431eb7553d630eef597d07d38ce52419328df4500",
+    "repair1-prior/red.log": "2d8a343f8688cde394458ff3323dcbeaa2e8e7e28b6762212bd17e59e54ac163",
+    "repair1-prior/repair-invariance-proof.json": "0f89eb9c51f0f33821db55bfd356b21940f84be58eb149daa0f178cc7884143d",
+    "reset.log": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+    "resource-profile.json": "32920aa6f7cbb211eebfbb51b2154c08e558ad915573685c037e12f31043ec53",
+    "session-teardown.json": "622bc58d87b652425ffb190c8cbdd1e410a7487e2fa90ac56659da91c2b7fcf0",
+    "session-teardown.log": "18ed93c3c26feba73eb51f0c735165d0464dde5f09991c004385d569f5e39c07",
+    "stack-summary.json": "78d75810220c70be170cdc9c3fffaa802736172655d8d86e51521595801fbd83",
     "svid.log": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0",
-    "sync-lint.log": "3459ba7f93d8232ad08d608a650bbacdce045de00d4ba92b07942bbb78bfb545",
+    "sync-lint.log": "dced1c15d95725f848b9dcfe51dde394c45f238b3d8a634a6b05beae1b0231a5",
+    "toolchain-reacquired.json": "e8b3fae60720a0d278084d44cef491272090d87e1976280c62d82ba6c756140e",
     "toolchain.json": "ceeb45af77b75b61c56a3090d2d4afdf9f472271a313619e2ab73cfcdd8420d4",
+    "typed-health-at-continuation.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
     "typed-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
     "verify.log": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
   },
   "raw_output_format": "RAW_FILE / END_RAW_FILE blocks individually SHA256-bound; generated credentials asserted absent. Published pytest case identities are SHA256 digests under PO 2026-10-15 synthetic-secret-scanner rule. Source originals stay unchanged and privately retained with source_raw_files digests; qualification consumes original JUnit, never a changed test selection.",
   "raw_output_path": "reports/assurance/OCOR-DEV-REM-0033-RCCAD/OCOR-DEV-REM-0033.log",
-  "raw_output_sha256": "8fdfcf1af81e2dbefb987801d1ed516a824bad2fe7bb147b71e18898044634d8",
-  "record_id": "OCOR-DEV-REM-0033-3c8f2eba711c",
+  "raw_output_sha256": "aecac67055dd9967e09fb923690b395571e06d3c92d5ca992a2cf7b1301ba7f7",
+  "record_id": "OCOR-DEV-REM-0033-repair1-beeaf5e6d9a7",
   "regression_0050": {
     "errors": 0,
     "failures": 0,
@@ -827,21 +846,9 @@
   },
   "repair_checkpoint": {
     "bootstrap_diagnosis": {
-      "detected_at": "2026-10-16T21:55:14.851822+00:00",
-      "error": "Keycloak cannot bind 127.0.0.1:8080; address already in use",
-      "full_suite": "NOT_EXECUTED",
-      "independent_verification": "NOT_REQUESTED_LOCAL_QUALIFICATION_INCOMPLETE",
-      "listener": {
-        "address": "0.0.0.0:8080",
-        "application": "antigravity-claude-proxy/src/index.js",
-        "executable": "node",
-        "pid": 13494
-      },
-      "regression_0050": "NOT_EXECUTED",
-      "required_unblock": "Release host TCP port 8080 through its owner, then run the documented reset/bootstrap/initialize/fixtures/typed-health procedure unchanged. If still occupied, continue deterministic work on the authorized scanner change set; no live qualification is claimed.",
-      "scope_decision": "Host agent proxy is outside the OCOR disposable stack; no termination, reconfiguration or port substitution attempted. One documented bootstrap attempt; no repeated attempt without changed condition.",
-      "source_head": "bb5b20940548662b5f621a2d6fae6a9848cd9066",
-      "status": "BLOCKED_EXTERNAL_HOST_PORT_CONFLICT"
+      "prior_commit": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+      "resolution": "TCP8080 observed free, documented reset/bootstrap succeeded unchanged; no host process or port configuration modified.",
+      "status": "RESOLVED_EXTERNAL_CONDITION"
     },
     "created_at": "2026-10-16T21:55:14.877447+00:00",
     "decision": "HOST-REBOOT-RESUME-ITER27-HEAD-MISMATCH (PO 2026-10-15, option1)",
@@ -881,8 +888,82 @@
         ".github/workflows/ocor-validation-closure.yml": "1d6e3f8d937efd0eff02b6ccba42e5a86b0408a3920e72d30d4ad13291f1d0d9"
       }
     },
-    "live_0050_regression": "NOT_EXECUTED_ON_REPAIR_1",
-    "live_full": "NOT_EXECUTED_ON_REPAIR_1",
+    "live_0050_regression": {
+      "errors": 0,
+      "failures": 0,
+      "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0033-20261015.json",
+      "skipped": 0,
+      "tests": 198
+    },
+    "live_full": {
+      "candidate_head": null,
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+        "scripts/run_qualifying_campaign.py",
+        "--execute",
+        "--output-dir",
+        "/home/luca/.ocor-codex/rem0033-resume-20261017/full"
+      ],
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 2323
+      },
+      "duration_seconds": 4093.359320845004,
+      "head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+      "kind_observation": {
+        "bootstrap_recoveries": [],
+        "rejections": [],
+        "removals": [
+          "OWNED_KIND_TEARDOWN_OBSERVED"
+        ]
+      },
+      "limit_seconds": 4500,
+      "parent_exit_capture": {
+        "exit_code": null,
+        "recovery_proof": {
+          "acquired_at": "2026-10-17T06:43:32.997876+00:00",
+          "code_tree_continuity": {
+            "execution_objects": 394,
+            "source_head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+            "status": "PASS_REACQUIRED_SAME_HEAD_AND_ALL_OBJECTS"
+          },
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 2323
+          },
+          "duration_notification": "REM-0033-LOCAL-FULL-DURATION remains open; this run 4093.359s >3600s and <4500s. No cap changed.",
+          "duration_seconds": 4093.359320845004,
+          "manual_interruption": "External loop stopped at 2026-10-17T05:44:06Z; the independent campaign process completed at 2026-10-17T06:20:52Z. No counts from an incomplete test run are used.",
+          "parent_exit_code": "NOT_CAPTURED_PARENT_INTERRUPTED",
+          "process_status": "NO_CAMPAIGN_OR_PYTEST_PROCESS_REMAINS",
+          "pytest_exit_evidence": "run_qualifying_campaign.main writes PASS only after checking process.returncode==0, JUnit, final stack and kind state; finish preserves PASS unless teardown fails. All final observation files and final redacted JUnit present.",
+          "raw_sha256": {
+            "full/campaign_result.json": "b76809c0a5b76c2847d4f97ccc5416b29aee205d8fdf8743a16f39c5f74d7e07",
+            "full/health-observer-manifest.json": "70ac92d214677b1d99ab7e4c1d04d60fc382b98912bf5896f4899cee0dfa21b6",
+            "full/health-observer-status.json": "e748542ef49af0a6e96d85494fdf8d88fb508636f26e42c5f61b86ba773b8ce2",
+            "full/health-observer.jsonl": "6dbd359b24926746826f14aed0ec8d50aa0b6a1a0fb7413f5312f62f4da1f4de",
+            "full/kind-teardown-observations.json": "99b08a2004731d68b0eed32f4390d515597973686cc66d9325b0b579b81209e0",
+            "full/kubernetes-runtime.log": "4c69c5435f247f68142f69a1c054b2cd0eefa3dfc5b99760e7409cfb951d492d",
+            "full/post_remediation_runtime.log": "4724143ebfad7d24c7193956e853da7ff80b3d55430caceb1c0c3d184d9e85b4",
+            "full/runtime_coverage_post_approval.json": "b9b40f5619eb67be80573be1f4c63a0de86867a7d968df6eb7d4fc97404e657c",
+            "full/runtime_junit_post_approval.xml": "025401830e15c187aaa599c362e0a381531ae6224ac5398619fa06e7e05deceb"
+          },
+          "source_head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+          "status": "COMPLETED_HARNESS_RESULT_RECOVERED"
+        },
+        "status": "NOT_CAPTURED_PARENT_INTERRUPTED"
+      },
+      "po_decision_required": true,
+      "required_modules": [
+        "test_ocor_dev_0048",
+        "test_ocor_dev_0049"
+      ],
+      "status": "PASS"
+    },
     "local_gates": [
       {
         "command": [
@@ -1073,6 +1154,7 @@
       "unchanged": true,
       "verdict": "NO_GO"
     },
+    "qualification_source_head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
     "raw_files": {
       "bootstrap-diagnosis.json": "121a4ab34ffd574a7eb9165f8b6a34ec07112951ac80efc03c6b4d4bd765a3b7",
       "bootstrap.log": "f3478c4d2376f3cafe973ea6c9512a7401698848674d70e1f3eb7faeba0bb205",
@@ -1130,7 +1212,7 @@
         "networks": [],
         "volumes": []
       },
-      "raw_sha256": "d4f06bac85969efd1aaf43689bde64af075fc3eb7b11a34a0ce8de3784828705",
+      "raw_sha256": "18ed93c3c26feba73eb51f0c735165d0464dde5f09991c004385d569f5e39c07",
       "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
       "status": "PASS"
     },
@@ -1142,7 +1224,7 @@
     {
       "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0033-20261015.json",
       "scope": "REGRESSION_ONLY",
-      "sha256": "3c2d995d5601ecc2b5d230124c9cb06ea9a88b3bac2af0d0ff9962fc5550c674",
+      "sha256": "3941d4ea8295ebe673b180190e58959f90bd05d8a4bfb5b67d17a7ed51240e95",
       "task_id": "OCOR-DEV-0050"
     }
   ],
@@ -1150,35 +1232,43 @@
     "The retry relies on systemd answering inside the 30 s window on a booting node; a slower boot remains a fail-closed WINDOW_EXPIRED_NODE_PRESENT and a new decision request, never a pass"
   ],
   "roles": {
-    "implementer": "Claude Code reserve (Anthropic): REM-0033 harness correction and deterministic RED/GREEN; Codex (OpenAI): HOST-REBOOT-RESUME-ITER27 preflight, fresh full campaign, 0050 regression, records and publication",
+    "decision": "LOOP-AGENT-ROTATION (2026-10-16)",
+    "excluded_verifier_providers": [
+      "OpenAI",
+      "Anthropic"
+    ],
     "implementers": [
       {
         "agent": "Claude Code",
-        "contribution": "original REM-0033 harness and deterministic tests",
+        "contribution": "original harness implementation and tests",
         "provider": "Anthropic"
       },
       {
         "agent": "Codex",
-        "contribution": "post-reboot qualification; cycle1 VF-001 repair, RED/GREEN, local gates and checkpoint",
+        "contribution": "post-reboot qualification; repair1 RED/GREEN implementation and local qualification/evidence",
         "provider": "OpenAI"
       }
     ],
     "independent_verifier_launched": false,
-    "planned_verifier": "Cursor CLI / Grok 4.7 (xAI), external loop; neither Anthropic nor OpenAI is eligible under LOOP-AGENT-ROTATION (2026-10-16)",
-    "verifier": "cursor"
+    "planned_verifier": {
+      "external_loop_only": true,
+      "model": "Grok 4.7",
+      "process": "Cursor CLI",
+      "provider": "xAI"
+    }
   },
   "rollback_procedure": "Revert the governed merge on main: the harness returns to the v2 observer of 9b4d3be; no data migration, no history rewrite, sealed records untouched.",
   "schema_version": "1.0",
   "session_teardown": {
     "after_counts": {
-      "containers": 24,
-      "networks": 8,
-      "volumes": 369
+      "containers": 25,
+      "networks": 9,
+      "volumes": 370
     },
     "before_counts": {
-      "containers": 35,
-      "networks": 9,
-      "volumes": 373
+      "containers": 36,
+      "networks": 10,
+      "volumes": 374
     },
     "exit_code": 0,
     "new_resources_remaining": {
@@ -1191,47 +1281,28 @@
       "networks": [],
       "volumes": []
     },
-    "raw_sha256": "93e4d1ff40ce20c36c524291766b57763e0df2e589cb308947dc461e6f047cb6",
+    "raw_sha256": "18ed93c3c26feba73eb51f0c735165d0464dde5f09991c004385d569f5e39c07",
     "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
     "status": "PASS"
   },
   "source_raw_files": {
-    "attempts/full-1/diagnosis.json": "3eba01e081dc3e8503d9a34e307694839636844710f7f6c95c95ceee4014ae20",
-    "attempts/full-1/full-exit.json": "682e3c278a645bfa22cb1cc2d55d496bba3aacd3c7f2fdd9b4107ed399b95082",
-    "attempts/full-1/full/campaign_result.json": "39fac72a2d7b7bfae4a16e6977f104f941372c90eee6212c7143da80f726f2c6",
-    "attempts/full-1/full/kind-teardown-observations.json": "8eee1eb1e29212e103e4e002fb8cf79f20ddf55e3bbd221a788a4b650fe52ddd",
-    "attempts/full-1/full/post_remediation_runtime.log": "8f78896ea41830bb8f8575d21dcfbe11dc71333fa0d58a5842b4ff6a4bb96612",
-    "attempts/full-2/diagnosis.json": "8697d726946c8156cc8f934a7ae41a431e877eefbf0865762086e9d6d4424cdc",
-    "attempts/full-2/dns-burst-kind.log": "0c72397d7db4b60550204dfb3e8a20b31220605a7cb52c8902b7a53c637b3845",
-    "attempts/full-2/dockerd-resolver-errors.log": "3bc4637d642e73589beb5529ce98763c8fd870a450cf7268bb76437fa130f005",
-    "attempts/full-2/full-exit.json": "922d1f43d1c64d4b4c68d41120c7dc52e2fedf876e5fcc61c3c354468053e55d",
-    "attempts/full-2/full/campaign_result.json": "39fac72a2d7b7bfae4a16e6977f104f941372c90eee6212c7143da80f726f2c6",
-    "attempts/full-2/full/kind-teardown-observations.json": "062e8b404f5fa6e1fdf1015bfe5b7f5069c5c364e63580eb86c0bc20eaeb1f97",
-    "attempts/full-2/full/post_remediation_runtime.log": "a381c5a183e59e943f9e4d3c430254ddf96ea5a6a2bd62cf88b3d64072bb45d0",
-    "attempts/full-3-host-reboot/diagnosis.json": "65bfe0b8af068a2e73127c5699a38f98f9cb9b7d7c6e9d29acb8db428512935e",
-    "attempts/preflight-1/preflight-commands.json": "d4e72b31f52428dcc58b2e1cd1e6d042196f81cac2b110c8c38851649d2d029e",
-    "attempts/preflight-1/preflight-result.json": "d53be36e84a40af294ee5490a181d141f39d27f5c7aa335a8b6b4c51a6590743",
-    "attempts/preflight-1/reset.log": "6d0d6f2246ab9c4ca742f17c6063da9132245347d5413313256613985f5f017f",
-    "attempts/preflight-rerun-drift-expected/baseline-drift.log": "c04b02a2b47c3a85d4090ccbf6b09acb7d164565495a4912fa739fe341a7b3f5",
-    "attempts/preflight-rerun-drift-expected/preflight.out": "29616ce70563982d4b8af99b1fa17d35095e8d9eed738677713fde683b55b551",
-    "baseline-drift.log": "c04b02a2b47c3a85d4090ccbf6b09acb7d164565495a4912fa739fe341a7b3f5",
+    "baseline-drift.log": "024cf8d7ec11c8cfbb082b301c85fc01737d5f7d85ca1cd79b1de6f83d562031",
     "bootstrap.log": "5aa7932040e2cf81bbfcceecbe6a9a5610c407bc96c6158377c94d520e842427",
-    "bounded-fuseki-process.log": "5e405efe072163fbc069e6f99b21c2c667dadaaba6846019e9c1c5cc4dc092e4",
+    "bounded-fuseki-process.log": "d0924acc9668452e35543bba94788268a1bb0bd02c7b318a276d0fdcc0c2e4da",
     "bounded-fuseki-profile.log": "44f9cf037870442a89823c01e78533f39e7c81c8f565fae64dcbcb3621229bf9",
-    "dns-monitor.log": "b4ff40b9cfabd1cd33bc3141296f4b8a847614fa43fc019d86501e5af29d59fd",
-    "duration-decision.json": "4b1d3a3dfa04d051b4307130323b9b2c85b9d50c8a3c2331873df258947d8de0",
-    "execution-invariance-proof.json": "c9ba1cd9e69764af193b98799914067ed73fcb8b3de1ef922041178919d5070d",
+    "execution-tree-at-launch.json": "ca229f462b5a4208639f2379b75496985bcedbb28ac9519b8aab9f0a425fa581",
     "fixtures.log": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
-    "full-driver.log": "c66a3bd5316eea01bdef1e0d858ac17c8290125c00f70d548745fef4b868902a",
-    "full-exit.json": "812e42df971aea60966fd9fd1271364b9001fb006c4658acfe8bdf51c203545d",
-    "full/campaign_result.json": "4997ff3bbfa63b55a2e5bb0e6a385ab8b3b312d2d7815d7ec409d3c3445b9235",
-    "full/health-observer.jsonl": "d463b169b3eefd5aab5badeb0f3ca3fc86d128cab45abfce58abf4c6ea69a5f9",
-    "full/kind-teardown-observations.json": "b35770ed2f984f8b9d95115aff41c19b1e7f9a3ac0a49d03435ead278bc37c14",
-    "full/kubernetes-runtime.log": "b6ec1a130e80e70b06a79a83c4dfad8b72e24485f9d3175ac4effb9c1ca2f6c0",
-    "full/post_remediation_runtime.log": "8cd0b1c422deb00df7eadc6d18bcf77e9cf7d293f92d9a6a7e29c85932d89beb",
-    "full/runtime_junit_post_approval.xml": "b7fc8f20a8d237b6ed1ccf8a5b85eb675980d1e0793554cd69ffe6ff551a0c6a",
-    "gates/gates.json": "34c099bb9ab85abbe3f48f526001840a0fcf73a9fc22b78cd133efae33d610e1",
-    "gates/harness-tests.log": "a3f96fa6b2cb9f0e6725010e03c5dc4979dd093e27cb3b4bf1d66a4a40ea4cfb",
+    "full-exit.json": "1c53e2d41cba20cc9d7061eb5c0a1b904132341ed207eeaa5c2544b61e21ad6e",
+    "full/campaign_result.json": "b76809c0a5b76c2847d4f97ccc5416b29aee205d8fdf8743a16f39c5f74d7e07",
+    "full/health-observer-manifest.json": "70ac92d214677b1d99ab7e4c1d04d60fc382b98912bf5896f4899cee0dfa21b6",
+    "full/health-observer-status.json": "e748542ef49af0a6e96d85494fdf8d88fb508636f26e42c5f61b86ba773b8ce2",
+    "full/health-observer.jsonl": "6dbd359b24926746826f14aed0ec8d50aa0b6a1a0fb7413f5312f62f4da1f4de",
+    "full/kind-teardown-observations.json": "99b08a2004731d68b0eed32f4390d515597973686cc66d9325b0b579b81209e0",
+    "full/kubernetes-runtime.log": "4c69c5435f247f68142f69a1c054b2cd0eefa3dfc5b99760e7409cfb951d492d",
+    "full/post_remediation_runtime.log": "4724143ebfad7d24c7193956e853da7ff80b3d55430caceb1c0c3d184d9e85b4",
+    "full/runtime_coverage_post_approval.json": "b9b40f5619eb67be80573be1f4c63a0de86867a7d968df6eb7d4fc97404e657c",
+    "full/runtime_junit_post_approval.xml": "025401830e15c187aaa599c362e0a381531ae6224ac5398619fa06e7e05deceb",
+    "gates/gates.json": "ebb93bdf8a06163f5e4e6fd18d6058a2362520e76c14812a7e14f543f34523d1",
     "gates/inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
     "gates/language.log": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
     "gates/mypy.log": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd",
@@ -1241,72 +1312,58 @@
     "gates/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
     "gates/runtime0049.log": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25",
     "gates/runtime0050.log": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
-    "gates/scope.log": "764df0bd576e436d4f40fd96b4e4b20341fd7850a4315ef7e6dbfa100dc0fea8",
+    "gates/scope.log": "b240c8a659bae9a394b5c8b358a4fbdb5e73cfa1a4e43facfa75c9b1e29e15ff",
     "gates/status.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "gates/verify.log": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-    "green.log": "2c3ecad8ca75eed140d6803b3d04fdf371ee8d8b0886632b1f7a482c73710f38",
-    "green.xml": "adbf110b3efb3f8c3449ede7cc4763c360169fd472941069918f6bd6f2719cff",
     "health.json": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
-    "helm-live-containerd-journal.log": "f5086fad031acc75938880b96a67fc3314c7c12494b4ca77398cc921a2befac6",
-    "helm-live-containers.json": "a4c97b9a79eab7e8effe44ef89e7f14b3e1262a33c292e7eaaecc9b089aae882",
     "initialize.log": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
     "inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
-    "live-new.json": "feddfcb7e7a8d476fc786dde62e49fe688103396044b027ac751513338c8b87e",
-    "live-new.out": "8f114acee9b404687f9d7730d2c0068c8fe0460daf18a24d85e64ac23f7c4c4c",
-    "live-old.json": "60d6911e9f89666915144aee721bc47e77f0133cc6c5b970a764b266bc6103c3",
-    "live-old.out": "4d51c491b0efae9408a80601c09050379a6b9471937c2770653550150e7a527a",
-    "preflight-commands.json": "96e0d983d06f796e1abf4bee920964d3b861c195f9491eafffcc4e47a031e5e5",
+    "preflight-commands.json": "6e1f8779437ac36d5727e80a63b353737a3647e1dc170a7615b22b30169595b3",
     "preflight-result.json": "5f1235e325146d71477ffc8121fb078da39bb1b020716a79075cd4128f799351",
-    "reboot-proof.json": "ebb829ef768fd2c9f94f4626f0870a4803d869671073ad6110a7422f7052122b",
-    "red-final.log": "8aa976339e53186d7b7477d5250ff0cf871447dd5d50ecdf7db11f7cf5d9eb7a",
-    "red-final.xml": "3b23ccb2f111dda231f9e17e97bfe6262aba20cb01047b8c63e70423bd6e4696",
-    "reset.log": "ee92aa157d15971d7ce7cdd58554d9591980e46ab32acc1f81354b7c416688d7",
-    "resume-contract.json": "76c4d1403f4c3d96e3faeba94c81cbe8aa8a4bece0dc2762d2c815eeb0697efe",
-    "session-teardown.json": "4e3cf01a3f8f91b4bf684ef3ec5800caeb3aa35c36337e2bde7cd5d36889b433",
-    "session-teardown.log": "93e4d1ff40ce20c36c524291766b57763e0df2e589cb308947dc461e6f047cb6",
-    "stack-summary.json": "0d6fa14c59a1ae893b72b7717c89737d2afb5962106b2fdd9d4f2b59bc63de9e",
+    "recovered-full-result.json": "adec6ff9b7b0d06e5aae30c49a7d2d8c0e7390af28567d803e129c46556499b4",
+    "regression0050-exit.json": "b9b5780156ccb51e63d7c2fbceb59a3f55a28b8816f37ec04813194d75e4dd00",
+    "regression0050-stack-observations.json": "f3ffac8dd90d157a206a0ee8f34ba14f374fae454eb99f6e005b8c2474747775",
+    "regression0050.log": "f6cc8810afcfb8bf66b6c251ba99870b410eb7f0802a56863fac87cbef7101d6",
+    "regression0050.xml": "30b02cbb560502cf91191648a7ef977b88b73cf9d77239555fa6c825f0375e71",
+    "repair1-prior/green-final.log": "90370e1c9b9eaff37c401f2431eb7553d630eef597d07d38ce52419328df4500",
+    "repair1-prior/red.log": "2d8a343f8688cde394458ff3323dcbeaa2e8e7e28b6762212bd17e59e54ac163",
+    "repair1-prior/repair-invariance-proof.json": "0f89eb9c51f0f33821db55bfd356b21940f84be58eb149daa0f178cc7884143d",
+    "reset.log": "89ec622d14161e13b9b068723c20c8a981d2e683d148952ce8b1ff87d9a9b2d6",
+    "resource-profile.json": "32920aa6f7cbb211eebfbb51b2154c08e558ad915573685c037e12f31043ec53",
+    "session-teardown.json": "622bc58d87b652425ffb190c8cbdd1e410a7487e2fa90ac56659da91c2b7fcf0",
+    "session-teardown.log": "18ed93c3c26feba73eb51f0c735165d0464dde5f09991c004385d569f5e39c07",
+    "stack-summary.json": "78d75810220c70be170cdc9c3fffaa802736172655d8d86e51521595801fbd83",
     "svid.log": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0",
-    "sync-lint.log": "3459ba7f93d8232ad08d608a650bbacdce045de00d4ba92b07942bbb78bfb545",
+    "sync-lint.log": "dced1c15d95725f848b9dcfe51dde394c45f238b3d8a634a6b05beae1b0231a5",
+    "toolchain-reacquired.json": "e8b3fae60720a0d278084d44cef491272090d87e1976280c62d82ba6c756140e",
     "toolchain.json": "ceeb45af77b75b61c56a3090d2d4afdf9f472271a313619e2ab73cfcdd8420d4",
+    "typed-health-at-continuation.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
     "typed-health.log": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
     "verify.log": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
   },
-  "status": "WIP_REPAIR_1_LOCAL_QUALIFICATION_BLOCKED",
+  "status": "CANDIDATE_REPAIR_1_AWAITING_EXACT_HEAD_CI_AND_INDEPENDENT_VERIFICATION",
   "task_id": "OCOR-DEV-REM-0033",
   "tdd": {
-    "cases": {
-      "diagnostic": [
-        "failed exec records bounded redacted stderr and exit code",
-        "successful probes carry no stderr"
-      ],
-      "negative": [
-        "probe failing until window expiry",
-        "probe never active (activating, failed, malformed)",
-        "OOM, restart and container PID change during the window",
-        "admitted node with NRestarts > 0",
-        "unadmitted recovered restart still rejected by the original checks",
-        "identity mismatch",
-        "other exec commands not retried"
-      ],
-      "positive": [
-        "failed bootstrap probe then success inside window accepted",
-        "admitted node with zero NRestarts accepted",
-        "probe timeout then success accepted",
-        "failed probe then intended removal keeps the v2 proof path"
-      ]
-    },
     "green": {
-      "raw": "green.log",
-      "result": "166 passed (test_kind_teardown_observation.py 37, test_qualifying_campaign_guard.py 129), 42 subtests, zero skip",
-      "sha256": "3e0c2564d43b1f3d8ed1c426184b3b86479c527794fcfe2b88c7f6104c7a707c"
+      "errors": 0,
+      "exit_code": 0,
+      "failures": 0,
+      "raw_sha256": "90370e1c9b9eaff37c401f2431eb7553d630eef597d07d38ce52419328df4500",
+      "skipped": 0,
+      "subtests": 42,
+      "tests": 167
     },
+    "prior_raw_files": [
+      "repair1-prior/red.log",
+      "repair1-prior/green-final.log",
+      "repair1-prior/repair-invariance-proof.json"
+    ],
     "red": {
-      "failed_for_expected_reason": "positives rejected WINDOW_EXPIRED_NODE_PRESENT by the old v2 path; new reason codes and stderr fields absent",
-      "method": "final test file run against scripts/ of base 9b4d3be in a scratch copy (git archive), -k BootstrapExecProbe",
-      "passing_before_fix": "five negatives already fail-closed on the old code (window expiry, never active, removal proof, identity mismatch, other exec commands)",
-      "raw": "red-final.log",
-      "result": "8 failed, 5 passed",
-      "sha256": "8aa976339e53186d7b7477d5250ff0cf871447dd5d50ecdf7db11f7cf5d9eb7a"
-    }
+      "exit_code": 1,
+      "fingerprint": "AssertionError: TeardownObservationError not raised",
+      "raw_sha256": "2d8a343f8688cde394458ff3323dcbeaa2e8e7e28b6762212bd17e59e54ac163",
+      "source": "ccb3722 with the new test, before the harness modification"
+    },
+    "repair_cycle": 1
   }
 }
