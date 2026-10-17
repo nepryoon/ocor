@@ -244,131 +244,35 @@
     }
   },
   "execution_invariance": {
-    "against_7cd5f7a": "previous REM-0017 proof unchanged except the third diagnostic export key in its normalisation",
-    "against_main_9b4d3be": "scripts/run_qualifying_campaign.py AST identical after removing the single bootstrap_recoveries export key; observer WINDOW/POLL/SAMPLE/KIND_BINARY constants identical; every run_probe timeout is 10; all workflows byte-identical",
-    "ast_proof_tests": [
-      "test_bootstrap_probe_change_is_observation_only_against_main",
-      "test_execution_ast_and_workflows_are_identical"
+    "base_sha": "ccb372272631a2e0500f57c87ec56cd7409a4652",
+    "campaign_sha256": "1a6dea51cdec913157e669531d96e0401d6573e862c8aaa3d9bbc3e83c4c03b3",
+    "campaign_supervisor_byte_identical": true,
+    "execution_semantics": "Only retained observed UUIDs are required in fresh snapshots; missing UUID rejects. No pytest command, selection, partitions, environment, timers, gates changed.",
+    "measured_at_source_head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+    "observe_kind_teardown_sha256": "bed7c9b77da3118d1424407c42f350053dcd86141ab04ef38731e2c7ea1e0051",
+    "observer_added_functions": [
+      "_require_observed_nodes"
     ],
-    "observe_kind_teardown_sha256": {
-      "after": "012a1c42dc2b0d12dfe7793661c9626a239f58d2f20d3a1e2ab2a30eb58f1b34",
-      "before": "fe2afe84b9a3b24cd9448a2360df1fbbb7595d88832632d4e0d90f12cafac376"
-    },
-    "run_qualifying_campaign_sha256": {
-      "after": "1a6dea51cdec913157e669531d96e0401d6573e862c8aaa3d9bbc3e83c4c03b3",
-      "before": "43f5572335e9e7d65a17f7d9d97f23803ba5b80c9131aafe038b7b4524f110ac"
+    "observer_changed_functions": [
+      "inspect_kubernetes_runtimes"
+    ],
+    "observer_constants_identical": true,
+    "repair_scope": "Only observer snapshot validation changes in repair1; original bootstrap retry was qualified in cycle0; this proof measures repair1 against ccb3722.",
+    "result": "PASS",
+    "timeouts_unchanged": true,
+    "window_seconds": 30,
+    "workflows_byte_identical": {
+      ".github/workflows/ocor-auto-merge.yml": "c3d90ec2b956ce0e859ec8fec61e9d1cf0458b9c6d6977aefc741b2b36b20b06",
+      ".github/workflows/ocor-delivery-activation.yml": "33ea39d598cc1644b7708eda96e04c8ef4cf6e4978125e3f0bb099a486652bcc",
+      ".github/workflows/ocor-lld-add-alignment.yml": "c9adf5ac14aefb944e33c6948cf2238b1f6355d4fb744a1fc23ac26ade44e6dc",
+      ".github/workflows/ocor-poc-ci.yml": "9b209460e757a91f809aa1f68064191a5dfa9f5f730a14b574076b64fd27e553",
+      ".github/workflows/ocor-rccad.yml": "0065583fc3da5f2f15b7925c0b60055dd696b97010f6667d3337a38db82ed23d",
+      ".github/workflows/ocor-supply-chain.yml": "fdbb6e60eba00232e3ea73c7eddb2be32355a51c7a3444db4c7d55b237e1261c",
+      ".github/workflows/ocor-tooling-bootstrap.yml": "d9f63d4fbb3f93d3e467a5faaf116b6167623ac6ec804cf495f9c65153835b0b",
+      ".github/workflows/ocor-validation-closure.yml": "1d6e3f8d937efd0eff02b6ccba42e5a86b0408a3920e72d30d4ad13291f1d0d9"
     }
   },
-  "historical_cycle0_tdd": {
-    "cases": {
-      "diagnostic": [
-        "failed exec records bounded redacted stderr and exit code",
-        "successful probes carry no stderr"
-      ],
-      "negative": [
-        "probe failing until window expiry",
-        "probe never active (activating, failed, malformed)",
-        "OOM, restart and container PID change during the window",
-        "admitted node with NRestarts > 0",
-        "unadmitted recovered restart still rejected by the original checks",
-        "identity mismatch",
-        "other exec commands not retried"
-      ],
-      "positive": [
-        "failed bootstrap probe then success inside window accepted",
-        "admitted node with zero NRestarts accepted",
-        "probe timeout then success accepted",
-        "failed probe then intended removal keeps the v2 proof path"
-      ]
-    },
-    "green": {
-      "raw": "green.log",
-      "result": "166 passed (test_kind_teardown_observation.py 37, test_qualifying_campaign_guard.py 129), 42 subtests, zero skip",
-      "sha256": "3e0c2564d43b1f3d8ed1c426184b3b86479c527794fcfe2b88c7f6104c7a707c"
-    },
-    "red": {
-      "failed_for_expected_reason": "positives rejected WINDOW_EXPIRED_NODE_PRESENT by the old v2 path; new reason codes and stderr fields absent",
-      "method": "final test file run against scripts/ of base 9b4d3be in a scratch copy (git archive), -k BootstrapExecProbe",
-      "passing_before_fix": "five negatives already fail-closed on the old code (window expiry, never active, removal proof, identity mismatch, other exec commands)",
-      "raw": "red-final.log",
-      "result": "8 failed, 5 passed",
-      "sha256": "8aa976339e53186d7b7477d5250ff0cf871447dd5d50ecdf7db11f7cf5d9eb7a"
-    }
-  },
-  "historical_live_bootstrap_observation": {
-    "live-new.json": {
-      "bootstrap_recoveries": 0,
-      "create_exit_code": 0,
-      "delete_exit_code": 0,
-      "errors": 0,
-      "failed_probe_stderr": [],
-      "failed_probes": 0,
-      "rejections": [],
-      "residue": []
-    },
-    "live-old.json": {
-      "bootstrap_recoveries": 0,
-      "create_exit_code": 0,
-      "delete_exit_code": 0,
-      "errors": 0,
-      "failed_probe_stderr": [],
-      "failed_probes": 0,
-      "rejections": [],
-      "residue": []
-    }
-  },
-  "historical_qualification_reference": {
-    "blob": "94de552a572ad515842ba8895f2aeff982ac8fe4",
-    "commit": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
-    "counts_transferred": false,
-    "description": "Cycle0 post-reboot run and prior external-port blocker retained in Git; current counts come only from this repair1 campaign."
-  },
-  "host_reboot_resume": {
-    "base_sha": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
-    "claims": {
-      "E1": 0,
-      "E2": 0,
-      "PoC_GO": "NO-GO",
-      "Production_readiness": "NO-GO",
-      "Verified": 0
-    },
-    "decision": "HOST-REBOOT-RESUME-ITER27",
-    "interrupted_run": "../attempts/full-3-host-reboot/diagnosis.json",
-    "roles": {
-      "original_implementation": "Claude Code reserve",
-      "resume_qualification_and_records": "Codex",
-      "verifier": "Grok 4.7 via Cursor (external loop only)"
-    },
-    "started_at": "2026-10-15T11:47:41.897628+00:00",
-    "task_id": "OCOR-DEV-REM-0033",
-    "verified_heads": {
-      "REM-0028": "19747383d3d570b2ffbb503a1878c49d140b8032",
-      "REM-0033": "3c8f2eba711cac1a180ae36df452dc0707efe205"
-    },
-    "waits": {
-      "CI": {
-        "max_seconds": 5400,
-        "poll_seconds": 60,
-        "required_checks_by_name": true
-      },
-      "full": {
-        "human_progress_poll_seconds": 30,
-        "max_seconds": 4500,
-        "supervisor_poll_seconds": 5
-      },
-      "preflight": {
-        "max_seconds": 1200,
-        "poll_seconds": 30
-      }
-    }
-  },
-  "id_allocation": "First free REM-* verified read-only on 2026-10-15 across every remote ref, ~/.ocor-codex JSON files and verdicts: zero occurrences of REM-0033 (REM-0032 highest in use; REM-0099 appears only as a range bound in a decision text).",
-  "independent_verification": {
-    "status": "PENDING_REQUEST",
-    "verifier": "cursor"
-  },
-  "interrupted_raw_archived_locally": "../attempts/full-3-host-reboot (each original file hash in diagnosis.json; interrupted raw not qualifying)",
-  "local_duration_decision_request": {
+  "historical_cycle0_duration_notification": {
     "blocks_current_qualification": false,
     "decision_branch": "governed/decision-request-rem0033-local-full-duration",
     "decision_path": "reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
@@ -471,6 +375,263 @@
       "tests.tasks.test_ocor_dev_rem_0026": 164.847,
       "tests.test_interpreter_pin": 1.125
     },
+    "observed_at": "2026-10-15T12:51:29.327471+00:00",
+    "raw_sha256": {
+      "full-exit.json": "812e42df971aea60966fd9fd1271364b9001fb006c4658acfe8bdf51c203545d",
+      "full/campaign_result.json": "4997ff3bbfa63b55a2e5bb0e6a385ab8b3b312d2d7815d7ec409d3c3445b9235",
+      "full/post_remediation_runtime.log": "8cd0b1c422deb00df7eadc6d18bcf77e9cf7d293f92d9a6a7e29c85932d89beb",
+      "full/runtime_junit_post_approval.xml": "b7fc8f20a8d237b6ed1ccf8a5b85eb675980d1e0793554cd69ffe6ff551a0c6a"
+    },
+    "result": {
+      "candidate_head": null,
+      "counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 2323
+      },
+      "duration_seconds": 3724.311452528,
+      "po_decision_required": true,
+      "required_modules": [
+        "test_ocor_dev_0048",
+        "test_ocor_dev_0049"
+      ],
+      "status": "PASS"
+    },
+    "rule": "REM-0017-CI-CAMPAIGN-BUDGET (2026-10-07): notify if local full suite exceeds60min; cap remains75min",
+    "status": "OPEN_PO_DECISION_REQUIRED"
+  },
+  "historical_cycle0_execution_invariance": {
+    "against_7cd5f7a": "previous REM-0017 proof unchanged except the third diagnostic export key in its normalisation",
+    "against_main_9b4d3be": "scripts/run_qualifying_campaign.py AST identical after removing the single bootstrap_recoveries export key; observer WINDOW/POLL/SAMPLE/KIND_BINARY constants identical; every run_probe timeout is 10; all workflows byte-identical",
+    "ast_proof_tests": [
+      "test_bootstrap_probe_change_is_observation_only_against_main",
+      "test_execution_ast_and_workflows_are_identical"
+    ],
+    "observe_kind_teardown_sha256": {
+      "after": "012a1c42dc2b0d12dfe7793661c9626a239f58d2f20d3a1e2ab2a30eb58f1b34",
+      "before": "fe2afe84b9a3b24cd9448a2360df1fbbb7595d88832632d4e0d90f12cafac376"
+    },
+    "run_qualifying_campaign_sha256": {
+      "after": "1a6dea51cdec913157e669531d96e0401d6573e862c8aaa3d9bbc3e83c4c03b3",
+      "before": "43f5572335e9e7d65a17f7d9d97f23803ba5b80c9131aafe038b7b4524f110ac"
+    }
+  },
+  "historical_cycle0_tdd": {
+    "cases": {
+      "diagnostic": [
+        "failed exec records bounded redacted stderr and exit code",
+        "successful probes carry no stderr"
+      ],
+      "negative": [
+        "probe failing until window expiry",
+        "probe never active (activating, failed, malformed)",
+        "OOM, restart and container PID change during the window",
+        "admitted node with NRestarts > 0",
+        "unadmitted recovered restart still rejected by the original checks",
+        "identity mismatch",
+        "other exec commands not retried"
+      ],
+      "positive": [
+        "failed bootstrap probe then success inside window accepted",
+        "admitted node with zero NRestarts accepted",
+        "probe timeout then success accepted",
+        "failed probe then intended removal keeps the v2 proof path"
+      ]
+    },
+    "green": {
+      "raw": "green.log",
+      "result": "166 passed (test_kind_teardown_observation.py 37, test_qualifying_campaign_guard.py 129), 42 subtests, zero skip",
+      "sha256": "3e0c2564d43b1f3d8ed1c426184b3b86479c527794fcfe2b88c7f6104c7a707c"
+    },
+    "red": {
+      "failed_for_expected_reason": "positives rejected WINDOW_EXPIRED_NODE_PRESENT by the old v2 path; new reason codes and stderr fields absent",
+      "method": "final test file run against scripts/ of base 9b4d3be in a scratch copy (git archive), -k BootstrapExecProbe",
+      "passing_before_fix": "five negatives already fail-closed on the old code (window expiry, never active, removal proof, identity mismatch, other exec commands)",
+      "raw": "red-final.log",
+      "result": "8 failed, 5 passed",
+      "sha256": "8aa976339e53186d7b7477d5250ff0cf871447dd5d50ecdf7db11f7cf5d9eb7a"
+    }
+  },
+  "historical_live_bootstrap_observation": {
+    "live-new.json": {
+      "bootstrap_recoveries": 0,
+      "create_exit_code": 0,
+      "delete_exit_code": 0,
+      "errors": 0,
+      "failed_probe_stderr": [],
+      "failed_probes": 0,
+      "rejections": [],
+      "residue": []
+    },
+    "live-old.json": {
+      "bootstrap_recoveries": 0,
+      "create_exit_code": 0,
+      "delete_exit_code": 0,
+      "errors": 0,
+      "failed_probe_stderr": [],
+      "failed_probes": 0,
+      "rejections": [],
+      "residue": []
+    }
+  },
+  "historical_qualification_reference": {
+    "blob": "94de552a572ad515842ba8895f2aeff982ac8fe4",
+    "commit": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+    "counts_transferred": false,
+    "description": "Cycle0 post-reboot run and prior external-port blocker retained in Git; current counts come only from this repair1 campaign."
+  },
+  "host_reboot_resume": {
+    "base_sha": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
+    "claims": {
+      "E1": 0,
+      "E2": 0,
+      "PoC_GO": "NO-GO",
+      "Production_readiness": "NO-GO",
+      "Verified": 0
+    },
+    "decision": "HOST-REBOOT-RESUME-ITER27",
+    "interrupted_run": "../attempts/full-3-host-reboot/diagnosis.json",
+    "roles": {
+      "original_implementation": "Claude Code reserve",
+      "resume_qualification_and_records": "Codex",
+      "verifier": "Grok 4.7 via Cursor (external loop only)"
+    },
+    "scope": "HISTORICAL: one-time checkpoint check and post-reboot run on 2026-10-15; no counts transferred to repair1 and no repeated checkpoint equality check.",
+    "started_at": "2026-10-15T11:47:41.897628+00:00",
+    "task_id": "OCOR-DEV-REM-0033",
+    "verified_heads": {
+      "REM-0028": "19747383d3d570b2ffbb503a1878c49d140b8032",
+      "REM-0033": "3c8f2eba711cac1a180ae36df452dc0707efe205"
+    },
+    "waits": {
+      "CI": {
+        "max_seconds": 5400,
+        "poll_seconds": 60,
+        "required_checks_by_name": true
+      },
+      "full": {
+        "human_progress_poll_seconds": 30,
+        "max_seconds": 4500,
+        "supervisor_poll_seconds": 5
+      },
+      "preflight": {
+        "max_seconds": 1200,
+        "poll_seconds": 30
+      }
+    }
+  },
+  "id_allocation": "First free REM-* verified read-only on 2026-10-15 across every remote ref, ~/.ocor-codex JSON files and verdicts: zero occurrences of REM-0033 (REM-0032 highest in use; REM-0099 appears only as a range bound in a decision text).",
+  "independent_verification": {
+    "status": "PENDING_REQUEST",
+    "verifier": "cursor"
+  },
+  "interrupted_raw_archived_locally": "../attempts/full-3-host-reboot (each original file hash in diagnosis.json; interrupted raw not qualifying)",
+  "local_duration_decision_request": {
+    "blocks_current_qualification": false,
+    "decision_branch": "governed/decision-request-rem0033-local-full-duration",
+    "decision_path": "reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
+    "decision_request_id": "REM-0033-LOCAL-FULL-DURATION",
+    "duration_seconds": 4093.359320845004,
+    "harness_sha256": {
+      "scripts/observe_kind_teardown.py": "bed7c9b77da3118d1424407c42f350053dcd86141ab04ef38731e2c7ea1e0051",
+      "scripts/run_qualifying_campaign.py": "1a6dea51cdec913157e669531d96e0401d6573e862c8aaa3d9bbc3e83c4c03b3"
+    },
+    "head": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a",
+    "module_seconds": {
+      "tests.acceptance_ev.test_ev_001_010_semantics_identity": 0.017,
+      "tests.acceptance_ev.test_ev_011_019_store_marking": 0.005,
+      "tests.acceptance_ev.test_ev_020_028_actions_capabilities": 0.014,
+      "tests.acceptance_ev.test_ev_029_035_fence_agent_e2e": 0.02,
+      "tests.backend_assumptions.test_ba01_atomic_outbox": 0.004,
+      "tests.backend_assumptions.test_ba01_postgres_fallback": 0.001,
+      "tests.backend_assumptions.test_ba02_idempotency": 0.0,
+      "tests.backend_assumptions.test_ba03_single_writer": 0.001,
+      "tests.backend_assumptions.test_ba04_canonicalization": 0.0,
+      "tests.backend_assumptions.test_ba05_temporal_guards": 0.0,
+      "tests.backend_assumptions.test_ba06_marking_lattice": 0.0,
+      "tests.backend_assumptions.test_ba07_emission_fence": 0.003,
+      "tests.backend_assumptions.test_ba08_capability_expiration": 0.0,
+      "tests.integration.test_postgres_outbox_live": 0.164,
+      "tests.mission_thread.test_first_governed_slice": 37.47200000000001,
+      "tests.runtime.test_c7_emission_hardening": 0.004,
+      "tests.runtime.test_public_surface_and_c8_hardening": 0.007,
+      "tests.schemas.test_schema_integrity": 0.232,
+      "tests.sdk.test_typescript_sdk_conformance": 0.657,
+      "tests.tasks.test_ocor_dev_0001": 0.09700000000000003,
+      "tests.tasks.test_ocor_dev_0002": 0.022000000000000002,
+      "tests.tasks.test_ocor_dev_0003": 0.087,
+      "tests.tasks.test_ocor_dev_0004": 0.013000000000000001,
+      "tests.tasks.test_ocor_dev_0005": 0.22100000000000003,
+      "tests.tasks.test_ocor_dev_0006": 0.23700000000000004,
+      "tests.tasks.test_ocor_dev_0007": 0.177,
+      "tests.tasks.test_ocor_dev_0008": 0.11300000000000002,
+      "tests.tasks.test_ocor_dev_0009": 0.06600000000000004,
+      "tests.tasks.test_ocor_dev_0010": 4.864999999999999,
+      "tests.tasks.test_ocor_dev_0011": 0.001,
+      "tests.tasks.test_ocor_dev_0012": 0.014000000000000005,
+      "tests.tasks.test_ocor_dev_0013": 0.04900000000000003,
+      "tests.tasks.test_ocor_dev_0014": 0.006,
+      "tests.tasks.test_ocor_dev_0015": 0.7410000000000001,
+      "tests.tasks.test_ocor_dev_0016": 2.263,
+      "tests.tasks.test_ocor_dev_0017": 3.085,
+      "tests.tasks.test_ocor_dev_0018": 0.20100000000000004,
+      "tests.tasks.test_ocor_dev_0019": 19.813000000000002,
+      "tests.tasks.test_ocor_dev_0020": 0.004,
+      "tests.tasks.test_ocor_dev_0021": 6.124,
+      "tests.tasks.test_ocor_dev_0022": 0.002,
+      "tests.tasks.test_ocor_dev_0023": 0.40800000000000003,
+      "tests.tasks.test_ocor_dev_0024": 2.514,
+      "tests.tasks.test_ocor_dev_0025": 22.834,
+      "tests.tasks.test_ocor_dev_0026": 2.663,
+      "tests.tasks.test_ocor_dev_0027": 2.322,
+      "tests.tasks.test_ocor_dev_0028": 0.007,
+      "tests.tasks.test_ocor_dev_0029": 0.3999999999999999,
+      "tests.tasks.test_ocor_dev_0030": 0.008,
+      "tests.tasks.test_ocor_dev_0032": 0.009000000000000001,
+      "tests.tasks.test_ocor_dev_0033": 0.030000000000000006,
+      "tests.tasks.test_ocor_dev_0034": 3.1279999999999997,
+      "tests.tasks.test_ocor_dev_0035": 1.517,
+      "tests.tasks.test_ocor_dev_0036": 0.8320000000000002,
+      "tests.tasks.test_ocor_dev_0037": 2.08,
+      "tests.tasks.test_ocor_dev_0038": 0.11400000000000002,
+      "tests.tasks.test_ocor_dev_0039": 2.741,
+      "tests.tasks.test_ocor_dev_0040": 52.825,
+      "tests.tasks.test_ocor_dev_0041": 59.182,
+      "tests.tasks.test_ocor_dev_0042": 0.007,
+      "tests.tasks.test_ocor_dev_0043": 0.006,
+      "tests.tasks.test_ocor_dev_0044": 0.022000000000000006,
+      "tests.tasks.test_ocor_dev_0045": 0.016,
+      "tests.tasks.test_ocor_dev_0046": 0.007,
+      "tests.tasks.test_ocor_dev_0047": 0.010000000000000002,
+      "tests.tasks.test_ocor_dev_0048": 127.58499999999991,
+      "tests.tasks.test_ocor_dev_0049": 3027.372,
+      "tests.tasks.test_ocor_dev_0050": 5.486,
+      "tests.tasks.test_ocor_dev_0051": 15.054000000000002,
+      "tests.tasks.test_ocor_dev_0052": 21.325,
+      "tests.tasks.test_ocor_dev_0053": 58.894999999999996,
+      "tests.tasks.test_ocor_dev_0054": 26.387999999999998,
+      "tests.tasks.test_ocor_dev_0055": 56.564,
+      "tests.tasks.test_ocor_dev_0079": 0.002,
+      "tests.tasks.test_ocor_dev_0080": 0.004,
+      "tests.tasks.test_ocor_dev_0081": 0.001,
+      "tests.tasks.test_ocor_dev_0082": 0.003,
+      "tests.tasks.test_ocor_dev_0083": 3.5079999999999996,
+      "tests.tasks.test_ocor_dev_0084": 0.002,
+      "tests.tasks.test_ocor_dev_rem_0007": 0.003,
+      "tests.tasks.test_ocor_dev_rem_0010": 0.0,
+      "tests.tasks.test_ocor_dev_rem_0011": 0.002,
+      "tests.tasks.test_ocor_dev_rem_0012": 0.048,
+      "tests.tasks.test_ocor_dev_rem_0014": 2.1159999999999997,
+      "tests.tasks.test_ocor_dev_rem_0020": 99.121,
+      "tests.tasks.test_ocor_dev_rem_0021": 21.214000000000002,
+      "tests.tasks.test_ocor_dev_rem_0022": 81.851,
+      "tests.tasks.test_ocor_dev_rem_0024": 0.09900000000000007,
+      "tests.tasks.test_ocor_dev_rem_0025": 134.565,
+      "tests.tasks.test_ocor_dev_rem_0026": 174.514,
+      "tests.test_interpreter_pin": 1.013
+    },
+    "notification": "New observed duration 4093.359s; existing notification remains open, <=4500s cap unchanged. No new normative decision inferred.",
     "observed_at": "2026-10-15T12:51:29.327471+00:00",
     "raw_sha256": {
       "full-exit.json": "812e42df971aea60966fd9fd1271364b9001fb006c4658acfe8bdf51c203545d",
