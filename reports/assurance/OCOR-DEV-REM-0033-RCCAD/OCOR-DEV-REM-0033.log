@@ -24633,7 +24633,7 @@ RAW_FILE full/kubernetes-runtime.log SHA256 4c69c5435f247f68142f69a1c054b2cd0eef
 {}
 
 END_RAW_FILE full/kubernetes-runtime.log
-RAW_FILE full/post_remediation_runtime.log SHA256 7d9d7001b6e82f9412c029ab072e86dbffa99796dec62b91744b1da1e1fe58ad
+RAW_FILE full/post_remediation_runtime.log SHA256 7a27cacd7e56d635106e084bebe2149c4542dd46bb84369a8fc4fd01dc0156e6
 ============================= test session starts ==============================
 platform linux -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python
 cachedir: .pytest_cache
@@ -26967,9 +26967,9 @@ sha256:af453930acb2b456192f7bb881a8f02ea166ceb6f5f338d3fc584ced4c75b8d1 PASSED [
 sha256:ebfe2043a7ab37f92b675160d62e599e756fdb354710c2dc55a1d55fcac58ca8 PASSED [100%]
 
 =============================== warnings summary ===============================
-tests/tasks/test_ocor_dev_rem_0020.py::test_f2_policy_denied_items_cost_no_more_index_work_than_before[0]
-tests/tasks/test_ocor_dev_rem_0020.py::test_f2_policy_denied_items_cost_no_more_index_work_than_before[40]
-tests/tasks/test_ocor_dev_rem_0020.py::test_f2_policy_denied_items_cost_no_more_index_work_than_before[130]
+sha256:d9bcbe7c0c6dd118f8d0dec4202d9d432252e793c6e6e1f17a60fc19a2bb898b
+sha256:3b2c06bcd00a25b20d6d8d3888955f3c9621c83618c3ca18b378f9743d626b28
+sha256:9a0344d1abc04d5a4434388fc4d6e518bf33052bf014fc5c7a221eda313e0c91
   tests/tasks/test_ocor_dev_rem_0020.py:546: PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')
     @pytest.mark.parametrize("denied", [0, 40, 130])
 
@@ -27333,6 +27333,61 @@ PASS 14  FAIL 0  NOT_EXECUTED 0
 referto JSON: reports/verify_report.json
 
 END_RAW_FILE gates/verify.log
+RAW_FILE gates-final/inputs.log SHA256 0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34
+inputs/normative/OCOR_Architectural_Design_Document_v1.1.md: OK
+inputs/normative/OCOR_CAP_ELM_Requirement_Crosswalk_v0.9.md: OK
+inputs/normative/OCOR_DEC_197_plus_Draft_v0.1.md: OK
+inputs/normative/OCOR_Decision_Register_v1.0.md: OK
+inputs/normative/OCOR_Decision_Traceability_Index_v1.0.md: OK
+inputs/normative/OCOR_Registers_v0.9.md: OK
+inputs/normative/OCOR_Requirement_Register_v0.9.md: OK
+inputs/normative/OCOR_Requirement_Traceability_Index_v0.9.md: OK
+
+END_RAW_FILE gates-final/inputs.log
+RAW_FILE gates-final/verify.log SHA256 61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413
+==============================================================================
+OCOR ADD — harness di verifica tool-backed
+oggetto: inputs/normative/OCOR_Architectural_Design_Document_v1.1.md
+sha256:  3e7532c7101e80c74b511cedc56a0563ca0938a3fe259911a91245cb19dedc7f
+==============================================================================
+[PASS] Integrità sorgenti
+       8 file, tutti i digest coincidono
+[PASS] JSON Schema — parsing e meta-validazione
+       5 schemi Draft 2020-12 validi: urn:ocor:schema:action-type-contract:1.0, urn:ocor:schema:canonical-ingestion-envelope:1.1, urn:ocor:schema:event-subscription-contract:1.0, urn:ocor:schema:mcp-tool-contract:1.1, urn:ocor:schema:signed-canonical-ir:1.0
+[PASS] OpenAPI — risoluzione $ref
+       OpenAPI 3.1.0 v1.1.0; 6 path, 25 schemi, 26 $ref; tutti i $ref risolti; schemi mai referenziati: nessuno
+[PASS] OpenAPI — validazione semantica con validator ufficiale
+       openapi-spec-validator==0.9.0; wheel SHA-256 222fecffc7714f6d0a6ad62c0e4b66cc2b7dbfafb7b93acfc6c308abbdb51af8; documento OpenAPI 3.1.0 valido
+[PASS] Protobuf — compilazione
+       protoc compila senza errori
+[PASS] Turtle/RDF — parsing
+       17 triple
+[PASS] Rami condizionali insoddisfacibili (classe RV-01)
+       nessun campo richiesto da un condizionale risulta non dichiarato
+[INFO] Rami condizionali da coprire con casi POSITIVI
+       il §7.1 del prompt richiede almeno un caso positivo per ramo — signed-canonical-ir=0; canonical-ingestion-envelope=4; mcp-tool-contract=11; action-type-contract=9; event-subscription-contract=0
+[PASS] FSM — bijezione diagramma/tabella
+       29 stati in corrispondenza
+[PASS] FSM — famiglia ACT-T
+       ACT-T01–T31 contigui, più le varianti a/b/c
+[INFO] FSM — stati terminali
+       stati senza archi uscenti non attesi: nessuno; stati di indeterminatezza privi di uscita: nessuno
+[PASS] Tracciabilità — allocazione in §7
+       DEC 181/196; BR 18/18; FR 174/174; NFR 93/93; ARC 23/23; CAP 25/26; ELM 103/103; RSK 60/60
+[PASS] Universo normativo
+       693 = 693 atteso
+[PASS] Rimandi di sezione
+       44 rimandi distinti, 59 sezioni; non risolti: nessuno
+[PASS] Evidence fence
+       'E1=0' ricorre 16 volte; claim probatori non supportati: nessuno
+[PASS] Nessun DEC-197 assegnato
+       3 occorrenze, tutte in forma negativa o come nome di file
+==============================================================================
+PASS 14  FAIL 0  NOT_EXECUTED 0
+==============================================================================
+referto JSON: reports/verify_report.json
+
+END_RAW_FILE gates-final/verify.log
 RAW_FILE health.json SHA256 518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3
 {
   "services": [
