@@ -16919,24 +16919,59 @@
       ],
       "id": "OCOR-DEV-REM-0033",
       "last_observation": {
-        "application": "antigravity-claude-proxy/src/index.js",
-        "at": "2026-10-16T22:54:45.478202+00:00",
-        "executable": "node",
-        "listener_address": "0.0.0.0:8080",
-        "pid": 13494,
-        "raw_sha256": "e630e3099eb259680c09cd9e40befbc41940864c82d66958cc116db14e170836"
+        "TCP8080": "FREE",
+        "at": "2026-10-18T23:08:47.308240+00:00",
+        "diagnostic_runs": {
+          "postgres_live": {
+            "counts": {
+              "errors": 0,
+              "failures": 0,
+              "skipped": 0,
+              "tests": 5
+            },
+            "exit_record_sha256": "0da84d1229fb1083999d919e04f5b42853b5d420d6cd8eb913edc49a2e8f1c70",
+            "junit_sha256": "6d17bdc72b036ddfc4c50cf57eb391b8a2137656d06ea106db48674009125060",
+            "qualifies_full_suite": false,
+            "source_head": "5603fb7aeea736aab58d2ef70475c3750f208036",
+            "status": "PASS_DIAGNOSTIC_ONLY"
+          },
+          "targeted": {
+            "counts": {
+              "errors": 0,
+              "failures": 0,
+              "skipped": 0,
+              "tests": 317
+            },
+            "exit_record_sha256": "4f78410418a2f295aae9f949dcf9c9e093f3483ab04406aef8c86e21bbab36ff",
+            "junit_sha256": "bf0e9a63bd49d42c980da7d929e5f44aa0a9ee4a144b229aecb73f3d20a9ad6a",
+            "qualifies_full_suite": false,
+            "source_head": "5603fb7aeea736aab58d2ef70475c3750f208036",
+            "status": "PASS_DIAGNOSTIC_ONLY"
+          }
+        },
+        "old_port_observation_reference": {
+          "commit": "7d635cf742b296dc49cc2660f435f9dc4ea64ce8",
+          "path": "reports/development/EXECUTION_STATE.json",
+          "preserved": true
+        },
+        "preflight": {
+          "services": 11,
+          "status": "PASS",
+          "toolchain_entries": 9
+        },
+        "session_teardown": "PASS"
       },
       "latest_independent_verdict": {
-        "blocking_findings": [
-          "VF-001"
+        "blocking_code_findings": 0,
+        "head_sha": "5603fb7aeea736aab58d2ef70475c3750f208036",
+        "not_executed": [
+          "Suite live completa scripts/run_qualifying_campaign.py --execute sull'HEAD 5603fb7aeea736aab58d2ef70475c3750f208036: avviata alle 2026-10-18T22:13:10Z e interrotta alle 2026-10-18T22:40:14Z al primo OOM. ocor-bootstrap-fuseki-1 OOMKilled (exit 137, HostConfig.Memory=2147483648, RestartCount=0) durante tests/tasks/test_ocor_dev_0049.py::test_dependency_fault_blocks_readiness_and_degrades_posture. L'host non era esaurito (circa 19 GiB available). STACK-HYGIENE impone l'arresto senza rilancio. La corsa non e evidenza: non e PASS e non e FAIL. Nel log interrotto, prima dell'OOM, compaiono due righe di progresso FAILED per test_restore_scope_mismatch_blocks_materialisation[marking_only] e [gcs_binding_only], senza traceback perche pytest e stato ucciso prima del riepilogo; non sono un esito di qualifica. 196 righe di test_ocor_dev_0048.py risultano PASSED e nessuna SKIPPED/FAILED/ERROR, ma il modulo non chiude una sessione completa e quindi non soddisfa CI-0048-REAL-BACKEND.",
+          "pytest ocor-runtime/tests/tasks/test_ocor_dev_0050.py sullo stack reale: non avviato. Dopo l'OOM di Fuseki lo stack e stato fermato e non riqualificato."
         ],
-        "head_sha": "ccb372272631a2e0500f57c87ec56cd7409a4652",
-        "live_checks_not_reexecuted": [
-          "Suite live completa scripts/run_qualifying_campaign.py --execute e pytest ocor-runtime/tests/ sullo stack ocor-bootstrap: lo stack non e' in esecuzione e non e' stato azzerato ne' ricreato. Il JUnit grezzo del candidato e' stato ispezionato (avvio 2026-10-15T11:48:15Z, 2323 test, 0 failure, 0 skip, head 3c8f2eb) ma non rieseguito. VF-001 gia' impedisce il sigillo; la suite di 75 minuti non copre la scomparsa dopo il probe recuperato.",
-          "pytest ocor-runtime/tests/tasks/test_ocor_dev_0050.py sullo stack live: non rieseguito, stack assente. Il record di riqualifica, il digest superseduto e validate_runtime_evidence.py --non-skipped sono stati controllati."
-        ],
-        "request_id": "OCOR-DEV-REM-0033-ccb372272631-0",
-        "sha256": "8c96a137233e5e95fec8177c8cd87d02c8b8328c7d120bb4b55e420fa2c43f48",
+        "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0033-5603fb7aeea7-1.json",
+        "preserved": true,
+        "request_id": "OCOR-DEV-REM-0033-5603fb7aeea7-1",
+        "sha256": "b83655ad95438f4ff3e06e68400b906dd784707bf741e7ae6f10eaaece4699c0",
         "verdict": "NO_GO"
       },
       "latest_verdict": {
@@ -16954,6 +16989,12 @@
       },
       "maximum_repair_cycles": 2,
       "next_action": "Leggere il nuovo verdetto esterno OCOR-DEV-REM-0033-5603fb7aeea7-1-env-recheck su 5603fb7aeea736aab58d2ef70475c3750f208036. Il NO_GO precedente resta storico: nessun finding di codice, full interrotta da OOM, 0050 NOT_EXECUTED; la diagnosi corrente non sostituisce la riproduzione completa. Il verifier deve usare la toolchain pinned, i tool Helm/kind/kubectl disponibili, OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN della propria sessione senza loggarli, la CA disposable valida e la ricetta ci_resources gia approvata (JVM -Xms128m -Xmx1G nel cgroup2GiB). Reset/bootstrap, 11 servizi READY; full <=75min e 0050, zero skip; arresto al primo OOM/restart. Nessuna modifica al candidato. GO sull HEAD esatto prima di sigillo e allineamento non distruttivo a main/CI/merge PR281; NO_GO con finding di codice richiede analisi e budget residuo, mai rotazione per test rosso. Dopo REM0033: scanner, REM0019 PR254, REM0023,0056; REM0028 ferma a1974738.",
+      "previous_independent_verdict_reference": {
+        "commit": "7d635cf742b296dc49cc2660f435f9dc4ea64ce8",
+        "key": "remediation_status.REM_0033_KIND_BOOTSTRAP_EXEC_PROBE.latest_independent_verdict",
+        "path": "reports/development/EXECUTION_STATE.json",
+        "preserved": true
+      },
       "repair_cycle": 1,
       "resume_precondition_blocker": {
         "authorized_checkpoint": "ccb372272631a2e0500f57c87ec56cd7409a4652",
@@ -18009,5 +18050,5 @@
     "recorded_at": "2026-10-18T22:55:24.056995+00:00",
     "status": "SUPERSEDED_EXTERNAL_PORT_RELEASED"
   },
-  "updated_at": "2026-10-18T22:55:24.056995+00:00"
+  "updated_at": "2026-10-18T23:08:47.308240+00:00"
 }
