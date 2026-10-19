@@ -495,6 +495,7 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0034-RCCAD/OCOR-DEV-REM-0034.json",
         "reports/assurance/OCOR-DEV-REM-0034-RCCAD/OCOR-DEV-REM-0034.log",
         "reports/tests/test_rem0034_secret_registry.py",
+        "reports/tests/test_kind_teardown_observation.py",
         "reports/development/decision_requests/REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER.md",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0034.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0034.log",

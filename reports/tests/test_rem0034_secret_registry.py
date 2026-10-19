@@ -173,6 +173,30 @@ def test_non_secret_scanners_patterns_selection_and_size_limit_are_unchanged() -
     assert old_doc == new_doc
 
 
+@pytest.mark.parametrize("mutation", ["pattern", "selection", "timeout", "secret-check", "summary", "version"])
+def test_historical_guard_rejects_every_other_workflow_edit(mutation: str) -> None:
+    from test_kind_teardown_observation import normalize_rem0034_secret_scanner
+
+    baseline = subprocess.check_output(["git", "show", "80a97ba:.github/workflows/ocor-supply-chain.yml"], cwd=ROOT, text=True, timeout=20)
+    current = WORKFLOW.read_text()
+    assert normalize_rem0034_secret_scanner(".github/workflows/ocor-supply-chain.yml", baseline, current) == baseline
+    old, new = {
+        "pattern": ("AKIA[0-9A-Z]{16}", "AKIA[0-9A-Z]{17}"),
+        "selection": ("2_000_000", "1_000_000"),
+        "timeout": ("timeout-minutes: 15", "timeout-minutes: 16"),
+        "secret-check": ("len(locations) != 1", "len(locations) != 2"),
+        "summary": ('summary["suspended_findings"] = suspended_findings', 'summary["suspended_findings"] = []'),
+        "version": ("OCOR_SCANNER_VERSION: 1.1.0", "OCOR_SCANNER_VERSION: 1.2.0"),
+    }[mutation]
+    assert old in current
+    changed = current.replace(old, new)
+    try:
+        normalized = normalize_rem0034_secret_scanner(".github/workflows/ocor-supply-chain.yml", baseline, changed)
+    except AssertionError:
+        return
+    assert normalized != baseline
+
+
 def test_fixture_provenance_is_literal_non_operational_test_data() -> None:
     source = subprocess.check_output(["git", "show", f"{SOURCE_COMMIT}:ocor-runtime/tests/tasks/test_ocor_dev_0050.py"], cwd=ROOT, text=True, timeout=20)
     tree = ast.parse(source)
