@@ -162,6 +162,14 @@ jobs:
           except (OSError, UnicodeDecodeError, ValueError, TypeError):
               secret_findings.append({"line": 0, "path": "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json", "rule_id": "SYNTHETIC_REGISTRY_INVALID", "severity": "CRITICAL"})
 
+          # A registered record cannot evade its authority binding by growing past
+          # the unchanged lexical scanner limit. This checks only the registered
+          # authority path; candidates(), patterns and the 2 MB selection stay intact.
+          for relative in sorted({entry["path"] for entry in registry_entries}):
+              registered = root / relative
+              if registered.is_file() and registered.stat().st_size > 2_000_000:
+                  secret_findings.append({"line": 0, "path": relative, "rule_id": "SYNTHETIC_RECORD_BINDING_INVALID", "severity": "CRITICAL"})
+
           for path, relative in candidates(text_suffixes):
               try:
                   source = path.read_text(encoding="utf-8")

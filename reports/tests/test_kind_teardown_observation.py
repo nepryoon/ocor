@@ -586,7 +586,7 @@ def normalize_rem0034_secret_scanner(path, before, after):
         return after
     start, end = after.index(marker), after.index('          lock_path =')
     delta = after[start:end]
-    assert hashlib.sha256(delta.encode()).hexdigest() == 'f7914d42ab16e65f517a7afe41bcf01372b042170e1ea3ec0b48265a2b3ba956'
+    assert hashlib.sha256(delta.encode()).hexdigest() == 'c1f489bf999b30c8647730f613fbab4bc875ab18d0e20e253f9c2481a928ad2c'
     old_start, old_end = before.index('          secret_findings: list'), before.index('          lock_path =')
     normalized = after[:start] + before[old_start:old_end] + after[end:]
     summary = '          if suspended_findings:\n              summary["suspended_findings"] = suspended_findings\n'
