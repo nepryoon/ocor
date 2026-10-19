@@ -572,6 +572,29 @@ def move_scope_gate_before_provisioning(text):
     return rest[:anchors[1]] + block + rest[anchors[1]:]
 
 
+def normalize_rem0034_secret_scanner(path, before, after):
+    """PO 2026-10-15: recognise only the exact REM-0034 secret-scanner delta.
+
+    Preserve the historical invariant for every other byte. The complete added
+    block (including the three authority entries and every fail-closed check) is
+    digest-bound; arbitrary secret-scanner edits still fail this guard.
+    """
+    if path != '.github/workflows/ocor-supply-chain.yml' or before == after:
+        return after
+    marker = '          # This append-only authority'
+    if marker not in after:
+        return after
+    start, end = after.index(marker), after.index('          lock_path =')
+    delta = after[start:end]
+    assert hashlib.sha256(delta.encode()).hexdigest() == '73da96ea208ca68a1d39d7b7a421b1776b046dea0ce56d7481d970c5a3d39fed'
+    old_start, old_end = before.index('          secret_findings: list'), before.index('          lock_path =')
+    normalized = after[:start] + before[old_start:old_end] + after[end:]
+    summary = '          if suspended_findings:\n              summary["suspended_findings"] = suspended_findings\n'
+    assert normalized.count(summary) == 1
+    assert normalized.count('      OCOR_SCANNER_VERSION: 1.1.0\n') == 1
+    return normalized.replace(summary, '').replace('      OCOR_SCANNER_VERSION: 1.1.0\n', '      OCOR_SCANNER_VERSION: 1.0.0\n')
+
+
 def assert_governed_workflow(path, before, after):
     """Accept only the PO's exact pin/N update and the scope-gate reorder; every other byte stays checked."""
     if path == '.github/workflows/ocor-delivery-activation.yml':
@@ -585,6 +608,7 @@ def assert_governed_workflow(path, before, after):
         suffix = suffix.replace('part: [1, 2, 3, 4]', 'part: [1, 2, 3, 4, 5]')
         suffix = suffix.replace('--shard-count 4', '--shard-count 5')
         before = prefix + '  conditional-infrastructure-0049-part:' + suffix
+    after = normalize_rem0034_secret_scanner(path, before, after)
     assert before == after, 'Workflow drift: ' + path
 
 
@@ -733,7 +757,10 @@ class ExecutionInvariants(unittest.TestCase):
                     for k in n.keywords if k.arg == 'timeout'}
         self.assertEqual(timeouts, {'10'})
         for workflow in sorted((root / '.github/workflows').glob('*.yml')):
-            self.assertEqual(old(str(workflow.relative_to(root))), workflow.read_text(), workflow.name)
+            path = str(workflow.relative_to(root))
+            before = old(path)
+            after = normalize_rem0034_secret_scanner(path, before, workflow.read_text())
+            self.assertEqual(before, after, workflow.name)
 
     def test_execution_ast_and_workflows_are_identical(self):
         proof = observation_only_proof()
