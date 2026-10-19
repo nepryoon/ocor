@@ -1,6 +1,6 @@
 # REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER
 
-Stato: `RESOLVED_PO_DECISION_IMPLEMENTATION_PENDING_VERIFICATION`. Apertura: 2026-10-15. Autore: Codex,
+Stato: `RESOLVED_PO_DECISION_IMPLEMENTED_AWAITING_INDEPENDENT_VERIFICATION`. Apertura: 2026-10-15. Autore: Codex,
 implementatore del loop. Unità: integrazione REM-0019, PR #254.
 
 ## Contesto e fatti riproducibili
@@ -111,3 +111,28 @@ runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO` invariati. Nessun nuovo DEC.
 ## Disposition del Product Owner — 2026-10-15
 
 Opzione 1 autorizzata da `REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER`: registro append-only delle sole tre occorrenze, binding completo e rifiuto fail-closed di ogni variazione. Attuazione dedicata `OCOR-DEV-REM-0034`, identificativo libero verificato su origin/main `80a97ba`; verifica indipendente e CI ancora richieste. I sigilli storici restano intatti. Nuove evidenze riportano soltanto digest delle identità dei casi. E1=0, E2=0, Verified=0 e claim NO-GO invariati.
+
+## Attuazione locale — OCOR-DEV-REM-0034
+
+La decisione del PO e risolta con opzione 1. Il candidato implementato sul sorgente
+`a72587020298059340fe550c3ae74a3667248ef8` attende verifica indipendente e integrazione.
+Il registro append-only e
+`reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json`: tre sole
+voci, senza identificativi parametrizzati in chiaro. Ogni nuova voce richiede una nuova
+decisione del PO. Ogni sospensione richiede percorso, regola, SHA256 del file intero,
+campo/indice/elemento e SHA256 della stringa esatti; la provenienza e verificata nei
+fixture del commit `6e1c4b050ac610a22673d6f559e424a01705189c`.
+
+Il controllo di coerenza del percorso registrato precede selezione e decoder: anche
+record oltre soglia o non UTF-8 restano FAIL. Pattern, soglia di 2 MB, selezione dei
+file e altri scanner invariati; versione dichiarata 1.1.0. Registro assente, malformato
+o incoerente, record alterato, occorrenza aggiuntiva, altro campo/percorso/regola o
+nuova credenziale restano bloccanti. Le sospensioni sono visibili nei riepiloghi con
+riferimento alla voce. I nuovi record riportano soltanto digest delle identita dei casi.
+
+Prove e record nuovi: `reports/assurance/OCOR-DEV-REM-0034-RCCAD/OCOR-DEV-REM-0034.json`,
+riqualifiche 0005 e 0050 nei rispettivi gate, piu record autonomo incorporato di
+riqualifica circoscritta REM-0033 per il guard di invarianza. I record sigillati e i
+verdetti restano storici e immutati; 0050 e sola regressione e REM-0023 resta aperta.
+La PR #279 conserva la storia della richiesta; chiusura operativa dopo l integrazione
+del change set. Nessun nuovo DEC, E1=0, E2=0, Verified=0 e claim NO-GO invariati.
