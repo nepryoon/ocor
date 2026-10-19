@@ -130,6 +130,19 @@ def test_registry_is_required_even_when_no_secret_is_present(tmp_path: Path) -> 
     assert any(f["rule_id"] == "SYNTHETIC_REGISTRY_INVALID" for f in report["findings"])
 
 
+@pytest.mark.parametrize("directory", [".", "ocor-runtime"])
+def test_original_fixture_contract_from_both_repository_directories(tmp_path: Path, directory: str) -> None:
+    sandbox(tmp_path)
+    (tmp_path / RECORD).unlink()
+    (tmp_path / ".git").write_text("gitdir: fixture\n")
+    result = subprocess.run(
+        [sys.executable, "-c", scanner_source()], cwd=tmp_path / directory,
+        env=os.environ | {"OCOR_SCAN_ROOT": str(tmp_path), "OCOR_SCAN_OUTPUT": str(tmp_path / "out"), "OCOR_SCANNER_VERSION": "1.1.0"},
+        capture_output=True, timeout=30,
+    )
+    assert result.returncode == 0
+
+
 def test_valid_registry_allows_checkout_before_historical_record_is_merged(tmp_path: Path) -> None:
     sandbox(tmp_path)
     (tmp_path / RECORD).unlink()

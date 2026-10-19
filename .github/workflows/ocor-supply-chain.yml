@@ -101,7 +101,8 @@ jobs:
           # This append-only authority belongs to the workflow checkout, independently of
           # OCOR_SCAN_ROOT (which the unchanged scanner tests point at temporary fixtures).
           # No environment override can select a different registry. New entries need PO authority.
-          registry_path = Path.cwd() / "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json"
+          checkout = next((directory for directory in (Path.cwd(), *Path.cwd().parents) if (directory / ".git").exists()), Path.cwd())
+          registry_path = checkout / "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json"
           approved_registry = {'decision': 'REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), option 1',
            'entries': [{'decision': 'REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), option 1',
                         'element': 1,
