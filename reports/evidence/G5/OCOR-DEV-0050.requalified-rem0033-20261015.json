@@ -185,8 +185,166 @@
     }
   },
   "independent_verification": {
-    "status": "PENDING_REQUEST",
-    "verifier": "cursor"
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 normative digests OK; inputs/ absent from base..HEAD"
+      },
+      {
+        "command": "git diff --name-status 9b4d3be8ec5bd785b02072a99037dd801b53d9a5..5603fb7aeea736aab58d2ef70475c3750f208036",
+        "exit_code": 0,
+        "summary": "13 paths, harness/tests/allowlist/evidence only; .github and ocor-runtime unchanged; workflows byte-identical to ccb3722; beeaf5e..HEAD is evidence/assurance only"
+      },
+      {
+        "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "Python 3.12.11 venv; uv 0.12.5; second idempotent sync exit 0"
+      },
+      {
+        "command": "RED pytest BootstrapExecProbe.test_disappearance_after_recovery_with_empty_history_is_rejected against ccb3722 observe_kind_teardown.py",
+        "exit_code": 1,
+        "summary": "Expected RED: AssertionError: TeardownObservationError not raised; _require_observed_nodes absent"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_kind_teardown_observation.py reports/tests/test_qualifying_campaign_guard.py",
+        "exit_code": 0,
+        "summary": "167 passed, 42 subtests passed, 0 failed, 0 skipped in 62.69s; includes VF-001 negative and AST invariants (window 30, probe timeout 10)"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff 0.13.1 clean"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "verify.py JSON gate passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref 9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
+        "exit_code": 0,
+        "summary": "RCCAD gate passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "language policy passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 9b4d3be8ec5bd785b02072a99037dd801b53d9a5 --head HEAD --branch governed/ocor-dev-rem-0033-kind-bootstrap-exec-probe",
+        "exit_code": 0,
+        "summary": "change scope passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 9b4d3be8ec5bd785b02072a99037dd801b53d9a5",
+        "exit_code": 0,
+        "summary": "plan gate passed; side-effect files restored, worktree clean"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "evidence input drift passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "0049 runtime evidence non-skipped passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "0050 runtime evidence non-skipped passed; new record unsealed and supersedes rem0032; sealed rem0032 sha256 1b8cf6492d237de83fa707f0c6be3525d7b60517d3608840cb8eff6783c901ee matches manifest"
+      },
+      {
+        "command": "gh api commits/5603fb7aeea736aab58d2ef70475c3750f208036/check-runs",
+        "exit_code": 0,
+        "summary": "13 required checks completed/success on exact HEAD; conditional-infrastructure-0049 parts 1-5 success; non-required skipped/neutral ignored"
+      },
+      {
+        "command": "gh run download 39011325503 artifact ocor-conditional-0049-part-1",
+        "exit_code": 0,
+        "summary": "Helm part hashes match request; kind-teardown-observations window 30, one OWNED_KIND_TEARDOWN_OBSERVED with destroy and owned remover; campaign 1 test 0 skip"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute (before bootstrap)",
+        "exit_code": 1,
+        "summary": "Compose interpolation failed because the fresh worktree had no bootstrap.env; no ocor-bootstrap containers existed. Fresh worktree env created by bootstrap, CA notBefore 2026-10-18T23:48:05Z"
+      },
+      {
+        "command": "scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "11 containers running, OOMKilled false, RestartCount 0; typed health PASS"
+      },
+      {
+        "command": "ci_resources + docker compose up fuseki with .ocor/ci-resources.yaml",
+        "exit_code": 0,
+        "summary": "Fuseki recreated healthy; JVM -Xms128m -Xmx1G; cgroup memory 2147483648"
+      },
+      {
+        "command": "initialize_services.py && load_fixtures.py && verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "init PASS, fixtures PASS, typed health PASS"
+      },
+      {
+        "command": "scripts/run_qualifying_campaign.py --execute (first, incomplete environment)",
+        "exit_code": 1,
+        "summary": "NON-QUALIFYING. 3 failed, 2134 passed, 186 errors, 0 skipped. All 186 errors and 2 failures are WORKLOAD_IDENTITY_UNAVAILABLE or missing control-plane SPIRE entry; 1 failure is mypy precondition after bootstrap uv sync dropped the lint extra. Not counted as code failure. Discarded."
+      },
+      {
+        "command": "uv sync --frozen --extra test --extra lint && SPIRE entry create + fetch x509",
+        "exit_code": 0,
+        "summary": "mypy importable; one agent trust domain ocor.test; entry /ocor/control-plane; fetch returned spiffe://ocor.test/ocor/control-plane"
+      },
+      {
+        "command": "scripts/run_qualifying_campaign.py --execute --output-dir .ocor/verification/rem0033-repair1-full",
+        "exit_code": 0,
+        "summary": "QUALIFYING run started 2026-10-19T00:53:50Z on 5603fb7. 2323 passed, 0 failures, 0 errors, 0 skipped, 3364.8s, po_decision_required false. 0048=196, 0049=390, 0050=198. Stack stayed 11/11, zero OOM and zero restart. Kind removal OWNED_KIND_TEARDOWN_OBSERVED with destroy and remover, window 30, zero rejections. JUnit sha256 c6d07803ec7d32c537de13d72b2e1fa78889d9ed1f8f6f05f0f7a95c9b192615"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed in 4.69s, 0 skipped, live DSN set, stack still up"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute (final)",
+        "exit_code": 0,
+        "summary": "ocor-bootstrap containers 0, kind clusters 0; non-OCOR containers not targeted"
+      }
+    ],
+    "findings": [],
+    "implementers": [
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic"
+      },
+      {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      }
+    ],
+    "integration_agent": "Codex (OpenAI), seal and integration only",
+    "integration_condition": "Only status, sealed_at, independent_verification, seal_continuity and manifest hash change after GO; execution trees equal reviewed HEAD. Main alignment also inherits TERMINAL_BLOCKED_REPORT.json, a fourth state file: no three-file-only CI campaign transfer is asserted. All 13 required checks must pass on final sealed HEAD before exact-head merge. Historical seals and raw logs immutable; REM0023 remains open.",
+    "not_executed": [],
+    "repair_cycle": 1,
+    "review_type": "REMEDIATION; 0050 REGRESSION_ONLY",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-19T01:52:11Z",
+    "verdict_file_sha256": "eecb659f456b05d7e69f030a255360e6fe2c00cf8aa08f2aeccddd1319b7b312",
+    "verdict_head_sha": "5603fb7aeea736aab58d2ef70475c3750f208036",
+    "verdict_request_id": "OCOR-DEV-REM-0033-5603fb7aeea7-1-env-recheck",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (xAI) via Cursor CLI",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori del task: Claude Code (Anthropic) e Codex (OpenAI). Nessun implementatore appartiene al fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -866,6 +1024,21 @@
   },
   "rollback": "Revert of the governed merge on main; no data migration, no history rewrite, sealed records untouched.",
   "schema_version": "1.0",
+  "seal_continuity": {
+    "aligned_head": "3453969d4d470f40ea60cd956b06fb9f5e1bd55b",
+    "execution_trees": {
+      ".github": "fca8f54508696412e77651964c329ead38170a6a",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "8aa0ab104133e5a930f0fff2d058325dd37c12fe",
+      "reports/tests": "18088d7b33da44a350ff436c3975ed5a2fddfc5a",
+      "scripts": "8498f1987b39c29998ec7b366751346744908256"
+    },
+    "fresh_final_head_ci_required": true,
+    "reviewed_head": "5603fb7aeea736aab58d2ef70475c3750f208036"
+  },
+  "sealed_at": "2026-10-19T01:55:27.501093+00:00",
   "source_raw_files": {
     "gates/gates.json": "ebb93bdf8a06163f5e4e6fd18d6058a2362520e76c14812a7e14f543f34523d1",
     "gates/inputs.log": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
@@ -889,7 +1062,7 @@
     "session-teardown.json": "622bc58d87b652425ffb190c8cbdd1e410a7487e2fa90ac56659da91c2b7fcf0",
     "toolchain.json": "ceeb45af77b75b61c56a3090d2d4afdf9f472271a313619e2ab73cfcdd8420d4"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "superseded_path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.json",
   "superseded_sha256": "1b8cf6492d237de83fa707f0c6be3525d7b60517d3608840cb8eff6783c901ee",
   "supersedes": "OCOR-DEV-0050-regression-rem0032-integration-cdf8819019de",
