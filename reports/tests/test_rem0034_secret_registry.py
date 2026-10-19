@@ -67,7 +67,7 @@ def test_authorized_sealed_occurrences_are_suspended_and_reported(tmp_path: Path
 
 
 @pytest.mark.parametrize("mutation", [
-    "record-byte", "oversized-record", "fourth-occurrence", "other-file", "other-field", "new-credential",
+    "record-byte", "oversized-record", "record-non-utf8", "fourth-occurrence", "other-file", "other-field", "new-credential",
     "wrong-rule", "wrong-digest", "wrong-index", "wrong-path", "wrong-file-digest",
     "wrong-provenance", "extra-entry", "missing-entry", "extra-field", "malformed", "missing",
 ])
@@ -79,6 +79,8 @@ def test_every_unapproved_variation_fails_closed(tmp_path: Path, mutation: str) 
         record.write_bytes(record.read_bytes() + b" ")
     elif mutation == "oversized-record":
         record.write_bytes(record.read_bytes() + b" " * 2_000_001)
+    elif mutation == "record-non-utf8":
+        record.write_bytes(record.read_bytes() + b"\xff")
     elif mutation in {"fourth-occurrence", "other-field"}:
         d = json.loads(record.read_text())
         v = d["regression_case_identity"][140]
