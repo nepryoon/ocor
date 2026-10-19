@@ -337,6 +337,226 @@ class ProbeTimeoutObservation(unittest.TestCase):
             self.assertEqual(removals[0]['node_id'], ID)
 
 
+BOOT_STDERR = 'System has not been booted with systemd as init system (PID 1). Can\'t operate.\n'
+
+
+def booting(*, pid=4242, running=True, oom=False, restarts=0, admitted=False):
+    networks = {'ocor-bootstrap_ocor-bootstrap': {}} if admitted else {'kind': {}}
+    return {**NODE, 'RestartCount': restarts, 'NetworkSettings': dict(Networks=networks),
+            'State': dict(Running=running, OOMKilled=oom, Status='running' if running else 'exited', Pid=pid)}
+
+
+class BootstrapExecProbe(unittest.TestCase):
+    """PO CI-0049-KIND-BOOTSTRAP-EXEC-PROBE (2026-10-15, option 1): the failed bootstrap
+    `systemctl show` of a present owned node is repeated at each poll inside the same
+    30 s window; accepted only when the same probe returns 0 with ActiveState=active
+    (and zero NRestarts if the node was admitted). Docker is simulated; nothing here
+    qualifies an OCOR backend or a runtime case."""
+
+    def exercise(self, nodes, probes, *, kubelet='ActiveState=active\nMainPID=7\nNRestarts=0\n', env_file=None, disappear_after_recovery=False):
+        """nodes: docker inspect <ID> rows during the window (last repeats);
+        probes: containerd results in order, (code, stdout, stderr) or 'TIMEOUT' (last repeats)."""
+        clock = Clock()
+        nodes, probes = list(nodes), list(probes)
+        calls = []
+        snapshots = 0
+
+        def run(argv, **kwargs):
+            nonlocal snapshots
+            calls.append((list(argv), dict(kwargs)))
+            code, out, err = 0, '', ''
+            if argv[:2] == ['docker', 'ps']:
+                snapshots += 1
+                out = '' if disappear_after_recovery and snapshots > 1 else ID + '\n'
+            elif argv[:2] == ['docker', 'inspect']:
+                row = nodes.pop(0) if len(nodes) > 1 else nodes[0]
+                if row is None:
+                    code, out, err = 1, '[]', 'Error: No such object: ' + ID
+                else:
+                    out = json.dumps([row])
+            elif argv[:2] == ['docker', 'exec'] and argv[5] == 'containerd':
+                outcome = probes.pop(0) if len(probes) > 1 else probes[0]
+                if outcome == 'TIMEOUT':
+                    clock.sleep(10)
+                    raise subprocess.TimeoutExpired(argv, 10)
+                clock.sleep(0.04)
+                code, out, err = outcome
+            elif argv[:2] == ['docker', 'exec'] and argv[5] == 'kubelet':
+                out = kubelet
+            elif argv[:2] == ['docker', 'events']:
+                out = ''
+            else:
+                raise AssertionError('unexpected command ' + repr(argv))
+            if code and kwargs.get('check'):
+                raise subprocess.CalledProcessError(code, argv, output=out, stderr=err)
+            return subprocess.CompletedProcess(argv, code, out, err)
+
+        patches = [patch.object(subprocess, 'run', run), patch.object(adapter, '_now', clock.now),
+                   patch.object(adapter, '_sleep', clock.sleep), patch.object(adapter, 'PYTEST_PGID', PGID),
+                   patch.object(adapter, 'REMOVER_OBSERVATIONS', []), patch.object(adapter, 'REMOVALS', []),
+                   patch.object(adapter, 'REJECTIONS', []), patch.object(adapter, 'PROBE_OBSERVATIONS', [])]
+        if hasattr(adapter, 'BOOTSTRAP_RECOVERIES'):
+            patches.append(patch.object(adapter, 'BOOTSTRAP_RECOVERIES', []))
+        if env_file is not None:
+            patches.append(patch.object(adapter, 'ENV_FILE', env_file, create=True))
+        for p in patches:
+            p.start()
+        try:
+            return adapter.inspect_kubernetes_runtimes(original.inspect_kubernetes_runtimes_raw)
+        finally:
+            self.rejections = list(adapter.REJECTIONS)
+            self.removals = list(adapter.REMOVALS)
+            self.probes = list(adapter.PROBE_OBSERVATIONS)
+            self.recoveries = list(getattr(adapter, 'BOOTSTRAP_RECOVERIES', []))
+            self.elapsed = clock.now() - T0
+            self.calls = calls
+            for p in reversed(patches):
+                p.stop()
+
+    FAIL = (1, '', BOOT_STDERR)
+    ACTIVE = (0, 'ActiveState=active\nMainPID=118\nNRestarts=0\n', '')
+
+    # ---- positive -------------------------------------------------------------------------
+
+    def test_failed_bootstrap_probe_then_success_inside_window_is_accepted(self):
+        current = self.exercise([booting()], [self.FAIL, self.FAIL, self.FAIL, self.ACTIVE])
+        self.assertEqual(current[ID + ':containerd'], dict(restarts=0, active='active', pid=118, admitted=False))
+        self.assertEqual(current[ID + ':kubelet']['active'], 'active')
+        self.assertEqual(self.rejections, [])
+        self.assertEqual(self.removals, [])
+        self.assertEqual(len(self.recoveries), 1)
+        recovery = self.recoveries[0]
+        self.assertEqual(recovery['status'], 'BOOTSTRAP_EXEC_PROBE_RECOVERED')
+        self.assertEqual((recovery['node_id'], recovery['service']), (ID, 'containerd'))
+        self.assertEqual(recovery['initial_failure']['returncode'], 1)
+        self.assertIn('not been booted with systemd', recovery['initial_failure']['stderr'])
+        self.assertLessEqual(self.elapsed, adapter.WINDOW_SECONDS)
+        # Probe identity unchanged: same argv, ten-second timeout, one retry per poll.
+        retried = [c for c in self.calls if c[0][:2] == ['docker', 'exec'] and c[0][5] == 'containerd']
+        self.assertTrue(all(c[0] == retried[0][0] and c[1]['timeout'] == 10 for c in retried))
+        self.assertEqual(len(retried), 5)  # failed original + 3 retries, then the fresh snapshot
+
+    def test_admitted_node_with_zero_restarts_is_accepted(self):
+        current = self.exercise([booting(admitted=True)], [self.FAIL, self.ACTIVE])
+        self.assertTrue(current[ID + ':containerd']['admitted'])
+        self.assertEqual(self.recoveries[0]['admitted'], True)
+
+    def test_probe_timeout_then_success_inside_window_is_accepted(self):
+        self.exercise([booting()], [self.FAIL, 'TIMEOUT', self.ACTIVE])
+        self.assertEqual(len(self.recoveries), 1)
+        self.assertEqual(self.rejections, [])
+
+    def test_failed_probe_then_intended_removal_keeps_v2_proof_path(self):
+        # A node that disappears during the retries still needs destroy + remover proof.
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.exercise([booting(), None], [self.FAIL])
+        self.assertEqual(self.rejections[-1]['reason'], 'OWNED_DESTROY_EVENT_MISSING')
+        self.assertEqual(self.recoveries, [])
+
+    # ---- negative -------------------------------------------------------------------------
+
+    def test_disappearance_after_recovery_with_empty_history_is_rejected(self):
+        # VF-001: the UUID was seen during recovery, then fresh docker ps is empty.
+        # No previous campaign snapshot exists to call confirm_missing_node for it.
+        with self.assertRaises(adapter.TeardownObservationError):
+            self.exercise([booting()], [self.FAIL, self.ACTIVE], disappear_after_recovery=True)
+        self.assertEqual(self.rejections[-1]['reason'], 'RECOVERED_NODE_MISSING_FROM_SNAPSHOT')
+        self.assertEqual(self.rejections[-1]['node_id'], ID)
+        self.assertEqual(len(self.recoveries), 1)
+        self.assertEqual(self.removals, [])
+        self.assertLess(self.elapsed, adapter.WINDOW_SECONDS)
+
+    def test_probe_failing_until_window_expiry_is_rejected(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.exercise([booting()], [self.FAIL])
+        self.assertEqual(self.rejections[-1]['reason'], 'WINDOW_EXPIRED_NODE_PRESENT')
+        self.assertEqual(self.recoveries, [])
+        self.assertLessEqual(self.elapsed, adapter.WINDOW_SECONDS + 1)
+
+    def test_probe_never_active_until_window_expiry_is_rejected(self):
+        for state_text in ('ActiveState=activating\nMainPID=0\nNRestarts=0\n',
+                           'ActiveState=failed\nMainPID=0\nNRestarts=0\n', 'garbage'):
+            with self.subTest(state=state_text), self.assertRaises(subprocess.CalledProcessError):
+                self.exercise([booting()], [self.FAIL, (0, state_text, '')])
+            self.assertEqual(self.rejections[-1]['reason'], 'WINDOW_EXPIRED_NODE_PRESENT')
+            self.assertEqual(self.recoveries, [])
+
+    def test_oom_restart_or_pid_change_during_window_is_rejected(self):
+        for rows, reason in (([booting(), booting(), booting(oom=True)], 'OOM_OR_RESTART_STATE'),
+                             ([booting(), booting(), booting(restarts=1)], 'OOM_OR_RESTART_STATE'),
+                             ([booting(pid=4242), booting(pid=4242), booting(pid=4343)], 'CONTAINER_PID_CHANGED')):
+            with self.subTest(reason=reason, row=rows[-1]['State']), self.assertRaises(subprocess.CalledProcessError):
+                self.exercise(rows, [self.FAIL, self.FAIL, self.ACTIVE])
+            self.assertEqual(self.rejections[-1]['reason'], reason)
+            self.assertEqual(self.recoveries, [])
+
+    def test_admitted_node_with_service_restarts_is_rejected(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.exercise([booting(admitted=True)], [self.FAIL, (0, 'ActiveState=active\nMainPID=118\nNRestarts=1\n', '')])
+        self.assertEqual(self.rejections[-1]['reason'], 'ADMITTED_NODE_SERVICE_RESTARTED')
+        self.assertEqual(self.recoveries, [])
+
+    def test_unadmitted_recovered_restart_still_fails_original_checks(self):
+        current = self.exercise([booting()], [self.FAIL, (0, 'ActiveState=active\nMainPID=118\nNRestarts=2\n', '')])
+        with self.assertRaises(original.CampaignError):
+            original.check_kubernetes_runtimes({}, current)
+
+    def test_identity_mismatch_during_window_is_rejected(self):
+        for row in (dict(booting(), Id='e' * 64), dict(booting(), Name='/foreign')):
+            with self.subTest(row=row['Name']), self.assertRaises(subprocess.CalledProcessError):
+                self.exercise([booting(), row], [self.FAIL, self.FAIL, self.ACTIVE])
+            self.assertEqual(self.rejections[-1]['reason'], 'NODE_IDENTITY_MISMATCH')
+
+    def test_other_exec_commands_are_not_retried(self):
+        # Only the exact runtime probe shape is repeated; any other exec keeps the v2 path.
+        for command in (['docker', 'exec', ID, 'systemctl', 'show', 'containerd'],
+                        ['docker', 'exec', ID, 'systemctl', 'show', 'sshd', '--property=ActiveState,MainPID,NRestarts'],
+                        ['docker', 'exec', ID, 'journalctl', '-u', 'containerd', '--no-pager']):
+            first = True
+
+            def inspector():
+                nonlocal first
+                if first:
+                    first = False
+                    raise subprocess.CalledProcessError(1, command, output='', stderr=BOOT_STDERR)
+                return {}
+            clock = Clock()
+            with self.subTest(command=command), \
+                    patch.object(subprocess, 'run', lambda argv, **k: subprocess.CompletedProcess(argv, 0, json.dumps([booting()]), '')), \
+                    patch.object(adapter, '_now', clock.now), patch.object(adapter, '_sleep', clock.sleep), \
+                    patch.object(adapter, 'REJECTIONS', []) as rejections, patch.object(adapter, 'PROBE_OBSERVATIONS', []), \
+                    self.assertRaises(subprocess.CalledProcessError):
+                adapter.inspect_kubernetes_runtimes(inspector)
+            self.assertEqual(rejections[-1]['reason'], 'WINDOW_EXPIRED_NODE_PRESENT')
+
+    # ---- diagnostics ----------------------------------------------------------------------
+
+    def test_failed_exec_records_bounded_redacted_stderr_and_exit_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            env = Path(d) / 'bootstrap.env'
+            env.write_text('OCOR_LOCAL_POSTGRES_PASSWORD=s3cr3t-generated\nSPIRE_JOIN_TOKEN=join-abc-123\nOTHER=visible\n')
+            noisy = ('x' * 2000 + ' password s3cr3t-generated token join-abc-123 '
+                     'OPENBAO_TOKEN=hvs.literal visible\n')
+            self.exercise([booting()], [(1, '', noisy), self.ACTIVE], env_file=env)
+        failed = [p for p in self.probes if p['command'][:2] == ['docker', 'exec'] and p.get('returncode') == 1]
+        self.assertTrue(failed)
+        for row in failed:
+            self.assertEqual(row['returncode'], 1)
+            self.assertLessEqual(len(row['stderr']), 500)
+            self.assertNotIn('s3cr3t-generated', row['stderr'])
+            self.assertNotIn('join-abc-123', row['stderr'])
+            self.assertNotIn('hvs.literal', row['stderr'])
+            self.assertIn('[REDACTED]', row['stderr'])
+            self.assertIn('visible', row['stderr'])
+        dumped = json.dumps(self.recoveries)
+        self.assertNotIn('s3cr3t-generated', dumped)
+        self.assertNotIn('join-abc-123', dumped)
+
+    def test_successful_probes_carry_no_stderr_field(self):
+        self.exercise([booting()], [self.FAIL, self.ACTIVE])
+        self.assertTrue(all('stderr' not in p for p in self.probes if p.get('returncode') == 0))
+
+
 SCOPE_STEP = '      - name: Reject immutable-path and task-ledger regressions\n'
 SCOPE_ANCHOR = '      - name: Acquire official checksum-pinned Kubernetes qualification tools\n'
 
@@ -371,7 +591,7 @@ def assert_governed_workflow(path, before, after):
 def observation_only_proof():
     """Reproducible AST comparison to the last unqualified CI source.
 
-    Normalisation removes only the two newly exported diagnostic fields and
+    Normalisation removes only the three newly exported diagnostic fields and
     unwraps the latency recorder back to subprocess.run; every call argument
     remains in the AST, including the ten-second timeout and check flag.
     """
@@ -392,7 +612,7 @@ def observation_only_proof():
             self.generic_visit(node)
             if any(isinstance(k, ast.Constant) and k.value == 'removals' for k in node.keys):
                 retained = [(k, v) for k, v in zip(node.keys, node.values, strict=True)
-                            if not (isinstance(k, ast.Constant) and k.value in {'remover_observations', 'probe_observations'})]
+                            if not (isinstance(k, ast.Constant) and k.value in {'remover_observations', 'probe_observations', 'bootstrap_recoveries'})]
                 node.keys = [k for k, _ in retained]
                 node.values = [v for _, v in retained]
             return node
@@ -476,6 +696,44 @@ class ExecutionInvariants(unittest.TestCase):
         # No pin/N exception in any other workflow.
         with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
             assert_governed_workflow('.github/workflows/ocor-rccad.yml', 'unchanged', 'changed')
+
+    def test_bootstrap_probe_change_is_observation_only_against_main(self):
+        """CI-0049-KIND-BOOTSTRAP-EXEC-PROBE: against the last qualified main (9b4d3be) the
+        campaign supervisor differs only by one exported diagnostic key; the observer keeps
+        its window, cadence, sampler and ten-second probe timeouts."""
+        root = Path(__file__).resolve().parents[2]
+        baseline = '9b4d3be8ec5bd785b02072a99037dd801b53d9a5'
+
+        def old(path):
+            return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True)
+
+        class DropExport(ast.NodeTransformer):
+            def visit_Dict(self, node):
+                self.generic_visit(node)
+                keep = [(k, v) for k, v in zip(node.keys, node.values, strict=True)
+                        if not (isinstance(k, ast.Constant) and k.value == 'bootstrap_recoveries')]
+                node.keys, node.values = [k for k, _ in keep], [v for _, v in keep]
+                return node
+
+        path = 'scripts/run_qualifying_campaign.py'
+        before = ast.dump(ast.parse(old(path)), include_attributes=False)
+        after = ast.dump(DropExport().visit(ast.parse((root / path).read_text())), include_attributes=False)
+        self.assertEqual(before, after)
+        self.assertNotEqual(old(path), (root / path).read_text())
+
+        def constants(text):
+            tree = ast.parse(text)
+            return {t.id: ast.dump(n.value) for n in tree.body if isinstance(n, ast.Assign)
+                    for t in n.targets if isinstance(t, ast.Name)
+                    and t.id in {'WINDOW_SECONDS', 'POLL_SECONDS', 'SAMPLE_SECONDS', 'KIND_BINARY'}}
+        observer = 'scripts/observe_kind_teardown.py'
+        self.assertEqual(constants(old(observer)), constants((root / observer).read_text()))
+        timeouts = {ast.unparse(k.value) for n in ast.walk(ast.parse((root / observer).read_text()))
+                    if isinstance(n, ast.Call) and ast.unparse(n.func) == 'run_probe'
+                    for k in n.keywords if k.arg == 'timeout'}
+        self.assertEqual(timeouts, {'10'})
+        for workflow in sorted((root / '.github/workflows').glob('*.yml')):
+            self.assertEqual(old(str(workflow.relative_to(root))), workflow.read_text(), workflow.name)
 
     def test_execution_ast_and_workflows_are_identical(self):
         proof = observation_only_proof()
