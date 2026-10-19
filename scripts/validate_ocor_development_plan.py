@@ -490,6 +490,16 @@ def main() -> int:
         # OCOR-DEV-0049 integration: 0050 regression after the merged REM-0032/REM-0017 allowlist.
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0032-integration-20261015.log",
+        # PO 2026-10-15 synthetic-secret scanner: exact REM-0034 outputs only.
+        "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json",
+        "reports/assurance/OCOR-DEV-REM-0034-RCCAD/OCOR-DEV-REM-0034.json",
+        "reports/assurance/OCOR-DEV-REM-0034-RCCAD/OCOR-DEV-REM-0034.log",
+        "reports/tests/test_rem0034_secret_registry.py",
+        "reports/development/decision_requests/REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER.md",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0034.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0034.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0034.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0034.log",
         # PO 2026-10-15 CI-0049-KIND-BOOTSTRAP-EXEC-PROBE (option 1): exact OCOR-DEV-REM-0033 paths.
         "reports/development/decision_requests/CI-0049-KIND-BOOTSTRAP-EXEC-PROBE.md",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/ci-38d259a-kind-bootstrap-exec-diagnosis.json",
