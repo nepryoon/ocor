@@ -343,7 +343,149 @@
     "status": "PASS"
   },
   "independent_verification": {
-    "status": "PENDING_EXTERNAL_LOOP"
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i digest normativi OK; inputs/ invariato nel diff base..HEAD."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q reports/tests/test_rem0034_secret_registry.py ocor-runtime/tests/tasks/test_ocor_dev_0005.py",
+        "exit_code": 0,
+        "summary": "38 passed, 0 skipped. Inclusi i 18 mutanti fail-closed e i 6 mutanti del guard."
+      },
+      {
+        "command": "pytest guard suite (6 moduli) senza Node/tsc sul PATH",
+        "exit_code": 0,
+        "summary": "224 passed, 2 skipped: tsc assente e Node v20.20.2/oracolo SDK assente."
+      },
+      {
+        "command": "PATH=node-v20.20.2+tsc-7.0.2 pytest test_generated_contracts_compile_under_tsc_strict test_component_1_measurement_end_to_end_smoke",
+        "exit_code": 0,
+        "summary": "2 passed dopo npm ci --ignore-scripts e npm run build dell'SDK nel worktree. Suite guard complessiva 226 passed, 0 skipped."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files."
+      },
+      {
+        "command": "scripts/validate_rccad.py --base-ref 80a97ba",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "scripts/validate_ocor_change_scope.py --base 80a97ba --head HEAD --branch governed/ocor-dev-rem-0034-sealed-synthetic-secret-scanner",
+        "exit_code": 0,
+        "summary": "PASS: 16 path cambiati; superfici immutabili intatte."
+      },
+      {
+        "command": "scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 80a97ba",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2. Il validator riscrive la serializzazione di OCOR_PLAN_RUN_STATE.json; file ripristinato, semantica invariata."
+      },
+      {
+        "command": "scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, drifted_tasks vuoto."
+      },
+      {
+        "command": "scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "adversarial registry probe (binding, 18 mutazioni, symlink, copia, worktree scan, 6 mutanti del guard)",
+        "exit_code": 0,
+        "summary": "Tre digest di stringa coincidono col record sigillato 0e37bcb0; fixture letterali a 6e1c4b0; scan del worktree blocking=0 suspended=0; delta SHA256 73da96ea normalizza al baseline 80a97ba."
+      },
+      {
+        "command": "scripts/bootstrap_development_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Primo avvio fallito: CA della checkout principale scaduta il 2026-10-08. CA disposable rigenerata solo nel worktree; secondo avvio PASS. 11 container, immagine Fuseki sha256:6534156b identica al lock."
+      },
+      {
+        "command": "docker compose -f deploy/bootstrap/compose.yaml -f .ocor/ci-resources.yaml up fuseki",
+        "exit_code": 0,
+        "summary": "Profilo ci_resources sha256 b79b1fc9; JVM -Xms128m -Xmx1G; MaxHeapSize=1073741824; cgroup 2147483648; OOMKilled=false; restarts=0."
+      },
+      {
+        "command": "initialize_services.py && load_fixtures.py && SVID control-plane && verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "Init e fixture PASS; SVID spiffe://ocor.test/ocor/control-plane fetched; typed health PASS, servizi READY."
+      },
+      {
+        "command": "scripts/run_qualifying_campaign.py --execute --output-dir /tmp/ocor-rem0034-verifier-full",
+        "exit_code": 1,
+        "summary": "2323 test, 0 skipped, 2301 passed, 21 failed, 1 error in 2869.80s. Tutti i 22 esiti rossi sono precondizioni d'ambiente: helm/kind assenti nel worktree /tmp e mypy rimosso dal successivo uv sync --extra test del bootstrap. 0050: 198 passed, 0 skipped. 0005: 6 passed, 0 skipped. Nessun OOM o restart."
+      },
+      {
+        "command": "pytest dei 22 nodi 0049 dopo uv sync --extra lint e symlink dei binari pinnati helm 3.14.4, kind 0.29.0, kubectl 1.33.1",
+        "exit_code": 0,
+        "summary": "22 passed in 450.03s, incluso il caso kind live. Nessun cluster kind residuo."
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "Stack ocor-bootstrap rimosso; 0 container del progetto rimasti; nessun volume nuovo rispetto allo snapshot pre-campagna."
+      }
+    ],
+    "findings": [],
+    "historical_implementers_of_affected_records": [
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic"
+      },
+      {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      }
+    ],
+    "implementers": [
+      {
+        "agent": "Codex",
+        "provider": "OpenAI",
+        "scope": "REM0034 implementation, local qualification and integration"
+      }
+    ],
+    "integration_agent": "Codex (OpenAI)",
+    "integration_condition": "Only new candidate seal metadata, embedded requalification metadata/digest and manifest hashes change after GO; execution trees identical to reviewed HEAD. No historical seal, raw, code, test, harness or workflow changed. Thirteen mandatory checks on final sealed HEAD before exact-head merge; REM0023 remains open.",
+    "not_executed": [],
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION; 0050 REGRESSION_ONLY",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-19T23:20:27Z",
+    "verdict_file_sha256": "bf1b8cefaa146b6239c90c04953f0901f9a3057180309a587599ef31e33de1b7",
+    "verdict_head_sha": "fa992a33676a238de7044082293b3199bb6d410c",
+    "verdict_request_id": "OCOR-DEV-REM-0034-fa992a33676a-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (xAI) via Cursor CLI",
+    "verifier_campaign_limitation": "Verifier full:2301 passed,21 failed,1 error,0 skipped because of missing tools; targeted rerun of22 nodes passed after pinned environment repair. This is not represented as one consecutive green full. Original implementer qualifying full2323/0/0/0 remains unchanged on identical execution tree; external GO accepted as issued; fresh final-head CI required.",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatore del change set: Codex (OpenAI). Implementatori storici dei record toccati: Claude Code (Anthropic) e Codex (OpenAI), senza contributo di xAI. Nessun implementatore dichiarato condivide il fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
   },
   "inputs": {
     ".github/workflows/ocor-supply-chain.yml": "aab635eafb71a3ad705329b8a44d3eba8c06da5688206bd83bb75d2bef34d30d",
@@ -420,6 +562,21 @@
   },
   "rollback": "Nuovo revert governato; sigilli storici intatti.",
   "schema_version": "1.0",
+  "seal_continuity": {
+    "aligned_head": "2c11f19f513461626404bdc203bd3535e3c24108",
+    "execution_trees": {
+      ".github": "3632913a3d6ba6ca9ff4f9cbdddd70fd238e796a",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "8aa0ab104133e5a930f0fff2d058325dd37c12fe",
+      "reports/tests": "23785e14a706bb0a38bf396c6577183d08d6f5b6",
+      "scripts": "d93cddf0d54d94a46ea73b9d555b04a8fd08c0f9"
+    },
+    "fresh_final_head_ci_required": true,
+    "reviewed_head": "fa992a33676a238de7044082293b3199bb6d410c"
+  },
+  "sealed_at": "2026-10-19T23:22:46.983044+00:00",
   "session_teardown": {
     "after_counts": {
       "containers": 25,
@@ -446,7 +603,7 @@
     "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
     "status": "PASS"
   },
-  "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "superseded_record": {
     "path": "reports/evidence/G0/OCOR-DEV-0005.requalified.json",
     "record_id": "OCOR-DEV-0005-requalified-583cef668320",
