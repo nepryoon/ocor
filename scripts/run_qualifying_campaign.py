@@ -873,6 +873,7 @@ def main() -> int:
                 "window_seconds": kind_observer.WINDOW_SECONDS,
                 "remover_observations": kind_observer.REMOVER_OBSERVATIONS,
                 "probe_observations": kind_observer.PROBE_OBSERVATIONS,
+                "bootstrap_recoveries": kind_observer.BOOTSTRAP_RECOVERIES,
             }, indent=2, sort_keys=True) + "\n")
         recorder_error = None
         if recorder is not None:
