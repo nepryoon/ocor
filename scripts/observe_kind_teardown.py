@@ -71,7 +71,10 @@ def owned_remover() -> dict[str, Any] | None:
             if os.getpgid(pid) != PYTEST_PGID or (folder / 'exe').resolve(strict=True) != KIND_BINARY:
                 continue
             args = (folder / 'cmdline').read_bytes().decode().rstrip('\0').split('\0')
-            if args != [str(KIND_BINARY), 'delete', 'cluster', '--name', 'ocor-poc']:
+            # Identity is /proc/<pid>/exe above; argv[0] is caller-chosen. Accept only an
+            # absolute alias of the same file (verifier symlink), never a relative name.
+            if (args[1:] != ['delete', 'cluster', '--name', 'ocor-poc'] or not os.path.isabs(args[0])
+                    or Path(os.path.realpath(args[0])) != KIND_BINARY):
                 continue
             stat = (folder / 'stat').read_text().rsplit(')', 1)[1].split()
             return {'pid': pid, 'pgid': PYTEST_PGID, 'start_ticks': int(stat[19]), 'command': args}
