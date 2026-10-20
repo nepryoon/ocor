@@ -16,8 +16,10 @@ Le riqualifiche sono record nuovi con supersessione; i sigilli storici
 restano intatti. Il primo writer del registry resta un rischio aperto
 assegnato a REM-0031 dalla decisione PO del 2026-10-14.
 
-Implementatore REM-0028: Codex. Verifica esterna primaria: Claude Code.
-Le riqualifiche della linea toccata dalla riserva Claude Code richiedono
-inoltre Cursor/Grok 4.7; nessun verifier è avviato dall'implementatore.
+Implementatore REM-0028: Codex (OpenAI), checkpoint e ripresa del 2026-10-20.
+La linea storica delle riqualifiche include Claude Code (Anthropic).
+Verifica richiesta a Grok 4.7 (xAI), via Cursor CLI, in processo e contesto
+separati avviati soltanto dal loop esterno, secondo LOOP-AGENT-ROTATION.
+Nessun verifier è avviato dall’implementatore.
 
 E1=0, E2=0, nessun requisito globalmente Verified; claim NO-GO invariati.
