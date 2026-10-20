@@ -1005,3 +1005,130 @@ def test_known_node_disappearance_cannot_qualify_without_removal_proof(monkeypat
     with pytest.raises(GUARD.kind_observer.TeardownObservationError, match="proof"):
         GUARD.check_kubernetes_runtimes(history, {})
     assert "node:containerd" in history
+
+
+# REM-0019 cycle 3, VF-001 of OCOR-DEV-REM-0019-712fc2b79977-2: the verifier ran the
+# campaign from a worktree whose .ocor/tools/bin/kind is a symlink to the official
+# binary. The 0049 fixture launched `kind delete` through that link, so argv[0] never
+# equalled the resolved KIND_BINARY and the v2 sampler saw no remover. Real kind
+# binary, real /proc, real sampler and the real 0049 tool() lookup; kind is held alive
+# by a fake `docker` on its own PATH only, so no Docker object is touched.
+KIND_TAIL = ['delete', 'cluster', '--name', 'ocor-poc']
+LEADER = '''import json, subprocess, sys
+argv, path, new_session = json.loads(sys.argv[1])
+subprocess.run(argv, env={"PATH": path}, capture_output=True, start_new_session=new_session)
+'''
+
+
+def official_kind():
+    binary = GUARD.qualification_kind_binary(Path(__file__).resolve().parents[2])
+    if not binary.is_file():
+        pytest.fail('official kind binary unavailable (DEC-211 provisioning required); not a skip')
+    return binary
+
+
+def verifier_layout(tmp_path, target):
+    """The verifier worktree: no checkout tools, only a symlinked .ocor/tools/bin/kind."""
+    worktree = tmp_path / 'wt'
+    tools = worktree / '.ocor/tools/bin'
+    tools.mkdir(parents=True)
+    (tools / 'kind').symlink_to(target)
+    return worktree
+
+
+def fixture_kind(monkeypatch, worktree):
+    """argv[0] exactly as test_ocor_dev_0049.tool('kind') returns it for this worktree."""
+    path = Path(__file__).resolve().parents[2] / 'ocor-runtime/tests/tasks/test_ocor_dev_0049.py'
+    spec = importlib.util.spec_from_file_location('ocor_rem0019_fixture_0049', path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, 'ROOT', worktree)
+    return module.tool('kind')
+
+
+def observe_remover(tmp_path, kind_binary, argv, *, path='', new_session=False):
+    """Run a pytest-like session leader that launches argv; return sampler rows and liveness."""
+    import json
+    import os
+    import subprocess
+    import time
+    fakebin = tmp_path / 'fakebin'
+    fakebin.mkdir(exist_ok=True)
+    (fakebin / 'docker').write_text('#!/bin/sh\nsleep 2\nexit 1\n')
+    (fakebin / 'docker').chmod(0o755)
+    observer = GUARD.kind_observer
+    leader = subprocess.Popen([sys.executable, '-I', '-c', LEADER,
+                               json.dumps([argv, ':'.join(filter(None, [path, str(fakebin), '/usr/bin:/bin'])),
+                                           new_session])], start_new_session=True)
+    thread = observer.start_sampler(leader.pid, kind_binary)
+    alive = 0
+    try:
+        while leader.poll() is None:
+            for entry in Path('/proc').iterdir():
+                try:
+                    if (entry.name.isdecimal() and int(entry.name) != leader.pid
+                            and (entry / 'cmdline').read_bytes().split(b'\0')[1:4] == [b'delete', b'cluster', b'--name']):
+                        alive += 1
+                except (OSError, IndexError):
+                    continue
+            time.sleep(observer.SAMPLE_SECONDS)
+    finally:
+        observer.stop_sampler(thread)
+        if leader.poll() is None:
+            os.killpg(leader.pid, 9)
+    # The remover really lived for many sampling periods: a rejection is never a missed sample.
+    assert alive >= 5, alive
+    return [dict(row) for row in observer.REMOVER_OBSERVATIONS], leader.pid
+
+
+def test_remover_launched_through_verifier_symlink_is_observed_in_the_pytest_group(tmp_path, monkeypatch):
+    official = official_kind()
+    worktree = verifier_layout(tmp_path, official)
+    kind_binary = GUARD.qualification_kind_binary(worktree)
+    assert kind_binary == official
+    rows, leader = observe_remover(tmp_path, kind_binary, [fixture_kind(monkeypatch, worktree), *KIND_TAIL])
+    assert len(rows) == 1, rows
+    assert rows[0]['pgid'] == leader and rows[0]['command'][1:] == KIND_TAIL
+    assert Path(rows[0]['command'][0]).resolve() == kind_binary
+
+
+def test_remover_launched_through_the_checkout_binary_is_observed_in_the_pytest_group(tmp_path):
+    """Control: the local layout (argv[0] is the real file) is observed by the same instrument."""
+    official = official_kind()
+    rows, leader = observe_remover(tmp_path, official, [str(official), *KIND_TAIL])
+    assert len(rows) == 1, rows
+    assert rows[0]['pgid'] == leader and rows[0]['command'] == [str(official), *KIND_TAIL]
+
+
+def test_symlink_to_a_different_binary_is_never_the_owned_remover(tmp_path, monkeypatch):
+    import shutil
+    official = official_kind()
+    foreign = tmp_path / 'foreign' / 'kind'
+    foreign.parent.mkdir()
+    shutil.copy2(official, foreign)
+    worktree = verifier_layout(tmp_path, foreign)
+    rows, _ = observe_remover(tmp_path, official, [fixture_kind(monkeypatch, worktree), *KIND_TAIL])
+    assert rows == []
+
+
+def test_relative_argv0_is_never_the_owned_remover(tmp_path):
+    official = official_kind()
+    rows, _ = observe_remover(tmp_path, official, ['kind', *KIND_TAIL], path=str(official.parent))
+    assert rows == []
+
+
+def test_remover_of_a_different_cluster_is_never_the_owned_remover(tmp_path, monkeypatch):
+    official = official_kind()
+    worktree = verifier_layout(tmp_path, official)
+    argv = [fixture_kind(monkeypatch, worktree), *KIND_TAIL[:-1], 'foreign']
+    rows, _ = observe_remover(tmp_path, official, argv)
+    assert rows == []
+
+
+def test_remover_outside_the_pytest_process_group_is_never_the_owned_remover(tmp_path, monkeypatch):
+    official = official_kind()
+    worktree = verifier_layout(tmp_path, official)
+    rows, _ = observe_remover(tmp_path, official, [fixture_kind(monkeypatch, worktree), *KIND_TAIL],
+                              new_session=True)
+    assert rows == []

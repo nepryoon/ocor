@@ -118,3 +118,82 @@ E1=0, E2=0, Verified=0 e claim NO-GO invariati.
 ## Sigillo 2026-10-14 — campagna finale e verdetto indipendente
 
 Verdetto `OCOR-DEV-REM-0019-90b30fff9819-1`, SHA256 `ab73c069a892b5f189a5f865f5bd9370572e00e105be5582919f0a15ba625d30`. Campagna qualificante su `6e1c4b050ac610a22673d6f559e424a01705189c`: full 2224/2224, cinque ordini 390/390 ciascuno e 119 isolati, zero skip e zero residui. Riqualifica 0050 di sola regressione (198 casi invariati), difetto audit di diniego ancora REM-0023. Codex e Claude Code di riserva hanno contribuito alla riparazione; verifier Grok 4.7 (Cursor), contesto separato. In questa unità Codex modifica soltanto metadati di sigillo, README e hash dei manifest; raw log, prove e record storici invariati. Il run completo iniziale del verifier con problemi di PATH/SPIRE resta diagnostico, con i successivi controlli registrati integralmente nel verdetto. Integrazione task prima, governance dopo; mai governance nel branch task prima dello scope CI. E1=0, E2=0, Verified=0 e NO-GO invariati.
+
+## Ciclo 3 (2026-10-20) — diagnosi di VF-001 e RED
+
+Ciclo eccezionale 3 di `REM-0019-INTEGRATION-REPAIR-BUDGET` (opzione 1), eseguito fuori
+dal loop da Claude Code (Anthropic, Opus 5.5) sotto supervisione del PO secondo
+`REM-0019-INTEGRATION-REPAIR-CYCLE3-INTERACTIVE`. Candidato di partenza
+`712fc2b799774281321c04209bfb6910b91f0941`, verdetto `OCOR-DEV-REM-0019-712fc2b79977-2`
+(SHA256 `f2c98370867331e3399e74961cd6b5130aae10276b097455f3d34069276fdbc5`), VF-001
+`NO_OWNED_REMOVER_IN_PYTEST_GROUP`. Osservatore non modificato prima della diagnosi.
+
+### Causa: ipotesi (c), identità di `argv[0]` per symlink
+
+- Il verifier ha eseguito la campagna da un worktree in `/tmp/ocor-verify-*/wt` privo di
+  `.ocor/tools/bin`; prima delle campagne del verdetto vi ha creato
+  `.ocor/tools/bin/kind` come **symlink** al binario ufficiale del checkout principale.
+- `test_ocor_dev_0049.tool("kind")` restituisce il percorso **non risolto**: la fixture
+  lancia `kind delete` con `argv[0]` = percorso del symlink.
+- `run_qualifying_campaign.qualification_kind_binary()` restituisce il percorso
+  **risolto**: `KIND_BINARY` = file reale.
+- `observe_kind_teardown.owned_remover()` accetta il processo solo se
+  `/proc/<pid>/exe` risolve a `KIND_BINARY` (vero: il kernel risolve il link) **e**
+  `argv == [str(KIND_BINARY), 'delete', 'cluster', '--name', 'ocor-poc']` (falso: confronto
+  di stringa su `argv[0]`). Nessun campione: `remover_observations` vuoto per l'intera
+  durata di entrambe le campagne del verifier (pgid pytest 2630803 e 3665447).
+- Nella full locale del ciclo 2 `argv[0]` era il file reale del checkout e il remover è
+  stato osservato, vivo per circa 2,6 s (13 periodi da 0,2 s).
+
+### Ipotesi discriminate
+
+- (a) remover breve perso dal campionamento: **esclusa**. Nella riproduzione il remover
+  resta vivo ≥ 7,6 s (≥ 38 periodi) e non è osservato nel layout symlink; nel layout
+  reale lo è.
+- (b) gruppo/sessione diversi per il lancio via `agent -p`: **esclusa**. Il supervisore
+  crea comunque una nuova sessione per pytest (`start_new_session=True`); in entrambe le
+  modalità pgid e sid del remover coincidono con il leader.
+- (c) **confermata**: unico predicato v2 che diverge è `argv` esatto.
+
+### Riproduzione sulla workstation
+
+Sonda con osservatore e `qualification_kind_binary` del candidato invariati, binario kind
+reale, `/proc` reale, leader in nuova sessione come pytest nella campagna; kind tenuto
+vivo da un `docker` fittizio nel solo PATH di kind (nessun oggetto Docker toccato). Due
+esecuzioni con esito identico:
+
+| Layout | pgid/sid = leader | exe = KIND_BINARY | argv esatto | Vivo | Campioni |
+|---|---|---|---|---|---|
+| checkout reale (locale) | sì | sì | sì | ≥ 7,6 s | 1 |
+| symlink in worktree (verifier) | sì | sì | **no** | ≥ 7,6 s | **0** |
+
+Output privati della sonda (scratch di sessione, nessun dato di fixture): run 1
+SHA256 `4d90324f5200501ac83963eec7ce45e5819e574eb5012eea753aa6be97e4a20a`, run 2
+`06bfd6cdd7e3a90cfe61cb8a885ddb08551bf1a5fc0ababa66c53b932c4e0ebd`, sonda
+`5fb1f9da0c1359a680dd8ac1e125f07c75303297a825ea2cc88a3509fddf6188`. Lo strumento
+versionato e riproducibile è il RED sotto.
+
+Versioni: kind v0.29.0 (go1.24.2, linux/amd64), Docker client/server 29.9.1, Python
+3.12.11 (venv `ocor-runtime`), kernel 7.0.0-38-generic.
+
+Suite completa in modalità verifier sul candidato non modificato: `NOT_EXECUTED` per
+disposizione del PO; rifiuto già riprodotto due volte in modo deterministico con
+osservatore, kind e `/proc` reali.
+
+### RED
+
+`reports/tests/test_qualifying_campaign_guard.py`, sei casi con campionatore reale, kind
+reale e `argv[0]` prodotto dal vero `tool("kind")` di 0049 nel layout del verifier; ogni
+caso verifica che il remover sia vivo per almeno cinque periodi, quindi un rifiuto non è
+mai un campione perso.
+
+- positivo, lancio via symlink del verifier: **FAIL** sul candidato (`AssertionError: []`);
+- controllo, lancio dal file reale del checkout: PASS (lo strumento osserva);
+- negativi che devono restare rifiuti: symlink verso un binario diverso, `argv[0]`
+  relativo, cluster diverso, processo fuori dal gruppo pytest: PASS (zero osservazioni).
+
+Fingerprint RED (SHA256 del JSON canonico `[nome, esito, messaggio]` ordinato):
+`07cafaa2cba4b84f2a55d45666f9395986de780d102b770a1022c2c4a1f52358`. File di test intero:
+1 failed, 134 passed.
+
+E1=0, E2=0, Verified=0 e claim NO-GO invariati; nessun sigillo, merge o GO.
