@@ -209,6 +209,32 @@
     "red_log_sha256": "403f2fce69ac98e70228af4d5e457b3211c93f00a4244998f9b2fae1b542117c",
     "scope": "Diagnostic targeted RED only; optional control can expire signatures or revoke identity. Final validation freezes iterables, re-reads authority/time and invokes control exactly once."
   },
+  "integration_alignment": {
+    "base_sha": "7eb83eefebcdff0f7ebf6bb9b9de6de8f7430ef5",
+    "changed_since_review": "reports/tests/test_qualifying_campaign_guard.py | 234 ++++++++++++++++++++++++\n scripts/observe_kind_teardown.py                |   5 +-\n scripts/validate_ocor_development_plan.py       |  25 +++\n 3 files changed, 263 insertions(+), 1 deletion(-)",
+    "execution_driver_sha256": {
+      "campaign.py": "3f85de914ae81c2028a6ca47ccdae63be21f744eafa40eac6cd3dcc2ed21501c",
+      "exact_union.py": "5dafa0dbbe014efe63879d6ca8468da040c4c83eaaf9b04d151bae9dc2adad0d",
+      "preflight.py": "71e52d884625af6c2f29f27153508f417d807ca8fa5ae2dad31ef4a269108fd1",
+      "targeted.py": "4377ec4ad34eabc85ac84a954a639c87b3d8f4b9e9d1aab20ea597e4cc3f2098"
+    },
+    "prior_go_coverage": "Historical HEAD only; no seal or current-head GO inferred. New full and requalification cover merged main harness.",
+    "prior_go_request_id": "OCOR-DEV-REM-0028-89745cf4b962-0",
+    "prior_go_sha256": "8b9b77976a882a9999f1e28632286ac5d2ff75664326297e35eb9b20308a0e10",
+    "reason": "Main integration includes accepted REM0019 kind-observer change and allowlist additions. New full required: alignment is not metadata-only. Historical REM0028 GO preserved; new exact-head external verification required.",
+    "reviewed_head": "89745cf4b962898e1d5ec20561e6a9a912406262",
+    "source_head": "0af64b5c492f7f4572d2fc11df06fe2793e964a1",
+    "status": "NEW_FULL_QUALIFIED_REQUIRES_NEW_EXACT_HEAD_VERDICT",
+    "trees": {
+      ".github": "3632913a3d6ba6ca9ff4f9cbdddd70fd238e796a",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "183bb4b99843e79e46f504079546fa6d44254b55",
+      "reports/tests": "f44ebaad1169a45041108701d1f716a4b62011a4",
+      "scripts": "c509b69cfd962bb4cc5b12140b31aa99a06ff7c6"
+    }
+  },
   "normative_refs": [
     "ADD v1.3 5.4/5.5",
     "LLD v1.1 1.1/4.1/4.3",
@@ -262,7 +288,12 @@
       {
         "agent": "Codex",
         "provider": "OpenAI",
-        "scope": "REM0028 code/tests checkpoint and resumed qualification/evidence"
+        "scope": "REM0028 implementation and integration qualification; non-destructive merge of main"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "scope": "Inherited REM0019 cycle3 kind observer merged from approved main; historical baseline/requalification lineage; no new REM0028 behavior authored in this iteration"
       }
     ],
     "verifier_requested": {
