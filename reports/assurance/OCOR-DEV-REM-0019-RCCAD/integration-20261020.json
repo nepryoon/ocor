@@ -302,8 +302,131 @@
     "verdict": "GO_FOR_EVIDENCE_SEAL"
   },
   "independent_verification": {
-    "status": "REQUESTED_PENDING",
-    "verifier": "cursor"
+    "commands": [
+      {
+        "command": "git worktree add --detach /tmp/ocor-verify-OCOR-DEV-REM-0019-6fd31e9e0812-3/wt 6fd31e9e0812c37e5465b6a608b5246a75bdaa44",
+        "exit_code": 0,
+        "summary": "Worktree detached sull'HEAD esatto; alberi .github, deploy, infra, inputs, ocor-runtime, reports/tests e scripts identici a 3cf6e22."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 OK. git diff 3b5d9768..HEAD -- inputs/ vuoto."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q reports/tests/test_qualifying_campaign_guard.py reports/tests/test_kind_teardown_observation.py",
+        "exit_code": 0,
+        "summary": "176 passed, 42 subtests, zero skip. Inclusi i 420 casi del predicato, il diff esatto sull'hunk argv e il layout symlink."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff 0.13.1, All checks passed."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0. E1=0, nessun DEC-197 assegnato."
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref 3b5d9768b2d6f55ffa5c34fcfb7db28a3e8694fd",
+        "exit_code": 0,
+        "summary": "PASS con l'interprete del progetto."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base 3b5d9768b2d6f55ffa5c34fcfb7db28a3e8694fd --head HEAD --branch governed/ocor-dev-rem-0019-evidence-stage",
+        "exit_code": 0,
+        "summary": "PASS. inputs/ immutato. Il ciclo 3 rispetto a 712fc2b tocca osservatore, test del guard, evidenza e stato."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 3b5d9768b2d6f55ffa5c34fcfb7db28a3e8694fd",
+        "exit_code": 0,
+        "summary": "37 PASS, 2 NOT_EXECUTED opzionali (markdownlint e mmdc assenti, fallback deterministico eseguito, non contati come PASS). Una prima invocazione con il python del binario ruff e' uscita 1 per ModuleNotFoundError jsonschema; non e' un esito del gate."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS. Il manifest G4 non cambia fra 712fc2b e HEAD."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS. I due digest aggiornati coincidono con i file; gli altri artefatti del manifest sono invariati."
+      },
+      {
+        "command": "tdd reproduction red b557549, green 3cf6e22, mutants no_isabs no_realpath no_exe_check",
+        "exit_code": 0,
+        "summary": "RED: 1 failed, 172 passed, 0 skipped; solo il caso symlink fallisce; fingerprint 07cafaa2cba4b84f2a55d45666f9395986de780d102b770a1022c2c4a1f52358. GREEN: 176 passed, fingerprint 576ece8a. Ogni mutante: 2 failed, 174 passed, ucciso dal confronto dei 420 casi e dal test di diff. Il commit di diagnosi precede il fix e non modifica l'osservatore."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "198 passed in 4.81s, zero skip. REGRESSION_ONLY; REM0023 resta OPEN nel record."
+      },
+      {
+        "command": "reset_test_environment.py --execute && bootstrap --skip-start && compose up con ci-resources -Xms128m -Xmx1G && initialize_services.py && load_fixtures.py",
+        "exit_code": 0,
+        "summary": "11 servizi running, RestartCount 0, OOMKilled false. Fuseki java -Xms128m -Xmx1G, cgroup 2147483648. Profilo sha256 b79b1fc925d59d897a07cabc559c756fc8efb0b421f6684a19495ade28af6918. TCP 8080 solo Keycloak. SVID spiffe://ocor.test/ocor/control-plane. Init e fixture PASS. Il bootstrap.env della checkout principale e' rimasto invariato."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --output-dir .ocor/verification-rem0019-full",
+        "exit_code": 0,
+        "summary": "Layout verifier: .ocor/tools/bin/kind symlink assoluto verso il binario ufficiale. JUnit 2323 tests, 0 failures, 0 errors, 0 skipped; 0048=196, 0049=390, 0050=198. Durata 3590.1525310350116 s, sotto 3600 e sotto 4500, po_decision_required false. Una rimozione OWNED_KIND_TEARDOWN_OBSERVED, zero rejection, zero recovery, window 30 s. argv[0] e' il symlink del worktree, coda esatta, pgid 1614942 uguale al leader pytest, destroy dello stesso UUID e2cdec63ae9f dentro la finestra. Tre avvii precedenti interrotti con exit 130 (DSN assente, init dei servizi assente, ruff assente dal PATH) non sono conteggiati."
+      }
+    ],
+    "findings": [],
+    "integration_condition": "13 required checks completed/success on the exact sealed HEAD, union and Helm proof, then --match-head-commit; no bypass.",
+    "metadata_alignment": {
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_trees": {
+        ".github": "3632913a3d6ba6ca9ff4f9cbdddd70fd238e796a",
+        "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+        "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+        "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+        "ocor-runtime": "8aa0ab104133e5a930f0fff2d058325dd37c12fe",
+        "reports/tests": "f44ebaad1169a45041108701d1f716a4b62011a4",
+        "scripts": "0d6ef8aa165c94667badb0ca2aeb65bcb957d28f"
+      },
+      "main_head": "f6585d9e7e513cc2b981bb6706cd25986919ae07",
+      "metadata_merge_commit": "041405fbc88a8c1252fafc1ece1441ad9f8ea22e",
+      "non_state_diff_stat": "",
+      "reviewed_head": "6fd31e9e0812c37e5465b6a608b5246a75bdaa44"
+    },
+    "not_executed": [],
+    "repair_cycle": 3,
+    "scope": "REM0019 integration cycle3 and REGRESSION_ONLY0050; REM0023 denial audit remains OPEN. Historical GO and seals unchanged.",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-21T09:08:18Z",
+    "verdict_file_sha256": "6fea8d9a9c5738ac00d8a9d82939e6a0c972cb13d40888582640656baf35542a",
+    "verdict_head_sha": "6fd31e9e0812c37e5465b6a608b5246a75bdaa44",
+    "verdict_request_id": "OCOR-DEV-REM-0019-6fd31e9e0812-3",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "cursor",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati dal loop esterno. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatori del task: Claude Code, Opus 5.5, fornitore Anthropic; Codex, fornitore OpenAI. Nessun implementatore dichiarato condivide il fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, loop esterno",
+      "provider": "xAI"
+    }
   },
   "invariants": {
     "changed_paths_vs_rejected": [
@@ -469,7 +592,7 @@
     "G4": "Union of historical artifacts; main REM0032 authority and requirement rows unchanged. Current deploy already qualified; tests identical.",
     "G5": "Historical artifact union; current regression-only0050 artifact supersedes REM0034, with12 conformance case references preserved on rem0033. No case claim backed only by aggregate regression."
   },
-  "next_action": "External exact-head Cursor/Grok review; seal these two candidate records only after GO; 13 required exact-head CI before PR254 merge. No cycle4: on NO_GO open a structural decision request.",
+  "next_action": "13 required named checks success on the exact sealed HEAD; validate union and Helm teardown; merge PR254 --match-head-commit and separate state sync.",
   "not_executed": [
     "Riproduzione completa sul candidato non modificato 712fc2b: non eseguita per decisione del PO; causa riprodotta deterministicamente dalla sonda e dal RED.",
     "Planning validator: markdownlint e mmdc opzionali non disponibili, fallback deterministico eseguito, non contati come PASS.",
@@ -1014,16 +1137,23 @@
         "provider": "OpenAI"
       }
     ],
+    "integration_agent": {
+      "agent": "Codex",
+      "provider": "OpenAI",
+      "scope": "Evidence seal and exact-head CI integration; no implementation changes"
+    },
     "verifier": {
-      "model": "Grok 4.7",
-      "process": "Cursor CLI, separate process/context, external loop only",
+      "independence_limits": "Processo e contesto separati dal loop esterno. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatori del task: Claude Code, Opus 5.5, fornitore Anthropic; Codex, fornitore OpenAI. Nessun implementatore dichiarato condivide il fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, loop esterno",
       "provider": "xAI",
-      "status": "EXPECTED_EXTERNAL_LOOP_NOT_LAUNCHED"
+      "status": "COMPLETED_GO_FOR_EVIDENCE_SEAL"
     }
   },
   "rollback": "New governed revert commit; no migration or rewrite of historical evidence.",
   "schema_version": "1.0",
   "scope": "Cycle3 of REM0019 integration (exceptional, PO-supervised): VF-001 fixed in scripts/observe_kind_teardown.py argv comparison only, with RED/GREEN, non-weakening proofs and mutations in reports/tests/test_qualifying_campaign_guard.py; full local and verifier-layout campaigns plus 0050 regression on clean source. Sealed historical records immutable.",
+  "sealed_at": "2026-10-21T09:13:22.325465+00:00",
   "session_teardown": {
     "after_counts": {
       "containers": 96,
@@ -1041,7 +1171,7 @@
     "session_start": "2026-10-20T20:28:33+00:00",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "superseded_record": {
     "path": "reports/assurance/OCOR-DEV-REM-0019-RCCAD/integration-20261015.json",
     "sha256": "4a9d0d22144900c2b9a1c3a336e99c3762037d798a70fa9ae17a04c7de8af112"
