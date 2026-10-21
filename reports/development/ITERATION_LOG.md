@@ -6059,3 +6059,10 @@ E1=0,E2=0,Verified=0 eNO-GO invariati; candidatoREM17 non sigillato/mergiato/ver
 - Inputs intatti, nessun DEC; E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED e PoC/Production NO-GO invariati.
 
 - Gate locali dello state sync PASS: checksum 8/8, verify 14 PASS, Ruff, mypy strict, RCCAD, language, scope, piano 37 PASS/2 NOT_EXECUTED opzionali, zero drift, runtime 0005/0049/0050. Full locale dello state sync NOT_EXECUTED: cambia soltanto i tre file di stato. CI completa dedicata sul suo HEAD esatto, massimo 90 minuti, polling 60 s, stop su obbligatorio rosso.
+
+
+### 2026-10-21T20:59:46.265633+00:00 — REM-0035: correzione della sola mappatura di regressione prima della review
+
+Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e287ae51dd6035e4a6`, estendeva nel nuovo record0050 la mappatura requirement_results agli ID del backlog. Corretto prima della review: il record preserva esattamente il soloBR-003 del record0050 precedente, con REGRESSION_ONLY,198casi invariati e REM0023 ancoraOPEN. Nessuna rivalutazione della conformità, nessuna modifica a codice,test,harness,workflow,lock,raw o criteri; alberi di esecuzione identici alla full2377PASS. Nuovo candidato `a64f0db688b3f7c3df2f0fb36187f44e18123aa8` e richiesta `OCOR-DEV-REM-0035-a64f0db688b3-0`,repair_cycle0. La richiesta precedente non è mai stata inserita nello slot del loop; nessun verdetto o ciclo consumato. Hash di record, manifest e riferimenti riacquisiti; gate locali nuovamentePASS. Il primoHEAD dello state-sync699bd6b e le sueCI restano diagnostici, nessun conteggio trasferito al nuovoHEAD; i13check obbligatori sono richiesti sul nuovoHEAD esatto. La full locale non si ripete perché non cambia alcun albero di esecuzione. Stato solo nei tre file, log storico preservato.
+
+- Gate locali dello state sync PASS: checksum 8/8, verify 14 PASS, Ruff, mypy strict, RCCAD, language, scope, piano 37 PASS/2 NOT_EXECUTED opzionali, zero drift, runtime 0005/0049/0050. Full locale dello state sync NOT_EXECUTED: cambia soltanto i tre file di stato. CI completa dedicata sul suo HEAD esatto, massimo 90 minuti, polling 60 s, stop su obbligatorio rosso.
