@@ -402,8 +402,147 @@
     }
   },
   "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256sum of environment.json and resolved toolchain/qualification binaries against infra/toolchain.lock.json and infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "summary": "environment.json sha256 00153eb4f299903636b53c2b9415c8bc1d62980735dc372d5e977f1d03e82955; host git 2.53.0, docker 29.7.2, node 20.20.2, uv 0.12.5, ruff 0.13.1, tsc 7.0.2, python 3.12.11 and helm/kind/kubectl digests match the locks"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "preflight PASS, docker READY, no tool errors; output sha256 ed7e3f5c1ea30cbf8f66a76d2d641269a4bc5a1268765df65d5428638316e7cb"
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "normative checksums OK; inputs tree 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35 unchanged from base"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "harness PASS; reports/verify_report.json restored to a64f0db688b3f7c3df2f0fb36187f44e18123aa8"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "ruff clean"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_rccad.py --base-ref efec39d0ef5ec15b7f66bd0e9d730ccf30fd7226",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings empty, dynamic assurance CI_REQUIRED"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "language policy PASS"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_ocor_change_scope.py --base efec39d0ef5ec15b7f66bd0e9d730ccf30fd7226 --head a64f0db688b3f7c3df2f0fb36187f44e18123aa8 --branch governed/ocor-dev-rem-0035-retire-0049-candidate-pin",
+        "exit_code": 0,
+        "summary": "PASS: 14 changed paths; immutable surfaces untouched"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref efec39d0ef5ec15b7f66bd0e9d730ccf30fd7226",
+        "exit_code": 0,
+        "summary": "development plan validation PASS"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "evidence input drift PASS"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "runtime evidence 0005 non-skipped PASS"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "runtime evidence 0050 non-skipped PASS"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q reports/tests/test_kind_teardown_observation.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py",
+        "exit_code": 0,
+        "summary": "244 passed, 44 subtests passed, zero skipped; workflow retirement mutations rejected"
+      },
+      {
+        "command": "pytest --collect-only and run_qualifying_campaign.partition N=5",
+        "exit_code": 0,
+        "summary": "2377 collected, sha256 c6189b2b3d491bf17e9b107a1e6b414a7c5e9d2894b0c20b3afbfec2e2a93b75; partition sha256 419873b00c033cb54edb656f19845b0c2cc289904236d6af20ad706079a08143; part sizes 1,573,554,754,495; 0049=390, 0005=6, 0050=198, 0048=196; zero duplicates"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute (first, no bootstrap.env)",
+        "exit_code": 1,
+        "summary": "compose interpolation failed because the fresh worktree had no bootstrap.env; main checkout CA notAfter 2026-10-08 was expired and was not reused"
+      },
+      {
+        "command": "bootstrap_development_environment.write_secret_file then reset, bootstrap --execute --timeout 600, ci_resources fuseki override, initialize, fixtures, typed health",
+        "exit_code": 0,
+        "summary": "11 services running, zero OOM/restarts; Fuseki -Xms128m -Xmx1G and cgroup 2147483648"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py --junitxml=/tmp/ocor-verify-OCOR-DEV-REM-0035-a64f0db688b3-0/targeted.xml",
+        "exit_code": 0,
+        "summary": "204 passed in 5.20s, zero skipped; JUnit identities match the sealed case digests (6 and 198)"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head a64f0db688b3f7c3df2f0fb36187f44e18123aa8 --output-dir .ocor/rem0035-independent-full",
+        "exit_code": 1,
+        "summary": "Incomplete verifier stack: control-plane SVID was not registered. 2 failed and 186 errors, all in test_ocor_dev_0048, cause WORKLOAD_IDENTITY_UNAVAILABLE; 2189 other tests passed; zero skipped. Not a product defect."
+      },
+      {
+        "command": "reset, bootstrap, Fuseki CI profile, documented SPIRE entry create for spiffe://ocor.test/ocor/control-plane, initialize, fixtures, typed health",
+        "exit_code": 0,
+        "summary": "SVID present for spiffe://ocor.test/ocor/control-plane; 11 healthy services; Fuseki heap and cgroup unchanged"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head a64f0db688b3f7c3df2f0fb36187f44e18123aa8 --output-dir .ocor/rem0035-independent-full-2",
+        "exit_code": 0,
+        "summary": "PASS on exact HEAD: 2377 tests, 0 failures, 0 errors, 0 skipped, duration 3386.77s, po_decision_required false; modules test_ocor_dev_0048 and test_ocor_dev_0049 executed; kind teardown OWNED_KIND_TEARDOWN_OBSERVED, one destroy event, window 30s, zero rejections"
+      },
+      {
+        "command": "scripts/reset_test_environment.py --execute (final teardown)",
+        "exit_code": 0,
+        "summary": "ocor-bootstrap containers, network and volumes removed; pre-existing non-OCOR containers left untouched; kind clusters absent; git status clean"
+      }
+    ],
+    "findings": [],
+    "implementers": [
+      {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "scope": "inherited REM0019 harness and historical baseline"
+      }
+    ],
+    "integration_agent": "Codex (OpenAI), seal and integration only",
+    "not_executed": [],
     "repair_cycle": 0,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "review_type": "REMEDIATION; 0005 regression; 0050 REGRESSION_ONLY",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-21T23:52:32Z",
+    "verdict_file_sha256": "86f0e6ee10e5b11d905cd05109f5a0fc9da0942e0b49bfabfd47cd647de835fc",
+    "verdict_head_sha": "a64f0db688b3f7c3df2f0fb36187f44e18123aa8",
+    "verdict_request_id": "OCOR-DEV-REM-0035-a64f0db688b3-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (xAI) via Cursor CLI",
+    "verifier_configuration": {
+      "independence_limits": "Contesto e processo separati. Verifier: Cursor, Grok 4.7 (xAI). Implementatori: Codex (OpenAI) per REM-0035; Claude Code (Anthropic) solo per il lignaggio ereditato REM-0019/0049/0050, senza modifiche nuove. Fornitori diversi.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, loop esterno, contesto pulito non interattivo"
+    },
+    "verifier_diagnostic_run_preserved": "First verifier run lacked control-plane SVID: failed attempt stays diagnostic; fresh full 2377 PASS after documented setup; no partial counts transferred"
   },
   "inputs": {
     ".github/workflows/ocor-validation-closure.yml": "a941f2f6691357a27facd51884531014177cb054037ba5d9b5eaabe2ca11289a",
@@ -682,6 +821,29 @@
   },
   "rollback": "New governed revert only; preserve every historical sealed record",
   "schema_version": "1.0",
+  "seal_continuity": {
+    "aligned_head": "f7135165cc621bb8335a6812d8c8c7cc8b08870f",
+    "authority": "CANDIDATE-INTEGRATION-STATE-FREEZE",
+    "execution_trees": {
+      ".github": "ec61878a8b3536355bf72071440f55b2987d27ce",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "183bb4b99843e79e46f504079546fa6d44254b55",
+      "reports/tests": "621f163146e2095a1058be7166b744605c8e2bfc",
+      "scripts": "99807f752dc4f339346ec6c8d38c0f174117f570"
+    },
+    "fresh_final_head_ci_required": true,
+    "main_head": "75fc8351bf7e60adc400a76175f6167373b6da38",
+    "merge_state_paths": [
+      "reports/development/EXECUTION_STATE.json",
+      "reports/development/MODEL_HANDOFF.json",
+      "reports/development/ITERATION_LOG.md"
+    ],
+    "non_state_diff_stat": "",
+    "reviewed_head": "a64f0db688b3f7c3df2f0fb36187f44e18123aa8"
+  },
+  "sealed_at": "2026-10-21T23:55:06.302524+00:00",
   "source_subtrees": {
     ".github": "ec61878a8b3536355bf72071440f55b2987d27ce",
     "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
@@ -691,7 +853,7 @@
     "reports/tests": "621f163146e2095a1058be7166b744605c8e2bfc",
     "scripts": "99807f752dc4f339346ec6c8d38c0f174117f570"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_REVIEW",
+  "status": "SEALED",
   "superseded_record": {
     "changed_inputs": [
       "scripts/validate_ocor_development_plan.py"
