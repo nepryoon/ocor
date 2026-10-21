@@ -197,3 +197,84 @@ Fingerprint RED (SHA256 del JSON canonico `[nome, esito, messaggio]` ordinato):
 1 failed, 134 passed.
 
 E1=0, E2=0, Verified=0 e claim NO-GO invariati; nessun sigillo, merge o GO.
+
+### Correzione (variante B, disposizione del PO)
+
+La variante A (risoluzione del percorso in `test_ocor_dev_0049.tool()`) è risultata GREEN
+ma viola due gate correnti: drift degli input di OCOR-DEV-0049 e allowlist del piano.
+È stata ripristinata senza commit; il PO ha scelto la variante B nell'osservatore. Unico
+hunk di `scripts/observe_kind_teardown.py` (1 riga rimossa, 4 aggiunte, di cui 2 di
+commento): il controllo `os.getpgid(pid) != PYTEST_PGID or /proc/<pid>/exe != KIND_BINARY`
+resta byte-identico e precede il confronto; la coda `delete cluster --name ocor-poc` resta
+esatta; `argv[0]` deve essere **assoluto** e il suo `realpath` uguale a `KIND_BINARY`, già
+risolto nel supervisore. Nessuna modifica a 0049, runtime, workflow, lock, soglie, timeout,
+finestra di 30 s, cadenza, timer, partizione, selezione o gate.
+
+### Prove di non indebolimento e mutazioni
+
+Riproducibili con `tdd.py` della sessione, ogni esecuzione in un worktree staccato con il
+solo symlink `.ocor/tools/bin/kind` (layout del verifier); sorgente committato mai mutato.
+
+- RED su `b557549`: VF-001 positivo **FAIL**, gli altri cinque PASS; fingerprint
+  riprodotto identico `07cafaa2cba4b84f2a55d45666f9395986de780d102b770a1022c2c4a1f52358`
+  (due file: 1 failed, 172 passed).
+- GREEN su `3cf6e22`: sei casi PASS, fingerprint
+  `576ece8af341fa341465e71ec3b51f45a5179eddafd45ebf250930c29ec742d1`; 176 passed,
+  0 failed/error/skipped, 42 subtest; invarianti AST esistenti verdi.
+- Confronto predicato vecchio (da `712fc2b`) e nuovo su 420 casi generati (3 `exe` ×
+  10 `argv[0]`, tra cui relativo, vuoto, symlink verso altro binario, file mancante ×
+  7 code, tra cui argomenti in più/meno, cluster diverso, `create` × 2 pgid), con cwd
+  dove i nomi relativi risolverebbero al file ufficiale: nessun caso accettato prima
+  viene rifiutato; uniche aggiunte `argv[0]` assoluto, alias dello stesso file, con
+  `exe` ufficiale, coda esatta e pgid pytest.
+- Diff limitato alla riga del confronto più il commento; controllo `exe` invariato e
+  precedente; `KIND_BINARY` risolto anche nel layout del verifier.
+- Mutanti `no_isabs`, `no_realpath`, `no_exe_check`: tutti uccisi (2 fallimenti
+  ciascuno, test di confronto e test del diff).
+
+Riepilogo TDD SHA256 `7803290b7a17d4b4af8b565affa910b659e37cc184afdbdc9b07c8a29b0a56b8`.
+
+### Qualifica sulla sorgente pulita `3cf6e22`
+
+Toolchain pinned (git isolato 2.53.0 per l'aggiornamento del git di sistema, Node
+20.20.2, Fuseki `ci_resources` `-Xmx1G`); prima di ogni full TCP 8080 occupato solo dal
+mapping Keycloak e MemAvailable ≥ 6 GiB. Preflight PASS (11 servizi) prima di ciascuna.
+
+| Esecuzione | passed | failed | errors | skipped | durata |
+|---|---|---|---|---|---|
+| regressione 0050 | 198 | 0 | 0 | 0 | 4,85 s |
+| full, layout locale | 2323 | 0 | 0 | 0 | 3977 s |
+| full, layout verifier (`setsid uv run --frozen`, symlink kind) | 2323 | 0 | 0 | 0 | 3530 s |
+
+Osservatore v2 in entrambe: una rimozione `OWNED_KIND_TEARDOWN_OBSERVED` con prova v2
+completa, zero rigetti, zero recovery, campionamento continuo (scarto massimo 5,1 s su
+periodo 5 s), uniche probe non zero sul nodo distrutto. Nel layout verifier `argv[0]` del
+remover è il **percorso symlink** del worktree: il caso di VF-001 osservato dal vivo.
+Stessi 2323 digest di caso nei due layout. Teardown: nessuna risorsa creata dalla
+sessione residua.
+
+Gate statici su `3cf6e22` (base `3b5d976`): inputs 8/8 e diff vuoto, ruff, mypy strict
+(80 file), verify 14/0/0, drift (197 input, 70 task), RCCAD, scope (30 path), piano
+(37 PASS, 2 `NOT_EXECUTED` opzionali `markdownlint`/`mmdc` con fallback), language: PASS.
+
+### Flag di durata e disposizione del PO
+
+La full locale (3977 s) supera la soglia di 3600 s ed è sotto il limite di 4500 s:
+`po_decision_required: true`. La stessa HEAD nel layout verifier: 3530 s, `false`.
+Disposizione del PO (2026-10-21): presa d'atto senza alcuna modifica di soglie o limiti;
+lo scarto è attribuito alla variabilità prestazionale della workstation (CPU da 15 W,
+throttling termico), non al codice; la valutazione finale spetta al verifier.
+`REM-0033-LOCAL-FULL-DURATION` resta invariata.
+
+### NOT_EXECUTED
+
+- Suite completa sul candidato non modificato: per disposizione del PO (sopra).
+- `markdownlint` e `mmdc` del validatore di piano: opzionali non disponibili.
+- Tentativo 1 della qualifica: fermato al preflight dal pin del git di sistema, prima di
+  qualsiasi test; archiviato come diagnostico, nessun conteggio trasferito.
+
+Raw della sessione in `integration-20261020.log` (stessi blocchi `RAW_FILE` nel log G5),
+identità dei casi solo per digest, scansione fail-closed dei valori locali di bootstrap.
+Implementatori: Claude Code (Anthropic) per il ciclo 3; Codex (OpenAI) per i cicli
+precedenti, contributi conservati. Verifier Cursor/Grok 4.7 avviato solo dal loop
+esterno. E1=0, E2=0, Verified=0 e claim NO-GO invariati; nessun sigillo, merge o GO.
