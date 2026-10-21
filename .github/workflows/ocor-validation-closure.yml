@@ -370,7 +370,7 @@ jobs:
             ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVAL_SHA256SUMS
 
   conditional-infrastructure-0049-part:
-    # A passing run exercises the guard; it does not accept the candidate's integration.
+    # TEST-INFRA-006 remains mandatory; 0049 is integrated and qualified at github.sha.
     # One deterministic part of the complete suite on its own runner and full
     # pinned stack (PO decision REM-0017-CI-CAMPAIGN-DURATION, 45-minute part limit).
     name: conditional-infrastructure-0049 part ${{ matrix.part }}/5
@@ -440,24 +440,13 @@ jobs:
               print(f"{package}=={version(package)}")
           PY
 
-      - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: beab1b4cc16d0678ce5554fcebd6495b328f5342
-          path: .ocor/candidate-0049
-          persist-credentials: false
-
-      - name: Synchronize complete candidate environment
-        working-directory: .ocor/candidate-0049/ocor-runtime
-        run: uv sync --frozen --extra test --extra lint
-
       - name: Acquire official checksum-pinned Kubernetes qualification tools
         run: |
           set -euo pipefail
           ocor-runtime/.venv/bin/python scripts/provision_qualification_tools.py --execute | tee reports/tests/ci_qualification_tools.log
 
       - name: Build pinned TypeScript SDK and oracle
-        working-directory: .ocor/candidate-0049/ocor-runtime/sdk/typescript
+        working-directory: ocor-runtime/sdk/typescript
         run: |
           set -euo pipefail
           npm ci
@@ -503,12 +492,12 @@ jobs:
           key: ${{ steps.fuseki-key.outputs.key }}
 
 
-      - name: Run this part of the immutable candidate FULL suite with TEST-INFRA-005 and 006
+      - name: Run this part of the current FULL suite with TEST-INFRA-005 and 006
         run: |
           set -euo pipefail
-          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository .ocor/candidate-0049 --expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342 --shard-index ${{ matrix.part }} --shard-count 5 --output-dir reports/tests/candidate-0049-part-${{ matrix.part }}
+          ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head "${{ github.sha }}" --shard-index ${{ matrix.part }} --shard-count 5 --output-dir reports/tests/candidate-0049-part-${{ matrix.part }}
 
-      - name: Teardown candidate-owned resources and the disposable stack
+      - name: Teardown test-owned resources and the disposable stack
         if: always()
         run: |
           set -euo pipefail
@@ -567,15 +556,8 @@ jobs:
           version: "0.12.5"
           enable-cache: true
 
-      - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: beab1b4cc16d0678ce5554fcebd6495b328f5342
-          path: .ocor/candidate-0049
-          persist-credentials: false
-
-      - name: Synchronize complete candidate environment
-        working-directory: .ocor/candidate-0049/ocor-runtime
+      - name: Synchronize locked runtime environment
+        working-directory: ocor-runtime
         run: uv sync --frozen --extra test --extra lint
 
       - name: Download every part of the parallel complete suite
@@ -584,13 +566,13 @@ jobs:
           pattern: ocor-conditional-0049-part-*-${{ github.sha }}
           path: reports/tests/candidate-0049-parts
 
-      - name: Aggregate candidate parts and prove their union equals pytest --collect-only on the candidate
+      - name: Aggregate current-revision parts and prove their union equals pytest --collect-only on the same HEAD
         run: |
           set -euo pipefail
           mkdir -p reports/tests
-          .ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository .ocor/candidate-0049 --expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342 --shard-count 5 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
+          ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --aggregate reports/tests/candidate-0049-parts --repository . --expected-head "${{ github.sha }}" --shard-count 5 --output-dir reports/tests/candidate-0049 | tee reports/tests/ci_candidate_aggregate.log
 
-      - name: Upload candidate guard execution (not an evidence seal)
+      - name: Upload current-revision guard execution (not an evidence seal)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

@@ -595,8 +595,59 @@ def normalize_rem0034_secret_scanner(path, before, after):
     return normalized.replace(summary, '').replace('      OCOR_SCANNER_VERSION: 1.1.0\n', '      OCOR_SCANNER_VERSION: 1.0.0\n')
 
 
+def retire_integrated_0049_pin(text):
+    """Exact PO-authorised delta after 0049 integration; no gate is normalised away.
+
+    CANDIDATE-INTEGRATION-STATE-FREEZE (2026-10-14): both runners qualify
+    github.sha with the same harness, partitions, artifact paths and union gate.
+    Each old fragment must occur exactly the declared number of times.
+    """
+    checkout = '''      - name: Checkout immutable TEST-INFRA-006 candidate (independent GO; integration pending)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: beab1b4cc16d0678ce5554fcebd6495b328f5342
+          path: .ocor/candidate-0049
+          persist-credentials: false
+
+'''
+    candidate_sync = '''      - name: Synchronize complete candidate environment
+        working-directory: .ocor/candidate-0049/ocor-runtime
+        run: uv sync --frozen --extra test --extra lint
+
+'''
+    current_sync = candidate_sync.replace('complete candidate', 'locked runtime').replace('.ocor/candidate-0049/', '')
+    changes = [
+        (checkout, '', 2),
+        (candidate_sync, '', 1),  # part already synchronises the current runtime
+        (candidate_sync, current_sync, 1),  # stackless aggregator
+        ('    # A passing run exercises the guard; it does not accept the candidate\'s integration.',
+         '    # TEST-INFRA-006 remains mandatory; 0049 is integrated and qualified at github.sha.', 1),
+        ('working-directory: .ocor/candidate-0049/ocor-runtime/sdk/typescript',
+         'working-directory: ocor-runtime/sdk/typescript', 1),
+        ('Run this part of the immutable candidate FULL suite with TEST-INFRA-005 and 006',
+         'Run this part of the current FULL suite with TEST-INFRA-005 and 006', 1),
+        ('.ocor/candidate-0049/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py',
+         'ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py', 2),
+        ('--repository .ocor/candidate-0049 --expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342',
+         '--repository . --expected-head "${{ github.sha }}"', 2),
+        ('Teardown candidate-owned resources and the disposable stack',
+         'Teardown test-owned resources and the disposable stack', 1),
+        ('Aggregate candidate parts and prove their union equals pytest --collect-only on the candidate',
+         'Aggregate current-revision parts and prove their union equals pytest --collect-only on the same HEAD', 1),
+        ('Upload candidate guard execution (not an evidence seal)',
+         'Upload current-revision guard execution (not an evidence seal)', 1),
+    ]
+    for old, new, count in changes:
+        # The first synchronization is redundant in the part, the second is
+        # retained on the current revision in the stackless aggregator.
+        expected = 2 if old == candidate_sync and new == '' else count
+        assert text.count(old) == expected, 'Unexpected retirement source: ' + old[:90]
+        text = text.replace(old, new, count)
+    return text
+
+
 def assert_governed_workflow(path, before, after):
-    """Accept only the PO's exact pin/N update and the scope-gate reorder; every other byte stays checked."""
+    """Accept only the PO's exact pin lifecycle/N update and scope-gate reorder."""
     if path == '.github/workflows/ocor-delivery-activation.yml':
         before = move_scope_gate_before_provisioning(before)
     if path == '.github/workflows/ocor-validation-closure.yml':
@@ -608,6 +659,7 @@ def assert_governed_workflow(path, before, after):
         suffix = suffix.replace('part: [1, 2, 3, 4]', 'part: [1, 2, 3, 4, 5]')
         suffix = suffix.replace('--shard-count 4', '--shard-count 5')
         before = prefix + '  conditional-infrastructure-0049-part:' + suffix
+        before = retire_integrated_0049_pin(before)
     after = normalize_rem0034_secret_scanner(path, before, after)
     assert before == after, 'Workflow drift: ' + path
 
@@ -675,6 +727,27 @@ def observation_only_proof():
 
 
 class ExecutionInvariants(unittest.TestCase):
+    def test_integrated_0049_is_qualified_at_the_current_revision(self):
+        """PO CANDIDATE-INTEGRATION-STATE-FREEZE: retire the pin, retain the guard."""
+        import yaml
+        root = Path(__file__).resolve().parents[2]
+        text = (root / '.github/workflows/ocor-validation-closure.yml').read_text()
+        jobs = yaml.safe_load(text)['jobs']
+        for job_id in ('conditional-infrastructure-0049-part', 'conditional-infrastructure-0049'):
+            steps = jobs[job_id]['steps']
+            checkouts = [s for s in steps if s.get('uses', '').startswith('actions/checkout@')]
+            self.assertEqual(len(checkouts), 1, 'An integrated task must use the checked-out PR revision')
+            self.assertNotIn('ref', checkouts[0]['with'])
+            self.assertNotIn('path', checkouts[0]['with'])
+            command = next(s['run'] for s in steps if 'scripts/run_qualifying_campaign.py' in s.get('run', ''))
+            self.assertIn('ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py', command)
+            self.assertIn('--repository . --expected-head "${{ github.sha }}"', command)
+            self.assertNotIn('.ocor/candidate-0049', command)
+            self.assertIn('--shard-count 5', command)
+        self.assertEqual(jobs['conditional-infrastructure-0049-part']['strategy']['matrix']['part'], [1, 2, 3, 4, 5])
+        self.assertEqual(jobs['conditional-infrastructure-0049']['needs'], 'conditional-infrastructure-0049-part')
+        self.assertIn('conditional-infrastructure-0049', jobs['validation-closure']['needs'])
+
     def test_workflow_invariant_rejects_every_unapproved_change(self):
         root = Path(__file__).resolve().parents[2]
         path = '.github/workflows/ocor-validation-closure.yml'
@@ -683,7 +756,9 @@ class ExecutionInvariants(unittest.TestCase):
         current = (root / path).read_text()
         assert_governed_workflow(path, before, current)
         for old, new in [
-            ('beab1b4cc16d0678ce5554fcebd6495b328f5342', 'a0ee43d4e502f3589cd857cfec4238eab13fe8e7'),
+            ('--expected-head "${{ github.sha }}"', '--expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342'),
+            ('--repository . --expected-head', '--repository .ocor/candidate-0049 --expected-head'),
+            ('working-directory: ocor-runtime/sdk/typescript', 'working-directory: .ocor/candidate-0049/ocor-runtime/sdk/typescript'),
             ('--shard-count 5', '--shard-count 4'),
             ('part: [1, 2, 3, 4, 5]', 'part: [1, 2, 3, 4]'),
             ('timeout-minutes: 75', 'timeout-minutes: 76'),
@@ -759,6 +834,8 @@ class ExecutionInvariants(unittest.TestCase):
         for workflow in sorted((root / '.github/workflows').glob('*.yml')):
             path = str(workflow.relative_to(root))
             before = old(path)
+            if path == '.github/workflows/ocor-validation-closure.yml':
+                before = retire_integrated_0049_pin(before)
             after = normalize_rem0034_secret_scanner(path, before, workflow.read_text())
             self.assertEqual(before, after, workflow.name)
 
