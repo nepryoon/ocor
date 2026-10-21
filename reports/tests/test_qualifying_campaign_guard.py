@@ -1005,3 +1005,237 @@ def test_known_node_disappearance_cannot_qualify_without_removal_proof(monkeypat
     with pytest.raises(GUARD.kind_observer.TeardownObservationError, match="proof"):
         GUARD.check_kubernetes_runtimes(history, {})
     assert "node:containerd" in history
+
+
+# REM-0019 cycle 3, VF-001 of OCOR-DEV-REM-0019-712fc2b79977-2: the verifier ran the
+# campaign from a worktree whose .ocor/tools/bin/kind is a symlink to the official
+# binary. The 0049 fixture launched `kind delete` through that link, so argv[0] never
+# equalled the resolved KIND_BINARY and the v2 sampler saw no remover. Real kind
+# binary, real /proc, real sampler and the real 0049 tool() lookup; kind is held alive
+# by a fake `docker` on its own PATH only, so no Docker object is touched.
+KIND_TAIL = ['delete', 'cluster', '--name', 'ocor-poc']
+LEADER = '''import json, subprocess, sys
+argv, path, new_session = json.loads(sys.argv[1])
+subprocess.run(argv, env={"PATH": path}, capture_output=True, start_new_session=new_session)
+'''
+
+
+def official_kind():
+    binary = GUARD.qualification_kind_binary(Path(__file__).resolve().parents[2])
+    if not binary.is_file():
+        pytest.fail('official kind binary unavailable (DEC-211 provisioning required); not a skip')
+    return binary
+
+
+def verifier_layout(tmp_path, target):
+    """The verifier worktree: no checkout tools, only a symlinked .ocor/tools/bin/kind."""
+    worktree = tmp_path / 'wt'
+    tools = worktree / '.ocor/tools/bin'
+    tools.mkdir(parents=True)
+    (tools / 'kind').symlink_to(target)
+    return worktree
+
+
+def fixture_kind(monkeypatch, worktree):
+    """argv[0] exactly as test_ocor_dev_0049.tool('kind') returns it for this worktree."""
+    path = Path(__file__).resolve().parents[2] / 'ocor-runtime/tests/tasks/test_ocor_dev_0049.py'
+    spec = importlib.util.spec_from_file_location('ocor_rem0019_fixture_0049', path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, 'ROOT', worktree)
+    return module.tool('kind')
+
+
+def observe_remover(tmp_path, kind_binary, argv, *, path='', new_session=False):
+    """Run a pytest-like session leader that launches argv; return sampler rows and liveness."""
+    import json
+    import os
+    import subprocess
+    import time
+    fakebin = tmp_path / 'fakebin'
+    fakebin.mkdir(exist_ok=True)
+    (fakebin / 'docker').write_text('#!/bin/sh\nsleep 2\nexit 1\n')
+    (fakebin / 'docker').chmod(0o755)
+    observer = GUARD.kind_observer
+    leader = subprocess.Popen([sys.executable, '-I', '-c', LEADER,
+                               json.dumps([argv, ':'.join(filter(None, [path, str(fakebin), '/usr/bin:/bin'])),
+                                           new_session])], start_new_session=True)
+    thread = observer.start_sampler(leader.pid, kind_binary)
+    alive = 0
+    try:
+        while leader.poll() is None:
+            for entry in Path('/proc').iterdir():
+                try:
+                    if (entry.name.isdecimal() and int(entry.name) != leader.pid
+                            and (entry / 'cmdline').read_bytes().split(b'\0')[1:4] == [b'delete', b'cluster', b'--name']):
+                        alive += 1
+                except (OSError, IndexError):
+                    continue
+            time.sleep(observer.SAMPLE_SECONDS)
+    finally:
+        observer.stop_sampler(thread)
+        if leader.poll() is None:
+            os.killpg(leader.pid, 9)
+    # The remover really lived for many sampling periods: a rejection is never a missed sample.
+    assert alive >= 5, alive
+    return [dict(row) for row in observer.REMOVER_OBSERVATIONS], leader.pid
+
+
+def test_remover_launched_through_verifier_symlink_is_observed_in_the_pytest_group(tmp_path, monkeypatch):
+    official = official_kind()
+    worktree = verifier_layout(tmp_path, official)
+    kind_binary = GUARD.qualification_kind_binary(worktree)
+    assert kind_binary == official
+    rows, leader = observe_remover(tmp_path, kind_binary, [fixture_kind(monkeypatch, worktree), *KIND_TAIL])
+    assert len(rows) == 1, rows
+    assert rows[0]['pgid'] == leader and rows[0]['command'][1:] == KIND_TAIL
+    assert Path(rows[0]['command'][0]).resolve() == kind_binary
+
+
+def test_remover_launched_through_the_checkout_binary_is_observed_in_the_pytest_group(tmp_path):
+    """Control: the local layout (argv[0] is the real file) is observed by the same instrument."""
+    official = official_kind()
+    rows, leader = observe_remover(tmp_path, official, [str(official), *KIND_TAIL])
+    assert len(rows) == 1, rows
+    assert rows[0]['pgid'] == leader and rows[0]['command'] == [str(official), *KIND_TAIL]
+
+
+def test_symlink_to_a_different_binary_is_never_the_owned_remover(tmp_path, monkeypatch):
+    import shutil
+    official = official_kind()
+    foreign = tmp_path / 'foreign' / 'kind'
+    foreign.parent.mkdir()
+    shutil.copy2(official, foreign)
+    worktree = verifier_layout(tmp_path, foreign)
+    rows, _ = observe_remover(tmp_path, official, [fixture_kind(monkeypatch, worktree), *KIND_TAIL])
+    assert rows == []
+
+
+def test_relative_argv0_is_never_the_owned_remover(tmp_path):
+    official = official_kind()
+    rows, _ = observe_remover(tmp_path, official, ['kind', *KIND_TAIL], path=str(official.parent))
+    assert rows == []
+
+
+def test_remover_of_a_different_cluster_is_never_the_owned_remover(tmp_path, monkeypatch):
+    official = official_kind()
+    worktree = verifier_layout(tmp_path, official)
+    argv = [fixture_kind(monkeypatch, worktree), *KIND_TAIL[:-1], 'foreign']
+    rows, _ = observe_remover(tmp_path, official, argv)
+    assert rows == []
+
+
+def test_remover_outside_the_pytest_process_group_is_never_the_owned_remover(tmp_path, monkeypatch):
+    official = official_kind()
+    worktree = verifier_layout(tmp_path, official)
+    rows, _ = observe_remover(tmp_path, official, [fixture_kind(monkeypatch, worktree), *KIND_TAIL],
+                              new_session=True)
+    assert rows == []
+
+
+# Non-weakening proofs for the cycle 3 observer change (PO, 2026-10-20, variant B).
+CYCLE3_BASE = '712fc2b799774281321c04209bfb6910b91f0941'
+OBSERVER = 'scripts/observe_kind_teardown.py'
+
+
+def observer_at_base(tmp_path):
+    import subprocess
+    root = Path(__file__).resolve().parents[2]
+    source = tmp_path / 'observe_kind_teardown_base.py'
+    source.write_text(subprocess.check_output(['git', '-C', str(root), 'show', f'{CYCLE3_BASE}:{OBSERVER}'], text=True))
+    spec = importlib.util.spec_from_file_location('ocor_observer_cycle3_base', source)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_new_remover_predicate_accepts_a_superset_only_by_absolute_alias_of_the_same_binary(tmp_path, monkeypatch):
+    import itertools
+    import os
+    old, new = observer_at_base(tmp_path), GUARD.kind_observer
+    kind = tmp_path / 'bin/kind'
+    foreign = tmp_path / 'other/kind'
+    for binary in (kind, foreign):
+        binary.parent.mkdir(parents=True, exist_ok=True)
+        binary.write_text('binary')
+    alias = tmp_path / 'wt/.ocor/tools/bin/kind'
+    alias.parent.mkdir(parents=True)
+    alias.symlink_to(kind)
+    foreign_alias = tmp_path / 'wt/foreign-kind'
+    foreign_alias.symlink_to(foreign)
+    kind_binary = kind.resolve()
+    # Relative names would resolve to the official file from this cwd: they must still be refused.
+    monkeypatch.chdir(tmp_path)
+    argv0s = [str(kind), str(alias), str(tmp_path / 'bin/../bin/kind'), str(foreign), str(foreign_alias),
+              str(tmp_path / 'missing/kind'), 'kind', 'bin/kind', './kind', '']
+    tails = [KIND_TAIL, KIND_TAIL[:-1], [*KIND_TAIL, '--verbosity', '1'], [*KIND_TAIL[:-1], 'foreign'],
+             ['delete', 'cluster', '--name=ocor-poc'], ['create', 'cluster', '--name', 'ocor-poc'], []]
+    exes = {'official': kind, 'alias': alias, 'foreign': foreign}
+    proc = tmp_path / 'proc'
+    differences, compared = [], 0
+    for (exe_name, exe), argv0, tail, pgid in itertools.product(exes.items(), argv0s, tails, (43, 44)):
+        pid_dir = proc / '42'
+        if pid_dir.exists():
+            for child in pid_dir.iterdir():
+                child.unlink()
+        pid_dir.mkdir(parents=True, exist_ok=True)
+        (pid_dir / 'exe').symlink_to(exe)
+        (pid_dir / 'stat').write_text('42 (kind) ' + ' '.join(['S'] + ['0'] * 18 + ['123']))
+        (pid_dir / 'cmdline').write_bytes(('\0'.join([argv0, *tail]) + '\0').encode())
+        verdicts = []
+        for module in (old, new):
+            monkeypatch.setattr(module, 'PROC', proc)
+            monkeypatch.setattr(module, 'KIND_BINARY', kind_binary)
+            monkeypatch.setattr(module, 'PYTEST_PGID', 43)
+            monkeypatch.setattr(os, 'getpgid', lambda pid, pgid=pgid: pgid)
+            verdicts.append(module.owned_remover() is not None)
+        compared += 1
+        assert not (verdicts[0] and not verdicts[1]), ('accepted before, rejected now', exe_name, argv0, tail, pgid)
+        if verdicts[1] and not verdicts[0]:
+            differences.append((exe_name, argv0, tuple(tail), pgid))
+    assert compared == 3 * len(argv0s) * len(tails) * 2
+    # The only admitted difference: same pgid, exact tail, exe of the official file and an
+    # absolute argv[0] other than the literal resolved path whose realpath is that file.
+    assert differences and all(
+        pgid == 43 and list(tail) == KIND_TAIL and Path(exes[exe_name]).resolve() == kind_binary
+        and os.path.isabs(argv0) and argv0 != str(kind_binary) and Path(os.path.realpath(argv0)) == kind_binary
+        for exe_name, argv0, tail, pgid in differences), differences
+    assert {argv0 for _, argv0, _, _ in differences} == {str(alias), str(tmp_path / 'bin/../bin/kind')} - {str(kind_binary)}
+
+
+def test_observer_change_is_limited_to_the_argv_comparison_after_the_unchanged_exe_check():
+    import difflib
+    import subprocess
+    root = Path(__file__).resolve().parents[2]
+    before = subprocess.check_output(['git', '-C', str(root), 'show', f'{CYCLE3_BASE}:{OBSERVER}'], text=True).splitlines()
+    after = (root / OBSERVER).read_text().splitlines()
+    removed = [line[1:] for line in difflib.unified_diff(before, after, lineterm='', n=0)
+               if line.startswith('-') and not line.startswith('---')]
+    added = [line[1:] for line in difflib.unified_diff(before, after, lineterm='', n=0)
+             if line.startswith('+') and not line.startswith('+++')]
+    assert removed == ["            if args != [str(KIND_BINARY), 'delete', 'cluster', '--name', 'ocor-poc']:"]
+    assert added == [
+        "            # Identity is /proc/<pid>/exe above; argv[0] is caller-chosen. Accept only an",
+        "            # absolute alias of the same file (verifier symlink), never a relative name.",
+        "            if (args[1:] != ['delete', 'cluster', '--name', 'ocor-poc'] or not os.path.isabs(args[0])",
+        "                    or Path(os.path.realpath(args[0])) != KIND_BINARY):",
+    ]
+    exe_check = ("            if os.getpgid(pid) != PYTEST_PGID or (folder / 'exe').resolve(strict=True) != KIND_BINARY:")
+    assert before.count(exe_check) == after.count(exe_check) == 1
+    assert after.index(exe_check) < after.index(added[2])
+    assert before[:before.index(exe_check) + 1] == after[:after.index(exe_check) + 1]
+
+
+def test_kind_binary_compared_by_the_sampler_is_always_a_resolved_path(tmp_path):
+    import os
+    official = official_kind()
+    assert official == Path(os.path.realpath(official))
+    worktree = verifier_layout(tmp_path, official)
+    assert GUARD.qualification_kind_binary(worktree) == Path(os.path.realpath(official))
+    thread = GUARD.kind_observer.start_sampler(os.getpid(), worktree / '.ocor/tools/bin/kind')
+    try:
+        assert GUARD.kind_observer.KIND_BINARY == Path(os.path.realpath(official))
+    finally:
+        GUARD.kind_observer.stop_sampler(thread)
