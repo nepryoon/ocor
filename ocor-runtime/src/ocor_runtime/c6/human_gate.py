@@ -10,31 +10,26 @@ same sealed ``ocor_runtime.c6.engine.Approval`` record
 ``GovernedActionEngine.execute`` already accepts -- no change to
 either sealed file.
 
-``HumanGateCoordinator.validate`` is a pure function of the signature
-set and the current time: calling it once when a Human Gate is first
-resolved and again, unmodified, immediately before dispatch is what
-gives "dual control" its real meaning here -- a signature that was
-still within its TTL at resolution time can have expired by dispatch
-time, and the second call denies exactly as the first would have,
-never trusting a stale resolution. Composes the sealed
-``ocor_runtime.c2_identity.IdentityRegistry`` (reused unmodified) to
-refuse an unresolved signatory, and accepts an optional real
-control-plane check (``ocor_runtime.security.ports.ControlStatus``,
-OCOR-DEV-0014/0021's sealed fail-closed pattern) so a caller can wire
-a live availability probe without this module depending on any one
-concrete backend.
+``HumanGateCoordinator`` re-reads identity attributes at every validation
+and uses its boundary-owned ``TrustedClock``. Request timestamps and
+``GateSignature.role`` do not confer authority. The optional ``at``
+argument is retained for source compatibility only and never decides
+validity. Signature content digests are not cryptographic authentication;
+the registry provisioning boundary remains the open REM-0031 risk.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from ..c2_identity import IdentityRegistry
+from ..c2_identity import IdentityRecord, IdentityRegistry
 from ..c3_store import require_aware
 from ..errors import OCORError
 from ..kernel.canonical import canonical_digest
+from ..kernel.governance import TrustedClock
 from .engine import Approval
 
 
@@ -117,9 +112,33 @@ class GateSignature:
         )
 
 
+_ROLE_TOKEN = re.compile(r"[A-Z][A-Z0-9_]*(?::\S+)?")
+
+
+def _active_human_roles(record: IdentityRecord | None) -> frozenset[str] | None:
+    """Q1 PoC interpretation, read only from the registry's scalar attributes.
+
+    None means unusable; an empty role set is distinct and may satisfy a
+    reset quorum, for which ADD 5.4 names no specific approver roles.
+    """
+    if record is None:
+        return None
+    attributes = record.attributes
+    if attributes.get("principal_kind") != "HUMAN" or attributes.get("status") != "ACTIVE":
+        return None
+    raw = attributes.get("roles")
+    if not isinstance(raw, str):
+        return None
+    tokens = raw.split(" ") if raw else []
+    if tokens != sorted(set(tokens)) or any(_ROLE_TOKEN.fullmatch(token) is None for token in tokens):
+        return None
+    return frozenset(tokens)
+
+
 class HumanGateCoordinator:
-    def __init__(self, *, identities: IdentityRegistry) -> None:
+    def __init__(self, *, identities: IdentityRegistry, clock: TrustedClock) -> None:
         self._identities = identities
+        self._clock = clock
 
     def validate(
         self,
@@ -129,50 +148,73 @@ class HumanGateCoordinator:
         policy: ApprovalPolicy,
         signatures: Iterable[GateSignature],
         scope: str,
-        at: datetime,
+        at: datetime | None = None,
         control_check: Callable[[], None] | None = None,
     ) -> Approval:
-        instant = require_aware(at, field="at")
+        signature_set = tuple(signatures)
+        instant = require_aware(self._clock.now(), field="trusted clock")
         excluded = {proposer_id}
         if policy.excluded_principal_id:
             excluded.add(policy.excluded_principal_id)
 
         valid_principals: set[str] = set()
-        role_covered_by: dict[str, str] = {}
+        role_candidates: dict[str, set[str]] = {role: set() for role in policy.required_roles}
 
-        for signature in signatures:
+        for signature in signature_set:
             principal = signature.principal_id
             if signature.action_id != action_id:
                 continue
             if principal in excluded:
                 continue
-            if self._identities.get(principal) is None:
+            roles = _active_human_roles(self._identities.get(principal))
+            if roles is None or signature.role not in roles:
                 continue
             if signature.scope != scope:
                 continue
-            if instant - signature.signed_at > policy.ttl:
+            if not timedelta(0) <= instant - signature.signed_at < policy.ttl:
                 continue
 
             valid_principals.add(principal)
 
-            if signature.role in policy.required_roles and signature.role not in role_covered_by:
-                already_covers_a_different_role = any(
-                    other_principal == principal for other_role, other_principal in role_covered_by.items() if other_role != signature.role
-                )
-                if not already_covers_a_different_role:
-                    role_covered_by[signature.role] = principal
+            if signature.role in policy.required_roles:
+                role_candidates[signature.role].add(principal)
 
         if len(valid_principals) < policy.minimum_signatories:
             raise HumanGateError(
                 "QUORUM_NOT_MET",
                 f"{len(valid_principals)} distinct valid signatory(ies), {policy.minimum_signatories} required",
             )
-        missing_roles = policy.required_roles - role_covered_by.keys()
+        # A distinct human per required role, independent of signature order.
+        # A first-fit assignment can falsely reject a valid quorum when one
+        # human holds both roles and another can cover only one of them.
+        role_by_principal: dict[str, str] = {}
+
+        def assign(role: str, visited: set[str]) -> bool:
+            for principal in sorted(role_candidates[role]):
+                if principal in visited:
+                    continue
+                visited.add(principal)
+                previous = role_by_principal.get(principal)
+                if previous is None or assign(previous, visited):
+                    role_by_principal[principal] = role
+                    return True
+            return False
+
+        for role in sorted(policy.required_roles):
+            assign(role, set())
+        missing_roles = policy.required_roles - set(role_by_principal.values())
         if missing_roles:
             raise HumanGateError("MISSING_REQUIRED_ROLE", f"no distinct valid signatory for: {sorted(missing_roles)}")
 
         if control_check is not None:
             control_check()
+            # Policy I/O may advance time or change identity authority. Only
+            # the final fresh validation may publish an Approval. The frozen
+            # tuple also supports single-pass signature iterators safely.
+            return self.validate(
+                action_id=action_id, proposer_id=proposer_id, policy=policy,
+                signatures=signature_set, scope=scope,
+            )
 
         approver = ",".join(sorted(valid_principals))
         return Approval(action_id=action_id, approver=approver, approved=True, approved_at=instant)

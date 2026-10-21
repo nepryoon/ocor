@@ -37,7 +37,7 @@ NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 def identities() -> IdentityRegistry:
     registry = IdentityRegistry()
     for canonical_id in ("urn:ocor:human:a", "urn:ocor:human:b", "urn:ocor:human:c"):
-        registry.register(IdentityRecord(canonical_id=canonical_id))
+        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""}))
     return registry
 
 
@@ -53,7 +53,7 @@ def test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_o
     assert stop.status is StopStatus.STOPPING
     stop.finish_draining(at=NOW)
     assert stop.status is StopStatus.STOPPED
-    stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, at=NOW)
+    stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert stop.status is StopStatus.RESET_PENDING
     event = stop.confirm_reset(at=NOW)
     assert stop.status is StopStatus.NORMAL
@@ -81,11 +81,11 @@ def test_reset_requires_two_distinct_resolved_human_approvers(identities: Identi
     stop.finish_draining(at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:a"), identities=identities, at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:a"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert excinfo.value.reason_code == "RESET_REQUIRES_DUAL_CONTROL"
 
     with pytest.raises(SafetyError) as excinfo:
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"), identities=identities, at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert excinfo.value.reason_code == "RESET_REQUIRES_DUAL_CONTROL"
 
 
@@ -95,7 +95,7 @@ def test_out_of_order_stop_transitions_are_refused(identities: IdentityRegistry)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
         stop.finish_draining(at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
         stop.confirm_reset(at=NOW)
 
