@@ -335,18 +335,127 @@
     }
   },
   "independent_verification": {
-    "current_head_go_claimed": false,
-    "historical_go": {
-      "head_sha": "89745cf4b962898e1d5ec20561e6a9a912406262",
-      "request_id": "OCOR-DEV-REM-0028-89745cf4b962-0",
-      "sha256": "8b9b77976a882a9999f1e28632286ac5d2ff75664326297e35eb9b20308a0e10",
-      "verifier": {
-        "independence_limits": "Processo e contesto separati dall'implementatore. Verifier: Grok 4.7, fornitore xAI, Cursor CLI in loop esterno. Implementatore del change set REM-0028: Codex, fornitore OpenAI. Lineage storico dei record 0044/0050 e della baseline di sicurezza REM-0024: Claude Code, fornitore Anthropic. I fornitori esclusi OpenAI e Anthropic non coincidono con il verifier.",
-        "model": "Grok 4.7",
-        "process": "Cursor CLI; external loop only"
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i digest normativi OK; inputs/ invariato nel diff 7eb83eef..0ddb1da."
+      },
+      {
+        "command": "toolchain preflight against infra/toolchain.lock.json and infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "summary": "PATH con git 2.53.0, node v20.20.2, uv 0.12.5, ruff 0.13.1, tsc 7.0.2, docker 29.7.2, gh 2.99.0, helm 3.14.4, kind 0.29.0, kubectl 1.33.1; digest coincidenti. Python 3.12.11 sha256 ccc93c55... dopo uv sync. Java jdk-21.0.8+9 sull'immagine eclipse-temurin pinnata."
+      },
+      {
+        "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "Ambiente isolato nel worktree detached; 43 pacchetti installati."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint mypy --strict",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_rccad.py --base-ref 7eb83eefebcdff0f7ebf6bb9b9de6de8f7430ef5",
+        "exit_code": 0,
+        "summary": "status PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 7eb83eefebcdff0f7ebf6bb9b9de6de8f7430ef5",
+        "exit_code": 0,
+        "summary": "verdict PASS; 37 PASS e 2 NOT_EXECUTED di tool opzionali non conteggiati come PASS. Il side effect sui file di piano e stato ripristinato all'HEAD prima dei test."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS; drifted_inputs 0, findings vuoti."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione fuori area autorizzata."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_ocor_change_scope.py --base 7eb83eefebcdff0f7ebf6bb9b9de6de8f7430ef5 --head 0ddb1da8a456b4ade6bd83e6ea3f943731099c29 --branch governed/ocor-dev-rem-0028-approver-revalidation",
+        "exit_code": 0,
+        "summary": "PASS: 20 path; superfici immutabili intatte. Alberi di esecuzione coincidenti con final_execution_trees. Hash degli artifact richiesti e dei sorgenti di bootstrap/lock coincidenti. 1974738 e antenato. Manifest G4/G5: solo aggiunte, nessun digest storico alterato."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_runtime_evidence.py --non-skipped",
+        "exit_code": 2,
+        "summary": "Il CLI richiede --task e --manifest. Il controllo sostanziale e stato eseguito subito dopo, con esito PASS, per OCOR-DEV-REM-0028, OCOR-DEV-0043, OCOR-DEV-0044 e OCOR-DEV-0050."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0028 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS evidenza qualificante REM-0028. Stesso esito per 0043, 0044 e 0050."
+      },
+      {
+        "command": "stack reset/bootstrap with bootstrap_ci_environment.ci_resources",
+        "exit_code": 0,
+        "summary": "CA della checkout principale scaduta il 2026-10-08 non modificata; CA rinnovata solo nel worktree, owner 1000:1000. Fuseki running_jvm_args -Xms128m -Xmx1G, cgroup 2147483648, NanoCpus 2000000000, OOMKilled false. 11 container, health typed PASS. Entry SPIRE spiffe://ocor.test/ocor/control-plane creata come in provision() e SVID fetch riuscito prima dei test."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py ocor-runtime/tests/tasks/test_ocor_dev_0043.py ocor-runtime/tests/tasks/test_ocor_dev_0044.py ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "305 passed, skipped 0 (54 REM-0028, 13 0043, 29 0044, 11 0047, 198 0050)."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+        "exit_code": 0,
+        "summary": "Primo avvio senza entry SPIRE: fail-closed WORKLOAD_IDENTITY_UNAVAILABLE, non qualificante. Riesecuzione dopo la entry: 196 passed, failures 0, errors 0, skipped 0, su backend reali."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --output-dir .ocor/rem0028-independent-env-recheck-full",
+        "exit_code": 0,
+        "summary": "PASS 2377 tests, failures 0, errors 0, skipped 0, duration_seconds 3257.12, po_decision_required false. Fuseki rimasto running senza OOM e senza restart. Unione collect-only/JUnit esatta 2377/2377. Kind: removals 1, rejections 0, window 30s. Claim dei record: E1=0, E2=0, Verified=0, NO-GO."
+      },
+      {
+        "command": "cleanup_session_resources then scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "Residui di sessione vuoti. Stack ocor-bootstrap rimosso. Container non di sessione preesistenti ancora presenti. Nessun cluster kind rimasto."
       }
-    },
-    "status": "PENDING_EXTERNAL_LOOP_AFTER_MAIN_ALIGNMENT"
+    ],
+    "findings": [],
+    "implementers": [
+      {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "scope": "inherited REM0019 harness and historical baseline"
+      }
+    ],
+    "integration_agent": "Codex (OpenAI), seal and integration only",
+    "not_executed": [],
+    "original_no_go_preserved": "OCOR-DEV-REM-0028-0ddb1da8a456-0 remains historical; no partial counts transferred",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION; 0043/0044 requalification; 0050 REGRESSION_ONLY",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-21T18:38:24Z",
+    "verdict_file_sha256": "d75586441aa986921b6c1898934c9a88bb08654efba294086e3d3193270642a5",
+    "verdict_head_sha": "0ddb1da8a456b4ade6bd83e6ea3f943731099c29",
+    "verdict_request_id": "OCOR-DEV-REM-0028-0ddb1da8a456-0-env-recheck",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (xAI) via Cursor CLI",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, grok-4.7-high, fornitore xAI. Implementatori dichiarati: Codex, fornitore OpenAI; Claude Code, fornitore Anthropic (osservatore REM-0019 ereditato da main e linea storica, nessun comportamento REM-0028 nuovo in questa iterazione). Nessun implementatore \u00e8 dello stesso fornitore del verifier. La verifica non \u00e8 stata avviata da un implementatore.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, loop esterno"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -927,6 +1036,29 @@
       }
     }
   },
+  "seal_continuity": {
+    "aligned_head": "88da8895daff66797259ebf96b6c1e3b17095e36",
+    "authority": "CANDIDATE-INTEGRATION-STATE-FREEZE",
+    "execution_trees": {
+      ".github": "3632913a3d6ba6ca9ff4f9cbdddd70fd238e796a",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "183bb4b99843e79e46f504079546fa6d44254b55",
+      "reports/tests": "f44ebaad1169a45041108701d1f716a4b62011a4",
+      "scripts": "c509b69cfd962bb4cc5b12140b31aa99a06ff7c6"
+    },
+    "fresh_final_head_ci_required": true,
+    "main_head": "497074baf76b3046c71ec6317a719ec0fdd51d6b",
+    "merge_state_paths": [
+      "reports/development/EXECUTION_STATE.json",
+      "reports/development/MODEL_HANDOFF.json",
+      "reports/development/ITERATION_LOG.md"
+    ],
+    "non_state_diff_stat": "",
+    "reviewed_head": "0ddb1da8a456b4ade6bd83e6ea3f943731099c29"
+  },
+  "sealed_at": "2026-10-21T18:41:54.168488+00:00",
   "session_teardown": {
     "after_counts": {
       "containers": 100,
@@ -953,7 +1085,7 @@
     "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "superseded_path": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-integration-20261020.json",
   "superseded_sha256": "a234a01cfb0bab6eabc7d894865563f46cd598419d8f439c8d8c55ef5b5d8354",
   "supersedes": "OCOR-DEV-0050-regression-rem0019-repair3-3cf6e22a7e4c",
