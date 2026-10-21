@@ -6006,3 +6006,5 @@ E1=0,E2=0,Verified=0 eNO-GO invariati; candidatoREM17 non sigillato/mergiato/ver
 - Inputsintatti,nessunDEC,E1=0,E2=0,Verified=0, runtimeNOT_ESTABLISHED ePoC/ProductionNO-GOinvariati.
 
 - Gate locali dello state-sync PASS: input8/8,verify14PASS,Ruff,mypystrict,RCCAD,language,scope,piano37PASS/2NOT_EXECUTEDopzionali,drift0 e runtime0005/0049/0050. Nuova full locale dello state-sync NOT_EXECUTED: modifica soltanto dei tre file di stato; CI dedicata completa richiesta sul suo HEAD esatto.
+
+- Correzione preventiva dello state-sync prima del merge: current_candidate_ci conservava letichetta del candidato non sigillato precedente; allineato al PASS del candidato6c0342f e al mergePR254, con rinvio a latest_ci_evidence. local_gate_results aggiornato ai gate dello state-sync. HEAD06902a7 superato solo da metadati di stato: run non qualificanti per il nuovo HEAD, nessun conteggio trasferito; nuovi13check obbligatori sul nuovoHEAD, senza cambi di codice/test/harness o cicli di riparazione del task.
