@@ -1,0 +1,83 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py && ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "commit": "c3357b439cd1462de71e1a5772f4d3d0f03b7150",
+  "commit_role": "Final implementation snapshot; subsequent report/state-only commit is the exact independent review head. Current task input hashes reacquired below.",
+  "created_at": "2026-10-08T14:24:15.346279+00:00",
+  "environment": {
+    "backend_profile": "real ocor-bootstrap; locked base and archive recipe; local output identity pending separate governed update",
+    "extras": [
+      "test",
+      "lint"
+    ],
+    "host": "nepryoon",
+    "node": "20.20.2",
+    "python": "3.12.11",
+    "toolchain_preflight": "9/9 pinned version+digest PASS",
+    "uv": "0.12.5"
+  },
+  "implementer": "Codex (OpenAI)",
+  "inputs": {
+    "infra/toolchain.lock.json": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "scripts/acquire_fuseki_archive.py": "4daa3479eef8b17f76025cfb9d1b788ad564356bc1de2a6c18286842a54fee81",
+    "scripts/bootstrap_development_environment.py": "62468bcc8912ae36761d2a860f16b5177e18728ecda06a89004d9c38f6e35a74",
+    "scripts/preflight_environment.py": "2fd8095514ca9e93dfb18c26f3a43e8bb36af670b64947431120e82b2140b467"
+  },
+  "raw_output_sha256": "9435ec755dc858c0c8d7e665e2d1cc7750ecb112c4fb9899c5b154281288c80e",
+  "record_id": "OCOR-DEV-0072-archive-requalified-c3357b439cd1",
+  "requalification": {
+    "previous_inputs": {
+      "infra/toolchain.lock.json": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "scripts/bootstrap_development_environment.py": "ffe644144af84b383f6f609fa80460ab73ba8131a4fef9f1c5aa33f8fe9aa1ff",
+      "scripts/preflight_environment.py": "2fd8095514ca9e93dfb18c26f3a43e8bb36af670b64947431120e82b2140b467"
+    },
+    "re_ran_command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py && ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+    "reason": "PO REM-0017-CI-ARCHIVE-ACQUISITION (2026-10-08): verified archive COPY replaces remote ADD; same source bytes and base; real typed readiness repeated",
+    "source_refinement": "read1 plus per-receive deadline, qualified by new real MISS/HIT in live-stream-acquisition.log"
+  },
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0072-EXACT-TOOLS",
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py && ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "requirement_id": "BR-003",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1,
+        "skipped": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "residual_risks": [
+    "This evidence qualifies development CLI and test-tool availability only; it does not establish backend or runtime conformance.",
+    "Host tools remain governed by fail-closed byte/version preflight; replacement requires a new pinned lock and qualification.",
+    "Local bootstrap output_sha256 identity is NOT_EXECUTED in this change set, differs as recorded, and requires separate PO-authorized FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE. Real typed readiness uses the existing governed build-recipe contract; no local identity PASS asserted."
+  ],
+  "result": "PASS",
+  "rollback": "Evidence-only qualification of already pinned host/repository tools: revert the isolated evidence commit; the worktree-local virtual environment is disposable and reproducible from uv.lock.",
+  "schema_version": 1.0,
+  "status": "REQUALIFIED_PENDING_INDEPENDENT_REMEDIATION_REVIEW",
+  "supersedes": "OCOR-DEV-0072-requalified2-8b44a595418f",
+  "supersedes_sha256": "4b3b236fd82aae746281c5501b210396e07e3f5ad40d42fae5360cd00d2f06d5",
+  "task_id": "OCOR-DEV-0072",
+  "verifier": "Claude Code (Anthropic), pending separate context"
+}

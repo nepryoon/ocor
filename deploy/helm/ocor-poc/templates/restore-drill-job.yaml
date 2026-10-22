@@ -1,0 +1,105 @@
+{{- if .Values.operational.restoreDrill.enabled }}
+{{- $compose := include "ocor-poc.compose" . | fromJson -}}
+{{- $load := index $compose "services" "ocor-restore-load-postgresql" "command" 0 -}}
+# Isolated restore drill (ADD v1.3 §6.5, LLD v1.1 §5.4): ephemeral PostgreSQL and
+# Qdrant run as sidecars reachable only inside the pod (ingress is default-deny
+# except 8080); plaintext stays in a memory-backed volume.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-restore-drill-{{ .Release.Revision }}
+  labels:
+    {{- include "ocor-poc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: restore-drill
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "ocor-poc.labels" . | nindent 8 }}
+        app.kubernetes.io/component: restore-drill
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Release.Name }}-ops
+      automountServiceAccountToken: false
+      {{- include "ocor-poc.podSecurity" . | nindent 6 }}
+      initContainers:
+        - name: restore-prepare
+          image: {{ include "ocor-poc.image" (list . "ops") }}
+          command: [python3, /opt/ocor/ocor_ops_agent.py, restore-prepare, --profile, /etc/ocor/profile.json,
+                    --vault, /vault, --staging, /restore
+                    {{- with .Values.operational.restoreDrill.recoveryPoint }}, --recovery-point, {{ . | quote }}{{ end }}]
+          env:
+            {{- include "ocor-poc.opsEnv" . | nindent 12 }}
+          {{- include "ocor-poc.containerSecurity" . | nindent 10 }}
+          volumeMounts:
+            - {name: agent, mountPath: /opt/ocor/ocor_ops_agent.py, subPath: ocor_ops_agent.py, readOnly: true}
+            - {name: agent, mountPath: /etc/ocor/profile.json, subPath: profile.json, readOnly: true}
+            - {name: vault, mountPath: /vault, readOnly: true}
+            - {name: restore, mountPath: /restore}
+            - {name: tmp, mountPath: /tmp}
+        - name: restore-postgresql
+          image: {{ include "ocor-poc.image" (list . "postgresql") }}
+          restartPolicy: Always
+          args: [postgres, -c, listen_addresses=127.0.0.1]
+          env:
+            - {name: POSTGRES_DB, value: ocor}
+            - {name: POSTGRES_USER, value: ocor}
+            - {name: POSTGRES_HOST_AUTH_METHOD, value: trust}
+            - {name: PGDATA, value: /pgdata/data}
+          startupProbe:
+            exec: {command: [pg_isready, -h, 127.0.0.1, -U, ocor, -d, ocor]}
+            periodSeconds: 2
+            failureThreshold: 60
+          volumeMounts:
+            - {name: pgdata, mountPath: /pgdata}
+            - {name: pgrun, mountPath: /var/run/postgresql}
+        - name: restore-qdrant
+          image: {{ include "ocor-poc.image" (list . "qdrant") }}
+          restartPolicy: Always
+          env:
+            - {name: QDRANT__SERVICE__HOST, value: 127.0.0.1}
+          startupProbe:
+            exec: {command: [sh, -c, "grep -qi ':18BD ' /proc/net/tcp"]}
+            periodSeconds: 2
+            failureThreshold: 60
+          volumeMounts:
+            - {name: qdrant, mountPath: /qdrant/storage}
+            - {name: qdrant-snapshots, mountPath: /qdrant/snapshots}
+        - name: restore-load-postgresql
+          image: {{ include "ocor-poc.image" (list . "postgresql") }}
+          command: [sh, -ec, {{ $load | replace "$$" "$" | quote }}]
+          env:
+            - {name: PGHOST, value: 127.0.0.1}
+            - {name: PGUSER, value: ocor}
+          {{- include "ocor-poc.containerSecurity" . | nindent 10 }}
+          volumeMounts:
+            - {name: restore, mountPath: /restore}
+            - {name: agent, mountPath: /opt/ocor/table-digest.sql, subPath: table-digest.sql, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      containers:
+        - name: restore-finalize
+          image: {{ include "ocor-poc.image" (list . "ops") }}
+          command: [python3, /opt/ocor/ocor_ops_agent.py, restore-finalize, --profile, /etc/ocor/profile.json,
+                    --vault, /vault, --staging, /restore, --restore-qdrant, "127.0.0.1:6333"]
+          env:
+            {{- include "ocor-poc.opsEnv" . | nindent 12 }}
+          {{- include "ocor-poc.containerSecurity" . | nindent 10 }}
+          volumeMounts:
+            - {name: agent, mountPath: /opt/ocor/ocor_ops_agent.py, subPath: ocor_ops_agent.py, readOnly: true}
+            - {name: agent, mountPath: /etc/ocor/profile.json, subPath: profile.json, readOnly: true}
+            - {name: vault, mountPath: /vault}
+            - {name: restore, mountPath: /restore}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: agent
+          configMap: {name: {{ .Release.Name }}-ops}
+        - name: vault
+          persistentVolumeClaim: {claimName: {{ include "ocor-poc.vault" . }}}
+        - {name: restore, emptyDir: {medium: Memory, sizeLimit: 1Gi}}
+        - {name: pgdata, emptyDir: {}}
+        - {name: pgrun, emptyDir: {}}
+        - {name: qdrant, emptyDir: {}}
+        - {name: qdrant-snapshots, emptyDir: {}}
+        - {name: tmp, emptyDir: {}}
+{{- end }}
