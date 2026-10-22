@@ -1,0 +1,37 @@
+{
+  "authority": "REM-0019-KIND-CONTAINERD-SEGV-RECURRENCE (2026-10-13); DEC-210/211; CC-OCOR-DELIVERY-COMPLETION",
+  "base_sha": "eb8ecc689e3f70c425c024efe594a3517cafa3b5",
+  "invariants": {
+    "E1": 0,
+    "E2": 0,
+    "Verified": 0,
+    "ambiguous_ownership": "FAIL before Compose down",
+    "anonymous_volumes": "Inventory records anonymous volume names, Docker anonymous labels and their exact owned container UUIDs before removal; post-inventory preserves binding even after container disappears. Missing/foreign/malformed ownership fails before mutation.",
+    "compose_down_timeout_seconds": 180,
+    "compose_project": "ocor-bootstrap",
+    "deletion": "existing Compose down only; no prune, broad removal, disconnect or deletion by name",
+    "dry_run": "no Docker contact",
+    "inputs": "immutable",
+    "inventory_timeout_seconds": 30,
+    "per_probe_max_seconds": 10,
+    "post_inventory_failure": "FAIL; never infer empty inventory",
+    "reset_functions_AST_unchanged": {
+      "_keycloak_admin_token": "67447f4ca15678bc3207d447262a7f4af83aa9c22746056d64c0c80afd49d266",
+      "_request": "5fd908d3df865301bb98443bfc2172e74b27320e30d709f88acfc44214bb30f1",
+      "reset": "bc994f2c70265615fafda96be0264f5071b80169560a298f99b6f68f4a3f0e3b",
+      "reset_graph_databases": "e83051d3e983a76c254f6721ed9ca2f26489a05e8301ad0fd3e11e06e32b3bd6",
+      "reset_keycloak_realm": "66f14cc61efcd47ce88a4c9b11156c417ff94414c0da8970e3a6a56325277a67",
+      "reset_opa_policy": "601d33635bb38d285d196323ed615d75e86356548acbb2f018b5a10c08dd28d3",
+      "reset_openbao_paths": "b732154223b2a5d9a61da33116fde3442f2f6f6da570732225092f2f9cc67da0"
+    }
+  },
+  "rollback": "new governed revert; no historical evidence edits",
+  "scope": [
+    "scripts/reset_test_environment.py",
+    "reports/tests/test_reset_teardown_residue.py",
+    "reports/tests/qualify_rem0029_teardown.py",
+    "exact plan allowlist and self-hash",
+    "new REM0029/0082/0050/0005 records and evidence; state only on governed/state-sync-*"
+  ],
+  "task_id": "OCOR-DEV-REM-0029"
+}

@@ -272,6 +272,19 @@ def main() -> int:
     changed = subprocess.run(["git", "diff", "--name-only", args.base_ref, "--"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
+        # REM-0029: exact teardown acceptance and fresh requalification outputs.
+        'reports/tests/test_reset_teardown_residue.py',
+        'reports/tests/qualify_rem0029_teardown.py',
+        'reports/assurance/OCOR-DEV-REM-0029-RCCAD/OCOR-DEV-REM-0029.json',
+        'reports/assurance/OCOR-DEV-REM-0029-RCCAD/OCOR-DEV-REM-0029.log',
+        'reports/assurance/OCOR-DEV-REM-0029-RCCAD/scope-and-invariants.json',
+        'reports/assurance/OCOR-DEV-REM-0029-RCCAD/README.md',
+        'reports/evidence/G2/OCOR-DEV-0082.requalified-rem0029.json',
+        'reports/evidence/G2/OCOR-DEV-0082.requalified-rem0029.log',
+        'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0029.json',
+        'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0029.log',
+        'reports/evidence/G0/OCOR-DEV-0005.requalified-rem0029.json',
+        'reports/evidence/G0/OCOR-DEV-0005.requalified-rem0029.log',
         # CC-OCOR-DELIVERY-COMPLETION section 7: exact authorized REM-0022
         # source and governance disposition; no broader spike path admission.
         "spikes/kafka_delivery/oracle.py",

@@ -25,14 +25,16 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-from ocor_bootstrap_lib import root, run
+from ocor_bootstrap_lib import BootstrapError, root, run
 
 TERMINUSDB_URL = "http://127.0.0.1:6363"
 TYPEDB_URL = "http://127.0.0.1:8000"
@@ -44,6 +46,9 @@ OCOR_REALM = "ocor"
 OCOR_DATABASE = "ocor_default"
 OPA_POLICY_ID = "ocor_bootstrap"
 OPENBAO_MOUNT = "ocor"
+PROJECT = "ocor-bootstrap"
+PROJECT_LABEL = "com.docker.compose.project"
+INVENTORY_TIMEOUT = 30
 
 
 class ResetError(RuntimeError):
@@ -172,13 +177,106 @@ def reset(*, terminusdb_password: str, keycloak_password: str, openbao_root_toke
     ]
 
 
-def teardown_command(repository: Path) -> list[str]:
-    env_file = repository / ".ocor" / "bootstrap.env"
+def teardown_command(repository: Path, env_file: Path | None = None) -> list[str]:
+    env_file = env_file if env_file is not None else repository / ".ocor" / "bootstrap.env"
     command = ["docker", "compose"]
     if env_file.exists():
         command.extend(["--env-file", str(env_file)])
     command.extend(["-p", "ocor-bootstrap", "-f", "deploy/bootstrap/compose.yaml", "down", "--volumes", "--remove-orphans"])
     return command
+
+
+def owned_resources(repository: Path, previous: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, list[dict[str, Any]]]:
+    """Read inventory independently of Compose, validating ownership before mutation.
+
+    Names alone never authorise removal. A reserved project name without the
+    exact Compose project label is ambiguous and blocks teardown. Previously
+    observed identities remain candidates even if renamed or relabelled.
+    Only candidate resources are inspected; only Compose performs deletion.
+    """
+    deadline = time.monotonic() + INVENTORY_TIMEOUT
+    inventory: dict[str, list[dict[str, Any]]] = {}
+    mounted_volumes: dict[str, set[str]] = {}
+
+    def query(command: list[str]) -> str:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ResetError("owned-resource inventory deadline expired")
+        # subprocess accepts float seconds; the shared helper is annotated int.
+        result = run(command, cwd=repository, timeout=cast(int, min(10, remaining)))
+        if result.returncode:
+            raise ResetError("owned-resource inventory unavailable")
+        return result.stdout
+
+    for kind, key in (("container", "containers"), ("network", "networks"), ("volume", "volumes")):
+        command = ["docker", kind, "ls", "--format", "{{json .}}"]
+        if kind == "container":
+            command.append("--all")
+        if kind in {"container", "network"}:
+            command.append("--no-trunc")
+        prior_ids = {item["id"] for item in (previous or {}).get(key, [])}
+        prior_mounts = {item["id"]: item.get("anonymous_mount_owner_ids", []) for item in (previous or {}).get(key, [])}
+        inventory[key] = []
+        for line in query(command).splitlines():
+            item = json.loads(line)
+            if not isinstance(item, dict):
+                raise ResetError("malformed owned-resource inventory")
+            name = item.get("Names") if kind == "container" else item.get("Name")
+            identity = name if kind == "volume" else item.get("ID")
+            labels = item.get("Labels")
+            if (not isinstance(name, str) or not name or not isinstance(identity, str) or not identity
+                    or not isinstance(labels, str)):
+                raise ResetError("incomplete owned-resource inventory")
+            reserved_name = name.startswith((PROJECT + "_", PROJECT + "-")) or name == PROJECT
+            labelled = f"{PROJECT_LABEL}={PROJECT}" in labels.split(",")
+            if not (reserved_name or labelled or identity in prior_ids or (kind == "volume" and identity in mounted_volumes)):
+                continue
+            inspected = json.loads(query(["docker", kind, "inspect", identity]))
+            if not isinstance(inspected, list) or len(inspected) != 1 or not isinstance(inspected[0], dict):
+                raise ResetError("malformed owned-resource inspection")
+            detail = inspected[0]
+            actual_labels = detail.get("Config", {}).get("Labels") if kind == "container" else detail.get("Labels")
+            actual_name = detail.get("Name")
+            actual_id = actual_name if kind == "volume" else detail.get("Id")
+            if (actual_id != identity or not isinstance(actual_name, str)
+                    or actual_name.removeprefix("/") != name):
+                raise ResetError("ambiguous owned-resource identity or ownership")
+            mount_owners = sorted(mounted_volumes.get(identity, set()) | set(prior_mounts.get(identity, []))) if kind == "volume" else []
+            anonymous = (bool(mount_owners) and re.fullmatch(r"[a-f0-9]{64}", identity) is not None
+                         and isinstance(actual_labels, dict) and PROJECT_LABEL not in actual_labels
+                         and actual_labels.get("com.docker.volume.anonymous") == "")
+            if not isinstance(actual_labels, dict) or (actual_labels.get(PROJECT_LABEL) != PROJECT and not anonymous):
+                raise ResetError("ambiguous owned-resource identity or ownership")
+            resource: dict[str, Any] = {"id": identity, "name": name}
+            if anonymous:
+                resource["anonymous_mount_owner_ids"] = mount_owners
+            inventory[key].append(resource)
+            if kind == "container":
+                mounts = detail.get("Mounts", [])
+                if not isinstance(mounts, list) or any(not isinstance(mount, dict) for mount in mounts):
+                    raise ResetError("malformed owned-container mounts")
+                for mount in mounts:
+                    if mount.get("Type") == "volume":
+                        volume_name = mount.get("Name")
+                        if not isinstance(volume_name, str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*", volume_name):
+                            raise ResetError("invalid owned-container volume binding")
+                        mounted_volumes.setdefault(volume_name, set()).add(identity)
+        inventory[key].sort(key=lambda resource: resource["id"])
+    if set(mounted_volumes) - {item["id"] for item in inventory["volumes"]}:
+        raise ResetError("owned-container volume missing from inventory")
+    return inventory
+
+
+def teardown(repository: Path, command: list[str]) -> tuple[int, dict[str, Any]]:
+    before = owned_resources(repository)
+    result = run(command, cwd=repository, timeout=180)
+    remaining = owned_resources(repository, previous=before)
+    passed = result.returncode == 0 and not any(remaining.values())
+    return (0 if passed else 1), {
+        "status": "PASS" if passed else "FAIL",
+        "compose_exit_code": result.returncode,
+        "owned_resources_remaining": remaining,
+    }
 
 
 def main() -> int:
@@ -213,13 +311,17 @@ def main() -> int:
             print(json.dumps({"status": "FAIL", "error": str(exc)}, sort_keys=True))
             return 1
 
-    command = teardown_command(repository)
+    command = teardown_command(repository, args.env_file)
     if not args.execute:
         print(json.dumps({"status": "PASS", "mode": "DRY_RUN", "command": command}, indent=2))
         return 0
-    result = run(command, cwd=repository, timeout=180)
-    print(json.dumps({"status": "PASS" if result.returncode == 0 else "ERROR", "stderr": result.stderr[-1000:]}, indent=2))
-    return result.returncode
+    try:
+        code, report = teardown(repository, command)
+    except (BootstrapError, ResetError, OSError, ValueError, TypeError, AttributeError) as exc:
+        print(json.dumps({"status": "FAIL", "error": str(exc)}, sort_keys=True))
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return code
 
 
 if __name__ == "__main__":
