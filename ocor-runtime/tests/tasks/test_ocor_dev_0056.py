@@ -1230,3 +1230,21 @@ def test_live_restored_search_entry_point_never_serves_a_deleted_item(backends, 
     for mode in RetrievalMode:
         refs = ask(mode)
         assert "urn:ocor:memory:keep:v1" in refs and not any(r.startswith("urn:ocor:memory:x:") for r in refs), (mode, refs)
+
+
+def test_the_deletion_module_has_no_backend_client_or_canonical_authority() -> None:
+    import ast
+
+    from ocor_runtime.memory import deletion
+
+    source = Path(deletion.__file__).read_text(encoding="utf-8")
+    imported = {
+        (node.module or "") if isinstance(node, ast.ImportFrom) else alias.name
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+        for alias in node.names
+    }
+    for forbidden in ("psycopg", "requests", "httpx", "urllib", "qdrant_client", "hvac", "socket", "subprocess"):
+        assert not any(name.split(".")[0] == forbidden for name in imported), forbidden
+    for authority in ("CapabilityLease(", "Approval(", "GovernedCanonicalCommitCommand", "ActionCommand(", "request_deletion("):
+        assert authority not in source
