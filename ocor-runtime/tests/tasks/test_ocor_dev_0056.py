@@ -553,3 +553,176 @@ def test_restore_participants_validate_tenant_and_scope_before_purge(tmp_path: P
         with pytest.raises(DeletionRecoveryError, match="RESTORE_BINDING_MISMATCH"):
             participant.purge(bad)
     assert t55.native_entries(restored, restored.ledger.get("x", 1)) == {"lexical": 1, "vector": 1}
+
+
+# --------------------------------------------------------------------------
+# Authenticated checkpoint bound to the recovery point (no caller authority)
+# --------------------------------------------------------------------------
+
+RECOVERY_POINT = "urn:ocor:recovery-point:" + "c" * 64
+OTHER_RECOVERY_POINT = "urn:ocor:recovery-point:" + "d" * 64
+
+
+def authenticated_api():  # type: ignore[no-untyped-def]
+    """Imported per test so a missing port fails each case, not collection."""
+
+    from ocor_runtime.memory import deletion
+
+    return deletion.AuthenticatedDeletionCheckpointAuthority, deletion.RecoveryPointCheckpointClaim
+
+
+class HmacVerifier:
+    """Unit attestation port; the live cases use OpenBao transit signatures."""
+
+    def __init__(self, key: bytes = b"k" * 32, *, answer: object = None, unavailable: bool = False) -> None:
+        self.key, self.answer, self.unavailable = key, answer, unavailable
+
+    def sign(self, payload: bytes) -> str:
+        import hashlib
+        import hmac
+
+        return hmac.new(self.key, payload, hashlib.sha256).hexdigest()
+
+    def verify(self, payload: bytes, attestation: str) -> bool:
+        import hmac
+
+        if self.unavailable:
+            raise TimeoutError("attestation service unavailable")
+        if self.answer is not None:
+            return self.answer  # type: ignore[return-value]
+        return hmac.compare_digest(self.sign(payload), attestation)
+
+
+class IssuedCheckpoints:
+    """Deletion-authority side: attests the current journal for one recovery point."""
+
+    def __init__(self, path: Path, signer: HmacVerifier, recovery_point: str = RECOVERY_POINT) -> None:
+        self.path, self.signer, self.recovery_point = path, signer, recovery_point
+        self.tamper: str | None = None
+        self.unavailable = False
+
+    def attested_checkpoint(self) -> tuple[bytes, str]:
+        _, claim_type = authenticated_api()
+        if self.unavailable:
+            raise ConnectionError("deletion authority unreachable")
+        claim = claim_type(self.recovery_point, DeletionJournalSnapshot.capture(self.path).checkpoint)
+        payload = claim.payload()
+        attestation = self.signer.sign(payload)
+        if self.tamper == "payload":
+            body = parse_i_json(payload)
+            body["checkpoint"]["deletion_epoch"] = 1
+            return canonical_bytes(body), attestation
+        if self.tamper == "attestation":
+            return payload, "0" * len(attestation)
+        if self.tamper == "empty":
+            return payload, ""
+        if self.tamper == "type":
+            return payload.decode(), attestation  # type: ignore[return-value]
+        if self.tamper in {"extra", "noncanonical", "rp-pattern"}:
+            body = parse_i_json(payload)
+            if self.tamper == "extra":
+                body["issued_by"] = "caller"
+                forged = canonical_bytes(body)
+            elif self.tamper == "noncanonical":
+                forged = payload.replace(b"{", b"{ ", 1)
+            else:
+                body["recovery_point_id"] = "recovery-point-1"
+                forged = canonical_bytes(body)
+            return forged, self.signer.sign(forged)
+        return payload, attestation
+
+
+def authenticated_gate(tmp_path: Path, **verifier: object):  # type: ignore[no-untyped-def]
+    authority_type, _ = authenticated_api()
+    authoritative = tmp_path / "authority.jsonl"
+    source = journal(authoritative)
+    restored = tmp_path / "restored.jsonl"
+    restored.write_bytes(authoritative.read_bytes())
+    issued = IssuedCheckpoints(authoritative, HmacVerifier())
+    check = HmacVerifier(**verifier)  # type: ignore[arg-type]
+    authority = authority_type(recovery_point_id=RECOVERY_POINT, source=issued, verifier=check)
+    participants = (Participant(), Participant("native-projections"))
+    gate = DeletionRestoreGate(journal=restored, authority=authority, participants=participants)
+    return gate, issued, authority, source
+
+
+def test_an_attested_checkpoint_for_the_recovery_point_opens_restore(tmp_path: Path) -> None:
+    gate, _, authority, _ = authenticated_gate(tmp_path)
+    expected = DeletionJournalSnapshot.capture(tmp_path / "authority.jsonl").checkpoint
+    assert authority.current() == expected
+    receipt = gate.reconcile()
+    assert receipt.checkpoint == expected and receipt.obligations == 2
+    assert gate.serve(lambda: "served") == "served"
+
+
+@pytest.mark.parametrize("tamper", ["payload", "attestation", "empty", "type"])
+def test_an_unauthenticated_checkpoint_never_opens_restore(tmp_path: Path, tamper: str) -> None:
+    gate, issued, _, _ = authenticated_gate(tmp_path)
+    issued.tamper = tamper
+    invoked: list[str] = []
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_UNAUTHENTICATED"):
+        gate.reconcile()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: invoked.append("served"))
+    assert invoked == []
+
+
+@pytest.mark.parametrize("answer", [False, 1, "true", [True]])
+def test_only_an_exact_true_verification_authenticates(tmp_path: Path, answer: object) -> None:
+    gate, _, _, _ = authenticated_gate(tmp_path, answer=answer)
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_UNAUTHENTICATED"):
+        gate.reconcile()
+
+
+@pytest.mark.parametrize("tamper", ["extra", "noncanonical", "rp-pattern"])
+def test_an_attested_but_malformed_claim_is_not_a_checkpoint(tmp_path: Path, tamper: str) -> None:
+    gate, issued, _, _ = authenticated_gate(tmp_path)
+    issued.tamper = tamper
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_INVALID"):
+        gate.reconcile()
+
+
+def test_a_claim_for_another_recovery_point_is_refused(tmp_path: Path) -> None:
+    gate, issued, _, _ = authenticated_gate(tmp_path)
+    issued.recovery_point = OTHER_RECOVERY_POINT
+    with pytest.raises(DeletionRecoveryError, match="RECOVERY_POINT_MISMATCH"):
+        gate.reconcile()
+
+
+@pytest.mark.parametrize("outage", ["source", "verifier"])
+def test_authority_or_verifier_outage_keeps_restore_closed(tmp_path: Path, outage: str) -> None:
+    gate, issued, _, _ = authenticated_gate(tmp_path, unavailable=outage == "verifier")
+    issued.unavailable = outage == "source"
+    with pytest.raises(DeletionRecoveryError, match="DELETION_AUTHORITY_UNAVAILABLE"):
+        gate.reconcile()
+
+
+def test_an_attested_later_deletion_closes_an_open_gate(tmp_path: Path) -> None:
+    gate, _, _, source = authenticated_gate(tmp_path)
+    gate.reconcile()
+    source.append(entry("z", 3, TombstonePhase.STARTED))
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.serve(lambda: "stale")
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: "stale")
+
+
+@pytest.mark.parametrize("value", ["", "recovery-point", "urn:ocor:recovery-point:" + "C" * 64, 7])
+def test_the_recovery_point_identity_is_a_closed_urn(tmp_path: Path, value: object) -> None:
+    authority_type, claim_type = authenticated_api()
+    journal(tmp_path / "j.jsonl")
+    checkpoint = DeletionJournalSnapshot.capture(tmp_path / "j.jsonl").checkpoint
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_INVALID"):
+        claim_type(value, checkpoint)  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        authority_type(recovery_point_id=value, source=object(), verifier=object())  # type: ignore[arg-type]
+
+
+def test_claim_payload_roundtrips_and_binds_recovery_point_and_checkpoint(tmp_path: Path) -> None:
+    _, claim_type = authenticated_api()
+    journal(tmp_path / "j.jsonl")
+    checkpoint = DeletionJournalSnapshot.capture(tmp_path / "j.jsonl").checkpoint
+    claim = claim_type(RECOVERY_POINT, checkpoint)
+    assert parse_i_json(claim.payload()) == {"recovery_point_id": RECOVERY_POINT, "checkpoint": checkpoint.to_mapping()}
+    assert claim_type.from_payload(claim.payload()) == claim
+    assert claim_type(OTHER_RECOVERY_POINT, checkpoint).payload() != claim.payload()
