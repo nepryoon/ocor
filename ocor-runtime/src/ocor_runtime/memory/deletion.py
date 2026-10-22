@@ -7,9 +7,10 @@ therefore require the exact sequence, head and deletion epoch supplied by a
 trusted checkpoint authority, independent of the restored file.
 
 ``capture`` validates and inventories a journal; it does NOT authenticate it.
-The recovery/manifest provider must authenticate the checkpoint and bind it to
-the selected recovery point before implementing ``current``.  A caller or the
-restored backup itself must never supply that authority.
+``AuthenticatedDeletionCheckpointAuthority`` authenticates the checkpoint
+through an attestation port of the deletion authority and binds it to the
+selected recovery point.  A caller or the restored backup itself must never
+supply that authority.
 
 The gate starts closed, purges and inventories every obligation, rechecks the
 authority and journal, and invalidates its receipt on any failure. ``serve``
@@ -177,6 +178,68 @@ class DeletionJournalSnapshot:
         return snapshot
 
 
+RECOVERY_POINT_PATTERN = r"urn:ocor:recovery-point:[0-9a-f]{64}"
+
+
+@dataclass(frozen=True, slots=True)
+class RecoveryPointCheckpointClaim:
+    """The deletion authority's checkpoint, bound to one recovery point.
+
+    The canonical payload is what the deletion authority attests; a claim for
+    another recovery point, an extra member or non-canonical bytes is refused.
+    """
+
+    recovery_point_id: str
+    checkpoint: DeletionJournalCheckpoint
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.recovery_point_id, str)
+            or re.fullmatch(RECOVERY_POINT_PATTERN, self.recovery_point_id) is None
+            or not isinstance(self.checkpoint, DeletionJournalCheckpoint)
+        ):
+            raise DeletionRecoveryError("CHECKPOINT_INVALID")
+
+    def to_mapping(self) -> dict[str, object]:
+        return {"recovery_point_id": self.recovery_point_id, "checkpoint": self.checkpoint.to_mapping()}
+
+    def payload(self) -> bytes:
+        return canonical_bytes(self.to_mapping())
+
+    @classmethod
+    def from_payload(cls, payload: bytes) -> RecoveryPointCheckpointClaim:
+        try:
+            body = parse_i_json(payload)
+            if not isinstance(body, Mapping) or set(body) != {"recovery_point_id", "checkpoint"}:
+                raise DeletionRecoveryError("CHECKPOINT_INVALID")
+            checkpoint = body["checkpoint"]
+            if not isinstance(checkpoint, Mapping) or set(checkpoint) != {"sequence", "head", "deletion_epoch"}:
+                raise DeletionRecoveryError("CHECKPOINT_INVALID")
+            claim = cls(
+                body["recovery_point_id"],
+                DeletionJournalCheckpoint(checkpoint["sequence"], checkpoint["head"], checkpoint["deletion_epoch"]),
+            )
+        except DeletionRecoveryError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- an unparsable claim is never a checkpoint
+            raise DeletionRecoveryError("CHECKPOINT_INVALID") from exc
+        if claim.payload() != payload:
+            raise DeletionRecoveryError("CHECKPOINT_INVALID")
+        return claim
+
+
+class AttestedCheckpointSource(Protocol):
+    """Deletion-authority endpoint: canonical claim payload and its attestation."""
+
+    def attested_checkpoint(self) -> tuple[bytes, str]: ...
+
+
+class CheckpointAttestationVerifier(Protocol):
+    """Verifies the deletion authority's attestation; only ``True`` authenticates."""
+
+    def verify(self, payload: bytes, attestation: str) -> bool: ...
+
+
 class DeletionCheckpointAuthority(Protocol):
     """Authenticated current checkpoint, independent of the restored journal.
 
@@ -185,6 +248,48 @@ class DeletionCheckpointAuthority(Protocol):
     """
 
     def current(self) -> DeletionJournalCheckpoint: ...
+
+
+class AuthenticatedDeletionCheckpointAuthority:
+    """``DeletionCheckpointAuthority`` from an attested, recovery-point-bound claim.
+
+    The recovery point is fixed by the restore composition; the source and the
+    verifier belong to the deletion authority, never to the restored backup or
+    to a query caller.  The attestation is verified before the payload is
+    parsed.  Freshness is the source's obligation: it attests the current
+    journal on every call, so an attested later deletion closes an open gate.
+    """
+
+    def __init__(
+        self, *, recovery_point_id: str, source: AttestedCheckpointSource,
+        verifier: CheckpointAttestationVerifier,
+    ) -> None:
+        if not isinstance(recovery_point_id, str) or re.fullmatch(RECOVERY_POINT_PATTERN, recovery_point_id) is None:
+            raise ValueError("recovery point identity must be a closed recovery-point URN")
+        self._recovery_point_id = recovery_point_id
+        self._source = source
+        self._verifier = verifier
+
+    def current(self) -> DeletionJournalCheckpoint:
+        try:
+            attested = self._source.attested_checkpoint()
+        except Exception as exc:  # noqa: BLE001 -- authority outage fails closed
+            raise DeletionRecoveryError("DELETION_AUTHORITY_UNAVAILABLE") from exc
+        if not isinstance(attested, tuple) or len(attested) != 2:
+            raise DeletionRecoveryError("CHECKPOINT_UNAUTHENTICATED")
+        payload, attestation = attested
+        if type(payload) is not bytes or type(attestation) is not str or not attestation:
+            raise DeletionRecoveryError("CHECKPOINT_UNAUTHENTICATED")
+        try:
+            verified = self._verifier.verify(payload, attestation)
+        except Exception as exc:  # noqa: BLE001 -- verifier outage is not authentication
+            raise DeletionRecoveryError("DELETION_AUTHORITY_UNAVAILABLE") from exc
+        if verified is not True:
+            raise DeletionRecoveryError("CHECKPOINT_UNAUTHENTICATED")
+        claim = RecoveryPointCheckpointClaim.from_payload(payload)
+        if not hmac.compare_digest(claim.recovery_point_id, self._recovery_point_id):
+            raise DeletionRecoveryError("RECOVERY_POINT_MISMATCH")
+        return claim.checkpoint
 
 
 class RestoredDeletionParticipant(Protocol):
@@ -380,6 +485,8 @@ class DeletionRestoreGate:
     def _checkpoint(self) -> DeletionJournalCheckpoint:
         try:
             checkpoint = self._authority.current()
+        except DeletionRecoveryError:
+            raise  # a stable authentication/binding code is kept, never relabelled
         except Exception as exc:  # noqa: BLE001 -- provider authentication/outage fails closed
             raise DeletionRecoveryError("DELETION_AUTHORITY_UNAVAILABLE") from exc
         if not isinstance(checkpoint, DeletionJournalCheckpoint):
