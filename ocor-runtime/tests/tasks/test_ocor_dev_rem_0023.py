@@ -47,6 +47,25 @@ class PostgresAudit:
             ]
 
 
+class SchemaPostgresAudit:
+    """Live consumer fixture sink; schema lifetime follows the existing world."""
+
+    def __init__(self, dsn: str, schema: str) -> None:
+        self.dsn, self.schema = dsn, schema
+        with psycopg.connect(dsn) as conn:
+            conn.execute(
+                f'CREATE TABLE IF NOT EXISTS "{schema}".admission_denials '
+                '(seq bigserial PRIMARY KEY, body jsonb NOT NULL)'
+            )
+
+    def record(self, event: Mapping[str, object]) -> None:
+        with psycopg.connect(self.dsn) as conn:
+            conn.execute(
+                f'INSERT INTO "{self.schema}".admission_denials (body) VALUES (%s::jsonb)',
+                (canonical_bytes(dict(event)).decode(),),
+            )
+
+
 @pytest.fixture
 def live(tmp_path: Path) -> Iterator[tuple[Any, PostgresAudit, Path]]:
     dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
@@ -382,3 +401,38 @@ def test_malformed_unicode_operation_is_fingerprinted_without_losing_denial_audi
         "\ud800".encode("utf-8", errors="surrogatepass")
     )
     assert path.read_bytes() == b""
+
+
+def test_consumer_fixture_scope_and_durable_sink(tmp_path: Path) -> None:
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(
+        "rem0023_scope", root / "reports/tests/test_rem0023_consumer_fixture_scope.py"
+    )
+    assert spec is not None and spec.loader is not None
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    for path in guard.FILES:
+        guard.compare(guard.baseline(path), (root / path).read_text())
+        with pytest.raises(AssertionError):
+            guard.compare(guard.baseline(path), (root / path).read_text() + "\nOUT_OF_SCOPE=True\n")
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+    assert dsn, "real PostgreSQL required"
+    schema = "rem0023_sink_" + uuid.uuid4().hex
+    with psycopg.connect(dsn) as conn:
+        conn.execute(f'CREATE SCHEMA "{schema}"')
+    try:
+        sink = SchemaPostgresAudit(dsn, schema)
+        event = {"action": "admitMemory.denied", "outcome": "DENIED"}
+        sink.record(event)
+        # A fresh sink/connection sees the same durable row, without overwriting.
+        SchemaPostgresAudit(dsn, schema)
+        with psycopg.connect(dsn) as conn:
+            assert conn.execute(f'SELECT body FROM "{schema}".admission_denials').fetchall() == [(event,)]
+            conn.execute(f'DROP TABLE "{schema}".admission_denials')
+        with pytest.raises(psycopg.errors.UndefinedTable):
+            sink.record(event)
+    finally:
+        with psycopg.connect(dsn) as conn:
+            conn.execute(f'DROP SCHEMA "{schema}" CASCADE')

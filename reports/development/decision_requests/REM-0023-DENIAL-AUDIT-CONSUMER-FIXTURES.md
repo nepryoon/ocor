@@ -1,6 +1,6 @@
 # REM-0023-DENIAL-AUDIT-CONSUMER-FIXTURES
 
-Status: OPEN_PO_DECISION_REQUIRED — estensione puntuale delle aree di file.
+Status: RESOLVED — opzione 1, decisione PO del 2026-10-22.
 Nessuna variazione normativa richiesta. Autorità corrente: decisione PO
 REM-0022-0050-ROLE-REVIEW-DISPOSITION (2026-10-11), DEC-210/211.
 
@@ -55,3 +55,20 @@ richiesti e la suite completa; poi nuovi record e verifica esterna sull'HEAD esa
 
 Inputs intatti; E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED,
 PoC/Production NO-GO. Nessun nuovo DEC e nessuna promozione probatoria.
+
+
+## Disposition del Product Owner — 2026-10-22
+
+`REM-0023-DENIAL-AUDIT-CONSUMER-FIXTURES`: opzione 1. Autorizzati
+soltanto i costruttori di MemoryAdmissionService e i fixture CWorld/0054 e
+World/0055 per il port esplicito MemoryAdmissionAuditSink. Test, identificativi,
+parametrizzazioni, assert, pytest.raises e reason code invariati. Nessun fallback
+volatile, nessun mascheramento AUDIT_UNAVAILABLE, nessuno skip/xfail/esclusione.
+Guardia AST eseguibile in reports/tests/test_rem0023_consumer_fixture_scope.py,
+RED prima del cablaggio, GREEN e mutazioni negative prima della qualifica.
+I live fixture usano PostgreSQL e connessioni indipendenti; i soli unit_world
+passano esplicitamente il port di riferimento. Il port è obbligatorio nei due
+costruttori, senza selezione implicita o fallback. Teardown tramite gli schemi
+posseduti già gestiti dai fixture. Nuovi record di riqualifica 0050/0054/0055
+con supersession esplicita, sigilli storici intatti. Ripresa da WIP7cfb60d con
+merge non distruttivo di main dopo la chiusura verificata di REM0029.
