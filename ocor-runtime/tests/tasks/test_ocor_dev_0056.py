@@ -1149,3 +1149,84 @@ def test_live_backend_fault_during_reconciliation_keeps_restore_closed_then_retr
     setattr(index, method, original)
     gate.reconcile()
     assert not mentions(gate.serve(d.refs), "x")
+
+
+# --------------------------------------------------------------------------
+# The restored searchMemory entry point is composed behind the gate
+# --------------------------------------------------------------------------
+
+
+def restored_search_type():  # type: ignore[no-untyped-def]
+    from ocor_runtime.memory import deletion
+
+    return deletion.RestoredMemorySearch
+
+
+class SpySearch:
+    def __init__(self) -> None:
+        self.calls: list[tuple[object, object]] = []
+
+    def search(self, request, *, binding):  # type: ignore[no-untyped-def]
+        self.calls.append((request, binding))
+        return {"hits": []}
+
+
+def test_restored_search_is_closed_until_reconciled_and_forwards_unchanged(tmp_path: Path) -> None:
+    gate, _, _, _ = gate_world(tmp_path)
+    spy = SpySearch()
+    search = restored_search_type()(service=spy, gate=gate)
+    request, binding = {"retrieval_mode": "LEXICAL"}, object()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        search.search(request, binding=binding)
+    assert spy.calls == []
+    gate.reconcile()
+    assert search.search(request, binding=binding) == {"hits": []}
+    assert spy.calls == [(request, binding)]
+
+
+def test_restored_search_discards_a_response_when_residue_reappears(tmp_path: Path) -> None:
+    gate, _, participant, _ = gate_world(tmp_path)
+    gate.reconcile()
+
+    class Resurrecting(SpySearch):
+        def search(self, request, *, binding):  # type: ignore[no-untyped-def]
+            participant.present.add("x")  # e.g. a replica re-synchronised from an old copy
+            return super().search(request, binding=binding)
+
+    search = restored_search_type()(service=Resurrecting(), gate=gate)
+    with pytest.raises(DeletionRecoveryError, match="DELETION_INCOMPLETE"):
+        search.search({}, binding=object())
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        search.search({}, binding=object())
+
+
+def test_restored_search_requires_a_gate_and_a_search_port(tmp_path: Path) -> None:
+    gate, _, _, _ = gate_world(tmp_path)
+    search_type = restored_search_type()
+    with pytest.raises(ValueError):
+        search_type(service=SpySearch(), gate=object())  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        search_type(service=object(), gate=gate)  # type: ignore[arg-type]
+
+
+def test_live_restored_search_entry_point_never_serves_a_deleted_item(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    from ocor_runtime.memory.retrieval import RetrievalMode
+
+    _, t52, _, t55, _ = live_modules()
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="forget-x")  # type: ignore[attr-defined]
+    d.deliver_journal()
+    gate = d.gate()
+    search = restored_search_type()(service=d.restored.service(), gate=gate)  # type: ignore[attr-defined]
+
+    def ask(mode: RetrievalMode):  # type: ignore[no-untyped-def]
+        body = t52.request(mode, text=t55.TEXT, ctx=t55.CALLER, deadline=d.restored.deadline())  # type: ignore[attr-defined]
+        return t52.refs(search.search(body, binding=t52.binding(t55.CALLER)))
+
+    for mode in RetrievalMode:
+        with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+            ask(mode)
+    gate.reconcile()
+    for mode in RetrievalMode:
+        refs = ask(mode)
+        assert "urn:ocor:memory:keep:v1" in refs and not any(r.startswith("urn:ocor:memory:x:") for r in refs), (mode, refs)
