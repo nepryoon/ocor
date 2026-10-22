@@ -19,6 +19,11 @@ callback must only materialise a response, never dispatch an external effect.
 All restored query entry points must go through this gate;
 ``RestoredMemorySearch`` is the composed ``searchMemory`` entry point.  This
 module declares no backend or runtime conformance.
+
+Operational refusals synchronously append digest-only denial evidence to the
+protected audit port. Audit failure keeps restore closed with AUDIT_UNAVAILABLE.
+Pure journal/claim decoding remains a value validator; its errors are audited by
+the authority, replay adapter or gate that consumes it.
 """
 
 from __future__ import annotations
@@ -27,12 +32,15 @@ import fcntl
 import hmac
 import re
 import threading
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from types import MappingProxyType
 from typing import Protocol, TypeVar
 
-from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json, parse_utc_timestamp
+from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp, parse_i_json, parse_utc_timestamp
 from ..kernel.governed_context import VerifiedGovernedContextBinding
 from .lifecycle import DeletionParticipant, DeletionTarget, InMemoryTombstoneStore, TombstoneEntry, TombstonePhase
 from .model import AdmittedMemoryVersion, LifecycleStatus, MemoryVersionLedger
@@ -48,6 +56,60 @@ class DeletionRecoveryError(RuntimeError):
     def __init__(self, reason_code: str) -> None:
         self.reason_code = reason_code
         super().__init__(reason_code)
+
+
+class DeletionRecoveryAuditSink(Protocol):
+    """Durable, protected denial authority, separate from restored memory versions.
+
+    Return only after a durable append, or raise. No volatile fallback is
+    provided. The same record port as admission may be composed here, but its
+    backend and isolation binding are fixed by the trusted restore operator.
+    """
+
+    def record(self, event: Mapping[str, object]) -> None: ...
+
+
+class _RecoveryDenials:
+    def __init__(
+        self, audit: DeletionRecoveryAuditSink | None, recovery_point_id: str,
+        checkpoint: DeletionJournalCheckpoint | None = None,
+    ) -> None:
+        if (
+            not isinstance(recovery_point_id, str)
+            or re.fullmatch(RECOVERY_POINT_PATTERN, recovery_point_id) is None
+        ):
+            raise ValueError("recovery point identity must be a closed recovery-point URN")
+        self.audit = audit
+        self.recovery_point_digest = canonical_digest(recovery_point_id)
+        self.checkpoint = checkpoint
+
+    @contextmanager
+    def guard(self, boundary: str, tombstone: TombstoneEntry | None = None) -> Iterator[None]:
+        try:
+            yield
+        except Exception as error:  # noqa: BLE001 -- every operational refusal needs evidence
+            if isinstance(error, DeletionRecoveryError) and error.reason_code == "AUDIT_UNAVAILABLE":
+                raise  # never disguise an unaudited refusal as an audited downstream error
+            try:
+                reason = error.reason_code if isinstance(error, DeletionRecoveryError) else "RECOVERY_UNAVAILABLE"
+                event = {
+                    "audit_version": "1.0",
+                    "action": boundary,
+                    "outcome": "DENIED",
+                    "reason_code": reason if re.fullmatch(r"[A-Z][A-Z0-9_]{0,95}", reason) else "RECOVERY_REJECTED",
+                    "recovery_point_digest": self.recovery_point_digest,
+                    # None explicitly means no authenticated checkpoint is known.
+                    # Never parse an unverified claim just to enrich the audit.
+                    "checkpoint_digest": None if self.checkpoint is None else self.checkpoint.digest,
+                    "tombstone_ref": None if tombstone is None else canonical_digest(tombstone.to_mapping()),
+                    "at": format_utc_timestamp(datetime.now(UTC)),
+                }
+                if self.audit is None:
+                    raise RuntimeError("denial audit authority is not configured")
+                self.audit.record(MappingProxyType(event))
+            except Exception:  # noqa: BLE001 -- no successful receipt or response without audit
+                raise DeletionRecoveryError("AUDIT_UNAVAILABLE") from None
+            raise
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,14 +326,20 @@ class AuthenticatedDeletionCheckpointAuthority:
     def __init__(
         self, *, recovery_point_id: str, source: AttestedCheckpointSource,
         verifier: CheckpointAttestationVerifier,
+        audit: DeletionRecoveryAuditSink | None = None,
     ) -> None:
         if not isinstance(recovery_point_id, str) or re.fullmatch(RECOVERY_POINT_PATTERN, recovery_point_id) is None:
             raise ValueError("recovery point identity must be a closed recovery-point URN")
         self._recovery_point_id = recovery_point_id
         self._source = source
         self._verifier = verifier
+        self._denials = _RecoveryDenials(audit, recovery_point_id)
 
     def current(self) -> DeletionJournalCheckpoint:
+        with self._denials.guard("deletionCheckpoint.denied"):
+            return self._current()
+
+    def _current(self) -> DeletionJournalCheckpoint:
         try:
             attested = self._source.attested_checkpoint()
         except Exception as exc:  # noqa: BLE001 -- authority outage fails closed
@@ -290,6 +358,7 @@ class AuthenticatedDeletionCheckpointAuthority:
         claim = RecoveryPointCheckpointClaim.from_payload(payload)
         if not hmac.compare_digest(claim.recovery_point_id, self._recovery_point_id):
             raise DeletionRecoveryError("RECOVERY_POINT_MISMATCH")
+        self._denials.checkpoint = claim.checkpoint
         return claim.checkpoint
 
 
@@ -326,13 +395,21 @@ class MemoryDeletionMetadataReplay:
         self, *, authoritative_metadata: MemoryMetadataStore,
         authoritative_ledger: MemoryVersionLedger, restored_metadata: MemoryMetadataStore,
         restored_ledger: MemoryVersionLedger,
+        audit: DeletionRecoveryAuditSink | None = None,
+        recovery_point_id: str,
+        checkpoint: DeletionJournalCheckpoint | None = None,
     ) -> None:
         self._source = authoritative_metadata
         self._source_ledger = authoritative_ledger
         self._restored = restored_metadata
         self._restored_ledger = restored_ledger
+        self._denials = _RecoveryDenials(audit, recovery_point_id, checkpoint)
 
     def purge(self, tombstone: TombstoneEntry) -> None:
+        with self._denials.guard("deletionMetadata.purge.denied", tombstone):
+            return self._purge(tombstone)
+
+    def _purge(self, tombstone: TombstoneEntry) -> None:
         versions = self._source_versions(tombstone)
         limit = len(versions)
         if self._restored.head(tombstone.memory_item_id) > limit or self._restored_ledger.latest_version(tombstone.memory_item_id) > limit:
@@ -360,6 +437,10 @@ class MemoryDeletionMetadataReplay:
                 )
 
     def residue(self, tombstone: TombstoneEntry) -> tuple[str, ...]:
+        with self._denials.guard("deletionMetadata.residue.denied", tombstone):
+            return self._residue(tombstone)
+
+    def _residue(self, tombstone: TombstoneEntry) -> tuple[str, ...]:
         versions = self._source_versions(tombstone)
         item_id = tombstone.memory_item_id
         if self._restored.head(item_id) != len(versions) or self._restored_ledger.latest_version(item_id) != len(versions):
@@ -422,11 +503,15 @@ class RestoredMemoryParticipant:
     def __init__(
         self, *, metadata: MemoryMetadataStore, participant: DeletionParticipant,
         binding: VerifiedGovernedContextBinding,
+        audit: DeletionRecoveryAuditSink | None = None,
+        recovery_point_id: str,
+        checkpoint: DeletionJournalCheckpoint | None = None,
     ) -> None:
         self.name = participant.name
         self._metadata = metadata
         self._participant = participant
         self._binding = binding
+        self._denials = _RecoveryDenials(audit, recovery_point_id, checkpoint)
 
     def _target(self, tombstone: TombstoneEntry) -> DeletionTarget:
         if not isinstance(self._binding, VerifiedGovernedContextBinding) or self._binding.expected.tenant_id != tombstone.tenant_id:
@@ -454,10 +539,12 @@ class RestoredMemoryParticipant:
         )
 
     def purge(self, tombstone: TombstoneEntry) -> None:
-        self._participant.purge(self._target(tombstone))
+        with self._denials.guard("deletionParticipant.purge.denied", tombstone):
+            self._participant.purge(self._target(tombstone))
 
     def residue(self, tombstone: TombstoneEntry) -> tuple[str, ...]:
-        return self._participant.residue(self._target(tombstone))
+        with self._denials.guard("deletionParticipant.residue.denied", tombstone):
+            return self._participant.residue(self._target(tombstone))
 
 
 @dataclass(frozen=True, slots=True)
@@ -470,6 +557,8 @@ class DeletionRestoreGate:
     def __init__(
         self, *, journal: Path, authority: DeletionCheckpointAuthority,
         participants: Sequence[RestoredDeletionParticipant],
+        audit: DeletionRecoveryAuditSink | None = None,
+        recovery_point_id: str,
     ) -> None:
         names = [participant.name for participant in participants]
         if not names or len(set(names)) != len(names) or any(
@@ -482,6 +571,7 @@ class DeletionRestoreGate:
         self._participants = tuple(participants)
         self._lock = threading.RLock()
         self._snapshot: DeletionJournalSnapshot | None = None
+        self._denials = _RecoveryDenials(audit, recovery_point_id)
 
     def _checkpoint(self) -> DeletionJournalCheckpoint:
         try:
@@ -492,6 +582,7 @@ class DeletionRestoreGate:
             raise DeletionRecoveryError("DELETION_AUTHORITY_UNAVAILABLE") from exc
         if not isinstance(checkpoint, DeletionJournalCheckpoint):
             raise DeletionRecoveryError("CHECKPOINT_INVALID")
+        self._denials.checkpoint = checkpoint
         return checkpoint
 
     def _check(self, snapshot: DeletionJournalSnapshot) -> None:
@@ -504,6 +595,8 @@ class DeletionRestoreGate:
             for participant in self._participants:
                 try:
                     residue = participant.residue(entry)
+                except DeletionRecoveryError:
+                    raise
                 except Exception as exc:  # noqa: BLE001 -- unreadable is not empty
                     raise DeletionRecoveryError("DELETION_INVENTORY_UNAVAILABLE") from exc
                 if not isinstance(residue, tuple) or residue:
@@ -518,7 +611,7 @@ class DeletionRestoreGate:
             raise DeletionRecoveryError("DELETION_PARTICIPANT_MISSING")
 
     def reconcile(self) -> DeletionReconciliationReceipt:
-        with self._lock:
+        with self._lock, self._denials.guard("deletionRestore.reconcile.denied"):
             self._snapshot = None
             snapshot = DeletionJournalSnapshot.read(self._journal, expected=self._checkpoint())
             self._validate_participants(snapshot)
@@ -526,6 +619,8 @@ class DeletionRestoreGate:
                 for participant in self._participants:
                     try:
                         participant.purge(entry)
+                    except DeletionRecoveryError:
+                        raise
                     except Exception as exc:  # noqa: BLE001 -- failed purge cannot reopen restore
                         raise DeletionRecoveryError("DELETION_INCOMPLETE") from exc
             self._check(snapshot)
@@ -534,7 +629,7 @@ class DeletionRestoreGate:
             return receipt
 
     def serve(self, action: Callable[[], T]) -> T:
-        with self._lock:
+        with self._lock, self._denials.guard("deletionRestore.serve.denied"):
             snapshot = self._snapshot
             if snapshot is None:
                 raise DeletionRecoveryError("RESTORE_NOT_RECONCILED")

@@ -193,7 +193,7 @@ def gate_world(tmp_path: Path):  # type: ignore[no-untyped-def]
     restored.write_bytes(authoritative.read_bytes())
     participant = Participant()
     authority = Authority(authoritative)
-    gate = DeletionRestoreGate(
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         journal=restored, authority=authority,
         participants=(participant, Participant("native-projections")),
     )
@@ -254,12 +254,12 @@ def test_missing_duplicate_or_unnamed_participants_are_configuration_errors(tmp_
     _, authority, participant, restored = gate_world(tmp_path)
     for participants in [(), (participant, participant)]:
         with pytest.raises(ValueError):
-            DeletionRestoreGate(journal=restored, authority=authority, participants=participants)
+            DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(), journal=restored, authority=authority, participants=participants)
 
 
 def test_omitting_a_recorded_store_cannot_qualify_recovery(tmp_path: Path) -> None:
     _, authority, participant, restored = gate_world(tmp_path)
-    gate = DeletionRestoreGate(journal=restored, authority=authority, participants=(participant,))
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(), journal=restored, authority=authority, participants=(participant,))
     with pytest.raises(DeletionRecoveryError, match="DELETION_PARTICIPANT_MISSING"):
         gate.reconcile()
     assert participant.calls == []
@@ -409,7 +409,7 @@ def test_authority_changed_during_the_final_inventory_is_rechecked(tmp_path: Pat
                 JournalTombstoneStore(authority.path).append(entry("z", 3, TombstonePhase.STARTED))
             return super().residue(tombstone)
 
-    gate = DeletionRestoreGate(
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         journal=restored, authority=authority,
         participants=(participant, DeletionDuringInventory("native-projections")),
     )
@@ -427,7 +427,7 @@ def test_a_purge_failure_is_not_overruled_by_an_empty_inventory(tmp_path: Path) 
             super().purge(tombstone)
             raise ConnectionError("lost ack")
 
-    gate = DeletionRestoreGate(
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         journal=restored, authority=authority,
         participants=(participant, FailedPurge("native-projections")),
     )
@@ -446,7 +446,7 @@ def test_authority_changed_during_purge_is_rechecked(tmp_path: Path) -> None:
             if tombstone.memory_item_id == "x":
                 JournalTombstoneStore(authority.path).append(entry("z", 3, TombstonePhase.STARTED))
 
-    gate = DeletionRestoreGate(
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         journal=restored, authority=authority,
         participants=(participant, ConcurrentDeletion("native-projections")),
     )
@@ -461,7 +461,7 @@ def test_authority_and_inventory_require_exact_port_types(tmp_path: Path) -> Non
         def residue(self, tombstone: TombstoneEntry):  # type: ignore[no-untyped-def]
             return []  # not a verified empty tuple
 
-    gate = DeletionRestoreGate(
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         journal=restored, authority=authority,
         participants=(participant, InvalidInventory("native-projections")),
     )
@@ -472,7 +472,7 @@ def test_authority_and_inventory_require_exact_port_types(tmp_path: Path) -> Non
         def current(self):  # type: ignore[no-untyped-def]
             return {"deletion_epoch": 2}
 
-    gate = DeletionRestoreGate(journal=restored, authority=InvalidAuthority(), participants=(participant,))
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(), journal=restored, authority=InvalidAuthority(), participants=(participant,))
     with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_INVALID"):
         gate.reconcile()
 
@@ -497,7 +497,7 @@ def replay_world(tmp_path: Path):  # type: ignore[no-untyped-def]
     restored.admit("x", t55.TEXT)
     source.delete("x", op="forget-x")
     tombstone = DeletionJournalSnapshot.capture(path).obligations[0]
-    replay = MemoryDeletionMetadataReplay(
+    replay = MemoryDeletionMetadataReplay(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         authoritative_metadata=source.metadata, authoritative_ledger=source.ledger,
         restored_metadata=restored.metadata, restored_ledger=restored.ledger,
     )
@@ -558,7 +558,7 @@ def test_restore_participants_refuse_a_binding_of_another_tenant(tmp_path: Path)
 
     replay, _, restored, tombstone = replay_world(tmp_path)
     replay.purge(tombstone)
-    participant = RestoredMemoryParticipant(
+    participant = RestoredMemoryParticipant(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         metadata=restored.metadata, participant=restored.participants()[0],
         binding=t52.binding(t52.context(tenant="tenant-b", compartments=("alpha", "bravo"))),
     )
@@ -593,10 +593,10 @@ def test_the_composed_recovery_gate_replays_then_purges_native_stores(tmp_path: 
     restored_path = tmp_path / "restored.jsonl"
     restored_path.write_bytes(source_path.read_bytes())
     participants = [replay, *[
-        RestoredMemoryParticipant(metadata=restored.metadata, participant=p, binding=t52.binding(t55.CALLER))
+        RestoredMemoryParticipant(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(), metadata=restored.metadata, participant=p, binding=t52.binding(t55.CALLER))
         for p in restored.participants()
     ]]
-    gate = DeletionRestoreGate(journal=restored_path, authority=Authority(source_path), participants=participants)
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(), journal=restored_path, authority=Authority(source_path), participants=participants)
     before = restored.every_mode()
     assert all("urn:ocor:memory:x:v1" in refs for refs in before.values())
     gate.reconcile()
@@ -612,7 +612,7 @@ def test_restore_participants_validate_tenant_and_scope_before_purge(tmp_path: P
 
     replay, _, restored, tombstone = replay_world(tmp_path)
     replay.purge(tombstone)
-    participant = RestoredMemoryParticipant(
+    participant = RestoredMemoryParticipant(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(),
         metadata=restored.metadata, participant=restored.participants()[0], binding=t52.binding(t55.CALLER),
     )
     for bad in [replace(tombstone, tenant_id="tenant-b"), replace(tombstone, partition_digests=("urn:sha256:" + "b" * 64,))]:
@@ -706,9 +706,9 @@ def authenticated_gate(tmp_path: Path, **verifier: object):  # type: ignore[no-u
     restored.write_bytes(authoritative.read_bytes())
     issued = IssuedCheckpoints(authoritative, HmacVerifier())
     check = HmacVerifier(**verifier)  # type: ignore[arg-type]
-    authority = authority_type(recovery_point_id=RECOVERY_POINT, source=issued, verifier=check)
+    authority = authority_type(audit=RecoveryAudit(), recovery_point_id=RECOVERY_POINT, source=issued, verifier=check)
     participants = (Participant(), Participant("native-projections"))
-    gate = DeletionRestoreGate(journal=restored, authority=authority, participants=participants)
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, audit=RecoveryAudit(), journal=restored, authority=authority, participants=participants)
     return gate, issued, authority, source
 
 
@@ -781,7 +781,7 @@ def test_the_recovery_point_identity_is_a_closed_urn(tmp_path: Path, value: obje
     with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_INVALID"):
         claim_type(value, checkpoint)  # type: ignore[arg-type]
     with pytest.raises(ValueError):
-        authority_type(recovery_point_id=value, source=object(), verifier=object())  # type: ignore[arg-type]
+        authority_type(audit=RecoveryAudit(), recovery_point_id=value, source=object(), verifier=object())  # type: ignore[arg-type]
 
 
 def test_claim_payload_roundtrips_and_binds_recovery_point_and_checkpoint(tmp_path: Path) -> None:
@@ -1003,18 +1003,19 @@ class Drill:
     def gate(self, *extra: object) -> DeletionRestoreGate:
         _, t52, _, t55, _ = live_modules()
         authority_type, _ = authenticated_api()
-        authority = authority_type(
+        authority = authority_type(audit=self.restored.admission_audit,
             recovery_point_id=self.recovery_point, source=self.issuer, verifier=self.attestation,
         )
-        replay = MemoryDeletionMetadataReplay(
+        checkpoint = DeletionJournalSnapshot.capture(self.authority_journal).checkpoint
+        replay = MemoryDeletionMetadataReplay(audit=self.restored.admission_audit, recovery_point_id=self.recovery_point, checkpoint=checkpoint,
             authoritative_metadata=self.source.metadata, authoritative_ledger=self.source.ledger,  # type: ignore[attr-defined]
             restored_metadata=self.restored.metadata, restored_ledger=self.restored.ledger,  # type: ignore[attr-defined]
         )
         adapters = [
-            RestoredMemoryParticipant(metadata=self.restored.metadata, participant=p, binding=t52.binding(t55.CALLER))  # type: ignore[attr-defined]
+            RestoredMemoryParticipant(audit=self.restored.admission_audit, recovery_point_id=self.recovery_point, checkpoint=checkpoint, metadata=self.restored.metadata, participant=p, binding=t52.binding(t55.CALLER))  # type: ignore[attr-defined]
             for p in [*self.restored.participants(), *extra]  # type: ignore[attr-defined]
         ]
-        return DeletionRestoreGate(journal=self.restored_journal, authority=authority, participants=[replay, *adapters])
+        return DeletionRestoreGate(audit=self.restored.admission_audit, recovery_point_id=self.recovery_point, journal=self.restored_journal, authority=authority, participants=[replay, *adapters])
 
     def deliver_journal(self) -> None:
         """The deletion authority ships its current journal to the restore site."""
@@ -1314,3 +1315,211 @@ def test_the_deletion_module_has_no_backend_client_or_canonical_authority() -> N
         assert not any(name.split(".")[0] == forbidden for name in imported), forbidden
     for authority in ("CapabilityLease(", "Approval(", "GovernedCanonicalCommitCommand", "ActionCommand(", "request_deletion("):
         assert authority not in source
+
+
+# VF-001: denial evidence is a durable restore obligation, independent of the
+# restored memory ledger. No payload or untrusted error text enters this port.
+class RecoveryAudit:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+        self.unavailable = False
+
+    def record(self, event) -> None:  # type: ignore[no-untyped-def]
+        if self.unavailable:
+            raise ConnectionError("audit backend unavailable: classified diagnostic")
+        self.events.append(dict(event))
+
+
+def test_restore_refusal_requires_an_acknowledged_denial_audit(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+    audit = RecoveryAudit()
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority,
+        participants=(participant, Participant("native-projections")),
+        audit=audit, recovery_point_id=RECOVERY_POINT,
+    )
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: pytest.fail("closed restore dispatched a response"))
+    assert len(audit.events) == 1
+    event = audit.events[0]
+    assert event["reason_code"] == "RESTORE_NOT_RECONCILED"
+    assert event["outcome"] == "DENIED"
+    assert event["recovery_point_digest"] == canonical_digest(RECOVERY_POINT)
+    assert event["checkpoint_digest"] is None  # no authenticated checkpoint yet
+    gate.reconcile()
+    assert gate.serve(lambda: "reconciled") == "reconciled"
+    assert len(audit.events) == 1  # success is not a denial
+
+
+def test_live_restore_refusal_is_durable_without_appending_a_memory_version(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    import psycopg
+
+    d = drill(backends, tmp_path)
+    gate = d.gate()
+    before = d.restored.ledger.latest_version("x")
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(d.refs)
+    schema = d.restored.metadata.schema
+    with psycopg.connect(backends.dsn) as conn:
+        rows = conn.execute(f'SELECT body FROM "{schema}".admission_denials ORDER BY seq').fetchall()
+    assert len(rows) == 1, "restore denial returned without a durable audit event"
+    assert rows[0][0]["reason_code"] == "RESTORE_NOT_RECONCILED"
+    assert rows[0][0]["recovery_point_digest"] == canonical_digest(d.recovery_point)
+    assert d.restored.ledger.latest_version("x") == before
+
+
+@pytest.mark.parametrize("boundary", ["authority", "gate", "metadata-purge", "metadata-residue", "participant-purge", "participant-residue"])
+@pytest.mark.parametrize("sink_state", ["available", "unavailable", "missing"])
+def test_every_recovery_boundary_audits_or_returns_audit_unavailable(tmp_path: Path, boundary: str, sink_state: str) -> None:
+    import test_ocor_dev_0052 as t52
+    import test_ocor_dev_0055 as t55
+
+    audit = RecoveryAudit()
+    audit.unavailable = sink_state == "unavailable"
+    port = None if sink_state == "missing" else audit
+    _, issuer, _, _ = authenticated_gate(tmp_path)
+    authority_type, _ = authenticated_api()
+    issuer.tamper = "attestation"
+    authority = authority_type(recovery_point_id=RECOVERY_POINT, source=issuer, verifier=HmacVerifier(), audit=port)
+    replay, source, restored, tombstone = replay_world(tmp_path)
+    replay = MemoryDeletionMetadataReplay(
+        authoritative_metadata=source.metadata, authoritative_ledger=source.ledger,
+        restored_metadata=restored.metadata, restored_ledger=restored.ledger,
+        audit=port, recovery_point_id=RECOVERY_POINT,
+    )
+    participant = RestoredMemoryParticipant(
+        metadata=restored.metadata, participant=restored.participants()[0],
+        binding=t52.binding(t55.CALLER), audit=port, recovery_point_id=RECOVERY_POINT,
+    )
+    gate = DeletionRestoreGate(
+        journal=tmp_path / "restored.jsonl", authority=authority,
+        participants=(Participant(), Participant("native-projections")),
+        audit=port, recovery_point_id=RECOVERY_POINT,
+    )
+    bad = replace(tombstone, tenant_id="tenant-b")
+    operations = {
+        "authority": (authority.current, "CHECKPOINT_UNAUTHENTICATED"),
+        "gate": (lambda: gate.serve(lambda: pytest.fail("dispatch on a closed gate")), "RESTORE_NOT_RECONCILED"),
+        "metadata-purge": (lambda: replay.purge(bad), "DELETION_SOURCE_MISMATCH"),
+        "metadata-residue": (lambda: replay.residue(bad), "DELETION_SOURCE_MISMATCH"),
+        "participant-purge": (lambda: participant.purge(bad), "RESTORE_BINDING_MISMATCH"),
+        "participant-residue": (lambda: participant.residue(bad), "RESTORE_BINDING_MISMATCH"),
+    }
+    action, reason = operations[boundary]
+    with pytest.raises(DeletionRecoveryError) as caught:
+        action()
+    assert caught.value.reason_code == (reason if sink_state == "available" else "AUDIT_UNAVAILABLE")
+    assert len(audit.events) == (1 if sink_state == "available" else 0)
+    if audit.events:
+        assert audit.events[0]["reason_code"] == reason
+        assert audit.events[0]["recovery_point_digest"] == canonical_digest(RECOVERY_POINT)
+        assert set(audit.events[0]) == {"audit_version", "action", "outcome", "reason_code", "recovery_point_digest", "checkpoint_digest", "tombstone_ref", "at"}
+        if boundary.startswith(("metadata", "participant")):
+            assert audit.events[0]["tombstone_ref"] == canonical_digest(bad.to_mapping())
+    assert restored.ledger.latest_version("x") == 1
+    assert restored.metadata.head("x") == 1
+
+
+def test_audit_failure_invalidates_an_open_gate_and_never_reuses_a_receipt(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+    audit = RecoveryAudit()
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority, participants=(participant, Participant("native-projections")),
+        audit=audit, recovery_point_id=RECOVERY_POINT,
+    )
+    gate.reconcile()
+    audit.unavailable = True
+
+    def response() -> str:
+        participant.present.add("x")
+        return "must not escape"
+
+    with pytest.raises(DeletionRecoveryError, match="AUDIT_UNAVAILABLE"):
+        gate.serve(response)
+    audit.unavailable = False
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: pytest.fail("prior receipt reopened restore"))
+    assert audit.events[-1]["reason_code"] == "RESTORE_NOT_RECONCILED"
+    assert audit.events[-1]["checkpoint_digest"] == authority.current().digest
+    gate.reconcile()
+    assert gate.serve(lambda: "new reconciliation") == "new reconciliation"
+
+
+def test_denial_events_do_not_copy_untrusted_reason_or_error_text(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+    audit = RecoveryAudit()
+    gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, journal=restored, authority=authority, participants=(participant, Participant("native-projections")), audit=audit)
+    gate.reconcile()
+
+    def callback() -> None:
+        raise DeletionRecoveryError("classified arbitrary content")
+
+    with pytest.raises(DeletionRecoveryError):
+        gate.serve(callback)
+    assert audit.events[-1]["reason_code"] == "RECOVERY_REJECTED"
+    assert "classified" not in canonical_bytes(audit.events[-1]).decode()
+
+
+def recovery_rows(backends, world):  # type: ignore[no-untyped-def]
+    import psycopg
+
+    with psycopg.connect(backends.dsn) as conn:
+        return [r[0] for r in conn.execute(f'SELECT body FROM "{world.metadata.schema}".admission_denials ORDER BY seq')]
+
+
+@pytest.mark.parametrize("boundary", ["authority", "gate", "metadata-purge", "metadata-residue", "participant-purge", "participant-residue"])
+@pytest.mark.parametrize("audit_available", [True, False])
+def test_live_each_recovery_boundary_uses_the_durable_audit_authority(backends, tmp_path: Path, boundary: str, audit_available: bool) -> None:  # type: ignore[no-untyped-def]
+    from psycopg.conninfo import make_conninfo
+
+    _, t52, _, t55, denial = live_modules()
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="audit-boundary-delete-x")
+    d.deliver_journal()
+    audit = denial.SchemaPostgresAudit(backends.dsn, d.restored.metadata.schema)
+    if not audit_available:
+        # A real PostgreSQL permission failure; no mock of record() or boundary.
+        audit.dsn = make_conninfo(backends.dsn, options="-c default_transaction_read_only=on")
+    authority_type, _ = authenticated_api()
+    authority = authority_type(recovery_point_id=d.recovery_point, source=d.issuer, verifier=d.attestation, audit=audit)
+    checkpoint = DeletionJournalSnapshot.capture(d.authority_journal).checkpoint
+    replay = MemoryDeletionMetadataReplay(
+        authoritative_metadata=d.source.metadata, authoritative_ledger=d.source.ledger,
+        restored_metadata=d.restored.metadata, restored_ledger=d.restored.ledger,
+        audit=audit, recovery_point_id=d.recovery_point, checkpoint=checkpoint,
+    )
+    participant = RestoredMemoryParticipant(
+        metadata=d.restored.metadata, participant=d.restored.participants()[0],
+        binding=t52.binding(t55.CALLER), audit=audit, recovery_point_id=d.recovery_point, checkpoint=checkpoint,
+    )
+    gate = DeletionRestoreGate(journal=d.restored_journal, authority=authority, participants=(participant,), audit=audit, recovery_point_id=d.recovery_point)
+    tombstone = replace(DeletionJournalSnapshot.capture(d.authority_journal).obligations[0], tenant_id="tenant-b")
+    d.issuer.forge = "malformed"
+    actions = {
+        "authority": (authority.current, "CHECKPOINT_UNAUTHENTICATED"),
+        "gate": (lambda: gate.serve(lambda: pytest.fail("unreconciled restore dispatched")), "RESTORE_NOT_RECONCILED"),
+        "metadata-purge": (lambda: replay.purge(tombstone), "DELETION_SOURCE_MISMATCH"),
+        "metadata-residue": (lambda: replay.residue(tombstone), "DELETION_SOURCE_MISMATCH"),
+        "participant-purge": (lambda: participant.purge(tombstone), "RESTORE_BINDING_MISMATCH"),
+        "participant-residue": (lambda: participant.residue(tombstone), "RESTORE_BINDING_MISMATCH"),
+    }
+    action, reason = actions[boundary]
+    before = d.restored.ledger.latest_version("x")
+    with pytest.raises(DeletionRecoveryError) as caught:
+        action()
+    assert caught.value.reason_code == (reason if audit_available else "AUDIT_UNAVAILABLE")
+    rows = recovery_rows(backends, d.restored)
+    assert len(rows) == int(audit_available)
+    if rows:
+        assert rows[0]["reason_code"] == reason
+        assert rows[0]["recovery_point_digest"] == canonical_digest(d.recovery_point)
+        assert rows[0]["checkpoint_digest"] == (checkpoint.digest if boundary.startswith(("metadata", "participant")) else None)
+        assert "artillery" not in canonical_bytes(rows[0]).decode()
+        assert "tenant-b" not in canonical_bytes(rows[0]).decode()
+    assert d.restored.ledger.latest_version("x") == before
+    d.issuer.forge = None
+    # A fresh healthy composition can reconcile and serve; the denied one
+    # never returned a receipt, appended a version, or dispatched retrieval.
+    healthy = d.gate()
+    healthy.reconcile()
+    assert not mentions(healthy.serve(d.refs), "x")
