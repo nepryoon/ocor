@@ -113,7 +113,7 @@
   "commit": "fbc45827106869b2ed5f3a4b3a48fe3e98c58d1c",
   "commit_role": "Frozen source HEAD tested; publication adds only fresh evidence/manifest metadata",
   "created_at": "2026-10-22T07:20:28.262770+00:00",
-  "duration_observation": "Local full duration 3335.3 s exceeds the 3600 s observation threshold (po_decision_required=true) but stays within the 75-minute local full cap kept by REM-0017-CI-CAMPAIGN-DURATION (2026-10-09), which already resolved the duration decision (CI split into parts); no new PO decision request, no threshold or timeout changed.",
+  "duration_observation": "Local full duration3335.332588925987s is below the3600s observation threshold (po_decision_required=false) and within the75-minute local full cap; no threshold,timeout or recorded PASS changed. VF-001 descriptive correction before seal.",
   "environment": {
     "PYTHONHASHSEED": "0",
     "TZ": "UTC",
@@ -592,8 +592,159 @@
     "status": "PASS"
   },
   "independent_verification": {
+    "commands": [
+      {
+        "command": "sha256 of docker git gh node ruff tsc uv python helm kind kubectl against infra/toolchain.lock.json and infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "summary": "All eleven binaries match the locked digests. environment.json sha256 5bd6b077c317153b7aa0fafabfe05bc1125303b54ba57eaed27965511cc4e9ae."
+      },
+      {
+        "command": "PYTHONPATH=scripts ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS; Docker READY; ports 6363,1729,3030,8181,8080,8200 free; no OCOR secret names in the environment."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "All normative inputs match. inputs tree 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35 equals the request."
+      },
+      {
+        "command": "git rev-parse HEAD and git diff --name-status eb8ecc689e3f70c425c024efe594a3517cafa3b5..HEAD",
+        "exit_code": 0,
+        "summary": "HEAD e65ac1a6197c0e825eabc8214ca9f185837ee567, clean tracked tree. Diff is reset teardown, residue tests, plan allowlist and self-hash, and new REM-0029/0082/0050/0005 records. Historical sealed files are not modified; manifests only prepend the new artifacts. fbc4582..HEAD changes evidence only. Reset function AST dumps are identical to the base."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 80 source files."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref eb8ecc689e3f70c425c024efe594a3517cafa3b5",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base eb8ecc689e3f70c425c024efe594a3517cafa3b5 --head HEAD",
+        "exit_code": 0,
+        "summary": "PASS: 19 changed paths; immutable surfaces untouched."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 70 tasks, 208 inputs, 0 drift."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref eb8ecc689e3f70c425c024efe594a3517cafa3b5",
+        "exit_code": 0,
+        "summary": "PASS: 37 PASS, 2 NOT_EXECUTED."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --non-skipped",
+        "exit_code": 2,
+        "summary": "CLI requires --task and --manifest. The three task-scoped commands above are the executable form and passed. The script is unchanged by this diff."
+      },
+      {
+        "command": "PYTHONHASHSEED=0 TZ=UTC ocor-runtime/.venv/bin/python -m pytest -q reports/tests/test_reset_teardown_residue.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+        "exit_code": 0,
+        "summary": "236 passed in 4.78s on the live 11-service stack. Zero skipped, zero failed."
+      },
+      {
+        "command": "PYTHONHASHSEED=0 TZ=UTC ocor-runtime/.venv/bin/python -m pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0005.py",
+        "exit_code": 0,
+        "summary": "6 passed in 0.21s. Zero skipped, zero failed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python reports/tests/qualify_rem0029_teardown.py --execute --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0029-e65ac1a6197c-0/qualify",
+        "exit_code": 0,
+        "summary": "PASS on real Docker. Network 4c5056900f88 stayed occupied by the holder while reset returned FAIL with compose_exit_code 0. After holder removal, empty teardown PASS. Anonymous volume 928cea3d4493 remained after rm without -v and was reported with the real container UUID; cleanup removed only that session's objects. No foreign container changed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS. Fuseki archive cache MISS from https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz with verified SHA-512. Each rebuild produced an output id different from lock 6534156b (6ed6234d, then 3e66ae83, then d0637e0b) and the CI provisioner still returned PASS. Before every qualifying run the tag ocor/jena-fuseki:6.2.0 was restored to sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b and Fuseki was recreated healthy with -Xms128m -Xmx1G. Typed health READY for the nine service groups; 11 containers running."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository <worktree> --expected-head e65ac1a6197c0e825eabc8214ca9f185837ee567 --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0029-e65ac1a6197c-0/full",
+        "exit_code": 1,
+        "summary": "Not a product result. 2086 passed, 5 skipped, 286 errors. Every error is Failed: OCOR_LIVE_POSTGRES_DSN is mandatory qualifying evidence. The five skips are tests/integration/test_postgres_outbox_live.py without that variable. CI sets the DSN from .ocor/bootstrap.env after provision; this attempt did not."
+      },
+      {
+        "command": "OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN set from .ocor/bootstrap.env; ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository <worktree> --expected-head e65ac1a6197c0e825eabc8214ca9f185837ee567 --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0029-e65ac1a6197c-0/full2",
+        "exit_code": 0,
+        "summary": "PASS on HEAD e65ac1a after a fresh teardown and bootstrap, Fuseki pinned to the lock. 2377 passed, 0 failed, 0 errors, 0 skipped, duration 3724.880723431008s, po_decision_required true because the duration exceeds 3600 and remains under the 4500s cap. Modules test_ocor_dev_0048 and test_ocor_dev_0049 executed. No OOM and no restart. The literal request omitted --repository, which the harness requires together with --expected-head; the run used the detached worktree."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Final teardown PASS. Owned containers, networks and volumes empty. Pre-existing non-bootstrap containers were left in place."
+      }
+    ],
+    "finding_disposition": {
+      "VF-001": "Accepted; corrected the descriptive duration only before sealing; raw result3335.332588925987 and false observation flag unchanged"
+    },
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "reports/assurance/OCOR-DEV-REM-0029-RCCAD/OCOR-DEV-REM-0029.log campaign_result.json records duration_seconds 3335.332588925987 and po_decision_required false. scripts/run_qualifying_campaign.py check_deadline returns elapsed > 3600. 3335.332588925987 does not exceed 3600. The same false sentence is copied into the limitations of reports/evidence/G2/OCOR-DEV-0082.requalified-rem0029.json, reports/evidence/G5/OCOR-DEV-0050.requalified-rem0029.json and reports/evidence/G0/OCOR-DEV-0005.requalified-rem0029.json. The verifier rerun at 3724.880723431008s correctly sets po_decision_required true and still PASSes under the 4500s cap.",
+        "id": "VF-001",
+        "path": "reports/assurance/OCOR-DEV-REM-0029-RCCAD/OCOR-DEV-REM-0029.json:116",
+        "required_fix": "Correct duration_observation and the three requalification limitations so they match the embedded campaign result: 3335.332588925987s does not exceed 3600, so po_decision_required is false. Do not change the threshold, the timeout, or the recorded PASS.",
+        "severity": "low"
+      }
+    ],
+    "implementers": [
+      {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "scope": "Reserve after Codex quota stop: reran qualification from zero, added0005 requalification, assembled evidence and state sync; historical0050/harness lineage"
+      }
+    ],
+    "integration_agent": "Codex (OpenAI), seal and integration only",
+    "not_executed": [],
     "repair_cycle": 0,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "review_type": "REMEDIATION; 0082 requalification; 0005 and 0050 REGRESSION_ONLY",
+    "status": "COMPLETED",
+    "verdict_created_at": "2026-10-22T10:07:12Z",
+    "verdict_file_sha256": "f9e083929e47f8c8739e7fd5cb680c9e05b6566fd348484b364b40f03ba0fe66",
+    "verdict_head_sha": "e65ac1a6197c0e825eabc8214ca9f185837ee567",
+    "verdict_request_id": "OCOR-DEV-REM-0029-e65ac1a6197c-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (xAI) via Cursor CLI",
+    "verifier_configuration": {
+      "independence_limits": "Contesto e processo separati. Verifier: Cursor, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nei record: Codex (OpenAI) per codice, test e record; Claude Code (Anthropic) per la riga storica, l'harness ereditato e il completamento dopo lo stop di quota, senza modifica di sorgente. Nessun implementatore dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, external loop only, clean context"
+    },
+    "verifier_diagnostic_run_preserved": "Initial verifier run lacked PostgreSQL DSN; retained as diagnostic. Fresh full2377PASS/zeroSkip after documented env; no partial counts transferred; duration3724.88s is above observation threshold and below75min cap (existing duration notice retained)"
   },
   "infrastructure_rerun": {
     "authority": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12)",
@@ -969,6 +1120,29 @@
     ],
     "task_id": "OCOR-DEV-REM-0029"
   },
+  "seal_continuity": {
+    "aligned_head": "466099d2834f6c7d80c5120fb8ae41f1d05455ab",
+    "authority": "CANDIDATE-INTEGRATION-STATE-FREEZE",
+    "execution_trees": {
+      ".github": "ec61878a8b3536355bf72071440f55b2987d27ce",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "183bb4b99843e79e46f504079546fa6d44254b55",
+      "reports/tests": "d7f937b34f09013ad5e93301a75206a2338751fc",
+      "scripts": "5e9620ce65e7eb121cf047f4d936fd82db0d52af"
+    },
+    "fresh_final_head_ci_required": true,
+    "main_head": "80e57f22bdd416951a7d25ec5d60fd87441b6e63",
+    "merge_state_paths": [
+      "reports/development/EXECUTION_STATE.json",
+      "reports/development/MODEL_HANDOFF.json",
+      "reports/development/ITERATION_LOG.md"
+    ],
+    "non_state_diff_stat": "",
+    "reviewed_head": "e65ac1a6197c0e825eabc8214ca9f185837ee567"
+  },
+  "sealed_at": "2026-10-22T10:10:23.731992+00:00",
   "session_teardown": {
     "after_counts": {
       "containers": 100,
@@ -1047,7 +1221,7 @@
     "reports/tests": "d7f937b34f09013ad5e93301a75206a2338751fc",
     "scripts": "5e9620ce65e7eb121cf047f4d936fd82db0d52af"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_REVIEW",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-REM-0029",
   "tdd": {
     "anonymous_mount_gap_diagnosis": {
