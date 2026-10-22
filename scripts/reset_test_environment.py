@@ -32,7 +32,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ocor_bootstrap_lib import BootstrapError, root, run
 
@@ -202,7 +202,8 @@ def owned_resources(repository: Path, previous: dict[str, list[dict[str, Any]]] 
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise ResetError("owned-resource inventory deadline expired")
-        result = run(command, cwd=repository, timeout=min(10, remaining))
+        # subprocess accepts float seconds; the shared helper is annotated int.
+        result = run(command, cwd=repository, timeout=cast(int, min(10, remaining)))
         if result.returncode:
             raise ResetError("owned-resource inventory unavailable")
         return result.stdout
@@ -223,7 +224,8 @@ def owned_resources(repository: Path, previous: dict[str, list[dict[str, Any]]] 
             name = item.get("Names") if kind == "container" else item.get("Name")
             identity = name if kind == "volume" else item.get("ID")
             labels = item.get("Labels")
-            if not all(isinstance(value, str) and value for value in (name, identity)) or not isinstance(labels, str):
+            if (not isinstance(name, str) or not name or not isinstance(identity, str) or not identity
+                    or not isinstance(labels, str)):
                 raise ResetError("incomplete owned-resource inventory")
             reserved_name = name.startswith((PROJECT + "_", PROJECT + "-")) or name == PROJECT
             labelled = f"{PROJECT_LABEL}={PROJECT}" in labels.split(",")
