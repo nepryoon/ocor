@@ -528,6 +528,9 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0034.log",
         # CANDIDATE-INTEGRATION-STATE-FREEZE: retire the integrated 0049 checkout.
         # REM-0023: exact denial-audit implementation/evidence paths; no gate change.
+        "reports/development/decision_requests/REM-0023-DENIAL-AUDIT-CONSUMER-FIXTURES.md",
+        "reports/assurance/OCOR-DEV-REM-0023-RCCAD/checkpoint.json",
+        "reports/assurance/OCOR-DEV-REM-0023-RCCAD/checkpoint.log",
         "ocor-runtime/src/ocor_runtime/memory/model.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py",
