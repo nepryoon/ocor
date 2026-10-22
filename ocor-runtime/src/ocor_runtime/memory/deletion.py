@@ -16,8 +16,9 @@ The gate starts closed, purges and inventories every obligation, rechecks the
 authority and journal, and invalidates its receipt on any failure. ``serve``
 rechecks both the checkpoint and residue before and after the callback; its
 callback must only materialise a response, never dispatch an external effect.
-All restored query entry points must go through this gate.  This module does
-not implement a runtime composition or declare backend/runtime conformance.
+All restored query entry points must go through this gate;
+``RestoredMemorySearch`` is the composed ``searchMemory`` entry point.  This
+module declares no backend or runtime conformance.
 """
 
 from __future__ import annotations
@@ -545,3 +546,31 @@ class DeletionRestoreGate:
             except BaseException:
                 self._snapshot = None
                 raise
+
+
+class RestoredSearchPort(Protocol):
+    """``MemorySearchPort.searchMemory`` of the restored stores."""
+
+    def search(self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None) -> object: ...
+
+
+class RestoredMemorySearch:
+    """The only restored ``searchMemory`` entry point: every call goes through the gate.
+
+    Compose the restored ``MemorySearchService`` here and expose only this
+    object to callers; request and binding are forwarded unchanged and the
+    response is returned only if the checkpoint and every participant's
+    inventory are still clean after it was materialised.
+    """
+
+    def __init__(self, *, service: RestoredSearchPort, gate: DeletionRestoreGate) -> None:
+        if not isinstance(gate, DeletionRestoreGate):
+            raise ValueError("restored search requires a DeletionRestoreGate")
+        if not callable(getattr(service, "search", None)):
+            raise ValueError("restored search requires a searchMemory port")
+        self._service = service
+        self._gate = gate
+
+    def search(self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None) -> object:
+        service = self._service
+        return self._gate.serve(lambda: service.search(request, binding=binding))
