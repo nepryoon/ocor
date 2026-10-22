@@ -526,6 +526,14 @@ def main() -> int:
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0034.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0034.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0034.log",
+        # CANDIDATE-INTEGRATION-STATE-FREEZE: retire the integrated 0049 checkout.
+        "reports/assurance/OCOR-DEV-REM-0035-RCCAD/OCOR-DEV-REM-0035.json",
+        "reports/assurance/OCOR-DEV-REM-0035-RCCAD/OCOR-DEV-REM-0035.log",
+        "reports/assurance/OCOR-DEV-REM-0035-RCCAD/pin-lifecycle.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0035.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0035.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0035.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0035.log",
         # PO 2026-10-15 CI-0049-KIND-BOOTSTRAP-EXEC-PROBE (option 1): exact OCOR-DEV-REM-0033 paths.
         "reports/development/decision_requests/CI-0049-KIND-BOOTSTRAP-EXEC-PROBE.md",
         "reports/assurance/OCOR-DEV-REM-0017-RCCAD/ci-38d259a-kind-bootstrap-exec-diagnosis.json",
