@@ -1,0 +1,820 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.003,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.37,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "verify",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.079,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "baseline-drift",
+      "raw_sha256": "953bb45ef6b7981fb31e9d8801a334ba564d5db4856587f46b272736386d42d7",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "duration_seconds": 2.004,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "reset",
+      "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
+      "duration_seconds": 35.323,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "bootstrap",
+      "raw_sha256": "63a4d701d2c76bb86897c657577661983c037312da9bc2e6102ccb8ceeefdd04",
+      "status": "PASS"
+    },
+    {
+      "command": "docker compose --env-file <worktree>/.ocor/bootstrap.env -f deploy/bootstrap/compose.yaml -f <worktree>/.ocor/ci-resources.yaml up --detach --no-build --wait --wait-timeout 120 fuseki",
+      "duration_seconds": 6.233,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "bounded-fuseki-profile",
+      "raw_sha256": "44f9cf037870442a89823c01e78533f39e7c81c8f565fae64dcbcb3621229bf9",
+      "status": "PASS"
+    },
+    {
+      "command": "docker top ocor-bootstrap-fuseki-1 -eo pid,args",
+      "duration_seconds": 0.014,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "bounded-fuseki-process",
+      "raw_sha256": "a701eec27a825e9e89277ee243a1eec5187c9f005984544427b2a22da4644c15",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.026,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "sync-lint",
+      "raw_sha256": "2f3644763ac8aed6035a569fcad10164921272df0288caac1a00de30653366cb",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file <worktree>/.ocor/bootstrap.env",
+      "duration_seconds": 1.266,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "initialize",
+      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file <worktree>/.ocor/bootstrap.env",
+      "duration_seconds": 0.142,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "fixtures",
+      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python ~/.ocor-codex/ocor-dev-0056/q2/register_control_plane.py",
+      "duration_seconds": 3.271,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "svid",
+      "raw_sha256": "07dc4a628442783e0163ef84bd811ed8df8b91c45f9fc7cceef05e66aabf9be0",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 2.587,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "typed-health",
+      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0056/q2/task-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0056.py",
+      "duration_seconds": 34.82,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "task-run-1",
+      "raw_sha256": "561b1a911f7f58d17c015eaa042bb3b619bc12e8ed2cfa2ac6a466a43df2df72",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 107,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0056/q2/task-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0056.py",
+      "duration_seconds": 37.406,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "task-run-2",
+      "raw_sha256": "b347fcefefd15732f85aff8ca5d9c5f97dbfc9f1c987a3779f3d52b29d9cda47",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 107,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0056/q2/task-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0056.py",
+      "duration_seconds": 34.613,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "task-run-3",
+      "raw_sha256": "170a69e56b6d8fab91bcac19620c634203553a99f54d53f0eec4eab42fffe976",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 107,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0056/q2/task-validation-command-project.xml ocor-runtime/tests/tasks/test_ocor_dev_0056.py",
+      "duration_seconds": 33.967,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "task-validation-command-project",
+      "raw_sha256": "298c6d292f8fdafe2e56731226d664d112ba8bb7f4a4aba32758e366d3f6a7ac",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 107,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0056/q2/regression-0055.xml ocor-runtime/tests/tasks/test_ocor_dev_0055.py",
+      "duration_seconds": 42.863,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "regression-0055",
+      "raw_sha256": "db88b9856277acc655b84ff74daf5803b2ff6b43e498a8c95b1143c37a41767a",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.714,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "sdk-ci",
+      "raw_sha256": "9194853d8b4eb9de5bb4320a17dfbfd0e13c275ba17d6bb158cae779bf4df00c",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.134,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_rem0023_consumer_fixture_scope.py --junitxml=~/.ocor-codex/ocor-dev-0056/q2/reports-portfolio-sdk.xml",
+      "duration_seconds": 34.165,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "reports-portfolio-sdk",
+      "raw_sha256": "704a501948f1d08e1cc1b0262bfefde4fe7f52febd327057477bd4245d8e68ba",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 350,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 4936980ddb8cb027797eb73810301add2d1ae3ca --output-dir ~/.ocor-codex/ocor-dev-0056/q2/full",
+      "duration_seconds": 3726.709,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "full-suite",
+      "raw_sha256": "9cf6d69e9fbef0a93585501b5b459578376407fd63bd5d2a7f599546c517d495",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.01,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m mypy --strict",
+      "duration_seconds": 0.139,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "mypy",
+      "raw_sha256": "3bce484934e38822ff7a68a9eb1d47d2dd53c92386f38d0dd24152acfb6fab7c",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.402,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+      "duration_seconds": 0.093,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.289,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.023,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.08,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "drift",
+      "raw_sha256": "953bb45ef6b7981fb31e9d8801a334ba564d5db4856587f46b272736386d42d7",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0056-deletion-saga-restore-reconciliation",
+      "duration_seconds": 0.042,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "scope",
+      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
+      "status": "PASS"
+    },
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.003,
+      "exit_code": 0,
+      "head_sha": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+      "label": "inputs-final",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (third of three consecutive live runs)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "23761a958086f5dc0cd89fb9b27132dd959183fb07027a97372cbaf5d5cb180e",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 107,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the backlog validation command scoped to the runtime project",
+      "exit_code": 0,
+      "label": "validation-command-junit",
+      "raw_sha256": "8c0d71ae1add6a272c048bfe728c45eb2b3651d0f4970746390274145057b853",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 107,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the 0055 regression whose live fixtures 0056 reuses",
+      "exit_code": 0,
+      "label": "regression-0055-junit",
+      "raw_sha256": "37ab7f954bf6604ceb5ccfd5a7bbfb3f42a3a335e0c5bd534d47d290cfc07dc5",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 76,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the governed full suite (scripts/run_qualifying_campaign.py)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "564f32d7daf86a58d7eaa4292f0f478ec1657c7e82ed051ec0bb8d956c42deef",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2589,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: run_qualifying_campaign.py result (75-min limit, stack guard, required modules)",
+      "exit_code": 0,
+      "label": "full-suite-campaign-result",
+      "raw_sha256": "789e11217771f7d333f14cde63edfbaafc259ce8f4ebd6eb4ec4dd1bd4f0788a",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2589,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every infra/toolchain.lock.json tool matched by version and sha256 on the campaign PATH",
+      "exit_code": 0,
+      "label": "toolchain-lock-match",
+      "raw_sha256": "09a7dca6ea2c4ec401e253e8e4b04fe98dd1f57dffc76efa4d65903b0f5fa8d0",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts before the task runs",
+      "exit_code": 0,
+      "label": "stack-summary",
+      "raw_sha256": "96842997cb86c76535a45f6dd7de30ca608e0e9a230ad2a8e685bccf9f93760e",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: containers/volumes/networks added by the task runs (must be empty)",
+      "exit_code": 0,
+      "label": "task-resource-delta",
+      "raw_sha256": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: mutants of memory/deletion.py on a git-archive scratch tree of the code commit; the non-live cases must fail",
+      "equivalent_mutants": {
+        "claim-extra-member-accepted": "equivalent: from_payload re-encodes the claim canonically and rejects any payload that differs, so an extra member is refused as CHECKPOINT_INVALID by the remaining check (killed by test_an_attested_but_malformed_claim_is_not_a_checkpoint[extra] either way)"
+      },
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "d17bc88d13c59a1176ddca308e65b84016c36244c8a3d0e6dd3097e44a087bd4",
+      "result": {
+        "equivalent_survivors": [
+          "claim-extra-member-accepted"
+        ],
+        "failed": 0,
+        "killed": 22,
+        "mutants": 23
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: verbatim mutation probe output",
+      "exit_code": 0,
+      "label": "mutation-probe-log",
+      "raw_sha256": "f6c489ee3c4d0e1b83861b3aa59e1003df03e062b3b7782be9dbd8ddc18703fc",
+      "status": "PASS"
+    }
+  ],
+  "commit": "4936980ddb8cb027797eb73810301add2d1ae3ca",
+  "created_at": "2026-10-22T18:24:12Z",
+  "design": [
+    "AuthenticatedDeletionCheckpointAuthority implements DeletionCheckpointAuthority: the attestation of the deletion authority is verified (exact True) before the closed canonical RecoveryPointCheckpointClaim is parsed; the claim binds the recovery point URN configured by the restore composition to sequence, head and deletion epoch.",
+    "DeletionRestoreGate keeps stable DeletionRecoveryError codes raised by the authority (CHECKPOINT_UNAUTHENTICATED, RECOVERY_POINT_MISMATCH, CHECKPOINT_INVALID) instead of relabelling them; other provider exceptions remain DELETION_AUTHORITY_UNAVAILABLE.",
+    "RestoredMemorySearch is the composed searchMemory entry point of the restored stores: request and binding are forwarded unchanged through DeletionRestoreGate.serve, which rechecks the checkpoint and every participant's inventory before and after materialisation.",
+    "Codex's WIP design is unchanged: hash-chained journal snapshot pinned to the authority checkpoint, MemoryDeletionMetadataReplay of original versions/events/audit refs, RestoredMemoryParticipant adapting 0055 participants with tenant/partition/version binding, gate closed until every obligation is purged and inventoried.",
+    "No change to approved architecture, contracts, lifecycle FSM or 0055 participants; deletion.py has no backend client and no canonical authority path."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-22T18:23:49.020470+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "admission_stores_retrieval": "real OCOR-DEV-0050 admission, 0053 embedding lifecycle coordinator, 0055 lifecycle coordinator and 0052/0053 retrieval in STRUCTURED, FULL_TEXT, VECTOR, HYBRID and parallel-v2 VECTOR mode",
+      "attestation_and_cipher": "OpenBao quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641 disposable dev server per module (ocor-test-0056-openbao-*, generated root token never logged): transit aes256-gcm96 content key (0051) and ed25519 key deletion-checkpoint signing/verifying the RecoveryPointCheckpointClaim",
+      "deletion_authority": "source world with the durable hash-chained JournalTombstoneStore of 0055 (tmp_path); its journal file is delivered to the restore site, and AttestedJournal signs the current checkpoint claim on every call",
+      "fault_ports": "replica participant (0055 FailingParticipant on the source, RestoredReplica on the restore site) and in-place Qdrant adapter method replacement for purge/inventory outage are explicit fault-injection ports",
+      "metadata_content_lexical": "PostgreSQL 16 of the ocor-bootstrap stack (postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20) via OCOR_LIVE_POSTGRES_DSN; source world schema ocor_t0055_<random> (0055 Backends fixture) and restored schema ocor_t0056_<random>, both dropped after each test",
+      "recovery_point": "backup_and_restore in test_ocor_dev_0056.py: one REPEATABLE READ transaction copies every table of the source schema (FK order) into the restored schema, Qdrant snapshots every source collection and recovers it under the restored namespace, the in-process 0052 ledger records and 0053 representation receipts are copied unchanged; recovery point URN = sha256 of the canonical manifest (table row counts and md5, snapshot checksums, ledger item digests, receipt digests)",
+      "vector_indexes": "Qdrant qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6 per test module through OCOR-DEV-0023's sealed QdrantHarness and the 0052 compact adapter (native v1 and parallel v2 collections); backup = POST /collections/<c>/snapshots, restore = PUT /collections/<restored>/snapshots/recover from the node's snapshot file"
+    },
+    "branch": "task/OCOR-DEV-0056-deletion-saga-restore-reconciliation",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "regression_stack": "ocor-bootstrap, 11 services running/no OOM/no restart, typed health PASS after reset_test_environment.py --execute and bootstrap_development_environment.py --execute with the bounded Fuseki profile (preflight steps in commands)",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/ocor-dev-0056"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/deletion.py": "521016a97f162c8784c37094a531693d1ebc19c00d5c192049f4243132647e79",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0056.py": "2c265c034e236595f6f65cb6377dab94a5eb5d847bfb191bd0690590b40338c4"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 Part II §§2.10/2.13 and LLD v1.1 §§2.8.6/5.4: a restored backup may hold deleted items; it is honoured by replaying the authoritative tombstones (completed and unfinished) and purging every restored representation before any retrieval is served, not by rewriting the immutable recovery point.",
+    "The checkpoint authority must be independent of the restored backup and of the caller: the deletion authority attests its current journal checkpoint for the specific recovery point (OpenBao transit signature in the qualifying cases); a stale journal at the restore site keeps restore closed (CHECKPOINT_MISMATCH) until the current one is delivered.",
+    "Caches/replicas/exports: the runtime has no result cache; a restored replica/export is a RestoredDeletionParticipant and, when recorded by the source saga, must be configured or restore stays closed (DELETION_PARTICIPANT_MISSING).",
+    "Requirement ids follow the backlog task (BR-003, FR-118); this is component-level evidence of the restore boundary, not G6 requirement verification."
+  ],
+  "observations": [
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run pytest -q --junitxml=~/.ocor-codex/ocor-dev-0056/q2/task-validation-command.xml ocor-runtime/tests/tasks/test_ocor_dev_0056.py",
+      "label": "task-validation-command",
+      "note": "backlog command 'uv run pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0056.py' run verbatim from the repository root: uv selected the root pyproject.toml (no runtime/test dependencies), created an untracked root .venv and uv.lock (moved out of the worktree) and failed to spawn pytest before any test ran. Not a test result; the same command scoped to the runtime project (--project ocor-runtime --frozen --extra test --extra lint, as used by the 0055 evidence) is the qualifying task-validation-command-project.",
+      "observed_exit_code": 2,
+      "raw_sha256": "e454e5b1321d942edd2388b74d4b8a14296191f138a7183cc96ee0515a4e1a1f"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_rem0023_consumer_fixture_scope.py --junitxml=~/.ocor-codex/ocor-dev-0056/q2/reports-portfolio.xml",
+      "label": "reports-portfolio",
+      "note": "first reports/tests portfolio run in the fresh worktree before 'npm ci' and the build of ocor-runtime/sdk/typescript: test_generated_contracts_compile_under_tsc_strict failed with TS2688 (no @types/node) and the TEST-INFRA-004 benchmark smoke was skipped (no compiled SDK oracle). Environment preparation, not a product result; the qualifying run is reports-portfolio-sdk after sdk-ci and sdk-build, as in the 0055 campaign.",
+      "observed_exit_code": 1,
+      "raw_sha256": "5017bbe629163dc8d7b43b9e4e41b87fe5e05ead99525565c8554044490cd8cb"
+    },
+    {
+      "label": "full-suite-duration",
+      "note": "governed full suite PASS in 3726.13s, above the 3600s PO notification threshold and below the unchanged 4500s limit; recorded as an occurrence for the open decision request REM-0033-LOCAL-FULL-DURATION (non-blocking, no limit, test or timeout changed).",
+      "raw_sha256": "789e11217771f7d333f14cde63edfbaafc259ce8f4ebd6eb4ec4dd1bd4f0788a"
+    }
+  ],
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) sono sostituite prima dell'archiviazione e dell'hash; DSN mostrato come <local generated credential>",
+  "raw_output_redactions": {
+    "OCOR_LOCAL_POSTGRES_PASSWORD": 1
+  },
+  "raw_output_sha256": "94ff607514ab4b3b1ad1800559214d502d1d6e03d33f5db0d9a23a0f70372b51",
+  "repair_cycle": 0,
+  "reproducible_check": {
+    "command": "python3 ~/.ocor-codex/ocor-dev-0056/q2/check_evidence.py <repo> <head>",
+    "scope": "inputs at commit and HEAD, diff after the commit limited to the evidence, raw log and per-line JSONL hashes, command/raw pairs, manifest hashes and preservation of existing G5 entries, per-case counts from the JUnit in the raw log, three task runs, full suite, mutation probe, validate_runtime_evidence --non-skipped"
+  },
+  "requirement_coverage_note": "Component-level evidence for the restore boundary of FR-118 (deleted memory is not retrievable, also after restore) and BR-003; no G6 verification, no E1/E2 or Verified promotion.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0056-RESTORE-HONORS-TOMBSTONES-BEFORE-SERVING",
+      "command": "Real recovery point on PostgreSQL 16 (one REPEATABLE READ snapshot copy of every table of the source schema) and Qdrant 1.15.1 (snapshot of every native/parallel collection recovered through the snapshot API into a new namespace), restored after a deletion made in the source: the restored stores really hold the deleted item in every retrieval mode and the parallel representation, yet the restore gate and the composed RestoredMemorySearch entry point refuse every request (RESTORE_NOT_RECONCILED) until the attested checkpoint is reconciled; afterwards no mode serves the item, undeleted and shared-content items are served; a restart with fresh adapters starts closed and reconciliation is idempotent (no replacement ledger event)",
+      "real_backend_tests": [
+        "test_live_qualifying_backends_are_real_and_pinned",
+        "test_live_restart_starts_closed_and_reconciliation_is_idempotent",
+        "test_live_restore_never_resurrects_a_deletion_made_after_the_backup",
+        "test_live_restored_search_entry_point_never_serves_a_deleted_item"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 8,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_live_qualifying_backends_are_real_and_pinned",
+        "test_live_restart_starts_closed_and_reconciliation_is_idempotent",
+        "test_live_restore_never_resurrects_a_deletion_made_after_the_backup",
+        "test_live_restored_search_entry_point_never_serves_a_deleted_item",
+        "test_restored_search_is_closed_until_reconciled_and_forwards_unchanged",
+        "test_restored_search_requires_a_gate_and_a_search_port",
+        "test_restored_service_starts_closed_and_only_opens_after_all_obligations",
+        "test_the_composed_recovery_gate_replays_then_purges_native_stores"
+      ],
+      "unit_fixture_tests": [
+        "test_restored_search_is_closed_until_reconciled_and_forwards_unchanged",
+        "test_restored_search_requires_a_gate_and_a_search_port",
+        "test_restored_service_starts_closed_and_only_opens_after_all_obligations",
+        "test_the_composed_recovery_gate_replays_then_purges_native_stores"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0056-DELETION-COMPLETES-ACROSS-RESTORED-STORES",
+      "command": "On the real backends the restored metadata, ledger, native lexical/vector entries, parallel descriptors and private content objects of the deleted item are purged (shared content retained) and the original versions, epochs, events and audit refs are replayed unchanged; an unfinished (DELETION_INCOMPLETE) source saga is replayed as such and its recorded replica participant must be present (DELETION_PARTICIPANT_MISSING otherwise); when the authority completes its saga the new versions are replayed; conflicting, unbound or other-tenant metadata/bindings are refused before any write",
+      "real_backend_tests": [
+        "test_live_unfinished_deletion_is_replayed_and_an_omitted_store_keeps_restore_closed"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 14,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_live_unfinished_deletion_is_replayed_and_an_omitted_store_keeps_restore_closed",
+        "test_metadata_replay_preserves_original_versions_epochs_events_and_audit",
+        "test_metadata_replay_reports_a_lost_commit_and_resumes_it",
+        "test_missing_duplicate_or_unnamed_participants_are_configuration_errors",
+        "test_omitting_a_recorded_store_cannot_qualify_recovery",
+        "test_replay_refuses_a_conflicting_restored_ledger_record_before_writing",
+        "test_replay_refuses_unbound_metadata_before_writing_anything",
+        "test_restore_participants_refuse_a_binding_of_another_tenant",
+        "test_restore_participants_validate_tenant_and_scope_before_purge",
+        "test_saga_outcomes_may_extend_version_refs_and_retry_under_the_same_epoch"
+      ],
+      "unit_fixture_tests": [
+        "test_metadata_replay_preserves_original_versions_epochs_events_and_audit",
+        "test_metadata_replay_reports_a_lost_commit_and_resumes_it",
+        "test_missing_duplicate_or_unnamed_participants_are_configuration_errors",
+        "test_omitting_a_recorded_store_cannot_qualify_recovery",
+        "test_replay_refuses_a_conflicting_restored_ledger_record_before_writing",
+        "test_replay_refuses_unbound_metadata_before_writing_anything",
+        "test_restore_participants_refuse_a_binding_of_another_tenant",
+        "test_restore_participants_validate_tenant_and_scope_before_purge",
+        "test_saga_outcomes_may_extend_version_refs_and_retry_under_the_same_epoch"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0056-CHECKPOINT-AUTHENTICATED-AND-BOUND-TO-RECOVERY-POINT",
+      "command": "The checkpoint authority is AuthenticatedDeletionCheckpointAuthority: the deletion authority's canonical RecoveryPointCheckpointClaim (recovery point URN derived from the backup manifest digest, sequence, head, deletion epoch) is attested with an OpenBao 2.6.2 transit ed25519 key and verified before parsing; a forged payload or malformed signature (CHECKPOINT_UNAUTHENTICATED), a claim for another recovery point (RECOVERY_POINT_MISMATCH), a non-canonical or extended claim (CHECKPOINT_INVALID) and an authority/verifier outage (DELETION_AUTHORITY_UNAVAILABLE) keep restore closed with nothing purged; only an exact True verification authenticates",
+      "real_backend_tests": [
+        "test_live_unauthenticated_or_unbound_checkpoint_keeps_restore_closed"
+      ],
+      "requirement_id": "BR-003",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 24,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_claim_for_another_recovery_point_is_refused",
+        "test_an_attested_but_malformed_claim_is_not_a_checkpoint",
+        "test_an_attested_checkpoint_for_the_recovery_point_opens_restore",
+        "test_an_unauthenticated_checkpoint_never_opens_restore",
+        "test_authority_and_inventory_require_exact_port_types",
+        "test_authority_or_verifier_outage_keeps_restore_closed",
+        "test_claim_payload_roundtrips_and_binds_recovery_point_and_checkpoint",
+        "test_live_unauthenticated_or_unbound_checkpoint_keeps_restore_closed",
+        "test_only_an_exact_true_verification_authenticates",
+        "test_the_recovery_point_identity_is_a_closed_urn"
+      ],
+      "unit_fixture_tests": [
+        "test_a_claim_for_another_recovery_point_is_refused",
+        "test_an_attested_but_malformed_claim_is_not_a_checkpoint",
+        "test_an_attested_checkpoint_for_the_recovery_point_opens_restore",
+        "test_an_unauthenticated_checkpoint_never_opens_restore",
+        "test_authority_and_inventory_require_exact_port_types",
+        "test_authority_or_verifier_outage_keeps_restore_closed",
+        "test_claim_payload_roundtrips_and_binds_recovery_point_and_checkpoint",
+        "test_only_an_exact_true_verification_authenticates",
+        "test_the_recovery_point_identity_is_a_closed_urn"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0056-JOURNAL-INTEGRITY-AND-CLOSED-CHECKPOINT",
+      "command": "The restored deletion journal must reproduce exactly the authority checkpoint (sequence, head, deletion epoch): removed suffix, reorder, rehashed replacement, invalid saga history, malformed chain records or entries and a wrong last entry digest are JOURNAL_CORRUPTED or CHECKPOINT_MISMATCH and never open restore; on the real backends a restore site still holding the journal delivered before a later deletion cannot reconcile (CHECKPOINT_MISMATCH) until the current journal is delivered",
+      "real_backend_tests": [
+        "test_live_a_deletion_after_reopening_closes_the_gate_until_reconciled"
+      ],
+      "requirement_id": "BR-003",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 44,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_wrong_entry_digest_on_the_last_line_is_corruption",
+        "test_an_entirely_rehashed_replacement_still_fails_the_pinned_checkpoint",
+        "test_changed_journal_cannot_match_the_authority_checkpoint",
+        "test_checkpoint_digest_is_bound_to_all_three_members",
+        "test_complete_journal_roundtrips_exact_order_and_checkpoint",
+        "test_each_checkpoint_member_is_checked",
+        "test_empty_journal_needs_an_explicit_empty_checkpoint",
+        "test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid",
+        "test_live_a_deletion_after_reopening_closes_the_gate_until_reconciled",
+        "test_malformed_checkpoints_are_not_authority",
+        "test_malformed_hash_chains_and_entries_never_open_restore"
+      ],
+      "unit_fixture_tests": [
+        "test_a_wrong_entry_digest_on_the_last_line_is_corruption",
+        "test_an_entirely_rehashed_replacement_still_fails_the_pinned_checkpoint",
+        "test_changed_journal_cannot_match_the_authority_checkpoint",
+        "test_checkpoint_digest_is_bound_to_all_three_members",
+        "test_complete_journal_roundtrips_exact_order_and_checkpoint",
+        "test_each_checkpoint_member_is_checked",
+        "test_empty_journal_needs_an_explicit_empty_checkpoint",
+        "test_invalid_saga_history_is_rejected_even_if_hash_chain_is_valid",
+        "test_malformed_checkpoints_are_not_authority",
+        "test_malformed_hash_chains_and_entries_never_open_restore"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0056-FAIL-CLOSED-ON-FAULT-AND-LATER-DELETION",
+      "command": "A deletion attested after reopening closes the gate (CHECKPOINT_MISMATCH, then RESTORE_NOT_RECONCILED) until the new journal is delivered and reconciled; a Qdrant purge or inventory outage during reconciliation keeps restore closed (DELETION_INCOMPLETE / DELETION_INVENTORY_UNAVAILABLE) and a retry opens it; residue or a new epoch appearing while a response is materialised discards it; the module has no backend client and no canonical authority path",
+      "real_backend_tests": [
+        "test_live_a_deletion_after_reopening_closes_the_gate_until_reconciled",
+        "test_live_backend_fault_during_reconciliation_keeps_restore_closed_then_retry_opens"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 18,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_missing_journal_and_failed_callback_leave_recovery_closed",
+        "test_a_new_authoritative_epoch_invalidates_an_already_open_gate",
+        "test_a_purge_failure_is_not_overruled_by_an_empty_inventory",
+        "test_an_attested_later_deletion_closes_an_open_gate",
+        "test_authority_changed_during_purge_is_rechecked",
+        "test_authority_changed_during_the_final_inventory_is_rechecked",
+        "test_failed_recovery_does_not_call_the_restored_service",
+        "test_live_a_deletion_after_reopening_closes_the_gate_until_reconciled",
+        "test_live_backend_fault_during_reconciliation_keeps_restore_closed_then_retry_opens",
+        "test_new_epoch_during_materialisation_discards_the_response",
+        "test_residue_created_during_materialisation_discards_the_response",
+        "test_restored_search_discards_a_response_when_residue_reappears",
+        "test_retry_reconciles_residue_but_never_reopens_on_a_prior_receipt",
+        "test_the_deletion_module_has_no_backend_client_or_canonical_authority"
+      ],
+      "unit_fixture_tests": [
+        "test_a_missing_journal_and_failed_callback_leave_recovery_closed",
+        "test_a_new_authoritative_epoch_invalidates_an_already_open_gate",
+        "test_a_purge_failure_is_not_overruled_by_an_empty_inventory",
+        "test_an_attested_later_deletion_closes_an_open_gate",
+        "test_authority_changed_during_purge_is_rechecked",
+        "test_authority_changed_during_the_final_inventory_is_rechecked",
+        "test_failed_recovery_does_not_call_the_restored_service",
+        "test_new_epoch_during_materialisation_discards_the_response",
+        "test_residue_created_during_materialisation_discards_the_response",
+        "test_restored_search_discards_a_response_when_residue_reappears",
+        "test_retry_reconciles_residue_but_never_reopens_on_a_prior_receipt",
+        "test_the_deletion_module_has_no_backend_client_or_canonical_authority"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "Freshness of the attestation is the deletion authority's obligation: AttestedJournal attests on every call, but the gate cannot by itself detect an authority that replays an older valid attestation for the same recovery point; no anti-replay nonce or timestamp is part of the claim (open, unassigned).",
+    "The window between the final recheck in serve and the return of the response is not atomic with respect to a concurrent authority append (inherited from Codex's WIP limitation); no FGM-17 claim is made.",
+    "A failing restored search request (e.g. an authorisation denial) closes the gate and requires a new reconcile (fail-closed semantics of serve inherited from the WIP); availability impact only, not a disclosure.",
+    "The backup is a logical PostgreSQL snapshot copy and Qdrant snapshot recovery inside the test harness; pg_dump/pg_restore and off-host backup media are not exercised by this task.",
+    "The ledger and representation receipts of the 0052/0053 world fixture are in-process; they are copied with the backup rather than restored from a durable store."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementers": "Codex (OpenAI): WIP 0d1de3b RED and 5edd6cd checkpoint-fenced journal, restore gate, metadata replay and participant adapter (2026-10-11); Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (LOOP-AGENT-ROTATION, quota Codex esaurita): realignment merge 1fd22c6 with origin/main 1bf0e92, attested recovery-point checkpoint authority, RestoredMemorySearch entry point, live restore drills, mutation-gap tests, qualification and this candidate (2026-10-22)",
+    "independence": "external loop only; the implementers did not run or simulate the verification",
+    "verifier": "selected by the loop among providers different from OpenAI and Anthropic (Cursor/Grok 4.7 xAI, then Antigravity/Gemini Google), separate process and clean context"
+  },
+  "rollback_procedure_verified": "Mechanical review: the task adds memory/deletion.py and tests/tasks/test_ocor_dev_0056.py plus evidence; no migration or persisted schema; rollback is a revert commit of the task merge, after which the prior G5 manifest validates unchanged (no existing entry is modified).",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "supersedes_candidate": "5edd6cdb526dab1be7d3f71d534b34622f870aee (Codex WIP log, non-qualifying, same path; preserved in Git history and archived verbatim in this raw log)",
+  "task_id": "OCOR-DEV-0056",
+  "tdd": {
+    "GREEN": "d6ecf71 (authority), 0509b60 (restored search); final task-run-1..3, validation command and full suite on the code commit (JUnit counts in commands)",
+    "RED": {
+      "claude_authority": "58a6d9c: 21 FAIL / 0 PASS, AttributeError: AuthenticatedDeletionCheckpointAuthority / RecoveryPointCheckpointClaim not implemented (raw label tdd-claude-red-authority)",
+      "claude_restored_search": "d6a49a1: 4 FAIL / 0 PASS, AttributeError: RestoredMemorySearch not implemented (raw label tdd-claude-red-restored-search)",
+      "codex": "0d1de3b: 26 FAIL / 1 PASS against a fail-open stub; roster 1 FAIL / 36 PASS; metadata replay 7 FAIL / 57 PASS (raw labels tdd-codex-red-*)"
+    },
+    "REFACTOR": "none beyond docstring alignment of the module header with the new ports",
+    "codex_wip_log_sha256": "c3df135e40d836fceebd3cc60f46ea66c607d5176ef26b752a384129afb40f68",
+    "mutation_probe": "23 mutants of memory/deletion.py on a git-archive scratch tree of the code commit, non-live 0056 cases: 22 killed; 1 equivalent survivor documented (claim-extra-member-accepted). First probe on abda918 left 6 survivors; 5 were killed by the tests of commit 4936980.",
+    "ordering_note": "Codex's RED preceded its WIP implementation; Claude's two RED commits precede the corresponding GREEN commits. The live drill cases are characterisation cases of the composed boundary on the real backends and were not RED first.",
+    "red_raw_sha256": {
+      "claude-red-authority": "6eb896585b2ff0e1a505a524b0fff88e3ff502f6d479e0efbfb9813be202a506",
+      "claude-red-restored-search": "4c76d1d93b6739e9bfc92566e8cf2de0999d04bbd1ee7486c2ae5d3d1d75d531",
+      "codex-red-behavior": "2d716139912214ea74a7dd8ec868f1feb173a858bd00c39feea418250cffcb2b",
+      "codex-red-checkpoint": "ab852eaa1077f439c237b587a9201d481baa28eafbdc746951cf0ff3e8605b09",
+      "codex-red-metadata": "5866c2d8bbe0f1a200a01be117e2251b34b270eaf782f0c0b5cc23935b3fe91e",
+      "codex-red-roster": "c911cc4a5e4fac654ba0abdd1f631fbe4292a5815d3ca824e49cdde7b88be50e"
+    }
+  }
+}
