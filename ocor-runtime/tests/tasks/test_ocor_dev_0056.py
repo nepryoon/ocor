@@ -1523,3 +1523,67 @@ def test_live_each_recovery_boundary_uses_the_durable_audit_authority(backends, 
     healthy = d.gate()
     healthy.reconcile()
     assert not mentions(healthy.serve(d.refs), "x")
+
+
+@pytest.mark.parametrize("audit_available", [True, False])
+def test_reconciliation_refusal_audits_checkpoint_and_invalidates_prior_receipt(tmp_path: Path, audit_available: bool) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+    audit = RecoveryAudit()
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority, participants=(participant, Participant("native-projections")),
+        audit=audit, recovery_point_id=RECOVERY_POINT,
+    )
+    gate.reconcile()
+    audit.unavailable = not audit_available
+    restored.write_bytes(b"")
+    with pytest.raises(DeletionRecoveryError) as caught:
+        gate.reconcile()
+    assert caught.value.reason_code == ("CHECKPOINT_MISMATCH" if audit_available else "AUDIT_UNAVAILABLE")
+    assert len(audit.events) == int(audit_available)
+    if audit.events:
+        assert audit.events[0]["action"] == "deletionRestore.reconcile.denied"
+        assert audit.events[0]["checkpoint_digest"] == authority.current().digest
+    audit.unavailable = False
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: pytest.fail("a failed reconcile retained its old receipt"))
+    restored.write_bytes(authority.path.read_bytes())
+    gate.reconcile()
+    assert gate.serve(lambda: "fresh receipt") == "fresh receipt"
+
+
+@pytest.mark.parametrize("fault", ["journal-prefix", "forged-attestation", "omitted-participant"])
+def test_live_reconciliation_failures_persist_the_denial_before_return(backends, tmp_path: Path, fault: str) -> None:  # type: ignore[no-untyped-def]
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="audit-reconcile-delete-x")
+    d.deliver_journal()
+    gate = d.gate()
+    if fault == "journal-prefix":
+        d.restored_journal.write_bytes(b"")
+        reason = "CHECKPOINT_MISMATCH"
+    elif fault == "forged-attestation":
+        d.issuer.forge = "malformed"
+        reason = "CHECKPOINT_UNAUTHENTICATED"
+    else:
+        authority_type, _ = authenticated_api()
+        authority = authority_type(recovery_point_id=d.recovery_point, source=d.issuer, verifier=d.attestation, audit=d.restored.admission_audit)
+        # A recorded participant omitted from the restore composition is a
+        # real roster failure, without changing any backend implementation.
+        gate = DeletionRestoreGate(journal=d.restored_journal, authority=authority, participants=(Participant("memory-metadata"),), audit=d.restored.admission_audit, recovery_point_id=d.recovery_point)
+        reason = "DELETION_PARTICIPANT_MISSING"
+    before = d.restored.ledger.latest_version("x")
+    with pytest.raises(DeletionRecoveryError, match=reason):
+        gate.reconcile()
+    rows = recovery_rows(backends, d.restored)
+    assert rows[-1]["action"] == "deletionRestore.reconcile.denied"
+    assert rows[-1]["reason_code"] == reason
+    assert rows[-1]["recovery_point_digest"] == canonical_digest(d.recovery_point)
+    checkpoint = DeletionJournalSnapshot.capture(d.authority_journal).checkpoint
+    assert rows[-1]["checkpoint_digest"] == (None if fault == "forged-attestation" else checkpoint.digest)
+    assert d.restored.ledger.latest_version("x") == before
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: pytest.fail("failed reconcile dispatched a response"))
+    d.issuer.forge = None
+    d.deliver_journal()
+    healthy = d.gate()
+    healthy.reconcile()
+    assert not mentions(healthy.serve(d.refs), "x")
