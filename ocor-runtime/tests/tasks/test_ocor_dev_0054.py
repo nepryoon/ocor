@@ -44,6 +44,7 @@ from typing import Any
 
 import psycopg
 import pytest
+import test_ocor_dev_rem_0023 as denial
 import test_ocor_dev_0051 as base
 import test_ocor_dev_0052 as r
 import yaml
@@ -79,6 +80,7 @@ from ocor_runtime.memory.model import (
     LifecycleStatus,
     MemoryAdmissionError,
     MemoryAdmissionService,
+    MemoryAdmissionAuditSink,
     MemoryKind,
     MemoryPolicyDecision,
     memory_version_ref,
@@ -206,7 +208,8 @@ class FailingJobs(InMemoryConsolidationJobLedger):
 class CWorld(r.World):
     """The 0052 world (real admission + real coordinator) wired for consolidation."""
 
-    def __init__(self, *, content: Any, jobs: Any = None, **ports: Any) -> None:
+    def __init__(self, *, admission_audit: MemoryAdmissionAuditSink, content: Any, jobs: Any = None, **ports: Any) -> None:
+        self.admission_audit = admission_audit
         self.counting = CountingContent(content)
         super().__init__(content=self.counting, **ports)
         self.references = ConsolidationReferenceResolver(r.Resolver())
@@ -215,6 +218,7 @@ class CWorld(r.World):
             ledger=self.ledger,
             resolver=self.references,
             policy=self.guard,
+            audit=admission_audit,
             markings=self.markings,
             clock=self.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": timedelta(days=365)}),
@@ -333,6 +337,7 @@ def denials(world: CWorld) -> list[Mapping[str, object]]:
 
 def unit_world(**kwargs: Any) -> CWorld:
     return CWorld(
+        admission_audit=r.Audit(),
         metadata=base.MemMetadata(),
         content=base.MemContent(),
         lexical=base.MemIndex(),
@@ -374,6 +379,7 @@ class Backends:
     def _ports(self, schema: str) -> dict[str, Any]:
         postgres = base.PostgresStores(self.dsn, schema)
         return {
+            "admission_audit": denial.SchemaPostgresAudit(self.dsn, schema),
             "metadata": postgres,
             "content": base.PostgresContentStore(postgres),
             "lexical": base.PostgresLexicalIndex(postgres),
@@ -397,6 +403,7 @@ class Backends:
             ledger=world.ledger,
             resolver=clone.references,
             policy=clone.guard,
+            audit=clone.admission_audit,
             markings=clone.markings,
             clock=world.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": timedelta(days=365)}),
