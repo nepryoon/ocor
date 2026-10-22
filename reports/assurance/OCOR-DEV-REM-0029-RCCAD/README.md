@@ -26,9 +26,12 @@ con label mancante o diversa produce FAIL prima di Compose. I timeout sono
 180 s per Compose, 30 s per ciascun inventario e al massimo 10 s per probe.
 La concorrenza con un altro proprietario dello stesso progetto resta vietata.
 
-Riqualifiche nuove con supersession: 0082 per lo script; 0050 di sola regressione
-per l'allowlist esatta del piano. Record storici e casi/asserzioni esistenti intatti.
-Implementatore attuale Codex/OpenAI; linea storica e harness Claude Code/Anthropic.
+Riqualifiche nuove con supersession: 0082 per lo script; 0050 e 0005 di sola regressione
+per l'allowlist esatta del piano (0005 aggiunta da Claude Code: deriva dello stesso input
+`scripts/validate_ocor_development_plan.py` non coperta dalla prima stesura). Record storici e casi/asserzioni esistenti intatti.
+Implementatori: Codex/OpenAI (codice, test, prima qualifica) e Claude Code/Anthropic
+(implementatore di riserva dopo l'esaurimento della quota Codex del 2026-10-22: riqualifica
+da zero, riqualifica 0005, evidenza e state sync; linea storica e harness).
 Verifier richiesto Cursor/Grok 4.7/xAI o Antigravity/Gemini/Google, soltanto dal
 loop esterno. Verifica e CI finali restano NOT_EXECUTED fino alle rispettive fasi.
 E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED e PoC/Production NO-GO invariati.

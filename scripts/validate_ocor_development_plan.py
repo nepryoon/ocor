@@ -283,6 +283,8 @@ def main() -> int:
         'reports/evidence/G2/OCOR-DEV-0082.requalified-rem0029.log',
         'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0029.json',
         'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0029.log',
+        'reports/evidence/G0/OCOR-DEV-0005.requalified-rem0029.json',
+        'reports/evidence/G0/OCOR-DEV-0005.requalified-rem0029.log',
         # CC-OCOR-DELIVERY-COMPLETION section 7: exact authorized REM-0022
         # source and governance disposition; no broader spike path admission.
         "spikes/kafka_delivery/oracle.py",
