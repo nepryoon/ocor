@@ -726,3 +726,426 @@ def test_claim_payload_roundtrips_and_binds_recovery_point_and_checkpoint(tmp_pa
     assert parse_i_json(claim.payload()) == {"recovery_point_id": RECOVERY_POINT, "checkpoint": checkpoint.to_mapping()}
     assert claim_type.from_payload(claim.payload()) == claim
     assert claim_type(OTHER_RECOVERY_POINT, checkpoint).payload() != claim.payload()
+
+
+# --------------------------------------------------------------------------
+# Qualifying restore drills on the real backends of OCOR-DEV-0051/0053/0055
+# --------------------------------------------------------------------------
+#
+# Real, pinned backends: PostgreSQL 16 from ``OCOR_LIVE_POSTGRES_DSN``
+# (metadata, encrypted content, full-text index, representation descriptors),
+# Qdrant 1.15.1 (native and parallel vector indexes) and OpenBao 2.6.2
+# (content transit key and the ed25519 key attesting deletion checkpoints).
+# The recovery point is a real backup: one REPEATABLE READ snapshot copy of
+# every table of the source schema plus a Qdrant snapshot of every source
+# collection, recovered through the Qdrant snapshot API into a new namespace.
+# The memory ledger of the 0052 world fixture is in-process; its records are
+# copied unchanged with the backup.  A missing backend fails, it never skips.
+
+
+def live_modules():  # type: ignore[no-untyped-def]
+    import test_ocor_dev_0051 as base
+    import test_ocor_dev_0052 as t52
+    import test_ocor_dev_0053 as t53
+    import test_ocor_dev_0055 as t55
+    import test_ocor_dev_rem_0023 as denial
+
+    return base, t52, t53, t55, denial
+
+
+def _openbao_harness():  # type: ignore[no-untyped-def]
+    base, *_ = live_modules()
+
+    class OpenBaoHarness(base.OpenBaoHarness):  # type: ignore[misc,name-defined]
+        PREFIX = "ocor-test-0056-openbao-"
+
+    return OpenBaoHarness
+
+
+class OpenBaoCheckpointAttestation:
+    """Deletion-authority attestation: OpenBao transit ed25519 sign/verify."""
+
+    KEY = "deletion-checkpoint"
+
+    def __init__(self, bao) -> None:  # type: ignore[no-untyped-def]
+        self._bao = bao
+        bao.call("POST", f"/v1/ocor-memory-transit/keys/{self.KEY}", {"type": "ed25519"})
+
+    def sign(self, payload: bytes) -> str:
+        import base64
+
+        data = self._bao.call(
+            "POST", f"/v1/ocor-memory-transit/sign/{self.KEY}", {"input": base64.b64encode(payload).decode()},
+        )
+        return str(data["data"]["signature"])
+
+    def verify(self, payload: bytes, attestation: str) -> bool:
+        import base64
+
+        base, *_ = live_modules()
+        status, data = base._http(
+            "POST", f"{self._bao.endpoint}/v1/ocor-memory-transit/verify/{self.KEY}",
+            {"input": base64.b64encode(payload).decode(), "signature": attestation},
+            headers={"X-Vault-Token": self._bao.token},
+        )
+        if status == 400:
+            return False  # malformed signature: not authenticated
+        if status != 200:
+            raise RuntimeError(f"OpenBao verify -> {status}")
+        return data["data"]["valid"] is True
+
+
+class AttestedJournal:
+    """The deletion authority: attests its current journal for one recovery point."""
+
+    def __init__(self, path: Path, signer: OpenBaoCheckpointAttestation, recovery_point: str) -> None:
+        self.path, self.signer, self.recovery_point = path, signer, recovery_point
+        self.forge: str | None = None
+
+    def attested_checkpoint(self) -> tuple[bytes, str]:
+        _, claim_type = authenticated_api()
+        checkpoint = DeletionJournalSnapshot.capture(self.path).checkpoint
+        payload = claim_type(self.recovery_point, checkpoint).payload()
+        if self.forge == "other-recovery-point":
+            payload = claim_type(OTHER_RECOVERY_POINT, checkpoint).payload()
+        signature = self.signer.sign(payload)
+        if self.forge == "payload":
+            body = parse_i_json(payload)
+            body["checkpoint"]["sequence"] += 1
+            payload = canonical_bytes(body)
+        if self.forge == "malformed":
+            signature = "vault:v1:" + "A" * 86
+        return payload, signature
+
+
+@pytest.fixture(scope="module")
+def live_backends():  # type: ignore[no-untyped-def]
+    import os
+
+    base, _, _, t55, _ = live_modules()
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+    if not dsn:
+        pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory qualifying evidence (real PostgreSQL)")
+    qdrant = base.QdrantHarness.provision()
+    bao = None
+    state = None
+    try:
+        bao = _openbao_harness().provision()
+        state = t55.Backends(dsn=dsn, qdrant=qdrant, bao=bao)
+        yield state
+    finally:
+        try:
+            if state is not None:
+                state.release()
+        finally:
+            try:
+                if bao is not None:
+                    bao.destroy()
+            finally:
+                qdrant.destroy()
+
+
+@pytest.fixture
+def backends(live_backends):  # type: ignore[no-untyped-def]
+    try:
+        yield live_backends
+    finally:
+        live_backends.release()
+
+
+# FK order of the 0051 schema first; every other table follows by name.
+TABLE_ORDER = ("partitions", "versions", "pointers")
+
+
+def backup_and_restore(backends, source, items: dict[str, object]):  # type: ignore[no-untyped-def]
+    """Back up ``source`` and restore it into a new namespace; returns (world, recovery point)."""
+
+    import hashlib
+    import uuid
+
+    import psycopg
+
+    base, t52, t53, _, denial = live_modules()
+    a = source.metadata.schema
+    b = f"ocor_t0056_{uuid.uuid4().hex[:12]}"
+    backends.schemas.append(b)
+    base.PostgresStores(backends.dsn, b)
+    t53.PostgresRepresentationStore(backends.dsn, b)
+    denial.SchemaPostgresAudit(backends.dsn, b)
+    manifest: dict[str, object] = {}
+    with psycopg.connect(backends.dsn) as conn:
+        conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        names = sorted(
+            row[0] for row in conn.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = %s AND table_type = 'BASE TABLE'", (a,),
+            ).fetchall()
+        )
+        ordered = [n for n in TABLE_ORDER if n in names] + [n for n in names if n not in TABLE_ORDER]
+        existing = {
+            row[0] for row in conn.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = %s", (b,),
+            ).fetchall()
+        }
+        for name in ordered:
+            if name not in existing:
+                conn.execute(f'CREATE TABLE "{b}"."{name}" (LIKE "{a}"."{name}" INCLUDING ALL)')
+            conn.execute(f'INSERT INTO "{b}"."{name}" SELECT * FROM "{a}"."{name}"')
+            row = conn.execute(
+                f'SELECT count(*), coalesce(md5(string_agg(t::text, \'|\' ORDER BY t::text)), \'\') FROM "{a}"."{name}" t'
+            ).fetchone()
+            assert row is not None
+            manifest[f"postgres:{name}"] = [row[0], row[1]]
+    index = t52.CompactQdrantVectorIndex(backends.qdrant.endpoint, a)
+    collections = index.collections()
+    assert collections, "the source must hold native vector collections"
+    for name in collections:
+        status, data = index._call("POST", f"/collections/{name}/snapshots?wait=true")
+        assert status == 200, (name, status)
+        snapshot = data["result"]
+        target = f"ocor_{b}_" + name.removeprefix(f"ocor_{a}_")
+        status, _ = index._call(
+            "PUT", f"/collections/{target}/snapshots/recover?wait=true",
+            {"location": f"file:///qdrant/snapshots/{name}/{snapshot['name']}"},
+        )
+        assert status == 200, (target, status)
+        manifest[f"qdrant:{name.removeprefix(f'ocor_{a}_')}"] = snapshot.get("checksum") or snapshot["name"]
+    restored = backends.world(schema=b)
+    for item_id in items:
+        for version in range(1, source.ledger.latest_version(item_id) + 1):
+            restored.ledger.append(source.ledger.get(item_id, version))
+    manifest["ledger"] = sorted(
+        source.ledger.get(i, v).item_digest for i in items for v in range(1, source.ledger.latest_version(i) + 1)
+    )
+    # The in-process representation receipt store of the fixture is part of the recovery point.
+    restored.rep_audit.events.extend(dict(event) for event in source.rep_audit.events)
+    manifest["representation_receipts"] = sorted(canonical_digest(dict(e)) for e in source.rep_audit.events)
+    recovery_point = "urn:ocor:recovery-point:" + hashlib.sha256(canonical_bytes(manifest)).hexdigest()
+    return restored, recovery_point
+
+
+@dataclass
+class Drill:
+    source: object
+    restored: object
+    recovery_point: str
+    authority_journal: Path
+    restored_journal: Path
+    attestation: OpenBaoCheckpointAttestation
+    issuer: AttestedJournal
+    items: dict[str, object]
+
+    def gate(self, *extra: object) -> DeletionRestoreGate:
+        _, t52, _, t55, _ = live_modules()
+        authority_type, _ = authenticated_api()
+        authority = authority_type(
+            recovery_point_id=self.recovery_point, source=self.issuer, verifier=self.attestation,
+        )
+        replay = MemoryDeletionMetadataReplay(
+            authoritative_metadata=self.source.metadata, authoritative_ledger=self.source.ledger,  # type: ignore[attr-defined]
+            restored_metadata=self.restored.metadata, restored_ledger=self.restored.ledger,  # type: ignore[attr-defined]
+        )
+        adapters = [
+            RestoredMemoryParticipant(metadata=self.restored.metadata, participant=p, binding=t52.binding(t55.CALLER))  # type: ignore[attr-defined]
+            for p in [*self.restored.participants(), *extra]  # type: ignore[attr-defined]
+        ]
+        return DeletionRestoreGate(journal=self.restored_journal, authority=authority, participants=[replay, *adapters])
+
+    def deliver_journal(self) -> None:
+        """The deletion authority ships its current journal to the restore site."""
+
+        self.restored_journal.write_bytes(self.authority_journal.read_bytes())
+
+    def refs(self) -> dict[str, list[str]]:
+        return self.restored.every_mode(v2=True)  # type: ignore[attr-defined,no-any-return]
+
+
+def drill(backends, tmp_path: Path, *, replica=None, twin: bool = False) -> Drill:  # type: ignore[no-untyped-def]
+    _, _, _, t55, _ = live_modules()
+    path = tmp_path / "authority.jsonl"
+    source = backends.world(tombstones=JournalTombstoneStore(path), replica=replica)
+    items = t55.populate(source)
+    if twin:
+        items["twin"] = source.admit("twin", t55.TEXT + " north")  # shares x's content object
+    source.rebuild(items["keep"])  # parallel v2 representation of the partition
+    restored, recovery_point = backup_and_restore(backends, source, items)
+    attestation = OpenBaoCheckpointAttestation(backends.bao)
+    issuer = AttestedJournal(path, attestation, recovery_point)
+    return Drill(source, restored, recovery_point, path, tmp_path / "restored.jsonl", attestation, issuer, items)
+
+
+def mentions(refs: dict[str, list[str]], item: str) -> bool:
+    return any(ref.startswith(f"urn:ocor:memory:{item}:") for found in refs.values() for ref in found)
+
+
+def test_live_qualifying_backends_are_real_and_pinned(backends) -> None:  # type: ignore[no-untyped-def]
+    import psycopg
+
+    base, t52, t53, _, _ = live_modules()
+    assert base.QDRANT_IMAGE.endswith(base.LOCKED_IMAGES["qdrant"].split("@", 1)[1])
+    assert base._docker("inspect", backends.qdrant.container, "--format", "{{.Config.Image}}") == base.QDRANT_IMAGE
+    assert base._docker("inspect", backends.bao.container, "--format", "{{.Config.Image}}") == base.LOCKED_IMAGES["openbao"]
+    with psycopg.connect(backends.dsn) as conn:
+        row = conn.execute("SHOW server_version").fetchone()
+    assert row is not None and str(row[0]).startswith("16.")
+    world = backends.world()
+    assert isinstance(world.metadata, base.PostgresStores) and isinstance(world.representations, t53.PostgresRepresentationStore)
+    assert isinstance(world.vector.inner, base.QdrantVectorIndex) and isinstance(world.parallel.inner, base.QdrantVectorIndex)
+    signer = OpenBaoCheckpointAttestation(backends.bao)
+    assert signer.verify(b"payload", signer.sign(b"payload")) is True
+    assert signer.verify(b"other", signer.sign(b"payload")) is False
+
+
+def test_live_restore_never_resurrects_a_deletion_made_after_the_backup(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    _, _, _, t55, _ = live_modules()
+    d = drill(backends, tmp_path, twin=True)
+    x, twin = d.items["x"], d.items["twin"]
+    assert d.source.delete("x", op="forget-x").lifecycle_status == "DELETED"  # type: ignore[attr-defined]
+    d.deliver_journal()
+    # The restored backup really holds x in every store: the resurrection risk is real.
+    before = d.refs()
+    assert all("urn:ocor:memory:x:v1" in refs for refs in before.values()), before
+    assert t55.native_entries(d.restored, x) == {"lexical": 1, "vector": 1}
+    assert t55.parallel_descriptors(d.restored, x) == ["urn:ocor:memory:x:v1"]
+    gate = d.gate()
+    served: list[str] = []
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: served.append("before"))
+    receipt = gate.reconcile()
+    assert receipt.obligations == 1 and receipt.checkpoint == DeletionJournalSnapshot.capture(d.authority_journal).checkpoint
+    found = gate.serve(d.refs)
+    assert not mentions(found, "x") and served == []
+    assert all("urn:ocor:memory:keep:v1" in refs and "urn:ocor:memory:twin:v1" in refs for refs in found.values()), found
+    # Every representation of x is gone from the restored stores; the shared object is retained for twin.
+    assert d.restored.status("x") == d.source.status("x") == "DELETED"  # type: ignore[attr-defined]
+    assert t55.native_entries(d.restored, x) == {"lexical": 0, "vector": 0}
+    assert t55.parallel_descriptors(d.restored, x) == []
+    assert t55.content_present(d.restored, twin)
+    for version in range(1, d.source.ledger.latest_version("x") + 1):  # type: ignore[attr-defined]
+        assert d.restored.ledger.get("x", version).to_mapping() == d.source.ledger.get("x", version).to_mapping()  # type: ignore[attr-defined]
+
+
+def test_live_restart_starts_closed_and_reconciliation_is_idempotent(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="forget-x")  # type: ignore[attr-defined]
+    d.deliver_journal()
+    d.gate().reconcile()
+    versions = d.restored.ledger.latest_version("x")  # type: ignore[attr-defined]
+    # Restart: new adapters and connections over the restored backends, durable ledger records copied.
+    restarted = backends.world(schema=d.restored.metadata.schema)  # type: ignore[attr-defined]
+    restarted.rep_audit.events.extend(d.restored.rep_audit.events)  # type: ignore[attr-defined]
+    for item in d.items:
+        for version in range(1, d.restored.ledger.latest_version(item) + 1):  # type: ignore[attr-defined]
+            restarted.ledger.append(d.restored.ledger.get(item, version))  # type: ignore[attr-defined]
+    d.restored = restarted
+    gate = d.gate()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(d.refs)
+    assert gate.reconcile().obligations == 1
+    assert restarted.ledger.latest_version("x") == versions  # no replacement event
+    assert not mentions(gate.serve(d.refs), "x")
+
+
+@pytest.mark.parametrize("forge", ["payload", "malformed", "other-recovery-point"])
+def test_live_unauthenticated_or_unbound_checkpoint_keeps_restore_closed(backends, tmp_path: Path, forge: str) -> None:  # type: ignore[no-untyped-def]
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="forget-x")  # type: ignore[attr-defined]
+    d.deliver_journal()
+    d.issuer.forge = forge
+    gate = d.gate()
+    code = "RECOVERY_POINT_MISMATCH" if forge == "other-recovery-point" else "CHECKPOINT_UNAUTHENTICATED"
+    with pytest.raises(DeletionRecoveryError, match=code):
+        gate.reconcile()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(d.refs)
+    assert mentions(d.refs(), "x")  # nothing was purged on an unauthenticated checkpoint
+
+
+def test_live_a_deletion_after_reopening_closes_the_gate_until_reconciled(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="forget-x")  # type: ignore[attr-defined]
+    d.deliver_journal()
+    gate = d.gate()
+    gate.reconcile()
+    assert mentions(gate.serve(d.refs), "y")
+    d.source.delete("y", op="forget-y")  # type: ignore[attr-defined]
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.serve(d.refs)
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(d.refs)
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.reconcile()  # the restore site still holds the stale journal
+    d.deliver_journal()
+    assert gate.reconcile().obligations == 2
+    found = gate.serve(d.refs)
+    assert not mentions(found, "x") and not mentions(found, "y") and mentions(found, "keep")
+
+
+class RestoredReplica:
+    """Restored replica/export copy of the source's replica participant."""
+
+    name = "replica"
+
+    def __init__(self, refs: set[str]) -> None:
+        self.present = set(refs)
+
+    def purge(self, target) -> None:  # type: ignore[no-untyped-def]
+        self.present -= set(target.version_refs)
+
+    def residue(self, target) -> tuple[str, ...]:  # type: ignore[no-untyped-def]
+        return tuple(sorted(self.present & set(target.version_refs)))
+
+
+def test_live_unfinished_deletion_is_replayed_and_an_omitted_store_keeps_restore_closed(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    _, _, _, t55, _ = live_modules()
+    replica = t55.FailingParticipant(failures=1)
+    d = drill(backends, tmp_path, replica=replica)
+    replica.track(d.items["y"])
+    assert d.source.delete("y", op="forget-y-1").lifecycle_status == "DELETION_INCOMPLETE"  # type: ignore[attr-defined]
+    d.deliver_journal()
+    # The restore composition omits the replica the source saga recorded.
+    omitted = d.gate()
+    with pytest.raises(DeletionRecoveryError, match="DELETION_PARTICIPANT_MISSING"):
+        omitted.reconcile()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        omitted.serve(d.refs)
+    restored_replica = RestoredReplica({"urn:ocor:memory:y:v1"})
+    gate = d.gate(restored_replica)
+    gate.reconcile()
+    assert d.restored.status("y") == "DELETION_INCOMPLETE" and restored_replica.present == set()  # type: ignore[attr-defined]
+    assert not mentions(gate.serve(d.refs), "y")
+    # The authority completes its saga: a new journal entry and new versions to replay.
+    assert d.source.delete("y", op="forget-y-2").lifecycle_status == "DELETED"  # type: ignore[attr-defined]
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.serve(d.refs)
+    d.deliver_journal()
+    gate.reconcile()
+    assert d.restored.status("y") == "DELETED"  # type: ignore[attr-defined]
+    assert d.restored.ledger.latest_version("y") == d.source.ledger.latest_version("y")  # type: ignore[attr-defined]
+    assert not mentions(gate.serve(d.refs), "y")
+
+
+@pytest.mark.parametrize("fault", ["purge", "inventory"])
+def test_live_backend_fault_during_reconciliation_keeps_restore_closed_then_retry_opens(backends, tmp_path: Path, fault: str) -> None:  # type: ignore[no-untyped-def]
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="forget-x")  # type: ignore[attr-defined]
+    d.deliver_journal()
+    index = d.restored.vector  # type: ignore[attr-defined]
+    method = "remove" if fault == "purge" else "read_back"
+    original = getattr(index, method)
+    calls = {"n": 0}
+
+    def unavailable(*args, **kwargs):  # type: ignore[no-untyped-def]
+        calls["n"] += 1
+        raise ConnectionError("qdrant unavailable")
+
+    setattr(index, method, unavailable)
+    gate = d.gate()
+    code = "DELETION_INCOMPLETE" if fault == "purge" else "DELETION_INVENTORY_UNAVAILABLE"
+    with pytest.raises(DeletionRecoveryError, match=code):
+        gate.reconcile()
+    assert calls["n"] >= 1
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(d.refs)
+    setattr(index, method, original)
+    gate.reconcile()
+    assert not mentions(gate.serve(d.refs), "x")
