@@ -1,12 +1,11 @@
 {
   "assumptions": [
-    "Ripresa esclusiva dallo stato versionato e dal verdetto esterno sullHEAD esatto; nessun verifier avviato dallimplementatore.",
-    "I constructor dei soli fixture0056 forniscono il port di audit e il recovery point; nessun consumer0055 o sigillo storico modificato.",
-    "I tentativi precedenti (inclusa full con mypy assente per un errore dello script locale) sono diagnostici; i primi run del ciclo1 precedono i test aggiuntivi che uccidono il mutante reconcile: diagnostici, non conteggiati nella qualifica finale."
+    "Same candidate HEAD and repair_cycle1; environment-only diagnosis, no product repair.",
+    "No new external verifier started; current full must finish or stop under the unchanged limits."
   ],
-  "base_sha": "eabf15fa9f11d2ce2da94846c69f921e72e72dbf",
-  "baseline_commit": "eabf15fa9f11d2ce2da94846c69f921e72e72dbf",
-  "branch": "governed/state-sync-ocor-dev-0056-repair1-20261022",
+  "base_sha": "16540fa44118101ba8d19d7e3b54e6e7ed987f3a",
+  "baseline_commit": "16540fa44118101ba8d19d7e3b54e6e7ed987f3a",
+  "branch": "governed/state-sync-0056-env-recheck-20261023",
   "branch_evidence_paths": [
     "reports/evidence/G5/OCOR-DEV-0056.json",
     "reports/evidence/G5/OCOR-DEV-0056.log"
@@ -293,13 +292,12 @@
       "status": "PASS"
     }
   ],
-  "current_task": "OCOR-DEV-0056:repair1-candidate",
+  "current_task": "OCOR-DEV-0056:environment diagnosis and unchanged-head rerun in progress",
   "evidence_paths": [
     "reports/development/EXECUTION_STATE.json",
-    "reports/development/ITERATION_LOG.md",
-    "reports/evidence/G5/MANIFEST.json"
+    "reports/development/ITERATION_LOG.md"
   ],
-  "exact_next_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0056-89eb79d63495-1, HEAD 89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92, branch task/OCOR-DEV-0056-deletion-saga-restore-reconciliation, repair_cycle=1. Implementatori Codex/OpenAI e Claude Code/Anthropic; verifier Cursor/Grok/xAI o Antigravity/Gemini/Google, fornitori diversi. Con GO: sigillare evidenza0056 e manifest, PR del task, 13 check nominali completed/success sull'HEAD esatto (max90min,poll60s,stop al primo rosso), merge --match-head-commit e state sync con completed_evidence_tasks71. Con NO_GO resta soltanto ciclo2 del budget ordinario, nessun indebolimento. Poi0057\u21920058\u21920059\u2192REM0030; G6 resta bloccato dalle REM obbligatorie aperte.",
+  "exact_next_action": "Riprendere la sorveglianza del processo locale env-recheck-20261023/run.py, sessione full sullHEAD0056 89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92. Non avviare altre suite. Log ~/.ocor-codex/ocor-dev-0056/env-recheck-20261023/full/post_remediation_runtime.log; tetto4500s e stopOOM/restart. Al termine verificare JUnit esatto, task150, check_final.py; teardown, state_sync.py, gate e PR solo3file di stato. Dopo CI13check verdi e merge: emit_request.py per env-recheck, loop_status e fine. Nessun verifier dallimplementatore.",
   "head_sha": "89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92",
   "head_sha_role": "Exact repair1 candidate HEAD to verify; code commit 2455a861d7a35a9fa897880681061c8463695c5a",
   "migration_rollback_result": "No migration; rollback is a revert commit of the task merge; prior G5 manifest entries unchanged",
@@ -378,42 +376,9 @@
   },
   "task_id": "OCOR-DEV-0056",
   "test_results": {
-    "full_suite": {
-      "candidate_head": "2455a861d7a35a9fa897880681061c8463695c5a",
-      "counts": {
-        "errors": 0,
-        "failures": 0,
-        "skipped": 0,
-        "tests": 2632
-      },
-      "duration_seconds": 3510.6271409799992,
-      "po_decision_required": false,
-      "required_modules": [
-        "test_ocor_dev_0048",
-        "test_ocor_dev_0049"
-      ],
-      "status": "PASS"
-    },
-    "junit_union": {
-      "collected": 2632,
-      "collected_sha256": "24e09f3fdd6dcf3fae82f2a16e75cf89cd3d52ce86058a1887480f6003526631",
-      "counts": {
-        "errors": 0,
-        "failures": 0,
-        "skipped": 0,
-        "tests": 2632
-      },
-      "duplicates": 0,
-      "executed": 2632,
-      "executed_identity_digest": "4c909d4afa12aab2844f28b448e371c631751ce0fcfdcfdebc1a707273285bca",
-      "extra": 0,
-      "missing": 0,
-      "status": "PASS"
-    },
-    "mutation_probe": "15/15 killed; original assertions/decorators preserved; scratch inputs equal final code commit",
-    "regression_0055": "PASS",
-    "reports_portfolio": "PASS",
-    "task_runs": "3 x 150 PASS, zero skip"
+    "environment_reproduction": "default auth setupERROR; recovered authPASS;11READY",
+    "full_suite": "RUNNING_NOT_QUALIFIED",
+    "previous_qualification": "Historical repair1 candidate remains unchanged; no new full PASS yet"
   },
   "unresolved_blockers": [
     {
@@ -425,12 +390,12 @@
       "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "updated_at": "2026-10-22T22:09:53.384912+00:00",
+  "updated_at": "2026-10-22T23:59:58.979516+00:00",
   "verification_queue": {
     "active_head_sha": "89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92",
-    "active_request_id": "OCOR-DEV-0056-89eb79d63495-1",
+    "active_request_id": null,
     "pending_request": null,
-    "status": "AWAITING_EXTERNAL_VERIFICATION",
+    "status": "ENVIRONMENT_DIAGNOSIS_IN_PROGRESS_NO_REQUEST",
     "suspended": [],
     "verifier": "cursor"
   },
@@ -442,5 +407,5 @@
     "review_type": "TASK_EVIDENCE",
     "status": "AWAITING_EXTERNAL_VERIFICATION"
   },
-  "worktree": ".ocor/worktrees/state-sync-0056-repair1-20261022"
+  "worktree": ".ocor/worktrees/state-sync-0056-env-recheck-20261023"
 }

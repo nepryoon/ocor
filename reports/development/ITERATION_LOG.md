@@ -6226,3 +6226,10 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - Inputs immutati; completed_evidence_tasks resta 70; nessun DEC. E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED e claim NO-GO invariati.
 
 - Gate locali dello state sync: Ruff pinned, mypy strict (80 file), verify14PASS, piano37PASS/2NOT_EXECUTED opzionali, RCCAD, language, scope, drift0 e checksum8/8 PASS. Prima invocazione Ruff NOT_EXECUTED per un percorso inesistente: conservata, corretta usando il path con digest del lock. Primo piano36PASS/1FAIL conservato in state-final-plan-first-failed.log (SHA256 62660875554260de8deacf5e82edfe1c57a192fb189db6fca976672734042e90); il dettaglio non fu acquisito prima del ripristino dei report e la causa non è dichiarata provata. Nuova esecuzione seriale:37PASS,0FAIL; report diagnostico completo conservato. Nessun test, validator o criterio modificato. CI obbligatoria sull'HEAD esatto richiesta prima del merge dello stato.
+
+
+## 2026-10-22T23:59:58.979516+00:00 — OCOR-DEV-0056: checkpoint della diagnosi ambientale e full in corso
+
+- Riprodotti -Xmx4G nel cgroup2GiB e SVID assente con setupERROR dello stesso test0048. Riapplicato profilo ci_resources già versionato e registrato SVID: stesso testPASS,11serviziREADY, nessuna modifica a codice/test/harness/lock/candidato. Nuova full in corso sullo stesso HEAD89eb79d63495, non ancora qualificata; repair_cycle resta1. Verdetto NO_GO precedente immutato, nessun conteggio trasferito.
+- Prossima azione: Riprendere la sorveglianza del processo locale env-recheck-20261023/run.py, sessione full sullHEAD0056 89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92. Non avviare altre suite. Log ~/.ocor-codex/ocor-dev-0056/env-recheck-20261023/full/post_remediation_runtime.log; tetto4500s e stopOOM/restart. Al termine verificare JUnit esatto, task150, check_final.py; teardown, state_sync.py, gate e PR solo3file di stato. Dopo CI13check verdi e merge: emit_request.py per env-recheck, loop_status e fine. Nessun verifier dallimplementatore.
+- E1/E2/Verified e claim invariati. Nessun verifier avviato.
