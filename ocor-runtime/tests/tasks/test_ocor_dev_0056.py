@@ -309,7 +309,7 @@ def test_a_missing_journal_and_failed_callback_leave_recovery_closed(tmp_path: P
 
 @pytest.mark.parametrize("field,value", [
     ("sequence", True), ("sequence", -1), ("deletion_epoch", True),
-    ("deletion_epoch", -1), ("head", "not-a-digest"),
+    ("deletion_epoch", -1), ("head", "not-a-digest"), ("deletion_epoch", 5),
 ])
 def test_malformed_checkpoints_are_not_authority(tmp_path: Path, field: str, value: object) -> None:
     path = tmp_path / "journal.jsonl"
@@ -384,6 +384,39 @@ def test_malformed_hash_chains_and_entries_never_open_restore(tmp_path: Path, at
         path.write_bytes(first_line + b"\n" + b"\n".join(lines[1:]) + b"\n")
     with pytest.raises(DeletionRecoveryError, match="JOURNAL_CORRUPTED"):
         DeletionJournalSnapshot.capture(path)
+
+
+def test_a_wrong_entry_digest_on_the_last_line_is_corruption(tmp_path: Path) -> None:
+    path = tmp_path / "journal.jsonl"
+    journal(path)
+    lines = path.read_bytes().splitlines()
+    last = parse_i_json(lines[-1])
+    last["entry_digest"] = "urn:sha256:" + "e" * 64  # no following prev pointer to catch it
+    path.write_bytes(b"\n".join([*lines[:-1], canonical_bytes(last)]) + b"\n")
+    with pytest.raises(DeletionRecoveryError, match="JOURNAL_CORRUPTED"):
+        DeletionJournalSnapshot.capture(path)
+
+
+def test_authority_changed_during_the_final_inventory_is_rechecked(tmp_path: Path) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+
+    class DeletionDuringInventory(Participant):
+        appended = False
+
+        def residue(self, tombstone: TombstoneEntry) -> tuple[str, ...]:
+            if tombstone.memory_item_id == "y" and not self.appended:
+                self.appended = True
+                JournalTombstoneStore(authority.path).append(entry("z", 3, TombstonePhase.STARTED))
+            return super().residue(tombstone)
+
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority,
+        participants=(participant, DeletionDuringInventory("native-projections")),
+    )
+    with pytest.raises(DeletionRecoveryError, match="CHECKPOINT_MISMATCH"):
+        gate.reconcile()
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: "stale")
 
 
 def test_a_purge_failure_is_not_overruled_by_an_empty_inventory(tmp_path: Path) -> None:
@@ -499,6 +532,39 @@ def test_replay_refuses_unbound_metadata_before_writing_anything(tmp_path: Path,
         replay.purge(replace(tombstone, **changes[attack]))
     assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 1
     assert replay.residue(tombstone)
+
+
+def test_replay_refuses_a_conflicting_restored_ledger_record_before_writing(tmp_path: Path) -> None:
+    replay, _, restored, tombstone = replay_world(tmp_path)
+    genuine = restored.ledger.get("x", 1)
+
+    class Diverged:
+        """A restored ledger record whose events differ from the authority's (same item)."""
+
+        def to_mapping(self) -> dict[str, object]:
+            return {**genuine.to_mapping(), "audit_ref": "urn:sha256:" + "9" * 64}
+
+    get = restored.ledger.get
+    restored.ledger.get = lambda item, version: Diverged() if (item, version) == ("x", 1) else get(item, version)
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_METADATA_CONFLICT"):
+        replay.purge(tombstone)
+    restored.ledger.get = get
+    assert restored.metadata.head("x") == restored.ledger.latest_version("x") == 1
+
+
+def test_restore_participants_refuse_a_binding_of_another_tenant(tmp_path: Path) -> None:
+    import test_ocor_dev_0052 as t52
+    import test_ocor_dev_0055 as t55
+
+    replay, _, restored, tombstone = replay_world(tmp_path)
+    replay.purge(tombstone)
+    participant = RestoredMemoryParticipant(
+        metadata=restored.metadata, participant=restored.participants()[0],
+        binding=t52.binding(t52.context(tenant="tenant-b", compartments=("alpha", "bravo"))),
+    )
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_BINDING_MISMATCH"):
+        participant.purge(tombstone)
+    assert t55.native_entries(restored, restored.ledger.get("x", 1)) == {"lexical": 1, "vector": 1}
 
 
 def test_metadata_replay_reports_a_lost_commit_and_resumes_it(tmp_path: Path) -> None:
