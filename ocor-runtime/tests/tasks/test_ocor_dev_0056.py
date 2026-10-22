@@ -1000,22 +1000,23 @@ class Drill:
     issuer: AttestedJournal
     items: dict[str, object]
 
-    def gate(self, *extra: object) -> DeletionRestoreGate:
+    def gate(self, *extra: object, audit=None) -> DeletionRestoreGate:  # type: ignore[no-untyped-def]
         _, t52, _, t55, _ = live_modules()
+        sink = self.restored.admission_audit if audit is None else audit
         authority_type, _ = authenticated_api()
-        authority = authority_type(audit=self.restored.admission_audit,
+        authority = authority_type(audit=sink,
             recovery_point_id=self.recovery_point, source=self.issuer, verifier=self.attestation,
         )
         checkpoint = DeletionJournalSnapshot.capture(self.authority_journal).checkpoint
-        replay = MemoryDeletionMetadataReplay(audit=self.restored.admission_audit, recovery_point_id=self.recovery_point, checkpoint=checkpoint,
+        replay = MemoryDeletionMetadataReplay(audit=sink, recovery_point_id=self.recovery_point, checkpoint=checkpoint,
             authoritative_metadata=self.source.metadata, authoritative_ledger=self.source.ledger,  # type: ignore[attr-defined]
             restored_metadata=self.restored.metadata, restored_ledger=self.restored.ledger,  # type: ignore[attr-defined]
         )
         adapters = [
-            RestoredMemoryParticipant(audit=self.restored.admission_audit, recovery_point_id=self.recovery_point, checkpoint=checkpoint, metadata=self.restored.metadata, participant=p, binding=t52.binding(t55.CALLER))  # type: ignore[attr-defined]
+            RestoredMemoryParticipant(audit=sink, recovery_point_id=self.recovery_point, checkpoint=checkpoint, metadata=self.restored.metadata, participant=p, binding=t52.binding(t55.CALLER))  # type: ignore[attr-defined]
             for p in [*self.restored.participants(), *extra]  # type: ignore[attr-defined]
         ]
-        return DeletionRestoreGate(audit=self.restored.admission_audit, recovery_point_id=self.recovery_point, journal=self.restored_journal, authority=authority, participants=[replay, *adapters])
+        return DeletionRestoreGate(audit=sink, recovery_point_id=self.recovery_point, journal=self.restored_journal, authority=authority, participants=[replay, *adapters])
 
     def deliver_journal(self) -> None:
         """The deletion authority ships its current journal to the restore site."""
@@ -1321,13 +1322,18 @@ def test_the_deletion_module_has_no_backend_client_or_canonical_authority() -> N
 # restored memory ledger. No payload or untrusted error text enters this port.
 class RecoveryAudit:
     def __init__(self) -> None:
-        self.events: list[dict[str, object]] = []
+        self.records: list[dict[str, object]] = []
         self.unavailable = False
 
     def record(self, event) -> None:  # type: ignore[no-untyped-def]
         if self.unavailable:
             raise ConnectionError("audit backend unavailable: classified diagnostic")
-        self.events.append(dict(event))
+        self.records.append(dict(event))
+
+    @property
+    def events(self) -> list[dict[str, object]]:
+        """Denials, kept distinct from access acknowledgements."""
+        return [e for e in self.records if e["outcome"] == "DENIED"]
 
 
 def test_restore_refusal_requires_an_acknowledged_denial_audit(tmp_path: Path) -> None:
@@ -1361,7 +1367,7 @@ def test_live_restore_refusal_is_durable_without_appending_a_memory_version(back
         gate.serve(d.refs)
     schema = d.restored.metadata.schema
     with psycopg.connect(backends.dsn) as conn:
-        rows = conn.execute(f'SELECT body FROM "{schema}".admission_denials ORDER BY seq').fetchall()
+        rows = conn.execute(f'SELECT body FROM "{schema}".admission_denials WHERE body->>\'outcome\'=\'DENIED\' ORDER BY seq').fetchall()
     assert len(rows) == 1, "restore denial returned without a durable audit event"
     assert rows[0][0]["reason_code"] == "RESTORE_NOT_RECONCILED"
     assert rows[0][0]["recovery_point_digest"] == canonical_digest(d.recovery_point)
@@ -1465,7 +1471,7 @@ def recovery_rows(backends, world):  # type: ignore[no-untyped-def]
     import psycopg
 
     with psycopg.connect(backends.dsn) as conn:
-        return [r[0] for r in conn.execute(f'SELECT body FROM "{world.metadata.schema}".admission_denials ORDER BY seq')]
+        return [r[0] for r in conn.execute(f'SELECT body FROM "{world.metadata.schema}".admission_denials WHERE body->>\'outcome\'=\'DENIED\' ORDER BY seq')]
 
 
 @pytest.mark.parametrize("boundary", ["authority", "gate", "metadata-purge", "metadata-residue", "participant-purge", "participant-residue"])
@@ -1588,3 +1594,48 @@ def test_live_reconciliation_failures_persist_the_denial_before_return(backends,
     healthy = d.gate()
     healthy.reconcile()
     assert not mentions(healthy.serve(d.refs), "x")
+
+
+@pytest.mark.parametrize("sink_state", ["unavailable", "missing"])
+def test_healthy_restore_cannot_issue_a_receipt_without_audit_authority(tmp_path: Path, sink_state: str) -> None:
+    _, authority, participant, restored = gate_world(tmp_path)
+    audit = RecoveryAudit()
+    audit.unavailable = True
+    gate = DeletionRestoreGate(
+        journal=restored, authority=authority, participants=(participant, Participant("native-projections")),
+        recovery_point_id=RECOVERY_POINT, audit=None if sink_state == "missing" else audit,
+    )
+    with pytest.raises(DeletionRecoveryError, match="AUDIT_UNAVAILABLE"):
+        gate.reconcile()
+    assert participant.calls == [], "audit availability must be acknowledged before mutating restored stores"
+    with pytest.raises(DeletionRecoveryError, match="AUDIT_UNAVAILABLE"):
+        gate.serve(lambda: pytest.fail("audit-unavailable restore served a hit"))
+
+
+def test_live_healthy_restore_fails_before_purge_if_audit_is_unavailable(backends, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    from psycopg.conninfo import make_conninfo
+
+    *_, denial = live_modules()
+    d = drill(backends, tmp_path)
+    d.source.delete("x", op="delete-before-readonly-restore")
+    d.deliver_journal()
+    sink = denial.SchemaPostgresAudit(backends.dsn, d.restored.metadata.schema)
+    sink.dsn = make_conninfo(backends.dsn, options="-c default_transaction_read_only=on")
+    gate = d.gate(audit=sink)
+    before = d.restored.ledger.latest_version("x")
+    with pytest.raises(DeletionRecoveryError, match="AUDIT_UNAVAILABLE"):
+        gate.reconcile()
+    assert d.restored.ledger.latest_version("x") == before
+    assert d.restored.metadata.head("x") == before
+    with pytest.raises(DeletionRecoveryError, match="AUDIT_UNAVAILABLE"):
+        gate.serve(lambda: pytest.fail("unavailable audit returned a hit"))
+    sink.dsn = backends.dsn
+    with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
+        gate.serve(lambda: pytest.fail("the failed audit opened a gate"))
+    gate.reconcile()
+    assert not mentions(gate.serve(d.refs), "x")
+    import psycopg
+
+    with psycopg.connect(backends.dsn) as conn:
+        outcomes = {r[0] for r in conn.execute(f'SELECT body->>\'outcome\' FROM "{d.restored.metadata.schema}".admission_denials')}
+    assert outcomes == {"ATTEMPTED", "DENIED"}

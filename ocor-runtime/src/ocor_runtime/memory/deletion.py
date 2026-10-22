@@ -59,7 +59,7 @@ class DeletionRecoveryError(RuntimeError):
 
 
 class DeletionRecoveryAuditSink(Protocol):
-    """Durable, protected denial authority, separate from restored memory versions.
+    """Durable, protected access/denial authority, separate from restored memory versions.
 
     Return only after a durable append, or raise. No volatile fallback is
     provided. The same record port as admission may be composed here, but its
@@ -97,32 +97,37 @@ class _RecoveryDenials:
         self.recovery_point_digest = canonical_digest(recovery_point_id)
         self.checkpoint = checkpoint
 
+    def _record(self, boundary: str, outcome: str, reason: str, tombstone: TombstoneEntry | None) -> None:
+        try:
+            event = {
+                "audit_version": "1.0",
+                "action": boundary,
+                "outcome": outcome,
+                "reason_code": reason,
+                "recovery_point_digest": self.recovery_point_digest,
+                # No authenticated checkpoint is known before authentication.
+                "checkpoint_digest": None if self.checkpoint is None else self.checkpoint.digest,
+                "tombstone_ref": None if tombstone is None else canonical_digest(tombstone.to_mapping()),
+                "at": format_utc_timestamp(datetime.now(UTC)),
+            }
+            if self.audit is None:
+                raise RuntimeError("recovery audit authority is not configured")
+            self.audit.record(MappingProxyType(event))
+        except Exception:  # noqa: BLE001 -- unavailable audit cannot acknowledge any operation
+            raise DeletionRecoveryError("AUDIT_UNAVAILABLE") from None
+
     @contextmanager
     def guard(self, boundary: str, tombstone: TombstoneEntry | None = None) -> Iterator[None]:
+        # An actual durable access append, never a health boolean or a fabricated
+        # denial. No purge, attestation request or response starts without it.
+        self._record(boundary.removesuffix(".denied") + ".attempted", "ATTEMPTED", "RECOVERY_ACCESS", tombstone)
         try:
             yield
         except Exception as error:  # noqa: BLE001 -- every operational refusal needs evidence
             if isinstance(error, DeletionRecoveryError) and error.reason_code == "AUDIT_UNAVAILABLE":
-                raise  # never disguise an unaudited refusal as an audited downstream error
-            try:
-                reason = error.reason_code if isinstance(error, DeletionRecoveryError) else "RECOVERY_UNAVAILABLE"
-                event = {
-                    "audit_version": "1.0",
-                    "action": boundary,
-                    "outcome": "DENIED",
-                    "reason_code": reason if reason in _RECOVERY_DENIAL_REASONS else "RECOVERY_REJECTED",
-                    "recovery_point_digest": self.recovery_point_digest,
-                    # None explicitly means no authenticated checkpoint is known.
-                    # Never parse an unverified claim just to enrich the audit.
-                    "checkpoint_digest": None if self.checkpoint is None else self.checkpoint.digest,
-                    "tombstone_ref": None if tombstone is None else canonical_digest(tombstone.to_mapping()),
-                    "at": format_utc_timestamp(datetime.now(UTC)),
-                }
-                if self.audit is None:
-                    raise RuntimeError("denial audit authority is not configured")
-                self.audit.record(MappingProxyType(event))
-            except Exception:  # noqa: BLE001 -- no successful receipt or response without audit
-                raise DeletionRecoveryError("AUDIT_UNAVAILABLE") from None
+                raise
+            reason = error.reason_code if isinstance(error, DeletionRecoveryError) else "RECOVERY_UNAVAILABLE"
+            self._record(boundary, "DENIED", reason if reason in _RECOVERY_DENIAL_REASONS else "RECOVERY_REJECTED", tombstone)
             raise
 
 
@@ -625,33 +630,35 @@ class DeletionRestoreGate:
             raise DeletionRecoveryError("DELETION_PARTICIPANT_MISSING")
 
     def reconcile(self) -> DeletionReconciliationReceipt:
-        with self._lock, self._denials.guard("deletionRestore.reconcile.denied"):
+        with self._lock:
             self._snapshot = None
-            snapshot = DeletionJournalSnapshot.read(self._journal, expected=self._checkpoint())
-            self._validate_participants(snapshot)
-            for entry in snapshot.obligations:
-                for participant in self._participants:
-                    try:
-                        participant.purge(entry)
-                    except DeletionRecoveryError:
-                        raise
-                    except Exception as exc:  # noqa: BLE001 -- failed purge cannot reopen restore
-                        raise DeletionRecoveryError("DELETION_INCOMPLETE") from exc
-            self._check(snapshot)
-            receipt = DeletionReconciliationReceipt(snapshot.checkpoint, len(snapshot.obligations))
-            self._snapshot = snapshot
-            return receipt
+            with self._denials.guard("deletionRestore.reconcile.denied"):
+                snapshot = DeletionJournalSnapshot.read(self._journal, expected=self._checkpoint())
+                self._validate_participants(snapshot)
+                for entry in snapshot.obligations:
+                    for participant in self._participants:
+                        try:
+                            participant.purge(entry)
+                        except DeletionRecoveryError:
+                            raise
+                        except Exception as exc:  # noqa: BLE001 -- failed purge cannot reopen restore
+                            raise DeletionRecoveryError("DELETION_INCOMPLETE") from exc
+                self._check(snapshot)
+                receipt = DeletionReconciliationReceipt(snapshot.checkpoint, len(snapshot.obligations))
+                self._snapshot = snapshot
+                return receipt
 
     def serve(self, action: Callable[[], T]) -> T:
-        with self._lock, self._denials.guard("deletionRestore.serve.denied"):
-            snapshot = self._snapshot
-            if snapshot is None:
-                raise DeletionRecoveryError("RESTORE_NOT_RECONCILED")
+        with self._lock:
             try:
-                self._check(snapshot)
-                response = action()
-                self._check(snapshot)
-                return response
+                with self._denials.guard("deletionRestore.serve.denied"):
+                    snapshot = self._snapshot
+                    if snapshot is None:
+                        raise DeletionRecoveryError("RESTORE_NOT_RECONCILED")
+                    self._check(snapshot)
+                    response = action()
+                    self._check(snapshot)
+                    return response
             except BaseException:
                 self._snapshot = None
                 raise
