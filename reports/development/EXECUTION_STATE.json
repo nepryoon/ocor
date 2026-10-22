@@ -1,23 +1,17 @@
 {
   "active_iteration": {
     "baseline_commit": "1bf0e9244e2e831c396813bf7bdea0999bba0623",
-    "branch": "governed/state-sync-ocor-dev-0056-candidate-20261022",
-    "campaign_background_processes_remaining": false,
+    "branch": "governed/state-sync-ocor-dev-0056-repair1-20261022",
+    "campaign_background_processes_remaining": true,
     "candidate_branch": "task/OCOR-DEV-0056-deletion-saga-restore-reconciliation",
-    "candidate_code_commit": "4936980ddb8cb027797eb73810301add2d1ae3ca",
-    "candidate_head_sha": "1734d8001bac8ee1375ce4182e273f10d4f11549",
+    "candidate_code_commit": "f367c4aa083969ca0086a431717853f7739ed71e",
+    "candidate_head_sha": "f367c4aa083969ca0086a431717853f7739ed71e",
     "candidate_pull_request": null,
     "candidate_worktree": ".ocor/worktrees/ocor-dev-0056",
     "duration_notification": {
       "duration_seconds": 3726.13,
       "effect": "non-blocking occurrence; 4500s limit unchanged",
       "id": "REM-0033-LOCAL-FULL-DURATION"
-    },
-    "evidence": {
-      "raw_sha256": "94ff607514ab4b3b1ad1800559214d502d1d6e03d33f5db0d9a23a0f70372b51",
-      "record": "reports/evidence/G5/OCOR-DEV-0056.json",
-      "record_sha256": "89a3ff9f25b24ef54e7410bf3689e6c95eac8fe2122d1869f7ed01afdf8640f1",
-      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION"
     },
     "interrupted_attempt": "Campaign on abda918 interrupted by the implementer at task-run-2 after the mutation probe found 6 survivors; not counted (diagnostic only).",
     "local_gate_results": [
@@ -247,30 +241,21 @@
       }
     ],
     "local_qualification": {
-      "full_suite": {
-        "candidate_head": "4936980ddb8cb027797eb73810301add2d1ae3ca",
-        "duration_seconds": 3726.13,
-        "errors": 0,
-        "failures": 0,
-        "skipped": 0,
-        "status": "PASS",
-        "tests": 2589
-      },
-      "mutation_probe": "23 mutants, 22 killed, 1 documented equivalent",
-      "observations": [
-        "backlog command 'uv run pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0056.py' run verbatim from the repository root: uv selected the root pyproject.toml (no runtime/test dependencies), created an untracked root .venv and uv.lock (moved out of the worktree) and failed to spawn pytest before any test ran. Not a test result; the same command scoped to the runtime project (--project ocor-runtime -",
-        "first reports/tests portfolio run in the fresh worktree before 'npm ci' and the build of ocor-runtime/sdk/typescript: test_generated_contracts_compile_under_tsc_strict failed with TS2688 (no @types/node) and the TEST-INFRA-004 benchmark smoke was skipped (no compiled SDK oracle). Environment preparation, not a product result; the qualifying run is reports-portfolio-sdk after sdk-ci and sdk-build, ",
-        "governed full suite PASS in 3726.13s, above the 3600s PO notification threshold and below the unchanged 4500s limit; recorded as an occurrence for the open decision request REM-0033-LOCAL-FULL-DURATION (non-blocking, no limit, test or timeout changed)."
-      ],
-      "regression_0055": "PASS",
-      "reports_portfolio": "294 PASS after sdk npm ci/build",
-      "reproducible_check": "PASS",
-      "task_runs": "3x 107 PASS live, validation command (--project ocor-runtime) 107 PASS",
-      "validate_runtime_evidence_non_skipped": "PASS"
+      "full_suite": "NOT_EXECUTED_ON_FINAL_COMMIT",
+      "mutation": "12/12 killed on source/test equal final commit; provenance capture pending",
+      "status": "IN_PROGRESS_NOT_QUALIFIED",
+      "unit": "120 PASS non-live"
     },
-    "next_action": "Attendere la verifica del solo loop esterno OCOR-DEV-0056-1734d8001bac-0 sull'HEAD esatto 1734d8001bac8ee1375ce4182e273f10d4f11549 del branch task/OCOR-DEV-0056-deletion-saga-restore-reconciliation (codice 4936980ddb8cb027797eb73810301add2d1ae3ca). Implementatori Codex (OpenAI) e Claude Code (Anthropic); verifier Cursor/Grok (xAI) oppure Antigravity/Gemini (Google); l'implementatore non avvia il verifier. Con GO: sigillare soltanto OCOR-DEV-0056.json e i digest nel manifest G5, aprire la PR del task, 13 check obbligatori per nome completed/success sull'HEAD esatto (max 90 min, poll 60 s, stop al primo rosso), merge --match-head-commit, poi state sync con completed_evidence_tasks 71. Con NO_GO: budget ordinario di due cicli di riparazione, senza indebolimenti. Poi 0057 -> 0058 -> 0059 -> REM-0030; nessun G6 finch\u00e9 le remediation obbligatorie restano aperte. Inputs, sigilli storici, E1/E2/Verified e claim invariati.",
-    "phase": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
-    "repair_cycle": 0,
+    "next_action": "Concludere la pipeline diagnostica r1q senza conteggiarla: HEAD mutato per chiudere il RED del reason code maiuscolo, nessuna full valida su quel commit. Poi eseguire ~/.ocor-codex/ocor-dev-0056/r1final/run.py all sul commit f367c4aa083969ca0086a431717853f7739ed71e; tetti task45/full75min, stop OOM/restart, quindi gate, evidenza e nuova richiesta esterna repair_cycle1. Non avviare il verifier.",
+    "phase": "REPAIR1_LOCAL_QUALIFICATION_IN_PROGRESS",
+    "previous_external_verdict": {
+      "blocking_findings": [
+        "VF-001"
+      ],
+      "request_id": "OCOR-DEV-0056-1734d8001bac-0",
+      "verdict": "NO_GO"
+    },
+    "repair_cycle": 1,
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
       "implementers": [
@@ -301,7 +286,7 @@
       },
       "verifier_started_by_implementer": false
     },
-    "session_directory": "/home/luca/.ocor-codex/ocor-dev-0056/q2",
+    "session_directory": "/home/luca/.ocor-codex/ocor-dev-0056/r1final",
     "session_teardown": {
       "owned_resources_remaining": {
         "containers": [],
@@ -2039,7 +2024,7 @@
       }
     }
   },
-  "baseline_commit": "1bf0e9244e2e831c396813bf7bdea0999bba0623",
+  "baseline_commit": "eabf15fa9f11d2ce2da94846c69f921e72e72dbf",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -8010,7 +7995,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "OCOR_DEV_0056_CANDIDATE_AWAITING_VERIFICATION",
-  "next_executable_action": "Attendere la verifica del solo loop esterno OCOR-DEV-0056-1734d8001bac-0 sull'HEAD esatto 1734d8001bac8ee1375ce4182e273f10d4f11549 del branch task/OCOR-DEV-0056-deletion-saga-restore-reconciliation (codice 4936980ddb8cb027797eb73810301add2d1ae3ca). Implementatori Codex (OpenAI) e Claude Code (Anthropic); verifier Cursor/Grok (xAI) oppure Antigravity/Gemini (Google); l'implementatore non avvia il verifier. Con GO: sigillare soltanto OCOR-DEV-0056.json e i digest nel manifest G5, aprire la PR del task, 13 check obbligatori per nome completed/success sull'HEAD esatto (max 90 min, poll 60 s, stop al primo rosso), merge --match-head-commit, poi state sync con completed_evidence_tasks 71. Con NO_GO: budget ordinario di due cicli di riparazione, senza indebolimenti. Poi 0057 -> 0058 -> 0059 -> REM-0030; nessun G6 finch\u00e9 le remediation obbligatorie restano aperte. Inputs, sigilli storici, E1/E2/Verified e claim invariati.",
+  "next_executable_action": "Concludere la pipeline diagnostica r1q senza conteggiarla: HEAD mutato per chiudere il RED del reason code maiuscolo, nessuna full valida su quel commit. Poi eseguire ~/.ocor-codex/ocor-dev-0056/r1final/run.py all sul commit f367c4aa083969ca0086a431717853f7739ed71e; tetti task45/full75min, stop OOM/restart, quindi gate, evidenza e nuova richiesta esterna repair_cycle1. Non avviare il verifier.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -23891,12 +23876,12 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-22T18:26:10.033205+00:00",
+  "updated_at": "2026-10-22T20:32:37.112173+00:00",
   "verification_queue": {
-    "active_head_sha": "1734d8001bac8ee1375ce4182e273f10d4f11549",
-    "active_request_id": "OCOR-DEV-0056-1734d8001bac-0",
+    "active_head_sha": null,
+    "active_request_id": null,
     "pending_request": null,
-    "status": "AWAITING_EXTERNAL_VERIFICATION",
+    "status": "IMPLEMENTER_REPAIR1_IN_PROGRESS",
     "suspended": [],
     "verifier": "cursor"
   }
