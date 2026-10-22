@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -185,7 +186,7 @@ def teardown_command(repository: Path, env_file: Path | None = None) -> list[str
     return command
 
 
-def owned_resources(repository: Path, previous: dict[str, list[dict[str, str]]] | None = None) -> dict[str, list[dict[str, str]]]:
+def owned_resources(repository: Path, previous: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, list[dict[str, Any]]]:
     """Read inventory independently of Compose, validating ownership before mutation.
 
     Names alone never authorise removal. A reserved project name without the
@@ -194,7 +195,8 @@ def owned_resources(repository: Path, previous: dict[str, list[dict[str, str]]] 
     Only candidate resources are inspected; only Compose performs deletion.
     """
     deadline = time.monotonic() + INVENTORY_TIMEOUT
-    inventory: dict[str, list[dict[str, str]]] = {}
+    inventory: dict[str, list[dict[str, Any]]] = {}
+    mounted_volumes: dict[str, set[str]] = {}
 
     def query(command: list[str]) -> str:
         remaining = deadline - time.monotonic()
@@ -212,6 +214,7 @@ def owned_resources(repository: Path, previous: dict[str, list[dict[str, str]]] 
         if kind in {"container", "network"}:
             command.append("--no-trunc")
         prior_ids = {item["id"] for item in (previous or {}).get(key, [])}
+        prior_mounts = {item["id"]: item.get("anonymous_mount_owner_ids", []) for item in (previous or {}).get(key, [])}
         inventory[key] = []
         for line in query(command).splitlines():
             item = json.loads(line)
@@ -224,7 +227,7 @@ def owned_resources(repository: Path, previous: dict[str, list[dict[str, str]]] 
                 raise ResetError("incomplete owned-resource inventory")
             reserved_name = name.startswith((PROJECT + "_", PROJECT + "-")) or name == PROJECT
             labelled = f"{PROJECT_LABEL}={PROJECT}" in labels.split(",")
-            if not (reserved_name or labelled or identity in prior_ids):
+            if not (reserved_name or labelled or identity in prior_ids or (kind == "volume" and identity in mounted_volumes)):
                 continue
             inspected = json.loads(query(["docker", kind, "inspect", identity]))
             if not isinstance(inspected, list) or len(inspected) != 1 or not isinstance(inspected[0], dict):
@@ -233,12 +236,32 @@ def owned_resources(repository: Path, previous: dict[str, list[dict[str, str]]] 
             actual_labels = detail.get("Config", {}).get("Labels") if kind == "container" else detail.get("Labels")
             actual_name = detail.get("Name")
             actual_id = actual_name if kind == "volume" else detail.get("Id")
-            if (not isinstance(actual_labels, dict) or actual_labels.get(PROJECT_LABEL) != PROJECT
-                    or actual_id != identity or not isinstance(actual_name, str)
+            if (actual_id != identity or not isinstance(actual_name, str)
                     or actual_name.removeprefix("/") != name):
                 raise ResetError("ambiguous owned-resource identity or ownership")
-            inventory[key].append({"id": identity, "name": name})
+            mount_owners = sorted(mounted_volumes.get(identity, set()) | set(prior_mounts.get(identity, []))) if kind == "volume" else []
+            anonymous = (bool(mount_owners) and re.fullmatch(r"[a-f0-9]{64}", identity) is not None
+                         and isinstance(actual_labels, dict) and PROJECT_LABEL not in actual_labels
+                         and actual_labels.get("com.docker.volume.anonymous") == "")
+            if not isinstance(actual_labels, dict) or (actual_labels.get(PROJECT_LABEL) != PROJECT and not anonymous):
+                raise ResetError("ambiguous owned-resource identity or ownership")
+            resource: dict[str, Any] = {"id": identity, "name": name}
+            if anonymous:
+                resource["anonymous_mount_owner_ids"] = mount_owners
+            inventory[key].append(resource)
+            if kind == "container":
+                mounts = detail.get("Mounts", [])
+                if not isinstance(mounts, list) or any(not isinstance(mount, dict) for mount in mounts):
+                    raise ResetError("malformed owned-container mounts")
+                for mount in mounts:
+                    if mount.get("Type") == "volume":
+                        volume_name = mount.get("Name")
+                        if not isinstance(volume_name, str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*", volume_name):
+                            raise ResetError("invalid owned-container volume binding")
+                        mounted_volumes.setdefault(volume_name, set()).add(identity)
         inventory[key].sort(key=lambda resource: resource["id"])
+    if set(mounted_volumes) - {item["id"] for item in inventory["volumes"]}:
+        raise ResetError("owned-container volume missing from inventory")
     return inventory
 
 

@@ -13,7 +13,11 @@ handling locali. `qualify_rem0029_teardown.py --execute --output-dir <directory>
 richiede uno stack ocor-bootstrap esclusivo e inizializzato: mantiene la rete
 reale occupata con un holder temporaneo digest-pinned, prova UUID e residuo,
 verifica il rifiuto dello script con Compose zero, poi ripulisce nel finally e
-prova il teardown vuoto. Non eseguirlo insieme ad altre campagne.
+prova il teardown vuoto. Una seconda prova usa Docker reale e una rimozione
+concorrente simulata nello scheduling: il container etichettato viene rimosso
+senza `-v` prima del vero Compose down. Il volume anonimo deve restare tracciato
+con label Docker e UUID del container, e il boundary deve rifiutare. Nessun
+risultato Docker è fabbricato; il cleanup rimuove solo gli oggetti della prova. Non eseguirlo insieme ad altre campagne.
 
 Il controllo legge l'inventario Docker indipendentemente da Compose, verifica
 label e identità prima della mutazione e ricontrolla dopo. Solo Compose cancella

@@ -178,3 +178,57 @@ def test_inspected_uuid_substitution_blocks_before_down(monkeypatch, capsys):
         return result
     code, data = invoke(monkeypatch, capsys, call, '--execute')
     assert code != 0 and data['status'] == 'FAIL' and not fake.down
+
+
+class AnonymousVolumeDocker:
+    def __init__(self, *, residue, labels=None):
+        self.down = False
+        self.residue = residue
+        self.labels = {'com.docker.volume.anonymous': ''} if labels is None else labels
+        self.volume = 'd' * 64
+        self.commands = []
+
+    def __call__(self, command, **kwargs):
+        self.commands.append(command)
+        kind = command[1]
+        if kind == 'compose':
+            self.down = True
+            return subprocess.CompletedProcess(command, 0, '', '')
+        if kind == 'container':
+            if 'ls' in command:
+                data = '' if self.down else json.dumps({'ID':IDENTITY,'Names':PROJECT+'-fixture-1','Labels':LABEL+'='+PROJECT})+'\n'
+            else:
+                data = json.dumps([{'Id':IDENTITY,'Name':'/'+PROJECT+'-fixture-1','Config':{'Labels':{LABEL:PROJECT}},
+                                    'Mounts':[{'Type':'volume','Name':self.volume}]}])
+        elif kind == 'volume':
+            if 'ls' in command:
+                data = json.dumps({'Name':self.volume,'Labels':','.join(k+'='+v for k,v in self.labels.items())})+'\n' if not self.down or self.residue else ''
+            else:
+                data = json.dumps([{'Name':self.volume,'Labels':self.labels}])
+        else:
+            assert kind == 'network' and 'ls' in command
+            data = ''
+        return subprocess.CompletedProcess(command, 0, data, '')
+
+
+def test_anonymous_mount_residue_cannot_escape_after_container_removed(monkeypatch, capsys):
+    fake = AnonymousVolumeDocker(residue=True)
+    code, data = invoke(monkeypatch, capsys, fake, '--execute')
+    assert code != 0, 'anonymous mounted volume must remain tracked after Compose removes its container'
+    assert data['status'] == 'FAIL' and data['compose_exit_code'] == 0
+    assert data['owned_resources_remaining']['volumes'] == [
+        {'id':fake.volume,'name':fake.volume,'anonymous_mount_owner_ids':[IDENTITY]}]
+
+
+def test_anonymous_mount_removed_by_compose_is_pass(monkeypatch, capsys):
+    fake = AnonymousVolumeDocker(residue=False)
+    code, data = invoke(monkeypatch, capsys, fake, '--execute')
+    assert code == 0 and data['status'] == 'PASS'
+    assert not any(data['owned_resources_remaining'].values())
+
+
+@pytest.mark.parametrize('labels', [{}, {LABEL:'other-project'}, {'com.docker.volume.anonymous':'unexpected'}])
+def test_unproved_volume_binding_blocks_before_mutation(monkeypatch, capsys, labels):
+    fake = AnonymousVolumeDocker(residue=True, labels=labels)
+    code, data = invoke(monkeypatch, capsys, fake, '--execute')
+    assert code != 0 and data['status'] == 'FAIL' and not fake.down
