@@ -1445,19 +1445,20 @@ def test_audit_failure_invalidates_an_open_gate_and_never_reuses_a_receipt(tmp_p
     assert gate.serve(lambda: "new reconciliation") == "new reconciliation"
 
 
-def test_denial_events_do_not_copy_untrusted_reason_or_error_text(tmp_path: Path) -> None:
+@pytest.mark.parametrize("reason", ["classified arbitrary content", "CLASSIFIED_CONTENT"])
+def test_denial_events_do_not_copy_untrusted_reason_or_error_text(tmp_path: Path, reason: str) -> None:
     _, authority, participant, restored = gate_world(tmp_path)
     audit = RecoveryAudit()
     gate = DeletionRestoreGate(recovery_point_id=RECOVERY_POINT, journal=restored, authority=authority, participants=(participant, Participant("native-projections")), audit=audit)
     gate.reconcile()
 
     def callback() -> None:
-        raise DeletionRecoveryError("classified arbitrary content")
+        raise DeletionRecoveryError(reason)
 
     with pytest.raises(DeletionRecoveryError):
         gate.serve(callback)
     assert audit.events[-1]["reason_code"] == "RECOVERY_REJECTED"
-    assert "classified" not in canonical_bytes(audit.events[-1]).decode()
+    assert "classified" not in canonical_bytes(audit.events[-1]).decode().lower()
 
 
 def recovery_rows(backends, world):  # type: ignore[no-untyped-def]

@@ -69,6 +69,20 @@ class DeletionRecoveryAuditSink(Protocol):
     def record(self, event: Mapping[str, object]) -> None: ...
 
 
+# A port exception is not an authority for the audit schema. Even uppercase
+# arbitrary text must never become a reason code or leak payload into evidence.
+_RECOVERY_DENIAL_REASONS = frozenset({
+    "CHECKPOINT_INVALID", "JOURNAL_UNAVAILABLE", "JOURNAL_CORRUPTED",
+    "CHECKPOINT_MISMATCH", "CHECKPOINT_UNAUTHENTICATED",
+    "DELETION_AUTHORITY_UNAVAILABLE", "RECOVERY_POINT_MISMATCH",
+    "RESTORE_METADATA_CONFLICT", "DELETION_SOURCE_INCOMPLETE",
+    "DELETION_SOURCE_MISMATCH", "RESTORE_BINDING_MISMATCH",
+    "DELETION_INVENTORY_UNAVAILABLE", "DELETION_INCOMPLETE",
+    "DELETION_PARTICIPANT_MISSING", "RESTORE_NOT_RECONCILED",
+    "RECOVERY_UNAVAILABLE",
+})
+
+
 class _RecoveryDenials:
     def __init__(
         self, audit: DeletionRecoveryAuditSink | None, recovery_point_id: str,
@@ -96,7 +110,7 @@ class _RecoveryDenials:
                     "audit_version": "1.0",
                     "action": boundary,
                     "outcome": "DENIED",
-                    "reason_code": reason if re.fullmatch(r"[A-Z][A-Z0-9_]{0,95}", reason) else "RECOVERY_REJECTED",
+                    "reason_code": reason if reason in _RECOVERY_DENIAL_REASONS else "RECOVERY_REJECTED",
                     "recovery_point_digest": self.recovery_point_digest,
                     # None explicitly means no authenticated checkpoint is known.
                     # Never parse an unverified claim just to enrich the audit.
