@@ -1,8 +1,8 @@
 # OCOR Planning Validation Report
 
-Validation commit/base: `efec39d0ef5ec15b7f66bd0e9d730ccf30fd7226`. Mechanical result: **PASS**.
+Validation commit/base: `origin/main`. Mechanical result: **FAIL**.
 
-Checks: 37 PASS, 0 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never counted as PASS.
+Checks: 36 PASS, 1 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never counted as PASS.
 
 ## Mechanical checks
 
@@ -46,7 +46,7 @@ Checks: 37 PASS, 0 FAIL, 2 NOT_EXECUTED. Optional unavailable tools are never co
 | immutable evidence claims | `PASS` | [] |
 | artifact hashes | `PASS` | [] |
 | inputs immutability | `PASS` | "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35" |
-| authorized planning-only diff | `PASS` | [] |
+| authorized planning-only diff | `FAIL` | ["ocor-runtime/src/ocor_runtime/memory/model.py", "ocor-runtime/tests/tasks/test_ocor_dev_0050.py"] |
 
 ## Independent adversarial review
 

@@ -24,7 +24,9 @@ Implements the ``MemoryAdmissionPort`` slice of the ``GovernedMemoryService``
   ``n - 1`` of the same item, may never reuse an occupied version slot with
   different bytes, and inherits (never sheds) the taint of every lineage source.
 
-Every rejection happens before the ledger is called.  Persistence goes through
+Every refusal is synchronously recorded through the denial audit authority;
+audit failure refuses closed without a success receipt. Rejected candidates
+never append an admitted version. Persistence goes through
 the ``MemoryVersionLedger`` port; this module ships an in-process reference
 ledger and a hash-chained, append-only journal ledger that survives process
 restarts (cross-run persistence) without any backend client, so the module
@@ -1186,6 +1188,18 @@ def _envelope_string(name: str, value: object) -> str:
     return value
 
 
+class MemoryAdmissionAuditSink(Protocol):
+    """Denial-only slice of MemoryAuditPort, version 1.
+
+    ``record`` acknowledges a durable append in the protected audit authority,
+    or raises. It must not append a memory version. Success audit remains part
+    of the existing atomic admitted-version record.
+    """
+
+    def record(self, event: Mapping[str, object]) -> None:
+        """Append one safe denial event, or fail closed."""
+
+
 class MemoryAdmissionService:
     """``MemoryAdmissionPort.admitMemory``: fail-closed, persistence-last admission."""
 
@@ -1198,6 +1212,7 @@ class MemoryAdmissionService:
         markings: MarkingDominance,
         clock: TrustedClock,
         limits: AdmissionLimits,
+        audit: MemoryAdmissionAuditSink | None = None,
     ) -> None:
         self._ledger = ledger
         self._resolver = resolver
@@ -1205,6 +1220,7 @@ class MemoryAdmissionService:
         self._markings = markings
         self._clock = clock
         self._limits = limits
+        self._audit = audit
 
     def admit(
         self,
@@ -1213,21 +1229,71 @@ class MemoryAdmissionService:
         binding: VerifiedGovernedContextBinding | None,
         payload: bytes,
     ) -> MemoryReceipt:
-        """Admit one candidate version, or raise before anything is persisted."""
+        """Admit a version, or audit its refusal without appending a version.
 
-        if not isinstance(binding, VerifiedGovernedContextBinding):
-            raise MemoryAdmissionError(
-                "AUTHENTICATION_REQUIRED",
-                "BINDING_MISSING",
-                "admission requires an authenticated governed-context binding",
-            )
-        correlation_id = binding.expected.correlation_id
+        Older callers can still perform successful atomic admissions without
+        the new denial port. A refusal without that port is explicitly
+        AUDIT_UNAVAILABLE, never an acknowledged audited refusal.
+        """
+
+        trusted = binding if isinstance(binding, VerifiedGovernedContextBinding) else None
+        correlation_id = None if trusted is None else trusted.expected.correlation_id
         try:
-            return self._admit(request, binding, payload)
+            if trusted is None:
+                raise MemoryAdmissionError(
+                    "AUTHENTICATION_REQUIRED",
+                    "BINDING_MISSING",
+                    "admission requires an authenticated governed-context binding",
+                )
+            return self._admit(request, trusted, payload)
         except MemoryAdmissionError as exc:
-            if exc.correlation_id is None:
-                exc.correlation_id = correlation_id
+            # Error metadata from a downstream port cannot replace the binding.
+            exc.correlation_id = correlation_id
+            self._record_denial(request, trusted, exc)
             raise
+        except Exception as exc:  # noqa: BLE001 -- unexpected port failures refuse closed
+            error = MemoryAdmissionError(
+                "INTERNAL_ERROR", "ADMISSION_UNAVAILABLE",
+                "admission failed closed", correlation_id=correlation_id,
+            )
+            self._record_denial(request, trusted, error)
+            raise error from exc
+
+    def _record_denial(
+        self,
+        request: Mapping[str, object],
+        binding: VerifiedGovernedContextBinding | None,
+        error: MemoryAdmissionError,
+    ) -> None:
+        try:
+            operation = request.get("operation_id") if isinstance(request, Mapping) else None
+            # No candidate, payload, arbitrary error message or caller-supplied
+            # GCS enters audit. Even operation IDs can contain prohibited text.
+            event: dict[str, object] = {
+                "audit_version": "1.0",
+                "action": "admitMemory.denied",
+                "outcome": "DENIED",
+                "reason_code": error.reason_code,
+                "detail_code": error.detail_code
+                if re.fullmatch(r"[A-Z][A-Z0-9_]{0,95}", error.detail_code) else "ADMISSION_REJECTED",
+                "operation_id_digest": "urn:sha256:" + hashlib.sha256(
+                    operation.encode("utf-8", errors="surrogatepass")
+                ).hexdigest()
+                if isinstance(operation, str) else None,
+                "governed_context_digest": None if binding is None else binding.expected.digest(),
+                "binding_ref": None if binding is None else binding.binding_ref,
+                "correlation_id": error.correlation_id,
+                "at": format_utc_timestamp(self._clock.now()),
+            }
+            if self._audit is None:
+                raise RuntimeError("denial audit authority is not configured")
+            self._audit.record(MappingProxyType(event))
+        except Exception as exc:  # noqa: BLE001 -- no unaudited refusal acknowledgement
+            raise MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE", "AUDIT_UNAVAILABLE",
+                "admission denial could not be audited",
+                correlation_id=error.correlation_id,
+            ) from exc
 
     def _admit(
         self,

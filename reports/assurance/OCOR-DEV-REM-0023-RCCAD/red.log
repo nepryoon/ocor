@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_denial_is_durable_without_any_version_append _______________
+
+live = (World(service=<ocor_runtime.memory.model.MemoryAdmissionService object at 0x7ab2f59557f0>, ledger=<ocor_runtime.memor...t object at 0x7ab2f44e4650>, PosixPath('/tmp/pytest-of-luca/pytest-65/test_denial_is_durable_without0/versions.jsonl'))
+
+    def test_denial_is_durable_without_any_version_append(live: Any) -> None:
+        world, audit, path = live
+        before = path.read_bytes()
+        with pytest.raises(MemoryAdmissionError) as caught:
+            world.admit(base.candidate(memory_kind="LONG_TERM"))
+        assert caught.value.reason_code == "MEMORY_SCHEMA_INVALID"
+        assert path.read_bytes() == before
+        assert JournalMemoryVersionLedger(path).get("mem-1", 1) is None
+        events = audit.events()
+>       assert len(events) == 1, "admitMemory denial missing from the durable audit authority"
+E       AssertionError: admitMemory denial missing from the durable audit authority
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py:66: AssertionError
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py::test_denial_is_durable_without_any_version_append
+1 failed in 0.27s

@@ -32,7 +32,7 @@ import textwrap
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -307,6 +307,16 @@ def provenance_record(provenance_id: str = "prov-1", **overrides: Any) -> Proven
 
 
 @dataclass
+class FixtureAdmissionAudit:
+    """Reference audit port; real durable authority is qualified by REM-0023."""
+
+    events: list[dict[str, object]] = field(default_factory=list)
+
+    def record(self, event: Mapping[str, object]) -> None:
+        self.events.append(dict(event))
+
+
+@dataclass
 class World:
     service: MemoryAdmissionService
     ledger: Any
@@ -314,6 +324,7 @@ class World:
     policy: FixturePolicy
     clock: InMemoryTrustedClock
     binding: VerifiedGovernedContextBinding
+    audit: FixtureAdmissionAudit
 
     def admit(self, cand: dict[str, Any], *, payload: bytes = PAYLOAD, operation_id: str = "op-1", **env: Any) -> Any:
         return self.service.admit(envelope(cand, operation_id=operation_id, **env), binding=self.binding, payload=payload)
@@ -340,12 +351,14 @@ def make_world(ledger: Any | None = None) -> World:
     policy = FixturePolicy()
     clock = InMemoryTrustedClock(NOW)
     ledger = ledger if ledger is not None else CountingLedger()
+    audit = FixtureAdmissionAudit()
     service = MemoryAdmissionService(
         ledger=ledger,
         resolver=resolver,
         policy=policy,
         markings=markings(),
         clock=clock,
+        audit=audit,
         limits=AdmissionLimits(
             retention_horizons={
                 "retention:standard": timedelta(days=365),
@@ -354,7 +367,7 @@ def make_world(ledger: Any | None = None) -> World:
         ),
     )
     binding = VerifiedGovernedContextBinding(binding_ref="binding:keycloak-session-1", expected=GCS)
-    return World(service, ledger, resolver, policy, clock, binding)
+    return World(service, ledger, resolver, policy, clock, binding, audit)
 
 
 @pytest.fixture
@@ -367,6 +380,7 @@ def assert_rejected_before_persistence(
 ) -> MemoryAdmissionError:
     before_calls = w.ledger.append_calls
     before = w.ledger.records()
+    before_audit = len(w.audit.events)
     with pytest.raises(MemoryAdmissionError) as caught:
         action()
     assert caught.value.reason_code == reason_code, caught.value
@@ -374,6 +388,12 @@ def assert_rejected_before_persistence(
         assert caught.value.detail_code == detail_code, caught.value
     assert w.ledger.append_calls == before_calls, "a rejected candidate reached persistence"
     assert w.ledger.records() == before
+    assert len(w.audit.events) == before_audit + 1
+    event = w.audit.events[-1]
+    assert event["outcome"] == "DENIED"
+    assert event["reason_code"] == caught.value.reason_code
+    assert event["detail_code"] == caught.value.detail_code
+    assert event["correlation_id"] == caught.value.correlation_id
     return caught.value
 
 
@@ -997,6 +1017,7 @@ def test_same_idempotency_key_revalidates_the_current_content_registry(journal: 
         markings=markings(),
         clock=later.clock,
         limits=AdmissionLimits(retention_horizons={}, content_schemas=frozenset()),
+        audit=later.audit,
     )
     with pytest.raises(MemoryAdmissionError) as caught:
         service.admit(envelope(candidate()), binding=later.binding, payload=PAYLOAD)
