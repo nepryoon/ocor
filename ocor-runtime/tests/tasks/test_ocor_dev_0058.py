@@ -261,6 +261,42 @@ def test_c6_consumer_requires_separate_control_authority_approval_decision_and_c
     assert not {"issue", "grant", "approve", "decide", "install_policy"} & set(dir(C6MemoryPromotionConsumer))
 
 
+@pytest.mark.parametrize("invalid_binding", [None, object(), {"expected": "caller-asserted"}],
+                         ids=["missing", "unverified-object", "caller-mapping"])
+@pytest.mark.parametrize("audit_available", [True, False], ids=["audit-ready", "audit-unavailable"])
+def test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access(
+    invalid_binding: Any, audit_available: bool,
+) -> None:
+    w, audit, _, s = unit()
+
+    class Unreachable:
+        def __getattr__(self, name: str) -> Any:
+            raise AssertionError("unauthenticated request reached " + name)
+
+    boundary: Any = Unreachable()
+    consumer = C6MemoryPromotionConsumer(
+        proposals=s, controls=boundary, verifier=boundary, human_gate=boundary,
+        policy=boundary, c3=boundary, clock=w.clock, audit=audit,
+        commit_capability="canonical.commit",
+    )
+    audit.fail = not audit_available
+    before = w.ledger.records()
+    error = refused(lambda: consumer.commit(r.d("proposal"), binding=invalid_binding),
+                    "BINDING_MISSING" if audit_available else "AUDIT_UNAVAILABLE")
+    assert error.reason_code == ("AUTHENTICATION_REQUIRED" if audit_available else "CONTROL_PLANE_UNAVAILABLE")
+    assert w.ledger.records() == before
+    if audit_available:
+        assert audit.actions() == ["commitMemoryPromotion.denied"]
+        event = audit.events[0]
+        assert event["reason_code"] == "AUTHENTICATION_REQUIRED"
+        assert event["detail_code"] == "BINDING_MISSING"
+        assert event["proposal_audit_ref"] == r.d("proposal")
+        assert event["correlation_id"] is None
+        assert event["governed_context_digest"] is None
+    else:
+        assert audit.events == []
+
+
 # C6 integration fixtures: no caller-supplied controls. The independent issuer
 # writes signed gates in its own PostgreSQL table. OpenBao verifies ed25519;
 # OPA really evaluates every canonical-commit policy decision.
