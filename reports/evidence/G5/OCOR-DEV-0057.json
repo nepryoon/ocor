@@ -663,6 +663,135 @@
     "uv": "0.12.5",
     "worktree": ".ocor/worktrees/ocor-dev-0057"
   },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "ff49e04ea316d5a19de1c42b96a1dd92b8d04f58",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_tree_after": "fdf753c4b38ebffeef0decb4a52a6a510e861584",
+      "execution_tree_before": "fdf753c4b38ebffeef0decb4a52a6a510e861584",
+      "main_head": "a0d664c5933831f60c082e6c5d08eaa053826da5",
+      "qualified_head": "ee7628a3ae92725780269689db358fe08d7dd7ef",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "636c410abac708fc9519bfbb103e772621408b590cec65c2b5bde5f871e29336",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS && git rev-parse HEAD && git diff --name-status e6d80fe37f6d4ffdd8c71bc51e4a5ede2515b432..ee7628a3ae92725780269689db358fe08d7dd7ef",
+        "exit_code": 0,
+        "summary": "HEAD ee7628a3ae92725780269689db358fe08d7dd7ef. SHA256SUMS 8/8 OK. inputs tree 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35, uguale al record. Diff limitato a context.py, test_ocor_dev_0057.py e ai tre output G5. Le voci preesistenti di MANIFEST.json sono invariate."
+      },
+      {
+        "command": "sha256sum environment.json && python scripts/preflight_environment.py --require-ready && hash toolchain/qualification locks",
+        "exit_code": 0,
+        "summary": "environment.json sha256 74e845a8d8b69b1e91147e97859e200325e24f5f4785ba4528bce982825f6a86. Preflight PASS. docker, git, gh, node, python, ruff, tsc, uv, helm, kind e kubectl coincidono con i lock."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute && python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Stack assente all'avvio (ALREADY_REMOVED), poi provisioning PASS in 49.744s. fuseki_max_heap_bytes=1073741824. SVID spiffe://ocor.test/ocor/control-plane presente. Archivio Fuseki da https://dlcdn.apache.org con SHA512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132 (cache MISS, ricetta del lock). Immagine costruita sha256:e324baabaff1bdb581adde980ae14f24f485eb715cfda34f0f83831c1dcab7ec, lock output_sha256 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b; gli altri 10 servizi coincidono col digest del lock. Typed health PASS, 11/11 running, zero OOM e zero restart."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "mypy strict PASS."
+      },
+      {
+        "command": "python scripts/validate_rccad.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base e6d80fe37f6d4ffdd8c71bc51e4a5ede2515b432 --head ee7628a3ae92725780269689db358fe08d7dd7ef",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0057 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS. Claim fence E1=0, E2=0, PoC_GO=NO-GO, Production_readiness=NO_GO, runtime_conformance=NOT_ESTABLISHED. Nessun requisito Verified."
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0."
+      },
+      {
+        "command": "npm --prefix ocor-runtime/sdk/typescript ci && npm --prefix ocor-runtime/sdk/typescript run build",
+        "exit_code": 0,
+        "summary": "ci e build PASS."
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/ocor-dev-0057/campaign/check_evidence.py . ee7628a3ae92725780269689db358fe08d7dd7ef",
+        "exit_code": 0,
+        "summary": "PASS. Commit 24a8ec2 antenato dell'HEAD, diff successivo solo evidenza, hash input e raw coerenti, 55 casi task tutti PASS, suite archiviata 2687/0/0/0, 19 mutanti uccisi."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0057.py",
+        "exit_code": 0,
+        "summary": "55 passed in 20.35s, zero skip, su PostgreSQL 16, Qdrant e OpenBao del pin. DSN di sessione non registrato."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0052.py",
+        "exit_code": 0,
+        "summary": "65 passed in 16.67s, zero skip, stessi backend reali."
+      },
+      {
+        "command": "adversarial probes on unit ports and live PostgreSQL/Qdrant/OpenBao",
+        "exit_code": 0,
+        "summary": "I fattori di score live coincidono con la formula del ranking e con il final_score durato nel receipt PostgreSQL (confidenze 0.95, 0.9, 0.8, 0.5). Oltre max_candidates per drop di policy: RETRIEVAL_BACKPRESSURE, audit di diniego, nessuna ricevuta di successo. Audit indisponibile sul diniego: AUDIT_UNAVAILABLE, fail-closed. Venti versioni e 30 item: selezionata solo hist v20 e i primi 10 per top_k dichiarato, senza il contenuto superseduto. Stop epoch e revoca durante la lettura coperti dai 55 casi rieseguiti."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head ee7628a3ae92725780269689db358fe08d7dd7ef --output-dir /home/luca/.ocor-codex/verify-env/OCOR-DEV-0057-ee7628a3ae92-0/full",
+        "exit_code": 0,
+        "summary": "PASS. 2687 passed, 0 failed, 0 errors, 0 skipped in 3923.7s sull'HEAD esatto. Moduli obbligatori test_ocor_dev_0048 (196 casi, nessuno skipped) e test_ocor_dev_0049 eseguiti. Stack 11/11 senza OOM n\u00e9 restart. po_decision_required=true perch\u00e9 la durata supera la soglia di 3600s e resta sotto il tetto di 4500s; lo stato della campagna \u00e8 PASS."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Stack ocor-bootstrap rimosso. Residui container, volumi e reti della sessione assenti."
+      }
+    ],
+    "findings": [],
+    "implementers": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (LOOP-AGENT-ROTATION, quota Codex esaurita): RED, implementation, mutation-gap tests, qualification and this candidate (2026-10-23). No other implementer touched this task.",
+    "integration_agent": "Codex (OpenAI), seal and exact-head integration only",
+    "integration_condition": "Only seal/manifest metadata follow the exact reviewed head; runtime, tests, harness, workflows, locks, raw output and all pre-existing sealed records unchanged. All 13 mandatory checks must succeed on the final seal HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "prior_verdicts": [],
+    "raw_output_sha256_unchanged": "6fd451f37117a8e6788abbb20657e0c367eaf66bf1a325eecbc2e9a7edd07b78",
+    "repair_cycle": 0,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-23T07:09:01Z",
+    "verdict_file_sha256": "1ce9f02a3a783bdbb694d254b0122ed9e757739fe900435a4383c315fb1b4048",
+    "verdict_head_sha": "ee7628a3ae92725780269689db358fe08d7dd7ef",
+    "verdict_request_id": "OCOR-DEV-0057-ee7628a3ae92-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatore del change set: Claude Code, modello claude-opus-5-5, fornitore Anthropic. Il loop indica anche Codex (OpenAI) come quota esaurita; richiesta ed evidenza dichiarano che non ha scritto il task.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/context.py": "453fc2c400228453496a6b8cb1fb42b753a31cd27a13c3e3194d7302f899c84e",
@@ -837,11 +966,12 @@
   "roles": {
     "implementers": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (LOOP-AGENT-ROTATION, quota Codex esaurita): RED, implementation, mutation-gap tests, qualification and this candidate (2026-10-23). No other implementer touched this task.",
     "independence": "external loop only; the implementer did not run or simulate the verification",
-    "verifier": "to be recorded from the external verdict (provider other than Anthropic)"
+    "verifier": "Grok 4.7 via Cursor CLI (xAI), independent process/context/provider; effective verdict configuration in independent_verification"
   },
   "rollback_procedure_verified": "Mechanical review: the task adds memory/context.py and tests/tasks/test_ocor_dev_0057.py plus evidence; no migration, no persisted schema and no change to existing modules; rollback is a revert commit of the task merge, after which the prior G5 manifest entries remain valid unchanged.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-23T07:12:38.436544+00:00",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-0057",
   "tdd": {
     "GREEN": "7889c3a implementation; 24a8ec2 adds two mutation-gap tests; final code commit 24a8ec2ac5f90774a8bca5c2e08a32cebc92be95: task three times, backlog validation command, 0052 regression, portfolio, governed full suite and validators (counts from archived JUnit).",
