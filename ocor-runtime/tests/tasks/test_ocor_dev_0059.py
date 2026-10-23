@@ -9,6 +9,10 @@ Backup/restore integration and final task qualification are pending at this chec
 from __future__ import annotations
 
 import dataclasses
+import hashlib
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -425,3 +429,208 @@ def test_a_head_change_during_inventory_refuses_a_stale_quota_or_monitor_result(
     refused(lambda: invoke(s, w, p), "CANDIDATE_CHANGED")
     assert audit.events[-1]["outcome"] == "DENIED"
     assert w.status("a-old") == "REVOKED"
+
+
+class SerializedQuota:
+    """Unit composition port; only live PostgreSQL locks qualify contention."""
+
+    def __init__(self) -> None:
+        self.mutex = threading.Lock()
+        self.fail = False
+        self.partitions: list[str] = []
+
+    @contextmanager
+    def hold(self, partition_digest: str) -> Any:
+        self.partitions.append(partition_digest)
+        if self.fail:
+            raise ConnectionError("serialization authority unavailable")
+        with self.mutex:
+            yield
+
+
+class PostgresSerializedQuota:
+    """Test adapter for the trusted serialization port, shared across writers.
+
+    Each test world owns its schema. Writers for that world lock the same
+    partition for inventory + ledger admission + store commit, not a quota token.
+    The lock has a bounded wait and PostgreSQL releases it on rollback/crash.
+    """
+
+    def __init__(self, dsn: str, schema: str) -> None:
+        self.dsn, self.schema = dsn, schema
+
+    @contextmanager
+    def hold(self, partition_digest: str) -> Any:
+        key = int.from_bytes(hashlib.sha256((self.schema + partition_digest).encode()).digest()[:8], signed=True)
+        with psycopg.connect(self.dsn) as conn:
+            conn.execute("SET LOCAL lock_timeout = '3s'")
+            conn.execute("SELECT pg_advisory_xact_lock(%s)", (key,))
+            yield
+
+
+def writer(w: Any, s: MemoryOperationsService, serialization: Any = None) -> Any:
+    from ocor_runtime.memory.operations import MemoryQuotaWriter
+    return MemoryQuotaWriter(operations=s, admission=w.admission, store=w.coordinator,
+                             serialization=serialization if serialization is not None else SerializedQuota())
+
+
+def write_request(w: Any, *, item_id: str = "new", text: str = life.TEXT, version: int = 1) -> tuple[dict[str, Any], bytes, Any]:
+    candidate = dict(w.ledger.get("a-old", 1).item.to_mapping())
+    payload, embedding = text.encode(), r.embed(text)
+    candidate.update(memory_item_id=item_id, memory_version=version,
+                     content_ref="content:" + r.d(payload).removeprefix("urn:sha256:"), content_digest=r.d(payload),
+                     embedding_ref=f"embedding:{item_id}:v{version}", embedding_digest=r.vector_digest(embedding))
+    if version > 1:
+        candidate["supersedes_ref"] = r.memory_version_ref(item_id, version - 1)
+    body = dict(operation_id=f"write-{item_id}-{version}", governed_context=r.context().to_mapping(),
+                governed_context_digest=r.context().digest(), deadline=w.deadline(), candidate=candidate)
+    return body, payload, embedding
+
+
+def write(wr: Any, w: Any, **kw: Any) -> Any:
+    body, payload, embedding = write_request(w, **kw)
+    return wr.admit_and_commit(body, binding=r.binding(r.context()), payload=payload, embedding=embedding)
+
+
+@pytest.mark.parametrize("live", [False, True])
+def test_quota_writer_rejects_the_actual_third_item_without_appending_or_indexing(
+    live: bool, backends: life.Backends,
+) -> None:
+    w = backends.world() if live else life.unit_world()
+    p = seed(w)
+    audit = receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema) if live else receipts.ReceiptAudit()
+    s, _, _ = setup(w, audit=audit)
+    wr = writer(w, s, PostgresSerializedQuota(backends.dsn, w.metadata.schema) if live else None)
+    accepted = write(wr, w)
+    assert accepted.state == "COMMITTED" and w.metadata.head("new") == 1
+    before = life.ledger_snapshot(w)
+    refused(lambda: write(wr, w, item_id="over"), "ITEM_QUOTA_EXCEEDED")
+    assert life.ledger_snapshot(w) == before
+    assert w.metadata.head("over") == 0
+    assert len(w.content.refs(p.digest)) == 1  # identical payloads share one content-addressed object
+    if live:
+        assert audit.actions()[-1] == "memoryWrite.denied"
+    else:
+        assert audit.events[-1]["outcome"] == "DENIED"
+
+
+@pytest.mark.parametrize("field,value,detail", [
+    ("max_payload_bytes", 4, "PAYLOAD_QUOTA_EXCEEDED"),
+    ("max_embedding_dimensions", 2, "EMBEDDING_QUOTA_EXCEEDED"),
+    ("max_index_entries", 5, "INDEX_QUOTA_EXCEEDED"),
+])
+@pytest.mark.parametrize("live", [False, True])
+def test_quota_writer_derives_demand_from_bytes_and_candidate_not_caller_counters(
+    field: str, value: int, detail: str, live: bool, backends: life.Backends,
+) -> None:
+    w = backends.world() if live else life.unit_world()
+    seed(w)
+    limits = dataclasses.replace(MemoryOperationsLimits(), **{field: value})
+    s, audit, _ = setup(w, limits=limits)
+    wr = writer(w, s, PostgresSerializedQuota(backends.dsn, w.metadata.schema) if live else None)
+    before = life.ledger_snapshot(w)
+    refused(lambda: write(wr, w), detail)
+    assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
+    assert audit.events[-1]["outcome"] == "DENIED"
+    # Same write at the exact configured boundary is accepted, without dropping a representation.
+    s, _, _ = setup(w, limits=dataclasses.replace(limits, **{field: {"max_payload_bytes": len(life.TEXT.encode()),
+        "max_embedding_dimensions": len(r.embed(life.TEXT)), "max_index_entries": 6}[field]}))
+    result = write(writer(w, s), w)
+    assert result.state == "COMMITTED" and len(result.representations) == 3
+
+
+@pytest.mark.parametrize("live", [False, True])
+def test_quota_writer_allows_exact_replay_and_correction_at_capacity(live: bool, backends: life.Backends) -> None:
+    w = backends.world() if live else life.unit_world()
+    seed(w)
+    s, _, _ = setup(w, limits=MemoryOperationsLimits(max_items=1, max_index_entries=3))
+    wr = writer(w, s, PostgresSerializedQuota(backends.dsn, w.metadata.schema) if live else None)
+    result = write(wr, w, item_id="a-old", text=life.TEXT + " updated", version=2)
+    assert result.head_version == 2
+    before = life.ledger_snapshot(w)
+    replay = write(wr, w, item_id="a-old", text=life.TEXT + " updated", version=2)
+    assert replay == result and life.ledger_snapshot(w) == before
+    assert invoke(s, w, MemoryPartition.for_item(w.ledger.get("a-old", 2).item)).items == 1
+
+
+@pytest.mark.parametrize("fault,detail", [("audit", "AUDIT_UNAVAILABLE"), ("policy", "POLICY_UNAVAILABLE"),
+    ("serialization", "QUOTA_SERIALIZATION_UNAVAILABLE"), ("stop", "STOP_STATE_INVALID")])
+def test_quota_writer_missing_authorities_never_invoke_admission(fault: str, detail: str) -> None:
+    w = life.unit_world()
+    seed(w)
+    s, audit, policy = setup(w)
+    lock = SerializedQuota()
+    if fault == "audit":
+        audit.fail = True
+    elif fault == "policy":
+        policy.fail = True
+    elif fault == "serialization":
+        lock.fail = True
+    else:
+        w.lc_stop.epoch = -1
+    before = life.ledger_snapshot(w)
+    refused(lambda: write(writer(w, s, lock), w), detail)
+    assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
+
+
+@pytest.mark.parametrize("tamper", ["scope", "gcs", "demand", "payload", "vector", "retention"])
+def test_quota_writer_cannot_bypass_binding_or_actual_demand(tamper: str) -> None:
+    w = life.unit_world()
+    seed(w)
+    s, audit, _ = setup(w)
+    lock = SerializedQuota()
+    wr = writer(w, s, lock)
+    body, payload, embedding = write_request(w)
+    if tamper == "scope":
+        body["candidate"]["compartments"] = ["bravo"]
+    elif tamper == "gcs":
+        body["governed_context_digest"] = r.d("other")
+    elif tamper == "demand":
+        body["demand"] = {"new_items": 0}
+    elif tamper == "payload":
+        payload = b"different content"
+    elif tamper == "vector":
+        embedding = [0.0] * len(embedding)
+    else:
+        body["candidate"]["retention_policy_ref"] = "unknown"
+    before = life.ledger_snapshot(w)
+    with pytest.raises(MemoryOperationsError):
+        wr.admit_and_commit(body, binding=r.binding(r.context()), payload=payload, embedding=embedding)
+    assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
+    assert audit.events[-1]["outcome"] == "DENIED"
+    if tamper in {"scope", "gcs", "demand"}:
+        assert lock.partitions == []
+
+
+def test_real_two_quota_writers_share_the_same_serialization_boundary(backends: life.Backends) -> None:
+    w = backends.world()
+    p = seed(w)
+    s1, _, _ = setup(w, audit=receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema))
+    s2, _, _ = setup(w, audit=receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema))
+    writers = [writer(w, s, PostgresSerializedQuota(backends.dsn, w.metadata.schema)) for s in (s1, s2)]
+    start = threading.Barrier(2)
+    def contend(i: int) -> str:
+        start.wait(timeout=5)
+        try:
+            return write(writers[i], w, item_id=f"parallel-{i}").state
+        except MemoryOperationsError as error:
+            return error.detail_code
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(contend, range(2)))
+    assert sorted(outcomes) == ["COMMITTED", "ITEM_QUOTA_EXCEEDED"]
+    assert invoke(s1, w, p).items == 2
+    assert sum(w.metadata.head(f"parallel-{i}") == 1 for i in range(2)) == 1
+
+
+def test_real_serialization_lock_timeout_is_fail_closed(backends: life.Backends) -> None:
+    w = backends.world()
+    seed(w)
+    s, _, _ = setup(w)
+    port = PostgresSerializedQuota(backends.dsn, w.metadata.schema)
+    p = MemoryPartition.for_item(w.ledger.get("a-old", 1).item)
+    with port.hold(p.digest):
+        before = life.ledger_snapshot(w)
+        refused(lambda: write(writer(w, s, PostgresSerializedQuota(backends.dsn, w.metadata.schema)), w),
+                "QUOTA_SERIALIZATION_UNAVAILABLE")
+        assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
+    assert write(writer(w, s, port), w).state == "COMMITTED"
