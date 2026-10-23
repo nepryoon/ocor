@@ -20,6 +20,98 @@ from ocor_runtime.memory.promotion import (
     PromotionProfile,
 )
 
+
+class CallerAssertedBinding:
+    """Looks like a binding, but has never crossed the authentication boundary."""
+
+    class Context:
+        correlation_id = "attacker-correlation"
+
+        def digest(self) -> str:
+            return "attacker-digest"
+
+    expected = Context()
+
+
+@pytest.mark.parametrize("operation", ["propose", "load"])
+@pytest.mark.parametrize("invalid_binding", [None, object(), {"expected": "caller-asserted"}, CallerAssertedBinding()],
+                         ids=["missing", "unverified-object", "caller-mapping", "caller-duck"])
+@pytest.mark.parametrize("audit_available", [True, False], ids=["audit-ready", "audit-unavailable"])
+def test_proposal_and_load_invalid_binding_audit_without_caller_context(
+    operation: str, invalid_binding: Any, audit_available: bool,
+) -> None:
+    w, audit, policy, s = unit()
+    result = s.propose("source", request(w), binding=r.binding())
+    before = w.ledger.records()
+    audit.events.clear()
+    policy.calls = 0
+    audit.fail = not audit_available
+    action = (lambda: s.propose("source", request(w), binding=invalid_binding)) if operation == "propose" else (
+        lambda: s.load(result.audit_ref, binding=invalid_binding))
+    error = refused(action, "BINDING_MISSING" if audit_available else "AUDIT_UNAVAILABLE")
+    assert error.reason_code == ("AUTHENTICATION_REQUIRED" if audit_available else "CONTROL_PLANE_UNAVAILABLE")
+    assert w.ledger.records() == before
+    assert policy.calls == 0
+    if audit_available:
+        assert audit.actions() == [("proposeMemoryPromotion" if operation == "propose" else "consumeMemoryPromotion") + ".denied"]
+        event = audit.events[0]
+        assert event["reason_code"] == "AUTHENTICATION_REQUIRED"
+        assert event["detail_code"] == "BINDING_MISSING"
+        assert event["correlation_id"] is None
+        assert event["governed_context_digest"] is None
+    else:
+        assert audit.events == []
+
+
+@pytest.mark.parametrize("operation", ["propose", "load"])
+def test_verified_binding_is_retained_for_authenticated_denial(operation: str) -> None:
+    w, audit, policy, s = unit()
+    result = s.propose("source", request(w), binding=r.binding())
+    policy.permitted = False
+    action = (lambda: s.propose("source", request(w), binding=r.binding())) if operation == "propose" else (
+        lambda: s.load(result.audit_ref, binding=r.binding()))
+    refused(action, "PROMOTION_DENIED")
+    assert audit.events[-1]["correlation_id"] == r.CALLER.correlation_id
+    assert audit.events[-1]["governed_context_digest"] == r.CALLER.digest()
+
+
+@pytest.mark.parametrize("operation", ["propose", "load"])
+@pytest.mark.parametrize("invalid_binding", [None, object(), {"expected": "caller-asserted"}, CallerAssertedBinding()],
+                         ids=["missing", "unverified-object", "caller-mapping", "caller-duck"])
+@pytest.mark.parametrize("audit_available", [True, False], ids=["audit-ready", "audit-unavailable"])
+def test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed(
+    backends: r.Backends, operation: str, invalid_binding: Any, audit_available: bool,
+) -> None:
+    with workflow(backends) as x:
+        before = x.w.ledger.records()
+        if not audit_available:
+            # Fault only the per-test audit authority; no volatile fallback.
+            with psycopg.connect(backends.dsn, autocommit=True) as conn:
+                conn.execute(f'DROP TABLE "{x.w.metadata.schema}".memory_audit')
+        action = (lambda: x.s.propose("c6-source", x.req, binding=invalid_binding)) if operation == "propose" else (
+            lambda: x.s.load(x.result.audit_ref, binding=invalid_binding))
+        error = refused(action, "BINDING_MISSING" if audit_available else "AUDIT_UNAVAILABLE")
+        assert error.reason_code == ("AUTHENTICATION_REQUIRED" if audit_available else "CONTROL_PLANE_UNAVAILABLE")
+        assert x.w.ledger.records() == before
+        assert x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) is None
+        with psycopg.connect(backends.dsn) as conn:
+            assert conn.execute("SELECT count(*) FROM c3_outbox WHERE aggregate_ref=%s",
+                                (x.req["target_aggregate_ref"],)).fetchone() == (0,)
+            if audit_available:
+                row = conn.execute(f'SELECT body FROM "{x.w.metadata.schema}".memory_audit ORDER BY seq DESC LIMIT 1').fetchone()
+                assert row is not None
+                event = json.loads(bytes(row[0]))
+                fresh = a.PostgresReceiptAudit(backends.dsn, x.w.metadata.schema)
+                assert fresh.receipt(event["audit_ref"]) == event
+                assert fresh.actions() == ["proposeMemoryPromotion.recorded", (
+                    "proposeMemoryPromotion" if operation == "propose" else "consumeMemoryPromotion") + ".denied"]
+                assert event["reason_code"] == "AUTHENTICATION_REQUIRED"
+                assert event["detail_code"] == "BINDING_MISSING"
+                assert event["correlation_id"] is None
+                assert event["governed_context_digest"] is None
+            else:
+                assert conn.execute("SELECT to_regclass(%s)", (x.w.metadata.schema + ".memory_audit",)).fetchone() == (None,)
+
 PROFILE = PromotionProfile("urn:ocor:proposal:memory-claim:1.0", "Situation")
 
 
