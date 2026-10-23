@@ -1,0 +1,1158 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.003,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.01,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "sync-lint",
+      "raw_sha256": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.358,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.081,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "drift",
+      "raw_sha256": "0c375d48e94b2e67bdad0377d1ecbb1afa81c8cdd49ae8813b0c4260f21acd5f",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.014,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m mypy",
+      "duration_seconds": 0.14,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "mypy",
+      "raw_sha256": "a766815ce9137d28823902e2a13996ac5e7021d76946b008d607ddbe5fe9163c",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.024,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.287,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0058-memory-promotion-c6-c3",
+      "duration_seconds": 0.037,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "scope",
+      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+      "duration_seconds": 0.093,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 1.512,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "teardown",
+      "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "status": "PASS"
+    },
+    {
+      "command": "rm -f -- .ocor/bootstrap.env",
+      "duration_seconds": 0.002,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "retire-credentials",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "duration_seconds": 47.754,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "bootstrap-ci",
+      "raw_sha256": "c8c6292f5f7504667a25f8ff03564c246cb0c01030731d965d6d1f9fdfbfc423",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+      "duration_seconds": 0.431,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "preflight",
+      "raw_sha256": "22986ed3b2aa9f216adadbf1624bafe28a975ae643ec13df8e3041483d670518",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /usr/bin/python3 ~/.ocor-codex/ocor-dev-0058/repair2/mutation_probe.py ~/.ocor-codex/ocor-dev-0058/repair2/mutation-probe.json",
+      "duration_seconds": 216.071,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "mutation-probe",
+      "raw_sha256": "9f0b99cfe379fc13bd45517618d6c0724d8290f9d218f74b1b7ddc82f0860538",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.327,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "task-run-1",
+      "raw_sha256": "cb4edb3786c8e384deeebd4715b9d7f2650a48ec561b1ee8fe1421bf1fa40e69",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 133,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.471,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "task-run-2",
+      "raw_sha256": "cba7bb19e81bfabf1e1cf363b2494414dc733f9fc414eb0d3a517752c8965a76",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 133,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.268,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "task-run-3",
+      "raw_sha256": "029ca463e7ef4df6c077622168a3d7817534f7081fe166b2063f11e89a8db13b",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 133,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-validation-command-project.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.272,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "task-validation-command-project",
+      "raw_sha256": "d5560ac20ac214069646632e17587a1e8b299d140c47cc9052374a644883432e",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 133,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.635,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "sdk-ci",
+      "raw_sha256": "8b6c8112caf5cb311ea60d9668ec58ea1207589d7c9c8ffc6270fff82e97553e",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.13,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_rem0023_consumer_fixture_scope.py --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/reports-portfolio.xml",
+      "duration_seconds": 34.418,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "reports-portfolio",
+      "raw_sha256": "5ff0d2beebf13b3306380401711abca9a2ac1cdd5e5f91c3d5e2fa4626a0973c",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 350,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "duration_seconds": 2.056,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-reset",
+      "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 1.518,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-teardown",
+      "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "status": "PASS"
+    },
+    {
+      "command": "rm -f -- .ocor/bootstrap.env",
+      "duration_seconds": 0.002,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-retire-credentials",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "duration_seconds": 47.105,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-bootstrap-ci",
+      "raw_sha256": "a9215f12a7894af0505351453e69e060f18f97424edb829a5a894707c136c1eb",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.01,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-sync-lint",
+      "raw_sha256": "0b105d5c53993200b4e9ffd3128e65e3bdbb3f6343e69a34711e81822d6238b0",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -c import mypy.version; print(mypy.version.__version__)",
+      "duration_seconds": 0.017,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-mypy-ready",
+      "raw_sha256": "ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head bca0773ef989f65036cb593d446f139fb59c76dd --output-dir ~/.ocor-codex/ocor-dev-0058/repair2/full",
+      "duration_seconds": 4109.24,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "full-suite",
+      "raw_sha256": "5cdd6e677635b704cebec3a41cd7405c26d00688c8df94ee54dd0b0bf077336f",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 3.066,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "session-teardown",
+      "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: Final documented bootstrap teardown: fail-closed, zero owned containers/volumes/networks",
+      "exit_code": 0,
+      "label": "session-teardown-result",
+      "raw_sha256": "be780b2071cf344e97248ac60d79f5a9769b84f2085cebdb4b0b4bb996fed0dc",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: AST comparison of all pre-existing test functions plus exact JUnit name subset: no old body, assertion, decorator or parametrized case changed/removed",
+      "exit_code": 0,
+      "label": "existing-tests-preserved",
+      "raw_sha256": "fe75b843c2779d682f179c5c519f8434a88e336c3349b4b9803bfa47d19910b5",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: Previous main integration PR320: all 13 required named checks success on exact head; not qualification of this candidate",
+      "exit_code": 0,
+      "label": "preflight-main-ci",
+      "raw_sha256": "10623af75811b2f76346d118d62584c9b8ab973e6f20c7c63f83265b9be1671d",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: actual publication functions checked: only parametrized names change, all counts/assertion outcomes and source SHA256 preserved",
+      "exit_code": 0,
+      "label": "publication-redaction-check",
+      "raw_sha256": "4eb65a923b3c6d3d1531544ab0c159e2e497a3e797cb087e5fe9448b1893c015",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: actual RED classifier: AST fixture dependency, returns nonzero on misclassification",
+      "exit_code": 0,
+      "label": "backend-classifier-script",
+      "raw_sha256": "fe80c9c13212ec33edce6ebaf41ca4954b4de3d809bae68459af120be567a01e",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: Helm, kind and kubectl executable SHA256 match qualification_tools.lock.json",
+      "exit_code": 0,
+      "label": "qualification-tools-lock-match",
+      "raw_sha256": "a2c806c7dc547234dff0c8590f9a342e7d6bbad5ad1141695e905e9efffc240f",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact evidence builder with explicit AST fixture classification",
+      "exit_code": 0,
+      "label": "evidence-builder-script",
+      "raw_sha256": "2d5c67d80584612545905987745e7cd07142637df5f8c75401624d8fde6bdd00",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: recomputes final HEAD digests, AST backend labels, raw/manifest/counts",
+      "exit_code": 0,
+      "label": "evidence-checker-script",
+      "raw_sha256": "534fb02bd89d1d7630df8218b9ff33a57472e0e3c0ce49e4a0999eeb29d822d4",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact JUnit multiset check against collection at the frozen code HEAD",
+      "exit_code": 0,
+      "label": "exact-union-checker-script",
+      "raw_sha256": "64663deff5a401853b5ed14cd98711d34fce7f247fa4160217a819a54905f1fe",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: bounded task/mutation/full/CI waits; unchanged limits",
+      "exit_code": 0,
+      "label": "wait-contract",
+      "raw_sha256": "9f187b7108f2cd2ecba79adeb3c32ecce1c7305e0fb9e1f73a797cccd4a48d62",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured from task-run-3 (parameterized names published as SHA256) (third of three consecutive live runs)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "c5f4fde79ef04bde6a2677bd3e913e04ad42c9ef32a425cd1d6b40979581cd77",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 133,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the backlog validation command scoped to the runtime project",
+      "exit_code": 0,
+      "label": "validation-command-junit",
+      "raw_sha256": "aad035707163896119aadc67ce14f9ee2f47a9ae9daf978f5f79a4398535abdf",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 133,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the reports/tests portfolio linked in CI (after SDK npm ci/build)",
+      "exit_code": 0,
+      "label": "reports-portfolio-junit",
+      "raw_sha256": "2e217c9d9c9e2f3147281b43cd1e0720a2ecc0c1e785569c43ec9c31bbe00a8e",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 350,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML (parameterized names published as SHA256) of the governed full suite (scripts/run_qualifying_campaign.py)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "3ffcb51cdaabe8a217d201ad13c1dd3325f9c92ddb8fa2f0cefe691a0a637ee4",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2820,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: run_qualifying_campaign.py result (75-min limit, stack guard, required modules)",
+      "exit_code": 0,
+      "label": "full-suite-campaign-result",
+      "raw_sha256": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2820,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every infra/toolchain.lock.json tool matched by version and sha256 on the campaign PATH",
+      "exit_code": 0,
+      "label": "toolchain-lock-match",
+      "raw_sha256": "bd664c6024afda8be85b3b7758e5aad2b60f676415cbe23ead44e9cd56264173",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: unsharded full JUnit exact multiset match with pytest --collect-only on the same HEAD: no missing/duplicate/extra/skipped test",
+      "exit_code": 0,
+      "label": "exact-junit-union",
+      "raw_sha256": "fee2412d40aa22dbe6c54c20394150fc2d45533203a0d2886a06b132060ebb93",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: repository kind v2 guard: destroy/remover proof and rejection observations",
+      "exit_code": 0,
+      "label": "full-kind-teardown",
+      "raw_sha256": "0980b5f3b99d5361a5cdc8bfa7b262b5633bf3db0c2fa6e464817c16d05dc438",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts after bootstrap_ci_environment.py, before the task runs",
+      "exit_code": 0,
+      "label": "stack-summary",
+      "raw_sha256": "abf58ad5008a978ba05b6abe1d4d7878eed27d4ef1d13bc0136a054908248696",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts after the second bootstrap_ci_environment.py, before the full suite",
+      "exit_code": 0,
+      "label": "full-stack-summary",
+      "raw_sha256": "b80d59bdab90ce6c1362825a33fbfb5ca8e1a503dbc027343b61c7d648f98d0c",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: containers/volumes/networks added by the task runs (must be empty)",
+      "exit_code": 0,
+      "label": "task-resource-delta",
+      "raw_sha256": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: mutants of memory/promotion.py on the frozen code commit; each must fail the task file unless declared equivalent with its reason",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "ae2ed0d2a4c2b088f3366c3775c87afc69005fecd61de4ac2f0946887ba66edf",
+      "result": {
+        "equivalent_survivors": [
+          "skip-command-gcs"
+        ],
+        "failed": 0,
+        "killed": 18,
+        "mutants": 19
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact mutation harness, archived for reproduction",
+      "exit_code": 0,
+      "label": "mutation-probe-script",
+      "raw_sha256": "a1ca988489126e7cf47e832d2f8c0ac695d7f14bcd77d59bbe8ede977cd2d1b9",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact local campaign driver: frozen extras, bootstrap_ci_environment.py, unchanged repository full harness and limits",
+      "exit_code": 0,
+      "label": "qualifying-local-driver",
+      "raw_sha256": "e1abce9c6a305db7523b168ef31586b32727d05e4b0f049bec03485bd4e283bd",
+      "status": "PASS"
+    }
+  ],
+  "commit": "bca0773ef989f65036cb593d446f139fb59c76dd",
+  "created_at": "2026-10-23T16:54:00Z",
+  "design": [
+    "MemoryPromotionService implements MemoryPromotionPort (LLD 2.8.1, 2.8.7) for the closed MemoryPromotionRequest of the governed-memory OpenAPI: it validates the binding, the closed request, a trusted-composition registered (proposal_schema_ref, target_aggregate_type) profile that can never be a security or policy type, the GCS digest and the deadline; it reads only the exact committed ACTIVE head through the 0052 eligibility, asks the live promotion policy, re-plans after the policy I/O (stop epoch, source stage digest, deadline) and appends a content-free proposal (source version, item/content digests, evidence and provenance refs, marking, taint, target, GCS digest, stop epoch, deadline) to the protected audit store; it returns exactly the public OperationReceipt (ACCEPTED, audit_ref) and re-validates once more after the audit write.",
+    "The memory port has no canonical writer, security writer or mutative memory port; every refusal after the binding is an audited denial and the memory item is never rewritten (ADD v1.3 Part II 2.11: rejected promotion recorded separately).",
+    "load(audit_ref) re-reads the recorded proposal, verifies its self-digest and action, and re-runs the full validation under the caller binding with the recorded stop epoch; any change of source, GCS, policy, stop epoch or deadline fails closed with an audited denial.",
+    "C6MemoryPromotionConsumer (C6 side of the port) receives only the proposal audit_ref and an authenticated binding. Command, Authority, Decision, approval policy and signatures come exclusively from the separate C6 control authority as one RFC 8785 canonical gate whose signature is verified by an independent verifier (OpenBao transit ed25519 in the qualifying cases).",
+    "The gate must bind the exact proposal digest and audit_ref; the command must bind the proposal target, GCS digest, evidence refs and a claim-source binding to the source version, branch main and a gate_package_digest over the whole frozen gate; the Decision must be accepted, live, unrevoked and bound to the command; the Authority is validated with the kernel validate_authority against a delegation verified by C6 delegation admission for this binding (never the Authority's own claim), with Authority and delegation revocation, the composed canonical-commit capability, scope, tenant, domain, compartments, purpose, risk ceiling and bundle; the approvals are validated by the real Human Gate (distinct active humans, roles, separation of duties, TTL, proposer excluded); the live OPA commit decision must permit under the GCS bundle.",
+    "Controls are revalidated after the intent audit, after a fresh proposal load and after the last policy I/O (decision window, Authority expiry, Authority/delegation/decision revocation, verified delegation, Human Gate), then C3 is called with the governed command and its receipt is verified against the command; intent and completion are audited.",
+    "Before dispatch every refusal is a definite audited denial (commitMemoryPromotion.denied) with a stable detail; after dispatch any error is reported as CONTROL_PLANE_UNAVAILABLE/COMMIT_OUTCOME_UNKNOWN and audited as indeterminate, never as success, because the GovernedCommitPort contract does not guarantee that an error means \"not committed\". A replay of the same gate returns the replayed C3 receipt without a second revision.",
+    "Repair cycle 1 audits authentication refusals at the C6 commit entry, with null correlation/GCS until a verified binding exists. Audit unavailability raises AUDIT_UNAVAILABLE. Backend classification is derived from the AST fixture dependency, never from test-name substrings.",
+    "Repair cycle 2: authentication denial in propose and load uses only the binding returned by the type-checking authentication boundary, or null until that check succeeds. Invalid objects, mappings and caller-asserted duck bindings never provide correlation/GCS. The real PostgreSQL audit persists each denial; dropping only the per-test audit table proves AUDIT_UNAVAILABLE with no proposal or canonical state success. Authenticated denial preserves verified context."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-23T16:53:56.019368+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:837e99412992aa2da2284da215b526feba173c7fcee975eec4b4483c12d0f24f",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "c3_commit": "real PostgresC3Service (c3/service.py) on the approved global C3 tables of the same PostgreSQL; only the rows of each test aggregate_ref are removed in teardown",
+      "c6_commit_policy": "real OPA of the ocor-bootstrap stack: a per-test Rego module (unique package, removed in teardown) is evaluated over HTTP for every canonical-commit decision; the outage case uses a real refused TCP connection",
+      "c6_control_authority": "test adapter of the separate C6 authority: signed gates, revocations and the verified delegation per binding in their own PostgreSQL tables of the per-test schema; gate bytes are RFC 8785 canonical and signed/verified with an ed25519 key of the OpenBao transit engine (disposable dev server of the 0052 harness)",
+      "c6_human_gate": "real HumanGateCoordinator (c6/human_gate.py) over the real IdentityRegistry (c2_identity.py) with HUMAN/ACTIVE principals and roles per the REM-0024 Q1 convention",
+      "memory_stores_retrieval": "real OCOR-DEV-0050 admission, 0051 store coordinator and the 0052 exact-version eligibility (_ExactSearch) composed unchanged inside MemoryPromotionService; the 0052 World and Backends fixtures are reused, with ocor_t0052_<random> schemas dropped after each test",
+      "metadata_content": "PostgreSQL 16 of the ocor-bootstrap stack via OCOR_LIVE_POSTGRES_DSN (memory metadata, OpenBao-sealed content); Qdrant per test module through the sealed OCOR-DEV-0023 harness",
+      "policy_ports": "the memory promotion policy and stop state at the proposal stage are explicit test ports (PromotionPolicy of this task, GrantPolicy/StopState of 0052); they decide, they are not the system under test; the four original test_promotion_policy_is_live_and_fail_closed cases remain unit_fixture_tests, never real_backend_tests; actual OPA qualification is separate.",
+      "proposal_audit_store": "PostgresReceiptAudit of OCOR-DEV-0057 (test adapter): append-only audit table in the per-test PostgreSQL schema; proposals are read back by audit_ref, also by fresh adapters of a new run",
+      "proposal_policy": "Pinned OPA HTTP adapter OpaProposalPolicy in test_live_proposal_policy_opa_positive_and_faults: allow/deny, actual refused TCP transport, installed policy revision (digest from GET), installed non-boolean Rego result. The adapter is a test composition, not a production policy service."
+    },
+    "bootstrap_procedure": "scripts/bootstrap_ci_environment.py --teardown --execute, removal of the dead worktree credential file, then scripts/bootstrap_ci_environment.py --execute --timeout 600 (VERIFIER-ENV-STANDARD-BOOTSTRAP 2026-10-23): pinned pulls, Fuseki recipe build from the SHA-512 archive, bounded 1 GiB Fuseki heap, SPIRE control-plane SVID, init, fixtures and typed health; repeated before the full suite",
+    "branch": "task/OCOR-DEV-0058-memory-promotion-c6-c3",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/ocor-dev-0058"
+  },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "277e2332aaad3edfac793a5a259d7d260f809f52",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_tree_after": "1e6dab4e7dd50b29dde292eb9c9316868c03d45a",
+      "execution_tree_before": "1e6dab4e7dd50b29dde292eb9c9316868c03d45a",
+      "main_head": "7116ca63e363714f7d4c04a3cd4002efcf6ab14e",
+      "qualified_head": "b0fbb184f51f15ef777c5ead16aba3f362d28db8",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "0aee4e52f427219d6d4b5c3399d4086e5f6820bb0708614a3343b442342ba3b8",
+    "commands": [
+      {
+        "command": "sha256 of PATH tools against infra/toolchain.lock.json; qualification tools helm/kind/kubectl; python realpath; sha256 of environment.json",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, ruff, tsc e uv coincidono con infra/toolchain.lock.json e con environment.json. helm, kind e kubectl coincidono con qualification_tools_sha256. Python 3.12.11 reale sha256 ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07. environment.json sha256 41a0da5e983c0085ec2f76f693928d901f2f4bbfc5de641de7eb965e61f3469c. Versioni: Docker 29.7.2, git 2.53.0, gh 2.99.0, node v20.20.2, ruff 0.13.1, tsc 7.0.2, uv 0.12.5."
+      },
+      {
+        "command": "python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS. errors=[], docker READY, secret_names_present=[], porte 1729/3030/6363/8080/8181/8200 libere."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i digest normativi OK. inputs/ non compare nel diff."
+      },
+      {
+        "command": "git diff --name-only origin/main...HEAD e c07f86ce41e8d64dcfc4a49846e25bb28dfae9f7..HEAD; python scripts/validate_ocor_change_scope.py --base origin/main e --base c07f86ce --head HEAD --branch task/OCOR-DEV-0058-memory-promotion-c6-c3",
+        "exit_code": 0,
+        "summary": "merge-base con origin/main uguale al base_sha della richiesta. Diff di cinque percorsi: promotion.py, test_ocor_dev_0058.py, OCOR-DEV-0058.json, OCOR-DEV-0058.log, MANIFEST.json. Scope validator PASS su entrambi i base: superfici immutabili intatte, ledger stabile. MANIFEST aggiunge solo gli artifact e i requirement_results di OCOR-DEV-0058."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 83 source files."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato usa un'estensione monitorata fuori dall'area autorizzata."
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "status PASS_LOCAL_PRECHECK. findings=[]. dynamic_assurance CI_REQUIRED."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS. checked_inputs=219, checked_tasks=72, drifted_inputs=0, findings=[]."
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "Harness PASS 14 FAIL 0 NOT_EXECUTED 0. Evidence fence E1=0, nessun claim probatorio non supportato."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0058 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0058."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute && python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Teardown iniziale PASS ALREADY_REMOVED, residual vuoto, .ocor/bootstrap.env assente. Provision PASS in 49.683s. fuseki_max_heap_bytes=1073741824. control-plane SVID exit 0. Archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA-512 verificato ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132. Nove servizi READY, undici container, OOMKilled=false, RestartCount=0. Immagini pinned di Postgres, OPA, OpenBao, Qdrant, Kafka, Keycloak, SPIRE, TerminusDB e TypeDB uguali a quelle registrate nell'evidenza. L'image id locale di Fuseki differisce dal record e da services.lock output_sha256 perche l'immagine e costruita in questo worktree; la procedura versionata ha comunque restituito PASS dopo il controllo di ricetta e heap."
+      },
+      {
+        "command": "npm --prefix ocor-runtime/sdk/typescript ci && npm --prefix ocor-runtime/sdk/typescript run build",
+        "exit_code": 0,
+        "summary": "npm ci ha aggiunto 4 pacchetti, 0 vulnerabilita. tsc --project tsconfig.json exit 0."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=/tmp/ocor-verify-OCOR-DEV-0058-b0fbb184f51f-2/task-junit.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+        "exit_code": 0,
+        "summary": "133 passed in 26.63s. JUnit tests=133 failures=0 errors=0 skipped=0. DSN PostgreSQL 127.0.0.1:55433 dello stack appena provisionato. Log OPA: 60 occorrenze promotion0058, PUT/GET/POST su /v1/policies e /v1/data/.../allow. Container ocor-bootstrap rimasti 11, nessuno aggiuntivo dal file di test."
+      },
+      {
+        "command": "probe avversariale unitaria su promotion.py: volume oltre max_candidates, storia di versioni, duck binding, filtro non previsto, stop durante la policy",
+        "exit_code": 0,
+        "summary": "Con 149 item il propose della sorgente esatta restituisce urn:ocor:memory:source:v1 e il mapping non ha campi score o rank. Dopo le versioni 2..30 la versione 1 e SOURCE_NOT_ELIGIBLE con consume/propose denial audit e la versione 30 restituisce urn:ocor:memory:source:v30. Il duck binding e rifiutato BINDING_MISSING con correlation_id e governed_context_digest nulli. Un memory_kinds estraneo e REQUEST_INVALID con denial. Lo stop durante authorize_promotion lascia solo proposeMemoryPromotion.denied. Schemi ocor_t0052 residui dopo i test: 0."
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/ocor-dev-0058/repair2/check_evidence.py . b0fbb184f51f15ef777c5ead16aba3f362d28db8",
+        "exit_code": 0,
+        "summary": "PASS. Commit di codice bca0773ef989f65036cb593d446f139fb59c76dd antenato dell'HEAD; il diff successivo e solo evidenza. Hash di input, raw JSONL, manifest e voci G5 preesistenti coerenti. JUnit di task 133/0/0 e suite archiviata 2820/0/0. Classificazione AST dei backend coerente. 19 mutanti, nessuno sopravvissuto fuori dall'equivalenza dichiarata skip-command-gcs, la cui ragione e confermata da GovernedCanonicalCommitCommand.__post_init__ che rifiuta un digest GCS diverso dal contesto. Claim E1=0, E2=0, runtime_conformance NOT_ESTABLISHED, Production_readiness NO_GO."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head b0fbb184f51f15ef777c5ead16aba3f362d28db8 --output-dir /home/luca/.ocor-codex/verify-env/OCOR-DEV-0058-b0fbb184f51f-2/full",
+        "exit_code": 0,
+        "summary": "PASS sullo HEAD esatto. counts tests=2820 failures=0 errors=0 skipped=0. JUnit ricalcolato: 2820 casi unici, 0 skipped; test_ocor_dev_0048=196, test_ocor_dev_0049=390, test_ocor_dev_0058=133. duration_seconds=4403.67, sotto il limite 4500 e sopra la soglia informativa 3600 (po_decision_required=true). kind-teardown-observations: 1 rimozione OWNED_KIND_TEARDOWN_OBSERVED, node_id 085f34dfd012, destroy dello stesso UUID, remover kind delete cluster --name ocor-poc, finestra 30s, rejections vuote. Health observer DIAGNOSTIC_ONLY. Nessun OOMKilled e RestartCount=0. Tre PytestWarning preesistenti di record_property in test_ocor_dev_rem_0020, non skip."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Teardown finale PASS, result REMOVED, residual containers/volumes/networks vuoto. Nessun container ocor-bootstrap rimasto. Log di build Fuseki non tracciato rimosso. git status pulito. HEAD invariato. I container non OCOR preesistenti non sono stati toccati."
+      }
+    ],
+    "findings": [],
+    "implementers": [
+      "Codex (OpenAI), gpt-6.1-sol: RED test (62b3954), proposal port (e7d6259) and an uncommitted first draft of the C6 consumer and its live fixture, interrupted by model capacity at 2026-10-23T08:34Z.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): took over the uncommitted WIP, fixed the live OPA fixture, found and fixed the self-vouched delegation defect (RED recorded), denial classification, capability pin, post-dispatch and mutation-gap tests, qualification and this candidate (de6aeb8 onward).",
+      "Codex (OpenAI), repair cycle 1: RED 2dd081b, audit of missing/unverified commit binding, live PostgreSQL denial tests, OPA proposal policy fault cases, explicit AST evidence classification, fresh qualification.",
+      "Codex (OpenAI), repair cycle 2: RED aeb2227 (10 failures, 8 passes), fix propose/load denial context bca0773, 34 added unit/live cases, fresh qualification; original implementers preserved.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer for repair cycle 2 after the Codex quota stop (2026-10-23T15:40Z): reviewed RED aeb2227 and fix bca0773 against VF-001 without changing code or tests, interrupted the quota-orphaned full (diagnostic, never counted), reran the governed full suite on the same HEAD, built and checked the evidence, published the candidate and the verification request."
+    ],
+    "integration_agent": "Codex (OpenAI), seal and exact-head integration only",
+    "integration_condition": "Only seal/manifest metadata follow the exact reviewed head; runtime, tests, harness, workflows, locks, raw output and all pre-existing sealed records unchanged. All 13 mandatory checks must succeed on the final seal HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "prior_verdicts": [
+      {
+        "head_sha": "353ef892ff6e15bb0af920525204dd6aa5a7a0e1",
+        "request_id": "OCOR-DEV-0058-353ef892ff6e-1",
+        "sha256": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba",
+        "verdict": "NO_GO"
+      },
+      {
+        "head_sha": "e5f3729a5219ccb68b41ae846310aef18e8ab6d0",
+        "request_id": "OCOR-DEV-0058-e5f3729a5219-0",
+        "sha256": "5fd887db6e0d10d2d072ab6d2e410a75aab5588fe8fcf1cc42a3e8fce0198b9c",
+        "verdict": "NO_GO"
+      }
+    ],
+    "raw_output_sha256_unchanged": "000290056806f79ca5109da47542047c84dc04c3558d0b9f39258225383341e2",
+    "repair_cycle": 2,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-23T18:58:31Z",
+    "verdict_file_sha256": "6f503b6ab183d32c3a203c6117b059687e8b5f6e7c4e4ff722d2b971611f44a6",
+    "verdict_head_sha": "b0fbb184f51f15ef777c5ead16aba3f362d28db8",
+    "verdict_request_id": "OCOR-DEV-0058-b0fbb184f51f-2",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatori dichiarati nella richiesta e nell'evidenza: Codex, fornitore OpenAI (original gpt-6.1-sol; repair1 NOT_EXPOSED_BY_RUNTIME; repair2); Claude Code, fornitore Anthropic (claude-opus-5-5), anche come reserve dopo lo stop di quota di Codex. Verifier: Cursor, fornitore xAI, grok-4.7-high. Nessun implementatore condivide il fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/promotion.py": "7f3a88f59f7b0e23e6c0da69d5bd4b3ad0ac9d7f44918a4a898f6747676869b5",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0058.py": "3e9f0daa1a8dcff81362f86f6bfa6fb6bbe2e694016d5bfa34563cc152d88192"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 Part II 2.11 and LLD 2.8.7 fix the path MemoryItem -> MemoryPromotionProposal -> C6 control/approval/decision -> GovernedCanonicalCommitCommand -> C3. The proposal is recorded in the protected audit store and is never an Approval, Decision, Authority, CapabilityLease or ActionCommand; the C6 consumer is a separate composition with its own control authority, so a request member can never carry a control.",
+    "Targets are restricted to explicitly registered profiles; Authority, Delegation, Approval, Decision, CapabilityLease, ActionCommand, Policy, PolicyBundle, Capability and Identity can never be registered (no capability grant or policy mutation through memory). This is the most restrictive reading of \"Memory non concede Authority, Approval, Decision, CapabilityLease o ActionCommand\".",
+    "A C3 error after dispatch is classified indeterminate (reconciliation by reading C3), the fail-closed reading of a port contract that does not distinguish a refused transaction from an unknown outcome.",
+    "The OperationReceipt returned by proposeMemoryPromotion carries status ACCEPTED: acceptance of a proposal record, not of canonical state; canonical state exists only with a verified C3 CommitReceipt.",
+    "Backlog requirement BR-003 is the generic task requirement; following the sealed G5 practice the cases are also bound to FR-053 (governed admission of canonical state), FR-118 (promotion tests of ADD v1.3 Part II section 3) and FR-119 (revocation and kill-switch races) as component-level evidence only; G6 binding of FR-053 remains with OCOR-DEV-0061."
+  ],
+  "observations": [
+    {
+      "label": "full-suite-duration",
+      "note": "governed full suite PASS in 4108.63s, above the 3600s PO notification threshold and below the unchanged 4500s limit; recorded as an occurrence for the open decision request REM-0033-LOCAL-FULL-DURATION (non-blocking, no limit, test or timeout changed).",
+      "raw_sha256": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f"
+    },
+    {
+      "label": "diagnostic-mutation-probe-de6aeb8",
+      "note": "DIAGNOSTIC, never counted: first mutation probe on de6aeb8, three survivors (final Human Gate recheck, command GCS comparison, C3 receipt verification)",
+      "raw_sha256": "71749925ba27420a0b02e35e96ddbe2946704768fe82e63f42619ad757bf3c61"
+    },
+    {
+      "label": "diagnostic-mutation-rerun",
+      "note": "DIAGNOSTIC, never counted: rerun of the three survivors after the two gap tests; GCS comparison remains (equivalent)",
+      "raw_sha256": "93fdd86cd0b4794226572c617673a7e3aedd446220f35aed2f728cb7c6c8b9c0"
+    },
+    {
+      "label": "diagnostic-mutation-preflight",
+      "note": "DIAGNOSTIC, never counted: dry run of the archived probe harness before the campaign",
+      "raw_sha256": "7c911a6fcba00725551cf0e7d12b0a06f57043d3bf71c65cedb791374fb611eb"
+    },
+    {
+      "label": "previous-external-verdict",
+      "note": "Historical NO_GO retained; repair cycle 2 addresses remaining VF-001 in propose/load; cycle1 corrections retained; not a qualifying command",
+      "raw_sha256": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba"
+    },
+    {
+      "label": "diagnostic-monitor.jsonl",
+      "note": "Diagnostic monitoring only; transient health observations and bounded state capture, no PASS/FAIL counts transferred",
+      "raw_sha256": "315641fad330fba738db1a15f4daa3b6daa7dcf5eef03858c1c1449e38b4c6e8"
+    },
+    {
+      "label": "diagnostic-full-typedb-health-diagnostic.json",
+      "note": "Diagnostic monitoring only; transient health observations and bounded state capture, no PASS/FAIL counts transferred",
+      "raw_sha256": "d02d2707572dd96cb337ec0945d16261f0f4947291f78cf48a0eae91b2337811"
+    },
+    {
+      "label": "diagnostic-full-keycloak-health-diagnostic.json",
+      "note": "Diagnostic monitoring only; transient health observations and bounded state capture, no PASS/FAIL counts transferred",
+      "raw_sha256": "0fc9d450bc5432d88d838769d3d232cf7c42599d8432bc0163c338d1e8701210"
+    },
+    {
+      "label": "diagnostic-quota-orphaned-full",
+      "note": "DIAGNOSTIC, never counted (LOOP-AGENT-ROTATION point 3): full suite launched by Codex on the same HEAD, orphaned by the Codex quota stop (supervisor dead, no campaign_result); interrupted at 1379 passed by Claude Code (Anthropic) and rerun from scratch; counts not transferred",
+      "raw_sha256": "eb54a7525403bcacfac6fc93b754730556f5fa20fb5a1d20e1a337ce15c3f14b"
+    }
+  ],
+  "parameterized_case_identity_publication": {
+    "acquired_source_sha256_before_publication_redaction": {
+      "backend-classifier-script": "fe80c9c13212ec33edce6ebaf41ca4954b4de3d809bae68459af120be567a01e",
+      "bootstrap-ci": "c8c6292f5f7504667a25f8ff03564c246cb0c01030731d965d6d1f9fdfbfc423",
+      "diagnostic-full-keycloak-health-diagnostic.json": "0fc9d450bc5432d88d838769d3d232cf7c42599d8432bc0163c338d1e8701210",
+      "diagnostic-full-typedb-health-diagnostic.json": "d02d2707572dd96cb337ec0945d16261f0f4947291f78cf48a0eae91b2337811",
+      "diagnostic-monitor.jsonl": "315641fad330fba738db1a15f4daa3b6daa7dcf5eef03858c1c1449e38b4c6e8",
+      "diagnostic-mutation-preflight": "7c911a6fcba00725551cf0e7d12b0a06f57043d3bf71c65cedb791374fb611eb",
+      "diagnostic-mutation-probe-de6aeb8": "71749925ba27420a0b02e35e96ddbe2946704768fe82e63f42619ad757bf3c61",
+      "diagnostic-mutation-rerun": "93fdd86cd0b4794226572c617673a7e3aedd446220f35aed2f728cb7c6c8b9c0",
+      "diagnostic-quota-orphaned-full": "eb54a7525403bcacfac6fc93b754730556f5fa20fb5a1d20e1a337ce15c3f14b",
+      "drift": "0c375d48e94b2e67bdad0377d1ecbb1afa81c8cdd49ae8813b0c4260f21acd5f",
+      "evidence-builder-script": "2d5c67d80584612545905987745e7cd07142637df5f8c75401624d8fde6bdd00",
+      "evidence-checker-script": "534fb02bd89d1d7630df8218b9ff33a57472e0e3c0ce49e4a0999eeb29d822d4",
+      "exact-junit-union": "fee2412d40aa22dbe6c54c20394150fc2d45533203a0d2886a06b132060ebb93",
+      "exact-union-checker-script": "64663deff5a401853b5ed14cd98711d34fce7f247fa4160217a819a54905f1fe",
+      "existing-tests-preserved": "fe75b843c2779d682f179c5c519f8434a88e336c3349b4b9803bfa47d19910b5",
+      "full-bootstrap-ci": "a9215f12a7894af0505351453e69e060f18f97424edb829a5a894707c136c1eb",
+      "full-kind-teardown": "0980b5f3b99d5361a5cdc8bfa7b262b5633bf3db0c2fa6e464817c16d05dc438",
+      "full-mypy-ready": "ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
+      "full-reset": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "full-retire-credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "full-stack-summary": "b80d59bdab90ce6c1362825a33fbfb5ca8e1a503dbc027343b61c7d648f98d0c",
+      "full-suite": "5cdd6e677635b704cebec3a41cd7405c26d00688c8df94ee54dd0b0bf077336f",
+      "full-suite-campaign-result": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f",
+      "full-suite-junit": "16d180d179cb52529ddaf75b5f32675b98cc52fd81e47f7d6e9b9abaae2f121b",
+      "full-sync-lint": "0b105d5c53993200b4e9ffd3128e65e3bdbb3f6343e69a34711e81822d6238b0",
+      "full-teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "harness": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "inputs": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "language": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "mutation-probe": "9f0b99cfe379fc13bd45517618d6c0724d8290f9d218f74b1b7ddc82f0860538",
+      "mutation-probe-result": "ae2ed0d2a4c2b088f3366c3775c87afc69005fecd61de4ac2f0946887ba66edf",
+      "mutation-probe-script": "a1ca988489126e7cf47e832d2f8c0ac695d7f14bcd77d59bbe8ede977cd2d1b9",
+      "mypy": "a766815ce9137d28823902e2a13996ac5e7021d76946b008d607ddbe5fe9163c",
+      "plan": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "preflight": "22986ed3b2aa9f216adadbf1624bafe28a975ae643ec13df8e3041483d670518",
+      "preflight-main-ci": "10623af75811b2f76346d118d62584c9b8ab973e6f20c7c63f83265b9be1671d",
+      "previous-external-verdict": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba",
+      "publication-redaction-check": "4eb65a923b3c6d3d1531544ab0c159e2e497a3e797cb087e5fe9448b1893c015",
+      "qualification-tools-lock-match": "a2c806c7dc547234dff0c8590f9a342e7d6bbad5ad1141695e905e9efffc240f",
+      "qualifying-local-driver": "e1abce9c6a305db7523b168ef31586b32727d05e4b0f049bec03485bd4e283bd",
+      "rccad": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "reports-portfolio": "5ff0d2beebf13b3306380401711abca9a2ac1cdd5e5f91c3d5e2fa4626a0973c",
+      "reports-portfolio-junit": "fb45c78c42210860ebd16c6a89347e2c0b063918bf5a05e26643cfb30537bef1",
+      "retire-credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ruff": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "scope": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "sdk-build": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "sdk-ci": "8b6c8112caf5cb311ea60d9668ec58ea1207589d7c9c8ffc6270fff82e97553e",
+      "session-teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "session-teardown-result": "be780b2071cf344e97248ac60d79f5a9769b84f2085cebdb4b0b4bb996fed0dc",
+      "stack-summary": "abf58ad5008a978ba05b6abe1d4d7878eed27d4ef1d13bc0136a054908248696",
+      "sync-lint": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "task-junit": "afadfba9aff2125a7e0c1b47303638f827576b26f7d9296ea46dcaba24d4af14",
+      "task-resource-delta": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+      "task-run-1": "cb4edb3786c8e384deeebd4715b9d7f2650a48ec561b1ee8fe1421bf1fa40e69",
+      "task-run-2": "cba7bb19e81bfabf1e1cf363b2494414dc733f9fc414eb0d3a517752c8965a76",
+      "task-run-3": "029ca463e7ef4df6c077622168a3d7817534f7081fe166b2063f11e89a8db13b",
+      "task-validation-command-project": "d5560ac20ac214069646632e17587a1e8b299d140c47cc9052374a644883432e",
+      "tdd-red-c6-consumer-absent": "7c799871742a19af8d35918b22ae9bbf12fe62bc0ec12a7f913b6e8f50449c13",
+      "tdd-red-module-absent": "e7edbd4e19ff48ea6b1ff90f4bc0a98bb23cd0cc6ab134e90887cc1196bc2ec8",
+      "tdd-red-self-vouched-delegation": "d7897f49235e797611bc0bdbd703d4c1b197bb5471782d0a66c19e442afc79d1",
+      "tdd-repair1-binding-audit": "d102195e0c59341e859d6aa6f869e88a483ed13c1f1a4d9bda99f732cfb1f54d",
+      "tdd-repair1-evidence-classification": "bf3490522129a0178acc0a0f17e0eefb303ca7152a6d65e1a9db20a5c27a2e6c",
+      "tdd-repair2-binding-audit": "71edcf80b00cb3b2cda560b70d1b6695851e05ac4f8569f17f20dc3df57494af",
+      "teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "toolchain-lock-match": "bd664c6024afda8be85b3b7758e5aad2b60f676415cbe23ead44e9cd56264173",
+      "validation-command-junit": "07b262893dff61e20d1ddd1aa2322efdb1613c1c2f4484f0a286c16b8ef7c65a",
+      "wait-contract": "9f187b7108f2cd2ecba79adeb3c32ecce1c7305e0fb9e1f73a797cccd4a48d62"
+    },
+    "authority": "REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15)",
+    "method": "All parametrized JUnit testcase names retain the test function name and replace the full parameterized identity by SHA256; only publication changes, original counts and local exact JUnit union unchanged",
+    "redacted_identity_counts": {
+      "full-suite-junit": 1668,
+      "reports-portfolio-junit": 120,
+      "task-junit": 121,
+      "validation-command-junit": 121
+    }
+  },
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) sono sostituite prima dell'archiviazione e dell'hash; DSN mostrato come <local generated credential>",
+  "raw_output_redactions": {},
+  "raw_output_sha256": "000290056806f79ca5109da47542047c84dc04c3558d0b9f39258225383341e2",
+  "repair_cycle": 2,
+  "repair_dispositions": {
+    "VF-001": {
+      "change": "propose/load usano solo il binding verificato o contesto nullo in entrambi i percorsi di eccezione; object/mapping/duck rifiutati BINDING_MISSING senza campi del chiamante; diniego persistito su PostgreSQL; audit realmente indisponibile fallisce AUDIT_UNAVAILABLE. Correzione commit del ciclo1 preservata.",
+      "status": "ADDRESSED_AWAITING_INDEPENDENT_VERIFIER",
+      "tests": [
+        "test_proposal_and_load_invalid_binding_audit_without_caller_context",
+        "test_verified_binding_is_retained_for_authenticated_denial",
+        "test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed"
+      ]
+    },
+    "VF-002-cycle0": {
+      "change": "Classificazione AST dei fixture; i quattro fault originali restano unitari; nuova qualifica con OPA pinned, revisione Rego reale, risposta non booleana e trasporto realmente rifiutato",
+      "status": "HISTORICAL_REPAIR1_PRESERVED",
+      "tests": [
+        "test_promotion_policy_is_live_and_fail_closed",
+        "test_live_proposal_policy_opa_positive_and_faults"
+      ]
+    }
+  },
+  "repair_of": {
+    "findings": [
+      "VF-001"
+    ],
+    "request_id": "OCOR-DEV-0058-353ef892ff6e-1",
+    "verdict": "NO_GO",
+    "verdict_sha256": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba"
+  },
+  "reproducible_check": {
+    "command": "python3 ~/.ocor-codex/ocor-dev-0058/repair2/check_evidence.py <repo> <head>",
+    "scope": "input hashes at code commit and final HEAD, evidence-only diff, raw JSONL hashes, command/raw pairing, exact task coverage and JUnit counts, full campaign, mutation results, prior G5 entries preserved, runtime validator; AST fixture classification and repair_cycle=2"
+  },
+  "requirement_coverage_note": "Component-level evidence for the promotion obligation of FR-118 (memory -> C6 -> C3 path), the governed canonical admission of FR-053, the revocation/kill-switch race aspects of FR-119 at the promotion boundary, plus BR-003; FGM-15 is exercised at component level only; no G6 verification, no FGM campaign closure, no E1/E2 or Verified promotion.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0058-PROPOSAL-IS-NON-AUTHORITATIVE-AND-RECORDED",
+      "command": "proposeMemoryPromotion records a content-free MemoryPromotionProposal bound to the exact committed source version, GCS, registered target profile, evidence and provenance in the protected audit store and returns only the public OperationReceipt; no ledger, canonical or security write; requests smuggling authority, approval, decision, capability, policy, content or effect members, unregistered or security/policy targets, malformed envelopes, a missing binding or a foreign GCS are refused with an audited denial; on PostgreSQL 16, Qdrant and OpenBao the proposal is durable and revalidated by fresh adapters",
+      "real_backend_tests": [
+        "test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed",
+        "test_live_proposal_is_durable_and_consumed_from_fresh_adapters"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 55,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed",
+        "test_live_proposal_is_durable_and_consumed_from_fresh_adapters",
+        "test_malformed_and_unregistered_targets_fail_closed",
+        "test_memory_port_has_no_canonical_security_or_mutative_memory_dependency",
+        "test_missing_binding_and_foreign_gcs_fail_closed",
+        "test_proposal_and_load_invalid_binding_audit_without_caller_context",
+        "test_proposal_binds_exact_source_gcs_target_evidence_without_mutation",
+        "test_request_cannot_smuggle_authority_effect_or_content",
+        "test_verified_binding_is_retained_for_authenticated_denial"
+      ],
+      "unit_fixture_tests": [
+        "test_malformed_and_unregistered_targets_fail_closed",
+        "test_memory_port_has_no_canonical_security_or_mutative_memory_dependency",
+        "test_missing_binding_and_foreign_gcs_fail_closed",
+        "test_proposal_and_load_invalid_binding_audit_without_caller_context",
+        "test_proposal_binds_exact_source_gcs_target_evidence_without_mutation",
+        "test_request_cannot_smuggle_authority_effect_or_content",
+        "test_verified_binding_is_retained_for_authenticated_denial"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0058-PROPOSAL-REVALIDATION-FAILS-CLOSED",
+      "command": "The proposal policy (unit fixture faults labelled as such; separate live cases query pinned OPA with allow/deny, a real refused TCP connection, an installed new bundle revision and an installed non-boolean result), deadline, audit availability, proposal integrity and the source eligibility are checked at proposal and again at consumption: revocation, correction, expiry, stop-epoch change (also during policy I/O), policy change, deadline, unrecorded, tampered or foreign proposals fail closed with an audited denial and no proposal; on the real backends revocation, supersession, foreign compartment, stop and policy denial leave only the denial and an unchanged ledger",
+      "real_backend_tests": [
+        "test_live_ineligible_source_or_changed_control_leaves_only_denial",
+        "test_live_proposal_policy_opa_positive_and_faults"
+      ],
+      "requirement_id": "FR-119",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 24,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_audit_outage_returns_no_proposal",
+        "test_consumption_revalidates_source_stop_policy_and_time",
+        "test_expired_deadline_is_audited",
+        "test_live_ineligible_source_or_changed_control_leaves_only_denial",
+        "test_live_proposal_policy_opa_positive_and_faults",
+        "test_promotion_policy_is_live_and_fail_closed",
+        "test_stop_change_during_policy_validation_returns_no_proposal",
+        "test_unrecorded_tampered_or_foreign_proposal_cannot_be_consumed"
+      ],
+      "unit_fixture_tests": [
+        "test_audit_outage_returns_no_proposal",
+        "test_consumption_revalidates_source_stop_policy_and_time",
+        "test_expired_deadline_is_audited",
+        "test_promotion_policy_is_live_and_fail_closed",
+        "test_stop_change_during_policy_validation_returns_no_proposal",
+        "test_unrecorded_tampered_or_foreign_proposal_cannot_be_consumed"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0058-CANONICAL-STATE-ONLY-VIA-C6-GATE-AND-VERIFIED-C3-RECEIPT",
+      "command": "On PostgreSQL, Qdrant, OpenBao transit (ed25519 gate signature), the real Human Gate and live OPA, a recorded proposal reaches canonical state only through the signed C6 gate (command, Authority, Decision, approvals) and a governed C3 commit whose receipt is verified against the command; the ledger is unchanged, intent and completion are audited, the replay returns the same C3 receipt without a second revision; a C3 refusal or a receipt not bound to the command after dispatch is an audited indeterminate outcome, never success",
+      "real_backend_tests": [
+        "test_live_c3_receipt_not_bound_to_command_is_indeterminate",
+        "test_live_c3_refusal_after_dispatch_is_indeterminate_never_success",
+        "test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt"
+      ],
+      "requirement_id": "FR-053",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 4,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_c6_consumer_requires_separate_control_authority_approval_decision_and_c3",
+        "test_live_c3_receipt_not_bound_to_command_is_indeterminate",
+        "test_live_c3_refusal_after_dispatch_is_indeterminate_never_success",
+        "test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt"
+      ],
+      "unit_fixture_tests": [
+        "test_c6_consumer_requires_separate_control_authority_approval_decision_and_c3"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0058-EVERY-C6-CONTROL-REFUSAL-LEAVES-STATE-UNCHANGED",
+      "command": "Missing/unverified bindings produce a durable denial with no C3 revision or outbox row; audit failure fails closed (local failure handling). Each live fault mutates exactly one control of the otherwise accepted gate and is refused before C3 with its own stable detail, leaving canonical state absent, the memory ledger unchanged and an audited denial: missing, unsigned or digest-forged gate; proposal, target, GCS, evidence or claim binding; Authority ref, expiry, not-yet-valid, revocation, purpose, tenant, capability, scope, domain, compartments, risk, self-vouched or unverified or revoked delegation, capability not composed for C3; Decision rejected, expired, revoked, other action or ref; approvals absent, below quorum, self-approved, wrong role, expired, missing required role, expiring during the last policy I/O; OPA deny, outage, stale bundle; stop, source revocation or Decision revocation during policy evaluation",
+      "real_backend_tests": [
+        "test_live_commit_invalid_binding_persists_denial_without_state_change",
+        "test_live_every_c6_gate_refusal_leaves_canonical_and_memory_unchanged"
+      ],
+      "requirement_id": "FR-053",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 50,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access",
+        "test_live_commit_invalid_binding_persists_denial_without_state_change",
+        "test_live_every_c6_gate_refusal_leaves_canonical_and_memory_unchanged"
+      ],
+      "unit_fixture_tests": [
+        "test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0058-MEMORY-PROMOTION-PATH",
+      "command": "End-to-end component path MemoryItem -> MemoryPromotionProposal -> C6 Policy/Authority/Approval/Decision -> GovernedCanonicalCommitCommand -> C3 on the real backends, with no direct memory write, capability grant or policy mutation at the port or integration level",
+      "real_backend_tests": [
+        "test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt"
+      ],
+      "requirement_id": "BR-003",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_c6_consumer_requires_separate_control_authority_approval_decision_and_c3",
+        "test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt",
+        "test_memory_port_has_no_canonical_security_or_mutative_memory_dependency"
+      ],
+      "unit_fixture_tests": [
+        "test_c6_consumer_requires_separate_control_authority_approval_decision_and_c3",
+        "test_memory_port_has_no_canonical_security_or_mutative_memory_dependency"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "The C6 control authority, its signer and the proposal audit store of the qualifying cases are test adapters on the real PostgreSQL and OpenBao; no production C6 authority service exists yet, so gate authenticity rests on the independent signature verification plus the store boundary (open, unassigned).",
+    "The last control revalidation and the C3 commit are not atomic with respect to a concurrent stop, revocation or approval withdrawal: the current GovernedCommitPort has no stop/epoch fence (open, tracked toward FGM-17; not claimed closed).",
+    "canonical_delta is decided and signed by C6 reviewers; this task binds it to the proposal by source version, evidence and claim-source binding, not by semantic equivalence with the memory content (content is never copied into the proposal).",
+    "The Authority signature is attested by the signed gate (signature_verified=True after the gate verification) rather than by a separate Authority signature check; acceptable only while the C6 signer is the single trusted authority (open, unassigned).",
+    "Proposal and gate digests in audit are non-content references that may be correlatable; the membership-inference risk declared in 0055 remains open and unassigned."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementers": [
+      "Codex (OpenAI), gpt-6.1-sol: RED test (62b3954), proposal port (e7d6259) and an uncommitted first draft of the C6 consumer and its live fixture, interrupted by model capacity at 2026-10-23T08:34Z.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): took over the uncommitted WIP, fixed the live OPA fixture, found and fixed the self-vouched delegation defect (RED recorded), denial classification, capability pin, post-dispatch and mutation-gap tests, qualification and this candidate (de6aeb8 onward).",
+      "Codex (OpenAI), repair cycle 1: RED 2dd081b, audit of missing/unverified commit binding, live PostgreSQL denial tests, OPA proposal policy fault cases, explicit AST evidence classification, fresh qualification.",
+      "Codex (OpenAI), repair cycle 2: RED aeb2227 (10 failures, 8 passes), fix propose/load denial context bca0773, 34 added unit/live cases, fresh qualification; original implementers preserved.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer for repair cycle 2 after the Codex quota stop (2026-10-23T15:40Z): reviewed RED aeb2227 and fix bca0773 against VF-001 without changing code or tests, interrupted the quota-orphaned full (diagnostic, never counted), reran the governed full suite on the same HEAD, built and checked the evidence, published the candidate and the verification request."
+    ],
+    "independence": "external loop only; the implementers did not run or simulate the verification; verifier must be of a provider other than OpenAI and Anthropic",
+    "verifier": "Grok 4.7 via Cursor CLI (xAI), independent process/context/provider; effective verdict configuration in independent_verification"
+  },
+  "rollback_procedure_verified": "Mechanical review: the task adds memory/promotion.py and tests/tasks/test_ocor_dev_0058.py plus evidence; no migration, no persisted schema of its own and no change to existing modules; rollback is a revert commit of the task merge, after which the prior G5 manifest entries remain valid unchanged.",
+  "schema_version": "1.0",
+  "sealed_at": "2026-10-23T20:43:25.327692+00:00",
+  "sealed_dependencies": {
+    "OCOR-DEV-0050": "29491c874905660314f2fd366fefb64a55ec8775",
+    "OCOR-DEV-0054": "aa3d158b5b3da95226a15b9a48a522a9494996fd",
+    "OCOR-DEV-0057": "24a8ec2ac5f90774a8bca5c2e08a32cebc92be95"
+  },
+  "session_teardown": {
+    "operation": "teardown",
+    "residual": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "result": "REMOVED",
+    "status": "PASS"
+  },
+  "status": "SEALED",
+  "task_id": "OCOR-DEV-0058",
+  "tdd": {
+    "GREEN": "Repair cycle 2 code commit bca0773ef989f65036cb593d446f139fb59c76dd: propose/load track the verified binding separately; both exception paths use only verified context or null; task repeated three times, full and portfolio newly acquired on this commit.",
+    "RED": "62b3954 (tests only, Codex): collection ModuleNotFoundError ocor_runtime.memory.promotion before any implementation (raw label tdd-red-module-absent). C6 consumer RED on e7d6259 plus uncommitted consumer test: ImportError C6MemoryPromotionConsumer (raw label tdd-red-c6-consumer-absent). Delegation RED on the Codex WIP (e7d6259 plus uncommitted consumer): the authority-delegation fault was ACCEPTED because the consumer built VerifiedAuthorityBinding from the Authority's own delegation_ref (raw label tdd-red-self-vouched-delegation, \"DID NOT RAISE\"). Repair cycle 1: 6 assertion failures before code change in red-binding-audit.log (missing durable denial / audit unavailability not observed); classifier RED reproduces the name-based misclassification in red-evidence-classification.log. Repair cycle 2 RED aeb2227: object/mapping caused AttributeError, caller duck inserted attacker correlation/digest; red-binding-audit.log fingerprints 10 failures with 8 positive controls passing.",
+    "REFACTOR": "Exact-version eligibility reuses the 0052 _ExactSearch (no duplicated policy logic); the memory port has no C3, C6, ledger or admission dependency; gate parsing, control revalidation and C3 dispatch are separated so that every refusal before dispatch is a definite audited denial and every failure after dispatch is an audited indeterminate outcome.",
+    "mutation_probe": "19 targeted mutants of memory/promotion.py, each removing or weakening one control, on the frozen code commit (in place, file restored and hash-checked). 18 killed; declared equivalent: ['skip-command-gcs'] (reason recorded per mutant). A first diagnostic probe on de6aeb8 left three survivors (final Human Gate recheck, command GCS comparison, C3 receipt verification): two tests were added (approval expiring during the last policy I/O; forged C3 receipt at the port) and the GCS comparison was shown equivalent. The diagnostic outputs are archived as diagnostics and never counted.",
+    "red_raw_sha256": {
+      "red-c6-consumer-absent": "7c799871742a19af8d35918b22ae9bbf12fe62bc0ec12a7f913b6e8f50449c13",
+      "red-module-absent": "e7edbd4e19ff48ea6b1ff90f4bc0a98bb23cd0cc6ab134e90887cc1196bc2ec8",
+      "red-self-vouched-delegation": "d7897f49235e797611bc0bdbd703d4c1b197bb5471782d0a66c19e442afc79d1",
+      "repair1-binding-audit": "d102195e0c59341e859d6aa6f869e88a483ed13c1f1a4d9bda99f732cfb1f54d",
+      "repair1-evidence-classification": "bf3490522129a0178acc0a0f17e0eefb303ca7152a6d65e1a9db20a5c27a2e6c",
+      "repair2-binding-audit": "71edcf80b00cb3b2cda560b70d1b6695851e05ac4f8569f17f20dc3df57494af"
+    }
+  }
+}
