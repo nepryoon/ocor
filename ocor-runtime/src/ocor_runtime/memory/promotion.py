@@ -472,10 +472,10 @@ class C6MemoryPromotionConsumer:
         self._human_gate, self._policy, self._c3 = human_gate, policy, c3
         self._clock, self._audit = clock, audit
 
-    def _record(self, action: str, binding: VerifiedGovernedContextBinding, **fields: object) -> None:
+    def _record(self, action: str, binding: VerifiedGovernedContextBinding | None, **fields: object) -> None:
         event: dict[str, object] = {
-            "action": action, "correlation_id": binding.expected.correlation_id,
-            "governed_context_digest": binding.expected.digest(),
+            "action": action, "correlation_id": binding.expected.correlation_id if binding else None,
+            "governed_context_digest": binding.expected.digest() if binding else None,
             "evaluated_at": format_utc_timestamp(self._clock.now()), **fields,
         }
         try:
@@ -486,9 +486,12 @@ class C6MemoryPromotionConsumer:
     def commit(
         self, proposal_audit_ref: str, *, binding: VerifiedGovernedContextBinding | None,
     ) -> CommitReceipt:
-        verified = MemoryPromotionService._binding(binding)
+        verified = None
         dispatched = False
         try:
+            # Audit authentication refusals too, using no caller-asserted GCS.
+            # Until this succeeds no proposal/control authority or C3 is read.
+            verified = MemoryPromotionService._binding(binding)
             proposal = self._proposals.load(proposal_audit_ref, binding=verified)
             gate = self._controls.gate(proposal_audit_ref)
             if not isinstance(gate, SignedPromotionGate):

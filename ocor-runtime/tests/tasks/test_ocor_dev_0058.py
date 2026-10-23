@@ -429,6 +429,41 @@ class OpaPolicy:
                                       r.d("stale") if self.stale else self.digest)
 
 
+class OpaProposalPolicy(OpaPolicy):
+    """Proposal policy test adapter: decode the response of the pinned OPA.
+
+    No decision is synthesised by this adapter. Invalid responses and a refused
+    TCP transport qualify local fail-closed handling, not OPA's own correctness.
+    """
+
+    TEMPLATE = ('package ocor.promotion0058.{suffix}\n'
+                'default allow := false\n'
+                'allow if {{ input.action == "MEMORY_PROMOTION"; '
+                'input.aggregate_type == "Situation"; input.permitted == true }}\n')
+
+    def install(self, source: str) -> None:
+        req = Request("http://127.0.0.1:8181/v1/policies/" + self.identifier,
+                      data=source.encode(), method="PUT", headers={"Content-Type": "text/plain"})
+        with urlopen(req, timeout=5) as response:
+            assert response.status == 200
+
+    def authorize_promotion(self, item: Any, ctx: Any, target_type: str, target_ref: str) -> Any:
+        if self.outage:
+            with urlopen("http://127.0.0.1:1/v1/data/" + self.path, timeout=1):
+                raise AssertionError("unreachable port answered")
+        status, rules = r.base._http("GET", "http://127.0.0.1:8181/v1/policies/" + self.identifier)
+        assert status == 200
+        digest = canonical_digest(rules["result"]["raw"])
+        status, out = r.base._http("POST", "http://127.0.0.1:8181/v1/data/" + self.path, {"input": {
+            "action": "MEMORY_PROMOTION", "aggregate_type": target_type, "permitted": self.permitted,
+        }})
+        assert status == 200
+        # A non-boolean OPA result cannot be interpreted as an allow decision.
+        if not isinstance(out.get("result"), bool):
+            return None
+        return r.MemoryPolicyDecision(out["result"], "urn:ocor:policy:opa-proposal0058", digest)
+
+
 def gate_body(proposal: Any, proposal_ref: str, ctx: Any) -> dict[str, Any]:
     now = r.NOW
     action = "urn:ocor:action:promotion:" + uuid.uuid4().hex
@@ -471,13 +506,13 @@ def gate_body(proposal: Any, proposal_ref: str, ctx: Any) -> dict[str, Any]:
 
 
 @contextmanager
-def workflow(backends: r.Backends) -> Iterator[Any]:
+def workflow(backends: r.Backends, *, proposal_policy: OpaProposalPolicy | None = None) -> Iterator[Any]:
     w = backends.world()
     policy = OpaPolicy()
     req: dict[str, Any] | None = None
     try:
         # The GCS pins the exact OPA rule bytes used in this component qualification.
-        ctx = replace(r.CALLER, policy_bundle_digest=policy.digest)
+        ctx = replace(r.CALLER, policy_bundle_digest=(proposal_policy or policy).digest)
         seed = w.admit("seed", "harbour patrol observation")
         candidate = seed.item.to_mapping()
         candidate.update(memory_item_id="c6-source", policy_bundle_digest=ctx.policy_bundle_digest,
@@ -499,7 +534,7 @@ def workflow(backends: r.Backends) -> Iterator[Any]:
             registry.register(IdentityRecord("human-" + role.lower(), attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": role}))
         c3 = PostgresC3Service(backends.dsn)
         c3.initialize()
-        s = service(w, audit)
+        s = service(w, audit, proposal_policy)
         req = request(w, governed_context=ctx.to_mapping(), governed_context_digest=ctx.digest(),
                       target_aggregate_ref="urn:ocor:situation:harbour:" + uuid.uuid4().hex)
         result = s.propose("c6-source", req, binding=r.binding(ctx))
@@ -541,6 +576,61 @@ def test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt(
         again = x.consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
         assert again.replayed is True and again.commit_id == receipt.commit_id
         assert x.c3.current_revision(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) == 1
+
+
+@pytest.mark.parametrize("invalid_binding", [None, object(), {"expected": "caller-asserted"}],
+                         ids=["missing", "unverified-object", "caller-mapping"])
+def test_live_commit_invalid_binding_persists_denial_without_state_change(
+    backends: r.Backends, invalid_binding: Any,
+) -> None:
+    with workflow(backends) as x:
+        x.controls.put(x.result.audit_ref, x.body)
+        before = x.w.ledger.records()
+        refused(lambda: x.consumer.commit(x.result.audit_ref, binding=invalid_binding), "BINDING_MISSING")
+        fresh_audit = a.PostgresReceiptAudit(backends.dsn, x.w.metadata.schema)
+        assert fresh_audit.actions() == ["proposeMemoryPromotion.recorded", "commitMemoryPromotion.denied"]
+        assert x.w.ledger.records() == before
+        assert x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) is None
+        with psycopg.connect(backends.dsn) as conn:
+            assert conn.execute("SELECT count(*) FROM c3_outbox WHERE aggregate_ref=%s",
+                                (x.req["target_aggregate_ref"],)).fetchone() == (0,)
+
+
+@pytest.mark.parametrize("fault,detail", [
+    ("allow", None), ("deny", "PROMOTION_DENIED"), ("outage", "PROMOTION_POLICY_UNAVAILABLE"),
+    ("stale", "POLICY_BUNDLE_MISMATCH"), ("invalid", "PROMOTION_POLICY_INVALID"),
+])
+def test_live_proposal_policy_opa_positive_and_faults(
+    backends: r.Backends, fault: str, detail: str | None,
+) -> None:
+    policy = OpaProposalPolicy()
+    try:
+        with workflow(backends, proposal_policy=policy) as x:
+            before = x.w.ledger.records()
+            # The fixture's initial proposal is a positive using this exact
+            # policy and binding. Mutate one boundary only before a second use.
+            policy.permitted = fault != "deny"
+            policy.outage = fault == "outage"
+            if fault == "stale":
+                policy.install(policy.SOURCE + "\n# new policy revision\n")
+            elif fault == "invalid":
+                package = policy.SOURCE.splitlines()[0]
+                policy.install(package + '\nallow := {"invalid": "decision"}\n')
+            if detail is None:
+                result = x.s.propose("c6-source", x.req, binding=r.binding(x.ctx))
+                assert result.proposal == x.result.proposal
+                assert x.audit.actions() == ["proposeMemoryPromotion.recorded"] * 2
+            else:
+                error = refused(lambda: x.s.propose("c6-source", x.req, binding=r.binding(x.ctx)), detail)
+                assert error.reason_code == {
+                    "deny": "POLICY_DENIED", "outage": "CONTROL_PLANE_UNAVAILABLE",
+                    "stale": "STALE_POLICY", "invalid": "CONTROL_PLANE_UNAVAILABLE",
+                }[fault]
+                assert x.audit.actions() == ["proposeMemoryPromotion.recorded", "proposeMemoryPromotion.denied"]
+            assert x.w.ledger.records() == before
+            assert x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) is None
+    finally:
+        policy.close()
 
 
 # Each fault mutates exactly one control of the otherwise accepted gate of the
