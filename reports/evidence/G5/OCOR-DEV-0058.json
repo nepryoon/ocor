@@ -632,6 +632,154 @@
     "uv": "0.12.5",
     "worktree": ".ocor/worktrees/ocor-dev-0058"
   },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "277e2332aaad3edfac793a5a259d7d260f809f52",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_tree_after": "1e6dab4e7dd50b29dde292eb9c9316868c03d45a",
+      "execution_tree_before": "1e6dab4e7dd50b29dde292eb9c9316868c03d45a",
+      "main_head": "7116ca63e363714f7d4c04a3cd4002efcf6ab14e",
+      "qualified_head": "b0fbb184f51f15ef777c5ead16aba3f362d28db8",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "0aee4e52f427219d6d4b5c3399d4086e5f6820bb0708614a3343b442342ba3b8",
+    "commands": [
+      {
+        "command": "sha256 of PATH tools against infra/toolchain.lock.json; qualification tools helm/kind/kubectl; python realpath; sha256 of environment.json",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, ruff, tsc e uv coincidono con infra/toolchain.lock.json e con environment.json. helm, kind e kubectl coincidono con qualification_tools_sha256. Python 3.12.11 reale sha256 ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07. environment.json sha256 41a0da5e983c0085ec2f76f693928d901f2f4bbfc5de641de7eb965e61f3469c. Versioni: Docker 29.7.2, git 2.53.0, gh 2.99.0, node v20.20.2, ruff 0.13.1, tsc 7.0.2, uv 0.12.5."
+      },
+      {
+        "command": "python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS. errors=[], docker READY, secret_names_present=[], porte 1729/3030/6363/8080/8181/8200 libere."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i digest normativi OK. inputs/ non compare nel diff."
+      },
+      {
+        "command": "git diff --name-only origin/main...HEAD e c07f86ce41e8d64dcfc4a49846e25bb28dfae9f7..HEAD; python scripts/validate_ocor_change_scope.py --base origin/main e --base c07f86ce --head HEAD --branch task/OCOR-DEV-0058-memory-promotion-c6-c3",
+        "exit_code": 0,
+        "summary": "merge-base con origin/main uguale al base_sha della richiesta. Diff di cinque percorsi: promotion.py, test_ocor_dev_0058.py, OCOR-DEV-0058.json, OCOR-DEV-0058.log, MANIFEST.json. Scope validator PASS su entrambi i base: superfici immutabili intatte, ledger stabile. MANIFEST aggiunge solo gli artifact e i requirement_results di OCOR-DEV-0058."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 83 source files."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato usa un'estensione monitorata fuori dall'area autorizzata."
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "status PASS_LOCAL_PRECHECK. findings=[]. dynamic_assurance CI_REQUIRED."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS. checked_inputs=219, checked_tasks=72, drifted_inputs=0, findings=[]."
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "Harness PASS 14 FAIL 0 NOT_EXECUTED 0. Evidence fence E1=0, nessun claim probatorio non supportato."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0058 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0058."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute && python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Teardown iniziale PASS ALREADY_REMOVED, residual vuoto, .ocor/bootstrap.env assente. Provision PASS in 49.683s. fuseki_max_heap_bytes=1073741824. control-plane SVID exit 0. Archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA-512 verificato ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132. Nove servizi READY, undici container, OOMKilled=false, RestartCount=0. Immagini pinned di Postgres, OPA, OpenBao, Qdrant, Kafka, Keycloak, SPIRE, TerminusDB e TypeDB uguali a quelle registrate nell'evidenza. L'image id locale di Fuseki differisce dal record e da services.lock output_sha256 perche l'immagine e costruita in questo worktree; la procedura versionata ha comunque restituito PASS dopo il controllo di ricetta e heap."
+      },
+      {
+        "command": "npm --prefix ocor-runtime/sdk/typescript ci && npm --prefix ocor-runtime/sdk/typescript run build",
+        "exit_code": 0,
+        "summary": "npm ci ha aggiunto 4 pacchetti, 0 vulnerabilita. tsc --project tsconfig.json exit 0."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=/tmp/ocor-verify-OCOR-DEV-0058-b0fbb184f51f-2/task-junit.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+        "exit_code": 0,
+        "summary": "133 passed in 26.63s. JUnit tests=133 failures=0 errors=0 skipped=0. DSN PostgreSQL 127.0.0.1:55433 dello stack appena provisionato. Log OPA: 60 occorrenze promotion0058, PUT/GET/POST su /v1/policies e /v1/data/.../allow. Container ocor-bootstrap rimasti 11, nessuno aggiuntivo dal file di test."
+      },
+      {
+        "command": "probe avversariale unitaria su promotion.py: volume oltre max_candidates, storia di versioni, duck binding, filtro non previsto, stop durante la policy",
+        "exit_code": 0,
+        "summary": "Con 149 item il propose della sorgente esatta restituisce urn:ocor:memory:source:v1 e il mapping non ha campi score o rank. Dopo le versioni 2..30 la versione 1 e SOURCE_NOT_ELIGIBLE con consume/propose denial audit e la versione 30 restituisce urn:ocor:memory:source:v30. Il duck binding e rifiutato BINDING_MISSING con correlation_id e governed_context_digest nulli. Un memory_kinds estraneo e REQUEST_INVALID con denial. Lo stop durante authorize_promotion lascia solo proposeMemoryPromotion.denied. Schemi ocor_t0052 residui dopo i test: 0."
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/ocor-dev-0058/repair2/check_evidence.py . b0fbb184f51f15ef777c5ead16aba3f362d28db8",
+        "exit_code": 0,
+        "summary": "PASS. Commit di codice bca0773ef989f65036cb593d446f139fb59c76dd antenato dell'HEAD; il diff successivo e solo evidenza. Hash di input, raw JSONL, manifest e voci G5 preesistenti coerenti. JUnit di task 133/0/0 e suite archiviata 2820/0/0. Classificazione AST dei backend coerente. 19 mutanti, nessuno sopravvissuto fuori dall'equivalenza dichiarata skip-command-gcs, la cui ragione e confermata da GovernedCanonicalCommitCommand.__post_init__ che rifiuta un digest GCS diverso dal contesto. Claim E1=0, E2=0, runtime_conformance NOT_ESTABLISHED, Production_readiness NO_GO."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head b0fbb184f51f15ef777c5ead16aba3f362d28db8 --output-dir /home/luca/.ocor-codex/verify-env/OCOR-DEV-0058-b0fbb184f51f-2/full",
+        "exit_code": 0,
+        "summary": "PASS sullo HEAD esatto. counts tests=2820 failures=0 errors=0 skipped=0. JUnit ricalcolato: 2820 casi unici, 0 skipped; test_ocor_dev_0048=196, test_ocor_dev_0049=390, test_ocor_dev_0058=133. duration_seconds=4403.67, sotto il limite 4500 e sopra la soglia informativa 3600 (po_decision_required=true). kind-teardown-observations: 1 rimozione OWNED_KIND_TEARDOWN_OBSERVED, node_id 085f34dfd012, destroy dello stesso UUID, remover kind delete cluster --name ocor-poc, finestra 30s, rejections vuote. Health observer DIAGNOSTIC_ONLY. Nessun OOMKilled e RestartCount=0. Tre PytestWarning preesistenti di record_property in test_ocor_dev_rem_0020, non skip."
+      },
+      {
+        "command": "python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Teardown finale PASS, result REMOVED, residual containers/volumes/networks vuoto. Nessun container ocor-bootstrap rimasto. Log di build Fuseki non tracciato rimosso. git status pulito. HEAD invariato. I container non OCOR preesistenti non sono stati toccati."
+      }
+    ],
+    "findings": [],
+    "implementers": [
+      "Codex (OpenAI), gpt-6.1-sol: RED test (62b3954), proposal port (e7d6259) and an uncommitted first draft of the C6 consumer and its live fixture, interrupted by model capacity at 2026-10-23T08:34Z.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): took over the uncommitted WIP, fixed the live OPA fixture, found and fixed the self-vouched delegation defect (RED recorded), denial classification, capability pin, post-dispatch and mutation-gap tests, qualification and this candidate (de6aeb8 onward).",
+      "Codex (OpenAI), repair cycle 1: RED 2dd081b, audit of missing/unverified commit binding, live PostgreSQL denial tests, OPA proposal policy fault cases, explicit AST evidence classification, fresh qualification.",
+      "Codex (OpenAI), repair cycle 2: RED aeb2227 (10 failures, 8 passes), fix propose/load denial context bca0773, 34 added unit/live cases, fresh qualification; original implementers preserved.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer for repair cycle 2 after the Codex quota stop (2026-10-23T15:40Z): reviewed RED aeb2227 and fix bca0773 against VF-001 without changing code or tests, interrupted the quota-orphaned full (diagnostic, never counted), reran the governed full suite on the same HEAD, built and checked the evidence, published the candidate and the verification request."
+    ],
+    "integration_agent": "Codex (OpenAI), seal and exact-head integration only",
+    "integration_condition": "Only seal/manifest metadata follow the exact reviewed head; runtime, tests, harness, workflows, locks, raw output and all pre-existing sealed records unchanged. All 13 mandatory checks must succeed on the final seal HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "prior_verdicts": [
+      {
+        "head_sha": "353ef892ff6e15bb0af920525204dd6aa5a7a0e1",
+        "request_id": "OCOR-DEV-0058-353ef892ff6e-1",
+        "sha256": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba",
+        "verdict": "NO_GO"
+      },
+      {
+        "head_sha": "e5f3729a5219ccb68b41ae846310aef18e8ab6d0",
+        "request_id": "OCOR-DEV-0058-e5f3729a5219-0",
+        "sha256": "5fd887db6e0d10d2d072ab6d2e410a75aab5588fe8fcf1cc42a3e8fce0198b9c",
+        "verdict": "NO_GO"
+      }
+    ],
+    "raw_output_sha256_unchanged": "000290056806f79ca5109da47542047c84dc04c3558d0b9f39258225383341e2",
+    "repair_cycle": 2,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-23T18:58:31Z",
+    "verdict_file_sha256": "6f503b6ab183d32c3a203c6117b059687e8b5f6e7c4e4ff722d2b971611f44a6",
+    "verdict_head_sha": "b0fbb184f51f15ef777c5ead16aba3f362d28db8",
+    "verdict_request_id": "OCOR-DEV-0058-b0fbb184f51f-2",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatori dichiarati nella richiesta e nell'evidenza: Codex, fornitore OpenAI (original gpt-6.1-sol; repair1 NOT_EXPOSED_BY_RUNTIME; repair2); Claude Code, fornitore Anthropic (claude-opus-5-5), anche come reserve dopo lo stop di quota di Codex. Verifier: Cursor, fornitore xAI, grok-4.7-high. Nessun implementatore condivide il fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/promotion.py": "7f3a88f59f7b0e23e6c0da69d5bd4b3ad0ac9d7f44918a4a898f6747676869b5",
@@ -971,10 +1119,11 @@
       "Claude Code (Anthropic), claude-opus-5-5, reserve implementer for repair cycle 2 after the Codex quota stop (2026-10-23T15:40Z): reviewed RED aeb2227 and fix bca0773 against VF-001 without changing code or tests, interrupted the quota-orphaned full (diagnostic, never counted), reran the governed full suite on the same HEAD, built and checked the evidence, published the candidate and the verification request."
     ],
     "independence": "external loop only; the implementers did not run or simulate the verification; verifier must be of a provider other than OpenAI and Anthropic",
-    "verifier": "to be recorded from the external verdict"
+    "verifier": "Grok 4.7 via Cursor CLI (xAI), independent process/context/provider; effective verdict configuration in independent_verification"
   },
   "rollback_procedure_verified": "Mechanical review: the task adds memory/promotion.py and tests/tasks/test_ocor_dev_0058.py plus evidence; no migration, no persisted schema of its own and no change to existing modules; rollback is a revert commit of the task merge, after which the prior G5 manifest entries remain valid unchanged.",
   "schema_version": "1.0",
+  "sealed_at": "2026-10-23T20:43:25.327692+00:00",
   "sealed_dependencies": {
     "OCOR-DEV-0050": "29491c874905660314f2fd366fefb64a55ec8775",
     "OCOR-DEV-0054": "aa3d158b5b3da95226a15b9a48a522a9494996fd",
@@ -990,7 +1139,7 @@
     "result": "REMOVED",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-0058",
   "tdd": {
     "GREEN": "Repair cycle 2 code commit bca0773ef989f65036cb593d446f139fb59c76dd: propose/load track the verified binding separately; both exception paths use only verified context or null; task repeated three times, full and portfolio newly acquired on this commit.",
