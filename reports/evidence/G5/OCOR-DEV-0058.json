@@ -8,117 +8,225 @@
   },
   "commands": [
     {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
-      "duration_seconds": 0.972,
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.003,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.01,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "sync-lint",
+      "raw_sha256": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.358,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.081,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "drift",
+      "raw_sha256": "0c375d48e94b2e67bdad0377d1ecbb1afa81c8cdd49ae8813b0c4260f21acd5f",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.014,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m mypy",
+      "duration_seconds": 0.14,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "mypy",
+      "raw_sha256": "a766815ce9137d28823902e2a13996ac5e7021d76946b008d607ddbe5fe9163c",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.024,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.287,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0058-memory-promotion-c6-c3",
+      "duration_seconds": 0.037,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "scope",
+      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+      "duration_seconds": 0.093,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 1.512,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "teardown",
-      "raw_sha256": "55a8a94cc71b828d70fd552887777044844fc3124b53459a9e58bb460957689b",
+      "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
       "status": "PASS"
     },
     {
       "command": "rm -f -- .ocor/bootstrap.env",
       "duration_seconds": 0.002,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "retire-credentials",
       "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "status": "PASS"
     },
     {
       "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
-      "duration_seconds": 53.688,
+      "duration_seconds": 47.754,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "bootstrap-ci",
-      "raw_sha256": "c09b7930fea362ff07239125991ebb9767453e370b871b0d7b7dc75ca3e6ae24",
+      "raw_sha256": "c8c6292f5f7504667a25f8ff03564c246cb0c01030731d965d6d1f9fdfbfc423",
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair1/task-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
-      "duration_seconds": 28.033,
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+      "duration_seconds": 0.431,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "preflight",
+      "raw_sha256": "22986ed3b2aa9f216adadbf1624bafe28a975ae643ec13df8e3041483d670518",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /usr/bin/python3 ~/.ocor-codex/ocor-dev-0058/repair2/mutation_probe.py ~/.ocor-codex/ocor-dev-0058/repair2/mutation-probe.json",
+      "duration_seconds": 216.071,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
+      "label": "mutation-probe",
+      "raw_sha256": "9f0b99cfe379fc13bd45517618d6c0724d8290f9d218f74b1b7ddc82f0860538",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.327,
+      "exit_code": 0,
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "task-run-1",
-      "raw_sha256": "a9b9218674fdbc2c5e0a485f0383108d91371fb7501be041d453447370d493a4",
+      "raw_sha256": "cb4edb3786c8e384deeebd4715b9d7f2650a48ec561b1ee8fe1421bf1fa40e69",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 99,
+        "passed": 133,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair1/task-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
-      "duration_seconds": 21.953,
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.471,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "task-run-2",
-      "raw_sha256": "83c33f91195d601ae092506be3f4ebd171b54cbb3625ccc487e53651f1508d9d",
+      "raw_sha256": "cba7bb19e81bfabf1e1cf363b2494414dc733f9fc414eb0d3a517752c8965a76",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 99,
+        "passed": 133,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair1/task-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
-      "duration_seconds": 26.941,
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.268,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "task-run-3",
-      "raw_sha256": "326c82086738de86c0c48b6e5537bbc3a3784526403250d4c331c593259dee40",
+      "raw_sha256": "029ca463e7ef4df6c077622168a3d7817534f7081fe166b2063f11e89a8db13b",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 99,
+        "passed": 133,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair1/task-validation-command-project.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
-      "duration_seconds": 25.365,
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/task-validation-command-project.xml ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "duration_seconds": 26.272,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "task-validation-command-project",
-      "raw_sha256": "7258aaa84a3444dcc81beb812085f2ffe948211ab2748eba5f7cfb5f8b552a98",
+      "raw_sha256": "d5560ac20ac214069646632e17587a1e8b299d140c47cc9052374a644883432e",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 99,
+        "passed": 133,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
       "command": "npm --prefix ocor-runtime/sdk/typescript ci",
-      "duration_seconds": 0.615,
+      "duration_seconds": 0.635,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "sdk-ci",
-      "raw_sha256": "041d72891482edddb5c2a015efa26ea64893968f24dcd38cbd9069f27d0f8bd9",
+      "raw_sha256": "8b6c8112caf5cb311ea60d9668ec58ea1207589d7c9c8ffc6270fff82e97553e",
       "status": "PASS"
     },
     {
       "command": "npm --prefix ocor-runtime/sdk/typescript run build",
-      "duration_seconds": 0.155,
+      "duration_seconds": 0.13,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "sdk-build",
       "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
       "status": "PASS"
     },
     {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_rem0023_consumer_fixture_scope.py --junitxml=~/.ocor-codex/ocor-dev-0058/repair1/reports-portfolio.xml",
-      "duration_seconds": 35.17,
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_rem0023_consumer_fixture_scope.py --junitxml=~/.ocor-codex/ocor-dev-0058/repair2/reports-portfolio.xml",
+      "duration_seconds": 34.418,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "reports-portfolio",
-      "raw_sha256": "994012e952dce2fe520e71f4bbcc0559c24e48b664f6d05bef728e9cf9e822f5",
+      "raw_sha256": "5ff0d2beebf13b3306380401711abca9a2ac1cdd5e5f91c3d5e2fa4626a0973c",
       "result": {
         "failed": 0,
         "not_executed": 0,
@@ -128,127 +236,19 @@
       "status": "PASS"
     },
     {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
-      "duration_seconds": 0.44,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "preflight",
-      "raw_sha256": "42061c4b05aaf12c49e74daa8a3c900a9fb0564a19a60cdd2626c350daf43a75",
-      "status": "PASS"
-    },
-    {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /usr/bin/python3 ~/.ocor-codex/ocor-dev-0058/repair1/mutation_probe.py ~/.ocor-codex/ocor-dev-0058/repair1/mutation-probe.json",
-      "duration_seconds": 148.789,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "mutation-probe",
-      "raw_sha256": "98400bd615608e72f355f53781da708c73ba6779b4adb8f067a523f6c9f2cc77",
-      "status": "PASS"
-    },
-    {
-      "command": "sha256sum -c inputs/normative/SHA256SUMS",
-      "duration_seconds": 0.004,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "inputs",
-      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
-      "status": "PASS"
-    },
-    {
-      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
-      "duration_seconds": 0.01,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "sync-lint",
-      "raw_sha256": "8f00f59825a71e93937fbc56382cd3aa752782e69740d960d2fdfdf288c4ef6c",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
-      "duration_seconds": 0.402,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "harness",
-      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
-      "duration_seconds": 0.082,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "drift",
-      "raw_sha256": "0c375d48e94b2e67bdad0377d1ecbb1afa81c8cdd49ae8813b0c4260f21acd5f",
-      "status": "PASS"
-    },
-    {
-      "command": "ruff check .",
-      "duration_seconds": 0.011,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "ruff",
-      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python -m mypy",
-      "duration_seconds": 0.101,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "mypy",
-      "raw_sha256": "a766815ce9137d28823902e2a13996ac5e7021d76946b008d607ddbe5fe9163c",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
-      "duration_seconds": 0.025,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "language",
-      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
-      "duration_seconds": 0.304,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "rccad",
-      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0058-memory-promotion-c6-c3",
-      "duration_seconds": 0.046,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "scope",
-      "raw_sha256": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
-      "status": "PASS"
-    },
-    {
-      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
-      "duration_seconds": 0.105,
-      "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
-      "label": "plan",
-      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-      "status": "PASS"
-    },
-    {
       "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
-      "duration_seconds": 2.271,
+      "duration_seconds": 2.056,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-reset",
       "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
       "status": "PASS"
     },
     {
       "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
-      "duration_seconds": 1.51,
+      "duration_seconds": 1.518,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-teardown",
       "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
       "status": "PASS"
@@ -257,52 +257,52 @@
       "command": "rm -f -- .ocor/bootstrap.env",
       "duration_seconds": 0.002,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-retire-credentials",
       "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "status": "PASS"
     },
     {
       "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
-      "duration_seconds": 53.266,
+      "duration_seconds": 47.105,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-bootstrap-ci",
-      "raw_sha256": "4300b9baf8984f28dd9b59b1834d29204d026eac33b8dcf3e921dbb1a0ea52ae",
+      "raw_sha256": "a9215f12a7894af0505351453e69e060f18f97424edb829a5a894707c136c1eb",
       "status": "PASS"
     },
     {
       "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
       "duration_seconds": 0.01,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-sync-lint",
-      "raw_sha256": "d896bfaae7a10ec97ec9e45157f975ff0aa08b18406d27bfb01be9aa0e4ae74d",
+      "raw_sha256": "0b105d5c53993200b4e9ffd3128e65e3bdbb3f6343e69a34711e81822d6238b0",
       "status": "PASS"
     },
     {
       "command": "<worktree>/ocor-runtime/.venv/bin/python -c import mypy.version; print(mypy.version.__version__)",
-      "duration_seconds": 0.024,
+      "duration_seconds": 0.017,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-mypy-ready",
       "raw_sha256": "ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 657e5b450e3505d15070017530bd6e41143eab90 --output-dir ~/.ocor-codex/ocor-dev-0058/repair1/full",
-      "duration_seconds": 3649.437,
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head bca0773ef989f65036cb593d446f139fb59c76dd --output-dir ~/.ocor-codex/ocor-dev-0058/repair2/full",
+      "duration_seconds": 4109.24,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "full-suite",
-      "raw_sha256": "4a0d2cb528b3b0a5af7b8df0cd22ebb02a3294ab0e59478ce229e3d233c1e73d",
+      "raw_sha256": "5cdd6e677635b704cebec3a41cd7405c26d00688c8df94ee54dd0b0bf077336f",
       "status": "PASS"
     },
     {
       "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
-      "duration_seconds": 3.301,
+      "duration_seconds": 3.066,
       "exit_code": 0,
-      "head_sha": "657e5b450e3505d15070017530bd6e41143eab90",
+      "head_sha": "bca0773ef989f65036cb593d446f139fb59c76dd",
       "label": "session-teardown",
       "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
       "status": "PASS"
@@ -318,21 +318,21 @@
       "command": "captured artifact: AST comparison of all pre-existing test functions plus exact JUnit name subset: no old body, assertion, decorator or parametrized case changed/removed",
       "exit_code": 0,
       "label": "existing-tests-preserved",
-      "raw_sha256": "d688fee723e2eea2e308b6df65473790bfe60de054c2f57acbc040e74d566aa1",
+      "raw_sha256": "fe75b843c2779d682f179c5c519f8434a88e336c3349b4b9803bfa47d19910b5",
       "status": "PASS"
     },
     {
-      "command": "captured artifact: Previous main integration PR319: all 13 required named checks success on exact head; not qualification of this candidate",
+      "command": "captured artifact: Previous main integration PR320: all 13 required named checks success on exact head; not qualification of this candidate",
       "exit_code": 0,
       "label": "preflight-main-ci",
-      "raw_sha256": "e3d9b07095b609aaabf57c88640dca62adf9cea41c13ff7e6feb66661be954d6",
+      "raw_sha256": "10623af75811b2f76346d118d62584c9b8ab973e6f20c7c63f83265b9be1671d",
       "status": "PASS"
     },
     {
       "command": "captured artifact: actual publication functions checked: only parametrized names change, all counts/assertion outcomes and source SHA256 preserved",
       "exit_code": 0,
       "label": "publication-redaction-check",
-      "raw_sha256": "d24eaff7d350497157c3db992c3e05bd2218d2e2220d8f5ff844f2eade92e29e",
+      "raw_sha256": "4eb65a923b3c6d3d1531544ab0c159e2e497a3e797cb087e5fe9448b1893c015",
       "status": "PASS"
     },
     {
@@ -346,21 +346,21 @@
       "command": "captured artifact: Helm, kind and kubectl executable SHA256 match qualification_tools.lock.json",
       "exit_code": 0,
       "label": "qualification-tools-lock-match",
-      "raw_sha256": "775af45e9a626e1b6007cac274154674d1bf41eca0aeab22e7804622ddae7afc",
+      "raw_sha256": "a2c806c7dc547234dff0c8590f9a342e7d6bbad5ad1141695e905e9efffc240f",
       "status": "PASS"
     },
     {
       "command": "captured artifact: exact evidence builder with explicit AST fixture classification",
       "exit_code": 0,
       "label": "evidence-builder-script",
-      "raw_sha256": "b2a9829d86bf6a33778ebed0d0debefcd32f6fddacfed181da627313f0a48158",
+      "raw_sha256": "2d5c67d80584612545905987745e7cd07142637df5f8c75401624d8fde6bdd00",
       "status": "PASS"
     },
     {
       "command": "captured artifact: recomputes final HEAD digests, AST backend labels, raw/manifest/counts",
       "exit_code": 0,
       "label": "evidence-checker-script",
-      "raw_sha256": "0c24c988b1bcdb0462a859c0adbeaede22fcb6e09535eab948878c0a790beef9",
+      "raw_sha256": "534fb02bd89d1d7630df8218b9ff33a57472e0e3c0ce49e4a0999eeb29d822d4",
       "status": "PASS"
     },
     {
@@ -381,11 +381,11 @@
       "command": "captured artifact: JUnit XML captured from task-run-3 (parameterized names published as SHA256) (third of three consecutive live runs)",
       "exit_code": 0,
       "label": "task-junit",
-      "raw_sha256": "25b3418c121424af5319d642ea48944676df7b71124b79c0e281f26158b66b75",
+      "raw_sha256": "c5f4fde79ef04bde6a2677bd3e913e04ad42c9ef32a425cd1d6b40979581cd77",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 99,
+        "passed": 133,
         "skipped": 0
       },
       "status": "PASS"
@@ -394,11 +394,11 @@
       "command": "captured artifact: JUnit XML of the backlog validation command scoped to the runtime project",
       "exit_code": 0,
       "label": "validation-command-junit",
-      "raw_sha256": "967d12b3c3dbd61a6268a87dcfb9c223008369666bceb766a166808b0b772ca9",
+      "raw_sha256": "aad035707163896119aadc67ce14f9ee2f47a9ae9daf978f5f79a4398535abdf",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 99,
+        "passed": 133,
         "skipped": 0
       },
       "status": "PASS"
@@ -407,7 +407,7 @@
       "command": "captured artifact: JUnit XML of the reports/tests portfolio linked in CI (after SDK npm ci/build)",
       "exit_code": 0,
       "label": "reports-portfolio-junit",
-      "raw_sha256": "a58fdec3481772a18170e510a9c6d6a57d7860c1409ad427547538739df1a8ab",
+      "raw_sha256": "2e217c9d9c9e2f3147281b43cd1e0720a2ecc0c1e785569c43ec9c31bbe00a8e",
       "result": {
         "failed": 0,
         "not_executed": 0,
@@ -420,11 +420,11 @@
       "command": "captured artifact: JUnit XML (parameterized names published as SHA256) of the governed full suite (scripts/run_qualifying_campaign.py)",
       "exit_code": 0,
       "label": "full-suite-junit",
-      "raw_sha256": "7354a0dc02ad794cefa3482e055eb10b320bd9657849f76ea3e68fc0729b6111",
+      "raw_sha256": "3ffcb51cdaabe8a217d201ad13c1dd3325f9c92ddb8fa2f0cefe691a0a637ee4",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 2786,
+        "passed": 2820,
         "skipped": 0
       },
       "status": "PASS"
@@ -433,11 +433,11 @@
       "command": "captured artifact: run_qualifying_campaign.py result (75-min limit, stack guard, required modules)",
       "exit_code": 0,
       "label": "full-suite-campaign-result",
-      "raw_sha256": "cffe0528cbca577545e9099ad4a2d032d42c5be70bc4bce1398f918b19c1696d",
+      "raw_sha256": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 2786,
+        "passed": 2820,
         "skipped": 0
       },
       "status": "PASS"
@@ -453,28 +453,28 @@
       "command": "captured artifact: unsharded full JUnit exact multiset match with pytest --collect-only on the same HEAD: no missing/duplicate/extra/skipped test",
       "exit_code": 0,
       "label": "exact-junit-union",
-      "raw_sha256": "5a420eaa8e16e46bfdb16e821b451a7c643a7a2b2b8d35cf05a224e605e68ec1",
+      "raw_sha256": "fee2412d40aa22dbe6c54c20394150fc2d45533203a0d2886a06b132060ebb93",
       "status": "PASS"
     },
     {
       "command": "captured artifact: repository kind v2 guard: destroy/remover proof and rejection observations",
       "exit_code": 0,
       "label": "full-kind-teardown",
-      "raw_sha256": "1442b25a2bf2a3c913848ae43ac47a3ada6665c802089f40148035aff61aa57c",
+      "raw_sha256": "0980b5f3b99d5361a5cdc8bfa7b262b5633bf3db0c2fa6e464817c16d05dc438",
       "status": "PASS"
     },
     {
       "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts after bootstrap_ci_environment.py, before the task runs",
       "exit_code": 0,
       "label": "stack-summary",
-      "raw_sha256": "b126dfdd89f769ece65e37c93fa7b980b0638e26316117534d174477ebef1cbd",
+      "raw_sha256": "abf58ad5008a978ba05b6abe1d4d7878eed27d4ef1d13bc0136a054908248696",
       "status": "PASS"
     },
     {
       "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts after the second bootstrap_ci_environment.py, before the full suite",
       "exit_code": 0,
       "label": "full-stack-summary",
-      "raw_sha256": "ce94f8354e94f0c19ceb9d661475688c9ad743a7715b3b1a127f5314e1c86d24",
+      "raw_sha256": "b80d59bdab90ce6c1362825a33fbfb5ca8e1a503dbc027343b61c7d648f98d0c",
       "status": "PASS"
     },
     {
@@ -488,14 +488,14 @@
       "command": "captured artifact: mutants of memory/promotion.py on the frozen code commit; each must fail the task file unless declared equivalent with its reason",
       "exit_code": 0,
       "label": "mutation-probe-result",
-      "raw_sha256": "49552aa666f6d1d5b8a9cb6ee5ccf35d006010fddc310e50840508d8bb2b9b0e",
+      "raw_sha256": "ae2ed0d2a4c2b088f3366c3775c87afc69005fecd61de4ac2f0946887ba66edf",
       "result": {
         "equivalent_survivors": [
           "skip-command-gcs"
         ],
         "failed": 0,
-        "killed": 16,
-        "mutants": 17
+        "killed": 18,
+        "mutants": 19
       },
       "status": "PASS"
     },
@@ -503,19 +503,19 @@
       "command": "captured artifact: exact mutation harness, archived for reproduction",
       "exit_code": 0,
       "label": "mutation-probe-script",
-      "raw_sha256": "2ee04561a5600945258db36ec2bb7926672baa192eb4bda67afc37d9bd862433",
+      "raw_sha256": "a1ca988489126e7cf47e832d2f8c0ac695d7f14bcd77d59bbe8ede977cd2d1b9",
       "status": "PASS"
     },
     {
       "command": "captured artifact: exact local campaign driver: frozen extras, bootstrap_ci_environment.py, unchanged repository full harness and limits",
       "exit_code": 0,
       "label": "qualifying-local-driver",
-      "raw_sha256": "bba6a4b8c19f471c819d45cce09ad608d9fb22afbb72bd313c7d006eafd01c44",
+      "raw_sha256": "e1abce9c6a305db7523b168ef31586b32727d05e4b0f049bec03485bd4e283bd",
       "status": "PASS"
     }
   ],
-  "commit": "657e5b450e3505d15070017530bd6e41143eab90",
-  "created_at": "2026-10-23T12:53:59Z",
+  "commit": "bca0773ef989f65036cb593d446f139fb59c76dd",
+  "created_at": "2026-10-23T16:54:00Z",
   "design": [
     "MemoryPromotionService implements MemoryPromotionPort (LLD 2.8.1, 2.8.7) for the closed MemoryPromotionRequest of the governed-memory OpenAPI: it validates the binding, the closed request, a trusted-composition registered (proposal_schema_ref, target_aggregate_type) profile that can never be a security or policy type, the GCS digest and the deadline; it reads only the exact committed ACTIVE head through the 0052 eligibility, asks the live promotion policy, re-plans after the policy I/O (stop epoch, source stage digest, deadline) and appends a content-free proposal (source version, item/content digests, evidence and provenance refs, marking, taint, target, GCS digest, stop epoch, deadline) to the protected audit store; it returns exactly the public OperationReceipt (ACCEPTED, audit_ref) and re-validates once more after the audit write.",
     "The memory port has no canonical writer, security writer or mutative memory port; every refusal after the binding is an audited denial and the memory item is never rewritten (ADD v1.3 Part II 2.11: rejected promotion recorded separately).",
@@ -524,13 +524,14 @@
     "The gate must bind the exact proposal digest and audit_ref; the command must bind the proposal target, GCS digest, evidence refs and a claim-source binding to the source version, branch main and a gate_package_digest over the whole frozen gate; the Decision must be accepted, live, unrevoked and bound to the command; the Authority is validated with the kernel validate_authority against a delegation verified by C6 delegation admission for this binding (never the Authority's own claim), with Authority and delegation revocation, the composed canonical-commit capability, scope, tenant, domain, compartments, purpose, risk ceiling and bundle; the approvals are validated by the real Human Gate (distinct active humans, roles, separation of duties, TTL, proposer excluded); the live OPA commit decision must permit under the GCS bundle.",
     "Controls are revalidated after the intent audit, after a fresh proposal load and after the last policy I/O (decision window, Authority expiry, Authority/delegation/decision revocation, verified delegation, Human Gate), then C3 is called with the governed command and its receipt is verified against the command; intent and completion are audited.",
     "Before dispatch every refusal is a definite audited denial (commitMemoryPromotion.denied) with a stable detail; after dispatch any error is reported as CONTROL_PLANE_UNAVAILABLE/COMMIT_OUTCOME_UNKNOWN and audited as indeterminate, never as success, because the GovernedCommitPort contract does not guarantee that an error means \"not committed\". A replay of the same gate returns the replayed C3 receipt without a second revision.",
-    "Repair cycle 1 audits authentication refusals at the C6 commit entry, with null correlation/GCS until a verified binding exists. Audit unavailability raises AUDIT_UNAVAILABLE. Backend classification is derived from the AST fixture dependency, never from test-name substrings."
+    "Repair cycle 1 audits authentication refusals at the C6 commit entry, with null correlation/GCS until a verified binding exists. Audit unavailability raises AUDIT_UNAVAILABLE. Backend classification is derived from the AST fixture dependency, never from test-name substrings.",
+    "Repair cycle 2: authentication denial in propose and load uses only the binding returned by the type-checking authentication boundary, or null until that check succeeds. Invalid objects, mappings and caller-asserted duck bindings never provide correlation/GCS. The real PostgreSQL audit persists each denial; dropping only the per-test audit table proves AUDIT_UNAVAILABLE with no proposal or canonical state success. Authenticated denial preserves verified context."
   ],
   "environment": {
-    "acquired_at": "2026-10-23T12:53:55.021221+00:00",
+    "acquired_at": "2026-10-23T16:53:56.019368+00:00",
     "backend_images": {
       "ocor-bootstrap-fuseki-1": {
-        "image_id": "sha256:c0be636d0112c98c646c359346228437aa70d7a90ecff74d92d39a05185c6370",
+        "image_id": "sha256:837e99412992aa2da2284da215b526feba173c7fcee975eec4b4483c12d0f24f",
         "image_ref": "ocor/jena-fuseki:6.2.0",
         "oom_killed": false,
         "restart_count": 0,
@@ -633,8 +634,8 @@
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
-    "ocor-runtime/src/ocor_runtime/memory/promotion.py": "ffa9f4165fd2f00cc7820715d18e2dbc7333e8f49005bdcdf23eec319c60a95f",
-    "ocor-runtime/tests/tasks/test_ocor_dev_0058.py": "26355f9c3429ae69e9324d988e4f63d47773064477323471f518908f3e67bf42"
+    "ocor-runtime/src/ocor_runtime/memory/promotion.py": "7f3a88f59f7b0e23e6c0da69d5bd4b3ad0ac9d7f44918a4a898f6747676869b5",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0058.py": "3e9f0daa1a8dcff81362f86f6bfa6fb6bbe2e694016d5bfa34563cc152d88192"
   },
   "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
   "normative_interpretations": [
@@ -647,8 +648,8 @@
   "observations": [
     {
       "label": "full-suite-duration",
-      "note": "governed full suite PASS in 3648.62s, above the 3600s PO notification threshold and below the unchanged 4500s limit; recorded as an occurrence for the open decision request REM-0033-LOCAL-FULL-DURATION (non-blocking, no limit, test or timeout changed).",
-      "raw_sha256": "cffe0528cbca577545e9099ad4a2d032d42c5be70bc4bce1398f918b19c1696d"
+      "note": "governed full suite PASS in 4108.63s, above the 3600s PO notification threshold and below the unchanged 4500s limit; recorded as an occurrence for the open decision request REM-0033-LOCAL-FULL-DURATION (non-blocking, no limit, test or timeout changed).",
+      "raw_sha256": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f"
     },
     {
       "label": "diagnostic-mutation-probe-de6aeb8",
@@ -667,101 +668,127 @@
     },
     {
       "label": "previous-external-verdict",
-      "note": "Historical NO_GO retained; repair cycle 1 addresses VF-001 and VF-002; not a qualifying command",
-      "raw_sha256": "5fd887db6e0d10d2d072ab6d2e410a75aab5588fe8fcf1cc42a3e8fce0198b9c"
+      "note": "Historical NO_GO retained; repair cycle 2 addresses remaining VF-001 in propose/load; cycle1 corrections retained; not a qualifying command",
+      "raw_sha256": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba"
+    },
+    {
+      "label": "diagnostic-monitor.jsonl",
+      "note": "Diagnostic monitoring only; transient health observations and bounded state capture, no PASS/FAIL counts transferred",
+      "raw_sha256": "315641fad330fba738db1a15f4daa3b6daa7dcf5eef03858c1c1449e38b4c6e8"
+    },
+    {
+      "label": "diagnostic-full-typedb-health-diagnostic.json",
+      "note": "Diagnostic monitoring only; transient health observations and bounded state capture, no PASS/FAIL counts transferred",
+      "raw_sha256": "d02d2707572dd96cb337ec0945d16261f0f4947291f78cf48a0eae91b2337811"
+    },
+    {
+      "label": "diagnostic-full-keycloak-health-diagnostic.json",
+      "note": "Diagnostic monitoring only; transient health observations and bounded state capture, no PASS/FAIL counts transferred",
+      "raw_sha256": "0fc9d450bc5432d88d838769d3d232cf7c42599d8432bc0163c338d1e8701210"
+    },
+    {
+      "label": "diagnostic-quota-orphaned-full",
+      "note": "DIAGNOSTIC, never counted (LOOP-AGENT-ROTATION point 3): full suite launched by Codex on the same HEAD, orphaned by the Codex quota stop (supervisor dead, no campaign_result); interrupted at 1379 passed by Claude Code (Anthropic) and rerun from scratch; counts not transferred",
+      "raw_sha256": "eb54a7525403bcacfac6fc93b754730556f5fa20fb5a1d20e1a337ce15c3f14b"
     }
   ],
   "parameterized_case_identity_publication": {
     "acquired_source_sha256_before_publication_redaction": {
       "backend-classifier-script": "fe80c9c13212ec33edce6ebaf41ca4954b4de3d809bae68459af120be567a01e",
-      "bootstrap-ci": "c09b7930fea362ff07239125991ebb9767453e370b871b0d7b7dc75ca3e6ae24",
+      "bootstrap-ci": "c8c6292f5f7504667a25f8ff03564c246cb0c01030731d965d6d1f9fdfbfc423",
+      "diagnostic-full-keycloak-health-diagnostic.json": "0fc9d450bc5432d88d838769d3d232cf7c42599d8432bc0163c338d1e8701210",
+      "diagnostic-full-typedb-health-diagnostic.json": "d02d2707572dd96cb337ec0945d16261f0f4947291f78cf48a0eae91b2337811",
+      "diagnostic-monitor.jsonl": "315641fad330fba738db1a15f4daa3b6daa7dcf5eef03858c1c1449e38b4c6e8",
       "diagnostic-mutation-preflight": "7c911a6fcba00725551cf0e7d12b0a06f57043d3bf71c65cedb791374fb611eb",
       "diagnostic-mutation-probe-de6aeb8": "71749925ba27420a0b02e35e96ddbe2946704768fe82e63f42619ad757bf3c61",
       "diagnostic-mutation-rerun": "93fdd86cd0b4794226572c617673a7e3aedd446220f35aed2f728cb7c6c8b9c0",
+      "diagnostic-quota-orphaned-full": "eb54a7525403bcacfac6fc93b754730556f5fa20fb5a1d20e1a337ce15c3f14b",
       "drift": "0c375d48e94b2e67bdad0377d1ecbb1afa81c8cdd49ae8813b0c4260f21acd5f",
-      "evidence-builder-script": "b2a9829d86bf6a33778ebed0d0debefcd32f6fddacfed181da627313f0a48158",
-      "evidence-checker-script": "0c24c988b1bcdb0462a859c0adbeaede22fcb6e09535eab948878c0a790beef9",
-      "exact-junit-union": "5a420eaa8e16e46bfdb16e821b451a7c643a7a2b2b8d35cf05a224e605e68ec1",
+      "evidence-builder-script": "2d5c67d80584612545905987745e7cd07142637df5f8c75401624d8fde6bdd00",
+      "evidence-checker-script": "534fb02bd89d1d7630df8218b9ff33a57472e0e3c0ce49e4a0999eeb29d822d4",
+      "exact-junit-union": "fee2412d40aa22dbe6c54c20394150fc2d45533203a0d2886a06b132060ebb93",
       "exact-union-checker-script": "64663deff5a401853b5ed14cd98711d34fce7f247fa4160217a819a54905f1fe",
-      "existing-tests-preserved": "d688fee723e2eea2e308b6df65473790bfe60de054c2f57acbc040e74d566aa1",
-      "full-bootstrap-ci": "4300b9baf8984f28dd9b59b1834d29204d026eac33b8dcf3e921dbb1a0ea52ae",
-      "full-kind-teardown": "1442b25a2bf2a3c913848ae43ac47a3ada6665c802089f40148035aff61aa57c",
+      "existing-tests-preserved": "fe75b843c2779d682f179c5c519f8434a88e336c3349b4b9803bfa47d19910b5",
+      "full-bootstrap-ci": "a9215f12a7894af0505351453e69e060f18f97424edb829a5a894707c136c1eb",
+      "full-kind-teardown": "0980b5f3b99d5361a5cdc8bfa7b262b5633bf3db0c2fa6e464817c16d05dc438",
       "full-mypy-ready": "ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
       "full-reset": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
       "full-retire-credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "full-stack-summary": "ce94f8354e94f0c19ceb9d661475688c9ad743a7715b3b1a127f5314e1c86d24",
-      "full-suite": "4a0d2cb528b3b0a5af7b8df0cd22ebb02a3294ab0e59478ce229e3d233c1e73d",
-      "full-suite-campaign-result": "cffe0528cbca577545e9099ad4a2d032d42c5be70bc4bce1398f918b19c1696d",
-      "full-suite-junit": "27f01e6bf4d867bc8d9fa65431384b563983309bfe9d370aac26a679788bad4e",
-      "full-sync-lint": "d896bfaae7a10ec97ec9e45157f975ff0aa08b18406d27bfb01be9aa0e4ae74d",
+      "full-stack-summary": "b80d59bdab90ce6c1362825a33fbfb5ca8e1a503dbc027343b61c7d648f98d0c",
+      "full-suite": "5cdd6e677635b704cebec3a41cd7405c26d00688c8df94ee54dd0b0bf077336f",
+      "full-suite-campaign-result": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f",
+      "full-suite-junit": "16d180d179cb52529ddaf75b5f32675b98cc52fd81e47f7d6e9b9abaae2f121b",
+      "full-sync-lint": "0b105d5c53993200b4e9ffd3128e65e3bdbb3f6343e69a34711e81822d6238b0",
       "full-teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
       "harness": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
       "inputs": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
       "language": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-      "mutation-probe": "98400bd615608e72f355f53781da708c73ba6779b4adb8f067a523f6c9f2cc77",
-      "mutation-probe-result": "49552aa666f6d1d5b8a9cb6ee5ccf35d006010fddc310e50840508d8bb2b9b0e",
-      "mutation-probe-script": "2ee04561a5600945258db36ec2bb7926672baa192eb4bda67afc37d9bd862433",
+      "mutation-probe": "9f0b99cfe379fc13bd45517618d6c0724d8290f9d218f74b1b7ddc82f0860538",
+      "mutation-probe-result": "ae2ed0d2a4c2b088f3366c3775c87afc69005fecd61de4ac2f0946887ba66edf",
+      "mutation-probe-script": "a1ca988489126e7cf47e832d2f8c0ac695d7f14bcd77d59bbe8ede977cd2d1b9",
       "mypy": "a766815ce9137d28823902e2a13996ac5e7021d76946b008d607ddbe5fe9163c",
       "plan": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-      "preflight": "42061c4b05aaf12c49e74daa8a3c900a9fb0564a19a60cdd2626c350daf43a75",
-      "preflight-main-ci": "e3d9b07095b609aaabf57c88640dca62adf9cea41c13ff7e6feb66661be954d6",
-      "previous-external-verdict": "5fd887db6e0d10d2d072ab6d2e410a75aab5588fe8fcf1cc42a3e8fce0198b9c",
-      "publication-redaction-check": "d24eaff7d350497157c3db992c3e05bd2218d2e2220d8f5ff844f2eade92e29e",
-      "qualification-tools-lock-match": "775af45e9a626e1b6007cac274154674d1bf41eca0aeab22e7804622ddae7afc",
-      "qualifying-local-driver": "bba6a4b8c19f471c819d45cce09ad608d9fb22afbb72bd313c7d006eafd01c44",
+      "preflight": "22986ed3b2aa9f216adadbf1624bafe28a975ae643ec13df8e3041483d670518",
+      "preflight-main-ci": "10623af75811b2f76346d118d62584c9b8ab973e6f20c7c63f83265b9be1671d",
+      "previous-external-verdict": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba",
+      "publication-redaction-check": "4eb65a923b3c6d3d1531544ab0c159e2e497a3e797cb087e5fe9448b1893c015",
+      "qualification-tools-lock-match": "a2c806c7dc547234dff0c8590f9a342e7d6bbad5ad1141695e905e9efffc240f",
+      "qualifying-local-driver": "e1abce9c6a305db7523b168ef31586b32727d05e4b0f049bec03485bd4e283bd",
       "rccad": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-      "reports-portfolio": "994012e952dce2fe520e71f4bbcc0559c24e48b664f6d05bef728e9cf9e822f5",
-      "reports-portfolio-junit": "fcbea80f0497c93163d472a48d74e6c91ecfd47d3a62487748c8a7365a92f8fa",
+      "reports-portfolio": "5ff0d2beebf13b3306380401711abca9a2ac1cdd5e5f91c3d5e2fa4626a0973c",
+      "reports-portfolio-junit": "fb45c78c42210860ebd16c6a89347e2c0b063918bf5a05e26643cfb30537bef1",
       "retire-credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "ruff": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
       "scope": "45bc96e0845920241b26a1ab6caa0bb1fbad8c33293655296005a9756553bb95",
       "sdk-build": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
-      "sdk-ci": "041d72891482edddb5c2a015efa26ea64893968f24dcd38cbd9069f27d0f8bd9",
+      "sdk-ci": "8b6c8112caf5cb311ea60d9668ec58ea1207589d7c9c8ffc6270fff82e97553e",
       "session-teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
       "session-teardown-result": "be780b2071cf344e97248ac60d79f5a9769b84f2085cebdb4b0b4bb996fed0dc",
-      "stack-summary": "b126dfdd89f769ece65e37c93fa7b980b0638e26316117534d174477ebef1cbd",
-      "sync-lint": "8f00f59825a71e93937fbc56382cd3aa752782e69740d960d2fdfdf288c4ef6c",
-      "task-junit": "8dfcf8d83cc8803b6eb39e8785855c374c53c86090832fb4268433b3ca9c2a4b",
+      "stack-summary": "abf58ad5008a978ba05b6abe1d4d7878eed27d4ef1d13bc0136a054908248696",
+      "sync-lint": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "task-junit": "afadfba9aff2125a7e0c1b47303638f827576b26f7d9296ea46dcaba24d4af14",
       "task-resource-delta": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
-      "task-run-1": "a9b9218674fdbc2c5e0a485f0383108d91371fb7501be041d453447370d493a4",
-      "task-run-2": "83c33f91195d601ae092506be3f4ebd171b54cbb3625ccc487e53651f1508d9d",
-      "task-run-3": "326c82086738de86c0c48b6e5537bbc3a3784526403250d4c331c593259dee40",
-      "task-validation-command-project": "7258aaa84a3444dcc81beb812085f2ffe948211ab2748eba5f7cfb5f8b552a98",
+      "task-run-1": "cb4edb3786c8e384deeebd4715b9d7f2650a48ec561b1ee8fe1421bf1fa40e69",
+      "task-run-2": "cba7bb19e81bfabf1e1cf363b2494414dc733f9fc414eb0d3a517752c8965a76",
+      "task-run-3": "029ca463e7ef4df6c077622168a3d7817534f7081fe166b2063f11e89a8db13b",
+      "task-validation-command-project": "d5560ac20ac214069646632e17587a1e8b299d140c47cc9052374a644883432e",
       "tdd-red-c6-consumer-absent": "7c799871742a19af8d35918b22ae9bbf12fe62bc0ec12a7f913b6e8f50449c13",
       "tdd-red-module-absent": "e7edbd4e19ff48ea6b1ff90f4bc0a98bb23cd0cc6ab134e90887cc1196bc2ec8",
       "tdd-red-self-vouched-delegation": "d7897f49235e797611bc0bdbd703d4c1b197bb5471782d0a66c19e442afc79d1",
       "tdd-repair1-binding-audit": "d102195e0c59341e859d6aa6f869e88a483ed13c1f1a4d9bda99f732cfb1f54d",
       "tdd-repair1-evidence-classification": "bf3490522129a0178acc0a0f17e0eefb303ca7152a6d65e1a9db20a5c27a2e6c",
-      "teardown": "55a8a94cc71b828d70fd552887777044844fc3124b53459a9e58bb460957689b",
+      "tdd-repair2-binding-audit": "71edcf80b00cb3b2cda560b70d1b6695851e05ac4f8569f17f20dc3df57494af",
+      "teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
       "toolchain-lock-match": "bd664c6024afda8be85b3b7758e5aad2b60f676415cbe23ead44e9cd56264173",
-      "validation-command-junit": "8c29e00a49cd8684604acc3fe1098270c5c3a15b79d36906b150b1d55959936d",
+      "validation-command-junit": "07b262893dff61e20d1ddd1aa2322efdb1613c1c2f4484f0a286c16b8ef7c65a",
       "wait-contract": "9f187b7108f2cd2ecba79adeb3c32ecce1c7305e0fb9e1f73a797cccd4a48d62"
     },
     "authority": "REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15)",
     "method": "All parametrized JUnit testcase names retain the test function name and replace the full parameterized identity by SHA256; only publication changes, original counts and local exact JUnit union unchanged",
     "redacted_identity_counts": {
-      "full-suite-junit": 1634,
+      "full-suite-junit": 1668,
       "reports-portfolio-junit": 120,
-      "task-junit": 87,
-      "validation-command-junit": 87
+      "task-junit": 121,
+      "validation-command-junit": 121
     }
   },
   "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) sono sostituite prima dell'archiviazione e dell'hash; DSN mostrato come <local generated credential>",
   "raw_output_redactions": {},
-  "raw_output_sha256": "2b8fe69e1cdfe2ae342c57823a3ec5be71bd77222c784762fdf5206c9a3a6e0e",
-  "repair_cycle": 1,
+  "raw_output_sha256": "000290056806f79ca5109da47542047c84dc04c3558d0b9f39258225383341e2",
+  "repair_cycle": 2,
   "repair_dispositions": {
     "VF-001": {
-      "change": "Binding verificato dentro il boundary auditato; campi GCS assenti finché non verificati; diniego persistito prima di ogni accesso C6/C3; audit indisponibile fallisce chiuso",
+      "change": "propose/load usano solo il binding verificato o contesto nullo in entrambi i percorsi di eccezione; object/mapping/duck rifiutati BINDING_MISSING senza campi del chiamante; diniego persistito su PostgreSQL; audit realmente indisponibile fallisce AUDIT_UNAVAILABLE. Correzione commit del ciclo1 preservata.",
       "status": "ADDRESSED_AWAITING_INDEPENDENT_VERIFIER",
       "tests": [
-        "test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access",
-        "test_live_commit_invalid_binding_persists_denial_without_state_change"
+        "test_proposal_and_load_invalid_binding_audit_without_caller_context",
+        "test_verified_binding_is_retained_for_authenticated_denial",
+        "test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed"
       ]
     },
-    "VF-002": {
+    "VF-002-cycle0": {
       "change": "Classificazione AST dei fixture; i quattro fault originali restano unitari; nuova qualifica con OPA pinned, revisione Rego reale, risposta non booleana e trasporto realmente rifiutato",
-      "status": "ADDRESSED_AWAITING_INDEPENDENT_VERIFIER",
+      "status": "HISTORICAL_REPAIR1_PRESERVED",
       "tests": [
         "test_promotion_policy_is_live_and_fail_closed",
         "test_live_proposal_policy_opa_positive_and_faults"
@@ -770,16 +797,15 @@
   },
   "repair_of": {
     "findings": [
-      "VF-001",
-      "VF-002"
+      "VF-001"
     ],
-    "request_id": "OCOR-DEV-0058-e5f3729a5219-0",
+    "request_id": "OCOR-DEV-0058-353ef892ff6e-1",
     "verdict": "NO_GO",
-    "verdict_sha256": "5fd887db6e0d10d2d072ab6d2e410a75aab5588fe8fcf1cc42a3e8fce0198b9c"
+    "verdict_sha256": "c636ba6b09768086d8b9b5ae2285fbaee2b743fce99c9a6099b5d0f92e026cba"
   },
   "reproducible_check": {
-    "command": "python3 ~/.ocor-codex/ocor-dev-0058/repair1/check_evidence.py <repo> <head>",
-    "scope": "input hashes at code commit and final HEAD, evidence-only diff, raw JSONL hashes, command/raw pairing, exact task coverage and JUnit counts, full campaign, mutation results, prior G5 entries preserved, runtime validator; AST fixture classification and repair_cycle=1"
+    "command": "python3 ~/.ocor-codex/ocor-dev-0058/repair2/check_evidence.py <repo> <head>",
+    "scope": "input hashes at code commit and final HEAD, evidence-only diff, raw JSONL hashes, command/raw pairing, exact task coverage and JUnit counts, full campaign, mutation results, prior G5 entries preserved, runtime validator; AST fixture classification and repair_cycle=2"
   },
   "requirement_coverage_note": "Component-level evidence for the promotion obligation of FR-118 (memory -> C6 -> C3 path), the governed canonical admission of FR-053, the revocation/kill-switch race aspects of FR-119 at the promotion boundary, plus BR-003; FGM-15 is exercised at component level only; no G6 verification, no FGM campaign closure, no E1/E2 or Verified promotion.",
   "requirement_results": [
@@ -787,30 +813,36 @@
       "case_id": "OCOR-DEV-0058-PROPOSAL-IS-NON-AUTHORITATIVE-AND-RECORDED",
       "command": "proposeMemoryPromotion records a content-free MemoryPromotionProposal bound to the exact committed source version, GCS, registered target profile, evidence and provenance in the protected audit store and returns only the public OperationReceipt; no ledger, canonical or security write; requests smuggling authority, approval, decision, capability, policy, content or effect members, unregistered or security/policy targets, malformed envelopes, a missing binding or a foreign GCS are refused with an audited denial; on PostgreSQL 16, Qdrant and OpenBao the proposal is durable and revalidated by fresh adapters",
       "real_backend_tests": [
+        "test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed",
         "test_live_proposal_is_durable_and_consumed_from_fresh_adapters"
       ],
       "requirement_id": "FR-118",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 21,
+        "passed": 55,
         "skipped": 0
       },
       "status": "PASS",
       "tests": [
+        "test_live_proposal_and_load_invalid_binding_denial_is_durable_and_fail_closed",
         "test_live_proposal_is_durable_and_consumed_from_fresh_adapters",
         "test_malformed_and_unregistered_targets_fail_closed",
         "test_memory_port_has_no_canonical_security_or_mutative_memory_dependency",
         "test_missing_binding_and_foreign_gcs_fail_closed",
+        "test_proposal_and_load_invalid_binding_audit_without_caller_context",
         "test_proposal_binds_exact_source_gcs_target_evidence_without_mutation",
-        "test_request_cannot_smuggle_authority_effect_or_content"
+        "test_request_cannot_smuggle_authority_effect_or_content",
+        "test_verified_binding_is_retained_for_authenticated_denial"
       ],
       "unit_fixture_tests": [
         "test_malformed_and_unregistered_targets_fail_closed",
         "test_memory_port_has_no_canonical_security_or_mutative_memory_dependency",
         "test_missing_binding_and_foreign_gcs_fail_closed",
+        "test_proposal_and_load_invalid_binding_audit_without_caller_context",
         "test_proposal_binds_exact_source_gcs_target_evidence_without_mutation",
-        "test_request_cannot_smuggle_authority_effect_or_content"
+        "test_request_cannot_smuggle_authority_effect_or_content",
+        "test_verified_binding_is_retained_for_authenticated_denial"
       ]
     },
     {
@@ -934,7 +966,9 @@
     "implementers": [
       "Codex (OpenAI), gpt-6.1-sol: RED test (62b3954), proposal port (e7d6259) and an uncommitted first draft of the C6 consumer and its live fixture, interrupted by model capacity at 2026-10-23T08:34Z.",
       "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): took over the uncommitted WIP, fixed the live OPA fixture, found and fixed the self-vouched delegation defect (RED recorded), denial classification, capability pin, post-dispatch and mutation-gap tests, qualification and this candidate (de6aeb8 onward).",
-      "Codex (OpenAI), repair cycle 1: RED 2dd081b, audit of missing/unverified commit binding, live PostgreSQL denial tests, OPA proposal policy fault cases, explicit AST evidence classification, fresh qualification."
+      "Codex (OpenAI), repair cycle 1: RED 2dd081b, audit of missing/unverified commit binding, live PostgreSQL denial tests, OPA proposal policy fault cases, explicit AST evidence classification, fresh qualification.",
+      "Codex (OpenAI), repair cycle 2: RED aeb2227 (10 failures, 8 passes), fix propose/load denial context bca0773, 34 added unit/live cases, fresh qualification; original implementers preserved.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer for repair cycle 2 after the Codex quota stop (2026-10-23T15:40Z): reviewed RED aeb2227 and fix bca0773 against VF-001 without changing code or tests, interrupted the quota-orphaned full (diagnostic, never counted), reran the governed full suite on the same HEAD, built and checked the evidence, published the candidate and the verification request."
     ],
     "independence": "external loop only; the implementers did not run or simulate the verification; verifier must be of a provider other than OpenAI and Anthropic",
     "verifier": "to be recorded from the external verdict"
@@ -959,16 +993,17 @@
   "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
   "task_id": "OCOR-DEV-0058",
   "tdd": {
-    "GREEN": "Repair cycle 1 code commit 657e5b450e3505d15070017530bd6e41143eab90: binding check inside audited commit boundary; missing verified context never sourced from caller; no C3 access; new OPA and durable denial tests; all qualifying runs newly acquired on this commit.",
-    "RED": "62b3954 (tests only, Codex): collection ModuleNotFoundError ocor_runtime.memory.promotion before any implementation (raw label tdd-red-module-absent). C6 consumer RED on e7d6259 plus uncommitted consumer test: ImportError C6MemoryPromotionConsumer (raw label tdd-red-c6-consumer-absent). Delegation RED on the Codex WIP (e7d6259 plus uncommitted consumer): the authority-delegation fault was ACCEPTED because the consumer built VerifiedAuthorityBinding from the Authority's own delegation_ref (raw label tdd-red-self-vouched-delegation, \"DID NOT RAISE\"). Repair cycle 1: 6 assertion failures before code change in red-binding-audit.log (missing durable denial / audit unavailability not observed); classifier RED reproduces the name-based misclassification in red-evidence-classification.log.",
+    "GREEN": "Repair cycle 2 code commit bca0773ef989f65036cb593d446f139fb59c76dd: propose/load track the verified binding separately; both exception paths use only verified context or null; task repeated three times, full and portfolio newly acquired on this commit.",
+    "RED": "62b3954 (tests only, Codex): collection ModuleNotFoundError ocor_runtime.memory.promotion before any implementation (raw label tdd-red-module-absent). C6 consumer RED on e7d6259 plus uncommitted consumer test: ImportError C6MemoryPromotionConsumer (raw label tdd-red-c6-consumer-absent). Delegation RED on the Codex WIP (e7d6259 plus uncommitted consumer): the authority-delegation fault was ACCEPTED because the consumer built VerifiedAuthorityBinding from the Authority's own delegation_ref (raw label tdd-red-self-vouched-delegation, \"DID NOT RAISE\"). Repair cycle 1: 6 assertion failures before code change in red-binding-audit.log (missing durable denial / audit unavailability not observed); classifier RED reproduces the name-based misclassification in red-evidence-classification.log. Repair cycle 2 RED aeb2227: object/mapping caused AttributeError, caller duck inserted attacker correlation/digest; red-binding-audit.log fingerprints 10 failures with 8 positive controls passing.",
     "REFACTOR": "Exact-version eligibility reuses the 0052 _ExactSearch (no duplicated policy logic); the memory port has no C3, C6, ledger or admission dependency; gate parsing, control revalidation and C3 dispatch are separated so that every refusal before dispatch is a definite audited denial and every failure after dispatch is an audited indeterminate outcome.",
-    "mutation_probe": "17 targeted mutants of memory/promotion.py, each removing or weakening one control, on the frozen code commit (in place, file restored and hash-checked). 16 killed; declared equivalent: ['skip-command-gcs'] (reason recorded per mutant). A first diagnostic probe on de6aeb8 left three survivors (final Human Gate recheck, command GCS comparison, C3 receipt verification): two tests were added (approval expiring during the last policy I/O; forged C3 receipt at the port) and the GCS comparison was shown equivalent. The diagnostic outputs are archived as diagnostics and never counted.",
+    "mutation_probe": "19 targeted mutants of memory/promotion.py, each removing or weakening one control, on the frozen code commit (in place, file restored and hash-checked). 18 killed; declared equivalent: ['skip-command-gcs'] (reason recorded per mutant). A first diagnostic probe on de6aeb8 left three survivors (final Human Gate recheck, command GCS comparison, C3 receipt verification): two tests were added (approval expiring during the last policy I/O; forged C3 receipt at the port) and the GCS comparison was shown equivalent. The diagnostic outputs are archived as diagnostics and never counted.",
     "red_raw_sha256": {
       "red-c6-consumer-absent": "7c799871742a19af8d35918b22ae9bbf12fe62bc0ec12a7f913b6e8f50449c13",
       "red-module-absent": "e7edbd4e19ff48ea6b1ff90f4bc0a98bb23cd0cc6ab134e90887cc1196bc2ec8",
       "red-self-vouched-delegation": "d7897f49235e797611bc0bdbd703d4c1b197bb5471782d0a66c19e442afc79d1",
       "repair1-binding-audit": "d102195e0c59341e859d6aa6f869e88a483ed13c1f1a4d9bda99f732cfb1f54d",
-      "repair1-evidence-classification": "bf3490522129a0178acc0a0f17e0eefb303ca7152a6d65e1a9db20a5c27a2e6c"
+      "repair1-evidence-classification": "bf3490522129a0178acc0a0f17e0eefb303ca7152a6d65e1a9db20a5c27a2e6c",
+      "repair2-binding-audit": "71edcf80b00cb3b2cda560b70d1b6695851e05ac4f8569f17f20dc3df57494af"
     }
   }
 }
