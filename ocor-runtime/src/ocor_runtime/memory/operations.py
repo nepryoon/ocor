@@ -6,16 +6,20 @@ uses the existing lifecycle saga; this module never deletes content or a tombsto
 directly. Monitoring reads only the authorised full isolation partition. Metrics
 have fixed labels and belong to the protected operator plane, never a user response.
 
-This initial checkpoint covers quota, monitoring and retention/pressure. Backup
-capture/restore integration and final task qualification are not yet implemented.
+``MemoryQuotaWriter`` applies the configured quotas to real admission + store
+commits, with demand derived from the actual payload/candidate and a trusted
+partition serialization port. Backup capture/restore integration and final task
+qualification are not yet implemented.
 The final control check and effects at the independent lifecycle/audit stores are
 not an atomic transaction; no cross-process admission or timing claim is made.
 """
 from __future__ import annotations
 
+import hashlib
 import threading
 from collections import Counter
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
+from contextlib import AbstractContextManager, ExitStack
 from dataclasses import dataclass, field, fields, replace
 from datetime import datetime, timedelta
 from types import MappingProxyType
@@ -30,10 +34,14 @@ from ..kernel.governed_context import (
 )
 from .lifecycle import MemoryLifecycleCoordinator
 from .model import (
-    AdmittedMemoryVersion, LifecycleStatus, MemoryAdmissionError, MemoryPolicyDecision, MemoryVersionLedger,
+    ENVELOPE_FIELDS, AdmittedMemoryVersion, GovernedMemoryItem, LifecycleStatus,
+    MemoryAdmissionError, MemoryAdmissionService, MemoryPolicyDecision, MemoryVersionLedger, RepresentationKind,
 )
 from .retrieval import RetrievalAuditSink, StopEpochPort
-from .stores import MemoryMetadataStore, MemoryPartition, StoredVersion, VersionState
+from .stores import (
+    MemoryMetadataStore, MemoryPartition, MemoryStoreCoordinator, StoreCommitReceipt, StoredVersion,
+    VersionState, validate_embedding,
+)
 
 
 class MemoryOperationsError(MemoryAdmissionError):
@@ -151,7 +159,7 @@ class _Head:
     first_created_at: datetime
 
 
-R = TypeVar("R", MemoryUsage, QuotaCheck, MemoryPressureReport)
+R = TypeVar("R", MemoryUsage, QuotaCheck, MemoryPressureReport, StoreCommitReceipt)
 ENVELOPE = frozenset({"operation_id", "governed_context", "governed_context_digest", "partition", "deadline"})
 
 
@@ -247,6 +255,7 @@ class MemoryOperationsService:
     def _guard(
         self, operation: str, request: Mapping[str, object], binding: VerifiedGovernedContextBinding | None,
         action: Callable[[_Plan], R], *, mutative: bool = False,
+        prepare: Callable[[], Mapping[str, object]] | None = None,
     ) -> R:
         verified = None
         plan = None
@@ -254,7 +263,7 @@ class MemoryOperationsService:
             if not isinstance(binding, VerifiedGovernedContextBinding):
                 raise _error("BINDING_MISSING", "AUTHENTICATION_REQUIRED")
             verified = binding
-            plan = self._plan(operation, request, binding)
+            plan = self._plan(operation, prepare() if prepare is not None else request, binding)
             with self._lock:
                 if mutative:
                     self._event(operation, "STARTED", verified, plan)
@@ -352,23 +361,26 @@ class MemoryOperationsService:
             if not isinstance(demand, MemoryQuotaDemand):
                 raise _error("DEMAND_INVALID", "MEMORY_SCHEMA_INVALID")
             usage = self._usage(self._heads(plan.partition))
-            horizon = self._limits.retention_horizons.get(demand.retention_policy_ref)
-            if horizon is None:
-                raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
-            checks = (
-                (usage.items + demand.new_items, self._limits.max_items, "ITEM"),
-                (demand.payload_bytes, self._limits.max_payload_bytes, "PAYLOAD"),
-                (demand.embedding_dimensions, self._limits.max_embedding_dimensions, "EMBEDDING"),
-                (demand.top_k, self._limits.max_top_k, "TOP_K"),
-                (demand.consolidation_concurrency, self._limits.max_consolidation_concurrency, "CONSOLIDATION"),
-                (usage.index_entries + demand.new_index_entries, self._limits.max_index_entries, "INDEX"),
-                (demand.retention_seconds, horizon.total_seconds(), "RETENTION"),
-            )
-            for actual, limit, resource in checks:
-                if actual > limit:
-                    raise _error(resource + "_QUOTA_EXCEEDED")
+            self._enforce_quota(usage, demand)
             return QuotaCheck(True, usage)
         return self._guard("memoryQuota", request, binding, check)
+
+    def _enforce_quota(self, usage: MemoryUsage, demand: MemoryQuotaDemand) -> None:
+        horizon = self._limits.retention_horizons.get(demand.retention_policy_ref)
+        if horizon is None:
+            raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
+        checks = (
+            (usage.items + demand.new_items, self._limits.max_items, "ITEM"),
+            (demand.payload_bytes, self._limits.max_payload_bytes, "PAYLOAD"),
+            (demand.embedding_dimensions, self._limits.max_embedding_dimensions, "EMBEDDING"),
+            (demand.top_k, self._limits.max_top_k, "TOP_K"),
+            (demand.consolidation_concurrency, self._limits.max_consolidation_concurrency, "CONSOLIDATION"),
+            (usage.index_entries + demand.new_index_entries, self._limits.max_index_entries, "INDEX"),
+            (demand.retention_seconds, horizon.total_seconds(), "RETENTION"),
+        )
+        for actual, limit, resource in checks:
+            if actual > limit:
+                raise _error(resource + "_QUOTA_EXCEEDED")
 
     def relieve_pressure(
         self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None,
@@ -442,3 +454,120 @@ class MemoryOperationsService:
         else:
             satisfied = remaining <= target and not incomplete
         return MemoryPressureReport(tuple(deleted), tuple(incomplete), tuple(sorted(held)), remaining, satisfied)
+
+
+class MemoryQuotaSerialization(Protocol):
+    """Trusted composition port, never a caller-provided reservation or lease.
+
+    Every writer sharing a metadata authority must use the same serialization
+    domain for the full partition digest. Hold spans inventory, admission and
+    store commit. Acquisition must have a bounded wait; loss/exit failure denies.
+    Low-level admission/store ports are trusted dependencies, not public routes
+    around this boundary. A process-local lock does not qualify cross-worker use.
+    """
+
+    def hold(self, partition_digest: str) -> AbstractContextManager[None]: ...
+
+
+class MemoryQuotaWriter:
+    """Internal admission + commit port with demand derived from actual input.
+
+    Preserves the existing admission and store validations. An unsuccessful store
+    commit can leave an admitted/PENDING version; it is not acknowledged as success
+    and existing reconciliation/retry semantics apply. No ledger entry is erased.
+    This port does not make audit, stop state and the stores one transaction: the
+    final control/effect window still belongs to FGM-17. Quotas cover committed
+    logical heads/native representation slots, not historical journal bytes.
+    """
+
+    def __init__(
+        self, *, operations: MemoryOperationsService, admission: MemoryAdmissionService,
+        store: MemoryStoreCoordinator, serialization: MemoryQuotaSerialization,
+    ) -> None:
+        self._operations, self._admission, self._store, self._serialization = operations, admission, store, serialization
+
+    def admit_and_commit(
+        self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None,
+        payload: bytes, embedding: Sequence[float] | None = None,
+    ) -> StoreCommitReceipt:
+        item: GovernedMemoryItem | None = None
+        vector: tuple[float, ...] | None = None
+
+        def prepare() -> Mapping[str, object]:
+            nonlocal item, vector
+            if not isinstance(request, Mapping) or set(request) != ENVELOPE_FIELDS:
+                raise _error("ENVELOPE_INVALID", "MEMORY_SCHEMA_INVALID")
+            candidate = request["candidate"]
+            if not isinstance(candidate, Mapping):
+                raise _error("NOT_AN_OBJECT", "MEMORY_SCHEMA_INVALID")
+            item = GovernedMemoryItem.from_mapping(candidate)
+            if not isinstance(payload, bytes) or "urn:sha256:" + hashlib.sha256(payload).hexdigest() != item.content_digest:
+                raise _error("CONTENT_DIGEST_MISMATCH", "MEMORY_SCHEMA_INVALID")
+            if RepresentationKind.VECTOR in item.representation_kinds:
+                if embedding is None:
+                    raise _error("EMBEDDING_MISSING", "MEMORY_SCHEMA_INVALID")
+                vector = validate_embedding(item, tuple(embedding))
+            elif embedding is not None:
+                raise _error("UNBOUND_REPRESENTATION", "MEMORY_SCHEMA_INVALID")
+            return {**{k: v for k, v in request.items() if k != "candidate"},
+                    "partition": MemoryPartition.for_item(item).to_mapping()}
+
+        def commit(plan: _Plan) -> StoreCommitReceipt:
+            if item is None:
+                raise _error("DEMAND_INVALID", "MEMORY_SCHEMA_INVALID")
+            if (item.governed_context_digest != plan.context.digest()
+                    or item.owner_principal_id != plan.context.effective_principal_id):
+                raise _error("ITEM_NOT_BOUND_TO_GCS", "GOVERNED_CONTEXT_MISMATCH")
+            stack = ExitStack()
+            try:
+                try:
+                    stack.enter_context(self._serialization.hold(plan.partition.digest))
+                except Exception as exc:  # noqa: BLE001 -- no unlocked quota check or write
+                    raise _error("QUOTA_SERIALIZATION_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+                return self._commit_locked(item, vector, payload, plan, binding)
+            finally:
+                # close() cannot suppress an exception raised by admission/store.
+                stack.close()
+
+        return self._operations._guard("memoryWrite", {}, binding, commit, mutative=True, prepare=prepare)
+
+    def _commit_locked(
+        self, item: GovernedMemoryItem, vector: tuple[float, ...] | None, payload: bytes,
+        plan: _Plan, binding: VerifiedGovernedContextBinding | None,
+    ) -> StoreCommitReceipt:
+        service = self._operations
+        service._check("memoryWrite", plan)  # also after a bounded wait for the lock
+        heads = service._heads(plan.partition)
+        previous = next((h for h in heads if h.record.item.memory_item_id == item.memory_item_id), None)
+        usage = service._usage(heads)
+        existing_slots = 0
+        if previous is not None and previous.record.item.lifecycle_status is LifecycleStatus.ACTIVE:
+            existing_slots = len(previous.stored.staged.pointers)
+        horizon = service._limits.retention_horizons.get(item.retention_policy_ref)
+        if horizon is None:
+            raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
+        first_created = previous.first_created_at if previous is not None else item.created_at
+        if item.expires_at is not None and item.expires_at > first_created + horizon:
+            raise _error("RETENTION_QUOTA_EXCEEDED")
+        if previous is not None and item.memory_version == previous.record.item.memory_version:
+            if item.digest() != previous.record.item_digest:
+                raise _error("IDEMPOTENCY_DIGEST_MISMATCH", "MEMORY_IDEMPOTENCY_CONFLICT")
+        elif previous is not None and item.memory_version <= previous.record.item.memory_version:
+            raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
+        service._enforce_quota(replace(usage, index_entries=usage.index_entries - existing_slots), MemoryQuotaDemand(
+            new_items=int(previous is None or not service._retained(previous)), payload_bytes=len(payload),
+            embedding_dimensions=len(vector) if vector is not None else 0,
+            new_index_entries=len(item.representation_kinds) if item.lifecycle_status is LifecycleStatus.ACTIVE else 0,
+            retention_policy_ref=item.retention_policy_ref,
+        ))
+        service._check("memoryWrite", plan)
+        receipt = self._admission.admit({
+            "operation_id": plan.operation_id, "governed_context": plan.context.to_mapping(),
+            "governed_context_digest": plan.context.digest(), "deadline": format_utc_timestamp(plan.deadline),
+            "candidate": item.to_mapping(),
+        }, binding=binding, payload=payload)
+        record = service._ledger.get(receipt.memory_item_id, receipt.memory_version)
+        if record is None or record.item_digest != item.digest():
+            raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
+        service._check("memoryWrite", plan)
+        return self._store.commit(record, payload=payload, embedding=vector)
