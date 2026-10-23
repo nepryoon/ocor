@@ -658,6 +658,165 @@
       "status": "IMPLEMENTED_AWAITING_INDEPENDENT_VERIFICATION"
     }
   ],
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "6b2aa63f4b4f2116869666dbe9b831d7efaaf485",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_tree_after": "f01a362380e9e81902a53478674df2d349d7dcf7",
+      "execution_tree_before": "f01a362380e9e81902a53478674df2d349d7dcf7",
+      "main_head": "68fe9e0afa789acd8849aab59d62889517731fba",
+      "qualified_head": "89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "d3e5d942f1f13b650f51062842468985f586fd823cb3241ad38ce999de214bd4",
+    "commands": [
+      {
+        "command": "sha256 of PATH tools versus infra/toolchain.lock.json, infra/qualification_tools.lock.json and environment.json",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, ruff, tsc, uv, python 3.12.11, helm, kind e kubectl coincidono con i lock. environment.json sha256 996cc6d4cf817534d66e6113008fb8107de3be9836c8fb4fb2d722d399251092. Il client docker e' 29.7.2; il daemon host e' 29.9.2. Preflight PASS."
+      },
+      {
+        "command": "python3 scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS, docker READY, errors vuoti"
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "tutti i sorgenti normativi OK"
+      },
+      {
+        "command": "git diff --name-status 1bf0e9244e2e831c396813bf7bdea0999bba0623..89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92",
+        "exit_code": 0,
+        "summary": "5 path: aggiunti deletion.py e test_ocor_dev_0056.py; MANIFEST.json solo 64 inserzioni; evidenza json e log aggiunti. Rispetto al commit di codice 2455a861 il diff e' solo evidenza. inputs/ intatto. git status pulito."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "python3 -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 81 source files"
+      },
+      {
+        "command": "python3 scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python3 scripts/validate_ocor_change_scope.py",
+        "exit_code": 0,
+        "summary": "PASS: 5 changed paths; immutable surfaces untouched"
+      },
+      {
+        "command": "python3 scripts/validate_runtime_evidence.py --task OCOR-DEV-0056 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS prima e dopo la campagna. Claim E1=0, E2=0, PoC_GO NO-GO, Production_readiness NO_GO, runtime_conformance NOT_ESTABLISHED. Commit di codice 2455a861; raw log sha256 ca9fafed8ec27c0ebab0f06b4532070b8987ea919642996c4fcf6f5c7c8f5f8d."
+      },
+      {
+        "command": "python3 scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS, 0 drift, rieseguito anche dopo la campagna"
+      },
+      {
+        "command": "python3 scripts/validate_rccad.py",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK"
+      },
+      {
+        "command": "python3 scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14 FAIL 0 NOT_EXECUTED 0"
+      },
+      {
+        "command": "git show 68fe9e0afa789acd8849aab59d62889517731fba:reports/development/MODEL_HANDOFF.json",
+        "exit_code": 0,
+        "summary": "Diagnosi versionata: heap Fuseki di default 4 GiB nel cgroup 2 GiB; profilo ci_resources -Xmx1G gia' presente. HEAD candidato invariato. Verdetto storico non modificato."
+      },
+      {
+        "command": "python3 scripts/reset_test_environment.py --execute",
+        "exit_code": 1,
+        "summary": "Fallito senza .ocor/bootstrap.env: compose richiede le variabili OCOR_LOCAL_*. Retry autorizzato con l'env della checkout principale, file non modificato (sha256 invariato f17de420859997b2436dda830e2440f3b911fd31f24b4141eacd19b78d458cc4), exit 0, nessun residuo ocor-bootstrap."
+      },
+      {
+        "command": "python3 scripts/bootstrap_development_environment.py --execute --timeout 600 && uv sync --project ocor-runtime --frozen --extra test --extra lint && ci_resources && docker compose -f deploy/bootstrap/compose.yaml -f .ocor/ci-resources.yaml up fuseki && initialize && fixtures && register_control_plane && verify_external_services.py --execute --typed && docker top fuseki",
+        "exit_code": 0,
+        "summary": "11 container ocor-bootstrap running. Typed health PASS su 9 controlli, tutti READY. Fuseki cgroup 2147483648, OOMKilled false, JVM -Xms128m -Xmx1G. SVID spiffe://ocor.test/ocor/control-plane fetched."
+      },
+      {
+        "command": "npm --prefix ocor-runtime/sdk/typescript ci && npm --prefix ocor-runtime/sdk/typescript run build",
+        "exit_code": 0,
+        "summary": "npm ci e tsc --project tsconfig.json PASS. node PATH v20.20.2, tsc 7.0.2. Il binario npm risolto da PATH e' /usr/bin/npm 11.19.1 con shebang env node."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92 --output-dir /home/luca/.ocor-codex/verify-env/OCOR-DEV-0056-89eb79d63495-1-env-recheck/full",
+        "exit_code": 0,
+        "summary": "PASS. JUnit 2632 passed, 0 failed, 0 errors, 0 skipped, 3647.12s. campaign_result duration_seconds 3648.69, sotto il limite 4500s. po_decision_required true perche' oltre la soglia informativa di 3600s; decisione PO gia' aperta REM-0033-LOCAL-FULL-DURATION, non un fallimento di test. 160 campioni Fuseki OOMKilled false. Kind teardown OWNED_KIND_TEARDOWN_OBSERVED, rejections vuote, destroy e kind delete dello stesso UUID. test_ocor_dev_0048 196 PASSED e 0 skip nel log."
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0056.py",
+        "exit_code": 0,
+        "summary": "150 passed in 78.31s, 0 skipped, backend PostgreSQL, Qdrant e OpenBao reali"
+      },
+      {
+        "command": "uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0055.py",
+        "exit_code": 0,
+        "summary": "76 passed in 43.65s, 0 skipped"
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/ocor-dev-0056/repair1-campaign-v2/check_evidence.py . 89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92",
+        "exit_code": 0,
+        "summary": "PASS. Evidenza archiviata coerente con HEAD, 150 casi, suite archiviata 2632/0/0/0, 15 mutanti."
+      },
+      {
+        "command": "python3 /tmp/ocor-verify-OCOR-DEV-0056-89eb79d63495-1-env-recheck/probe_0056.py",
+        "exit_code": 0,
+        "summary": "Live: fattori lexical/vector dipendono dal modo (FULL_TEXT lexical 1 vector 0, VECTOR lexical 0 vector > 0.5, HYBRID entrambi > 0), recency 0.999 non sentinella. x assente. Residuo durante serve: DELETION_INCOMPLETE poi RESTORE_NOT_RECONCILED. Nuova deletion durante serve: CHECKPOINT_MISMATCH poi RESTORE_NOT_RECONCILED. Qdrant read_back morto: DELETION_INVENTORY_UNAVAILABLE, retry non serve x. 25 tombstone, 0 leak, keep presente. Diniego restore: una riga PostgreSQL DENIED reason RESTORE_NOT_RECONCILED, versione ledger invariata. Attestazione piu' vecchia ma coerente col journal spedito serve ancora x: riproduce il residual dichiarato open e non assegnato, non una chiusura rivendicata."
+      },
+      {
+        "command": "python3 scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "PASS, residual containers networks volumes vuoti. Nessun container ocor-bootstrap rimasto. I container ocor-poc exited di 2-3 giorni erano gia' presenti prima di questa run."
+      }
+    ],
+    "findings": [],
+    "implementers": "Codex (OpenAI): WIP 0d1de3b RED and 5edd6cd checkpoint-fenced journal, restore gate, metadata replay and participant adapter (2026-10-11); Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (LOOP-AGENT-ROTATION, quota Codex esaurita): realignment merge 1fd22c6 with origin/main 1bf0e92, attested recovery-point checkpoint authority, RestoredMemorySearch entry point, live restore drills, mutation-gap tests, qualification and this candidate (2026-10-22); Codex (OpenAI), repair_cycle=1: VF-001 denial audit, live/negative tests, mutation-gap closure and final qualification.",
+    "integration_agent": "Codex (OpenAI), seal and exact-head integration only",
+    "integration_condition": "Only seal/manifest metadata follow the exact reviewed head; runtime, tests, harness, workflows, locks, raw output and all pre-existing sealed records unchanged. All 13 mandatory checks must succeed on the final seal HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "prior_verdicts": [
+      {
+        "request_id": "OCOR-DEV-0056-1734d8001bac-0",
+        "verdict": "NO_GO"
+      },
+      {
+        "disposition": "Historical environment diagnostic retained; unchanged-head env-recheck accepted",
+        "request_id": "OCOR-DEV-0056-89eb79d63495-1",
+        "verdict": "NO_GO"
+      }
+    ],
+    "raw_output_sha256_unchanged": "ca9fafed8ec27c0ebab0f06b4532070b8987ea919642996c4fcf6f5c7c8f5f8d",
+    "repair_cycle": 1,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-23T02:36:55Z",
+    "verdict_file_sha256": "9f9013ba9615bc0f88fe80bf7761f6ee53d618f24ceb13ba515eeeab98d91c44",
+    "verdict_head_sha": "89eb79d63495f6ae0a6ca2c592e1e9b7660fbd92",
+    "verdict_request_id": "OCOR-DEV-0056-89eb79d63495-1-env-recheck",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatori del task: Codex (OpenAI) e Claude Code (Anthropic). Nessun implementatore dichiarato appartiene al fornitore del verifier.",
+      "model": "grok-4.7-high (xAI)",
+      "process": "Cursor CLI, contesto pulito, sessione non interattiva"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/deletion.py": "c8b2adfe378c3e6a5c06ce954c335ec9db96a57cd8ddd15180b134d3390ea2b1",
@@ -665,12 +824,12 @@
   },
   "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
   "normative_interpretations": [
-    "ADD v1.3 Part II §§2.10/2.13 and LLD v1.1 §§2.8.6/5.4: a restored backup may hold deleted items; it is honoured by replaying the authoritative tombstones (completed and unfinished) and purging every restored representation before any retrieval is served, not by rewriting the immutable recovery point.",
+    "ADD v1.3 Part II \u00a7\u00a72.10/2.13 and LLD v1.1 \u00a7\u00a72.8.6/5.4: a restored backup may hold deleted items; it is honoured by replaying the authoritative tombstones (completed and unfinished) and purging every restored representation before any retrieval is served, not by rewriting the immutable recovery point.",
     "The checkpoint authority must be independent of the restored backup and of the caller: the deletion authority attests its current journal checkpoint for the specific recovery point (OpenBao transit signature in the qualifying cases); a stale journal at the restore site keeps restore closed (CHECKPOINT_MISMATCH) until the current one is delivered.",
     "Caches/replicas/exports: the runtime has no result cache; a restored replica/export is a RestoredDeletionParticipant and, when recorded by the source saga, must be configured or restore stays closed (DELETION_PARTICIPANT_MISSING).",
     "Requirement ids follow the backlog task (BR-003, FR-118); this is component-level evidence of the restore boundary, not G6 requirement verification.",
     "Campaign-v2 fixes only local environment preparation: bootstrap sync removes the lint extra, so a second frozen test+lint sync and a mypy import precede the full suite. The failed precondition run remains diagnostic; no counts are transferred and no product/test change is made.",
-    "ADD v1.3 Part II §2.6 denial evidence applies to recovery boundaries. Pure journal/claim value parsing does not dispatch or serve: the consuming operational boundary persists its errors. An unauthenticated checkpoint is not parsed for audit enrichment; a null checkpoint_digest honestly records that no trusted checkpoint is yet known."
+    "ADD v1.3 Part II \u00a72.6 denial evidence applies to recovery boundaries. Pure journal/claim value parsing does not dispatch or serve: the consuming operational boundary persists its errors. An unauthenticated checkpoint is not parsed for audit enrichment; a null checkpoint_digest honestly records that no trusted checkpoint is yet known."
   ],
   "observations": [
     {
@@ -979,11 +1138,12 @@
   "roles": {
     "implementers": "Codex (OpenAI): WIP 0d1de3b RED and 5edd6cd checkpoint-fenced journal, restore gate, metadata replay and participant adapter (2026-10-11); Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (LOOP-AGENT-ROTATION, quota Codex esaurita): realignment merge 1fd22c6 with origin/main 1bf0e92, attested recovery-point checkpoint authority, RestoredMemorySearch entry point, live restore drills, mutation-gap tests, qualification and this candidate (2026-10-22); Codex (OpenAI), repair_cycle=1: VF-001 denial audit, live/negative tests, mutation-gap closure and final qualification.",
     "independence": "external loop only; the implementers did not run or simulate the verification",
-    "verifier": "selected by the loop among providers different from OpenAI and Anthropic (Cursor/Grok 4.7 xAI, then Antigravity/Gemini Google), separate process and clean context"
+    "verifier": "Grok 4.7 via Cursor CLI (xAI), independent process/context/provider; effective verdict configuration in independent_verification"
   },
   "rollback_procedure_verified": "Mechanical review: the task adds memory/deletion.py and tests/tasks/test_ocor_dev_0056.py plus evidence; no migration or persisted schema; rollback is a revert commit of the task merge, after which the prior G5 manifest validates unchanged (no existing entry is modified).",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "sealed_at": "2026-10-23T02:40:06.044466+00:00",
+  "status": "SEALED",
   "supersedes_candidate": "1734d8001bac8ee1375ce4182e273f10d4f11549 (cycle0 candidate, NO_GO VF-001, preserved unchanged in Git; no historical seal rewritten)",
   "task_id": "OCOR-DEV-0056",
   "tdd": {
