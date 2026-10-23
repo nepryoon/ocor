@@ -7,14 +7,13 @@ Qdrant, OpenBao transit, the real Human Gate and C3 transaction service.
 """
 from __future__ import annotations
 
-import dataclasses
 from datetime import timedelta
 from typing import Any
 
 import pytest
 import test_ocor_dev_0052 as r
 import test_ocor_dev_0057 as a
-from ocor_runtime.kernel.canonical import canonical_digest, format_utc_timestamp
+from ocor_runtime.kernel.canonical import format_utc_timestamp
 from ocor_runtime.memory.promotion import (
     MemoryPromotionError,
     MemoryPromotionService,
@@ -84,7 +83,7 @@ def test_proposal_binds_exact_source_gcs_target_evidence_without_mutation() -> N
     assert result.proposal.evidence_refs
     assert result.proposal.provenance_refs
     assert w.ledger.records() == before
-    assert result.to_mapping()["status"] == "PROPOSED"
+    assert result.to_mapping()["status"] == "ACCEPTED"
     assert result.to_mapping()["operation_id"] == "promote-1"
     assert audit.actions() == ["proposeMemoryPromotion.recorded"]
     assert s.load(result.audit_ref, binding=r.binding()) == result.proposal
@@ -157,7 +156,7 @@ def test_unrecorded_tampered_or_foreign_proposal_cannot_be_consumed() -> None:
     result = s.propose("source", request(w), binding=r.binding())
     with pytest.raises(r.MemoryAdmissionError):
         s.load(result.audit_ref, binding=r.binding(r.context(tenant="other")))
-    audit.events[0]["proposal"]["target_aggregate_ref"] = "forged"
+    next(e for e in audit.events if "proposal" in e)["proposal"]["target_aggregate_ref"] = "forged"
     refused(lambda: s.load(result.audit_ref, binding=r.binding()), "PROPOSAL_DIGEST_MISMATCH")
 
 
@@ -251,3 +250,11 @@ def test_live_ineligible_source_or_changed_control_leaves_only_denial(backends: 
         s.propose(target, request(w), binding=r.binding())
     assert w.ledger.records() == before
     assert audit.actions() == ["proposeMemoryPromotion.denied"]
+
+
+def test_c6_consumer_requires_separate_control_authority_approval_decision_and_c3() -> None:
+    from ocor_runtime.memory.promotion import C6MemoryPromotionConsumer
+    import inspect
+    fields = set(inspect.signature(C6MemoryPromotionConsumer).parameters)
+    assert {"proposals", "controls", "verifier", "human_gate", "policy", "c3", "clock", "audit"} <= fields
+    assert not {"issue", "grant", "approve", "decide", "install_policy"} & set(dir(C6MemoryPromotionConsumer))
