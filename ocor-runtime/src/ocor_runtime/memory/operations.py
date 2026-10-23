@@ -317,6 +317,13 @@ class MemoryOperationsService:
             if head.staged.verify().digest() != record.item_digest:
                 raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
             heads[item_id] = _Head(record, head, first.item.created_at)
+        for item_id, selected in heads.items():
+            version = selected.record.item.memory_version
+            current = self._metadata.get(item_id, version)
+            if (self._metadata.head(item_id) != version or self._ledger.latest_version(item_id) != version
+                    or current is None or current.state is not VersionState.COMMITTED
+                    or current.staged.stage_digest != selected.stored.staged.stage_digest):
+                raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
         return tuple(heads[k] for k in sorted(heads))
 
     @staticmethod

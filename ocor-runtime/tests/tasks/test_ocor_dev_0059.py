@@ -406,3 +406,22 @@ def test_real_retention_keeps_new_items_and_holds(backends: life.Backends) -> No
     report = invoke(s, w, p, "enforce_retention", limit=2)
     assert report.deleted == ("a-old",) and report.held == ("held",) and not report.satisfied
     assert w.status("young") == "ACTIVE" and w.status("held") == "LEGAL_HOLD"
+
+
+def test_a_head_change_during_inventory_refuses_a_stale_quota_or_monitor_result() -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, audit, _ = setup(w)
+    original = w.metadata.get
+    switched = False
+    def racing_get(item_id: str, version: int) -> Any:
+        nonlocal switched
+        result = original(item_id, version)
+        if not switched:
+            switched = True
+            w.move("a-old", "REVOKED")
+        return result
+    w.metadata.get = racing_get
+    refused(lambda: invoke(s, w, p), "CANDIDATE_CHANGED")
+    assert audit.events[-1]["outcome"] == "DENIED"
+    assert w.status("a-old") == "REVOKED"
