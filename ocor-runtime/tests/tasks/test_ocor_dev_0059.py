@@ -634,3 +634,379 @@ def test_real_serialization_lock_timeout_is_fail_closed(backends: life.Backends)
                 "QUOTA_SERIALIZATION_UNAVAILABLE")
         assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
     assert write(writer(w, s, port), w).state == "COMMITTED"
+
+
+# --------------------------------------------------------------------------
+# Backup manifest and restore materialisation (ADD v1.3 II 2.13, LLD 2.8.6,
+# FGM-18). Implementer of this slice: Claude Code (Anthropic). Live cases reuse
+# the 0056 real backup drill (PostgreSQL snapshot copy, Qdrant snapshot
+# recovery, OpenBao transit attestation) and its DeletionRestoreGate.
+# --------------------------------------------------------------------------
+
+MANIFEST_KEYS = {"schema", "recovery_point_id", "operation_id", "partition", "partition_digest",
+                 "governed_context_digest", "captured_at", "journal_checkpoint", "usage", "entries"}
+ENTRY_KEYS = {"memory_item_id", "head_version", "lifecycle_status", "deletion_epoch", "content_ref",
+              "content_digest", "stage_digest", "item_digests", "audit_refs", "representations"}
+POINT = "urn:ocor:recovery-point:" + "d" * 64
+
+
+class Checkpoints:
+    """Trusted deletion-checkpoint port fixture (journal-backed or fixed)."""
+
+    def __init__(self, path: Path | None = None, *, fixed: Any = None) -> None:
+        self.path, self.fixed, self.fail, self.calls, self.after = path, fixed, False, 0, None
+
+    def current(self) -> Any:
+        from ocor_runtime.memory.deletion import GENESIS, DeletionJournalCheckpoint, DeletionJournalSnapshot
+        self.calls += 1
+        if self.fail:
+            raise ConnectionError("deletion authority unavailable")
+        if self.after is not None and self.calls > 1:
+            return self.after
+        if self.fixed is not None:
+            return self.fixed
+        if self.path is None:
+            return DeletionJournalCheckpoint(0, GENESIS, 0)
+        return DeletionJournalSnapshot.capture(self.path).checkpoint
+
+
+class Signer:
+    """HMAC unit signer; live cases use the OpenBao transit attestation of 0056."""
+
+    def __init__(self) -> None:
+        self.fail, self.answer, self.signed = False, None, 0
+
+    def sign(self, payload: bytes) -> str:
+        import hmac
+        if self.fail:
+            raise ConnectionError("signer unavailable")
+        self.signed += 1
+        return "hmac:" + hmac.new(b"k" * 32, payload, hashlib.sha256).hexdigest()
+
+    def verify(self, payload: bytes, signature: str) -> Any:
+        import hmac
+        if self.answer is not None:
+            return self.answer
+        return hmac.compare_digest(signature, "hmac:" + hmac.new(b"k" * 32, payload, hashlib.sha256).hexdigest())
+
+
+def backup_service(s: MemoryOperationsService, checkpoints: Any = None, signer: Any = None) -> Any:
+    from ocor_runtime.memory.operations import MemoryBackupService
+    return MemoryBackupService(operations=s, checkpoints=checkpoints or Checkpoints(), signer=signer or Signer())
+
+
+def capture(b: Any, w: Any, p: MemoryPartition, point: str = POINT) -> Any:
+    return b.capture(request(w, p), binding=r.binding(r.context()), recovery_point_id=point)
+
+
+def test_backup_manifest_is_complete_canonical_and_signed() -> None:
+    from ocor_runtime.kernel.canonical import canonical_bytes, parse_i_json
+    w = life.unit_world()
+    p = seed(w)
+    w.admit("b-del", life.TEXT + " gone")
+    w.delete("b-del", op="forget-b")
+    s, audit, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    body = parse_i_json(backup.payload)
+    assert canonical_bytes(body) == backup.payload and signer.verify(backup.payload, backup.signature) is True
+    assert set(body) == MANIFEST_KEYS and body["recovery_point_id"] == POINT
+    assert body["partition_digest"] == p.digest and body["governed_context_digest"] == r.context().digest()
+    assert body["journal_checkpoint"] == {"sequence": 0, "head": "urn:sha256:" + "0" * 64, "deletion_epoch": 0}
+    entries = {e["memory_item_id"]: e for e in body["entries"]}
+    assert sorted(entries) == ["a-old", "b-del"] and all(set(e) == ENTRY_KEYS for e in entries.values())
+    live = entries["a-old"]
+    record = w.ledger.get("a-old", 1)
+    stored = w.metadata.get("a-old", 1)
+    assert (live["head_version"], live["lifecycle_status"], live["deletion_epoch"]) == (1, "ACTIVE", None)
+    assert live["content_ref"] == stored.staged.content_object_ref and live["content_digest"] == record.item.content_digest
+    assert live["item_digests"] == [record.item_digest] and live["audit_refs"] == [stored.staged.audit_ref]
+    assert live["stage_digest"] == stored.staged.stage_digest
+    assert [x["representation_digest"] for x in live["representations"]] == [
+        ptr.representation_digest for ptr in stored.staged.pointers]
+    gone = entries["b-del"]
+    assert gone["lifecycle_status"] == "DELETED" and isinstance(gone["deletion_epoch"], int) and gone["deletion_epoch"] >= 1
+    assert gone["representations"] == [] and len(gone["item_digests"]) == gone["head_version"]
+    assert body["usage"] == {"items": 1, "held_items": 0, "incomplete_deletions": 0, "index_entries": 3, "tombstones": 1}
+    assert life.TEXT not in backup.payload.decode()  # metadata and refs only, never content
+    assert [e["action"] for e in audit.events][-2:] == ["memoryBackup.started", "memoryBackup.completed"]
+
+
+def test_backup_is_deterministic_for_an_unchanged_partition() -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    b = backup_service(s)
+    assert capture(b, w, p).payload == capture(b, w, p).payload
+
+
+@pytest.mark.parametrize("fault,detail", [
+    ("binding", "BINDING_MISSING"), ("policy", "OPERATIONS_DENIED"), ("checkpoint", "CHECKPOINT_UNAVAILABLE"),
+    ("checkpoint-changed", "CHECKPOINT_CHANGED"), ("signer", "SIGNER_UNAVAILABLE"),
+    ("point", "RECOVERY_POINT_INVALID"), ("audit", "AUDIT_UNAVAILABLE"),
+])
+def test_backup_capture_fails_closed_without_a_manifest(fault: str, detail: str) -> None:
+    from ocor_runtime.memory.deletion import DeletionJournalCheckpoint
+    w = life.unit_world()
+    p = seed(w)
+    s, audit, policy = setup(w)
+    checkpoints, signer = Checkpoints(), Signer()
+    b = backup_service(s, checkpoints, signer)
+    binding: Any = r.binding(r.context())
+    point = POINT
+    if fault == "binding":
+        binding = None
+    elif fault == "policy":
+        policy.allow = False
+    elif fault == "checkpoint":
+        checkpoints.fail = True
+    elif fault == "checkpoint-changed":
+        checkpoints.after = DeletionJournalCheckpoint(1, r.d("journal-head"), 1)
+    elif fault == "signer":
+        signer.fail = True
+    elif fault == "point":
+        point = "urn:ocor:recovery-point:not-a-digest"
+    else:
+        audit.fail = True
+    refused(lambda: b.capture(request(w, p), binding=binding, recovery_point_id=point), detail)
+    if fault in {"binding", "policy", "point"}:
+        assert checkpoints.calls == 0
+    if fault != "audit":
+        assert signer.signed == 0 or fault == "signer"
+        assert audit.events[-1]["outcome"] == "DENIED"
+
+
+def test_backup_never_captures_another_partition() -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, policy = setup(w)
+    checkpoints = Checkpoints()
+    other = dataclasses.replace(p, compartments=("bravo",))
+    refused(lambda: capture(backup_service(s, checkpoints), w, other), "PARTITION_DENIED")
+    assert policy.calls == [] and checkpoints.calls == 0
+
+
+@pytest.mark.parametrize("tamper", ["extra-key", "non-canonical", "schema", "entry-key", "not-json"])
+def test_restore_refuses_an_invalid_manifest_even_if_signed(tamper: str, tmp_path: Path) -> None:
+    import json
+
+    from ocor_runtime.kernel.canonical import canonical_bytes, parse_i_json
+    from ocor_runtime.memory.operations import MemoryRestoreGate
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    body = parse_i_json(backup.payload)
+    if tamper == "extra-key":
+        payload = canonical_bytes({**body, "note": "x"})
+    elif tamper == "non-canonical":
+        payload = json.dumps(body, indent=1).encode()
+    elif tamper == "schema":
+        payload = canonical_bytes({**body, "schema": "urn:ocor:schema:other:v1"})
+    elif tamper == "entry-key":
+        payload = canonical_bytes({**body, "entries": [{**body["entries"][0], "extra": 1}]})
+    else:
+        payload = b"\xff not json"
+    gate, _, participant, _ = unit_gate(tmp_path)
+    audit = receipts.ReceiptAudit()
+    restore = MemoryRestoreGate(recovery_point_id=POINT, verifier=signer, gate=gate, checkpoints=Checkpoints(),
+                                journal=tmp_path / "restored.jsonl", metadata=w.metadata, ledger=w.ledger, audit=audit)
+    refused(lambda: restore.open(payload, signer.sign(payload)), "BACKUP_MANIFEST_INVALID")
+    assert participant.calls == [] and audit.events[-1]["outcome"] == "DENIED"
+
+
+def unit_gate(tmp_path: Path) -> Any:
+    import test_ocor_dev_0056 as t56
+    return t56.gate_world(tmp_path)
+
+
+@pytest.mark.parametrize("answer", [False, None, 1, "true"])  # None: real HMAC check of a wrong signature
+def test_restore_requires_an_exact_true_signature_verification(answer: Any, tmp_path: Path) -> None:
+    from ocor_runtime.memory.operations import MemoryRestoreGate
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    gate, _, participant, _ = unit_gate(tmp_path)
+    restore = MemoryRestoreGate(recovery_point_id=POINT, verifier=signer, gate=gate, checkpoints=Checkpoints(),
+                                journal=tmp_path / "restored.jsonl", metadata=w.metadata, ledger=w.ledger,
+                                audit=receipts.ReceiptAudit())
+    signer.answer = answer
+    signature = "hmac:" + "0" * 64 if answer is None else backup.signature
+    refused(lambda: restore.open(backup.payload, signature), "BACKUP_UNAUTHENTICATED")
+    assert participant.calls == []
+    refused(lambda: restore.serve(lambda: "materialised"), "RESTORE_NOT_OPEN")
+
+
+def test_restore_components_require_exact_port_types(tmp_path: Path) -> None:
+    from ocor_runtime.memory.operations import MemoryRestoreGate
+    w = life.unit_world()
+    with pytest.raises(ValueError):
+        MemoryRestoreGate(recovery_point_id=POINT, verifier=Signer(), gate=object(), checkpoints=Checkpoints(),  # type: ignore[arg-type]
+                          journal=tmp_path / "j", metadata=w.metadata, ledger=w.ledger, audit=receipts.ReceiptAudit())
+    gate, *_ = unit_gate(tmp_path)
+    with pytest.raises(ValueError):
+        MemoryRestoreGate(recovery_point_id="urn:ocor:recovery-point:x", verifier=Signer(), gate=gate,
+                          checkpoints=Checkpoints(), journal=tmp_path / "j", metadata=w.metadata, ledger=w.ledger,
+                          audit=receipts.ReceiptAudit())
+
+
+# ---- live restore drills (real PostgreSQL/Qdrant/OpenBao, 0056 backup copy) --------------------
+
+def live_drill(backends: life.Backends, tmp_path: Path, *, hold: bool = False) -> Any:
+    """The 0056 drill, optionally with a legal hold placed before the backup copy."""
+    import test_ocor_dev_0056 as t56
+    from ocor_runtime.memory.lifecycle import JournalTombstoneStore
+    path = tmp_path / "authority.jsonl"
+    source = backends.world(tombstones=JournalTombstoneStore(path))
+    items = life.populate(source)
+    if hold:
+        source.holds.place()
+        source.move("x", "LEGAL_HOLD", hold=life.HOLD, reason="LITIGATION_HOLD")
+    source.rebuild(items["keep"])
+    restored, point = t56.backup_and_restore(backends, source, items)
+    attestation = t56.OpenBaoCheckpointAttestation(backends.bao)
+    issuer = t56.AttestedJournal(path, attestation, point)
+    return t56.Drill(source, restored, point, path, tmp_path / "restored.jsonl", attestation, issuer, items)
+
+
+def live_capture(d: Any, backends: life.Backends, point: str | None = None) -> tuple[Any, Any, Any]:
+    import test_ocor_dev_0056 as t56
+    s, _, _ = setup(d.source, audit=receipts.PostgresReceiptAudit(backends.dsn, d.source.metadata.schema))
+    signer = t56.OpenBaoCheckpointAttestation(backends.bao)
+    b = backup_service(s, Checkpoints(d.authority_journal), signer)
+    p = MemoryPartition.for_item(d.items["keep"].item)
+    return capture(b, d.source, p, point or d.recovery_point), signer, p
+
+
+def live_restore(d: Any, backends: life.Backends, signer: Any, checkpoints: Any = None, audit: Any = None) -> Any:
+    from ocor_runtime.memory.operations import MemoryRestoreGate
+    return MemoryRestoreGate(
+        recovery_point_id=d.recovery_point, verifier=signer, gate=d.gate(),
+        checkpoints=checkpoints or Checkpoints(d.authority_journal), journal=d.restored_journal,
+        metadata=d.restored.metadata, ledger=d.restored.ledger,
+        audit=audit or receipts.PostgresReceiptAudit(backends.dsn, d.restored.metadata.schema),
+    )
+
+
+def mentions(refs: dict[str, list[str]], item: str) -> bool:
+    return any(ref.startswith(f"urn:ocor:memory:{item}:") for found in refs.values() for ref in found)
+
+
+def test_live_restore_replays_tombstones_then_reopens_with_holds_and_epochs(
+    backends: life.Backends, tmp_path: Path,
+) -> None:
+    from ocor_runtime.kernel.canonical import parse_i_json
+    d = live_drill(backends, tmp_path)
+    backup, signer, _ = live_capture(d, backends)
+    body = parse_i_json(backup.payload)
+    assert {e["memory_item_id"] for e in body["entries"]} == {"keep", "x", "y"}
+    # A deletion after the backup must never be resurrected by the restore.
+    assert d.source.delete("x", op="forget-x").lifecycle_status == "DELETED"
+    d.deliver_journal()
+    assert mentions(d.refs(), "x")  # the restored copy really still holds x
+    audit = receipts.PostgresReceiptAudit(backends.dsn, d.restored.metadata.schema)
+    restore = live_restore(d, backends, signer, audit=audit)
+    refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+    receipt = restore.open(backup.payload, backup.signature)
+    assert receipt.obligations == 1 and receipt.manifest_digest == "urn:sha256:" + hashlib.sha256(backup.payload).hexdigest()
+    assert receipt.deleted_after_backup == ("x",) and receipt.verified_items == 2
+    found = restore.serve(d.refs)
+    assert not mentions(found, "x") and mentions(found, "keep") and mentions(found, "y")
+    assert d.restored.status("x") == "DELETED"
+    assert audit.actions()[-1] == "memoryRestore.served"
+
+
+def test_live_restore_preserves_a_legal_hold_recorded_in_the_manifest(backends: life.Backends, tmp_path: Path) -> None:
+    from ocor_runtime.kernel.canonical import parse_i_json
+    d = live_drill(backends, tmp_path, hold=True)
+    backup, signer, _ = live_capture(d, backends)
+    restore = live_restore(d, backends, signer)
+    d.deliver_journal()
+    receipt = restore.open(backup.payload, backup.signature)
+    assert receipt.obligations == 0 and receipt.deleted_after_backup == () and receipt.verified_items == 3
+    entries = {e["memory_item_id"]: e for e in parse_i_json(backup.payload)["entries"]}
+    assert {k: e["lifecycle_status"] for k, e in entries.items()} == {"keep": "ACTIVE", "x": "LEGAL_HOLD", "y": "ACTIVE"}
+    assert entries["x"]["head_version"] == 2 and entries["x"]["representations"] != []
+    assert d.restored.status("x") == "LEGAL_HOLD"
+    found = restore.serve(d.refs)
+    assert not mentions(found, "x") and mentions(found, "keep")  # held, preserved, never retrievable
+
+
+@pytest.mark.parametrize("tamper", ["payload", "signature"])
+def test_live_unauthenticated_backup_never_purges_or_reopens(backends: life.Backends, tmp_path: Path, tamper: str) -> None:
+    d = live_drill(backends, tmp_path)
+    backup, signer, _ = live_capture(d, backends)
+    d.source.delete("x", op="forget-x")
+    d.deliver_journal()
+    payload = backup.payload.replace(b'"keep"', b'"kept"') if tamper == "payload" else backup.payload
+    signature = backup.signature if tamper == "payload" else "vault:v1:" + "A" * 86
+    restore = live_restore(d, backends, signer)
+    refused(lambda: restore.open(payload, signature), "BACKUP_UNAUTHENTICATED")
+    refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+    assert mentions(d.refs(), "x")  # nothing purged without an authenticated manifest
+
+
+def test_live_manifest_of_another_recovery_point_is_refused(backends: life.Backends, tmp_path: Path) -> None:
+    d = live_drill(backends, tmp_path)
+    backup, signer, _ = live_capture(d, backends, point=POINT)
+    d.deliver_journal()
+    refused(lambda: live_restore(d, backends, signer).open(backup.payload, backup.signature), "RECOVERY_POINT_MISMATCH")
+
+
+def test_live_stale_deletion_epoch_blocks_materialisation_before_any_purge(backends: life.Backends, tmp_path: Path) -> None:
+    d = live_drill(backends, tmp_path)
+    old_journal = tmp_path / "before-deletion.jsonl"
+    old_journal.write_bytes(d.authority_journal.read_bytes())
+    d.source.delete("y", op="forget-y")
+    backup, signer, _ = live_capture(d, backends)  # the manifest records the newer deletion epoch
+    d.deliver_journal()
+    # The deletion authority answers with a checkpoint older than the backup: a journal rollback.
+    restore = live_restore(d, backends, signer, checkpoints=Checkpoints(old_journal))
+    refused(lambda: restore.open(backup.payload, backup.signature), "STALE_DELETION_EPOCH")
+    assert mentions(d.refs(), "y")
+    refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+
+
+@pytest.mark.parametrize("drift", ["newer-version", "extra-item"])
+def test_live_projection_drift_blocks_materialisation(backends: life.Backends, tmp_path: Path, drift: str) -> None:
+    d = live_drill(backends, tmp_path)
+    if drift == "newer-version":
+        # The source revokes y after the copy: the manifest is newer than the restored projection.
+        d.source.move("y", "REVOKED")
+    backup, signer, _ = live_capture(d, backends)
+    if drift == "extra-item":
+        d.restored.admit("extra", life.TEXT + " east")  # present in the restored stores, absent from the manifest
+    d.deliver_journal()
+    restore = live_restore(d, backends, signer)
+    refused(lambda: restore.open(backup.payload, backup.signature), "PROJECTION_DRIFT")
+    refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+
+
+def test_live_drift_after_reopening_discards_the_response_and_closes(backends: life.Backends, tmp_path: Path) -> None:
+    d = live_drill(backends, tmp_path)
+    backup, signer, _ = live_capture(d, backends)
+    d.deliver_journal()
+    restore = live_restore(d, backends, signer)
+    restore.open(backup.payload, backup.signature)
+    served: list[str] = []
+
+    def materialise() -> Any:
+        d.restored.admit("late", life.TEXT + " west")
+        served.append("called")
+        return d.refs()
+    refused(lambda: restore.serve(materialise), "PROJECTION_DRIFT")
+    assert served == ["called"]
+    refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+
+
+def test_live_missing_journal_keeps_restore_closed(backends: life.Backends, tmp_path: Path) -> None:
+    from ocor_runtime.memory.deletion import DeletionRecoveryError
+    d = live_drill(backends, tmp_path)
+    backup, signer, _ = live_capture(d, backends)
+    restore = live_restore(d, backends, signer)  # journal never delivered to the restore site
+    with pytest.raises(DeletionRecoveryError):
+        restore.open(backup.payload, backup.signature)
+    refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
