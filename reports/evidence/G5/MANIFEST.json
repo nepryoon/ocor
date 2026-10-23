@@ -309,6 +309,16 @@
       "path": "OCOR-DEV-0057.log",
       "sha256": "6fd451f37117a8e6788abbb20657e0c367eaf66bf1a325eecbc2e9a7edd07b78",
       "task_id": "OCOR-DEV-0057-RAW"
+    },
+    {
+      "path": "OCOR-DEV-0058.json",
+      "sha256": "cf860bea8eaabd2f67e2feafc68e201e6148bb668101dfd1fa894f9ac58f9e07",
+      "task_id": "OCOR-DEV-0058"
+    },
+    {
+      "path": "OCOR-DEV-0058.log",
+      "sha256": "51d4dd6c84447a8ac08fb0a3d1af14de70576fe5856be6b84e1112f0042c9111",
+      "task_id": "OCOR-DEV-0058-RAW"
     }
   ],
   "created_at": "2026-10-08T18:33:05Z",
@@ -844,6 +854,51 @@
       "requirement_id": "FR-119",
       "status": "PASS",
       "task_id": "OCOR-DEV-0057"
+    },
+    {
+      "case_id": "OCOR-DEV-0058-PROPOSAL-IS-NON-AUTHORITATIVE-AND-RECORDED",
+      "command": "proposeMemoryPromotion records a content-free MemoryPromotionProposal bound to the exact committed source version, GCS, registered target profile, evidence and provenance in the protected audit store and returns only the public OperationReceipt; no ledger, canonical or security write; requests smuggling authority, approval, decision, capability, policy, content or effect members, unregistered or security/policy targets, malformed envelopes, a missing binding or a foreign GCS are refused with an audited denial; on PostgreSQL 16, Qdrant and OpenBao the proposal is durable and revalidated by fresh adapters",
+      "evidence_path": "OCOR-DEV-0058.json",
+      "raw_output_path": "OCOR-DEV-0058.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0058"
+    },
+    {
+      "case_id": "OCOR-DEV-0058-PROPOSAL-REVALIDATION-FAILS-CLOSED",
+      "command": "The live promotion policy (deny, outage, stale bundle, invalid decision), deadline, audit availability, proposal integrity and the source eligibility are checked at proposal and again at consumption: revocation, correction, expiry, stop-epoch change (also during policy I/O), policy change, deadline, unrecorded, tampered or foreign proposals fail closed with an audited denial and no proposal; on the real backends revocation, supersession, foreign compartment, stop and policy denial leave only the denial and an unchanged ledger",
+      "evidence_path": "OCOR-DEV-0058.json",
+      "raw_output_path": "OCOR-DEV-0058.log",
+      "requirement_id": "FR-119",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0058"
+    },
+    {
+      "case_id": "OCOR-DEV-0058-CANONICAL-STATE-ONLY-VIA-C6-GATE-AND-VERIFIED-C3-RECEIPT",
+      "command": "On PostgreSQL, Qdrant, OpenBao transit (ed25519 gate signature), the real Human Gate and live OPA, a recorded proposal reaches canonical state only through the signed C6 gate (command, Authority, Decision, approvals) and a governed C3 commit whose receipt is verified against the command; the ledger is unchanged, intent and completion are audited, the replay returns the same C3 receipt without a second revision; a C3 refusal or a receipt not bound to the command after dispatch is an audited indeterminate outcome, never success",
+      "evidence_path": "OCOR-DEV-0058.json",
+      "raw_output_path": "OCOR-DEV-0058.log",
+      "requirement_id": "FR-053",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0058"
+    },
+    {
+      "case_id": "OCOR-DEV-0058-EVERY-C6-CONTROL-REFUSAL-LEAVES-STATE-UNCHANGED",
+      "command": "Each live fault mutates exactly one control of the otherwise accepted gate and is refused before C3 with its own stable detail, leaving canonical state absent, the memory ledger unchanged and an audited denial: missing, unsigned or digest-forged gate; proposal, target, GCS, evidence or claim binding; Authority ref, expiry, not-yet-valid, revocation, purpose, tenant, capability, scope, domain, compartments, risk, self-vouched or unverified or revoked delegation, capability not composed for C3; Decision rejected, expired, revoked, other action or ref; approvals absent, below quorum, self-approved, wrong role, expired, missing required role, expiring during the last policy I/O; OPA deny, outage, stale bundle; stop, source revocation or Decision revocation during policy evaluation",
+      "evidence_path": "OCOR-DEV-0058.json",
+      "raw_output_path": "OCOR-DEV-0058.log",
+      "requirement_id": "FR-053",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0058"
+    },
+    {
+      "case_id": "OCOR-DEV-0058-MEMORY-PROMOTION-PATH",
+      "command": "End-to-end component path MemoryItem -> MemoryPromotionProposal -> C6 Policy/Authority/Approval/Decision -> GovernedCanonicalCommitCommand -> C3 on the real backends, with no direct memory write, capability grant or policy mutation at the port or integration level",
+      "evidence_path": "OCOR-DEV-0058.json",
+      "raw_output_path": "OCOR-DEV-0058.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0058"
     }
   ],
   "schema_version": "1.0"
