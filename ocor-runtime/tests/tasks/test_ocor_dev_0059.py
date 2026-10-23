@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import dataclasses
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
+import psycopg
 import pytest
 import test_ocor_dev_0052 as r
 import test_ocor_dev_0055 as life
@@ -223,8 +225,9 @@ def test_unauthorized_partition_does_not_influence_count_pressure_or_metric_labe
     assert audit.events[-1]["partition_digest"] == p.digest
 
 
-def test_real_partition_pressure_preserves_hold_and_durable_tombstones(backends: life.Backends) -> None:
-    w = backends.world()
+def test_real_partition_pressure_preserves_hold_and_durable_tombstones(backends: life.Backends, tmp_path: Path) -> None:
+    journal = tmp_path / "tombstones.jsonl"
+    w = backends.world(tombstones=life.JournalTombstoneStore(journal))
     p = seed(w)
     w.admit("b-old", life.TEXT + " b")
     w.admit("held", life.TEXT + " held")
@@ -237,6 +240,9 @@ def test_real_partition_pressure_preserves_hold_and_durable_tombstones(backends:
     assert w.status("held") == "LEGAL_HOLD" and w.tombstones.entries("held") == ()
     assert w.tombstones.entries("a-old")[-1].phase == "COMPLETED"
     assert w.tombstones.entries("b-old")[-1].phase == "COMPLETED"
+    fresh = life.JournalTombstoneStore(journal)
+    assert fresh.entries("a-old") == w.tombstones.entries("a-old")
+    assert fresh.entries("b-old") == w.tombstones.entries("b-old")
     for item_id in result.deleted:
         record = w.ledger.get(item_id, 1)
         assert not life.content_present(w, record)
@@ -255,3 +261,148 @@ def test_real_unauthorized_partition_cannot_change_quota_decision(backends: life
     assert after == before
     denied = dataclasses.replace(p, tenant_id="tenant-b")
     refused(lambda: invoke(s, w, denied), "PARTITION_DENIED")
+
+
+@pytest.mark.parametrize("field", ["new_items", "payload_bytes", "embedding_dimensions", "top_k",
+    "consolidation_concurrency", "new_index_entries", "retention_seconds"])
+@pytest.mark.parametrize("value", [True, -1, 1.5])
+def test_invalid_demand_never_silently_coerces_or_releases_quota(field: str, value: Any) -> None:
+    with pytest.raises(ValueError):
+        MemoryQuotaDemand(**{field: value})
+
+
+@pytest.mark.parametrize("field,value", [("operation_id", ""), ("operation_id", True), ("deadline", "bad"),
+    ("deadline", 0), ("governed_context", None), ("governed_context_digest", "forged"), ("partition", None)])
+def test_request_envelope_failures_are_audited(field: str, value: Any) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, audit, _ = setup(w)
+    body = request(w, p)
+    body[field] = value
+    with pytest.raises(MemoryOperationsError):
+        s.monitor(body, binding=r.binding(r.context()))
+    assert audit.events[-1]["outcome"] == "DENIED"
+    assert w.status("a-old") == "ACTIVE"
+
+
+@pytest.mark.parametrize("action", ["monitor", "check_quota", "relieve_pressure", "enforce_retention"])
+def test_changed_stop_state_cannot_return_success(action: str) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, audit, _ = setup(w)
+    w.lc_stop.bump_after = 1
+    kwargs = {"demand": MemoryQuotaDemand()} if action == "check_quota" else (
+        {"target_items": 0, "limit": 1} if action == "relieve_pressure" else ({"limit": 1} if action == "enforce_retention" else {}))
+    refused(lambda: invoke(s, w, p, action, **kwargs), "STOP_EPOCH_MISMATCH")
+    assert audit.events[-1]["outcome"] == "DENIED"
+    assert w.status("a-old") == "ACTIVE"
+
+
+@pytest.mark.parametrize("state", [True, -1, "0"])
+def test_invalid_stop_epoch_is_not_an_admission(state: Any) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    w.lc_stop.epoch = state
+    refused(lambda: invoke(s, w, p), "STOP_STATE_INVALID")
+
+
+def test_inventory_unavailable_is_never_zero_usage() -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, audit, _ = setup(w)
+    def missing(_: str) -> Any:
+        raise ConnectionError("metadata unavailable")
+    w.metadata.versions_in = missing
+    refused(lambda: invoke(s, w, p), "OPERATIONS_UNAVAILABLE")
+    assert audit.events[-1]["outcome"] == "DENIED"
+
+
+def test_unknown_retention_policy_is_not_permission_to_forget() -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    refused(lambda: invoke(s, w, p, "check_quota", demand=MemoryQuotaDemand(retention_policy_ref="unknown")),
+            "RETENTION_UNCONFIGURED")
+    s, _, _ = setup(w, limits=MemoryOperationsLimits(retention_horizons={"other": timedelta(days=1)}))
+    refused(lambda: invoke(s, w, p, "enforce_retention", limit=1), "RETENTION_UNCONFIGURED")
+    assert w.status("a-old") == "ACTIVE"
+
+
+def test_partial_deletion_does_not_release_the_item_quota() -> None:
+    replica = life.FailingParticipant(1)
+    w = life.unit_world(replica=replica)
+    record = w.admit("a-old", life.TEXT)
+    replica.track(record)
+    p = MemoryPartition.for_item(record.item)
+    s, _, _ = setup(w)
+    report = invoke(s, w, p, "relieve_pressure", target_items=0, limit=1)
+    assert report.incomplete == ("a-old",) and report.deleted == ()
+    assert report.remaining_items == 1 and not report.satisfied
+    assert invoke(s, w, p).incomplete_deletions == 1
+    assert w.status("a-old") == "DELETION_INCOMPLETE"
+
+
+def test_legal_hold_placed_during_pressure_policy_check_is_not_evicted() -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, policy = setup(w)
+    original = policy.authorize_operations
+    def raced(operation: str, partition: MemoryPartition, ctx: Any) -> Any:
+        if len(policy.calls) == 1:
+            w.holds.place()
+            w.move("a-old", "LEGAL_HOLD", hold=life.HOLD)
+        return original(operation, partition, ctx)
+    policy.authorize_operations = raced
+    refused(lambda: invoke(s, w, p, "relieve_pressure", target_items=0, limit=1), "CANDIDATE_CHANGED")
+    assert w.status("a-old") == "LEGAL_HOLD"
+    assert w.tombstones.entries("a-old") == ()
+
+
+@pytest.mark.parametrize("field,value,detail", [
+    ("new_items", 2, "ITEM_QUOTA_EXCEEDED"), ("payload_bytes", 65, "PAYLOAD_QUOTA_EXCEEDED"),
+    ("embedding_dimensions", 9, "EMBEDDING_QUOTA_EXCEEDED"), ("top_k", 11, "TOP_K_QUOTA_EXCEEDED"),
+    ("consolidation_concurrency", 3, "CONSOLIDATION_QUOTA_EXCEEDED"),
+    ("new_index_entries", 4, "INDEX_QUOTA_EXCEEDED"),
+    ("retention_seconds", 365 * 86400 + 1, "RETENTION_QUOTA_EXCEEDED"),
+])
+def test_real_configured_quotas_do_not_delete_existing_content(
+    backends: life.Backends, field: str, value: int, detail: str,
+) -> None:
+    w = backends.world()
+    p = seed(w)
+    audit = receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema)
+    s, _, _ = setup(w, audit=audit)
+    positive = invoke(s, w, p, "check_quota", demand=MemoryQuotaDemand())
+    assert positive.permitted and audit.receipt(positive.audit_ref)["outcome"] == "COMPLETED"
+    refused(lambda: invoke(s, w, p, "check_quota", demand=MemoryQuotaDemand(**{field: value})), detail)
+    assert audit.actions()[-1] == "memoryQuota.denied"
+    assert w.status("a-old") == "ACTIVE"
+    assert life.content_present(w, w.ledger.get("a-old", 1))
+
+
+def test_real_audit_unavailable_refuses_pressure_before_deletion(backends: life.Backends) -> None:
+    w = backends.world()
+    p = seed(w)
+    audit = receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema)
+    s, _, _ = setup(w, audit=audit)
+    with psycopg.connect(backends.dsn, autocommit=True) as conn:
+        conn.execute(f'DROP TABLE "{w.metadata.schema}".memory_audit')
+    refused(lambda: invoke(s, w, p, "relieve_pressure", target_items=0, limit=1), "AUDIT_UNAVAILABLE")
+    assert w.status("a-old") == "ACTIVE" and w.tombstones.entries("a-old") == ()
+    assert life.content_present(w, w.ledger.get("a-old", 1))
+
+
+def test_real_retention_keeps_new_items_and_holds(backends: life.Backends) -> None:
+    w = backends.world()
+    p = seed(w)
+    w.admit("held", life.TEXT + " hold")
+    w.holds.place()
+    w.move("held", "LEGAL_HOLD", hold=life.HOLD)
+    w.clock.advance(timedelta(days=20))
+    w.admit("young", life.TEXT + " young")
+    w.clock.advance(timedelta(days=350))
+    s, _, _ = setup(w, audit=receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema))
+    report = invoke(s, w, p, "enforce_retention", limit=2)
+    assert report.deleted == ("a-old",) and report.held == ("held",) and not report.satisfied
+    assert w.status("young") == "ACTIVE" and w.status("held") == "LEGAL_HOLD"
