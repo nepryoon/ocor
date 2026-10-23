@@ -16,9 +16,10 @@ an open FGM-17 qualification concern, not a runtime conformance claim.
 from __future__ import annotations
 
 import hmac
+import re
 from collections.abc import Mapping
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, fields
+from datetime import datetime, timedelta
 from types import MappingProxyType
 from typing import Protocol
 
@@ -60,6 +61,7 @@ REQUEST_FIELDS = ENVELOPE_FIELDS | {
 }
 # A profile must be explicitly registered by trusted composition. Security and
 # policy mutations are never a memory-promotion target, even with a profile.
+_CODE = re.compile(r"[A-Z][A-Z0-9_]{0,95}")
 FORBIDDEN_TARGETS = frozenset({
     "Authority", "Delegation", "Approval", "Decision", "CapabilityLease",
     "ActionCommand", "Policy", "PolicyBundle", "Capability", "Identity",
@@ -368,3 +370,310 @@ class MemoryPromotionService:
             error = _error("PROMOTION_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
             self._deny("consumeMemoryPromotion", binding, None, error)
             raise error from exc
+
+
+# The following adapter belongs to the C6 side of the port. Its dependencies
+# are deliberately absent from MemoryPromotionService. It consumes controls
+# issued by a separate C6 authority, it never issues them from memory.
+
+from ..c3.ports import CommitReceipt, GovernedCanonicalCommitCommand, GovernedCommitPort  # noqa: E402
+from ..c6.human_gate import (  # noqa: E402
+    ApprovalPolicy,
+    GateSignature,
+    HumanGateCoordinator,
+    HumanGateError,
+)
+from ..kernel.canonical import canonical_bytes, parse_i_json  # noqa: E402
+from ..kernel.governance import (  # noqa: E402
+    Authority,
+    AuthorityRequest,
+    GovernanceFault,
+    RiskClass,
+    VerifiedAuthorityBinding,
+    validate_authority,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class SignedPromotionGate:
+    """Canonical closed C6 gate bytes, signed by an independently trusted signer.
+
+    The signer attests its Authority/delegation validation and the Decision;
+    the consumer still rechecks revocation, Authority scope/window, policy,
+    Human Gate identity/quorum/TTL and the source immediately before C3.
+    A reference or a signature-shaped string alone never passes verification.
+    """
+
+    payload: bytes
+    signature: str
+
+
+class PromotionGateVerifier(Protocol):
+    def verify(self, payload: bytes, signature: str) -> bool: ...
+
+
+class PromotionControlStore(Protocol):
+    """Protected C6 control authority, separate from the memory audit store.
+
+    gate() never creates a gate. revoked() also covers revocation of an
+    ancestor delegation/authority of the addressed control record.
+    verified_delegation() returns the SignedDelegation that C6 identity and
+    delegation admission verified for the authenticated binding, or None.
+    It is the only delegation source: an Authority cannot vouch for itself.
+    """
+
+    def gate(self, proposal_audit_ref: str) -> SignedPromotionGate | None: ...
+
+    def verified_delegation(self, binding_ref: str) -> str | None: ...
+
+    def revoked(self, control_ref: str) -> bool: ...
+
+
+class PromotionCommitPolicy(Protocol):
+    def authorize_commit(
+        self, proposal: MemoryPromotionProposal, command: GovernedCanonicalCommitCommand,
+    ) -> MemoryPolicyDecision: ...
+
+
+def promotion_gate_digest(body: Mapping[str, object]) -> str:
+    """Digest the entire frozen gate, omitting only its two self-references."""
+    command, decision = body["command"], body["decision"]
+    if not isinstance(command, Mapping) or not isinstance(decision, Mapping):
+        raise ValueError("gate must bind a command and a Decision")
+    return canonical_digest({
+        **body,
+        "command": {k: v for k, v in command.items() if k != "gate_package_digest"},
+        "decision": {k: v for k, v in decision.items() if k != "gate_package_digest"},
+    })
+
+
+class C6MemoryPromotionConsumer:
+    """C6 gates -> governed C3 command -> verified C3 receipt, never a direct write.
+
+    Public callers supply only the recorded proposal reference and an
+    authenticated binding. The command, Authority, Decision, approval policy
+    and signatures come exclusively from the separately trusted C6 authority.
+    Its signature binds every command field and approval to the exact proposal.
+    No C3 call occurs for a missing, rejected, stale, revoked or altered gate.
+    """
+
+    def __init__(
+        self, *, proposals: MemoryPromotionService, controls: PromotionControlStore,
+        verifier: PromotionGateVerifier, human_gate: HumanGateCoordinator,
+        policy: PromotionCommitPolicy, c3: GovernedCommitPort, clock: TrustedClock,
+        audit: RetrievalAuditSink, commit_capability: str,
+    ) -> None:
+        # The canonical-commit capability is fixed by trusted composition; a
+        # signed gate cannot authorize C3 under an unrelated capability.
+        if not _reference(commit_capability):
+            raise ValueError("a named canonical-commit capability is required")
+        self._capability = commit_capability
+        self._proposals, self._controls, self._verifier = proposals, controls, verifier
+        self._human_gate, self._policy, self._c3 = human_gate, policy, c3
+        self._clock, self._audit = clock, audit
+
+    def _record(self, action: str, binding: VerifiedGovernedContextBinding, **fields: object) -> None:
+        event: dict[str, object] = {
+            "action": action, "correlation_id": binding.expected.correlation_id,
+            "governed_context_digest": binding.expected.digest(),
+            "evaluated_at": format_utc_timestamp(self._clock.now()), **fields,
+        }
+        try:
+            self._audit.record(MappingProxyType({**event, "audit_ref": canonical_digest(event)}))
+        except Exception as exc:  # noqa: BLE001 -- never claim an unaudited success
+            raise _error("AUDIT_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+
+    def commit(
+        self, proposal_audit_ref: str, *, binding: VerifiedGovernedContextBinding | None,
+    ) -> CommitReceipt:
+        verified = MemoryPromotionService._binding(binding)
+        dispatched = False
+        try:
+            proposal = self._proposals.load(proposal_audit_ref, binding=verified)
+            gate = self._controls.gate(proposal_audit_ref)
+            if not isinstance(gate, SignedPromotionGate):
+                raise _error("C6_GATE_MISSING")
+            if (not isinstance(gate.payload, bytes) or len(gate.payload) > 1 << 20
+                    or not _reference(gate.signature) or self._verifier.verify(gate.payload, gate.signature) is not True):
+                raise _error("C6_GATE_UNSIGNED")
+            try:
+                body = parse_i_json(gate.payload)
+            except ValueError as exc:
+                raise _error("C6_GATE_INVALID") from exc
+            if (not isinstance(body, Mapping) or canonical_bytes(body) != gate.payload or set(body) != {
+                "proposal_audit_ref", "proposal_digest", "command", "authority", "decision",
+                "approval_policy", "signatures", "risk_class", "capability_id",
+            }):
+                raise _error("C6_GATE_INVALID")
+            if body["proposal_audit_ref"] != proposal_audit_ref or body["proposal_digest"] != proposal.digest:
+                raise _error("C6_PROPOSAL_MISMATCH")
+            raw_command = body["command"]
+            if not isinstance(raw_command, Mapping):
+                raise _error("C6_GATE_INVALID")
+            try:
+                command = GovernedCanonicalCommitCommand.from_mapping(raw_command)
+                digest = promotion_gate_digest(body)
+            except ValueError as exc:
+                raise _error("C6_GATE_INVALID") from exc
+            if command.gate_package_digest != digest:
+                raise _error("GATE_PACKAGE_MISMATCH")
+            if (command.aggregate_type != proposal.target_aggregate_type
+                    or command.aggregate_ref != proposal.target_aggregate_ref
+                    or command.governed_context != verified.expected
+                    or command.governed_context_digest != proposal.governed_context_digest
+                    or command.branch != "main"
+                    or not set(proposal.evidence_refs) <= set(command.evidence_refs)
+                    or not any(b.source_ref == proposal.source_version_ref
+                               and b.evidence_ref in proposal.evidence_refs for b in command.claim_source_bindings)):
+                raise _error("C6_COMMAND_BINDING_MISMATCH")
+            authority, approval_policy, signatures = self._controls_from_body(body, command, proposal, verified)
+            # Audit intent before dispatch; an unavailable audit cannot cause C3
+            # to advance. Revalidation below covers changes during the audit I/O.
+            self._record("commitMemoryPromotion.intent", verified,
+                         proposal_audit_ref=proposal_audit_ref, command_digest=command.command_digest,
+                         causation_id=proposal.operation_id, gate_package_digest=digest)
+            self._require_live(body, command, proposal, verified, authority, approval_policy, signatures)
+            fresh = self._proposals.load(proposal_audit_ref, binding=verified)
+            if fresh != proposal:
+                raise _error("CANDIDATE_CHANGED")
+            # The source load itself may perform policy I/O. Controls are checked
+            # again at boundary time. External stop-to-commit atomicity remains
+            # an explicit residual of the current C3 port (FGM-17).
+            self._require_live(body, command, proposal, verified, authority, approval_policy, signatures)
+            if self._clock.now() >= proposal.deadline:
+                raise _error("DEADLINE_EXCEEDED")
+            dispatched = True
+            receipt = self._c3.commit(command)
+            if not isinstance(receipt, CommitReceipt):
+                raise _error("C3_RECEIPT_INVALID")
+            receipt.verify(command)
+            self._record("commitMemoryPromotion.completed", verified,
+                         proposal_audit_ref=proposal_audit_ref, command_digest=command.command_digest,
+                         commit_id=receipt.commit_id, causation_id=proposal.operation_id)
+            return receipt
+        except Exception as exc:  # noqa: BLE001 -- control/store failures never become success
+            detail = "COMMIT_OUTCOME_UNKNOWN" if dispatched else "C6_CONTROL_UNAVAILABLE"
+            error = exc if isinstance(exc, MemoryAdmissionError) else _error(detail, "CONTROL_PLANE_UNAVAILABLE")
+            self._record("commitMemoryPromotion.indeterminate" if dispatched else "commitMemoryPromotion.denied",
+                         verified, proposal_audit_ref=proposal_audit_ref, reason_code=error.reason_code,
+                         detail_code=error.detail_code)
+            raise error from exc
+
+    def _controls_from_body(
+        self, body: Mapping[str, object], command: GovernedCanonicalCommitCommand,
+        proposal: MemoryPromotionProposal, binding: VerifiedGovernedContextBinding,
+    ) -> tuple[Authority, ApprovalPolicy, tuple[GateSignature, ...]]:
+        raw_authority, decision = body["authority"], body["decision"]
+        raw_policy, raw_sigs = body["approval_policy"], body["signatures"]
+        if (not isinstance(raw_authority, Mapping)
+                or set(raw_authority) != {f.name for f in fields(Authority)}
+                or not isinstance(decision, Mapping) or set(decision) != {
+                    "decision_ref", "action_id", "accepted", "decided_at", "valid_until", "gate_package_digest",
+                } or not isinstance(raw_policy, Mapping) or set(raw_policy) != {"required_roles", "minimum_signatories", "ttl_seconds"}
+                or not isinstance(raw_sigs, list)):
+            raise _error("C6_GATE_INVALID")
+        if not raw_sigs:
+            raise _error("C6_APPROVAL_INVALID")
+        if (decision["decision_ref"] != command.decision_ref
+                or decision["action_id"] != command.action_instance_id
+                or decision["gate_package_digest"] != command.gate_package_digest
+                or decision["accepted"] is not True):
+            raise _error("C6_DECISION_REJECTED")
+        authority_values = dict(raw_authority)
+        try:
+            for name in ("not_before", "expires_at"):
+                authority_values[name] = parse_utc_timestamp(str(authority_values[name]))
+            authority = Authority(**authority_values)
+            parse_utc_timestamp(str(decision["decided_at"]))
+            parse_utc_timestamp(str(decision["valid_until"]))
+        except (TypeError, ValueError) as exc:  # TimestampError is a ValueError
+            raise _error("C6_GATE_INVALID") from exc
+        if authority.authority_id != command.authority_ref:
+            raise _error("C6_AUTHORITY_MISMATCH")
+        risk = body["risk_class"]
+        if isinstance(risk, bool) or not isinstance(risk, int) or risk not in {int(c) for c in RiskClass}:
+            raise _error("C6_GATE_INVALID")
+        if not _reference(body["capability_id"]):
+            raise _error("C6_GATE_INVALID")
+        if body["capability_id"] != self._capability:
+            raise _error("C6_CAPABILITY_MISMATCH")
+        required_roles = raw_policy["required_roles"]
+        count, ttl = raw_policy["minimum_signatories"], raw_policy["ttl_seconds"]
+        if (not isinstance(required_roles, list) or not required_roles
+                or not all(_reference(r) for r in required_roles) or len(set(required_roles)) != len(required_roles)
+                or isinstance(count, bool) or not isinstance(count, int) or count < 2
+                or isinstance(ttl, bool) or not isinstance(ttl, int) or not 1 <= ttl <= 86400):
+            raise _error("C6_APPROVAL_INVALID")
+        policy = ApprovalPolicy(frozenset(required_roles), count, timedelta(seconds=ttl))
+        signatures = []
+        for raw in raw_sigs:
+            if not isinstance(raw, Mapping) or set(raw) != {f.name for f in fields(GateSignature)}:
+                raise _error("C6_APPROVAL_INVALID")
+            entry = dict(raw)
+            try:
+                entry["signed_at"] = parse_utc_timestamp(str(entry["signed_at"]))
+                signatures.append(GateSignature(**entry))
+            except (TypeError, ValueError) as exc:
+                raise _error("C6_APPROVAL_INVALID") from exc
+        return authority, policy, tuple(signatures)
+
+    def _require_live(
+        self, body: Mapping[str, object], command: GovernedCanonicalCommitCommand,
+        proposal: MemoryPromotionProposal, binding: VerifiedGovernedContextBinding,
+        authority: Authority, approval_policy: ApprovalPolicy, signatures: tuple[GateSignature, ...],
+    ) -> None:
+        decision = body["decision"]
+        assert isinstance(decision, Mapping)
+        now = self._clock.now()
+        start, end = parse_utc_timestamp(str(decision["decided_at"])), parse_utc_timestamp(str(decision["valid_until"]))
+        if not start <= now < end or self._controls.revoked(command.decision_ref) is not False:
+            raise _error("C6_DECISION_EXPIRED_OR_REVOKED")
+        try:
+            self._authority_and_approval(body, command, binding, authority, approval_policy, signatures, now)
+        except (GovernanceFault, HumanGateError) as exc:
+            # A refused control is a denial, never "control plane unavailable".
+            raise _error(exc.reason_code if _CODE.fullmatch(exc.reason_code) else "C6_CONTROL_DENIED") from exc
+        result = self._policy.authorize_commit(proposal, command)
+        if (not isinstance(result, MemoryPolicyDecision) or result.permitted is not True
+                or not _reference(result.decision_ref)):
+            raise _error("C6_POLICY_DENIED")
+        if result.policy_bundle_digest != binding.expected.policy_bundle_digest:
+            raise _error("POLICY_BUNDLE_MISMATCH", "STALE_POLICY")
+        # The final control-plane I/O cannot make expired controls usable.
+        final_now = self._clock.now()
+        if (final_now >= end or final_now >= authority.expires_at
+                or self._controls.revoked(authority.authority_id) is not False
+                or self._controls.revoked(authority.delegation_ref) is not False
+                or self._controls.revoked(command.decision_ref) is not False
+                or self._controls.verified_delegation(binding.binding_ref) != authority.delegation_ref):
+            raise _error("C6_CONTROL_EXPIRED_OR_REVOKED")
+        try:
+            self._human_gate.validate(
+                action_id=command.action_instance_id, proposer_id=binding.expected.effective_principal_id,
+                policy=approval_policy, signatures=signatures, scope=command.aggregate_ref,
+            )
+        except HumanGateError as exc:
+            raise _error(exc.reason_code if _CODE.fullmatch(exc.reason_code) else "C6_CONTROL_DENIED") from exc
+
+    def _authority_and_approval(
+        self, body: Mapping[str, object], command: GovernedCanonicalCommitCommand,
+        binding: VerifiedGovernedContextBinding, authority: Authority,
+        approval_policy: ApprovalPolicy, signatures: tuple[GateSignature, ...], now: datetime,
+    ) -> None:
+        delegation = self._controls.verified_delegation(binding.binding_ref)
+        validate_authority(
+            authority, AuthorityRequest(
+                capability_id=str(body["capability_id"]), resource_scope=command.aggregate_ref,
+                risk_class=RiskClass(body["risk_class"]),  # type: ignore[arg-type]
+                governed_context=binding.expected, at=now,
+            ), signature_verified=True,
+            revoked=(self._controls.revoked(authority.authority_id) is not False
+                     or self._controls.revoked(authority.delegation_ref) is not False),
+            # No verified delegation: an unverifiable binding, never the Authority's own claim.
+            verified_binding=None if delegation is None else VerifiedAuthorityBinding(
+                binding.binding_ref, delegation, binding.expected),
+        )
+        self._human_gate.validate(
+            action_id=command.action_instance_id, proposer_id=binding.expected.effective_principal_id,
+            policy=approval_policy, signatures=signatures, scope=command.aggregate_ref,
+        )
