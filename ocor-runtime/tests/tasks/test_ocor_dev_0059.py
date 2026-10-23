@@ -4,7 +4,7 @@ ADD v1.3 II 2.6/2.10/2.13, LLD 2.8.6 and 7.2 FGM-19 oracles.
 Unit ports exercise boundary branches. Live cases reuse the actual 0055
 admission/lifecycle/store stack (PostgreSQL, Qdrant, OpenBao); fixture policy
 and hold authorities are explicitly test ports, not end-to-end security proof.
-Backup/restore integration and final task qualification are pending at this checkpoint.
+Backup manifest/restore cases reuse the 0056 real backup drill and gate.
 """
 from __future__ import annotations
 
@@ -726,7 +726,10 @@ def test_backup_manifest_is_complete_canonical_and_signed() -> None:
         ptr.representation_digest for ptr in stored.staged.pointers]
     gone = entries["b-del"]
     assert gone["lifecycle_status"] == "DELETED" and isinstance(gone["deletion_epoch"], int) and gone["deletion_epoch"] >= 1
-    assert gone["representations"] == [] and len(gone["item_digests"]) == gone["head_version"]
+    # The tombstone version keeps only its metadata pointer, stamped with the deletion epoch.
+    assert [(x["representation_kind"], x["deletion_epoch"]) for x in gone["representations"]] == [
+        ("STRUCTURED", gone["deletion_epoch"])]
+    assert len(gone["item_digests"]) == gone["head_version"] == len(gone["audit_refs"])
     assert body["usage"] == {"items": 1, "held_items": 0, "incomplete_deletions": 0, "index_entries": 3, "tombstones": 1}
     assert life.TEXT not in backup.payload.decode()  # metadata and refs only, never content
     assert [e["action"] for e in audit.events][-2:] == ["memoryBackup.started", "memoryBackup.completed"]
@@ -744,6 +747,7 @@ def test_backup_is_deterministic_for_an_unchanged_partition() -> None:
     ("binding", "BINDING_MISSING"), ("policy", "OPERATIONS_DENIED"), ("checkpoint", "CHECKPOINT_UNAVAILABLE"),
     ("checkpoint-changed", "CHECKPOINT_CHANGED"), ("signer", "SIGNER_UNAVAILABLE"),
     ("point", "RECOVERY_POINT_INVALID"), ("audit", "AUDIT_UNAVAILABLE"),
+    ("checkpoint-type", "CHECKPOINT_UNAVAILABLE"), ("signature-empty", "SIGNER_UNAVAILABLE"),
 ])
 def test_backup_capture_fails_closed_without_a_manifest(fault: str, detail: str) -> None:
     from ocor_runtime.memory.deletion import DeletionJournalCheckpoint
@@ -766,6 +770,10 @@ def test_backup_capture_fails_closed_without_a_manifest(fault: str, detail: str)
         signer.fail = True
     elif fault == "point":
         point = "urn:ocor:recovery-point:not-a-digest"
+    elif fault == "checkpoint-type":
+        checkpoints.fixed = {"sequence": 0}
+    elif fault == "signature-empty":
+        signer.sign = lambda payload: ""  # type: ignore[method-assign]
     else:
         audit.fail = True
     refused(lambda: b.capture(request(w, p), binding=binding, recovery_point_id=point), detail)
@@ -851,6 +859,135 @@ def test_restore_components_require_exact_port_types(tmp_path: Path) -> None:
         MemoryRestoreGate(recovery_point_id="urn:ocor:recovery-point:x", verifier=Signer(), gate=gate,
                           checkpoints=Checkpoints(), journal=tmp_path / "j", metadata=w.metadata, ledger=w.ledger,
                           audit=receipts.ReceiptAudit())
+
+
+def unit_restore(w: Any, tmp_path: Path, signer: Signer, *, checkpoints: Any = None, metadata: Any = None,
+                 audit: Any = None) -> tuple[Any, Any, Any]:
+    from ocor_runtime.memory.operations import MemoryRestoreGate
+    gate, _, participant, journal_path = unit_gate(tmp_path)
+    audit = audit if audit is not None else receipts.ReceiptAudit()
+    restore = MemoryRestoreGate(recovery_point_id=POINT, verifier=signer, gate=gate,
+                                checkpoints=checkpoints or Checkpoints(), journal=journal_path,
+                                metadata=metadata or w.metadata, ledger=w.ledger, audit=audit)
+    return restore, participant, audit
+
+
+def resigned(backup: Any, signer: Signer, change: Any) -> tuple[bytes, str]:
+    from ocor_runtime.kernel.canonical import canonical_bytes, parse_i_json
+    body = parse_i_json(backup.payload)
+    change(body)
+    payload = canonical_bytes(body)
+    return payload, signer.sign(payload)
+
+
+def test_unit_restore_opens_and_serves_an_unchanged_copy(tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    restore, participant, audit = unit_restore(w, tmp_path, signer)
+    receipt = restore.open(backup.payload, backup.signature)
+    assert participant.calls == ["x", "y"]  # every journal obligation replayed before the comparison
+    assert receipt.verified_items == 1 and receipt.deleted_after_backup == () and receipt.manifest_digest == backup.manifest_digest
+    assert restore.serve(lambda: "materialised") == "materialised"
+    assert [e["action"] for e in audit.events][-2:] == ["memoryRestore.opened", "memoryRestore.served"]
+
+
+@pytest.mark.parametrize("fault,detail", [
+    ("verifier-outage", "BACKUP_UNAUTHENTICATED"), ("checkpoint-outage", "CHECKPOINT_UNAVAILABLE"),
+    ("checkpoint-type", "CHECKPOINT_UNAVAILABLE"), ("checkpoint-forked", "STALE_DELETION_EPOCH"),
+    ("audit", "AUDIT_UNAVAILABLE"), ("inventory", "RESTORE_INVENTORY_UNAVAILABLE"),
+])
+def test_unit_restore_faults_keep_materialisation_closed(fault: str, detail: str, tmp_path: Path) -> None:
+    from ocor_runtime.memory.deletion import DeletionJournalCheckpoint
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    checkpoints, metadata, audit = Checkpoints(), None, receipts.ReceiptAudit()
+    if fault == "verifier-outage":
+        def outage(payload: bytes, signature: str) -> bool:
+            raise ConnectionError("custodian unavailable")
+        signer.verify = outage  # type: ignore[method-assign]
+    elif fault == "checkpoint-outage":
+        checkpoints.fail = True
+    elif fault == "checkpoint-type":
+        checkpoints.fixed = object()
+    elif fault == "checkpoint-forked":
+        # Same sequence, another head: the authority's history is not the one of the backup.
+        backup = capture(backup_service(s, Checkpoints(fixed=DeletionJournalCheckpoint(1, r.d("a"), 1)), signer), w, p)
+        checkpoints.fixed = DeletionJournalCheckpoint(1, r.d("b"), 1)
+    elif fault == "audit":
+        audit.fail = True
+    else:
+        class Broken:
+            def __getattr__(self, name: str) -> Any:
+                return getattr(w.metadata, name)
+
+            def versions_in(self, partition_digest: str) -> Any:
+                raise ConnectionError("restored metadata unreadable")
+        metadata = Broken()
+    restore, participant, audit = unit_restore(w, tmp_path, signer, checkpoints=checkpoints, metadata=metadata, audit=audit)
+    refused(lambda: restore.open(backup.payload, backup.signature), detail)
+    if fault in {"verifier-outage", "checkpoint-outage", "checkpoint-type", "checkpoint-forked"}:
+        assert participant.calls == []  # refused before any purge
+    if fault != "audit":
+        assert audit.events[-1]["detail_code"] == detail and audit.events[-1]["outcome"] == "DENIED"
+    audit.fail = False
+    refused(lambda: restore.serve(lambda: "materialised"), "RESTORE_NOT_OPEN")
+
+
+def _add_entry(item: str, epoch: int | None) -> Any:
+    def change(body: dict[str, Any]) -> None:
+        body["entries"].append({**body["entries"][0], "memory_item_id": item, "deletion_epoch": epoch})
+        body["entries"].sort(key=lambda e: e["memory_item_id"])
+    return change
+
+
+def _set(field: str, value: Any) -> Any:
+    def change(body: dict[str, Any]) -> None:
+        body["entries"][0][field] = value
+    return change
+
+
+@pytest.mark.parametrize("label,change,detail", [
+    ("deleted-after-backup-without-replayed-tombstone", _add_entry("y", None), "STALE_DELETION_EPOCH"),
+    ("manifest-epoch-newer-than-tombstone", _add_entry("x", 99), "STALE_DELETION_EPOCH"),
+    ("item-epoch", _set("deletion_epoch", 5), "STALE_DELETION_EPOCH"),
+    ("pointer-epoch", lambda b: b["entries"][0]["representations"][0].update(deletion_epoch=7), "STALE_DELETION_EPOCH"),
+    ("stage", _set("stage_digest", "urn:sha256:" + "e" * 64), "PROJECTION_DRIFT"),
+    ("version-digests", _set("item_digests", ["urn:sha256:" + "f" * 64]), "PROJECTION_DRIFT"),
+    ("head", _set("head_version", 2), "PROJECTION_DRIFT"),
+    ("missing-item", lambda b: b.update(entries=[]), "PROJECTION_DRIFT"),
+])
+def test_unit_restore_comparison_branches(label: str, change: Any, detail: str, tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    payload, signature = resigned(capture(backup_service(s, signer=signer), w, p), signer, change)
+    restore, participant, audit = unit_restore(w, tmp_path, signer)
+    refused(lambda: restore.open(payload, signature), detail)
+    assert participant.calls == ["x", "y"]  # compared only after the tombstone replay
+    refused(lambda: restore.serve(lambda: "materialised"), "RESTORE_NOT_OPEN")
+
+
+def test_unit_failed_materialisation_closes_the_restore(tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    restore, _, audit = unit_restore(w, tmp_path, signer)
+    restore.open(backup.payload, backup.signature)
+
+    def broken() -> str:
+        raise RuntimeError("materialiser failure")
+    refused(lambda: restore.serve(broken), "RESTORE_INVENTORY_UNAVAILABLE")
+    assert audit.events[-1]["action"] == "memoryRestore.serve.denied"
+    refused(lambda: restore.serve(lambda: "materialised"), "RESTORE_NOT_OPEN")
 
 
 # ---- live restore drills (real PostgreSQL/Qdrant/OpenBao, 0056 backup copy) --------------------
@@ -996,7 +1133,7 @@ def test_live_drift_after_reopening_discards_the_response_and_closes(backends: l
     def materialise() -> Any:
         d.restored.admit("late", life.TEXT + " west")
         served.append("called")
-        return d.refs()
+        return d.restored.every_mode()  # the late item has no parallel v2 descriptor yet
     refused(lambda: restore.serve(materialise), "PROJECTION_DRIFT")
     assert served == ["called"]
     refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")

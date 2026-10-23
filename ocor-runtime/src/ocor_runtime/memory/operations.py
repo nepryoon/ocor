@@ -8,31 +8,40 @@ have fixed labels and belong to the protected operator plane, never a user respo
 
 ``MemoryQuotaWriter`` applies the configured quotas to real admission + store
 commits, with demand derived from the actual payload/candidate and a trusted
-partition serialization port. Backup capture/restore integration and final task
-qualification are not yet implemented.
+partition serialization port. ``MemoryBackupService`` captures a signed,
+digest-only backup manifest; ``MemoryRestoreGate`` reopens restored memory only
+after custodian authentication, a stale-epoch check, the 0056 tombstone replay
+and an exact projection comparison. Store snapshots themselves remain the
+0049/0056 recovery-point procedure; no RTO/RPO or recovery conformance is claimed.
 The final control check and effects at the independent lifecycle/audit stores are
 not an atomic transaction; no cross-process admission or timing claim is made.
 """
 from __future__ import annotations
 
 import hashlib
+import re
 import threading
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager, ExitStack
 from dataclasses import dataclass, field, fields, replace
 from datetime import datetime, timedelta
+from pathlib import Path
 from types import MappingProxyType
 from typing import Protocol, TypeVar
 
 from ..kernel.canonical import (
-    TimestampError, canonical_digest, format_utc_timestamp, parse_utc_timestamp,
+    TimestampError, canonical_bytes, canonical_digest, format_utc_timestamp, parse_i_json, parse_utc_timestamp,
 )
 from ..kernel.governance import TrustedClock
 from ..kernel.governed_context import (
     GovernedContext, GovernedContextCodec, GovernedContextError, VerifiedGovernedContextBinding,
 )
-from .lifecycle import MemoryLifecycleCoordinator
+from .deletion import (
+    RECOVERY_POINT_PATTERN, DeletionCheckpointAuthority, DeletionJournalCheckpoint, DeletionJournalSnapshot,
+    DeletionRecoveryError, DeletionRestoreGate,
+)
+from .lifecycle import MemoryLifecycleCoordinator, TombstoneEntry
 from .model import (
     ENVELOPE_FIELDS, AdmittedMemoryVersion, GovernedMemoryItem, LifecycleStatus,
     MemoryAdmissionError, MemoryAdmissionService, MemoryPolicyDecision, MemoryVersionLedger, RepresentationKind,
@@ -159,7 +168,8 @@ class _Head:
     first_created_at: datetime
 
 
-R = TypeVar("R", MemoryUsage, QuotaCheck, MemoryPressureReport, StoreCommitReceipt)
+R = TypeVar("R", MemoryUsage, QuotaCheck, MemoryPressureReport, StoreCommitReceipt, "SignedMemoryBackup")
+T = TypeVar("T")
 ENVELOPE = frozenset({"operation_id", "governed_context", "governed_context_digest", "partition", "deadline"})
 
 
@@ -571,3 +581,312 @@ class MemoryQuotaWriter:
             raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
         service._check("memoryWrite", plan)
         return self._store.commit(record, payload=payload, embedding=vector)
+
+
+MANIFEST_SCHEMA = "urn:ocor:schema:memory-backup-manifest:v1"
+_MANIFEST_KEYS = frozenset({
+    "schema", "recovery_point_id", "operation_id", "partition", "partition_digest", "governed_context_digest",
+    "captured_at", "journal_checkpoint", "usage", "entries",
+})
+_ENTRY_KEYS = frozenset({
+    "memory_item_id", "head_version", "lifecycle_status", "deletion_epoch", "content_ref", "content_digest",
+    "stage_digest", "item_digests", "audit_refs", "representations",
+})
+
+
+class MemoryBackupSigner(Protocol):
+    """Trusted backup custodian (e.g. OpenBao transit); never supplied by a caller.
+
+    ``verify`` must return exactly ``True`` only for a signature it issued over
+    these exact bytes; any other answer or failure keeps restore closed.
+    """
+
+    def sign(self, payload: bytes) -> str: ...
+
+    def verify(self, payload: bytes, signature: str) -> bool: ...
+
+
+@dataclass(frozen=True, slots=True)
+class SignedMemoryBackup:
+    """Canonical manifest bytes plus the custodian signature over them."""
+
+    payload: bytes
+    signature: str
+    manifest_digest: str
+
+
+class MemoryBackupService:
+    """Partition-bound backup manifest (ADD v1.3 II 2.13, LLD 2.8.6).
+
+    The manifest binds memory metadata, content refs, representation versions,
+    lifecycle/deletion epochs, the deletion journal checkpoint and per-version
+    audit refs of the authorised partition to one trusted recovery point. It is
+    digest-only: no payload, vector or text. Capturing the store bytes themselves
+    is the 0049/0056 recovery-point procedure; this manifest is what restore
+    verifies before reopening retrieval. The checkpoint must be unchanged across
+    the inventory, otherwise a deletion raced the capture and it is refused.
+    """
+
+    def __init__(
+        self, *, operations: MemoryOperationsService, checkpoints: DeletionCheckpointAuthority,
+        signer: MemoryBackupSigner,
+    ) -> None:
+        self._operations, self._checkpoints, self._signer = operations, checkpoints, signer
+
+    def _checkpoint(self) -> DeletionJournalCheckpoint:
+        try:
+            checkpoint = self._checkpoints.current()
+        except Exception as exc:  # noqa: BLE001 -- unavailable deletion authority denies
+            raise _error("CHECKPOINT_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+        if not isinstance(checkpoint, DeletionJournalCheckpoint):
+            raise _error("CHECKPOINT_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
+        return checkpoint
+
+    def capture(
+        self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None,
+        recovery_point_id: str,
+    ) -> SignedMemoryBackup:
+        def build(plan: _Plan) -> SignedMemoryBackup:
+            if not isinstance(recovery_point_id, str) or re.fullmatch(RECOVERY_POINT_PATTERN, recovery_point_id) is None:
+                raise _error("RECOVERY_POINT_INVALID", "MEMORY_SCHEMA_INVALID")
+            service = self._operations
+            checkpoint = self._checkpoint()
+            heads = service._heads(plan.partition)
+            entries = [self._entry(head) for head in heads]
+            if self._checkpoint() != checkpoint:
+                raise _error("CHECKPOINT_CHANGED", "REPRESENTATION_NOT_READY")
+            service._check("memoryBackup", plan)
+            payload = canonical_bytes({
+                "schema": MANIFEST_SCHEMA, "recovery_point_id": recovery_point_id,
+                "operation_id": plan.operation_id, "partition": plan.partition.to_mapping(),
+                "partition_digest": plan.partition.digest, "governed_context_digest": plan.context.digest(),
+                "captured_at": format_utc_timestamp(service._clock.now().replace(microsecond=0)),
+                "journal_checkpoint": checkpoint.to_mapping(), "usage": service._usage(heads).to_mapping(),
+                "entries": entries,
+            })
+            try:
+                signature = self._signer.sign(payload)
+            except Exception as exc:  # noqa: BLE001 -- an unsigned manifest is not a backup
+                raise _error("SIGNER_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+            if not isinstance(signature, str) or not signature:
+                raise _error("SIGNER_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
+            return SignedMemoryBackup(payload, signature, "urn:sha256:" + hashlib.sha256(payload).hexdigest())
+
+        return self._operations._guard("memoryBackup", request, binding, build, mutative=True)
+
+    def _entry(self, head: _Head) -> dict[str, object]:
+        service = self._operations
+        item = head.record.item
+        item_id, version = item.memory_item_id, item.memory_version
+        digests: list[str] = []
+        audit_refs: list[str] = []
+        for v in range(1, version + 1):
+            record, stored = service._ledger.get(item_id, v), service._metadata.get(item_id, v)
+            if record is None or stored is None:
+                raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
+            digests.append(record.item_digest)
+            audit_refs.append(stored.staged.audit_ref)
+        return {
+            "memory_item_id": item_id, "head_version": version, "lifecycle_status": item.lifecycle_status.value,
+            "deletion_epoch": item.deletion_epoch, "content_ref": head.stored.staged.content_object_ref,
+            "content_digest": item.content_digest, "stage_digest": head.stored.staged.stage_digest,
+            "item_digests": digests, "audit_refs": audit_refs,
+            "representations": [{
+                "representation_kind": p.representation_kind.value, "representation_version": p.representation_version,
+                "representation_digest": p.representation_digest, "deletion_epoch": p.deletion_epoch,
+            } for p in head.stored.staged.pointers],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryRestoreReceipt:
+    recovery_point_id: str
+    manifest_digest: str
+    checkpoint: DeletionJournalCheckpoint
+    obligations: int
+    verified_items: int
+    deleted_after_backup: tuple[str, ...]
+    audit_ref: str = ""
+
+
+class MemoryRestoreGate:
+    """Restored-memory materialisation boundary, composed over the 0056 gate.
+
+    ``open`` authenticates the manifest with the custodian, refuses a deletion
+    authority older than the backup (stale deletion epoch) before any purge,
+    replays every tombstone through ``DeletionRestoreGate.reconcile`` and only
+    then compares the restored metadata/ledger with the manifest. Items deleted
+    after the backup must carry the authoritative tombstone epoch; every other
+    item must match head, stage, pointers, epochs and version digests exactly;
+    any extra restored item is projection drift. ``serve`` repeats the check
+    around the materialising callback, which must not dispatch external effects.
+    Any failure closes the boundary until a new ``open``. The checkpoint port
+    must be the same trusted authority composed into the deletion gate.
+    """
+
+    def __init__(
+        self, *, recovery_point_id: str, verifier: MemoryBackupSigner, gate: DeletionRestoreGate,
+        checkpoints: DeletionCheckpointAuthority, journal: Path, metadata: MemoryMetadataStore,
+        ledger: MemoryVersionLedger, audit: RetrievalAuditSink,
+    ) -> None:
+        if not isinstance(gate, DeletionRestoreGate):
+            raise ValueError("restore requires the DeletionRestoreGate")
+        if not isinstance(recovery_point_id, str) or re.fullmatch(RECOVERY_POINT_PATTERN, recovery_point_id) is None:
+            raise ValueError("recovery point identity must be a closed recovery-point URN")
+        self._point, self._verifier, self._gate, self._checkpoints = recovery_point_id, verifier, gate, checkpoints
+        self._journal, self._metadata, self._ledger, self._audit = journal, metadata, ledger, audit
+        self._lock = threading.RLock()
+        self._open: tuple[Mapping[str, object], MemoryRestoreReceipt] | None = None
+
+    def _record(self, action: str, outcome: str, detail: str, manifest_digest: str | None) -> str:
+        event: dict[str, object] = {
+            "action": action, "outcome": outcome, "detail_code": detail,
+            "recovery_point_digest": canonical_digest(self._point), "manifest_digest": manifest_digest,
+        }
+        ref = canonical_digest(event)
+        try:
+            self._audit.record(MappingProxyType({**event, "audit_ref": ref}))
+        except Exception as exc:  # noqa: BLE001 -- mandatory audit authority
+            raise _error("AUDIT_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+        return ref
+
+    def _denied(self, action: str, error: BaseException, manifest_digest: str | None) -> None:
+        detail = error.reason_code if isinstance(error, DeletionRecoveryError) else (
+            error.detail_code if isinstance(error, MemoryAdmissionError) else "RESTORE_INVENTORY_UNAVAILABLE")
+        self._record(action + ".denied", "DENIED", detail, manifest_digest)
+
+    @staticmethod
+    def _decode(payload: bytes) -> Mapping[str, object]:
+        try:
+            body = parse_i_json(payload)
+            if not isinstance(body, dict) or canonical_bytes(body) != payload:
+                raise ValueError("non-canonical manifest")
+            if set(body) != _MANIFEST_KEYS or body["schema"] != MANIFEST_SCHEMA:
+                raise ValueError("closed manifest schema")
+            entries = body["entries"]
+            if not isinstance(entries, list) or any(not isinstance(e, dict) or set(e) != _ENTRY_KEYS for e in entries):
+                raise ValueError("closed entry schema")
+            ids = [e["memory_item_id"] for e in entries]
+            if any(not isinstance(i, str) for i in ids) or len(set(ids)) != len(ids):
+                raise ValueError("entry identity")
+            checkpoint = body["journal_checkpoint"]
+            if not isinstance(checkpoint, dict) or set(checkpoint) != {"sequence", "head", "deletion_epoch"}:
+                raise ValueError("checkpoint")
+            DeletionJournalCheckpoint(checkpoint["sequence"], checkpoint["head"], checkpoint["deletion_epoch"])
+            if not isinstance(body["partition_digest"], str):
+                raise ValueError("partition")
+        except Exception as exc:  # noqa: BLE001 -- any malformed manifest is refused alike
+            raise _error("BACKUP_MANIFEST_INVALID", "MEMORY_SCHEMA_INVALID") from exc
+        return body
+
+    def open(self, payload: bytes, signature: str) -> MemoryRestoreReceipt:
+        with self._lock:
+            self._open = None
+            digest = "urn:sha256:" + hashlib.sha256(payload).hexdigest() if isinstance(payload, bytes) else None
+            try:
+                try:
+                    verified = self._verifier.verify(payload, signature)
+                except Exception as exc:  # noqa: BLE001 -- custodian outage is not authentication
+                    raise _error("BACKUP_UNAUTHENTICATED", "AUTHENTICATION_REQUIRED") from exc
+                if verified is not True or digest is None:
+                    raise _error("BACKUP_UNAUTHENTICATED", "AUTHENTICATION_REQUIRED")
+                body = self._decode(payload)
+                if body["recovery_point_id"] != self._point:
+                    raise _error("RECOVERY_POINT_MISMATCH", "AUTHENTICATION_REQUIRED")
+                raw = body["journal_checkpoint"]
+                assert isinstance(raw, dict)
+                recorded = DeletionJournalCheckpoint(raw["sequence"], raw["head"], raw["deletion_epoch"])
+                try:
+                    current = self._checkpoints.current()
+                except Exception as exc:  # noqa: BLE001 -- unavailable authority keeps restore closed
+                    raise _error("CHECKPOINT_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+                if not isinstance(current, DeletionJournalCheckpoint):
+                    raise _error("CHECKPOINT_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
+                if (current.sequence < recorded.sequence or current.deletion_epoch < recorded.deletion_epoch
+                        or (current.sequence == recorded.sequence and current != recorded)):
+                    raise _error("STALE_DELETION_EPOCH")
+                reconciled = self._gate.reconcile()  # tombstones replayed before any comparison or reopen
+                obligations = {e.memory_item_id: e for e in DeletionJournalSnapshot.read(
+                    self._journal, expected=reconciled.checkpoint).obligations}
+                deleted, verified_items = self._verify(body, obligations)
+                ref = self._record("memoryRestore.opened", "COMPLETED", "NONE", digest)
+                receipt = MemoryRestoreReceipt(self._point, digest, reconciled.checkpoint, reconciled.obligations,
+                                               verified_items, deleted, ref)
+                self._open = (body, receipt)
+                return receipt
+            except (MemoryAdmissionError, DeletionRecoveryError) as exc:
+                self._denied("memoryRestore.open", exc, digest)
+                raise
+            except Exception as exc:  # noqa: BLE001 -- unreadable restored stores are not a clean restore
+                self._denied("memoryRestore.open", exc, digest)
+                raise _error("RESTORE_INVENTORY_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+
+    def _verify(self, body: Mapping[str, object], obligations: Mapping[str, TombstoneEntry]) -> tuple[tuple[str, ...], int]:
+        entries = body["entries"]
+        partition = body["partition_digest"]
+        assert isinstance(entries, list) and isinstance(partition, str)
+        recorded = {e["memory_item_id"]: e for e in entries}
+        restored_ids = {s.staged.memory_item_id for s in self._metadata.versions_in(partition)}
+        if not restored_ids <= set(recorded):
+            raise _error("PROJECTION_DRIFT", "REPRESENTATION_NOT_READY")
+        deleted: list[str] = []
+        for item_id in sorted(recorded):
+            entry = recorded[item_id]
+            tomb = obligations.get(item_id)
+            head = self._metadata.head(item_id)
+            record = self._ledger.get(item_id, head) if head else None
+            stored = self._metadata.get(item_id, head) if head else None
+            epoch = entry["deletion_epoch"]
+            if tomb is not None and (epoch is None or tomb.deletion_epoch > epoch):
+                # Deleted after the backup: the replayed authoritative tombstone version is required.
+                if record is None or record.item.deletion_epoch != tomb.deletion_epoch:
+                    raise _error("STALE_DELETION_EPOCH")
+                deleted.append(item_id)
+                continue
+            if tomb is not None and epoch is not None and tomb.deletion_epoch < epoch:
+                raise _error("STALE_DELETION_EPOCH")
+            if record is None or stored is None:
+                raise _error("PROJECTION_DRIFT", "REPRESENTATION_NOT_READY")
+            representations = entry["representations"]
+            if record.item.deletion_epoch != epoch or not isinstance(representations, list) or [
+                    p.deletion_epoch for p in stored.staged.pointers] != [x["deletion_epoch"] for x in representations]:
+                raise _error("STALE_DELETION_EPOCH")
+            digests = [r.item_digest if (r := self._ledger.get(item_id, v)) is not None else None
+                       for v in range(1, head + 1)]
+            if (head != entry["head_version"] or self._ledger.latest_version(item_id) != head
+                    or stored.state is not VersionState.COMMITTED
+                    or stored.staged.stage_digest != entry["stage_digest"]
+                    or stored.staged.partition.digest != partition
+                    or record.item_digest != stored.staged.item_digest
+                    or digests != entry["item_digests"]):
+                raise _error("PROJECTION_DRIFT", "REPRESENTATION_NOT_READY")
+        return tuple(deleted), len(recorded) - len(deleted)
+
+    def serve(self, action: Callable[[], T]) -> T:
+        with self._lock:
+            opened = self._open
+            try:
+                if opened is None:
+                    raise _error("RESTORE_NOT_OPEN", "REPRESENTATION_NOT_READY")
+                body, receipt = opened
+                obligations = self._obligations(receipt)
+
+                def materialise() -> T:
+                    self._verify(body, obligations)
+                    response = action()
+                    self._verify(body, obligations)
+                    return response
+                response = self._gate.serve(materialise)
+                self._record("memoryRestore.served", "COMPLETED", "NONE", receipt.manifest_digest)
+                return response
+            except BaseException as exc:
+                self._open = None
+                if isinstance(exc, Exception):
+                    self._denied("memoryRestore.serve", exc, opened[1].manifest_digest if opened else None)
+                if isinstance(exc, (MemoryAdmissionError, DeletionRecoveryError)) or not isinstance(exc, Exception):
+                    raise
+                raise _error("RESTORE_INVENTORY_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+
+    def _obligations(self, receipt: MemoryRestoreReceipt) -> Mapping[str, TombstoneEntry]:
+        return {e.memory_item_id: e for e in DeletionJournalSnapshot.read(
+            self._journal, expected=receipt.checkpoint).obligations}
