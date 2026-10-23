@@ -289,6 +289,16 @@
       "path": "OCOR-DEV-0050.requalified-rem0019-marker.log",
       "sha256": "59dcafc26ca4de88b41d44e3db74e78249be356a51fae517b0cd4b1be8e60823",
       "task_id": "OCOR-DEV-0050-RAW"
+    },
+    {
+      "path": "OCOR-DEV-0056.json",
+      "sha256": "7a1e5973c1ea2588ecb00dd7a1ca46b47d2a7ccc74d761045696e92caa76f1e3",
+      "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "path": "OCOR-DEV-0056.log",
+      "sha256": "ca9fafed8ec27c0ebab0f06b4532070b8987ea919642996c4fcf6f5c7c8f5f8d",
+      "task_id": "OCOR-DEV-0056-RAW"
     }
   ],
   "created_at": "2026-10-08T18:33:05Z",
@@ -725,6 +735,60 @@
       "requirement_id": "FR-140",
       "status": "PASS",
       "task_id": "OCOR-DEV-0050"
+    },
+    {
+      "case_id": "OCOR-DEV-0056-RESTORE-DENIAL-AUDIT-FAIL-CLOSED",
+      "command": "Every operational refusal in the checkpoint authority, restore gate reconcile/serve, metadata replay purge/residue and participant purge/residue synchronously persists a digest-only denial in the protected audit authority. Real PostgreSQL rows are read from a separate connection; read-only PostgreSQL denies the audit write and yields AUDIT_UNAVAILABLE with no successful receipt, hit or appended memory version. Initial unauthenticated checkpoint is explicitly null; trusted recovery point digest is always bound. Existing assertions and parametrisations are preserved.",
+      "evidence_path": "OCOR-DEV-0056.json",
+      "raw_output_path": "OCOR-DEV-0056.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "case_id": "OCOR-DEV-0056-RESTORE-HONORS-TOMBSTONES-BEFORE-SERVING",
+      "command": "Real recovery point on PostgreSQL 16 (one REPEATABLE READ snapshot copy of every table of the source schema) and Qdrant 1.15.1 (snapshot of every native/parallel collection recovered through the snapshot API into a new namespace), restored after a deletion made in the source: the restored stores really hold the deleted item in every retrieval mode and the parallel representation, yet the restore gate and the composed RestoredMemorySearch entry point refuse every request (RESTORE_NOT_RECONCILED) until the attested checkpoint is reconciled; afterwards no mode serves the item, undeleted and shared-content items are served; a restart with fresh adapters starts closed and reconciliation is idempotent (no replacement ledger event)",
+      "evidence_path": "OCOR-DEV-0056.json",
+      "raw_output_path": "OCOR-DEV-0056.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "case_id": "OCOR-DEV-0056-DELETION-COMPLETES-ACROSS-RESTORED-STORES",
+      "command": "On the real backends the restored metadata, ledger, native lexical/vector entries, parallel descriptors and private content objects of the deleted item are purged (shared content retained) and the original versions, epochs, events and audit refs are replayed unchanged; an unfinished (DELETION_INCOMPLETE) source saga is replayed as such and its recorded replica participant must be present (DELETION_PARTICIPANT_MISSING otherwise); when the authority completes its saga the new versions are replayed; conflicting, unbound or other-tenant metadata/bindings are refused before any write",
+      "evidence_path": "OCOR-DEV-0056.json",
+      "raw_output_path": "OCOR-DEV-0056.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "case_id": "OCOR-DEV-0056-CHECKPOINT-AUTHENTICATED-AND-BOUND-TO-RECOVERY-POINT",
+      "command": "The checkpoint authority is AuthenticatedDeletionCheckpointAuthority: the deletion authority's canonical RecoveryPointCheckpointClaim (recovery point URN derived from the backup manifest digest, sequence, head, deletion epoch) is attested with an OpenBao 2.6.2 transit ed25519 key and verified before parsing; a forged payload or malformed signature (CHECKPOINT_UNAUTHENTICATED), a claim for another recovery point (RECOVERY_POINT_MISMATCH), a non-canonical or extended claim (CHECKPOINT_INVALID) and an authority/verifier outage (DELETION_AUTHORITY_UNAVAILABLE) keep restore closed with nothing purged; only an exact True verification authenticates",
+      "evidence_path": "OCOR-DEV-0056.json",
+      "raw_output_path": "OCOR-DEV-0056.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "case_id": "OCOR-DEV-0056-JOURNAL-INTEGRITY-AND-CLOSED-CHECKPOINT",
+      "command": "The restored deletion journal must reproduce exactly the authority checkpoint (sequence, head, deletion epoch): removed suffix, reorder, rehashed replacement, invalid saga history, malformed chain records or entries and a wrong last entry digest are JOURNAL_CORRUPTED or CHECKPOINT_MISMATCH and never open restore; on the real backends a restore site still holding the journal delivered before a later deletion cannot reconcile (CHECKPOINT_MISMATCH) until the current journal is delivered",
+      "evidence_path": "OCOR-DEV-0056.json",
+      "raw_output_path": "OCOR-DEV-0056.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "case_id": "OCOR-DEV-0056-FAIL-CLOSED-ON-FAULT-AND-LATER-DELETION",
+      "command": "A deletion attested after reopening closes the gate (CHECKPOINT_MISMATCH, then RESTORE_NOT_RECONCILED) until the new journal is delivered and reconciled; a Qdrant purge or inventory outage during reconciliation keeps restore closed (DELETION_INCOMPLETE / DELETION_INVENTORY_UNAVAILABLE) and a retry opens it; residue or a new epoch appearing while a response is materialised discards it; the module has no backend client and no canonical authority path",
+      "evidence_path": "OCOR-DEV-0056.json",
+      "raw_output_path": "OCOR-DEV-0056.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0056"
     }
   ],
   "schema_version": "1.0"
