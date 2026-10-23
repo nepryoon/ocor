@@ -442,6 +442,35 @@ def test_a_version_changed_after_retrieval_is_never_rendered() -> None:
     assert audit.actions()[-1] == "assembleMemoryContext.denied"
 
 
+@pytest.mark.parametrize("fault,reason,detail", [
+    ("revocation", "REPRESENTATION_NOT_READY", "CANDIDATE_CHANGED"),
+    ("kill-switch", "STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED"),
+])
+def test_a_change_during_a_content_read_never_reaches_the_context_policy(fault: str, reason: str, detail: str) -> None:
+    world, audit, policy = unit()
+    service = assembler(world, audit, policy)
+    original = world.coordinator.read_version
+    reads: list[str] = []
+
+    def read_then_change(partition: Any, memory_item_id: str, memory_version: int) -> Any:
+        materialized = original(partition, memory_item_id, memory_version)
+        reads.append(memory_item_id)
+        if memory_item_id == "p-1" and reads.count("p-1") == 2:  # the assembler's read, after the search's
+            if fault == "revocation":
+                record = world.ledger.get("p-1", 1)
+                assert record is not None
+                world.lifecycle(record, "REVOKED", "harbour patrol schedule alpha with call sign RAVEN-7")
+            else:
+                world.stop.epoch += 1
+        return materialized
+
+    world.coordinator.read_version = read_then_change  # type: ignore[method-assign]
+    expect(lambda: service.assemble(assembly_request(world), binding=binding()), reason, detail)
+    assert reads.count("p-1") == 2
+    assert "urn:ocor:memory:p-1:v1" not in policy.calls  # changed content is never handed on
+    assert audit.actions()[-1] == "assembleMemoryContext.denied"
+
+
 def test_no_audit_means_no_context() -> None:
     world, audit, policy = unit()
     audit.fail_actions.add("assembleMemoryContext")
@@ -497,7 +526,7 @@ def _replay_inputs(world: r.World, label: str) -> tuple[Any, dict[str, Any], Ver
     raise AssertionError(label)
 
 
-@pytest.mark.parametrize("label", ["unknown-receipt", "tampered-receipt", "foreign-action", "query", "max-bytes", "target-model", "caller-context"])
+@pytest.mark.parametrize("label", ["unknown-receipt", "tampered-receipt", "rewritten-receipt", "foreign-action", "query", "max-bytes", "target-model", "caller-context"])
 def test_replay_rejects_any_unrecorded_input(label: str) -> None:
     world, audit, policy = unit()
     service = assembler(world, audit, policy)
@@ -509,6 +538,10 @@ def test_replay_rejects_any_unrecorded_input(label: str) -> None:
         stored = audit.receipt(original.audit_ref)
         assert stored is not None
         stored["replay"]["blocks"][0]["content_digest"] = "urn:sha256:" + "2" * 64  # type: ignore[index]
+    elif label == "rewritten-receipt":
+        stored = audit.receipt(original.audit_ref)
+        assert stored is not None
+        stored["policy_decisions"] = []  # consistent core, rewritten audit body
     elif label == "foreign-action":
         audit_ref = next(e["audit_ref"] for e in audit.events if e["action"] == "searchMemory")
     else:
@@ -517,6 +550,7 @@ def test_replay_rejects_any_unrecorded_input(label: str) -> None:
     error = expect(lambda: service.replay(audit_ref, body, binding=who), *{
         "unknown-receipt": ("MEMORY_SCHEMA_INVALID", "RECEIPT_UNRECORDED"),
         "tampered-receipt": ("MEMORY_SCHEMA_INVALID", "RECEIPT_DIGEST_MISMATCH"),
+        "rewritten-receipt": ("MEMORY_SCHEMA_INVALID", "RECEIPT_DIGEST_MISMATCH"),
         "foreign-action": ("MEMORY_SCHEMA_INVALID", "RECEIPT_UNRECORDED"),
         "caller-context": ("GOVERNED_CONTEXT_MISMATCH", "REPLAY_CONTEXT_MISMATCH"),
     }.get(label, ("MEMORY_SCHEMA_INVALID", "REPLAY_INPUT_UNRECORDED")))
