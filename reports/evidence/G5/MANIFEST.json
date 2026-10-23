@@ -299,6 +299,16 @@
       "path": "OCOR-DEV-0056.log",
       "sha256": "ca9fafed8ec27c0ebab0f06b4532070b8987ea919642996c4fcf6f5c7c8f5f8d",
       "task_id": "OCOR-DEV-0056-RAW"
+    },
+    {
+      "path": "OCOR-DEV-0057.json",
+      "sha256": "636c410abac708fc9519bfbb103e772621408b590cec65c2b5bde5f871e29336",
+      "task_id": "OCOR-DEV-0057"
+    },
+    {
+      "path": "OCOR-DEV-0057.log",
+      "sha256": "6fd451f37117a8e6788abbb20657e0c367eaf66bf1a325eecbc2e9a7edd07b78",
+      "task_id": "OCOR-DEV-0057-RAW"
     }
   ],
   "created_at": "2026-10-08T18:33:05Z",
@@ -789,6 +799,51 @@
       "requirement_id": "FR-118",
       "status": "PASS",
       "task_id": "OCOR-DEV-0056"
+    },
+    {
+      "case_id": "OCOR-DEV-0057-RECEIPT-BINDS-VERSIONS-REDACTIONS-ORDER-TRUNCATION-REPRESENTATIONS-DIGEST",
+      "command": "MemoryContextAssembly receipt (closed ten-field contract record) binds the query digest, the representation versions and ranking profile digest of the pinned search receipt, the exact selected versions with item and content digests in retrieval order, every redaction span and reason (never the removed text), the whole-block-prefix truncation record and the SHA-256 final context digest; rendering keeps memory as escaped UNTRUSTED_MEMORY_DATA blocks; on PostgreSQL 16, Qdrant and OpenBao for all four retrieval modes the receipt is durably appended and read back by audit_ref",
+      "evidence_path": "OCOR-DEV-0057.json",
+      "raw_output_path": "OCOR-DEV-0057.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0057"
+    },
+    {
+      "case_id": "OCOR-DEV-0057-EXACT-REPLAY-REPRODUCES-CONTEXT",
+      "command": "FGM-20 oracle at component level: replay by audit_ref re-materialises the recorded versions in recorded order (no re-ranking, recency drift irrelevant) with the same redactions and truncation and yields byte-identical context and identical contract fields; on the real backends from fresh adapters and connections of a new run in every retrieval mode",
+      "evidence_path": "OCOR-DEV-0057.json",
+      "raw_output_path": "OCOR-DEV-0057.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0057"
+    },
+    {
+      "case_id": "OCOR-DEV-0057-UNRECORDED-OR-NON-DETERMINISTIC-REPLAY-REJECTED",
+      "command": "Unknown, foreign, tampered or rewritten receipts and a different query, budget, target model or governed context are refused before any content read (RECEIPT_UNRECORDED / RECEIPT_DIGEST_MISMATCH / REPLAY_INPUT_UNRECORDED / REPLAY_CONTEXT_MISMATCH); correction, revocation, reclassification, materialisation denial, changed redaction or exclusion and a kill switch make replay fail closed (CANDIDATE_CHANGED / CONTEXT_REPLAY_MISMATCH / STOP_EPOCH_MISMATCH) with an audited denial and no context, also on the real backends",
+      "evidence_path": "OCOR-DEV-0057.json",
+      "raw_output_path": "OCOR-DEV-0057.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0057"
+    },
+    {
+      "case_id": "OCOR-DEV-0057-FAIL-CLOSED-REQUEST-POLICY-AND-AUDIT",
+      "command": "The closed MemoryContextAssemblyRequest, binding, GCS digest, deadline, budget, rendering profile and search-under-the-same-GCS are checked before any search; context policy outage, invalid decision, stale bundle and malformed redaction spans fail closed with an audited, digest-only denial; no audit means no context; content not binding its committed digest is never rendered",
+      "evidence_path": "OCOR-DEV-0057.json",
+      "raw_output_path": "OCOR-DEV-0057.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0057"
+    },
+    {
+      "case_id": "OCOR-DEV-0057-NON-INTERFERENCE-AND-STOP-RACES-AT-THE-CONTEXT-BOUNDARY",
+      "command": "On the real backends, worlds with and without the twenty-one unauthorized or ineligible items of the 0052 corpus (foreign or mixed compartment, tenant, organization, marking, purpose, domain, project, run, agent, federation, quarantined, proposed, expired, not-yet-valid, elapsed validity, pending projection, revoked, policy-denied, other kind, reclassified) produce byte-identical contexts, selections and truncation records in all four modes; a kill switch or a revocation during assembly or during a content read leaves no context and no success receipt, and changed content never reaches the context policy",
+      "evidence_path": "OCOR-DEV-0057.json",
+      "raw_output_path": "OCOR-DEV-0057.log",
+      "requirement_id": "FR-119",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0057"
     }
   ],
   "schema_version": "1.0"
