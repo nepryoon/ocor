@@ -528,6 +528,7 @@ GATE_FAULT_DETAILS = {
     # The Human Gate deliberately never discloses which signature it excluded.
     "approval-quorum": "QUORUM_NOT_MET", "approval-self": "QUORUM_NOT_MET", "approval-role": "QUORUM_NOT_MET",
     "approval-expired": "QUORUM_NOT_MET", "approval-missing-role": "MISSING_REQUIRED_ROLE",
+    "approval-expired-during-final-policy": "QUORUM_NOT_MET",
     "policy-denied": "C6_POLICY_DENIED", "policy-outage": "C6_CONTROL_UNAVAILABLE",
     "policy-stale": "POLICY_BUNDLE_MISMATCH", "stop-during-policy": "STOP_EPOCH_CHANGED",
     "source-during-policy": "SOURCE_NOT_ELIGIBLE", "revoked-during-policy": "C6_CONTROL_EXPIRED_OR_REVOKED",
@@ -618,6 +619,12 @@ def test_live_every_c6_gate_refusal_leaves_canonical_and_memory_unchanged(backen
             x.policy.hook = lambda: x.w.lifecycle(x.source, "REVOKED", "harbour patrol observation")
         elif fault == "revoked-during-policy":
             x.policy.hook = lambda: x.controls.revoke(decision["decision_ref"])
+        elif fault == "approval-expired-during-final-policy":
+            # Only the last policy I/O outlives the approval TTL (decision and
+            # Authority still valid): solely the final Human Gate check sees it.
+            body["approval_policy"]["ttl_seconds"] = 120
+            calls = iter(range(10))
+            x.policy.hook = lambda: next(calls) == 1 and x.w.clock.advance(timedelta(seconds=150))
         if fault != "missing":
             x.controls.put(x.result.audit_ref, body, broken_signature=fault == "unsigned")
         if fault == "gate-digest":
@@ -656,3 +663,29 @@ def test_live_c3_refusal_after_dispatch_is_indeterminate_never_success(backends:
         assert state is not None and state.revision == 1 and dict(state.state)["patrol_status"] == "rival"
         assert x.w.ledger.records() == before
         assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.indeterminate"]
+
+
+class ForgedReceiptC3:
+    """Fault injection at the port: real C3 commit, drifted receipt binding."""
+
+    def __init__(self, c3: Any) -> None:
+        self.c3 = c3
+
+    def commit(self, command: Any) -> Any:
+        return replace(self.c3.commit(command), decision_ref="urn:ocor:decision:forged")
+
+
+def test_live_c3_receipt_not_bound_to_command_is_indeterminate(backends: r.Backends) -> None:
+    with workflow(backends) as x:
+        x.controls.put(x.result.audit_ref, x.body)
+        consumer = C6MemoryPromotionConsumer(
+            proposals=x.s, controls=x.controls, verifier=x.signer,
+            human_gate=HumanGateCoordinator(identities=x.registry, clock=x.w.clock), policy=x.policy,
+            c3=ForgedReceiptC3(x.c3), clock=x.w.clock, audit=x.audit, commit_capability="canonical.commit")
+        with pytest.raises(r.MemoryAdmissionError) as caught:
+            consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
+        assert (caught.value.reason_code, caught.value.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "COMMIT_OUTCOME_UNKNOWN")
+        assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.indeterminate"]
+        # C3 did commit: the outcome is reconciled from C3, never reported as success.
+        state = x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"])
+        assert state is not None and state.revision == 1
