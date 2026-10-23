@@ -162,3 +162,12 @@ Raw SHA256 della nuova occorrenza:
 Verdetto esterno storico SHA256: `5fd887db6e0d10d2d072ab6d2e410a75aab5588fe8fcf1cc42a3e8fce0198b9c`.
 
 Raccomandazione invariata: mantenere il tetto75min e la notifica oltre60min; caratterizzare le durate senza modifiche esecutive. La notifica non blocca la verifica indipendente di0058. Il candidato resta senza sigillo e senza PR fino al GO esterno. Nessuna allowlist estesa; nessun merge di questa sola richiesta e necessario prima della disposition. Inputs intatti; E1=0, E2=0, Verified=0 e claim NO-GO invariati.
+
+
+## 2026-10-23T20:45:27.222913+00:00 — OCOR-DEV-0058 ciclo 2: full locale e verifica indipendente
+
+- `repair2-full-local`: HEAD `bca0773ef989f65036cb593d446f139fb59c76dd`, durata 4108.628862 s, 2820 PASS e zero failure/error/skip; SHA256 campaign_result `9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f`.
+- `verifier-repair2-full`: HEAD `b0fbb184f51f15ef777c5ead16aba3f362d28db8`, durata 4403.665523 s, 2820 PASS e zero failure/error/skip; SHA256 campaign_result `fffa6d350d5272d5b6261f0b1f51bd78b86b45eb4a770bd2f016d305e6f1639f`.
+- Verdetto `OCOR-DEV-0058-b0fbb184f51f-2`: GO_FOR_EVIDENCE_SEAL, nessun finding o NOT_EXECUTED; SHA256 `6f503b6ab183d32c3a203c6117b059687e8b5f6e7c4e4ff722d2b971611f44a6`. Implementatori Codex/OpenAI e Claude Code/Anthropic; verifier Cursor CLI/grok-4.7-high/xAI, processo e contesto separati. Il precedente verifier ciclo 1 aveva misurato 3899.85 s (verdetto storico NO_GO per audit binding, non per durata).
+- Bootstrap standard `scripts/bootstrap_ci_environment.py --execute --timeout 600`, profilo di risorse e SVID versionati; unione JUnit esatta, rimozione kind v2 provata, zero OOM/restart, teardown senza residui secondo i record originali. Soglia informativa 3600 s superata, tetto 4500 s rispettato e invariato. Nessuna campagna ripetuta per ridurre la durata. Nessun conteggio trasferito fra run.
+- Raccomandazione e opzioni invariate: presa d’atto mantenendo i limiti, oppure diagnosi prestazionale separata. La causa prestazionale non e stabilita da questi soli tempi. Notifica non bloccante; nessuna estensione dell’allowlist, nessun merge della richiesta senza disposition, nessun cambio a codice, test, gate o record sigillati. E1=0, E2=0, Verified=0 e claim NO-GO invariati.
