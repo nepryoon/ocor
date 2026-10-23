@@ -315,6 +315,7 @@ class MemoryPromotionService:
         binding: VerifiedGovernedContextBinding | None,
     ) -> PromotionReceipt:
         operation = request.get("operation_id") if isinstance(request, Mapping) else None
+        verified = None
         try:
             verified = self._binding(binding)
             proposal = self._validate(memory_item_id, request, verified)
@@ -331,15 +332,16 @@ class MemoryPromotionService:
                 raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
             return PromotionReceipt(proposal, ref)
         except MemoryAdmissionError as exc:
-            self._deny("proposeMemoryPromotion", binding, operation, exc)
+            self._deny("proposeMemoryPromotion", verified, operation, exc)
             raise
         except Exception as exc:  # noqa: BLE001 -- backend read errors fail closed and audited
             error = _error("PROMOTION_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
-            self._deny("proposeMemoryPromotion", binding, operation, error)
+            self._deny("proposeMemoryPromotion", verified, operation, error)
             raise error from exc
 
     def load(self, audit_ref: str, *, binding: VerifiedGovernedContextBinding | None) -> MemoryPromotionProposal:
         """Revalidate a recorded proposal for the C6 consumer; never grant control."""
+        verified = None
         try:
             verified = self._binding(binding)
             if not _reference(audit_ref):
@@ -364,11 +366,11 @@ class MemoryPromotionService:
                 raise _error("PROPOSAL_DIGEST_MISMATCH")
             return proposal
         except MemoryAdmissionError as exc:
-            self._deny("consumeMemoryPromotion", binding, None, exc)
+            self._deny("consumeMemoryPromotion", verified, None, exc)
             raise
         except Exception as exc:  # noqa: BLE001 -- no unauthenticated/missing-store fallback
             error = _error("PROMOTION_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
-            self._deny("consumeMemoryPromotion", binding, None, error)
+            self._deny("consumeMemoryPromotion", verified, None, error)
             raise error from exc
 
 
