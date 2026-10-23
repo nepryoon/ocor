@@ -636,3 +636,23 @@ def test_live_every_c6_gate_refusal_leaves_canonical_and_memory_unchanged(backen
         if fault != "source-during-policy":
             assert x.w.ledger.records() == before
         assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+def test_live_c3_refusal_after_dispatch_is_indeterminate_never_success(backends: r.Backends) -> None:
+    # The GovernedCommitPort contract does not promise that a C3 error means
+    # "not committed": after dispatch the consumer reports an unknown outcome
+    # for reconciliation, never success and never a definite denial.
+    with workflow(backends) as x:
+        x.controls.put(x.result.audit_ref, x.body)
+        rival = dict(x.body["command"], command_id="urn:ocor:command:" + uuid.uuid4().hex,
+                     idempotency_key="rival-" + uuid.uuid4().hex,
+                     canonical_delta={"patrol_status": "rival"})
+        x.c3.commit(GovernedCanonicalCommitCommand.from_mapping(rival))
+        before = x.w.ledger.records()
+        with pytest.raises(r.MemoryAdmissionError) as caught:
+            x.consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
+        assert (caught.value.reason_code, caught.value.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "COMMIT_OUTCOME_UNKNOWN")
+        state = x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"])
+        assert state is not None and state.revision == 1 and dict(state.state)["patrol_status"] == "rival"
+        assert x.w.ledger.records() == before
+        assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.indeterminate"]
