@@ -573,8 +573,13 @@ def test_quota_writer_missing_authorities_never_invoke_admission(fault: str, det
     assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
 
 
-@pytest.mark.parametrize("tamper", ["scope", "gcs", "demand", "payload", "vector", "retention"])
-def test_quota_writer_cannot_bypass_binding_or_actual_demand(tamper: str) -> None:
+@pytest.mark.parametrize("tamper,detail,holds", [
+    ("scope", "PARTITION_DENIED", 0), ("gcs", "GCS_INVALID", 0), ("demand", "ENVELOPE_INVALID", 0),
+    ("payload", "CONTENT_DIGEST_MISMATCH", 0), ("vector", "EMBEDDING_INVALID", 0), ("retention", "RETENTION_UNCONFIGURED", 1),
+    # Claude Code: the candidate itself must be bound to the plan GCS/owner before the serialization hold.
+    ("candidate-gcs", "ITEM_NOT_BOUND_TO_GCS", 0), ("owner", "ITEM_NOT_BOUND_TO_GCS", 0),
+])
+def test_quota_writer_cannot_bypass_binding_or_actual_demand(tamper: str, detail: str, holds: int) -> None:
     w = life.unit_world()
     seed(w)
     s, audit, _ = setup(w)
@@ -591,15 +596,17 @@ def test_quota_writer_cannot_bypass_binding_or_actual_demand(tamper: str) -> Non
         payload = b"different content"
     elif tamper == "vector":
         embedding = [0.0] * len(embedding)
-    else:
+    elif tamper == "retention":
         body["candidate"]["retention_policy_ref"] = "unknown"
+    elif tamper == "candidate-gcs":
+        body["candidate"]["governed_context_digest"] = r.d("other-gcs")
+    else:
+        body["candidate"]["owner_principal_id"] = "principal-other"
     before = life.ledger_snapshot(w)
-    with pytest.raises(MemoryOperationsError):
-        wr.admit_and_commit(body, binding=r.binding(r.context()), payload=payload, embedding=embedding)
+    refused(lambda: wr.admit_and_commit(body, binding=r.binding(r.context()), payload=payload, embedding=embedding), detail)
     assert life.ledger_snapshot(w) == before and w.metadata.head("new") == 0
     assert audit.events[-1]["outcome"] == "DENIED"
-    if tamper in {"scope", "gcs", "demand"}:
-        assert lock.partitions == []
+    assert len(lock.partitions) == holds  # refused before admission; only the retention bound is checked under the hold
 
 
 def test_real_two_quota_writers_share_the_same_serialization_boundary(backends: life.Backends) -> None:
