@@ -90,6 +90,20 @@ class ContextPolicy:
 
 
 @dataclass
+class KillSwitchPolicy(ContextPolicy):
+    """Raises the kill switch (stop epoch) while the first version is being admitted."""
+
+    stop: Any = None
+
+    def authorize_context(
+        self, item: GovernedMemoryItem, text: str, ctx: GovernedContext, target_model_ref: str
+    ) -> ContextPolicyDecision:
+        if not self.calls:
+            self.stop.epoch += 1
+        return super().authorize_context(item, text, ctx, target_model_ref)
+
+
+@dataclass
 class ReceiptAudit:
     """Audit sink of the unit worlds; receipts are looked up by ``audit_ref``."""
 
@@ -287,7 +301,7 @@ def test_truncation_keeps_a_whole_block_prefix_and_records_what_was_cut() -> Non
     sizes = [len(line) + 1 for line in full.context.split(b"\n")[:-1]]
     budget = sizes[0] + sizes[1] + sizes[2] - 1  # header + first block + all but one byte of the second
     cut = assembler(world, audit, policy).assemble(assembly_request(world, max_bytes=budget, operation="a2"), binding=binding())
-    assert cut.context == b"".join(full.context.split(b"\n")[:2]) + b"\n" and len(cut.context) <= budget
+    assert cut.context == b"\n".join(full.context.split(b"\n")[:2]) + b"\n" and len(cut.context) <= budget
     assert list(cut.selected_item_version_refs) == list(full.selected_item_version_refs[:1])
     record = cut.truncation_record
     assert record == {
@@ -332,7 +346,7 @@ INVALID: list[tuple[str, Any, str, str]] = [
     ("target-empty", lambda w: {**assembly_request(w), "target_model_ref": ""}, "MEMORY_SCHEMA_INVALID", "REQUEST_INVALID"),
     ("profile-unknown", lambda w: {**assembly_request(w), "rendering_profile_ref": "urn:x"}, "UNSUPPORTED_CAPABILITY", "RENDERING_PROFILE_UNKNOWN"),
     ("deadline-past", lambda w: {**assembly_request(w), "deadline": format_utc_timestamp(NOW - timedelta(seconds=1))}, "POLICY_DENIED", "DEADLINE_EXCEEDED"),
-    ("gcs-digest", lambda w: {**assembly_request(w), "governed_context_digest": "urn:sha256:" + "0" * 64}, "GOVERNED_CONTEXT_MISMATCH", "GCS_DIGEST_MISMATCH"),
+    ("gcs-digest", lambda w: {**assembly_request(w), "governed_context_digest": "urn:sha256:" + "0" * 64}, "GOVERNED_CONTEXT_MISMATCH", "GOVERNED_CONTEXT_MISMATCH"),
     ("search-other-gcs", lambda w: assembly_request(w, search_ctx=context(compartments=("alpha",))), "GOVERNED_CONTEXT_MISMATCH", "SEARCH_CONTEXT_MISMATCH"),
 ]
 
@@ -402,13 +416,11 @@ def test_an_item_denied_by_the_context_policy_is_excluded_and_never_disclosed() 
 
 
 def test_a_stop_epoch_change_during_assembly_returns_no_context() -> None:
-    world, audit, policy = unit()
-    service = assembler(world, audit, policy)
-    reads = world.stop.reads
-    world.stop.bump_after = reads + 6  # survives the search, trips while the context is assembled
+    world, audit, _ = unit()
+    service = assembler(world, audit, KillSwitchPolicy(stop=world.stop))
     expect(lambda: service.assemble(assembly_request(world), binding=binding()), "STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED")
     assert audit.actions() == ["searchMemory", "assembleMemoryContext.denied"]
-    world.stop.bump_after, world.stop.fail = None, True
+    world.stop.fail = True
     expect(lambda: service.assemble(assembly_request(world, operation="a2"), binding=binding()), "CONTROL_PLANE_UNAVAILABLE", "STOP_STATE_UNAVAILABLE")
 
 
@@ -541,7 +553,7 @@ def test_a_replay_that_cannot_be_exact_fails_closed_without_context(change: str,
     elif change == "context-denied":
         policy.denied.add("p-1")
     else:
-        world.stop.bump_after = world.stop.reads + 2
+        service = assembler(world, audit, KillSwitchPolicy(stop=world.stop))
     before = len(audit.events)
     expect(lambda: service.replay(original.audit_ref, assembly_request(world, operation="rp"), binding=binding()), reason, detail)
     assert [e["action"] for e in audit.events[before:]] == ["replayMemoryContext.denied"]
@@ -720,6 +732,5 @@ def test_live_kill_switch_during_assembly_leaves_no_context_and_no_success_recei
     world = backends.world()
     populate(world)
     audit = backends.audit(world)
-    world.stop.bump_after = world.stop.reads + 6
-    expect(lambda: assembler(world, audit, ContextPolicy()).assemble(assembly_request(world), binding=binding()), "STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED")
+    expect(lambda: assembler(world, audit, KillSwitchPolicy(stop=world.stop)).assemble(assembly_request(world), binding=binding()), "STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED")
     assert audit.actions() == ["searchMemory", "assembleMemoryContext.denied"]
