@@ -6424,3 +6424,14 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - inputs intatti; nessun nuovoDEC, E1=0,E2=0,Verified=0,runtimeNOT_ESTABLISHED,PoC/ProductionNO-GO invariati.
 
 - Gate dello state sync: checksum8/8, harness14PASS, drift0, ruff, mypy strict, language, RCCAD, scope, piano (base origin/main) e validator runtime0005/0049/0050 PASS; controlli opzionali NOT_EXECUTED del piano restano tali. Stato canonico. Nessuna campagna in background. CI dello state sync sui13 nomi obbligatori sull HEAD esatto prima del merge.
+
+
+## 2026-10-24T19:43:58.417586+00:00 — REM-0030: checkpoint documentazione e qualifica sul nuovo host
+
+- Unica unita REM-0030, REPOSITORY-RENAME-AND-README (2026-10-14), secondo QUEUE-TO-G6-ORDER. Implementatore Codex/OpenAI; verifica indipendente affidata al loop esterno, nessun verifier avviato.
+- HOST-MIGRATION (2026-10-24): main pulita e allineata a 6487902cef8438ec02ecc75892542c762d2c878b, nessun lavoro OCOR concorrente; ripresa dalla prossima azione versionata. Profilo osservato: Intel Core Ultra9 275HX,24thread,32504823808byteRAM, kernel7.0.0-38; CLI Codex0.164.0. Durate non confrontate con il vecchio host.
+- Candidato aa8f36c9be5de1290b160355a02b632f6fa66008, branch governed/ocor-dev-rem-0030-repository-readme: README britannico con49link validi e diagramma Mermaid validato da11.12.0; markdownlint0.18.1 PASS. Clausola AGENTS esatta; confronto AST del validatore identico salvo aggiunte puntuali all allowlist. inputs/runtime/test/workflow/lock invariati.
+- Preflight checksum8/8,harness14PASS,drift0 e strumenti ai digest lock PASS. Bootstrap standard scripts/bootstrap_ci_environment.py --execute --timeout600 da shell pulita PASS; solo due variabiliOCOR passate ai test, nessun source. Primo reset senza file credenziali FAIL diagnostico, zero risorse; dopo bootstrap reset PASS. Il bootstrap dopo reset richiede un file locale nuovo: tentativo rifiutato dal guard, credenziali generate archiviate localmente0600 e bootstrap fresco PASS. Nessun criterio o controllo modificato.
+- Regressioni0005:6PASS,0050:198PASS,0082:10PASS, zero failure/error/skip. Campagna completa in corso con supervisore versionato, tetto75min e controllo diOOM/restart; nessun conteggio qualificante dichiarato prima della conclusione.
+- Prossima azione: Riprendere la qualifica locale REM-0030 sul worktree /home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030 all HEAD aa8f36c9be5de1290b160355a02b632f6fa66008: monitorare la campagna scripts/run_qualifying_campaign.py gia avviata, massimo75min, senza avviare un secondo stack. Poi portfolio, unione JUnit esatta, gate finali, evidenza candidata con riqualifiche0005/0050/0082 e richiesta di verifica esterna. Rinomina solo dopo GO e merge della PR. Nessun incremento E1/E2/Verified.
+- Rinomina non eseguita; nessun nuovoDEC,E1=0,E2=0,Verified=0,claimNO-GO invariati.
