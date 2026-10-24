@@ -23242,7 +23242,104 @@
     "session_directory": "/home/luca/.ocor-codex/rem0023-integration-20261022",
     "status": "NOT_EXECUTED_FOR_NEW_STATE_HEAD"
   },
-  "state_sync_commands": [],
+  "state_sync_commands": [
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m mypy",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "mypy",
+      "raw_sha256": "58041ca0a5f16e793351345586a35e4159cdce61347fdae24588b96f9800b296",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/state-sync-0059-integrated-20261024",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "scope",
+      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "drift",
+      "raw_sha256": "aa009722641d4c3be81b32c6f5a8fcf52ba811aadd01c14a0f6da9e8032f32b5",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "rt0005",
+      "raw_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0049 --non-skipped --manifest reports/evidence/G4/MANIFEST.json",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "rt0049",
+      "raw_sha256": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+      "exit_code": 0,
+      "head_sha": "state-sync worktree on 06c29b21ee0d7b3668f3dd8bd4f59fec6b989bcf + state commit",
+      "label": "rt0050",
+      "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
+      "status": "PASS"
+    }
+  ],
   "state_sync_local_gates": {
     "drift": "PASS",
     "harness": "PASS",
