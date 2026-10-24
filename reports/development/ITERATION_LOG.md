@@ -6393,3 +6393,5 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - inputs immutati; E1=0,E2=0,Verified=0,claim NO-GO invariati; nessun nuovo DEC o chiusura normativa.
 
 - Notifica non bloccante sopra60min: https://github.com/nepryoon/ocor-detailed-design/blob/20a75bcfc315fbe6f1730999e046456191db7059/reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md; commit 20a75bcfc315fbe6f1730999e046456191db7059, SHA256 103507cee72e4242feb1382a16779b1e7a59335e55157528fee6d268e2aa456a. Full locale4076.349030048994s e full del verifier ciclo04238.05s; limiti invariati, nessun task bloccato.
+
+- Gate dello state sync corrente: checksum8/8, harness14PASS, drift0, ruff, language, RCCAD, scope, piano e validator runtime0005/0049/0050 PASS; comandi e raw SHA256 dello stesso worktree registrati. I controlli opzionali NOT_EXECUTED del piano restano tali, nessuna promozione.

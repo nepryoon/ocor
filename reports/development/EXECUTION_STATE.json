@@ -23369,43 +23369,13 @@
   "state_sync_commands": [
     {
       "command": [
-        "git",
-        "worktree",
-        "add",
-        "-b",
-        "governed/state-sync-0059-checkpoint-20261024",
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-0059-checkpoint-20261024",
-        "origin/main"
+        "sha256sum",
+        "-c",
+        "inputs/normative/SHA256SUMS"
       ],
-      "duration_seconds": 0.326,
       "exit_code": 0,
-      "label": "state-worktree",
-      "raw_sha256": "4f952d87985cca231197f67aabfc0dce745de44cf81f564cfb009e743cc4147c",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "ruff",
-        "check",
-        "."
-      ],
-      "duration_seconds": 0.026,
-      "exit_code": 0,
-      "label": "state-ruff",
-      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
-        "-m",
-        "mypy",
-        "--strict"
-      ],
-      "duration_seconds": 3.177,
-      "exit_code": 0,
-      "label": "state-mypy",
-      "raw_sha256": "a766815ce9137d28823902e2a13996ac5e7021d76946b008d607ddbe5fe9163c",
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
       "status": "PASS"
     },
     {
@@ -23414,10 +23384,66 @@
         "scripts/verify.py",
         "--json"
       ],
-      "duration_seconds": 0.359,
       "exit_code": 0,
-      "label": "state-verify",
+      "label": "harness",
       "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
+        "scripts/validate_evidence_input_drift.py"
+      ],
+      "exit_code": 0,
+      "label": "drift",
+      "raw_sha256": "17953f65f1736f3af2380e6bf82e149be51f3deb910d1c9225f9319713437d38",
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit_code": 0,
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
+        "scripts/validate_language_policy.py"
+      ],
+      "exit_code": 0,
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
+        "scripts/validate_rccad.py",
+        "--base-ref",
+        "origin/main"
+      ],
+      "exit_code": 0,
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
+        "scripts/validate_ocor_change_scope.py",
+        "--base",
+        "origin/main",
+        "--branch",
+        "governed/state-sync-0059-repair1-20261024"
+      ],
+      "exit_code": 0,
+      "label": "scope",
+      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
       "status": "PASS"
     },
     {
@@ -23428,100 +23454,54 @@
         "HEAD",
         "--authorized-extension"
       ],
-      "duration_seconds": 0.092,
       "exit_code": 0,
-      "label": "state-plan",
+      "label": "plan",
       "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
       "status": "PASS"
     },
     {
       "command": [
         "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
-        "scripts/validate_rccad.py",
-        "--base-ref",
-        "origin/main"
-      ],
-      "duration_seconds": 0.285,
-      "exit_code": 0,
-      "label": "state-rccad",
-      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
-        "scripts/validate_language_policy.py"
-      ],
-      "duration_seconds": 0.024,
-      "exit_code": 0,
-      "label": "state-language",
-      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
-        "scripts/validate_ocor_change_scope.py",
-        "--base",
-        "origin/main",
-        "--branch",
-        "governed/state-sync-0059-checkpoint-20261024"
-      ],
-      "duration_seconds": 0.032,
-      "exit_code": 0,
-      "label": "state-scope",
-      "raw_sha256": "8db888191e0ff3c25467ca9deb1eae00a8425020f94c1729a657b13251cc97e1",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
-        "scripts/validate_evidence_input_drift.py"
-      ],
-      "duration_seconds": 0.083,
-      "exit_code": 0,
-      "label": "state-drift",
-      "raw_sha256": "17953f65f1736f3af2380e6bf82e149be51f3deb910d1c9225f9319713437d38",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "sha256sum",
-        "-c",
-        "inputs/normative/SHA256SUMS"
-      ],
-      "duration_seconds": 0.005,
-      "exit_code": 0,
-      "label": "state-inputs",
-      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
-      "status": "PASS"
-    },
-    {
-      "command": [
-        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
         "scripts/validate_runtime_evidence.py",
-        "--non-skipped"
+        "--task",
+        "OCOR-DEV-0005",
+        "--non-skipped",
+        "--manifest",
+        "reports/evidence/G0/MANIFEST.json"
       ],
-      "duration_seconds": 0.021,
-      "exit_code": 2,
-      "label": "state-runtime-existing",
-      "raw_sha256": "0a8ce5ae9b1f5c3717c3a1e5849952631c19f50ae91451c6cddd16b41f61a144",
-      "status": "FAIL"
+      "exit_code": 0,
+      "label": "rt0005",
+      "raw_sha256": "47aeb48f50f25f9c6088c580998f0d19d85521a72a5fb9ddd37c7780d7dbbcb2",
+      "status": "PASS"
     },
     {
       "command": [
         "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
         "scripts/validate_runtime_evidence.py",
         "--task",
-        "OCOR-DEV-0058",
+        "OCOR-DEV-0049",
+        "--non-skipped",
         "--manifest",
-        "reports/evidence/G5/MANIFEST.json",
-        "--non-skipped"
+        "reports/evidence/G4/MANIFEST.json"
       ],
-      "duration_seconds": 0.021,
       "exit_code": 0,
-      "label": "state-runtime-existing-corrected",
-      "raw_sha256": "707368dae3ab264684ecfc6b1638211df8c2c54fd476267c6256c9c95c879f19",
+      "label": "rt0049",
+      "raw_sha256": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25",
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0059/ocor-runtime/.venv/bin/python",
+        "scripts/validate_runtime_evidence.py",
+        "--task",
+        "OCOR-DEV-0050",
+        "--non-skipped",
+        "--manifest",
+        "reports/evidence/G5/MANIFEST.json"
+      ],
+      "exit_code": 0,
+      "label": "rt0050",
+      "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be",
       "status": "PASS"
     }
   ],
