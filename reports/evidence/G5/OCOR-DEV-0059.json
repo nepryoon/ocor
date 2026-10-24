@@ -611,6 +611,202 @@
     "uv": "0.12.5",
     "worktree": ".ocor/worktrees/ocor-dev-0059"
   },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "269172a8f9490a857d050a2284d98918c117ca35",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "a63a94d11ae8afc02f84ff359f38a9ac59ae16ed",
+      "qualified_head": "28173a069bee1bb1cf62f552a89e2ff344526a06",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "eb5b07e8a29f00ce74cd899f4df19c0ff0d2da953a5e586cba0b8b72128d107c",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i file in inputs/normative corrispondono al manifest."
+      },
+      {
+        "command": "sha256 degli eseguibili in PATH confrontati con infra/toolchain.lock.json e infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, python 3.12.11, ruff, tsc, uv, helm, kind e kubectl coincidono con i lock. Preflight rieseguito: PASS, errori vuoti, Docker READY. environment.json sha256 773d57322e96a0493eb8a1057bd89e98adf09ecf34abd4a809fe1b4fc1193ac5."
+      },
+      {
+        "command": "git diff --name-status 655c9ed8f4608958922835c7530c4b73bb45b6b1..28173a069bee1bb1cf62f552a89e2ff344526a06",
+        "exit_code": 0,
+        "summary": "Solo operations.py, test_ocor_dev_0059.py e i tre output di evidenza G5. I record preesistenti del manifest sono invariati: sei righe aggiunte per OCOR-DEV-0059 e due artifact nuovi. Nessun segreto letterale nel diff."
+      },
+      {
+        "command": "git show 4a55e057520ef6cc1f6637b46ef32a010dbac50c:reports/development/MODEL_HANDOFF.json",
+        "exit_code": 0,
+        "summary": "Diagnosi versionata: causa VERIFIER_CHILD_ENVIRONMENT_STALE_EXPORTED_CREDENTIALS, provisioner ufficiale invariato, standard_preparation_defect false. Il wrapper run_in_stack.py ha digest 5b981f7443582c9a20c6c6268987aa03fc560988533e4e292b3f012d3da34066."
+      },
+      {
+        "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+        "exit_code": 0,
+        "summary": "43 pacchetti gia' sincronizzati."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 84 source files."
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessuna estensione monitorata fuori dall'area autorizzata."
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0059-memory-operations",
+        "exit_code": 0,
+        "summary": "PASS: 5 path cambiati; superfici immutabili intatte."
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0. Evidence fence E1=0 senza claim probatori non supportati."
+      },
+      {
+        "command": "npm --prefix ocor-runtime/sdk/typescript ci && npm --prefix ocor-runtime/sdk/typescript run build",
+        "exit_code": 0,
+        "summary": "ci e tsc --project tsconfig.json terminati a 0."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute --clean-bootstrap --timeout 650 -- python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Primo provisioning PASS in 49s. fuseki_max_heap_bytes=1073741824. SVID spiffe://ocor.test/ocor/control-plane presente. Archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA512 uguale al lock. Undici servizi READY, nessun OOM. L'id immagine costruita e' registrato e diverso da build.output_sha256; source_sha512 e la ricetta coincidono e la procedura non fallisce su quell'id."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute --timeout 2700 -- uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=task.xml ocor-runtime/tests/tasks/test_ocor_dev_0059.py",
+        "exit_code": 0,
+        "summary": "JUnit sul primo stack sano: tests=223, failures=0, errors=0, skipped=0, 40.20s. I casi live di pressione, restore e writer concorrenti sono nella suite. PostgreSQL e Qdrant hanno ricevuto traffico durante la run. Nessun container di test rimasto in esecuzione oltre ocor-bootstrap."
+      },
+      {
+        "command": "python3 /home/luca/.ocor-codex/ocor-dev-0059/repair1/check_evidence.py . 28173a069bee1bb1cf62f552a89e2ff344526a06",
+        "exit_code": 0,
+        "summary": "PASS. Il commit registrato e' antenato di HEAD e il diff successivo e' solo evidenza. Hash di input, raw log e manifest coerenti. I 21 mutanti risultano uccisi nel raw log archiviato; questa verifica non ha rieseguito la campagna di mutazione. I conteggi di suite completa del record non sono stati usati come prova."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute --clean-bootstrap --timeout 300 -- python scripts/bootstrap_ci_environment.py --teardown --execute && unlink .ocor/bootstrap.env && python3 run_in_stack.py --execute --clean-bootstrap --timeout 650 -- python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Teardown PASS, residui vuoti, credential file rimosso. Il secondo provisioning con ambiente figlio senza OCOR_LOCAL_*/OCOR_SPIRE_* e' PASS: heap 1073741824, SVID del control-plane presente, archivio Fuseki cache HIT dalla stessa fonte Apache e dallo stesso SHA512, undici servizi READY. Il fallimento del join token del verdetto precedente non si e' riprodotto."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute --timeout 4650 -- uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 28173a069bee1bb1cf62f552a89e2ff344526a06 --output-dir full",
+        "exit_code": 0,
+        "summary": "Campagna PASS sullo stack appena ricreato. JUnit: tests=3043, failures=0, errors=0, skipped=0, durata pytest 3929.23s, durata campagna 3930.06s. HEAD invariato. Moduli obbligatori eseguiti: test_ocor_dev_0048=196, test_ocor_dev_0049=390, test_ocor_dev_0059=223, zero skip. po_decision_required true perche' la durata supera la soglia di notifica di 3600s e resta sotto il limite di 4500s. Nessun OOM o restart. Tre PytestWarning di record_property, non skip."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute -- uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_runtime_evidence.py --task OCOR-DEV-0059 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-0059. Claim fence del record: E1=0, E2=0, PoC_GO=NO-GO, Production_readiness=NO-GO, runtime_conformance=NOT_ESTABLISHED."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute -- uv run --project ocor-runtime --frozen --extra test --extra lint python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: checked_inputs 221, checked_tasks 73, drifted_inputs 0, drifted_tasks vuoto."
+      },
+      {
+        "command": "python3 run_in_stack.py --execute --clean-bootstrap --timeout 300 -- python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Teardown finale PASS, result REMOVED, residui di container, volumi e reti vuoti. Nessun file tracciato modificato."
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "category": "codice",
+        "evidence": "Sul world unitario, ammissione di a-old versione 1 e versione 2, capture firmata, sostituzione del solo audit_ref della versione 1 nel metadata store con urn:sha256: seguito da 32 byte ab. Lo stage_digest della head resta quello del manifest. open() restituisce la ricevuta e serve() restituisce materialised; gli eventi di audit sono memoryRestore.opened e memoryRestore.served. Il manifest firmato conserva gli audit_refs originali e lo store della versione 1 diverge. _verify confronta head, stage_digest della head, item_digests ed epoche e non legge entry['audit_refs'].",
+        "id": "VF-002",
+        "path": "ocor-runtime/src/ocor_runtime/memory/operations.py:898",
+        "required_fix": "In _verify, per ogni versione da 1 a head, esigere che l'audit_ref del metadata ripristinato sia uguale a entry['audit_refs'] e rifiutare con PROJECTION_DRIFT e audit di diniego. Aggiungere il caso positivo con riferimenti integri e il negativo con un solo riferimento storico alterato. Resta aperto e non bloccante: questa riesecuzione non lo dichiara riparato.",
+        "severity": "medium"
+      }
+    ],
+    "findings_disposition": {
+      "VF-002": "OPEN_NONBLOCKING: medium code finding confirmed by the verifier (restore gate does not compare historical audit_refs); not repaired and not claimed repaired by this seal; carried in EXECUTION_STATE as an open non-blocking follow-up for a governed remediation."
+    },
+    "implementers": [
+      "Codex (OpenAI): RED 8e996eb, operations/quota/pressure/monitoring checkpoint 5b88f09/274f078, quota-writer RED 6ba786d and an uncommitted MemoryQuotaWriter draft, interrupted by the Codex quota stop at 2026-10-23T22:51Z. Repair1 by Codex/OpenAI: 888c8e6/14619ce RED, all production fixes and new unit/live tests, qualification, candidate evidence and request.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): validated and committed the writer draft (1d72a5b), backup manifest and gated restore with RED 5d6e33a and GREEN 7ba617d, mutation probe, qualification and this candidate.",
+      "Codex (OpenAI): unchanged-head environment diagnosis (VERIFIER_CHILD_ENVIRONMENT_STALE_EXPORTED_CREDENTIALS) and env-recheck request, no candidate change."
+    ],
+    "integration_agent": "Claude Code (Anthropic), claude-opus-5-5, reserve implementer after the Codex quota stop (2026-10-24T08:59Z): state-only alignment merge, seal and exact-head integration only",
+    "integration_condition": "Only seal/manifest metadata follow the exact reviewed head; runtime, tests, harness, workflows, locks, raw output and all pre-existing sealed records unchanged. All 13 mandatory checks must succeed on the final seal HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "prior_verdicts": [
+      {
+        "findings": [
+          {
+            "blocking": true,
+            "id": "VF-001",
+            "severity": "high"
+          },
+          {
+            "blocking": false,
+            "id": "VF-002",
+            "severity": "medium"
+          }
+        ],
+        "head_sha": "28173a069bee1bb1cf62f552a89e2ff344526a06",
+        "request_id": "OCOR-DEV-0059-28173a069bee-1",
+        "sha256": "f20443afb0fd3a77f5c504c0201b42fac550526d2242f003e3e926b222f75bed",
+        "verdict": "NO_GO"
+      },
+      {
+        "findings": [
+          {
+            "blocking": true,
+            "id": "VF-001",
+            "severity": "high"
+          },
+          {
+            "blocking": false,
+            "id": "VF-002",
+            "severity": "medium"
+          }
+        ],
+        "head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
+        "request_id": "OCOR-DEV-0059-e226fc7d127c-0",
+        "sha256": "4831d3e4ce2eeff5fe5b188f6f391863492664804ef5decb3d91c8cad2e301ba",
+        "verdict": "NO_GO"
+      }
+    ],
+    "raw_output_sha256_unchanged": "c267c5244b6daff2774c0f6dd2f55198d85267598157005d75c257eaa43b6d41",
+    "repair_cycle": 1,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-24T06:58:19Z",
+    "verdict_file_sha256": "5e67e90b1afe99d0ec334bc5db2421ff0bc1f63b41a632aa2c22b674e619d85c",
+    "verdict_head_sha": "28173a069bee1bb1cf62f552a89e2ff344526a06",
+    "verdict_request_id": "OCOR-DEV-0059-28173a069bee-1-env-recheck",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "processo e contesto separati; verifier Cursor, modello grok-4.7-high, fornitore xAI; implementatori Codex (OpenAI) e Claude Code (Anthropic), fornitori diversi dal verifier",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, sessione non interattiva, contesto pulito"
+    },
+    "verifier_environment": {
+      "path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-0059-28173a069bee-1-env-recheck/environment.json",
+      "preflight": "PASS",
+      "sha256": "773d57322e96a0493eb8a1057bd89e98adf09ecf34abd4a809fe1b4fc1193ac5"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/operations.py": "3528aeae3023e9b4d3adc26fa7f7df17ff4feccf18e84d970666a38be4aa4195",
@@ -1035,10 +1231,11 @@
       "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): validated and committed the writer draft (1d72a5b), backup manifest and gated restore with RED 5d6e33a and GREEN 7ba617d, mutation probe, qualification and this candidate."
     ],
     "independence": "external loop only; the implementers did not run or simulate the verification; verifier must be of a provider other than OpenAI and Anthropic",
-    "verifier": "to be recorded from the external verdict"
+    "verifier": "Grok 4.7 via Cursor CLI (xAI), independent process/context/provider; effective verdict configuration in independent_verification"
   },
   "rollback_procedure_verified": "Mechanical review: the task adds memory/operations.py and tests/tasks/test_ocor_dev_0059.py plus evidence; no migration, no persisted schema of its own and no change to existing modules; rollback is a revert commit of the task merge, after which the prior G5 manifest entries remain valid unchanged.",
   "schema_version": "1.0",
+  "sealed_at": "2026-10-24T07:00:59.799139+00:00",
   "sealed_dependencies": {
     "OCOR-DEV-0049": "e67e50d7b5efa1f551497a8018618a4e7450ab65",
     "OCOR-DEV-0052": "8865203f6a557d4dccb4d2cd60059c37b057e7fe",
@@ -1056,7 +1253,7 @@
     "result": "REMOVED",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-0059",
   "tdd": {
     "GREEN": "274f078 quota/pressure/monitoring checkpoint (Codex); 1d72a5b MemoryQuotaWriter drafted by Codex before its quota stop and validated/committed by Claude Code; 7ba617d backup manifest and gated restore (Claude Code); ea0193b pins writer refusal details after the first qualification probe; final code commit 5abf97104498d54844a70035056f47a017dd82f7: task file three times, backlog validation command, reports portfolio, governed full suite and validators (counts from archived JUnit). Repair1: fresh whole task x3, full, reports, targeted mutants on final code; no counts transferred from cycle0.",
@@ -1079,6 +1276,21 @@
       ],
       "request_id": "OCOR-DEV-0059-e226fc7d127c-0",
       "verdict": "NO_GO"
+    },
+    {
+      "findings": [
+        "VF-001",
+        "VF-002"
+      ],
+      "request_id": "OCOR-DEV-0059-28173a069bee-1",
+      "verdict": "NO_GO"
+    },
+    {
+      "findings": [
+        "VF-002"
+      ],
+      "request_id": "OCOR-DEV-0059-28173a069bee-1-env-recheck",
+      "verdict": "GO_FOR_EVIDENCE_SEAL"
     }
   ]
 }
