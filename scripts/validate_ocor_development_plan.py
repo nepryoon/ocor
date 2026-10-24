@@ -272,6 +272,20 @@ def main() -> int:
     changed = subprocess.run(["git", "diff", "--name-only", args.base_ref, "--"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
+        # CC-OCOR-DELIVERY-COMPLETION section 7: exact REM-0036 (VF-002 of 0059) outputs.
+        "ocor-runtime/src/ocor_runtime/memory/operations.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0036.py",
+        "reports/assurance/OCOR-DEV-REM-0036-RCCAD/red.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.log",
+        "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0036.json",
+        "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0036.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0036.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0036.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0036.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0036.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0036.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0036.log",
         # PO REPOSITORY-RENAME-AND-README (2026-10-14): exact REM-0030 outputs.
         "README.md",
         "reports/assurance/OCOR-DEV-REM-0030-RCCAD/OCOR-DEV-REM-0030.json",
