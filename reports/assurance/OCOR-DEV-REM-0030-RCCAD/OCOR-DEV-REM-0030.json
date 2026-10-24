@@ -985,7 +985,153 @@
     "method": "Confronto byte per byte di tutti i file evidence/assurance presenti alla baseline, esclusi i manifest aggiornabili"
   },
   "independent_verification": {
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "4548cf7870fd40d9d3a2c41f96c4527f59027b25",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_subtrees": {
+        ".github": "ec61878a8b3536355bf72071440f55b2987d27ce",
+        "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+        "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+        "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+        "ocor-runtime": "07169a81619f44dbe4588c67a227ebfe9ff9eb70",
+        "reports/tests": "389a299fdb94329060f6e6a0ee979d99840b7a0b",
+        "scripts": "742a631a554d3ea8863895daf62b5add394e2aa1"
+      },
+      "main_head": "a6d3a114104a506352e1088be03934c8879cb614",
+      "qualified_head": "3a30104866efb0220d645fad13728be5160706b4",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "3c44c90d8f715471f38b2ccae258be7d8946fdd16b0d77ca68b1325333cad72b",
+    "commands": [
+      {
+        "command": "sha256 of PATH tools versus infra/toolchain.lock.json and infra/qualification_tools.lock.json; sha256sum environment.json",
+        "exit_code": 0,
+        "summary": "Host tools, Python 3.12.11, helm, kind and kubectl match the lock digests. environment.json sha256 56297776ae12e9137aaa6cf79264faa7c023e7cadc839e52af63195b99265e83. Host Intel(R) Core(TM) Ultra 9 275HX, 24 threads, MemTotal 31742992 KiB, kernel 7.0.0-38-generic."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS; docker READY; ports free; no secret names present."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "All normative inputs OK. Diff base..HEAD does not touch inputs/."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 84 source files."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: no tracked file uses a monitored extension outside its authorized area."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 6487902cef8438ec02ecc75892542c762d2c878b --head HEAD",
+        "exit_code": 0,
+        "summary": "PASS: 16 changed paths; immutable surfaces untouched; task ledger stable. AGENTS.md changes only the authorized repository clause. The plan validator diff adds only the REM-0030 allowlist. Manifests only prepend new regression entries; every previous entry is unchanged. Sealed requalification blobs for 0005, 0050 and 0082 are unchanged and their recorded supersession digests match."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 6487902cef8438ec02ecc75892542c762d2c878b",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (historical optional plan markdownlint and Mermaid). The run rewrote the report header to the supplied base and the report hash; those two tracked files were restored to HEAD before the campaign. Committed artifact hashes matched the files before that rewrite. README markdownlint-cli2@0.18.1 and Mermaid CLI@11.12.0 were executed separately and passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS; 223 inputs, 74 tasks, 0 drifted."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS. The script requires --task and --manifest; --non-skipped was applied to the three regression tasks whose manifests changed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0. Evidence fence intact. No DEC-197 assigned."
+      },
+      {
+        "command": "npx --yes markdownlint-cli2@0.18.1 README.md",
+        "exit_code": 0,
+        "summary": "markdownlint-cli2 v0.18.1: 0 errors. 49 README links resolve to existing paths. No American spellings from the checked list, no local paths, no personal data, no secrets, no copied progress counts. C8 label matches ADD Governed Agent Kernel. Normative sources declared to prevail. Fence remains E1=0, E2=0, Verified 0, NO-GO."
+      },
+      {
+        "command": "npx --yes @mermaid-js/mermaid-cli@11.12.0 --input architecture.mmd --output architecture.svg --puppeteerConfigFile .github/mermaid-puppeteer.json --quiet",
+        "exit_code": 0,
+        "summary": "Rendered SVG 28756 bytes with the repository Puppeteer configuration."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Initial clean-shell teardown: ALREADY_REMOVED, residual empty."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS from a clean shell. fuseki_max_heap_bytes=1073741824. control-plane SVID spiffe://ocor.test/ocor/control-plane created, exit 0. Fuseki archive cache MISS, source https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, verified_sha512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132. Lock image id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. Services READY with fail-closed unauthenticated checks. bootstrap.env was not sourced; only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN were exported for the campaign."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "214 passed in 4.84s; 0 failed; 0 skipped. Modules 6, 198 and 10. Test blobs identical to base 6487902cef8438ec02ecc75892542c762d2c878b."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest --collect-only -q ocor-runtime/tests/",
+        "exit_code": 0,
+        "summary": "3043 tests collected, equal to the executed campaign count."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 3a30104866efb0220d645fad13728be5160706b4 --output-dir .ocor/verification/REM0030/full",
+        "exit_code": 0,
+        "summary": "PASS at HEAD 3a30104866efb0220d645fad13728be5160706b4. JUnit tests 3043, failures 0, errors 0, skipped 0. Includes test_ocor_dev_0048 (196) and test_ocor_dev_0049 (390). Duration 3790.44s, above the 3600s non-blocking notification and under the 4500s cap. po_decision_required is that notification only. No OOM. Clean shell; exported names OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only, plus OCOR_VERIFIER_WORKTREE from env.sh. No implementer tools."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Final clean-shell teardown REMOVED; residual containers, volumes and networks empty. No ocor containers or volumes left."
+      }
+    ],
+    "created_at": "2026-10-24T22:40:03Z",
+    "findings": [],
+    "head_sha": "3a30104866efb0220d645fad13728be5160706b4",
+    "not_executed": [],
+    "request_id": "OCOR-DEV-REM-0030-3a30104866ef-0",
+    "sealed_at": "2026-10-24T22:42:09.843676+00:00",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_sha256": "c1d966f96519982cef16059233a9583aebb1989cb9a8437a12966be7c12e6e5a",
+    "verifier": {
+      "independence_limits": "Processo e contesto separati dal change set. Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore dichiarato nella richiesta e nell'evidenza: Codex, fornitore OpenAI. La sezione ruoli del loop indica anche claude (Anthropic) fra gli implementatori dal GO precedente; il fornitore del verifier non coincide con OpenAI né con Anthropic. Campagna avviata da shell pulita (env -i, senza source di bootstrap.env). Variabili esportate per lo stack, soli nomi: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN; OCOR_VERIFIER_WORKTREE arriva da env.sh. Nessuno strumento dell'implementatore. environment.json sha256 56297776ae12e9137aaa6cf79264faa7c023e7cadc839e52af63195b99265e83. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 31742992 KiB, kernel 7.0.0-38-generic.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
   },
   "inputs": {
     "AGENTS.md": "bc053084cb8e18d456911ab65b5bc67e8ab0ff0bd662ff9e308ec4f07137eef4",
@@ -1320,8 +1466,19 @@
         "scope": "REM-0030 e riqualifiche di sola regressione"
       }
     ],
+    "integration_agent": {
+      "agent": "Codex",
+      "provider": "OpenAI",
+      "scope": "Sigillo e integrazione; nessuna modifica runtime/test/harness"
+    },
+    "verifier_effective": {
+      "independence_limits": "Processo e contesto separati dal change set. Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore dichiarato nella richiesta e nell'evidenza: Codex, fornitore OpenAI. La sezione ruoli del loop indica anche claude (Anthropic) fra gli implementatori dal GO precedente; il fornitore del verifier non coincide con OpenAI né con Anthropic. Campagna avviata da shell pulita (env -i, senza source di bootstrap.env). Variabili esportate per lo stack, soli nomi: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN; OCOR_VERIFIER_WORKTREE arriva da env.sh. Nessuno strumento dell'implementatore. environment.json sha256 56297776ae12e9137aaa6cf79264faa7c023e7cadc839e52af63195b99265e83. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 31742992 KiB, kernel 7.0.0-38-generic.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
     "verifier_started_by_implementer": false,
-    "verifier_status": "PENDING_EXTERNAL_LOOP"
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback": "Nuovo revert della sola modifica documentale/allowlist; applicabilita inversa verificata. Nessuna migrazione dati. Non autorizza una rinomina inversa del repository.",
   "schema_version": "1.0",
@@ -1417,6 +1574,6 @@
     "reports/tests": "389a299fdb94329060f6e6a0ee979d99840b7a0b",
     "scripts": "742a631a554d3ea8863895daf62b5add394e2aa1"
   },
-  "status": "CANDIDATE",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-REM-0030"
 }

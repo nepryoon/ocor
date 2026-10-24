@@ -2,7 +2,7 @@
   "artifacts": [
     {
       "path": "OCOR-DEV-0050.requalified-rem0030.json",
-      "sha256": "74fda1904a1e9f36ef8abfde927326fd88db6a9c69e474755addf33a4548d7d9",
+      "sha256": "5a3806a7b62bd89c2bf319d0f5523113d97dd4342fb9be46e251b91ffbb44714",
       "task_id": "OCOR-DEV-0050"
     },
     {
@@ -463,7 +463,7 @@
     },
     {
       "case_id": "OCOR-DEV-0051-COMPARTMENT-PARTITIONS-PHYSICAL-AND-LOGICAL",
-      "command": "every attribute of the ADD \u00a72.6 isolation tuple changes the partition; separate content addresses, PostgreSQL tables and Qdrant collections per partition; identical text/vectors never cross partitions; out-of-partition reads indistinguishable from absent; ciphertext moved across partitions does not open",
+      "command": "every attribute of the ADD §2.6 isolation tuple changes the partition; separate content addresses, PostgreSQL tables and Qdrant collections per partition; identical text/vectors never cross partitions; out-of-partition reads indistinguishable from absent; ciphertext moved across partitions does not open",
       "evidence_path": "OCOR-DEV-0051.requalified.json",
       "raw_output_path": "OCOR-DEV-0051.requalified.log",
       "requirement_id": "FR-119",
@@ -616,7 +616,7 @@
     },
     {
       "case_id": "OCOR-DEV-0055-REVOCATION-AND-EXPIRY-DETERMINISTICALLY-EXCLUDE",
-      "command": "FGM-10 on real PostgreSQL 16 (metadata, encrypted content, full-text index, representation descriptors), Qdrant 1.15.1 (native and parallel vector indexes) and OpenBao 2.6.2 transit: a revocation is version n+1 (supersedes_ref = head, same content, lifecycle_status REVOKED) committed through the real 0053 coordinator; version n stays byte-identical; the item leaves STRUCTURED, FULL_TEXT, VECTOR, HYBRID and the parallel v2 representation (descriptor invalidated) while every other hit is unchanged; expiry sweeps select by expires_at then item id, are bounded by a limit (rest deferred), are idempotent and identical on a twin world; REVOKED/EXPIRED never re-open (FSM of ADD v1.3 Part II \u00a72.10 parsed from the normative text and compared exactly); re-opening a QUARANTINED item needs a readable stop epoch that is unchanged when re-read after the content read, right before the append (an epoch changed inside read_version refuses with nothing written), while an exclusion never waits on the stop state; REVOKED, EXPIRED or SUPERSEDED committed by this coordinator while retrieval reads the item's content leaves no hit in any mode (CANDIDATE_CHANGED, audited denial, no receipt) and a read without changes returns the unchanged result",
+      "command": "FGM-10 on real PostgreSQL 16 (metadata, encrypted content, full-text index, representation descriptors), Qdrant 1.15.1 (native and parallel vector indexes) and OpenBao 2.6.2 transit: a revocation is version n+1 (supersedes_ref = head, same content, lifecycle_status REVOKED) committed through the real 0053 coordinator; version n stays byte-identical; the item leaves STRUCTURED, FULL_TEXT, VECTOR, HYBRID and the parallel v2 representation (descriptor invalidated) while every other hit is unchanged; expiry sweeps select by expires_at then item id, are bounded by a limit (rest deferred), are idempotent and identical on a twin world; REVOKED/EXPIRED never re-open (FSM of ADD v1.3 Part II §2.10 parsed from the normative text and compared exactly); re-opening a QUARANTINED item needs a readable stop epoch that is unchanged when re-read after the content read, right before the append (an epoch changed inside read_version refuses with nothing written), while an exclusion never waits on the stop state; REVOKED, EXPIRED or SUPERSEDED committed by this coordinator while retrieval reads the item's content leaves no hit in any mode (CANDIDATE_CHANGED, audited denial, no receipt) and a read without changes returns the unchanged result",
       "evidence_path": "OCOR-DEV-0055.json",
       "raw_output_path": "OCOR-DEV-0055.log",
       "requirement_id": "FR-118",
