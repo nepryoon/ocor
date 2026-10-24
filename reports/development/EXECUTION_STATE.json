@@ -1,18 +1,79 @@
 {
   "active_iteration": {
-    "baseline_commit": "5ea0713db2844e67de488e916466d6058adaeaf9",
-    "branch": "governed/state-sync-0059-candidate-20261024",
+    "baseline_commit": "655c9ed8f4608958922835c7530c4b73bb45b6b1",
+    "branch": "governed/state-sync-0059-repair1-20261024",
     "campaign_background_processes_remaining": false,
     "candidate_branch": "task/OCOR-DEV-0059-memory-operations",
-    "candidate_code_commit": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
-    "candidate_head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
+    "candidate_code_commit": "5abf97104498d54844a70035056f47a017dd82f7",
+    "candidate_head_sha": "28173a069bee1bb1cf62f552a89e2ff344526a06",
     "candidate_pull_request": null,
     "candidate_worktree": ".ocor/worktrees/ocor-dev-0059",
     "change_set": "CC-OCOR-DELIVERY-COMPLETION__OCOR_DEV_0059",
     "decision_id": "DEC-210",
-    "next_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0059-e226fc7d127c-0 (TASK_EVIDENCE, repair_cycle 0) sull HEAD esatto e226fc7d127c3b660e2ea7c82864525577ecaf2d del branch task/OCOR-DEV-0059-memory-operations. Implementatori: Codex (OpenAI) e Claude Code (Anthropic); verifier ammessi Cursor/Grok (xAI) o Antigravity/Gemini (Google), esclusi OpenAI e Anthropic. Con GO_FOR_EVIDENCE_SEAL: sigillo (identita verifier e verdetto nel record), PR del task, 13 check obbligatori verdi per nome sull HEAD esatto, merge --match-head-commit e state sync; poi REM-0030 e la coda gia decisa (QUEUE-TO-G6-ORDER). Con NO_GO: ciclo di riparazione 1 di 2 sul branch del task, senza riscrivere la storia. G6 resta subordinato alle remediation obbligatorie aperte. Nessun nuovo DEC o promozione E1/E2/Verified.",
+    "duration_notification": {
+      "blocks": [],
+      "branch": "governed/decision-request-0059-full-duration-20261024",
+      "commit": "20a75bcfc315fbe6f1730999e046456191db7059",
+      "maximum_seconds": 4500,
+      "observations": [
+        {
+          "duration_seconds": 4238.05,
+          "occurrence": "verifier-cycle0-full",
+          "source_head": "e226fc7d127c3b660e2ea7c82864525577ecaf2d"
+        },
+        {
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3043
+          },
+          "duration_seconds": 4076.349030048994,
+          "occurrence": "repair1-full-local",
+          "raw_sha256": "dca512129824c5befbd3d415983a5905f502b232e2c33c40e661d6c37e47fdda",
+          "source_head": "5abf97104498d54844a70035056f47a017dd82f7"
+        }
+      ],
+      "path": "reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
+      "publication": "PUSHED_BRANCH_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+      "sha256": "103507cee72e4242feb1382a16779b1e7a59335e55157528fee6d268e2aa456a",
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "task_id": "OCOR-DEV-0059",
+      "threshold_seconds": 3600,
+      "url": "https://github.com/nepryoon/ocor-detailed-design/blob/20a75bcfc315fbe6f1730999e046456191db7059/reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md"
+    },
+    "next_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0059-28173a069bee-1 (TASK_EVIDENCE, repair_cycle 1) sull HEAD esatto 28173a069bee1bb1cf62f552a89e2ff344526a06 del branch task/OCOR-DEV-0059-memory-operations. Implementatori: Codex (OpenAI) e Claude Code (Anthropic); verifier ammessi Cursor/Grok (xAI) o Antigravity/Gemini (Google), esclusi OpenAI e Anthropic. Con GO_FOR_EVIDENCE_SEAL: sigillo (identita verifier e verdetto nel record), PR del task, 13 check obbligatori verdi per nome sull HEAD esatto, merge --match-head-commit e state sync; poi REM-0030 e la coda gia decisa (QUEUE-TO-G6-ORDER). Con NO_GO: ciclo di riparazione 2 di 2 sul branch del task, senza riscrivere la storia. G6 resta subordinato alle remediation obbligatorie aperte. Nessun nuovo DEC o promozione E1/E2/Verified.",
     "phase": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
-    "repair_cycle": 0,
+    "previous_verdict": {
+      "findings": [
+        {
+          "blocking": true,
+          "evidence": "MemoryRestoreGate.serve (operations.py:865-881) ricalcola la proiezione prima e dopo il callback, poi restituisce la risposta e registra memoryRestore.served. Il costruttore (operations.py:727) non riceve uno StopEpochPort. Prova unitaria sullo unit world di 0055: open del manifest firmato, incremento di lc_stop.epoch da 0 a 1, serve(lambda: 'opened-after-stop') restituisce quella stringa e l'ultimo audit e memoryRestore.served. La revoca a meta materializzazione e invece chiusa: test_live_drift_after_reopening e passato nel rerun live (182 passed, 0 skipped). ADD v1.3 Part II 2.12 include le kill-switch races e il ricalcolo dello stop epoch; il controllo avversario OCOR-DEV-0052-INDEPENDENT-REVIEW punto 3 richiede lo stop epoch a meta del ciclo di materializzazione. Il residuo dichiarato verso FGM-17 copre la finestra dopo un controllo gia eseguito, non l'assenza del controllo sul gate di restore.",
+          "id": "VF-001",
+          "path": "ocor-runtime/src/ocor_runtime/memory/operations.py:865",
+          "required_fix": "MemoryRestoreGate deve ricevere lo StopEpochPort attendibile legato al contesto del ripristino. Leggere l'epoch prima di open/reconcile e di nuovo prima e dopo il callback di materializzazione. Epoch assente, invalido o diverso: diniego auditato, boundary chiuso, nessuna risposta restituita.",
+          "severity": "high"
+        },
+        {
+          "blocking": false,
+          "evidence": "_heads (operations.py:315-346) rilegge solo gli item gia selezionati e rifiuta CANDIDATE_CHANGED se uno di quelli cambia. Non riesegue versions_in. Prova: versions_in restituisce lo snapshot e, prima del return, ammette un nuovo item nella stessa partizione. monitor completa con reported_items=1, head del nuovo item=1, audit COMPLETED. La lunga storia (40 versioni, 40 digest) e il volume (41 item, index=123) non divergono. Il writer qualificato rinventaria sotto il lock advisory PostgreSQL: il caso live a due writer e passato (un solo COMMITTED). Il buco resta su monitor, check_quota e capture, che non prendono quel lock.",
+          "id": "VF-002",
+          "path": "ocor-runtime/src/ocor_runtime/memory/operations.py:339",
+          "required_fix": "Dopo la mappa degli head, rileggere l'insieme dei committed head della partizione e rifiutare CANDIDATE_CHANGED se e comparso o scomparso un item, senza restituire un usage COMPLETED o un manifest firmato da uno snapshot parziale.",
+          "severity": "medium"
+        }
+      ],
+      "head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
+      "request_id": "OCOR-DEV-0059-e226fc7d127c-0",
+      "sha256": "4831d3e4ce2eeff5fe5b188f6f391863492664804ef5decb3d91c8cad2e301ba",
+      "verdict": "NO_GO",
+      "verifier": {
+        "independence_limits": "Processo e contesto separati. Verifier: Cursor, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Codex (OpenAI) e Claude Code (Anthropic). Fornitori diversi; il merito e stato valutato.",
+        "model": "grok-4.7-high",
+        "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+      }
+    },
+    "repair_cycle": 1,
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
       "implementers": [
@@ -20,7 +81,7 @@
           "agent": "Codex",
           "model": "NOT_EXPOSED_BY_RUNTIME",
           "provider": "OpenAI",
-          "scope": "RED 8e996eb; checkpoint quote/pressione/monitoraggio 5b88f09/274f078 con RED inventario; RED 6ba786d del quota writer e bozza non committata del writer, interrotta dallo stop di quota (22:51Z)"
+          "scope": "Repair1 Codex/OpenAI, RED 888c8e6/14619ce, GREEN 5abf971, tests live e qualifica fresca; storico: RED 8e996eb; checkpoint quote/pressione/monitoraggio 5b88f09/274f078 con RED inventario; RED 6ba786d del quota writer e bozza non committata del writer, interrotta dallo stop di quota (22:51Z)"
         },
         {
           "agent": "Claude Code",
@@ -29,6 +90,10 @@
           "scope": "riserva: validazione e commit della bozza writer (1d72a5b); backup manifest firmato e restore governato con RED 5d6e33a e GREEN 7ba617d; rafforzamento ea0193b dopo la prima sonda di mutazione; qualifica, evidenza candidata e richiesta di verifica"
         }
       ],
+      "repair1_implementer": {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      },
       "verifier": "external loop only: Cursor/Grok (xAI) or Antigravity/Gemini (Google); not launched or simulated by implementer",
       "verifier_excluded_providers": [
         "Anthropic",
@@ -37,14 +102,14 @@
     },
     "source_reference": {
       "candidate_branch": "task/OCOR-DEV-0059-memory-operations",
-      "candidate_code_commit": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
-      "candidate_head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
+      "candidate_code_commit": "5abf97104498d54844a70035056f47a017dd82f7",
+      "candidate_head_sha": "28173a069bee1bb1cf62f552a89e2ff344526a06",
       "candidate_worktree": ".ocor/worktrees/ocor-dev-0059",
       "evidence": {
         "raw": "reports/evidence/G5/OCOR-DEV-0059.log",
-        "raw_sha256": "91318218c0514a616aadd565774161743ebfd694253deeef39c573421554b13a",
+        "raw_sha256": "c267c5244b6daff2774c0f6dd2f55198d85267598157005d75c257eaa43b6d41",
         "record": "reports/evidence/G5/OCOR-DEV-0059.json",
-        "record_sha256": "e933ed87b49a9df236f45163cc8787953df6bdbe24f13a79bd6f8c4126ceddfc",
+        "record_sha256": "eb5b07e8a29f00ce74cd899f4df19c0ff0d2da953a5e586cba0b8b72128d107c",
         "result": "PASS",
         "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION"
       },
@@ -66,25 +131,25 @@
         "backlog_validation_command_project": {
           "failed": 0,
           "not_executed": 0,
-          "passed": 182,
+          "passed": 223,
           "skipped": 0
         },
         "full_suite": {
-          "candidate_head": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+          "candidate_head": "5abf97104498d54844a70035056f47a017dd82f7",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3002
+            "tests": 3043
           },
-          "duration_seconds": 3511.6913309999945,
+          "duration_seconds": 4076.349030048994,
           "exact_junit_union": "PASS",
           "status": "PASS"
         },
         "mutation_probe": {
           "equivalent": [],
-          "killed": 18,
-          "mutants": 18
+          "killed": 21,
+          "mutants": 21
         },
         "reports_portfolio": {
           "failed": 0,
@@ -96,14 +161,14 @@
           "last": {
             "failed": 0,
             "not_executed": 0,
-            "passed": 182,
+            "passed": 223,
             "skipped": 0
           },
           "runs": 3
         }
       },
-      "repair_cycle": 0,
-      "session_directory": "/home/luca/.ocor-codex/ocor-dev-0059-claude/q",
+      "repair_cycle": 1,
+      "session_directory": "/home/luca/.ocor-codex/ocor-dev-0059/repair1",
       "session_teardown": {
         "operation": "teardown",
         "residual": {
@@ -117,7 +182,7 @@
       "task_id": "OCOR-DEV-0059"
     },
     "task_id": "OCOR-DEV-0059",
-    "worktree": ".ocor/worktrees/state-sync-0059-candidate-20261024"
+    "worktree": ".ocor/worktrees/state-sync-0059-repair1-20261024"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1845,7 +1910,7 @@
       }
     }
   },
-  "baseline_commit": "5ea0713db2844e67de488e916466d6058adaeaf9",
+  "baseline_commit": "655c9ed8f4608958922835c7530c4b73bb45b6b1",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5413,6 +5478,29 @@
           "status": "OPEN_PO_DECISION_REQUIRED",
           "threshold_seconds": 3600,
           "verdict_sha256": "6f503b6ab183d32c3a203c6117b059687e8b5f6e7c4e4ff722d2b971611f44a6"
+        },
+        {
+          "blocks": [],
+          "duration_seconds": 4238.05,
+          "effect": "Historical full PASS within75min; advisory only, task NO_GO for VF001/VF002, no counts transferred",
+          "maximum_seconds": 4500,
+          "occurrence": "verifier-cycle0-full",
+          "occurrence_task_id": "OCOR-DEV-0059",
+          "source_head": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
+          "status": "OPEN_PO_DECISION_REQUIRED",
+          "threshold_seconds": 3600,
+          "verdict_sha256": "4831d3e4ce2eeff5fe5b188f6f391863492664804ef5decb3d91c8cad2e301ba"
+        },
+        {
+          "blocks": [],
+          "duration_seconds": 4076.349030048994,
+          "maximum_seconds": 4500,
+          "occurrence": "candidate-full-local",
+          "occurrence_task_id": "OCOR-DEV-0059",
+          "raw_sha256": "dca512129824c5befbd3d415983a5905f502b232e2c33c40e661d6c37e47fdda",
+          "source_head": "5abf97104498d54844a70035056f47a017dd82f7",
+          "status": "OPEN_PO_DECISION_REQUIRED",
+          "threshold_seconds": 3600
         }
       ],
       "blocks": [],
@@ -5423,40 +5511,35 @@
       "id": "REM-0033-LOCAL-FULL-DURATION",
       "latest_notification": {
         "blocks": [],
-        "branch": "governed/decision-request-0058-full-duration-20261023",
-        "commit": "792089d8a5da1b99ff721adb80a39006b969b67f",
-        "id": "REM-0033-LOCAL-FULL-DURATION",
+        "branch": "governed/decision-request-0059-full-duration-20261024",
+        "commit": "20a75bcfc315fbe6f1730999e046456191db7059",
+        "maximum_seconds": 4500,
         "observations": [
           {
-            "counts": {
-              "errors": 0,
-              "failures": 0,
-              "skipped": 0,
-              "tests": 2820
-            },
-            "duration_seconds": 4108.628861846999,
-            "occurrence": "repair2-full-local",
-            "raw_sha256": "9085d4bc0062384cd55cff5a28ab577aeb8a9271421d4649bb4835572037b70f",
-            "source_head": "bca0773ef989f65036cb593d446f139fb59c76dd"
+            "duration_seconds": 4238.05,
+            "occurrence": "verifier-cycle0-full",
+            "source_head": "e226fc7d127c3b660e2ea7c82864525577ecaf2d"
           },
           {
             "counts": {
               "errors": 0,
               "failures": 0,
               "skipped": 0,
-              "tests": 2820
+              "tests": 3043
             },
-            "duration_seconds": 4403.665522780997,
-            "occurrence": "verifier-repair2-full",
-            "raw_sha256": "fffa6d350d5272d5b6261f0b1f51bd78b86b45eb4a770bd2f016d305e6f1639f",
-            "source_head": "b0fbb184f51f15ef777c5ead16aba3f362d28db8"
+            "duration_seconds": 4076.349030048994,
+            "occurrence": "repair1-full-local",
+            "raw_sha256": "dca512129824c5befbd3d415983a5905f502b232e2c33c40e661d6c37e47fdda",
+            "source_head": "5abf97104498d54844a70035056f47a017dd82f7"
           }
         ],
         "path": "reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
-        "sha256": "f03898c0fc9c6cb653cccad4f31c713217cd80d0ab45f54c6a6d81e2c299703d",
+        "publication": "PUSHED_BRANCH_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+        "sha256": "103507cee72e4242feb1382a16779b1e7a59335e55157528fee6d268e2aa456a",
         "status": "OPEN_PO_DECISION_REQUIRED",
-        "url": "https://github.com/nepryoon/ocor-detailed-design/blob/792089d8a5da1b99ff721adb80a39006b969b67f/reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
-        "verdict_sha256": "6f503b6ab183d32c3a203c6117b059687e8b5f6e7c4e4ff722d2b971611f44a6"
+        "task_id": "OCOR-DEV-0059",
+        "threshold_seconds": 3600,
+        "url": "https://github.com/nepryoon/ocor-detailed-design/blob/20a75bcfc315fbe6f1730999e046456191db7059/reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md"
       },
       "path": "reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
       "status": "OPEN_PO_DECISION_REQUIRED"
@@ -6231,8 +6314,8 @@
     "OCOR-DEV-0084"
   ],
   "current_candidate_ci": {
-    "head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
-    "repair_cycle": 0,
+    "head_sha": "28173a069bee1bb1cf62f552a89e2ff344526a06",
+    "repair_cycle": 1,
     "status": "NOT_EXECUTED_PENDING_INDEPENDENT_VERIFICATION",
     "task_id": "OCOR-DEV-0059"
   },
@@ -6724,7 +6807,7 @@
       "candidate_ci": "NOT_EXECUTED_PENDING_INDEPENDENT_VERIFICATION",
       "independent_verification": "REQUESTED_AWAITING_VERDICT"
     },
-    "scope": "OCOR-DEV-0059 candidate ea0193b182cc064fffa5cc109283b1aefc3f40ed"
+    "scope": "OCOR-DEV-0059 candidate 5abf97104498d54844a70035056f47a017dd82f7"
   },
   "loop_roles": {
     "OCOR-DEV-0049": {
@@ -7028,7 +7111,7 @@
           "agent": "Codex",
           "model": "NOT_EXPOSED_BY_RUNTIME",
           "provider": "OpenAI",
-          "scope": "RED 8e996eb; checkpoint quote/pressione/monitoraggio 5b88f09/274f078 con RED inventario; RED 6ba786d del quota writer e bozza non committata del writer, interrotta dallo stop di quota (22:51Z)"
+          "scope": "Repair1 Codex/OpenAI, RED 888c8e6/14619ce, GREEN 5abf971, tests live e qualifica fresca; storico: RED 8e996eb; checkpoint quote/pressione/monitoraggio 5b88f09/274f078 con RED inventario; RED 6ba786d del quota writer e bozza non committata del writer, interrotta dallo stop di quota (22:51Z)"
         },
         {
           "agent": "Claude Code",
@@ -7037,6 +7120,10 @@
           "scope": "riserva: validazione e commit della bozza writer (1d72a5b); backup manifest firmato e restore governato con RED 5d6e33a e GREEN 7ba617d; rafforzamento ea0193b dopo la prima sonda di mutazione; qualifica, evidenza candidata e richiesta di verifica"
         }
       ],
+      "repair1_implementer": {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      },
       "verifier": "external loop only: Cursor/Grok (xAI) or Antigravity/Gemini (Google); not launched or simulated by implementer",
       "verifier_excluded_providers": [
         "Anthropic",
@@ -7624,7 +7711,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "OCOR_DEV_0059_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
-  "next_executable_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0059-e226fc7d127c-0 (TASK_EVIDENCE, repair_cycle 0) sull HEAD esatto e226fc7d127c3b660e2ea7c82864525577ecaf2d del branch task/OCOR-DEV-0059-memory-operations. Implementatori: Codex (OpenAI) e Claude Code (Anthropic); verifier ammessi Cursor/Grok (xAI) o Antigravity/Gemini (Google), esclusi OpenAI e Anthropic. Con GO_FOR_EVIDENCE_SEAL: sigillo (identita verifier e verdetto nel record), PR del task, 13 check obbligatori verdi per nome sull HEAD esatto, merge --match-head-commit e state sync; poi REM-0030 e la coda gia decisa (QUEUE-TO-G6-ORDER). Con NO_GO: ciclo di riparazione 1 di 2 sul branch del task, senza riscrivere la storia. G6 resta subordinato alle remediation obbligatorie aperte. Nessun nuovo DEC o promozione E1/E2/Verified.",
+  "next_executable_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0059-28173a069bee-1 (TASK_EVIDENCE, repair_cycle 1) sull HEAD esatto 28173a069bee1bb1cf62f552a89e2ff344526a06 del branch task/OCOR-DEV-0059-memory-operations. Implementatori: Codex (OpenAI) e Claude Code (Anthropic); verifier ammessi Cursor/Grok (xAI) o Antigravity/Gemini (Google), esclusi OpenAI e Anthropic. Con GO_FOR_EVIDENCE_SEAL: sigillo (identita verifier e verdetto nel record), PR del task, 13 check obbligatori verdi per nome sull HEAD esatto, merge --match-head-commit e state sync; poi REM-0030 e la coda gia decisa (QUEUE-TO-G6-ORDER). Con NO_GO: ciclo di riparazione 2 di 2 sul branch del task, senza riscrivere la storia. G6 resta subordinato alle remediation obbligatorie aperte. Nessun nuovo DEC o promozione E1/E2/Verified.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -7666,9 +7753,9 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "candidate_head_sha": "274f078c363d94beed1493bccbfee849d072595b",
-    "phase": "IMPLEMENTATION_WIP_CHECKPOINT_NOT_QUALIFIED",
-    "recorded_on_main_at": "5ea0713db2844e67de488e916466d6058adaeaf9",
+    "candidate_head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
+    "phase": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+    "recorded_on_main_at": "655c9ed8f4608958922835c7530c4b73bb45b6b1",
     "task_id": "OCOR-DEV-0059"
   },
   "previous_candidate_ci": {
@@ -7886,10 +7973,10 @@
       "OCOR-DEV-0063"
     ],
     "completed_count": 73,
-    "main_head": "5ea0713db2844e67de488e916466d6058adaeaf9",
+    "main_head": "655c9ed8f4608958922835c7530c4b73bb45b6b1",
     "mandatory_remediations_still_block_G6": true,
-    "observed_at": "2026-10-24T00:25:05.216230+00:00",
-    "ordered_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0059-e226fc7d127c-0 (TASK_EVIDENCE, repair_cycle 0) sull HEAD esatto e226fc7d127c3b660e2ea7c82864525577ecaf2d del branch task/OCOR-DEV-0059-memory-operations. Implementatori: Codex (OpenAI) e Claude Code (Anthropic); verifier ammessi Cursor/Grok (xAI) o Antigravity/Gemini (Google), esclusi OpenAI e Anthropic. Con GO_FOR_EVIDENCE_SEAL: sigillo (identita verifier e verdetto nel record), PR del task, 13 check obbligatori verdi per nome sull HEAD esatto, merge --match-head-commit e state sync; poi REM-0030 e la coda gia decisa (QUEUE-TO-G6-ORDER). Con NO_GO: ciclo di riparazione 1 di 2 sul branch del task, senza riscrivere la storia. G6 resta subordinato alle remediation obbligatorie aperte. Nessun nuovo DEC o promozione E1/E2/Verified.",
+    "observed_at": "2026-10-24T03:55:39.134987+00:00",
+    "ordered_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e verifica OCOR-DEV-0059-28173a069bee-1 (TASK_EVIDENCE, repair_cycle 1) sull HEAD esatto 28173a069bee1bb1cf62f552a89e2ff344526a06 del branch task/OCOR-DEV-0059-memory-operations. Implementatori: Codex (OpenAI) e Claude Code (Anthropic); verifier ammessi Cursor/Grok (xAI) o Antigravity/Gemini (Google), esclusi OpenAI e Anthropic. Con GO_FOR_EVIDENCE_SEAL: sigillo (identita verifier e verdetto nel record), PR del task, 13 check obbligatori verdi per nome sull HEAD esatto, merge --match-head-commit e state sync; poi REM-0030 e la coda gia decisa (QUEUE-TO-G6-ORDER). Con NO_GO: ciclo di riparazione 2 di 2 sul branch del task, senza riscrivere la storia. G6 resta subordinato alle remediation obbligatorie aperte. Nessun nuovo DEC o promozione E1/E2/Verified.",
     "ready": [
       "OCOR-DEV-0059",
       "OCOR-DEV-0060",
@@ -23459,10 +23546,10 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-24T00:25:05.216230+00:00",
+  "updated_at": "2026-10-24T03:55:39.134987+00:00",
   "verification_queue": {
-    "active_head_sha": "e226fc7d127c3b660e2ea7c82864525577ecaf2d",
-    "active_request_id": "OCOR-DEV-0059-e226fc7d127c-0",
+    "active_head_sha": "28173a069bee1bb1cf62f552a89e2ff344526a06",
+    "active_request_id": "OCOR-DEV-0059-28173a069bee-1",
     "pending_request": null,
     "status": "REQUESTED_AWAITING_VERDICT",
     "suspended": [],
