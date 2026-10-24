@@ -319,6 +319,16 @@
       "path": "OCOR-DEV-0058.log",
       "sha256": "000290056806f79ca5109da47542047c84dc04c3558d0b9f39258225383341e2",
       "task_id": "OCOR-DEV-0058-RAW"
+    },
+    {
+      "path": "OCOR-DEV-0059.json",
+      "sha256": "bd172b3af9d42eb15557f768650497c48bea93088bcf5af11abbcf06deadc10e",
+      "task_id": "OCOR-DEV-0059"
+    },
+    {
+      "path": "OCOR-DEV-0059.log",
+      "sha256": "c267c5244b6daff2774c0f6dd2f55198d85267598157005d75c257eaa43b6d41",
+      "task_id": "OCOR-DEV-0059-RAW"
     }
   ],
   "created_at": "2026-10-08T18:33:05Z",
@@ -899,6 +909,60 @@
       "requirement_id": "BR-003",
       "status": "PASS",
       "task_id": "OCOR-DEV-0058"
+    },
+    {
+      "case_id": "OCOR-DEV-0059-QUOTA-ENFORCED-ON-REAL-ADMISSION-WITHOUT-DOWNGRADE",
+      "command": "The seven configured PoC limits are positive configuration values; quota checks count committed heads once and keep tombstoned/partially deleted items counted; real admission plus store commit on PostgreSQL 16, Qdrant and OpenBao derive demand from the actual payload and candidate, refuse the over-limit item, payload, embedding dimensions and index entries with an audited denial and no ledger entry, version or index entry, accept the exact boundary with every representation (no semantic downgrade), accept exact replay and same-item correction at capacity, and serialize two concurrent writers on a shared PostgreSQL advisory lock (exactly one committed, one ITEM_QUOTA_EXCEEDED); a lock timeout or a missing audit, policy, serialization or stop authority never reaches admission",
+      "evidence_path": "OCOR-DEV-0059.json",
+      "raw_output_path": "OCOR-DEV-0059.log",
+      "requirement_id": "NFR-033",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0059"
+    },
+    {
+      "case_id": "OCOR-DEV-0059-PRESSURE-AND-RETENTION-PRESERVE-HOLDS-AND-TOMBSTONES",
+      "command": "Quota pressure and retention select deterministically by due time and item id, never select or evict a legal hold (also when placed during the policy check), forget only through the 0055 deletion saga, keep durable tombstones, refuse unknown retention policies and an unavailable audit before any deletion, on the real memory stack and tombstone journal",
+      "evidence_path": "OCOR-DEV-0059.json",
+      "raw_output_path": "OCOR-DEV-0059.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0059"
+    },
+    {
+      "case_id": "OCOR-DEV-0059-BOUNDED-NON-INTERFERING-MONITORING-AND-FAIL-CLOSED-CONTROLS",
+      "command": "Monitoring, quota and pressure read only the authorised full isolation partition: unverified bindings and partitions outside the verified GCS never reach policy or inventory, an unauthorised partition cannot change counts, quota decisions, pressure or metric labels (fixed label set), policy/audit/stop/inventory failures and malformed envelopes fail closed with an audited denial and never return zero usage or success",
+      "evidence_path": "OCOR-DEV-0059.json",
+      "raw_output_path": "OCOR-DEV-0059.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0059"
+    },
+    {
+      "case_id": "OCOR-DEV-0059-BACKUP-MANIFEST-COMPLETE-SIGNED-AND-PARTITION-BOUND",
+      "command": "The backup manifest of the authorised partition is canonical, digest-only and signed (OpenBao transit in the live cases) and records memory metadata, content refs, representation versions, lifecycle and deletion epochs, the deletion journal checkpoint and per-version audit refs bound to the recovery point; binding, policy, checkpoint outage or race, signer failure, invalid recovery point, foreign partition and audit failure produce no manifest",
+      "evidence_path": "OCOR-DEV-0059.json",
+      "raw_output_path": "OCOR-DEV-0059.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0059"
+    },
+    {
+      "case_id": "OCOR-DEV-0059-RESTORE-REPLAYS-TOMBSTONES-AND-BLOCKS-STALE-EPOCH-OR-DRIFT",
+      "command": "On the real 0056 backup drill (PostgreSQL snapshot copy, Qdrant snapshot recovery, OpenBao attestation) restored memory stays closed until the manifest is authenticated, bound to the recovery point and not newer than the deletion authority, every tombstone is replayed through the 0056 gate and the restored projection equals the manifest; a deletion after the backup is never resurrected, a held item stays held, an unauthenticated or foreign manifest purges nothing, a stale deletion epoch is refused before any purge, projection drift (older restored version, extra item, drift during materialisation) and a missing journal keep or close the boundary",
+      "evidence_path": "OCOR-DEV-0059.json",
+      "raw_output_path": "OCOR-DEV-0059.log",
+      "requirement_id": "FR-118",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0059"
+    },
+    {
+      "case_id": "OCOR-DEV-0059-REPAIR1-RESTORE-STOP-AND-INVENTORY-MEMBERSHIP",
+      "command": "VF-001/VF-002: trusted verified GCS and live stop epoch on restore open/reconcile and around materialisation; unavailable, invalid or changed epoch closes the gate and audits denial; stable nonzero epoch permits unchanged results. Inventory rechecks the complete committed-head map, detects new/missing/reclassified heads and version changes, while PENDING and historical rows do not create phantom usage. Unit controls and live PostgreSQL/Qdrant/OpenBao positive/negative restore and partition races; authority fixtures remain explicit test ports.",
+      "evidence_path": "OCOR-DEV-0059.json",
+      "raw_output_path": "OCOR-DEV-0059.log",
+      "requirement_id": "FR-119",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0059"
     }
   ],
   "schema_version": "1.0"
