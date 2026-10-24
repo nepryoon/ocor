@@ -41,7 +41,7 @@ completion status. The authoritative decomposition is in ADD §2 and LLD §2.
 | C5 — Event Backbone | Carries ingestion, commit and execution events with durable delivery, deduplication and replay. |
 | C6 — Action Engine & Saga Coordinator | Governs action workflows, approvals, execution, compensation and reconciliation. |
 | C7 — Causal Runtime & Scenario Orchestrator | Runs pinned causal models and isolated scenarios, with explicit abstention when evidence is insufficient. |
-| C8 — Agent Kernel & Governed Tool Runtime | Bounds agent activity through governed queries, typed tools, delegation and leases. |
+| C8 — Governed Agent Kernel | Bounds agent activity through governed queries, typed tools, delegation and leases. |
 
 C1 supplies release artefacts to the runtime. C5 brings admitted inputs to C3 and
 propagates committed events to C4. C2 reads the projections; C8 uses C2 and governed
