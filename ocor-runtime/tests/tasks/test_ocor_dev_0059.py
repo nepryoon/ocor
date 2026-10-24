@@ -1166,12 +1166,12 @@ def test_unit_restore_stop_epoch_race_closes_without_a_response(phase: str, tmp_
     backup = capture(backup_service(s, signer=signer), w, p)
     restore, participant, audit = unit_restore(w, tmp_path, signer)
     if phase == "during-reconcile":
-        original = participant.apply
-        def apply(*args: Any, **kwargs: Any) -> Any:
+        original = participant.purge
+        def purge(*args: Any, **kwargs: Any) -> Any:
             result = original(*args, **kwargs)
             w.lc_stop.epoch += 1
             return result
-        participant.apply = apply
+        participant.purge = purge
     if phase == "during-open-verify":
         original_verify = signer.verify
         def verify(*args: Any) -> Any:
