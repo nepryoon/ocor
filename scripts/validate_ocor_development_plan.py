@@ -272,6 +272,18 @@ def main() -> int:
     changed = subprocess.run(["git", "diff", "--name-only", args.base_ref, "--"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
+        # PO REPOSITORY-RENAME-AND-README (2026-10-14): exact REM-0030 outputs.
+        "README.md",
+        "reports/assurance/OCOR-DEV-REM-0030-RCCAD/OCOR-DEV-REM-0030.json",
+        "reports/assurance/OCOR-DEV-REM-0030-RCCAD/OCOR-DEV-REM-0030.log",
+        "reports/assurance/OCOR-DEV-REM-0030-RCCAD/scope-and-links.json",
+        "reports/assurance/OCOR-DEV-REM-0030-RCCAD/rename-evidence.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0030.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0030.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0030.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0030.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0030.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0030.log",
         # REM-0029: exact teardown acceptance and fresh requalification outputs.
         'reports/tests/test_reset_teardown_residue.py',
         'reports/tests/qualify_rem0029_teardown.py',

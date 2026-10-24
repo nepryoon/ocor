@@ -1,0 +1,644 @@
+{
+  "change_set": "OCOR-DEV-REM-0030",
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "case_sha256": [
+        "a4626b0983964147693cf91648a7f11f4c39dab18f54e9d5f20455db41a54309",
+        "9add1109bdf20336bd5e5f7b3162f7552047a9c75e257afebe8940150af42fab",
+        "882a5ba5fb5a2e8a285cf4c3824a9ef31730a3b1f87e639ffdf010b0538a9a4d",
+        "a5076d623e19d9463287b2c88744528613e1e7dc80f56dbc99774ebdefd1d4c1",
+        "e11ac679b733c99f7df6e16a151f42ef9a213869cc06a2bfbf9184cd5112ad46",
+        "5d49a4efdbe35a86cd613939c7a26310c978038103001d0573b7c2a99321506c"
+      ],
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/ocor-runtime/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0005.py",
+        "--junitxml=/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/.ocor/rem0030/task-0005.xml"
+      ],
+      "duration_seconds": 0.4644675020008435,
+      "exit_code": 0,
+      "junit_sha256": "158fed92028a39984f942fb1f5747bcb79a516f1f156e71a74dd1b57e1f8f7d0",
+      "label": "task-0005",
+      "raw_sha256": "c0d52b8706cdc757b3dfa45fde39008dc0db7566ca80213ddb65216c0de21600",
+      "result": {
+        "errors": 0,
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 6,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/ocor-runtime/.venv/bin/python",
+        "scripts/run_qualifying_campaign.py",
+        "--execute",
+        "--repository",
+        ".",
+        "--expected-head",
+        "aa8f36c9be5de1290b160355a02b632f6fa66008",
+        "--output-dir",
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/.ocor/rem0030/full"
+      ],
+      "duration_seconds": 3808.442821588,
+      "exit_code": 0,
+      "head_sha": "aa8f36c9be5de1290b160355a02b632f6fa66008",
+      "label": "full",
+      "raw_sha256": "3d270ac8a21669c2e168bdad69464df55f9cc1c2d369b92486e60b531b958109",
+      "result": {
+        "errors": 0,
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3043,
+        "skipped": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "commit": "aa8f36c9be5de1290b160355a02b632f6fa66008",
+  "commit_role": "Fonte congelata realmente eseguita; la pubblicazione aggiunge soltanto evidenza, manifest e metadati di validazione del piano. Nessun codice, test, harness, workflow o lock cambia dopo la qualifica.",
+  "created_at": "2026-10-24T20:39:51.738885+00:00",
+  "environment": {
+    "PYTHONHASHSEED": "0",
+    "TZ": "UTC",
+    "agent_cli": "codex-cli 0.164.0",
+    "bootstrap_procedure": "scripts/bootstrap_ci_environment.py --execute --timeout 600",
+    "bootstrap_result": {
+      "fuseki_archive": {
+        "cache": "HIT",
+        "cache_key": "fuseki-sha512-ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132",
+        "source": "https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz",
+        "verified_sha512": "ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132"
+      },
+      "fuseki_built_image_id": "sha256:700e26900ba36fed716551bcbea95fa70afcd7870a869d750afd333897def806",
+      "fuseki_lock_image_id": "6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+      "fuseki_max_heap_bytes": 1073741824,
+      "provisioning_seconds": 42.185,
+      "services": {
+        "services": [
+          {
+            "detail": {
+              "info_status": 200,
+              "ok_status": 200,
+              "unauthenticated_access": "FAIL_CLOSED"
+            },
+            "service": "terminusdb",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "lock": {
+                "image": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+                "license": "MPL-2.0",
+                "source": "https://hub.docker.com/r/typedb/typedb",
+                "version": "3.12.3"
+              },
+              "protocol": {
+                "distribution": "TypeDB CE",
+                "grpc_tcp": "READY",
+                "health_status": 204,
+                "unauthenticated_database_access": "FAIL_CLOSED",
+                "version": "3.12.3"
+              },
+              "result": "PASS",
+              "runtime": {
+                "configured_image": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+                "health": "healthy",
+                "ports": {
+                  "1729/tcp": "1729",
+                  "8000/tcp": "8000"
+                }
+              },
+              "schema_version": "1.0",
+              "service": "typedb"
+            },
+            "service": "typedb",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "absent_dataset_check": "FAIL_CLOSED",
+              "absent_dataset_status": 404,
+              "malformed_request_status": 200,
+              "ping_status": 200
+            },
+            "service": "fuseki",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "errors": [],
+              "services": {
+                "keycloak": {
+                  "health": "healthy",
+                  "host_ips": [
+                    "127.0.0.1"
+                  ],
+                  "image": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+                  "paused": false,
+                  "running": true
+                },
+                "opa": {
+                  "health": "healthy",
+                  "host_ips": [
+                    "127.0.0.1"
+                  ],
+                  "image": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+                  "paused": false,
+                  "running": true
+                }
+              },
+              "status": "PASS"
+            },
+            "service": "opa-keycloak",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "api": {
+                "auth": {
+                  "authorized_system_api": "PASS",
+                  "invalid_token": "FAIL_CLOSED"
+                },
+                "health": {
+                  "initialized": true,
+                  "seal_state": "UNSEALED",
+                  "standby": false,
+                  "version": "2.6.2"
+                }
+              },
+              "lock": {
+                "image": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+                "license": "MPL-2.0",
+                "source": "https://quay.io/repository/openbao/openbao",
+                "version": "2.6.2"
+              },
+              "result": "PASS",
+              "runtime": {
+                "configured_image": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+                "health": "healthy",
+                "host_binding": "127.0.0.1:8200",
+                "no_new_privileges": true
+              },
+              "schema_version": "1.0",
+              "service": "openbao"
+            },
+            "service": "openbao",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "fault": {},
+              "identity": {},
+              "invalid_token": {},
+              "recovery": {},
+              "result": "PASS",
+              "runtime": {
+                "spire-agent": {
+                  "host_ports": 0,
+                  "image": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+                  "running": true
+                },
+                "spire-server": {
+                  "host_ports": 0,
+                  "image": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+                  "running": true
+                }
+              },
+              "schema_version": "1.0",
+              "service": "spiffe-spire",
+              "trust_domain": "ocor.test",
+              "versions": {
+                "spire-agent": "1.15.3",
+                "spire-server": "1.15.3"
+              }
+            },
+            "service": "spiffe-spire",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "pg_isready": "/var/run/postgresql:5432 - accepting connections",
+              "unauthenticated_access": "FAIL_CLOSED",
+              "wrong_password_exit_code": 2
+            },
+            "service": "postgresql",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "absent_topic_check": "FAIL_CLOSED",
+              "describe_absent_topic_exit_code": 1,
+              "list_topics_exit_code": 0
+            },
+            "service": "kafka",
+            "status": "READY"
+          },
+          {
+            "detail": {
+              "absent_collection_check": "FAIL_CLOSED",
+              "absent_collection_status": 404,
+              "root_status": 200,
+              "version": "1.15.1"
+            },
+            "service": "qdrant",
+            "status": "READY"
+          }
+        ],
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "branch": "governed/ocor-dev-rem-0030-repository-readme",
+    "duration_comparison": "HOST-MIGRATION (2026-10-24): do not compare with previous host durations",
+    "host_profile": {
+      "cpu": "Intel Core Ultra 9 275HX",
+      "kernel": "7.0.0-38-generic",
+      "model": "Lenovo Legion Pro 5 16IAX10H",
+      "ram_bytes": 32504823808,
+      "threads": 24
+    },
+    "java": "eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0",
+    "python": "Python 3.12.11",
+    "qualification_tools": {
+      "helm": {
+        "path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-0059-28173a069bee-1-env-recheck/wt/.ocor/tools/bin/helm",
+        "sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "version": "3.14.4"
+      },
+      "kind": {
+        "path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-0059-28173a069bee-1-env-recheck/wt/.ocor/tools/bin/kind",
+        "sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "version": "0.29.0"
+      },
+      "kubectl": {
+        "path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-0059-28173a069bee-1-env-recheck/wt/.ocor/tools/bin/kubectl",
+        "sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "version": "1.33.1"
+      }
+    },
+    "shell": "env -i; bash --noprofile --norc; bootstrap.env never sourced; only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN passed to test children",
+    "task_0049_resolved_tools": {
+      "helm": {
+        "path": "/home/luca/projects/ocor-detailed-design/.ocor/tools/bin/helm",
+        "sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "version": "3.14.4"
+      },
+      "kind": {
+        "path": "/home/luca/projects/ocor-detailed-design/.ocor/tools/bin/kind",
+        "sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "version": "0.29.0"
+      },
+      "kubectl": {
+        "path": "/home/luca/projects/ocor-detailed-design/.ocor/tools/bin/kubectl",
+        "sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "version": "1.33.1"
+      }
+    },
+    "toolchain": {
+      "docker": {
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/docker",
+        "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13"
+      },
+      "git": {
+        "path": "/home/luca/.ocor-codex/rem0019-escalation-20261020/isolated-git/usr/lib/git-core/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a"
+      },
+      "github-cli": {
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/gh",
+        "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85"
+      },
+      "node": {
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/node",
+        "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd"
+      },
+      "python": {
+        "path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/ocor-runtime/.venv/bin/python",
+        "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07"
+      },
+      "ruff": {
+        "path": "/home/luca/.local/share/uv/tools/ruff/bin/ruff",
+        "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb"
+      },
+      "typescript": {
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/tsc",
+        "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd"
+      },
+      "uv": {
+        "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/uv",
+        "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46"
+      }
+    }
+  },
+  "execution_tree_sha256": "bfefc29560ae6586c042ab5720cf4896e6d9abc9e1d4f138b322b533d0d0df4a",
+  "full_regression": {
+    "candidate_head": "aa8f36c9be5de1290b160355a02b632f6fa66008",
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 3043
+    },
+    "duration_seconds": 3807.9490645689984,
+    "po_decision_required": true,
+    "required_modules": [
+      "test_ocor_dev_0048",
+      "test_ocor_dev_0049"
+    ],
+    "status": "PASS"
+  },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "4548cf7870fd40d9d3a2c41f96c4527f59027b25",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "execution_subtrees": {
+        ".github": "ec61878a8b3536355bf72071440f55b2987d27ce",
+        "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+        "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+        "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+        "ocor-runtime": "07169a81619f44dbe4588c67a227ebfe9ff9eb70",
+        "reports/tests": "389a299fdb94329060f6e6a0ee979d99840b7a0b",
+        "scripts": "742a631a554d3ea8863895daf62b5add394e2aa1"
+      },
+      "main_head": "a6d3a114104a506352e1088be03934c8879cb614",
+      "qualified_head": "3a30104866efb0220d645fad13728be5160706b4",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "24ac350f96344367ea087223883a8d16bda10cd6359444e2a6034b21d7980a13",
+    "commands": [
+      {
+        "command": "sha256 of PATH tools versus infra/toolchain.lock.json and infra/qualification_tools.lock.json; sha256sum environment.json",
+        "exit_code": 0,
+        "summary": "Host tools, Python 3.12.11, helm, kind and kubectl match the lock digests. environment.json sha256 56297776ae12e9137aaa6cf79264faa7c023e7cadc839e52af63195b99265e83. Host Intel(R) Core(TM) Ultra 9 275HX, 24 threads, MemTotal 31742992 KiB, kernel 7.0.0-38-generic."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "PASS; docker READY; ports free; no secret names present."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "All normative inputs OK. Diff base..HEAD does not touch inputs/."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 84 source files."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: no tracked file uses a monitored extension outside its authorized area."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 6487902cef8438ec02ecc75892542c762d2c878b --head HEAD",
+        "exit_code": 0,
+        "summary": "PASS: 16 changed paths; immutable surfaces untouched; task ledger stable. AGENTS.md changes only the authorized repository clause. The plan validator diff adds only the REM-0030 allowlist. Manifests only prepend new regression entries; every previous entry is unchanged. Sealed requalification blobs for 0005, 0050 and 0082 are unchanged and their recorded supersession digests match."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref 6487902cef8438ec02ecc75892542c762d2c878b",
+        "exit_code": 0,
+        "summary": "PASS 37, NOT_EXECUTED 2 (historical optional plan markdownlint and Mermaid). The run rewrote the report header to the supplied base and the report hash; those two tracked files were restored to HEAD before the campaign. Committed artifact hashes matched the files before that rewrite. README markdownlint-cli2@0.18.1 and Mermaid CLI@11.12.0 were executed separately and passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS; 223 inputs, 74 tasks, 0 drifted."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS. The script requires --task and --manifest; --non-skipped was applied to the three regression tasks whose manifests changed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0082 --non-skipped --manifest reports/evidence/G2/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0050 --non-skipped --manifest reports/evidence/G5/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0. Evidence fence intact. No DEC-197 assigned."
+      },
+      {
+        "command": "npx --yes markdownlint-cli2@0.18.1 README.md",
+        "exit_code": 0,
+        "summary": "markdownlint-cli2 v0.18.1: 0 errors. 49 README links resolve to existing paths. No American spellings from the checked list, no local paths, no personal data, no secrets, no copied progress counts. C8 label matches ADD Governed Agent Kernel. Normative sources declared to prevail. Fence remains E1=0, E2=0, Verified 0, NO-GO."
+      },
+      {
+        "command": "npx --yes @mermaid-js/mermaid-cli@11.12.0 --input architecture.mmd --output architecture.svg --puppeteerConfigFile .github/mermaid-puppeteer.json --quiet",
+        "exit_code": 0,
+        "summary": "Rendered SVG 28756 bytes with the repository Puppeteer configuration."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Initial clean-shell teardown: ALREADY_REMOVED, residual empty."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS from a clean shell. fuseki_max_heap_bytes=1073741824. control-plane SVID spiffe://ocor.test/ocor/control-plane created, exit 0. Fuseki archive cache MISS, source https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, verified_sha512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132. Lock image id 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b. Services READY with fail-closed unauthenticated checks. bootstrap.env was not sourced; only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN were exported for the campaign."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "214 passed in 4.84s; 0 failed; 0 skipped. Modules 6, 198 and 10. Test blobs identical to base 6487902cef8438ec02ecc75892542c762d2c878b."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest --collect-only -q ocor-runtime/tests/",
+        "exit_code": 0,
+        "summary": "3043 tests collected, equal to the executed campaign count."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 3a30104866efb0220d645fad13728be5160706b4 --output-dir .ocor/verification/REM0030/full",
+        "exit_code": 0,
+        "summary": "PASS at HEAD 3a30104866efb0220d645fad13728be5160706b4. JUnit tests 3043, failures 0, errors 0, skipped 0. Includes test_ocor_dev_0048 (196) and test_ocor_dev_0049 (390). Duration 3790.44s, above the 3600s non-blocking notification and under the 4500s cap. po_decision_required is that notification only. No OOM. Clean shell; exported names OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only, plus OCOR_VERIFIER_WORKTREE from env.sh. No implementer tools."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Final clean-shell teardown REMOVED; residual containers, volumes and networks empty. No ocor containers or volumes left."
+      }
+    ],
+    "created_at": "2026-10-24T22:40:03Z",
+    "findings": [],
+    "head_sha": "3a30104866efb0220d645fad13728be5160706b4",
+    "not_executed": [],
+    "request_id": "OCOR-DEV-REM-0030-3a30104866ef-0",
+    "sealed_at": "2026-10-24T22:42:09.844342+00:00",
+    "verdict": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_sha256": "c1d966f96519982cef16059233a9583aebb1989cb9a8437a12966be7c12e6e5a",
+    "verifier": {
+      "independence_limits": "Processo e contesto separati dal change set. Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore dichiarato nella richiesta e nell'evidenza: Codex, fornitore OpenAI. La sezione ruoli del loop indica anche claude (Anthropic) fra gli implementatori dal GO precedente; il fornitore del verifier non coincide con OpenAI né con Anthropic. Campagna avviata da shell pulita (env -i, senza source di bootstrap.env). Variabili esportate per lo stack, soli nomi: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN; OCOR_VERIFIER_WORKTREE arriva da env.sh. Nessuno strumento dell'implementatore. environment.json sha256 56297776ae12e9137aaa6cf79264faa7c023e7cadc839e52af63195b99265e83. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 31742992 KiB, kernel 7.0.0-38-generic.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
+    }
+  },
+  "inputs": {
+    ".github/workflows/ocor-supply-chain.yml": "aab635eafb71a3ad705329b8a44d3eba8c06da5688206bd83bb75d2bef34d30d",
+    ".github/workflows/ocor-validation-closure.yml": "a941f2f6691357a27facd51884531014177cb054037ba5d9b5eaabe2ca11289a",
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0005.py": "b544b1854cf65cf40ab9510beccbe5a195d5cb1cba590d97d0677aab422d1b35",
+    "ocor-runtime/uv.lock": "21dfa5dce0be7756356306cd22df7fd8c90ee5b30646d5ddac5b0c93aefe5608",
+    "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json": "b4ee221d3d9da03929e6bea4f8b61cf29de68c2d3c0a62930c11208a8ea58356",
+    "reports/tests/qualify_rem0029_teardown.py": "e2c3d205283166528be54e81cc5a90176fc2073e028321660369ee9f917361a0",
+    "reports/tests/test_kind_teardown_observation.py": "a7598d9c09b278acbbdddd84f6746a2d57b8bf1096bddcb35c73fae79c15ddec",
+    "reports/tests/test_rem0034_secret_registry.py": "9446c84e3b4ee0067c2d314d75682307405a8757783fb5d4fbe4f5d8e18b7557",
+    "reports/tests/test_reset_teardown_residue.py": "8a0a2e491d01acf78acdc135781cd21f47c2dfa74af2a18077557ae434ab2064",
+    "scripts/validate_ocor_development_plan.py": "625e0024a500c89edc1b4a321131bbd1789114e22396e1b34a0f9d45dee6f1c5"
+  },
+  "limitations": [
+    "Regressione su test invariati dopo estensione puntuale della allowlist; non rivaluta la conformita storica del task. Sigilli precedenti preservati."
+  ],
+  "not_executed": [
+    "INDEPENDENT_VERIFICATION_PENDING"
+  ],
+  "partition_union_proof": {
+    "case_identities_sha256": "7dbb5ae8aff7e85ad7848775f958333da6b581f6f5ba4994c01c33d26e9c795e",
+    "collection_sha256": "a57282d96a8de6ca200c4cb046a246fd1cb937874fc5f3018c969309388a0b9b",
+    "duplicated": 0,
+    "errors": 0,
+    "executed": 3043,
+    "expected": 3043,
+    "failures": 0,
+    "junit_sha256": "20d7fd238603b9b6e0c23ca9f6963bb894ca3c9e1b703463c3904aba37102c96",
+    "missing": 0,
+    "skipped": 0,
+    "source_head": "aa8f36c9be5de1290b160355a02b632f6fa66008",
+    "status": "PASS",
+    "unexpected": 0
+  },
+  "raw_output_sha256": "c0d52b8706cdc757b3dfa45fde39008dc0db7566ca80213ddb65216c0de21600",
+  "record_id": "OCOR-DEV-0005-requalified-rem0030-aa8f36c9be5d",
+  "regression_case_count": 6,
+  "regression_case_sha256": [
+    "a4626b0983964147693cf91648a7f11f4c39dab18f54e9d5f20455db41a54309",
+    "9add1109bdf20336bd5e5f7b3162f7552047a9c75e257afebe8940150af42fab",
+    "882a5ba5fb5a2e8a285cf4c3824a9ef31730a3b1f87e639ffdf010b0538a9a4d",
+    "a5076d623e19d9463287b2c88744528613e1e7dc80f56dbc99774ebdefd1d4c1",
+    "e11ac679b733c99f7df6e16a151f42ef9a213869cc06a2bfbf9184cd5112ad46",
+    "5d49a4efdbe35a86cd613939c7a26310c978038103001d0573b7c2a99321506c"
+  ],
+  "requirement_coverage_note": "REGRESSION_ONLY; nessuna nuova valutazione di conformita o promozione dei requisiti",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0005-REM0030-REGRESSION",
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/ocor-runtime/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0005.py",
+        "--junitxml=/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0030/.ocor/rem0030/task-0005.xml"
+      ],
+      "requirement_id": "BR-003",
+      "result": {
+        "errors": 0,
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 6,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0005"
+    }
+  ],
+  "result": "PASS",
+  "review_scope": "REGRESSION_ONLY",
+  "roles": {
+    "allowed_verifier_order": [
+      {
+        "agent": "Cursor CLI",
+        "model": "Grok 4.7",
+        "provider": "xAI"
+      },
+      {
+        "agent": "Antigravity CLI",
+        "model": "Gemini",
+        "provider": "Google"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic"
+      }
+    ],
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
+    "excluded_verifier_providers": [
+      "OpenAI"
+    ],
+    "implementers": [
+      {
+        "agent": "Codex",
+        "cli_version": "0.164.0",
+        "model": "NOT_EXPOSED_BY_RUNTIME",
+        "provider": "OpenAI",
+        "scope": "REM-0030 e riqualifiche di sola regressione"
+      }
+    ],
+    "integration_agent": {
+      "agent": "Codex",
+      "provider": "OpenAI",
+      "scope": "Sigillo e integrazione; nessuna modifica runtime/test/harness"
+    },
+    "verifier_effective": {
+      "independence_limits": "Processo e contesto separati dal change set. Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore dichiarato nella richiesta e nell'evidenza: Codex, fornitore OpenAI. La sezione ruoli del loop indica anche claude (Anthropic) fra gli implementatori dal GO precedente; il fornitore del verifier non coincide con OpenAI né con Anthropic. Campagna avviata da shell pulita (env -i, senza source di bootstrap.env). Variabili esportate per lo stack, soli nomi: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN; OCOR_VERIFIER_WORKTREE arriva da env.sh. Nessuno strumento dell'implementatore. environment.json sha256 56297776ae12e9137aaa6cf79264faa7c023e7cadc839e52af63195b99265e83. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 31742992 KiB, kernel 7.0.0-38-generic.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
+  },
+  "schema_version": "1.0",
+  "source_subtrees": {
+    ".github": "ec61878a8b3536355bf72071440f55b2987d27ce",
+    "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+    "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+    "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime": "07169a81619f44dbe4588c67a227ebfe9ff9eb70",
+    "reports/tests": "389a299fdb94329060f6e6a0ee979d99840b7a0b",
+    "scripts": "742a631a554d3ea8863895daf62b5add394e2aa1"
+  },
+  "status": "SEALED",
+  "superseded_record": {
+    "path": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0023.json",
+    "sha256": "6840057c2025daf8609b83dae2e7523a6b47884be271e6fcf42dd17bb6a0f37c"
+  },
+  "supersedes": "OCOR-DEV-0005-requalified-rem0023-14a508362f8c",
+  "task_id": "OCOR-DEV-0005",
+  "tests_unchanged_from_base": true
+}
