@@ -203,3 +203,11 @@ nessun task bloccato. Rimangono E1=0, E2=0, zero requisiti Verified e claim NO-G
 Full PASS sul commit `5abf97104498d54844a70035056f47a017dd82f7`: 3043 casi, zero failure, error o skip; durata esatta 4076.349030048994 s. Unione JUnit esatta PASS (3043 raccolti/eseguiti, nessun mancante/duplicato/extra).
 
 SHA256 `campaign_result.json`: `dca512129824c5befbd3d415983a5905f502b232e2c33c40e661d6c37e47fdda`. Sorgente locale: `~/.ocor-codex/ocor-dev-0059/repair1/full/campaign_result.json`; raw pubblicato con l evidenza candidata di OCOR-DEV-0059. Teardown standard PASS, zero residui posseduti; nessun OOM o restart. Il superamento dei 60 minuti resta una notifica non bloccante; tetto di 75 minuti invariato. Nessuna nuova soglia proposta, nessun conteggio trasferito da altri run.
+
+
+## Occorrenza OCOR-DEV-0059 — full del verifier, env-recheck del ciclo 1 (2026-10-24)
+
+- `verifier-repair1-env-recheck-full`: HEAD `28173a069bee1bb1cf62f552a89e2ff344526a06`, durata campagna 3930.055224034004 s, 3043 PASS e zero failure/error/skip; SHA256 campaign_result `810f92b0f8700208ec2d28c476a46e4db03b5c2b615a349ba0353d8bc782b5c1` (`~/.ocor-codex/verify-env/OCOR-DEV-0059-28173a069bee-1-env-recheck/full/campaign_result.json`).
+- Verdetto `OCOR-DEV-0059-28173a069bee-1-env-recheck`: GO_FOR_EVIDENCE_SEAL, nessun NOT_EXECUTED, VF-002 medium non bloccante aperto; SHA256 `5e67e90b1afe99d0ec334bc5db2421ff0bc1f63b41a632aa2c22b674e619d85c`. Implementatori Codex/OpenAI e Claude Code/Anthropic; verifier Cursor CLI/grok-4.7-high/xAI, processo e contesto separati.
+- Bootstrap standard `scripts/bootstrap_ci_environment.py --execute --timeout 600` dopo teardown e rimozione del file di credenziali; zero OOM/restart, teardown finale senza residui secondo il verdetto. Soglia informativa 3600 s superata, tetto 4500 s rispettato e invariato.
+- Notifica non bloccante, registrata da Claude Code (Anthropic) come implementatore di riserva durante l'integrazione. Raccomandazione e opzioni invariate; nessuna estensione dell'allowlist, nessun cambio a codice, test, gate o record sigillati. E1=0, E2=0, Verified=0 e claim NO-GO invariati.
