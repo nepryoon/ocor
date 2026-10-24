@@ -825,7 +825,7 @@ def test_restore_refuses_an_invalid_manifest_even_if_signed(tamper: str, tmp_pat
         payload = b"\xff not json"
     gate, _, participant, _ = unit_gate(tmp_path)
     audit = receipts.ReceiptAudit()
-    restore = MemoryRestoreGate(recovery_point_id=POINT, verifier=signer, gate=gate, checkpoints=Checkpoints(),
+    restore = MemoryRestoreGate(stop=w.lc_stop, binding=r.binding(r.context()), recovery_point_id=POINT, verifier=signer, gate=gate, checkpoints=Checkpoints(),
                                 journal=tmp_path / "restored.jsonl", metadata=w.metadata, ledger=w.ledger, audit=audit)
     refused(lambda: restore.open(payload, signer.sign(payload)), "BACKUP_MANIFEST_INVALID")
     assert participant.calls == [] and audit.events[-1]["outcome"] == "DENIED"
@@ -845,7 +845,7 @@ def test_restore_requires_an_exact_true_signature_verification(answer: Any, tmp_
     signer = Signer()
     backup = capture(backup_service(s, signer=signer), w, p)
     gate, _, participant, _ = unit_gate(tmp_path)
-    restore = MemoryRestoreGate(recovery_point_id=POINT, verifier=signer, gate=gate, checkpoints=Checkpoints(),
+    restore = MemoryRestoreGate(stop=w.lc_stop, binding=r.binding(r.context()), recovery_point_id=POINT, verifier=signer, gate=gate, checkpoints=Checkpoints(),
                                 journal=tmp_path / "restored.jsonl", metadata=w.metadata, ledger=w.ledger,
                                 audit=receipts.ReceiptAudit())
     signer.answer = answer
@@ -859,11 +859,11 @@ def test_restore_components_require_exact_port_types(tmp_path: Path) -> None:
     from ocor_runtime.memory.operations import MemoryRestoreGate
     w = life.unit_world()
     with pytest.raises(ValueError):
-        MemoryRestoreGate(recovery_point_id=POINT, verifier=Signer(), gate=object(), checkpoints=Checkpoints(),  # type: ignore[arg-type]
+        MemoryRestoreGate(stop=w.lc_stop, binding=r.binding(r.context()), recovery_point_id=POINT, verifier=Signer(), gate=object(), checkpoints=Checkpoints(),  # type: ignore[arg-type]
                           journal=tmp_path / "j", metadata=w.metadata, ledger=w.ledger, audit=receipts.ReceiptAudit())
     gate, *_ = unit_gate(tmp_path)
     with pytest.raises(ValueError):
-        MemoryRestoreGate(recovery_point_id="urn:ocor:recovery-point:x", verifier=Signer(), gate=gate,
+        MemoryRestoreGate(stop=w.lc_stop, binding=r.binding(r.context()), recovery_point_id="urn:ocor:recovery-point:x", verifier=Signer(), gate=gate,
                           checkpoints=Checkpoints(), journal=tmp_path / "j", metadata=w.metadata, ledger=w.ledger,
                           audit=receipts.ReceiptAudit())
 
@@ -873,7 +873,7 @@ def unit_restore(w: Any, tmp_path: Path, signer: Signer, *, checkpoints: Any = N
     from ocor_runtime.memory.operations import MemoryRestoreGate
     gate, _, participant, journal_path = unit_gate(tmp_path)
     audit = audit if audit is not None else receipts.ReceiptAudit()
-    restore = MemoryRestoreGate(recovery_point_id=POINT, verifier=signer, gate=gate,
+    restore = MemoryRestoreGate(stop=w.lc_stop, binding=r.binding(r.context()), recovery_point_id=POINT, verifier=signer, gate=gate,
                                 checkpoints=checkpoints or Checkpoints(), journal=journal_path,
                                 metadata=metadata or w.metadata, ledger=w.ledger, audit=audit)
     return restore, participant, audit
@@ -1028,7 +1028,7 @@ def live_capture(d: Any, backends: life.Backends, point: str | None = None) -> t
 def live_restore(d: Any, backends: life.Backends, signer: Any, checkpoints: Any = None, audit: Any = None) -> Any:
     from ocor_runtime.memory.operations import MemoryRestoreGate
     return MemoryRestoreGate(
-        recovery_point_id=d.recovery_point, verifier=signer, gate=d.gate(),
+        stop=d.restored.lc_stop, binding=r.binding(r.context()), recovery_point_id=d.recovery_point, verifier=signer, gate=d.gate(),
         checkpoints=checkpoints or Checkpoints(d.authority_journal), journal=d.restored_journal,
         metadata=d.restored.metadata, ledger=d.restored.ledger,
         audit=audit or receipts.PostgresReceiptAudit(backends.dsn, d.restored.metadata.schema),
@@ -1157,6 +1157,15 @@ def test_live_missing_journal_keeps_restore_closed(backends: life.Backends, tmp_
 
 
 # Repair1 (Codex/OpenAI): stop authority at restore and complete partition inventory.
+def operation_events(audit: Any) -> list[Any]:
+    if isinstance(audit, receipts.ReceiptAudit):
+        return audit.events
+    import json
+    with psycopg.connect(audit.dsn) as conn:
+        rows = conn.execute(f'SELECT body FROM "{audit.schema}".memory_audit ORDER BY seq').fetchall()
+    return [json.loads(bytes(row[0])) for row in rows]
+
+
 @pytest.mark.parametrize("phase", ["before-serve", "during-materialise", "during-reconcile", "during-open-verify"])
 def test_unit_restore_stop_epoch_race_closes_without_a_response(phase: str, tmp_path: Path) -> None:
     w = life.unit_world()
@@ -1189,8 +1198,8 @@ def test_unit_restore_stop_epoch_race_closes_without_a_response(phase: str, tmp_
                 w.lc_stop.epoch += 1
             return "must-not-escape"
         refused(lambda: restore.serve(materialise), "STOP_EPOCH_MISMATCH")
-    assert audit.events[-1]["outcome"] == "DENIED"
-    assert not any(e["action"] == "memoryRestore.served" for e in audit.events)
+    assert operation_events(audit)[-1]["outcome"] == "DENIED"
+    assert not any(e["action"] == "memoryRestore.served" for e in operation_events(audit))
     refused(lambda: restore.serve(lambda: pytest.fail("closed restore called materialisation")), "RESTORE_NOT_OPEN")
 
 
@@ -1212,7 +1221,7 @@ def test_unit_restore_stop_authority_is_mandatory(phase: str, fault: Any, detail
         w.lc_stop.epoch = fault
     refused(lambda: restore.open(backup.payload, backup.signature) if phase == "open" else restore.serve(
         lambda: pytest.fail("invalid stop state materialised")), detail)
-    assert audit.events[-1]["outcome"] == "DENIED"
+    assert operation_events(audit)[-1]["outcome"] == "DENIED"
     refused(lambda: restore.serve(lambda: "closed"), "RESTORE_NOT_OPEN")
 
 
@@ -1220,7 +1229,7 @@ def inventory_call(s: Any, w: Any, p: MemoryPartition, operation: str, signer: A
     if operation == "capture":
         return capture(backup_service(s, signer=signer), w, p)
     if operation == "quota":
-        return invoke(s, w, p, "check_quota", demand=MemoryQuotaDemand(new_items=1))
+        return invoke(s, w, p, "check_quota", demand=MemoryQuotaDemand())
     return invoke(s, w, p)
 
 
@@ -1239,8 +1248,8 @@ def inventory_race(w: Any, operation: str, audit: Any, monkeypatch: Any) -> None
     monkeypatch.setattr(w.metadata, "versions_in", versions_in)
     signer = Signer()
     refused(lambda: inventory_call(s, w, p, operation, signer), "CANDIDATE_CHANGED")
-    assert audit.events[-1]["outcome"] == "DENIED"
-    assert not any(e["outcome"] == "COMPLETED" for e in audit.events)
+    assert operation_events(audit)[-1]["outcome"] == "DENIED"
+    assert not any(e["outcome"] == "COMPLETED" for e in operation_events(audit))
     assert signer.signed == 0
     # A stable complete inventory must still work (and count the new head).
     monkeypatch.setattr(w.metadata, "versions_in", original)
@@ -1248,7 +1257,7 @@ def inventory_race(w: Any, operation: str, audit: Any, monkeypatch: Any) -> None
     if operation == "monitor":
         assert result.items == 2
     elif operation == "quota":
-        assert result.usage.items == 2 and not result.permitted
+        assert result.usage.items == 2 and result.permitted
     else:
         from ocor_runtime.kernel.canonical import parse_i_json
         assert len(parse_i_json(result.payload)["entries"]) == 2 and signer.signed == 1
@@ -1275,6 +1284,7 @@ def test_live_restore_rechecks_stop_around_materialisation(
     backup, signer, _ = live_capture(d, backends)
     audit = receipts.PostgresReceiptAudit(backends.dsn, d.restored.metadata.schema)
     restore = live_restore(d, backends, signer, audit=audit)
+    d.deliver_journal()
     restore.open(backup.payload, backup.signature)
     if phase == "before-serve":
         d.restored.lc_stop.epoch += 1
@@ -1289,10 +1299,169 @@ def test_live_restore_rechecks_stop_around_materialisation(
         return result
     if phase == "unchanged":
         assert mentions(restore.serve(materialise), "x")
-        assert audit.events[-1]["action"] == "memoryRestore.served"
+        assert operation_events(audit)[-1]["action"] == "memoryRestore.served"
     else:
         detail = {"outage": "STOP_UNAVAILABLE", "invalid": "STOP_STATE_INVALID"}.get(phase, "STOP_EPOCH_MISMATCH")
         refused(lambda: restore.serve(materialise), detail)
-        assert audit.events[-1]["outcome"] == "DENIED"
-        assert not any(e["action"] == "memoryRestore.served" for e in audit.events)
+        assert operation_events(audit)[-1]["outcome"] == "DENIED"
+        assert not any(e["action"] == "memoryRestore.served" for e in operation_events(audit))
         refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+
+
+@pytest.mark.parametrize("bad_binding", [None, object(), {"expected": "caller"}])
+def test_restore_requires_a_verified_context_at_composition(bad_binding: Any, tmp_path: Path) -> None:
+    from ocor_runtime.memory.operations import MemoryRestoreGate
+    w = life.unit_world()
+    gate, *_ = unit_gate(tmp_path)
+    with pytest.raises(ValueError, match="verified governed-context binding"):
+        MemoryRestoreGate(recovery_point_id=POINT, verifier=Signer(), gate=gate, checkpoints=Checkpoints(),
+            journal=tmp_path / "restored.jsonl", metadata=w.metadata, ledger=w.ledger, audit=receipts.ReceiptAudit(),
+            stop=w.lc_stop, binding=bad_binding)
+
+
+def test_signed_restore_manifest_must_match_the_trusted_context(tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    payload, signature = resigned(backup, signer, lambda b: b.update(governed_context_digest=r.d("foreign-context")))
+    restore, participant, audit = unit_restore(w, tmp_path, signer)
+    refused(lambda: restore.open(payload, signature), "GCS_INVALID")
+    assert participant.calls == [] and operation_events(audit)[-1]["outcome"] == "DENIED"
+
+
+@pytest.mark.parametrize("phase", ["before-callback", "after-callback", "audit"])
+def test_restore_stop_change_during_final_validation_or_audit_is_closed(phase: str, tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    restore, _, audit = unit_restore(w, tmp_path, signer)
+    restore.open(backup.payload, backup.signature)
+    original = w.metadata.versions_in
+    reads, callbacks = 0, []
+    def versions_in(partition: str) -> Any:
+        nonlocal reads
+        result = original(partition)
+        reads += 1
+        if (phase == "before-callback" and reads == 1) or (phase == "after-callback" and reads == 2):
+            w.lc_stop.epoch += 1
+        return result
+    w.metadata.versions_in = versions_in
+    original_record = audit.record
+    def record(event: Any) -> None:
+        original_record(event)
+        if phase == "audit" and event["action"] == "memoryRestore.served":
+            w.lc_stop.epoch += 1
+    audit.record = record
+    def materialise() -> str:
+        callbacks.append(1)
+        return "must-not-escape"
+    refused(lambda: restore.serve(materialise), "STOP_EPOCH_MISMATCH")
+    assert callbacks == ([] if phase == "before-callback" else [1])
+    assert operation_events(audit)[-1]["outcome"] == "DENIED"
+    refused(lambda: restore.serve(materialise), "RESTORE_NOT_OPEN")
+
+
+@pytest.mark.parametrize("change", ["removed", "new-version", "pending", "history", "unchanged"])
+def test_partition_inventory_compares_committed_head_membership(change: str) -> None:
+    from ocor_runtime.memory.stores import VersionState
+    w = life.unit_world()
+    p = seed(w)
+    if change == "history":
+        w.admit("a-old", life.TEXT + " correction", version=2)
+    s, audit, _ = setup(w)
+    original = w.metadata.versions_in
+    reads = 0
+    def versions_in(partition_digest: str) -> Any:
+        nonlocal reads
+        rows = original(partition_digest)
+        reads += 1
+        if reads == 2:
+            if change == "removed":
+                return ()
+            if change == "new-version":
+                w.admit("a-old", life.TEXT + " correction", version=2)
+                return original(partition_digest)
+            if change == "pending":
+                # A PENDING concurrent admission has no committed head yet.
+                record = w.admit("pending", life.TEXT + " staged", commit=False, vector=False)
+                staged, _, _ = w.coordinator._prepare(record, (life.TEXT + " staged").encode(), None)
+                w.metadata.stage(staged)
+                assert any(x.state is VersionState.PENDING for x in original(partition_digest))
+                return original(partition_digest)
+        return rows
+    w.metadata.versions_in = versions_in
+    if change in {"removed", "new-version"}:
+        refused(lambda: invoke(s, w, p), "CANDIDATE_CHANGED")
+        assert operation_events(audit)[-1]["outcome"] == "DENIED"
+    else:
+        assert invoke(s, w, p).items == 1
+        assert operation_events(audit)[-1]["outcome"] == "COMPLETED"
+
+
+def test_restore_reads_the_verified_context_and_preserves_nonzero_epoch(tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    w.lc_stop.epoch = 7
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    calls: list[Any] = []
+    original = w.lc_stop.current_epoch
+    def current_epoch(ctx: Any) -> int:
+        assert ctx == r.context()
+        calls.append(ctx)
+        return original(ctx)
+    w.lc_stop.current_epoch = current_epoch
+    restore, _, _ = unit_restore(w, tmp_path, signer)
+    restore.open(backup.payload, backup.signature)
+    assert restore.serve(lambda: "unchanged") == "unchanged"
+    assert len(calls) >= 6
+
+
+def test_restore_stop_denial_audit_outage_never_leaves_the_gate_open(tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    restore, _, audit = unit_restore(w, tmp_path, signer)
+    restore.open(backup.payload, backup.signature)
+    audit.fail = True
+    w.lc_stop.epoch += 1
+    refused(lambda: restore.serve(lambda: pytest.fail("stop denied callback ran")), "AUDIT_UNAVAILABLE")
+    audit.fail = False
+    refused(lambda: restore.serve(lambda: "closed"), "RESTORE_NOT_OPEN")
+
+
+def reclassified_inventory(w: Any, audit: Any, monkeypatch: Any) -> None:
+    p = seed(w)
+    s, _, _ = setup(w, audit=audit)
+    original = w.metadata.versions_in
+    reads = 0
+    def versions_in(partition: str) -> Any:
+        nonlocal reads
+        reads += 1
+        if reads == 2:
+            # Real committed head leaves this isolation partition; historical
+            # versions remain, so comparing historical item ids is insufficient.
+            w.admit("a-old", life.TEXT + " reclassified", version=2,
+                    ctx=dataclasses.replace(r.context(), compartments=("alpha", "bravo")))
+        return original(partition)
+    monkeypatch.setattr(w.metadata, "versions_in", versions_in)
+    refused(lambda: invoke(s, w, p), "CANDIDATE_CHANGED")
+    assert operation_events(audit)[-1]["outcome"] == "DENIED"
+    monkeypatch.setattr(w.metadata, "versions_in", original)
+    assert invoke(s, w, p).items == 0
+
+
+def test_unit_inventory_disappearance_by_reclassification_is_refused(monkeypatch: Any) -> None:
+    reclassified_inventory(life.unit_world(), receipts.ReceiptAudit(), monkeypatch)
+
+
+def test_live_inventory_disappearance_by_reclassification_is_refused(backends: life.Backends, monkeypatch: Any) -> None:
+    w = backends.world()
+    reclassified_inventory(w, receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema), monkeypatch)

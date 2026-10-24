@@ -343,6 +343,19 @@ class MemoryOperationsService:
                     or current is None or current.state is not VersionState.COMMITTED
                     or current.staged.stage_digest != selected.stored.staged.stage_digest):
                 raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
+        # Re-read the full membership, not just the heads already selected.
+        # A concurrent admission/reclassification may add/remove an item without
+        # changing any selected head. PENDING and historical rows are not heads.
+        observed = {
+            stored.staged.memory_item_id: (stored.staged.memory_version, stored.staged.stage_digest)
+            for stored in self._metadata.versions_in(partition.digest)
+            if stored.state is VersionState.COMMITTED
+            and self._metadata.head(stored.staged.memory_item_id) == stored.staged.memory_version
+        }
+        expected = {item_id: (head.record.item.memory_version, head.stored.staged.stage_digest)
+                    for item_id, head in heads.items()}
+        if observed != expected:
+            raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
         return tuple(heads[k] for k in sorted(heads))
 
     @staticmethod
@@ -721,14 +734,21 @@ class MemoryRestoreGate:
     any extra restored item is projection drift. ``serve`` repeats the check
     around the materialising callback, which must not dispatch external effects.
     Any failure closes the boundary until a new ``open``. The checkpoint port
-    must be the same trusted authority composed into the deletion gate.
+    must be the same trusted authority composed into the deletion gate. The
+    composition supplies a verified context and its live stop authority; the
+    signed manifest must bind that context. A stop change during opening or
+    materialisation discards the result and closes the boundary. The final
+    epoch check and delivery are not atomic (residual tracked toward FGM-17).
     """
 
     def __init__(
         self, *, recovery_point_id: str, verifier: MemoryBackupSigner, gate: DeletionRestoreGate,
         checkpoints: DeletionCheckpointAuthority, journal: Path, metadata: MemoryMetadataStore,
         ledger: MemoryVersionLedger, audit: RetrievalAuditSink,
+        stop: StopEpochPort, binding: VerifiedGovernedContextBinding,
     ) -> None:
+        if not isinstance(binding, VerifiedGovernedContextBinding):
+            raise ValueError("restore requires a verified governed-context binding")
         if not isinstance(gate, DeletionRestoreGate):
             raise ValueError("restore requires the DeletionRestoreGate")
         if not isinstance(recovery_point_id, str) or re.fullmatch(RECOVERY_POINT_PATTERN, recovery_point_id) is None:
@@ -736,7 +756,21 @@ class MemoryRestoreGate:
         self._point, self._verifier, self._gate, self._checkpoints = recovery_point_id, verifier, gate, checkpoints
         self._journal, self._metadata, self._ledger, self._audit = journal, metadata, ledger, audit
         self._lock = threading.RLock()
-        self._open: tuple[Mapping[str, object], MemoryRestoreReceipt] | None = None
+        self._stop, self._context = stop, binding.expected
+        self._open: tuple[Mapping[str, object], MemoryRestoreReceipt, int] | None = None
+
+    def _epoch(self) -> int:
+        try:
+            epoch = self._stop.current_epoch(self._context)
+        except Exception as exc:  # noqa: BLE001 -- unavailable trusted stop authority denies
+            raise _error("STOP_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+        if not _integer(epoch):
+            raise _error("STOP_STATE_INVALID", "CONTROL_PLANE_UNAVAILABLE")
+        return epoch
+
+    def _check_epoch(self, expected: int) -> None:
+        if self._epoch() != expected:
+            raise _error("STOP_EPOCH_MISMATCH", "STOP_EPOCH_MISMATCH")
 
     def _record(self, action: str, outcome: str, detail: str, manifest_digest: str | None) -> str:
         event: dict[str, object] = {
@@ -784,6 +818,7 @@ class MemoryRestoreGate:
             self._open = None
             digest = "urn:sha256:" + hashlib.sha256(payload).hexdigest() if isinstance(payload, bytes) else None
             try:
+                epoch = self._epoch()
                 try:
                     verified = self._verifier.verify(payload, signature)
                 except Exception as exc:  # noqa: BLE001 -- custodian outage is not authentication
@@ -791,6 +826,9 @@ class MemoryRestoreGate:
                 if verified is not True or digest is None:
                     raise _error("BACKUP_UNAUTHENTICATED", "AUTHENTICATION_REQUIRED")
                 body = self._decode(payload)
+                if body["governed_context_digest"] != self._context.digest():
+                    raise _error("GCS_INVALID", "GOVERNED_CONTEXT_MISMATCH")
+                self._check_epoch(epoch)
                 if body["recovery_point_id"] != self._point:
                     raise _error("RECOVERY_POINT_MISMATCH", "AUTHENTICATION_REQUIRED")
                 raw = body["journal_checkpoint"]
@@ -805,14 +843,18 @@ class MemoryRestoreGate:
                 if (current.sequence < recorded.sequence or current.deletion_epoch < recorded.deletion_epoch
                         or (current.sequence == recorded.sequence and current != recorded)):
                     raise _error("STALE_DELETION_EPOCH")
+                self._check_epoch(epoch)
                 reconciled = self._gate.reconcile()  # tombstones replayed before any comparison or reopen
                 obligations = {e.memory_item_id: e for e in DeletionJournalSnapshot.read(
                     self._journal, expected=reconciled.checkpoint).obligations}
+                self._check_epoch(epoch)
                 deleted, verified_items = self._verify(body, obligations)
+                self._check_epoch(epoch)
                 ref = self._record("memoryRestore.opened", "COMPLETED", "NONE", digest)
                 receipt = MemoryRestoreReceipt(self._point, digest, reconciled.checkpoint, reconciled.obligations,
                                                verified_items, deleted, ref)
-                self._open = (body, receipt)
+                self._check_epoch(epoch)
+                self._open = (body, receipt, epoch)
                 return receipt
             except (MemoryAdmissionError, DeletionRecoveryError) as exc:
                 self._denied("memoryRestore.open", exc, digest)
@@ -868,16 +910,22 @@ class MemoryRestoreGate:
             try:
                 if opened is None:
                     raise _error("RESTORE_NOT_OPEN", "REPRESENTATION_NOT_READY")
-                body, receipt = opened
+                body, receipt, epoch = opened
+                self._check_epoch(epoch)
                 obligations = self._obligations(receipt)
 
                 def materialise() -> T:
                     self._verify(body, obligations)
+                    self._check_epoch(epoch)
                     response = action()
+                    self._check_epoch(epoch)
                     self._verify(body, obligations)
+                    self._check_epoch(epoch)
                     return response
                 response = self._gate.serve(materialise)
+                self._check_epoch(epoch)
                 self._record("memoryRestore.served", "COMPLETED", "NONE", receipt.manifest_digest)
+                self._check_epoch(epoch)
                 return response
             except BaseException as exc:
                 self._open = None
