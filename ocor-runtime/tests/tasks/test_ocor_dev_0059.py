@@ -1154,3 +1154,145 @@ def test_live_missing_journal_keeps_restore_closed(backends: life.Backends, tmp_
     with pytest.raises(DeletionRecoveryError):
         restore.open(backup.payload, backup.signature)
     refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
+
+
+# Repair1 (Codex/OpenAI): stop authority at restore and complete partition inventory.
+@pytest.mark.parametrize("phase", ["before-serve", "during-materialise", "during-reconcile", "during-open-verify"])
+def test_unit_restore_stop_epoch_race_closes_without_a_response(phase: str, tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    restore, participant, audit = unit_restore(w, tmp_path, signer)
+    if phase == "during-reconcile":
+        original = participant.apply
+        def apply(*args: Any, **kwargs: Any) -> Any:
+            result = original(*args, **kwargs)
+            w.lc_stop.epoch += 1
+            return result
+        participant.apply = apply
+    if phase == "during-open-verify":
+        original_verify = signer.verify
+        def verify(*args: Any) -> Any:
+            w.lc_stop.epoch += 1
+            return original_verify(*args)
+        signer.verify = verify
+    if phase.startswith("during-") and phase != "during-materialise":
+        refused(lambda: restore.open(backup.payload, backup.signature), "STOP_EPOCH_MISMATCH")
+    else:
+        restore.open(backup.payload, backup.signature)
+        if phase == "before-serve":
+            w.lc_stop.epoch += 1
+        def materialise() -> str:
+            if phase == "during-materialise":
+                w.lc_stop.epoch += 1
+            return "must-not-escape"
+        refused(lambda: restore.serve(materialise), "STOP_EPOCH_MISMATCH")
+    assert audit.events[-1]["outcome"] == "DENIED"
+    assert not any(e["action"] == "memoryRestore.served" for e in audit.events)
+    refused(lambda: restore.serve(lambda: pytest.fail("closed restore called materialisation")), "RESTORE_NOT_OPEN")
+
+
+@pytest.mark.parametrize("phase", ["open", "serve"])
+@pytest.mark.parametrize("fault,detail", [(None, "STOP_STATE_INVALID"), (True, "STOP_STATE_INVALID"),
+    (-1, "STOP_STATE_INVALID"), ("0", "STOP_STATE_INVALID"), ("outage", "STOP_UNAVAILABLE")])
+def test_unit_restore_stop_authority_is_mandatory(phase: str, fault: Any, detail: str, tmp_path: Path) -> None:
+    w = life.unit_world()
+    p = seed(w)
+    s, _, _ = setup(w)
+    signer = Signer()
+    backup = capture(backup_service(s, signer=signer), w, p)
+    restore, _, audit = unit_restore(w, tmp_path, signer)
+    if phase == "serve":
+        restore.open(backup.payload, backup.signature)
+    if fault == "outage":
+        w.lc_stop.fail = True
+    else:
+        w.lc_stop.epoch = fault
+    refused(lambda: restore.open(backup.payload, backup.signature) if phase == "open" else restore.serve(
+        lambda: pytest.fail("invalid stop state materialised")), detail)
+    assert audit.events[-1]["outcome"] == "DENIED"
+    refused(lambda: restore.serve(lambda: "closed"), "RESTORE_NOT_OPEN")
+
+
+def inventory_call(s: Any, w: Any, p: MemoryPartition, operation: str, signer: Any) -> Any:
+    if operation == "capture":
+        return capture(backup_service(s, signer=signer), w, p)
+    if operation == "quota":
+        return invoke(s, w, p, "check_quota", demand=MemoryQuotaDemand(new_items=1))
+    return invoke(s, w, p)
+
+
+def inventory_race(w: Any, operation: str, audit: Any, monkeypatch: Any) -> None:
+    p = seed(w)
+    s, _, _ = setup(w, audit=audit)
+    original = w.metadata.versions_in
+    calls = 0
+    def versions_in(partition_digest: str) -> Any:
+        nonlocal calls
+        snapshot = original(partition_digest)
+        calls += 1
+        if calls == 1:
+            w.admit("racing-new-item", life.TEXT + " late committed")
+        return snapshot
+    monkeypatch.setattr(w.metadata, "versions_in", versions_in)
+    signer = Signer()
+    refused(lambda: inventory_call(s, w, p, operation, signer), "CANDIDATE_CHANGED")
+    assert audit.events[-1]["outcome"] == "DENIED"
+    assert not any(e["outcome"] == "COMPLETED" for e in audit.events)
+    assert signer.signed == 0
+    # A stable complete inventory must still work (and count the new head).
+    monkeypatch.setattr(w.metadata, "versions_in", original)
+    result = inventory_call(s, w, p, operation, signer)
+    if operation == "monitor":
+        assert result.items == 2
+    elif operation == "quota":
+        assert result.usage.items == 2 and not result.permitted
+    else:
+        from ocor_runtime.kernel.canonical import parse_i_json
+        assert len(parse_i_json(result.payload)["entries"]) == 2 and signer.signed == 1
+
+
+@pytest.mark.parametrize("operation", ["monitor", "quota", "capture"])
+def test_unit_inventory_membership_race_never_completes(operation: str, monkeypatch: Any) -> None:
+    inventory_race(life.unit_world(), operation, receipts.ReceiptAudit(), monkeypatch)
+
+
+@pytest.mark.parametrize("operation", ["monitor", "quota", "capture"])
+def test_live_inventory_membership_race_never_completes(
+    backends: life.Backends, operation: str, monkeypatch: Any,
+) -> None:
+    w = backends.world()
+    inventory_race(w, operation, receipts.PostgresReceiptAudit(backends.dsn, w.metadata.schema), monkeypatch)
+
+
+@pytest.mark.parametrize("phase", ["before-serve", "during-materialise", "outage", "invalid", "unchanged"])
+def test_live_restore_rechecks_stop_around_materialisation(
+    backends: life.Backends, tmp_path: Path, phase: str,
+) -> None:
+    d = live_drill(backends, tmp_path)
+    backup, signer, _ = live_capture(d, backends)
+    audit = receipts.PostgresReceiptAudit(backends.dsn, d.restored.metadata.schema)
+    restore = live_restore(d, backends, signer, audit=audit)
+    restore.open(backup.payload, backup.signature)
+    if phase == "before-serve":
+        d.restored.lc_stop.epoch += 1
+    elif phase == "outage":
+        d.restored.lc_stop.fail = True
+    elif phase == "invalid":
+        d.restored.lc_stop.epoch = None
+    def materialise() -> Any:
+        result = d.refs()
+        if phase == "during-materialise":
+            d.restored.lc_stop.epoch += 1
+        return result
+    if phase == "unchanged":
+        assert mentions(restore.serve(materialise), "x")
+        assert audit.events[-1]["action"] == "memoryRestore.served"
+    else:
+        detail = {"outage": "STOP_UNAVAILABLE", "invalid": "STOP_STATE_INVALID"}.get(phase, "STOP_EPOCH_MISMATCH")
+        refused(lambda: restore.serve(materialise), detail)
+        assert audit.events[-1]["outcome"] == "DENIED"
+        assert not any(e["action"] == "memoryRestore.served" for e in audit.events)
+        refused(lambda: restore.serve(d.refs), "RESTORE_NOT_OPEN")
