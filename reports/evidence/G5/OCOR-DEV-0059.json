@@ -1,0 +1,961 @@
+{
+  "backend_classification": "AST: a test requesting the backends fixture is real_backend; bases parametrized by live in {False, True} request it for both instances but only [True] uses the real stack, so they are listed as mixed_unit_and_live_parametrized_tests and never counted as real_backend_tests; each case needs at least one pure real_backend test",
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO_GO",
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "duration_seconds": 0.003,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "inputs",
+      "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.007,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "sync-lint",
+      "raw_sha256": "8f00f59825a71e93937fbc56382cd3aa752782e69740d960d2fdfdf288c4ef6c",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/verify.py --json",
+      "duration_seconds": 0.36,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "harness",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py",
+      "duration_seconds": 0.083,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "drift",
+      "raw_sha256": "17953f65f1736f3af2380e6bf82e149be51f3deb910d1c9225f9319713437d38",
+      "status": "PASS"
+    },
+    {
+      "command": "ruff check .",
+      "duration_seconds": 0.009,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m mypy",
+      "duration_seconds": 0.101,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "mypy",
+      "raw_sha256": "58041ca0a5f16e793351345586a35e4159cdce61347fdae24588b96f9800b296",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+      "duration_seconds": 0.021,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+      "duration_seconds": 0.296,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0059-memory-operations",
+      "duration_seconds": 0.03,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "scope",
+      "raw_sha256": "1f5c61cd03b540d858259695016230223b2d8d9b1d4ce3237ab008a6d38ca284",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref HEAD --authorized-extension",
+      "duration_seconds": 0.099,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "plan",
+      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 2.074,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "teardown",
+      "raw_sha256": "ad016c68db4b29d6fcb3b5ed48d61165937639f5a25ceaa6a6c05bdcc295fb3a",
+      "status": "PASS"
+    },
+    {
+      "command": "rm -f -- .ocor/bootstrap.env",
+      "duration_seconds": 0.002,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "retire-credentials",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "duration_seconds": 46.29,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "bootstrap-ci",
+      "raw_sha256": "72fee71fb3bfc6b004c3fb4a12ff0e1d0894d7751508b0774bd45a5e8318850c",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+      "duration_seconds": 0.422,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "preflight",
+      "raw_sha256": "ceed718d73b3f47b452fa7e7d016c85d93c8b28cf01c07c538f22a3aa43176af",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /usr/bin/python3 ~/.ocor-codex/ocor-dev-0059-claude/q/mutation_probe.py ~/.ocor-codex/ocor-dev-0059-claude/q/mutation-probe.json",
+      "duration_seconds": 221.724,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "mutation-probe",
+      "raw_sha256": "c96ff798190a90bbfe12ec8bf9156b20e443a312687dec45a0cdc76cf997e528",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0059-claude/q/task-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0059.py",
+      "duration_seconds": 31.024,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "task-run-1",
+      "raw_sha256": "900bff217d8f6cb1a9554bd7c95771076f2d153550ef4fa3a7a7bfc9130c66fb",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 182,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0059-claude/q/task-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0059.py",
+      "duration_seconds": 29.799,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "task-run-2",
+      "raw_sha256": "5c307915a9844f069e594df30f3dfd0b6cc0224440764ac26ab1d8a0e1f6fc2c",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 182,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0059-claude/q/task-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0059.py",
+      "duration_seconds": 29.91,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "task-run-3",
+      "raw_sha256": "2854a9453b61162250662b40fa6889adc42e128f187dde82f6e2b216353f62e0",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 182,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs --junitxml=~/.ocor-codex/ocor-dev-0059-claude/q/task-validation-command-project.xml ocor-runtime/tests/tasks/test_ocor_dev_0059.py",
+      "duration_seconds": 29.991,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "task-validation-command-project",
+      "raw_sha256": "1e962ea18032e3e5b9e12b209c5e7b600f8293806f5fa53a2b106ecd52aa4ef9",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 182,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
+      "duration_seconds": 0.616,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "sdk-ci",
+      "raw_sha256": "42665c30b1a8c4623dd00bc7b390b8b04d875dd0703364ea30d7bdb92b364667",
+      "status": "PASS"
+    },
+    {
+      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
+      "duration_seconds": 0.14,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "sdk-build",
+      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_backlog_generator_reality_parity.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_evidence_input_drift.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_rem0023_consumer_fixture_scope.py --junitxml=~/.ocor-codex/ocor-dev-0059-claude/q/reports-portfolio.xml",
+      "duration_seconds": 34.496,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "reports-portfolio",
+      "raw_sha256": "bca3e2b4ccee364678b804f44dc4245f89c9375f7a1f408dd8ca63d5a99dc06e",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 350,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "duration_seconds": 2.137,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-reset",
+      "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 0.596,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-teardown",
+      "raw_sha256": "ad016c68db4b29d6fcb3b5ed48d61165937639f5a25ceaa6a6c05bdcc295fb3a",
+      "status": "PASS"
+    },
+    {
+      "command": "rm -f -- .ocor/bootstrap.env",
+      "duration_seconds": 0.002,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-retire-credentials",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "duration_seconds": 47.57,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-bootstrap-ci",
+      "raw_sha256": "7f416bbe2640ae6b96c3a351c7920e201eca886ee92a50f0478438bb2a90372a",
+      "status": "PASS"
+    },
+    {
+      "command": "uv sync --project ocor-runtime --frozen --extra test --extra lint",
+      "duration_seconds": 0.01,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-sync-lint",
+      "raw_sha256": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python -c import mypy.version; print(mypy.version.__version__)",
+      "duration_seconds": 0.018,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-mypy-ready",
+      "raw_sha256": "ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
+      "status": "PASS"
+    },
+    {
+      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> <worktree>/ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head ea0193b182cc064fffa5cc109283b1aefc3f40ed --output-dir ~/.ocor-codex/ocor-dev-0059-claude/q/full",
+      "duration_seconds": 3512.346,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "full-suite",
+      "raw_sha256": "466aef7a44174fb56ac334e81cd2ca4d5c4150e6753478436ff35c87740a92ed",
+      "status": "PASS"
+    },
+    {
+      "command": "<worktree>/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 3.081,
+      "exit_code": 0,
+      "head_sha": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+      "label": "session-teardown",
+      "raw_sha256": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: Final documented bootstrap teardown: fail-closed, zero owned containers/volumes/networks",
+      "exit_code": 0,
+      "label": "session-teardown-result",
+      "raw_sha256": "be780b2071cf344e97248ac60d79f5a9769b84f2085cebdb4b0b4bb996fed0dc",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: toolchain and Helm, kind and kubectl executable SHA256 match infra/toolchain.lock.json and qualification_tools.lock.json",
+      "exit_code": 0,
+      "label": "qualification-tools-lock-match",
+      "raw_sha256": "978db15b9d6658b27306f9b4dce00d5f1bef12bb3c31a01aa11e769efb8300e6",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact evidence builder with explicit AST fixture classification",
+      "exit_code": 0,
+      "label": "evidence-builder-script",
+      "raw_sha256": "61fd7e750625f1d33db0d13072008b23a9c81b0cd87275d27bbecbfa9a018ebf",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: recomputes final HEAD digests, AST backend labels, raw/manifest/counts",
+      "exit_code": 0,
+      "label": "evidence-checker-script",
+      "raw_sha256": "e3f771d68edeb8b9c27192ff4349b3b16e470d5b31fc89391eead0bf9f9b3705",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact JUnit multiset check against collection at the frozen code HEAD",
+      "exit_code": 0,
+      "label": "exact-union-checker-script",
+      "raw_sha256": "0e691a50281b97b624aeae935afde05c207e8359cb6faf726eae30c6442045e5",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: bounded task/mutation/full/CI waits; unchanged limits",
+      "exit_code": 0,
+      "label": "wait-contract",
+      "raw_sha256": "09050692ba00691519966aa25a194a07e6bb989428e7645ba5c764392ea9b77d",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML captured from task-run-3 (parameterized names published as SHA256) (third of three consecutive live runs)",
+      "exit_code": 0,
+      "label": "task-junit",
+      "raw_sha256": "4e57b79d5bc9aa1c604610d1d11881eefbc8e13b0e4d85fd2581fa20ec085433",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 182,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the backlog validation command scoped to the runtime project",
+      "exit_code": 0,
+      "label": "validation-command-junit",
+      "raw_sha256": "bd65e492ccb106e612726a188105e45395b87c4ed33fa076d6a5322dd4022070",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 182,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML of the reports/tests portfolio linked in CI (after SDK npm ci/build)",
+      "exit_code": 0,
+      "label": "reports-portfolio-junit",
+      "raw_sha256": "02ff6cac6ff8dc1eb49cdfc0d1d7961f9755aaee3d4b5cc2468729602b50cbd2",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 350,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: JUnit XML (parameterized names published as SHA256) of the governed full suite (scripts/run_qualifying_campaign.py)",
+      "exit_code": 0,
+      "label": "full-suite-junit",
+      "raw_sha256": "f451e248733c33b2ceac4cde72c0a114e3bb762e9c88fa7d8dd653d545a20790",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3002,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: run_qualifying_campaign.py result (75-min limit, stack guard, required modules)",
+      "exit_code": 0,
+      "label": "full-suite-campaign-result",
+      "raw_sha256": "fe2147abceb9b52d1ee8edb06892ac385804e92b4779db36b1d343e91d7ffe5d",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3002,
+        "skipped": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: every infra/toolchain.lock.json tool matched by version and sha256 on the campaign PATH",
+      "exit_code": 0,
+      "label": "toolchain-lock-match",
+      "raw_sha256": "6d18d4a62bb1c1ce591dec4f95923a30f70473eef7dad57d4a23f21b521f2dd6",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: unsharded full JUnit exact multiset match with pytest --collect-only on the same HEAD: no missing/duplicate/extra/skipped test",
+      "exit_code": 0,
+      "label": "exact-junit-union",
+      "raw_sha256": "db70dca7ca340aa55f1af10074f5fe3f470af15c4efb7c497b0f315182ea61e6",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: repository kind v2 guard: destroy/remover proof and rejection observations",
+      "exit_code": 0,
+      "label": "full-kind-teardown",
+      "raw_sha256": "43f42ad6c3dee65805cfba35ca7209037ea2819ab983f6c20e8a63500582597b",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts after bootstrap_ci_environment.py, before the task runs",
+      "exit_code": 0,
+      "label": "stack-summary",
+      "raw_sha256": "c25f2a84eb1b4289c87c07f7411375480f98670a4bf8b01eb44834ea7b446908",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: 11 ocor-bootstrap services running, no OOM, zero restarts after the second bootstrap_ci_environment.py, before the full suite",
+      "exit_code": 0,
+      "label": "full-stack-summary",
+      "raw_sha256": "4426d9ffa05960960f752460e41b6139c30f61dd160856c4c1fe6e509926d1a3",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: containers/volumes/networks added by the task runs (must be empty)",
+      "exit_code": 0,
+      "label": "task-resource-delta",
+      "raw_sha256": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: mutants of memory/operations.py on a git-archive scratch of the frozen code commit; each must fail the task file unless declared equivalent with its reason",
+      "exit_code": 0,
+      "label": "mutation-probe-result",
+      "raw_sha256": "e034455c48ad5a65cd16ce571f56708fa6705c24a0c6ede29b9c32879a0be86d",
+      "result": {
+        "equivalent_survivors": [],
+        "failed": 0,
+        "killed": 18,
+        "mutants": 18
+      },
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact mutation harness, archived for reproduction",
+      "exit_code": 0,
+      "label": "mutation-probe-script",
+      "raw_sha256": "72f0a8e534e773ff9bcaa806a6613d4f3b728b608244ed4440fe6be0ffdf4626",
+      "status": "PASS"
+    },
+    {
+      "command": "captured artifact: exact local campaign driver: frozen extras, bootstrap_ci_environment.py, unchanged repository full harness and limits",
+      "exit_code": 0,
+      "label": "qualifying-local-driver",
+      "raw_sha256": "a0873bd433f8fc7e7e1d1b561fb9b593f6a4d1744cb8b6aa9fc4f2785147a1a8",
+      "status": "PASS"
+    }
+  ],
+  "commit": "ea0193b182cc064fffa5cc109283b1aefc3f40ed",
+  "created_at": "2026-10-24T00:24:13Z",
+  "design": [
+    "MemoryOperationsService (Codex checkpoint, unchanged semantics) authenticates the binding, matches the full isolation tuple of the requested partition to the verified GCS before any inventory, asks the live operations policy and stop epoch, inventories only committed heads of that partition and rechecks deadline, policy and stop epoch after each effect; monitoring returns bounded counts of the authorised partition only and metric labels are (operation, outcome, reason_code).",
+    "Pressure and retention select deterministically (due time, item id), never select LEGAL_HOLD items, and delete only through the existing 0055 lifecycle saga (DELETION_PENDING -> DELETED | DELETION_INCOMPLETE); tombstones are never removed and partial deletions keep the item counted.",
+    "MemoryQuotaWriter applies the configured item, payload, embedding-dimension, index-entry and retention limits to a real admission plus store commit: demand is derived from the actual payload bytes and candidate (not caller counters), the candidate must be bound to the plan GCS and owner, inventory, quota check, admission and store commit run inside the trusted partition serialization port, and missing audit/policy/serialization/stop authority never reaches admission. Exact replay and same-item correction at capacity are accepted.",
+    "MemoryBackupService captures, through the same guarded envelope, a canonical digest-only manifest of the authorised partition: per head the version, lifecycle status, deletion epoch, content ref and digest, stage digest, item digests and audit refs of every version and the representation kinds/versions/digests/epochs, plus the deletion journal checkpoint read before and after the inventory (refused if it changed), the bounded usage and the trusted recovery point identity; the bytes are signed by the backup custodian port.",
+    "MemoryRestoreGate opens restored memory only after: exact-true custodian verification, closed canonical manifest decoding, the recovery point identity, a deletion-authority checkpoint not older than the manifest (otherwise STALE_DELETION_EPOCH before any purge), DeletionRestoreGate.reconcile (tombstone replay before any comparison) and an exact comparison of the restored metadata/ledger with the manifest; items deleted after the backup must carry the replayed authoritative tombstone epoch, every other item must match head, stage, partition, version digests and item/pointer deletion epochs, and an extra restored item is projection drift. serve repeats the comparison before and after the materialising callback inside the 0056 gate; any failure closes the boundary."
+  ],
+  "environment": {
+    "acquired_at": "2026-10-24T00:24:09.308665+00:00",
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:65ca8aa52b4a9dca33f148b2982c3376d697b81a3edf54bc73f0b7a3a4b9ea96",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "backend_under_test": {
+      "audit_store": "PostgresReceiptAudit of OCOR-DEV-0057 (test adapter): append-only audit table in the per-test PostgreSQL schema for operations, backup and restore events",
+      "backup_custodian": "OpenBaoCheckpointAttestation of 0056 (test adapter): manifest bytes signed and verified with the OpenBao transit engine of the disposable 0055 harness; the unit cases use an HMAC fixture signer and are labelled unit",
+      "backup_restore": "the sealed OCOR-DEV-0056 real backup drill: REPEATABLE READ snapshot copy of every source table into a new PostgreSQL schema and Qdrant snapshot/recover of every source collection; deletion journal shipped to the restore site; DeletionRestoreGate with the AuthenticatedDeletionCheckpointAuthority, MemoryDeletionMetadataReplay and RestoredMemoryParticipant of 0056 over the restored stores",
+      "memory_stack": "real OCOR-DEV-0050 admission, 0051 store coordinator (PostgreSQL 16 metadata, OpenBao-sealed content, Qdrant vector and lexical projections), 0053 parallel representations and the 0055 lifecycle coordinator/deletion saga, reused unchanged through the 0055 World/Backends fixtures; per-test ocor_t0055_<random> schemas and Qdrant collections are dropped after each test",
+      "policy_ports": "the operations policy, hold registry and stop-epoch state are explicit test ports (Policy of this task, HoldRegistry/LifecycleGrant of 0055); they decide, they are not the system under test and they are no end-to-end security proof",
+      "quota_serialization": "PostgresSerializedQuota (test adapter of the trusted MemoryQuotaSerialization port): pg_advisory_xact_lock on sha256(schema + partition digest) of the same PostgreSQL, lock_timeout 3s, released by PostgreSQL on rollback/crash; two writers with separate audit adapters contend on it in the qualifying concurrency case"
+    },
+    "bootstrap_procedure": "scripts/bootstrap_ci_environment.py --teardown --execute, removal of the dead worktree credential file, then scripts/bootstrap_ci_environment.py --execute --timeout 600 (VERIFIER-ENV-STANDARD-BOOTSTRAP 2026-10-23): pinned pulls, Fuseki recipe build from the SHA-512 archive, bounded Fuseki heap, SPIRE control-plane SVID, init, fixtures and typed health; repeated after scripts/reset_test_environment.py --execute before the full suite",
+    "branch": "task/OCOR-DEV-0059-memory-operations",
+    "host": "nepryoon",
+    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
+    "node": "20.20.2",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
+    "ruff": "0.13.1",
+    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
+    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
+    "uv": "0.12.5",
+    "worktree": ".ocor/worktrees/ocor-dev-0059"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/operations.py": "d613bb13e3d64ebc9905289b91589bb203dddf482a1e0d7cfd253f3ea9c7ad15",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0059.py": "29706a042b682961f6fe3fbab4aad8165496d9136ab40ee6ed493ec2094a5fd6"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "normative_interpretations": [
+    "ADD v1.3 Part II 2.13 lists the backup manifest members; restore must replay tombstones before reopening retrieval and projection drift or a stale deletion epoch blocks materialisation. A deletion-authority checkpoint older than the manifest is read as a stale deletion epoch (journal rollback) and refused before any purge, the most restrictive reading.",
+    "The store snapshots themselves are the OCOR-DEV-0049/0056 recovery-point procedure; this task binds the memory manifest to that recovery point identity and verifies the restored projection against it. No RTO/RPO, EV-031 or recovery conformance is claimed.",
+    "Quota exceedance produces a refusal (quota/backpressure), never semantic downgrade (ADD v1.3 Part II 2.13): no representation is dropped to fit a limit and the boundary-value write is accepted with all representations.",
+    "Backlog requirement BR-003 is the generic task requirement; following the sealed G5 practice the cases are also bound to FR-118 (lifecycle, legal hold, deletion and restore tests of ADD v1.3 Part II section 3) and NFR-033 (quota behaviour) as component-level evidence only; the G6 binding of NFR-033 remains with OCOR-DEV-0061."
+  ],
+  "observations": [
+    {
+      "label": "diagnostic-mutation-narrow-selection",
+      "note": "DIAGNOSTIC, never counted: first probe with -k 'backup or restore or quota_writer'; two survivors only because the killing live tests were outside the selection",
+      "raw_sha256": "1c32304c5be49e24e7b9b2f9a1832f162adc7e4aead8169e6ad1ed403385561b"
+    },
+    {
+      "label": "diagnostic-mutation-whole-file",
+      "note": "DIAGNOSTIC, never counted: rerun of the same 13 mutants on the whole task file before the docstring-only edit of 7ba617d; all killed",
+      "raw_sha256": "de733c08339d66fb4add3ff050216046ceed48028a591613da7060c703bdc1d6"
+    },
+    {
+      "label": "diagnostic-qualification-attempt1-mutation",
+      "note": "DIAGNOSTIC, never counted: first qualification probe on 7ba617d with 18 mutants; writer-gcs-unbound and writer-content-digest-unchecked survived; test strengthened in ea0193b and the whole qualification rerun on the new head",
+      "raw_sha256": "ca7ce32e8d3dec69168471a90b210bc6e714689983695a15eecbed590c738476"
+    },
+    {
+      "label": "diagnostic-qualification-attempt1-diagnosis",
+      "note": "DIAGNOSTIC, never counted: diagnosis and action of the first qualification attempt",
+      "raw_sha256": "5f65dc4d53456ec6e5a1fa954a7f5d8b558456edd9daa505ac68588f744f57f7"
+    }
+  ],
+  "parameterized_case_identity_publication": {
+    "acquired_source_sha256_before_publication_redaction": {
+      "bootstrap-ci": "72fee71fb3bfc6b004c3fb4a12ff0e1d0894d7751508b0774bd45a5e8318850c",
+      "diagnostic-mutation-narrow-selection": "1c32304c5be49e24e7b9b2f9a1832f162adc7e4aead8169e6ad1ed403385561b",
+      "diagnostic-mutation-whole-file": "de733c08339d66fb4add3ff050216046ceed48028a591613da7060c703bdc1d6",
+      "diagnostic-qualification-attempt1-diagnosis": "5f65dc4d53456ec6e5a1fa954a7f5d8b558456edd9daa505ac68588f744f57f7",
+      "diagnostic-qualification-attempt1-mutation": "ca7ce32e8d3dec69168471a90b210bc6e714689983695a15eecbed590c738476",
+      "drift": "17953f65f1736f3af2380e6bf82e149be51f3deb910d1c9225f9319713437d38",
+      "evidence-builder-script": "61fd7e750625f1d33db0d13072008b23a9c81b0cd87275d27bbecbfa9a018ebf",
+      "evidence-checker-script": "e3f771d68edeb8b9c27192ff4349b3b16e470d5b31fc89391eead0bf9f9b3705",
+      "exact-junit-union": "db70dca7ca340aa55f1af10074f5fe3f470af15c4efb7c497b0f315182ea61e6",
+      "exact-union-checker-script": "0e691a50281b97b624aeae935afde05c207e8359cb6faf726eae30c6442045e5",
+      "full-bootstrap-ci": "7f416bbe2640ae6b96c3a351c7920e201eca886ee92a50f0478438bb2a90372a",
+      "full-kind-teardown": "43f42ad6c3dee65805cfba35ca7209037ea2819ab983f6c20e8a63500582597b",
+      "full-mypy-ready": "ad8650bc9057d9dfd809961b69dbad640c288d809fa44437d44d83d3b118c821",
+      "full-reset": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "full-retire-credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "full-stack-summary": "4426d9ffa05960960f752460e41b6139c30f61dd160856c4c1fe6e509926d1a3",
+      "full-suite": "466aef7a44174fb56ac334e81cd2ca4d5c4150e6753478436ff35c87740a92ed",
+      "full-suite-campaign-result": "fe2147abceb9b52d1ee8edb06892ac385804e92b4779db36b1d343e91d7ffe5d",
+      "full-suite-junit": "b4b5b4aa3536b4a8231bf5aa3ff7aeca1dbfcff5d1f6050d51772a4b5f13055b",
+      "full-sync-lint": "19cd9026a946acd3ac18753f12c5618f60f69cafffb4bc2ae00c6a17d9ae7a73",
+      "full-teardown": "ad016c68db4b29d6fcb3b5ed48d61165937639f5a25ceaa6a6c05bdcc295fb3a",
+      "harness": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
+      "inputs": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
+      "language": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
+      "mutation-probe": "c96ff798190a90bbfe12ec8bf9156b20e443a312687dec45a0cdc76cf997e528",
+      "mutation-probe-result": "e034455c48ad5a65cd16ce571f56708fa6705c24a0c6ede29b9c32879a0be86d",
+      "mutation-probe-script": "72f0a8e534e773ff9bcaa806a6613d4f3b728b608244ed4440fe6be0ffdf4626",
+      "mypy": "58041ca0a5f16e793351345586a35e4159cdce61347fdae24588b96f9800b296",
+      "plan": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
+      "preflight": "ceed718d73b3f47b452fa7e7d016c85d93c8b28cf01c07c538f22a3aa43176af",
+      "qualification-tools-lock-match": "978db15b9d6658b27306f9b4dce00d5f1bef12bb3c31a01aa11e769efb8300e6",
+      "qualifying-local-driver": "a0873bd433f8fc7e7e1d1b561fb9b593f6a4d1744cb8b6aa9fc4f2785147a1a8",
+      "rccad": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
+      "reports-portfolio": "bca3e2b4ccee364678b804f44dc4245f89c9375f7a1f408dd8ca63d5a99dc06e",
+      "reports-portfolio-junit": "1be887ce4fdeb525727c5aeee20cdcdeeafc4dbfcbe192032130f22a172e87a0",
+      "retire-credentials": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ruff": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "scope": "1f5c61cd03b540d858259695016230223b2d8d9b1d4ce3237ab008a6d38ca284",
+      "sdk-build": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
+      "sdk-ci": "42665c30b1a8c4623dd00bc7b390b8b04d875dd0703364ea30d7bdb92b364667",
+      "session-teardown": "46f9cf0720690ac47cfc0e0702ed7d9abc8826721fb08aff552d7c960446501b",
+      "session-teardown-result": "be780b2071cf344e97248ac60d79f5a9769b84f2085cebdb4b0b4bb996fed0dc",
+      "stack-summary": "c25f2a84eb1b4289c87c07f7411375480f98670a4bf8b01eb44834ea7b446908",
+      "sync-lint": "8f00f59825a71e93937fbc56382cd3aa752782e69740d960d2fdfdf288c4ef6c",
+      "task-junit": "69805d00176187bb5b58cc9051d86216ce0dda25d156e177d9a8fb34cd9e05c3",
+      "task-resource-delta": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+      "task-run-1": "900bff217d8f6cb1a9554bd7c95771076f2d153550ef4fa3a7a7bfc9130c66fb",
+      "task-run-2": "5c307915a9844f069e594df30f3dfd0b6cc0224440764ac26ab1d8a0e1f6fc2c",
+      "task-run-3": "2854a9453b61162250662b40fa6889adc42e128f187dde82f6e2b216353f62e0",
+      "task-validation-command-project": "1e962ea18032e3e5b9e12b209c5e7b600f8293806f5fa53a2b106ecd52aa4ef9",
+      "tdd-red-backup-restore": "c73a820e89448e3759239352c300c920d66ad8a939a81594a87eaf29a5042a92",
+      "tdd-red-inventory-race": "298c68457002c5c36a427778d108472f31f0ef000fd24e77621fe92ce2ad9f0d",
+      "tdd-red-module-absent": "d8518d61ff9c1ee26ad4f9f1002e96793ac24c19ab02dc38ed0b6e6884460266",
+      "tdd-red-quota-writer": "3863b9ba83d1a64314388271a350fa29ef463c7a65753c4916a60b76a0509adb",
+      "teardown": "ad016c68db4b29d6fcb3b5ed48d61165937639f5a25ceaa6a6c05bdcc295fb3a",
+      "toolchain-lock-match": "6d18d4a62bb1c1ce591dec4f95923a30f70473eef7dad57d4a23f21b521f2dd6",
+      "validation-command-junit": "89f6707a7d0767652108e3cf57840e50a4f966a70298a5e22c43c0c7811e14c6",
+      "wait-contract": "09050692ba00691519966aa25a194a07e6bb989428e7645ba5c764392ea9b77d"
+    },
+    "authority": "REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15)",
+    "method": "All parametrized JUnit testcase names retain the test function name and replace the full parameterized identity by SHA256; only publication changes, original counts and local exact JUnit union unchanged",
+    "redacted_identity_counts": {
+      "full-suite-junit": 1822,
+      "reports-portfolio-junit": 120,
+      "task-junit": 154,
+      "validation-command-junit": 154
+    }
+  },
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) sono sostituite prima dell'archiviazione e dell'hash; DSN mostrato come <local generated credential>",
+  "raw_output_redactions": {},
+  "raw_output_sha256": "91318218c0514a616aadd565774161743ebfd694253deeef39c573421554b13a",
+  "repair_cycle": 0,
+  "reproducible_check": {
+    "command": "python3 ~/.ocor-codex/ocor-dev-0059-claude/q/check_evidence.py <repo> <head>",
+    "scope": "input hashes at code commit and final HEAD, evidence-only diff, raw JSONL hashes, command/raw pairing, exact task coverage and JUnit counts, AST backend classification, full campaign, mutation results, prior G5 entries preserved, runtime validator"
+  },
+  "requirement_coverage_note": "Component-level evidence for the quota, retention-pressure, legal-hold, tombstone, backup-manifest and restore obligations of FR-118 and the quota behaviour of NFR-033, plus BR-003; FGM-18 and FGM-19 are exercised at component level only; no G6 verification, no FGM campaign closure, no E1/E2 or Verified promotion.",
+  "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0059-QUOTA-ENFORCED-ON-REAL-ADMISSION-WITHOUT-DOWNGRADE",
+      "command": "The seven configured PoC limits are positive configuration values; quota checks count committed heads once and keep tombstoned/partially deleted items counted; real admission plus store commit on PostgreSQL 16, Qdrant and OpenBao derive demand from the actual payload and candidate, refuse the over-limit item, payload, embedding dimensions and index entries with an audited denial and no ledger entry, version or index entry, accept the exact boundary with every representation (no semantic downgrade), accept exact replay and same-item correction at capacity, and serialize two concurrent writers on a shared PostgreSQL advisory lock (exactly one committed, one ITEM_QUOTA_EXCEEDED); a lock timeout or a missing audit, policy, serialization or stop authority never reaches admission",
+      "mixed_unit_and_live_parametrized_tests": [
+        "test_quota_writer_allows_exact_replay_and_correction_at_capacity",
+        "test_quota_writer_derives_demand_from_bytes_and_candidate_not_caller_counters",
+        "test_quota_writer_rejects_the_actual_third_item_without_appending_or_indexing"
+      ],
+      "real_backend_tests": [
+        "test_real_configured_quotas_do_not_delete_existing_content",
+        "test_real_serialization_lock_timeout_is_fail_closed",
+        "test_real_two_quota_writers_share_the_same_serialization_boundary"
+      ],
+      "requirement_id": "NFR-033",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 91,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_a_head_change_during_inventory_refuses_a_stale_quota_or_monitor_result",
+        "test_configuration_limits_are_positive_integers",
+        "test_configuration_retention_is_mandatory_positive_and_copied",
+        "test_each_configured_quota_has_a_positive_and_negative",
+        "test_head_versions_count_once_and_deleted_items_do_not_free_tombstones",
+        "test_invalid_demand_never_silently_coerces_or_releases_quota",
+        "test_partial_deletion_does_not_release_the_item_quota",
+        "test_quota_writer_allows_exact_replay_and_correction_at_capacity",
+        "test_quota_writer_cannot_bypass_binding_or_actual_demand",
+        "test_quota_writer_derives_demand_from_bytes_and_candidate_not_caller_counters",
+        "test_quota_writer_missing_authorities_never_invoke_admission",
+        "test_quota_writer_rejects_the_actual_third_item_without_appending_or_indexing",
+        "test_real_configured_quotas_do_not_delete_existing_content",
+        "test_real_serialization_lock_timeout_is_fail_closed",
+        "test_real_two_quota_writers_share_the_same_serialization_boundary"
+      ],
+      "unit_fixture_tests": [
+        "test_a_head_change_during_inventory_refuses_a_stale_quota_or_monitor_result",
+        "test_configuration_limits_are_positive_integers",
+        "test_configuration_retention_is_mandatory_positive_and_copied",
+        "test_each_configured_quota_has_a_positive_and_negative",
+        "test_head_versions_count_once_and_deleted_items_do_not_free_tombstones",
+        "test_invalid_demand_never_silently_coerces_or_releases_quota",
+        "test_partial_deletion_does_not_release_the_item_quota",
+        "test_quota_writer_cannot_bypass_binding_or_actual_demand",
+        "test_quota_writer_missing_authorities_never_invoke_admission"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0059-PRESSURE-AND-RETENTION-PRESERVE-HOLDS-AND-TOMBSTONES",
+      "command": "Quota pressure and retention select deterministically by due time and item id, never select or evict a legal hold (also when placed during the policy check), forget only through the 0055 deletion saga, keep durable tombstones, refuse unknown retention policies and an unavailable audit before any deletion, on the real memory stack and tombstone journal",
+      "mixed_unit_and_live_parametrized_tests": [],
+      "real_backend_tests": [
+        "test_real_audit_unavailable_refuses_pressure_before_deletion",
+        "test_real_partition_pressure_preserves_hold_and_durable_tombstones",
+        "test_real_retention_keeps_new_items_and_holds"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 7,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_legal_hold_placed_during_pressure_policy_check_is_not_evicted",
+        "test_pressure_selects_deterministically_and_never_deletes_legal_hold",
+        "test_real_audit_unavailable_refuses_pressure_before_deletion",
+        "test_real_partition_pressure_preserves_hold_and_durable_tombstones",
+        "test_real_retention_keeps_new_items_and_holds",
+        "test_retention_uses_first_creation_and_trusted_clock",
+        "test_unknown_retention_policy_is_not_permission_to_forget"
+      ],
+      "unit_fixture_tests": [
+        "test_legal_hold_placed_during_pressure_policy_check_is_not_evicted",
+        "test_pressure_selects_deterministically_and_never_deletes_legal_hold",
+        "test_retention_uses_first_creation_and_trusted_clock",
+        "test_unknown_retention_policy_is_not_permission_to_forget"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0059-BOUNDED-NON-INTERFERING-MONITORING-AND-FAIL-CLOSED-CONTROLS",
+      "command": "Monitoring, quota and pressure read only the authorised full isolation partition: unverified bindings and partitions outside the verified GCS never reach policy or inventory, an unauthorised partition cannot change counts, quota decisions, pressure or metric labels (fixed label set), policy/audit/stop/inventory failures and malformed envelopes fail closed with an audited denial and never return zero usage or success",
+      "mixed_unit_and_live_parametrized_tests": [],
+      "real_backend_tests": [
+        "test_real_unauthorized_partition_cannot_change_quota_decision"
+      ],
+      "requirement_id": "BR-003",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 36,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_audit_failure_never_returns_success",
+        "test_changed_stop_state_cannot_return_success",
+        "test_invalid_stop_epoch_is_not_an_admission",
+        "test_inventory_unavailable_is_never_zero_usage",
+        "test_partition_cannot_escape_the_verified_context",
+        "test_policy_failure_is_audited_before_inventory",
+        "test_real_unauthorized_partition_cannot_change_quota_decision",
+        "test_request_envelope_failures_are_audited",
+        "test_unauthorized_partition_does_not_influence_count_pressure_or_metric_labels",
+        "test_unverified_binding_never_reaches_policy_or_inventory"
+      ],
+      "unit_fixture_tests": [
+        "test_audit_failure_never_returns_success",
+        "test_changed_stop_state_cannot_return_success",
+        "test_invalid_stop_epoch_is_not_an_admission",
+        "test_inventory_unavailable_is_never_zero_usage",
+        "test_partition_cannot_escape_the_verified_context",
+        "test_policy_failure_is_audited_before_inventory",
+        "test_request_envelope_failures_are_audited",
+        "test_unauthorized_partition_does_not_influence_count_pressure_or_metric_labels",
+        "test_unverified_binding_never_reaches_policy_or_inventory"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0059-BACKUP-MANIFEST-COMPLETE-SIGNED-AND-PARTITION-BOUND",
+      "command": "The backup manifest of the authorised partition is canonical, digest-only and signed (OpenBao transit in the live cases) and records memory metadata, content refs, representation versions, lifecycle and deletion epochs, the deletion journal checkpoint and per-version audit refs bound to the recovery point; binding, policy, checkpoint outage or race, signer failure, invalid recovery point, foreign partition and audit failure produce no manifest",
+      "mixed_unit_and_live_parametrized_tests": [],
+      "real_backend_tests": [
+        "test_live_restore_preserves_a_legal_hold_recorded_in_the_manifest",
+        "test_live_restore_replays_tombstones_then_reopens_with_holds_and_epochs"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 14,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_backup_capture_fails_closed_without_a_manifest",
+        "test_backup_is_deterministic_for_an_unchanged_partition",
+        "test_backup_manifest_is_complete_canonical_and_signed",
+        "test_backup_never_captures_another_partition",
+        "test_live_restore_preserves_a_legal_hold_recorded_in_the_manifest",
+        "test_live_restore_replays_tombstones_then_reopens_with_holds_and_epochs"
+      ],
+      "unit_fixture_tests": [
+        "test_backup_capture_fails_closed_without_a_manifest",
+        "test_backup_is_deterministic_for_an_unchanged_partition",
+        "test_backup_manifest_is_complete_canonical_and_signed",
+        "test_backup_never_captures_another_partition"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-0059-RESTORE-REPLAYS-TOMBSTONES-AND-BLOCKS-STALE-EPOCH-OR-DRIFT",
+      "command": "On the real 0056 backup drill (PostgreSQL snapshot copy, Qdrant snapshot recovery, OpenBao attestation) restored memory stays closed until the manifest is authenticated, bound to the recovery point and not newer than the deletion authority, every tombstone is replayed through the 0056 gate and the restored projection equals the manifest; a deletion after the backup is never resurrected, a held item stays held, an unauthenticated or foreign manifest purges nothing, a stale deletion epoch is refused before any purge, projection drift (older restored version, extra item, drift during materialisation) and a missing journal keep or close the boundary",
+      "mixed_unit_and_live_parametrized_tests": [],
+      "real_backend_tests": [
+        "test_live_drift_after_reopening_discards_the_response_and_closes",
+        "test_live_manifest_of_another_recovery_point_is_refused",
+        "test_live_missing_journal_keeps_restore_closed",
+        "test_live_projection_drift_blocks_materialisation",
+        "test_live_stale_deletion_epoch_blocks_materialisation_before_any_purge",
+        "test_live_unauthenticated_backup_never_purges_or_reopens"
+      ],
+      "requirement_id": "FR-118",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 34,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "tests": [
+        "test_live_drift_after_reopening_discards_the_response_and_closes",
+        "test_live_manifest_of_another_recovery_point_is_refused",
+        "test_live_missing_journal_keeps_restore_closed",
+        "test_live_projection_drift_blocks_materialisation",
+        "test_live_stale_deletion_epoch_blocks_materialisation_before_any_purge",
+        "test_live_unauthenticated_backup_never_purges_or_reopens",
+        "test_restore_components_require_exact_port_types",
+        "test_restore_refuses_an_invalid_manifest_even_if_signed",
+        "test_restore_requires_an_exact_true_signature_verification",
+        "test_unit_failed_materialisation_closes_the_restore",
+        "test_unit_restore_comparison_branches",
+        "test_unit_restore_faults_keep_materialisation_closed",
+        "test_unit_restore_opens_and_serves_an_unchanged_copy"
+      ],
+      "unit_fixture_tests": [
+        "test_restore_components_require_exact_port_types",
+        "test_restore_refuses_an_invalid_manifest_even_if_signed",
+        "test_restore_requires_an_exact_true_signature_verification",
+        "test_unit_failed_materialisation_closes_the_restore",
+        "test_unit_restore_comparison_branches",
+        "test_unit_restore_faults_keep_materialisation_closed",
+        "test_unit_restore_opens_and_serves_an_unchanged_copy"
+      ]
+    }
+  ],
+  "residual_risks": [
+    "The operations policy, hold registry, quota serialization, audit store and backup custodian of the qualifying cases are test adapters on the real PostgreSQL and OpenBao; no production authority service exists yet (open, unassigned).",
+    "The final control check and the effects at the independent lifecycle, audit and store authorities are not one transaction; a store commit failure after admission can leave a PENDING version handled by the existing reconciliation (open, tracked toward FGM-17; not claimed closed).",
+    "The restore checkpoint port must be the same trusted deletion authority composed into the DeletionRestoreGate; the composition is a deployment obligation, not enforced by type.",
+    "Quotas count committed logical heads and native representation slots, not historical journal or object bytes; process-local serialization would not qualify cross-worker use (only the shared PostgreSQL adapter is qualified).",
+    "Manifest and audit digests are non-content references that may be correlatable; the membership-inference risk declared in 0055 remains open and unassigned."
+  ],
+  "result": "PASS",
+  "roles": {
+    "implementers": [
+      "Codex (OpenAI): RED 8e996eb, operations/quota/pressure/monitoring checkpoint 5b88f09/274f078, quota-writer RED 6ba786d and an uncommitted MemoryQuotaWriter draft, interrupted by the Codex quota stop at 2026-10-23T22:51Z.",
+      "Claude Code (Anthropic), claude-opus-5-5, reserve implementer (LOOP-AGENT-ROTATION): validated and committed the writer draft (1d72a5b), backup manifest and gated restore with RED 5d6e33a and GREEN 7ba617d, mutation probe, qualification and this candidate."
+    ],
+    "independence": "external loop only; the implementers did not run or simulate the verification; verifier must be of a provider other than OpenAI and Anthropic",
+    "verifier": "to be recorded from the external verdict"
+  },
+  "rollback_procedure_verified": "Mechanical review: the task adds memory/operations.py and tests/tasks/test_ocor_dev_0059.py plus evidence; no migration, no persisted schema of its own and no change to existing modules; rollback is a revert commit of the task merge, after which the prior G5 manifest entries remain valid unchanged.",
+  "schema_version": "1.0",
+  "sealed_dependencies": {
+    "OCOR-DEV-0049": "e67e50d7b5efa1f551497a8018618a4e7450ab65",
+    "OCOR-DEV-0052": "8865203f6a557d4dccb4d2cd60059c37b057e7fe",
+    "OCOR-DEV-0056": "2455a861d7a35a9fa897880681061c8463695c5a",
+    "OCOR-DEV-0057": "24a8ec2ac5f90774a8bca5c2e08a32cebc92be95",
+    "OCOR-DEV-0058": "bca0773ef989f65036cb593d446f139fb59c76dd"
+  },
+  "session_teardown": {
+    "operation": "teardown",
+    "residual": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "result": "REMOVED",
+    "status": "PASS"
+  },
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "task_id": "OCOR-DEV-0059",
+  "tdd": {
+    "GREEN": "274f078 quota/pressure/monitoring checkpoint (Codex); 1d72a5b MemoryQuotaWriter drafted by Codex before its quota stop and validated/committed by Claude Code; 7ba617d backup manifest and gated restore (Claude Code); ea0193b pins writer refusal details after the first qualification probe; final code commit ea0193b182cc064fffa5cc109283b1aefc3f40ed: task file three times, backlog validation command, reports portfolio, governed full suite and validators (counts from archived JUnit).",
+    "RED": "8e996eb (tests only, Codex): collection ModuleNotFoundError ocor_runtime.memory.operations (raw label tdd-red-module-absent). 5b88f09 plus the inventory/head-change test (Codex): DID NOT RAISE MemoryOperationsError (tdd-red-inventory-race). 6ba786d (tests only, Codex): ImportError MemoryQuotaWriter, 4 failures in the selected authority cases (tdd-red-quota-writer). 5d6e33a (tests only, Claude Code): ImportError MemoryBackupService/MemoryRestoreGate, 25 failures (tdd-red-backup-restore).",
+    "REFACTOR": "Quota limits are enforced by one _enforce_quota used by both the diagnostic check and the writer; the writer reuses the existing admission and store coordinator unchanged; backup reuses _heads/_usage and the guarded operation envelope; restore composes the sealed 0056 DeletionRestoreGate instead of duplicating tombstone replay.",
+    "mutation_probe": "18 targeted mutants of memory/operations.py, each removing or weakening one control, on a git-archive scratch tree of the frozen code commit (worktree never mutated); every mutant must fail the whole live task file. 18 killed; declared equivalent: []. Two earlier probes in this session are archived as diagnostics and never counted: one on a narrower -k selection left two survivors only because the killing tests were not selected; the rerun on the whole file killed all 13. The first qualification probe on 7ba617d (18 mutants) left two writer survivors (candidate GCS/owner binding, payload digest) masked by the later generic admission refusal; ea0193b pins the stable detail codes and the absence of a serialization hold, and the whole qualification was rerun.",
+    "red_raw_sha256": {
+      "backup-restore": "c73a820e89448e3759239352c300c920d66ad8a939a81594a87eaf29a5042a92",
+      "inventory-race": "298c68457002c5c36a427778d108472f31f0ef000fd24e77621fe92ce2ad9f0d",
+      "module-absent": "d8518d61ff9c1ee26ad4f9f1002e96793ac24c19ab02dc38ed0b6e6884460266",
+      "quota-writer": "3863b9ba83d1a64314388271a350fa29ef463c7a65753c4916a60b76a0509adb"
+    }
+  }
+}
