@@ -54,16 +54,38 @@ OCOR-DEV-REM-0027 (LLD v1.1 sections 1.4, 4.3 and 6; ADD v1.3 section
   verdict ``OCOR-DEV-REM-0027-f48452c64777-0``): the runtime raises
   ``ToolPreempted`` -- a ``BaseException``, so an ordinary ``except
   Exception`` in the tool cannot swallow it -- asynchronously in the
-  worker thread, which stops the tool at its next interpreter step,
-  before any effect that would follow a blocking wait.
+  worker thread. Delivery is best-effort and happens only between
+  interpreter steps (see the residual limit below);
+* every ``execution_unknown`` refusal (repair 2,
+  REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION) is recorded, before the
+  refusal is raised, as an indeterminate outcome with the C6
+  ``OutcomeReconciler`` -- lease, tool, stop epoch, dispatch and refusal
+  times, correlation -- so it is reconciled and never blindly retried
+  (ADD v1.3 section 5.5 points 5-6). The record travels with the
+  refusal (``ToolRuntimeError.reconciliation``); a reconciler that cannot
+  record it fails the call closed with ``RECONCILIATION_UNAVAILABLE``,
+  never with a receipt;
+* ``authorize_effect`` is the lease channel for an effect a tool
+  performs: it re-authorizes the lease on the bound authority, so an
+  effect attempted after an accepted stop -- even from a ``finally``
+  that runs late -- is refused with ``STOP_BOUND_DENIED``.
 
 Residual limit, declared rather than claimed closed: in-process
-preemption acts between interpreter steps. A registered tool that
-catches ``BaseException`` or performs its effect inside a single native
-call that is already running cannot be preempted here; its outcome stays
-``execution_unknown`` and goes to reconciliation (ADD v1.3 section 5.5
-points 5-6). Tools are registered by the platform, never by the model,
-whose expressions cannot catch exceptions.
+preemption is best-effort between interpreter steps. A native call that
+is already running (``time.sleep``, blocking I/O) and the ``finally``
+blocks that follow it are not interruptible: ``ToolPreempted`` is only
+delivered when the native call returns, and the ``finally`` then runs at
+that moment -- measured at 11.7 s after the stop for a 12 s native wait
+(verdict ``OCOR-DEV-REM-0027-5cb0f629d084-1``, VF-001). A tool that
+catches ``BaseException`` is likewise not stopped. What stays bounded is
+the runtime: the call is refused within the ``<=10 s`` target, no new
+tool is dispatched, no pre-stop lease is usable on the lease channel,
+and the outcome goes to reconciliation. An effect such a tool performs
+on a channel the platform does not govern is a residual, measured by
+the qualification and traced to FGM-17 and to the G6 qualification;
+it is never reported as contained. Tools are registered by the
+platform, never by the model, whose expressions cannot catch
+exceptions.
 """
 
 from __future__ import annotations
@@ -71,15 +93,17 @@ from __future__ import annotations
 import ast
 import contextvars
 import ctypes
+import json
 import threading
 import time
+import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Callable, Mapping
 
 from ..c3_store import require_aware
 from ..c4_marking import MarkingEngine, MarkingSet
-from ..c6.safety import EmergencyStopController, SafetyError
+from ..c6.safety import EmergencyStopController, OutcomeReconciler, ReconciliationRecord, SafetyError
 from ..c6_capabilities import CapabilityAuthority, CapabilityLease, StopEpochDenied
 from ..c8_agent import StrictSandbox, TokenBudget
 from ..errors import AuthorizationError, OCORError
@@ -92,13 +116,40 @@ class ToolRuntimeError(OCORError):
     mirroring the reason-code pattern already established by every
     other retained C1-C8 component this session."""
 
-    def __init__(self, reason_code: str, message: str, *, execution_unknown: bool = False) -> None:
+    def __init__(
+        self,
+        reason_code: str,
+        message: str,
+        *,
+        execution_unknown: bool = False,
+        reconciliation: UnknownToolOutcome | None = None,
+    ) -> None:
         self.reason_code = reason_code
         # True when a dispatched tool may still have produced (or may yet
         # produce) its effect: the outcome goes to reconciliation, never to
         # a blind retry.
         self.execution_unknown = execution_unknown
+        # The indeterminate outcome recorded with the C6 reconciler for an
+        # execution_unknown refusal; None when none could be recorded.
+        self.reconciliation = reconciliation
         super().__init__(f"{reason_code}: {message}")
+
+
+@dataclass(frozen=True, slots=True)
+class UnknownToolOutcome:
+    """An ``execution_unknown`` tool call as recorded with the C6
+    ``OutcomeReconciler`` (``reconciliation``, status
+    ``EXECUTION_UNKNOWN``, never idempotent-proven)."""
+
+    command_id: str
+    tool_name: str
+    lease_id: str
+    stop_epoch: int
+    reason_code: str
+    correlation_id: str
+    dispatched_at: datetime
+    refused_at: datetime
+    reconciliation: ReconciliationRecord
 
 
 class ToolCancelled(OCORError):
@@ -245,6 +296,7 @@ class ToolCallRuntime:
         marking_engine: MarkingEngine,
         stop: EmergencyStopController,
         tool_call_deadline: timedelta = DEFAULT_TOOL_CALL_DEADLINE,
+        reconciler: OutcomeReconciler | None = None,
     ) -> None:
         if not isinstance(tool_call_deadline, timedelta) or not timedelta(0) < tool_call_deadline <= CONTAINMENT_TARGET:
             raise ValueError(f"tool_call_deadline must be positive and at most {CONTAINMENT_TARGET}")
@@ -254,6 +306,35 @@ class ToolCallRuntime:
         self._marking_engine = marking_engine
         self._stop = stop
         self._deadline_seconds = tool_call_deadline.total_seconds()
+        self._reconciler = OutcomeReconciler() if reconciler is None else reconciler
+        self._unknown_outcomes: list[UnknownToolOutcome] = []
+        self._outcomes_lock = threading.Lock()
+
+    @property
+    def reconciler(self) -> OutcomeReconciler:
+        """The C6 reconciler that receives every ``execution_unknown``
+        outcome of this runtime."""
+        return self._reconciler
+
+    @property
+    def unknown_outcomes(self) -> tuple[UnknownToolOutcome, ...]:
+        with self._outcomes_lock:
+            return tuple(self._unknown_outcomes)
+
+    def authorize_effect(
+        self, lease: CapabilityLease | str, tool_name: str, *, subject: str, at: datetime
+    ) -> CapabilityLease:
+        """The lease channel for an effect of ``tool_name``: the lease is
+        re-authorized on the bound authority, so after an accepted stop the
+        effect is refused with ``STOP_BOUND_DENIED`` (and with
+        ``CAPABILITY_DENIED`` outside the lease)."""
+        instant = require_aware(at, field="at")
+        try:
+            return self._authority.authorize(lease, f"tool:{tool_name}", tool_name, at=instant, subject=subject)
+        except StopEpochDenied as error:
+            raise ToolRuntimeError("STOP_BOUND_DENIED", f"effect of tool {tool_name!r} is fenced by the emergency stop: {error}") from error
+        except AuthorizationError as error:
+            raise ToolRuntimeError("CAPABILITY_DENIED", f"effect of tool {tool_name!r} is not covered by the lease: {error}") from error
 
     def invoke(
         self,
@@ -305,7 +386,15 @@ class ToolCallRuntime:
         charge = budget.consume(estimated_tokens, category=f"tool:{tool_name}")
 
         def dispatch(name: str, call: Callable[[], Any]) -> Any:
-            return self._dispatch(name, call, lease_id=authorized.lease_id, subject=subject, at=instant, fenced_epoch=lease_epoch)
+            return self._dispatch(
+                name,
+                call,
+                lease_id=authorized.lease_id,
+                subject=subject,
+                at=instant,
+                fenced_epoch=lease_epoch,
+                correlation_id=context.correlation_id,
+            )
 
         result = self._sandbox.execute(expression, bindings, dispatch=dispatch)
 
@@ -355,7 +444,15 @@ class ToolCallRuntime:
             raise ToolRuntimeError("STOP_BOUND_DENIED", str(error)) from error
 
     def _dispatch(
-        self, name: str, call: Callable[[], Any], *, lease_id: str, subject: str, at: datetime, fenced_epoch: int
+        self,
+        name: str,
+        call: Callable[[], Any],
+        *,
+        lease_id: str,
+        subject: str,
+        at: datetime,
+        fenced_epoch: int,
+        correlation_id: str,
     ) -> Any:
         """Run one tool call of the expression: re-authorized and fenced
         immediately before dispatch, supervised until it ends, the stop is
@@ -365,34 +462,96 @@ class ToolCallRuntime:
 
         dispatched = _DispatchedCall(stop=self._stop, fenced_epoch=fenced_epoch, cancelled=threading.Event())
         worker = _ToolWorker(name, call, dispatched)
+
+        def unknown(reason_code: str, message: str) -> ToolRuntimeError:
+            return self._reconcile(
+                reason_code,
+                message,
+                tool_name=name,
+                lease_id=lease_id,
+                stop_epoch=fenced_epoch,
+                correlation_id=correlation_id,
+                dispatched_at=dispatched_at,
+            )
+
+        dispatched_at = datetime.now(UTC)
         deadline = time.monotonic() + self._deadline_seconds
         worker.start()
         while not worker.done.wait(_SUPERVISION_INTERVAL_SECONDS):
             if _stop_accepted(self._stop, fenced_epoch):
                 self._cancel(worker, dispatched)
-                raise ToolRuntimeError(
+                raise unknown(
                     "STOP_BOUND_DENIED",
                     f"emergency stop accepted while tool {name!r} was running: cancelled, or preempted if it "
                     "does not cooperate; its outcome is EXECUTION_UNKNOWN",
-                    execution_unknown=True,
                 )
             if time.monotonic() >= deadline:
                 self._cancel(worker, dispatched)
-                raise ToolRuntimeError(
+                raise unknown(
                     "TOOL_DEADLINE_EXCEEDED",
                     f"tool {name!r} exceeded its {self._deadline_seconds} s deadline: cancelled, or preempted if it "
                     "does not cooperate; its outcome is EXECUTION_UNKNOWN",
-                    execution_unknown=True,
                 )
         if _stop_accepted(self._stop, fenced_epoch):
-            raise ToolRuntimeError(
+            raise unknown(
                 "STOP_BOUND_DENIED",
                 f"emergency stop accepted while tool {name!r} was running; its outcome is EXECUTION_UNKNOWN",
-                execution_unknown=True,
             )
         if "error" in worker.outcome:
             raise worker.outcome["error"]
         return worker.outcome["result"]
+
+    def _reconcile(
+        self,
+        reason_code: str,
+        message: str,
+        *,
+        tool_name: str,
+        lease_id: str,
+        stop_epoch: int,
+        correlation_id: str,
+        dispatched_at: datetime,
+    ) -> ToolRuntimeError:
+        """Record an ``execution_unknown`` outcome with the C6 reconciler
+        and return the refusal carrying it. If the reconciler cannot record
+        it, the call fails closed with ``RECONCILIATION_UNAVAILABLE``."""
+        refused_at = datetime.now(UTC)
+        command_id = f"urn:ocor:c8:tool-call:{uuid.uuid4()}"
+        note = json.dumps(
+            {
+                "correlation_id": correlation_id,
+                "dispatched_at": dispatched_at.isoformat(),
+                "lease_id": lease_id,
+                "reason_code": reason_code,
+                "refused_at": refused_at.isoformat(),
+                "stop_epoch": stop_epoch,
+                "tool_name": tool_name,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        try:
+            record = self._reconciler.mark_ambiguous(command_id, idempotent_effect_proven=False, at=refused_at, note=note)
+        except Exception as error:
+            raise ToolRuntimeError(
+                "RECONCILIATION_UNAVAILABLE",
+                f"{message}; the C6 reconciler could not record the outcome, the call fails closed",
+                execution_unknown=True,
+            ) from error
+        outcome = UnknownToolOutcome(
+            command_id=command_id,
+            tool_name=tool_name,
+            lease_id=lease_id,
+            stop_epoch=stop_epoch,
+            reason_code=reason_code,
+            correlation_id=correlation_id,
+            dispatched_at=dispatched_at,
+            refused_at=refused_at,
+            reconciliation=record,
+        )
+        with self._outcomes_lock:
+            self._unknown_outcomes.append(outcome)
+        return ToolRuntimeError(reason_code, message, execution_unknown=True, reconciliation=outcome)
 
     @staticmethod
     def _cancel(worker: _ToolWorker, dispatched: _DispatchedCall) -> None:
