@@ -31,6 +31,7 @@ timestamp by the real registered tool callable.
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from collections.abc import Callable
@@ -899,9 +900,7 @@ def test_an_unavailable_reconciler_does_not_affect_a_call_that_completes() -> No
 # --- repair 2: native wait + finally (VF-001 of OCOR-DEV-REM-0027-5cb0f629d084-1) ---
 
 
-def test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured(
-    record_property: Callable[[str, object], None],
-) -> None:
+def test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured() -> None:
     """The tool waits inside one native call (``time.sleep``) that the
     in-process preemption cannot interrupt, then attempts its effect in its
     ``finally``, journalled there: once through the lease channel (the
@@ -949,9 +948,15 @@ def test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_r
     assert harness.effects == []
     # ungoverned residual: measured and recorded, not a containment PASS
     assert len(ungoverned) == 1
-    record_property("rem0027_ungoverned_finally_residual_seconds_after_stop", round(ungoverned[0] - stop_at, 3))
-    record_property("rem0027_ungoverned_finally_residual_classification", "RESIDUAL_MEASURED_NOT_PASS")
-    record_property("rem0027_governed_finally_denial_seconds_after_stop", round(governed[0][1] - stop_at, 3))
+    # printed for the qualification raw log (pytest -s); never an assertion
+    measure = {
+        "classification": "RESIDUAL_MEASURED_NOT_PASS",
+        "governed_finally_denial_seconds_after_stop": round(governed[0][1] - stop_at, 3),
+        "refusal_seconds_after_stop": round(returned_at - stop_at, 3),
+        "traced_to": ["FGM-17", "G6 qualification"],
+        "ungoverned_finally_residual_seconds_after_stop": round(ungoverned[0] - stop_at, 3),
+    }
+    print("OCOR-DEV-REM-0027-RESIDUAL " + json.dumps(measure, sort_keys=True))
 
 
 def test_the_lease_channel_authorizes_an_effect_without_a_stop() -> None:
