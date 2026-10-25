@@ -435,6 +435,8 @@ def main() -> int:
         "ocor-runtime/src/ocor_runtime/c3/service.py",
         "ocor-runtime/src/ocor_runtime/c3_store.py",
         "ocor-runtime/src/ocor_runtime/c4_marking.py",
+        # OCOR-DEV-REM-0027: lease bound to the emergency-stop epoch (LLD v1.1 section 1.4).
+        "ocor-runtime/src/ocor_runtime/c6_capabilities.py",
         "ocor-runtime/src/ocor_runtime/c8_agent.py",
         "ocor-runtime/tests/backend_assumptions/test_ba01_atomic_outbox.py",
         "ocor-runtime/tests/schemas/test_schema_integrity.py",
@@ -480,6 +482,7 @@ def main() -> int:
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0079.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0080.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0081.py",
@@ -690,6 +693,19 @@ def main() -> int:
         "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0024.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0024.log",
+        # OCOR-DEV-REM-0027 (INFO-C): remediation record, OCOR-DEV-0047 and 0050 requalifications.
+        "reports/assurance/OCOR-DEV-REM-0027-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json",
+        "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.log",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.log",
+        # REM-0027 repair 2: regression-only requalifications forced by this allowlist.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
