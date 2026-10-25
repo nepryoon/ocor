@@ -1,48 +1,66 @@
 {
   "active_iteration": {
-    "baseline_commit": "40ae60fffc3bdf58ea6f5ac2a332d389a5f3c326",
-    "branch": "governed/state-sync-rem0027-repair2-candidate-20261025",
+    "baseline_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
+    "branch": "governed/state-sync-rem0027-integrated-20261025",
     "campaign_background_processes_remaining": false,
-    "candidate": {
-      "branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
-      "head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
-      "qualified_code_commit": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
-      "raw_sha256": "b9fb4285789d84828799bec2630ec10841761d9f1e4080d6892c7c75b8c89813",
-      "record_sha256": {
-        "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json": "9693428a28fc54183cfd884b5d1c9637d616daec19f9122c400e4f301cffb576",
-        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.json": "33b550ae8e2ff25aa44bfc35e1cd2cccd9329eade1950548f30d621d3ae65f42",
-        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json": "e068f1e27b4a3dc05ad4157d31870931d7e675ac511a7ed40695fae1c32281ce",
-        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json": "4b2341fe7dddf6ccdead70b60ab11418502f3de3fdef4933ee6fcfe4597f7720",
-        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json": "e22bbea8ce407effc31d19e4abcf31fa3b80d0125764eb8614de4f16ef42d014"
-      },
-      "verify_request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2"
-    },
-    "change_set": "OCOR-DEV-REM-0027 repair cycle 2 (last of the budget)",
+    "candidate_branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
+    "candidate_head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
+    "change_set": "OCOR-DEV-REM-0027",
     "decisions": [
       "REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14)",
       "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
-      "REM-0033-LOCAL-FULL-DURATION (2026-10-25) point 4"
+      "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (2026-10-25)"
     ],
-    "next_action": "Attendere il verdetto esterno OCOR-DEV-REM-0027-ef8086f319ac-2 (Cursor/Grok 4.7, xAI; implementatori Claude Code/Anthropic e Codex/OpenAI, nessun verifier Anthropic o OpenAI) sul candidato ef8086f319ac9f67df6a667ae411db0201ac0c3f del branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch. Con GO_FOR_EVIDENCE_SEAL: registrare verifier e verdetto nei cinque record (REM-0027, 0005, 0047, 0050, 0082) e sigillarli, aprire la PR, attendere i 13 check obbligatori sull'HEAD esatto, merge con --match-head-commit, poi state sync. Con NO_GO: budget esaurito (ciclo 2 era l'ultimo), TERMINAL_BLOCKED del solo REM-0027 con record di escalation e residuo misurato (11,5 s, RESIDUAL_MEASURED_NOT_PASS), nessun ciclo 3; proseguire con REM-0031. Con VERIFIER_ERROR: una sola ripetizione della richiesta. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
-    "phase": "REPAIR_2_CANDIDATE_PUSHED_AWAITING_INDEPENDENT_VERIFICATION",
+    "independent_verification": {
+      "findings": [],
+      "head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
+      "not_executed": [],
+      "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
+      "sha256": "69ba037db4de32275de4840dda5deaf7a614bd725551d5097f141a0652e7fe1d",
+      "verdict": "GO_FOR_EVIDENCE_SEAL",
+      "verifier": {
+        "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Claude Code, claude-opus-5-5 (Anthropic), cicli 0, 1 e 2; Codex (OpenAI), contato dal loop. Nessun implementatore dello stesso fornitore del verifier.",
+        "model": "grok-4.7-high",
+        "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+        "provider": "xAI"
+      }
+    },
+    "merge_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
+    "next_action": "Avviare OCOR-DEV-REM-0031 (REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY 2026-10-14, opzione 1) secondo QUEUE-TO-G6-ORDER: branch governed/ocor-dev-rem-0031-identity-registry-writer-authority da origin/main in worktree nuovo; prima l inventario dei consumer di IdentityRegistry e dei record sigillati che li hanno fra gli input (scope esatto dei file dall inventario, entro il confine di provisioning autorizzato); poi RED sul backend reale per ogni famiglia positiva/negativa (creazione autorizzata; primo writer ostile e auto-attribuzione negati; aggiornamenti di requester/approver negati; autorita indisponibile fail-closed), GREEN, riqualifiche con supersession esplicita di ogni task con input sigillato toccato; schema dell identity record e convenzione Q1 invariati; suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic se Claude Code implementa). Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6 (non riprenderla d iniziativa). Nessun nuovo DEC, E1/E2/Verified o claim.",
+    "phase": "VERIFIED_SEALED_MERGED",
+    "pr": 343,
+    "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
     "roles": {
-      "authority": "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
+      "authority": "LOOP-AGENT-ROTATION (2026-10-16); LOOP-IMPLEMENTER-ORDER (2026-10-25)",
       "implementers": [
         {
           "agent": "Claude Code",
           "cli_version": "2.1.310",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "REM-0027 repair cycle 2: alignment merge, RED/GREEN, qualification, evidence, verification request and state sync"
+          "scope": "REM-0027 cycle 0, repair cycles 1 and 2: RED/GREEN, qualification, evidence, verification requests; then integration metadata and evidence sealing only"
         },
         {
           "agent": "Codex",
           "provider": "OpenAI",
-          "scope": "counted as implementer of the task by the loop rule; no repair-2 code"
+          "scope": "counted as implementer of the task by the loop rule (LOOP-AGENT-ROTATION point 2; LOOP-IMPLEMENTER-ORDER point 2): state syncs and historical inputs; no repair-2 code"
         }
       ],
-      "verifier": "Cursor CLI / Grok 4.7 (xAI), external loop only; Anthropic and OpenAI excluded"
-    }
+      "integration_agent": {
+        "agent": "Claude Code",
+        "cli_version": "2.1.310",
+        "model": "claude-opus-5-5",
+        "provider": "Anthropic",
+        "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation and tests unchanged"
+      },
+      "verifier": {
+        "agent": "Cursor CLI",
+        "independence": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Claude Code, claude-opus-5-5 (Anthropic), cicli 0, 1 e 2; Codex (OpenAI), contato dal loop. Nessun implementatore dello stesso fornitore del verifier.",
+        "model": "grok-4.7-high",
+        "provider": "xAI"
+      }
+    },
+    "sealed_head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1770,7 +1788,7 @@
       }
     }
   },
-  "baseline_commit": "40ae60fffc3bdf58ea6f5ac2a332d389a5f3c326",
+  "baseline_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5751,9 +5769,22 @@
         "sha256": "819e437fba68d88c99f2d5e191a119ebbc73c1cba443e2da9083f41d260b4bd5"
       },
       "id": "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY",
+      "po_decision": "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (2026-10-25)",
+      "po_disposition": {
+        "effect": "OCOR-DEV-REM-0037 suspended until after G6 closure; serial local full suite unchanged; no test, case, limit, timeout, threshold, CI partition or gate changed",
+        "option": "3",
+        "record": {
+          "branch": "governed/decision-request-rem0037-local-suite-split-inventory",
+          "commit": "73c4d74774b3b51864f86c02648e01949b9587a7",
+          "path": "reports/development/decision_requests/REM-0037-LOCAL-SUITE-SPLIT-INVENTORY.md",
+          "pr": 340,
+          "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+          "sha256": "192275b23af649621478288a0515ace27093550964acbcf1113d367eb0a67e56"
+        }
+      },
       "reason": "Pre-code inventory: isolated per-part stacks need parameterised endpoints/names in sealed inputs. Variant without 0049/source changes still requalifies at least 6 tasks (0072, 0073, 0075, 0079, 0080, 0081) and caps the gain at 28%; the full-gain variant (about -50%) requalifies 15 tasks including 0049 (0025, 0037, 0038, 0040, 0048, 0049, 0058, 0072, 0073, 0075, 0079, 0080, 0081, 0082, 0083). Point 2 threshold (more than 3 tasks or 0049/0050) exceeded.",
       "recommendation": "Option 1: env-driven endpoints and names with byte-identical defaults in the inventoried files only, AST proof limited to literal-to-env-default replacement, superseding requalifications of the 15 tasks, compose override file additive, kind only in the default part; option 3 (suspend) preferred to option 2",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "RESOLVED_PO_DISPOSITION_SUSPENDED"
     }
   ],
   "checkpoint_consolidation": {
@@ -6441,54 +6472,54 @@
     "bad_checks": [],
     "campaign_artifacts": [
       {
-        "archive_sha256": "34dbff9411273cf0d8596b954930d5dd6114650ea57039b02b6f9819e5b44758",
-        "campaign_result_sha256": "84e25219d14ab515b7f1c3294b12cbfd54ffbc3095dc223bed340aff68865c7b",
+        "archive_sha256": "1b583e40bfcb74dbae76647ee6faa5c5a984ba08da1378d57a34bde962034c3d",
+        "campaign_result_sha256": "9bca3c90269ec2e75253013906156cec533f0053bff11ebeab773e4b1b20f70d",
         "github_digest_verified": true,
-        "id": 12591776675,
-        "junit_sha256": "9d00e49cb5bbe8b9e8b7ef7945a3cbe3fb1fc6ab1b68b48ce4a66905943a68a7",
-        "name": "ocor-conditional-0049-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921389",
+        "id": 12604615241,
+        "junit_sha256": "03ae29558ecc1d610ed79b79e69a415e576a1695242584f3bd3a330dc7e35685",
+        "name": "ocor-conditional-0049-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849159",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1249.503503172,
+          "longest_part_seconds": 1456.113899095,
           "mode": "AGGREGATE",
-          "partition_sha256": "842f723a5372d6ace38640ee9e5c420c1cc1c0a84b3af89b2ee468958e8b7704",
+          "partition_sha256": "0cdaeff121faa6bab79c74af396f2fd1908f7b10c137c776be25e0823bd84058",
           "parts": [
             {
-              "duration_seconds": 1249.503503172,
+              "duration_seconds": 1162.130519415,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1070.029893764,
-              "selected_sha256": "a218b6051872280b0ddc416fd7ea39ddfa0ba37e3ba19d1a6fe038347aa466e9",
+              "duration_seconds": 851.782254678,
+              "selected_sha256": "4290ae2f67822646466d5f84c802ecbe91ef79ce4f37367c6f6399c09325460d",
               "shard_index": 2,
               "tests": 796
             },
             {
-              "duration_seconds": 1054.154954959,
-              "selected_sha256": "04266c1d71888d8041c6fff99a141f70f378733f294ce33dff74292557d8434b",
+              "duration_seconds": 1125.4318575730001,
+              "selected_sha256": "f4183ceccdd7027d298f5e64a583c9a30820e08108a06310c56e5b72e36e920d",
               "shard_index": 3,
-              "tests": 766
+              "tests": 777
             },
             {
-              "duration_seconds": 984.1086955139999,
-              "selected_sha256": "e3cd8cd776748ac6f7cdade51099e6dbda5b7eb7e1adc5ab53cf291a10dd7d33",
+              "duration_seconds": 1456.113899095,
+              "selected_sha256": "cf786a843a492a788e8394d0a7d09a1b8935ba476f97f556302d622fe0149ccc",
               "shard_index": 4,
-              "tests": 1055
+              "tests": 1036
             },
             {
-              "duration_seconds": 961.178868108,
-              "selected_sha256": "5748cae2f0aaba562988d67b3efd5e9e0e5692d7129224c6d4a6f6b09b8c8633",
+              "duration_seconds": 783.561058001,
+              "selected_sha256": "455f9a54005c788bad536e3bb2fee89b5070805df2739c3c7931b1d54c4da3a0",
               "shard_index": 5,
-              "tests": 448
+              "tests": 497
             }
           ],
           "rebalance_required": false,
@@ -6499,57 +6530,57 @@
           "shard_count": 5,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       },
       {
-        "archive_sha256": "4d602fbbae3a825aa2013c8c2eb8bf1dc005788e5b96867964b29f447f90393f",
-        "campaign_result_sha256": "9c0e8d363cbc2af4e0b431a05caec84e670de9dd327ee737b7492cd8bb464557",
+        "archive_sha256": "b2c790ff7a71e979da3e0c11eeb8b4c40d1efc80de0c46ce67799aa2455f9eb2",
+        "campaign_result_sha256": "fd5dfc2ef9fdd9cb081028ed5b35436a64a18cd23dd78ea4d1a0a4e16858210c",
         "github_digest_verified": true,
-        "id": 12590824604,
-        "junit_sha256": "844e5ed5eabd3fb2eeac666e47dc524fcfd2e2700a03f181541b8f5c28892355",
-        "name": "ocor-validation-closure-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921389",
+        "id": 12603854793,
+        "junit_sha256": "79bf69a724746859a1243104b79c838898a61890e9afff041e80ffa837b72ac1",
+        "name": "ocor-validation-closure-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849159",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1485.388691458,
+          "longest_part_seconds": 1530.991974398,
           "mode": "AGGREGATE",
-          "partition_sha256": "5362242b3222e4213d21d404fbe7d1207b98fe1255864972b97a9e7344c720c9",
+          "partition_sha256": "7a30c5da5660e77334583b9bb750a96cbe9c89404bf4035223766947be1d4a04",
           "parts": [
             {
-              "duration_seconds": 1231.861505857,
+              "duration_seconds": 1152.318965772,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1045.2964257150002,
-              "selected_sha256": "3c0820d985ee4f1b5deb8e0687a89675c1efc50044d06523abe4145069b586d4",
+              "duration_seconds": 1288.816134901,
+              "selected_sha256": "c716e613e0611724dd6f60f3d0df8836497ee71f0544b26c00e7b0049a720862",
               "shard_index": 2,
-              "tests": 575
+              "tests": 617
             },
             {
-              "duration_seconds": 1334.2177577839998,
-              "selected_sha256": "72bf9918e8a27e401d4f33d2bd112d09a6bffd793c7a38cb72b78edc316008f4",
+              "duration_seconds": 1365.1496992950001,
+              "selected_sha256": "be9345537c24b2e89433561b7387f5b8ba9a07b03042d02c031f728a6fc53905",
               "shard_index": 3,
-              "tests": 1218
+              "tests": 1232
             },
             {
-              "duration_seconds": 1485.388691458,
-              "selected_sha256": "ef49f0c5cdc471325664822f89de76bd1e0cde29e5ebeeef63db565426847a8b",
+              "duration_seconds": 1530.991974398,
+              "selected_sha256": "2f1e39ed6b50b93384edb89715308ab2ec9ecc952a75d69f70f4c638332eed89",
               "shard_index": 4,
-              "tests": 1272
+              "tests": 1257
             }
           ],
           "rebalance_required": false,
@@ -6560,57 +6591,57 @@
           "shard_count": 4,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       },
       {
-        "archive_sha256": "051b0d6b907b63e738173f80986260697165e467bb1c90900372bf258577e567",
-        "campaign_result_sha256": "197df868e1b8752bbee9228f76399973c7f711abd1ca9390fcd1ab55e9ec0dcb",
+        "archive_sha256": "b607cda845442908a0fbcba4921667997d7581c762c4f169c3a03e7948bb03b2",
+        "campaign_result_sha256": "6f6168e1b157d7621356ff6aaf41841acef2e6b43ba83b2b1b8e40cb3fbf7139",
         "github_digest_verified": true,
-        "id": 12591403184,
-        "junit_sha256": "aa8162b06c7ee6546b7e97655cfb721446289369dd6695d703b824308b6ed523",
-        "name": "ocor-activation-full-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921412",
+        "id": 12604441051,
+        "junit_sha256": "7b1f72e1cc53258905194c5dc96c6627ac990faddb72758eae07c0a8078ea49e",
+        "name": "ocor-activation-full-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849166",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1460.914757946,
+          "longest_part_seconds": 1488.571255011,
           "mode": "AGGREGATE",
-          "partition_sha256": "5362242b3222e4213d21d404fbe7d1207b98fe1255864972b97a9e7344c720c9",
+          "partition_sha256": "7a30c5da5660e77334583b9bb750a96cbe9c89404bf4035223766947be1d4a04",
           "parts": [
             {
-              "duration_seconds": 1244.6835934550002,
+              "duration_seconds": 1157.619199345,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1087.658315073,
-              "selected_sha256": "3c0820d985ee4f1b5deb8e0687a89675c1efc50044d06523abe4145069b586d4",
+              "duration_seconds": 1146.737006396,
+              "selected_sha256": "c716e613e0611724dd6f60f3d0df8836497ee71f0544b26c00e7b0049a720862",
               "shard_index": 2,
-              "tests": 575
+              "tests": 617
             },
             {
-              "duration_seconds": 1333.9523132240001,
-              "selected_sha256": "72bf9918e8a27e401d4f33d2bd112d09a6bffd793c7a38cb72b78edc316008f4",
+              "duration_seconds": 1364.1495046979999,
+              "selected_sha256": "be9345537c24b2e89433561b7387f5b8ba9a07b03042d02c031f728a6fc53905",
               "shard_index": 3,
-              "tests": 1218
+              "tests": 1232
             },
             {
-              "duration_seconds": 1460.914757946,
-              "selected_sha256": "ef49f0c5cdc471325664822f89de76bd1e0cde29e5ebeeef63db565426847a8b",
+              "duration_seconds": 1488.571255011,
+              "selected_sha256": "2f1e39ed6b50b93384edb89715308ab2ec9ecc952a75d69f70f4c638332eed89",
               "shard_index": 4,
-              "tests": 1272
+              "tests": 1257
             }
           ],
           "rebalance_required": false,
@@ -6621,57 +6652,57 @@
           "shard_count": 4,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       },
       {
-        "archive_sha256": "8ebdb1380396f4937055870448cda8f6135d77f545993adf813c41d8cb5cf7ed",
-        "campaign_result_sha256": "6aec7be5f05485fa75b1b12ff4d9cdf95f7fd4169609ad41dfa28fd9d4f63a5b",
+        "archive_sha256": "372f56414245b68635ff202a5ff5fb44e7704f9507074cab7baaea0e728c2336",
+        "campaign_result_sha256": "0a5baf3c3dafe0ebb963f4031992e2a1c5c19de6a118786e1fd22996a2fd868f",
         "github_digest_verified": true,
-        "id": 12591338577,
-        "junit_sha256": "da79b310c813a51bf3edd49fa2219e9c698664ed1c100d88aef362912d97a1d7",
-        "name": "ocor-rccad-full-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921427",
+        "id": 12604391126,
+        "junit_sha256": "6aa23fc447f3bba9fc42ea3f27ed15bf68225afaeb4b2f6535398386d993f803",
+        "name": "ocor-rccad-full-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849205",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1521.523494502,
+          "longest_part_seconds": 1520.24032262,
           "mode": "AGGREGATE",
-          "partition_sha256": "5362242b3222e4213d21d404fbe7d1207b98fe1255864972b97a9e7344c720c9",
+          "partition_sha256": "7a30c5da5660e77334583b9bb750a96cbe9c89404bf4035223766947be1d4a04",
           "parts": [
             {
-              "duration_seconds": 1189.891428047,
+              "duration_seconds": 1194.887611824,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1045.911548629,
-              "selected_sha256": "3c0820d985ee4f1b5deb8e0687a89675c1efc50044d06523abe4145069b586d4",
+              "duration_seconds": 1279.0114512389998,
+              "selected_sha256": "c716e613e0611724dd6f60f3d0df8836497ee71f0544b26c00e7b0049a720862",
               "shard_index": 2,
-              "tests": 575
+              "tests": 617
             },
             {
-              "duration_seconds": 1350.8587862880001,
-              "selected_sha256": "72bf9918e8a27e401d4f33d2bd112d09a6bffd793c7a38cb72b78edc316008f4",
+              "duration_seconds": 1233.310954707,
+              "selected_sha256": "be9345537c24b2e89433561b7387f5b8ba9a07b03042d02c031f728a6fc53905",
               "shard_index": 3,
-              "tests": 1218
+              "tests": 1232
             },
             {
-              "duration_seconds": 1521.523494502,
-              "selected_sha256": "ef49f0c5cdc471325664822f89de76bd1e0cde29e5ebeeef63db565426847a8b",
+              "duration_seconds": 1520.24032262,
+              "selected_sha256": "2f1e39ed6b50b93384edb89715308ab2ec9ecc952a75d69f70f4c638332eed89",
               "shard_index": 4,
-              "tests": 1272
+              "tests": 1257
             }
           ],
           "rebalance_required": false,
@@ -6682,170 +6713,170 @@
           "shard_count": 4,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       }
     ],
-    "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
+    "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
     "maximum_wait_seconds": 5400,
-    "merge_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
+    "merge_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
     "merge_tree_proof": {
       "byte_identical_tree": true,
-      "candidate_head": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-      "git_tree": "d0b2e2b0b168ca59f4b76495abf91acc235996da",
-      "github_pr_merge_ref": "63a95b77ee8844e0b75f285d1ac125900d2b991f",
-      "main_merge_commit_tree": "d0b2e2b0b168ca59f4b76495abf91acc235996da"
+      "candidate_head": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+      "git_tree": "258ba657abdd294183fd42be8c22dd5da03fe789",
+      "github_pr_merge_ref": "1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+      "main_merge_commit_tree": "258ba657abdd294183fd42be8c22dd5da03fe789"
     },
-    "observed_at": "2026-10-25T08:01:11.740101+00:00",
+    "observed_at": "2026-10-25T15:33:27.053831+00:00",
     "poll_seconds": 60,
-    "pr": 337,
+    "pr": 343,
     "required_checks": {
       "backend-compatibility-not-ba-evidence": {
-        "completed_at": "2026-10-25T07:29:49Z",
+        "completed_at": "2026-10-25T15:00:36Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401921",
-        "id": 121107401921,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506271",
+        "id": 121203506271,
         "name": "backend-compatibility-not-ba-evidence",
-        "started_at": "2026-10-25T07:29:29Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "contract": {
-        "completed_at": "2026-10-25T07:29:19Z",
+        "completed_at": "2026-10-25T15:00:31Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401751",
-        "id": 121107401751,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506402",
+        "id": 121203506402,
         "name": "contract",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "delivery-activation": {
-        "completed_at": "2026-10-25T07:59:11Z",
+        "completed_at": "2026-10-25T15:31:01Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921412/job/121112654021",
-        "id": 121112654021,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849166/job/121210032815",
+        "id": 121210032815,
         "name": "delivery-activation",
-        "started_at": "2026-10-25T07:56:16Z",
+        "started_at": "2026-10-25T15:27:30Z",
         "status": "completed"
       },
       "evidence": {
-        "completed_at": "2026-10-25T07:29:23Z",
+        "completed_at": "2026-10-25T15:00:30Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401771",
-        "id": 121107401771,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506302",
+        "id": 121203506302,
         "name": "evidence",
-        "started_at": "2026-10-25T07:28:59Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "fgm-contract-readiness-not-runtime-evidence": {
-        "completed_at": "2026-10-25T07:29:29Z",
+        "completed_at": "2026-10-25T15:00:31Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401613",
-        "id": 121107401613,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506282",
+        "id": 121203506282,
         "name": "fgm-contract-readiness-not-runtime-evidence",
-        "started_at": "2026-10-25T07:28:59Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "integration-postgresql": {
-        "completed_at": "2026-10-25T07:29:39Z",
+        "completed_at": "2026-10-25T15:00:51Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401724",
-        "id": 121107401724,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203505984",
+        "id": 121203505984,
         "name": "integration-postgresql",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "mandatory-gates": {
-        "completed_at": "2026-10-25T07:29:53Z",
+        "completed_at": "2026-10-25T15:00:55Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107564657",
-        "id": 121107564657,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203687165",
+        "id": 121203687165,
         "name": "mandatory-gates",
-        "started_at": "2026-10-25T07:29:51Z",
+        "started_at": "2026-10-25T15:00:52Z",
         "status": "completed"
       },
       "rccad-methodology": {
-        "completed_at": "2026-10-25T08:00:12Z",
+        "completed_at": "2026-10-25T15:31:18Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921427/job/121112872294",
-        "id": 121112872294,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849205/job/121210301295",
+        "id": 121210301295,
         "name": "rccad-methodology",
-        "started_at": "2026-10-25T07:57:26Z",
+        "started_at": "2026-10-25T15:28:38Z",
         "status": "completed"
       },
       "supply-chain": {
-        "completed_at": "2026-10-25T07:29:19Z",
+        "completed_at": "2026-10-25T15:00:28Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921369/job/121107401386",
-        "id": 121107401386,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849162/job/121203505908",
+        "id": 121203505908,
         "name": "supply-chain",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "tooling-policy": {
-        "completed_at": "2026-10-25T07:29:27Z",
+        "completed_at": "2026-10-25T15:00:30Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921394/job/121107401531",
-        "id": 121107401531,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849244/job/121203506231",
+        "id": 121203506231,
         "name": "tooling-policy",
-        "started_at": "2026-10-25T07:28:59Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "type-and-lint-gate": {
-        "completed_at": "2026-10-25T07:29:46Z",
+        "completed_at": "2026-10-25T15:01:17Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921394/job/121107401355",
-        "id": 121107401355,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849244/job/121203506441",
+        "id": 121203506441,
         "name": "type-and-lint-gate",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:30Z",
         "status": "completed"
       },
       "unit": {
-        "completed_at": "2026-10-25T07:29:19Z",
+        "completed_at": "2026-10-25T15:00:30Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401746",
-        "id": 121107401746,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506309",
+        "id": 121203506309,
         "name": "unit",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "validation-closure": {
-        "completed_at": "2026-10-25T07:59:30Z",
+        "completed_at": "2026-10-25T15:31:35Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921389/job/121112747481",
-        "id": 121112747481,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849159/job/121210236872",
+        "id": 121210236872,
         "name": "validation-closure",
-        "started_at": "2026-10-25T07:56:46Z",
+        "started_at": "2026-10-25T15:28:22Z",
         "status": "completed"
       }
     },
     "reruns": 0,
     "run_ids": [
-      "40172921369",
-      "40172921384",
-      "40172921389",
-      "40172921394",
-      "40172921412",
-      "40172921427"
+      "40204849159",
+      "40204849162",
+      "40204849166",
+      "40204849186",
+      "40204849205",
+      "40204849244"
     ],
-    "started_at": "2026-10-25T07:28:58Z",
+    "started_at": "2026-10-25T15:00:10Z",
     "status": "PASS_EXACT_HEAD_13_REQUIRED"
   },
   "current_gate": "G5_BACKLOG_COMPLETE_PRE_G6_REMEDIATIONS_IN_PROGRESS",
@@ -6864,54 +6895,54 @@
     "bad_checks": [],
     "campaign_artifacts": [
       {
-        "archive_sha256": "34dbff9411273cf0d8596b954930d5dd6114650ea57039b02b6f9819e5b44758",
-        "campaign_result_sha256": "84e25219d14ab515b7f1c3294b12cbfd54ffbc3095dc223bed340aff68865c7b",
+        "archive_sha256": "1b583e40bfcb74dbae76647ee6faa5c5a984ba08da1378d57a34bde962034c3d",
+        "campaign_result_sha256": "9bca3c90269ec2e75253013906156cec533f0053bff11ebeab773e4b1b20f70d",
         "github_digest_verified": true,
-        "id": 12591776675,
-        "junit_sha256": "9d00e49cb5bbe8b9e8b7ef7945a3cbe3fb1fc6ab1b68b48ce4a66905943a68a7",
-        "name": "ocor-conditional-0049-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921389",
+        "id": 12604615241,
+        "junit_sha256": "03ae29558ecc1d610ed79b79e69a415e576a1695242584f3bd3a330dc7e35685",
+        "name": "ocor-conditional-0049-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849159",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1249.503503172,
+          "longest_part_seconds": 1456.113899095,
           "mode": "AGGREGATE",
-          "partition_sha256": "842f723a5372d6ace38640ee9e5c420c1cc1c0a84b3af89b2ee468958e8b7704",
+          "partition_sha256": "0cdaeff121faa6bab79c74af396f2fd1908f7b10c137c776be25e0823bd84058",
           "parts": [
             {
-              "duration_seconds": 1249.503503172,
+              "duration_seconds": 1162.130519415,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1070.029893764,
-              "selected_sha256": "a218b6051872280b0ddc416fd7ea39ddfa0ba37e3ba19d1a6fe038347aa466e9",
+              "duration_seconds": 851.782254678,
+              "selected_sha256": "4290ae2f67822646466d5f84c802ecbe91ef79ce4f37367c6f6399c09325460d",
               "shard_index": 2,
               "tests": 796
             },
             {
-              "duration_seconds": 1054.154954959,
-              "selected_sha256": "04266c1d71888d8041c6fff99a141f70f378733f294ce33dff74292557d8434b",
+              "duration_seconds": 1125.4318575730001,
+              "selected_sha256": "f4183ceccdd7027d298f5e64a583c9a30820e08108a06310c56e5b72e36e920d",
               "shard_index": 3,
-              "tests": 766
+              "tests": 777
             },
             {
-              "duration_seconds": 984.1086955139999,
-              "selected_sha256": "e3cd8cd776748ac6f7cdade51099e6dbda5b7eb7e1adc5ab53cf291a10dd7d33",
+              "duration_seconds": 1456.113899095,
+              "selected_sha256": "cf786a843a492a788e8394d0a7d09a1b8935ba476f97f556302d622fe0149ccc",
               "shard_index": 4,
-              "tests": 1055
+              "tests": 1036
             },
             {
-              "duration_seconds": 961.178868108,
-              "selected_sha256": "5748cae2f0aaba562988d67b3efd5e9e0e5692d7129224c6d4a6f6b09b8c8633",
+              "duration_seconds": 783.561058001,
+              "selected_sha256": "455f9a54005c788bad536e3bb2fee89b5070805df2739c3c7931b1d54c4da3a0",
               "shard_index": 5,
-              "tests": 448
+              "tests": 497
             }
           ],
           "rebalance_required": false,
@@ -6922,57 +6953,57 @@
           "shard_count": 5,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       },
       {
-        "archive_sha256": "4d602fbbae3a825aa2013c8c2eb8bf1dc005788e5b96867964b29f447f90393f",
-        "campaign_result_sha256": "9c0e8d363cbc2af4e0b431a05caec84e670de9dd327ee737b7492cd8bb464557",
+        "archive_sha256": "b2c790ff7a71e979da3e0c11eeb8b4c40d1efc80de0c46ce67799aa2455f9eb2",
+        "campaign_result_sha256": "fd5dfc2ef9fdd9cb081028ed5b35436a64a18cd23dd78ea4d1a0a4e16858210c",
         "github_digest_verified": true,
-        "id": 12590824604,
-        "junit_sha256": "844e5ed5eabd3fb2eeac666e47dc524fcfd2e2700a03f181541b8f5c28892355",
-        "name": "ocor-validation-closure-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921389",
+        "id": 12603854793,
+        "junit_sha256": "79bf69a724746859a1243104b79c838898a61890e9afff041e80ffa837b72ac1",
+        "name": "ocor-validation-closure-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849159",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1485.388691458,
+          "longest_part_seconds": 1530.991974398,
           "mode": "AGGREGATE",
-          "partition_sha256": "5362242b3222e4213d21d404fbe7d1207b98fe1255864972b97a9e7344c720c9",
+          "partition_sha256": "7a30c5da5660e77334583b9bb750a96cbe9c89404bf4035223766947be1d4a04",
           "parts": [
             {
-              "duration_seconds": 1231.861505857,
+              "duration_seconds": 1152.318965772,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1045.2964257150002,
-              "selected_sha256": "3c0820d985ee4f1b5deb8e0687a89675c1efc50044d06523abe4145069b586d4",
+              "duration_seconds": 1288.816134901,
+              "selected_sha256": "c716e613e0611724dd6f60f3d0df8836497ee71f0544b26c00e7b0049a720862",
               "shard_index": 2,
-              "tests": 575
+              "tests": 617
             },
             {
-              "duration_seconds": 1334.2177577839998,
-              "selected_sha256": "72bf9918e8a27e401d4f33d2bd112d09a6bffd793c7a38cb72b78edc316008f4",
+              "duration_seconds": 1365.1496992950001,
+              "selected_sha256": "be9345537c24b2e89433561b7387f5b8ba9a07b03042d02c031f728a6fc53905",
               "shard_index": 3,
-              "tests": 1218
+              "tests": 1232
             },
             {
-              "duration_seconds": 1485.388691458,
-              "selected_sha256": "ef49f0c5cdc471325664822f89de76bd1e0cde29e5ebeeef63db565426847a8b",
+              "duration_seconds": 1530.991974398,
+              "selected_sha256": "2f1e39ed6b50b93384edb89715308ab2ec9ecc952a75d69f70f4c638332eed89",
               "shard_index": 4,
-              "tests": 1272
+              "tests": 1257
             }
           ],
           "rebalance_required": false,
@@ -6983,57 +7014,57 @@
           "shard_count": 4,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       },
       {
-        "archive_sha256": "051b0d6b907b63e738173f80986260697165e467bb1c90900372bf258577e567",
-        "campaign_result_sha256": "197df868e1b8752bbee9228f76399973c7f711abd1ca9390fcd1ab55e9ec0dcb",
+        "archive_sha256": "b607cda845442908a0fbcba4921667997d7581c762c4f169c3a03e7948bb03b2",
+        "campaign_result_sha256": "6f6168e1b157d7621356ff6aaf41841acef2e6b43ba83b2b1b8e40cb3fbf7139",
         "github_digest_verified": true,
-        "id": 12591403184,
-        "junit_sha256": "aa8162b06c7ee6546b7e97655cfb721446289369dd6695d703b824308b6ed523",
-        "name": "ocor-activation-full-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921412",
+        "id": 12604441051,
+        "junit_sha256": "7b1f72e1cc53258905194c5dc96c6627ac990faddb72758eae07c0a8078ea49e",
+        "name": "ocor-activation-full-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849166",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1460.914757946,
+          "longest_part_seconds": 1488.571255011,
           "mode": "AGGREGATE",
-          "partition_sha256": "5362242b3222e4213d21d404fbe7d1207b98fe1255864972b97a9e7344c720c9",
+          "partition_sha256": "7a30c5da5660e77334583b9bb750a96cbe9c89404bf4035223766947be1d4a04",
           "parts": [
             {
-              "duration_seconds": 1244.6835934550002,
+              "duration_seconds": 1157.619199345,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1087.658315073,
-              "selected_sha256": "3c0820d985ee4f1b5deb8e0687a89675c1efc50044d06523abe4145069b586d4",
+              "duration_seconds": 1146.737006396,
+              "selected_sha256": "c716e613e0611724dd6f60f3d0df8836497ee71f0544b26c00e7b0049a720862",
               "shard_index": 2,
-              "tests": 575
+              "tests": 617
             },
             {
-              "duration_seconds": 1333.9523132240001,
-              "selected_sha256": "72bf9918e8a27e401d4f33d2bd112d09a6bffd793c7a38cb72b78edc316008f4",
+              "duration_seconds": 1364.1495046979999,
+              "selected_sha256": "be9345537c24b2e89433561b7387f5b8ba9a07b03042d02c031f728a6fc53905",
               "shard_index": 3,
-              "tests": 1218
+              "tests": 1232
             },
             {
-              "duration_seconds": 1460.914757946,
-              "selected_sha256": "ef49f0c5cdc471325664822f89de76bd1e0cde29e5ebeeef63db565426847a8b",
+              "duration_seconds": 1488.571255011,
+              "selected_sha256": "2f1e39ed6b50b93384edb89715308ab2ec9ecc952a75d69f70f4c638332eed89",
               "shard_index": 4,
-              "tests": 1272
+              "tests": 1257
             }
           ],
           "rebalance_required": false,
@@ -7044,57 +7075,57 @@
           "shard_count": 4,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       },
       {
-        "archive_sha256": "8ebdb1380396f4937055870448cda8f6135d77f545993adf813c41d8cb5cf7ed",
-        "campaign_result_sha256": "6aec7be5f05485fa75b1b12ff4d9cdf95f7fd4169609ad41dfa28fd9d4f63a5b",
+        "archive_sha256": "372f56414245b68635ff202a5ff5fb44e7704f9507074cab7baaea0e728c2336",
+        "campaign_result_sha256": "0a5baf3c3dafe0ebb963f4031992e2a1c5c19de6a118786e1fd22996a2fd868f",
         "github_digest_verified": true,
-        "id": 12591338577,
-        "junit_sha256": "da79b310c813a51bf3edd49fa2219e9c698664ed1c100d88aef362912d97a1d7",
-        "name": "ocor-rccad-full-63a95b77ee8844e0b75f285d1ac125900d2b991f",
-        "run_id": "40172921427",
+        "id": 12604391126,
+        "junit_sha256": "6aa23fc447f3bba9fc42ea3f27ed15bf68225afaeb4b2f6535398386d993f803",
+        "name": "ocor-rccad-full-1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+        "run_id": "40204849205",
         "summary": {
-          "collected_sha256": "922363addccd40c866e998b4fd8dc069f02fbdf28300f1f00623be06d31919a9",
+          "collected_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
           "counts": {
             "errors": 0,
             "failures": 0,
             "skipped": 0,
-            "tests": 3066
+            "tests": 3107
           },
-          "longest_part_seconds": 1521.523494502,
+          "longest_part_seconds": 1520.24032262,
           "mode": "AGGREGATE",
-          "partition_sha256": "5362242b3222e4213d21d404fbe7d1207b98fe1255864972b97a9e7344c720c9",
+          "partition_sha256": "7a30c5da5660e77334583b9bb750a96cbe9c89404bf4035223766947be1d4a04",
           "parts": [
             {
-              "duration_seconds": 1189.891428047,
+              "duration_seconds": 1194.887611824,
               "selected_sha256": "9ffdc2d9a30003586da045d46d320ec452fc41d28ee5c417947161cd8a8fa56e",
               "shard_index": 1,
               "tests": 1
             },
             {
-              "duration_seconds": 1045.911548629,
-              "selected_sha256": "3c0820d985ee4f1b5deb8e0687a89675c1efc50044d06523abe4145069b586d4",
+              "duration_seconds": 1279.0114512389998,
+              "selected_sha256": "c716e613e0611724dd6f60f3d0df8836497ee71f0544b26c00e7b0049a720862",
               "shard_index": 2,
-              "tests": 575
+              "tests": 617
             },
             {
-              "duration_seconds": 1350.8587862880001,
-              "selected_sha256": "72bf9918e8a27e401d4f33d2bd112d09a6bffd793c7a38cb72b78edc316008f4",
+              "duration_seconds": 1233.310954707,
+              "selected_sha256": "be9345537c24b2e89433561b7387f5b8ba9a07b03042d02c031f728a6fc53905",
               "shard_index": 3,
-              "tests": 1218
+              "tests": 1232
             },
             {
-              "duration_seconds": 1521.523494502,
-              "selected_sha256": "ef49f0c5cdc471325664822f89de76bd1e0cde29e5ebeeef63db565426847a8b",
+              "duration_seconds": 1520.24032262,
+              "selected_sha256": "2f1e39ed6b50b93384edb89715308ab2ec9ecc952a75d69f70f4c638332eed89",
               "shard_index": 4,
-              "tests": 1272
+              "tests": 1257
             }
           ],
           "rebalance_required": false,
@@ -7105,170 +7136,170 @@
           "shard_count": 4,
           "status": "PASS",
           "union": {
-            "collected": 3066,
+            "collected": 3107,
             "duplicated": [],
-            "executed": 3066,
+            "executed": 3107,
             "missing": [],
             "unexpected": []
           }
         }
       }
     ],
-    "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
+    "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
     "maximum_wait_seconds": 5400,
-    "merge_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
+    "merge_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
     "merge_tree_proof": {
       "byte_identical_tree": true,
-      "candidate_head": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-      "git_tree": "d0b2e2b0b168ca59f4b76495abf91acc235996da",
-      "github_pr_merge_ref": "63a95b77ee8844e0b75f285d1ac125900d2b991f",
-      "main_merge_commit_tree": "d0b2e2b0b168ca59f4b76495abf91acc235996da"
+      "candidate_head": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+      "git_tree": "258ba657abdd294183fd42be8c22dd5da03fe789",
+      "github_pr_merge_ref": "1ad42c26bfccccf9ac4737e0cba0d284c698ecfa",
+      "main_merge_commit_tree": "258ba657abdd294183fd42be8c22dd5da03fe789"
     },
-    "observed_at": "2026-10-25T08:01:11.740101+00:00",
+    "observed_at": "2026-10-25T15:33:27.053831+00:00",
     "poll_seconds": 60,
-    "pr": 337,
+    "pr": 343,
     "required_checks": {
       "backend-compatibility-not-ba-evidence": {
-        "completed_at": "2026-10-25T07:29:49Z",
+        "completed_at": "2026-10-25T15:00:36Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401921",
-        "id": 121107401921,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506271",
+        "id": 121203506271,
         "name": "backend-compatibility-not-ba-evidence",
-        "started_at": "2026-10-25T07:29:29Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "contract": {
-        "completed_at": "2026-10-25T07:29:19Z",
+        "completed_at": "2026-10-25T15:00:31Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401751",
-        "id": 121107401751,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506402",
+        "id": 121203506402,
         "name": "contract",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "delivery-activation": {
-        "completed_at": "2026-10-25T07:59:11Z",
+        "completed_at": "2026-10-25T15:31:01Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921412/job/121112654021",
-        "id": 121112654021,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849166/job/121210032815",
+        "id": 121210032815,
         "name": "delivery-activation",
-        "started_at": "2026-10-25T07:56:16Z",
+        "started_at": "2026-10-25T15:27:30Z",
         "status": "completed"
       },
       "evidence": {
-        "completed_at": "2026-10-25T07:29:23Z",
+        "completed_at": "2026-10-25T15:00:30Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401771",
-        "id": 121107401771,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506302",
+        "id": 121203506302,
         "name": "evidence",
-        "started_at": "2026-10-25T07:28:59Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "fgm-contract-readiness-not-runtime-evidence": {
-        "completed_at": "2026-10-25T07:29:29Z",
+        "completed_at": "2026-10-25T15:00:31Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401613",
-        "id": 121107401613,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506282",
+        "id": 121203506282,
         "name": "fgm-contract-readiness-not-runtime-evidence",
-        "started_at": "2026-10-25T07:28:59Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "integration-postgresql": {
-        "completed_at": "2026-10-25T07:29:39Z",
+        "completed_at": "2026-10-25T15:00:51Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401724",
-        "id": 121107401724,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203505984",
+        "id": 121203505984,
         "name": "integration-postgresql",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "mandatory-gates": {
-        "completed_at": "2026-10-25T07:29:53Z",
+        "completed_at": "2026-10-25T15:00:55Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107564657",
-        "id": 121107564657,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203687165",
+        "id": 121203687165,
         "name": "mandatory-gates",
-        "started_at": "2026-10-25T07:29:51Z",
+        "started_at": "2026-10-25T15:00:52Z",
         "status": "completed"
       },
       "rccad-methodology": {
-        "completed_at": "2026-10-25T08:00:12Z",
+        "completed_at": "2026-10-25T15:31:18Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921427/job/121112872294",
-        "id": 121112872294,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849205/job/121210301295",
+        "id": 121210301295,
         "name": "rccad-methodology",
-        "started_at": "2026-10-25T07:57:26Z",
+        "started_at": "2026-10-25T15:28:38Z",
         "status": "completed"
       },
       "supply-chain": {
-        "completed_at": "2026-10-25T07:29:19Z",
+        "completed_at": "2026-10-25T15:00:28Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921369/job/121107401386",
-        "id": 121107401386,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849162/job/121203505908",
+        "id": 121203505908,
         "name": "supply-chain",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "tooling-policy": {
-        "completed_at": "2026-10-25T07:29:27Z",
+        "completed_at": "2026-10-25T15:00:30Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921394/job/121107401531",
-        "id": 121107401531,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849244/job/121203506231",
+        "id": 121203506231,
         "name": "tooling-policy",
-        "started_at": "2026-10-25T07:28:59Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "type-and-lint-gate": {
-        "completed_at": "2026-10-25T07:29:46Z",
+        "completed_at": "2026-10-25T15:01:17Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921394/job/121107401355",
-        "id": 121107401355,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849244/job/121203506441",
+        "id": 121203506441,
         "name": "type-and-lint-gate",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:30Z",
         "status": "completed"
       },
       "unit": {
-        "completed_at": "2026-10-25T07:29:19Z",
+        "completed_at": "2026-10-25T15:00:30Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921384/job/121107401746",
-        "id": 121107401746,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849186/job/121203506309",
+        "id": 121203506309,
         "name": "unit",
-        "started_at": "2026-10-25T07:28:58Z",
+        "started_at": "2026-10-25T15:00:10Z",
         "status": "completed"
       },
       "validation-closure": {
-        "completed_at": "2026-10-25T07:59:30Z",
+        "completed_at": "2026-10-25T15:31:35Z",
         "conclusion": "success",
-        "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
-        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40172921389/job/121112747481",
-        "id": 121112747481,
+        "head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+        "html_url": "https://github.com/nepryoon/ocor/actions/runs/40204849159/job/121210236872",
+        "id": 121210236872,
         "name": "validation-closure",
-        "started_at": "2026-10-25T07:56:46Z",
+        "started_at": "2026-10-25T15:28:22Z",
         "status": "completed"
       }
     },
     "reruns": 0,
     "run_ids": [
-      "40172921369",
-      "40172921384",
-      "40172921389",
-      "40172921394",
-      "40172921412",
-      "40172921427"
+      "40204849159",
+      "40204849162",
+      "40204849166",
+      "40204849186",
+      "40204849205",
+      "40204849244"
     ],
-    "started_at": "2026-10-25T07:28:58Z",
+    "started_at": "2026-10-25T15:00:10Z",
     "status": "PASS_EXACT_HEAD_13_REQUIRED"
   },
   "local_gate_results": [
@@ -8157,6 +8188,40 @@
       "integration_agent": "Codex (OpenAI): preflight, seal, PR267 and first CI attempt; Claude Code (Anthropic) reserve after Codex quota exhaustion: CI wait, single infra rerun, merge decision and this state sync",
       "verifier": "Grok 4.7 via Cursor CLI"
     },
+    "OCOR-DEV-REM-0027": {
+      "effective_verifier": {
+        "agent": "Cursor CLI",
+        "independence": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Claude Code, claude-opus-5-5 (Anthropic), cicli 0, 1 e 2; Codex (OpenAI), contato dal loop. Nessun implementatore dello stesso fornitore del verifier.",
+        "model": "grok-4.7-high",
+        "provider": "xAI"
+      },
+      "implementers": [
+        {
+          "agent": "Claude Code",
+          "cli_version": "2.1.310",
+          "model": "claude-opus-5-5",
+          "provider": "Anthropic",
+          "scope": "REM-0027 cycle 0, repair cycles 1 and 2: RED/GREEN, qualification, evidence, verification requests; then integration metadata and evidence sealing only"
+        },
+        {
+          "agent": "Codex",
+          "provider": "OpenAI",
+          "scope": "counted as implementer of the task by the loop rule (LOOP-AGENT-ROTATION point 2; LOOP-IMPLEMENTER-ORDER point 2): state syncs and historical inputs; no repair-2 code"
+        }
+      ],
+      "integration_agent": {
+        "agent": "Claude Code",
+        "cli_version": "2.1.310",
+        "model": "claude-opus-5-5",
+        "provider": "Anthropic",
+        "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge"
+      },
+      "verifier_excluded_providers": [
+        "Anthropic",
+        "OpenAI"
+      ],
+      "verifier_status": "GO_FOR_EVIDENCE_SEAL"
+    },
     "OCOR-DEV-REM-0028": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
       "historical_requalification_lineage": [
@@ -8572,8 +8637,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "REM_0018_VERIFIED_SEALED_INTEGRATED_PRE_G6_REMEDIATIONS_PENDING",
-  "next_executable_action": "Attendere il verdetto esterno OCOR-DEV-REM-0027-ef8086f319ac-2 (Cursor/Grok 4.7, xAI; implementatori Claude Code/Anthropic e Codex/OpenAI, nessun verifier Anthropic o OpenAI) sul candidato ef8086f319ac9f67df6a667ae411db0201ac0c3f del branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch. Con GO_FOR_EVIDENCE_SEAL: registrare verifier e verdetto nei cinque record (REM-0027, 0005, 0047, 0050, 0082) e sigillarli, aprire la PR, attendere i 13 check obbligatori sull'HEAD esatto, merge con --match-head-commit, poi state sync. Con NO_GO: budget esaurito (ciclo 2 era l'ultimo), TERMINAL_BLOCKED del solo REM-0027 con record di escalation e residuo misurato (11,5 s, RESIDUAL_MEASURED_NOT_PASS), nessun ciclo 3; proseguire con REM-0031. Con VERIFIER_ERROR: una sola ripetizione della richiesta. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+  "mandate_phase_status": "REM_0027_VERIFIED_SEALED_INTEGRATED_PRE_G6_REMEDIATIONS_PENDING",
+  "next_executable_action": "Avviare OCOR-DEV-REM-0031 (REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY 2026-10-14, opzione 1) secondo QUEUE-TO-G6-ORDER: branch governed/ocor-dev-rem-0031-identity-registry-writer-authority da origin/main in worktree nuovo; prima l inventario dei consumer di IdentityRegistry e dei record sigillati che li hanno fra gli input (scope esatto dei file dall inventario, entro il confine di provisioning autorizzato); poi RED sul backend reale per ogni famiglia positiva/negativa (creazione autorizzata; primo writer ostile e auto-attribuzione negati; aggiornamenti di requester/approver negati; autorita indisponibile fail-closed), GREEN, riqualifiche con supersession esplicita di ogni task con input sigillato toccato; schema dell identity record e convenzione Q1 invariati; suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic se Claude Code implementa). Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6 (non riprenderla d iniziativa). Nessun nuovo DEC, E1/E2/Verified o claim.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8615,11 +8680,11 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "branch": "governed/state-sync-rem0037-inventory-dr-20261025",
-    "change_set": "OCOR-DEV-REM-0037 pre-code inventory (LOCAL-SUITE-SPLIT point 2)",
-    "merge_commit": "40ae60fffc3bdf58ea6f5ac2a332d389a5f3c326",
-    "phase": "INVENTORY_THRESHOLD_EXCEEDED_DECISION_REQUEST_OPENED_MERGED",
-    "request_id": null
+    "branch": "governed/state-sync-rem0027-repair2-candidate-20261025",
+    "change_set": "OCOR-DEV-REM-0027 repair cycle 2 (last of the budget)",
+    "merge_commit": null,
+    "phase": "REPAIR_2_CANDIDATE_PUSHED_AWAITING_INDEPENDENT_VERIFICATION",
+    "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2"
   },
   "previous_candidate_ci": {
     "head_sha": "712fc2b799774281321c04209bfb6910b91f0941",
@@ -8628,14 +8693,14 @@
     "status": "BLOCKED_NO_GO_REPAIR_BUDGET_EXHAUSTED"
   },
   "previous_candidate_ci_reference": {
-    "head_sha": "09c0069e90c0a95500ef23a50514d95e8f3b9320",
-    "merge_commit": "127953a43536889bc93c6b64964324ee370907f9",
-    "pr": 334
+    "head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52",
+    "merge_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
+    "pr": 337
   },
   "previous_state_sync_ci_reference": {
-    "branch": "governed/state-sync-rem0018-candidate-20261025",
-    "merge_commit": "23256d0bcf736f43ffaa7e26551b89f57be4f691",
-    "pr": 336,
+    "branch": "governed/state-sync-rem0027-repair2-candidate-20261025",
+    "merge_commit": "c17a70d3c981b92ba71c2982b3de60796c31cac0",
+    "pr": 342,
     "status": "MERGED_AFTER_REQUIRED_CHECKS"
   },
   "ready_set_observation": {
@@ -8648,15 +8713,14 @@
     ],
     "completed_evidence_tasks_count": 74,
     "mandatory_remediations_prevent_g6_start": [
-      "OCOR-DEV-REM-0027",
       "OCOR-DEV-REM-0031"
     ],
-    "observed_at": "2026-10-25T08:01:11.758014+00:00",
+    "observed_at": "2026-10-25T15:33:31.341128+00:00",
     "queue_before_g6": [
-      "REM-0033-LOCAL-FULL-DURATION profiling (read-only)",
-      "OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT)",
-      "OCOR-DEV-REM-0027 last cycle",
       "OCOR-DEV-REM-0031"
+    ],
+    "suspended_by_po": [
+      "OCOR-DEV-REM-0037 (until after G6 closure)"
     ]
   },
   "remediation_status": {
@@ -17332,6 +17396,26 @@
       "id": "OCOR-DEV-REM-0027",
       "implementer": "Claude Code (Anthropic, claude-opus-5-5): cycle 0, repair cycles 1 and 2; Codex (OpenAI) counted by the loop rule",
       "in_live_poc_path": true,
+      "independent_verification": {
+        "findings": [],
+        "head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
+        "not_executed": [],
+        "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
+        "sha256": "69ba037db4de32275de4840dda5deaf7a614bd725551d5097f141a0652e7fe1d",
+        "verdict": "GO_FOR_EVIDENCE_SEAL",
+        "verifier": {
+          "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Claude Code, claude-opus-5-5 (Anthropic), cicli 0, 1 e 2; Codex (OpenAI), contato dal loop. Nessun implementatore dello stesso fornitore del verifier.",
+          "model": "grok-4.7-high",
+          "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+          "provider": "xAI"
+        }
+      },
+      "integration_alignment": {
+        "aligned_head": "c07cfd654a45e9375e2897500340f7ae689ef195",
+        "main_head": "c17a70d3c981b92ba71c2982b3de60796c31cac0",
+        "nonstate_git_tree_sha256": "d6ef558e78c191ba7e509144284d030652ac9988d4d87e5fc5d5dbab3ded112d",
+        "qualified_head": "ef8086f319ac9f67df6a667ae411db0201ac0c3f"
+      },
       "latest_verdict": {
         "findings": [
           {
@@ -17350,6 +17434,8 @@
       },
       "live_path_classification": "sole PoC implementation of the normative function, qualified by G6; no caller in ocor-runtime/src today; treated as live path under the fail-closed interpretation recorded in INFO-C.md",
       "maximum_repair_cycles": 2,
+      "measured_residual_after_integration": "ungoverned-channel effect in finally 11.5 s after stop, RESIDUAL_MEASURED_NOT_PASS, confirmed by the verifier as a measurement only; traced to FGM-17 and G6; no claim",
+      "merge_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
       "negative_acceptance_criteria": [
         "No generic thread-safety rewrite and no semantic change beyond LLD v1.1 \u00a74.3/\u00a76 and ADD v1.3 \u00a75.5 (PO decision INFO-C).",
         "No caller-supplied time or epoch accepted as authority; no existing test, gate, threshold or sealed record weakened or rewritten.",
@@ -17359,6 +17445,7 @@
         "docs/OCOR_LLD_v1.1.md \u00a74.3, \u00a76, \u00a77 (FGM-17)",
         "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md \u00a72.2 (C8), \u00a75.5"
       ],
+      "pull_request": 343,
       "recorded_at": "2026-10-12T21:13:51.011370+00:00",
       "repair_cycle": 2,
       "repair_cycles_used": 2,
@@ -17368,7 +17455,23 @@
       ],
       "rollback_procedure": "New revert commit only; keep new evidence and explicit supersession history, historical seals untouched.",
       "scope": "Align ToolCallRuntime to LLD v1.1 \u00a74.3 and \u00a76 (C8 kill switch preemptive) and ADD v1.3 \u00a75.5 (stop denies new mutative tool calls, revokes capability leases in the local boundary, target <=10 s). Today invoke checks the stop once (tool_runtime.py:119), then charges the budget (123) and runs the whole sandbox expression (125), which may call several registered tools with no wall-clock bound and no stop re-check; CapabilityLease carries no stop_epoch and the epoch passed to invoke is caller-chosen. Probe: C8-1 stop accepted after the guard does not prevent the effect (receipt epoch 0, controller 1 STOPPING); C8-2 second tool of the same expression produces its effect 10.5 s after stop acceptance; C8-3 a lease issued at epoch 0 is accepted after stop and dual-control reset at epoch 2. Class check from the same dispatch point: the lease authorizes tool:<tool_name> but the expression can call any registered tool. Fence every tool dispatch atomically against the trusted stop epoch, cancel or bound in-flight calls so the last effect stays within <=10 s, bind leases to the stop epoch so a reset never re-enables a pre-stop lease, and authorize every tool actually called. If the lease-epoch binding needs a public contract change, write a decision request instead of inventing it.",
-      "status": "REPAIR_2_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION_LAST_CYCLE"
+      "seal_hashes": {
+        "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json": "262468fb5d7ec3bb3a9f7d0ae8069060961776c4b98211b642447609cd2003cb",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.json": "f6d4f7b7e9393f9dc2482e69339aa3e3b40a36ff88067d5d87f42d031134bba7",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json": "19d22bf87e6888ab634f66333dd33e70625e2904771a907a4e361efc8968e63a",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json": "fb33a357e0b889e59b789e22ba2c46f0234adab6bff61234fe8bd79f11c0f3bf",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json": "3b5a8015ce7a57f4efa53a15020009db6f6c8d128bb8e323d509f8665378c3fa"
+      },
+      "sealed_head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5",
+      "status": "RESOLVED_VERIFIED_SEALED_MERGED",
+      "verifier_full_duration_notice": {
+        "cap_seconds": 4500,
+        "disposition": "REM-0033-LOCAL-FULL-DURATION (2026-10-25) point 4: recorded as before, no new request (not within 5 min of the cap)",
+        "duration_seconds": 3819.747,
+        "notice_seconds": 3600,
+        "status": "PASS",
+        "tests": 3107
+      }
     },
     "REM_0028_APPROVER_AUTHORITY_REVALIDATION": {
       "acceptance_criteria": [
@@ -24307,6 +24410,7 @@
       },
       "id": "OCOR-DEV-REM-0037",
       "id_allocation": "First free REM-* verified read-only on 2026-10-25 across every local and remote ref (git grep), ~/.ocor-codex JSON/Markdown and verdicts, PR titles/bodies: zero occurrences of REM-0037 (REM-0036 highest in use; REM-0099 only as a range bound in decision text).",
+      "po_decision": "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (2026-10-25)",
       "pre_code_inventory": {
         "artifacts": {
           "artifacts_location": "~/.ocor-codex/rem0037-inventory-20261025/ (outside Git)",
@@ -24320,16 +24424,22 @@
         "observed_main": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
         "outcome": "Point 2 threshold exceeded: minimum 6 requalifications without 0049 (gain at most 28%), 15 including 0049 for the full gain; code not started"
       },
-      "queue_position": "after REM-0018 integration and the REM-0033-LOCAL-FULL-DURATION read-only profiling (its design input); before the last REM-0027 cycle",
+      "queue_position": "removed from the pre-G6 queue (supersedes only point 1 of LOCAL-SUITE-SPLIT); not to be resumed on own initiative; after G6 closure a new decision request with updated measurements may be opened",
       "scope": "Local full suite in 2 parallel parts, each with an isolated stack (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials) generated by the versioned procedure; default single-stack behaviour identical for CI, verifier and every other use; teardown of both stacks with zero residue.",
-      "status": "BLOCKED_OPEN_PO_DECISION_INVENTORY_THRESHOLD",
+      "status": "SUSPENDED_BY_PO_UNTIL_AFTER_G6_NOT_CLOSED_NOT_VERIFIED",
+      "suspension_effects": [
+        "no parameterisation of endpoints or names, no Compose override, no requalification, no change to code, tests, harness, workflows or sealed records for the split suite",
+        "local full suite remains serial with the current procedure for implementer and verifier",
+        "kind-only-in-default-part question left open for the post-G6 re-evaluation",
+        "inventory artifacts outside Git (~/.ocor-codex/rem0037-inventory-20261025/) unchanged as reference"
+      ],
       "verification": "Independent verifier of a provider different from all implementers"
     }
   },
   "repository": "nepryoon/ocor",
   "schema_version": "1.0",
   "state_sync_ci": {
-    "branch": "governed/state-sync-rem0018-integrated-20261025",
+    "branch": "governed/state-sync-rem0027-integrated-20261025",
     "note": "This metadata-only state sync merges only after thirteen required named checks succeed on its exact committed HEAD; observed IDs are retained by the loop and confirmed at the next resumption.",
     "status": "PENDING_EXACT_HEAD_REQUIRED_CHECKS",
     "wait_contract": {
@@ -25520,7 +25630,7 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-25T12:55:34.501114+00:00",
+  "updated_at": "2026-10-25T15:33:31.341128+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
@@ -25532,11 +25642,13 @@
     },
     {
       "head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
+      "merge_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
       "repair_cycle": 2,
       "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
       "review_type": "REMEDIATION",
-      "status": "PENDING_EXTERNAL_VERIFICATION",
-      "task_id": "OCOR-DEV-REM-0027"
+      "status": "COMPLETED_GO_FOR_EVIDENCE_SEAL_INTEGRATED",
+      "task_id": "OCOR-DEV-REM-0027",
+      "verdict_sha256": "69ba037db4de32275de4840dda5deaf7a614bd725551d5097f141a0652e7fe1d"
     }
   ]
 }
