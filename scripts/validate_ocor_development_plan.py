@@ -701,6 +701,11 @@ def main() -> int:
         "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.log",
+        # REM-0027 repair 2: regression-only requalifications forced by this allowlist.
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
