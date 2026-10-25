@@ -1,11 +1,13 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "caa715af3def246061ac1747f3660c4d68505935",
+  "baseline_commit": "938c2a9196890192f80643e0c50bddb27ccf16fe",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "68bdb8b076a3de66cf985cce4f4b8d111428a6418436ea93aca2c4eb077e132e"
+    "sha256": "09ff9ef0fc36e18c6c1554a520fa44438dde6de53c8846becb21a265650ea10e"
   },
-  "blocking_tasks": [],
+  "blocking_tasks": [
+    "OCOR-DEV-REM-0031 consumer adaptation, qualification, verification and integration"
+  ],
   "claims": {
     "E1": 0,
     "E2": 0,
@@ -13,73 +15,67 @@
     "Production_readiness": "NO-GO",
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "completed_evidence_tasks": 70,
-  "decision_requests": [],
-  "direct_ready_disposition": "NOT_EXECUTABLE_UNDER_PO_PRIORITY_AND_OPEN_G6_DEPENDENCIES",
+  "completed_evidence_tasks": 74,
+  "decision_requests": [
+    {
+      "branch": "governed/decision-request-rem0031-registry-consumer-scope",
+      "commit": "4daecbf19c07f88b88edc1a1e16bd2d08701caac",
+      "id": "REM-0031-REGISTRY-CONSUMER-SCOPE",
+      "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
+      "pr": 345,
+      "recommendation": "option 1",
+      "sha256": "4efd0f22c1c0bb13ee8f9fe48644bf0f3e2528cc5f131ea3c1307b8d7ea12c67",
+      "status": "OPEN_PO_DECISION_REQUIRED"
+    }
+  ],
+  "direct_ready_disposition": "NOT_EXECUTABLE_BEHIND_MANDATORY_REMEDIATION_REM_0031",
   "direct_ready_tasks": [
-    "OCOR-DEV-0056",
-    "OCOR-DEV-0057",
     "OCOR-DEV-0060",
-    "OCOR-DEV-0063"
+    "OCOR-DEV-0061",
+    "OCOR-DEV-0062",
+    "OCOR-DEV-0063",
+    "OCOR-DEV-0064"
   ],
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "independent_verifier": {
     "implementers": [
       {
         "agent": "Claude Code",
-        "contribution": "original harness implementation and tests",
+        "contribution": "REM-0031 inventory, decision request and provisioning boundary WIP",
         "provider": "Anthropic"
       },
       {
         "agent": "Codex",
-        "contribution": "post-reboot qualification; repair1 RED/GREEN implementation and local qualification/evidence",
+        "contribution": "counted by the loop among the task implementers",
         "provider": "OpenAI"
       }
     ],
-    "latest_verdict": {
-      "created_at": "2026-10-19T01:52:11Z",
-      "findings": [],
-      "head_sha": "5603fb7aeea736aab58d2ef70475c3750f208036",
-      "not_executed": [],
-      "path": "/home/luca/.ocor-codex/verdicts/OCOR-DEV-REM-0033-5603fb7aeea7-1-env-recheck.json",
-      "request_id": "OCOR-DEV-REM-0033-5603fb7aeea7-1-env-recheck",
-      "sha256": "eecb659f456b05d7e69f030a255360e6fe2c00cf8aa08f2aeccddd1319b7b312",
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verifier": {
-        "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori del task: Claude Code (Anthropic) e Codex (OpenAI). Nessun implementatore appartiene al fornitore del verifier.",
-        "model": "grok-4.7-high",
-        "process": "Cursor CLI, contesto pulito, esecuzione non interattiva"
-      }
-    },
-    "status": "GO_FOR_EVIDENCE_SEAL"
+    "status": "NOT_REQUESTED_WIP_CHECKPOINT"
   },
   "local_controls": {
-    "candidate_deterministic_tests": "NOT_RERUN: prior 167 PASS and 42 subtests on unchanged candidate execution tree; not new evidence",
-    "evidence_input_drift": "70 tasks / 194 inputs / 0 drift",
-    "independent_verification": "NOT_REQUESTED_LOCAL_QUALIFICATION_INCOMPLETE",
+    "boundary_tests": "RED 48/48 NotImplementedError before code; GREEN 57/57 on the real stack, 0 skipped",
+    "evidence_input_drift": "74 tasks / 224 inputs / 0 drift",
+    "full_suite": "NOT_EXECUTED: WIP checkpoint",
     "normative_sha256": "8/8 PASS",
-    "prescribed_root_harness": "14 PASS",
-    "resources": "No session resources created; no OCOR bootstrap/PoC containers present; no background activities started",
-    "runtime_this_iteration": "NOT_EXECUTED: pre-existing external TCP8080 conflict; no bootstrap retry without changed condition",
-    "services": "NOT_EXECUTED: no OCOR bootstrap containers present",
-    "state_sync_gates": "RCCAD PASS_LOCAL_PRECHECK; scope/language/ruff/mypy strict/drift/runtime-record validators PASS; plan 37 PASS / 2 NOT_EXECUTED preserved. Runtime-record validators do not qualify new live tests.",
-    "toolchain": "9/9 version and digest PASS using the existing isolated pinned toolchain; host PATH defaults not used"
+    "plan_allowlist": "FAIL_EXPECTED_PENDING_ALLOWLIST on the WIP branch only (two new paths)",
+    "regression": "0048 + REM-0031 + six consumer modules: 622 passed, 0 skipped",
+    "resources": "Stack torn down: 0 containers, 0 volumes"
   },
-  "minimal_unblock_action": "Nessuna per REM0033: chiusa; proseguire con lo scanner governato.",
-  "next_executable_action": "Eseguire il change set governed dedicato REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (PO2026-10-15 opzione1): verificare provenienza e tre digest esatti del record storico, RED scanner attuale, registro append-only senza stringhe e scanner fail-closed con tutti i negativi prescritti; nessun ampliamento di scope. Inventariare le riqualifiche necessarie, suite locali e richiesta esterna a verifier di fornitore diverso da tutti gli implementatori. Poi integrare REM0019 PR254 senza riscritture, REM0023, riprendere0056 WIP5edd6cd e0057-0059, REM0030 e dipendenzeG6. REM0028 WIP1974738 preservato. REM0033 chiusa: nessun ulteriore repair o replay dei gate gia verdi sullo stesso albero.",
+  "minimal_unblock_action": "Disposition del PO sulla decision request REM-0031-REGISTRY-CONSUMER-SCOPE (PR #345), opzione raccomandata 1.",
+  "next_executable_action": "Attendere la disposition del PO sulla decision request REM-0031-REGISTRY-CONSUMER-SCOPE (PR #345 bozza): tutto il lavoro residuo eseguibile ne dipende (adattamento dei consumer, qualifica, verifica e integrazione di REM-0031; G6 OCOR-DEV-0060-0069 subordinato a REM-0031; OCOR-DEV-REM-0037 sospesa dal PO). Dopo la disposition: rimuovere TERMINAL_BLOCKED con aggiornamento di stato tracciato; riprendere il branch governed/ocor-dev-rem-0031-identity-registry-writer-authority dal checkpoint WIP 6f98a15bfc1f0a5640c0380274fad3ed24cd0f5b senza riscriverne la storia (allineamento a origin/main solo con merge non distruttivo); applicare l opzione scelta (opzione 1: register() chiuso per default sulle chiavi Q1 dopo il controllo di immutabilita, seeding alla costruzione, scrittura runtime solo tramite IdentityProvisioningBoundary; adattamento delle sole scritture del registry nei sei moduli consumer con prova AST e test che fallisce se il diff tocca altro); RED prima del codice per la chiusura del primo writer ostile direttamente su register(); allowlist del piano con i soli percorsi esatti nuovi e riqualifiche con supersession (opzione 1: 0043, 0044, 0058; piu le riqualifiche di sola regressione 0005, 0050, 0082 imposte dalla modifica del validator del piano); suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600 e OCOR_LIVE_POSTGRES_DSN; richiesta di verifica esterna sull HEAD esatto con verifier di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic). Poi G6 (OCOR-DEV-0060 e seguenti). Nessun nuovo DEC, E1/E2/Verified o claim.",
   "no_new_po_normative_decision_required": true,
-  "open_pull_requests": 11,
+  "open_pull_requests": 8,
   "previous_report": {
-    "commit": "6b6bead55febbee2fe7b15ef0b79f3a77ac87c6c",
+    "commit": "12d07e38884e548213e7eef90a41b155c64da6d5",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "64793b66564f54caf1633199abc8da67ec786dfb582bad30adf1d38a57b1b2c9",
+    "sha256": "c8499f0ef95bceac09814a69b88b7ad194508f190f343fe5629882bc0b95b5c2",
     "status": "HISTORICAL_PRESERVED_IN_GIT"
   },
-  "recorded_at": "2026-10-16T22:54:45.478202+00:00",
-  "remaining_backlog_tasks": 14,
+  "recorded_at": "2026-10-25T18:05:07.598286+00:00",
+  "remaining_backlog_tasks": 10,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "HISTORICAL_SUPERSEDED_REM0033_INTEGRATED",
-  "terminal_state": "CONTINUE",
-  "updated_at": "2026-10-19T02:27:34.511183+00:00"
+  "status": "TERMINAL_BLOCKED",
+  "terminal_state": "TERMINAL_BLOCKED",
+  "updated_at": "2026-10-25T18:05:07.598286+00:00"
 }
