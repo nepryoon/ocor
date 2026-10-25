@@ -1,71 +1,28 @@
 {
   "active_iteration": {
-    "baseline_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
-    "branch": "governed/state-sync-rem0018-integrated-20261025",
+    "baseline_commit": "fca729117eaab09db154af2cb1e3395c63c9ec18",
+    "branch": "governed/state-sync-rem0033-profiling-20261025",
     "campaign_background_processes_remaining": false,
-    "candidate_branch": "governed/ocor-dev-rem-0018-anonymous-volume-teardown",
-    "candidate_head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
-    "change_set": "OCOR-DEV-REM-0018",
-    "independent_verification": {
-      "findings": [
-        {
-          "blocking": false,
-          "evidence": "After campaign exit 0 and before the final teardown, docker network 7888d40b0e1e (name=kind, driver=bridge, created 2026-10-25 07:44:24 +0100, containers empty) was present and was absent from the pre-campaign network snapshot. Container and volume sets were unchanged. kind-teardown-observations.json records one removal, status OWNED_KIND_TEARDOWN_OBSERVED, node ocor-poc-control-plane, remover kind delete cluster --name ocor-poc, zero rejections, window_seconds 30. The REM-0018 diff does not touch test_ocor_dev_0049.py. The subsequent scripts/bootstrap_ci_environment.py --teardown --execute removed it as an attributed test network and left an empty residual.",
-          "id": "VF-001",
-          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0049.py:3319",
-          "required_fix": "Pre-existing residue of the unchanged 0049 kind fixture, outside this change set. A separate remediation should remove the empty docker network kind when the owned cluster is deleted. It does not change the REM-0018 Qdrant lifecycle result; the final official teardown already collected this network.",
-          "severity": "medium"
-        }
-      ],
-      "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
-      "not_executed": [],
-      "request_id": "OCOR-DEV-REM-0018-6abdaf37bd5a-0",
-      "sha256": "47c6889df62d13691af7e82366bbb7bf48b68dc2c941d66bcfb3169d8e2acada",
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verifier": {
-        "independence_limits": "Processo e contesto separati. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatori dichiarati nella richiesta e nel record: Codex, fornitore OpenAI; Claude Code, fornitore Anthropic. Nessun implementatore appartiene al fornitore del verifier.",
-        "model": "grok-4.7-high",
-        "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
-        "provider": "xAI"
-      }
-    },
-    "merge_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
-    "next_action": "Eseguire l unita breve di profilazione in sola lettura disposta da REM-0033-LOCAL-FULL-DURATION (2026-10-25) ed estesa da REM-0033-LOCAL-FULL-DURATION-PROFILING-SCOPE (2026-10-25): soltanto artefatti di campagne gia eseguite (JUnit con tempi per caso, campaign_result.json, log, registri bootstrap/teardown), nessuna nuova campagna. Ripartizione: stack setup/teardown, raccolta, primi 30 casi e primi 10 moduli per durata, attese/timeout consumati, quota seriale e parallelizzabile; confronto dichiarato con 0059 sul vecchio host; perche la suite non accelera con 24 thread. Esecuzioni complete per unita (0057, 0058, 0059, REM-0036, REM-0018) con esecutore, durata, esito e quota sul tempo dell unita; fattibilita di 2 parti con stack isolati (stima tempo, memoria per stack contro 32 GB e guardia 3 GB, risorse condivise: progetto Compose ocor-bootstrap, porte, kind, volumi, SPIRE; test non divisibili; riuso della partizione CI in 4 parti). Registrare l esito con gli hash degli artefatti nella disposition del file REM-0033-LOCAL-FULL-DURATION.md e nell ITERATION_LOG, nell allowlist vigente; eventuali interventi solo come decision request separate (operativa o normativa). Poi OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, input di progetto = profilazione), quindi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
-    "phase": "VERIFIED_SEALED_MERGED",
-    "pr": 337,
-    "request_id": "OCOR-DEV-REM-0018-6abdaf37bd5a-0",
+    "change_set": "REM-0033-LOCAL-FULL-DURATION read-only profiling",
+    "decisions": [
+      "REM-0033-LOCAL-FULL-DURATION (2026-10-25)",
+      "REM-0033-LOCAL-FULL-DURATION-PROFILING-SCOPE (2026-10-25)"
+    ],
+    "next_action": "Eseguire OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, 2026-10-25) come prossima unita governata pre-G6, con input di progetto l esito della profilazione REM-0033 registrato su governed/decision-request-rem0018-local-full-duration-20261025 commit 539b9b6f092e977afec331826e1a8559a2b43cb1: prima del codice inventario dei file e dei record sigillati che li hanno fra gli input (fermarsi con decision request se le riqualifiche superano 3 task o toccano 0049/0050); preferire uno script nuovo che orchestra run_qualifying_campaign.py e parametri con default invariato; isolamento per parte di progetto Compose, porte, cluster kind, rete kind, volumi, directory .ocor, CA SPIRE e credenziali; default single-stack identico per CI e verifier; partizione deterministica dai tempi per caso misurati in cui il caso Helm puo condividere la parte con altre unita (stima circa 1990 s contro circa 2950 s con Helm riservato), moduli non-0049 interi, partition() CI invariata; RED prima del codice per partizionatore e controllo d unione (caso mancante, duplicato, in piu); prova di equivalenza sullo stesso head serial e 2 parti, stesso insieme, entrambe PASS, zero skip; avvio 2 parti solo con MemAvailable sufficiente (soglia proposta 18 GiB da confermare con misura diretta), altrimenti seriale registrato; guardia memoria, tetto 75 min e notifica 60 min sul tempo complessivo invariati; teardown di entrambi gli stack a zero residui. Verifica esterna di fornitore diverso da tutti gli implementatori (Codex sempre contato). Poi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+    "phase": "PROFILING_RECORDED_STATE_SYNC",
     "roles": {
-      "authority": "LOOP-AGENT-ROTATION (2026-10-16); LOOP-IMPLEMENTER-ORDER (2026-10-25)",
+      "authority": "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
       "implementers": [
-        {
-          "agent": "Codex",
-          "model": "NOT_EXPOSED_BY_RUNTIME",
-          "provider": "OpenAI",
-          "scope": "REM0018 audit, RED/GREEN, Qdrant lifecycle, qualification launch"
-        },
         {
           "agent": "Claude Code",
           "cli_version": "2.1.310",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "resumption after Codex quota exhaustion: evidence assembly and verification request; then integration metadata and evidence sealing only"
+          "scope": "read-only profiling, decision-request disposition record and state sync"
         }
       ],
-      "integration_agent": {
-        "agent": "Claude Code",
-        "cli_version": "2.1.310",
-        "model": "claude-opus-5-5",
-        "provider": "Anthropic",
-        "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation and tests unchanged"
-      },
-      "verifier": {
-        "agent": "Cursor CLI",
-        "independence": "Processo e contesto separati. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatori dichiarati nella richiesta e nel record: Codex, fornitore OpenAI; Claude Code, fornitore Anthropic. Nessun implementatore appartiene al fornitore del verifier.",
-        "model": "grok-4.7-high",
-        "provider": "xAI"
-      }
-    },
-    "sealed_head_sha": "75fd0c84f8170f7cfa8b3e3d9f92267bd20a5e52"
+      "verifier": "none required: no code, test, harness or evidence change; analysis only"
+    }
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1793,7 +1750,7 @@
       }
     }
   },
-  "baseline_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
+  "baseline_commit": "fca729117eaab09db154af2cb1e3395c63c9ec18",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5598,9 +5555,69 @@
           "any intervention only as separate decision requests; no implementation authorised by this decision"
         ],
         "option": "PO option 2 (request option 1 with early profiling)",
-        "profiling_status": "PENDING_NEXT_UNIT"
+        "profiling_outcome": {
+          "artifact_sha256": {
+            "profile.json": "f700496b5d301255564b9d1080f93698ee7412000ae0b33b34eb9a5e99a00bc3",
+            "profile.py": "df002a887dc5adae7ae1516d5704b17774a58db855218d055eea19311196cdaa",
+            "units.json": "c75bba8fc76df28115eec6600ab34b59735e4d18e08a272835aece49330f849b",
+            "units.py": "06343de2152fa4d71612e435d4e2509d16b07e11560aedc9f0855f724ee3d956"
+          },
+          "artifacts_location": "~/.ocor-codex/rem0033-profiling-20261025/ (outside Git)",
+          "campaigns_analysed": [
+            "REM-0018 impl",
+            "REM-0036 impl",
+            "REM-0030 impl",
+            "REM-0030 verifier",
+            "0059 impl c0",
+            "0059 verifier c0",
+            "0059 impl c1",
+            "0059 verifier env-recheck"
+          ],
+          "executor": "Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310); read-only; no campaign, test or container started",
+          "findings": [
+            "Wall time = sum of per-case times plus 7.7-11 s; collection and coverage overhead negligible; stack provisioning 41.7-47.1 s outside campaign time; teardown duration NOT_MEASURED",
+            "test_ocor_dev_0049 is 72.3% (REM-0018 2859.7 s); Helm case alone 1008.0 s (25.5%), range 363-1099 s across eight campaigns from the real */15 CronJob tick; rest of suite stable 2936.7-2971.8 s new host, 3128.3-3203.4 s old host",
+            "No speed-up with 24 threads: single serial pytest process with real waits; mean busy cores 1.02 (p95 2.14) of 24 new host, 1.31-1.51 of 14 old host (observer cpu_count 14, not 12); iowait 0.06-0.08%",
+            "Local full runs are 43-49% of unit wall time for 0057, 0058, 0059, REM-0036, REM-0018; with CI PRs over 80%",
+            "Two parts: about 2950 s with current partition() rules (Helm reserved alone), about 1900-1990 s with a measured-time partition where Helm shares its part (worst-case Helm about 2080 s)",
+            "Memory: one stack plus agents 10.2-11.7 GiB at start, 14.4-15.1 GiB peak, MemAvailable min 15.2-15.9 GiB; estimated 5.1-6.2 GiB per part; proposed start threshold MemAvailable >= 18 GiB, to be confirmed by direct measurement in REM-0037",
+            "Shared resources preventing two stacks: fixed Compose project ocor-bootstrap and network, fixed 127.0.0.1 ports, kind cluster ocor-poc and shared docker network kind, named volumes, .ocor directory, SPIRE CA/registrations, single credentials file and env, memory guard killing ocor-poc by name"
+          ],
+          "interventions": [
+            {
+              "classification": "OPERATIONAL",
+              "item": "2-part local suite with measured-time partition letting Helm share its part",
+              "route": "already authorised as OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT point 4); no new decision request; CI partition() unchanged"
+            },
+            {
+              "classification": "NORMATIVE",
+              "item": "shorten the real CronJob tick wait in the Helm case",
+              "route": "not recommended; no decision request"
+            },
+            {
+              "classification": "NORMATIVE",
+              "item": "implementer qualification through CI parts",
+              "route": "not proposed before REM-0037 is measured; no decision request now"
+            },
+            {
+              "classification": "NONE",
+              "item": "stack preparation reduction",
+              "route": "about 1% of campaign time; not justified"
+            }
+          ],
+          "new_decision_requests": [],
+          "recorded_at": "2026-10-25T08:46:38.175044+00:00",
+          "recorded_in": {
+            "branch": "governed/decision-request-rem0018-local-full-duration-20261025",
+            "commit": "539b9b6f092e977afec331826e1a8559a2b43cb1",
+            "path": "reports/development/decision_requests/REM-0033-LOCAL-FULL-DURATION.md",
+            "publication": "PUSHED_BRANCH_NO_ALLOWLIST_CHANGE",
+            "sha256": "55af2c331982145397c974a47c85f628a3c453842814dc7b066ae9e2d540d239"
+          }
+        },
+        "profiling_status": "RECORDED"
       },
-      "status": "RESOLVED_PO_DISPOSITION_PROFILING_PENDING"
+      "status": "RESOLVED_PO_DISPOSITION_PROFILING_RECORDED"
     },
     {
       "blocked_tasks": [],
@@ -8508,7 +8525,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "REM_0018_VERIFIED_SEALED_INTEGRATED_PRE_G6_REMEDIATIONS_PENDING",
-  "next_executable_action": "Eseguire l unita breve di profilazione in sola lettura disposta da REM-0033-LOCAL-FULL-DURATION (2026-10-25) ed estesa da REM-0033-LOCAL-FULL-DURATION-PROFILING-SCOPE (2026-10-25): soltanto artefatti di campagne gia eseguite (JUnit con tempi per caso, campaign_result.json, log, registri bootstrap/teardown), nessuna nuova campagna. Ripartizione: stack setup/teardown, raccolta, primi 30 casi e primi 10 moduli per durata, attese/timeout consumati, quota seriale e parallelizzabile; confronto dichiarato con 0059 sul vecchio host; perche la suite non accelera con 24 thread. Esecuzioni complete per unita (0057, 0058, 0059, REM-0036, REM-0018) con esecutore, durata, esito e quota sul tempo dell unita; fattibilita di 2 parti con stack isolati (stima tempo, memoria per stack contro 32 GB e guardia 3 GB, risorse condivise: progetto Compose ocor-bootstrap, porte, kind, volumi, SPIRE; test non divisibili; riuso della partizione CI in 4 parti). Registrare l esito con gli hash degli artefatti nella disposition del file REM-0033-LOCAL-FULL-DURATION.md e nell ITERATION_LOG, nell allowlist vigente; eventuali interventi solo come decision request separate (operativa o normativa). Poi OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, input di progetto = profilazione), quindi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+  "next_executable_action": "Eseguire OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, 2026-10-25) come prossima unita governata pre-G6, con input di progetto l esito della profilazione REM-0033 registrato su governed/decision-request-rem0018-local-full-duration-20261025 commit 539b9b6f092e977afec331826e1a8559a2b43cb1: prima del codice inventario dei file e dei record sigillati che li hanno fra gli input (fermarsi con decision request se le riqualifiche superano 3 task o toccano 0049/0050); preferire uno script nuovo che orchestra run_qualifying_campaign.py e parametri con default invariato; isolamento per parte di progetto Compose, porte, cluster kind, rete kind, volumi, directory .ocor, CA SPIRE e credenziali; default single-stack identico per CI e verifier; partizione deterministica dai tempi per caso misurati in cui il caso Helm puo condividere la parte con altre unita (stima circa 1990 s contro circa 2950 s con Helm riservato), moduli non-0049 interi, partition() CI invariata; RED prima del codice per partizionatore e controllo d unione (caso mancante, duplicato, in piu); prova di equivalenza sullo stesso head serial e 2 parti, stesso insieme, entrambe PASS, zero skip; avvio 2 parti solo con MemAvailable sufficiente (soglia proposta 18 GiB da confermare con misura diretta), altrimenti seriale registrato; guardia memoria, tetto 75 min e notifica 60 min sul tempo complessivo invariati; teardown di entrambi gli stack a zero residui. Verifica esterna di fornitore diverso da tutti gli implementatori (Codex sempre contato). Poi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8550,10 +8567,10 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "branch": "governed/state-sync-rem0018-candidate-20261025",
+    "branch": "governed/state-sync-rem0018-integrated-20261025",
     "change_set": "OCOR-DEV-REM-0018",
-    "merge_commit": null,
-    "phase": "IMPLEMENTED_AWAITING_INDEPENDENT_VERIFICATION",
+    "merge_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
+    "phase": "VERIFIED_SEALED_MERGED",
     "request_id": "OCOR-DEV-REM-0018-6abdaf37bd5a-0"
   },
   "previous_candidate_ci": {
@@ -24197,11 +24214,18 @@
         "Usable for implementer local qualification only after independent GO, seal and merge; verifier keeps current serial procedure until a separate PO decision",
         "Any change of evidence standard/source (parts as separate proofs, CI or CI limits, union waivers) is normative: stop and open a decision request"
       ],
+      "design_input": {
+        "branch": "governed/decision-request-rem0018-local-full-duration-20261025",
+        "commit": "539b9b6f092e977afec331826e1a8559a2b43cb1",
+        "profile_json_sha256": "f700496b5d301255564b9d1080f93698ee7412000ae0b33b34eb9a5e99a00bc3",
+        "sha256": "55af2c331982145397c974a47c85f628a3c453842814dc7b066ae9e2d540d239",
+        "source": "REM-0033-LOCAL-FULL-DURATION profiling outcome"
+      },
       "id": "OCOR-DEV-REM-0037",
       "id_allocation": "First free REM-* verified read-only on 2026-10-25 across every local and remote ref (git grep), ~/.ocor-codex JSON/Markdown and verdicts, PR titles/bodies: zero occurrences of REM-0037 (REM-0036 highest in use; REM-0099 only as a range bound in decision text).",
       "queue_position": "after REM-0018 integration and the REM-0033-LOCAL-FULL-DURATION read-only profiling (its design input); before the last REM-0027 cycle",
       "scope": "Local full suite in 2 parallel parts, each with an isolated stack (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials) generated by the versioned procedure; default single-stack behaviour identical for CI, verifier and every other use; teardown of both stacks with zero residue.",
-      "status": "REGISTERED_QUEUED",
+      "status": "REGISTERED_READY_NEXT_UNIT",
       "verification": "Independent verifier of a provider different from all implementers"
     }
   },
@@ -25399,7 +25423,7 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-25T08:01:11.758014+00:00",
+  "updated_at": "2026-10-25T08:46:38.175044+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
