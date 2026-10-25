@@ -273,6 +273,7 @@ def main() -> int:
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
         # CC-OCOR-DELIVERY-COMPLETION: exact REM-0018 teardown and requalification outputs.
+        "spikes/vector_partition/oracle.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py",
         "reports/assurance/OCOR-DEV-REM-0018-RCCAD/README.md",
         "reports/assurance/OCOR-DEV-REM-0018-RCCAD/red.log",
