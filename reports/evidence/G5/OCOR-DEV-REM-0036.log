@@ -1,0 +1,374 @@
+REM-0036 actual outputs (raw, unedited members).
+
+--- red.log ---
+.F.FFFFF.F                                                               [100%]
+=================================== FAILURES ===================================
+___ test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit[1] ___
+
+version = 1
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_unit_one_altered_audit_re0')
+
+    @pytest.mark.parametrize("version", [1, 2])
+    def test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit(version: int, tmp_path: Path) -> None:
+        w, signer, backup = two_versions()
+        forge(w, version)
+        restore, participant, audit = t59.unit_restore(w, tmp_path, signer)
+>       t59.refused(lambda: restore.open(backup.payload, backup.signature), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit.<locals>.<lambda> at 0x774f075765c0>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+_______ test_unit_audit_ref_altered_after_opening_discards_the_response ________
+
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_unit_audit_ref_altered_af0')
+
+    def test_unit_audit_ref_altered_after_opening_discards_the_response(tmp_path: Path) -> None:
+        w, signer, backup = two_versions()
+        restore, _, audit = t59.unit_restore(w, tmp_path, signer)
+        restore.open(backup.payload, backup.signature)
+        served: list[str] = []
+    
+        def materialise() -> str:
+            forge(w, 1)
+            served.append("called")
+            return "materialised"
+>       t59.refused(lambda: restore.serve(materialise), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_unit_audit_ref_altered_after_opening_discards_the_response.<locals>.<lambda> at 0x774f0744fd80>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+___ test_unit_signed_manifest_refs_must_match_the_restored_store[extra-ref] ____
+
+label = 'extra-ref'
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_unit_signed_manifest_refs0')
+
+    @pytest.mark.parametrize("label", sorted(MANIFEST_REF_CHANGES))
+    def test_unit_signed_manifest_refs_must_match_the_restored_store(label: str, tmp_path: Path) -> None:
+        change = MANIFEST_REF_CHANGES[label]
+        w, signer, backup = two_versions()
+    
+        def edit(body: dict[str, Any]) -> None:
+            body["entries"][0]["audit_refs"] = change(body["entries"][0]["audit_refs"])
+        payload, signature = t59.resigned(backup, signer, edit)
+        restore, _, audit = t59.unit_restore(w, tmp_path, signer)
+>       t59.refused(lambda: restore.open(payload, signature), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_unit_signed_manifest_refs_must_match_the_restored_store.<locals>.<lambda> at 0x774f074ac540>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+_ test_unit_signed_manifest_refs_must_match_the_restored_store[historical-ref] _
+
+label = 'historical-ref'
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_unit_signed_manifest_refs1')
+
+    @pytest.mark.parametrize("label", sorted(MANIFEST_REF_CHANGES))
+    def test_unit_signed_manifest_refs_must_match_the_restored_store(label: str, tmp_path: Path) -> None:
+        change = MANIFEST_REF_CHANGES[label]
+        w, signer, backup = two_versions()
+    
+        def edit(body: dict[str, Any]) -> None:
+            body["entries"][0]["audit_refs"] = change(body["entries"][0]["audit_refs"])
+        payload, signature = t59.resigned(backup, signer, edit)
+        restore, _, audit = t59.unit_restore(w, tmp_path, signer)
+>       t59.refused(lambda: restore.open(payload, signature), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_unit_signed_manifest_refs_must_match_the_restored_store.<locals>.<lambda> at 0x774f074accc0>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+__ test_unit_signed_manifest_refs_must_match_the_restored_store[missing-ref] ___
+
+label = 'missing-ref'
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_unit_signed_manifest_refs2')
+
+    @pytest.mark.parametrize("label", sorted(MANIFEST_REF_CHANGES))
+    def test_unit_signed_manifest_refs_must_match_the_restored_store(label: str, tmp_path: Path) -> None:
+        change = MANIFEST_REF_CHANGES[label]
+        w, signer, backup = two_versions()
+    
+        def edit(body: dict[str, Any]) -> None:
+            body["entries"][0]["audit_refs"] = change(body["entries"][0]["audit_refs"])
+        payload, signature = t59.resigned(backup, signer, edit)
+        restore, _, audit = t59.unit_restore(w, tmp_path, signer)
+>       t59.refused(lambda: restore.open(payload, signature), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_unit_signed_manifest_refs_must_match_the_restored_store.<locals>.<lambda> at 0x774f074ad8a0>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+__ test_unit_signed_manifest_refs_must_match_the_restored_store[swapped-refs] __
+
+label = 'swapped-refs'
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_unit_signed_manifest_refs3')
+
+    @pytest.mark.parametrize("label", sorted(MANIFEST_REF_CHANGES))
+    def test_unit_signed_manifest_refs_must_match_the_restored_store(label: str, tmp_path: Path) -> None:
+        change = MANIFEST_REF_CHANGES[label]
+        w, signer, backup = two_versions()
+    
+        def edit(body: dict[str, Any]) -> None:
+            body["entries"][0]["audit_refs"] = change(body["entries"][0]["audit_refs"])
+        payload, signature = t59.resigned(backup, signer, edit)
+        restore, _, audit = t59.unit_restore(w, tmp_path, signer)
+>       t59.refused(lambda: restore.open(payload, signature), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_unit_signed_manifest_refs_must_match_the_restored_store.<locals>.<lambda> at 0x774f074ae3e0>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+______ test_live_one_altered_historical_audit_ref_blocks_materialisation _______
+
+backends = Backends(dsn='postgresql://ocor:<redacted:OCOR_LOCAL_POSTGRES_PASSWORD>@127.0.0.1:55433/ocor', qdrant=<spikes.vect...ocor_dev_0055.OpenBaoHarness object at 0x774f0768e7b0>, schemas=['ocor_t0055_085cbb569810', 'ocor_t0056_f2ceb07c937c'])
+tmp_path = PosixPath('/tmp/pytest-of-luca/pytest-15/test_live_one_altered_historic0')
+
+    def test_live_one_altered_historical_audit_ref_blocks_materialisation(backends: life.Backends, tmp_path: Path) -> None:
+        d = t59.live_drill(backends, tmp_path, hold=True)
+        backup, signer, _ = t59.live_capture(d, backends)
+        head = d.restored.metadata.get("x", 2).staged.stage_digest
+        forge_live(d, "x", 1)
+        assert d.restored.metadata.get("x", 2).staged.stage_digest == head  # the head slot is untouched
+        assert d.restored.metadata.get("x", 1).staged.audit_ref == FORGED
+        d.deliver_journal()
+        audit = receipts.PostgresReceiptAudit(backends.dsn, d.restored.metadata.schema)
+        restore = t59.live_restore(d, backends, signer, audit=audit)
+>       t59.refused(lambda: restore.open(backup.payload, backup.signature), "PROJECTION_DRIFT")
+
+tests/tasks/test_ocor_dev_rem_0036.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_live_one_altered_historical_audit_ref_blocks_materialisation.<locals>.<lambda> at 0x774f075a7920>
+detail = 'PROJECTION_DRIFT'
+
+    def refused(action: Any, detail: str) -> MemoryOperationsError:
+>       with pytest.raises(MemoryOperationsError) as caught:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE MemoryOperationsError
+
+tests/tasks/test_ocor_dev_0059.py:82: Failed
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_restore_with_intact_historical_audit_refs_opens_and_serves
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit[2]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_live_intact_historical_audit_refs_reopen_the_restore
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit[1]
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_audit_ref_altered_after_opening_discards_the_response
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[extra-ref]
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[historical-ref]
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[missing-ref]
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[swapped-refs]
+FAILED tests/tasks/test_ocor_dev_rem_0036.py::test_live_one_altered_historical_audit_ref_blocks_materialisation
+7 failed, 3 passed in 3.68s
+
+--- green.log ---
+..........                                                               [100%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_restore_with_intact_historical_audit_refs_opens_and_serves
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit[1]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_one_altered_audit_ref_is_projection_drift_with_denial_audit[2]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_audit_ref_altered_after_opening_discards_the_response
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[extra-ref]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[historical-ref]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[missing-ref]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_unit_signed_manifest_refs_must_match_the_restored_store[swapped-refs]
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_live_intact_historical_audit_refs_reopen_the_restore
+PASSED tests/tasks/test_ocor_dev_rem_0036.py::test_live_one_altered_historical_audit_ref_blocks_materialisation
+10 passed in 3.84s
+
+--- task-rem_0036.log ---
+..........                                                               [100%]
+10 passed in 4.05s
+
+--- task-0059.log ---
+........................................................................ [ 32%]
+........................................................................ [ 64%]
+........................................................................ [ 96%]
+.......                                                                  [100%]
+223 passed in 32.48s
+
+--- regr-0059-0056.log ---
+........................................................................ [ 19%]
+........................................................................ [ 38%]
+........................................................................ [ 57%]
+........................................................................ [ 77%]
+........................................................................ [ 96%]
+.............                                                            [100%]
+373 passed in 95.65s (0:01:35)
+
+--- gates/inputs.log ---
+inputs/normative/OCOR_Architectural_Design_Document_v1.1.md: OK
+inputs/normative/OCOR_CAP_ELM_Requirement_Crosswalk_v0.9.md: OK
+inputs/normative/OCOR_DEC_197_plus_Draft_v0.1.md: OK
+inputs/normative/OCOR_Decision_Register_v1.0.md: OK
+inputs/normative/OCOR_Decision_Traceability_Index_v1.0.md: OK
+inputs/normative/OCOR_Registers_v0.9.md: OK
+inputs/normative/OCOR_Requirement_Register_v0.9.md: OK
+inputs/normative/OCOR_Requirement_Traceability_Index_v0.9.md: OK
+
+--- gates/harness.log ---
+==============================================================================
+OCOR ADD — harness di verifica tool-backed
+oggetto: inputs/normative/OCOR_Architectural_Design_Document_v1.1.md
+sha256:  3e7532c7101e80c74b511cedc56a0563ca0938a3fe259911a91245cb19dedc7f
+==============================================================================
+[PASS] Integrità sorgenti
+       8 file, tutti i digest coincidono
+[PASS] JSON Schema — parsing e meta-validazione
+       5 schemi Draft 2020-12 validi: urn:ocor:schema:action-type-contract:1.0, urn:ocor:schema:canonical-ingestion-envelope:1.1, urn:ocor:schema:event-subscription-contract:1.0, urn:ocor:schema:mcp-tool-contract:1.1, urn:ocor:schema:signed-canonical-ir:1.0
+[PASS] OpenAPI — risoluzione $ref
+       OpenAPI 3.1.0 v1.1.0; 6 path, 25 schemi, 26 $ref; tutti i $ref risolti; schemi mai referenziati: nessuno
+[PASS] OpenAPI — validazione semantica con validator ufficiale
+       openapi-spec-validator==0.9.0; wheel SHA-256 222fecffc7714f6d0a6ad62c0e4b66cc2b7dbfafb7b93acfc6c308abbdb51af8; documento OpenAPI 3.1.0 valido
+[PASS] Protobuf — compilazione
+       protoc compila senza errori
+[PASS] Turtle/RDF — parsing
+       17 triple
+[PASS] Rami condizionali insoddisfacibili (classe RV-01)
+       nessun campo richiesto da un condizionale risulta non dichiarato
+[INFO] Rami condizionali da coprire con casi POSITIVI
+       il §7.1 del prompt richiede almeno un caso positivo per ramo — signed-canonical-ir=0; canonical-ingestion-envelope=4; mcp-tool-contract=11; action-type-contract=9; event-subscription-contract=0
+[PASS] FSM — bijezione diagramma/tabella
+       29 stati in corrispondenza
+[PASS] FSM — famiglia ACT-T
+       ACT-T01–T31 contigui, più le varianti a/b/c
+[INFO] FSM — stati terminali
+       stati senza archi uscenti non attesi: nessuno; stati di indeterminatezza privi di uscita: nessuno
+[PASS] Tracciabilità — allocazione in §7
+       DEC 181/196; BR 18/18; FR 174/174; NFR 93/93; ARC 23/23; CAP 25/26; ELM 103/103; RSK 60/60
+[PASS] Universo normativo
+       693 = 693 atteso
+[PASS] Rimandi di sezione
+       44 rimandi distinti, 59 sezioni; non risolti: nessuno
+[PASS] Evidence fence
+       'E1=0' ricorre 16 volte; claim probatori non supportati: nessuno
+[PASS] Nessun DEC-197 assegnato
+       3 occorrenze, tutte in forma negativa o come nome di file
+==============================================================================
+PASS 14  FAIL 0  NOT_EXECUTED 0
+==============================================================================
+referto JSON: reports/verify_report.json
+
+--- gates/drift.log ---
+{
+  "checked_inputs": 224,
+  "checked_tasks": 74,
+  "drifted_inputs": 0,
+  "drifted_tasks": [],
+  "findings": [],
+  "status": "PASS"
+}
+
+--- gates/language.log ---
+PASS: no tracked file uses a monitored extension outside its authorized area
+
+--- gates/rccad.log ---
+{
+  "checked_artifacts": 22,
+  "dynamic_assurance": "CI_REQUIRED",
+  "findings": [],
+  "fitness_results": {
+    "AFF-001": "PASS_STATIC_PRECHECK",
+    "AFF-002": "PASS_STATIC_PRECHECK",
+    "AFF-003": "PASS_STATIC_PRECHECK",
+    "AFF-004": "PASS_STATIC_PRECHECK",
+    "AFF-005": "PASS_STATIC_PRECHECK",
+    "AFF-006": "PASS_STATIC_PRECHECK",
+    "AFF-007": "PASS_STATIC_PRECHECK",
+    "AFF-008": "PASS_STATIC_PRECHECK",
+    "AFF-009": "PASS_STATIC_PRECHECK",
+    "AFF-010": "PASS_STATIC_PRECHECK"
+  },
+  "methodology_sha256": "231ce3325537de85890b16e97f138bd6a4263fc1e240094ed26499af9aeeb6cd",
+  "status": "PASS_LOCAL_PRECHECK"
+}
+
+--- gates/scope.log ---
+PASS: 18 changed path(s); immutable surfaces untouched; task ledger stable
+
+--- gates/plan.log ---
+{"verdict": "PASS", "counts": {"PASS": 37, "NOT_EXECUTED": 2}, "tasks": 84, "requirements": 285, "waves": 29, "critical_days": 161}
+
+--- gates/ruff.log ---
+All checks passed!
+
+--- gates/mypy.log ---
+Success: no issues found in 84 source files
+
+--- full/campaign_result.json ---
+{
+  "candidate_head": "4a79d2961d57d2febf18cf4b146ad18376108370",
+  "counts": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 3053
+  },
+  "duration_seconds": 3784.921411496998,
+  "po_decision_required": true,
+  "required_modules": [
+    "test_ocor_dev_0048",
+    "test_ocor_dev_0049"
+  ],
+  "status": "PASS"
+}
+
+--- exact-union.json ---
+{
+  "collected": 3053,
+  "collection_sha256": "4d3eff027e3aa2c2790badcc5e1f6bf7463df06d0322727fee9aae8cbc7fcf8c",
+  "duplicated": 0,
+  "executed": 3053,
+  "missing": 0,
+  "unexpected": 0
+}
