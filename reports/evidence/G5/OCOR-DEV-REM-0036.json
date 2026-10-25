@@ -420,7 +420,129 @@
     "status": "PASS"
   },
   "independent_verification": {
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "34b69297e19cc8f6bdbaf23e15c86dd5524c1b1c",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "73c90da59210c55eb56b0319f450639af7ee669a",
+      "nonstate_git_tree_sha256": "714fab7b701427fa8b250932ff27afce3e5e32417503af3edefd2077d72e394d",
+      "qualified_head": "61ebdc17698b010a82ea1503a599c81b011c017b",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "81e4b189891303a7e5d413b1d924e62a252ec758a547cd9b807d17bd9de06d02",
+    "commands": [
+      {
+        "command": "sha256sum of docker, git, gh, node, ruff, tsc, uv, helm, kind, kubectl; compare with infra/toolchain.lock.json and environment.json; sha256sum environment.json; lscpu; awk MemTotal /proc/meminfo; python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "Strumenti allineati al lock (docker e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13, git 5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a, gh d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85, node 6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd, ruff b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb, tsc 2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd, uv b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46, helm 912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698, kind c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284, kubectl 5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3). environment.json sha256 c1bd7913d14d6aa27f3f8cea12de2d634f46ee254635f7530c3706e6306dcdab. Host: Intel Core Ultra 9 275HX, 24 thread, MemTotal 31742992 kB. Preflight PASS. Worktree gia preparato, nessun altro worktree creato."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i file normativi OK. Albero inputs 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35, uguale al campo inputs dell'evidenza. Blob dei record di evidenza preesistenti invariati (0 mismatch)."
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: checked_inputs 224, checked_tasks 74, drifted_inputs 0."
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti. La suite dinamica e stata rieseguita con run_qualifying_campaign.py."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato usa un'estensione monitorata fuori dall'area autorizzata."
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/ocor-dev-rem-0036-restore-audit-refs",
+        "exit_code": 0,
+        "summary": "PASS: 18 path cambiati fra base d20652b29a62ab34834d20d8815e0451e54d6043 e HEAD; superfici immutabili intatte; ledger dei task stabile. Il sorgente fra il commit di qualifica 4a79d2961d57d2febf18cf4b146ad18376108370 e HEAD e identico: il commit di pubblicazione aggiunge solo evidenza, manifest e red.log."
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "verdict PASS, 37 PASS. I 2 NOT_EXECUTED sono i controlli opzionali interni markdownlint e renderer Mermaid, non gate obbligatori di questa verifica."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 84 source files."
+      },
+      {
+        "command": "env -i clean shell; python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Prima del provisioning: nessuno stack ocor-bootstrap presente, result ALREADY_REMOVED, residui vuoti."
+      },
+      {
+        "command": "env -i clean shell; python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS in 44.419s. fuseki_max_heap_bytes=1073741824. SVID spiffe://ocor.test/ocor/control-plane presente (control-plane SVID exit 0). Archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132 uguale al lock. 11 container obbligatori healthy, OOMKilled false, RestartCount 0. Shell pulita: bootstrap.env non sourced. Variabili esportate per i test: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN, PYTHONHASHSEED, TZ. env.sh imposta anche PATH e OCOR_VERIFIER_WORKTREE. Nessuno strumento dell'implementatore eseguito."
+      },
+      {
+        "command": "cd ocor-runtime && python -m pytest tests/tasks/test_ocor_dev_rem_0036.py tests/tasks/test_ocor_dev_0059.py tests/tasks/test_ocor_dev_0050.py tests/tasks/test_ocor_dev_0005.py tests/tasks/test_ocor_dev_0082.py -p no:cacheprovider -rfEs --tb=line",
+        "exit_code": 0,
+        "summary": "447 passed in 40.32s. Zero failed, zero error, zero skipped. Backend PostgreSQL live via OCOR_LIVE_POSTGRES_DSN sullo stack pinned; i casi live di REM-0036 alterano la metadata PostgreSQL ripristinata."
+      },
+      {
+        "command": "python /tmp/ocor-verify-OCOR-DEV-REM-0036-61ebdc17698b-0/adversarial_unit.py",
+        "exit_code": 0,
+        "summary": "Cinque probe sul gate, directory temporanea pulita. Storia di 4 versioni integra: open e serve. Audit ref storico intermedio (versione 2, head 4) alterato con stage_digest della head invariato: PROJECTION_DRIFT, denial memoryRestore.open.denied, serve resta RESTORE_NOT_OPEN. Scambio di due audit ref non-head: PROJECTION_DRIFT con denial. Alterazione durante serve: memoryRestore.serve.denied e nessun memoryRestore.served. Audit indisponibile: AUDIT_UNAVAILABLE sia su open sia sul serve successivo, confine chiuso, nessuna ricevuta di successo."
+      },
+      {
+        "command": "python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 61ebdc17698b010a82ea1503a599c81b011c017b --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0036-61ebdc17698b-0/campaign",
+        "exit_code": 0,
+        "summary": "PASS. JUnit: tests 3053, failures 0, errors 0, skipped 0 (skipped_elements 0). duration_seconds 3333.923, sotto il tetto di 4500s, po_decision_required false. candidate_head 61ebdc17698b010a82ea1503a599c81b011c017b. required_modules test_ocor_dev_0048 e test_ocor_dev_0049 eseguiti dentro la suite. Nessun servizio ocor-bootstrap ucciso: OOMKilled false, RestartCount 0. Shell pulita, stesse variabili esportate del provisioning. Tre PytestWarning preesistenti di record_property in test_ocor_dev_rem_0020.py, non introdotte dal diff."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-REM-0036 --manifest reports/evidence/G5/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS: qualifying task evidence for OCOR-DEV-REM-0036. Hash del raw log, del red.log e delle quattro riqualifiche uguali ai campi dei record. Claim E1=0, E2=0, Verified=0, PoC_GO NO-GO, Production_readiness NO-GO, runtime_conformance NOT_ESTABLISHED. Le stringhe postgresql:// nei log sono placeholder <redacted:...>, non credenziali."
+      },
+      {
+        "command": "env -i clean shell; python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "result REMOVED. Container, volumi e reti ocor-bootstrap residui: 0. Nessun cluster kind lasciato. Worktree pulito, HEAD invariato."
+      }
+    ],
+    "findings": [],
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "f62edc4d53bbc72df312834f456223e0ba68e5cebacbeb7bdc0872ef832d8d49",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-25T02:54:26Z",
+    "verdict_file_sha256": "e63676fdbcc680770311c148bff2677b5d73d0f0b582787ad00180e6dd04d29b",
+    "verdict_head_sha": "61ebdc17698b010a82ea1503a599c81b011c017b",
+    "verdict_request_id": "OCOR-DEV-REM-0036-61ebdc17698b-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI / Grok 4.7 / xAI. Implementatore del change set: Claude Code 2.1.310 / claude-opus-5-5 / Anthropic. Implementatori storici del 0059 superato, dichiarati nell'evidenza e esclusi come verifier: Codex / OpenAI e Claude Code / Anthropic. Nessun implementatore dichiarato e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "preflight": "PASS",
+      "sha256": "c1bd7913d14d6aa27f3f8cea12de2d634f46ee254635f7530c3706e6306dcdab"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -631,6 +753,12 @@
       }
     ],
     "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / Grok 4.7 / xAI. Implementatore del change set: Claude Code 2.1.310 / claude-opus-5-5 / Anthropic. Implementatori storici del 0059 superato, dichiarati nell'evidenza e esclusi come verifier: Codex / OpenAI e Claude Code / Anthropic. Nessun implementatore dichiarato e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "excluded_verifier_providers": [
       "Anthropic",
       "OpenAI"
@@ -646,10 +774,22 @@
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
         "scope": "REM-0036 RED, fix, allowlist, local qualification and candidate evidence"
+      },
+      {
+        "agent": "Codex",
+        "cli_version": "0.164.0",
+        "provider": "OpenAI",
+        "scope": "integration metadata and evidence sealing only; no runtime, test or harness changes"
       }
     ],
+    "integration_agent": {
+      "agent": "Codex",
+      "cli_version": "0.164.0",
+      "provider": "OpenAI",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation and tests unchanged"
+    },
     "verifier_started_by_implementer": false,
-    "verifier_status": "PENDING_EXTERNAL_LOOP"
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback": "new governed revert of the REM-0036 commits; preserve all historical evidence; no inputs change",
   "schema_version": "1.0",
@@ -662,7 +802,7 @@
     "reports/tests": "389a299fdb94329060f6e6a0ee979d99840b7a0b",
     "scripts": "ed6299b7529632babf45e1e31c55254e773cb917"
   },
-  "status": "CANDIDATE",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-REM-0036",
   "tdd": {
     "fix_commit": "47d17e79f134e3d79e0d3b2fe8ad57f3999a8cf7",
