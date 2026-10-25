@@ -169,3 +169,32 @@ PO preferisce non riqualificare 0049 prima di G6, l'opzione 3 è preferibile all
 
 Inputs immutabili; E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED,
 PoC/Production NO-GO. Nessun nuovo DEC o chiusura normativa.
+
+## Disposition PO (2026-10-25)
+
+Decisione `REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (2026-10-25)`: scelta
+l'**opzione 3**. `OCOR-DEV-REM-0037` è **sospesa fino a dopo la chiusura di
+G6**. Stato della richiesta: risolta con sospensione.
+
+- Nessuna implementazione: niente parametrizzazione di endpoint o nomi, nessun
+  file di override Compose, nessuna riqualifica, nessuna modifica a codice,
+  test, harness, workflow o record sigillati per la suite divisa in parti. La
+  suite completa locale resta **seriale** con la procedura vigente, per
+  l'implementatore e per il verifier.
+- `LOCAL-SUITE-SPLIT (2026-10-25)` resta registrata con esecuzione sospesa;
+  questa decisione supersede soltanto il suo punto 1 (ordine nella coda):
+  REM-0037 esce dalla coda pre-G6 e non si riprende d'iniziativa. Dopo la
+  chiusura di G6 si potrà aprire una nuova decision request con misure
+  aggiornate; resta aperta per quella rivalutazione la domanda sul cluster kind
+  solo nella parte predefinita.
+- Coda: ultimo ciclo di `OCOR-DEV-REM-0027`, poi `OCOR-DEV-REM-0031`, poi G6
+  (QUEUE-TO-G6-ORDER).
+- Gli artefatti dell'inventario fuori da Git
+  (`~/.ocor-codex/rem0037-inventory-20261025/`) restano invariati come
+  riferimento.
+- Nessun test, caso, limite, timeout, soglia, partizione CI o gate cambiato.
+
+Registrazione: Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310),
+implementatore del loop secondo LOOP-IMPLEMENTER-ORDER. `OCOR-DEV-REM-0037` è
+registrata come sospesa dal PO, non chiusa e non verificata. Claim invariati:
+E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED, PoC/Production NO-GO.
