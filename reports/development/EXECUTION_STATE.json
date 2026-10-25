@@ -1,32 +1,56 @@
 {
   "active_iteration": {
-    "baseline_commit": "e49313353986500dc9b4f0efc828e3c2795ef542",
-    "branch": "governed/state-sync-rem0030-renamed-20261025",
+    "baseline_commit": "d20652b29a62ab34834d20d8815e0451e54d6043",
+    "branch": "governed/state-sync-rem0036-candidate-20261025",
     "campaign_background_processes_remaining": false,
-    "candidate_branch": "governed/ocor-dev-rem-0030-repository-readme",
-    "candidate_head_sha": "02a1a526141228658142f094c0c381be838a99c2",
-    "change_set": "OCOR-DEV-REM-0030",
-    "merge_commit": "e49313353986500dc9b4f0efc828e3c2795ef542",
-    "next_action": "Eseguire OCOR-DEV-REM-0036 (VF-002 non bloccante di 0059) come prossima unita: leggere la remediation versionata e i riferimenti necessari, branch governed/worktree isolato da origin/main, criteri RED prima del codice; confronto degli audit_refs storici nel restore gate, PROJECTION_DRIFT con audit di diniego, positivi e negativi sui backend pinned. Contratto pubblico invariato; riqualifiche con supersession degli input sigillati toccati. Qualifiche locali da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; mai source di bootstrap.env. Richiedere solo al loop esterno la verifica sull HEAD esatto, dichiarando tutti gli implementatori e un verifier di fornitore diverso. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
-    "phase": "RENAME_COMPLETED_CLOSURE_EVIDENCE_STATE_SYNC",
-    "rename_evidence": "reports/assurance/OCOR-DEV-REM-0030-RCCAD/rename-evidence.json",
-    "repair_cycle": 0,
-    "request_id": "OCOR-DEV-REM-0030-3a30104866ef-0",
-    "status": "CANDIDATE_MERGED_RENAME_VERIFIED_STATE_SYNC_PENDING_CI",
-    "task_id": "OCOR-DEV-REM-0030",
-    "unit": "integration",
-    "verdict": {
-      "head_sha": "3a30104866efb0220d645fad13728be5160706b4",
-      "request_id": "OCOR-DEV-REM-0030-3a30104866ef-0",
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verdict_sha256": "c1d966f96519982cef16059233a9583aebb1989cb9a8437a12966be7c12e6e5a",
-      "verifier": {
-        "model": "grok-4.7-high",
-        "process": "Cursor CLI",
-        "provider": "xAI"
-      }
+    "candidate_branch": "governed/ocor-dev-rem-0036-restore-audit-refs",
+    "candidate_code_commit": "4a79d2961d57d2febf18cf4b146ad18376108370",
+    "candidate_head_sha": "61ebdc17698b010a82ea1503a599c81b011c017b",
+    "candidate_worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-rem-0036",
+    "change_set": "OCOR-DEV-REM-0036",
+    "implementer": {
+      "agent": "Claude Code",
+      "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
+      "cli_version": "2.1.310",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic"
     },
-    "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/state-sync-rem0030-renamed-20261025"
+    "local_qualification": {
+      "bootstrap": "scripts/bootstrap_ci_environment.py --execute --timeout 600, clean shell, locked toolchain PATH",
+      "candidate_head_sha": "61ebdc17698b010a82ea1503a599c81b011c017b",
+      "duration_notice": "REM-0033-LOCAL-FULL-DURATION: 3784.9s over the 3600s notification threshold, under the unchanged 4500s cap; non-blocking, no cap changed",
+      "full": {
+        "campaign_result_sha256": "303bd45e2b474aadd22d90a66b7496352861aa73bcf7752012ba829e074836b0",
+        "duration_seconds": 3784.921411496998,
+        "errors": 0,
+        "exact_union": true,
+        "failures": 0,
+        "passed": 3053,
+        "skipped": 0
+      },
+      "gates": "inputs 8/8, harness 14 PASS, drift 0 (74 task/224 input), language, RCCAD, scope, plan (37 PASS/2 NOT_EXECUTED optional), ruff, mypy strict: PASS",
+      "green": {
+        "passed": 10
+      },
+      "record_sha256": "81e4b189891303a7e5d413b1d924e62a252ec758a547cd9b807d17bd9de06d02",
+      "red": {
+        "failed": 7,
+        "passed": 3,
+        "raw_sha256": "082439b64da05b97f9461f62069995df705973b508a9903a0ee82011efbfd26b"
+      },
+      "source_head": "4a79d2961d57d2febf18cf4b146ad18376108370",
+      "tasks": {
+        "0005": 6,
+        "0050": 198,
+        "0059": 223,
+        "0082": 10,
+        "rem_0036": 10
+      },
+      "teardown": "final teardown PASS, zero owned residual containers/volumes/networks"
+    },
+    "next_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e richiede la verifica indipendente OCOR-DEV-REM-0036-61ebdc17698b-0 (REMEDIATION, repair_cycle0) sull HEAD esatto 61ebdc17698b010a82ea1503a599c81b011c017b del branch governed/ocor-dev-rem-0036-restore-audit-refs: confronto degli audit_refs storici in MemoryRestoreGate._verify, PROJECTION_DRIFT con audit di diniego, casi positivi e negativi unitari e live, riqualifica 0059 e riqualifiche di sola regressione 0005/0050/0082. Implementatore Claude Code/Anthropic; verifier Cursor/Grok/xAI o Antigravity/Gemini/Google, esclusi Anthropic e OpenAI. Bootstrap e campagne da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600, mai source di bootstrap.env. Con GO: sigillo, PR del candidato, 13 check obbligatori per nome sull HEAD esatto, merge --match-head-commit e state sync. Con NO_GO: ciclo1 di2 nello scope REM-0036. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+    "phase": "CANDIDATE_PUSHED_AWAITING_EXTERNAL_VERIFICATION",
+    "request_id": "OCOR-DEV-REM-0036-61ebdc17698b-0"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1754,7 +1778,7 @@
       }
     }
   },
-  "baseline_commit": "e49313353986500dc9b4f0efc828e3c2795ef542",
+  "baseline_commit": "d20652b29a62ab34834d20d8815e0451e54d6043",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -7616,7 +7640,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "REM_0030_INTEGRATED_RENAMED",
-  "next_executable_action": "Eseguire OCOR-DEV-REM-0036 (VF-002 non bloccante di 0059) come prossima unita: leggere la remediation versionata e i riferimenti necessari, branch governed/worktree isolato da origin/main, criteri RED prima del codice; confronto degli audit_refs storici nel restore gate, PROJECTION_DRIFT con audit di diniego, positivi e negativi sui backend pinned. Contratto pubblico invariato; riqualifiche con supersession degli input sigillati toccati. Qualifiche locali da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; mai source di bootstrap.env. Richiedere solo al loop esterno la verifica sull HEAD esatto, dichiarando tutti gli implementatori e un verifier di fornitore diverso. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+  "next_executable_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e richiede la verifica indipendente OCOR-DEV-REM-0036-61ebdc17698b-0 (REMEDIATION, repair_cycle0) sull HEAD esatto 61ebdc17698b010a82ea1503a599c81b011c017b del branch governed/ocor-dev-rem-0036-restore-audit-refs: confronto degli audit_refs storici in MemoryRestoreGate._verify, PROJECTION_DRIFT con audit di diniego, casi positivi e negativi unitari e live, riqualifica 0059 e riqualifiche di sola regressione 0005/0050/0082. Implementatore Claude Code/Anthropic; verifier Cursor/Grok/xAI o Antigravity/Gemini/Google, esclusi Anthropic e OpenAI. Bootstrap e campagne da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600, mai source di bootstrap.env. Con GO: sigillo, PR del candidato, 13 check obbligatori per nome sull HEAD esatto, merge --match-head-commit e state sync. Con NO_GO: ciclo1 di2 nello scope REM-0036. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -7658,10 +7682,8 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "6487902cef8438ec02ecc75892542c762d2c878b",
-    "branch": "governed/state-sync-rem0030-candidate-20261024",
-    "candidate_head_sha": "3a30104866efb0220d645fad13728be5160706b4",
-    "status": "REM0030_PRE_RENAME_CANDIDATE_NOW_SEALED_INTEGRATED_RENAMED"
+    "change_set": "OCOR-DEV-REM-0030",
+    "recorded_in": "ITERATION_LOG.md 2026-10-24T23:13:41.284683+00:00"
   },
   "previous_candidate_ci": {
     "head_sha": "712fc2b799774281321c04209bfb6910b91f0941",
@@ -7882,9 +7904,9 @@
     "completed_count": 74,
     "main_head": "e49313353986500dc9b4f0efc828e3c2795ef542",
     "mandatory_remediations_still_block_G6": true,
-    "next_executable_action": "Eseguire OCOR-DEV-REM-0036 (VF-002 non bloccante di 0059) come prossima unita: leggere la remediation versionata e i riferimenti necessari, branch governed/worktree isolato da origin/main, criteri RED prima del codice; confronto degli audit_refs storici nel restore gate, PROJECTION_DRIFT con audit di diniego, positivi e negativi sui backend pinned. Contratto pubblico invariato; riqualifiche con supersession degli input sigillati toccati. Qualifiche locali da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; mai source di bootstrap.env. Richiedere solo al loop esterno la verifica sull HEAD esatto, dichiarando tutti gli implementatori e un verifier di fornitore diverso. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+    "next_executable_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e richiede la verifica indipendente OCOR-DEV-REM-0036-61ebdc17698b-0 (REMEDIATION, repair_cycle0) sull HEAD esatto 61ebdc17698b010a82ea1503a599c81b011c017b del branch governed/ocor-dev-rem-0036-restore-audit-refs: confronto degli audit_refs storici in MemoryRestoreGate._verify, PROJECTION_DRIFT con audit di diniego, casi positivi e negativi unitari e live, riqualifica 0059 e riqualifiche di sola regressione 0005/0050/0082. Implementatore Claude Code/Anthropic; verifier Cursor/Grok/xAI o Antigravity/Gemini/Google, esclusi Anthropic e OpenAI. Bootstrap e campagne da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600, mai source di bootstrap.env. Con GO: sigillo, PR del candidato, 13 check obbligatori per nome sull HEAD esatto, merge --match-head-commit e state sync. Con NO_GO: ciclo1 di2 nello scope REM-0036. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
     "observed_at": "2026-10-24T23:13:41.284683+00:00",
-    "ordered_action": "Eseguire OCOR-DEV-REM-0036 (VF-002 non bloccante di 0059) come prossima unita: leggere la remediation versionata e i riferimenti necessari, branch governed/worktree isolato da origin/main, criteri RED prima del codice; confronto degli audit_refs storici nel restore gate, PROJECTION_DRIFT con audit di diniego, positivi e negativi sui backend pinned. Contratto pubblico invariato; riqualifiche con supersession degli input sigillati toccati. Qualifiche locali da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; mai source di bootstrap.env. Richiedere solo al loop esterno la verifica sull HEAD esatto, dichiarando tutti gli implementatori e un verifier di fornitore diverso. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+    "ordered_action": "Il loop esterno prepara VERIFIER-ENV-STANDARD e richiede la verifica indipendente OCOR-DEV-REM-0036-61ebdc17698b-0 (REMEDIATION, repair_cycle0) sull HEAD esatto 61ebdc17698b010a82ea1503a599c81b011c017b del branch governed/ocor-dev-rem-0036-restore-audit-refs: confronto degli audit_refs storici in MemoryRestoreGate._verify, PROJECTION_DRIFT con audit di diniego, casi positivi e negativi unitari e live, riqualifica 0059 e riqualifiche di sola regressione 0005/0050/0082. Implementatore Claude Code/Anthropic; verifier Cursor/Grok/xAI o Antigravity/Gemini/Google, esclusi Anthropic e OpenAI. Bootstrap e campagne da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600, mai source di bootstrap.env. Con GO: sigillo, PR del candidato, 13 check obbligatori per nome sull HEAD esatto, merge --match-head-commit e state sync. Con NO_GO: ciclo1 di2 nello scope REM-0036. Poi remediation obbligatorie pre-G6 ancora aperte: REM-0018, ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
     "ready": [
       "OCOR-DEV-0060",
       "OCOR-DEV-0061",
@@ -7901,7 +7923,7 @@
     ],
     "reason": "G5 backlog complete; REM-0030 verified, merged and renamed. Execute REM0036 and mandatory open pre-G6 remediations.",
     "selected": "OCOR-DEV-REM-0036",
-    "selected_unit": "OCOR-DEV-REM-0036:implementation",
+    "selected_unit": "OCOR-DEV-REM-0036:verification",
     "source": "origin/main EXECUTION_STATE plus approved backlog"
   },
   "remediation_status": {
@@ -22857,6 +22879,30 @@
       },
       "authorization": "CC-OCOR-DELIVERY-COMPLETION section 7: remediation of defects with the first verified free REM-*",
       "blocked_tasks": [],
+      "candidate": {
+        "branch": "governed/ocor-dev-rem-0036-restore-audit-refs",
+        "evidence_paths": [
+          "reports/evidence/G5/OCOR-DEV-REM-0036.json",
+          "reports/evidence/G5/OCOR-DEV-REM-0036.log",
+          "reports/assurance/OCOR-DEV-REM-0036-RCCAD/red.log",
+          "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0036.json",
+          "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0036.log",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0036.json",
+          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0036.log",
+          "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0036.json",
+          "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0036.log",
+          "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0036.json",
+          "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0036.log",
+          "reports/evidence/G5/MANIFEST.json",
+          "reports/evidence/G0/MANIFEST.json",
+          "reports/evidence/G2/MANIFEST.json"
+        ],
+        "head_sha": "61ebdc17698b010a82ea1503a599c81b011c017b",
+        "red_sha256": "082439b64da05b97f9461f62069995df705973b508a9903a0ee82011efbfd26b",
+        "request_id": "OCOR-DEV-REM-0036-61ebdc17698b-0",
+        "source_head": "4a79d2961d57d2febf18cf4b146ad18376108370",
+        "updated_at": "2026-10-25T01:08:53.640954+00:00"
+      },
       "claims_unchanged": true,
       "defect": "MemoryRestoreGate._verify compares head, stage_digest, item_digests and epochs but not entry['audit_refs']: replacing only a historical audit_ref in the restored metadata store still opens and serves the restore",
       "origin": {
@@ -22870,7 +22916,7 @@
       },
       "requalification": "touches a sealed input of OCOR-DEV-0059: requalification record with explicit supersedes in the same change set, plus 0050 regression if governed paths change",
       "required_fix": "In _verify, per ogni versione da 1 a head, esigere che l'audit_ref del metadata ripristinato sia uguale a entry['audit_refs'] e rifiutare con PROJECTION_DRIFT e audit di diniego. Aggiungere il caso positivo con riferimenti integri e il negativo con un solo riferimento storico alterato. Resta aperto e non bloccante: questa riesecuzione non lo dichiara riparato.",
-      "status": "OPEN_IMPLEMENTATION_REQUIRED_NONBLOCKING"
+      "status": "CANDIDATE_PENDING_INDEPENDENT_VERIFICATION"
     }
   },
   "repository": "nepryoon/ocor",
@@ -24075,16 +24121,14 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-24T23:13:41.284683+00:00",
+  "updated_at": "2026-10-25T01:08:53.640954+00:00",
   "verification_queue": [
     {
-      "head_sha": "3a30104866efb0220d645fad13728be5160706b4",
-      "merge_commit": "e49313353986500dc9b4f0efc828e3c2795ef542",
+      "head_sha": "61ebdc17698b010a82ea1503a599c81b011c017b",
       "repair_cycle": 0,
-      "request_id": "OCOR-DEV-REM-0030-3a30104866ef-0",
-      "sealed_head_sha": "02a1a526141228658142f094c0c381be838a99c2",
-      "status": "GO_FOR_EVIDENCE_SEAL_INTEGRATED",
-      "task_id": "OCOR-DEV-REM-0030"
+      "request_id": "OCOR-DEV-REM-0036-61ebdc17698b-0",
+      "status": "PENDING_EXTERNAL_LOOP",
+      "task_id": "OCOR-DEV-REM-0036"
     }
   ]
 }
