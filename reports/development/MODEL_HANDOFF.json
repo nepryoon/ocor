@@ -2,9 +2,20 @@
   "assumptions": [
     "Backlog ready set does not waive pre-G6 remediation dependencies."
   ],
-  "base_sha": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
-  "baseline_commit": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
-  "branch": "governed/state-sync-rem0037-inventory-dr-20261025",
+  "base_sha": "40ae60fffc3bdf58ea6f5ac2a332d389a5f3c326",
+  "baseline_commit": "40ae60fffc3bdf58ea6f5ac2a332d389a5f3c326",
+  "branch": "governed/state-sync-rem0027-repair2-candidate-20261025",
+  "candidate_record_hashes": {
+    "branch_head": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
+    "records": {
+      "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json": "9693428a28fc54183cfd884b5d1c9637d616daec19f9122c400e4f301cffb576",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.json": "33b550ae8e2ff25aa44bfc35e1cd2cccd9329eade1950548f30d621d3ae65f42",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json": "e068f1e27b4a3dc05ad4157d31870931d7e675ac511a7ed40695fae1c32281ce",
+      "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json": "4b2341fe7dddf6ccdead70b60ab11418502f3de3fdef4933ee6fcfe4597f7720",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json": "e22bbea8ce407effc31d19e4abcf31fa3b80d0125764eb8614de4f16ef42d014"
+    },
+    "status": "CANDIDATE_NOT_SEALED_ON_BRANCH_ONLY"
+  },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -20,37 +31,46 @@
   },
   "commands": [
     {
-      "command": "python3 -I ~/.ocor-codex/rem0037-inventory-20261025/inventory.py <repo>",
+      "command": "task suite x3: pytest tests/tasks/test_ocor_dev_rem_0027.py tests/tasks/test_ocor_dev_0047.py",
       "exit_code": 0,
-      "summary": "Read-only inventory of shared-resource literals crossed with latest sealed inputs of 74 completed tasks; inventory.json c1f0163c89dfb69c4990e93ae4450b0dd42be6aec64e37694608bdd8b4116041."
+      "summary": "52 passed, 0 failed, 0 skipped, each run"
     },
     {
-      "command": "git push origin governed/decision-request-rem0037-local-suite-split-inventory; gh pr create --draft (#340)",
+      "command": "scripts/reset_test_environment.py --execute; scripts/bootstrap_ci_environment.py --execute --timeout 600 (clean shell)",
       "exit_code": 0,
-      "summary": "Decision request REM-0037-LOCAL-SUITE-SPLIT-INVENTORY at 2055895f58335b982544b421c492071f6c71873f, sha256 819e437fba68d88c99f2d5e191a119ebbc73c1cba443e2da9083f41d260b4bd5; draft, not to be merged."
+      "summary": "11 services healthy; first attempt failed on an expired worktree SPIRE CA (diagnostic, archived)"
+    },
+    {
+      "command": "regression pytest 0005/0047/0050/0082/REM-0027 with OCOR_LIVE_POSTGRES_DSN",
+      "exit_code": 0,
+      "summary": "266 passed, 0 skipped"
+    },
+    {
+      "command": "scripts/run_qualifying_campaign.py --execute --repository . --expected-head 3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "exit_code": 0,
+      "summary": "PASS 3107, exact union, 4084.6 s; first attempt rejected by the guard (tracked README edited during the run), repeated"
+    },
+    {
+      "command": "mutation_probe.py (repair 2)",
+      "exit_code": 0,
+      "summary": "9/9 killed, sources restored"
+    },
+    {
+      "command": "ruff, mypy --strict, validate_rccad, validate_language_policy, verify.py, sha256sum, validate_runtime_evidence x4, validate_evidence_input_drift, validate_ocor_development_plan --authorized-extension, validate_ocor_change_scope",
+      "exit_code": 0,
+      "summary": "all PASS (verify 14 PASS; drift 0)"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0037:pre-code-inventory",
+  "current_task": "OCOR-DEV-REM-0027:repair-2-implementation",
   "evidence_paths": [],
-  "exact_next_action": "Eseguire l ultimo ciclo di riparazione di OCOR-DEV-REM-0027 (repair_cycle 2, ultimo del budget) secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14), ripartendo dal branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch head 5cb0f629d084833f34d4494c4770d9e7090322b1 senza riscriverne la storia (allineamento a origin/main solo con merge non distruttivo): riconciliazione di ogni ToolRuntimeError execution_unknown presso OutcomeReconciler di C6 con positivo e negativo fail-closed; caso attesa nativa + finally con journal dell effetto, rifiuto entro 10 s, execution_unknown con record di riconciliazione, effetto tardivo via canale con lease rifiutato con STOP_BOUND_DENIED, residuo su canale non governato registrato come misura e mai PASS; docstring ed evidenza corrette; nessun altro cambiamento; suite del task tre volte e suite completa seriale una volta, zero skip; riqualifica 0047 (e 0050 di sola regressione) con supersession; verifica esterna Cursor/Grok (xAI), implementatori Claude Code (Anthropic) e Codex (OpenAI) dichiarati. Con NO_GO: TERMINAL_BLOCKED del solo REM-0027, escalation, nessun ciclo 3. Poi REM-0031. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
-  "head_sha": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
-  "head_sha_role": "main baseline before state sync",
+  "exact_next_action": "Attendere il verdetto esterno OCOR-DEV-REM-0027-ef8086f319ac-2 (Cursor/Grok 4.7, xAI; implementatori Claude Code/Anthropic e Codex/OpenAI, nessun verifier Anthropic o OpenAI) sul candidato ef8086f319ac9f67df6a667ae411db0201ac0c3f del branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch. Con GO_FOR_EVIDENCE_SEAL: registrare verifier e verdetto nei cinque record (REM-0027, 0005, 0047, 0050, 0082) e sigillarli, aprire la PR, attendere i 13 check obbligatori sull'HEAD esatto, merge con --match-head-commit, poi state sync. Con NO_GO: budget esaurito (ciclo 2 era l'ultimo), TERMINAL_BLOCKED del solo REM-0027 con record di escalation e residuo misurato (11,5 s, RESIDUAL_MEASURED_NOT_PASS), nessun ciclo 3; proseguire con REM-0031. Con VERIFIER_ERROR: una sola ripetizione della richiesta. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+  "head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
+  "head_sha_role": "REM-0027 repair-2 candidate awaiting external verification",
   "independent_verification": {
-    "reason": "no code, test, harness, workflow or evidence record changed",
-    "status": "NOT_REQUIRED_INVENTORY_ONLY"
-  },
-  "integration_alignment": {
-    "aligned_head": "555f649fe5433da704574afb9525f3e0f22e4028",
-    "all_nonstate_paths_byte_identical": true,
-    "changed_paths": [
-      "reports/development/EXECUTION_STATE.json",
-      "reports/development/ITERATION_LOG.md",
-      "reports/development/MODEL_HANDOFF.json"
-    ],
-    "main_head": "23256d0bcf736f43ffaa7e26551b89f57be4f691",
-    "nonstate_git_tree_sha256": "a7fc55de576c1d464bc16577d5a8d35fe06b0a15ea4ab67f9a23f804e340631e",
-    "qualified_head": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad"
+    "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
+    "status": "REQUESTED",
+    "verifier": "Cursor CLI / Grok 4.7 (xAI)"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -463,11 +483,14 @@
     "started_at": "2026-10-25T07:28:58Z",
     "status": "PASS_EXACT_HEAD_13_REQUIRED"
   },
-  "local_gate_results": "State-sync gates listed in ITERATION_LOG entry; no runtime gate executed (no code change).",
+  "local_gate_results": "All local gates PASS on the candidate; state-sync gates listed in the ITERATION_LOG entry.",
   "next_task": "OCOR-DEV-REM-0027",
-  "phase": "REM0037_INVENTORY_DECISION_REQUEST_OPENED",
-  "raw_evidence_location": "reports/evidence (eight sealed records; raw logs unchanged)",
-  "requirement_ids": [],
+  "phase": "REM0027_REPAIR2_CANDIDATE_AWAITING_VERIFICATION",
+  "raw_evidence_location": "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.log (byte-identical raw next to each requalification); campaign artifacts in .ocor/rem0027r2 of the candidate worktree (outside Git)",
+  "requirement_ids": [
+    "NFR-047",
+    "NFR-081"
+  ],
   "roles": {
     "authority": "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
     "implementers": [
@@ -476,12 +499,17 @@
         "cli_version": "2.1.310",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "read-only pre-code inventory, decision request and state sync"
+        "scope": "REM-0027 repair cycle 2: alignment merge, RED/GREEN, qualification, evidence, verification request and state sync"
+      },
+      {
+        "agent": "Codex",
+        "provider": "OpenAI",
+        "scope": "counted as implementer of the task by the loop rule; no repair-2 code"
       }
     ],
-    "verifier": "none required: no code, test, harness or evidence change; inventory only"
+    "verifier": "Cursor CLI / Grok 4.7 (xAI), external loop only; Anthropic and OpenAI excluded"
   },
-  "rollback_result": "new governed revert of the REM-0018 commits; preserve all historical evidence; no inputs change",
+  "rollback_result": "mechanical: revert of the REM-0027 change-set commits; superseded records become most recent again; no inputs change",
   "schema_version": "1.0",
   "seal_hashes": {
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0018.json": "2795e8dd8c09d6e7b377dfb70f5ae3a257342eb6a985fc5bbd2de67872a63d5c",
@@ -494,18 +522,20 @@
     "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0018.json": "71141d8648df531a3ae04e14eb0c59be3ea4e3ceb67623edbd0a56a393e4172f"
   },
   "security_observability_notes": [
-    "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 thread, RAM 32504823808 bytes; no old-host timing comparison.",
-    "No runtime, test or harness change during integration; no new DEC or evidence-fence promotion.",
-    "VF-001 non-blocking follow-up recorded, not implemented."
+    "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 threads, 32 GB RAM; no old-host timing comparison.",
+    "Raw log redaction checked: no generated credential of the three bootstrap env files appears in the raw.",
+    "Measured residual 11.5 s (ungoverned channel, finally after native wait) recorded as RESIDUAL_MEASURED_NOT_PASS, traced to FGM-17/G6."
   ],
   "test_results": {
-    "local_full_this_iteration": "NOT_EXECUTED_INVENTORY_ONLY"
+    "local_full_this_iteration": "PASS 3107/3107 zero skip at 3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+    "regression": "266/266",
+    "task_suite": "3 x 52/52"
   },
   "unresolved_blockers": [
+    "OCOR-DEV-REM-0027 awaiting external verdict OCOR-DEV-REM-0027-ef8086f319ac-2 (last repair cycle)",
     "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (OPEN_PO_DECISION_REQUIRED, blocks only OCOR-DEV-REM-0037)",
-    "OCOR-DEV-REM-0027 last cycle",
     "OCOR-DEV-REM-0031"
   ],
-  "updated_at": "2026-10-25T09:26:46.459576+00:00",
-  "worktree": ".ocor/worktrees/ss-rem0037-inventory"
+  "updated_at": "2026-10-25T12:55:34.501114+00:00",
+  "worktree": ".ocor/worktrees/rem-0027 (candidate); .ocor/worktrees/ss-rem0027-repair2 (state sync)"
 }
