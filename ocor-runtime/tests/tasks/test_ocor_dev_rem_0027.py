@@ -40,7 +40,7 @@ from typing import Any
 import pytest
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
-from ocor_runtime.c6.safety import EmergencyStopController
+from ocor_runtime.c6.safety import EmergencyStopController, OutcomeReconciler, OutcomeStatus, SafetyError
 from ocor_runtime.c6_capabilities import CapabilityAuthority, CapabilityLease
 from ocor_runtime.c8 import tool_runtime as tool_runtime_module
 from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError
@@ -56,6 +56,7 @@ CONTAINMENT_TARGET_SECONDS = 10.0
 CONTENT_MARKING = MarkingSet({"classification": "SECRET"})
 FULL_CLEARANCE = MarkingSet({"classification": "TOP_SECRET"})
 HUMANS = ("urn:ocor:human:a", "urn:ocor:human:b")
+RESET_REQUESTER = "urn:ocor:human:c"
 
 
 def make_context() -> GovernedContext:
@@ -98,8 +99,12 @@ class Harness:
         self.marking = MarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
         self.stop = EmergencyStopController()
         self.identities = IdentityRegistry()
-        for human in HUMANS:
-            self.identities.register(IdentityRecord(canonical_id=human))
+        # REM-0028 (merged on main): reset approvers are resolved active humans
+        # read from registry attributes, independent of the requester.
+        for human in (*HUMANS, RESET_REQUESTER):
+            self.identities.register(
+                IdentityRecord(canonical_id=human, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""})
+            )
         options: dict[str, Any] = {} if deadline is None else {"tool_call_deadline": deadline}
         self.runtime = ToolCallRuntime(
             sandbox=self.sandbox, authority=self.authority, marking_engine=self.marking, stop=self.stop, **options
@@ -161,7 +166,7 @@ class Harness:
 
     def reset(self) -> None:
         self.stop.finish_draining(at=NOW)
-        self.stop.request_reset(approvers=HUMANS, identities=self.identities, at=NOW)
+        self.stop.request_reset(approvers=HUMANS, identities=self.identities, requester=RESET_REQUESTER, at=NOW)
         self.stop.confirm_reset(at=NOW)
 
     def invoke(
@@ -745,3 +750,223 @@ def test_another_gate_sharing_the_bound_authority_refuses_a_pre_stop_lease() -> 
     with pytest.raises(AuthorizationError):
         kernel.execute_sandboxed("1 + 1", lease=stale, at=NOW)
     assert kernel.execute_sandboxed("1 + 1", lease=fresh, at=NOW) == 2
+
+
+# --- repair 2: every EXECUTION_UNKNOWN goes to C6 reconciliation --------------------
+# REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14), points 1-3: ADD
+# v1.3 section 5.5 points 4-6 -- an in-flight call that cannot be cancelled is
+# closed with EXECUTION_UNKNOWN and goes to reconciliation, never to a blind
+# retry. The reconciler is the real C6 ``OutcomeReconciler``.
+
+NATIVE_WAIT_SECONDS = 12.0
+
+
+class UnavailableReconciler(OutcomeReconciler):
+    """A real C6 reconciler whose store is unreachable."""
+
+    def mark_ambiguous(self, command_id: str, *, idempotent_effect_proven: bool, at: datetime, note: str = "") -> Any:
+        raise OSError("reconciliation store unreachable")
+
+
+def reconciled_harness(*, deadline: timedelta | None = None, reconciler: OutcomeReconciler | None = None) -> Harness:
+    harness = Harness(deadline=deadline)
+    options: dict[str, Any] = {} if deadline is None else {"tool_call_deadline": deadline}
+    harness.runtime = ToolCallRuntime(
+        sandbox=harness.sandbox,
+        authority=harness.authority,
+        marking_engine=harness.marking,
+        stop=harness.stop,
+        reconciler=reconciler if reconciler is not None else OutcomeReconciler(),
+        **options,
+    )
+    return harness
+
+
+def assert_reconciled(harness: Harness, error: ToolRuntimeError, *, tool: str, lease: CapabilityLease, reason_code: str) -> None:
+    outcome = error.reconciliation
+    assert outcome is not None
+    assert outcome.reason_code == reason_code
+    assert outcome.tool_name == tool
+    assert outcome.lease_id == lease.lease_id
+    assert outcome.stop_epoch == lease.stop_epoch == 0
+    assert outcome.correlation_id == make_context().correlation_id
+    assert outcome.dispatched_at.tzinfo is not None and outcome.refused_at >= outcome.dispatched_at
+    assert harness.runtime.unknown_outcomes == (outcome,)
+    reconciler = harness.runtime.reconciler
+    record = outcome.reconciliation
+    assert reconciler.records == (record,)
+    assert record.command_id == outcome.command_id
+    assert record.status is OutcomeStatus.UNKNOWN
+    assert record.idempotent_effect_proven is False
+    for field in (outcome.lease_id, outcome.tool_name, outcome.correlation_id, reason_code, f'"stop_epoch":{outcome.stop_epoch}'):
+        assert field in record.note
+    # an EXECUTION_UNKNOWN outcome is never auto-retried
+    with pytest.raises(SafetyError) as blocked:
+        reconciler.require_may_auto_retry(outcome.command_id)
+    assert blocked.value.reason_code == "AUTO_RETRY_BLOCKED_AMBIGUOUS_NON_IDEMPOTENT"
+
+
+def test_a_call_that_completes_opens_no_reconciliation() -> None:
+    harness = reconciled_harness()
+    harness.tool("restart_service")
+    lease = harness.lease("restart_service")
+
+    receipt = harness.invoke("restart_service(name)", lease)
+
+    assert receipt.result == "restart_service svc"
+    assert harness.runtime.unknown_outcomes == ()
+    assert harness.runtime.reconciler.records == ()
+
+
+def test_a_stop_during_a_non_cooperative_tool_records_its_unknown_outcome_with_the_c6_reconciler() -> None:
+    harness = reconciled_harness()
+    harness.tool("slow_restart", slow_non_cooperative(harness))
+    lease = harness.lease("slow_restart")
+    harness.accept_stop_later(STOP_AFTER_SECONDS)
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.invoke("slow_restart(name)", lease, tool_name="slow_restart")
+    returned_at = time.monotonic()
+    harness.wait_settled("slow_restart")
+
+    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.execution_unknown is True
+    assert harness.stop_accepted_at is not None
+    assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="STOP_BOUND_DENIED")
+
+
+def test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconciler() -> None:
+    harness = reconciled_harness(deadline=timedelta(seconds=1))
+    harness.tool("slow_restart", slow_cooperative(harness))
+    lease = harness.lease("slow_restart")
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.invoke("slow_restart(name)", lease, tool_name="slow_restart")
+    assert harness.finished.wait(SLOW_SECONDS + 5.0)
+
+    assert refused.value.reason_code == "TOOL_DEADLINE_EXCEEDED"
+    assert refused.value.execution_unknown is True
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="TOOL_DEADLINE_EXCEEDED")
+
+
+def test_the_default_runtime_reconciles_with_its_own_c6_reconciler() -> None:
+    harness = Harness(deadline=timedelta(seconds=1))
+    harness.tool("slow_restart", slow_cooperative(harness))
+    lease = harness.lease("slow_restart")
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.invoke("slow_restart(name)", lease, tool_name="slow_restart")
+    assert harness.finished.wait(SLOW_SECONDS + 5.0)
+
+    assert isinstance(harness.runtime.reconciler, OutcomeReconciler)
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="TOOL_DEADLINE_EXCEEDED")
+
+
+def test_an_unavailable_reconciler_fails_closed_without_any_receipt() -> None:
+    harness = reconciled_harness(reconciler=UnavailableReconciler())
+    harness.tool("slow_restart", slow_non_cooperative(harness))
+    harness.tool("restart_service")
+    lease = harness.lease("slow_restart", "restart_service")
+    harness.accept_stop_later(STOP_AFTER_SECONDS)
+
+    receipts: list[Any] = []
+    with pytest.raises(ToolRuntimeError) as refused:
+        receipts.append(harness.invoke("[slow_restart(name), restart_service(name)]", lease, tool_name="slow_restart"))
+    returned_at = time.monotonic()
+    harness.wait_settled("slow_restart")
+
+    assert receipts == []
+    assert refused.value.reason_code == "RECONCILIATION_UNAVAILABLE"
+    assert refused.value.execution_unknown is True
+    assert refused.value.reconciliation is None
+    assert isinstance(refused.value.__cause__, OSError)
+    assert harness.runtime.unknown_outcomes == ()
+    assert harness.stop_accepted_at is not None
+    assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    assert harness.effects == []
+
+
+def test_an_unavailable_reconciler_does_not_affect_a_call_that_completes() -> None:
+    harness = reconciled_harness(reconciler=UnavailableReconciler())
+    harness.tool("restart_service")
+    lease = harness.lease("restart_service")
+
+    assert harness.invoke("restart_service(name)", lease).result == "restart_service svc"
+    assert harness.names() == ["restart_service"]
+
+
+# --- repair 2: native wait + finally (VF-001 of OCOR-DEV-REM-0027-5cb0f629d084-1) ---
+
+
+def test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured(
+    record_property: Callable[[str, object], None],
+) -> None:
+    """The tool waits inside one native call (``time.sleep``) that the
+    in-process preemption cannot interrupt, then attempts its effect in its
+    ``finally``, journalled there: once through the lease channel (the
+    bound authority, via ``ToolCallRuntime.authorize_effect``) and once on an
+    ungoverned channel (a plain append). The call is refused within the
+    target and reconciled; the governed effect is refused with
+    STOP_BOUND_DENIED; the ungoverned effect is recorded as a measured
+    residual (FGM-17, G6 qualification), never asserted as contained."""
+    harness = reconciled_harness()
+    governed: list[tuple[str, float]] = []
+    ungoverned: list[float] = []
+    lease = harness.lease("slow_restart")
+
+    def body(_: str) -> None:
+        try:
+            time.sleep(NATIVE_WAIT_SECONDS)
+        finally:
+            try:
+                harness.runtime.authorize_effect(lease, "slow_restart", subject="agent-1", at=datetime.now(UTC))
+            except ToolRuntimeError as denied:
+                governed.append((denied.reason_code, time.monotonic()))
+            else:
+                governed.append(("AUTHORIZED", time.monotonic()))
+            ungoverned.append(time.monotonic())
+            harness.finished.set()
+
+    harness.tool("slow_restart", body)
+    harness.accept_stop_later(STOP_AFTER_SECONDS)
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.invoke("slow_restart(name)", lease, tool_name="slow_restart")
+    returned_at = time.monotonic()
+    assert harness.finished.wait(NATIVE_WAIT_SECONDS + 5.0)
+    harness.wait_settled("slow_restart")
+
+    assert harness.stop_accepted_at is not None
+    stop_at = harness.stop_accepted_at
+    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.execution_unknown is True
+    assert returned_at - stop_at <= CONTAINMENT_TARGET_SECONDS
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="STOP_BOUND_DENIED")
+    # the late effect on the lease channel is refused by the stop fence
+    assert [reason for reason, _ in governed] == ["STOP_BOUND_DENIED"]
+    # the registered callable never journalled an effect
+    assert harness.effects == []
+    # ungoverned residual: measured and recorded, not a containment PASS
+    assert len(ungoverned) == 1
+    record_property("rem0027_ungoverned_finally_residual_seconds_after_stop", round(ungoverned[0] - stop_at, 3))
+    record_property("rem0027_ungoverned_finally_residual_classification", "RESIDUAL_MEASURED_NOT_PASS")
+    record_property("rem0027_governed_finally_denial_seconds_after_stop", round(governed[0][1] - stop_at, 3))
+
+
+def test_the_lease_channel_authorizes_an_effect_without_a_stop() -> None:
+    harness = reconciled_harness()
+    lease = harness.lease("restart_service")
+
+    authorized = harness.runtime.authorize_effect(lease, "restart_service", subject="agent-1", at=NOW)
+
+    assert authorized.lease_id == lease.lease_id
+
+
+def test_the_lease_channel_refuses_an_effect_outside_the_lease() -> None:
+    harness = reconciled_harness()
+    lease = harness.lease("restart_service")
+
+    with pytest.raises(ToolRuntimeError) as refused:
+        harness.runtime.authorize_effect(lease, "delete_volume", subject="agent-1", at=NOW)
+    assert refused.value.reason_code == "CAPABILITY_DENIED"
