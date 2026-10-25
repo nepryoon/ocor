@@ -304,8 +304,141 @@
     "sha256": "a53caca4c74c58fbdb5a87e9a6660b45e2a0c1d8d7ca9844abaf61b07cdac4ff"
   },
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "555f649fe5433da704574afb9525f3e0f22e4028",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "23256d0bcf736f43ffaa7e26551b89f57be4f691",
+      "nonstate_git_tree_sha256": "a7fc55de576c1d464bc16577d5a8d35fe06b0a15ea4ab67f9a23f804e340631e",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the three state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "7c8d3f47725591e633dc25e271f706e29e8363bd0b0087eec4b853bfc0257b55",
+    "commands": [
+      {
+        "command": "sha256 of environment.json and host/qualification tools versus infra/toolchain.lock.json and infra/qualification_tools.lock.json; lscpu; MemTotal",
+        "exit_code": 0,
+        "summary": "environment.json sha256 ba543b509a5002ed8957b6e495cfa779ee298e66862bf82e64b45e6ef744578d. PATH tools match the lock: docker e45381109c6853, git 5516c9f362c293, gh d0a901528411df, node 6295488653f0d9, ruff b2576c0128fd8b, tsc 2219f428a7e55a, uv b65f23a420c4ac, python 3.12.11 ccc93c55c24bb9, helm 912d3c044f46dc, kind c72eda46430f06, kubectl 5de4e9f2266738. Host Intel(R) Core(TM) Ultra 9 275HX, 24 threads, MemTotal 31742992 kB (32504823808 bytes). Preflight rerun PASS, docker READY, no OCOR secret names in the clean shell."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "All eight normative digests OK. inputs tree 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35 matches the evidence record and is unchanged from the base."
+      },
+      {
+        "command": "git diff --name-status 685785e65599da27aac8cbb23499f4a3a8f147cc..6abdaf37bd5a87fffdaf14652782cf813e7c93ad and 7fc59409aebf3f632e2dff8925b98f78a2facc11..HEAD",
+        "exit_code": 0,
+        "summary": "HEAD is 6abdaf37bd5a87fffdaf14652782cf813e7c93ad, parent and qualified source 7fc59409aebf3f632e2dff8925b98f78a2facc11. Base-to-HEAD is 26 paths: Qdrant lifecycle in spikes/vector_partition/oracle.py, test_ocor_dev_rem_0018.py, allowlist line in scripts/validate_ocor_development_plan.py, planning hash, assurance and new requalification records. Qualified-source-to-HEAD is evidence records and manifests only. Historical sealed record hashes in audit.json match the files. validate_ocor_change_scope.py PASS."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 84 source files."
+      },
+      {
+        "command": "python scripts/validate_rccad.py",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings empty, dynamic_assurance CI_REQUIRED."
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: no tracked file uses a monitored extension outside its authorized area."
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/ocor-dev-rem-0018-anonymous-volume-teardown",
+        "exit_code": 0,
+        "summary": "PASS: 26 changed paths; immutable surfaces untouched; task ledger stable."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS: 224 inputs, 74 tasks, drifted_inputs 0."
+      },
+      {
+        "command": "python scripts/validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "verdict PASS, 37 PASS and 2 optional NOT_EXECUTED inside the script (markdownlint and mermaid, deterministic fallback). Not a skipped mandatory control."
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --non-skipped for OCOR-DEV-REM-0018, OCOR-DEV-0005, OCOR-DEV-0023, OCOR-DEV-0082, OCOR-DEV-REM-0022, OCOR-DEV-0050, OCOR-DEV-REM-0023, OCOR-DEV-REM-0036",
+        "exit_code": 0,
+        "summary": "Eight PASS. Each manifest selects the new requalification first. Raw log hashes match. Claims remain E1=0, E2=0, Verified=0, PoC/Production NO-GO, runtime NOT_ESTABLISHED. Supersession targets exist and their sealed bytes match audit.json."
+      },
+      {
+        "command": "clean shell: python scripts/bootstrap_ci_environment.py --teardown --execute; then a new clean shell: python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "First teardown ALREADY_REMOVED. Provision PASS in 45.118s. fuseki_max_heap_bytes=1073741824. control-plane SVID spiffe://ocor.test/ocor/control-plane exit 0. Fuseki archive cache MISS from https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, verified SHA512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132. Eleven bootstrap containers, nine typed services READY. Built image sha256:b9b2cba6f998e9fa85e229c582cc5bc8b25f6c2dccadbf8d9dedc66bcbb9f430 differs from lock output_sha256 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b; the versioned script records both and does not compare them. bootstrap.env was not sourced. No implementer tools were executed."
+      },
+      {
+        "command": "clean shell exports OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN, PYTHONHASHSEED=0, TZ=UTC; PYTHONPATH set as scripts/run_qualifying_campaign.py pytest_environment; cd ocor-runtime && python -m pytest tests/tasks/test_ocor_dev_rem_0018.py -p no:cacheprovider -q -rfEs",
+        "exit_code": 0,
+        "summary": "13 passed in 8.40s, zero skipped, zero failed. Real pinned Qdrant 1.15.1. The same command without the campaign PYTHONPATH exits 2 at collection (ModuleNotFoundError: spikes); that is the harness path, not a product failure. Adversarial probes on the real image: two anonymous mounts are removed and a second destroy is idempotent; a foreign container and its anonymous volume stay. A volume-enumeration failure raises VectorPartitionError and is not treated as success."
+      },
+      {
+        "command": "cd ocor-runtime && python -m pytest tests/tasks/test_ocor_dev_rem_0022.py tests/tasks/test_ocor_dev_0019.py tests/tasks/test_ocor_dev_0040.py -p no:cacheprovider -q -rfEs",
+        "exit_code": 0,
+        "summary": "37 passed in 127.37s, zero skipped, zero failed. Real Kafka/C5 backends, stack unchanged."
+      },
+      {
+        "command": "cd ocor-runtime && python -m pytest tests/tasks/test_ocor_dev_0023.py tests/tasks/test_ocor_dev_0024.py tests/tasks/test_ocor_dev_0025.py tests/tasks/test_ocor_dev_0026.py -p no:cacheprovider -q -rfEs",
+        "exit_code": 0,
+        "summary": "25 passed in 30.58s, zero skipped. The evidence vector-consumers command also includes test_ocor_dev_0027.py; that file was run with the allowlist regression."
+      },
+      {
+        "command": "cd ocor-runtime && python -m pytest tests/tasks/test_ocor_dev_0027.py tests/tasks/test_ocor_dev_0005.py tests/tasks/test_ocor_dev_0050.py tests/tasks/test_ocor_dev_0082.py tests/tasks/test_ocor_dev_rem_0023.py tests/tasks/test_ocor_dev_rem_0036.py -p no:cacheprovider -q -rfEs",
+        "exit_code": 0,
+        "summary": "337 passed in 15.39s, zero skipped: 8 from 0027 plus 329 allowlist-regression tests. Regression requalification inputs stayed green."
+      },
+      {
+        "command": "clean shell; export only OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN, PYTHONHASHSEED, TZ; python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 6abdaf37bd5a87fffdaf14652782cf813e7c93ad --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0018-6abdaf37bd5a-0/campaign",
+        "exit_code": 0,
+        "summary": "PASS on the exact HEAD. JUnit 3066 tests, 0 failures, 0 errors, 0 skipped, 0 duplicates. Includes test_ocor_dev_0048 (196), test_ocor_dev_0049 (390) and test_ocor_dev_rem_0018 (13). Duration 4093.913s, under the 4500s ceiling and over the 3600s threshold, so po_decision_required is true, consistent with the open non-blocking decision request. No OOM and no restarts on the eleven bootstrap containers. Kind node ocor-poc-control-plane removed with owned remover kind delete cluster --name ocor-poc, one destroy event, zero rejections, window 30s. Campaign started from a clean shell; bootstrap.env was not sourced; no implementer tools. Final official teardown removed the stack and the attributed kind network; residual containers, volumes and networks empty; tracked tree clean."
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "After campaign exit 0 and before the final teardown, docker network 7888d40b0e1e (name=kind, driver=bridge, created 2026-10-25 07:44:24 +0100, containers empty) was present and was absent from the pre-campaign network snapshot. Container and volume sets were unchanged. kind-teardown-observations.json records one removal, status OWNED_KIND_TEARDOWN_OBSERVED, node ocor-poc-control-plane, remover kind delete cluster --name ocor-poc, zero rejections, window_seconds 30. The REM-0018 diff does not touch test_ocor_dev_0049.py. The subsequent scripts/bootstrap_ci_environment.py --teardown --execute removed it as an attributed test network and left an empty residual.",
+        "id": "VF-001",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0049.py:3319",
+        "required_fix": "Pre-existing residue of the unchanged 0049 kind fixture, outside this change set. A separate remediation should remove the empty docker network kind when the owned cluster is deleted. It does not change the REM-0018 Qdrant lifecycle result; the final official teardown already collected this network.",
+        "severity": "medium"
+      }
+    ],
+    "findings_disposition": "VF-001 non bloccante (medium): residuo preesistente della fixture kind invariata di 0049 fuori da questo change set; la rete kind vuota e stata raccolta dal teardown ufficiale. Registrato come follow-up nello stato, nessuna modifica in questo change set.",
+    "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "06e00642c819c1c1afd86a5a100b885726bebe74a6e24415be6e565e4a2aa3e3",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-25T07:26:14Z",
+    "verdict_file_sha256": "47c6889df62d13691af7e82366bbb7bf48b68dc2c941d66bcfb3169d8e2acada",
+    "verdict_head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
+    "verdict_request_id": "OCOR-DEV-REM-0018-6abdaf37bd5a-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor, modello grok-4.7-high, fornitore xAI. Implementatori dichiarati nella richiesta e nel record: Codex, fornitore OpenAI; Claude Code, fornitore Anthropic. Nessun implementatore appartiene al fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "preflight": "PASS",
+      "sha256": "ba543b509a5002ed8957b6e495cfa779ee298e66862bf82e64b45e6ef744578d"
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -335,6 +468,12 @@
   "result": "PASS",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatori di REM-0018: Codex / OpenAI e Claude Code 2.1.310 / claude-opus-5-5 / Anthropic; implementatori storici degli input riqualificati: Codex / OpenAI e Claude Code / Anthropic. Nessun implementatore dichiarato e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "historical_implementers_of_regression_inputs": [
       {
         "agent": "Codex",
@@ -360,6 +499,13 @@
         "scope": "resumption after Codex quota exhaustion: full campaign completion check, teardown, evidence assembly, gates and verification request"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "cli": "Claude Code 2.1.310",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation and tests unchanged"
+    },
     "verifier_alternative": {
       "agent": "Antigravity CLI",
       "model": "Gemini",
@@ -375,7 +521,8 @@
       "process": "external loop only, separate clean context",
       "provider": "xAI"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback": "Mechanically reviewed: new revert commit of the isolated lifecycle change and tests, followed by requalification; no data migration, no prune, no sealed-history rewrite.",
   "schema_version": "1.0",
@@ -386,7 +533,7 @@
     "validator_ast_identical_except_exact_allowlist": true,
     "vector_non_lifecycle_ast_identical": true
   },
-  "status": "LOCAL_QUALIFIED_PENDING_INDEPENDENT_REVIEW",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-REM-0036-4a79d2961d57",
   "supersession_scope": "Regression only after exact planning allowlist extension; no reassessment of historical conformance",
   "task_id": "OCOR-DEV-REM-0036"
