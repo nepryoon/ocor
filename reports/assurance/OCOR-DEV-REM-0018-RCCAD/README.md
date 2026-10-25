@@ -53,3 +53,47 @@ l'audit/teardown del REM anche a questo harness, con riqualifica dei suoi input
 sigillati. Nella ripresa REM-0017 18 volumi per full sono stati osservati,
 attribuiti tramite Docker mounts e rimossi; zero residui finali. Questo record
 registra il difetto, non dichiara riparato o qualificato REM-0018.
+
+## Ripresa 2026-10-25 — candidato REM-0018
+
+Stato corrente: `IMPLEMENTED_AWAITING_QUALIFICATION_AND_INDEPENDENT_REVIEW`.
+Il testo di apertura sopra e' storico: non costituisce un esito di qualifica.
+Implementatore di questa unita: Codex (OpenAI); verifier esterno richiesto
+secondo LOOP-AGENT-ROTATION, con fornitore diverso dagli implementatori.
+
+L'inventario in `audit.json` riconcilia i difetti con `main`:
+
+- Kafka spike e C5 sono gia corretti da REM-0022: label di ownership, rimozione
+  per ID immutabile con `--volumes`, volume nominato esatto e controllo dei residui.
+  Sorgenti e test restano byte-identici; i test live di REM-0022, 0019 e 0040
+  vengono rieseguiti, senza dedurre la qualifica dalla sola lettura del codice.
+- L'immagine Qdrant pinnata non dichiara `VOLUME`; lo storage del test e' tmpfs.
+  Il leak anonimo di serie non e' riprodotto su questa immagine. Restano difetti
+  di lifecycle: avvio fuori dal try, controllo del solo prefisso e nessuna
+  verifica del teardown. Il RED ne dimostra gli effetti su Docker reale.
+- La correzione riguarda solo il lifecycle Qdrant: ownership e immagine verificate,
+  identita immutabile, avvio nel try/finally anche per interruzione Python,
+  rimozione con `--volumes`, memoria dei mount e verifica fail-closed dei residui.
+  Nessun prune; un volume nominato resta intatto e viene segnalato come residuo.
+  Gli errori di Docker restano errori, compresi quelli di cleanup.
+
+I test aggiungono un mount anonimo scratch al container reale per esercitare la
+classe senza cambiare immagine o backend. Volume nominato, container e rete
+sentinella restano invariati, insieme all'intero insieme degli ID preesistenti.
+Il caso stock prova separatamente assenza di mount anonimi e storage tmpfs.
+Fault locali: timeout dopo creazione, KeyboardInterrupt, readiness timeout,
+fallimento della rimozione, CLI che restituisce successo senza rimuovere,
+container assente con volume residuo, risorsa estranea. Nessuna risposta di
+successo del backend e' simulata come evidenza qualificante.
+
+`red.log` conserva il RED iniziale (8 FAIL, 1 PASS, commit `0e22e52`).
+Il fingerprint addizionale dell'interruzione Python e' in `audit.json`;
+le esecuzioni diagnostiche restano distinte dai run qualificanti.
+I tredici nuovi casi sono inclusi nella suite runtime e quindi nella CI completa.
+La riqualifica di 0023 copre l'input cambiato; le riqualifiche degli input
+allowlist sono di sola regressione, senza riaprire conformita o sigilli storici.
+I 22 consumer sono inventariati prima della modifica in `audit.json`.
+
+Rollback: nuovo revert commit, seguito da riqualifica. Contratti, risultati
+funzionali, test preesistenti, harness, timer, workflow e fence restano invariati.
+Nessuna chiusura della remediation prima del GO esterno e dell'integrazione.

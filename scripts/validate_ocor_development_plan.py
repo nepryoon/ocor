@@ -272,6 +272,27 @@ def main() -> int:
     changed = subprocess.run(["git", "diff", "--name-only", args.base_ref, "--"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, check=True, text=True, capture_output=True).stdout.splitlines()
     extension_paths = {
+        # CC-OCOR-DELIVERY-COMPLETION: exact REM-0018 teardown and requalification outputs.
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py",
+        "reports/assurance/OCOR-DEV-REM-0018-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0018-RCCAD/red.log",
+        "reports/assurance/OCOR-DEV-REM-0018-RCCAD/audit.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0018.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0018.log",
+        "reports/evidence/G2/OCOR-DEV-0023.requalified-rem0018.json",
+        "reports/evidence/G2/OCOR-DEV-0023.requalified-rem0018.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0018.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0018.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0018.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0018.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0018.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0018.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-rem0018.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0022.requalified-rem0018.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0018.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0018.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0018.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0018.log",
         # CC-OCOR-DELIVERY-COMPLETION section 7: exact REM-0036 (VF-002 of 0059) outputs.
         "ocor-runtime/src/ocor_runtime/memory/operations.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0036.py",

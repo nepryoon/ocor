@@ -53,6 +53,11 @@ def lifecycle(monkeypatch):
                                                            "image": entry["Config"]["Image"], "mounts": entry["Mounts"]}, sort_keys=True))
 
     monkeypatch.setattr(oracle, "_command", record)
+    sentinel = "ocor-rem0018-unrelated-" + uuid.uuid4().hex[:12]
+    docker("volume", "create", sentinel)
+    docker("network", "create", sentinel)
+    docker("create", "--name", sentinel, "--network", sentinel,
+           "--volume", sentinel + ":/sentinel", oracle.QDRANT_IMAGE)
     baseline = resources()
     yield {"record": record, "original": original, "owned": owned, "baseline": baseline}
     # Diagnostic cleanup is exact and never masks an assertion failure.
@@ -62,7 +67,12 @@ def lifecycle(monkeypatch):
         for mount in entry["Mounts"]:
             if mount["Type"] == "volume" and mount["Name"] in resources()["volume"]:
                 docker("volume", "rm", mount["Name"])
-    assert resources() == baseline, "diagnostic teardown must also leave zero owned resources"
+    try:
+        assert resources() == baseline, "diagnostic teardown must also leave zero owned resources"
+    finally:
+        docker("rm", "--force", "--volumes", sentinel)
+        docker("volume", "rm", sentinel)
+        docker("network", "rm", sentinel)
 
 
 def assert_clean(lifecycle):
@@ -81,14 +91,17 @@ def test_success_removes_anonymous_mount_preserves_baseline_and_is_idempotent(li
     assert_clean(lifecycle)
 
 
-def test_post_creation_command_timeout_cleans_all_real_resources(lifecycle, monkeypatch):
+@pytest.mark.parametrize("fault", [subprocess.TimeoutExpired, KeyboardInterrupt])
+def test_post_creation_command_timeout_cleans_all_real_resources(lifecycle, monkeypatch, fault):
     def interrupted(*args, **kwargs):
         result = lifecycle["record"](*args, **kwargs)
         if args[:2] == ("docker", "run"):
-            raise subprocess.TimeoutExpired(args, 60, output=result)
+            if fault is subprocess.TimeoutExpired:
+                raise fault(args, 60, output=result)
+            raise fault()
         return result
     monkeypatch.setattr(oracle, "_command", interrupted)
-    with pytest.raises(subprocess.TimeoutExpired):
+    with pytest.raises(fault):
         oracle.QdrantHarness.provision()
     assert_clean(lifecycle)
 
@@ -143,6 +156,52 @@ def test_foreign_container_with_spike_name_is_not_removed():
     finally:
         if name in docker("container", "ls", "--all", "--format", "{{.Names}}").splitlines():
             docker("rm", "--force", "--volumes", name)
+
+
+def test_stock_pinned_image_declares_no_anonymous_volumes_and_leaves_no_resources():
+    assert not json.loads(docker("image", "inspect", oracle.QDRANT_IMAGE))[0]["Config"].get("Volumes")
+    baseline = resources()
+    value = oracle.QdrantHarness.provision()
+    try:
+        metadata = json.loads(docker("inspect", value.container))[0]
+        mounts = metadata["Mounts"]
+        assert metadata["HostConfig"]["Tmpfs"]["/qdrant/storage"] == "size=256m,mode=0750"
+        assert not any(m["Type"] == "volume" for m in mounts)
+    finally:
+        value.destroy()
+    assert resources() == baseline
+
+
+def test_absent_container_does_not_hide_retained_anonymous_volume(lifecycle):
+    value = oracle.QdrantHarness.provision()
+    docker("rm", "--force", value.container)  # Local fault: omit -v deliberately.
+    with pytest.raises(oracle.VectorPartitionError, match="owned resources remain"):
+        value.destroy()
+    for volume in value._volumes:
+        docker("volume", "rm", volume)
+    value.destroy()
+    assert_clean(lifecycle)
+
+
+def test_attached_named_volume_is_preserved_and_reported(lifecycle, monkeypatch):
+    volume = "ocor-rem0018-foreign-" + uuid.uuid4().hex[:12]
+    docker("volume", "create", volume)
+    def attach(*args, **kwargs):
+        if args[:2] == ("docker", "run"):
+            command = list(args)
+            command[-1:-1] = ["--volume", volume + ":/foreign"]
+            args = tuple(command)
+        return lifecycle["record"](*args, **kwargs)
+    monkeypatch.setattr(oracle, "_command", attach)
+    try:
+        value = oracle.QdrantHarness.provision()
+        with pytest.raises(oracle.VectorPartitionError, match="owned resources remain"):
+            value.destroy()
+        assert volume in resources()["volume"]
+    finally:
+        docker("volume", "rm", volume)
+    value.destroy()
+    assert_clean(lifecycle)
 
 
 @pytest.mark.parametrize("name", ["foreign", "ocor-spike-0023-", "ocor-spike-0023-not-an-id"])

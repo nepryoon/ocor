@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import http.client
 import json
+import re
 import statistics
 import subprocess
 import time
@@ -99,45 +100,76 @@ class QdrantHarness:
     def __init__(self, container: str, endpoint: str) -> None:
         self.container = container
         self.endpoint = endpoint.rstrip("/")
+        self._identity: str | None = None
+        self._volumes: set[str] = set()
 
     @classmethod
     def provision(cls) -> QdrantHarness:
         container = f"ocor-spike-0023-{uuid.uuid4().hex[:12]}"
-        _command(
-            "docker",
-            "run",
-            "--detach",
-            "--name",
-            container,
-            "--security-opt",
-            "no-new-privileges:true",
-            "--tmpfs",
-            "/qdrant/storage:size=256m,mode=0750",
-            "--publish",
-            "127.0.0.1::6333",
-            QDRANT_IMAGE,
-        )
+        names = _command("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines()
+        if container in names:
+            raise VectorPartitionError("refusing to reuse an existing container")
+        harness = cls(container, "")
+        ready = False
         try:
+            # Docker can create resources before the client times out. The run
+            # itself therefore belongs inside the cleanup boundary.
+            _command(
+                "docker", "run", "--detach", "--name", container,
+                "--label", f"ocor.vector.lifecycle.owner={container}",
+                "--security-opt", "no-new-privileges:true",
+                "--tmpfs", "/qdrant/storage:size=256m,mode=0750",
+                "--publish", "127.0.0.1::6333", QDRANT_IMAGE,
+            )
+            entry = harness._inspect_owned()
+            harness._identity = entry["Id"]
+            harness._volumes = {m["Name"] for m in entry["Mounts"] if m["Type"] == "volume"}
             binding = _command("docker", "port", container, "6333/tcp")
             port = binding.rsplit(":", 1)[1]
-            harness = cls(container, f"http://127.0.0.1:{port}")
+            harness.endpoint = f"http://127.0.0.1:{port}"
             deadline = time.monotonic() + 60
             while time.monotonic() < deadline:
                 try:
                     info = harness.request("GET", "/")
                     if str(info.get("version", "")).startswith("1.15"):
+                        ready = True
                         return harness
                 except VectorPartitionError:
                     time.sleep(0.2)
             raise VectorPartitionError("Qdrant did not expose its pinned version")
-        except Exception:
-            _command("docker", "rm", "--force", container)
-            raise
+        finally:
+            if not ready:
+                harness.destroy()
+
+    def _inspect_owned(self) -> dict[str, Any]:
+        entry = json.loads(_command("docker", "inspect", self.container))[0]
+        if ((entry["Config"].get("Labels") or {}).get("ocor.vector.lifecycle.owner") != self.container
+                or entry["Config"]["Image"] != QDRANT_IMAGE
+                or entry["Name"] != f"/{self.container}"
+                or (self._identity is not None and entry["Id"] != self._identity)):
+            raise VectorPartitionError("refusing to destroy a foreign container")
+        return entry
 
     def destroy(self) -> None:
-        if not self.container.startswith("ocor-spike-0023-"):
+        """Remove only the owned immutable container and its anonymous mounts.
+
+        Named volumes are never removed. Remember mount identities across
+        retries so an absent container cannot hide a leftover volume. Docker
+        enumeration failures propagate; absence is never inferred from a failed
+        probe. No global prune or network mutation is needed (default network).
+        """
+        if re.fullmatch(r"ocor-spike-0023-[0-9a-f]{12}", self.container) is None:
             raise VectorPartitionError("refusing to destroy a non-spike container")
-        _command("docker", "rm", "--force", self.container)
+        names = _command("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines()
+        if self.container in names:
+            entry = self._inspect_owned()
+            self._identity = entry["Id"]
+            self._volumes.update(m["Name"] for m in entry["Mounts"] if m["Type"] == "volume")
+            _command("docker", "rm", "--force", "--volumes", self._identity)
+        names = _command("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines()
+        volumes = set(_command("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
+        if self.container in names or self._volumes & volumes:
+            raise VectorPartitionError("owned resources remain after teardown")
 
     def request(self, method: str, path: str, body: Any | None = None) -> dict[str, Any]:
         data = None
