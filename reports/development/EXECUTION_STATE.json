@@ -1,15 +1,23 @@
 {
   "active_iteration": {
-    "baseline_commit": "fca729117eaab09db154af2cb1e3395c63c9ec18",
-    "branch": "governed/state-sync-rem0033-profiling-20261025",
+    "baseline_commit": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
+    "branch": "governed/state-sync-rem0037-inventory-dr-20261025",
     "campaign_background_processes_remaining": false,
-    "change_set": "REM-0033-LOCAL-FULL-DURATION read-only profiling",
+    "change_set": "OCOR-DEV-REM-0037 pre-code inventory (LOCAL-SUITE-SPLIT point 2)",
+    "decision_request": {
+      "branch": "governed/decision-request-rem0037-local-suite-split-inventory",
+      "commit": "2055895f58335b982544b421c492071f6c71873f",
+      "path": "reports/development/decision_requests/REM-0037-LOCAL-SUITE-SPLIT-INVENTORY.md",
+      "pr": 340,
+      "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+      "sha256": "819e437fba68d88c99f2d5e191a119ebbc73c1cba443e2da9083f41d260b4bd5"
+    },
     "decisions": [
-      "REM-0033-LOCAL-FULL-DURATION (2026-10-25)",
-      "REM-0033-LOCAL-FULL-DURATION-PROFILING-SCOPE (2026-10-25)"
+      "LOCAL-SUITE-SPLIT (2026-10-25)",
+      "LOOP-IMPLEMENTER-ORDER (2026-10-25)"
     ],
-    "next_action": "Eseguire OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, 2026-10-25) come prossima unita governata pre-G6, con input di progetto l esito della profilazione REM-0033 registrato su governed/decision-request-rem0018-local-full-duration-20261025 commit 539b9b6f092e977afec331826e1a8559a2b43cb1: prima del codice inventario dei file e dei record sigillati che li hanno fra gli input (fermarsi con decision request se le riqualifiche superano 3 task o toccano 0049/0050); preferire uno script nuovo che orchestra run_qualifying_campaign.py e parametri con default invariato; isolamento per parte di progetto Compose, porte, cluster kind, rete kind, volumi, directory .ocor, CA SPIRE e credenziali; default single-stack identico per CI e verifier; partizione deterministica dai tempi per caso misurati in cui il caso Helm puo condividere la parte con altre unita (stima circa 1990 s contro circa 2950 s con Helm riservato), moduli non-0049 interi, partition() CI invariata; RED prima del codice per partizionatore e controllo d unione (caso mancante, duplicato, in piu); prova di equivalenza sullo stesso head serial e 2 parti, stesso insieme, entrambe PASS, zero skip; avvio 2 parti solo con MemAvailable sufficiente (soglia proposta 18 GiB da confermare con misura diretta), altrimenti seriale registrato; guardia memoria, tetto 75 min e notifica 60 min sul tempo complessivo invariati; teardown di entrambi gli stack a zero residui. Verifica esterna di fornitore diverso da tutti gli implementatori (Codex sempre contato). Poi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
-    "phase": "PROFILING_RECORDED_STATE_SYNC",
+    "next_action": "Eseguire l ultimo ciclo di riparazione di OCOR-DEV-REM-0027 (repair_cycle 2, ultimo del budget) secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14), ripartendo dal branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch head 5cb0f629d084833f34d4494c4770d9e7090322b1 senza riscriverne la storia (allineamento a origin/main solo con merge non distruttivo): riconciliazione di ogni ToolRuntimeError execution_unknown presso OutcomeReconciler di C6 con positivo e negativo fail-closed; caso attesa nativa + finally con journal dell effetto, rifiuto entro 10 s, execution_unknown con record di riconciliazione, effetto tardivo via canale con lease rifiutato con STOP_BOUND_DENIED, residuo su canale non governato registrato come misura e mai PASS; docstring ed evidenza corrette; nessun altro cambiamento; suite del task tre volte e suite completa seriale una volta, zero skip; riqualifica 0047 (e 0050 di sola regressione) con supersession; verifica esterna Cursor/Grok (xAI), implementatori Claude Code (Anthropic) e Codex (OpenAI) dichiarati. Con NO_GO: TERMINAL_BLOCKED del solo REM-0027, escalation, nessun ciclo 3. Poi REM-0031. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+    "phase": "INVENTORY_THRESHOLD_EXCEEDED_DECISION_REQUEST_OPENED",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
       "implementers": [
@@ -18,10 +26,10 @@
           "cli_version": "2.1.310",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "read-only profiling, decision-request disposition record and state sync"
+          "scope": "read-only pre-code inventory, decision request and state sync"
         }
       ],
-      "verifier": "none required: no code, test, harness or evidence change; analysis only"
+      "verifier": "none required: no code, test, harness or evidence change; inventory only"
     }
   },
   "backlog_escalations": {
@@ -1750,7 +1758,7 @@
       }
     }
   },
-  "baseline_commit": "fca729117eaab09db154af2cb1e3395c63c9ec18",
+  "baseline_commit": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5706,6 +5714,34 @@
       "resolution": "Completed: disposition recorded onREM0023, fixture-only wiring/AST proof, fresh0054/0055 supersessions, externalGO and exact-headCI.",
       "resolved_at": "2026-10-22T12:22:11.914836+00:00",
       "status": "RESOLVED_PO_DECISION_EXECUTED"
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0037"
+      ],
+      "created_at": "2026-10-25T09:26:46.459576+00:00",
+      "decision": "LOCAL-SUITE-SPLIT (2026-10-25), point 2",
+      "does_not_block": [
+        "OCOR-DEV-REM-0027",
+        "OCOR-DEV-REM-0031"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-rem0037-local-suite-split-inventory",
+        "commit": "2055895f58335b982544b421c492071f6c71873f",
+        "inventory": {
+          "artifacts_location": "~/.ocor-codex/rem0037-inventory-20261025/ (outside Git)",
+          "inventory.json": "c1f0163c89dfb69c4990e93ae4450b0dd42be6aec64e37694608bdd8b4116041",
+          "inventory.py": "21890d2cbf1c466a51ad62429ef8dcecb9246b7599d86adbcbc6828cd0805aac"
+        },
+        "path": "reports/development/decision_requests/REM-0037-LOCAL-SUITE-SPLIT-INVENTORY.md",
+        "pr": 340,
+        "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+        "sha256": "819e437fba68d88c99f2d5e191a119ebbc73c1cba443e2da9083f41d260b4bd5"
+      },
+      "id": "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY",
+      "reason": "Pre-code inventory: isolated per-part stacks need parameterised endpoints/names in sealed inputs. Variant without 0049/source changes still requalifies at least 6 tasks (0072, 0073, 0075, 0079, 0080, 0081) and caps the gain at 28%; the full-gain variant (about -50%) requalifies 15 tasks including 0049 (0025, 0037, 0038, 0040, 0048, 0049, 0058, 0072, 0073, 0075, 0079, 0080, 0081, 0082, 0083). Point 2 threshold (more than 3 tasks or 0049/0050) exceeded.",
+      "recommendation": "Option 1: env-driven endpoints and names with byte-identical defaults in the inventoried files only, AST proof limited to literal-to-env-default replacement, superseding requalifications of the 15 tasks, compose override file additive, kind only in the default part; option 3 (suspend) preferred to option 2",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8525,7 +8561,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "REM_0018_VERIFIED_SEALED_INTEGRATED_PRE_G6_REMEDIATIONS_PENDING",
-  "next_executable_action": "Eseguire OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, 2026-10-25) come prossima unita governata pre-G6, con input di progetto l esito della profilazione REM-0033 registrato su governed/decision-request-rem0018-local-full-duration-20261025 commit 539b9b6f092e977afec331826e1a8559a2b43cb1: prima del codice inventario dei file e dei record sigillati che li hanno fra gli input (fermarsi con decision request se le riqualifiche superano 3 task o toccano 0049/0050); preferire uno script nuovo che orchestra run_qualifying_campaign.py e parametri con default invariato; isolamento per parte di progetto Compose, porte, cluster kind, rete kind, volumi, directory .ocor, CA SPIRE e credenziali; default single-stack identico per CI e verifier; partizione deterministica dai tempi per caso misurati in cui il caso Helm puo condividere la parte con altre unita (stima circa 1990 s contro circa 2950 s con Helm riservato), moduli non-0049 interi, partition() CI invariata; RED prima del codice per partizionatore e controllo d unione (caso mancante, duplicato, in piu); prova di equivalenza sullo stesso head serial e 2 parti, stesso insieme, entrambe PASS, zero skip; avvio 2 parti solo con MemAvailable sufficiente (soglia proposta 18 GiB da confermare con misura diretta), altrimenti seriale registrato; guardia memoria, tetto 75 min e notifica 60 min sul tempo complessivo invariati; teardown di entrambi gli stack a zero residui. Verifica esterna di fornitore diverso da tutti gli implementatori (Codex sempre contato). Poi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+  "next_executable_action": "Eseguire l ultimo ciclo di riparazione di OCOR-DEV-REM-0027 (repair_cycle 2, ultimo del budget) secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14), ripartendo dal branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch head 5cb0f629d084833f34d4494c4770d9e7090322b1 senza riscriverne la storia (allineamento a origin/main solo con merge non distruttivo): riconciliazione di ogni ToolRuntimeError execution_unknown presso OutcomeReconciler di C6 con positivo e negativo fail-closed; caso attesa nativa + finally con journal dell effetto, rifiuto entro 10 s, execution_unknown con record di riconciliazione, effetto tardivo via canale con lease rifiutato con STOP_BOUND_DENIED, residuo su canale non governato registrato come misura e mai PASS; docstring ed evidenza corrette; nessun altro cambiamento; suite del task tre volte e suite completa seriale una volta, zero skip; riqualifica 0047 (e 0050 di sola regressione) con supersession; verifica esterna Cursor/Grok (xAI), implementatori Claude Code (Anthropic) e Codex (OpenAI) dichiarati. Con NO_GO: TERMINAL_BLOCKED del solo REM-0027, escalation, nessun ciclo 3. Poi REM-0031. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8567,11 +8603,11 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "branch": "governed/state-sync-rem0018-integrated-20261025",
-    "change_set": "OCOR-DEV-REM-0018",
-    "merge_commit": "450574634b13f787d1c4a3b3831ae9cdf9289d67",
-    "phase": "VERIFIED_SEALED_MERGED",
-    "request_id": "OCOR-DEV-REM-0018-6abdaf37bd5a-0"
+    "branch": "governed/state-sync-rem0033-profiling-20261025",
+    "change_set": "REM-0033-LOCAL-FULL-DURATION read-only profiling",
+    "merge_commit": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
+    "phase": "PROFILING_RECORDED_STATE_SYNC_MERGED",
+    "request_id": null
   },
   "previous_candidate_ci": {
     "head_sha": "712fc2b799774281321c04209bfb6910b91f0941",
@@ -24223,9 +24259,22 @@
       },
       "id": "OCOR-DEV-REM-0037",
       "id_allocation": "First free REM-* verified read-only on 2026-10-25 across every local and remote ref (git grep), ~/.ocor-codex JSON/Markdown and verdicts, PR titles/bodies: zero occurrences of REM-0037 (REM-0036 highest in use; REM-0099 only as a range bound in decision text).",
+      "pre_code_inventory": {
+        "artifacts": {
+          "artifacts_location": "~/.ocor-codex/rem0037-inventory-20261025/ (outside Git)",
+          "inventory.json": "c1f0163c89dfb69c4990e93ae4450b0dd42be6aec64e37694608bdd8b4116041",
+          "inventory.py": "21890d2cbf1c466a51ad62429ef8dcecb9246b7599d86adbcbc6828cd0805aac"
+        },
+        "decision_request": "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY",
+        "executed_at": "2026-10-25T09:26:46.459576+00:00",
+        "executor": "Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310); read-only, no code, test, campaign or container",
+        "method": "git grep of shared-resource literals (127.0.0.1 ports, ocor-bootstrap project/container names, ocor-poc, .ocor/) over src, tests, scripts, deploy, reports/tests, workflows, crossed with the inputs of the most recent record of each of the 74 completed tasks (select_most_recent of validate_evidence_input_drift.py); static lower bound",
+        "observed_main": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
+        "outcome": "Point 2 threshold exceeded: minimum 6 requalifications without 0049 (gain at most 28%), 15 including 0049 for the full gain; code not started"
+      },
       "queue_position": "after REM-0018 integration and the REM-0033-LOCAL-FULL-DURATION read-only profiling (its design input); before the last REM-0027 cycle",
       "scope": "Local full suite in 2 parallel parts, each with an isolated stack (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials) generated by the versioned procedure; default single-stack behaviour identical for CI, verifier and every other use; teardown of both stacks with zero residue.",
-      "status": "REGISTERED_READY_NEXT_UNIT",
+      "status": "BLOCKED_OPEN_PO_DECISION_INVENTORY_THRESHOLD",
       "verification": "Independent verifier of a provider different from all implementers"
     }
   },
@@ -25423,7 +25472,7 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-25T08:46:38.175044+00:00",
+  "updated_at": "2026-10-25T09:26:46.459576+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",

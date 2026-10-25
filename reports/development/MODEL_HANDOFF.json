@@ -2,9 +2,9 @@
   "assumptions": [
     "Backlog ready set does not waive pre-G6 remediation dependencies."
   ],
-  "base_sha": "fca729117eaab09db154af2cb1e3395c63c9ec18",
-  "baseline_commit": "fca729117eaab09db154af2cb1e3395c63c9ec18",
-  "branch": "governed/state-sync-rem0033-profiling-20261025",
+  "base_sha": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
+  "baseline_commit": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
+  "branch": "governed/state-sync-rem0037-inventory-dr-20261025",
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -20,30 +20,25 @@
   },
   "commands": [
     {
-      "command": "python3 -I ~/.ocor-codex/rem0033-profiling-20261025/profile.py profile.json",
+      "command": "python3 -I ~/.ocor-codex/rem0037-inventory-20261025/inventory.py <repo>",
       "exit_code": 0,
-      "summary": "Read-only analysis of eight existing full campaigns (JUnit per-case times, campaign_result, health-observer); hashes in the decision request file."
+      "summary": "Read-only inventory of shared-resource literals crossed with latest sealed inputs of 74 completed tasks; inventory.json c1f0163c89dfb69c4990e93ae4450b0dd42be6aec64e37694608bdd8b4116041."
     },
     {
-      "command": "python3 -I ~/.ocor-codex/rem0033-profiling-20261025/units.py",
+      "command": "git push origin governed/decision-request-rem0037-local-suite-split-inventory; gh pr create --draft (#340)",
       "exit_code": 0,
-      "summary": "Full runs per unit 0057/0058/0059/REM-0036/REM-0018 with executor, duration, outcome, share of unit wall time and CI PR time."
-    },
-    {
-      "command": "git push origin governed/decision-request-rem0018-local-full-duration-20261025",
-      "exit_code": 0,
-      "summary": "Disposition and profiling outcome appended to REM-0033-LOCAL-FULL-DURATION.md at 539b9b6f092e977afec331826e1a8559a2b43cb1; branch not merged, allowlist unchanged."
+      "summary": "Decision request REM-0037-LOCAL-SUITE-SPLIT-INVENTORY at 2055895f58335b982544b421c492071f6c71873f, sha256 819e437fba68d88c99f2d5e191a119ebbc73c1cba443e2da9083f41d260b4bd5; draft, not to be merged."
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "REM-0033-LOCAL-FULL-DURATION:profiling",
+  "current_task": "OCOR-DEV-REM-0037:pre-code-inventory",
   "evidence_paths": [],
-  "exact_next_action": "Eseguire OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT, 2026-10-25) come prossima unita governata pre-G6, con input di progetto l esito della profilazione REM-0033 registrato su governed/decision-request-rem0018-local-full-duration-20261025 commit 539b9b6f092e977afec331826e1a8559a2b43cb1: prima del codice inventario dei file e dei record sigillati che li hanno fra gli input (fermarsi con decision request se le riqualifiche superano 3 task o toccano 0049/0050); preferire uno script nuovo che orchestra run_qualifying_campaign.py e parametri con default invariato; isolamento per parte di progetto Compose, porte, cluster kind, rete kind, volumi, directory .ocor, CA SPIRE e credenziali; default single-stack identico per CI e verifier; partizione deterministica dai tempi per caso misurati in cui il caso Helm puo condividere la parte con altre unita (stima circa 1990 s contro circa 2950 s con Helm riservato), moduli non-0049 interi, partition() CI invariata; RED prima del codice per partizionatore e controllo d unione (caso mancante, duplicato, in piu); prova di equivalenza sullo stesso head serial e 2 parti, stesso insieme, entrambe PASS, zero skip; avvio 2 parti solo con MemAvailable sufficiente (soglia proposta 18 GiB da confermare con misura diretta), altrimenti seriale registrato; guardia memoria, tetto 75 min e notifica 60 min sul tempo complessivo invariati; teardown di entrambi gli stack a zero residui. Verifica esterna di fornitore diverso da tutti gli implementatori (Codex sempre contato). Poi ultimo ciclo REM-0027 secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, quindi REM-0031. G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
-  "head_sha": "fca729117eaab09db154af2cb1e3395c63c9ec18",
+  "exact_next_action": "Eseguire l ultimo ciclo di riparazione di OCOR-DEV-REM-0027 (repair_cycle 2, ultimo del budget) secondo REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14), ripartendo dal branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch head 5cb0f629d084833f34d4494c4770d9e7090322b1 senza riscriverne la storia (allineamento a origin/main solo con merge non distruttivo): riconciliazione di ogni ToolRuntimeError execution_unknown presso OutcomeReconciler di C6 con positivo e negativo fail-closed; caso attesa nativa + finally con journal dell effetto, rifiuto entro 10 s, execution_unknown con record di riconciliazione, effetto tardivo via canale con lease rifiutato con STOP_BOUND_DENIED, residuo su canale non governato registrato come misura e mai PASS; docstring ed evidenza corrette; nessun altro cambiamento; suite del task tre volte e suite completa seriale una volta, zero skip; riqualifica 0047 (e 0050 di sola regressione) con supersession; verifica esterna Cursor/Grok (xAI), implementatori Claude Code (Anthropic) e Codex (OpenAI) dichiarati. Con NO_GO: TERMINAL_BLOCKED del solo REM-0027, escalation, nessun ciclo 3. Poi REM-0031. OCOR-DEV-REM-0037 resta ferma fino alla disposition del PO su REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (PR #340 bozza). G6 resta subordinato; nessun nuovo DEC, E1/E2/Verified o claim.",
+  "head_sha": "bb9dab7382a8f41acfcba6817e801c2e71d71b81",
   "head_sha_role": "main baseline before state sync",
   "independent_verification": {
     "reason": "no code, test, harness, workflow or evidence record changed",
-    "status": "NOT_REQUIRED_ANALYSIS_ONLY"
+    "status": "NOT_REQUIRED_INVENTORY_ONLY"
   },
   "integration_alignment": {
     "aligned_head": "555f649fe5433da704574afb9525f3e0f22e4028",
@@ -468,9 +463,9 @@
     "started_at": "2026-10-25T07:28:58Z",
     "status": "PASS_EXACT_HEAD_13_REQUIRED"
   },
-  "local_gate_results": "Seal gates rerun on sealed head: checksum 8/8, harness 14 PASS, drift 0 (74/224), RCCAD, language, scope, plan (37 PASS, 2 optional NOT_EXECUTED), ruff, mypy strict, runtime evidence for eight records PASS. Raw logs in ~/.ocor-codex/integrate-rem0018-20261025/gate-*.log.",
-  "next_task": "OCOR-DEV-REM-0037",
-  "phase": "PROFILING_RECORDED",
+  "local_gate_results": "State-sync gates listed in ITERATION_LOG entry; no runtime gate executed (no code change).",
+  "next_task": "OCOR-DEV-REM-0027",
+  "phase": "REM0037_INVENTORY_DECISION_REQUEST_OPENED",
   "raw_evidence_location": "reports/evidence (eight sealed records; raw logs unchanged)",
   "requirement_ids": [],
   "roles": {
@@ -481,10 +476,10 @@
         "cli_version": "2.1.310",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "read-only profiling, decision-request disposition record and state sync"
+        "scope": "read-only pre-code inventory, decision request and state sync"
       }
     ],
-    "verifier": "none required: no code, test, harness or evidence change; analysis only"
+    "verifier": "none required: no code, test, harness or evidence change; inventory only"
   },
   "rollback_result": "new governed revert of the REM-0018 commits; preserve all historical evidence; no inputs change",
   "schema_version": "1.0",
@@ -504,21 +499,13 @@
     "VF-001 non-blocking follow-up recorded, not implemented."
   ],
   "test_results": {
-    "local_full_this_iteration": "NOT_EXECUTED_METADATA_ONLY",
-    "verifier_full": {
-      "duration_seconds": 4093.913,
-      "errors": 0,
-      "failed": 0,
-      "passed": 3066,
-      "skipped": 0
-    }
+    "local_full_this_iteration": "NOT_EXECUTED_INVENTORY_ONLY"
   },
   "unresolved_blockers": [
-    "REM-0033-LOCAL-FULL-DURATION profiling",
-    "OCOR-DEV-REM-0037",
+    "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (OPEN_PO_DECISION_REQUIRED, blocks only OCOR-DEV-REM-0037)",
     "OCOR-DEV-REM-0027 last cycle",
     "OCOR-DEV-REM-0031"
   ],
-  "updated_at": "2026-10-25T08:46:38.175044+00:00",
-  "worktree": ".ocor/worktrees/state-sync-rem0033-profiling-20261025"
+  "updated_at": "2026-10-25T09:26:46.459576+00:00",
+  "worktree": ".ocor/worktrees/ss-rem0037-inventory"
 }
