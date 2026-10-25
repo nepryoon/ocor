@@ -1,66 +1,37 @@
 {
   "active_iteration": {
-    "baseline_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
-    "branch": "governed/state-sync-rem0027-integrated-20261025",
+    "baseline_commit": "d1207eec98257b50bb18ac936e54dacc90caf427",
+    "branch": "governed/state-sync-rem0031-inventory-dr-20261025",
     "campaign_background_processes_remaining": false,
-    "candidate_branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
-    "candidate_head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
-    "change_set": "OCOR-DEV-REM-0027",
-    "decisions": [
-      "REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14)",
-      "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
-      "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (2026-10-25)"
-    ],
-    "independent_verification": {
-      "findings": [],
-      "head_sha": "ef8086f319ac9f67df6a667ae411db0201ac0c3f",
-      "not_executed": [],
-      "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
-      "sha256": "69ba037db4de32275de4840dda5deaf7a614bd725551d5097f141a0652e7fe1d",
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verifier": {
-        "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Claude Code, claude-opus-5-5 (Anthropic), cicli 0, 1 e 2; Codex (OpenAI), contato dal loop. Nessun implementatore dello stesso fornitore del verifier.",
-        "model": "grok-4.7-high",
-        "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
-        "provider": "xAI"
-      }
+    "change_set": "OCOR-DEV-REM-0031 pre-code consumer inventory (REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY)",
+    "decision_request": {
+      "branch": "governed/decision-request-rem0031-registry-consumer-scope",
+      "commit": "4daecbf19c07f88b88edc1a1e16bd2d08701caac",
+      "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
+      "pr": 345,
+      "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+      "sha256": "4efd0f22c1c0bb13ee8f9fe48644bf0f3e2528cc5f131ea3c1307b8d7ea12c67"
     },
-    "merge_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
-    "next_action": "Avviare OCOR-DEV-REM-0031 (REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY 2026-10-14, opzione 1) secondo QUEUE-TO-G6-ORDER: branch governed/ocor-dev-rem-0031-identity-registry-writer-authority da origin/main in worktree nuovo; prima l inventario dei consumer di IdentityRegistry e dei record sigillati che li hanno fra gli input (scope esatto dei file dall inventario, entro il confine di provisioning autorizzato); poi RED sul backend reale per ogni famiglia positiva/negativa (creazione autorizzata; primo writer ostile e auto-attribuzione negati; aggiornamenti di requester/approver negati; autorita indisponibile fail-closed), GREEN, riqualifiche con supersession esplicita di ogni task con input sigillato toccato; schema dell identity record e convenzione Q1 invariati; suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic se Claude Code implementa). Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6 (non riprenderla d iniziativa). Nessun nuovo DEC, E1/E2/Verified o claim.",
-    "phase": "VERIFIED_SEALED_MERGED",
-    "pr": 343,
-    "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2",
+    "decisions": [
+      "REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (2026-10-14)",
+      "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
+      "REM-0023-DENIAL-AUDIT-CONSUMER-FIXTURES (2026-10-22), precedent"
+    ],
+    "next_action": "Proseguire OCOR-DEV-REM-0031 nella parte non bloccata dalla decision request REM-0031-REGISTRY-CONSUMER-SCOPE (PR #345 bozza): branch governed/ocor-dev-rem-0031-identity-registry-writer-authority da origin/main in worktree nuovo; implementare soltanto il boundary di provisioning comune a tutte le opzioni (nuovo modulo C2 IdentityProvisioningBoundary, policy di provisioning in bundle OPA firmato, nuovo modulo tests/tasks/test_ocor_dev_rem_0031.py) con RED prima del codice e GREEN sui backend reali Keycloak/OPA dello stack avviato da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600: creazione autorizzata; auto-attribuzione negata; writer registrato come richiedente o approvatore negato; aggiornamento negato; autorita (identita o policy) indisponibile fail-closed; schema identity-record e convenzione Q1 invariati. Non toccare i sei moduli di test dei consumer (0043, 0044, 0058, REM-0024, REM-0027, REM-0028) ne la semantica di register() per le chiavi Q1 finche il PO non dispone; checkpoint WIP tracciato sul branch senza richiesta di verifica. Dopo la disposition: adattamento dei consumer secondo l opzione scelta con prova AST, riqualifiche (opzione 1: 0043, 0044, 0058) con supersession, suite del task e suite completa seriale, verifica esterna di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic). Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
+    "phase": "INVENTORY_CONSUMER_SCOPE_DECISION_REQUEST_OPENED",
     "roles": {
-      "authority": "LOOP-AGENT-ROTATION (2026-10-16); LOOP-IMPLEMENTER-ORDER (2026-10-25)",
+      "authority": "LOOP-IMPLEMENTER-ORDER (2026-10-25)",
       "implementers": [
         {
           "agent": "Claude Code",
           "cli_version": "2.1.310",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "REM-0027 cycle 0, repair cycles 1 and 2: RED/GREEN, qualification, evidence, verification requests; then integration metadata and evidence sealing only"
-        },
-        {
-          "agent": "Codex",
-          "provider": "OpenAI",
-          "scope": "counted as implementer of the task by the loop rule (LOOP-AGENT-ROTATION point 2; LOOP-IMPLEMENTER-ORDER point 2): state syncs and historical inputs; no repair-2 code"
+          "scope": "read-only pre-code inventory, decision request and state sync"
         }
       ],
-      "integration_agent": {
-        "agent": "Claude Code",
-        "cli_version": "2.1.310",
-        "model": "claude-opus-5-5",
-        "provider": "Anthropic",
-        "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation and tests unchanged"
-      },
-      "verifier": {
-        "agent": "Cursor CLI",
-        "independence": "Processo e contesto separati. Verifier: Cursor CLI, Grok 4.7 (xAI). Implementatori dichiarati nella richiesta e nell'evidenza: Claude Code, claude-opus-5-5 (Anthropic), cicli 0, 1 e 2; Codex (OpenAI), contato dal loop. Nessun implementatore dello stesso fornitore del verifier.",
-        "model": "grok-4.7-high",
-        "provider": "xAI"
-      }
-    },
-    "sealed_head_sha": "5aacd9d827cffa866f9a3afdcd8fedbb768063f5"
+      "verifier": "none required: no code, test, harness or evidence change; inventory only"
+    }
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1788,7 +1759,7 @@
       }
     }
   },
-  "baseline_commit": "aeed1c6f559929dd8c746c8f13e9aca24db31055",
+  "baseline_commit": "d1207eec98257b50bb18ac936e54dacc90caf427",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5785,6 +5756,33 @@
       "reason": "Pre-code inventory: isolated per-part stacks need parameterised endpoints/names in sealed inputs. Variant without 0049/source changes still requalifies at least 6 tasks (0072, 0073, 0075, 0079, 0080, 0081) and caps the gain at 28%; the full-gain variant (about -50%) requalifies 15 tasks including 0049 (0025, 0037, 0038, 0040, 0048, 0049, 0058, 0072, 0073, 0075, 0079, 0080, 0081, 0082, 0083). Point 2 threshold (more than 3 tasks or 0049/0050) exceeded.",
       "recommendation": "Option 1: env-driven endpoints and names with byte-identical defaults in the inventoried files only, AST proof limited to literal-to-env-default replacement, superseding requalifications of the 15 tasks, compose override file additive, kind only in the default part; option 3 (suspend) preferred to option 2",
       "status": "RESOLVED_PO_DISPOSITION_SUSPENDED"
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0031 consumer adaptation, qualification, verification and integration"
+      ],
+      "created_at": "2026-10-25T16:21:51.478652+00:00",
+      "decision": "REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (2026-10-14), option1: inventory consumers before modifying",
+      "does_not_block": [
+        "OCOR-DEV-REM-0031 provisioning boundary implementation (new C2 module, signed provisioning policy, test_ocor_dev_rem_0031.py, RED/GREEN on real Keycloak/OPA)"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-rem0031-registry-consumer-scope",
+        "commit": "4daecbf19c07f88b88edc1a1e16bd2d08701caac",
+        "inventory": {
+          "artifacts_location": "~/.ocor-codex/rem0031-inventory-20261025/ (outside Git)",
+          "inventory.json": "57463432605f9b0ffc37447be5648967868f9ba848840b473ca9e62821deeda3",
+          "inventory.py": "cb2456da7a4cfb3dc76cd484859c33f9a49a7ffbfd4c057abcf735ceab3e4678"
+        },
+        "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
+        "pr": 345,
+        "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+        "sha256": "4efd0f22c1c0bb13ee8f9fe48644bf0f3e2528cc5f131ea3c1307b8d7ea12c67"
+      },
+      "id": "REM-0031-REGISTRY-CONSUMER-SCOPE",
+      "reason": "Pre-code inventory at d1207ee: closing the hostile first writer changes IdentityRegistry.register() for records with reserved Q1 keys; six test modules of other tasks write such records directly (fixtures/helpers in 0043, 0044, REM-0024, REM-0027, REM-0028; test-body sites in 0058 x1 and REM-0028 x3; REM-0024 asserts IdentityConflictError on update). Outside named areas per the REM-0023 precedent. No src consumer needs modification. Requalifications (latest-record view): option 1 0043, 0044, 0058; options 2/3 none.",
+      "recommendation": "Option 1: closed-by-default register() for new Q1 records (immutability conflict first), construction-time seeding plus authenticated IdentityProvisioningBoundary (Keycloak, signed OPA policy, self-attribution and registered-principal writers denied, fail-closed); authorise write-only adaptation of the six modules with REM-0023-style AST proof; requalify 0043/0044/0058 with supersession; regression of REM-0024/0027/0028",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8637,8 +8635,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "REM_0027_VERIFIED_SEALED_INTEGRATED_PRE_G6_REMEDIATIONS_PENDING",
-  "next_executable_action": "Avviare OCOR-DEV-REM-0031 (REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY 2026-10-14, opzione 1) secondo QUEUE-TO-G6-ORDER: branch governed/ocor-dev-rem-0031-identity-registry-writer-authority da origin/main in worktree nuovo; prima l inventario dei consumer di IdentityRegistry e dei record sigillati che li hanno fra gli input (scope esatto dei file dall inventario, entro il confine di provisioning autorizzato); poi RED sul backend reale per ogni famiglia positiva/negativa (creazione autorizzata; primo writer ostile e auto-attribuzione negati; aggiornamenti di requester/approver negati; autorita indisponibile fail-closed), GREEN, riqualifiche con supersession esplicita di ogni task con input sigillato toccato; schema dell identity record e convenzione Q1 invariati; suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic se Claude Code implementa). Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6 (non riprenderla d iniziativa). Nessun nuovo DEC, E1/E2/Verified o claim.",
+  "mandate_phase_status": "REM_0031_CONSUMER_SCOPE_DECISION_PENDING_PRE_G6",
+  "next_executable_action": "Proseguire OCOR-DEV-REM-0031 nella parte non bloccata dalla decision request REM-0031-REGISTRY-CONSUMER-SCOPE (PR #345 bozza): branch governed/ocor-dev-rem-0031-identity-registry-writer-authority da origin/main in worktree nuovo; implementare soltanto il boundary di provisioning comune a tutte le opzioni (nuovo modulo C2 IdentityProvisioningBoundary, policy di provisioning in bundle OPA firmato, nuovo modulo tests/tasks/test_ocor_dev_rem_0031.py) con RED prima del codice e GREEN sui backend reali Keycloak/OPA dello stack avviato da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600: creazione autorizzata; auto-attribuzione negata; writer registrato come richiedente o approvatore negato; aggiornamento negato; autorita (identita o policy) indisponibile fail-closed; schema identity-record e convenzione Q1 invariati. Non toccare i sei moduli di test dei consumer (0043, 0044, 0058, REM-0024, REM-0027, REM-0028) ne la semantica di register() per le chiavi Q1 finche il PO non dispone; checkpoint WIP tracciato sul branch senza richiesta di verifica. Dopo la disposition: adattamento dei consumer secondo l opzione scelta con prova AST, riqualifiche (opzione 1: 0043, 0044, 0058) con supersession, suite del task e suite completa seriale, verifica esterna di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic). Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8680,10 +8678,10 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "branch": "governed/state-sync-rem0027-repair2-candidate-20261025",
-    "change_set": "OCOR-DEV-REM-0027 repair cycle 2 (last of the budget)",
-    "merge_commit": null,
-    "phase": "REPAIR_2_CANDIDATE_PUSHED_AWAITING_INDEPENDENT_VERIFICATION",
+    "branch": "governed/state-sync-rem0027-integrated-20261025",
+    "change_set": "OCOR-DEV-REM-0027",
+    "merge_commit": "d1207eec98257b50bb18ac936e54dacc90caf427",
+    "phase": "VERIFIED_SEALED_MERGED_STATE_SYNC_MERGED",
     "request_id": "OCOR-DEV-REM-0027-ef8086f319ac-2"
   },
   "previous_candidate_ci": {
@@ -20313,10 +20311,24 @@
       ],
       "id": "OCOR-DEV-REM-0031",
       "new_decision_ids": false,
+      "pre_code_inventory": {
+        "artifacts": {
+          "artifacts_location": "~/.ocor-codex/rem0031-inventory-20261025/ (outside Git)",
+          "inventory.json": "57463432605f9b0ffc37447be5648967868f9ba848840b473ca9e62821deeda3",
+          "inventory.py": "cb2456da7a4cfb3dc76cd484859c33f9a49a7ffbfd4c057abcf735ceab3e4678"
+        },
+        "c2_identity_sha256": "bbd7794ccc5a43d7e29f0941407edf8ad144acc42faaeec2f24690cfdfff987b",
+        "decision_request": "REM-0031-REGISTRY-CONSUMER-SCOPE",
+        "executed_at": "2026-10-25T16:21:51.478652+00:00",
+        "executor": "Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310); read-only, no code, test, campaign or container",
+        "method": "git grep of IdentityRegistry API and .register( over src and tests, reserved Q1 key writers, crossed with inputs of the most recent record of each of the 74 completed tasks (select_most_recent of validate_evidence_input_drift.py) and with every sealed JSON in reports/evidence and reports/assurance",
+        "observed_main": "d1207eec98257b50bb18ac936e54dacc90caf427",
+        "outcome": "Consumer test scope needs PO extension (REM-0023 precedent); provisioning boundary work not blocked; code not started"
+      },
       "recorded_at": "2026-10-14T11:45:48.691437+00:00",
       "residual_risk": "First unauthenticated writer remains open until this remediation is independently closed; no attribution to FGM16/REM27/REM28 or unperformed campaigns",
       "scope": "Authenticated and authorised IdentityRegistry provisioning boundary (principal, authority, policy), distinct from grant/authorize/signature; requester and approvers cannot write. Inventory consumers before modifications; identity-record schema and Q1 convention unchanged.",
-      "status": "OPEN_IMPLEMENTATION_REQUIRED",
+      "status": "OPEN_IMPLEMENTATION_REQUIRED_CONSUMER_SCOPE_DECISION_PENDING",
       "work_started": false
     },
     "REM_0032_0049_RELAY_PROBE_LOAD_BUDGET": {
@@ -25630,7 +25642,7 @@
     "recorded_at": "2026-10-19T02:27:34.511183+00:00",
     "status": "HISTORICAL_BLOCKERS_SUPERSEDED_REM0033_INTEGRATED"
   },
-  "updated_at": "2026-10-25T15:33:31.341128+00:00",
+  "updated_at": "2026-10-25T16:21:51.478652+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
