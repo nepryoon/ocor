@@ -1,6 +1,16 @@
 {
   "artifacts": [
     {
+      "path": "OCOR-DEV-0005.requalified-rem0018.json",
+      "sha256": "2795e8dd8c09d6e7b377dfb70f5ae3a257342eb6a985fc5bbd2de67872a63d5c",
+      "task_id": "OCOR-DEV-0005"
+    },
+    {
+      "path": "OCOR-DEV-0005.requalified-rem0018.log",
+      "sha256": "9cc3ef4518613667bac1c25156106f68b0f95c21a854cb395323149925d67f29",
+      "task_id": "OCOR-DEV-0005-RAW"
+    },
+    {
       "path": "OCOR-DEV-0005.requalified-rem0036.json",
       "sha256": "cce84c76efcc74f4d8c8512307766db01aa80bbf7ae22740c5b31565e272f9c0",
       "task_id": "OCOR-DEV-0005"
@@ -134,6 +144,38 @@
   "created_at": "2026-09-01T21:01:03.590307Z",
   "gate": "G0",
   "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0005-REGRESSION-REM0018",
+      "command": [
+        "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0018/ocor-runtime/.venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/tasks/test_ocor_dev_0005.py",
+        "tests/tasks/test_ocor_dev_0050.py",
+        "tests/tasks/test_ocor_dev_0082.py",
+        "tests/tasks/test_ocor_dev_rem_0023.py",
+        "tests/tasks/test_ocor_dev_rem_0036.py",
+        "-p",
+        "no:cacheprovider",
+        "-q",
+        "-s",
+        "-rfEs",
+        "--tb=short",
+        "--junitxml=/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0018/.ocor/rem0018/allowlist-regression.xml"
+      ],
+      "evidence_path": "OCOR-DEV-0005.requalified-rem0018.json",
+      "raw_output_path": "OCOR-DEV-0005.requalified-rem0018.log",
+      "requirement_id": "BR-003",
+      "result": {
+        "errors": 0,
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 329,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0005"
+    },
     {
       "case_id": "OCOR-DEV-0002-REQUALIFIED",
       "command": "uv run --project ocor-runtime --frozen pytest -q ocor-runtime/tests/tasks/test_ocor_dev_0002.py",

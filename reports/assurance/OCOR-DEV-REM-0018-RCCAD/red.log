@@ -1,0 +1,92 @@
+MOUNT_PROVENANCE {"container": "ocor-spike-0023-e27862696031", "id": "06ea775687b32dfd3b63841b7e3bd384e53c25202a830ee0f40717216d006322", "image": "qdrant/qdrant:v1.15.1@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6", "mounts": [{"Destination": "/ocor-rem0018-scratch", "Driver": "local", "Mode": "", "Name": "ea084a6bc6ec35134e66f1d0e5a535a1d8cf5a3d5857a5e9d5c1b61e530ca75b", "Propagation": "", "RW": true, "Source": "/var/lib/docker/volumes/ea084a6bc6ec35134e66f1d0e5a535a1d8cf5a3d5857a5e9d5c1b61e530ca75b/_data", "Type": "volume"}]}
+FMOUNT_PROVENANCE {"container": "ocor-spike-0023-94c202b5c47b", "id": "fffd9304a275f8c222665c675393423f47e7491d2c01b433c558481c377fa33f", "image": "qdrant/qdrant:v1.15.1@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6", "mounts": [{"Destination": "/ocor-rem0018-scratch", "Driver": "local", "Mode": "", "Name": "eb51d5befb5b6224c7ff79d4de326f2517d92b63bff9ee0c181669b2dfbbb23c", "Propagation": "", "RW": true, "Source": "/var/lib/docker/volumes/eb51d5befb5b6224c7ff79d4de326f2517d92b63bff9ee0c181669b2dfbbb23c/_data", "Type": "volume"}]}
+FMOUNT_PROVENANCE {"container": "ocor-spike-0023-1ce196f7b5a7", "id": "4703fa11bef24a4adb866a9c302664f4a40878361b595d0fd2bc4f48c18cd9ae", "image": "qdrant/qdrant:v1.15.1@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6", "mounts": [{"Destination": "/ocor-rem0018-scratch", "Driver": "local", "Mode": "", "Name": "1a66d5732d2bd33416bd3c62edad13e2ac5c14e6775195a23d0e111a12807db2", "Propagation": "", "RW": true, "Source": "/var/lib/docker/volumes/1a66d5732d2bd33416bd3c62edad13e2ac5c14e6775195a23d0e111a12807db2/_data", "Type": "volume"}]}
+FMOUNT_PROVENANCE {"container": "ocor-spike-0023-1641f440ca3a", "id": "e3b6da662558954b7dedd21b786cee96b7ad501f79fe39915ad39ec7088287fc", "image": "qdrant/qdrant:v1.15.1@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6", "mounts": [{"Destination": "/ocor-rem0018-scratch", "Driver": "local", "Mode": "", "Name": "4b39b10d6df1b1ffc68c3140c0be06b747bf7928faf9934af48b42ff69adc7e4", "Propagation": "", "RW": true, "Source": "/var/lib/docker/volumes/4b39b10d6df1b1ffc68c3140c0be06b747bf7928faf9934af48b42ff69adc7e4/_data", "Type": "volume"}]}
+FMOUNT_PROVENANCE {"container": "ocor-spike-0023-ae9c141d4c12", "id": "5ad202c9e2e34a4d067209ed81c56531faca3e204b6eb60a999bf0f243e425f2", "image": "qdrant/qdrant:v1.15.1@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6", "mounts": [{"Destination": "/ocor-rem0018-scratch", "Driver": "local", "Mode": "", "Name": "32246ee135f83e1f8a73d1527028d97e4164ff0e91cb05f99efe5527f8faefbc", "Propagation": "", "RW": true, "Source": "/var/lib/docker/volumes/32246ee135f83e1f8a73d1527028d97e4164ff0e91cb05f99efe5527f8faefbc/_data", "Type": "volume"}]}
+FF.FF
+=================================== FAILURES ===================================
+__ test_success_removes_anonymous_mount_preserves_baseline_and_is_idempotent ___
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:79: in test_success_removes_anonymous_mount_preserves_baseline_and_is_idempotent
+    assert_clean(lifecycle)
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:71: in assert_clean
+    assert resources() == lifecycle["baseline"], "owned resources remain after teardown"
+E   AssertionError: owned resources remain after teardown
+E   assert {'container':...ive_default'}} == {'container':...ive_default'}}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'volume': {'ea084a6bc6ec35134e66f1d0e5a535a1d8cf5a3d5857a5e9d5c1b61e530ca75b'}} != {'volume': set()}
+E     Use -v to get more diff
+_________ test_post_creation_command_timeout_cleans_all_real_resources _________
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:93: in test_post_creation_command_timeout_cleans_all_real_resources
+    assert_clean(lifecycle)
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:71: in assert_clean
+    assert resources() == lifecycle["baseline"], "owned resources remain after teardown"
+E   AssertionError: owned resources remain after teardown
+E   assert {'container':...ive_default'}} == {'container':...ive_default'}}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Differing items:
+E     {'container': {'fffd9304a275'}} != {'container': set()}
+E     {'volume': {'eb51d5befb5b6224c7ff79d4de326f2517d92b63bff9ee0c181669b2dfbbb23c'}} != {'volume': set()}
+E     Use -v to get more diff
+_______________ test_readiness_timeout_cleans_all_real_resources _______________
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:101: in test_readiness_timeout_cleans_all_real_resources
+    assert_clean(lifecycle)
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:71: in assert_clean
+    assert resources() == lifecycle["baseline"], "owned resources remain after teardown"
+E   AssertionError: owned resources remain after teardown
+E   assert {'container':...ive_default'}} == {'container':...ive_default'}}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'volume': {'1a66d5732d2bd33416bd3c62edad13e2ac5c14e6775195a23d0e111a12807db2'}} != {'volume': set()}
+E     Use -v to get more diff
+______________ test_removal_failure_is_explicit_and_retry_cleans _______________
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:116: in test_removal_failure_is_explicit_and_retry_cleans
+    assert_clean(lifecycle)
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:71: in assert_clean
+    assert resources() == lifecycle["baseline"], "owned resources remain after teardown"
+E   AssertionError: owned resources remain after teardown
+E   assert {'container':...ive_default'}} == {'container':...ive_default'}}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'volume': {'4b39b10d6df1b1ffc68c3140c0be06b747bf7928faf9934af48b42ff69adc7e4'}} != {'volume': set()}
+E     Use -v to get more diff
+__________ test_successful_removal_response_with_residue_is_rejected ___________
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:128: in test_successful_removal_response_with_residue_is_rejected
+    with pytest.raises(oracle.VectorPartitionError, match="owned resources remain"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE VectorPartitionError
+____________ test_foreign_container_with_spike_name_is_not_removed _____________
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:140: in test_foreign_container_with_spike_name_is_not_removed
+    with pytest.raises(oracle.VectorPartitionError, match="refusing.*foreign"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE VectorPartitionError
+______ test_non_owned_names_are_rejected_before_docker[ocor-spike-0023-] _______
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:154: in test_non_owned_names_are_rejected_before_docker
+    oracle.QdrantHarness(name, "unused").destroy()
+spikes/vector_partition/oracle.py:140: in destroy
+    _command("docker", "rm", "--force", self.container)
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:151: in forbidden
+    raise AssertionError("must validate ownership before calling Docker")
+E   AssertionError: must validate ownership before calling Docker
+__ test_non_owned_names_are_rejected_before_docker[ocor-spike-0023-not-an-id] __
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:154: in test_non_owned_names_are_rejected_before_docker
+    oracle.QdrantHarness(name, "unused").destroy()
+spikes/vector_partition/oracle.py:140: in destroy
+    _command("docker", "rm", "--force", self.container)
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py:151: in forbidden
+    raise AssertionError("must validate ownership before calling Docker")
+E   AssertionError: must validate ownership before calling Docker
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_success_removes_anonymous_mount_preserves_baseline_and_is_idempotent
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_post_creation_command_timeout_cleans_all_real_resources
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_readiness_timeout_cleans_all_real_resources
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_removal_failure_is_explicit_and_retry_cleans
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_successful_removal_response_with_residue_is_rejected
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_foreign_container_with_spike_name_is_not_removed
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_non_owned_names_are_rejected_before_docker[ocor-spike-0023-]
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0018.py::test_non_owned_names_are_rejected_before_docker[ocor-spike-0023-not-an-id]
+8 failed, 1 passed in 2.22s
