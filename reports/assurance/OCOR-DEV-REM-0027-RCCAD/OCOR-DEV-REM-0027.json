@@ -1,349 +1,217 @@
 {
+  "alignment_merge": {
+    "commit": "f34b46e",
+    "conflicts": "reports/evidence/G4/MANIFEST.json, reports/evidence/G5/MANIFEST.json and reports/planning/OCOR_PLAN_RUN_STATE.json taken from main (the cycle-1 requalification pointers are superseded by this cycle's records); scripts/validate_ocor_development_plan.py allowlist union",
+    "harness_alignment": "REM-0028 (merged on main) made EmergencyStopController.request_reset require a requester and registry attributes; the REM-0027 test harness registers its humans with principal_kind HUMAN, status ACTIVE, empty roles, and passes a third human as requester (commit eea5c32). No assertion, case or parametrization changed; c6/safety.py unchanged by this change set.",
+    "merged": "origin/main 40ae60f (non-destructive merge, no rebase, no force-push)"
+  },
   "change_set": {
     "branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
-    "decision": "Product Owner decision INFO-C (2026-10-05, targeted concurrency conformance audit) executed by the INFO-C audit of 2026-10-12, which registered OCOR-DEV-REM-0027 as a free REM id; mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
+    "decision": "INFO-C (2026-10-05) audit of 2026-10-12; repair cycle 2 scope REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14); mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
     "id": "OCOR-DEV-REM-0027",
-    "remediation_record": "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json"
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0027-RCCAD/OCOR-DEV-REM-0027.json",
+    "repair_cycle": 2
   },
   "claims": {
     "E1": 0,
     "E2": 0,
     "PoC_GO": "NO-GO",
-    "Production_readiness": "NO_GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
   "commands": [
     {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "command": "ocor-runtime/.venv/bin/python -m pytest tests/tasks/test_ocor_dev_rem_0027.py tests/tasks/test_ocor_dev_0047.py -p no:cacheprovider -q -s -rfEs --tb=short --junitxml=.ocor/rem0027r2/task-1.xml",
+      "cwd": "ocor-runtime",
+      "duration_seconds": 60.996,
       "exit_code": 0,
-      "label": "reset",
-      "raw_sha256": "06ecd39552bf7d7059c0fba1ac76cdea53427f1feda128ae3ba74e878931b001",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --execute --timeout 600",
-      "exit_code": 0,
-      "label": "bootstrap",
-      "raw_sha256": "a61b9ddd6dbc8260557847cce9ac35950c9ee2c9112885d0dce8995a488aa1d4",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python deploy/bootstrap/init/initialize_services.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/.ocor/bootstrap.env",
-      "exit_code": 0,
-      "label": "initialize",
-      "raw_sha256": "6e6011a52c85df6c43c4c45e4f94e4b4873b9af265dcbbe8b7c6b4021cc9d533",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python deploy/bootstrap/fixtures/load_fixtures.py --env-file /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/.ocor/bootstrap.env",
-      "exit_code": 0,
-      "label": "fixtures",
-      "raw_sha256": "6ea1e3849eec413523bc3a0fb356bdf534a38fa2f75a20bbd54f8cc2bbf38ea4",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
-      "exit_code": 0,
-      "label": "health",
-      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python register_control_plane.py",
-      "exit_code": 0,
-      "label": "register",
-      "raw_sha256": "4fb06fc4ff58e49bfc8fb17243694f83bbbc1932cadf74693d2f9c493e46752d",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
-      "duration_seconds": 2.6,
-      "exit_code": 0,
-      "label": "health-now",
-      "raw_sha256": "518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3",
-      "status": "PASS"
-    },
-    {
-      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
-      "duration_seconds": 0.0,
-      "exit_code": 0,
-      "label": "sync",
-      "raw_sha256": "ae686a7598d0a6f3cae20ca164a12c24cffe43dd8c5adafc40cfeeed23bc29bc",
-      "status": "PASS"
-    },
-    {
-      "command": "npm --prefix ocor-runtime/sdk/typescript ci",
-      "duration_seconds": 0.6,
-      "exit_code": 0,
-      "label": "sdk-ci",
-      "raw_sha256": "bc8c70e655c41f2d65120368e0cf755629ba54dba9da90181f965912c97aa2f9",
-      "status": "PASS"
-    },
-    {
-      "command": "npm --prefix ocor-runtime/sdk/typescript run build",
-      "duration_seconds": 0.2,
-      "exit_code": 0,
-      "label": "sdk-build",
-      "raw_sha256": "31fff717d3a266c32099dd8115a869af222c0bdff716da61f53d9090ff067b84",
-      "status": "PASS"
-    },
-    {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0027-r1/task-junit-1.xml ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
-      "duration_seconds": 29.7,
-      "exit_code": 0,
-      "label": "task-run-1",
-      "raw_sha256": "cea63c3e835496e7fcbae145673821144f2d45a68279011567086594643eb007",
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "junit_raw_sha256": "ac74c11fcf844a00dfc43f942862babf0a2d232f6e53c5606254d9a266de8620",
+      "label": "task-1",
+      "raw_sha256": "aee928f1cce964e919acfae31cc53bd06d3a0036a9aa900937db207cbfae537f",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 241,
+        "passed": 52,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0027-r1/task-junit-2.xml ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
-      "duration_seconds": 29.6,
+      "command": "ocor-runtime/.venv/bin/python -m pytest tests/tasks/test_ocor_dev_rem_0027.py tests/tasks/test_ocor_dev_0047.py -p no:cacheprovider -q -s -rfEs --tb=short --junitxml=.ocor/rem0027r2/task-2.xml",
+      "cwd": "ocor-runtime",
+      "duration_seconds": 60.976,
       "exit_code": 0,
-      "label": "task-run-2",
-      "raw_sha256": "10fe42b486f88bac73060bddfaa2520d4bb901bf89794beb9e2fe9852c6eeca4",
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "junit_raw_sha256": "8970b8c682e1fd651b55a73c73c547a3f37d126729b62931c4afc2b830731f20",
+      "label": "task-2",
+      "raw_sha256": "743eec9c2ec995e9dac84c96d3f9e604c29a21f914cdea509e5925f69c0d7b26",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 241,
+        "passed": 52,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider -rs --junitxml=/home/luca/.ocor-codex/rem-0027-r1/task-junit-3.xml ocor-runtime/tests/tasks/test_ocor_dev_0047.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
-      "duration_seconds": 29.6,
+      "command": "ocor-runtime/.venv/bin/python -m pytest tests/tasks/test_ocor_dev_rem_0027.py tests/tasks/test_ocor_dev_0047.py -p no:cacheprovider -q -s -rfEs --tb=short --junitxml=.ocor/rem0027r2/task-3.xml",
+      "cwd": "ocor-runtime",
+      "duration_seconds": 60.958,
       "exit_code": 0,
-      "label": "task-run-3",
-      "raw_sha256": "ae4dbd9fdebfd78e073ce07b30eb7c5f833053065c577cde39d7f5870d0469ec",
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "junit_raw_sha256": "82eccf8e7229888f5c8d98c8556ebbe4ef50177392eac4b5f2c5b8b1609084c9",
+      "label": "task-3",
+      "raw_sha256": "c1b0fad48a9c294d5033d7472ac61f1c3728c779ab6d2e65d04029aecb3856d5",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 241,
+        "passed": 52,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "OCOR_LIVE_POSTGRES_DSN=<local generated credential> uv run --directory ocor-runtime --frozen --extra test --extra lint pytest -q -rs --junitxml=/home/luca/.ocor-codex/rem-0027-r1/task-junit-uv.xml tests/tasks/test_ocor_dev_0047.py tests/tasks/test_ocor_dev_rem_0027.py tests/tasks/test_ocor_dev_0050.py",
-      "duration_seconds": 29.6,
+      "command": "ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "cwd": ".",
+      "duration_seconds": 0.264,
       "exit_code": 0,
-      "label": "task-validation-command",
-      "raw_sha256": "10fe42b486f88bac73060bddfaa2520d4bb901bf89794beb9e2fe9852c6eeca4",
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "label": "pre-full-reset",
+      "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "cwd": ".",
+      "duration_seconds": 46.478,
+      "exit_code": 0,
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "label": "pre-full-bootstrap",
+      "raw_sha256": "05f487acba2f6fa324581280beb8b66c573dad20db068ea8aec6fef9a5d049dd",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest tests/tasks/test_ocor_dev_0005.py tests/tasks/test_ocor_dev_0047.py tests/tasks/test_ocor_dev_0050.py tests/tasks/test_ocor_dev_0082.py tests/tasks/test_ocor_dev_rem_0027.py -p no:cacheprovider -q -s -rfEs --tb=short --junitxml=.ocor/rem0027r2/regression.xml",
+      "cwd": "ocor-runtime",
+      "duration_seconds": 65.816,
+      "exit_code": 0,
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "junit_raw_sha256": "7a0248a2a54e06ceaf778d2c00e3c3a0a5a7a751ec25d144c88cfc6a4677b1d8",
+      "label": "regression",
+      "raw_sha256": "01072a46b4272d542cb4898fc48c12c6611f9e3a4b925cb8bb8ca1807c6413c6",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 241,
+        "passed": 266,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "docker ps -a / volume ls / network ls before and after; added resources must be zero",
+      "campaign_duration_seconds": 4084.5591009769996,
+      "campaign_result_raw_sha256": "9d5329a776ad8a29f994ad61e83978dd0ab74d80dcafb8688782651427efb17e",
+      "campaign_status": "PASS",
+      "command": "ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 3832b9178a3ffea574ff09d2383b15732cb2c5c8 --output-dir .ocor/rem0027r2/full",
+      "cwd": ".",
+      "duration_seconds": 4084.845,
+      "exact_union": {
+        "collected": 3107,
+        "collection_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
+        "duplicated": [],
+        "executed": 3107,
+        "executed_identity_sha256": "ff66473aff14d08987a3b98a74f3cdfc63de32302314b95e40de2ba7c0628986",
+        "missing": [],
+        "unexpected": []
+      },
       "exit_code": 0,
-      "label": "task-teardown-delta",
-      "raw_sha256": "6d8dcb7b331d519461dc43af0f262d03f23bfa2f8c8a7ef50802dd5495cc34de",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python full_suite.py (guarded: 75-min cap, abort on restart/OOM/exit; docker events recorder running) -> OCOR_LIVE_POSTGRES_DSN=<local generated credential> /home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python -m pytest -v --junitxml=<log_dir>/full2/junit.xml tests/ (cwd ocor-runtime)",
-      "duration_seconds": 973.8,
-      "exit_code": 0,
-      "label": "full-suite-recorded",
-      "raw_sha256": "e90ee987a02c1275303cdf0841f52a901a264d25d9bf1b2de948ab4d69f49d6c",
+      "head_sha": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+      "junit_sha256": "987b9c63db51a81e7674ebe9ff1792d3d08d2afac5f75b786af96285446952aa",
+      "label": "full",
+      "pytest_raw_sha256": "a952b3814d6d6902e9690377682c537f302674770056b194e8acbd5219d6ede9",
+      "raw_sha256": "6f2f2a43f9263ec4577338b32cb5a732d305af49e4e5ac5153b932a00b04fc6e",
       "result": {
         "failed": 0,
         "not_executed": 0,
-        "passed": 1866,
+        "passed": 3107,
         "skipped": 0
       },
       "status": "PASS"
     },
     {
-      "command": "docker events recorder during full-suite-recorded: every residual resource attributed to the container that created/mounted it; none may belong to the C5 backbone (ocor-c5-backbone-*) or the 0050 harnesses run by this change set; no container/network residue; nothing pre-existing removed",
+      "command": "python3 mutation_probe.py <detached worktree at the code commit> <log dir>",
       "exit_code": 0,
-      "label": "full-resource-attribution",
-      "raw_sha256": "4e6bd9971e30d60b12de06c9d929629abe46ea33488b17135c3f6b69231a907f",
-      "status": "PASS"
-    },
-    {
-      "command": "remove exactly the run-created, anonymous, unmounted volumes attributed above (STACK-HYGIENE session cleanup); inventory must equal the pre-run inventory",
-      "exit_code": 0,
-      "label": "full-resource-cleanup",
-      "raw_sha256": "9a1caedb7034fd14e1cfb1cdd08c5f38ca57b8f24ec080df4c18fb567b90c291",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python -m pytest --collect-only -q -p no:cacheprovider tests/ (cwd ocor-runtime, same HEAD) compared with the testcases of full-suite-recorded JUnit: identical multiset, no duplicate, no missing",
-      "duration_seconds": 0.7,
-      "exit_code": 0,
-      "label": "full-collection-union",
-      "raw_sha256": "48be538adde6718d8341d94df7d9f8f8d7fe5908e5046575f4f0e75b033297f9",
-      "status": "PASS"
-    },
-    {
-      "command": "uv sync --directory ocor-runtime --frozen --extra test --extra lint",
-      "duration_seconds": 0.0,
-      "exit_code": 0,
-      "label": "sync-lint",
-      "raw_sha256": "b1b5b5b9c1ae010c87b51f8416faff90fbb17abb5503022c7f6f9c4b77a19629",
-      "status": "PASS"
-    },
-    {
-      "command": "ruff check .",
-      "duration_seconds": 0.0,
-      "exit_code": 0,
-      "label": "ruff",
-      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python -m mypy --strict",
-      "duration_seconds": 0.2,
-      "exit_code": 0,
-      "label": "mypy",
-      "raw_sha256": "abcb6647b13baa8244d90bb839deeab7f27878b24d4a96ce9a221f280e0e8a6c",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/verify.py --json",
-      "duration_seconds": 0.4,
-      "exit_code": 0,
-      "label": "harness",
-      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
-      "duration_seconds": 0.1,
-      "exit_code": 0,
-      "label": "plan",
-      "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
-      "duration_seconds": 0.3,
-      "exit_code": 0,
-      "label": "rccad",
-      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
-      "duration_seconds": 0.0,
-      "exit_code": 0,
-      "label": "language",
-      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
-      "status": "PASS"
-    },
-    {
-      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0027/ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --branch governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
-      "duration_seconds": 0.0,
-      "exit_code": 0,
-      "label": "scope",
-      "raw_sha256": "711ab02493261e897b250c387c59fc197b91ea15b25c53402c840980441a6c04",
+      "label": "mutation-probe-repair2",
+      "raw_sha256": "74a93f84816e345cef1e334b2188f029545dc5cd3eebfca747a80a317827c325",
+      "result": {
+        "failed": 0,
+        "killed": 9,
+        "mutants": 9
+      },
       "status": "PASS"
     },
     {
       "command": "sha256sum -c inputs/normative/SHA256SUMS",
-      "duration_seconds": 0.0,
       "exit_code": 0,
-      "label": "inputs",
+      "label": "gate-checksum",
       "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34",
       "status": "PASS"
     },
     {
-      "command": "captured artifact: JUnit XML captured verbatim from task-run-3 (third of three consecutive runs of the 0047, REM-0027 and 0050 suites)",
+      "command": "ruff check .",
       "exit_code": 0,
-      "label": "task-junit",
-      "raw_sha256": "82f1fb47e9551189449832f9d14d225cbad0aa2a43df2a9d4a33ae8380148f3f",
-      "result": {
-        "failed": 0,
-        "not_executed": 0,
-        "passed": 241,
-        "skipped": 0
-      },
+      "label": "gate-ruff",
+      "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
       "status": "PASS"
     },
     {
-      "command": "captured artifact: JUnit XML captured verbatim from task-validation-command (uv run, frozen lock)",
+      "command": "ocor-runtime/.venv/bin/python -m mypy --strict",
       "exit_code": 0,
-      "label": "task-junit-uv",
-      "raw_sha256": "b53dd3d4996fa8a6f8a20f63cf755dabaea3bf88a81540e09a9e2a27b4b78089",
-      "result": {
-        "failed": 0,
-        "not_executed": 0,
-        "passed": 241,
-        "skipped": 0
-      },
+      "label": "gate-mypy",
+      "raw_sha256": "58041ca0a5f16e793351345586a35e4159cdce61347fdae24588b96f9800b296",
       "status": "PASS"
     },
     {
-      "command": "captured artifact: JUnit XML captured verbatim from the guarded, event-recorded full-suite run (full-suite-recorded)",
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
       "exit_code": 0,
-      "label": "full-suite-junit",
-      "raw_sha256": "f765b920ddb597027f760731afc89ef74f559f4cf1f9ae3eca79d6102a692a10",
-      "result": {
-        "failed": 0,
-        "not_executed": 0,
-        "passed": 1866,
-        "skipped": 0
-      },
+      "label": "gate-rccad",
+      "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f",
       "status": "PASS"
     },
     {
-      "command": "captured artifact: full_suite.py supervisor result of full-suite-recorded (75-minute cap, stack restart/OOM/exit guard)",
+      "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
       "exit_code": 0,
-      "label": "full-suite-runner-result",
-      "raw_sha256": "38b694f27077b1de3b7e097371d6a2bc908a2fb18b82382a735c3cb3beb66942",
+      "label": "gate-language",
+      "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d",
       "status": "PASS"
     },
     {
-      "command": "captured artifact: every non-equivalent mutant of the REM-0027 remediation (cycle 0 and repair 1) in c8/tool_runtime.py and c6_capabilities.py must make the REM-0027 suite fail; declared equivalent mutants are listed with their reason; sources restored byte-identical, worktree clean",
+      "command": "ocor-runtime/.venv/bin/python scripts/verify.py --json",
       "exit_code": 0,
-      "label": "mutation-probe-result",
-      "raw_sha256": "f09335ea2a077acdf78f7077b1cc69abff98dc4199d7a7d6f094bf21e7354322",
-      "result": {
-        "equivalent_declared": [
-          "M1-no-fence-at-tool-dispatch",
-          "M3-unbound-lease-accepted"
-        ],
-        "equivalent_survivors": 2,
-        "failed": 0,
-        "killed": 20,
-        "mutants": 22
-      },
-      "status": "PASS"
-    },
-    {
-      "command": "captured artifact: source of the mutation probe (mutant table)",
-      "exit_code": 0,
-      "label": "mutation-probe-script",
-      "raw_sha256": "75728cc2dc27f439d7715787064b4ba8967e7fff7df491e5bfbc31679880b74c",
+      "label": "gate-verify",
+      "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413",
       "status": "PASS"
     }
   ],
-  "commit": "d577c62bc66cd1da3afdf33628ae2b09421cb4aa",
-  "created_at": "2026-10-13T09:21:38Z",
+  "commit": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+  "commit_role": "qualified code/test source; the exact publication HEAD is bound by the external verification request",
+  "created_at": "2026-10-25T12:53:34Z",
   "design": [
     "Epoch-bound leases (LLD v1.1 section 1.4 lists stop_epoch in the CapabilityLease record; ADD v1.3 section 5.5 'Ogni mutative call presenta una capability lease con stop_epoch corrente'): CapabilityLease gains an optional stop_epoch; CapabilityAuthority can be bound to one stop controller (constructor or bind_stop_controller, rebinding to another controller refused); a bound authority stamps the controller's epoch on every lease after checking the controller is NORMAL at that epoch, and refuses issuance otherwise. Stop acceptance increments the epoch atomically (c6/safety.py unchanged), which revokes every lease of the previous epoch in the local boundary; a reset issues yet another epoch, so a pre-stop lease is never re-enabled.",
     "ToolCallRuntime binds its authority to its controller at construction. After the existing capability, purpose and marking gates it requires the authoritative lease's stop_epoch, requires the presented stop_epoch to equal it (a command prepared before the stop is refused even with a fresh lease) and fences on it. The presented epoch is an assertion of the caller, never the authority.",
     "Per-tool capability: the registered tools the expression can call are found by parsing it (only names registered in the sandbox; anything the sandbox would refuse is left to its own refusal, preserving the 0047 escape-syntax behaviour and budget charge), and each must be authorized by the lease before the budget is charged. Each dispatch re-authorizes (no use consumed) and re-fences.",
     "Preemptive dispatch: StrictSandbox.execute accepts an optional dispatch hook receiving (name, call). The runtime runs the call on a daemon worker thread with a context variable naming the call, and supervises it every 10 ms: an accepted stop or the deadline sets the call's cancellation flag and refuses at once with execution_unknown; a stop accepted during a call that completes also refuses with execution_unknown. cancellation_checkpoint()/cancellation_requested() are the cooperative cancellation point (LLD v1.1 section 6) for tools.",
     "Repair 1 (VF-001): each dispatch runs in a _ToolWorker. On an accepted stop or the deadline the supervisor sets the cooperative cancellation flag, waits at most 0.25 s, then schedules ToolPreempted (BaseException) once in the worker via PyThreadState_SetAsyncExc; the worker clears any pending one when it retires, under the same lock, so it is never scheduled in a retired thread whose id may be reused. The call is refused at once (STOP_BOUND_DENIED or TOOL_DEADLINE_EXCEEDED, execution_unknown) as before.",
-    "Repair 1 (VF-002/VF-003): CapabilityAuthority bound to a controller fences authorize() itself (lease epoch must be present and current, controller NORMAL), requires the parent's epoch on delegation, and sweeps its ledger once per epoch change, recording superseded leases as revoked at the accepted stop (StopEpochAuthority now also exposes history; c6/safety.py unchanged)."
+    "Repair 1 (VF-002/VF-003): CapabilityAuthority bound to a controller fences authorize() itself (lease epoch must be present and current, controller NORMAL), requires the parent's epoch on delegation, and sweeps its ledger once per epoch change, recording superseded leases as revoked at the accepted stop (StopEpochAuthority now also exposes history; c6/safety.py unchanged).",
+    "Repair 2, reconciliation (REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION point 1; ADD v1.3 section 5.5 points 5-6): ToolCallRuntime takes an optional C6 OutcomeReconciler (a real one is created when none is injected) and, before raising any execution_unknown refusal (stop accepted while a tool runs, call deadline, stop observed on completion), calls OutcomeReconciler.mark_ambiguous with a fresh command id, idempotent_effect_proven=False, the refusal instant and a canonical JSON note carrying lease_id, tool_name, stop_epoch, reason_code, correlation_id (from the GovernedContext), dispatched_at and refused_at. The returned ReconciliationRecord is wrapped in an UnknownToolOutcome that travels with the refusal (ToolRuntimeError.reconciliation) and is journalled by the runtime (unknown_outcomes). If the reconciler raises, the call fails closed with RECONCILIATION_UNAVAILABLE (execution_unknown, cause chained) and no receipt. c6/safety.py is not modified (the existing mark_ambiguous API is used), so REM-0024/REM-0028 surfaces are untouched.",
+    "Repair 2, lease channel (point 2): ToolCallRuntime.authorize_effect(lease, tool, subject, at) re-authorizes an effect of a tool on the bound CapabilityAuthority and maps StopEpochDenied to STOP_BOUND_DENIED and any other AuthorizationError to CAPABILITY_DENIED; an effect attempted after an accepted stop, including from a finally that runs late, is refused there.",
+    "Repair 2, documentation (point 3): the module docstring states that asynchronous preemption is best-effort between interpreter steps, that a running native call and the finally that follows it are not interruptible (the finally runs when the native call returns: measured 11.5 s after the stop for a 12 s native wait), what stays bounded (refusal <=10 s, no new dispatch, no usable pre-stop lease on the lease channel, reconciliation), and that the ungoverned-channel effect is a measured residual traced to FGM-17 and the G6 qualification."
   ],
   "environment": {
-    "acquired_at": "2026-10-13T09:21:25.877053+00:00",
     "backend_images": {
       "ocor-bootstrap-fuseki-1": {
-        "image_id": "sha256:6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b",
+        "image_id": "sha256:b27eaf9bf418642b0433202b627866a6ea6d3165947f30aa8ee24ec796d92d56",
         "image_ref": "ocor/jena-fuseki:6.2.0",
         "oom_killed": false,
         "restart_count": 0,
@@ -420,49 +288,214 @@
         "status": "running"
       }
     },
-    "backend_under_test": {
-      "memory_regression_0050": "OCOR-DEV-0050 suite unchanged on the ocor-bootstrap stack (PostgreSQL postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20 via OCOR_LIVE_POSTGRES_DSN), regression-only requalification",
-      "tool_boundary": "in-process component, no external service (as OCOR-DEV-0047): the real CapabilityAuthority, MarkingEngine, EmergencyStopController, StrictSandbox and TokenBudget; no mock of the stop controller or of the capability authority; the stop is accepted by a separate thread as an external Emergency Control Plane would, and every effect is recorded with a monotonic timestamp by the real registered tool callable"
-    },
+    "bootstrap_env_sourced": false,
+    "bootstrap_procedure": "scripts/reset_test_environment.py --execute; scripts/bootstrap_ci_environment.py --execute --timeout 600 (VERIFIER-ENV-STANDARD-BOOTSTRAP)",
     "branch": "governed/ocor-dev-rem-0027-c8-preemptive-kill-switch",
-    "host": "nepryoon",
-    "mypy": "2.3.1 strict (pyproject [tool.mypy])",
-    "node": "20.20.2",
+    "clean_shell": true,
+    "cpu_model": "Intel Core Ultra 9 275HX",
+    "env_exports": [
+      "OCOR_BOOTSTRAP_ENV",
+      "OCOR_LIVE_POSTGRES_DSN",
+      "PYTHONHASHSEED",
+      "TZ"
+    ],
+    "fuseki_max_heap_bytes": 1073741824,
+    "host": "Lenovo Legion Pro 5 16IAX10H (HOST-MIGRATION 2026-10-24)",
+    "implementer_cli": "Claude Code 2.1.310 (claude-opus-5-5)",
     "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
-    "python": "3.12.11 (ocor-runtime/.venv synced with uv 0.12.5 --frozen --extra test --extra lint)",
-    "regression_stack": "ocor-bootstrap (11 services READY via verify_external_services.py --execute --typed) after reset_test_environment.py --execute and bootstrap_development_environment.py --execute; images observed after the full suite",
-    "ruff": "0.13.1",
-    "services_lock_sha256": "6d0c8678521ca7f3831324dddb6df9796cd129b941746386809688bd558c98c2",
-    "toolchain_lock_sha256": "452f08187674b3c1dfcd8b6f3410bc1f152f32abd58f520d3f4ccd09c3ef2931",
-    "typescript_sdk": "npm ci + build in ocor-runtime/sdk/typescript (steps sdk-ci, sdk-build)",
-    "uv": "0.12.5",
-    "worktree": ".ocor/worktrees/rem-0027"
+    "python": "3.12.11",
+    "qualification_source_commit": "3832b9178a3ffea574ff09d2383b15732cb2c5c8",
+    "ram_bytes": 32504840192,
+    "threads": 24,
+    "toolchain": {
+      "docker": {
+        "lock_sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/docker",
+        "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "version": "29.7.2"
+      },
+      "gh": {
+        "lock_sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/gh",
+        "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "version": "2.99.0"
+      },
+      "git": {
+        "lock_sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "version": "2.53.0"
+      },
+      "helm": {
+        "lock_sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/tools/bin/helm",
+        "sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "version": "3.14.4"
+      },
+      "java": {
+        "image": "eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0",
+        "sha256": "db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0"
+      },
+      "kind": {
+        "lock_sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/tools/bin/kind",
+        "sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "version": "0.29.0"
+      },
+      "kubectl": {
+        "lock_sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/tools/bin/kubectl",
+        "sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "version": "1.33.1"
+      },
+      "node": {
+        "lock_sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/node",
+        "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "version": "20.20.2"
+      },
+      "python": {
+        "lock_sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/bin/python3.12",
+        "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "version": "3.12.11"
+      },
+      "ruff": {
+        "lock_sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/ruff",
+        "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "version": "0.13.1"
+      },
+      "tsc": {
+        "lock_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/tsc",
+        "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "version": "7.0.2"
+      },
+      "uv": {
+        "lock_sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-REM-0036-61ebdc17698b-0/bin/uv",
+        "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "version": "0.12.5"
+      }
+    }
   },
   "findings_scope": {
     "C8-1": "fixed: every tool dispatch of the expression is fenced against the controller's current epoch immediately before it runs (EmergencyStopController.guard_dispatch with the lease's epoch); a stop accepted after the entry gates refuses the first dispatch with STOP_BOUND_DENIED and no effect",
     "C8-2": "fixed: each tool call runs on a worker thread supervised every 10 ms; a stop accepted while it runs refuses the call at once (STOP_BOUND_DENIED, execution_unknown) and no later tool of the expression is dispatched; a cooperating tool is cancelled through cancellation_checkpoint before its effect and a non-cooperating one is preempted (repair 1, VF-001); a per-call deadline (default 5 s, at most the 10 s containment target) bounds any call with TOOL_DEADLINE_EXCEEDED. Measured in the suite: return within the 10 s target from stop acceptance under an 11 s tool, no effect after the stop",
     "C8-3": "fixed: ToolCallRuntime binds its CapabilityAuthority to its EmergencyStopController; every lease records the trusted epoch at issuance (LLD v1.1 section 1.4 lists stop_epoch in the lease record), issuance is refused while the stop is not NORMAL, a lease of another epoch or of none never dispatches, the caller's stop_epoch is only compared with the lease's (never trusted), and a pre-stop lease cannot delegate after the reset",
     "VF-001": "fixed: a cancelled tool still running after a 0.25 s cooperative grace is preempted: ToolPreempted, a BaseException (an ordinary except Exception cannot swallow it), is scheduled once in its worker thread through CPython's PyThreadState_SetAsyncExc, serialized with the worker's retirement by a lock so it is never scheduled in a retired thread; the tool stops at its next interpreter step, before any effect that follows its blocking wait. The qualifying tests now journal a mutative effect with its monotonic timestamp and fail if any lands later than 10 s after the stop acceptance (non-cooperative stop case, deadline case, and a new non-cooperative tool with a broad except Exception, which is now preempted within the target instead of after its own 11 s).",
+    "VF-001 (verdict OCOR-DEV-REM-0027-5cb0f629d084-1)": "disposed by the Product Owner (REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, 2026-10-14): founded in fact, not blocking as formulated; the acceptance criterion is realigned to ADD v1.3 section 5.5. Repair 2 implements the closed scope: reconciliation of every execution_unknown (positive and fail-closed negative), the native wait + finally case with the effect journalled inside the finally (refusal within 10 s, execution_unknown with reconciliation record, lease-channel effect refused STOP_BOUND_DENIED, ungoverned effect measured as residual, never PASS), corrected docstring and evidence. Out-of-process tool execution is not authorized in this cycle and is recorded as a design option for the FGM-17 qualification in G6.",
     "VF-002": "fixed: on a bound authority a delegation whose child carries an epoch requires the parent's epoch to be present and equal (StopEpochDenied otherwise); the ledger sweep also records an epoch-less parent as revoked at the first accepted stop after the binding.",
     "VF-003": "fixed: authorize() on an authority bound to a controller refuses a lease bound to no epoch or to an epoch other than the current one, and every lease while the controller is not NORMAL (StopEpochDenied, an AuthorizationError, mapped by ToolCallRuntime to STOP_BOUND_DENIED); every caller of authorize() sharing the bound authority inherits the fence (tested through AgentKernel.execute_sandboxed). Once the controller moves past the epoch the ledger last saw, every lease of an older epoch is recorded as revoked at the accepted stop that superseded it (StopEvent.at of the activation), so the reset leaves no pre-stop lease active in the ledger.",
     "class_check": "every registered tool the expression can call must be covered by the lease: checked statically before anything is charged or run (no partial effect) and again at each dispatch (a lease revoked mid-expression stops the next tool)",
     "unchanged": "the five entry gates and their order and reason codes; receipts; StrictSandbox behaviour without the dispatch hook; CapabilityAuthority behaviour for authorities not bound to a stop controller (a bound authority now also fences authorize(), repair 1); EmergencyStopController (c6/safety.py byte-identical, so OCOR-DEV-0044 is not requalified and REM-0024 is not touched); public OpenAPI/proto contracts"
   },
+  "full_campaign": {
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 3107
+    },
+    "duration_seconds": 4084.5591009769996,
+    "exact_union": {
+      "collected": 3107,
+      "collection_sha256": "7bc3be012896a6b4b6b66e35e8e54bcd30b09b65fcdf6331846751a25c33ef48",
+      "duplicated": [],
+      "executed": 3107,
+      "executed_identity_sha256": "ff66473aff14d08987a3b98a74f3cdfc63de32302314b95e40de2ba7c0628986",
+      "missing": [],
+      "unexpected": []
+    },
+    "status": "PASS"
+  },
+  "independent_verification": {
+    "head_sha": null,
+    "status": "PENDING_EXTERNAL_LOOP"
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
-    "ocor-runtime/src/ocor_runtime/c6/safety.py": "d241be276c3e1a9c4c335d9d950439536f5f8065193aa83cce9fff519e0cbe83",
+    "ocor-runtime/src/ocor_runtime/c6/safety.py": "e23afc6514abf450d12001ec9fa1ee8206d8a3395b3984629074e82a4b08b580",
     "ocor-runtime/src/ocor_runtime/c6_capabilities.py": "b9be753c93bc02c0a6d1724614a39c4eed59193472517ca4724784ef9c70b58d",
-    "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py": "276707533e89af7a623ac29eb6fadcc910722879947a22bd81c52f8cd95fe2cc",
+    "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py": "591ac6dfcdc5ec992046a725e73b3a57cbb72abd08e4df020fd8826c5bc39e7c",
     "ocor-runtime/src/ocor_runtime/c8_agent.py": "3d70d9f26f763209ac8e3c1e0275cfef4b6ad1181c3f1e0d3d4b56927505b8ce",
     "ocor-runtime/tests/tasks/test_ocor_dev_0047.py": "21646257f1c908ef5ce826314501f4048f196c3ff4d4f8cc2a975106dbbe3151",
-    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py": "ed449506c874259d9ae6881c9188c484ccdbc6e36d279003043415a38fc9a22c",
-    "scripts/validate_ocor_development_plan.py": "c8a83fe7c6b56bb1b63ff2f2e37d74e4d199f05291f538c82c67a390284c0ca8"
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py": "4eb310435e31ae605b8d927870b8cc764de6a4214c2b166754a12ecad3ab646d",
+    "scripts/validate_ocor_development_plan.py": "f3fd4eef3175f7fdd0228ab30903143aefbde351e4effe448928cf8bf56babc2"
   },
   "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "measured_residuals": {
+    "classification": "RESIDUAL_MEASURED_NOT_PASS",
+    "description": "effect of a registered tool on a channel the platform does not govern, executed in the finally that follows a 12 s native wait, measured from the accepted stop; reported as measurement only, never as containment",
+    "observations": [
+      {
+        "classification": "RESIDUAL_MEASURED_NOT_PASS",
+        "governed_finally_denial_seconds_after_stop": 11.5,
+        "refusal_seconds_after_stop": 0.258,
+        "run": "task-1",
+        "traced_to": [
+          "FGM-17",
+          "G6 qualification"
+        ],
+        "ungoverned_finally_residual_seconds_after_stop": 11.5
+      },
+      {
+        "classification": "RESIDUAL_MEASURED_NOT_PASS",
+        "governed_finally_denial_seconds_after_stop": 11.5,
+        "refusal_seconds_after_stop": 0.26,
+        "run": "task-2",
+        "traced_to": [
+          "FGM-17",
+          "G6 qualification"
+        ],
+        "ungoverned_finally_residual_seconds_after_stop": 11.5
+      },
+      {
+        "classification": "RESIDUAL_MEASURED_NOT_PASS",
+        "governed_finally_denial_seconds_after_stop": 11.5,
+        "refusal_seconds_after_stop": 0.251,
+        "run": "task-3",
+        "traced_to": [
+          "FGM-17",
+          "G6 qualification"
+        ],
+        "ungoverned_finally_residual_seconds_after_stop": 11.5
+      },
+      {
+        "classification": "RESIDUAL_MEASURED_NOT_PASS",
+        "governed_finally_denial_seconds_after_stop": 11.5,
+        "refusal_seconds_after_stop": 0.258,
+        "run": "regression",
+        "traced_to": [
+          "FGM-17",
+          "G6 qualification"
+        ],
+        "ungoverned_finally_residual_seconds_after_stop": 11.5
+      }
+    ],
+    "traced_to": [
+      "FGM-17",
+      "G6 qualification"
+    ]
+  },
   "normative_interpretations": [
     "ADD v1.3 section 5.5 target '<=10 s' is measured 'dall'accettazione locale dell'evento firmato all'ultimo nuovo command accettato': a tool dispatch is the new command accepted, and the fence makes every dispatch after the stop acceptance impossible; the call deadline is bounded by the same 10 s so no supervised call outlives the target without a refusal.",
     "ADD v1.3 section 5.5 points 4-6 ('cancella operazioni in-flight quando il contract lo consente; avvia compensation o reconciliation per operazioni non cancellabili; EXECUTION_UNKNOWN agli effetti ambigui'): the sandbox tool contract is a plain callable, so in-flight cancellation is cooperative (cancellation_checkpoint); a non-cooperating call is abandoned with execution_unknown and its outcome is not inferred.",
-    "The per-call deadline default (5 s) follows the lease TTL bound of ADD v1.3 section 5.2/5.5 ('TTL non superiore a 5 secondi'); it is configurable up to the 10 s containment target and never above."
+    "The per-call deadline default (5 s) follows the lease TTL bound of ADD v1.3 section 5.2/5.5 ('TTL non superiore a 5 secondi'); it is configurable up to the 10 s containment target and never above.",
+    "Acceptance criterion of repair 2 (PO disposition REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION, a reading of ADD v1.3 section 5.5 and LLD v1.1 sections 4.3 and 6, not a semantic change): from the stop acceptance no new tool dispatch is accepted and no pre-stop lease is usable, measured <=10 s; an in-flight call is cancelled at cooperative checkpoints or closed by the deadline with execution_unknown; every execution_unknown outcome produces a reconciliation record. The previously recorded loop criterion 'last tool effect <=10 s' is superseded by this disposition.",
+    "The ungoverned-channel effect of a finally after a native wait is not claimed contained: it is measured (RESIDUAL_MEASURED_NOT_PASS) and traced to FGM-17 and G6; if the G6 campaign shows that the in-process residual violates 'nessuna tool influence successiva', a decision request is opened (PO disposition)."
   ],
   "origin_finding": {
     "audit": "reports/development/decision_requests/INFO-C.md (2026-10-12): C8-1 a stop accepted after guard_dispatch does not prevent the effect (receipt epoch 0, controller 1 STOPPING); C8-2 the second tool of one expression produces its effect 10.5 s after the stop was accepted; C8-3 a lease issued at epoch 0 is accepted after stop and dual-control reset at epoch 2; class check: the lease authorizes tool:<tool_name> but the expression can call any registered tool",
@@ -470,55 +503,99 @@
     "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py:103-125 (sha256 2055f82e...) at origin/main 78d297c, unchanged up to 299a6a6; c6_capabilities.py CapabilityLease without stop_epoch",
     "registration": "EXECUTION_STATE remediation_status.REM_0027_C8_PREEMPTIVE_KILL_SWITCH (allocated 2026-10-12, next free id verified; no hard dependency)"
   },
-  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) e la password del DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
-  "raw_output_redactions": {
-    "OCOR_SPIRE_JOIN_TOKEN": 1
+  "previous_cycles": [
+    {
+      "findings": [
+        "VF-001",
+        "VF-002",
+        "VF-003"
+      ],
+      "head_sha": "f48452c647772a6dd0ab17fdbd88e8543113ed57",
+      "repair_cycle": 0,
+      "verdict": "OCOR-DEV-REM-0027-f48452c64777-0",
+      "verdict_result": "NO_GO"
+    },
+    {
+      "findings": [
+        "VF-001"
+      ],
+      "head_sha": "5cb0f629d084833f34d4494c4770d9e7090322b1",
+      "note": "the cycle-1 candidate files are superseded in place by this record (never sealed); they remain in the branch history at the cycle-1 head",
+      "record_id": "OCOR-DEV-REM-0027-d577c62bc66c",
+      "record_sha256_at_head": "d75c5bbb9e5d34ef28e499065fdda7510b48e43ce962e88ae3f7e2c9f782c00d",
+      "repair_cycle": 1,
+      "verdict": "OCOR-DEV-REM-0027-5cb0f629d084-1",
+      "verdict_result": "NO_GO"
+    }
+  ],
+  "qualification_limits": {
+    "duration_notification_seconds": 3600,
+    "full_seconds": 4500,
+    "limits_changed": false,
+    "task_seconds": 2700
   },
-  "raw_output_sha256": "5e955dc06fcd143b46f44db1e4669966c191c3c9d2d51c964bd7c4d2e5c9209f",
-  "record_id": "OCOR-DEV-REM-0027-d577c62bc66c",
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env) e la password del DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {},
+  "raw_output_sha256": "b9fb4285789d84828799bec2630ec10841761d9f1e4080d6892c7c75b8c89813",
+  "record_id": "OCOR-DEV-REM-0027-r2-3832b9178a3f",
   "repair": {
-    "budget": "ordinary budget of 2 repair cycles (OCOR-RCCAD section 8); this is the first",
+    "budget": "ordinary budget of 2 repair cycles (OCOR-RCCAD section 8); this is the second and last. With NO_GO: TERMINAL_BLOCKED of REM-0027 only, escalation record with the measured residual, no cycle 3 (PO disposition).",
     "disposition": {
-      "VF-001": "fixed: a cancelled tool still running after a 0.25 s cooperative grace is preempted: ToolPreempted, a BaseException (an ordinary except Exception cannot swallow it), is scheduled once in its worker thread through CPython's PyThreadState_SetAsyncExc, serialized with the worker's retirement by a lock so it is never scheduled in a retired thread; the tool stops at its next interpreter step, before any effect that follows its blocking wait. The qualifying tests now journal a mutative effect with its monotonic timestamp and fail if any lands later than 10 s after the stop acceptance (non-cooperative stop case, deadline case, and a new non-cooperative tool with a broad except Exception, which is now preempted within the target instead of after its own 11 s).",
-      "VF-002": "fixed: on a bound authority a delegation whose child carries an epoch requires the parent's epoch to be present and equal (StopEpochDenied otherwise); the ledger sweep also records an epoch-less parent as revoked at the first accepted stop after the binding.",
-      "VF-003": "fixed: authorize() on an authority bound to a controller refuses a lease bound to no epoch or to an epoch other than the current one, and every lease while the controller is not NORMAL (StopEpochDenied, an AuthorizationError, mapped by ToolCallRuntime to STOP_BOUND_DENIED); every caller of authorize() sharing the bound authority inherits the fence (tested through AgentKernel.execute_sandboxed). Once the controller moves past the epoch the ledger last saw, every lease of an older epoch is recorded as revoked at the accepted stop that superseded it (StopEvent.at of the activation), so the reset leaves no pre-stop lease active in the ledger."
+      "VF-001": "PO disposition REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14): the finding is founded in fact (a finally after a native wait runs when the preemption is delivered, 11.7 s in the verifier probe; the runtime docstring denied it) and both facts are corrected here; the demand to contain within 10 s the last effect of a native call already in flight does not derive from ADD v1.3 section 5.5 and is not satisfiable in-process. The finding stays in the verdict history."
     },
     "previous_candidate": {
-      "code_commit": "72ecedd6798088c38f361c5774cdbf55722e32b8",
-      "head_sha": "f48452c647772a6dd0ab17fdbd88e8543113ed57"
+      "code_commit": "d577c62bc66cd1da3afdf33628ae2b09421cb4aa",
+      "head_sha": "5cb0f629d084833f34d4494c4770d9e7090322b1"
     },
-    "repair_cycle": 1,
+    "repair_cycle": 2,
+    "scope_points": {
+      "1": "reconciliation of every ToolRuntimeError execution_unknown with the C6 OutcomeReconciler; positive and negative (unavailable reconciler -> fail-closed, no receipt): case R2-EXECUTION-UNKNOWN-RECONCILED-WITH-C6 and R2-UNAVAILABLE-RECONCILER-FAILS-CLOSED",
+      "2": "native wait + finally with the effect journalled in the finally: case R2-NATIVE-WAIT-FINALLY-LEASE-CHANNEL-REFUSED-RESIDUAL-MEASURED and measured_residuals",
+      "3": "docstring of c8/tool_runtime.py and this evidence corrected (design, residual_risks)",
+      "4": "no other change; task suite three times (task-1..3) and full serial suite once (full), zero skip; requalification of 0047 (functional) and 0050 (regression only), plus 0005 and 0082 (regression only) because the planning validator is one of their sealed inputs"
+    },
     "verdict": {
-      "created_at": "2026-10-13T06:08:32Z",
       "findings": {
-        "VF-001": "high, blocking: a slow non-cooperative tool produced its mutative effect 11.7 s after the stop (c8/tool_runtime.py:291: the worker was abandoned, not stopped); the qualifying test registered the slow tool with mutative=False",
-        "VF-002": "high, blocking: a parent lease with stop_epoch None (issued before bind_stop_controller) delegated after stop and reset to a child at epoch 2 whose tool produced an effect (c6_capabilities.py:208)",
-        "VF-003": "high, blocking: CapabilityAuthority.authorize() on the bound authority accepted a pre-stop lease after the reset (stop_epoch 0, revoked_at null) -- the gate also used by c6/engine.py, c8/orchestrator.py, c7_emission.py and c8_agent.py (c6_capabilities.py:237)"
+        "VF-001": "high, blocking as formulated: a tool performing its effect in the finally after time.sleep(12) produced it 11.7 s after the stop; the qualifying test journalled effects only after body() returned"
       },
-      "path": "~/.ocor-codex/verdicts/OCOR-DEV-REM-0027-f48452c64777-0.json (outside the repository; not modified)",
-      "request_id": "OCOR-DEV-REM-0027-f48452c64777-0",
-      "verdict": "NO_GO",
-      "verifier": "Grok 4.7 via Cursor CLI"
+      "request_id": "OCOR-DEV-REM-0027-5cb0f629d084-1",
+      "result": "NO_GO",
+      "verifier": "Grok 4.7 via Cursor CLI (xAI)"
     }
   },
-  "repair_cycle": 1,
-  "reproducible_check": {
-    "checker_source_sha256": "ae9ce117a66367f0ab52124433c84d7953b1da479654c401b045538be804f15c",
-    "command": "python3 /home/luca/.ocor-codex/rem-0027-r1/check_evidence.py <repo> <head>",
-    "scope": "mechanical integrity and count reconstruction of the three records; does not constitute independent verification"
-  },
+  "repair_cycle": 2,
   "requalifications": [
     {
       "record": "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json",
-      "record_sha256": "19cb689e4a5ec239dedecf7ab21af64687d5255e9af16113053180f8928877ee",
-      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0047.json",
+      "record_sha256": "4b2341fe7dddf6ccdead70b60ab11418502f3de3fdef4933ee6fcfe4597f7720",
+      "scope": "functional (input changed)",
+      "supersedes": "OCOR-DEV-0047-requalified-rem0024-9faac98a8653",
+      "supersedes_record": "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0024.json",
       "task_id": "OCOR-DEV-0047"
     },
     {
       "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0027.json",
-      "record_sha256": "181e4696359d2a71dc08d9e2cf7a3bb4e394a66cb43c33d0acf961ded313b806",
-      "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0026.json",
+      "record_sha256": "e22bbea8ce407effc31d19e4abcf31fa3b80d0125764eb8614de4f16ef42d014",
+      "scope": "regression-only",
+      "supersedes": "OCOR-DEV-0050-requalified-rem0018-7fc59409aebf",
+      "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0018.json",
       "task_id": "OCOR-DEV-0050"
+    },
+    {
+      "record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.json",
+      "record_sha256": "33b550ae8e2ff25aa44bfc35e1cd2cccd9329eade1950548f30d621d3ae65f42",
+      "scope": "regression-only",
+      "supersedes": "OCOR-DEV-0005-requalified-rem0018-7fc59409aebf",
+      "supersedes_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0018.json",
+      "task_id": "OCOR-DEV-0005"
+    },
+    {
+      "record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json",
+      "record_sha256": "e068f1e27b4a3dc05ad4157d31870931d7e675ac511a7ed40695fae1c32281ce",
+      "scope": "regression-only",
+      "supersedes": "OCOR-DEV-0082-requalified-rem0018-7fc59409aebf",
+      "supersedes_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0018.json",
+      "task_id": "OCOR-DEV-0082"
     }
   ],
   "requirement_coverage_note": "Component-level evidence only for the C8 tool-boundary behaviours named in each case (NFR-047 containment, NFR-081 stop epoch). Full verification (BA-08, NFR-047, FGM-17) is allocated to G6; E1=0/E2=0 and zero global Verified remain unchanged.",
@@ -754,24 +831,150 @@
         "test_a_lease_revoked_during_the_expression_refuses_the_next_tool",
         "test_an_unauthorized_second_tool_is_refused_before_any_effect"
       ]
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0027-R2-EXECUTION-UNKNOWN-RECONCILED-WITH-C6",
+      "command": "every execution_unknown refusal (stop accepted while a tool runs; call deadline) records, before it is raised, an EXECUTION_UNKNOWN outcome with the real C6 OutcomeReconciler, never idempotent-proven, whose note carries lease, tool, stop epoch, dispatch and refusal times, reason code and correlation; the record travels with the refusal and is journalled by the runtime; require_may_auto_retry refuses it (AUTO_RETRY_BLOCKED_AMBIGUOUS_NON_IDEMPOTENT); a completed call opens no reconciliation (positive control); the default runtime owns a real reconciler (RED on f34b46e: reconciler parameter and record absent)",
+      "finding": "repair 2 point 1",
+      "in_process_real_collaborator_tests": [
+        "test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconciler",
+        "test_a_call_that_completes_opens_no_reconciliation",
+        "test_a_stop_during_a_non_cooperative_tool_records_its_unknown_outcome_with_the_c6_reconciler",
+        "test_the_default_runtime_reconciles_with_its_own_c6_reconciler"
+      ],
+      "mocked_boundary_tests": [],
+      "requirement_id": "NFR-047",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 4,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "442ac0ecdffb9cb08d7c8c543e16b926b5f1db2d7fb4277d9b12133b618d350c",
+        "86b6299b1e672000747edd3ae492a0a1a2ae6f41aaad97663935e217821acada",
+        "2785e6574f96609646a1064835c4afd86e4c7cb4a2bf689e2511ecaa51aa88d4",
+        "f7f94f5012120c7196c9f3a5eab0c8552b54be0203441223ca5c983b9cc14bf6"
+      ],
+      "tests": [
+        "test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconciler",
+        "test_a_call_that_completes_opens_no_reconciliation",
+        "test_a_stop_during_a_non_cooperative_tool_records_its_unknown_outcome_with_the_c6_reconciler",
+        "test_the_default_runtime_reconciles_with_its_own_c6_reconciler"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0027-R2-UNAVAILABLE-RECONCILER-FAILS-CLOSED",
+      "command": "a reconciler whose store is unreachable makes an execution_unknown call fail closed with RECONCILIATION_UNAVAILABLE (execution_unknown, cause chained, no receipt, no record, no effect, refusal within 10 s of the stop); a call that completes is unaffected (positive control)",
+      "finding": "repair 2 point 1 (negative)",
+      "in_process_real_collaborator_tests": [
+        "test_an_unavailable_reconciler_does_not_affect_a_call_that_completes",
+        "test_an_unavailable_reconciler_fails_closed_without_any_receipt"
+      ],
+      "mocked_boundary_tests": [],
+      "requirement_id": "NFR-047",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "80ae52dadca2a39739bb009788eb4d677b8deae68e4fe44add6107cc4e78a1c8",
+        "8a12e27b41e9216ae9ede51e56b2d5bcbca959512eb3fb83054834f5fc1173e5"
+      ],
+      "tests": [
+        "test_an_unavailable_reconciler_does_not_affect_a_call_that_completes",
+        "test_an_unavailable_reconciler_fails_closed_without_any_receipt"
+      ]
+    },
+    {
+      "case_id": "OCOR-DEV-REM-0027-R2-NATIVE-WAIT-FINALLY-LEASE-CHANNEL-REFUSED-RESIDUAL-MEASURED",
+      "command": "a tool waiting in one native call (time.sleep 12 s) attempts its effect in its finally, journalled there: invoke refuses within 10 s of the stop (STOP_BOUND_DENIED, execution_unknown) with a C6 reconciliation record; the late effect attempted through the lease channel (ToolCallRuntime.authorize_effect on the bound authority) is refused STOP_BOUND_DENIED; the effect on an ungoverned channel is printed as a measured residual (RESIDUAL_MEASURED_NOT_PASS, see measured_residuals) and is never asserted as contained; the lease channel authorizes an effect without a stop and refuses one outside the lease (CAPABILITY_DENIED)",
+      "finding": "repair 2 point 2 (VF-001 of OCOR-DEV-REM-0027-5cb0f629d084-1)",
+      "in_process_real_collaborator_tests": [
+        "test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured",
+        "test_the_lease_channel_authorizes_an_effect_without_a_stop",
+        "test_the_lease_channel_refuses_an_effect_outside_the_lease"
+      ],
+      "mocked_boundary_tests": [],
+      "requirement_id": "NFR-047",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 3,
+        "skipped": 0
+      },
+      "status": "PASS",
+      "test_case_sha256": [
+        "43076608179d0f3c1468ff8a0c4859650e557e62ef317f25b919e42126bd986b",
+        "2d7d1780fd830444167eb4ad0208aec50262c61a979e2be105abd4920f37e591",
+        "15e066a6f90425e6c8fd7baef49355f0fd467429fdce566ffc1d602390845937"
+      ],
+      "tests": [
+        "test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured",
+        "test_the_lease_channel_authorizes_an_effect_without_a_stop",
+        "test_the_lease_channel_refuses_an_effect_outside_the_lease"
+      ]
     }
   ],
   "residual_risks": [
-    "In-process preemption acts between interpreter steps: a registered tool that catches BaseException (or a bare except) around its wait, or that performs its effect inside one native call already running when the stop is accepted, cannot be stopped by the runtime; its outcome stays execution_unknown and reconciliation/compensation belongs to C6 (OutcomeReconciler, not wired to ToolCallRuntime). Tools are registered by the platform, never by the model, whose sandbox expressions cannot catch exceptions; process isolation of tools (ADD C8 'OCI sandbox') is outside this change set. The cases covered and measured are non-cooperative tools blocked in a wait and tools swallowing ordinary exceptions. Not claimed closed; tracked to FGM-17.",
-    "A preempted worker whose native call blocks (e.g. a long sleep) keeps its daemon thread until that call returns; it then raises ToolPreempted before any further step. A tool blocking forever holds one thread for the life of the process.",
-    "The lease time window is still evaluated at the caller-supplied 'at' instant (pre-existing 0047 contract, unchanged): REM-0027 removes the caller's authority over the stop epoch only; trusted-time evaluation of lease windows and the 5 s lease TTL of ADD v1.3 section 5.2 are not introduced here.",
-    "The lease is still the in-process CapabilityLease, not the signed, single-use-per-(action_instance_id, emission_attempt) record of LLD v1.1 section 1.4 (signature, delegation_ref, action_instance_id, GCS and GatePackage binding, fencing token); only stop_epoch is added. The rest belongs to the C6 dispatch path and G6.",
-    "The stop is detected at dispatch and by 10 ms supervision polling of the controller, not pushed: a stop accepted inside the last 10 ms of a fast call is reported as execution_unknown on completion rather than cancelling it.",
+    "In-process preemption is best-effort between interpreter steps: a running native call (time.sleep, blocking I/O) and the finally that follows it are not interruptible; the finally runs when the native call returns (measured 11.5 s after the stop for a 12 s wait). The runtime stays bounded (refusal <=10 s, no new dispatch, reconciliation record) and the lease channel refuses the late effect, but an effect on a channel the platform does not govern lands late: measured as RESIDUAL_MEASURED_NOT_PASS, not claimed contained, traced to FGM-17 and to the G6 qualification. Out-of-process execution of tools with termination at the stop is a design option for FGM-17, not authorized in this cycle (PO disposition).",
+    "A registered tool that catches BaseException is likewise not stopped by the preemption; tools are registered by the platform, never by the model, whose sandbox expressions cannot catch exceptions.",
+    "Without a stop, a call closed by its deadline leaves its lease valid: a late effect of that call through the lease channel is still authorized (the lease is not revoked on deadline expiry); the outcome is reconciled as EXECUTION_UNKNOWN. Revoking or fencing on deadline is outside the closed scope of repair 2.",
+    "The C6 OutcomeReconciler is in-memory (sealed OCOR-DEV-0044 contract): the record does not survive the process; durable reconciliation storage belongs to the C6 dispatch path and G6. The default reconciler of a runtime constructed without one is private to that runtime.",
+    "A preempted worker whose native call blocks keeps its daemon thread until that call returns; a tool blocking forever holds one thread for the life of the process.",
+    "The lease time window is still evaluated at the caller-supplied 'at' instant (0047 contract unchanged); the dispatch and refusal times of the reconciliation record use the local UTC clock, not a TrustedClock.",
+    "The lease is still the in-process CapabilityLease, not the signed single-use record of LLD v1.1 section 1.4; only stop_epoch is added. The stop is detected at dispatch and by 10 ms supervision polling, not pushed.",
     "ToolCallRuntime is still not invoked by other ocor-runtime modules (INFO-C classification); G6 qualification (BA-08, NFR-047, FGM-17) depends on it."
   ],
   "result": "PASS",
   "roles": {
-    "implementer": "Claude Code (Anthropic), claude-opus-5-5, implementatore di riserva del loop (quota Codex esaurita): ciclo 0 e ciclo di riparazione 1 di OCOR-DEV-REM-0027",
-    "independence": "external loop only; separate process, context and provider",
-    "original_implementer_0047_0050": "OCOR-DEV-0047: original implementer per its sealed record; OCOR-DEV-0050: Claude Code cycle 0, Codex repair cycles 1-2",
-    "verifier": "Grok 4.7 (Cursor CLI; verifier: cursor) -- separate process, context and provider; Claude Code does not verify this change set (LOOP-ROLES: Cursor/Grok when the reserve Claude Code implements)"
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER (2026-10-25)",
+    "historical_implementers_of_regression_inputs": [
+      {
+        "agent": "Codex",
+        "provider": "OpenAI"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic"
+      }
+    ],
+    "implementers": [
+      {
+        "agent": "Claude Code",
+        "cli": "Claude Code 2.1.310",
+        "model": "claude-opus-5-5",
+        "provider": "Anthropic",
+        "scope": "REM-0027 cycle 0, repair cycle 1 and repair cycle 2 (this record): alignment merge, RED/GREEN, qualification, evidence assembly, verification request"
+      },
+      {
+        "agent": "Codex",
+        "provider": "OpenAI",
+        "scope": "counted as implementer of the task by the loop rule (LOOP-AGENT-ROTATION point 2; LOOP-IMPLEMENTER-ORDER point 2): state syncs and historical inputs; no repair-2 code"
+      }
+    ],
+    "verifier_alternative": {
+      "agent": "Antigravity CLI",
+      "model": "Gemini",
+      "provider": "Google"
+    },
+    "verifier_excluded_providers": [
+      "Anthropic",
+      "OpenAI"
+    ],
+    "verifier_requested": {
+      "agent": "Cursor CLI",
+      "model": "Grok 4.7",
+      "process": "external loop only, separate clean context (REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION)",
+      "provider": "xAI"
+    },
+    "verifier_started_by_implementer": false
   },
-  "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted data, no migration and no public contract change: leases and stop controllers are in-process. Reverting restores the original 0047 record and the REM-0026 record of 0050 as the most recent ones once the REM-0027 requalification records are removed with the revert.",
+  "rollback_procedure_verified": "Mechanical review: revert the change-set commits. No persisted data, no migration, no public contract change: leases, stop controllers and the reconciler are in-process. Reverting restores the superseded records of 0005, 0047, 0050 and 0082 as the most recent ones once the REM-0027 requalification records are removed with the revert.",
   "schema_version": "1.0",
   "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
   "task_id": "OCOR-DEV-REM-0027",
@@ -779,6 +982,21 @@
     "GREEN": {
       "command": "task-run-1..3 and task-validation-command over the 0047, REM-0027 and 0050 suites (JUnit counts in commands)",
       "raw_label": "task-run-3, task-junit"
+    },
+    "GREEN_REPAIR_2": {
+      "commit": "a57d243",
+      "runs": [
+        "task-1",
+        "task-2",
+        "task-3",
+        "regression",
+        "full"
+      ]
+    },
+    "MUTATION_REPAIR_2": {
+      "killed": 9,
+      "raw_sha256": "74a93f84816e345cef1e334b2188f029545dc5cd3eebfca747a80a317827c325",
+      "total": 9
     },
     "RED": {
       "command": "detached worktree .ocor/worktrees/rem-0027-red of the tests-only commit 0249a28 (parent origin/main 299a6a6) with its own venv (uv sync --frozen --extra test --extra lint); the run prints HEAD, the diff against origin/main and whether c8/tool_runtime.py, c8_agent.py, c6_capabilities.py and c6/safety.py equal origin/main, then python -m pytest -q -p no:cacheprovider -rA tests/tasks/test_ocor_dev_rem_0027.py",
@@ -852,6 +1070,26 @@
       },
       "raw_label": "tdd-red-repair1, tdd-red-repair1-junit",
       "raw_sha256": "1ea11860bfaceca5aa5eee8885a70aa4fadaa738541b95a539963ecaecbd8ae6"
+    },
+    "RED_REPAIR_2": {
+      "command": "worktree rem-0027 at RED commit eea5c32 (tests only, sources of the alignment merge f34b46e): python -m pytest -q -p no:cacheprovider -rf tests/tasks/test_ocor_dev_rem_0027.py",
+      "exit_code": 1,
+      "failed": 9,
+      "fingerprint_sha256": "9b88ed14f2d00d2ac332005c736febd802a54ff29a28fcb5aab188e8e35a9ff8 = sha256 of the FAILED lines (reason stripped) and the summary line of red.log",
+      "note": "the RED file used record_property for the residual; 3832b91 prints it instead (xunit2), no assertion changed",
+      "outcomes": {
+        "test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconciler": "FAIL",
+        "test_a_call_that_completes_opens_no_reconciliation": "FAIL",
+        "test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured": "FAIL",
+        "test_a_stop_during_a_non_cooperative_tool_records_its_unknown_outcome_with_the_c6_reconciler": "FAIL",
+        "test_an_unavailable_reconciler_does_not_affect_a_call_that_completes": "FAIL",
+        "test_an_unavailable_reconciler_fails_closed_without_any_receipt": "FAIL",
+        "test_the_default_runtime_reconciles_with_its_own_c6_reconciler": "FAIL",
+        "test_the_lease_channel_authorizes_an_effect_without_a_stop": "FAIL",
+        "test_the_lease_channel_refuses_an_effect_outside_the_lease": "FAIL"
+      },
+      "passed": 32,
+      "raw_sha256": "b14544713ea1a77920f1176ca8cf36ddf354086b9b8599c13df692efde517765"
     },
     "REFACTOR": "None beyond the fix: one dispatch hook in StrictSandbox, an optional stop binding in CapabilityAuthority, the supervised dispatch in ToolCallRuntime. Repair 1: the worker thread became _ToolWorker (lock-serialized preemption and retirement); StopEpochDenied subclass of AuthorizationError; ledger sweep.",
     "mutation_probe": "Repair 1: 22 mutants (the 14 of cycle 0 re-anchored to the repaired code, plus M15 no preemption, M16 preemption catchable as Exception, M17 epoch-less parent delegates, M18 authorize not stop-fenced, M19 ledger not swept, M20 revoked_at not the stop acceptance, M21/M22 stop denials reported as CAPABILITY_DENIED) run against the REM-0027 suite in a separate detached worktree at the exact code commit d577c62: all killed except M1 and M3, declared equivalent with their reason (the bound authority's authorize() fences the same epoch first); sources restored byte-identical, worktree clean (raw label mutation-probe-result). A first repair-1 probe at a5d77f1 killed 18/22: M8 (cooperative deadline signal masked by preemption) and M14 (delegation epoch check masked by the ledger sweep unless the child issuance is backdated) led to the two cases of d577c62; its log is kept outside the repository as a diagnostic. Cycle 0: 14/14 at 72ecedd (diagnostic first probe 13/14 at 1c83a98).",
