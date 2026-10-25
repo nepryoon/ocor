@@ -730,7 +730,8 @@ class MemoryRestoreGate:
     replays every tombstone through ``DeletionRestoreGate.reconcile`` and only
     then compares the restored metadata/ledger with the manifest. Items deleted
     after the backup must carry the authoritative tombstone epoch; every other
-    item must match head, stage, pointers, epochs and version digests exactly;
+    item must match head, stage, pointers, epochs, version digests and
+    per-version audit refs exactly;
     any extra restored item is projection drift. ``serve`` repeats the check
     around the materialising callback, which must not dispatch external effects.
     Any failure closes the boundary until a new ``open``. The checkpoint port
@@ -895,12 +896,15 @@ class MemoryRestoreGate:
                 raise _error("STALE_DELETION_EPOCH")
             digests = [r.item_digest if (r := self._ledger.get(item_id, v)) is not None else None
                        for v in range(1, head + 1)]
+            audit_refs = [m.staged.audit_ref if (m := self._metadata.get(item_id, v)) is not None else None
+                          for v in range(1, head + 1)]
             if (head != entry["head_version"] or self._ledger.latest_version(item_id) != head
                     or stored.state is not VersionState.COMMITTED
                     or stored.staged.stage_digest != entry["stage_digest"]
                     or stored.staged.partition.digest != partition
                     or record.item_digest != stored.staged.item_digest
-                    or digests != entry["item_digests"]):
+                    or digests != entry["item_digests"]
+                    or audit_refs != entry["audit_refs"]):
                 raise _error("PROJECTION_DRIFT", "REPRESENTATION_NOT_READY")
         return tuple(deleted), len(recorded) - len(deleted)
 
