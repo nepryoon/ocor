@@ -6491,3 +6491,12 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - inputs intatti; nessun nuovo DEC, E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC/Production NO-GO invariati. Stato solo su governed/state-sync; attesa CI massimo 90 min dalla prima run, poll 60 s, sui 13 nomi obbligatori e HEAD esatto, uscita immediata su FAIL.
 
 - Gate dello state sync: checksum 8/8, harness 14 PASS, drift 0, ruff, mypy strict, language, RCCAD, scope, piano e runtime evidence dei cinque record PASS. I due controlli opzionali del piano restano NOT_EXECUTED. Soltanto i tre file di stato sono modificati; nessuna campagna locale ripetuta per metadati. La nuova CI obbligatoria resta da eseguire sull HEAD esatto prima del merge.
+
+
+## 2026-10-25T04:59:32.680866+00:00 — checkpoint locale REM-0018, qualifica ancora in corso
+
+- Implementatore Codex/OpenAI. Sorgente 7fc59409aebf3f632e2dff8925b98f78a2facc11, worktree .ocor/worktrees/rem-0018; audit, RED e fix committati.
+- Mirati: 13 REM0018, 37 Kafka/C5, 33 vector/consumer, 329 allowlist PASS; reports CI 277 test e 46 subtest, programmi standalone e 80 casi conformance PASS.
+- Full avviata da shell pulita dopo reset e bootstrap standard; al checkpoint caso Helm in corso, nessun esito finale attribuito. Limite 75 min, osservazione 60s, source/casi/harness invariati.
+- Prossima azione: Riprendere la campagna locale gia in esecuzione nel worktree .ocor/worktrees/rem-0018, HEAD 7fc59409aebf3f632e2dff8925b98f78a2facc11, output .ocor/rem0018/full/ e .ocor/rem0018/full-status.log, tetto 4500s e poll60s; non avviare un secondo stack. Se PASS e processo concluso: teardown standard, unione JUnit esatta, evidenze e riqualifiche, gate, pubblicazione e richiesta al loop esterno. Se interrotta da quota: diagnosticare e ripartire secondo regole vigenti, senza conteggiare run incompleti. Nessun verifier avviato.
+- Nessun sigillo, PR del candidato o verifica indipendente; inputs intatti, E1/E2/Verified e claim invariati. Checkpoint locale soltanto, non pubblicato su main durante la campagna.
