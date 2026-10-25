@@ -1,0 +1,589 @@
+RAW_FILE gates/gates.json SHA256 ebb93bdf8a06163f5e4e6fd18d6058a2362520e76c14812a7e14f543f34523d1
+[
+  {
+    "command": [
+      "sha256sum",
+      "-c",
+      "inputs/normative/SHA256SUMS"
+    ],
+    "duration_seconds": 0.003940709997550584,
+    "exit_code": 0,
+    "label": "inputs",
+    "raw_sha256": "0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/verify.py",
+      "--json"
+    ],
+    "duration_seconds": 0.36242291500093415,
+    "exit_code": 0,
+    "label": "verify",
+    "raw_sha256": "61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413"
+  },
+  {
+    "command": [
+      "ruff",
+      "check",
+      "."
+    ],
+    "duration_seconds": 0.00840918900212273,
+    "exit_code": 0,
+    "label": "ruff",
+    "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "-m",
+      "mypy",
+      "--strict"
+    ],
+    "duration_seconds": 0.09842616799869575,
+    "exit_code": 0,
+    "label": "mypy",
+    "raw_sha256": "2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/validate_rccad.py",
+      "--base-ref",
+      "9b4d3be"
+    ],
+    "duration_seconds": 0.25344491000578273,
+    "exit_code": 0,
+    "label": "rccad",
+    "raw_sha256": "0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/validate_language_policy.py"
+    ],
+    "duration_seconds": 0.024000183002499398,
+    "exit_code": 0,
+    "label": "language",
+    "raw_sha256": "ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/validate_ocor_change_scope.py",
+      "--base",
+      "9b4d3be",
+      "--head",
+      "HEAD",
+      "--branch",
+      "governed/ocor-dev-rem-0033-kind-bootstrap-exec-probe"
+    ],
+    "duration_seconds": 0.03670572199916933,
+    "exit_code": 0,
+    "label": "scope",
+    "raw_sha256": "b240c8a659bae9a394b5c8b358a4fbdb5e73cfa1a4e43facfa75c9b1e29e15ff"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/validate_ocor_development_plan.py",
+      "--authorized-extension",
+      "--base-ref",
+      "9b4d3be"
+    ],
+    "duration_seconds": 0.09223911199660506,
+    "exit_code": 0,
+    "label": "plan",
+    "raw_sha256": "c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/validate_runtime_evidence.py",
+      "--task",
+      "OCOR-DEV-0049",
+      "--non-skipped",
+      "--manifest",
+      "reports/evidence/G4/MANIFEST.json"
+    ],
+    "duration_seconds": 0.0210187299962854,
+    "exit_code": 0,
+    "label": "runtime0049",
+    "raw_sha256": "d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25"
+  },
+  {
+    "command": [
+      "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "scripts/validate_runtime_evidence.py",
+      "--task",
+      "OCOR-DEV-0050",
+      "--non-skipped",
+      "--manifest",
+      "reports/evidence/G5/MANIFEST.json"
+    ],
+    "duration_seconds": 0.02203018199361395,
+    "exit_code": 0,
+    "label": "runtime0050",
+    "raw_sha256": "dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be"
+  },
+  {
+    "command": [
+      "git",
+      "restore",
+      "reports/verify_report.json"
+    ],
+    "duration_seconds": 0.002540568995755166,
+    "exit_code": 0,
+    "label": "restore-verify",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": [
+      "git",
+      "status",
+      "--porcelain"
+    ],
+    "duration_seconds": 0.0049848109993035905,
+    "exit_code": 0,
+    "label": "status",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]
+
+END_RAW_FILE gates/gates.json
+RAW_FILE gates/inputs.log SHA256 0a2036313a8b8deca46e664d2621879f4e0191c98eb287e2aeeb7171aae53c34
+inputs/normative/OCOR_Architectural_Design_Document_v1.1.md: OK
+inputs/normative/OCOR_CAP_ELM_Requirement_Crosswalk_v0.9.md: OK
+inputs/normative/OCOR_DEC_197_plus_Draft_v0.1.md: OK
+inputs/normative/OCOR_Decision_Register_v1.0.md: OK
+inputs/normative/OCOR_Decision_Traceability_Index_v1.0.md: OK
+inputs/normative/OCOR_Registers_v0.9.md: OK
+inputs/normative/OCOR_Requirement_Register_v0.9.md: OK
+inputs/normative/OCOR_Requirement_Traceability_Index_v0.9.md: OK
+
+END_RAW_FILE gates/inputs.log
+RAW_FILE gates/language.log SHA256 ca6cb78dcbe21415365ecd6578a2eb0bf3d22bdcd7ddbae94e31fe19f67cd29d
+PASS: no tracked file uses a monitored extension outside its authorized area
+
+END_RAW_FILE gates/language.log
+RAW_FILE gates/mypy.log SHA256 2ee1bfc13507fda246a3220aaeaa3f3dd56dcc26a996aa35567c2871279b5ecd
+Success: no issues found in 80 source files
+
+END_RAW_FILE gates/mypy.log
+RAW_FILE gates/plan.log SHA256 c0753802bc31d2d19a9a5b77de8467f7b382f8b05832abf72af1a624819b6cba
+{"verdict": "PASS", "counts": {"PASS": 37, "NOT_EXECUTED": 2}, "tasks": 84, "requirements": 285, "waves": 29, "critical_days": 161}
+
+END_RAW_FILE gates/plan.log
+RAW_FILE gates/rccad.log SHA256 0043e5c71880b8696f14cc449b0e908f5418b4864e06a71d3fb4d4f212543c3f
+{
+  "checked_artifacts": 22,
+  "dynamic_assurance": "CI_REQUIRED",
+  "findings": [],
+  "fitness_results": {
+    "AFF-001": "PASS_STATIC_PRECHECK",
+    "AFF-002": "PASS_STATIC_PRECHECK",
+    "AFF-003": "PASS_STATIC_PRECHECK",
+    "AFF-004": "PASS_STATIC_PRECHECK",
+    "AFF-005": "PASS_STATIC_PRECHECK",
+    "AFF-006": "PASS_STATIC_PRECHECK",
+    "AFF-007": "PASS_STATIC_PRECHECK",
+    "AFF-008": "PASS_STATIC_PRECHECK",
+    "AFF-009": "PASS_STATIC_PRECHECK",
+    "AFF-010": "PASS_STATIC_PRECHECK"
+  },
+  "methodology_sha256": "231ce3325537de85890b16e97f138bd6a4263fc1e240094ed26499af9aeeb6cd",
+  "status": "PASS_LOCAL_PRECHECK"
+}
+
+END_RAW_FILE gates/rccad.log
+RAW_FILE gates/restore-verify.log SHA256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+END_RAW_FILE gates/restore-verify.log
+RAW_FILE gates/ruff.log SHA256 82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18
+All checks passed!
+
+END_RAW_FILE gates/ruff.log
+RAW_FILE gates/runtime0049.log SHA256 d06a9f22b0b62d127c29af0cc773886401dee8e350445660ad10950b9a4d6b25
+PASS: qualifying task evidence for OCOR-DEV-0049
+
+END_RAW_FILE gates/runtime0049.log
+RAW_FILE gates/runtime0050.log SHA256 dde4a43ea3edc587884118bb0e7be21cb3e9b72048bb67d246cddb5fd8d5d4be
+PASS: qualifying task evidence for OCOR-DEV-0050
+
+END_RAW_FILE gates/runtime0050.log
+RAW_FILE gates/scope.log SHA256 b240c8a659bae9a394b5c8b358a4fbdb5e73cfa1a4e43facfa75c9b1e29e15ff
+PASS: 13 changed path(s); immutable surfaces untouched; task ledger stable
+
+END_RAW_FILE gates/scope.log
+RAW_FILE gates/status.log SHA256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+END_RAW_FILE gates/status.log
+RAW_FILE gates/verify.log SHA256 61736e49983a32531b3c8362f960d943a8a7f7f437ca98e91c1f3c3f8762b413
+==============================================================================
+OCOR ADD — harness di verifica tool-backed
+oggetto: inputs/normative/OCOR_Architectural_Design_Document_v1.1.md
+sha256:  3e7532c7101e80c74b511cedc56a0563ca0938a3fe259911a91245cb19dedc7f
+==============================================================================
+[PASS] Integrità sorgenti
+       8 file, tutti i digest coincidono
+[PASS] JSON Schema — parsing e meta-validazione
+       5 schemi Draft 2020-12 validi: urn:ocor:schema:action-type-contract:1.0, urn:ocor:schema:canonical-ingestion-envelope:1.1, urn:ocor:schema:event-subscription-contract:1.0, urn:ocor:schema:mcp-tool-contract:1.1, urn:ocor:schema:signed-canonical-ir:1.0
+[PASS] OpenAPI — risoluzione $ref
+       OpenAPI 3.1.0 v1.1.0; 6 path, 25 schemi, 26 $ref; tutti i $ref risolti; schemi mai referenziati: nessuno
+[PASS] OpenAPI — validazione semantica con validator ufficiale
+       openapi-spec-validator==0.9.0; wheel SHA-256 222fecffc7714f6d0a6ad62c0e4b66cc2b7dbfafb7b93acfc6c308abbdb51af8; documento OpenAPI 3.1.0 valido
+[PASS] Protobuf — compilazione
+       protoc compila senza errori
+[PASS] Turtle/RDF — parsing
+       17 triple
+[PASS] Rami condizionali insoddisfacibili (classe RV-01)
+       nessun campo richiesto da un condizionale risulta non dichiarato
+[INFO] Rami condizionali da coprire con casi POSITIVI
+       il §7.1 del prompt richiede almeno un caso positivo per ramo — signed-canonical-ir=0; canonical-ingestion-envelope=4; mcp-tool-contract=11; action-type-contract=9; event-subscription-contract=0
+[PASS] FSM — bijezione diagramma/tabella
+       29 stati in corrispondenza
+[PASS] FSM — famiglia ACT-T
+       ACT-T01–T31 contigui, più le varianti a/b/c
+[INFO] FSM — stati terminali
+       stati senza archi uscenti non attesi: nessuno; stati di indeterminatezza privi di uscita: nessuno
+[PASS] Tracciabilità — allocazione in §7
+       DEC 181/196; BR 18/18; FR 174/174; NFR 93/93; ARC 23/23; CAP 25/26; ELM 103/103; RSK 60/60
+[PASS] Universo normativo
+       693 = 693 atteso
+[PASS] Rimandi di sezione
+       44 rimandi distinti, 59 sezioni; non risolti: nessuno
+[PASS] Evidence fence
+       'E1=0' ricorre 16 volte; claim probatori non supportati: nessuno
+[PASS] Nessun DEC-197 assegnato
+       3 occorrenze, tutte in forma negativa o come nome di file
+==============================================================================
+PASS 14  FAIL 0  NOT_EXECUTED 0
+==============================================================================
+referto JSON: reports/verify_report.json
+
+END_RAW_FILE gates/verify.log
+RAW_FILE health.json SHA256 518a61a1c28d0e054e6b0c36359e48fde8974a1cade88ec60b8766c9aeebf8e3
+{
+  "services": [
+    {
+      "detail": {
+        "info_status": 200,
+        "ok_status": 200,
+        "unauthenticated_access": "FAIL_CLOSED"
+      },
+      "service": "terminusdb",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "lock": {
+          "image": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+          "license": "MPL-2.0",
+          "source": "https://hub.docker.com/r/typedb/typedb",
+          "version": "3.12.3"
+        },
+        "protocol": {
+          "distribution": "TypeDB CE",
+          "grpc_tcp": "READY",
+          "health_status": 204,
+          "unauthenticated_database_access": "FAIL_CLOSED",
+          "version": "3.12.3"
+        },
+        "result": "PASS",
+        "runtime": {
+          "configured_image": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+          "health": "healthy",
+          "ports": {
+            "1729/tcp": "1729",
+            "8000/tcp": "8000"
+          }
+        },
+        "schema_version": "1.0",
+        "service": "typedb"
+      },
+      "service": "typedb",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "absent_dataset_check": "FAIL_CLOSED",
+        "absent_dataset_status": 404,
+        "malformed_request_status": 200,
+        "ping_status": 200
+      },
+      "service": "fuseki",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "errors": [],
+        "services": {
+          "keycloak": {
+            "health": "healthy",
+            "host_ips": [
+              "127.0.0.1"
+            ],
+            "image": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+            "paused": false,
+            "running": true
+          },
+          "opa": {
+            "health": "healthy",
+            "host_ips": [
+              "127.0.0.1"
+            ],
+            "image": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+            "paused": false,
+            "running": true
+          }
+        },
+        "status": "PASS"
+      },
+      "service": "opa-keycloak",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "api": {
+          "auth": {
+            "authorized_system_api": "PASS",
+            "invalid_token": "FAIL_CLOSED"
+          },
+          "health": {
+            "initialized": true,
+            "seal_state": "UNSEALED",
+            "standby": false,
+            "version": "2.6.2"
+          }
+        },
+        "lock": {
+          "image": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+          "license": "MPL-2.0",
+          "source": "https://quay.io/repository/openbao/openbao",
+          "version": "2.6.2"
+        },
+        "result": "PASS",
+        "runtime": {
+          "configured_image": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+          "health": "healthy",
+          "host_binding": "127.0.0.1:8200",
+          "no_new_privileges": true
+        },
+        "schema_version": "1.0",
+        "service": "openbao"
+      },
+      "service": "openbao",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "fault": {},
+        "identity": {},
+        "invalid_token": {},
+        "recovery": {},
+        "result": "PASS",
+        "runtime": {
+          "spire-agent": {
+            "host_ports": 0,
+            "image": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+            "running": true
+          },
+          "spire-server": {
+            "host_ports": 0,
+            "image": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+            "running": true
+          }
+        },
+        "schema_version": "1.0",
+        "service": "spiffe-spire",
+        "trust_domain": "ocor.test",
+        "versions": {
+          "spire-agent": "1.15.3",
+          "spire-server": "1.15.3"
+        }
+      },
+      "service": "spiffe-spire",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "pg_isready": "/var/run/postgresql:5432 - accepting connections",
+        "unauthenticated_access": "FAIL_CLOSED",
+        "wrong_password_exit_code": 2
+      },
+      "service": "postgresql",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "absent_topic_check": "FAIL_CLOSED",
+        "describe_absent_topic_exit_code": 1,
+        "list_topics_exit_code": 0
+      },
+      "service": "kafka",
+      "status": "READY"
+    },
+    {
+      "detail": {
+        "absent_collection_check": "FAIL_CLOSED",
+        "absent_collection_status": 404,
+        "root_status": 200,
+        "version": "1.15.1"
+      },
+      "service": "qdrant",
+      "status": "READY"
+    }
+  ],
+  "status": "PASS"
+}
+
+END_RAW_FILE health.json
+RAW_FILE preflight-result.json SHA256 5f1235e325146d71477ffc8121fb078da39bb1b020716a79075cd4128f799351
+{
+  "services": 11,
+  "status": "PASS",
+  "toolchain_entries": 9
+}
+
+END_RAW_FILE preflight-result.json
+RAW_FILE regression0050-exit.json SHA256 b9b5780156ccb51e63d7c2fbceb59a3f55a28b8816f37ec04813194d75e4dd00
+{
+  "command": [
+    "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+    "--junitxml=/home/luca/.ocor-codex/rem0033-resume-20261017/regression0050.xml"
+  ],
+  "exit_code": 0,
+  "source_head_at_launch": "beeaf5e6d9a7e316e3bec93bc4b229fe8a099c2a"
+}
+
+END_RAW_FILE regression0050-exit.json
+RAW_FILE regression0050-stack-observations.json SHA256 f3ffac8dd90d157a206a0ee8f34ba14f374fae454eb99f6e005b8c2474747775
+[
+  {
+    "elapsed": 0.0501020130031975,
+    "status": "PASS_11_RUNNING_NO_OOM_NO_RESTART"
+  }
+]
+
+END_RAW_FILE regression0050-stack-observations.json
+RAW_FILE regression0050.log SHA256 f6cc8810afcfb8bf66b6c251ba99870b410eb7f0802a56863fac87cbef7101d6
+........................................................................ [ 36%]
+........................................................................ [ 72%]
+......................................................                   [100%]
+198 passed in 4.73s
+
+END_RAW_FILE regression0050.log
+RAW_FILE regression0050.xml SHA256 12d7857d2b3f151d9ea3c0ceb40751b399204936acb8df6de68a547430ce300d
+<testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="198" time="4.728" timestamp="2026-10-17T06:43:43.113398+00:00" hostname="nepryoon"><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:0eb63464cd40877174ec24f6cf173506d4e68dcdef0bd048a71c1607925d69bb" time="0.000" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a669ed696c4d8c4dddf716e75dc26c991892f02ff898279f015c7a08722e8296" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d1a366154a8b470928a1f8f0195dc2326f88a0328e4d763e0d61f827283803e7" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:ff64cee5c83adee39028edea74d16de6ab57611ac068ba6f41fd220074e02344" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:4e44c1abe30c930fd1f93922d451b0353bfdb0103d3c73ffee7c052e7ed8a6b7" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d84148d5c1e2d3963966f63db69f25c8318fb48e20d9f8b2e269c0582e481134" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:fbde216b670025a1380da4ebb46795aa80077d2e31695e202d757ca6b135bc95" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:743b18cb15b628d81f0da5732a0266824c5b40368b2cef573dd899f09e8aace4" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a51d211d2b27985ca7baf06523ea92b8a574bd42dd8e2cf007e478306740d142" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:3c14f8c4357d56c5137cc8cd539c5904ccc297e066d2eea6238c3ec121588b50" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:df6a183f908fcdefd7df3b0b20df3240bbfe86adf704dcfee4bbef2c868d25ed" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:64ec277104cb9cf312f3077b6b5ea9a2c381048f9f96255ae5f4c72e3968db26" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:198904940b192690526cfaede668110e2a54e5281cece32a2f970b0c29094aff" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2452574cb03174b1f91fc993928f835df559966131877ed86e7b3b1efa17f981" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:10dfaedb918febc4801519ad2fb290bf36fa78cb602bfede88c28b12d4bcdf8e" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:75fa0f9ece60ece972464dfc77c965605cf2203d625bae305a65ad9a4f693603" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:08b3d0e933b5e9ed6b88f24c8a8a2504d9d04895cd2baa2af39f3151f848a8f5" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:f70425824b92d2091b6d1bab36db4bd539e96f52c47b9f201dcaf722966df165" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a7f9773f5e009d8e83c9dd1e01b537d4e9fb77a1486272914937b9ef76784a13" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2567782f6d3bf43119da044b8337f0a99049b7f87988a79ad70f117dd8c0c4b3" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:480145cacbb376f9ec0035053f833bab55a2933e61ecc0f7b85a6af5102cb06a" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5f9f59461a636138c700df549f20ca63a93e48c5ea2b647434725f9e482fe1cb" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:67d551df6fd92c6f169efd03f5083a40ed61cb43ded2d4984f462aa159cb8269" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:ac8d542efb44e2e7a328ca74c2b3f7ce46d72327887de1da5bab7e4ec79c77be" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:11f78c45c9550bad5a18c45fcafc16ecbcf43d8e3510043ec273f8a1952e15f4" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:31e47a3388844ee2b5d019712f6e53dbb1ded86b3e8ae6f1a4ad1b618fca7653" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:136b5db184f2a567843b2d40565211e9c3cbe466f4da45517e5797bedcf331dc" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7673189c0433b1fc957c1559df478b9c9381deb3cc3e13a9ba8118e78e3566bc" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:861364f1d34b1d88aaa82af809bc957772a572cc56d3e220e823024b95743cc9" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2c28d511e251dca5483468385433efbf179f8acc2a0680d0cd563e1681a7ba21" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:46504fd400bce939a1b65217a4f09da5c0e09cc02e0ab2fd4f5fade55c454fe8" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:aef1fcc89260deb224e50b12cdfdf13f89c9f6387f3a0bc83e69c059c587b6d2" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a72109f0d5b3707f260cbeed2aabb9281c8ac76dadea657bc10f13884b10be81" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:bff54ca56e7d848c6db61fbe853492aa955217f1f4eda6dca7043759e4b7284f" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:700f9ba60fe555281a54daa7bcf6bb723452b391fe9e2a216213f638e50653f5" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c87215bd2a20e66bc753bedeccdc1a1def273254ad1d71513f184e9e8cb22e04" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:94696ff5551b125e592f8340f610563bfbaa90e60555f1da050e32ffee00cc7f" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:4320a85d805894af0ecad50c3a965609f4fe1910572a827c26cb3606d09ef053" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7a74acca114ea68be4c131a7c5fcaeb578e962973db4acb8265827b204f067fb" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:74a9b0687ec620aef6b5bf93b6fd76fa5e5610f38c7c33d1e7b0a8248d3edcba" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b9f3924b421d3f810282bbdeaa50afcd58ac6e8de36156d9cf1eea0a91c92a01" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:814d819326950f78a174744474c28dc9437184cc867efa110f753eadcc95846d" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5b8ae7cb66e639c00854caf0f048b7c01b495780f6ba585bb306b3fa8758b52a" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a3b7c60d720294f05aa3bda3827c4745da82b4375354bb3012267c0f46b39292" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:86e4380565f89b287a5f8440c96d16b93d4944cacd70bead93fc4d864e544f0e" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:845fcd0a767bf778b893c4e59a60f235679f310a3d46e024d63da73bad81a001" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5483bb4cbc43450bc5d91e406a93121883cf6dfd1ae5604590b16c684a554285" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:df88b3aa5e4a005aa0b4eee5867019bb33509373e3f53cbb91cb92c68388e934" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:39e9cbb18a723656de5ce80171a3c4169893e2b9b79822a3587c7f34ac509c2f" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b61db8309ffd62ca6d3347b4839672d0d70e3251eea9959cad4dced64cb303d1" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:90bf04daaf186ce6ac58a450651416d0f82d78f0cc10c4cac82109ea3e5d4789" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:0578b9316f434ea0f2956860fa0186124e69e7cb9735cac790c403b602bbfc8b" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:e7d869e8af571c07fd2b65063ddd5a2115a9661825dec6bc9c670c712644c924" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:8805f7a2ea285ea1f8fd58d4c2c17813b28ea56e7ce61ee70d20454995e2cbbc" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6a38004aeca0613df41671306977cedf779ca329548a0432bf19c8321a9d458d" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:507db51e7f7033e505ad62b4574f1397c16b68d4bf6ce2839c1ec46259beae28" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:4fdabb3222408e256948bd0a9117466ac83f2fd9eb3a3598349dbaefc5d74db0" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:017cc285f737301178beaca4bb8dd31c8115247d1b48ac2527f588450c6e8432" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:fb7b9412f5caa068ba75473545a4cee7c630e6d1a70681c8f831b62128732a7a" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:9f6064e40220a5fc470a929b87cdd855958d0d3e8e6c7af22fc02354981a8caf" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:df69dd98f00509a9498f825d7fb9e3151d3366f22cbafdb83837e284a014b59a" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:1fa48fd27854d5955b2cd69edea1f0f782ed4ab71e6dd63e739a95f26e269de2" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6b44ad177d957422c043fc179ff19d675afb19525cf8cad1b1f71792855af8c6" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:029dc71fdae8d3fb4d21cb6726d9dbb30923ac6a02adf45f6132fbf182add12d" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:8013cf7590261787be6b5f7ae89dab12ade2adcb21334e2d709a45a38d33740b" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d9187a6e0f463fd28123f8d25dfd3bf6ba5dd4febf59cb35853bfde37a625658" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d65927e8d3c4a77305a90f6f48ffd36e49d882d0013b897475ac02bf956f4e5b" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:aff25455258d4569ed7ab366817b4e5a295c0f58c5136ab8f3fb09660cd282eb" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:1b85ee88c9207e912ec373d9c8cfec1a8d1464efa22a63a1fe4574a574c377cc" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:1b8f32e431abaa6c7093b05d67f1cb8d586222fd3440f7bb90e8d74bfbafc466" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:09871fb65a3ee3ab4a7813a24df6380ea19c805a250bbcae1807c7b851e31d73" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:53274aa895560cf4f5f15bcc3f87cac69a34641faadcc99805f7ae347ee3f474" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:96394e8c125171c3c5b06a37806a47c9d692e05bae8a075a1021912b1d1fa9b2" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b2f76c19885b1560f48f764f7843c7a7388a4b3542049a543719355787c65daf" time="0.000" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d387fc334cc49751ef87e2d7a2071221f723b126d9fae336e3e6ac46a6224885" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6d9b7656c758bd467bf6a5e81d9d2c56fd26fe45f8184c88519db68587bdd8aa" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:56d965e291dd3943b15d80c6f5fd268cf6b7a7dcd19e423314d400d0a5e8b7b5" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:e55e7e4480a63ad614e42f12edf61864184f54c198ce62b099237bb8ca3992a9" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:50aba2108d656101f68308c5be29dda3e3e352093cbfc5f67b190d0ba46af569" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:abc4f7ca231951361cb8b8d34fec7a209918f8d088c0b8b459a46a9877da45c3" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:20a84175f841f994d7b5103e5a54de0affe7ab366cb623b35591509c5c51dd06" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b171e6079be54ac55041f63f95ed33526ad4e7efcd03854e63c08c7fbbd06fae" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:f68bfcda0114b28de4b8c568bd9551d8119d9def60d91869aac0f11cf82bb3d7" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6b6a5e0c7b7d46307180346f80430517914b33f318f743da98a4641757a0a671" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7689621ad68fe12c786f70c0cbf2a1df673f632f742afcb32341272bde1ac191" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7e18e50eb907c929f69fdc1d20541077661015a3f073c69139616dec0957897a" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d16d2cc0b980a87b2840a125ada4654779c0e6cd35d5dd8cd1082443954db575" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b0ba0b77a00c085c81ce0d60ca8c8052b5b8ffe6b15e0982b89e2267a37025ce" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b153d473000c6aa24d3b82e40ca0daa230ee3ebc310c20cb5b667d70831612db" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:ed8890057e3187a115e195697a01931d9e09ef8d75c7baad89edd7543f65b233" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:1fe38cfd59e7919d14002a37ca8da548c68c0634efe8b5505d5e1ab977e2efb2" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:8b9483714a85db09e3f2be0583f90825747dc981a056e918b07ff7f1c8a829a7" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:ddf5b9bbf7d2a2688313c05adb9a75d522ce5cef3199334c918d282c77d1843d" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d36d2dad78ab993a87165b7e166f55f7ce5635db217e05cedf6739b8c744ee2f" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:508972ce921945c688b16e0af55db7b0992169244b5aa170325844e1c5d4e600" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c2fb40ecbcc93c5e63670f863f1e5e53dac7d2a4f4476713738423732ccf200b" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:03283eae2a385258f32d6416d2c3bf2fc32b6c2e8ccf86de178b653fe67ba3ba" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c9c417aaf3a73c2ddc75e766cc1b322b30aa015d4865036c6bb5508f4afb0198" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b8fb2028d371d8714cf191e6ef365a50ff6e3908482198d722098ba2d10721f5" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d695a3f14e2b63fd5743c0d6596cf38be1e48277d1b201dc2fc7c6da264b02f0" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:51b4dae0d1b660d4cf161a9ca21ce4ea7ddc93622a5c68fec219ebb510da1c87" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b3d92aa0dc695fb14a000e33d5ce61fb4b8be7597a6d938c733731da48acee30" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:0b99c452a61ad12e89c1c1a9369fbebf9ce6f56de7eeccf5a820ca055624cbd3" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5a3ace80570104545ae438b70e7f004b7c531696bbef8fe12519ec001b45fae7" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:70ce82f0b7b80f8ad09cb8adcd0f4fc938510580a3ea41974c9a5e3ad97592c8" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:05a6a91ec720e0916e906ce0bf93f7354672d4cd4b664655a052e2c8b9868c1e" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:3e382c0db8d9a3540a7347a835af5a84682e426107ea772cefbde0412710a22d" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c559ccee87839fc8426c61c34fa6d2fecbae7dddd2368ad841cec3d7532dbbed" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:f83185bbf65b06b99dea9a8812c105e34f41afc47a6cf4b331e1db5d208f87e0" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:02837f8daf8b759062899ee6858fed14fe4189a6de25d7363fe0ac61f41049f4" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2b65bbd1f4a1912121fa15bea546f079f135bce0db155fe962a5bf7a70fe0c22" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:90f7cccde0c83f24360060ea148d3aa4dd49ccfb22c39907d9877fc606c53679" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:50223bcb8a8e9ddf9919ab688532fcade4d5e342d4a4c9545985dcf4a54c5d29" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7a8f138f57ee17c6059b367fd1e1af5fde0bb4b71110a7bcc188def1dc1358e5" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:226ee3889c0d632e97871895450e34ed9556e4c2364f79ca1be4d75c81156e68" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7c09601a667aea78a01e205a9866b9db0244e5535e5a483f7738f8782f42c378" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:30f035fc50f9992ec139abd0773181496a15e8d4870c67fc95bd676975d3fe0e" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:f8225a1c246d9f648d79b9e395b180d74643b26ff694bd2bd4aca21606f08088" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:43aeffc9c3325cf677e281c31d5c32e5d346a83d7ba0762f835508dafff27bd0" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:f4e30a9c3168898fc363f0ef4ca310e0e97b041452a32beba77a97de4af75b80" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:e287184dbba3f98c3d46cd56c9eb1f0e1e767eba27ee0b70740c08a1d6fdaf65" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:01c8b9a5897ecff6d4bc4cc8465b8b6d2ed120c12a0faae82f61a69090e91fe3" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:23fab0bf1ee1eb0a9208cfbf67f7600918d9f4cc423119ea2431198c97ac24b9" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:4d3e0653449883c9cc414ec25d3458f866a1e86bc35b3da360e6f54d51ea14d3" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:fe9296a9481798e994b0a9b33924af0f85f9ea26fa225e2d3ba52b51fcb6b041" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:86983aa2e380fb1aab3b8e8a08e83e99b5cd918f0cf4ca5427b7ad914fd02f15" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:0a90cf183acb54aedb38adefba99156f3a4b0fa55e9464a1724ed89488e2ab21" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:997437a54ded9f945ef798f0e590a3b09371ec2eed73c8b7105e197687272b66" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6bb15928366acf44e64968d05eb91038b7a4e71a57afc25b010c26f3569c7231" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b53a99ccd30fbacad0383ead7f7782b7b5e1aabd4d85adc605127ace4f295a6b" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:9076819d2931011dd1250d64e5713ef340a13e166b48a1494c7053e2a996cf82" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:fd2b2ddcb2434a59674a2c50f22ab512bf0d934e21f7dbf1edf140ba7337db87" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a75669ef7f300ff15d8f5813ea483340aba24f42a337dc4b3afd995c91e31710" time="0.000" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:9aefbe989843eabe4e023a0b00d5350c5ea1be8e125862c13f07de422cd2bb07" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:52d048efda54950f93f69da3c53ca6358de88a7d2cb7a733e4d126a49bdf18f1" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2ff014bc41bb0487632c6a4ebe944187bfab25a0e23a168505f05e80b5912c53" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2e2a9db3c3b2185d8b306a93cd52fd076f3dc38d7d6beea1ca133ad3e68746a1" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:0b67cfcaf6758e34b58974b1e1463f28077ef9e432bc1dd040039763713174a3" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:2f0fd3b05601dd5e39ededd4e638333687b0fd408e38cac91fd99dff33786eb2" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d5c6b0791293e6858219d7b435f2999e0bfc239aff27832e410cbbea09de2f58" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d2b4b3004544fdf3decd83a5ac35228d46349efc7d0b3546e8742bec950dca24" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d1a1372366b859ac4956f69ecb4e871e89f7a5d1b6117086410a6ccb04510040" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c6f97996a3aacb880505f36dd9ab9c46d95ba85d76a2e049396eddd443cb9614" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:60dbe67f4f53fcfc27af86422548276101ad7accce34577485d9ba81525b687c" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:77a7035a8ed6460687cb672381d0efbedae059137c793a3e8857ad38a7856a8f" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:dc47b087b70c662800d78171bdd725dd40849ed5ae1705e7495a32c5e71ff5d5" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:07238a056f91b7c1c27b5ec4ab91e1ede62216e21168f352ed96feb38f9847ab" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c7fb72aeaa501f41b9b2081aa46584e8e82008efe5853fc90fd43fca0c21f423" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:397a4365521b4f805b49c698accdca31bb9b5d25c7d0f238296615fc3af3e775" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:36546cd1204214da3b6c9e9d0844185fda5df4340df19dd9b51e8393a697dbf7" time="0.004" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a0681ecd31fc7052487cf9c002a5bd7d8e7fc55136dc92382d42c7ddcb0364f3" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:f0504cf5ce8ea2886771bcb0cde0d4ad9a6c500a51f3cc139c0eedc55076e666" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:a50db33df1ab30f3217f2f449e6bdbe33022b2ca0142eeea8868e1b63788e68d" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:17eb0ad35222de0c2f7a99a5f9b4872bcb13aa2ec14413d80bc4e0aa2d40c54a" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:394f4263bb9551c1d7d71bb6de473857359327b55aa3022022a7576afca24348" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:7db2ec103bcb6483211059bbcdc040be0aa59d90c276c0196376485121d0575c" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5ae298cb2795cc1e22b1c523255970eee13ca486c76ab389c707b561c44fbd8d" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:96cc0b073d1c7380362e027ad502da4b180003c6a1625b421af89472acf5e4b5" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b46dfa8cbdbd6419cb5be43f318cf7f554abb1efa45afa853de1adee05632045" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:165cd81e0c95ceb88097d71185ca7aa97090d832f774ae9204fec855959672c2" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:60cf8647a22600722165d28649f147ebae8f93490d08d7294ebf4bdc832454f0" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6307a720e9cb532199eeffccc46a7d8ebe54afc6af41b116771af950fc701103" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:54d6b4ff6a097a7f855d37533c953e94e9d8aa4cd5ca1bcf39e389680b74fadd" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:10deac107f5841481663a0045430a3730149aa06c561446151a0e8e5d34c6fce" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5b17b7432abb302a3effb926f1de3c43b990fc479336521d578e3cea1ee7f0b5" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:d4b142a88124d57d944ae3bf991d72c8e2d28a0acb6f4c0e2a3b6c48e5338d7c" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:42e1351879eeb86f08938542f51724e69822d89daa12d2e7872f184dbfcb25da" time="0.008" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:3dc4185ecccf571b5ed6d3b0e73f986b32ab8ec46a4a3b3ef190c7ebab069d29" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:68b39bf71a445def1174e69e3429fb25c0fbe755e6c399b95ff119a25f2cca4c" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:0184ac024e7cae33c7ffc82680de30631d61311e8c98bafdaf4cde739dea8689" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:eb0b431a7fa964cb9e5d220c0d3a8b2d1f2b1c2f0a082f6adb02cc07554ff4e5" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:1f2aa294eb191fa1a75f2d27bc861b4610268dad100fb0ceee6a521a22605971" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:3771e547fbc01afcfa791813961b62cdd7df7a3a334d51435d3c4fc8d7875b69" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c9109034a2a0cc772cdebd0d05db6e77ee18c51987a85ce9568795ff0b75def6" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:cb10562ebb3a1892868ad7f3634e1a063866b586163c44cbff18c5a792fa60b0" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:cc90e75219fde94b9c63ebd8f6d77101120fdc4627948c6befd15944d7be1dbb" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b35a1d87a6950a74473c383b34f6bdb68d95763b1c563877ff02b204aaeff777" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6e0eb60919a973c0574eeafd8476e3ae5a0c3d56884061bd8bd8d040d77ad73b" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:9c5be145beed71d0410efcda4a6000d8b80c53ec24e805c9e6c8ec241895f567" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:cc2576914856a23ebc2e86a3562b961984a9adfb7873532f1b7f183e41635df6" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:ffba4095c8d4e91cc32f5434eda629dbb107a67b3c7b53a8d73def8be8518c0d" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:bb5edb7936c03d7e24ab9e9cc33f126f0169ea7e9937e0d23271b2e97abd0450" time="0.005" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6490a1d284875ae1d7c0eb58fa4af0bd92bec83d99c08965c676f6323e11a603" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:b2b56f7d789793124c53058cfd24f7dc90188fb27461cf22711965ab9af922b7" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:aa8685e8c79d7e172913655a28783f29ed07156b51ebd621871b985b04820de0" time="0.002" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:539c0229ec11f16808d71a6464e8e671243e4d17c0c69074858298b6cd847e6a" time="0.006" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:e1393cf4ae270b37ca115955c59b22b95fb7cd4ba63c354b8ba3a6212a445c7b" time="0.004" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:de645cd52d6367df142c8ef10af27398bca49e969e9143f7fca382f47ebe5ccd" time="0.009" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:18026649e61b2ee319abb964f9cb216ab19da0ed3d5c4bd400c60ea71457769d" time="0.091" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:4b0c079d59e41a4fdedc4bf674a823beb35efe4bb98c02dbb643542b6d6ce05c" time="0.005" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:851d33eb8e6981e4a10248ff36b3effa9c0712053eff244efdfe3d5b35f74fec" time="4.079" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:9f358d08b0a5445bfb87a782c383b4225f1b06f4d4df09163389bb86d53b708c" time="0.083" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:5d9e28f046b220dca86e633696df76d2ba1981f5a57bffeb57492d31669683f5" time="0.003" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:4f7d426b2e9af8fcda55df588d3119d3d5e9396adf70a0095cf684399849819b" time="0.007" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6765d8b85e2f272936710964223ea64f73c1e07d64e5cd1f3c514417540c7d42" time="0.001" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:9108b2e7534122f96c52b67c2f801225e59ce30c0fbac51a1386704d3e99a371" time="0.000" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:c18348f9a2a7e35357a3179fccd97036b6740e030f0acc0ef2030dafa50edd4c" time="0.004" /><testcase classname="tests.tasks.test_ocor_dev_0050" name="sha256:6d47670f8e46902279c941e2a16f9b813431496622e6ad72043de38dd9ae1cd4" time="0.008" /></testsuite></testsuites>
+END_RAW_FILE regression0050.xml
+RAW_FILE session-teardown.json SHA256 622bc58d87b652425ffb190c8cbdd1e410a7487e2fa90ac56659da91c2b7fcf0
+{
+  "after_counts": {
+    "containers": 25,
+    "networks": 9,
+    "volumes": 370
+  },
+  "before_counts": {
+    "containers": 36,
+    "networks": 10,
+    "volumes": 374
+  },
+  "exit_code": 0,
+  "new_resources_remaining": {
+    "containers": [],
+    "networks": [],
+    "volumes": []
+  },
+  "owned_bootstrap_resources_remaining": {
+    "containers": [],
+    "networks": [],
+    "volumes": []
+  },
+  "raw_sha256": "18ed93c3c26feba73eb51f0c735165d0464dde5f09991c004385d569f5e39c07",
+  "scope": "session-owned OCOR resources only; no non-OCOR resources touched",
+  "status": "PASS"
+}
+
+END_RAW_FILE session-teardown.json
+RAW_FILE toolchain.json SHA256 ceeb45af77b75b61c56a3090d2d4afdf9f472271a313619e2ab73cfcdd8420d4
+{
+  "tools": [
+    {
+      "digest_match": true,
+      "id": "docker",
+      "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/docker",
+      "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+      "version": "Docker version 29.7.2, build a7dcaa6",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "git",
+      "path": "/usr/bin/git",
+      "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+      "version": "git version 2.53.0",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "github-cli",
+      "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/gh",
+      "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+      "version": "gh version 2.99.0 (2026-09-01)\nhttps://github.com/cli/cli/releases/tag/v2.99.0",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "expected_version": "21.0.8+9",
+      "id": "java",
+      "version": "jdk-21.0.8+9",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "node",
+      "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/node",
+      "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+      "version": "v20.20.2",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "python",
+      "path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0033/ocor-runtime/.venv/bin/python",
+      "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+      "version": "Python 3.12.11",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "ruff",
+      "path": "/home/luca/.local/bin/ruff",
+      "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+      "version": "ruff 0.13.1",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "typescript",
+      "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/tsc",
+      "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+      "version": "Version 7.0.2",
+      "version_match": true
+    },
+    {
+      "digest_match": true,
+      "id": "uv",
+      "path": "/home/luca/.ocor-codex/c5resume/toolchain/bin/uv",
+      "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+      "version": "uv 0.12.5 (x86_64-unknown-linux-gnu)",
+      "version_match": true
+    }
+  ]
+}
+
+END_RAW_FILE toolchain.json

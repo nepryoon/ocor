@@ -18,7 +18,7 @@ jobs:
     env:
       OCOR_SCAN_ROOT: .
       OCOR_SCAN_OUTPUT: /tmp/ocor-supply-chain
-      OCOR_SCANNER_VERSION: 1.0.0
+      OCOR_SCANNER_VERSION: 1.1.0
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v4
@@ -98,23 +98,129 @@ jobs:
               "GITHUB_TOKEN": re.compile(r"gh[pousr]_[A-Za-z0-9]{36,}"),
               "PRIVATE_KEY": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
           }
+          # This append-only authority belongs to the workflow checkout, independently of
+          # OCOR_SCAN_ROOT (which the unchanged scanner tests point at temporary fixtures).
+          # No environment override can select a different registry. New entries need PO authority.
+          checkout = next((directory for directory in (Path.cwd(), *Path.cwd().parents) if (directory / ".git").exists()), Path.cwd())
+          registry_path = checkout / "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json"
+          approved_registry = {'decision': 'REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), option 1',
+           'entries': [{'decision': 'REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), option 1',
+                        'element': 1,
+                        'field': 'regression_case_identity',
+                        'file_sha256': '0e37bcb00cd57560cb74342d00b08a04c8fda7abaac0e762a8bab688dfefdee7',
+                        'id': 'REM0034-140',
+                        'index': 140,
+                        'path': 'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-marker.json',
+                        'provenance': {'commit': '6e1c4b050ac610a22673d6f559e424a01705189c',
+                                       'function': 'test_secrets_credentials_tokens_and_hidden_reasoning_inside_allowed_classes_are_refused',
+                                       'path': 'ocor-runtime/tests/tasks/test_ocor_dev_0050.py'},
+                        'rule_id': 'PRIVATE_KEY',
+                        'string_sha256': 'face5b9e01f3f67cd66a05b7f769d7c9794db20c89608f1738d6f8ed045d277a'},
+                       {'decision': 'REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), option 1',
+                        'element': 1,
+                        'field': 'regression_case_identity',
+                        'file_sha256': '0e37bcb00cd57560cb74342d00b08a04c8fda7abaac0e762a8bab688dfefdee7',
+                        'id': 'REM0034-141',
+                        'index': 141,
+                        'path': 'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-marker.json',
+                        'provenance': {'commit': '6e1c4b050ac610a22673d6f559e424a01705189c',
+                                       'function': 'test_secrets_credentials_tokens_and_hidden_reasoning_inside_allowed_classes_are_refused',
+                                       'path': 'ocor-runtime/tests/tasks/test_ocor_dev_0050.py'},
+                        'rule_id': 'AWS_ACCESS_KEY',
+                        'string_sha256': '588b75fc376710d8d592238d317df325417a1734200818620e5dde8e8d51c5bb'},
+                       {'decision': 'REM-0019-SEALED-SYNTHETIC-SECRET-SCANNER (2026-10-15), option 1',
+                        'element': 1,
+                        'field': 'regression_case_identity',
+                        'file_sha256': '0e37bcb00cd57560cb74342d00b08a04c8fda7abaac0e762a8bab688dfefdee7',
+                        'id': 'REM0034-175',
+                        'index': 175,
+                        'path': 'reports/evidence/G5/OCOR-DEV-0050.requalified-rem0019-marker.json',
+                        'provenance': {'commit': '6e1c4b050ac610a22673d6f559e424a01705189c',
+                                       'function': 'test_same_idempotency_key_revalidates_payload_before_returning_receipt',
+                                       'path': 'ocor-runtime/tests/tasks/test_ocor_dev_0050.py'},
+                        'rule_id': 'PRIVATE_KEY',
+                        'string_sha256': 'fe135a59f6261b411db6f713e7249c545a745bb72619c42a5d3ba1068fffea61'}],
+           'schema_version': '1.0'}
           secret_findings: list[dict[str, object]] = []
+          suspended_findings: list[dict[str, object]] = []
+          registry_entries = []
+          try:
+              def unique_object(pairs):
+                  result = {}
+                  for key, value in pairs:
+                      if key in result:
+                          raise ValueError("duplicate JSON key")
+                      result[key] = value
+                  return result
+
+              registry = json.loads(registry_path.read_text(encoding="utf-8"), object_pairs_hook=unique_object)
+              # Structural equality also pins provenance, rules and all approved binding fields.
+              # Canonical bytes reject duplicate/coerced types (e.g. true in place of index 1).
+              if json.dumps(registry, sort_keys=True) != json.dumps(approved_registry, sort_keys=True):
+                  raise ValueError("registry differs from the three PO-authorized entries")
+              registry_entries = registry["entries"]
+          except (OSError, UnicodeDecodeError, ValueError, TypeError):
+              secret_findings.append({"line": 0, "path": "reports/assurance/OCOR-DEV-REM-0034-RCCAD/synthetic-secret-occurrences.json", "rule_id": "SYNTHETIC_REGISTRY_INVALID", "severity": "CRITICAL"})
+
+          # Validate registered authority bytes before lexical selection or UTF-8
+          # decoding can skip a file. This checks only the registered authority
+          # path; candidates(), patterns and the 2 MB selection stay intact.
+          for relative in sorted({entry["path"] for entry in registry_entries}):
+              registered = root / relative
+              expected_digest = next(entry["file_sha256"] for entry in registry_entries if entry["path"] == relative)
+              if registered.is_file() and (registered.stat().st_size > 2_000_000 or hashlib.sha256(registered.read_bytes()).hexdigest() != expected_digest):
+                  secret_findings.append({"line": 0, "path": relative, "rule_id": "SYNTHETIC_RECORD_BINDING_INVALID", "severity": "CRITICAL"})
+
           for path, relative in candidates(text_suffixes):
               try:
                   source = path.read_text(encoding="utf-8")
               except UnicodeDecodeError:
                   continue
+              authorized_spans = []
+              entries = [entry for entry in registry_entries if entry["path"] == relative]
+              if entries:
+                  try:
+                      if hashlib.sha256(path.read_bytes()).hexdigest() != entries[0]["file_sha256"]:
+                          raise ValueError("sealed record digest differs")
+                      document = json.loads(source, object_pairs_hook=unique_object)
+                      # The immutable file hash fixes its structure. Locate the unique raw JSON
+                      # string token whose decoded value equals the field/index/element value;
+                      # only pattern matches wholly inside that exact token can be suspended.
+                      tokens = [(m.start(), m.end(), json.loads(m.group())) for m in re.finditer(r'"(?:[^"\\]|\\.)*"', source)]
+                      for entry in entries:
+                          value = document[entry["field"]][entry["index"]][entry["element"]]
+                          if not isinstance(value, str) or hashlib.sha256(value.encode("utf-8")).hexdigest() != entry["string_sha256"]:
+                              raise ValueError("field/index/string binding differs")
+                          locations = [(start, end) for start, end, token in tokens if token == value]
+                          if len(locations) != 1:
+                              raise ValueError("ambiguous string location")
+                          start, end = locations[0]
+                          matches = list(secret_patterns[entry["rule_id"]].finditer(source, start, end))
+                          if len(matches) != 1:
+                              raise ValueError("authorized occurrence is not unique")
+                          match = matches[0]
+                          authorized_spans.append((entry["rule_id"], match.start(), match.end(), entry["id"]))
+                  except (ValueError, KeyError, IndexError, TypeError):
+                      authorized_spans = []
+                      secret_findings.append({"line": 0, "path": relative, "rule_id": "SYNTHETIC_RECORD_BINDING_INVALID", "severity": "CRITICAL"})
               for rule_id, pattern in secret_patterns.items():
                   for match in pattern.finditer(source):
-                      secret_findings.append(
-                          {
-                              "line": source.count("\n", 0, match.start()) + 1,
-                              "path": relative,
-                              "rule_id": rule_id,
-                              "severity": "CRITICAL",
-                          }
-                      )
+                      finding = {
+                          "line": source.count("\n", 0, match.start()) + 1,
+                          "path": relative,
+                          "rule_id": rule_id,
+                          "severity": "CRITICAL",
+                      }
+                      entry_id = next((ident for rule, start, end, ident in authorized_spans if (rule, start, end) == (rule_id, match.start(), match.end())), None)
+                      if entry_id is None:
+                          secret_findings.append(finding)
+                      else:
+                          suspended_findings.append(finding | {"registry_entry_id": entry_id, "decision": approved_registry["decision"]})
           write("secrets", secret_findings)
+          # Keep the normal report contract and disclose every suspension in both summaries.
+          secret_report = json.loads((output / "secrets.json").read_text(encoding="utf-8"))
+          secret_report["suspended_findings"] = suspended_findings
+          (output / "secrets.json").write_text(json.dumps(secret_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
           lock_path = root / "ocor-runtime/uv.lock"
           dependency_findings: list[dict[str, object]] = []
@@ -200,6 +306,8 @@ jobs:
               "scanner": "ocor-supply-chain",
               "scanner_version": version,
           }
+          if suspended_findings:
+              summary["suspended_findings"] = suspended_findings
           (output / "summary.json").write_text(
               json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
           )

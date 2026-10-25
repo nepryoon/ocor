@@ -1,0 +1,65 @@
+RED before consumer wiring (guard initially required audit on every constructor call, later narrowed to the authorized fixture calls; test-body constructors remain unchanged):
+..                                                           [100%]
+=================================== FAILURES ===================================
+_ ConsumerFixtureScope.test_exact_allowed_fixture_diff_and_required_wiring (path='ocor-runtime/tests/tasks/test_ocor_dev_0054.py') _
+
+self = <test_rem0023_consumer_fixture_scope.ConsumerFixtureScope testMethod=test_exact_allowed_fixture_diff_and_required_wiring>
+
+    def test_exact_allowed_fixture_diff_and_required_wiring(self) -> None:
+        for path in FILES:
+            with self.subTest(path=path):
+>               compare(baseline(path), (ROOT / path).read_text())
+
+reports/tests/test_rem0023_consumer_fixture_scope.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+before = '"""OCOR-DEV-0054: Implement consolidation reflection dissent and correction.\n\nAcceptance (backlog): derived memorie...nce(world.cipher, base.OpenBaoTransitCipher)\n    assert isinstance(world.counting.inner, base.PostgresContentStore)\n'
+after = '"""OCOR-DEV-0054: Implement consolidation reflection dissent and correction.\n\nAcceptance (backlog): derived memorie...nce(world.cipher, base.OpenBaoTransitCipher)\n    assert isinstance(world.counting.inner, base.PostgresContentStore)\n'
+
+    def compare(before: str, after: str) -> dict[str, object]:
+        old, new = ast.parse(before), ast.parse(after)
+        assert protected(old) == protected(new), 'test/assert/pytest.raises/decorator changed'
+        assert dump(old) == dump(StripWiring().visit(copy.deepcopy(new))), 'diff outside explicit audit constructor/fixture wiring'
+        admissions = [n for n in ast.walk(new) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'MemoryAdmissionService']
+>       assert admissions and all(any(k.arg == 'audit' for k in n.keywords) for n in admissions), 'explicit admission audit wiring missing'
+E       AssertionError: explicit admission audit wiring missing
+E       assert ([<ast.Call object at 0x79bc10f73090>, <ast.Call object at 0x79bc10cd7710>] and False)
+E        +  where False = all(<generator object compare.<locals>.<genexpr> at 0x79bc110d5380>)
+
+reports/tests/test_rem0023_consumer_fixture_scope.py:82: AssertionError
+_ ConsumerFixtureScope.test_exact_allowed_fixture_diff_and_required_wiring (path='ocor-runtime/tests/tasks/test_ocor_dev_0055.py') _
+
+self = <test_rem0023_consumer_fixture_scope.ConsumerFixtureScope testMethod=test_exact_allowed_fixture_diff_and_required_wiring>
+
+    def test_exact_allowed_fixture_diff_and_required_wiring(self) -> None:
+        for path in FILES:
+            with self.subTest(path=path):
+>               compare(baseline(path), (ROOT / path).read_text())
+
+reports/tests/test_rem0023_consumer_fixture_scope.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+before = '"""OCOR-DEV-0055: Implement retention expiry revocation forgetting and legal hold.\n\nAcceptance (backlog): policy tr...RetrievalMode.HYBRID, ctx=secret)\n    assert not any(r.startswith("urn:ocor:memory:x:") for r in t52.refs(cleared))\n'
+after = '"""OCOR-DEV-0055: Implement retention expiry revocation forgetting and legal hold.\n\nAcceptance (backlog): policy tr...RetrievalMode.HYBRID, ctx=secret)\n    assert not any(r.startswith("urn:ocor:memory:x:") for r in t52.refs(cleared))\n'
+
+    def compare(before: str, after: str) -> dict[str, object]:
+        old, new = ast.parse(before), ast.parse(after)
+        assert protected(old) == protected(new), 'test/assert/pytest.raises/decorator changed'
+        assert dump(old) == dump(StripWiring().visit(copy.deepcopy(new))), 'diff outside explicit audit constructor/fixture wiring'
+        admissions = [n for n in ast.walk(new) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'MemoryAdmissionService']
+>       assert admissions and all(any(k.arg == 'audit' for k in n.keywords) for n in admissions), 'explicit admission audit wiring missing'
+E       AssertionError: explicit admission audit wiring missing
+E       assert ([<ast.Call object at 0x79bc101c9550>, <ast.Call object at 0x79bc10727210>] and False)
+E        +  where False = all(<generator object compare.<locals>.<genexpr> at 0x79bc11223ae0>)
+
+reports/tests/test_rem0023_consumer_fixture_scope.py:82: AssertionError
+=========================== short test summary info ============================
+SUBFAILED(path='ocor-runtime/tests/tasks/test_ocor_dev_0054.py') reports/tests/test_rem0023_consumer_fixture_scope.py::ConsumerFixtureScope::test_exact_allowed_fixture_diff_and_required_wiring
+SUBFAILED(path='ocor-runtime/tests/tasks/test_ocor_dev_0055.py') reports/tests/test_rem0023_consumer_fixture_scope.py::ConsumerFixtureScope::test_exact_allowed_fixture_diff_and_required_wiring
+2 failed, 2 passed, 10 subtests passed in 1.11s
+
+Diagnostic GREEN attempt: 0055 test-body constructor intentionally untouched; guard restricted to authorized fixture calls.
+
+GREEN final guard and adversarial mutations:
+..                                                           [100%]
+2 passed, 12 subtests passed in 1.85s

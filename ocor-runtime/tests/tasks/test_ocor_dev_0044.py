@@ -15,6 +15,7 @@ slices).
 from __future__ import annotations
 
 import threading
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -27,6 +28,7 @@ from ocor_runtime.c6.safety import (
     SafetyError,
     StopStatus,
 )
+from ocor_runtime.kernel.governance import InMemoryTrustedClock
 
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 
@@ -35,7 +37,7 @@ NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 def identities() -> IdentityRegistry:
     registry = IdentityRegistry()
     for canonical_id in ("urn:ocor:human:a", "urn:ocor:human:b", "urn:ocor:human:c"):
-        registry.register(IdentityRecord(canonical_id=canonical_id))
+        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""}))
     return registry
 
 
@@ -51,7 +53,7 @@ def test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_o
     assert stop.status is StopStatus.STOPPING
     stop.finish_draining(at=NOW)
     assert stop.status is StopStatus.STOPPED
-    stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, at=NOW)
+    stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert stop.status is StopStatus.RESET_PENDING
     event = stop.confirm_reset(at=NOW)
     assert stop.status is StopStatus.NORMAL
@@ -79,11 +81,11 @@ def test_reset_requires_two_distinct_resolved_human_approvers(identities: Identi
     stop.finish_draining(at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:a"), identities=identities, at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:a"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert excinfo.value.reason_code == "RESET_REQUIRES_DUAL_CONTROL"
 
     with pytest.raises(SafetyError) as excinfo:
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"), identities=identities, at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert excinfo.value.reason_code == "RESET_REQUIRES_DUAL_CONTROL"
 
 
@@ -93,7 +95,7 @@ def test_out_of_order_stop_transitions_are_refused(identities: IdentityRegistry)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
         stop.finish_draining(at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, requester="urn:ocor:human:c", at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
         stop.confirm_reset(at=NOW)
 
@@ -145,9 +147,57 @@ def test_a_real_concurrent_stop_race_never_lets_a_stale_epoch_dispatch_through()
 # --- BreakGlassController ----------------------------------------------------
 
 
+# OCOR-DEV-REM-0024 (PO decision REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY, Q2):
+# break-glass now requires a requester, the affected domain, named
+# capabilities, registry-held principal attributes and the boundary's
+# trusted clock instead of a caller instant. Same cases, assertions and
+# reason codes as the sealed OCOR-DEV-0044 suite.
+REQUESTER = "urn:ocor:human:c"
+DOMAIN = "ops"
+CAPABILITIES = frozenset({"restart_service"})
+BREAK_GLASS_ATTRIBUTES = {
+    "urn:ocor:human:a": {"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "SECURITY_DUTY_OFFICER"},
+    "urn:ocor:human:b": {"principal_kind": "HUMAN", "status": "ACTIVE", "roles": f"DOMAIN_OWNER:{DOMAIN}"},
+    REQUESTER: {"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""},
+}
+
+
+class _AuditLog:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    def record(self, event: Mapping[str, object]) -> None:
+        self.events.append(dict(event))
+
+
+class _AlertChannel:
+    def __init__(self) -> None:
+        self.alerts: list[dict[str, object]] = []
+
+    def alert(self, event: Mapping[str, object]) -> None:
+        self.alerts.append(dict(event))
+
+
 @pytest.fixture
-def controller(identities: IdentityRegistry) -> BreakGlassController:
-    return BreakGlassController(identities=identities, stop=EmergencyStopController())
+def break_glass_identities() -> IdentityRegistry:
+    registry = IdentityRegistry()
+    for canonical_id, attributes in BREAK_GLASS_ATTRIBUTES.items():
+        registry.register(IdentityRecord(canonical_id=canonical_id, attributes=attributes))
+    return registry
+
+
+@pytest.fixture
+def clock() -> InMemoryTrustedClock:
+    return InMemoryTrustedClock(NOW)
+
+
+def _break_glass_controller(identities: IdentityRegistry, stop: EmergencyStopController, clock: InMemoryTrustedClock) -> BreakGlassController:
+    return BreakGlassController(identities=identities, stop=stop, clock=clock, audit=_AuditLog(), alerts=_AlertChannel())
+
+
+@pytest.fixture
+def controller(break_glass_identities: IdentityRegistry, clock: InMemoryTrustedClock) -> BreakGlassController:
+    return _break_glass_controller(break_glass_identities, EmergencyStopController(), clock)
 
 
 def test_a_valid_grant_authorizes_an_allowed_capability_with_mandatory_review(controller: BreakGlassController) -> None:
@@ -156,12 +206,14 @@ def test_a_valid_grant_authorizes_an_allowed_capability_with_mandatory_review(co
         reason="production-incident",
         incident_ref="INC-42",
         scope="urn:ocor:target:site-1",
+        requester=REQUESTER,
+        domain=DOMAIN,
+        capabilities=CAPABILITIES,
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-        at=NOW,
         ttl=timedelta(minutes=10),
     )
 
-    use = controller.authorize(grant, capability="restart_service", review_ref="REV-1", at=NOW)
+    use = controller.authorize(grant, capability="restart_service", review_ref="REV-1")
 
     assert use.grant_id == "bg-1"
     assert use.review_ref == "REV-1"
@@ -174,8 +226,10 @@ def test_a_grant_without_two_distinct_approvers_is_refused(controller: BreakGlas
             reason="production-incident",
             incident_ref="INC-42",
             scope="urn:ocor:target:site-1",
+            requester=REQUESTER,
+            domain=DOMAIN,
+            capabilities=CAPABILITIES,
             approvers=("urn:ocor:human:a", "urn:ocor:human:a"),
-            at=NOW,
             ttl=timedelta(minutes=10),
         )
     assert excinfo.value.reason_code == "BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS"
@@ -188,8 +242,10 @@ def test_a_grant_with_an_unresolved_approver_is_refused(controller: BreakGlassCo
             reason="production-incident",
             incident_ref="INC-42",
             scope="urn:ocor:target:site-1",
+            requester=REQUESTER,
+            domain=DOMAIN,
+            capabilities=CAPABILITIES,
             approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"),
-            at=NOW,
             ttl=timedelta(minutes=10),
         )
     assert excinfo.value.reason_code == "BREAK_GLASS_REQUIRES_TWO_DISTINCT_HUMANS"
@@ -202,27 +258,31 @@ def test_a_ttl_beyond_the_maximum_is_refused_at_construction(controller: BreakGl
             reason="production-incident",
             incident_ref="INC-42",
             scope="urn:ocor:target:site-1",
+            requester=REQUESTER,
+            domain=DOMAIN,
+            capabilities=CAPABILITIES,
             approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-            at=NOW,
             ttl=MAX_BREAK_GLASS_TTL + timedelta(minutes=1),
         )
 
 
-def test_an_expired_grant_denies_even_though_it_was_valid_when_first_used(controller: BreakGlassController) -> None:
+def test_an_expired_grant_denies_even_though_it_was_valid_when_first_used(controller: BreakGlassController, clock: InMemoryTrustedClock) -> None:
     grant = controller.grant(
         grant_id="bg-5",
         reason="production-incident",
         incident_ref="INC-42",
         scope="urn:ocor:target:site-1",
+        requester=REQUESTER,
+        domain=DOMAIN,
+        capabilities=CAPABILITIES,
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-        at=NOW,
         ttl=timedelta(minutes=5),
     )
-    controller.authorize(grant, capability="restart_service", review_ref="REV-1", at=NOW)
+    controller.authorize(grant, capability="restart_service", review_ref="REV-1")
 
-    later = NOW + timedelta(minutes=6)
+    clock.advance(timedelta(minutes=6))
     with pytest.raises(SafetyError) as excinfo:
-        controller.authorize(grant, capability="restart_service", review_ref="REV-2", at=later)
+        controller.authorize(grant, capability="restart_service", review_ref="REV-2")
     assert excinfo.value.reason_code == "BREAK_GLASS_EXPIRED"
 
 
@@ -232,14 +292,16 @@ def test_a_revoked_grant_denies_immediately(controller: BreakGlassController) ->
         reason="production-incident",
         incident_ref="INC-42",
         scope="urn:ocor:target:site-1",
+        requester=REQUESTER,
+        domain=DOMAIN,
+        capabilities=CAPABILITIES,
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-        at=NOW,
         ttl=timedelta(minutes=10),
     )
     controller.revoke(grant)
 
     with pytest.raises(SafetyError) as excinfo:
-        controller.authorize(grant, capability="restart_service", review_ref="REV-1", at=NOW)
+        controller.authorize(grant, capability="restart_service", review_ref="REV-1")
     assert excinfo.value.reason_code == "BREAK_GLASS_EXPIRED"
 
 
@@ -250,32 +312,36 @@ def test_forbidden_capabilities_are_never_authorized_by_break_glass(controller: 
         reason="production-incident",
         incident_ref="INC-42",
         scope="urn:ocor:target:site-1",
+        requester=REQUESTER,
+        domain=DOMAIN,
+        capabilities=CAPABILITIES,
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-        at=NOW,
         ttl=timedelta(minutes=10),
     )
 
     with pytest.raises(SafetyError) as excinfo:
-        controller.authorize(grant, capability=capability, review_ref="REV-1", at=NOW)
+        controller.authorize(grant, capability=capability, review_ref="REV-1")
     assert excinfo.value.reason_code == "BREAK_GLASS_FORBIDDEN_CAPABILITY"
 
 
-def test_break_glass_can_never_override_an_active_emergency_stop(identities: IdentityRegistry) -> None:
+def test_break_glass_can_never_override_an_active_emergency_stop(break_glass_identities: IdentityRegistry, clock: InMemoryTrustedClock) -> None:
     stop = EmergencyStopController()
-    controller = BreakGlassController(identities=identities, stop=stop)
+    controller = _break_glass_controller(break_glass_identities, stop, clock)
     grant = controller.grant(
         grant_id="bg-8",
         reason="production-incident",
         incident_ref="INC-42",
         scope="urn:ocor:target:site-1",
+        requester=REQUESTER,
+        domain=DOMAIN,
+        capabilities=CAPABILITIES,
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-        at=NOW,
         ttl=timedelta(minutes=10),
     )
     stop.activate(reason="unrelated-incident", at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
-        controller.authorize(grant, capability="restart_service", review_ref="REV-1", at=NOW)
+        controller.authorize(grant, capability="restart_service", review_ref="REV-1")
     assert excinfo.value.reason_code == "BREAK_GLASS_STOP_ACTIVE"
 
 
@@ -285,13 +351,15 @@ def test_a_use_without_a_review_reference_is_refused(controller: BreakGlassContr
         reason="production-incident",
         incident_ref="INC-42",
         scope="urn:ocor:target:site-1",
+        requester=REQUESTER,
+        domain=DOMAIN,
+        capabilities=CAPABILITIES,
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
-        at=NOW,
         ttl=timedelta(minutes=10),
     )
 
     with pytest.raises(SafetyError) as excinfo:
-        controller.authorize(grant, capability="restart_service", review_ref="", at=NOW)
+        controller.authorize(grant, capability="restart_service", review_ref="")
     assert excinfo.value.reason_code == "BREAK_GLASS_REVIEW_REQUIRED"
 
 

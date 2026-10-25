@@ -1,0 +1,212 @@
+REM-0023: diagnostic checkpoint, NOT candidate qualification
+
+--- red.log ---
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_denial_is_durable_without_any_version_append _______________
+
+live = (World(service=<ocor_runtime.memory.model.MemoryAdmissionService object at 0x7ab2f59557f0>, ledger=<ocor_runtime.memor...t object at 0x7ab2f44e4650>, PosixPath('/tmp/pytest-of-luca/pytest-65/test_denial_is_durable_without0/versions.jsonl'))
+
+    def test_denial_is_durable_without_any_version_append(live: Any) -> None:
+        world, audit, path = live
+        before = path.read_bytes()
+        with pytest.raises(MemoryAdmissionError) as caught:
+            world.admit(base.candidate(memory_kind="LONG_TERM"))
+        assert caught.value.reason_code == "MEMORY_SCHEMA_INVALID"
+        assert path.read_bytes() == before
+        assert JournalMemoryVersionLedger(path).get("mem-1", 1) is None
+        events = audit.events()
+>       assert len(events) == 1, "admitMemory denial missing from the durable audit authority"
+E       AssertionError: admitMemory denial missing from the durable audit authority
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py:66: AssertionError
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py::test_denial_is_durable_without_any_version_append
+1 failed in 0.27s
+
+--- targeted-qualified.log ---
+........................................................................ [ 23%]
+........................................................................ [ 47%]
+........................................................................ [ 71%]
+........................................................................ [ 95%]
+..............                                                           [100%]
+302 passed in 7.12s
+
+--- memory-regression.log ---
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+...................................................................F.... [ 59%]
+......FF..........................................F..................... [ 74%]
+........................................................................ [ 89%]
+.....................................................                    [100%]
+=================================== FAILURES ===================================
+____________ test_a_deadline_elapsing_during_the_job_writes_nothing ____________
+
+live = <test_ocor_dev_0054.CWorld object at 0x7e57323f1820>
+
+    def test_a_deadline_elapsing_during_the_job_writes_nothing(live: CWorld) -> None:
+        records = convoy_sources(live)
+        live.grant.on_call = lambda: live.clock.advance(timedelta(seconds=31))
+        before = len(live.ledger.records())
+>       refused(
+            lambda: live.consolidator().consolidate(consolidation_request(refs_of(records)), binding=r.binding(CTX)),
+            "POLICY_DENIED",
+            "DEADLINE_EXCEEDED",
+        )
+
+ocor-runtime/tests/tasks/test_ocor_dev_0054.py:887: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_a_deadline_elapsing_during_the_job_writes_nothing.<locals>.<lambda> at 0x7e5732ae9a80>
+reason = 'POLICY_DENIED', detail = 'DEADLINE_EXCEEDED'
+
+    def refused(action: Any, reason: str, detail: str) -> MemoryAdmissionError:
+        with pytest.raises(MemoryAdmissionError) as caught:
+            action()
+>       assert (caught.value.reason_code, caught.value.detail_code) == (reason, detail), str(caught.value)
+E       AssertionError: CONTROL_PLANE_UNAVAILABLE/AUDIT_UNAVAILABLE: admission denial could not be audited
+E       assert ('CONTROL_PLA..._UNAVAILABLE') == ('POLICY_DENI...INE_EXCEEDED')
+E         
+E         At index 0 diff: 'CONTROL_PLANE_UNAVAILABLE' != 'POLICY_DENIED'
+E         Use -v to get more diff
+
+ocor-runtime/tests/tasks/test_ocor_dev_0054.py:325: AssertionError
+_ test_derived_memory_and_dissent_cannot_be_admitted_or_rewritten_around_the_service _
+
+live = <test_ocor_dev_0054.CWorld object at 0x7e572f26c9b0>
+
+    def test_derived_memory_and_dissent_cannot_be_admitted_or_rewritten_around_the_service(live: CWorld) -> None:
+        records, outcome = _consolidated(live)
+        summary = live.item(outcome.derived_ref).item
+        dissent = live.item(outcome.dissent_refs[0]).item
+        forged = b'{"statements": "status open, no conflict"}'
+    
+        def next_version(item: GovernedMemoryItem, payload: bytes, **changes: Any) -> dict[str, Any]:
+            mapping = item.to_mapping()
+            mapping.update(
+                memory_version=item.memory_version + 1,
+                supersedes_ref=item.version_ref,
+                correction_of_ref=item.version_ref,
+                content_digest=d(payload),
+                created_at=format_utc_timestamp(live.clock.now()),
+                governed_context_digest=CTX.digest(),
+            )
+            mapping.update(changes)
+            return mapping
+    
+        # A correction of the summary through plain admission (dissent erasure).
+>       exc = refused(lambda: _direct(live, next_version(summary, forged), forged, "op-direct-1"), "POLICY_DENIED", "ADMISSION_DENIED")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ocor-runtime/tests/tasks/test_ocor_dev_0054.py:1210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_derived_memory_and_dissent_cannot_be_admitted_or_rewritten_around_the_service.<locals>.<lambda> at 0x7e57307f68e0>
+reason = 'POLICY_DENIED', detail = 'ADMISSION_DENIED'
+
+    def refused(action: Any, reason: str, detail: str) -> MemoryAdmissionError:
+        with pytest.raises(MemoryAdmissionError) as caught:
+            action()
+>       assert (caught.value.reason_code, caught.value.detail_code) == (reason, detail), str(caught.value)
+E       AssertionError: CONTROL_PLANE_UNAVAILABLE/AUDIT_UNAVAILABLE: admission denial could not be audited
+E       assert ('CONTROL_PLA..._UNAVAILABLE') == ('POLICY_DENI...SSION_DENIED')
+E         
+E         At index 0 diff: 'CONTROL_PLANE_UNAVAILABLE' != 'POLICY_DENIED'
+E         Use -v to get more diff
+
+ocor-runtime/tests/tasks/test_ocor_dev_0054.py:325: AssertionError
+____ test_a_directly_admitted_dissent_cannot_be_rewritten_by_a_new_version _____
+
+live = <test_ocor_dev_0054.CWorld object at 0x7e573073bf20>
+
+    def test_a_directly_admitted_dissent_cannot_be_rewritten_by_a_new_version(live: CWorld) -> None:
+        text = claims(("bridge-7", "status", "closed"))
+        dissent = live.admit(
+            "challenger-dissent-1", text, vector=False, bindings=PROJECT, kind="DISSENT",
+            source_kind="HUMAN_INPUT", taint=("HUMAN_SUPPLIED",), content_schema="urn:ocor:memory-content:dissent:1.0",
+        )
+        forged = claims(("bridge-7", "status", "open")).encode()
+    
+        def next_version(payload: bytes, **changes: Any) -> dict[str, Any]:
+            mapping = dissent.item.to_mapping()
+            mapping.update(
+                memory_version=2,
+                supersedes_ref=dissent.item.version_ref,
+                content_digest=d(payload),
+                created_at=format_utc_timestamp(live.clock.now()),
+            )
+            mapping.update(changes)
+            return mapping
+    
+>       refused(lambda: _direct(live, next_version(forged), forged, "op-dissent-rewrite"), "POLICY_DENIED", "ADMISSION_DENIED")
+
+ocor-runtime/tests/tasks/test_ocor_dev_0054.py:1255: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+action = <function test_a_directly_admitted_dissent_cannot_be_rewritten_by_a_new_version.<locals>.<lambda> at 0x7e573072c4a0>
+reason = 'POLICY_DENIED', detail = 'ADMISSION_DENIED'
+
+    def refused(action: Any, reason: str, detail: str) -> MemoryAdmissionError:
+        with pytest.raises(MemoryAdmissionError) as caught:
+            action()
+>       assert (caught.value.reason_code, caught.value.detail_code) == (reason, detail), str(caught.value)
+E       AssertionError: CONTROL_PLANE_UNAVAILABLE/AUDIT_UNAVAILABLE: admission denial could not be audited
+E       assert ('CONTROL_PLA..._UNAVAILABLE') == ('POLICY_DENI...SSION_DENIED')
+E         
+E         At index 0 diff: 'CONTROL_PLANE_UNAVAILABLE' != 'POLICY_DENIED'
+E         Use -v to get more diff
+
+ocor-runtime/tests/tasks/test_ocor_dev_0054.py:325: AssertionError
+______ test_the_admission_guard_refuses_a_new_version_on_an_excluded_head ______
+
+    def test_the_admission_guard_refuses_a_new_version_on_an_excluded_head() -> None:
+        world = unit_world()
+        record = world.admit("item", TEXT)
+        world.move("item", "REVOKED")
+        with pytest.raises(MemoryAdmissionError) as caught:
+            world.admit("item", TEXT + " corrected", version=3)
+>       assert caught.value.reason_code == "POLICY_DENIED"
+E       AssertionError: assert 'CONTROL_PLANE_UNAVAILABLE' == 'POLICY_DENIED'
+E         
+E         - POLICY_DENIED
+E         + CONTROL_PLANE_UNAVAILABLE
+
+ocor-runtime/tests/tasks/test_ocor_dev_0055.py:534: AssertionError
+=============================== warnings summary ===============================
+tests/tasks/test_ocor_dev_rem_0020.py::test_f2_policy_denied_items_cost_no_more_index_work_than_before[0]
+tests/tasks/test_ocor_dev_rem_0020.py::test_f2_policy_denied_items_cost_no_more_index_work_than_before[40]
+tests/tasks/test_ocor_dev_rem_0020.py::test_f2_policy_denied_items_cost_no_more_index_work_than_before[130]
+  tests/tasks/test_ocor_dev_rem_0020.py:546: PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0054.py::test_a_deadline_elapsing_during_the_job_writes_nothing
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0054.py::test_derived_memory_and_dissent_cannot_be_admitted_or_rewritten_around_the_service
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0054.py::test_a_directly_admitted_dissent_cannot_be_rewritten_by_a_new_version
+FAILED ocor-runtime/tests/tasks/test_ocor_dev_0055.py::test_the_admission_guard_refuses_a_new_version_on_an_excluded_head
+4 failed, 481 passed, 3 warnings in 227.02s (0:03:47)
+
+--- reports-portfolio.log ---
+............s.................................s......................... [ 24%]
+........................................................................ [ 49%]
+................................................................... [ 72%]
+................................. [ 83%]
+................................................                         [100%]
+290 passed, 2 skipped, 44 subtests passed in 33.70s
+
+--- reports-portfolio-qualified.log ---
+........................................................................ [ 24%]
+........................................................................ [ 49%]
+................................................................... [ 72%]
+................................. [ 83%]
+................................................                         [100%]
+292 passed, 44 subtests passed in 33.78s
+
+--- session-teardown.log ---
+{
+  "status": "PASS",
+  "stderr": "rminusdb-1 Removing \n Container ocor-bootstrap-terminusdb-1 Removed \n Container ocor-bootstrap-postgresql-1 Stopped \n Container ocor-bootstrap-postgresql-1 Removing \n Container ocor-bootstrap-postgresql-1 Removed \n Container ocor-bootstrap-spire-server-1 Stopped \n Container ocor-bootstrap-spire-server-1 Removing \n Container ocor-bootstrap-spire-server-1 Removed \n Container ocor-bootstrap-fuseki-1 Stopped \n Container ocor-bootstrap-fuseki-1 Removing \n Container ocor-bootstrap-fuseki-1 Removed \n Container ocor-bootstrap-openbao-1 Stopped \n Container ocor-bootstrap-openbao-1 Removing \n Container ocor-bootstrap-openbao-1 Removed \n Container ocor-bootstrap-kafka-1 Stopped \n Container ocor-bootstrap-kafka-1 Removing \n Container ocor-bootstrap-kafka-1 Removed \n Container ocor-bootstrap-keycloak-1 Stopped \n Container ocor-bootstrap-keycloak-1 Removing \n Container ocor-bootstrap-keycloak-1 Removed \n Network ocor-bootstrap_ocor-bootstrap Removing \n Network ocor-bootstrap_ocor-bootstrap Removed \n"
+}

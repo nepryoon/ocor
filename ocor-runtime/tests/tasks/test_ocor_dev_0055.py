@@ -46,6 +46,7 @@ from typing import Any
 
 import psycopg
 import pytest
+import test_ocor_dev_rem_0023 as denial
 import test_ocor_dev_0051 as base
 import test_ocor_dev_0052 as t52
 import test_ocor_dev_0053 as t53
@@ -75,6 +76,7 @@ from ocor_runtime.memory.model import (
     LifecycleStatus,
     MemoryAdmissionError,
     MemoryAdmissionService,
+    MemoryAdmissionAuditSink,
     MemoryPolicyDecision,
 )
 from ocor_runtime.memory.retrieval import MemoryRetrievalError, MemorySearchResponse, RetrievalMode
@@ -169,11 +171,13 @@ class FailingParticipant:
 class World(t53.World):
     """0053 world (real admission, embedding coordinator, retrieval) plus the lifecycle."""
 
-    def __init__(self, *, tombstones: Any | None = None, replica: FailingParticipant | None = None, **kwargs: Any) -> None:
+    def __init__(self, *, admission_audit: MemoryAdmissionAuditSink, tombstones: Any | None = None, replica: FailingParticipant | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        self.admission_audit = admission_audit
         self.admission = MemoryAdmissionService(
             ledger=self.ledger,
             resolver=t52.Resolver(),
+            audit=admission_audit,
             policy=LifecycleGuardPolicy(base.Policy(), ledger=self.ledger),
             markings=self.markings,
             clock=self.clock,
@@ -282,6 +286,7 @@ class World(t53.World):
 
 def unit_world(**kwargs: Any) -> World:
     return World(
+        admission_audit=t52.Audit(),
         metadata=base.MemMetadata(),
         content=base.MemContent(),
         lexical=base.MemIndex(),
@@ -699,6 +704,7 @@ class Backends:
             self.schemas.append(schema)
         postgres = base.PostgresStores(self.dsn, schema)
         return World(
+            admission_audit=denial.SchemaPostgresAudit(self.dsn, schema),
             metadata=postgres,
             content=base.PostgresContentStore(postgres),
             lexical=base.PostgresLexicalIndex(postgres),

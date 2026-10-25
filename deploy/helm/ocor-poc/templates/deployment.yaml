@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ops
+  labels:
+    {{- include "ocor-poc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ops
+spec:
+  replicas: {{ .Values.operational.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: ops
+  template:
+    metadata:
+      labels:
+        {{- include "ocor-poc.labels" . | nindent 8 }}
+        app.kubernetes.io/component: ops
+      annotations:
+        ocor.io/profile-digest: {{ .Values.ocor | toJson | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-ops
+      automountServiceAccountToken: false
+      {{- include "ocor-poc.podSecurity" . | nindent 6 }}
+      containers:
+        - name: ops
+          image: {{ include "ocor-poc.image" (list . "ops") }}
+          command: [python3, /opt/ocor/ocor_ops_agent.py, serve, --profile, /etc/ocor/profile.json,
+                    --listen, "0.0.0.0:8080", --vault, /vault]
+          ports:
+            - {name: http, containerPort: 8080}
+          env:
+            {{- include "ocor-poc.opsEnv" . | nindent 12 }}
+          {{- include "ocor-poc.containerSecurity" . | nindent 10 }}
+          livenessProbe:
+            httpGet: {path: /livez, port: http}
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            failureThreshold: 1
+          volumeMounts:
+            - {name: agent, mountPath: /opt/ocor/ocor_ops_agent.py, subPath: ocor_ops_agent.py, readOnly: true}
+            - {name: agent, mountPath: /etc/ocor/profile.json, subPath: profile.json, readOnly: true}
+            - {name: vault, mountPath: /vault, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: agent
+          configMap: {name: {{ .Release.Name }}-ops}
+        - name: vault
+          persistentVolumeClaim: {claimName: {{ include "ocor-poc.vault" . }}, readOnly: true}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-ops
+  labels:
+    {{- include "ocor-poc.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: ops
+  ports:
+    - {name: http, port: 8080, targetPort: http}

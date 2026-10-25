@@ -1,0 +1,372 @@
+{
+  "conditional_branches": [
+    {
+      "condition": "record is None",
+      "function": "_active_human_roles",
+      "line": 124,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "attributes.get('principal_kind') != 'HUMAN' or attributes.get('status') != 'ACTIVE'",
+      "function": "_active_human_roles",
+      "line": 127,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "not isinstance(raw, str)",
+      "function": "_active_human_roles",
+      "line": 130,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "tokens != sorted(set(tokens)) or any((_ROLE_TOKEN.fullmatch(token) is None for token in tokens))",
+      "function": "_active_human_roles",
+      "line": 133,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "policy.excluded_principal_id",
+      "function": "validate",
+      "line": 157,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "len(valid_principals) < policy.minimum_signatories",
+      "function": "validate",
+      "line": 182,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "missing_roles",
+      "function": "validate",
+      "line": 206,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "control_check is not None",
+      "function": "validate",
+      "line": 209,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "signature.action_id != action_id",
+      "function": "validate",
+      "line": 165,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "principal in excluded",
+      "function": "validate",
+      "line": 167,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "roles is None or signature.role not in roles",
+      "function": "validate",
+      "line": 170,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "signature.scope != scope",
+      "function": "validate",
+      "line": 172,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "not timedelta(0) <= instant - signature.signed_at < policy.ttl",
+      "function": "validate",
+      "line": 174,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "signature.role in policy.required_roles",
+      "function": "validate",
+      "line": 179,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "principal in visited",
+      "function": "validate",
+      "line": 194,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "previous is None or assign(previous, visited)",
+      "function": "validate",
+      "line": 198,
+      "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+    },
+    {
+      "condition": "len(approvers) != 2 or len(distinct) != 2 or (not requester) or (requester in distinct)",
+      "function": "request_reset",
+      "line": 171,
+      "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+    },
+    {
+      "condition": "self._status is not StopStatus.STOPPED",
+      "function": "request_reset",
+      "line": 174,
+      "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+    },
+    {
+      "condition": "_active_human_roles(identities.get(principal)) is None",
+      "function": "request_reset",
+      "line": 179,
+      "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+    }
+  ],
+  "conformance_matrix": [
+    {
+      "negative": "test_invalid_registry_approver_cannot_approve; test_invalid_registry_approver_cannot_reset",
+      "positive": "test_valid_registry_quorum_is_accepted",
+      "rule": "registry resolved, HUMAN, ACTIVE, scalar ordered unique roles"
+    },
+    {
+      "negative": "test_claimed_role_is_not_registry_authority",
+      "positive": "test_valid_registry_quorum_is_accepted",
+      "rule": "declared role held in registry"
+    },
+    {
+      "negative": "test_signature_binding_and_separation_are_required",
+      "positive": "test_success_checks_control_and_preserves_registry_records",
+      "rule": "proposal/scope binding, requester and explicit exclusions"
+    },
+    {
+      "negative": "test_signature_window_rejects_future_exact_expiry_and_expired; test_clock_advancement_cannot_be_undone_by_a_caller_timestamp",
+      "positive": "test_clock_advancement_cannot_be_undone_by_a_caller_timestamp",
+      "rule": "boundary time; future, exact expiry, stale signature"
+    },
+    {
+      "negative": "test_authority_is_reread_after_prior_success",
+      "positive": "test_authority_is_reread_after_prior_success",
+      "rule": "fresh identity resolution on use"
+    },
+    {
+      "negative": "0043::test_the_same_real_human_signing_both_required_roles_is_not_counted_twice; 0043::test_a_third_distinct_signatory_does_not_rescue_a_missing_required_role",
+      "positive": "0043::test_a_quorum_covering_both_required_roles_by_distinct_humans_resolves_approved",
+      "rule": "distinct role holders and quorum"
+    },
+    {
+      "negative": "0043::test_a_real_bounded_probe_against_an_unreachable_control_fails_closed_not_permit",
+      "positive": "test_success_checks_control_and_preserves_registry_records",
+      "rule": "control availability"
+    },
+    {
+      "negative": "test_reset_rejects_bad_quorum_without_changing_state",
+      "positive": "test_reset_needs_no_invented_fixed_role_and_never_writes_registry",
+      "rule": "reset dual control, requester separation and unchanged stopped state on refusal"
+    },
+    {
+      "negative": "test_reset_timestamp_comes_from_boundary_not_request",
+      "positive": "test_reset_timestamp_comes_from_boundary_not_request",
+      "rule": "reset local UTC timestamp independent of caller"
+    },
+    {
+      "negative": "0044::test_out_of_order_stop_transitions_are_refused",
+      "positive": "0044::test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_one",
+      "rule": "reset FSM/epoch"
+    },
+    {
+      "negative": "test_requests_cannot_supply_or_set_authority_attributes",
+      "positive": "test_success_checks_control_and_preserves_registry_records",
+      "rule": "requests cannot set identity attributes"
+    },
+    {
+      "negative": "test_invalid_clock_is_fail_closed",
+      "positive": "test_valid_registry_quorum_is_accepted",
+      "rule": "clock unavailable"
+    },
+    {
+      "negative": "test_real_dual_role_holder_still_cannot_fill_two_role_slots",
+      "positive": "test_scoped_role_token_preserves_the_approved_q1_domain_syntax",
+      "rule": "genuine dual-role holder cannot occupy both role slots; approved scoped tokens retained"
+    },
+    {
+      "negative": "test_real_dual_role_holder_still_cannot_fill_two_role_slots (second human OBSERVER, genuinely insufficient role coverage)",
+      "positive": "test_valid_distinct_role_assignment_is_independent_of_signature_order [False, True]",
+      "rule": "distinct-role assignment independent of signature order"
+    },
+    {
+      "negative": "test_control_check_cannot_leave_a_stale_approval [clock,registry]",
+      "positive": "test_control_check_revalidation_retains_a_generator_and_calls_control_once",
+      "rule": "fresh authority and clock after optional blocking control"
+    }
+  ],
+  "consumer_inventory": {
+    "EmergencyStopController.request_reset": [
+      "test_ocor_dev_0044.py"
+    ],
+    "HumanGateCoordinator": [
+      "test_ocor_dev_0043.py"
+    ],
+    "live_poc_wiring": false,
+    "method": "rg -n HumanGateCoordinator|request_reset over ocor-runtime, reports/tests and scripts"
+  },
+  "control_revalidation_tdd": {
+    "deselected": 51,
+    "failed": 2,
+    "passed": 1,
+    "red_log_sha256": "403f2fce69ac98e70228af4d5e457b3211c93f00a4244998f9b2fae1b542117c",
+    "scope": "Diagnostic targeted RED only; optional control can expire signatures or revoke identity. Final validation freezes iterables, re-reads authority/time and invokes control exactly once."
+  },
+  "integration_alignment": {
+    "base_sha": "7eb83eefebcdff0f7ebf6bb9b9de6de8f7430ef5",
+    "changed_since_review": "reports/tests/test_qualifying_campaign_guard.py | 234 ++++++++++++++++++++++++\n scripts/observe_kind_teardown.py                |   5 +-\n scripts/validate_ocor_development_plan.py       |  25 +++\n 3 files changed, 263 insertions(+), 1 deletion(-)",
+    "execution_driver_sha256": {
+      "campaign.py": "3f85de914ae81c2028a6ca47ccdae63be21f744eafa40eac6cd3dcc2ed21501c",
+      "exact_union.py": "5dafa0dbbe014efe63879d6ca8468da040c4c83eaaf9b04d151bae9dc2adad0d",
+      "preflight.py": "71e52d884625af6c2f29f27153508f417d807ca8fa5ae2dad31ef4a269108fd1",
+      "targeted.py": "4377ec4ad34eabc85ac84a954a639c87b3d8f4b9e9d1aab20ea597e4cc3f2098"
+    },
+    "prior_go_coverage": "Historical HEAD only; no seal or current-head GO inferred. New full and requalification cover merged main harness.",
+    "prior_go_request_id": "OCOR-DEV-REM-0028-89745cf4b962-0",
+    "prior_go_sha256": "8b9b77976a882a9999f1e28632286ac5d2ff75664326297e35eb9b20308a0e10",
+    "reason": "Main integration includes accepted REM0019 kind-observer change and allowlist additions. New full required: alignment is not metadata-only. Historical REM0028 GO preserved; new exact-head external verification required.",
+    "reviewed_head": "89745cf4b962898e1d5ec20561e6a9a912406262",
+    "source_head": "0af64b5c492f7f4572d2fc11df06fe2793e964a1",
+    "status": "NEW_FULL_QUALIFIED_REQUIRES_NEW_EXACT_HEAD_VERDICT",
+    "trees": {
+      ".github": "3632913a3d6ba6ca9ff4f9cbdddd70fd238e796a",
+      "deploy": "09932afe9520e9b5a5fbaf42e150bf19cd50e909",
+      "infra": "7aca9c88936775231146c60f5781a5c33fd93ebf",
+      "inputs": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime": "183bb4b99843e79e46f504079546fa6d44254b55",
+      "reports/tests": "f44ebaad1169a45041108701d1f716a4b62011a4",
+      "scripts": "c509b69cfd962bb4cc5b12140b31aa99a06ff7c6"
+    }
+  },
+  "normative_refs": [
+    "ADD v1.3 5.4/5.5",
+    "LLD v1.1 1.1/4.1/4.3",
+    "PO Q1/Q2/Q3 2026-10-13"
+  ],
+  "q1_convention": "principal_kind HUMAN|WORKLOAD; status ACTIVE only; roles scalar sorted unique tokens separated by one space, read only from IdentityRegistry. PoC interpretation; identity-record schema and c2_identity.py unchanged.",
+  "red": {
+    "failed": 26,
+    "limitations": "RED suite initially used legacy constructor and reset signature; GREEN changes only these setup inputs to the new boundary clock/requester API. Additional regression cases added after RED are not relabelled as RED.",
+    "passed": 1,
+    "raw_sha256": "4b0f544ded00646ccf2ebb32e689998240db2eeded53675453a02be27cef1df8",
+    "source": "9b4d3be8ec5bd785b02072a99037dd801b53d9a5"
+  },
+  "reset_normative_disposition": "ADD 5.4/5.5 and LLD4.3 require two approvers and a new epoch, without fixed role names or signature TTL for reset. No break-glass Security Duty Officer/Domain Owner quorum or 15-minute TTL is imposed on reset. It requires two registry-active humans, distinct and separate from requester. Timestamp uses the boundary system UTC clock; compatibility at is ignored.",
+  "residual_risks": [
+    {
+      "description": "IdentityRegistry first writer unauthenticated: this change reads registry authority but does not secure provisioning. PO REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY 2026-10-14; not assigned to FGM16/REM27/REM28.",
+      "id": "REM-0031",
+      "status": "OPEN"
+    },
+    {
+      "description": "GateSignature integrity digest is content-addressed, not an asymmetric signature or authenticated transport. This retained in-memory component is not the live PoC authority boundary; no production or runtime-conformance claim.",
+      "status": "OPEN_EXISTING_COMPONENT_LIMIT"
+    }
+  ],
+  "resume": {
+    "checkpoint": "19747383d3d570b2ffbb503a1878c49d140b8032",
+    "date": "2026-10-20",
+    "main_baseline": "a2748a224fe0a52739777e32840f80068af00b05",
+    "method": "non-destructive merge; inherited RED logs retained by digest; fresh qualification on resumed source HEAD; no previous campaign counts transferred",
+    "qualified_source_head": "d7369f7c5ef0c0c85c4a9ad4ca4b4170055fb8b2",
+    "scope_proof_sha256": "4377695fc147b2d14a59561e244cb99220ebd65c8f94c87ffe34abc259b925f5"
+  },
+  "role_matching_tdd": {
+    "disposition": "First-fit inherited algorithm rejected a feasible role assignment; augmenting matching enforces distinct humans without rejecting order-equivalent valid quorums.",
+    "failed": 1,
+    "passed": 2,
+    "red_log_sha256": "5a475c96253dc013ffbb277a3215e44dbeeae1c865f84ef701349408dc8a90b1",
+    "selection_status": "Targeted RED only,47 deselected not qualifying; final full suite selects all cases."
+  },
+  "roles": {
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16)",
+    "historical_requalification_lineage": [
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "scope": "historical0044/0050 records and REM0024 safety baseline"
+      }
+    ],
+    "implementers": [
+      {
+        "agent": "Codex",
+        "provider": "OpenAI",
+        "scope": "REM0028 implementation and integration qualification; non-destructive merge of main"
+      },
+      {
+        "agent": "Claude Code",
+        "provider": "Anthropic",
+        "scope": "Inherited REM0019 cycle3 kind observer merged from approved main; historical baseline/requalification lineage; no new REM0028 behavior authored in this iteration"
+      }
+    ],
+    "verifier_requested": {
+      "model": "Grok 4.7",
+      "process": "Cursor CLI; external loop only",
+      "provider": "xAI"
+    },
+    "verifier_started_by_implementer": false
+  },
+  "schema_version": "1.0",
+  "scope_proof": {
+    "0043": {
+      "assertions_identical": true,
+      "one_to_one_case_mapping": {
+        "test_a_failing_control_check_blocks_approval_even_though_quorum_and_roles_are_satisfied": "test_a_failing_control_check_blocks_approval_even_though_quorum_and_roles_are_satisfied",
+        "test_a_quorum_covering_both_required_roles_by_distinct_humans_resolves_approved": "test_a_quorum_covering_both_required_roles_by_distinct_humans_resolves_approved",
+        "test_a_real_bounded_probe_against_an_unreachable_control_fails_closed_not_permit": "test_a_real_bounded_probe_against_an_unreachable_control_fails_closed_not_permit",
+        "test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine": "test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine",
+        "test_a_scope_mismatched_signature_denies": "test_a_scope_mismatched_signature_denies",
+        "test_a_third_distinct_signatory_does_not_rescue_a_missing_required_role": "test_a_third_distinct_signatory_does_not_rescue_a_missing_required_role",
+        "test_an_expired_signature_denies_even_though_it_was_once_valid": "test_an_expired_signature_denies_even_though_it_was_once_valid",
+        "test_an_unresolved_signatory_is_never_counted": "test_an_unresolved_signatory_is_never_counted",
+        "test_dual_control_a_resolution_that_was_valid_can_be_denied_again_at_dispatch_time": "test_dual_control_a_resolution_that_was_valid_can_be_denied_again_at_dispatch_time",
+        "test_insufficient_distinct_signatories_fails_quorum": "test_insufficient_distinct_signatories_fails_quorum",
+        "test_integrity_digest_is_deterministic_and_changes_with_any_semantic_field": "test_integrity_digest_is_deterministic_and_changes_with_any_semantic_field",
+        "test_the_proposer_own_signature_is_never_counted_even_if_otherwise_valid": "test_the_proposer_own_signature_is_never_counted_even_if_otherwise_valid",
+        "test_the_same_real_human_signing_both_required_roles_is_not_counted_twice": "test_the_same_real_human_signing_both_required_roles_is_not_counted_twice"
+      },
+      "scope": "Names and assertion AST identical; authorized clock/requester/attribute setup inputs adapted, not byte-identical function bodies.",
+      "test_function_names_identical": true
+    },
+    "0044": {
+      "assertions_identical": true,
+      "one_to_one_case_mapping": {
+        "test_a_command_never_marked_ambiguous_may_auto_retry": "test_a_command_never_marked_ambiguous_may_auto_retry",
+        "test_a_command_with_no_reconciliation_record_cannot_be_queried_or_resolved": "test_a_command_with_no_reconciliation_record_cannot_be_queried_or_resolved",
+        "test_a_grant_with_an_unresolved_approver_is_refused": "test_a_grant_with_an_unresolved_approver_is_refused",
+        "test_a_grant_without_two_distinct_approvers_is_refused": "test_a_grant_without_two_distinct_approvers_is_refused",
+        "test_a_missed_reconciliation_deadline_escalates_to_indeterminate_and_preserves_the_retry_block": "test_a_missed_reconciliation_deadline_escalates_to_indeterminate_and_preserves_the_retry_block",
+        "test_a_real_concurrent_stop_race_never_lets_a_stale_epoch_dispatch_through": "test_a_real_concurrent_stop_race_never_lets_a_stale_epoch_dispatch_through",
+        "test_a_revoked_grant_denies_immediately": "test_a_revoked_grant_denies_immediately",
+        "test_a_ttl_beyond_the_maximum_is_refused_at_construction": "test_a_ttl_beyond_the_maximum_is_refused_at_construction",
+        "test_a_use_without_a_review_reference_is_refused": "test_a_use_without_a_review_reference_is_refused",
+        "test_a_valid_grant_authorizes_an_allowed_capability_with_mandatory_review": "test_a_valid_grant_authorizes_an_allowed_capability_with_mandatory_review",
+        "test_an_already_resolved_command_cannot_be_resolved_again": "test_an_already_resolved_command_cannot_be_resolved_again",
+        "test_an_ambiguous_effect_with_idempotency_proven_may_auto_retry": "test_an_ambiguous_effect_with_idempotency_proven_may_auto_retry",
+        "test_an_ambiguous_non_idempotent_effect_cannot_auto_retry": "test_an_ambiguous_non_idempotent_effect_cannot_auto_retry",
+        "test_an_expired_grant_denies_even_though_it_was_valid_when_first_used": "test_an_expired_grant_denies_even_though_it_was_valid_when_first_used",
+        "test_break_glass_can_never_override_an_active_emergency_stop": "test_break_glass_can_never_override_an_active_emergency_stop",
+        "test_dispatch_is_blocked_while_stopping_even_at_the_current_epoch": "test_dispatch_is_blocked_while_stopping_even_at_the_current_epoch",
+        "test_evidence_of_effect_resolves_an_ambiguous_execution_to_confirmed": "test_evidence_of_effect_resolves_an_ambiguous_execution_to_confirmed",
+        "test_evidence_of_no_effect_resolves_an_ambiguous_execution_to_failed": "test_evidence_of_no_effect_resolves_an_ambiguous_execution_to_failed",
+        "test_evidence_resolves_an_ambiguous_compensation_to_compensated_or_compensation_failed": "test_evidence_resolves_an_ambiguous_compensation_to_compensated_or_compensation_failed",
+        "test_forbidden_capabilities_are_never_authorized_by_break_glass": "test_forbidden_capabilities_are_never_authorized_by_break_glass",
+        "test_no_evidence_before_the_deadline_makes_no_inference": "test_no_evidence_before_the_deadline_makes_no_inference",
+        "test_out_of_order_stop_transitions_are_refused": "test_out_of_order_stop_transitions_are_refused",
+        "test_reset_requires_two_distinct_resolved_human_approvers": "test_reset_requires_two_distinct_resolved_human_approvers",
+        "test_stop_precedence_combined_with_reconciliation_end_to_end": "test_stop_precedence_combined_with_reconciliation_end_to_end",
+        "test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_one": "test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_one"
+      },
+      "scope": "Names and assertion AST identical; authorized clock/requester/attribute setup inputs adapted, not byte-identical function bodies.",
+      "test_function_names_identical": true
+    },
+    "normative_refs": [
+      "ADD v1.3 5.4/5.5",
+      "LLD v1.1 1.1/4.1/4.3",
+      "PO Q1/Q2/Q3 2026-10-13"
+    ],
+    "safety_other_code_unchanged": true,
+    "source_head": "07c59762fd13078ccc2e480c0eb1e367fb8a3afc"
+  },
+  "source_head": "4ce8a5cb8f03b885d31ddb2998b17644ac10f956",
+  "source_head_role": "Earlier source reference; code and audit final source commit are bound by the final evidence record. Conditional branch inventory below describes final code.",
+  "task_id": "OCOR-DEV-REM-0028",
+  "time_disposition": "HumanGate boundary clock injected at construction, not per request. Future signatures and exact-expiry signatures refuse. GateSignature.role selects an act of signing and must be independently present in registry roles; it never grants the role."
+}
