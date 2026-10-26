@@ -62,3 +62,50 @@ anche reset e smontaggio).
 - `E1=0`, `E2=0`, nessun requisito `Verified`; runtime conformance `NOT_ESTABLISHED`, PoC-GO e Production
   readiness `NO-GO`. Temporal, SeaweedFS e TerminusDB restano `Candidate Implementation` fino alla qualifica
   di `OCOR-DEV-0060`.
+
+## Riparazione 1 (ciclo 1)
+
+- **Status**: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION`, ciclo 1. Record distinti
+  `repair-1.json`/`.log` e riqualifiche `OCOR-DEV-0005`, `OCOR-DEV-0050` e `OCOR-DEV-0082`
+  `.requalified-rem0038-repair1`, con `supersedes` esplicito. I record sigillati di questo
+  change set al commit `03edc31a8ced808259290bb055b807f2d97af562` (sopra compreso questo file fino a
+  questa sezione) restano immutati; il GO `OCOR-DEV-REM-0038-dc5a404b350f-0` non si riusa.
+- **Causa**: CI sull'HEAD esatto sigillato (PR #357), due fallimenti reali, zero rerun, nessun merge:
+  `tooling-policy` (run `40375838054`), il passo di rendering del Compose non aveva i segnaposto di
+  `OCOR_LOCAL_SEAWEEDFS_PASSWORD` e `OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD`; `validation-closure`
+  (run `40375837616`), i guard di invarianza di `reports/tests/test_kind_teardown_observation.py`
+  rifiutavano la costante `MANDATORY_CONTAINERS = 15`.
+- **Autorità**: decisione normativa del PO `REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26)`, opzione 1
+  (decision request `governed/decision-request-rem0038-campaign-guard-admission`, commit
+  `fdb2704762697dbe74a34c8a44670b11d86e6924`, sha256
+  `7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943`, verificato).
+- **Correzione**: due righe di segnaposto nel workflow di tooling; nel guard, normalizzazione esatta con
+  conteggi verificati (costante e sue due sostituzioni riportate a `11`; i due segnaposto) e test negativi
+  (`Rem0038GuardAdmission`): un'altra costante, un'altra funzione modificata o aggiunta,
+  `MANDATORY_CONTAINERS = 16`, il controllo d'inventario indebolito, la costante usata altrove, il limite
+  della suite, un segnaposto in più, mancante, duplicato o in un altro workflow e un'altra riga di tooling
+  continuano a fallire. Baseline `9b4d3be`/`7cd5f7a`, controlli su finestra, cadenza, campionamento,
+  `KIND_BINARY`, timeout di 10 s ed esclusione di `observe_health_event` invariati. Due test del task
+  rendono `compose.yaml` con esattamente l'ambiente del workflow (lacuna locale della PR #357).
+- **TDD**: RED al commit `f6eefce` (HEAD sigillato unito a `origin/main`) con i soli test nuovi: 6 test
+  falliti, tutti per i segnaposto mancanti; GREEN al commit di codice `12659a1cd847f53991e96991033104326abf1cda`. Tentativi non qualificanti, elencati
+  nel record con gli sha256 degli artefatti e mai contati come PASS o FAIL: `a0` su `6f748b3`, fermato
+  prima di ogni test perché l'allowlist di piano non era ancora dichiarata; `a1` su `1b1160f`, campagna
+  intera passata (3224/3224 in 4146,3 s) ma superata, perché l'estensione dell'allowlist fa derivare anche
+  il record sigillato di `0082`; percorsi di `0082` dichiarati in `12659a1` e campagna rieseguita.
+- **Gate locali prima della campagna** (condizione b): i sei moduli di guardia dell'aggregato
+  `validation-closure` (239 PASS, zero skip), lo scanner di supply chain 1.1.0 (0 bloccanti), il passo esatto di
+  rendering del Compose del workflow di tooling e i gate di codice. I moduli di guardia girano anche nella
+  campagna (`reports-portfolio`).
+- **Campagna** (stack reale a 15 container, shell pulita, PATH del lock): fasi A (bootstrap, verifica tipizzata 11 servizi
+  READY prima e dopo fault e reset, qualifiche e fault injection) PASS; modulo del task 22/22 tre volte;
+  regressione 325; portfolio dei report 362; suite completa seriale 3224/3224, zero skip, 4007,0 s
+  (66,8 min: sopra la notifica dei 60 minuti, sotto il tetto vigente di 75 minuti con più di 5 minuti di
+  margine); smontaggio senza residui. Alimentazione: rete elettrica a inizio e fine corsa (79%).
+- **Riqualifiche**: `0005` e `0050` (modulo di guardia e allowlist di piano, input sigillati) e `0082`
+  (allowlist di piano; anche reset e smontaggio), tutte di sola regressione; le riqualifiche sigillate di
+  `0070` e `0072`–`0079` restano le più recenti (deriva 0).
+- **Ruoli**: implementatore Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato dal loop.
+  Verifier richiesto di fornitore diverso: Cursor CLI / Grok (xAI) oppure Antigravity / Gemini (Google).
+- Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+  Nessun nuovo `DEC-*`; nessun limite, timeout o gate cambiato.
