@@ -99,13 +99,12 @@ class Harness:
         self.authority = CapabilityAuthority(issuer="rem-0027-authority")
         self.marking = MarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
         self.stop = EmergencyStopController()
-        self.identities = IdentityRegistry()
         # REM-0028 (merged on main): reset approvers are resolved active humans
         # read from registry attributes, independent of the requester.
-        for human in (*HUMANS, RESET_REQUESTER):
-            self.identities.register(
-                IdentityRecord(canonical_id=human, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""})
-            )
+        self.identities = IdentityRegistry(
+            IdentityRecord(canonical_id=human, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""})
+            for human in (*HUMANS, RESET_REQUESTER)
+        )
         options: dict[str, Any] = {} if deadline is None else {"tool_call_deadline": deadline}
         self.runtime = ToolCallRuntime(
             sandbox=self.sandbox, authority=self.authority, marking_engine=self.marking, stop=self.stop, **options

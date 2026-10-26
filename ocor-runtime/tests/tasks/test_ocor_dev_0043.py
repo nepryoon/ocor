@@ -41,9 +41,10 @@ PROPOSER = "urn:ocor:human:proposer"
 
 @pytest.fixture
 def identities() -> IdentityRegistry:
-    registry = IdentityRegistry()
-    for canonical_id in ("urn:ocor:human:risk-owner", "urn:ocor:human:compliance", "urn:ocor:human:extra"):
-        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "COMPLIANCE RISK_OWNER" if canonical_id.endswith("extra") else ("COMPLIANCE" if canonical_id.endswith("compliance") else "COMPLIANCE RISK_OWNER")}))
+    registry = IdentityRegistry(
+        IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "COMPLIANCE RISK_OWNER" if canonical_id.endswith("extra") else ("COMPLIANCE" if canonical_id.endswith("compliance") else "COMPLIANCE RISK_OWNER")})
+        for canonical_id in ("urn:ocor:human:risk-owner", "urn:ocor:human:compliance", "urn:ocor:human:extra")
+    )
     return registry
 
 

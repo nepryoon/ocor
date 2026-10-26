@@ -155,9 +155,10 @@ class SettableClock:
 
 @pytest.fixture
 def registry() -> IdentityRegistry:
-    registry = IdentityRegistry()
-    for canonical_id, attributes in RECORDS.items():
-        registry.register(IdentityRecord(canonical_id=canonical_id, attributes=attributes))
+    registry = IdentityRegistry(
+        IdentityRecord(canonical_id=canonical_id, attributes=attributes)
+        for canonical_id, attributes in RECORDS.items()
+    )
     return registry
 
 

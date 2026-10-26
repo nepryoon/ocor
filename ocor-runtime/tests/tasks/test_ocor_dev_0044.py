@@ -35,9 +35,10 @@ NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 
 @pytest.fixture
 def identities() -> IdentityRegistry:
-    registry = IdentityRegistry()
-    for canonical_id in ("urn:ocor:human:a", "urn:ocor:human:b", "urn:ocor:human:c"):
-        registry.register(IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""}))
+    registry = IdentityRegistry(
+        IdentityRecord(canonical_id=canonical_id, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""})
+        for canonical_id in ("urn:ocor:human:a", "urn:ocor:human:b", "urn:ocor:human:c")
+    )
     return registry
 
 
@@ -180,9 +181,10 @@ class _AlertChannel:
 
 @pytest.fixture
 def break_glass_identities() -> IdentityRegistry:
-    registry = IdentityRegistry()
-    for canonical_id, attributes in BREAK_GLASS_ATTRIBUTES.items():
-        registry.register(IdentityRecord(canonical_id=canonical_id, attributes=attributes))
+    registry = IdentityRegistry(
+        IdentityRecord(canonical_id=canonical_id, attributes=attributes)
+        for canonical_id, attributes in BREAK_GLASS_ATTRIBUTES.items()
+    )
     return registry
 
 
