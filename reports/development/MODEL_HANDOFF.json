@@ -1,11 +1,28 @@
 {
   "assumptions": [
-    "The selected real component of a BA case is the one named by ADD v1.3 Part I par. 2.6 unless an explicit governed decision selects a documented fallback (DEC-201: no implicit fallback).",
-    "Implementing or activating a missing candidate or fallback is a technology/change-control choice reserved to the PO; the loop only inventories and requests."
+    "Policy, Authority, stop-epoch, hold and audit decisions in the qualifying cases are the explicit G5 test ports on the real stores; no production authority service is exercised.",
+    "Per-requirement results live inside the task record and the G6 manifest (fail-closed reading of the evidence-path ambiguity); no reports/evidence/G6/<REQ>.json file is created."
   ],
-  "base_sha": "330f58a2e6f2833f0f239f668abec86b79ca9f19",
-  "baseline_commit": "330f58a2e6f2833f0f239f668abec86b79ca9f19",
-  "branch": "governed/state-sync-0060-ba-dr-20261026",
+  "base_sha": "607ed958899ce86ef3312f2ac0e23b2f8a1f8294",
+  "baseline_commit": "607ed958899ce86ef3312f2ac0e23b2f8a1f8294",
+  "branch": "governed/state-sync-0061-candidate-20261026",
+  "candidate_branch_evidence": {
+    "branch": "task/OCOR-DEV-0061-fgm-01-10-campaign",
+    "head_sha": "42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f",
+    "note": "evidence lives on the candidate branch until sealing and merge; not yet on main",
+    "paths": [
+      "reports/evidence/G6/OCOR-DEV-0061.json",
+      "reports/evidence/G6/OCOR-DEV-0061.log",
+      "reports/evidence/G6/MANIFEST.json",
+      "ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py"
+    ],
+    "sha256": {
+      "ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py": "a73a27269ab7e3ac07d9686b50e0d0ac30d7661581af7427234ee62595ec2b95",
+      "reports/evidence/G6/MANIFEST.json": "effb28436b5d5c9e42d169bdb04d25430d16661817706d0a0b014658961eb597",
+      "reports/evidence/G6/OCOR-DEV-0061.json": "8b0a02684056bc72dc8b0c3aedebfe6f81da7ec79d58796dcddbea59423b0f34",
+      "reports/evidence/G6/OCOR-DEV-0061.log": "35277c4e1de5de7cd3bfc0593e37e6d3a0613f4e9ed6d47aad606574e079c7ab"
+    }
+  },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -21,32 +38,37 @@
   },
   "commands": [
     {
-      "command": "read-only inventory: grep of deploy/bootstrap/compose.yaml services and images, ocor-runtime/src adapters, pyproject.toml/uv.lock clients, ADD v1.3 Part I par. 2.6, DEC-201, LLD v1.1 par. 5.2/7.1",
+      "command": "run_qualifying_campaign.py --execute --repository . --expected-head 4ab9caf (clean shell, locked toolchain)",
       "exit_code": 0,
-      "summary": "BA-02/03/04/07/08 executable; BA-05/06 no real component; BA-01 only PostgreSQL fallback adapter, not approved"
+      "summary": "PASS 3202/3202, 0 skip, 3534.35 s, exact union"
     },
     {
-      "command": "git push origin governed/decision-request-ocor-dev-0060-ba-selected-components; gh pr create --draft (PR #351)",
+      "command": "FGM module x3 + backlog validation command (project-scoped)",
       "exit_code": 0,
-      "summary": "decision request commit 803abee616cef879b0c9dfe1218bfaa50200de96, file sha256 84cdd936ef6f2999497ebe3f50cb0b05e56f128ffbe0acab77bc78fff40c7574"
+      "summary": "22/22 each on PostgreSQL 16, Qdrant 1.15.1, OpenBao 2.6.2"
     },
     {
-      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "command": "mutation_probe.py (10 runtime controls, one per FGM)",
       "exit_code": 0,
-      "summary": "8/8 OK"
+      "summary": "10/10 killed, each by its own negative case; M0 PASS"
+    },
+    {
+      "command": "validate_runtime_evidence.py --task OCOR-DEV-0061 --non-skipped --manifest reports/evidence/G6/MANIFEST.json",
+      "exit_code": 0,
+      "summary": "PASS"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-0060:pre-code-inventory",
+  "current_task": "OCOR-DEV-0061:candidate-verification-requested",
   "evidence_paths": [],
-  "exact_next_action": "Avviare OCOR-DEV-0061 (Execute FGM-01 through FGM-10 campaign), numero piu basso del ready set G6 non bloccato (0060 bloccato dalla decision request normativa OCOR-DEV-0060-BA-SELECTED-COMPONENTS, PR #351 bozza): branch task/OCOR-DEV-0061-<slug> da origin/main in worktree nuovo; leggere per intero obiettivo, acceptance_criteria, negative_acceptance_criteria, validation_commands, rollback_procedure, evidence_outputs e definition_of_done; prima del codice inventario in sola lettura dei componenti reali richiesti da FGM-01..FGM-10 (LLD v1.1 par. 7.2) contro stack di bootstrap e adapter del runtime, con decision request se un componente richiesto manca; solo expected_file_areas (ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py) ed evidence_outputs; ogni caso FGM legato al requisito specifico secondo OCOR_TRACEABILITY_PLAN.csv; RED prima del codice, backend reali pinned, zero skip; fence DEC-208 (nessuna kind/scope/lifecycle differita, nessun bypass di C6/C3); suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori. OCOR-DEV-0060 e i dipendenti 0065-0069 attendono la disposition del PO. OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
-  "head_sha": "330f58a2e6f2833f0f239f668abec86b79ca9f19",
-  "head_sha_role": "main baseline before state sync",
+  "exact_next_action": "Attendere il verdetto esterno OCOR-DEV-0061-42992d6713db-0 (verifier Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic) sul candidato OCOR-DEV-0061 task/OCOR-DEV-0061-fgm-01-10-campaign @ 42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f (codice 4ab9caf). Con GO_FOR_EVIDENCE_SEAL: registrare verifier e verdetto nel record reports/evidence/G6/OCOR-DEV-0061.json e sigillarlo (hash del MANIFEST G6 aggiornato chirurgicamente, raw log invariato), allineamento non distruttivo a origin/main solo se necessario con prova di albero invariato, PR con i 13 check obbligatori verdi sull HEAD esatto, merge --match-head-commit, state sync con 0061 in completed_evidence_tasks. Con NO_GO: riparazione (ciclo 1 di 2) e nuova verifica. Nel frattempo, se il loop assegna un iterazione di implementazione: OCOR-DEV-0062 (FGM-11..FGM-20) e il numero piu basso eseguibile del ready set G6 (0060 attende la disposition del PO su OCOR-DEV-0060-BA-SELECTED-COMPONENTS, PR #351 bozza). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
+  "head_sha": "42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f",
+  "head_sha_role": "OCOR-DEV-0061 verification candidate on task/OCOR-DEV-0061-fgm-01-10-campaign",
   "independent_verification": {
-    "reason": "no code, test, harness, workflow or evidence record changed",
-    "status": "NOT_REQUIRED_INVENTORY_ONLY"
+    "request_id": "OCOR-DEV-0061-42992d6713db-0",
+    "status": "REQUESTED_EXTERNAL_LOOP",
+    "verifier_constraint": "Cursor/Grok (xAI) or Antigravity/Gemini (Google); never OpenAI or Anthropic"
   },
-  "integration_alignment": null,
   "latest_ci_evidence": {
     "bad_checks": [],
     "campaign_artifacts": [
@@ -459,11 +481,35 @@
     "started_at": "2026-10-26T04:12:53Z",
     "status": "PASS_EXACT_HEAD_13_REQUIRED"
   },
-  "local_gate_results": "State-sync gates listed in ITERATION_LOG entry; no runtime gate executed (no code change).",
-  "next_task": "OCOR-DEV-0061:implementation",
-  "phase": "OCOR_DEV_0060_INVENTORY_NORMATIVE_DECISION_REQUEST_OPENED",
-  "raw_evidence_location": "none (inventory facts recorded in the decision request file)",
-  "requirement_ids": [],
+  "local_gate_results": {
+    "mypy_strict": "PASS",
+    "normative_sha256": "8/8 PASS",
+    "ruff": "PASS",
+    "supply_chain_secret_scanner_local": "PASS 0 blocking",
+    "teardown": "PASS zero residue",
+    "toolchain_lock": "12/12 sha256 match (toolchain + qualification tools)",
+    "validate_evidence_input_drift": "PASS",
+    "validate_language_policy": "PASS",
+    "validate_ocor_change_scope": "PASS (4 paths)",
+    "validate_ocor_development_plan_authorized_extension": "PASS (base HEAD, as CI for task/ branches)",
+    "validate_rccad": "PASS",
+    "validate_runtime_evidence_non_skipped": "PASS",
+    "verify_py": "PASS"
+  },
+  "next_task": "OCOR-DEV-0061:integration (after verdict)",
+  "phase": "OCOR_DEV_0061_CANDIDATE_VERIFICATION_REQUESTED",
+  "raw_evidence_location": "reports/evidence/G6/OCOR-DEV-0061.log (JSONL); working artifacts outside Git in ~/.ocor-codex/ocor-dev-0061/",
+  "requirement_ids": [
+    "FR-053",
+    "FR-113",
+    "FR-115",
+    "FR-119",
+    "FR-131",
+    "FR-135",
+    "NFR-025",
+    "NFR-033",
+    "NFR-075"
+  ],
   "roles": {
     "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
     "implementers": [
@@ -472,12 +518,15 @@
         "cli_version": "2.1.310",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-0060 read-only pre-code inventory, normative decision request and state sync"
+        "scope": "OCOR-DEV-0061 inventory, FGM-01..10 campaign module, qualification, evidence, verification request, state sync"
       }
     ],
-    "verifier": "none required: no code, test, harness or evidence change; inventory only"
+    "loop_counted_implementers": [
+      "Codex (OpenAI)"
+    ],
+    "verifier": "external loop only: Cursor/Grok 4.7 (xAI) or Antigravity/Gemini (Google); never Anthropic or OpenAI"
   },
-  "rollback_result": "close draft PR #351 and revert this state sync; no code or evidence to roll back",
+  "rollback_result": "revert the task merge (one test module plus evidence and the new G6 manifest); no runtime code, schema or migration",
   "schema_version": "1.0",
   "seal_hashes": {},
   "security_observability_notes": [
@@ -485,11 +534,33 @@
     "No runtime, test or harness change; no new DEC or evidence-fence promotion."
   ],
   "test_results": {
-    "local_full_this_iteration": "NOT_EXECUTED_INVENTORY_ONLY"
+    "full": {
+      "collected_sha256": "b23b9dc8d840e4079e30170ec27ea7459ed6caf2ec8d64b791448346873ebb94",
+      "duration_seconds": 3534.354,
+      "errors": 0,
+      "exact_union": "PASS",
+      "failures": 0,
+      "skipped": 0,
+      "status": "PASS",
+      "tests": 3202
+    },
+    "mutation": {
+      "baseline_M0": "PASS 22/22",
+      "killed": 10,
+      "mutants": 10,
+      "survivors": []
+    },
+    "task": {
+      "passed_each": 22,
+      "reports_portfolio": "400/400",
+      "runs": 3,
+      "skipped": 0,
+      "validation_command_project": "22/22"
+    }
   },
   "unresolved_blockers": [
-    "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (OPEN_PO_NORMATIVE_DECISION_REQUIRED, blocks OCOR-DEV-0060 and transitively 0065-0069; 0061-0064 executable)"
+    "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (OPEN_PO_NORMATIVE_DECISION_REQUIRED, blocks OCOR-DEV-0060 and transitively 0065-0069)"
   ],
-  "updated_at": "2026-10-26T05:24:29.313028+00:00",
-  "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ss-0060-ba-dr"
+  "updated_at": "2026-10-26T09:17:31.077720+00:00",
+  "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ocor-dev-0061"
 }
