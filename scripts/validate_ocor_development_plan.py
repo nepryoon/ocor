@@ -769,6 +769,14 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0038.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038.log",
+        # OCOR-DEV-REM-0038 repair 1 (PO REM-0038-CAMPAIGN-GUARD-ADMISSION): distinct
+        # record paths superseding the sealed REM-0038, 0005 and 0050 records.
+        "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.json",
+        "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
