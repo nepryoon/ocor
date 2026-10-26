@@ -90,6 +90,15 @@ class IdentityRegistry:
 
     def register(self, record: IdentityRecord) -> IdentityRecord:
         with self._lock:
+            # Immutability first: a different record under a known identity
+            # is still an IdentityConflictError, an identical one a no-op.
+            if self._records.get(record.canonical_id) is None and (
+                RESERVED_PRINCIPAL_ATTRIBUTES & set(record.attributes)
+            ):
+                raise IdentityRegistrationDenied(
+                    f"{PRIVILEGED_RECORD_REASON_CODE}: new identity {record.canonical_id!r} "
+                    "carries reserved principal attributes"
+                )
             return self._store(record)
 
     def _admit_provisioned(self, record: IdentityRecord) -> IdentityRecord:

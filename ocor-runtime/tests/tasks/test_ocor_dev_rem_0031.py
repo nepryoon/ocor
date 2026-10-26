@@ -919,7 +919,7 @@ def test_hostile_first_writer_cannot_reach_a_human_gate_quorum():
         GateSignature(action_id="action", principal_id=_APPROVER, role="RISK_OWNER", scope="scope", signed_at=_GATE_NOW),
     ]
     gate = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(_GATE_NOW))
-    with pytest.raises(HumanGateError):
+    with pytest.raises(HumanGateError, match="QUORUM_NOT_MET"):
         gate.validate(
             action_id="action", proposer_id="urn:ocor:human:rem0031-proposer",
             policy=ApprovalPolicy(frozenset({"COMPLIANCE", "RISK_OWNER"}), 2, timedelta(minutes=10)),

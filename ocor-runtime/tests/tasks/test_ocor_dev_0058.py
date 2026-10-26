@@ -621,9 +621,10 @@ def workflow(backends: r.Backends, *, proposal_policy: OpaProposalPolicy | None 
         signer = BaoSigner(backends.bao)
         controls = Controls(backends.dsn, w.metadata.schema, signer)
         controls.admit_delegation(r.binding(ctx).binding_ref, r.d("c6-verified-delegation"))
-        registry = IdentityRegistry()
-        for role in ("COMPLIANCE", "RISK_OWNER"):
-            registry.register(IdentityRecord("human-" + role.lower(), attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": role}))
+        registry = IdentityRegistry(
+            IdentityRecord("human-" + role.lower(), attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": role})
+            for role in ("COMPLIANCE", "RISK_OWNER")
+        )
         c3 = PostgresC3Service(backends.dsn)
         c3.initialize()
         s = service(w, audit, proposal_policy)

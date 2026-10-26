@@ -19,12 +19,13 @@ ROLES = frozenset({'DOMAIN_APPROVER', 'NATIONAL_APPROVER'})
 
 
 def directory(first: dict[str, object] | None = None) -> IdentityRegistry:
-    registry = IdentityRegistry()
+    records = []
     for name, roles in [('a', 'DOMAIN_APPROVER'), ('b', 'NATIONAL_APPROVER'), ('requester', '')]:
         attributes = {'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': roles}
         if name == 'a' and first is not None:
             attributes = first
-        registry.register(IdentityRecord(canonical_id=name, attributes=attributes))
+        records.append(IdentityRecord(canonical_id=name, attributes=attributes))
+    registry = IdentityRegistry(records)
     return registry
 
 
@@ -198,12 +199,11 @@ def test_invalid_clock_is_fail_closed() -> None:
 
 
 def test_real_dual_role_holder_still_cannot_fill_two_role_slots() -> None:
-    registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'})
-    values = signatures()
-    values[1] = GateSignature(action_id='action', principal_id='a', role='NATIONAL_APPROVER', scope='scope', signed_at=NOW)
     # Second human keeps headcount sufficient but holds no required role;
     # only a could cover either of the two required role slots.
-    registry.register(IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'OBSERVER'}))
+    registry = IdentityRegistry([*directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'}).all_records(), IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'OBSERVER'})])
+    values = signatures()
+    values[1] = GateSignature(action_id='action', principal_id='a', role='NATIONAL_APPROVER', scope='scope', signed_at=NOW)
     values.append(GateSignature(action_id='action', principal_id='extra', role='OBSERVER', scope='scope', signed_at=NOW))
     with pytest.raises(HumanGateError, match='MISSING_REQUIRED_ROLE'):
         HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW)).validate(
@@ -222,8 +222,7 @@ def test_scoped_role_token_preserves_the_approved_q1_domain_syntax() -> None:
 
 @pytest.mark.parametrize('reverse', [False, True])
 def test_valid_distinct_role_assignment_is_independent_of_signature_order(reverse: bool) -> None:
-    registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'})
-    registry.register(IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER'}))
+    registry = IdentityRegistry([*directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER NATIONAL_APPROVER'}).all_records(), IdentityRecord(canonical_id='extra', attributes={'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': 'DOMAIN_APPROVER'})])
     values = [GateSignature(action_id='action', principal_id=p, role=r, scope='scope', signed_at=NOW)
               for p, r in [('a', 'DOMAIN_APPROVER'), ('a', 'NATIONAL_APPROVER'), ('extra', 'DOMAIN_APPROVER')]]
     if reverse:
@@ -246,10 +245,9 @@ def test_distinct_role_matching_agrees_with_exhaustive_assignment_oracle() -> No
         edges = {(p, r) for i, (p, r) in enumerate(itertools.product(people, required)) if mask & (1 << i)}
         expected = any(all((person, role) in edges for person, role in zip(assignment, required))
                        for assignment in itertools.permutations(people))
-        registry = IdentityRegistry()
-        for person in people:
-            registry.register(IdentityRecord(canonical_id=person, attributes={
-                'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': ' '.join(sorted(r for p, r in edges if p == person))}))
+        registry = IdentityRegistry(IdentityRecord(canonical_id=person, attributes={
+            'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': ' '.join(sorted(r for p, r in edges if p == person))})
+            for person in people)
         values = [GateSignature(action_id='action', principal_id=p, role=r, scope='scope', signed_at=NOW) for p, r in sorted(edges)]
         gate = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(NOW))
         for ordered in (values, list(reversed(values))):
