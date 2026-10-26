@@ -1,11 +1,49 @@
 {
   "assumptions": [
-    "Policy, Authority, stop-epoch, hold and audit decisions in the qualifying cases are the explicit G5 test ports on the real stores; no production authority service is exercised.",
-    "Per-requirement results live inside the task record and the G6 manifest (fail-closed reading of the evidence-path ambiguity); no reports/evidence/G6/<REQ>.json file is created."
+    "Change set a provisions servers only; Python clients (Temporal, S3, TerminusDB) enter with the adapters of change sets b, c, d.",
+    "TerminusDB was already provisioned and qualified by OCOR-DEV-0073; its requalification on the 15-container stack is its provisioning evidence here.",
+    "DEP-011 benchmark NOT_EXECUTED here (needs the SDK worker), carried to OCOR-DEV-REM-0039; licence MIT verified."
   ],
-  "base_sha": "77541e4d2ac99bfa28c65737764c4fe24cb5db70",
-  "baseline_commit": "3a3087dd8e47cd85f0bdafba0e285d188a718605",
-  "branch": "governed/state-sync-0061-integrated-20261026",
+  "base_sha": "72b2f9e458f0030f2d8834739c2d8b674ec4dc81",
+  "baseline_commit": "72b2f9e458f0030f2d8834739c2d8b674ec4dc81",
+  "branch": "governed/state-sync-rem0038-candidate-20261026",
+  "candidate_branch_evidence": {
+    "branch": "governed/ocor-dev-rem-0038-ba-services",
+    "head_sha": "dc5a404b350f47c0caa7e9432695e835dc162222",
+    "note": "evidence lives on the candidate branch until sealing and merge; not yet on main",
+    "paths": [
+      "reports/assurance/OCOR-DEV-REM-0038-RCCAD/OCOR-DEV-REM-0038.json",
+      "reports/assurance/OCOR-DEV-REM-0038-RCCAD/OCOR-DEV-REM-0038.log",
+      "reports/assurance/OCOR-DEV-REM-0038-RCCAD/README.md",
+      "reports/evidence/G0/MANIFEST.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038.log",
+      "reports/evidence/G2/MANIFEST.json",
+      "reports/evidence/G2/OCOR-DEV-0070.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0070.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0074.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0074.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0076.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0076.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0077.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0077.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0078.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0078.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0038.log",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038.log",
+      "reports/evidence/G5/MANIFEST.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038.log"
+    ]
+  },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -21,47 +59,41 @@
   },
   "commands": [
     {
-      "command": "git merge --no-ff origin/main (state-only alignment) into task/OCOR-DEV-0061-fgm-01-10-campaign",
-      "exit_code": 0,
-      "summary": "86b4753; only the three state files differ from the reviewed head 42992d6; all non-state paths byte-identical"
+      "command": "build_evidence.py at b81630a + inline supply-chain scanner (pre-push)",
+      "exit_code": 1,
+      "summary": "2 blocking AWS_ACCESS_KEY findings (AKIA key id of the published AWS SigV4 example in seaweedfs/test_qualify.py); evidence commit a25a4b4 never pushed, saved as patch in ~/.ocor-codex/salvage/20261026T-rem0038-evidence-a25a4b4"
     },
     {
-      "command": "seal reports/evidence/G6/OCOR-DEV-0061.json (independent_verification, roles.verifier, sealed_at, status SEALED) + surgical G6 MANIFEST hash",
+      "command": "fix 36e6151 (neutral key id, published signature unchanged) and whole campaign re-run from a clean shell (rerun.sh: phases A, A3, B, B2)",
       "exit_code": 0,
-      "summary": "85f4982; raw log unchanged 35277c4e..."
+      "summary": "38 steps PASS at 36e6151; full 3222 PASS 4113.5 s; teardown zero residue"
     },
     {
-      "command": "local gates on the seal: inputs 8/8, ruff, mypy, rccad, language, scope, plan (base HEAD as CI), runtime evidence 0061, drift, verify.py",
+      "command": "build_evidence.py 36e6151 -> commit dc5a404",
       "exit_code": 0,
-      "summary": "all PASS; verify 14 PASS; plan 37 PASS + 2 optional NOT_EXECUTED"
+      "summary": "REM-0038 PASS sha256 63e60f37a0e69a2e62e888dcd4172bf1dbcffb49974eb5391897fa510c62110e; 12 requalification records; raw a720a97880ed7e61f2b9f42d48ab6ebc0bf16cbbeabb9535432727a857179366"
     },
     {
-      "command": "gh pr merge 354 --merge --match-head-commit 85f4982b79fbd421f18cb6ef3ad872b08b42ae40",
+      "command": "gates on dc5a404: inputs 8/8, ruff, mypy, rccad, language, scope, plan, verify.py, drift, lock validation, supply-chain scanner, runtime evidence x12",
       "exit_code": 0,
-      "summary": "13 required checks green on exact head, zero reruns; merge 3a3087dd8e47cd85f0bdafba0e285d188a718605; sealed hashes unchanged on main"
+      "summary": "all PASS"
     },
     {
-      "command": "record PO disposition on governed/decision-request-ocor-dev-0060-ba-selected-components; gh pr close 351",
+      "command": "git push -u origin governed/ocor-dev-rem-0038-ba-services",
       "exit_code": 0,
-      "summary": "727aee9, file sha256 caa69e8f...; PR #351 closed as resolved, not merged"
+      "summary": "remote head dc5a404b350f47c0caa7e9432695e835dc162222; no PR opened before the verdict"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-0061:integrated",
-  "evidence_paths": [
-    "reports/evidence/G6/OCOR-DEV-0061.json",
-    "reports/evidence/G6/OCOR-DEV-0061.log",
-    "reports/evidence/G6/MANIFEST.json"
-  ],
-  "exact_next_action": "Avviare OCOR-DEV-REM-0038, change set a. della decisione normativa OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26), opzione 2: provisioning nello stack di bootstrap e nella CI dei server Temporal (con il proprio PostgreSQL), SeaweedFS (bucket con S3 Object Lock e versioning) e TerminusDB, pinned per digest, con lo stesso trattamento dei servizi esistenti (salute, reset, smontaggio senza residui, fault injection dove i test lo richiedono). ID verificato libero il 2026-10-26 (REM-0038..0041 assenti da tutti i ref); riverificarlo con grep prima del primo commit. Branch governed/ocor-dev-rem-0038-<slug> da origin/main in worktree nuovo. Prima del codice: inventario in sola lettura dei consumer e dei record sigillati toccati (compose, bootstrap, init, verify_external_services, workflow CI, lock); dipendenze secondo OCOR_EXTERNAL_DEPENDENCY_POLICY.md (versione esatta, fonte, licenza, digest, voce nei lock di toolchain e qualificazione, inventario licenze NFR-073), verifica licenza e benchmark di Temporal per DEP-011; licenza non ammessa: stop e decision request. RED prima del codice sui servizi reali, GREEN, riqualifiche con supersession esplicita, suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600, verifica esterna di fornitore diverso da tutti gli implementatori. Limiti invariati: tetto di 30 minuti per job su main, guardia della memoria a 3 GB, tetti della suite locale; se superati, stop e decision request con le misure. Poi REM b (adapter Temporal di C6), c (adapter SeaweedFS di C7), d (adapter TerminusDB di C3) con i successivi ID liberi; OCOR-DEV-0062..0064 mentre le remediation attendono verifica o sono bloccate; OCOR-DEV-0060 dopo l integrazione di tutte e quattro. OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim; Temporal, SeaweedFS e TerminusDB restano Candidate Implementation.",
-  "head_sha": "85f4982b79fbd421f18cb6ef3ad872b08b42ae40",
-  "head_sha_role": "OCOR-DEV-0061 sealed head merged into main as 3a3087dd8e47cd85f0bdafba0e285d188a718605",
+  "current_task": "OCOR-DEV-REM-0038:candidate-verification-requested",
+  "evidence_paths": [],
+  "exact_next_action": "Attendere il verdetto esterno OCOR-DEV-REM-0038-dc5a404b350f-0 (verifier Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic) sul candidato OCOR-DEV-REM-0038 governed/ocor-dev-rem-0038-ba-services @ dc5a404b350f47c0caa7e9432695e835dc162222. Con GO_FOR_EVIDENCE_SEAL: allineamento non distruttivo con origin/main (solo file di stato), registrare verifier e verdetto nei 13 record (REM-0038 e riqualifiche 0005, 0050, 0070, 0072-0079, 0082) e sigillare, PR del branch con i 13 check obbligatori sull HEAD esatto (osservare il tetto di 30 minuti per job su main con i 4 container nuovi: se superato, stop e decision request con le misure), merge --match-head-commit, state sync. Con NO_GO: riparazione (ciclo 1). In attesa del verdetto: OCOR-DEV-REM-0039 (change set b, adapter Temporal di C6, include il benchmark DEP-011) dipende dall integrazione di REM-0038 per il provisioning; OCOR-DEV-0062..0064 eseguibili mentre REM-0038 attende la verifica (punto 5 della decisione). OCOR-DEV-REM-0037 sospesa fino a dopo G6. Claim invariati.",
+  "head_sha": "dc5a404b350f47c0caa7e9432695e835dc162222",
+  "head_sha_role": "OCOR-DEV-REM-0038 verification candidate on governed/ocor-dev-rem-0038-ba-services",
   "independent_verification": {
-    "findings": [],
-    "request_id": "OCOR-DEV-0061-42992d6713db-0",
-    "status": "GO_FOR_EVIDENCE_SEAL_SEALED_INTEGRATED",
-    "verdict_sha256": "f537d082c907d0f48be068b979e8fecfdaa5d20b69277d8a68cdc5e2a4202d00",
-    "verifier": "Cursor CLI, grok-4.7-high (xAI)"
+    "request_id": "OCOR-DEV-REM-0038-dc5a404b350f-0",
+    "status": "REQUESTED_EXTERNAL_LOOP",
+    "verifier_constraint": "Cursor/Grok (xAI) or Antigravity/Gemini (Google); never OpenAI or Anthropic"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -123,89 +155,64 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
-    "mypy_strict": "PASS",
-    "normative_sha256": "8/8 PASS",
+    "checksum": "PASS",
+    "drift": "PASS",
+    "language": "PASS",
+    "lock-validation": "PASS",
+    "mypy": "PASS",
+    "plan": "PASS",
+    "rccad": "PASS",
     "ruff": "PASS",
-    "supply_chain_secret_scanner_local": "PASS 0 blocking",
-    "teardown": "PASS zero residue",
-    "toolchain_lock": "12/12 sha256 match (toolchain + qualification tools)",
-    "validate_evidence_input_drift": "PASS",
-    "validate_language_policy": "PASS",
-    "validate_ocor_change_scope": "PASS (4 paths)",
-    "validate_ocor_development_plan_authorized_extension": "PASS (base HEAD, as CI for task/ branches)",
-    "validate_rccad": "PASS",
-    "validate_runtime_evidence_non_skipped": "PASS",
-    "verify_py": "PASS"
+    "runtime-evidence-0005": "PASS",
+    "runtime-evidence-0050": "PASS",
+    "runtime-evidence-0070": "PASS",
+    "runtime-evidence-0072": "PASS",
+    "runtime-evidence-0073": "PASS",
+    "runtime-evidence-0074": "PASS",
+    "runtime-evidence-0075": "PASS",
+    "runtime-evidence-0076": "PASS",
+    "runtime-evidence-0077": "PASS",
+    "runtime-evidence-0078": "PASS",
+    "runtime-evidence-0079": "PASS",
+    "runtime-evidence-0082": "PASS",
+    "scope": "PASS",
+    "supply-chain": "PASS",
+    "verify-harness": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0038 (change set a of OCOR-DEV-0060-BA-SELECTED-COMPONENTS: provisioning of Temporal, SeaweedFS and TerminusDB in bootstrap and CI)",
-  "phase": "OCOR_DEV_0061_INTEGRATED",
-  "raw_evidence_location": "reports/evidence/G6/OCOR-DEV-0061.log (JSONL); working artifacts outside Git in ~/.ocor-codex/ocor-dev-0061/",
+  "next_task": "OCOR-DEV-REM-0038:integration (after verdict)",
+  "phase": "OCOR_DEV_REM_0038_CANDIDATE_VERIFICATION_REQUESTED",
+  "raw_evidence_location": "reports/assurance/OCOR-DEV-REM-0038-RCCAD/OCOR-DEV-REM-0038.log (JSONL, byte-identical next to each requalification record); working artifacts outside Git in ~/.ocor-codex/rem-0038/",
   "requirement_ids": [
-    "FR-053",
-    "FR-113",
-    "FR-115",
-    "FR-119",
-    "FR-131",
-    "FR-135",
-    "NFR-025",
-    "NFR-033",
-    "NFR-075"
+    "NFR-058",
+    "NFR-073"
   ],
   "roles": {
     "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
     "implementers": [
       {
         "agent": "Claude Code",
-        "cli_version": "2.1.310",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-0061 inventory, FGM-01..10 campaign module, qualification, evidence, verification request, state sync"
+        "scope": "OCOR-DEV-REM-0038 inventory, dependency acquisition, provisioning code and tests, qualification campaign, evidence, verification request, state sync"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
     ],
-    "verifier": "external loop only: Cursor/Grok 4.7 (xAI) or Antigravity/Gemini (Google); never Anthropic or OpenAI"
+    "verifier": "external loop only: Cursor/Grok (xAI) or Antigravity/Gemini (Google); never Anthropic or OpenAI"
   },
-  "rollback_result": "revert the task merge (one test module plus evidence and the new G6 manifest); no runtime code, schema or migration",
+  "rollback_result": "revert the change-set commits (bootstrap profile, services lock, two qualification modules, verification/bootstrap/campaign script changes, evidence and requalification records); disposable tmpfs state only, no migration",
   "schema_version": "1.0",
-  "seal_hashes": {
-    "reports/evidence/G6/MANIFEST.json": "7a587816a0bb3faff54b4a68b541b6647097fac4452c8984254699306316c083",
-    "reports/evidence/G6/OCOR-DEV-0061.json": "64b0b9776ce14bbfdccd177df4ff2c6e63eea8fa4d129e2fdbca13ef028484a6",
-    "reports/evidence/G6/OCOR-DEV-0061.log": "35277c4e1de5de7cd3bfc0593e37e6d3a0613f4e9ed6d47aad606574e079c7ab"
-  },
+  "seal_hashes": {},
   "security_observability_notes": [
     "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 thread, 32 GB; no timing measured in this unit.",
     "No runtime, test or harness change; no new DEC or evidence-fence promotion."
   ],
   "test_results": {
-    "full": {
-      "collected_sha256": "b23b9dc8d840e4079e30170ec27ea7459ed6caf2ec8d64b791448346873ebb94",
-      "duration_seconds": 3534.354,
-      "errors": 0,
-      "exact_union": "PASS",
-      "failures": 0,
-      "skipped": 0,
-      "status": "PASS",
-      "tests": 3202
-    },
-    "mutation": {
-      "baseline_M0": "PASS 22/22",
-      "killed": 10,
-      "mutants": 10,
-      "survivors": []
-    },
-    "task": {
-      "passed_each": 22,
-      "reports_portfolio": "400/400",
-      "runs": 3,
-      "skipped": 0,
-      "validation_command_project": "22/22"
-    }
+    "full": "serial run_qualifying_campaign.py at 36e6151: PASS 3222/3222, 0 failures/errors/skips, exact collection/JUnit union, 4113.5 s (above the 60-min notification, below the 75-min cap by >5 min: recorded per REM-0033-LOCAL-FULL-DURATION point 4)",
+    "task": "tests/tasks/test_ocor_dev_rem_0038.py 20/20 x3 on the real 15-container stack; regression 323/323; reports portfolio 221/221; service contract suites 78/78; 0 skipped"
   },
-  "unresolved_blockers": [
-    "OCOR-DEV-0060-BA-SELECTED-COMPONENTS resolved by the PO (normative, option 2); OCOR-DEV-0060 sequenced after the four REM change sets a-d"
-  ],
-  "updated_at": "2026-10-26T11:56:42.724763+00:00",
-  "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ss-0061-integrated"
+  "unresolved_blockers": [],
+  "updated_at": "2026-10-26T16:10:56.440373+00:00",
+  "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0038-ba-services"
 }
