@@ -435,6 +435,9 @@ def main() -> int:
         "ocor-runtime/src/ocor_runtime/c3/service.py",
         "ocor-runtime/src/ocor_runtime/c3_store.py",
         "ocor-runtime/src/ocor_runtime/c4_marking.py",
+        # OCOR-DEV-REM-0031: register() closed on reserved Q1 attributes, provisioning boundary.
+        "ocor-runtime/src/ocor_runtime/c2_identity.py",
+        "ocor-runtime/src/ocor_runtime/c2/provisioning.py",
         # OCOR-DEV-REM-0027: lease bound to the emergency-stop epoch (LLD v1.1 section 1.4).
         "ocor-runtime/src/ocor_runtime/c6_capabilities.py",
         "ocor-runtime/src/ocor_runtime/c8_agent.py",
@@ -483,6 +486,9 @@ def main() -> int:
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0031.py",
+        # PO 2026-10-25 REM-0031-REGISTRY-CONSUMER-SCOPE option 1: seeding-only consumer site.
+        "ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0079.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0080.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_0081.py",
@@ -706,6 +712,25 @@ def main() -> int:
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0027.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0027.log",
+        # OCOR-DEV-REM-0031: remediation record, consumer guard, 0043/0044/0058
+        # requalifications and the 0005/0050/0082 regression-only ones forced by this allowlist.
+        "reports/tests/test_rem0031_consumer_registry_scope.py",
+        "reports/assurance/OCOR-DEV-REM-0031-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0031-RCCAD/OCOR-DEV-REM-0031.json",
+        "reports/assurance/OCOR-DEV-REM-0031-RCCAD/OCOR-DEV-REM-0031.log",
+        "reports/assurance/OCOR-DEV-REM-0031-RCCAD/consumer-registry-scope.json",
+        "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0031.json",
+        "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0031.log",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0031.json",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0031.log",
+        "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0031.json",
+        "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0031.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0031.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0031.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0031.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0031.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0031.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0031.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
