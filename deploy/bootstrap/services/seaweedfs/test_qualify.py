@@ -58,6 +58,7 @@ def observations(**overrides: Any) -> dict[str, Any]:
 def lock_observed(**overrides: Any) -> dict[str, Any]:
     values: dict[str, Any] = {
         "create_status": 200,
+        "create_code": "",
         "versioning_body": "<VersioningConfiguration><Status>Enabled</Status></VersioningConfiguration>",
         "lock_body": "<ObjectLockConfiguration><ObjectLockEnabled>Enabled</ObjectLockEnabled></ObjectLockConfiguration>",
         "put_status": 200,
@@ -158,10 +159,12 @@ class SeaweedFSQualificationContractTests(unittest.TestCase):
         result = qualify.validate_object_lock(lock_observed())
         self.assertEqual(result["retained_version_delete"], "FAIL_CLOSED")
         self.assertTrue(result["retained_version_intact"])
+        reused = qualify.validate_object_lock(lock_observed(create_status=409, create_code="BucketAlreadyOwnedByYou"))
+        self.assertEqual(reused["bucket_object_lock"], "Enabled")
 
     def test_object_lock_rejects_every_weakened_branch(self) -> None:
         cases = {
-            "bucket creation": {"create_status": 409},
+            "bucket creation": {"create_status": 409, "create_code": "BucketAlreadyExists"},
             "versioning": {"versioning_body": "<VersioningConfiguration/>"},
             "Object Lock configuration": {"lock_body": "<Error/>"},
             "no version": {"version_id": ""},

@@ -12,12 +12,16 @@ and publishes only the S3 port on loopback, `/healthz` answers, unsigned and
 wrong-secret requests are denied, a SigV4-signed ListBuckets succeeds and the binary
 reports the exact locked version.
 
-With `--execute` it also runs the Object Lock probe: a uniquely named bucket is created
-with Object Lock (versioning is then enabled), one object is written under
-`COMPLIANCE` retention, and deleting that version must be denied both plainly and with
-the governance-bypass header; the version must remain readable. `COMPLIANCE` is the
-mode used because no request, bypass header included, may shorten or remove it. The
-probe never deletes the locked version or bucket; teardown releases the tmpfs.
+With `--execute` it also runs the Object Lock probe: the dedicated bucket
+`ocor-qualify-object-lock` is created with Object Lock, or reused when it already exists
+(`409 BucketAlreadyOwnedByYou`); versioning is then enabled. One object is written under
+a new key with `COMPLIANCE` retention, and deleting that version must be denied both
+plainly and with the governance-bypass header; the version must remain readable.
+`COMPLIANCE` is the mode used because no request, bypass header included, may shorten or
+remove it. The probe never deletes the locked version or bucket; teardown releases the
+tmpfs. The bucket is reused because every bucket is a SeaweedFS collection with its own
+volume; the profile sizes volumes at 8 MB with 64 slots on the 512 MB tmpfs (the default
+sizing left 7 slots, exhausted after 7 buckets).
 
 ```bash
 python3 deploy/bootstrap/services/seaweedfs/qualify.py --execute

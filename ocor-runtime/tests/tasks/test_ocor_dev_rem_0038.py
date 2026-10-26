@@ -142,7 +142,7 @@ def test_temporal_ordering_schema_and_dynamic_config():
 
 def test_seaweedfs_runs_single_node_s3_with_a_generated_admin_identity():
     service = SERVICES["seaweedfs"]
-    assert service["command"] == ["mini", "-dir=/data"]
+    assert service["command"] == ["mini", "-dir=/data", "-master.volumeSizeLimitMB=8", "-volume.max=64"]
     assert service["environment"]["AWS_ACCESS_KEY_ID"] == "ocor-bootstrap-s3"
 
 
@@ -233,12 +233,25 @@ def test_live_seaweedfs_enforces_auth_object_lock_and_recovers():
     assert result["protocol"]["unsigned_access"] == "FAIL_CLOSED"
     assert result["protocol"]["wrong_secret_access"] == "FAIL_CLOSED"
     lock = result["object_lock"]
+    assert lock["bucket"] == "ocor-qualify-object-lock"
     assert lock["bucket_versioning"] == "Enabled" and lock["bucket_object_lock"] == "Enabled"
     assert lock["retained_version_delete"] == "FAIL_CLOSED"
     assert lock["retained_version_bypass_delete"] == "FAIL_CLOSED"
     assert lock["retained_version_intact"] is True
     assert result["fault_recovery"]["unpause_recovery"] == "PASS"
     assert result["fault_recovery"]["after_unpause"]["unsigned_access"] == "FAIL_CLOSED"
+
+
+def test_live_seaweedfs_repeated_object_lock_probes_do_not_exhaust_volume_slots():
+    # Regression: one bucket per probe exhausted the 7 default volume slots after
+    # 7 runs ("No writable volumes"); 8 consecutive probes must all pass.
+    versions = set()
+    for _ in range(8):
+        result = _qualify("seaweedfs", "--execute")
+        assert result["object_lock"]["bucket"] == "ocor-qualify-object-lock"
+        assert result["object_lock"]["retained_version_delete"] == "FAIL_CLOSED"
+        versions.add(result["object_lock"]["key"])
+    assert len(versions) == 8
 
 
 def test_live_typed_verification_reports_the_new_services_ready():

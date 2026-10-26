@@ -237,11 +237,13 @@ services:
 
   # OCOR-DEV-REM-0038: SeaweedFS (BA-06 candidate), single-node mini mode; only
   # the S3 gateway is published. The admin identity comes from the generated
-  # disposable credentials; unsigned requests are denied.
+  # disposable credentials; unsigned requests are denied. Every bucket is its own
+  # collection with its own volume: 8 MB volumes and 64 slots fit the 512 MB
+  # tmpfs (the default sizing left 7 slots, exhausted after 7 buckets).
   seaweedfs:
     <<: *policy
     image: chrislusf/seaweedfs@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8
-    command: ["mini", "-dir=/data"]
+    command: ["mini", "-dir=/data", "-master.volumeSizeLimitMB=8", "-volume.max=64"]
     environment:
       AWS_ACCESS_KEY_ID: ocor-bootstrap-s3
       AWS_SECRET_ACCESS_KEY: ${OCOR_LOCAL_SEAWEEDFS_PASSWORD:?required}

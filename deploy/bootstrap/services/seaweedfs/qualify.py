@@ -6,8 +6,8 @@ SeaweedFS (OCOR-DEV-REM-0038, BA-06 candidate component) runs in single-node
 signed with AWS Signature Version 4 using the disposable credentials Docker
 holds for the container; nothing is printed except typed observations.
 
-``--execute`` adds the S3 Object Lock probe: it creates a uniquely named bucket
-with Object Lock (which forces versioning), writes one object under a
+``--execute`` adds the S3 Object Lock probe: it creates (or reuses) one dedicated
+bucket with Object Lock (which forces versioning), writes one new object under a
 COMPLIANCE retention and proves that deleting that version fails closed, with
 and without the governance-bypass header. The probe never removes the locked
 version or bucket: the storage is disposable tmpfs, released by teardown.
@@ -42,6 +42,10 @@ EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
 DIGEST_IMAGE = re.compile(r"^chrislusf/seaweedfs@sha256:[0-9a-f]{64}$")
 VERSION = re.compile(r"[0-9]+\.[0-9]+")
 RETENTION_MODE = "COMPLIANCE"
+# One dedicated probe bucket, reused by every run: each bucket is a SeaweedFS
+# collection holding its own volume, so a bucket per run would exhaust the
+# disposable volume slots. Each run writes a new object version.
+PROBE_BUCKET = "ocor-qualify-object-lock"
 # The first object write after a (re)start allocates volumes on tmpfs, measured
 # at about 12 s on the qualification host; write-path requests get a bounded
 # allowance instead of the 5 s control-plane timeout.
@@ -208,7 +212,9 @@ def validate_observations(
 
 
 def validate_object_lock(observed: Mapping[str, Any]) -> dict[str, Any]:
-    if observed["create_status"] != 200:
+    if observed["create_status"] != 200 and not (
+        observed["create_status"] == 409 and observed["create_code"] == "BucketAlreadyOwnedByYou"
+    ):
         raise QualificationError("Object Lock bucket creation failed")
     if "<Status>Enabled</Status>" not in observed["versioning_body"]:
         raise QualificationError("Object Lock bucket has no enabled versioning")
@@ -235,38 +241,39 @@ def validate_object_lock(observed: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def object_lock_probe(base_url: str, credential: tuple[str, str]) -> dict[str, Any]:
-    bucket = f"ocor-qualify-{uuid.uuid4().hex[:12]}"
-    payload = f"ocor-object-lock-probe {bucket}"
+    bucket = PROBE_BUCKET
+    key = f"probe-{uuid.uuid4().hex[:12]}"
+    payload = f"ocor-object-lock-probe {bucket}/{key}"
     until = (datetime.now(UTC) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    create_status, _, _ = request(
+    create_status, _, create_body = request(
         "PUT", f"{base_url}/{bucket}", credential=credential,
         headers={"x-amz-bucket-object-lock-enabled": "true"},
     )
     _, _, versioning_body = request("GET", f"{base_url}/{bucket}?versioning", credential=credential)
     _, _, lock_body = request("GET", f"{base_url}/{bucket}?object-lock", credential=credential)
     put_status, put_headers, _ = request(
-        "PUT", f"{base_url}/{bucket}/probe", credential=credential, body=payload.encode(),
+        "PUT", f"{base_url}/{bucket}/{key}", credential=credential, body=payload.encode(),
         headers={"x-amz-object-lock-mode": RETENTION_MODE, "x-amz-object-lock-retain-until-date": until},
         timeout=WRITE_TIMEOUT,
     )
     version_id = put_headers.get("x-amz-version-id", "")
     version = urllib.parse.quote(version_id, safe="")
     _, _, retention_body = request(
-        "GET", f"{base_url}/{bucket}/probe?retention&versionId={version}", credential=credential
+        "GET", f"{base_url}/{bucket}/{key}?retention&versionId={version}", credential=credential
     )
-    delete_status, _, _ = request("DELETE", f"{base_url}/{bucket}/probe?versionId={version}", credential=credential)
+    delete_status, _, _ = request("DELETE", f"{base_url}/{bucket}/{key}?versionId={version}", credential=credential)
     bypass_delete_status, _, _ = request(
-        "DELETE", f"{base_url}/{bucket}/probe?versionId={version}", credential=credential,
+        "DELETE", f"{base_url}/{bucket}/{key}?versionId={version}", credential=credential,
         headers={"x-amz-bypass-governance-retention": "true"},
     )
-    read_status, _, read_body = request("GET", f"{base_url}/{bucket}/probe?versionId={version}", credential=credential)
+    read_status, _, read_body = request("GET", f"{base_url}/{bucket}/{key}?versionId={version}", credential=credential)
     result = validate_object_lock({
-        "create_status": create_status, "versioning_body": versioning_body, "lock_body": lock_body,
+        "create_status": create_status, "create_code": error_code(create_body), "versioning_body": versioning_body, "lock_body": lock_body,
         "put_status": put_status, "version_id": version_id, "retention_body": retention_body,
         "delete_status": delete_status, "bypass_delete_status": bypass_delete_status,
         "read_status": read_status, "read_body": read_body, "payload": payload,
     })
-    return {"bucket": bucket, **result}
+    return {"bucket": bucket, "key": key, "bucket_created": create_status == 200, **result}
 
 
 def run(command: Sequence[str], timeout: float = 20.0) -> subprocess.CompletedProcess[str]:
