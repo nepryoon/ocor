@@ -426,6 +426,130 @@
     "uv": "0.12.5",
     "worktree": ".ocor/worktrees/ocor-dev-0061"
   },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "86b4753473ea5bc64e2faf7a849eaddacd078a0a",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "77541e4d2ac99bfa28c65737764c4fe24cb5db70",
+      "qualified_head": "42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "8b0a02684056bc72dc8b0c3aedebfe6f81da7ec79d58796dcddbea59423b0f34",
+    "commands": [
+      {
+        "command": "sha256 of docker, git, gh, node, ruff, tsc, uv, helm, kind, kubectl compared with infra/toolchain.lock.json and environment.json",
+        "exit_code": 0,
+        "summary": "All host and qualification binaries on PATH match the lock integrity and environment.json. environment.json sha256 6d8097b19948ad6e74ecb43f5d5621f03792d39893509da67ea574868ac9ace1. Host: Intel Core Ultra 9 275HX, 24 threads, MemTotal 31743008 kB. Preflight rerun PASS, ports free, errors empty."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8/8 normative digests OK. inputs/ is absent from the diff. inputs tree at HEAD and at code commit 4ab9cafc0935fc62e8a8862f582330522793a885 is 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35, matching the record. Listed input file hashes match the record."
+      },
+      {
+        "command": "git diff --name-status 607ed958899ce86ef3312f2ac0e23b2f8a1f8294..42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f",
+        "exit_code": 0,
+        "summary": "Only additions: ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py and reports/evidence/G6/{MANIFEST.json,OCOR-DEV-0061.json,OCOR-DEV-0061.log}. Evidence file sha256 values match the request. No sealed evidence file was modified. 4ab9cafc..HEAD adds only the three evidence files."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python -m mypy",
+        "exit_code": 0,
+        "summary": "PASS (mypy 2.3.1, pyproject files ocor-runtime/src and scripts)"
+      },
+      {
+        "command": "python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_ocor_change_scope.py --base origin/main --branch task/OCOR-DEV-0061-fgm-01-10-campaign",
+        "exit_code": 0,
+        "summary": "PASS. Merge-base with origin/main is the request base_sha 607ed958899ce86ef3312f2ac0e23b2f8a1f8294. Scope stays on the task test module and G6 evidence."
+      },
+      {
+        "command": "python scripts/validate_evidence_input_drift.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "python scripts/validate_runtime_evidence.py --task OCOR-DEV-0061 --non-skipped --manifest reports/evidence/G6/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS. Record claims remain E1=0, E2=0, PoC_GO NO-GO, Production_readiness NO_GO, runtime_conformance NOT_ESTABLISHED."
+      },
+      {
+        "command": "python scripts/verify.py --json",
+        "exit_code": 0,
+        "summary": "PASS 14, FAIL 0, NOT_EXECUTED 0. Evidence fence reports E1=0 and no unsupported evidentiary claims."
+      },
+      {
+        "command": "env -i clean shell: python scripts/bootstrap_ci_environment.py --teardown --execute && python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "One fresh env -i shell, bootstrap.env not sourced, no credentials inherited. Teardown of an absent stack then provision PASS in 43.984s. fuseki_max_heap_bytes=1073741824. control-plane SVID spiffe://ocor.test/ocor/control-plane present on recheck. Fuseki archive cache MISS from https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, verified_sha512 matches the lock. 11 containers running, OOMKilled false, restart_count 0."
+      },
+      {
+        "command": "env -i clean shell, exported only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN (plus OCOR_VERIFIER_WORKTREE from env.sh): uv run --project ocor-runtime --frozen --extra test --extra lint pytest -q -p no:cacheprovider -rs ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py",
+        "exit_code": 0,
+        "summary": "22 passed in 31.45s. JUnit tests=22 failures=0 errors=0 skipped=0. No implementer tools were executed."
+      },
+      {
+        "command": "env -i clean shell: python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 4ab9cafc0935fc62e8a8862f582330522793a885 --output-dir /tmp/ocor-verify-OCOR-DEV-0061-42992d6713db-0/literal",
+        "exit_code": 1,
+        "summary": "Fails before pytest: candidate HEAD mismatch, worktree is 42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f. That HEAD only adds the G6 evidence files on top of the code commit. The serial suite was therefore executed on the review HEAD."
+      },
+      {
+        "command": "env -i clean shell, exported only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN (plus OCOR_VERIFIER_WORKTREE from env.sh): python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f --output-dir /tmp/ocor-verify-OCOR-DEV-0061-42992d6713db-0/campaign",
+        "exit_code": 0,
+        "summary": "Serial full suite PASS. JUnit unique cases=3202 failures=0 errors=0 skipped=0, including test_ocor_dev_0048 (196), test_ocor_dev_0049 (390) and test_fgm_01_10 (22). duration_seconds=3947.15, under the 4500s cap. po_decision_required true only because elapsed exceeded the 3600s notification threshold; the campaign returns PASS. No OOM and no restarts of the 11 ocor-bootstrap containers. No kind clusters left. bootstrap.env was not sourced. No implementer tools were executed."
+      },
+      {
+        "command": "env -i clean shell: python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "REMOVED. Residual containers, volumes and networks empty. No kind clusters. Untracked reports/tests/ci_fuseki_build.log produced by provisioning was removed. Tracked worktree clean."
+      }
+    ],
+    "findings": [],
+    "implementers": [
+      "Claude Code (Anthropic), claude-opus-5-5, implementer of record under LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26): inventory, campaign module, qualification and candidate. The loop always counts Codex (OpenAI) among the implementers; Codex did not author code for this task."
+    ],
+    "integration_agent": "Claude Code (Anthropic), claude-opus-5-5, loop implementer (2026-10-26): state-only alignment merge, seal and exact-head integration only",
+    "integration_condition": "Only seal/manifest metadata follow the exact reviewed head; runtime, tests, harness, workflows, locks, raw output and all pre-existing sealed records unchanged. All 13 mandatory checks must succeed on the final seal HEAD before merge --match-head-commit.",
+    "not_executed": [],
+    "prior_verdicts": [],
+    "raw_output_sha256_unchanged": "35277c4e1de5de7cd3bfc0593e37e6d3a0613f4e9ed6d47aad606574e079c7ab",
+    "repair_cycle": 0,
+    "review_type": "TASK_EVIDENCE",
+    "verdict_created_at": "2026-10-26T11:11:43Z",
+    "verdict_file_sha256": "f537d082c907d0f48be068b979e8fecfdaa5d20b69277d8a68cdc5e2a4202d00",
+    "verdict_head_sha": "42992d6713dbdc52ae9cb6f7bc8d3fd1684d832f",
+    "verdict_request_id": "OCOR-DEV-0061-42992d6713db-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Implementatori dichiarati dal loop e dalla richiesta: Claude Code (Anthropic, claude-opus-5-5) e Codex (OpenAI, contato dal loop, non autore del codice). L'evidenza nomina Claude come implementatore di record e dichiara che il loop conta sempre Codex. Verifier: Cursor, Grok 4.7 (xAI), fornitore diverso da entrambi.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito non interattivo"
+    },
+    "verifier_environment": {
+      "path": "/home/luca/.ocor-codex/verify-env/OCOR-DEV-0061-42992d6713db-0/environment.json",
+      "preflight": "PASS",
+      "sha256": "6d8097b19948ad6e74ecb43f5d5621f03792d39893509da67ea574868ac9ace1"
+    }
+  },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
     "ocor-runtime/src/ocor_runtime/memory/consolidation.py": "487a27879db8d42f84f1c25317ad668a124e8051ab83cac1c3d379e9bd12142f",
@@ -860,10 +984,12 @@
     "implementers": [
       "Claude Code (Anthropic), claude-opus-5-5, CLI 2.1.310, implementer of record under LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26): pre-code inventory, campaign module, qualification and this candidate. No other agent touched OCOR-DEV-0061."
     ],
-    "independence": "external loop only; the implementer does not verify. Eligible verifier: a provider different from Anthropic and from OpenAI (the loop always counts Codex), i.e. Cursor/Grok (xAI) or Antigravity/Gemini (Google)."
+    "independence": "external loop only; the implementer does not verify. Eligible verifier: a provider different from Anthropic and from OpenAI (the loop always counts Codex), i.e. Cursor/Grok (xAI) or Antigravity/Gemini (Google).",
+    "verifier": "Grok 4.7 via Cursor CLI (xAI), independent process/context/provider; effective verdict configuration in independent_verification"
   },
   "rollback_procedure_verified": "Mechanical review: the task adds one test module and its evidence (plus the new G6 manifest); no runtime code, schema, migration or existing test changes; rollback is a revert commit of the task merge, after which the G5 manifests and records remain valid unchanged.",
   "schema_version": "1.0",
+  "sealed_at": "2026-10-26T11:13:19.269877+00:00",
   "sealed_dependencies": {
     "OCOR-DEV-0050": "f1e9e6eebae02ea2ad765e54fa3b69d739f8caf8",
     "OCOR-DEV-0051": "408eb1cb5c0e664047b025b2b4a42d0371c3ffbc",
@@ -884,7 +1010,7 @@
     "result": "REMOVED",
     "status": "PASS"
   },
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "structural_tests": [
     "test_campaign_rows_match_the_normative_lld_table",
     "test_every_planned_requirement_is_bound_to_a_positive_and_negative_case"
