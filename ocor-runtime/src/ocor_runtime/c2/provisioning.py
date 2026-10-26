@@ -24,7 +24,9 @@ Order of checks, every one fail-closed and leaving the registry unchanged:
 
 The identity-record schema and the reserved Q1 attribute convention
 (``principal_kind``, ``status``, ``roles``) are unchanged: the boundary
-stores the record exactly as given.
+stores the record exactly as given, through the registry's reserved write
+path, because ``IdentityRegistry.register`` refuses every new record that
+carries Q1 attributes (PO decision REM-0031-REGISTRY-CONSUMER-SCOPE, option 1).
 """
 
 from __future__ import annotations
