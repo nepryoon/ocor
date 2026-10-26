@@ -1,12 +1,11 @@
 {
   "assumptions": [
-    "Reserved Q1 keys are the exact names principal_kind, status, roles; key presence with any value makes a new record privileged.",
-    "An identical replay of an existing record is the unchanged immutability no-op kept first by the PO.",
-    "_admit_provisioned is a private API-surface guarantee, not an in-process isolation boundary (PO point 8)."
+    "The selected real component of a BA case is the one named by ADD v1.3 Part I par. 2.6 unless an explicit governed decision selects a documented fallback (DEC-201: no implicit fallback).",
+    "Implementing or activating a missing candidate or fallback is a technology/change-control choice reserved to the PO; the loop only inventories and requests."
   ],
-  "base_sha": "3e7e1e09e17b138783d3f46566a4471725be8585",
-  "baseline_commit": "3e7e1e09e17b138783d3f46566a4471725be8585",
-  "branch": "governed/state-sync-rem0031-integrated-20261026",
+  "base_sha": "330f58a2e6f2833f0f239f668abec86b79ca9f19",
+  "baseline_commit": "330f58a2e6f2833f0f239f668abec86b79ca9f19",
+  "branch": "governed/state-sync-0060-ba-dr-20261026",
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/MODEL_HANDOFF.json",
@@ -22,66 +21,32 @@
   },
   "commands": [
     {
-      "command": "git merge --no-ff origin/main (7ed0de4) into the candidate branch",
+      "command": "read-only inventory: grep of deploy/bootstrap/compose.yaml services and images, ocor-runtime/src adapters, pyproject.toml/uv.lock clients, ADD v1.3 Part I par. 2.6, DEC-201, LLD v1.1 par. 5.2/7.1",
       "exit_code": 0,
-      "summary": "aligned head b78fe1379dae1e8cdccdb1937117b0fb2481403a; only the four state files differ from a29e00da3a32; non-state tree sha256 cc626f76... equal"
+      "summary": "BA-02/03/04/07/08 executable; BA-05/06 no real component; BA-01 only PostgreSQL fallback adapter, not approved"
     },
     {
-      "command": "seal: independent_verification, roles and status SEALED in the seven records; surgical manifest hash update G0/G2/G4/G5",
+      "command": "git push origin governed/decision-request-ocor-dev-0060-ba-selected-components; gh pr create --draft (PR #351)",
       "exit_code": 0,
-      "summary": "sealed head 50beefa50f340f8a6d9da94d352483c2903ea67b; raw logs unchanged (83bafe86...)"
+      "summary": "decision request commit 803abee616cef879b0c9dfe1218bfaa50200de96, file sha256 84cdd936ef6f2999497ebe3f50cb0b05e56f128ffbe0acab77bc78fff40c7574"
     },
     {
-      "command": "gates on sealed head: sha256sum -c, ruff, validate_rccad, language, change scope, plan --authorized-extension, verify.py, evidence drift, runtime evidence x6",
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
       "exit_code": 0,
-      "summary": "all PASS (plan 37 PASS, 2 optional NOT_EXECUTED; verify 14/0/0; drift 0)"
-    },
-    {
-      "command": "gh pr checks 349 (13 required checks on exact head)",
-      "exit_code": 0,
-      "summary": "PASS; run ids 40267895533, 40267895535, 40267895539, 40267895545, 40267895555, 40267895558, 40267895570"
-    },
-    {
-      "command": "gh pr merge 349 --merge --match-head-commit 50beefa50f340f8a6d9da94d352483c2903ea67b",
-      "exit_code": 0,
-      "summary": "merge commit 3e7e1e09e17b138783d3f46566a4471725be8585; tree equal to PR merge ref; seal hashes unchanged"
+      "summary": "8/8 OK"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0031:integration",
-  "evidence_paths": [
-    "reports/assurance/OCOR-DEV-REM-0031-RCCAD/OCOR-DEV-REM-0031.json",
-    "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0031.json",
-    "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0031.json",
-    "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0031.json",
-    "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0031.json",
-    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0031.json",
-    "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0031.json"
-  ],
-  "exact_next_action": "Avviare OCOR-DEV-0060 (Execute qualifying BA-01 through BA-08 campaign), primo task G6 pronto (hard_dependencies tutte in completed_evidence_tasks; ready set G6: 0060-0064) secondo QUEUE-TO-G6-ORDER, ora che le remediation pre-G6 sono integrate: branch task/OCOR-DEV-0060-<slug> da origin/main in worktree nuovo; leggere per intero obiettivo, acceptance_criteria, negative_acceptance_criteria, validation_commands, rollback_procedure, evidence_outputs e definition_of_done; solo expected_file_areas (ocor-runtime/tests/conformance/ba/) ed evidence_outputs; ogni caso BA sul componente reale selezionato con risultato individuale firmato e hash del raw log, legato al requisito specifico secondo OCOR_TRACEABILITY_PLAN.csv; RED prima del codice, backend reali pinned, zero skip; suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori. OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
-  "head_sha": "3e7e1e09e17b138783d3f46566a4471725be8585",
-  "head_sha_role": "integrated main baseline before state sync",
+  "current_task": "OCOR-DEV-0060:pre-code-inventory",
+  "evidence_paths": [],
+  "exact_next_action": "Avviare OCOR-DEV-0061 (Execute FGM-01 through FGM-10 campaign), numero piu basso del ready set G6 non bloccato (0060 bloccato dalla decision request normativa OCOR-DEV-0060-BA-SELECTED-COMPONENTS, PR #351 bozza): branch task/OCOR-DEV-0061-<slug> da origin/main in worktree nuovo; leggere per intero obiettivo, acceptance_criteria, negative_acceptance_criteria, validation_commands, rollback_procedure, evidence_outputs e definition_of_done; prima del codice inventario in sola lettura dei componenti reali richiesti da FGM-01..FGM-10 (LLD v1.1 par. 7.2) contro stack di bootstrap e adapter del runtime, con decision request se un componente richiesto manca; solo expected_file_areas (ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py) ed evidence_outputs; ogni caso FGM legato al requisito specifico secondo OCOR_TRACEABILITY_PLAN.csv; RED prima del codice, backend reali pinned, zero skip; fence DEC-208 (nessuna kind/scope/lifecycle differita, nessun bypass di C6/C3); suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600; verifica esterna con verifier di fornitore diverso da tutti gli implementatori. OCOR-DEV-0060 e i dipendenti 0065-0069 attendono la disposition del PO. OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
+  "head_sha": "330f58a2e6f2833f0f239f668abec86b79ca9f19",
+  "head_sha_role": "main baseline before state sync",
   "independent_verification": {
-    "findings": [],
-    "head_sha": "a29e00da3a32919da6124d806a74625875e6c4f4",
-    "not_executed": [],
-    "request_id": "OCOR-DEV-REM-0031-a29e00da3a32-0",
-    "sha256": "32e6e5174ea9c064bb536f7fb50a3993463737b10dae0ed22f42bf2966fbffcf",
-    "status": "GO_FOR_EVIDENCE_SEAL",
-    "verdict": "GO_FOR_EVIDENCE_SEAL",
-    "verifier": {
-      "independence_limits": "Processo e contesto separati. Implementatori: Claude Code (Anthropic, claude-opus-5-5) e Codex (OpenAI). Verifier: Cursor, Grok 4.7 (xAI), fornitore diverso da entrambi gli implementatori dichiarati nella richiesta e nell'evidenza.",
-      "model": "grok-4.7-high",
-      "process": "Cursor CLI, contesto pulito non interattivo",
-      "provider": "xAI"
-    }
+    "reason": "no code, test, harness, workflow or evidence record changed",
+    "status": "NOT_REQUIRED_INVENTORY_ONLY"
   },
-  "integration_alignment": {
-    "aligned_head": "b78fe1379dae1e8cdccdb1937117b0fb2481403a",
-    "main_head": "7ed0de41ecb9cdd18d14a3272693f534af10bdf6",
-    "nonstate_git_tree_sha256": "cc626f76ac8e24a24cfcdb92d92dd5a4e2050a3012e572ba3d455b4bd977949c",
-    "qualified_head": "a29e00da3a32919da6124d806a74625875e6c4f4"
-  },
+  "integration_alignment": null,
   "latest_ci_evidence": {
     "bad_checks": [],
     "campaign_artifacts": [
@@ -494,60 +459,37 @@
     "started_at": "2026-10-26T04:12:53Z",
     "status": "PASS_EXACT_HEAD_13_REQUIRED"
   },
-  "local_gate_results": "Seal gates rerun on sealed head: checksum 8/8, harness 14 PASS, drift 0, RCCAD, language, scope, plan (37 PASS, 2 optional NOT_EXECUTED), ruff, runtime evidence for 0043/0044/0058/0005/0050/0082 PASS. mypy not rerun: only JSON records changed since the verifier's PASS.",
-  "next_task": "OCOR-DEV-0060:implementation",
-  "phase": "VERIFIED_SEALED_MERGED",
-  "raw_evidence_location": "reports/assurance/OCOR-DEV-REM-0031-RCCAD and reports/evidence G0/G2/G4/G5 (seven sealed records; raw logs unchanged)",
+  "local_gate_results": "State-sync gates listed in ITERATION_LOG entry; no runtime gate executed (no code change).",
+  "next_task": "OCOR-DEV-0061:implementation",
+  "phase": "OCOR_DEV_0060_INVENTORY_NORMATIVE_DECISION_REQUEST_OPENED",
+  "raw_evidence_location": "none (inventory facts recorded in the decision request file)",
   "requirement_ids": [],
   "roles": {
-    "effective_verifier": {
-      "agent": "Cursor CLI",
-      "independence": "Processo e contesto separati. Implementatori: Claude Code (Anthropic, claude-opus-5-5) e Codex (OpenAI). Verifier: Cursor, Grok 4.7 (xAI), fornitore diverso da entrambi gli implementatori dichiarati nella richiesta e nell'evidenza.",
-      "model": "grok-4.7-high",
-      "provider": "xAI"
-    },
+    "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
     "implementers": [
       {
         "agent": "Claude Code",
         "cli_version": "2.1.310",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0031 consumer inventory, provisioning boundary, register() closure, consumer seeding, qualification, evidence, verification request; then metadata-only alignment, evidence sealing and integration"
-      },
-      {
-        "agent": "Codex",
-        "provider": "OpenAI",
-        "scope": "counted as implementer of the task by the loop rule (LOOP-AGENT-ROTATION point 2; LOOP-IMPLEMENTER-ORDER point 2); no REM-0031 code"
+        "scope": "OCOR-DEV-0060 read-only pre-code inventory, normative decision request and state sync"
       }
     ],
-    "integration_agent": {
-      "agent": "Claude Code",
-      "cli_version": "2.1.310",
-      "model": "claude-opus-5-5",
-      "provider": "Anthropic",
-      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge"
-    }
+    "verifier": "none required: no code, test, harness or evidence change; inventory only"
   },
-  "rollback_result": "new governed revert of the REM-0031 commits; preserve all historical evidence; no inputs change",
+  "rollback_result": "close draft PR #351 and revert this state sync; no code or evidence to roll back",
   "schema_version": "1.0",
-  "seal_hashes": {
-    "reports/assurance/OCOR-DEV-REM-0031-RCCAD/OCOR-DEV-REM-0031.json": "146d331274582f26ed4b37092429293eebc5953728c5009c692dc4d3f9c8230a",
-    "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0031.json": "c99288812f5b9b45d716100ae67fcbb5f70860ec4f783b4bcc112c327c654c7e",
-    "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0031.json": "466105d9371f86db0bf087bf0fe23e2c5a2b17e25183e0cb45a04d3280e232fd",
-    "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0031.json": "6d34d9bcafb29604325a49f251e64d47eb20e0bd9067ecd0bf006a1f02809698",
-    "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0031.json": "eb821b3b2cc4de72984a6605bd72b5483a35b9a5c518fcb83e85b5b414147637",
-    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0031.json": "9a4a7a83d6b99c32987b9c34dd9c0a3039d0feb6aded519250e39600c6373ceb",
-    "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0031.json": "ed4cb2805c9fce72edfab5567ef33bc8b6f3bf1b7abb98fc61c428a4bfcc9bcb"
-  },
+  "seal_hashes": {},
   "security_observability_notes": [
-    "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 thread; no timing measured in this unit.",
-    "Residual risk unchanged: first unauthenticated registry writer remains OPEN until REM-0031 is independently closed.",
+    "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 thread, 32 GB; no timing measured in this unit.",
     "No runtime, test or harness change; no new DEC or evidence-fence promotion."
   ],
   "test_results": {
     "local_full_this_iteration": "NOT_EXECUTED_INVENTORY_ONLY"
   },
-  "unresolved_blockers": [],
-  "updated_at": "2026-10-26T04:45:44.339294+00:00",
-  "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ss-rem0031-integrated"
+  "unresolved_blockers": [
+    "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (OPEN_PO_NORMATIVE_DECISION_REQUIRED, blocks OCOR-DEV-0060 and transitively 0065-0069; 0061-0064 executable)"
+  ],
+  "updated_at": "2026-10-26T05:24:29.313028+00:00",
+  "worktree": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/ss-0060-ba-dr"
 }
