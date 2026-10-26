@@ -44,7 +44,18 @@ from ocor_runtime.c2.provisioning import (
     provisioning_policy_rego,
     provisioning_resource,
 )
-from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry, ResolutionStatus
+from ocor_runtime.c2_identity import (
+    PRIVILEGED_RECORD_REASON_CODE,
+    RESERVED_PRINCIPAL_ATTRIBUTES,
+    IdentityRecord,
+    IdentityRegistrationDenied,
+    IdentityRegistry,
+    ResolutionStatus,
+    identify_or_abstain,
+)
+from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
+from ocor_runtime.errors import IdentityConflictError
+from ocor_runtime.kernel.governance import InMemoryTrustedClock
 from ocor_runtime.kernel.governed_context import GovernedContext
 from ocor_runtime.security.control_plane import (
     KeycloakIdentityProvider,
@@ -300,6 +311,15 @@ def world(opa, identities, mtls):
     return registry, boundary, digest, identities
 
 
+def _reseed(boundary, *records):
+    """A registry seeded at composition with the same real authority ports:
+    after construction, records with Q1 attributes enter only through the boundary."""
+    registry = IdentityRegistry(records)
+    return registry, IdentityProvisioningBoundary(
+        registry, identity=boundary._identity, policy=boundary._policy, audience=boundary._audience
+    )
+
+
 def _provision(boundary, record, username, principal_id, digest, **gcs_kwargs):
     return boundary.provision(
         record,
@@ -347,7 +367,7 @@ def test_authorised_writer_creates_new_q1_record_on_real_backends(world):
 def test_authorised_writer_may_provision_after_composition_seeding(world):
     # Seeding records of other principals does not make the authority one of them.
     registry, boundary, digest, ids = world
-    registry.register(_record("urn:ocor:human:rem0031-seeded-requester", **_q1()))
+    registry, boundary = _reseed(boundary, _record("urn:ocor:human:rem0031-seeded-requester", **_q1()))
     receipt = _provision(boundary, _record(), PROVISIONER_USERNAME, ids["provisioner"], digest)
     assert receipt.record.canonical_id == NEW_HUMAN
     assert len(registry.all_records()) == 2
@@ -458,9 +478,9 @@ def test_writer_registered_as_requester_or_approver_is_denied(world, seed):
     registry, boundary, digest, ids = world
     me = ids["provisioner"]
     if seed["alias"]:
-        registry.register(_record("urn:ocor:human:rem0031-owner", me, **_q1(*seed["roles"])))
+        registry, boundary = _reseed(boundary, _record("urn:ocor:human:rem0031-owner", me, **_q1(*seed["roles"])))
     else:
-        registry.register(_record(me, **_q1(*seed["roles"])))
+        registry, boundary = _reseed(boundary, _record(me, **_q1(*seed["roles"])))
     _denied(
         boundary, registry, _record(), PROVISIONER_USERNAME, me, digest,
         "PROVISIONING_WRITER_IS_REGISTERED_PRINCIPAL",
@@ -477,7 +497,7 @@ def test_writer_registered_as_requester_or_approver_is_denied(world, seed):
 def test_update_of_existing_record_or_identifier_is_denied(world, variant):
     registry, boundary, digest, ids = world
     requester = _record("urn:ocor:human:rem0031-requester", "rem0031-requester-alias", **_q1())
-    registry.register(requester)
+    registry, boundary = _reseed(boundary, requester)
     record = {
         "promotion": _record(requester.canonical_id, **_q1("SECURITY_DUTY_OFFICER")),
         "identical_replay": requester,
@@ -666,8 +686,8 @@ class _LocalPolicy:
         )
 
 
-def _local(policy: _LocalPolicy, identity: _LocalIdentity | None = None):
-    registry = IdentityRegistry()
+def _local(policy: _LocalPolicy, identity: _LocalIdentity | None = None, seed: tuple[IdentityRecord, ...] = ()):
+    registry = IdentityRegistry(seed)
     boundary = IdentityProvisioningBoundary(
         registry, identity=identity or _LocalIdentity(), policy=policy, audience=AUDIENCE
     )
@@ -736,8 +756,7 @@ def test_identity_failures_fail_closed_without_consulting_policy(error, reason, 
 
 def test_boundary_checks_precede_policy_consultation():
     policy = _LocalPolicy()
-    registry, boundary = _local(policy)
-    registry.register(_record(_WRITER, **_q1(kind="WORKLOAD")))
+    registry, boundary = _local(policy, seed=(_record(_WRITER, **_q1(kind="WORKLOAD")),))
     _local_denied(registry, boundary, "PROVISIONING_WRITER_IS_REGISTERED_PRINCIPAL")
     _local_denied(registry, boundary, "PROVISIONING_SELF_ATTRIBUTION", _record(NEW_HUMAN, _WRITER))
     assert policy.calls == 0
@@ -746,7 +765,8 @@ def test_boundary_checks_precede_policy_consultation():
 def test_record_created_concurrently_during_policy_is_not_overwritten():
     racing = _record(NEW_HUMAN, **_q1())
     holder: dict[str, IdentityRegistry] = {}
-    policy = _LocalPolicy(during=lambda: holder["registry"].register(racing))
+    # A concurrent provisioning admitted through the boundary's reserved write path.
+    policy = _LocalPolicy(during=lambda: holder["registry"]._admit_provisioned(racing))
     registry, boundary = _local(policy)
     holder["registry"] = registry
     with pytest.raises(IdentityProvisioningDenied) as excinfo:
@@ -758,7 +778,7 @@ def test_record_created_concurrently_during_policy_is_not_overwritten():
 def test_writer_registered_concurrently_during_policy_is_denied():
     holder: dict[str, IdentityRegistry] = {}
     policy = _LocalPolicy(
-        during=lambda: holder["registry"].register(_record(_WRITER, **_q1("SECURITY_DUTY_OFFICER")))
+        during=lambda: holder["registry"]._admit_provisioned(_record(_WRITER, **_q1("SECURITY_DUTY_OFFICER")))
     )
     registry, boundary = _local(policy)
     holder["registry"] = registry
@@ -851,3 +871,132 @@ def test_signed_policy_clauses_on_real_opa(opa, identities, violation):
     )
     assert status == 200, body
     assert json.loads(body).get("result") is (violation is None)
+
+
+# --------------------------------------------------------------------------- #
+# register() closed by default for reserved Q1 attributes (PO decision
+# REM-0031-REGISTRY-CONSUMER-SCOPE, option 1): immutability first, then every
+# new record carrying principal_kind, status or roles is refused; such records
+# enter only by composition seeding or through the provisioning boundary.
+# --------------------------------------------------------------------------- #
+
+_APPROVER = "urn:ocor:human:rem0031-hostile-approver"
+_GATE_NOW = datetime(2026, 10, 26, 9, tzinfo=UTC)
+
+
+def _register_denied(registry: IdentityRegistry, record: IdentityRecord) -> IdentityRegistrationDenied:
+    before = _snapshot(registry)
+    with pytest.raises(IdentityRegistrationDenied) as excinfo:
+        registry.register(record)
+    assert excinfo.value.reason_code == PRIVILEGED_RECORD_REASON_CODE
+    assert _snapshot(registry) == before, "a refused registration changed the registry"
+    assert registry.get(record.canonical_id) is None or registry.get(record.canonical_id) != record
+    return excinfo.value
+
+
+def test_reserved_q1_attribute_names_are_the_approved_convention():
+    assert RESERVED_PRINCIPAL_ATTRIBUTES == frozenset({"principal_kind", "status", "roles"})
+    assert PRIVILEGED_RECORD_REASON_CODE == "IDENTITY_PRIVILEGED_RECORD_REQUIRES_PROVISIONING"
+    assert issubclass(IdentityRegistrationDenied, PermissionError)
+    assert not issubclass(IdentityRegistrationDenied, IdentityConflictError)
+
+
+def test_hostile_first_writer_directly_on_register_is_denied():
+    # The first writer of a new identity can no longer self-assign an approver role.
+    registry = IdentityRegistry()
+    _register_denied(registry, _record(_APPROVER, "hostile-alias", **_q1("SECURITY_DUTY_OFFICER")))
+    assert registry.all_records() == ()
+    assert registry.candidates("hostile-alias") == ()
+    assert registry.resolve(_APPROVER).status is ResolutionStatus.ABSTAIN
+
+
+def test_hostile_first_writer_cannot_reach_a_human_gate_quorum():
+    seeded = _record("urn:ocor:human:rem0031-real-approver", **_q1("COMPLIANCE"))
+    registry = IdentityRegistry([seeded])
+    _register_denied(registry, _record(_APPROVER, **_q1("RISK_OWNER")))
+    signatures = [
+        GateSignature(action_id="action", principal_id=seeded.canonical_id, role="COMPLIANCE", scope="scope", signed_at=_GATE_NOW),
+        GateSignature(action_id="action", principal_id=_APPROVER, role="RISK_OWNER", scope="scope", signed_at=_GATE_NOW),
+    ]
+    gate = HumanGateCoordinator(identities=registry, clock=InMemoryTrustedClock(_GATE_NOW))
+    with pytest.raises(HumanGateError):
+        gate.validate(
+            action_id="action", proposer_id="urn:ocor:human:rem0031-proposer",
+            policy=ApprovalPolicy(frozenset({"COMPLIANCE", "RISK_OWNER"}), 2, timedelta(minutes=10)),
+            signatures=signatures, scope="scope",
+        )
+
+
+@pytest.mark.parametrize(
+    "attributes",
+    [
+        pytest.param({"principal_kind": "HUMAN"}, id="principal_kind_only"),
+        pytest.param({"status": "ACTIVE"}, id="status_only"),
+        pytest.param({"roles": "SECURITY_DUTY_OFFICER"}, id="roles_only"),
+        pytest.param({"roles": ""}, id="empty_roles"),
+        pytest.param({"principal_kind": "WORKLOAD", "status": "ACTIVE", "roles": ""}, id="workload"),
+        pytest.param({"principal_kind": "HUMAN", "status": "SUSPENDED", "roles": "", "display": "x"}, id="with_other_keys"),
+        pytest.param({"principal_kind": None}, id="null_value"),
+    ],
+)
+def test_register_refuses_every_new_record_with_any_reserved_key(attributes):
+    _register_denied(IdentityRegistry(), _record(_APPROVER, **attributes))
+
+
+def test_register_still_admits_new_records_without_reserved_keys():
+    registry = IdentityRegistry()
+    plain = IdentityRecord(canonical_id="urn:ocor:asset:rem0031-plain", aliases=frozenset({"Plain"}),
+                           attributes={"display_name": "Plain", "Status": "case differs", "role": "not reserved"})
+    assert registry.register(plain) == plain
+    assert registry.register(IdentityRecord(canonical_id="urn:ocor:asset:bare")).attributes == {}
+    assert registry.resolve("plain").canonical_id == plain.canonical_id
+
+
+def test_immutability_conflict_is_checked_before_the_reserved_key_refusal():
+    requester = _record("urn:ocor:human:rem0031-requester", **_q1())
+    registry = IdentityRegistry([requester])
+    with pytest.raises(IdentityConflictError):
+        registry.register(_record(requester.canonical_id, **_q1("SECURITY_DUTY_OFFICER")))
+    plain = IdentityRecord(canonical_id="urn:ocor:asset:rem0031-plain")
+    registry.register(plain)
+    with pytest.raises(IdentityConflictError):
+        registry.register(_record(plain.canonical_id, **_q1("SECURITY_DUTY_OFFICER")))
+    assert registry.get(requester.canonical_id) == requester
+    assert registry.get(plain.canonical_id) == plain
+
+
+def test_identical_replay_of_a_seeded_record_adds_nothing():
+    requester = _record("urn:ocor:human:rem0031-requester", **_q1())
+    registry = IdentityRegistry([requester])
+    before = _snapshot(registry)
+    assert registry.register(requester) is registry.get(requester.canonical_id)
+    assert _snapshot(registry) == before
+
+
+def test_composition_seeding_admits_q1_records_with_immutability():
+    a = _record("urn:ocor:human:rem0031-a", "alias-a", **_q1("COMPLIANCE"))
+    b = _record("urn:ocor:human:rem0031-b", **_q1())
+    registry = IdentityRegistry(iter([a, b, a]))
+    assert registry.all_records() == (a, b)
+    assert registry.resolve("ALIAS-A").canonical_id == a.canonical_id
+    with pytest.raises(IdentityConflictError):
+        IdentityRegistry([a, _record(a.canonical_id, **_q1("RISK_OWNER"))])
+    assert identify_or_abstain([a, b], "alias-a").canonical_id == a.canonical_id
+
+
+def test_no_public_registry_method_admits_q1_records_after_construction():
+    public = {name for name in vars(IdentityRegistry) if not name.startswith("_")}
+    assert public == {"register", "get", "add_alias", "candidates", "resolve", "all_records"}
+    registry = IdentityRegistry()
+    with pytest.raises(KeyError):
+        registry.add_alias(_APPROVER, "hostile-alias")
+    _register_denied(registry, _record(_APPROVER, **_q1("SECURITY_DUTY_OFFICER")))
+    assert registry.all_records() == ()
+
+
+def test_boundary_is_the_only_runtime_writer_of_q1_records():
+    registry, boundary = _local(_LocalPolicy())
+    _register_denied(registry, _record())
+    receipt = _provision(boundary, _record(), "local", _WRITER, _LOCAL_DIGEST)
+    assert registry.get(NEW_HUMAN) == receipt.record
+    assert dict(receipt.record.attributes) == _q1("SECURITY_DUTY_OFFICER")

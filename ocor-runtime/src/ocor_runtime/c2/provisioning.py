@@ -208,7 +208,7 @@ class IdentityProvisioningBoundary:
         with self._registry._lock:
             self._require_unregistered_writer(actors, correlation_id)
             self._require_new_identifiers(record, correlation_id)
-            stored = self._registry.register(record)
+            stored = self._registry._admit_provisioned(record)
         return ProvisioningReceipt(
             record=stored,
             writer_principal_id=writer.principal_id,

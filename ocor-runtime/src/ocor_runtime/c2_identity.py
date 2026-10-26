@@ -10,7 +10,20 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
-from .errors import IdentityConflictError
+from .errors import IdentityConflictError, OCORError
+
+# Reserved Q1 attributes of identity-record v1.2 (PO decision
+# REM-0024-BREAK-GLASS-PRINCIPAL-AUTHORITY): only composition seeding and the
+# IdentityProvisioningBoundary may introduce a record that carries them
+# (PO decision REM-0031-REGISTRY-CONSUMER-SCOPE, option 1).
+RESERVED_PRINCIPAL_ATTRIBUTES = frozenset({"principal_kind", "status", "roles"})
+PRIVILEGED_RECORD_REASON_CODE = "IDENTITY_PRIVILEGED_RECORD_REQUIRES_PROVISIONING"
+
+
+class IdentityRegistrationDenied(OCORError, PermissionError):
+    """A new record with reserved Q1 attributes reached the open write path."""
+
+    reason_code = PRIVILEGED_RECORD_REASON_CODE
 
 
 def normalize_identifier(value: str) -> str:
@@ -62,14 +75,31 @@ class IdentityRegistry:
     Alias collisions are retained as evidence of ambiguity.  The resolver then
     abstains unless authoritative evidence selects one candidate with sufficient
     confidence and margin.
+
+    Records carrying reserved Q1 attributes enter only as ``records`` seeded at
+    construction, before the registry is shared, or later through
+    ``IdentityProvisioningBoundary``; ``register`` refuses every new one.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, records: Iterable[IdentityRecord] = ()) -> None:
         self._records: dict[str, IdentityRecord] = {}
         self._aliases: dict[str, set[str]] = {}
         self._lock = threading.RLock()
+        for record in records:
+            self._store(record)
 
     def register(self, record: IdentityRecord) -> IdentityRecord:
+        with self._lock:
+            return self._store(record)
+
+    def _admit_provisioned(self, record: IdentityRecord) -> IdentityRecord:
+        """Write path reserved to IdentityProvisioningBoundary, which has
+        authenticated and authorised the writer and holds the lock."""
+
+        with self._lock:
+            return self._store(record)
+
+    def _store(self, record: IdentityRecord) -> IdentityRecord:
         with self._lock:
             existing = self._records.get(record.canonical_id)
             if existing is not None:
@@ -186,8 +216,5 @@ IdentityResolver = IdentityRegistry
 def identify_or_abstain(
     records: Iterable[IdentityRecord], identifier: str
 ) -> ResolutionOutcome:
-    registry = IdentityRegistry()
-    for record in records:
-        registry.register(record)
-    return registry.resolve(identifier)
+    return IdentityRegistry(records).resolve(identifier)
 
