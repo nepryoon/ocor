@@ -136,3 +136,48 @@ contato fra gli implementatori dal loop; il verifier dell'unità implementativa 
 essere di un fornitore diverso (Cursor/Grok, xAI, o Antigravity/Gemini, Google).
 `inputs/` intatto; E1=0, E2=0, Verified=0, runtime `NOT_ESTABLISHED`, PoC/Production
 `NO-GO`. Nessun nuovo `DEC-*`, nessuna chiusura di `OI-*`/`ASM-*`/`RSK-*`.
+
+## Disposition PO (2026-10-25)
+
+Decisione `REM-0031-REGISTRY-CONSUMER-SCOPE (2026-10-25)`: scelta l'**opzione 1**,
+alle condizioni della decisione (file della richiesta letto con sha256
+`4efd0f22c1c0bb13ee8f9fe48644bf0f3e2528cc5f131ea3c1307b8d7ea12c67`, commit
+`4daecbf19c07f88b88edc1a1e16bd2d08701caac`). Estende soltanto il perimetro di
+`REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (2026-10-14)`, opzione 1, che resta
+vigente per il resto. Stato della richiesta: risolta.
+
+- `register()`: controllo di immutabilità per primo (`IdentityConflictError`
+  invariato); poi ogni record nuovo con chiavi Q1 (`principal_kind`, `status`,
+  `roles`) è rifiutato con reason code dedicato; record senza chiavi Q1, schema
+  `identity-record` e convenzione Q1 invariati.
+- Ingressi dei record Q1: soltanto seeding alla costruzione e, a runtime,
+  `IdentityProvisioningBoundary` (Keycloak reale, OPA reale con bundle firmato,
+  auto-attribuzione, writer registrati e aggiornamento negati, fail-closed).
+- Se il reason code richiedesse di modificare un registro, contratto o schema
+  sigillato o un artefatto normativo: stop e nuova decision request.
+- Consumer di test: soltanto le scritture inventariate nei sei moduli
+  (`0043`, `0044`, `0058`, `REM-0024`, `REM-0027`, `REM-0028`), con prova AST e
+  test che fallisce se il diff tocca altro;
+  `test_a_requester_cannot_update_its_record_into_an_approver` attende ancora
+  `IdentityConflictError`.
+- Riqualifiche con supersession per `0043`, `0044`, `0058`; regressione
+  documentata di `REM-0024`, `REM-0027`, `REM-0028` senza nuovi record;
+  nell'allowlist del piano solo i nuovi percorsi esatti.
+- Verifica: suite del task e suite completa seriale da shell pulita; verifier
+  esterno di fornitore diverso da tutti gli implementatori (mai OpenAI o
+  Anthropic).
+- Nessun test indebolito; nessun caso, limite, timeout o soglia cambiato. La
+  prova resta in processo e non dimostra runtime conformance.
+
+Attuazione (2026-10-26): candidato sul branch
+`governed/ocor-dev-rem-0031-identity-registry-writer-authority`; il reason
+code (`IDENTITY_PRIVILEGED_RECORD_REQUIRES_PROVISIONING`) è definito in codice
+in `c2_identity.py` senza toccare registri, contratti, schemi o artefatti
+normativi; nessun sito oltre i sei moduli ha richiesto modifiche. La modifica
+dell'allowlist del validator di piano impone inoltre le riqualifiche di sola
+regressione di `0005`, `0050` e `0082` (regola R3, come in REM-0023 e REM-0027).
+
+Registrazione: Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310),
+implementatore del loop secondo LOOP-IMPLEMENTER-ORDER; Codex (OpenAI) contato
+fra gli implementatori del task. Claim invariati: E1=0, E2=0, Verified=0;
+runtime NOT_ESTABLISHED, PoC/Production NO-GO.
