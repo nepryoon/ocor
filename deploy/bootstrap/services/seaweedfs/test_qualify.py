@@ -122,18 +122,21 @@ class SeaweedFSQualificationContractTests(unittest.TestCase):
 
     def test_sigv4_matches_the_published_aws_example(self) -> None:
         # AWS S3 API reference, "Signature Calculations for the Authorization
-        # Header", example GET Object request.
+        # Header", example GET Object request. The access key id is not part
+        # of the string to sign, so the published signature holds for any id;
+        # a neutral id replaces the documented AKIA-shaped one, which the
+        # supply-chain secret scanner rightly refuses in the repository.
         headers = qualify.sign(
             "GET",
             "https://examplebucket.s3.amazonaws.com/test.txt",
-            "AKIAIOSFODNN7EXAMPLE",
+            "OCOR-SIGV4-EXAMPLE-KEY-ID",
             "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             now=datetime(2013, 5, 24, tzinfo=UTC),
             headers={"Range": "bytes=0-9"},
         )
         self.assertEqual(
             headers["authorization"],
-            "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, "
+            "AWS4-HMAC-SHA256 Credential=OCOR-SIGV4-EXAMPLE-KEY-ID/20130524/us-east-1/s3/aws4_request, "
             "SignedHeaders=host;range;x-amz-content-sha256;x-amz-date, "
             "Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41",
         )
