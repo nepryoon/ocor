@@ -135,3 +135,45 @@ dimostrate da test negativi, e non allenta alcun limite, timeout o gate.
 - Non bloccati: `OCOR-DEV-0062`, `OCOR-DEV-0063`, `OCOR-DEV-0064`.
 - Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e
   Production `NO-GO`. Nessun nuovo `DEC-*`.
+
+## Disposition PO (2026-10-26)
+
+Decisione **normativa** `REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26)`, presa dal PO con
+istruzione esplicita: scelta l'**opzione 1** con tre condizioni (file della richiesta letto
+con sha256 `7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943`, commit
+`fdb2704762697dbe74a34c8a44670b11d86e6924`). Stato della richiesta: risolta.
+
+- Opzione 1: nel solo `reports/tests/test_kind_teardown_observation.py` una normalizzazione
+  per REM-0038 sul modello di `retire_integrated_0049_pin`, che riporta alla forma della
+  baseline `MANDATORY_CONTAINERS = 15`, le due sostituzioni di `11` (in `main` e in
+  `observe_health_event`) e i due segnaposto `OCOR_LOCAL_SEAWEEDFS_PASSWORD` e
+  `OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD` del workflow di tooling, ciascuna con conteggio
+  verificato; test negativi per ogni altra differenza (un'altra costante, un'altra funzione,
+  `MANDATORY_CONTAINERS` diverso da 15, una riga di workflow in più). Invariati le baseline
+  `9b4d3be` e `7cd5f7a`, i controlli su `WINDOW_SECONDS`, `POLL_SECONDS`, `SAMPLE_SECONDS`,
+  `KIND_BINARY`, i timeout delle sonde a 10 s, l'esclusione di `observe_health_event` e le
+  normalizzazioni esistenti. Rientra nella riparazione 1 di `OCOR-DEV-REM-0038`, con verifica
+  esterna ordinaria, sigillo, CI sull'HEAD esatto e merge.
+- Condizione a: lo stesso schema è autorizzato preventivamente soltanto per
+  `OCOR-DEV-REM-0042` (`FULL_SUITE_LIMIT_SECONDS` da 4500 a 5400, `LOCAL-FULL-SUITE-CAP-90`) e
+  per `OCOR-DEV-REM-0039`–`0041` (modifiche a workflow e `run_qualifying_campaign.py`
+  strettamente necessarie ai servizi di `OCOR-DEV-0060-BA-SELECTED-COMPONENTS`). Una
+  differenza che cambia limiti, timeout, finestre, cadenze, timer, partizioni, selezione dei
+  casi o gate richiede una nuova decision request.
+- Condizione b: prima di ogni campagna e di ogni push di un candidato, l'implementatore esegue
+  in locale i moduli di guardia dell'aggregato `validation-closure` e ne registra l'esito
+  nell'evidenza.
+- Condizione c: dopo l'integrazione di `OCOR-DEV-REM-0041`, una decision request separata
+  valuta il consolidamento delle normalizzazioni in una nuova baseline, con prova di
+  equivalenza; fino ad allora le baseline non si spostano.
+- Chiarimento: i timeout vigenti dei job della CI restano invariati (oggi `timeout-minutes: 75`
+  per le parti); `MAIN-CI-30MIN-JOB-CAP` non è riattivato.
+- Ordine: riparazione 1 e integrazione di REM-0038, poi REM-0042, poi REM-0039, 0040, 0041,
+  poi `OCOR-DEV-0060`; `OCOR-DEV-0062`–`0064` quando le remediation attendono una verifica.
+
+`DEC-*`: nessun nuovo identificativo. La procedura vigente non lo richiede: il mandato
+`CC-OCOR-DELIVERY-COMPLETION` non attiva l'eccezione di baseline promotion di `AGENTS.md`,
+che sola autorizza nuovi `DEC-*`. La decisione è registrata come decisione normativa del PO in
+questo file, nel registro `blockers` e nell'`ITERATION_LOG.md`. Registrazione: Claude Code
+(Anthropic, claude-opus-5-5), implementatore del loop. Claim invariati: E1=0, E2=0,
+Verified=0; runtime NOT_ESTABLISHED, PoC/Production NO-GO.
