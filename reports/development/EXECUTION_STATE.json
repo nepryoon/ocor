@@ -1,144 +1,150 @@
 {
   "active_iteration": {
-    "baseline_commit": "debd2d464fdbeb43ecd9aa15f21c67ea25cc3885",
-    "branch": "governed/state-sync-rem0038-integration-ci-fail-20261026",
+    "baseline_commit": "1bbf270dfe4a27ed68f24434f74982732537f90e",
+    "branch": "governed/state-sync-rem0038-repair1-candidate-20261026",
     "campaign_background_processes_remaining": false,
     "candidate": {
-      "aligned_head": "a149db8",
-      "branch": "governed/ocor-dev-rem-0038-ba-services",
-      "ci": {
-        "checkruns_json_sha256": "d6a4844b9a8acb6984f3b623ee51d038aef702e4c806e810407a7ec3d1ea3cff",
-        "longest_jobs_seconds": {
-          "delivery-activation part 4/4": 1859,
-          "rccad-methodology part 4/4": 1729,
-          "validation-closure part 4/4": 1844
+      "branch": "governed/ocor-dev-rem-0038-ba-services-repair-1",
+      "code_commit": "12659a1cd847f53991e96991033104326abf1cda",
+      "evidence_paths": [
+        "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.json",
+        "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.log",
+        "reports/assurance/OCOR-DEV-REM-0038-RCCAD/README.md",
+        "reports/evidence/G0/MANIFEST.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.log",
+        "reports/evidence/G2/MANIFEST.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.log",
+        "reports/evidence/G5/MANIFEST.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.log"
+      ],
+      "full_suite": {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 3224
         },
-        "pr": 357,
-        "required_checks": [
-          "contract",
-          "unit",
-          "integration-postgresql",
-          "backend-compatibility-not-ba-evidence",
-          "evidence",
-          "mandatory-gates",
-          "rccad-methodology",
-          "delivery-activation",
-          "validation-closure",
-          "supply-chain",
-          "type-and-lint-gate",
-          "tooling-policy",
-          "fgm-contract-readiness-not-runtime-evidence"
-        ],
-        "required_results": {
-          "backend-compatibility-not-ba-evidence": "success",
-          "contract": "success",
-          "delivery-activation": "success",
-          "evidence": "success",
-          "fgm-contract-readiness-not-runtime-evidence": "success",
-          "integration-postgresql": "success",
-          "mandatory-gates": "success",
-          "rccad-methodology": "success",
-          "supply-chain": "success",
-          "tooling-policy": "failure",
-          "type-and-lint-gate": "success",
-          "unit": "success",
-          "validation-closure": "failure"
+        "duration_seconds": 4007.0,
+        "power": "mains at start and end (79%)",
+        "status": "PASS"
+      },
+      "gates": {
+        "checksum": "PASS",
+        "drift": "PASS",
+        "language": "PASS",
+        "lock-validation": "PASS",
+        "mypy": "PASS",
+        "plan": "PASS",
+        "rccad": "PASS",
+        "ruff": "PASS",
+        "runtime-0005": "PASS",
+        "runtime-0050": "PASS",
+        "runtime-0070": "PASS",
+        "runtime-0072": "PASS",
+        "runtime-0073": "PASS",
+        "runtime-0074": "PASS",
+        "runtime-0075": "PASS",
+        "runtime-0076": "PASS",
+        "runtime-0077": "PASS",
+        "runtime-0078": "PASS",
+        "runtime-0079": "PASS",
+        "runtime-0082": "PASS",
+        "scope": "PASS",
+        "supply_chain_scanner_1.1.0": "PASS (0 blocking)",
+        "tooling_compose_step": "PASS",
+        "validation_closure_guards": "PASS 239",
+        "verify-harness": "PASS"
+      },
+      "head_sha": "15ca445f50e6fcb67d02d4e7474259b91a7152a1",
+      "non_qualifying_attempts": {
+        "a0-missing-plan-allowlist": "code commit 6f748b3: the campaign was stopped by the implementer during the first bootstrap of phase A (only stack-absent-initial had run) because the repair-1 evidence paths had not been declared in the planning allowlist before the campaign (precedent 4053ca9); the partial stack was torn down with reset_test_environment.py --execute (PASS, zero residue), its credentials archived here, and the paths declared in 1b1160f before restarting",
+        "a1-superseded-code-commit-1b1160f": "code commit 1b1160f: the whole campaign passed (phase A, task 22/22 x3, regression 325, reports portfolio 362, full serial suite 3224/3224 in 4146.3 s, teardown), but the evidence gates then showed that the allowlist extension of 1b1160f also drifts the sealed OCOR-DEV-0082 record (scripts/validate_ocor_development_plan.py is one of its inputs); the pre-campaign drift check had been read by count, not by task list. 0082 paths were declared in 12659a1 and the whole campaign re-run at that commit; the unpushed evidence commit e37b4d5 is kept as a patch"
+      },
+      "not_executed": [
+        {
+          "carried_to": "OCOR-DEV-REM-0039",
+          "check": "DEP-011 Temporal benchmark",
+          "reason": "requires the Temporal Python SDK worker of change set b"
         },
-        "run_ids": [
-          "40375837414",
-          "40375837483",
-          "40375837544",
-          "40375837616",
-          "40375837627",
-          "40375838054"
-        ],
-        "summary_it": "11 check obbligatori su 13 verdi; tooling-policy FAIL (run 40375838054) e validation-closure FAIL (aggregato, run 40375837616); zero rerun; non mergiata. Run 40375837414, 40375837483, 40375837544, 40375837616, 40375837627, 40375838054."
-      },
-      "ci_failure": {
-        "diagnosis": "Real, deterministic failure, not infrastructural: no rerun. The Compose rendering check of the tooling-policy job exports placeholders only for the pre-existing required variables; compose.yaml at the candidate also requires OCOR_LOCAL_SEAWEEDFS_PASSWORD and OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD. Local RED with the exact workflow command at the sealed head: exit 1 with the four interpolation errors; probe with the two extra placeholders: exit 0. Not caught before push because no local gate renders Compose with the workflow environment and the verifier's command set did not include the tooling-policy workflow step.",
-        "error": "error while interpolating services.temporal-admin-tools.environment.SQL_PASSWORD: required variable OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD is missing a value: required",
-        "job": "tooling-policy",
-        "local_green_probe_log_sha256": "19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061",
-        "local_red_log_sha256": "376550e61bfcdccf8faed6645f2264d2723c9e6fa567b25514d0eda0601cffaf",
-        "logs_location": "/home/luca/.ocor-codex/integrate-rem0038-20261026 (outside Git)",
-        "probe_patch_sha256": "9f21728bcb1f214dc66d9d951cff393b68119d28e95cfb899695bba94a942ac7",
-        "probe_results_at_dc5a404_plus_patch": {
-          "drift": "PASS, drifted_inputs 0 (241 inputs, 75 tasks)",
-          "plan": "PASS 37, NOT_EXECUTED 2",
-          "rccad": "PASS_LOCAL_PRECHECK",
-          "scope": "PASS"
+        {
+          "check": "image vulnerability scan / image SBOM",
+          "reason": "no image scanner in infra/toolchain.lock.json or infra/qualification_tools.lock.json; not installed ad hoc"
         },
-        "run_id": "40375838054",
-        "step": "Validate manifests and Compose rendering",
-        "workflow": ".github/workflows/ocor-tooling-bootstrap.yml"
-      },
-      "ci_failure_guard": {
-        "diagnosis": "Real failure: reports/tests/test_kind_teardown_observation.py (test_bootstrap_probe_change_is_observation_only_against_main, test_execution_ast_and_workflows_are_identical) freezes scripts/run_qualifying_campaign.py and every workflow to baselines 9b4d3be/7cd5f7a with enumerated normalizations only; REM-0038 changed main (11 -> MANDATORY_CONTAINERS = 15). With origin/main's campaign script the module passes 39/39; the workflow placeholders alone also fail it. Not run by the local or verifier suites (aggregate-only guard). Admission of authorized changes in a PO-invariant guard: decision request REM-0038-CAMPAIGN-GUARD-ADMISSION.",
-        "job": "validation-closure (aggregate)",
-        "local_red_log_sha256": "b27282741c520862d6af55a34a8b046a33ef4f1a181899a22ab895600b8e41f3",
-        "probe_workflow_only_log_sha256": "6f69cdcb00bf768d29a0e208c07b35f886b3c70f67b26774b9f40dae28a571bd",
-        "run_id": "40375837616",
-        "step": "Execute conditional report guards and campaign supervisor tests"
-      },
-      "decision_request": {
-        "branch": "governed/decision-request-rem0038-campaign-guard-admission",
-        "commit": "fdb2704762697dbe74a34c8a44670b11d86e6924",
-        "path": "reports/development/decision_requests/REM-0038-CAMPAIGN-GUARD-ADMISSION.md",
-        "pr": 358,
-        "publication": "DRAFT_PR_NOT_TO_BE_MERGED_PLAN_ALLOWLIST_UNCHANGED",
-        "sha256": "7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943"
-      },
-      "pull_request": 357,
-      "qualified_head": "dc5a404b350f47c0caa7e9432695e835dc162222",
-      "request_id": "OCOR-DEV-REM-0038-dc5a404b350f-0",
-      "seal_hashes": {
-        "reports/assurance/OCOR-DEV-REM-0038-RCCAD/OCOR-DEV-REM-0038.json": "237035d140b1ffc36fd4d3de31031b822ebb6d9a6c06a9b40e0f6a8ff2486446",
-        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038.json": "3baec5ae2487e8e740ff8c83ae86717850456354ee9d8b9704b00a722abaa6df",
-        "reports/evidence/G2/OCOR-DEV-0070.requalified-rem0038.json": "4260b175a4f7134d83dbe5178382f310012267ca3524b2d6822777dd3aa2c425",
-        "reports/evidence/G2/OCOR-DEV-0072.requalified-rem0038.json": "90ee5f697bb9574c7d166eb1d11dc16c8a2cea2113395820cd3038590709a253",
-        "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0038.json": "0dddf73884c20dbc908404c99943854f9630fb79e3eb320c3943a7f60f0466b6",
-        "reports/evidence/G2/OCOR-DEV-0074.requalified-rem0038.json": "41f0afa1d62b50aac37fb3aeddfa756fe05e0ec5fc8f4441325b9da9c5934342",
-        "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0038.json": "e970ed4becee73e40e7ad8d78856286816a15b0a8083d6f41dbe6e09ed80899c",
-        "reports/evidence/G2/OCOR-DEV-0076.requalified-rem0038.json": "4caf501d6df13c4d9b978a63141f97a7b929577de33e56370d2914b134a39404",
-        "reports/evidence/G2/OCOR-DEV-0077.requalified-rem0038.json": "7dc4d3ec02d65b2e6f9753374b6830473d8e0d226c3c2777c91eb30d862b3fb4",
-        "reports/evidence/G2/OCOR-DEV-0078.requalified-rem0038.json": "b69f069dad1066a28bebaa7df06226c86a07cd769f01e2191b111732d1c5bd4a",
-        "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0038.json": "24c981598bbc60ae1748fb919f0cbd160e84ca543f4b4cb9535ecb2ba68d4008",
-        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038.json": "03cae29e37dd8d4645bc159c205ec1e71032a672d001ed5872e8411f3b953bf8",
-        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038.json": "ed65f7b71f83d1baabd3ab81dd530086b8a6093ef0eccac4842ea1a11c75d643"
-      },
-      "sealed_head": "03edc31a8ced808259290bb055b807f2d97af562",
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verdict_file_sha256": "785154e2cb53163af8ff13c856fa0eecb0f38a3a0d4ba0ec8e0b222c43c9c214"
+        {
+          "check": "mutation probe",
+          "reason": "not run for this change set; RED on origin/main and negative-branch unit contracts instead"
+        }
+      ],
+      "requalifications": [
+        {
+          "record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.json",
+          "record_sha256": "5269d14081c3bf2ccebfaf1c7cfd8f8228cf633b172ee37865722ff724f21bb6",
+          "scope": "regression",
+          "supersedes": "OCOR-DEV-0005-requalified-rem0038-36e61515552d",
+          "supersedes_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038.json",
+          "task_id": "OCOR-DEV-0005"
+        },
+        {
+          "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.json",
+          "record_sha256": "719d10f0fb952d729010871e5dc0d7f5f0311d34450ee8e68be7b4c645d4880e",
+          "scope": "regression",
+          "supersedes": "OCOR-DEV-0050-requalified-rem0038-36e61515552d",
+          "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038.json",
+          "task_id": "OCOR-DEV-0050"
+        },
+        {
+          "record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.json",
+          "record_sha256": "33047d70bb4bcee900cb2233d6cf4f4f7918c19c3978a63a481e2e99d22b05ce",
+          "scope": "regression",
+          "supersedes": "OCOR-DEV-0082-requalified-rem0038-36e61515552d",
+          "supersedes_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038.json",
+          "task_id": "OCOR-DEV-0082"
+        }
+      ],
+      "request_id": "OCOR-DEV-REM-0038-15ca445f50e6-1",
+      "task_runs": {
+        "module": "tests/tasks/test_ocor_dev_rem_0038.py",
+        "passed_each": 22,
+        "regression": 325,
+        "reports_portfolio": 362,
+        "runs": 3,
+        "validation_closure_guards": 239
+      }
     },
-    "change_set": "OCOR-DEV-REM-0038 integration attempt (GO, seal, exact-head CI FAIL, not merged)",
+    "change_set": "OCOR-DEV-REM-0038 repair 1 (exact-head CI failures of PR #357; PO REM-0038-CAMPAIGN-GUARD-ADMISSION option 1)",
     "decisions": [
-      "CC-OCOR-DELIVERY-COMPLETION par. 5 point 8 (real failure: back to point 7)",
+      "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) option 1",
+      "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26) option 2, change set a",
+      "LOCAL-FULL-SUITE-CAP-90 (2026-10-26) (REM-0042, not applied here)",
+      "REM-0033-LOCAL-FULL-DURATION (2026-10-25)",
       "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-      "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
-      "LOCAL-FULL-SUITE-CAP-90 (2026-10-26)",
-      "REM-0033-LOCAL-FULL-DURATION (2026-10-25)"
+      "VERIFIER-ENV-CLEAN-SHELL (2026-10-24)",
+      "CC-OCOR-DELIVERY-COMPLETION par. 4-8"
     ],
-    "next_action": "OCOR-DEV-0062 implementation (FGM-11..FGM-20 campaign), the lowest executable task not blocked by a PO decision. OCOR-DEV-REM-0038 repair cycle 1 waits for the PO disposition of REM-0038-CAMPAIGN-GUARD-ADMISSION (governed/decision-request-rem0038-campaign-guard-admission, commit fdb2704762697dbe74a34c8a44670b11d86e6924, file sha256 7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943, draft PR #358; recommendation Option 1). The sealed branch governed/ocor-dev-rem-0038-ba-services @ 03edc31a8ced and PR #357 stay preserved and unmerged; do not rewrite them or the sealed records. After the disposition, repair cycle 1 (REMEDIATION): new isolated worktree and governed branch, RED first for both failures (workflow compose-config placeholders OCOR_LOCAL_SEAWEEDFS_PASSWORD and OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD; test_kind_teardown_observation guards as the PO decides), distinct record IDs/paths with explicit supersedes to the sealed originals (REM-0022 precedent), run the validation-closure guard modules and the inline supply-chain scanner locally before the campaign, full serial suite from a clean shell with the locked PATH and power logged at start and end, then a new verification request to a verifier of a provider different from all implementers (Cursor/Grok xAI or Antigravity/Gemini Google; never OpenAI or Anthropic). Then OCOR-DEV-REM-0042 (LOCAL-FULL-SUITE-CAP-90, ID verified free; also subject to the guard disposition), REM-0039..0041, OCOR-DEV-0060 after all four BA remediations. OCOR-DEV-REM-0037 suspended until after G6. No new DEC; claims unchanged.",
+    "next_action": "OCOR-DEV-0062 implementation (FGM-11..FGM-20 campaign), the lowest executable task while OCOR-DEV-REM-0038 repair 1 awaits the external verdict OCOR-DEV-REM-0038-15ca445f50e6-1 (verifier of a provider different from all implementers: Cursor/Grok xAI or Antigravity/Gemini Google; never Anthropic or OpenAI). On GO_FOR_EVIDENCE_SEAL: seal the four repair records (repair-1, 0005/0050/0082 requalified-rem0038-repair1) on governed/ocor-dev-rem-0038-ba-services-repair-1, open the PR, run the validation-closure guard modules, the supply-chain scanner and the tooling Compose step locally before the push (PO condition b), wait for all 13 required checks on the exact head, merge with --match-head-commit, then close PR #357 as superseded (never rewrite 03edc31). On NO_GO: repair cycle 2 (last). Then OCOR-DEV-REM-0042 (LOCAL-FULL-SUITE-CAP-90, own exact guard normalisation per condition a), REM-0039..0041, OCOR-DEV-0060 after all four BA remediations; consolidation decision request after REM-0041 (condition c). OCOR-DEV-REM-0037 suspended until after G6. No new DEC; claims unchanged.",
     "normative_interpretations": [
-      "A real CI failure after the GO and the seal is handled as repair cycle 1 of the ordinary budget, not as an infrastructure rerun; fail-closed, the GO on dc5a404 is not reused for a different head.",
-      "The sealed branch and PR #357 are preserved unmerged (REM-0022 precedent): no sealed record is rewritten; the repair emits distinct records with explicit supersession."
+      "PO option 1 names 'le due sostituzioni di 11 (in main e in observe_health_event)'. In main the REM-0038 change touches the inventory comparison and the f-string message of the same raise; both are normalised as one fragment, the minimum needed to restore the baseline AST. Nothing else in main is normalised.",
+      "The repair stays under the 75-minute full-suite cap: LOCAL-FULL-SUITE-CAP-90 is implemented by OCOR-DEV-REM-0042 after the integration of REM-0038 (decision point 4), so this campaign is still qualified with FULL_SUITE_LIMIT_SECONDS = 4500.",
+      "The GO OCOR-DEV-REM-0038-dc5a404b350f-0 is not reused: a new external verification of a provider different from all implementers (never Anthropic or OpenAI) is requested for the repaired head."
     ],
-    "phase": "OCOR_DEV_REM_0038_INTEGRATION_CI_FAIL_PO_DECISION_PENDING",
+    "phase": "OCOR_DEV_REM_0038_REPAIR_1_VERIFICATION_REQUESTED",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
         {
           "agent": "Claude Code",
-          "cli_version": "2.1.310",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "REM-0038 implementation, campaign and evidence (previous iterations); this iteration: alignment, sealing, PR #357, CI diagnosis, state sync"
+          "scope": "REM-0038 implementation, campaign, evidence, sealing (previous iterations); this iteration: PO disposition record, repair 1 RED/GREEN, requalification campaign, evidence, verification request, state sync"
         }
       ],
       "loop_counted_implementers": [
         "Codex (OpenAI)"
       ],
-      "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0038-dc5a404b350f-0)"
+      "verifier": "external loop only: Cursor/Grok (xAI) or Antigravity/Gemini (Google); never Anthropic or OpenAI"
     }
   },
   "backlog_escalations": {
@@ -1867,7 +1873,7 @@
       }
     }
   },
-  "baseline_commit": "debd2d464fdbeb43ecd9aa15f21c67ea25cc3885",
+  "baseline_commit": "1bbf270dfe4a27ed68f24434f74982732537f90e",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -5981,10 +5987,7 @@
       "status": "RESOLVED_PO_NORMATIVE_DECISION_IMPLEMENTATION_REQUIRED"
     },
     {
-      "blocked_tasks": [
-        "OCOR-DEV-REM-0038",
-        "OCOR-DEV-REM-0042"
-      ],
+      "blocked_tasks": [],
       "created_at": "2026-10-26T19:00:21.558587+00:00",
       "decision": "REM-0019-INTEGRATION-REPAIR-BUDGET (2026-10-20) point 4 (in doubt, open a decision request); CC-OCOR-DELIVERY-COMPLETION par. 7",
       "does_not_block": [
@@ -5997,13 +6000,37 @@
         "commit": "fdb2704762697dbe74a34c8a44670b11d86e6924",
         "path": "reports/development/decision_requests/REM-0038-CAMPAIGN-GUARD-ADMISSION.md",
         "pr": 358,
-        "publication": "DRAFT_PR_NOT_TO_BE_MERGED_PLAN_ALLOWLIST_UNCHANGED",
+        "publication": "RESOLVED_DISPOSITION_RECORDED_PR_CLOSED_NOT_MERGED",
         "sha256": "7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943"
       },
       "id": "REM-0038-CAMPAIGN-GUARD-ADMISSION",
+      "po_decision": "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26), option 1 with conditions a, b, c (normative PO decision, explicit PO instruction)",
+      "po_disposition": {
+        "clarification": "current CI job timeouts unchanged (timeout-minutes: 75 for the parts); MAIN-CI-30MIN-JOB-CAP not reactivated, no new limit",
+        "conditions": {
+          "a": "same scheme pre-authorised only for OCOR-DEV-REM-0042 (FULL_SUITE_LIMIT_SECONDS 4500 -> 5400, LOCAL-FULL-SUITE-CAP-90) and OCOR-DEV-REM-0039..0041 (workflow/run_qualifying_campaign.py changes strictly needed by the OCOR-DEV-0060-BA-SELECTED-COMPONENTS services); any change to limits, timeouts, windows, cadences, timers, partitions, case selection or gates -> new decision request",
+          "b": "before every campaign and every candidate push the implementer runs locally the validation-closure aggregate guard modules and records the result in the evidence",
+          "c": "after the integration of OCOR-DEV-REM-0041, a separate decision request on consolidating the normalisations into a new baseline, with an equivalence proof; baselines unchanged until then"
+        },
+        "decision_level": "NORMATIVE",
+        "decision_request_sha256_verified": "7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943",
+        "effect": "Exact, count-verified normalisation of the REM-0038 delta in reports/tests/test_kind_teardown_observation.py only (MANDATORY_CONTAINERS = 15 and its two uses back to 11; the two tooling-policy placeholders), with negative tests for every other difference; baselines 9b4d3be/7cd5f7a, WINDOW/POLL/SAMPLE/KIND_BINARY checks, 10 s probe timeouts, observe_health_event exclusion and existing normalisations unchanged; part of REM-0038 repair 1 with ordinary external verification, seal, exact-head CI, merge",
+        "new_dec_id": "none: CC-OCOR-DELIVERY-COMPLETION does not activate the AGENTS.md baseline-promotion exception, the only procedure that authorizes a new DEC-*",
+        "option": "1",
+        "order": "repair 1 and integration of REM-0038, then REM-0042, then REM-0039, 0040, 0041, then OCOR-DEV-0060; 0062-0064 when the remediations await verification",
+        "record": {
+          "branch": "governed/decision-request-rem0038-campaign-guard-admission",
+          "commit": "84a571c4c9e6b5d87463df8abd0d9153139d14cf",
+          "path": "reports/development/decision_requests/REM-0038-CAMPAIGN-GUARD-ADMISSION.md",
+          "pr": 358,
+          "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+          "sha256": "0ee966a4b01158bd0bd64dc46b11a5d363ff3d06df9d25a7ad3ac0dec19c808f"
+        }
+      },
       "reason": "The test_kind_teardown_observation invariance guards reject any change to scripts/run_qualifying_campaign.py or the workflows beyond enumerated normalizations; the PO-authorized REM-0038 (15 mandatory containers, Compose placeholders) and REM-0042 (FULL_SUITE_LIMIT_SECONDS) require such changes.",
       "recommendation": "Option 1: exact, enumerated normalization per authorized change in reports/tests/test_kind_teardown_observation.py, with negative tests that any other drift still fails; baselines, window, cadence, sampler, probe timeouts unchanged.",
-      "status": "OPEN_PO_DECISION_REQUIRED",
+      "resolved_at": "2026-10-26T20:11:41+00:00",
+      "status": "RESOLVED_PO_NORMATIVE_DECISION_IMPLEMENTATION_REQUIRED",
       "transitively_blocked_tasks": [
         "OCOR-DEV-REM-0039",
         "OCOR-DEV-REM-0040",
@@ -8230,8 +8257,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_REM_0038_INTEGRATION_CI_FAIL_PO_DECISION_PENDING_0062_NEXT",
-  "next_executable_action": "OCOR-DEV-0062 implementation (FGM-11..FGM-20 campaign), the lowest executable task not blocked by a PO decision. OCOR-DEV-REM-0038 repair cycle 1 waits for the PO disposition of REM-0038-CAMPAIGN-GUARD-ADMISSION (governed/decision-request-rem0038-campaign-guard-admission, commit fdb2704762697dbe74a34c8a44670b11d86e6924, file sha256 7f01089c5a887dbf381b754a8369d3d7499caf2a54b7792f9825f846d931d943, draft PR #358; recommendation Option 1). The sealed branch governed/ocor-dev-rem-0038-ba-services @ 03edc31a8ced and PR #357 stay preserved and unmerged; do not rewrite them or the sealed records. After the disposition, repair cycle 1 (REMEDIATION): new isolated worktree and governed branch, RED first for both failures (workflow compose-config placeholders OCOR_LOCAL_SEAWEEDFS_PASSWORD and OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD; test_kind_teardown_observation guards as the PO decides), distinct record IDs/paths with explicit supersedes to the sealed originals (REM-0022 precedent), run the validation-closure guard modules and the inline supply-chain scanner locally before the campaign, full serial suite from a clean shell with the locked PATH and power logged at start and end, then a new verification request to a verifier of a provider different from all implementers (Cursor/Grok xAI or Antigravity/Gemini Google; never OpenAI or Anthropic). Then OCOR-DEV-REM-0042 (LOCAL-FULL-SUITE-CAP-90, ID verified free; also subject to the guard disposition), REM-0039..0041, OCOR-DEV-0060 after all four BA remediations. OCOR-DEV-REM-0037 suspended until after G6. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_REM_0038_REPAIR_1_VERIFICATION_PENDING_0062_NEXT",
+  "next_executable_action": "OCOR-DEV-0062 implementation (FGM-11..FGM-20 campaign), the lowest executable task while OCOR-DEV-REM-0038 repair 1 awaits the external verdict OCOR-DEV-REM-0038-15ca445f50e6-1 (verifier of a provider different from all implementers: Cursor/Grok xAI or Antigravity/Gemini Google; never Anthropic or OpenAI). On GO_FOR_EVIDENCE_SEAL: seal the four repair records (repair-1, 0005/0050/0082 requalified-rem0038-repair1) on governed/ocor-dev-rem-0038-ba-services-repair-1, open the PR, run the validation-closure guard modules, the supply-chain scanner and the tooling Compose step locally before the push (PO condition b), wait for all 13 required checks on the exact head, merge with --match-head-commit, then close PR #357 as superseded (never rewrite 03edc31). On NO_GO: repair cycle 2 (last). Then OCOR-DEV-REM-0042 (LOCAL-FULL-SUITE-CAP-90, own exact guard normalisation per condition a), REM-0039..0041, OCOR-DEV-0060 after all four BA remediations; consolidation decision request after REM-0041 (condition c). OCOR-DEV-REM-0037 suspended until after G6. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8273,10 +8300,10 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "72b2f9e458f0030f2d8834739c2d8b674ec4dc81",
-    "branch": "governed/state-sync-rem0038-candidate-20261026",
-    "change_set": "OCOR-DEV-REM-0038 candidate (change set a of OCOR-DEV-0060-BA-SELECTED-COMPONENTS: Temporal and SeaweedFS provisioning in bootstrap and CI)",
-    "phase": "OCOR_DEV_REM_0038_CANDIDATE_VERIFICATION_REQUESTED"
+    "baseline_commit": "debd2d464fdbeb43ecd9aa15f21c67ea25cc3885",
+    "branch": "governed/state-sync-rem0038-integration-ci-fail-20261026",
+    "change_set": "OCOR-DEV-REM-0038 integration attempt (GO, seal, exact-head CI FAIL, not merged)",
+    "phase": "OCOR_DEV_REM_0038_INTEGRATION_CI_FAIL_PO_DECISION_PENDING"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -8355,23 +8382,22 @@
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "blocked_by_po_decision": {
-      "OCOR-DEV-REM-0038": "REM-0038-CAMPAIGN-GUARD-ADMISSION (repair cycle 1)",
-      "OCOR-DEV-REM-0042": "REM-0038-CAMPAIGN-GUARD-ADMISSION"
-    },
+    "blocked_by_po_decision": {},
     "completed_evidence_tasks_count": 75,
     "executable_now": [
       "OCOR-DEV-0062",
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "in_verification": [],
+    "in_verification": [
+      "OCOR-DEV-REM-0038 (repair 1)"
+    ],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-26T19:00:21.558587+00:00",
+    "observed_at": "2026-10-26T22:40:47.452443+00:00",
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
       "OCOR-DEV-0060": "after integration of the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
-      "OCOR-DEV-REM-0042": "after the integration of OCOR-DEV-REM-0038 and before OCOR-DEV-REM-0039 (LOCAL-FULL-SUITE-CAP-90 (2026-10-26))"
+      "OCOR-DEV-REM-0042": "after the integration of OCOR-DEV-REM-0038 and before OCOR-DEV-REM-0039 (LOCAL-FULL-SUITE-CAP-90; REM-0038-CAMPAIGN-GUARD-ADMISSION condition a and order)"
     },
     "suspended_by_po": [
       "OCOR-DEV-REM-0037 (until after G6 closure)"
@@ -24325,6 +24351,21 @@
         "state": "OPEN_NOT_MERGED_PRESERVED"
       },
       "recorded_at": "2026-10-26T16:10:56.440373+00:00",
+      "repair_1": {
+        "authority": "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26), option 1",
+        "branch": "governed/ocor-dev-rem-0038-ba-services-repair-1",
+        "candidate_head": "15ca445f50e6fcb67d02d4e7474259b91a7152a1",
+        "code_commit": "12659a1cd847f53991e96991033104326abf1cda",
+        "recorded_at": "2026-10-26T22:40:47.452443+00:00",
+        "repair_cycle": 1,
+        "request_id": "OCOR-DEV-REM-0038-15ca445f50e6-1",
+        "sealed_original_preserved": {
+          "branch": "governed/ocor-dev-rem-0038-ba-services",
+          "head": "03edc31a8ced808259290bb055b807f2d97af562",
+          "pr": 357
+        },
+        "status": "CANDIDATE_VERIFICATION_REQUESTED"
+      },
       "repair_cycle_next": 1,
       "request_id": "OCOR-DEV-REM-0038-dc5a404b350f-0",
       "seal_hashes": {
@@ -24343,7 +24384,7 @@
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038.json": "ed65f7b71f83d1baabd3ab81dd530086b8a6093ef0eccac4842ea1a11c75d643"
       },
       "sealed_head_sha": "03edc31a8ced808259290bb055b807f2d97af562",
-      "status": "GO_SEALED_ON_BRANCH_CI_FAIL_REPAIR_1_BLOCKED_BY_PO_DECISION",
+      "status": "REPAIR_1_CANDIDATE_VERIFICATION_REQUESTED",
       "status_of_components": "Candidate Implementation until OCOR-DEV-0060 qualification"
     },
     "REM_0042_LOCAL_FULL_SUITE_CAP_90": {
@@ -25557,7 +25598,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-26T19:00:21.558587+00:00",
+  "updated_at": "2026-10-26T22:40:47.452443+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
@@ -25700,6 +25741,17 @@
       "verdict_file_sha256": "785154e2cb53163af8ff13c856fa0eecb0f38a3a0d4ba0ec8e0b222c43c9c214",
       "verdict_recorded_at": "2026-10-26T19:00:21.558587+00:00",
       "written_at": "~/.ocor-codex/verify_request.json"
+    },
+    {
+      "base_sha": "1bbf270dfe4a27ed68f24434f74982732537f90e",
+      "branch": "governed/ocor-dev-rem-0038-ba-services-repair-1",
+      "head_sha": "15ca445f50e6fcb67d02d4e7474259b91a7152a1",
+      "recorded_at": "2026-10-26T22:40:47.452443+00:00",
+      "repair_cycle": 1,
+      "request_id": "OCOR-DEV-REM-0038-15ca445f50e6-1",
+      "review_type": "REMEDIATION",
+      "status": "REQUESTED_PENDING_EXTERNAL_VERDICT",
+      "task_id": "OCOR-DEV-REM-0038"
     }
   ]
 }
