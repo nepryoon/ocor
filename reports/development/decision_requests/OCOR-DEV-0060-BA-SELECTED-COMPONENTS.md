@@ -142,3 +142,53 @@ Sono interpretazioni fail-closed senza impatto semantico. Il PO può correggerle
 - Nessun codice, test, harness, workflow, record di evidenza o allowlist modificato.
   Nessun nuovo `DEC-*`. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
   PoC/Production `NO-GO` invariati.
+
+## Disposition PO (2026-10-26)
+
+Decisione **normativa** `OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)`, presa dal
+PO con istruzione esplicita: scelta l'**opzione 2** (file della richiesta letto con
+sha256 `84cdd936ef6f2999497ebe3f50cb0b05e56f128ffbe0acab77bc78fff40c7574`, commit
+`803abee616cef879b0c9dfe1218bfaa50200de96`). I casi BA si qualificano sui componenti
+candidati dichiarati da ADD v1.3 Parte I §2.6, messi a disposizione come componenti
+reali. Nessun fallback di §2.6 è attivato. Stato della richiesta: risolta.
+
+- `BA-05`: server Temporal con il proprio PostgreSQL e adapter runtime di `C6` dietro i
+  port esistenti.
+- `BA-06`: object store S3-compatible SeaweedFS (Apache 2.0), bucket con S3 Object Lock
+  e versioning attivi, adapter runtime di `C7` dietro i port esistenti; modalità di
+  retention scelta e motivata nell'evidenza; nessun bypass della retention nel percorso
+  applicativo.
+- `BA-01`: adapter runtime TerminusDB per `C3`, archivio canonico
+  `VersionedAssertedState`; PostgreSQL resta l'adapter di verifica dell'atomicità
+  (LLD v1.1 §5.2), mai fallback implicito (`DEC-201`). Il change control di `V12-AM-14`
+  riguarda le alternative di fallback, non TerminusDB. Se TerminusDB non supera i
+  conformance test di §2.6 (cinque crash window di §2.3, writer stale, fork senza
+  `DeliveryAttempt`): stop e decision request di change control.
+- Dipendenze nuove (server Temporal e SeaweedFS, client Python Temporal, S3 e
+  TerminusDB) secondo `OCOR_EXTERNAL_DEPENDENCY_POLICY.md`: versione esatta, fonte,
+  licenza, digest, lock, inventario licenze (`NFR-073`); verifica licenza e benchmark di
+  Temporal per `DEP-011`. Licenza non ammessa: stop e decision request.
+- Change set governati separati, con i primi `OCOR-DEV-REM-*` liberi, nell'ordine:
+  a. provisioning in bootstrap e CI, pinned per digest; b. adapter Temporal di `C6`;
+  c. adapter SeaweedFS di `C7`; d. adapter TerminusDB di `C3`. Ciclo completo per
+  ciascuno; contratti, port, schemi e semantica invariati, altrimenti stop e decision
+  request.
+- Ordine: chiusura di `OCOR-DEV-0061`, poi a, b, c, d; `OCOR-DEV-0062`–`0064` quando le
+  remediation attendono verifica o sono bloccate; `OCOR-DEV-0060` dopo l'integrazione di
+  tutte e quattro. Ogni risultato nomina componente e versione.
+- Note dell'implementatore accettate così come sono: limite di `BA-07` (broker singolo,
+  senza Strimzi né schema registry esterno, licenze legate a `OI-028`), firma dei
+  risultati con chiave locale fuori da Git e chiave pubblica nel record, legame dei casi
+  ai requisiti specifici di `OCOR_TRACEABILITY_PLAN.csv`.
+- Limiti invariati: tetto di 30 minuti per job su `main`, guardia della memoria a 3 GB,
+  tetti della suite locale; se superati: stop e decision request con le misure.
+
+`DEC-*`: nessun nuovo identificativo. La procedura vigente non lo richiede: il mandato
+`CC-OCOR-DELIVERY-COMPLETION` non attiva l'eccezione di baseline promotion di
+`AGENTS.md`, che sola autorizza nuovi `DEC-*`. La decisione è registrata come decisione
+normativa del PO in questo file, nel registro `blockers` e nell'`ITERATION_LOG.md`.
+
+Fino alla qualifica di `0060`, TerminusDB, Temporal e SeaweedFS restano
+`Candidate Implementation`. Registrazione: Claude Code (Anthropic, claude-opus-5-5),
+implementatore del loop. Claim invariati: E1=0, E2=0, Verified=0; runtime
+NOT_ESTABLISHED, PoC/Production NO-GO.
