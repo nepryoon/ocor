@@ -1,13 +1,11 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "938c2a9196890192f80643e0c50bddb27ccf16fe",
+  "baseline_commit": "60afecfb0428350b552f77861455b695ebbd24f1",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "09ff9ef0fc36e18c6c1554a520fa44438dde6de53c8846becb21a265650ea10e"
+    "sha256": "bff791ccea394ce1bce6ee45cd3040b0d7c6489f7fd33249aaf9ed5cef9a033c"
   },
-  "blocking_tasks": [
-    "OCOR-DEV-REM-0031 consumer adaptation, qualification, verification and integration"
-  ],
+  "blocking_tasks": [],
   "claims": {
     "E1": 0,
     "E2": 0,
@@ -20,12 +18,21 @@
     {
       "branch": "governed/decision-request-rem0031-registry-consumer-scope",
       "commit": "4daecbf19c07f88b88edc1a1e16bd2d08701caac",
+      "disposition_record": {
+        "branch": "governed/decision-request-rem0031-registry-consumer-scope",
+        "commit": "7bcd138063f0d204e5dcff1989867a1b6ae9a717",
+        "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
+        "pr": 345,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "d159dfa691464e92c6ace8349b80f8b03c1d230f967dffb8e340b283d0ecf248"
+      },
       "id": "REM-0031-REGISTRY-CONSUMER-SCOPE",
       "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
+      "po_decision": "REM-0031-REGISTRY-CONSUMER-SCOPE (2026-10-25), option1",
       "pr": 345,
       "recommendation": "option 1",
       "sha256": "4efd0f22c1c0bb13ee8f9fe48644bf0f3e2528cc5f131ea3c1307b8d7ea12c67",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "RESOLVED_PO_DECISION_EXECUTION_CANDIDATE"
     }
   ],
   "direct_ready_disposition": "NOT_EXECUTABLE_BEHIND_MANDATORY_REMEDIATION_REM_0031",
@@ -38,6 +45,7 @@
   ],
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "independent_verifier": {
+    "head_sha": "a29e00da3a32919da6124d806a74625875e6c4f4",
     "implementers": [
       {
         "agent": "Claude Code",
@@ -50,19 +58,20 @@
         "provider": "OpenAI"
       }
     ],
-    "status": "NOT_REQUESTED_WIP_CHECKPOINT"
+    "request_id": "OCOR-DEV-REM-0031-a29e00da3a32-0",
+    "status": "REQUESTED_EXTERNAL_LOOP"
   },
   "local_controls": {
-    "boundary_tests": "RED 48/48 NotImplementedError before code; GREEN 57/57 on the real stack, 0 skipped",
     "evidence_input_drift": "74 tasks / 224 inputs / 0 drift",
-    "full_suite": "NOT_EXECUTED: WIP checkpoint",
+    "full_suite": "3180/3180 serial, 0 skipped, 3487.8 s",
+    "guard": "3/3, 47 subtests",
     "normative_sha256": "8/8 PASS",
-    "plan_allowlist": "FAIL_EXPECTED_PENDING_ALLOWLIST on the WIP branch only (two new paths)",
-    "regression": "0048 + REM-0031 + six consumer modules: 622 passed, 0 skipped",
-    "resources": "Stack torn down: 0 containers, 0 volumes"
+    "regression": "852/852, 0 skipped",
+    "resources": "Stack torn down: 0 containers, 0 volumes, 0 networks",
+    "task_suite": "73/73, 0 skipped"
   },
-  "minimal_unblock_action": "Disposition del PO sulla decision request REM-0031-REGISTRY-CONSUMER-SCOPE (PR #345), opzione raccomandata 1.",
-  "next_executable_action": "Attendere la disposition del PO sulla decision request REM-0031-REGISTRY-CONSUMER-SCOPE (PR #345 bozza): tutto il lavoro residuo eseguibile ne dipende (adattamento dei consumer, qualifica, verifica e integrazione di REM-0031; G6 OCOR-DEV-0060-0069 subordinato a REM-0031; OCOR-DEV-REM-0037 sospesa dal PO). Dopo la disposition: rimuovere TERMINAL_BLOCKED con aggiornamento di stato tracciato; riprendere il branch governed/ocor-dev-rem-0031-identity-registry-writer-authority dal checkpoint WIP 6f98a15bfc1f0a5640c0380274fad3ed24cd0f5b senza riscriverne la storia (allineamento a origin/main solo con merge non distruttivo); applicare l opzione scelta (opzione 1: register() chiuso per default sulle chiavi Q1 dopo il controllo di immutabilita, seeding alla costruzione, scrittura runtime solo tramite IdentityProvisioningBoundary; adattamento delle sole scritture del registry nei sei moduli consumer con prova AST e test che fallisce se il diff tocca altro); RED prima del codice per la chiusura del primo writer ostile direttamente su register(); allowlist del piano con i soli percorsi esatti nuovi e riqualifiche con supersession (opzione 1: 0043, 0044, 0058; piu le riqualifiche di sola regressione 0005, 0050, 0082 imposte dalla modifica del validator del piano); suite del task e suite completa seriale da shell pulita con scripts/bootstrap_ci_environment.py --execute --timeout 600 e OCOR_LIVE_POSTGRES_DSN; richiesta di verifica esterna sull HEAD esatto con verifier di fornitore diverso da tutti gli implementatori (Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic). Poi G6 (OCOR-DEV-0060 e seguenti). Nessun nuovo DEC, E1/E2/Verified o claim.",
+  "minimal_unblock_action": "Done: PO disposition REM-0031-REGISTRY-CONSUMER-SCOPE (2026-10-25), option 1.",
+  "next_executable_action": "Attendere il verdetto esterno OCOR-DEV-REM-0031-a29e00da3a32-0 (verifier Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic) sul candidato OCOR-DEV-REM-0031 governed/ocor-dev-rem-0031-identity-registry-writer-authority @ a29e00da3a32919da6124d806a74625875e6c4f4. Con GO_FOR_EVIDENCE_SEAL: registrare verifier e verdetto nei sette record (REM-0031 e riqualifiche 0043, 0044, 0058, 0005, 0050, 0082) e sigillarli, allineamento non distruttivo a origin/main solo se necessario con prova di albero invariato, PR con i 13 check obbligatori verdi sull HEAD esatto, merge --match-head-commit, state sync. Con NO_GO: riparazione (ciclo 1 di 2) e nuova verifica. Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
   "no_new_po_normative_decision_required": true,
   "open_pull_requests": 8,
   "previous_report": {
@@ -75,7 +84,7 @@
   "remaining_backlog_tasks": 10,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "TERMINAL_BLOCKED",
-  "terminal_state": "TERMINAL_BLOCKED",
-  "updated_at": "2026-10-25T18:05:07.598286+00:00"
+  "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE",
+  "terminal_state": "NOT_TERMINAL_LOOP_CONTINUE",
+  "updated_at": "2026-10-26T02:10:37.061152+00:00"
 }
