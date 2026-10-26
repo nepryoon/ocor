@@ -201,7 +201,7 @@ def wait_ready(server: str, admin: str, expected_image: str, expected_version: s
     raise QualificationError(f"Temporal did not recover within {timeout:.0f}s: {last_error}")
 
 
-def fault_and_recover(server: str, admin: str, expected_image: str, expected_version: str) -> dict[str, Any]:
+def fault_and_recover(server: str, admin: str, expected_image: str, expected_version: str, *, restart: bool = True) -> dict[str, Any]:
     paused = False
     unavailable_observed = False
     try:
@@ -219,7 +219,14 @@ def fault_and_recover(server: str, admin: str, expected_image: str, expected_ver
     finally:
         if paused:
             run(["docker", "unpause", server])
-    wait_ready(server, admin, expected_image, expected_version)
+    unpaused = wait_ready(server, admin, expected_image, expected_version)
+    if not restart:
+        return {
+            "paused_service_detected_unavailable": True,
+            "unpause_recovery": "PASS",
+            "restart_recovery": "NOT_REQUESTED",
+            "after_unpause": unpaused["protocol"],
+        }
     if run(["docker", "restart", "--time", "10", server], timeout=40.0).returncode:
         raise QualificationError("cannot restart the Temporal server container")
     recovered = wait_ready(server, admin, expected_image, expected_version)
@@ -262,7 +269,7 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
     }
     if args.fault_recovery:
         result["fault_recovery"] = fault_and_recover(
-            args.server_container, args.admin_container, server_image, version
+            args.server_container, args.admin_container, server_image, version, restart=not args.no_restart
         )
     return result
 
@@ -274,6 +281,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--admin-container", default=ADMIN_CONTAINER)
     parser.add_argument("--database-container", default=DATABASE_CONTAINER)
     parser.add_argument("--fault-recovery", action="store_true")
+    parser.add_argument(
+        "--no-restart", action="store_true",
+        help="pause/unpause only: the full-suite campaign forbids container restarts",
+    )
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 

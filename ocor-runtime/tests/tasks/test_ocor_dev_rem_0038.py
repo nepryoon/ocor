@@ -185,6 +185,11 @@ def test_typed_verification_includes_the_new_services(monkeypatch):
     assert seaweedfs.status is verify.ServiceStatus.NOT_PROVISIONED
 
 
+def test_campaign_requires_every_compose_service_as_a_mandatory_container():
+    campaign = _load("run_qualifying_campaign_rem0038", ROOT / "scripts/run_qualifying_campaign.py")
+    assert campaign.MANDATORY_CONTAINERS == len(SERVICES) == 15
+
+
 @pytest.mark.parametrize("service", ["temporal", "seaweedfs"])
 def test_qualification_contract_suites(service):
     module = _load(f"{service}_test_qualify_rem0038", ROOT / "deploy/bootstrap/services" / service / "test_qualify.py")
@@ -206,18 +211,24 @@ def _qualify(service: str, *arguments: str) -> dict[str, Any]:
     return payload
 
 
+# The full-suite campaign fails on any container restart (run_qualifying_campaign
+# check_stack), so the suite's fault cycle is pause/unpause; the restart cycle of
+# the same modules runs in the provisioning qualification campaign.
+
+
 def test_live_temporal_is_serving_pinned_and_fails_closed_then_recovers():
-    result = _qualify("temporal", "--execute", "--fault-recovery")
+    result = _qualify("temporal", "--execute", "--fault-recovery", "--no-restart")
     assert result["result"] == "PASS"
     assert result["protocol"] == {"frontend_host_tcp": "READY", "cluster_health": "SERVING",
                                   "server_version": "1.32.1", "absent_namespace_lookup": "FAIL_CLOSED"}
     assert result["runtime"]["database"]["ports"] == {} and result["runtime"]["admin_tools"]["ports"] == {}
     assert result["fault_recovery"]["paused_service_detected_unavailable"] is True
-    assert result["fault_recovery"]["restart_recovery"] == "PASS"
+    assert result["fault_recovery"]["unpause_recovery"] == "PASS"
+    assert result["fault_recovery"]["after_unpause"]["cluster_health"] == "SERVING"
 
 
 def test_live_seaweedfs_enforces_auth_object_lock_and_recovers():
-    result = _qualify("seaweedfs", "--execute", "--fault-recovery")
+    result = _qualify("seaweedfs", "--execute", "--fault-recovery", "--no-restart")
     assert result["result"] == "PASS"
     assert result["protocol"]["unsigned_access"] == "FAIL_CLOSED"
     assert result["protocol"]["wrong_secret_access"] == "FAIL_CLOSED"
@@ -226,8 +237,8 @@ def test_live_seaweedfs_enforces_auth_object_lock_and_recovers():
     assert lock["retained_version_delete"] == "FAIL_CLOSED"
     assert lock["retained_version_bypass_delete"] == "FAIL_CLOSED"
     assert lock["retained_version_intact"] is True
-    assert result["fault_recovery"]["restart_recovery"] == "PASS"
-    assert result["fault_recovery"]["after_restart_object_lock"]["retained_version_delete"] == "FAIL_CLOSED"
+    assert result["fault_recovery"]["unpause_recovery"] == "PASS"
+    assert result["fault_recovery"]["after_unpause"]["unsigned_access"] == "FAIL_CLOSED"
 
 
 def test_live_typed_verification_reports_the_new_services_ready():

@@ -320,7 +320,7 @@ def wait_ready(container: str, base_url: str, expected_image: str, expected_vers
     raise QualificationError(f"SeaweedFS did not recover within {timeout:.0f}s: {last_error}")
 
 
-def fault_and_recover(container: str, base_url: str, expected_image: str, expected_version: str) -> dict[str, Any]:
+def fault_and_recover(container: str, base_url: str, expected_image: str, expected_version: str, *, restart: bool = True) -> dict[str, Any]:
     paused = False
     unavailable_observed = False
     try:
@@ -340,7 +340,14 @@ def fault_and_recover(container: str, base_url: str, expected_image: str, expect
     finally:
         if paused:
             run(["docker", "unpause", container])
-    wait_ready(container, base_url, expected_image, expected_version)
+    unpaused = wait_ready(container, base_url, expected_image, expected_version)
+    if not restart:
+        return {
+            "paused_service_detected_unavailable": True,
+            "unpause_recovery": "PASS",
+            "restart_recovery": "NOT_REQUESTED",
+            "after_unpause": unpaused["protocol"],
+        }
     if run(["docker", "restart", "--time", "10", container], timeout=40.0).returncode:
         raise QualificationError("cannot restart the SeaweedFS container")
     recovered = wait_ready(container, base_url, expected_image, expected_version)
@@ -375,7 +382,9 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
     if args.execute:
         result["object_lock"] = object_lock_probe(args.url, credential)
     if args.fault_recovery:
-        result["fault_recovery"] = fault_and_recover(args.container, args.url, entry["image"], entry["version"])
+        result["fault_recovery"] = fault_and_recover(
+            args.container, args.url, entry["image"], entry["version"], restart=not args.no_restart
+        )
     return result
 
 
@@ -385,6 +394,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
     parser.add_argument("--url", default=DEFAULT_URL)
     parser.add_argument("--fault-recovery", action="store_true")
+    parser.add_argument(
+        "--no-restart", action="store_true",
+        help="pause/unpause only: the full-suite campaign forbids container restarts",
+    )
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
