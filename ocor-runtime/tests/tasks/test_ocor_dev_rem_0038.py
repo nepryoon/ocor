@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
+import shlex
 import subprocess
 import sys
 import unittest
@@ -188,6 +190,39 @@ def test_typed_verification_includes_the_new_services(monkeypatch):
 def test_campaign_requires_every_compose_service_as_a_mandatory_container():
     campaign = _load("run_qualifying_campaign_rem0038", ROOT / "scripts/run_qualifying_campaign.py")
     assert campaign.MANDATORY_CONTAINERS == len(SERVICES) == 15
+
+
+def _tooling_compose_rendering() -> tuple[dict[str, str], list[str]]:
+    """The environment and command of the tooling-policy step that renders compose.yaml."""
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ocor-tooling-bootstrap.yml").read_text(encoding="utf-8"))
+    steps = [step for job in workflow["jobs"].values() for step in job["steps"]
+             if step.get("name") == "Validate manifests and Compose rendering"]
+    assert len(steps) == 1
+    lines = [line for line in steps[0]["run"].replace("\\\n", " ").splitlines() if "docker compose" in line]
+    assert len(lines) == 1
+    tokens = shlex.split(lines[0])
+    environment = {}
+    while re.fullmatch(r"[A-Z_][A-Z0-9_]*=.*", tokens[0]):
+        name, value = tokens.pop(0).split("=", 1)
+        environment[name] = value
+    assert tokens[:2] == ["docker", "compose"] and tokens[-2:] == ["config", "--quiet"]
+    return environment, tokens
+
+
+def test_tooling_policy_compose_rendering_sets_every_required_variable():
+    """Repair 1: PR #357 failed tooling-policy because the workflow lacked two placeholders."""
+    required = set(re.findall(r"\$\{([A-Z_][A-Z0-9_]*):\?", (ROOT / "deploy/bootstrap/compose.yaml").read_text(encoding="utf-8")))
+    environment, _ = _tooling_compose_rendering()
+    assert {"OCOR_LOCAL_SEAWEEDFS_PASSWORD", "OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD"} <= required
+    assert sorted(required - set(environment)) == []
+
+
+def test_tooling_policy_compose_rendering_command_exits_zero():
+    """The exact workflow command, with only the workflow's variables, renders the stack."""
+    environment, command = _tooling_compose_rendering()
+    result = subprocess.run(command, cwd=ROOT, env={"HOME": os.environ.get("HOME", "/tmp"), "PATH": os.environ["PATH"], **environment},
+                            capture_output=True, text=True, timeout=120, check=False)
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize("service", ["temporal", "seaweedfs"])

@@ -646,6 +646,49 @@ def retire_integrated_0049_pin(text):
     return text
 
 
+REM0038_CONSTANT = (
+    '# Every service of deploy/bootstrap/compose.yaml: the eleven original containers\n'
+    '# plus Temporal, its PostgreSQL, its admin-tools and SeaweedFS (OCOR-DEV-REM-0038).\n'
+    'MANDATORY_CONTAINERS = 15\n'
+)
+REM0038_PLACEHOLDERS = (
+    '          OCOR_LOCAL_SEAWEEDFS_PASSWORD=x \\\n'
+    '          OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD=x \\\n'
+)
+
+
+def normalize_rem0038_campaign(text):
+    """PO REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26), option 1: exact delta of REM-0038.
+
+    OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26) adds Temporal, its PostgreSQL, its
+    admin-tools and SeaweedFS to the bootstrap stack, so the campaign requires 15 mandatory
+    containers. Only the constant and its two uses (the inventory check in main and the
+    diagnostic stats in observe_health_event) return to the baseline literal 11; each
+    fragment must occur exactly once and no other use of the constant may remain.
+    """
+    changes = [
+        (REM0038_CONSTANT, ''),
+        ('*ids[:MANDATORY_CONTAINERS]])', '*ids[:11]])'),
+        ('        if len(initial) != MANDATORY_CONTAINERS:\n'
+         '            raise CampaignError(f"expected {MANDATORY_CONTAINERS} mandatory containers, found {len(initial)}")\n',
+         '        if len(initial) != 11:\n'
+         '            raise CampaignError(f"expected 11 mandatory containers, found {len(initial)}")\n'),
+    ]
+    for old, new in changes:
+        assert text.count(old) == 1, 'Unexpected REM-0038 source: ' + old[:90]
+        text = text.replace(old, new, 1)
+    assert 'MANDATORY_CONTAINERS' not in text, 'Unexpected REM-0038 source: MANDATORY_CONTAINERS'
+    return text
+
+
+def normalize_rem0038_workflow(path, after):
+    """Same decision: only the two Compose-rendering placeholders of the tooling workflow."""
+    if path != '.github/workflows/ocor-tooling-bootstrap.yml':
+        return after
+    assert after.count(REM0038_PLACEHOLDERS) == 1, 'Workflow drift: ' + path
+    return after.replace(REM0038_PLACEHOLDERS, '', 1)
+
+
 def assert_governed_workflow(path, before, after):
     """Accept only the PO's exact pin lifecycle/N update and scope-gate reorder."""
     if path == '.github/workflows/ocor-delivery-activation.yml':
@@ -660,11 +703,11 @@ def assert_governed_workflow(path, before, after):
         suffix = suffix.replace('--shard-count 4', '--shard-count 5')
         before = prefix + '  conditional-infrastructure-0049-part:' + suffix
         before = retire_integrated_0049_pin(before)
-    after = normalize_rem0034_secret_scanner(path, before, after)
+    after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, after))
     assert before == after, 'Workflow drift: ' + path
 
 
-def observation_only_proof():
+def observation_only_proof(overrides=None):
     """Reproducible AST comparison to the last unqualified CI source.
 
     Normalisation removes only the three newly exported diagnostic fields and
@@ -675,7 +718,9 @@ def observation_only_proof():
     baseline = '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0'
 
     def source(path, old=False):
-        return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True) if old else (root / path).read_text()
+        if old:
+            return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True)
+        return (overrides or {}).get(path, (root / path).read_text())
 
     class DiagnosticsOnly(ast.NodeTransformer):
         def visit_Call(self, node):
@@ -694,7 +739,7 @@ def observation_only_proof():
             return node
 
     path = 'scripts/run_qualifying_campaign.py'
-    before, after = ast.parse(source(path, True)), ast.parse(source(path))
+    before, after = ast.parse(source(path, True)), ast.parse(normalize_rem0038_campaign(source(path)))
     before_functions = {n.name: n for n in before.body if isinstance(n, ast.FunctionDef)}
     after_functions = {n.name: n for n in after.body if isinstance(n, ast.FunctionDef)}
     results = {}
@@ -723,7 +768,8 @@ def observation_only_proof():
     return {'baseline': baseline, 'functions': results, 'workflows_unchanged': workflows,
             'campaign_constants_identical': True, 'window_poll_sample_identical': True,
             'normalisation': 'Only latency wrapper and two diagnostic export fields removed from AST. Workflows require the exact PO-authorised 0049 pin and N=5 delta; all other bytes, timers and gates identical.',
-            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts; 0049 integration CI repair: delivery-activation scope gate moved byte-identically before the first worktree writer'}
+            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts; 0049 integration CI repair: delivery-activation scope gate moved byte-identically before the first worktree writer; REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26): two tooling Compose-rendering placeholders',
+            'authorised_campaign_delta': 'REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26): MANDATORY_CONTAINERS = 15 and its two uses normalised back to 11'}
 
 
 class ExecutionInvariants(unittest.TestCase):
@@ -800,44 +846,7 @@ class ExecutionInvariants(unittest.TestCase):
         """CI-0049-KIND-BOOTSTRAP-EXEC-PROBE: against the last qualified main (9b4d3be) the
         campaign supervisor differs only by one exported diagnostic key; the observer keeps
         its window, cadence, sampler and ten-second probe timeouts."""
-        root = Path(__file__).resolve().parents[2]
-        baseline = '9b4d3be8ec5bd785b02072a99037dd801b53d9a5'
-
-        def old(path):
-            return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True)
-
-        class DropExport(ast.NodeTransformer):
-            def visit_Dict(self, node):
-                self.generic_visit(node)
-                keep = [(k, v) for k, v in zip(node.keys, node.values, strict=True)
-                        if not (isinstance(k, ast.Constant) and k.value == 'bootstrap_recoveries')]
-                node.keys, node.values = [k for k, _ in keep], [v for _, v in keep]
-                return node
-
-        path = 'scripts/run_qualifying_campaign.py'
-        before = ast.dump(ast.parse(old(path)), include_attributes=False)
-        after = ast.dump(DropExport().visit(ast.parse((root / path).read_text())), include_attributes=False)
-        self.assertEqual(before, after)
-        self.assertNotEqual(old(path), (root / path).read_text())
-
-        def constants(text):
-            tree = ast.parse(text)
-            return {t.id: ast.dump(n.value) for n in tree.body if isinstance(n, ast.Assign)
-                    for t in n.targets if isinstance(t, ast.Name)
-                    and t.id in {'WINDOW_SECONDS', 'POLL_SECONDS', 'SAMPLE_SECONDS', 'KIND_BINARY'}}
-        observer = 'scripts/observe_kind_teardown.py'
-        self.assertEqual(constants(old(observer)), constants((root / observer).read_text()))
-        timeouts = {ast.unparse(k.value) for n in ast.walk(ast.parse((root / observer).read_text()))
-                    if isinstance(n, ast.Call) and ast.unparse(n.func) == 'run_probe'
-                    for k in n.keywords if k.arg == 'timeout'}
-        self.assertEqual(timeouts, {'10'})
-        for workflow in sorted((root / '.github/workflows').glob('*.yml')):
-            path = str(workflow.relative_to(root))
-            before = old(path)
-            if path == '.github/workflows/ocor-validation-closure.yml':
-                before = retire_integrated_0049_pin(before)
-            after = normalize_rem0034_secret_scanner(path, before, workflow.read_text())
-            self.assertEqual(before, after, workflow.name)
+        bootstrap_probe_proof(self)
 
     def test_execution_ast_and_workflows_are_identical(self):
         proof = observation_only_proof()
@@ -845,6 +854,117 @@ class ExecutionInvariants(unittest.TestCase):
         self.assertTrue(proof['functions']['partition']['identical'])
         self.assertTrue(proof['functions']['check_kubernetes_runtimes']['identical'])
 
+
+def bootstrap_probe_proof(case, overrides=None):
+    """Body of the CI-0049-KIND-BOOTSTRAP-EXEC-PROBE proof; ``overrides`` replaces file text
+    so that the negative cases of REM-0038-CAMPAIGN-GUARD-ADMISSION run the same checks."""
+    root = Path(__file__).resolve().parents[2]
+
+    def read(path):
+        return (overrides or {}).get(path, (root / path).read_text())
+
+    baseline = '9b4d3be8ec5bd785b02072a99037dd801b53d9a5'
+
+    def old(path):
+        return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True)
+
+    class DropExport(ast.NodeTransformer):
+        def visit_Dict(self, node):
+            self.generic_visit(node)
+            keep = [(k, v) for k, v in zip(node.keys, node.values, strict=True)
+                    if not (isinstance(k, ast.Constant) and k.value == 'bootstrap_recoveries')]
+            node.keys, node.values = [k for k, _ in keep], [v for _, v in keep]
+            return node
+
+    path = 'scripts/run_qualifying_campaign.py'
+    before = ast.dump(ast.parse(old(path)), include_attributes=False)
+    after = ast.dump(DropExport().visit(ast.parse(normalize_rem0038_campaign(read(path)))), include_attributes=False)
+    case.assertEqual(before, after)
+    case.assertNotEqual(old(path), read(path))
+
+    def constants(text):
+        tree = ast.parse(text)
+        return {t.id: ast.dump(n.value) for n in tree.body if isinstance(n, ast.Assign)
+                for t in n.targets if isinstance(t, ast.Name)
+                and t.id in {'WINDOW_SECONDS', 'POLL_SECONDS', 'SAMPLE_SECONDS', 'KIND_BINARY'}}
+    observer = 'scripts/observe_kind_teardown.py'
+    case.assertEqual(constants(old(observer)), constants((root / observer).read_text()))
+    timeouts = {ast.unparse(k.value) for n in ast.walk(ast.parse((root / observer).read_text()))
+                if isinstance(n, ast.Call) and ast.unparse(n.func) == 'run_probe'
+                for k in n.keywords if k.arg == 'timeout'}
+    case.assertEqual(timeouts, {'10'})
+    for workflow in sorted((root / '.github/workflows').glob('*.yml')):
+        path = str(workflow.relative_to(root))
+        before = old(path)
+        if path == '.github/workflows/ocor-validation-closure.yml':
+            before = retire_integrated_0049_pin(before)
+        after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, read(path)))
+        case.assertEqual(before, after, workflow.name)
+
+
+
+class Rem0038GuardAdmission(unittest.TestCase):
+    """PO REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26), option 1: the exact REM-0038 delta is
+    admitted; every other difference still fails the invariance proofs."""
+    CAMPAIGN = 'scripts/run_qualifying_campaign.py'
+    TOOLING = '.github/workflows/ocor-tooling-bootstrap.yml'
+
+    def failing_proofs(self, overrides):
+        failed = set()
+        for name, proof in (('main-9b4d3be', lambda: bootstrap_probe_proof(self, overrides)),
+                            ('ast-7cd5f7a', lambda: observation_only_proof(overrides))):
+            try:
+                proof()
+            except AssertionError:
+                failed.add(name)
+        return failed
+
+    def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_literal(self):
+        root = Path(__file__).resolve().parents[2]
+        campaign = (root / self.CAMPAIGN).read_text()
+        self.assertEqual(campaign.count(REM0038_CONSTANT), 1)
+        normalised = normalize_rem0038_campaign(campaign)
+        self.assertNotIn('MANDATORY_CONTAINERS', normalised)
+        self.assertEqual(normalised.count('*ids[:11]])'), 1)
+        self.assertEqual(normalised.count('if len(initial) != 11:'), 1)
+        self.assertEqual(self.failing_proofs({}), set())
+
+    def test_every_other_campaign_difference_still_fails(self):
+        root = Path(__file__).resolve().parents[2]
+        campaign = (root / self.CAMPAIGN).read_text()
+        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        stack = '        raise CampaignError("mandatory stack disappeared")\n'
+        for label, changed, expected in [
+            ('MANDATORY_CONTAINERS 16', campaign.replace('MANDATORY_CONTAINERS = 15', 'MANDATORY_CONTAINERS = 16', 1), both),
+            ('another constant', campaign.replace(REM0038_CONSTANT, REM0038_CONSTANT + 'EXTRA_CONTAINERS = 1\n', 1), both),
+            ('limit constant', campaign.replace('FULL_SUITE_LIMIT_SECONDS = 4500', 'FULL_SUITE_LIMIT_SECONDS = 5400', 1), both),
+            ('another function changed', campaign.replace(stack, stack.replace('disappeared', 'vanished'), 1), both),
+            ('another function added', campaign + '\n\ndef extra_gate() -> None:\n    return None\n', {'main-9b4d3be'}),
+            ('inventory check weakened', campaign.replace('if len(initial) != MANDATORY_CONTAINERS:', 'if len(initial) < MANDATORY_CONTAINERS:', 1), both),
+            ('constant used elsewhere', campaign.replace('PART_LIMIT_SECONDS = 2700', 'PART_LIMIT_SECONDS = 180 * MANDATORY_CONTAINERS', 1), both),
+            ('literal 11 kept in main', campaign.replace('if len(initial) != MANDATORY_CONTAINERS:', 'if len(initial) != 11:', 1), both),
+        ]:
+            with self.subTest(change=label):
+                self.assertNotEqual(changed, campaign)
+                self.assertEqual(self.failing_proofs({self.CAMPAIGN: changed}), expected)
+
+    def test_every_other_workflow_difference_still_fails(self):
+        root = Path(__file__).resolve().parents[2]
+        tooling = (root / self.TOOLING).read_text()
+        self.assertEqual(tooling.count(REM0038_PLACEHOLDERS), 1)
+        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        extra = '          OCOR_LOCAL_EXTRA_PASSWORD=x \\\n'
+        rccad = '.github/workflows/ocor-rccad.yml'
+        for label, overrides in [
+            ('one more placeholder line', {self.TOOLING: tooling.replace(REM0038_PLACEHOLDERS, REM0038_PLACEHOLDERS + extra, 1)}),
+            ('placeholder missing', {self.TOOLING: tooling.replace(REM0038_PLACEHOLDERS, REM0038_PLACEHOLDERS.split('\n')[0] + '\n', 1)}),
+            ('placeholder duplicated', {self.TOOLING: tooling.replace(REM0038_PLACEHOLDERS, REM0038_PLACEHOLDERS * 2, 1)}),
+            ('placeholders in another workflow', {rccad: (root / rccad).read_text() + REM0038_PLACEHOLDERS}),
+            ('other tooling line', {self.TOOLING: tooling.replace('docker compose -f deploy/bootstrap/compose.yaml config --quiet',
+                                                                  'docker compose -f deploy/bootstrap/compose.yaml config', 1)}),
+        ]:
+            with self.subTest(change=label):
+                self.assertEqual(self.failing_proofs(overrides), both)
 
 if __name__ == '__main__':
     unittest.main()
