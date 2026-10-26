@@ -159,6 +159,102 @@ services:
       retries: 20
       start_period: 10s
 
+  # OCOR-DEV-REM-0038: Temporal (BA-05 candidate) with its own PostgreSQL, never
+  # published on the host. admin-tools applies the pinned schema, then keeps the
+  # official CLI available for protocol probes; the server starts only after it.
+  temporal-postgresql:
+    <<: *policy
+    image: postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20
+    environment:
+      POSTGRES_DB: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: ${OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD:?required}
+    tmpfs: ["/var/lib/postgresql/data:size=512m,mode=0700"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    deploy: {resources: {limits: {memory: 512M, cpus: "1.0"}}}
+
+  temporal-admin-tools:
+    <<: *policy
+    image: temporalio/admin-tools@sha256:9ef0dc5b063bf4ffd5c1512de72e0e73e225bd2c7006a18ce69bd592a8862a83
+    depends_on: {temporal-postgresql: {condition: service_healthy}}
+    environment:
+      SQL_PASSWORD: ${OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD:?required}
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        rm -f /tmp/ocor-schema-ready
+        for db in temporal temporal_visibility; do
+          schema=temporal
+          [ "$$db" = temporal_visibility ] && schema=visibility
+          tool="temporal-sql-tool --plugin postgres12 --ep temporal-postgresql -p 5432 -u temporal --db $$db"
+          # Idempotent on a re-run: existing database/base schema are kept and
+          # the strict versioned update below still has to succeed.
+          $$tool create-database || true
+          $$tool setup-schema -v 0.0 || true
+          $$tool update-schema -d "/etc/temporal/schema/postgresql/v12/$$schema/versioned"
+        done
+        touch /tmp/ocor-schema-ready
+        trap exit INT HUP TERM
+        sleep infinity &
+        wait
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/ocor-schema-ready"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+    deploy: {resources: {limits: {memory: 256M, cpus: "1.0"}}}
+
+  temporal:
+    <<: *policy
+    image: temporalio/server@sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049
+    depends_on: {temporal-admin-tools: {condition: service_healthy}}
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_SEEDS: temporal-postgresql
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: ${OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD:?required}
+      DYNAMIC_CONFIG_FILE_PATH: /etc/ocor/temporal/dynamicconfig.yaml
+      TEMPORAL_ALLOW_NO_AUTH: "true"
+    volumes:
+      - "./temporal/dynamicconfig.yaml:/etc/ocor/temporal/dynamicconfig.yaml:ro"
+    ports: ["127.0.0.1:17233:7233"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z \"$$(getent hosts \"$$(hostname)\" | awk '{print $$1}')\" 7233"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+    deploy: {resources: {limits: {memory: 1G, cpus: "2.0"}}}
+
+  # OCOR-DEV-REM-0038: SeaweedFS (BA-06 candidate), single-node mini mode; only
+  # the S3 gateway is published. The admin identity comes from the generated
+  # disposable credentials; unsigned requests are denied.
+  seaweedfs:
+    <<: *policy
+    image: chrislusf/seaweedfs@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8
+    command: ["mini", "-dir=/data"]
+    environment:
+      AWS_ACCESS_KEY_ID: ocor-bootstrap-s3
+      AWS_SECRET_ACCESS_KEY: ${OCOR_LOCAL_SEAWEEDFS_PASSWORD:?required}
+    ports: ["127.0.0.1:18333:8333"]
+    tmpfs: ["/data:size=512m,mode=0750"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    deploy: {resources: {limits: {memory: 1G, cpus: "2.0"}}}
+
 networks:
   ocor-bootstrap:
     # Dedicated bridge plus loopback-only publications isolate the disposable

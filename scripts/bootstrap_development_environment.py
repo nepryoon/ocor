@@ -16,6 +16,30 @@ from acquire_fuseki_archive import acquire, build_context, remaining
 from ocor_bootstrap_lib import BootstrapError, load_json, retry, root, run, validate_locks
 
 
+# Disposable credentials generated for every new environment. OCOR-DEV-REM-0038
+# added the Temporal PostgreSQL and SeaweedFS S3 secrets; names end in PASSWORD
+# or TOKEN so the CI diagnostics redaction covers them.
+GENERATED_SECRET_KEYS = (
+    "OCOR_LOCAL_KEYCLOAK_PASSWORD",
+    "OCOR_LOCAL_OPENBAO_TOKEN",
+    "OCOR_LOCAL_POSTGRES_PASSWORD",
+    "OCOR_LOCAL_SEAWEEDFS_PASSWORD",
+    "OCOR_LOCAL_TEMPORAL_POSTGRES_PASSWORD",
+    "OCOR_LOCAL_TERMINUSDB_PASSWORD",
+)
+
+
+def ensure_generated_secrets(path: Path) -> list[str]:
+    """Add generated values for keys an older env file lacks; never rewrite one."""
+    entries = dict(
+        line.split("=", 1) for line in path.read_text(encoding="utf-8").splitlines() if "=" in line
+    )
+    added = sorted(key for key in GENERATED_SECRET_KEYS if not entries.get(key))
+    for key in added:
+        replace_env(path, key, secrets.token_urlsafe(32))
+    return added
+
+
 def write_secret_file(repository: Path) -> Path:
     path = repository / ".ocor" / "bootstrap.env"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -37,10 +61,7 @@ def write_secret_file(repository: Path) -> Path:
             raise BootstrapError("failed to generate disposable SPIRE test CA")
         key.chmod(0o600)
     values = {
-        "OCOR_LOCAL_KEYCLOAK_PASSWORD": secrets.token_urlsafe(32),
-        "OCOR_LOCAL_OPENBAO_TOKEN": secrets.token_urlsafe(32),
-        "OCOR_LOCAL_POSTGRES_PASSWORD": secrets.token_urlsafe(32),
-        "OCOR_LOCAL_TERMINUSDB_PASSWORD": secrets.token_urlsafe(32),
+        **{key: secrets.token_urlsafe(32) for key in GENERATED_SECRET_KEYS},
         "OCOR_SPIRE_BOOTSTRAP_DIR": str(spire),
         "OCOR_SPIRE_JOIN_TOKEN": "bootstrap-pending",
     }
@@ -115,6 +136,7 @@ def main() -> int:
         env_file = repository / ".ocor/bootstrap.env"
         if not env_file.exists():
             env_file = write_secret_file(repository)
+        ensure_generated_secrets(env_file)
         if not args.skip_start:
             server = run([
                 "docker", "compose", "--env-file", str(env_file), "-f", "deploy/bootstrap/compose.yaml",
