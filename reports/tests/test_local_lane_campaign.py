@@ -506,9 +506,12 @@ def test_lane_tools_are_verified_against_the_qualification_lock(tmp_path):
         LANES.verify_lane_tools(repo)
 
 
+DELEGATED = 'cpuset cpu io memory hugetlb pids rdma misc\n'
+
+
 def test_start_sandbox_creates_labelled_volumes_and_waits_for_an_empty_private_daemon(tmp_path):
     item = lane(tmp_path)
-    runner = FakeRunner()
+    runner = FakeRunner([(['docker', 'exec', item.name, 'cat', '/sys/fs/cgroup/cgroup.subtree_control'], 0, DELEGATED)])
     LANES.start_sandbox(item, [], runner, output_root=tmp_path / 'out', sleep=lambda seconds: None)
     argvs = runner.argvs()
     for volume in item.volumes:
@@ -516,6 +519,29 @@ def test_start_sandbox_creates_labelled_volumes_and_waits_for_an_empty_private_d
     assert argvs.index(LANES.sandbox_run_argv(item, [], output_root=tmp_path / 'out')) > 1
     assert ['docker', 'exec', item.name, 'docker', 'info', '--format', '{{.ServerVersion}}'] in argvs
     assert ['docker', 'exec', item.name, 'docker', 'ps', '-aq'] in argvs
+
+
+def test_sandbox_init_retries_the_controller_delegation_and_fails_closed_before_dockerd(tmp_path):
+    # A docker exec that arrives before the delegation lands in the root cgroup
+    # and makes the single write fail: the init moves late processes and retries.
+    script = LANES.sandbox_init(lane(tmp_path))
+    delegation, _, rest = script.partition('exec /usr/bin/dockerd')
+    assert f'seq 1 {LANES.CGROUP_DELEGATION_ATTEMPTS}' in delegation
+    assert delegation.index('xargs -rn1 < /sys/fs/cgroup/cgroup.procs') < delegation.index('> /sys/fs/cgroup/cgroup.subtree_control')
+    assert 'grep -qw memory /sys/fs/cgroup/cgroup.subtree_control || exit 97' in delegation
+    assert rest == ' --host unix:///run/docker.sock --group 1000 --data-root /var/lib/docker'
+
+
+def test_cgroup_delegation_is_bounded():
+    assert 1 < LANES.CGROUP_DELEGATION_ATTEMPTS * LANES.CGROUP_DELEGATION_PAUSE_SECONDS <= LANES.SANDBOX_READY_SECONDS
+
+
+@pytest.mark.parametrize('delegated', ['', 'cpu io pids\n', 'cpuset cpu io hugetlb pids\n'])
+def test_start_sandbox_fails_closed_without_the_delegated_resource_controllers(tmp_path, delegated):
+    item = lane(tmp_path)
+    runner = FakeRunner([(['docker', 'exec', item.name, 'cat', '/sys/fs/cgroup/cgroup.subtree_control'], 0, delegated)])
+    with pytest.raises(CAMPAIGN.CampaignError, match='controllers'):
+        LANES.start_sandbox(item, [], runner, output_root=tmp_path / 'out', sleep=lambda seconds: None)
 
 
 def test_start_sandbox_fails_closed_when_the_private_daemon_never_answers(tmp_path):
@@ -635,7 +661,7 @@ def lane_world(tmp_path, monkeypatch):
     (repository / '.ocor/bootstrap.env').write_text(f'OCOR_LOCAL_POSTGRES_PASSWORD={SECRET}\nOTHER=1\n')
     (repository / 'ocor-runtime/.coverage').write_bytes(b'coverage')
     world = {'repository': repository, 'calls': [], 'stacks': [], 'collected': None, 'junit_cases': None,
-             'pytest_exit': 0, 'head': HEAD}
+             'pytest_exit': 0, 'head': HEAD, 'bootstrap_exit': 0}
     FakeRecorder.instances = []
 
     def verify_revision(path, head):
@@ -652,6 +678,10 @@ def lane_world(tmp_path, monkeypatch):
 
     def runner(argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
         world['calls'].append(('run', [str(item) for item in argv], dict(env or {})))
+        if world['bootstrap_exit'] and '--teardown' not in argv:
+            if check:
+                raise CAMPAIGN.CampaignError('command failed (1)')
+            return LANES.CommandResult(1, json.dumps({'status': 'FAIL', 'error': 'complete stack failed', 'echo': SECRET}))
         return LANES.CommandResult(0, json.dumps({'status': 'PASS', 'echo': SECRET}))
 
     def pytest_command(output, selection):
@@ -822,6 +852,17 @@ def test_lane_redacts_generated_credentials_from_its_logs(lane_world, tmp_path):
     for path in spec.parent.iterdir():
         if path.is_file():
             assert SECRET not in path.read_text(errors='replace'), path.name
+
+
+def test_lane_keeps_the_redacted_bootstrap_output_when_the_bootstrap_fails(lane_world, tmp_path):
+    lane_world['bootstrap_exit'] = 1
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    result = assert_lane_failed(spec, 'bootstrap')
+    log = (spec.parent / 'bootstrap.log').read_text()
+    assert 'complete stack failed' in log and SECRET not in log and '[REDACTED]' in log
+    assert 'complete stack failed' in result['error'] and SECRET not in result['error']
+    assert not [call for call in lane_world['calls'] if call[0] in ('collect', 'pytest')]
 
 
 def test_lane_cli_runs_the_spec_and_returns_its_status(lane_world, tmp_path, monkeypatch):
