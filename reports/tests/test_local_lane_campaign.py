@@ -830,3 +830,412 @@ def test_lane_cli_runs_the_spec_and_returns_its_status(lane_world, tmp_path, mon
     monkeypatch.setattr(LANES, 'run_lane', lambda path: seen.setdefault('spec', path) and 0)
     assert LANES.main(['--run-lane', str(spec)]) == 0
     assert seen['spec'] == spec.resolve()
+
+
+# --- --execute orchestration on the host ------------------------------------
+# Memory admission first (SERIAL fallback recorded, nothing provisioned), the
+# exact head and the collection on the host checkout, the deterministic
+# partition, both lanes provisioned and started, then launched in parallel with
+# only HOME and PATH. The host keeps the whole-campaign clock; the first failure
+# of either lane stops the other. The union must be exact, coverage is combined
+# onto the host checkout, and both lanes are always torn down with zero residue.
+
+class FakeProcess:
+    """A lane runner process: exit code after ``polls`` polls, or never if None."""
+
+    def __init__(self, returncode=0, polls=1):
+        self.returncode, self.polls, self.killed = returncode, polls, False
+
+    def poll(self):
+        if self.killed:
+            return -9
+        if self.polls is None:
+            return None
+        if self.polls > 0:
+            self.polls -= 1
+            return None
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
+
+    def wait(self, timeout=None):
+        return self.poll()
+
+
+class FakeClock:
+    def __init__(self, start=LANE_CLOCK[0], step=5.0):
+        self.now, self.step = start, step
+
+    def __call__(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += self.step
+
+
+def two_lanes(tmp_path):
+    lanes = [lane(tmp_path, 1), lane(tmp_path, 2)]
+    for item in lanes:
+        item.output.mkdir(parents=True)
+    return lanes
+
+
+def test_lane_spec_is_written_in_the_lane_output_and_is_exact(tmp_path):
+    item = two_lanes(tmp_path)[0]
+    path = LANES.write_lane_spec(item, HEAD, LANE_SELECTION, LANE_CLOCK[0])
+    assert path == item.output / 'lane_spec.json'
+    spec = LANES.load_lane_spec(path)
+    assert spec == {'campaign_start': LANE_CLOCK[0], 'head': HEAD, 'lane': 1, 'selection': LANE_SELECTION,
+                    'stop_file': str(item.output / 'STOP')}
+    assert path.read_text() == json.dumps(spec, indent=2, sort_keys=True) + '\n'
+
+
+def test_lane_run_argv_runs_the_lane_runner_in_its_sandbox_with_only_home_and_path(tmp_path):
+    item = two_lanes(tmp_path)[0]
+    spec = item.output / 'lane_spec.json'
+    argv = LANES.lane_run_argv(item, '/p/bin:/usr/bin', spec)
+    python = str(item.repository / 'ocor-runtime/.venv/bin/python')
+    assert argv == LANES.sandbox_exec_argv(item, '/p/bin:/usr/bin', [python, 'scripts/run_local_lane_campaign.py', '--run-lane', str(spec)], {})
+    assert [argv[i + 1].split('=', 1)[0] for i, value in enumerate(argv) if value == '-e'] == ['HOME', 'PATH']
+
+
+def test_supervision_of_two_passing_lanes_writes_no_stop_request(tmp_path):
+    lanes, clock = two_lanes(tmp_path), FakeClock()
+    report = LANES.supervise_lanes({1: FakeProcess(0, 2), 2: FakeProcess(0, 3)}, lanes, clock.now - 10, clock=clock, sleep=clock.sleep)
+    assert report == {'returncodes': {1: 0, 2: 0}, 'first_failure': None, 'stop_reason': None, 'killed_after_grace': [],
+                      'po_decision_required': False}
+    assert not any((item.output / 'STOP').exists() for item in lanes)
+
+
+def test_first_failure_of_a_lane_stops_the_other_and_waits_for_it(tmp_path):
+    lanes, clock = two_lanes(tmp_path), FakeClock()
+    other = FakeProcess(1, 4)
+    report = LANES.supervise_lanes({1: other, 2: FakeProcess(1, 1)}, lanes, clock.now, clock=clock, sleep=clock.sleep)
+    assert report['first_failure'] == 2 and report['returncodes'] == {1: 1, 2: 1}
+    assert 'lane 2' in (lanes[0].output / 'STOP').read_text()
+    assert not (lanes[1].output / 'STOP').exists()
+    assert other.poll() == 1 and not other.killed and report['killed_after_grace'] == []
+
+
+def test_host_clock_at_the_limit_stops_both_lanes(tmp_path):
+    lanes, clock = two_lanes(tmp_path), FakeClock()
+    report = LANES.supervise_lanes({1: FakeProcess(1, 3), 2: FakeProcess(1, 3)}, lanes, clock.now - 5400, clock=clock, sleep=clock.sleep)
+    assert '90-minute campaign limit reached' in report['stop_reason']
+    assert all('90-minute' in (item.output / 'STOP').read_text() for item in lanes)
+
+
+def test_host_clock_reports_the_notification_threshold(tmp_path):
+    lanes, clock = two_lanes(tmp_path), FakeClock()
+    report = LANES.supervise_lanes({1: FakeProcess(0, 1), 2: FakeProcess(0, 1)}, lanes, clock.now - 3601, clock=clock, sleep=clock.sleep)
+    assert report['po_decision_required'] is True and report['stop_reason'] is None
+
+
+def test_a_lane_that_ignores_the_stop_request_is_killed_after_the_grace(tmp_path):
+    lanes, clock = two_lanes(tmp_path), FakeClock(step=60.0)
+    stuck = FakeProcess(0, None)
+    report = LANES.supervise_lanes({1: stuck, 2: FakeProcess(1, 0)}, lanes, clock.now, clock=clock, sleep=clock.sleep)
+    assert stuck.killed and report['killed_after_grace'] == [1] and report['first_failure'] == 2
+    assert clock.now - LANE_CLOCK[0] >= LANES.STOP_GRACE_SECONDS
+
+
+def test_stop_grace_covers_the_longest_uninterruptible_lane_step():
+    assert LANES.STOP_GRACE_SECONDS >= LANES.PROVISION_TIMEOUT_SECONDS + 60
+    assert LANES.STOP_GRACE_SECONDS < LANES.FULL_SUITE_LIMIT_SECONDS
+
+
+def write_lane_result(item, part, **changes):
+    result = {'status': 'PASS', 'lane': item.index, 'candidate_head': HEAD, 'selected': len(part),
+              'selected_sha256': CAMPAIGN.collection_digest(part), 'lane_duration_seconds': 12.5,
+              'campaign_elapsed_seconds': 20.0, 'counts': {'tests': len(part), 'failures': 0, 'errors': 0, 'skipped': 0},
+              'po_decision_required': False, **changes}
+    (item.output / 'lane_result.json').write_text(json.dumps(result))
+    return result
+
+
+def test_lane_results_must_both_pass_for_their_exact_selection_and_head(tmp_path):
+    lanes = two_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights())
+    for item, part in zip(lanes, parts):
+        write_lane_result(item, part)
+    results = LANES.read_lane_results(lanes, HEAD, parts)
+    assert [result['lane'] for result in results] == [1, 2]
+
+
+@pytest.mark.parametrize('change, match', [
+    ({'status': 'FAIL', 'error': 'pytest exit code 1'}, 'pytest exit code 1'),
+    ({'candidate_head': '0' * 40}, 'head'),
+    ({'lane': 1}, 'lane'),
+    ({'selected_sha256': '0' * 64}, 'selection'),
+])
+def test_lane_results_reject_a_failure_another_head_lane_or_selection(tmp_path, change, match):
+    lanes = two_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights())
+    write_lane_result(lanes[0], parts[0])
+    write_lane_result(lanes[1], parts[1], **change)
+    with pytest.raises(CAMPAIGN.CampaignError, match=match):
+        LANES.read_lane_results(lanes, HEAD, parts)
+
+
+def test_lane_results_reject_an_absent_result(tmp_path):
+    lanes = two_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights())
+    write_lane_result(lanes[0], parts[0])
+    with pytest.raises(CAMPAIGN.CampaignError, match='lane 2'):
+        LANES.read_lane_results(lanes, HEAD, parts)
+
+
+def test_merged_junit_keeps_every_lane_suite_and_enforces_required_modules(tmp_path):
+    lanes = two_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights())
+    for item, part in zip(lanes, parts):
+        write_junit(item.output / LANES.LANE_JUNIT, [CAMPAIGN.junit_identity(node) for node in part])
+    merged = tmp_path / 'merged.xml'
+    counts = LANES.merge_lane_junit(lanes, merged, required_modules=['test_ocor_dev_0049'])
+    assert counts == {'tests': len(nodes()), 'failures': 0, 'errors': 0, 'skipped': 0}
+    assert [suite.get('name') for suite in ET.parse(merged).getroot().iter('testsuite')] == ['pytest-lane-1', 'pytest-lane-2']
+    with pytest.raises(CAMPAIGN.CampaignError, match='required guard'):
+        LANES.merge_lane_junit(lanes, tmp_path / 'other.xml', required_modules=['test_ocor_dev_0048'])
+
+
+def test_coverage_is_combined_onto_the_host_checkout_with_both_lane_paths_remapped(tmp_path):
+    lanes = two_lanes(tmp_path)
+    for item in lanes:
+        (item.output / 'runtime_coverage.data').write_bytes(b'data-%d' % item.index)
+    suite, output = tmp_path / 'host/ocor-runtime', tmp_path / 'campaign'
+    output.mkdir()
+    runner = FakeRunner()
+    LANES.combine_lane_coverage(suite, lanes, output, runner)
+    rcfile = output / 'lane_coverage.rc'
+    text = rcfile.read_text()
+    sources = [line.strip() for line in text.split('source =', 1)[1].splitlines() if line.strip()]
+    assert sources == [str(suite / 'src'), *(str(item.repository / 'ocor-runtime/src') for item in lanes)]
+    combine, report = runner.calls
+    assert combine['argv'][1:4] == ['-m', 'coverage', 'combine'] and f'--rcfile={rcfile}' in combine['argv']
+    assert combine['argv'][-2:] == [str(output / 'runtime_coverage.lane-1'), str(output / 'runtime_coverage.lane-2')]
+    assert report['argv'][1:4] == ['-m', 'coverage', 'json'] and str(output / 'runtime_coverage_post_approval.json') in report['argv']
+    assert combine['cwd'] == report['cwd'] == str(suite)
+    assert (output / 'runtime_coverage.lane-2').read_bytes() == b'data-2'
+
+
+def test_coverage_combination_fails_closed(tmp_path):
+    lanes = two_lanes(tmp_path)
+    for item in lanes:
+        (item.output / 'runtime_coverage.data').write_bytes(b'x')
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.combine_lane_coverage(tmp_path, lanes, tmp_path, FakeRunner([(['*', 'coverage combine'], 1, '')]))
+
+
+def power_supplies(tmp_path, **supplies):
+    root = tmp_path / 'power'
+    for name, values in supplies.items():
+        (root / name).mkdir(parents=True)
+        for key, value in values.items():
+            (root / name / key).write_text(value + '\n')
+    return root
+
+
+def test_power_reading_reports_mains_battery_or_not_executed(tmp_path):
+    mains = power_supplies(tmp_path / 'a', AC={'type': 'Mains', 'online': '1'}, BAT0={'type': 'Battery', 'status': 'Charging'})
+    assert LANES.power_reading(mains)['source'] == 'MAINS'
+    battery = power_supplies(tmp_path / 'b', AC={'type': 'Mains', 'online': '0'}, BAT0={'type': 'Battery', 'status': 'Discharging'})
+    assert LANES.power_reading(battery)['source'] == 'BATTERY'
+    assert LANES.power_reading(tmp_path / 'absent')['source'] == 'NOT_EXECUTED'
+    reading = LANES.power_reading(mains)
+    assert reading['supplies']['AC'] == {'online': '1', 'type': 'Mains'} and 'read_at' in reading
+
+
+@pytest.fixture
+def host_world(tmp_path, monkeypatch):
+    """The host side of --execute with lane provisioning, sandboxes and lane processes observed."""
+    world = {'calls': [], 'lane_exit': {1: 0, 2: 0}, 'fail_provision': None, 'collected': nodes(), 'head': HEAD}
+    source = tmp_path / 'host'
+    (source / 'ocor-runtime').mkdir(parents=True)
+    world['source'] = source
+
+    def verify_revision(path, head):
+        world['calls'].append(('verify_revision', str(path)))
+        if head != world['head']:
+            raise CAMPAIGN.CampaignError(f'candidate HEAD mismatch: {world["head"]}')
+
+    def collect_nodeids(directory, selection):
+        world['calls'].append(('collect', str(directory), list(selection)))
+        return list(world['collected'])
+
+    def provision_lane(item, source_path, head, runner, env):
+        world['calls'].append(('provision', item.index))
+        if world['fail_provision'] == item.index:
+            raise CAMPAIGN.CampaignError(f'lane {item.index} provisioning failed')
+        item.output.mkdir(parents=True)
+        item.repository.mkdir(parents=True)
+        return {'lane': item.index, 'head': head, 'repository': str(item.repository)}
+
+    def start_sandbox(item, mounts, runner, *, output_root, sleep=None):
+        world['calls'].append(('sandbox', item.index))
+        return {'lane': item.index, 'sandbox': item.name}
+
+    def launcher(argv, log):
+        index = int(argv[argv.index('--run-lane') + 1].split('/lane-')[-1].split('/')[0])
+        world['calls'].append(('launch', index))
+        item = next(entry for entry in world['lanes'] if entry.index == index)
+        spec = LANES.load_lane_spec(item.output / 'lane_spec.json')
+        if world['lane_exit'][index] == 0:
+            write_junit(item.output / LANES.LANE_JUNIT, [CAMPAIGN.junit_identity(node) for node in spec['selection']])
+            (item.output / 'runtime_coverage.data').write_bytes(b'cov')
+            write_lane_result(item, spec['selection'])
+        else:
+            write_lane_result(item, spec['selection'], status='FAIL', error=f'lane {index} pytest exit code 1')
+        log.write_text('lane log\n')
+        return FakeProcess(world['lane_exit'][index], 1)
+
+    def teardown_lane(item, path, runner):
+        world['calls'].append(('teardown', item.index))
+        return {'lane': item.index, 'status': 'PASS'}
+
+    real_lane = LANES.Lane
+
+    def lane_factory(*args, **kwargs):
+        item = real_lane(*args, **kwargs)
+        world.setdefault('lanes', []).append(item)
+        return item
+
+    monkeypatch.setattr(CAMPAIGN, 'verify_revision', verify_revision)
+    monkeypatch.setattr(CAMPAIGN, 'collect_nodeids', collect_nodeids)
+    monkeypatch.setattr(LANES, 'load_weights', weights)
+    monkeypatch.setattr(LANES, 'provision_lane', provision_lane)
+    monkeypatch.setattr(LANES, 'start_sandbox', start_sandbox)
+    monkeypatch.setattr(LANES, 'ensure_root_image', lambda runner, links: world['calls'].append(('root_image',)))
+    monkeypatch.setattr(LANES, 'host_usr_links', lambda: {'bin': 'usr/bin'})
+    monkeypatch.setattr(LANES, 'teardown_lane', teardown_lane)
+    monkeypatch.setattr(LANES, 'remove_root_image', lambda runner: world['calls'].append(('remove_root_image',)))
+    monkeypatch.setattr(LANES, 'check_host_residue', lambda campaign_name, runner: world['calls'].append(('residue',)) or {})
+    monkeypatch.setattr(LANES, 'combine_lane_coverage', lambda suite, lanes, output, runner: world['calls'].append(('coverage', str(suite))))
+    monkeypatch.setattr(LANES, 'tool_mounts', lambda paths, home: [])
+    monkeypatch.setattr(LANES, 'Lane', lane_factory)
+    monkeypatch.setattr(LANES, 'SUPERVISE_POLL_SECONDS', 0)
+    world['launcher'] = launcher
+    world['meminfo'] = tmp_path / 'meminfo'
+    world['meminfo'].write_text(meminfo(31743008, 26000000))
+    world['power'] = power_supplies(tmp_path, AC={'type': 'Mains', 'online': '1'})
+    world['work'] = tmp_path / 'work'
+    return world
+
+
+def execute(world, selection=('tests/',)):
+    return LANES.execute_campaign(world['work'], HEAD, [Path('/home/luca/.ocor-codex/impl-env/x/bin')], list(selection),
+                                  source=world['source'], runner=FakeRunner(), launcher=world['launcher'],
+                                  meminfo_path=world['meminfo'], power_root=world['power'])
+
+
+def stored_result(world):
+    return json.loads((world['work'] / 'campaign_result.json').read_text())
+
+
+M48 = 'tests/tasks/test_ocor_dev_0048.py::test_guard'
+
+
+def test_execute_runs_both_lanes_in_parallel_and_records_an_exact_pass(host_world):
+    host_world['collected'] = [*nodes(), M48]
+    result = execute(host_world)
+    assert result['status'] == 'PASS' and result == stored_result(host_world)
+    assert result['mode'] == 'TWO_LANE' and result['selection_scope'] == 'FULL_SUITE' and result['qualifying_scope'] is True
+    assert result['head'] == HEAD and result['memory']['mode'] == 'TWO_LANE'
+    collected = host_world['collected']
+    assert result['collection']['collected'] == len(collected)
+    assert result['collection']['collected_sha256'] == CAMPAIGN.collection_digest(collected)
+    assert result['union'] == {'collected': len(collected), 'executed': len(collected), 'missing': [], 'duplicated': [], 'unexpected': [],
+                               'lanes': result['collection']['lane_cases']}
+    assert result['counts'] == {'tests': len(collected), 'failures': 0, 'errors': 0, 'skipped': 0}
+    assert result['required_modules'] == ['test_ocor_dev_0048', 'test_ocor_dev_0049']
+    assert result['power_start']['source'] == result['power_end']['source'] == 'MAINS'
+    assert result['limit_seconds'] == 5400 and result['threshold_seconds'] == 3600
+    assert isinstance(result['total_duration_seconds'], float) and result['po_decision_required'] is False
+    assert [entry['lane'] for entry in result['lanes']] == [1, 2]
+    assert all('provisioning_seconds' in entry and entry['result']['status'] == 'PASS' for entry in result['lanes'])
+    calls = [call[0] for call in host_world['calls']]
+    assert calls.index('verify_revision') < calls.index('collect') < calls.index('root_image') < calls.index('provision')
+    launches = [i for i, call in enumerate(calls) if call == 'launch']
+    assert len(launches) == 2 and max(i for i, call in enumerate(calls) if call in ('provision', 'sandbox')) < launches[0]
+    assert launches[1] == launches[0] + 1
+    assert calls.index('coverage') > launches[1]
+    assert calls.count('teardown') == 2 and calls.index('teardown') > calls.index('coverage')
+    assert calls.index('remove_root_image') < calls.index('residue') and calls[-1] == 'residue'
+    assert calls.count('verify_revision') == 2
+    assert ('collect', str(host_world['source'] / 'ocor-runtime'), ['tests/']) in host_world['calls']
+
+
+def test_execute_full_suite_requires_the_sealed_supervisor_guards(host_world):
+    result = execute(host_world)
+    assert result['status'] == 'FAIL' and 'required guard' in result['error']
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+
+
+def test_execute_with_an_explicit_selection_is_marked_non_qualifying(host_world):
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS' and result['selection_scope'] == 'EXPLICIT_NON_QUALIFYING'
+    assert result['qualifying_scope'] is False and result['required_modules'] == []
+
+
+def test_execute_below_the_memory_threshold_records_the_serial_fallback_and_provisions_nothing(host_world):
+    host_world['meminfo'].write_text(meminfo(31743008, 1000))
+    result = execute(host_world)
+    assert result['status'] == 'SERIAL_FALLBACK' and result['mode'] == 'SERIAL' and result['memory']['mode'] == 'SERIAL'
+    assert 'run_qualifying_campaign.py' in result['next_action']
+    assert not [call for call in host_world['calls'] if call[0] in ('provision', 'sandbox', 'launch', 'root_image')]
+    assert stored_result(host_world) == result
+
+
+def test_execute_fails_closed_on_a_host_head_mismatch_before_provisioning(host_world):
+    host_world['head'] = '0' * 40
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'HEAD mismatch' in result['error']
+    assert not [call for call in host_world['calls'] if call[0] in ('provision', 'launch')]
+
+
+def test_execute_records_the_failing_lane_and_still_tears_down_both(host_world):
+    host_world['lane_exit'][2] = 1
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'lane 2' in result['error']
+    assert result['supervision']['first_failure'] == 2
+    calls = [call[0] for call in host_world['calls']]
+    assert calls.count('teardown') == 2 and 'coverage' not in calls and calls[-1] == 'residue'
+
+
+def test_execute_tears_down_both_lanes_when_provisioning_fails(host_world):
+    host_world['fail_provision'] = 2
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'provisioning failed' in result['error']
+    calls = [call[0] for call in host_world['calls']]
+    assert 'launch' not in calls and calls.count('teardown') == 2 and calls[-1] == 'residue'
+
+
+def test_execute_rejects_a_union_that_differs_from_the_collection(host_world, monkeypatch):
+    monkeypatch.setattr(LANES, 'lane_partition', lambda collected, weights_map: [collected[:3], collected[4:]])
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'missing' in result['error']
+
+
+@pytest.mark.parametrize('argv', [
+    ['--execute', '/tmp/w'],
+    ['--execute', '/tmp/w', '--expected-head', HEAD],
+    ['--execute', '/tmp/w', '--tool-bin', '/x'],
+])
+def test_execute_cli_requires_the_head_and_the_locked_tools(argv):
+    with pytest.raises(SystemExit):
+        LANES.main(argv)
+
+
+def test_execute_cli_passes_the_selection_and_returns_the_status(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake(work, head, tool_bins, selection, **kwargs):
+        seen.update(work=work, head=head, tool_bins=tool_bins, selection=selection)
+        return {'status': 'SERIAL_FALLBACK'}
+    monkeypatch.setattr(LANES, 'execute_campaign', fake)
+    assert LANES.main(['--execute', str(tmp_path / 'w'), '--expected-head', HEAD, '--tool-bin', str(tmp_path)]) == 3
+    assert seen['selection'] == ['tests/'] and seen['head'] == HEAD
+    monkeypatch.setattr(LANES, 'execute_campaign', lambda *a, **k: {'status': 'PASS'})
+    assert LANES.main(['--execute', str(tmp_path / 'w'), '--expected-head', HEAD, '--tool-bin', str(tmp_path),
+                       '--select', 'tests/a.py::t', '--select', 'tests/b.py::t']) == 0
+    monkeypatch.setattr(LANES, 'execute_campaign', lambda *a, **k: {'status': 'FAIL'})
+    assert LANES.main(['--execute', str(tmp_path / 'w'), '--expected-head', HEAD, '--tool-bin', str(tmp_path)]) == 1
