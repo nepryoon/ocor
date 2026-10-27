@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "856d79c9901313b5c7804084e50bc8337650292a",
-    "branch": "governed/state-sync-rem0037-kind-smoke-20261027",
+    "baseline_commit": "8ffe10b0fd53fa912ce2c5ce8716bcb62f1831a9",
+    "branch": "governed/state-sync-rem0037-guard-wiring-20261027",
     "campaign_background_processes_remaining": false,
     "candidate": {
       "branch": "governed/ocor-dev-rem-0037-local-suite-split",
@@ -11,7 +11,9 @@
         "reports/tests/test_local_lane_campaign.py",
         "scripts/run_local_lane_campaign.py",
         "scripts/validate_ocor_development_plan.py",
-        "reports/planning/OCOR_PLAN_RUN_STATE.json"
+        "reports/planning/OCOR_PLAN_RUN_STATE.json",
+        "reports/tests/test_kind_teardown_observation.py",
+        ".github/workflows/ocor-validation-closure.yml"
       ],
       "code_commits": [
         "77611df672a6e6aa739c403a2f13c4d256f78a4d",
@@ -26,14 +28,17 @@
         "cfcfe78aa230cc201b8cf15e77668f311c1362ab",
         "0724a0455ac260b9df698005ea3b1b62061319c0",
         "5c33d25d0a56a972cbe7cea37e69ef7b980bd768",
-        "21343d188c0f820300ea7fbe94b1dd04f4d76cb9"
+        "21343d188c0f820300ea7fbe94b1dd04f4d76cb9",
+        "f1330c318f0762c9873ff9f5e5de08722c54af7e",
+        "11ed79daec185cb939c26dd7e07c8b3d1d4cfb3e",
+        "d5ab2733efb2deaceaef84ab72c8fa782c999547"
       ],
-      "head_sha": "21343d188c0f820300ea7fbe94b1dd04f4d76cb9",
-      "note": "WIP, not a candidate: CI guard wiring, requalifications and equivalence proof pending",
+      "head_sha": "d5ab2733efb2deaceaef84ab72c8fa782c999547",
+      "note": "WIP, not a candidate: requalifications and equivalence proof pending",
       "pushed": true,
       "worktree": ".ocor/worktrees/rem-0037"
     },
-    "change_set": "OCOR-DEV-REM-0037 kind-backed two-lane smoke (real, non-qualifying, PASS) and clock-aligned Helm partition weight (RED -> GREEN)",
+    "change_set": "OCOR-DEV-REM-0037 CI guard wiring: lane guard module in the validation-closure guard step under the exact REM-0037 normalization (RED -> GREEN)",
     "decisions": [
       "LOCAL-SUITE-SPLIT (2026-10-25)",
       "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26)",
@@ -43,15 +48,16 @@
       "AGENT-WAIT-HYGIENE (2026-10-27)"
     ],
     "host_memory_at_sync": {
-      "MemAvailable": 27531824,
+      "MemAvailable": 26920944,
       "MemTotal": 31743008
     },
-    "next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 21343d188c0f: partitioner with the clock-aligned Helm weight, exact union, lane lifecycle, per-lane runner and --execute orchestration GREEN; real non-qualifying smokes PASS, including the kind-backed 0049 Helm case in a lane). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit: (f) add reports/tests/test_local_lane_campaign.py to the validation-closure guard step only under REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization in reports/tests/test_kind_teardown_observation.py, verified counts, negative tests), otherwise a decision request; do not touch scripts/run_qualifying_campaign.py. Then requalify sealed records whose inputs are touched (0005/0050/0082 regression-only on the plan allowlist). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
+    "next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP d5ab2733efb2: partitioner with the clock-aligned Helm weight, exact union, lane lifecycle, per-lane runner, --execute orchestration and the lane guard module wired into the validation-closure guard step under the exact REM-0037 normalization, all GREEN; real non-qualifying smokes PASS). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit: requalification records with explicit supersession (sealed records untouched, real backends) for every completed task whose latest record drifts at the WIP head: OCOR-DEV-0005 (.github/workflows/ocor-validation-closure.yml, reports/tests/test_kind_teardown_observation.py, scripts/validate_ocor_development_plan.py), OCOR-DEV-0050 (same three files; substantive, authorized without threshold by LOCAL-SUITE-SPLIT-REACTIVATION point 3) and OCOR-DEV-0082 (plan validator only, regression-only); re-run validate_evidence_input_drift.py to confirm the list first, and produce the requalifications only once no further REM-0037 change to those inputs is expected. Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
     "normative_interpretations": [
       "STOP_GRACE_SECONDS (PROVISION_TIMEOUT_SECONDS + 120 s) and the bounded cgroup delegation retry (50 x 0.2 s) are new bounds of the additive orchestrator only, never applied to a test, the serial supervisor, CI or the verifier; they only bound how long a stopped or failed lane is awaited before teardown. An explicit --select run is recorded as EXPLICIT_NON_QUALIFYING and never counts as a full suite.",
-      "The handoff asked for one kind-backed 0049 case in each lane; the module has a single kind-backed case, so the smoke placed it in one lane and a stack-backed 0049 case in the other (fact over plan, recorded). The clock-aligned weight is a partition input only and never selects, excludes or times a case."
+      "The handoff asked for one kind-backed 0049 case in each lane; the module has a single kind-backed case, so the smoke placed it in one lane and a stack-backed 0049 case in the other (fact over plan, recorded). The clock-aligned weight is a partition input only and never selects, excludes or times a case.",
+      "Adding the lane guard module to the validation-closure guard step is a workflow change of REM-0037: admitted only through LOCAL-SUITE-SPLIT-REACTIVATION point 6 with the schema of REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization, verified counts, negative tests); baselines not moved, scripts/run_qualifying_campaign.py untouched. The guard addition makes the OCOR-DEV-0050 requalification substantive; REACTIVATION point 3 authorizes it without threshold."
     ],
-    "phase": "OCOR_DEV_REM_0037_KIND_SMOKE_PASS",
+    "phase": "OCOR_DEV_REM_0037_CI_GUARD_WIRED",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -59,7 +65,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "REM-0037 measurement, partitioner RED/GREEN, lane isolation probe, lane lifecycle RED/GREEN, per-lane runner RED/GREEN, --execute orchestration RED/GREEN and smoke repair, state syncs, kind two-lane smoke and clock-aligned weight repair RED/GREEN"
+          "scope": "REM-0037 measurement, partitioner RED/GREEN, lane isolation probe, lane lifecycle RED/GREEN, per-lane runner RED/GREEN, --execute orchestration RED/GREEN and smoke repair, state syncs, kind two-lane smoke and clock-aligned weight repair RED/GREEN, CI guard wiring RED/GREEN"
         }
       ],
       "loop_counted_implementers": [
@@ -1794,7 +1800,7 @@
       }
     }
   },
-  "baseline_commit": "856d79c9901313b5c7804084e50bc8337650292a",
+  "baseline_commit": "8ffe10b0fd53fa912ce2c5ce8716bcb62f1831a9",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -8318,8 +8324,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_REM_0037_IN_PROGRESS_KIND_SMOKE_PASS",
-  "next_executable_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 21343d188c0f: partitioner with the clock-aligned Helm weight, exact union, lane lifecycle, per-lane runner and --execute orchestration GREEN; real non-qualifying smokes PASS, including the kind-backed 0049 Helm case in a lane). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit: (f) add reports/tests/test_local_lane_campaign.py to the validation-closure guard step only under REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization in reports/tests/test_kind_teardown_observation.py, verified counts, negative tests), otherwise a decision request; do not touch scripts/run_qualifying_campaign.py. Then requalify sealed records whose inputs are touched (0005/0050/0082 regression-only on the plan allowlist). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_REM_0037_IN_PROGRESS_CI_GUARD_WIRED",
+  "next_executable_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP d5ab2733efb2: partitioner with the clock-aligned Helm weight, exact union, lane lifecycle, per-lane runner, --execute orchestration and the lane guard module wired into the validation-closure guard step under the exact REM-0037 normalization, all GREEN; real non-qualifying smokes PASS). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit: requalification records with explicit supersession (sealed records untouched, real backends) for every completed task whose latest record drifts at the WIP head: OCOR-DEV-0005 (.github/workflows/ocor-validation-closure.yml, reports/tests/test_kind_teardown_observation.py, scripts/validate_ocor_development_plan.py), OCOR-DEV-0050 (same three files; substantive, authorized without threshold by LOCAL-SUITE-SPLIT-REACTIVATION point 3) and OCOR-DEV-0082 (plan validator only, regression-only); re-run validate_evidence_input_drift.py to confirm the list first, and produce the requalifications only once no further REM-0037 change to those inputs is expected. Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8366,10 +8372,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "c887dcafc0f3ef7b66c1d11b7a169fd18ea6c160",
-    "branch": "governed/state-sync-rem0037-execute-orchestration-20261027",
-    "change_set": "OCOR-DEV-REM-0037 --execute orchestration: memory admission, parallel lanes, cross stop, exact union, coverage remap, teardown (RED -> GREEN) and cgroup delegation repair (RED -> GREEN), real non-qualifying smoke PASS",
-    "phase": "OCOR_DEV_REM_0037_EXECUTE_ORCHESTRATION_GREEN"
+    "baseline_commit": "856d79c9901313b5c7804084e50bc8337650292a",
+    "branch": "governed/state-sync-rem0037-kind-smoke-20261027",
+    "change_set": "OCOR-DEV-REM-0037 kind-backed two-lane smoke (real, non-qualifying, PASS) and clock-aligned Helm partition weight (RED -> GREEN)",
+    "phase": "OCOR_DEV_REM_0037_KIND_SMOKE_PASS"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -8455,11 +8461,11 @@
     ],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-27T18:23:04.914388+00:00",
+    "observed_at": "2026-10-27T19:04:20.504612+00:00",
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
       "OCOR-DEV-0060": "after integration of the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
-      "OCOR-DEV-REM-0037": "in progress: partitioner (with the clock-aligned Helm weight), lane lifecycle, per-lane runner and --execute orchestration GREEN; real non-qualifying smokes PASS including the kind-backed Helm case in a lane; next CI guard wiring, requalifications, then pre-campaign gate/review and the equivalence proof",
+      "OCOR-DEV-REM-0037": "in progress: partitioner, lane lifecycle, per-lane runner, --execute orchestration and CI guard wiring GREEN; real non-qualifying smokes PASS; next requalifications of 0005/0050/0082, then pre-campaign gate/review and the equivalence proof",
       "OCOR-DEV-REM-0042": "integrated: PR #366 merged (21000270090b)"
     },
     "suspended_by_po": []
@@ -24296,6 +24302,43 @@
     "REM_0037_LOCAL_SUITE_SPLIT": {
       "authority": "LOCAL-SUITE-SPLIT (2026-10-25)",
       "branch": "governed/ocor-dev-rem-0037-local-suite-split",
+      "ci_guard_wiring_20261027": {
+        "authority": "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26) point 6 under REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition a",
+        "ci_guard_step_local": {
+          "junit_sha256": "a526e895b5e57580e215288612b93b02a231fba9314961baafe8cff480bd0f9b",
+          "log_sha256": "c56792e0d121cea978e2b661c68ce2a7e0bde8727ad24dadafe039803138cc78",
+          "note": "a first run with a PATH without node gave 2 skips in pre-existing modules (tsc strict, benchmark smoke); environmental, not recorded as a result",
+          "result": "exact CI guard command with the locked toolchain PATH in a clean env: 362 passed, 83 subtests; check_junit {'tests': 445, 'failures': 0, 'errors': 0, 'skipped': 0}"
+        },
+        "executed_at": "2026-10-27T19:04:20.504612+00:00",
+        "executor": "Claude Code (Anthropic, claude-opus-5-5)",
+        "green": {
+          "log_sha256": "e3a2dd0470127dd1618fdcee7fa5c91997cd196cc9d049d3bd6b404ee09b66ae",
+          "result": "48 passed, 83 subtests passed"
+        },
+        "green_commit": "d5ab2733efb2deaceaef84ab72c8fa782c999547",
+        "lane_module_hermetic": "117 passed with HOME set to an empty directory outside /home/luca (no dependency on files outside Git)",
+        "merge_with_main": "f1330c318f0762c9873ff9f5e5de08722c54af7e",
+        "negative_tests": [
+          "module missing",
+          "module duplicated",
+          "module first",
+          "another module added",
+          "selection flag added",
+          "tee log changed",
+          "junit path changed",
+          "module run in a second step",
+          "module in another workflow"
+        ],
+        "normalization": "normalize_rem0037_workflow in reports/tests/test_kind_teardown_observation.py: only for .github/workflows/ocor-validation-closure.yml, the exact command fragment must occur once and the module name once, then it returns to the baseline command; chained into assert_governed_workflow and bootstrap_probe_proof (both baselines 7cd5f7a and 9b4d3be); existing normalizations and baselines unchanged",
+        "raw_location": "~/.ocor-codex/rem-0037-guard-wiring/ (outside Git)",
+        "red_commit": "11ed79daec185cb939c26dd7e07c8b3d1d4cfb3e",
+        "red_fingerprint": {
+          "log_sha256": "1e7c54597074408f21c445e72e23380b87354ae4f6e9f86447a77d3f20444fc0",
+          "result": "14 failed (7 tests plus subtests; every workflow-invariance proof fails because the workflow does not yet contain the module), 41 passed, 62 subtests passed"
+        },
+        "workflow_delta": "reports/tests/test_local_lane_campaign.py appended once to the pytest command of the validation-closure step 'Execute conditional report guards and campaign supervisor tests' (same --junitxml guards_junit.xml, same check_junit zero-skip gate); no other workflow byte changed"
+      },
       "constraints": [
         "Inventory of files and sealed records before code; prefer additive orchestration script and parameters with unchanged defaults; stop with decision request if requalifications exceed 3 tasks or touch 0049/0050",
         "Deterministic partition from profiling per-case times; serial/shared-state/kind tests in the same part; no case removed, merged, skipped, xfailed or edited",
@@ -24474,7 +24517,7 @@
           }
         }
       },
-      "head_sha": "21343d188c0f820300ea7fbe94b1dd04f4d76cb9",
+      "head_sha": "d5ab2733efb2deaceaef84ab72c8fa782c999547",
       "id": "OCOR-DEV-REM-0037",
       "id_allocation": "First free REM-* verified read-only on 2026-10-25 across every local and remote ref (git grep), ~/.ocor-codex JSON/Markdown and verdicts, PR titles/bodies: zero occurrences of REM-0037 (REM-0036 highest in use; REM-0099 only as a range bound in decision text).",
       "kind_smoke_20261027": {
@@ -24883,8 +24926,27 @@
         "memory_deferral": "LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27): if two stacks do not fit with the unchanged guard, suspend awaiting memory (no decision request, no loop stop), preserve the branch not integrated, proceed with REM-0039..0041 then OCOR-DEV-0060; resume automatically when MemTotal grows or MemAvailable at start exceeds the measured threshold; no sealing or integration without real two-lane execution on the same head",
         "registered_at": "2026-10-27T09:21:02.269458+00:00"
       },
+      "requalification_drift_at_wip": {
+        "head": "d5ab2733efb2deaceaef84ab72c8fa782c999547",
+        "observed_at": "2026-10-27T19:04:20.504612+00:00",
+        "tasks": {
+          "OCOR-DEV-0005": [
+            ".github/workflows/ocor-validation-closure.yml",
+            "reports/tests/test_kind_teardown_observation.py",
+            "scripts/validate_ocor_development_plan.py"
+          ],
+          "OCOR-DEV-0050": [
+            ".github/workflows/ocor-validation-closure.yml",
+            "reports/tests/test_kind_teardown_observation.py",
+            "scripts/validate_ocor_development_plan.py"
+          ],
+          "OCOR-DEV-0082": [
+            "scripts/validate_ocor_development_plan.py"
+          ]
+        }
+      },
       "scope": "Local full suite in 2 parallel parts, each with an isolated stack (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials) generated by the versioned procedure; default single-stack behaviour identical for CI, verifier and every other use; teardown of both stacks with zero residue.",
-      "status": "IN_PROGRESS_KIND_SMOKE_PASS",
+      "status": "IN_PROGRESS_CI_GUARD_WIRED",
       "status_history": [
         {
           "status": "SUSPENDED_BY_PO_UNTIL_AFTER_G6_NOT_CLOSED_NOT_VERIFIED",
@@ -24917,6 +24979,10 @@
         {
           "status": "IN_PROGRESS_EXECUTE_ORCHESTRATION_GREEN",
           "until": "2026-10-27T18:23:04.914388+00:00"
+        },
+        {
+          "status": "IN_PROGRESS_KIND_SMOKE_PASS",
+          "until": "2026-10-27T19:04:20.504612+00:00"
         }
       ],
       "suspension_effects": [
@@ -26574,7 +26640,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-27T18:23:04.914388+00:00",
+  "updated_at": "2026-10-27T19:04:20.504612+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
