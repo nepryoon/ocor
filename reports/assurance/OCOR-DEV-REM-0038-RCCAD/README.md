@@ -129,3 +129,21 @@ anche reset e smontaggio).
   qualificante cambia.
 - **Ruoli**: implementatore Claude Code (Anthropic); Codex (OpenAI) contato dal loop. È l'ultimo ciclo di
   riparazione: un nuovo `NO_GO` porta all'escalation.
+
+## Sigillo della riparazione (dopo GO indipendente)
+
+- **Verdetto**: `OCOR-DEV-REM-0038-449142725058-2`, `GO_FOR_EVIDENCE_SEAL`, zero finding, nulla
+  `NOT_EXECUTED` (file sha256 `1c57e5996e9fdbb2aab2b3b0bba86258e960e672ebf93bfa0bf1b6a8f769b6dd`). Verifier:
+  Cursor CLI / grok-4.7-high / xAI, contesto separato. Suite completa seriale del verifier 3224/3224, zero
+  skip, 4221,682 s: 621,682 s sopra la notifica di 3600 s, margine calcolato dal tetto di 4500 s 278,318 s.
+  Rete elettrica a inizio e fine suite (dato del verifier).
+- **Allineamento**: HEAD verificato `4491427` unito in modo non distruttivo con `origin/main` `96ba4ac`
+  (`a1e7ac38df649dd585f736f0b36243126699e903`); cambiano soltanto i tre file di stato, albero non di stato identico.
+- **Sigillo**: `repair-1.json` e le riqualifiche `OCOR-DEV-0005`, `0050`, `0082`
+  `.requalified-rem0038-repair1` passano a `SEALED`; i manifest G0, G2 e G5 puntano agli hash sigillati. In
+  `repair-1.json` i `record_sha256` delle riqualifiche restano gli hash candidati verificati; gli hash
+  sigillati sono affiancati in `independent_verification.sealed_requalification_records`. Raw log invariati;
+  nessun record sigillato precedente modificato.
+- **Ruoli**: implementatore e integrazione Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato
+  dal loop. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production
+  `NO-GO`.
