@@ -1,35 +1,46 @@
 {
   "active_iteration": {
-    "baseline_commit": "266cf12f828ba470c7e0cdc5068f5d3b65c82024",
-    "branch": "governed/state-sync-rem0037-measurement-20261027",
+    "baseline_commit": "20f578fa50c2c3b1abf5062e72b3a37d678e5d49",
+    "branch": "governed/state-sync-rem0037-red-green-partitioner-20261027",
     "campaign_background_processes_remaining": false,
     "candidate": {
       "branch": "governed/ocor-dev-rem-0037-local-suite-split",
       "changed_paths": [
-        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json"
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
+        "reports/tests/test_local_lane_campaign.py",
+        "scripts/run_local_lane_campaign.py",
+        "scripts/validate_ocor_development_plan.py",
+        "reports/planning/OCOR_PLAN_RUN_STATE.json"
       ],
-      "code_commits": [],
-      "head_sha": "5c64fa3a165a22503bef8e5a6e09b514be49b7aa",
-      "note": "WIP measurement record only; no code, test, harness or workflow change yet; not a candidate",
+      "code_commits": [
+        "77611df672a6e6aa739c403a2f13c4d256f78a4d",
+        "8fff199a90051a34bbe5d0fe09df96fd2bc04616"
+      ],
+      "head_sha": "8fff199a90051a34bbe5d0fe09df96fd2bc04616",
+      "note": "WIP, not a candidate: configurability, lane launcher, requalifications and equivalence proof pending",
       "pushed": true,
       "worktree": ".ocor/worktrees/rem-0037"
     },
-    "change_set": "OCOR-DEV-REM-0037 pre-code checkpoint: reactivation registration, read-only inventory on the 15-container stack, serial memory measurement",
+    "change_set": "OCOR-DEV-REM-0037 partitioner checkpoint: RED -> GREEN for the additive two-lane orchestrator (partition, exact union, memory admission)",
     "decisions": [
       "LOCAL-SUITE-SPLIT (2026-10-25)",
       "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26)",
       "LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27)",
+      "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26)",
       "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)"
     ],
     "host_memory_at_sync": {
-      "MemAvailable": 24223880,
+      "MemAvailable": 23981284,
       "MemTotal": 31743008
     },
-    "next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 5c64fa3a165a with the pre-code measurement record): at unit start read /proc/meminfo and compare MemAvailable with the measured two-lane start threshold 14340.6 MiB (if lower, run serial and record it). Align non-destructively with origin/main. Then, RED first: (1) a new additive orchestration script (preferred to editing sealed scripts) with a deterministic partitioner from the per-case times of the measurement JUnit and an exact-union checker (missing, duplicate, extra case; zero skip) with failing tests before the code; (2) configurability of the shared resources only (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials, fixed endpoints in jena_adapter.py, typedb_adapter.py, backbone.py and the new services) with byte-identical defaults, AST proof limited to literal-to-configurable-default replacement; prove which cases have order or shared-state dependencies before grouping them; split the 0049 module across lanes. Any change to scripts/run_qualifying_campaign.py or workflows follows REM-0038-CAMPAIGN-GUARD-ADMISSION condition a, otherwise a decision request. Requalify every sealed record whose inputs are touched (0049/0050 included, no threshold). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
+    "next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 8fff199a9005: partitioner and exact-union check GREEN). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit, RED first: configurability of the shared resources only (Compose project ocor-bootstrap, published ports, kind cluster ocor-poc, volumes, .ocor directory, SPIRE CA, generated credentials, fixed endpoints in jena_adapter.py, typedb_adapter.py, backbone.py and the Temporal/SeaweedFS/TerminusDB services) with byte-identical defaults, AST proof limited to literal-to-configurable-default replacement and a test failing on any other diff; start from the inventory (~/.ocor-codex/rem-0037/inventory, 62 files) and touch only literals a second lane really needs. Then the lane launcher in scripts/run_local_lane_campaign.py (two isolated stacks, per-lane run_qualifying_campaign.py --repository/--expected-head with the explicit node selection, whole-campaign clock, teardown of both stacks with zero residue). Any change to scripts/run_qualifying_campaign.py or workflows (including adding reports/tests/test_local_lane_campaign.py to the validation-closure guard step) follows REM-0038-CAMPAIGN-GUARD-ADMISSION condition a, otherwise a decision request. Requalify every sealed record whose inputs are touched (0005/0050/0082 already drift on the plan allowlist; 0049/0050 included, no threshold). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
     "normative_interpretations": [
-      "Occupancy rule (fail-closed): the single-lane peak is the maximum of three estimates (MemAvailable drop from the pre-stack baseline, drop from the lower of the pre/post baselines, peak docker-stats container sum incl. kind plus peak pytest RSS); the start threshold is twice that plus the unchanged 3000 MiB guard. The measured baseline includes the one loop agent active per iteration."
+      "Partition units (fail-closed, stricter than REACTIVATION point 5 allows): only the 0049 cases are split, because their independence is already qualified (REM-0019 GO, INDEPENDENT_MODULES of the sealed supervisor); every other module stays whole, so no intra-module order or shared-state dependency can be broken. Cross-module independence within the same unit sets is exercised by the 4-part CI partition on every required run.",
+      "Weights are partition input only: cases >= 0.5 s keep their measured time, others weigh 0.05 s (rounded mean of the rest, 0.0495 s); they never select or exclude a case.",
+      "Additive design: the orchestrator imports scripts/run_qualifying_campaign.py and does not modify it; the serial campaign, the CI parts and the verifier procedure are unchanged."
     ],
-    "phase": "OCOR_DEV_REM_0037_PRE_CODE_MEASURED_TWO_LANES_FIT",
+    "phase": "OCOR_DEV_REM_0037_PARTITIONER_GREEN",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -37,7 +48,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "REM-0037 reactivation registration, read-only inventory, serial memory measurement, state sync"
+          "scope": "REM-0037 measurement, partitioner RED/GREEN, state syncs"
         }
       ],
       "loop_counted_implementers": [
@@ -1772,7 +1783,7 @@
       }
     }
   },
-  "baseline_commit": "266cf12f828ba470c7e0cdc5068f5d3b65c82024",
+  "baseline_commit": "20f578fa50c2c3b1abf5062e72b3a37d678e5d49",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -8296,8 +8307,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_REM_0037_IN_PROGRESS_PRE_CODE_MEASURED",
-  "next_executable_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 5c64fa3a165a with the pre-code measurement record): at unit start read /proc/meminfo and compare MemAvailable with the measured two-lane start threshold 14340.6 MiB (if lower, run serial and record it). Align non-destructively with origin/main. Then, RED first: (1) a new additive orchestration script (preferred to editing sealed scripts) with a deterministic partitioner from the per-case times of the measurement JUnit and an exact-union checker (missing, duplicate, extra case; zero skip) with failing tests before the code; (2) configurability of the shared resources only (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials, fixed endpoints in jena_adapter.py, typedb_adapter.py, backbone.py and the new services) with byte-identical defaults, AST proof limited to literal-to-configurable-default replacement; prove which cases have order or shared-state dependencies before grouping them; split the 0049 module across lanes. Any change to scripts/run_qualifying_campaign.py or workflows follows REM-0038-CAMPAIGN-GUARD-ADMISSION condition a, otherwise a decision request. Requalify every sealed record whose inputs are touched (0049/0050 included, no threshold). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_REM_0037_IN_PROGRESS_PARTITIONER_GREEN",
+  "next_executable_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 8fff199a9005: partitioner and exact-union check GREEN). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit, RED first: configurability of the shared resources only (Compose project ocor-bootstrap, published ports, kind cluster ocor-poc, volumes, .ocor directory, SPIRE CA, generated credentials, fixed endpoints in jena_adapter.py, typedb_adapter.py, backbone.py and the Temporal/SeaweedFS/TerminusDB services) with byte-identical defaults, AST proof limited to literal-to-configurable-default replacement and a test failing on any other diff; start from the inventory (~/.ocor-codex/rem-0037/inventory, 62 files) and touch only literals a second lane really needs. Then the lane launcher in scripts/run_local_lane_campaign.py (two isolated stacks, per-lane run_qualifying_campaign.py --repository/--expected-head with the explicit node selection, whole-campaign clock, teardown of both stacks with zero residue). Any change to scripts/run_qualifying_campaign.py or workflows (including adding reports/tests/test_local_lane_campaign.py to the validation-closure guard step) follows REM-0038-CAMPAIGN-GUARD-ADMISSION condition a, otherwise a decision request. Requalify every sealed record whose inputs are touched (0005/0050/0082 already drift on the plan allowlist; 0049/0050 included, no threshold). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8344,10 +8355,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "21000270090b85ebf2ae15ab5059a490e377eac2",
-    "branch": "governed/state-sync-rem0042-integrated-20261027",
-    "change_set": "OCOR-DEV-REM-0042 integration (GO, seal, exact-head CI PASS, merged)",
-    "phase": "OCOR_DEV_REM_0042_INTEGRATED"
+    "baseline_commit": "266cf12f828ba470c7e0cdc5068f5d3b65c82024",
+    "branch": "governed/state-sync-rem0037-measurement-20261027",
+    "change_set": "OCOR-DEV-REM-0037 pre-code checkpoint: reactivation registration, read-only inventory on the 15-container stack, serial memory measurement",
+    "phase": "OCOR_DEV_REM_0037_PRE_CODE_MEASURED_TWO_LANES_FIT"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -8433,11 +8444,11 @@
     ],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-27T12:12:28.404290+00:00",
+    "observed_at": "2026-10-27T13:17:26.480650+00:00",
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
       "OCOR-DEV-0060": "after integration of the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
-      "OCOR-DEV-REM-0037": "in progress: pre-code inventory and memory measurement done (two lanes fit); next RED for partitioner/union check and resource configurability",
+      "OCOR-DEV-REM-0037": "in progress: partitioner and exact-union check GREEN (WIP); next RED for shared-resource configurability with identical defaults, then lane launcher",
       "OCOR-DEV-REM-0042": "integrated: PR #366 merged (21000270090b)"
     },
     "suspended_by_po": []
@@ -24289,7 +24300,7 @@
         "sha256": "55af2c331982145397c974a47c85f628a3c453842814dc7b066ae9e2d540d239",
         "source": "REM-0033-LOCAL-FULL-DURATION profiling outcome"
       },
-      "head_sha": "5c64fa3a165a22503bef8e5a6e09b514be49b7aa",
+      "head_sha": "8fff199a90051a34bbe5d0fe09df96fd2bc04616",
       "id": "OCOR-DEV-REM-0037",
       "id_allocation": "First free REM-* verified read-only on 2026-10-25 across every local and remote ref (git grep), ~/.ocor-codex JSON/Markdown and verdicts, PR titles/bodies: zero occurrences of REM-0037 (REM-0036 highest in use; REM-0099 only as a range bound in decision text).",
       "memory_measurement_20261027": {
@@ -24332,6 +24343,61 @@
         "record_sha256": "6ec1603c0775d6b0e805053f11c2db02ddd79471faf6c0abf70b87e5ab082c58",
         "single_lane_peak_occupancy_mib": 5670.3,
         "two_lane_start_threshold_mib": 14340.6
+      },
+      "partitioner_20261027": {
+        "alignment_merge": "777e146",
+        "changed_paths": [
+          "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
+          "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
+          "reports/tests/test_local_lane_campaign.py",
+          "scripts/run_local_lane_campaign.py",
+          "scripts/validate_ocor_development_plan.py",
+          "reports/planning/OCOR_PLAN_RUN_STATE.json"
+        ],
+        "executed_at": "2026-10-27T13:17:26.480650+00:00",
+        "executor": "Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310)",
+        "local_gates": {
+          "checksum": "PASS 8/8",
+          "drift": "FAIL expected at WIP: OCOR-DEV-0005, 0050, 0082 input scripts/validate_ocor_development_plan.py (regression-only requalifications at candidate time, LOCAL-FULL-SUITE-CAP-90-AMENDMENT point 4)",
+          "language": "PASS",
+          "mypy-strict": "PASS (86 files)",
+          "plan --authorized-extension": "PASS (37 PASS, 2 NOT_EXECUTED)",
+          "rccad": "PASS_LOCAL_PRECHECK",
+          "ruff": "PASS",
+          "runtime-evidence --non-skipped": "NOT_EXECUTED (no REM-0037 evidence record yet)",
+          "scope": "PASS (6 paths)"
+        },
+        "partition_on_wip_head": {
+          "collected": 3224,
+          "collected_sha256": "f38a6123d50358d5ff5bbe523c83cc2f796e92c37b068651fa1950ac1371fb9d",
+          "lane_cases": [
+            1766,
+            1458
+          ],
+          "lane_seconds_estimate": [
+            1768.191,
+            1768.189
+          ],
+          "lower_bound_seconds": 429.129,
+          "note": "estimate from per-case times only; per-lane bootstrap (~45 s) and collection not included",
+          "partition_sha256": "d419dcd8106c101315bcbdfca94ff467f174c262208e014834c4808eafae7080",
+          "units": "every module whole except the 0049 cases (INDEPENDENT_MODULES of the sealed supervisor, independence qualified by the REM-0019 GO and used by the CI parts); Helm case not reserved because each lane gets its own kind cluster",
+          "weights_source_junit_sha256": "a7e4ada48efa056c62ee28c579c02901f595f3d361004a1ea07db4bd91e2059e"
+        },
+        "tdd": {
+          "green": "35 passed, 0 skipped",
+          "green_commit": "8fff199a90051a34bbe5d0fe09df96fd2bc04616",
+          "green_log_sha256": "0e75e393fe068f4ef53f3464421d1b63db2187a92ca0adb60a6b5750a768abd3",
+          "guards": "validation-closure guard modules + new module: 277 passed, 74 subtests, 0 skipped",
+          "guards_log_sha256": "5e9f59232e6bf10163020c88f45db87b72d7fe7a277982cbddc71a6e1aa4c026",
+          "raw_location": "~/.ocor-codex/rem-0037/tdd/ (outside Git)",
+          "red_collection_fingerprint": "collection ERROR: FileNotFoundError scripts/run_local_lane_campaign.py",
+          "red_collection_log_sha256": "5b784eefe9a5bc1e68f6910106e910924cd4232785e708c5fad44e0e78ad2e12",
+          "red_commit": "77611df672a6e6aa739c403a2f13c4d256f78a4d",
+          "red_stub_fingerprint": "33 failed, 2 passed (the two constant-only checks): every function body NotImplementedError (AST stub of the GREEN module)",
+          "red_stub_log_sha256": "33171a9e790db7260aa9f8b79dea587be69433ba1a7ef1f9350ac9a3b4a7e086",
+          "red_stub_sha256": "6d26a832820e0b7726a5f305a9f1192deee1751ff29abdbabcb72c51431703bb"
+        }
       },
       "po_decision": "REM-0037-LOCAL-SUITE-SPLIT-INVENTORY (2026-10-25)",
       "pre_code_inventory": {
@@ -24400,7 +24466,7 @@
         "registered_at": "2026-10-27T09:21:02.269458+00:00"
       },
       "scope": "Local full suite in 2 parallel parts, each with an isolated stack (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials) generated by the versioned procedure; default single-stack behaviour identical for CI, verifier and every other use; teardown of both stacks with zero residue.",
-      "status": "IN_PROGRESS_PRE_CODE_INVENTORY_AND_MEMORY_MEASURED_TWO_LANES_FIT",
+      "status": "IN_PROGRESS_PARTITIONER_AND_UNION_CHECK_GREEN",
       "status_history": [
         {
           "status": "SUSPENDED_BY_PO_UNTIL_AFTER_G6_NOT_CLOSED_NOT_VERIFIED",
@@ -24409,6 +24475,10 @@
         {
           "status": "REACTIVATED_NEXT_UNIT",
           "until": "2026-10-27T12:12:28.404290+00:00"
+        },
+        {
+          "status": "IN_PROGRESS_PRE_CODE_INVENTORY_AND_MEMORY_MEASURED_TWO_LANES_FIT",
+          "until": "2026-10-27T13:17:26.480650+00:00"
         }
       ],
       "suspension_effects": [
@@ -26066,7 +26136,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-27T12:12:28.404290+00:00",
+  "updated_at": "2026-10-27T13:17:26.480650+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
