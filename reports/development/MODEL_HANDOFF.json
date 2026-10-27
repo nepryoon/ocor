@@ -4,13 +4,13 @@
     "TerminusDB was already provisioned and qualified by OCOR-DEV-0073; its requalification on the 15-container stack is its provisioning evidence here.",
     "DEP-011 benchmark NOT_EXECUTED here (needs the SDK worker), carried to OCOR-DEV-REM-0039; licence MIT verified."
   ],
-  "base_sha": "9959e6434c36a6addcdc4b75c064087ad246cfd2",
-  "baseline_commit": "9959e6434c36a6addcdc4b75c064087ad246cfd2",
-  "branch": "governed/state-sync-rem0037-lane-isolation-probe-20261027",
+  "base_sha": "feaafb540a633d8c1453668337029b1252fa4b17",
+  "baseline_commit": "feaafb540a633d8c1453668337029b1252fa4b17",
+  "branch": "governed/state-sync-rem0037-lane-lifecycle-20261027",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0037-local-suite-split",
-    "head_sha": "db8b42c6db7a98f694d91017c97ec5697a93d7d4",
-    "note": "WIP: measurement record, lane weights, orchestrator and its guard; not evidence, not sealed",
+    "head_sha": "c93cc06c90aa150a3580ac4f6df68e35c010a31b",
+    "note": "WIP: measurement record, lane weights, partitioner, lane lifecycle and their guard; not evidence, not sealed",
     "paths": [
       "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
       "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
@@ -36,47 +36,37 @@
   },
   "commands": [
     {
-      "command": "git merge origin/main into governed/ocor-dev-rem-0037-local-suite-split",
-      "exit_code": 0,
-      "summary": "non-destructive alignment db8b42c6db7a (state files only), pushed"
-    },
-    {
-      "command": "sandbox: docker import empty root; docker run --privileged --cgroupns=private (host /usr,/etc ro; own dockerd)",
-      "exit_code": 0,
-      "summary": "inner dockerd 29.9.2 overlayfs cgroup v2 up"
-    },
-    {
-      "command": "sandbox: kind create cluster ocor-poc (pinned kindest/node v1.33.4)",
-      "exit_code": 0,
-      "summary": "cluster ready in 26 s after cgroup v2 nesting setup"
-    },
-    {
-      "command": "sandbox: bootstrap_ci_environment.py --execute --timeout 600",
-      "exit_code": 0,
-      "summary": "15 containers, PASS"
-    },
-    {
-      "command": "sandbox: pytest test_ocor_dev_0048.py test_ocor_dev_0081.py",
-      "exit_code": 0,
-      "summary": "209 passed in 134.33 s"
-    },
-    {
-      "command": "sandbox: pytest test_ocor_dev_0049.py",
+      "command": "pytest reports/tests/test_local_lane_campaign.py (RED, 31e5c76)",
       "exit_code": 1,
-      "summary": "389 passed, 1 failed (mypy precondition: probe venv lacked --extra lint) in 2312.06 s; case passed after uv sync --extra lint"
+      "summary": "22 failed (lifecycle functions absent), 35 passed"
     },
     {
-      "command": "sandbox: bootstrap_ci_environment.py --teardown --execute; remove sandbox, volumes, root image",
+      "command": "pytest reports/tests/test_local_lane_campaign.py (GREEN, c93cc06)",
       "exit_code": 0,
-      "summary": "residual empty inside; host residue zero"
+      "summary": "57 passed"
+    },
+    {
+      "command": "env -i ... run_local_lane_campaign.py --lifecycle-check WORK --expected-head c93cc06 --tool-bin impl-env/rem-0037/bin",
+      "exit_code": 0,
+      "summary": "TWO_LANE admitted; both lanes cloned at the head (uv sync test+lint, npm ci, build), sandboxes ready, probes head/python 3.12.11/docker 29.9.2 cgroup v2/kind v0.29.0/node v20.20.2/uid 1000; teardown PASS, host residue zero"
+    },
+    {
+      "command": "ruff, mypy strict, validate_rccad, validate_language_policy, validate_ocor_change_scope, validate_ocor_development_plan --authorized-extension --base-ref origin/main, guard modules",
+      "exit_code": 0,
+      "summary": "PASS"
+    },
+    {
+      "command": "validate_evidence_input_drift.py",
+      "exit_code": 1,
+      "summary": "expected drift 0005/0050/0082 (plan validator allowlist)"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0037:lane-isolation-feasibility",
+  "current_task": "OCOR-DEV-REM-0037:lane-lifecycle",
   "evidence_paths": [],
-  "exact_next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP db8b42c6db7a). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Lane isolation design (feasibility probe 2026-10-27, outside Git, ~/.ocor-codex/rem-0037-sandbox/probe_summary.json): lane 1 runs on the host daemon with today's names and ports; lane 2 runs in an OCOR-labelled privileged sandbox container with its own dockerd, data-root volume, network namespace, /run, /tmp and HOME, host /usr and /etc read-only, a locally imported empty root (no external image), and a self-contained git clone of the head at the same absolute path, so no literal in code, tests, harness or workflows changes and the shared-resource configurability step is not needed (if a later fact shows a literal must change, apply REACTIVATION point 4 with identical defaults). Next coherent unit, RED first in reports/tests/test_local_lane_campaign.py, then GREEN in scripts/run_local_lane_campaign.py only: (a) lane checkout provisioning (self-contained clone at the exact head, uv sync --frozen --extra test --extra lint with the locked Python, .ocor/tools and Fuseki cache copied, fresh .ocor credentials); (b) sandbox lifecycle (empty-root import, docker run argv with the exact mount set, cgroup v2 nesting, dockerd --group 1000, exec as 1000:1000, fail-closed readiness); (c) per-lane bootstrap_ci_environment.py --execute and pytest of the lane's explicit node list with JUnit, whole-campaign clock via check_campaign_deadline; (d) exact union check, then bootstrap_ci_environment.py --teardown --execute in both lanes, sandbox/volume/image removal and zero-residue check on host and inside. Decide whether lane 1 also uses the sandbox for symmetry (record the choice). Do not touch scripts/run_qualifying_campaign.py or workflows unless REM-0038-CAMPAIGN-GUARD-ADMISSION condition a applies (adding the new guard module to validation-closure). Requalify sealed records whose inputs are touched (0005/0050/0082 on the plan allowlist). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
-  "head_sha": "db8b42c6db7a98f694d91017c97ec5697a93d7d4",
-  "head_sha_role": "REM-0037 WIP head (partitioner GREEN, aligned with origin/main; not a candidate)",
+  "exact_next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP c93cc06c90aa: partitioner, exact union and lane lifecycle GREEN). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Both lanes run in sandboxes (decision recorded 2026-10-27: symmetry, host development stack untouched). Next coherent unit, RED first in reports/tests/test_local_lane_campaign.py, then GREEN in scripts/run_local_lane_campaign.py only: (c) the per-lane runner executed inside each sandbox (verify_revision of the lane clone, bootstrap_ci_environment.py --execute --timeout 600, exactly the lane's explicit node list proven by collect_nodeids, pytest with JUnit and coverage like the sealed supervisor, inspect_stack/check_stack with MANDATORY_CONTAINERS, Kubernetes runtime checks, whole-campaign clock via check_campaign_deadline from the campaign start passed in, stop on the first failure of either lane) and (d) the --execute orchestration: memory admission (SERIAL fallback recorded), collection and partition on the host clone, ensure_root_image, provision and start both lanes, run both lanes in parallel, check_exact_union against the collection, teardown_lane in both lanes, remove_root_image and check_host_residue, campaign_result.json with per-lane and total durations, power readings at start and end. Do not touch scripts/run_qualifying_campaign.py; adding reports/tests/test_local_lane_campaign.py to the validation-closure guard step follows REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization, verified counts, negative tests), otherwise a decision request. Requalify sealed records whose inputs are touched (0005/0050/0082 regression-only on the plan allowlist). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
+  "head_sha": "c93cc06c90aa150a3580ac4f6df68e35c010a31b",
+  "head_sha_role": "REM-0037 WIP head (partitioner and lane lifecycle GREEN; not a candidate)",
   "independent_verification": {
     "next_verifier_constraint": "neither Anthropic nor OpenAI nor the preventive reviewer's provider",
     "status": "NOT_REQUESTED"
@@ -141,12 +131,20 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
+    "change_scope": "PASS (6 changed paths vs origin/main)",
     "checksum": "PASS 8/8",
-    "note": "no tracked code changed in this unit; WIP gates of 8fff199 unchanged (alignment merge db8b42c touches state files only)"
+    "evidence_input_drift": "FAIL expected: OCOR-DEV-0005, 0050, 0082 via scripts/validate_ocor_development_plan.py (regression-only requalifications at candidate time)",
+    "guards": "323 passed, 74 subtests, zero skip (validation-closure guard modules, tooling-bootstrap guard modules and the lane module; log sha256 2536a5a61b72379c...)",
+    "language_policy": "PASS",
+    "mypy_strict": "PASS (86 source files)",
+    "plan_authorized_extension": "PASS 37, NOT_EXECUTED 2 (no planning file rewritten)",
+    "rccad": "PASS_LOCAL_PRECHECK",
+    "ruff": "PASS",
+    "runtime_evidence": "NOT_EXECUTED (no REM-0037 record yet)"
   },
-  "next_task": "OCOR-DEV-REM-0037:red-green-lane-launcher-sandbox",
-  "phase": "OCOR_DEV_REM_0037_LANE_ISOLATION_FEASIBLE",
-  "raw_evidence_location": "~/.ocor-codex/rem-0038-r2 (gates/*.log, guards.log, supply-chain*.log, tooling-step.log); campaign artifacts ~/.ocor-codex/rem-0038-r1",
+  "next_task": "OCOR-DEV-REM-0037:red-green-lane-runner-and-orchestration",
+  "phase": "OCOR_DEV_REM_0037_LANE_LIFECYCLE_GREEN",
+  "raw_evidence_location": "~/.ocor-codex/rem-0037-lifecycle (red.log, guards.log, lifecycle.json)",
   "requirement_ids": [
     "NFR-058",
     "NFR-073"
@@ -158,7 +156,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0037 measurement, partitioner RED/GREEN, lane isolation probe, state syncs"
+        "scope": "REM-0037 measurement, partitioner RED/GREEN, lane isolation probe, lane lifecycle RED/GREEN, state syncs"
       }
     ],
     "loop_counted_implementers": [
@@ -195,6 +193,6 @@
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-27T14:40:43.770716+00:00",
+  "updated_at": "2026-10-27T15:36:10.289644+00:00",
   "worktree": ".ocor/worktrees/rem-0037"
 }
