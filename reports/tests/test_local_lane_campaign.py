@@ -160,7 +160,9 @@ def test_union_accepts_exactly_the_collected_cases(tmp_path):
 
 def test_union_rejects_a_missing_case(tmp_path):
     parts = LANES.lane_partition(nodes(), weights())
-    parts[0] = parts[0][1:]
+    # drop from a lane that keeps other cases, so the rejection is for the missing case
+    big = max(range(len(parts)), key=lambda index: len(parts[index]))
+    parts[big] = parts[big][1:]
     with pytest.raises(CAMPAIGN.CampaignError, match='missing'):
         LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts))
 

@@ -58,6 +58,11 @@ MEMORY_GUARD_MIB = 3000
 MINIMUM_MEASURED_SECONDS = 0.5
 DEFAULT_CASE_SECONDS = 0.05
 WEIGHTS_PATH = Path(__file__).resolve().parents[1] / "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json"
+# The 0049 Helm case sleeps until the next tick of the approved */15 CronJob
+# schedule (0..900 s, wall-clock aligned), so one measured time is no upper bound:
+# its weight carries the full period on top (fail-closed for lane balance).
+CLOCK_ALIGNED_WAIT_SECONDS = {f"{campaign.junit_identity(campaign.HELM_NODE)[0]}::"
+                              f"{campaign.junit_identity(campaign.HELM_NODE)[1]}": 900.0}
 # Lane sandboxes: every host resource carries the campaign label; the root image
 # is imported locally from an empty tree (no registry image is ever pulled).
 LANE_LABEL = "org.ocor.local-lane"
@@ -83,7 +88,8 @@ def weight_key(nodeid: str) -> str:
 
 
 def case_weight(nodeid: str, weights: dict[str, float]) -> float:
-    return float(weights.get(weight_key(nodeid), DEFAULT_CASE_SECONDS))
+    key = weight_key(nodeid)
+    return float(weights.get(key, DEFAULT_CASE_SECONDS)) + CLOCK_ALIGNED_WAIT_SECONDS.get(key, 0.0)
 
 
 def derive_weights(junit: Path) -> dict[str, Any]:
