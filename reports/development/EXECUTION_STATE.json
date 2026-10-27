@@ -1,67 +1,29 @@
 {
   "active_iteration": {
-    "baseline_commit": "d80865e2c401e31a0e4cb9bdd5fed1e63b8fe9ab",
-    "branch": "governed/state-sync-rem0037-pregate-20261027",
+    "baseline_commit": "61edf3a66ca6adf05c045d3df0c056382cb3d9f5",
+    "branch": "governed/state-sync-rem0037-campaign-blocked-20261027",
     "campaign_background_processes_remaining": false,
     "candidate": {
       "branch": "governed/ocor-dev-rem-0037-local-suite-split",
-      "changed_paths": [
-        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
-        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
-        "reports/tests/test_local_lane_campaign.py",
-        "scripts/run_local_lane_campaign.py",
-        "scripts/validate_ocor_development_plan.py",
-        "reports/planning/OCOR_PLAN_RUN_STATE.json",
-        "reports/tests/test_kind_teardown_observation.py",
-        ".github/workflows/ocor-validation-closure.yml"
-      ],
-      "code_commits": [
-        "77611df672a6e6aa739c403a2f13c4d256f78a4d",
-        "8fff199a90051a34bbe5d0fe09df96fd2bc04616",
-        "31e5c769cd23f68e3603a52d152ce7187182947d",
-        "c93cc06c90aa150a3580ac4f6df68e35c010a31b",
-        "063173c746a49dad33bc26be4ca0fca82ca32a40",
-        "a2440e6bc8e789dca9ffca54929624bb42720e84",
-        "92cb4adedacb7466fb359e7d3ffa248c1785c685",
-        "8a7d081336be05822a7454966bd2cc6b040ec932",
-        "c7b068dec146013f205aeee7ee719015aceb998f",
-        "cfcfe78aa230cc201b8cf15e77668f311c1362ab",
-        "0724a0455ac260b9df698005ea3b1b62061319c0",
-        "5c33d25d0a56a972cbe7cea37e69ef7b980bd768",
-        "21343d188c0f820300ea7fbe94b1dd04f4d76cb9",
-        "f1330c318f0762c9873ff9f5e5de08722c54af7e",
-        "11ed79daec185cb939c26dd7e07c8b3d1d4cfb3e",
-        "d5ab2733efb2deaceaef84ab72c8fa782c999547",
-        "654463a198ee9263e7c1a6046895a7ee568733be",
-        "a80037c130303f9cefbf54019a0c8bc69c826aad",
-        "a87c6b483ac9f8735700152d05eb321bb406df48"
-      ],
-      "head_sha": "a87c6b483ac9f8735700152d05eb321bb406df48",
-      "note": "candidate code head awaiting the preventive review; campaigns, requalifications and equivalence proof pending; not evidence, not sealed",
+      "evidence_built": false,
+      "head_sha": "b4ddd6987daa4e35f76176672a1840d4f05ea045",
+      "note": "not evidence, not sealed; blocked by an open PO decision request",
       "pushed": true,
       "worktree": ".ocor/worktrees/rem-0037"
     },
-    "change_set": "OCOR-DEV-REM-0037 candidate code head: exact allowlist of the candidate evidence paths, PRE-CAMPAIGN-GATE (scanner finding fixed), preventive review requested",
+    "change_set": "OCOR-DEV-REM-0037 qualifying campaigns: serial PASS, two-lane FAIL closed at lane teardown (residual network from a sealed 0006 test); decision request REM-0037-0006-NETWORK-RESIDUE opened",
     "decisions": [
       "LOCAL-SUITE-SPLIT (2026-10-25)",
       "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26)",
       "LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27)",
-      "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26)",
+      "PRE-CAMPAIGN-GATE (2026-10-26)",
+      "PRE-CAMPAIGN-REVIEW (2026-10-26)",
       "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-      "AGENT-WAIT-HYGIENE (2026-10-27)"
+      "AGENT-WAIT-HYGIENE (2026-10-27)",
+      "SENTINELLA-DELEGA-OPERATIVA (2026-10-25)"
     ],
-    "host_memory_at_sync": {
-      "MemAvailable": 25506260,
-      "MemTotal": 31743008
-    },
-    "next_action": "Resume OCOR-DEV-REM-0037 after the preventive review OCOR-DEV-REM-0037-a87c6b483ac9-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0037-a87c6b483ac9-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0037-local-suite-split, worktree .ocor/worktrees/rem-0037, candidate code head a87c6b483ac9 (pushed). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial only and record). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0037-candidate/pregate.py), build the TypeScript SDK in the candidate worktree, and the qualifying campaigns on the same head from a clean shell with the locked PATH and power logging: serial full suite (scripts/run_qualifying_campaign.py, cap 5400 s, notification 3600 s) and two-lane full suite (scripts/run_local_lane_campaign.py --execute), same case set, exact JUnit union, zero skip, both PASS; regression runs of tests/tasks/test_ocor_dev_0005/0050/0082 on the real stack; then the requalification records (requalified-rem0037, explicit supersession, sealed records untouched) of 0005 (workflow, guard, plan validator), 0050 (substantive, REACTIVATION point 3) and 0082 (plan validator), the REM-0037 record with inventory, memory measures and equivalence proof, and the verify request (verifier neither Anthropic nor OpenAI nor the preventive reviewer's provider). OCOR-DEV-0062..0064 proceed while remediations await verification. No new DEC; claims unchanged.",
-    "normative_interpretations": [
-      "STOP_GRACE_SECONDS (PROVISION_TIMEOUT_SECONDS + 120 s) and the bounded cgroup delegation retry (50 x 0.2 s) are new bounds of the additive orchestrator only, never applied to a test, the serial supervisor, CI or the verifier; they only bound how long a stopped or failed lane is awaited before teardown. An explicit --select run is recorded as EXPLICIT_NON_QUALIFYING and never counts as a full suite.",
-      "The handoff asked for one kind-backed 0049 case in each lane; the module has a single kind-backed case, so the smoke placed it in one lane and a stack-backed 0049 case in the other (fact over plan, recorded). The clock-aligned weight is a partition input only and never selects, excludes or times a case.",
-      "Adding the lane guard module to the validation-closure guard step is a workflow change of REM-0037: admitted only through LOCAL-SUITE-SPLIT-REACTIVATION point 6 with the schema of REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization, verified counts, negative tests); baselines not moved, scripts/run_qualifying_campaign.py untouched. The guard addition makes the OCOR-DEV-0050 requalification substantive; REACTIVATION point 3 authorizes it without threshold.",
-      "Requalification records of 0005/0050/0082 are produced from the REM-0037 qualifying campaign at the final code head (REM-0042 precedent: PRE-CAMPAIGN-GATE drift FAIL expected at the code head, PASS at the evidence head), not before it: a record produced earlier would drift again with the allowlist commit and would not reflect the final head. The allowlist commit is the last planned change to their inputs."
-    ],
-    "phase": "OCOR_DEV_REM_0037_AWAITING_PRE_CAMPAIGN_REVIEW",
+    "next_action": "Check the PO disposition of REM-0037-0006-NETWORK-RESIDUE (PR #377; file sha256 9a4d5534fb4a975b7738731cb5dc29b5a50a6edcf1c2380c8f180cfb508918f8). If recorded, apply it to OCOR-DEV-REM-0037 with precedence (branch governed/ocor-dev-rem-0037-local-suite-split, worktree .ocor/worktrees/rem-0037, code head b4ddd6987daa; preserved artifacts in ~/.ocor-codex/rem-0037-q): with option 1, RED/GREEN of the Compose teardown in test_ocor_dev_0006.py only with the AST proof, remove once the stale host network ocor-missing-image-negative_default (OCOR test resource) and record it, update the allowlist for the 0006 requalification, then PRE-CAMPAIGN-GATE on the new head and both qualifying campaigns (serial and two-lane) on the same head, requalifications of 0005/0006/0050/0082, evidence and verify request (verifier neither Anthropic nor OpenAI nor Google). While the decision is pending: start OCOR-DEV-REM-0039 (Temporal adapter of C6, OCOR-DEV-0060-BA-SELECTED-COMPONENTS change set b) with the first free REM id verified; OCOR-DEV-0062..0064 may proceed while remediations await verification. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). Full-suite cap 5400 s, notification 3600 s. No new DEC; claims unchanged.",
+    "phase": "OCOR_DEV_REM_0037_BLOCKED_OPEN_PO_DECISION",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -1804,7 +1766,7 @@
       }
     }
   },
-  "baseline_commit": "d80865e2c401e31a0e4cb9bdd5fed1e63b8fe9ab",
+  "baseline_commit": "61edf3a66ca6adf05c045d3df0c056382cb3d9f5",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6092,6 +6054,34 @@
       "po_decision": "LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27) (explicit PO instruction)",
       "status": "RESOLVED_PO_DECISION_REGISTERED_CONDITIONAL",
       "summary": "Modifies only the reaction of LOCAL-SUITE-SPLIT-REACTIVATION point 8: insufficient memory suspends OCOR-DEV-REM-0037 awaiting memory (no decision request, no loop stop) and the queue moves to REM-0039..0041 then OCOR-DEV-0060 (which then does not wait for REM-0037); automatic resumption when MemTotal grows or MemAvailable at start exceeds the measured threshold; no REM-0037 sealing or integration without real two-lane execution; memory guard unchanged, no service removed."
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0037"
+      ],
+      "created_at": "2026-10-27T22:39:47.605618+00:00",
+      "decision": "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26) point 4 (anything beyond configurability: stop and open a decision request); CC-OCOR-DELIVERY-COMPLETION par. 7",
+      "decision_level": "OPERATIVE",
+      "does_not_block": [
+        "OCOR-DEV-REM-0039",
+        "OCOR-DEV-REM-0040",
+        "OCOR-DEV-REM-0041",
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-rem0037-0006-network-residue",
+        "commit": "1f2eeb558c079f1218939b55658eb6818244a54e",
+        "path": "reports/development/decision_requests/REM-0037-0006-NETWORK-RESIDUE.md",
+        "pr": 377,
+        "publication": "PR_OPEN_FOR_PO_DISPOSITION",
+        "sha256": "9a4d5534fb4a975b7738731cb5dc29b5a50a6edcf1c2380c8f180cfb508918f8"
+      },
+      "id": "REM-0037-0006-NETWORK-RESIDUE",
+      "reason": "The two-lane qualifying campaign of OCOR-DEV-REM-0037 at b4ddd69 passed 3224/3224 with an exact union but failed closed at lane-1 teardown: the sealed test test_ocor_dev_0006.py::test_missing_pinned_image_cannot_fall_back_to_public_pull leaves the Compose network ocor-missing-image-negative_default; fixing the test is outside point 4.",
+      "recommendation": "Option 1: extend OCOR-DEV-REM-0037 to add only the Compose teardown of the project the test creates (finally block) in test_ocor_dev_0006.py, with the REM-0023-style AST proof and the requalification of OCOR-DEV-0006; lane residue check unchanged.",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8328,8 +8318,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_REM_0037_IN_PROGRESS_AWAITING_PRE_CAMPAIGN_REVIEW",
-  "next_executable_action": "Resume OCOR-DEV-REM-0037 after the preventive review OCOR-DEV-REM-0037-a87c6b483ac9-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0037-a87c6b483ac9-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0037-local-suite-split, worktree .ocor/worktrees/rem-0037, candidate code head a87c6b483ac9 (pushed). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial only and record). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0037-candidate/pregate.py), build the TypeScript SDK in the candidate worktree, and the qualifying campaigns on the same head from a clean shell with the locked PATH and power logging: serial full suite (scripts/run_qualifying_campaign.py, cap 5400 s, notification 3600 s) and two-lane full suite (scripts/run_local_lane_campaign.py --execute), same case set, exact JUnit union, zero skip, both PASS; regression runs of tests/tasks/test_ocor_dev_0005/0050/0082 on the real stack; then the requalification records (requalified-rem0037, explicit supersession, sealed records untouched) of 0005 (workflow, guard, plan validator), 0050 (substantive, REACTIVATION point 3) and 0082 (plan validator), the REM-0037 record with inventory, memory measures and equivalence proof, and the verify request (verifier neither Anthropic nor OpenAI nor the preventive reviewer's provider). OCOR-DEV-0062..0064 proceed while remediations await verification. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_REM_0037_BLOCKED_OPEN_PO_DECISION_REM_0039_NEXT",
+  "next_executable_action": "Check the PO disposition of REM-0037-0006-NETWORK-RESIDUE (PR #377; file sha256 9a4d5534fb4a975b7738731cb5dc29b5a50a6edcf1c2380c8f180cfb508918f8). If recorded, apply it to OCOR-DEV-REM-0037 with precedence (branch governed/ocor-dev-rem-0037-local-suite-split, worktree .ocor/worktrees/rem-0037, code head b4ddd6987daa; preserved artifacts in ~/.ocor-codex/rem-0037-q): with option 1, RED/GREEN of the Compose teardown in test_ocor_dev_0006.py only with the AST proof, remove once the stale host network ocor-missing-image-negative_default (OCOR test resource) and record it, update the allowlist for the 0006 requalification, then PRE-CAMPAIGN-GATE on the new head and both qualifying campaigns (serial and two-lane) on the same head, requalifications of 0005/0006/0050/0082, evidence and verify request (verifier neither Anthropic nor OpenAI nor Google). While the decision is pending: start OCOR-DEV-REM-0039 (Temporal adapter of C6, OCOR-DEV-0060-BA-SELECTED-COMPONENTS change set b) with the first free REM id verified; OCOR-DEV-0062..0064 may proceed while remediations await verification. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). Full-suite cap 5400 s, notification 3600 s. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8376,10 +8366,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "8ffe10b0fd53fa912ce2c5ce8716bcb62f1831a9",
-    "branch": "governed/state-sync-rem0037-guard-wiring-20261027",
-    "change_set": "OCOR-DEV-REM-0037 CI guard wiring: lane guard module in the validation-closure guard step under the exact REM-0037 normalization (RED -> GREEN)",
-    "phase": "OCOR_DEV_REM_0037_CI_GUARD_WIRED"
+    "baseline_commit": "d80865e2c401e31a0e4cb9bdd5fed1e63b8fe9ab",
+    "branch": "governed/state-sync-rem0037-pregate-20261027",
+    "change_set": "OCOR-DEV-REM-0037 candidate code head: exact allowlist of the candidate evidence paths, PRE-CAMPAIGN-GATE (scanner finding fixed), preventive review requested",
+    "phase": "OCOR_DEV_REM_0037_AWAITING_PRE_CAMPAIGN_REVIEW"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -8455,21 +8445,23 @@
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "blocked_by_po_decision": {},
+    "blocked_by_po_decision": {
+      "OCOR-DEV-REM-0037": "REM-0037-0006-NETWORK-RESIDUE"
+    },
     "completed_evidence_tasks_count": 75,
     "executable_now": [
-      "OCOR-DEV-REM-0037",
+      "OCOR-DEV-REM-0039",
       "OCOR-DEV-0062",
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-27T19:58:12.788519+00:00",
+    "observed_at": "2026-10-27T22:39:47.605618+00:00",
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
       "OCOR-DEV-0060": "after integration of the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
-      "OCOR-DEV-REM-0037": "in progress: lane machinery and CI guard wiring GREEN; candidate code head a87c6b4 passed PRE-CAMPAIGN-GATE (drift expected); preventive review requested; next campaigns (serial and two-lane), requalifications of 0005/0050/0082 and the equivalence proof",
+      "OCOR-DEV-REM-0037": "blocked by REM-0037-0006-NETWORK-RESIDUE: serial full suite PASS and two-lane 3224/3224 PASS with exact union at b4ddd69, two-lane campaign FAIL closed at lane teardown (residual network of a sealed 0006 test)",
       "OCOR-DEV-REM-0042": "integrated: PR #366 merged (21000270090b)"
     },
     "suspended_by_po": []
@@ -24305,6 +24297,7 @@
     },
     "REM_0037_LOCAL_SUITE_SPLIT": {
       "authority": "LOCAL-SUITE-SPLIT (2026-10-25)",
+      "blocked_by": "REM-0037-0006-NETWORK-RESIDUE",
       "branch": "governed/ocor-dev-rem-0037-local-suite-split",
       "candidate_head_20261027": {
         "allowlist_commit": {
@@ -24393,8 +24386,11 @@
         },
         "pre_campaign_review": {
           "base_sha": "d80865e2c401e31a0e4cb9bdd5fed1e63b8fe9ab",
+          "outcome_sha256": "07e97f033321b146b97545f7b1c938688d9ef4ac9fea9b4c7f6e114025367198",
           "request_id": "OCOR-DEV-REM-0037-a87c6b483ac9-pre",
-          "status": "REQUESTED"
+          "reviewer": "Antigravity CLI (agy) / gemini-4-argon-high / Google",
+          "status": "COMPLETED",
+          "verdict": "NO_BLOCKING_FINDINGS"
         },
         "raw_location": "~/.ocor-codex/rem-0037-candidate/ (outside Git)"
       },
@@ -24613,7 +24609,7 @@
           }
         }
       },
-      "head_sha": "a87c6b483ac9f8735700152d05eb321bb406df48",
+      "head_sha": "b4ddd6987daa4e35f76176672a1840d4f05ea045",
       "id": "OCOR-DEV-REM-0037",
       "id_allocation": "First free REM-* verified read-only on 2026-10-25 across every local and remote ref (git grep), ~/.ocor-codex JSON/Markdown and verdicts, PR titles/bodies: zero occurrences of REM-0037 (REM-0036 highest in use; REM-0099 only as a range bound in decision text).",
       "kind_smoke_20261027": {
@@ -25011,6 +25007,151 @@
         ],
         "supersedes": "pre_code_inventory of 2026-10-25 (bb9dab7, 11-container stack), kept as history"
       },
+      "qualification_campaign_20261027": {
+        "alignment_merge": {
+          "note": "non-destructive merge of origin/main 61edf3a (state files only) after the preventive review",
+          "sha": "b4ddd6987daa4e35f76176672a1840d4f05ea045"
+        },
+        "diagnosis": "lane-1 teardown found one custom network inside its private daemon: test_ocor_dev_0006.py::test_missing_pinned_image_cannot_fall_back_to_public_pull runs docker compose -p ocor-missing-image-negative up with a missing image; Compose creates ocor-missing-image-negative_default and the test never removes it. On the host daemon the network exists since 2026-10-24 21:34 (id df15bf84d1be) and is reused, so the serial check (ocor-bootstrap only) never sees it.",
+        "evidence_built": false,
+        "executed_at": "2026-10-27T22:39:47.605618+00:00",
+        "executor": "Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310)",
+        "head": "b4ddd6987daa4e35f76176672a1840d4f05ea045",
+        "phase_a_and_a3": {
+          "bootstrap": "PASS",
+          "regression": "PASS",
+          "reports-portfolio": "PASS",
+          "reset": "PASS",
+          "task-rem0037-run1": "PASS",
+          "task-rem0037-run2": "PASS",
+          "task-rem0037-run3": "PASS",
+          "verify-typed-after-reset": "PASS",
+          "verify-typed-execute": "PASS"
+        },
+        "power": "rete elettrica per tutta la campagna (una lettura al minuto)",
+        "pre_campaign_gate": {
+          "gates_json_sha256": "30d39f59a7d537e889b6b762c7fac2d78b8f38f828e752da0d160ff59463d0bb",
+          "head": "b4ddd6987daa4e35f76176672a1840d4f05ea045",
+          "result": "41/42 PASS; drift FAIL expected (0005, 0050, 0082)",
+          "steps": 42
+        },
+        "pre_campaign_review": {
+          "findings": 0,
+          "outcome_sha256": "07e97f033321b146b97545f7b1c938688d9ef4ac9fea9b4c7f6e114025367198",
+          "request_id": "OCOR-DEV-REM-0037-a87c6b483ac9-pre",
+          "reviewer": "Antigravity CLI (agy) / gemini-4-argon-high / Google",
+          "verdict": "NO_BLOCKING_FINDINGS"
+        },
+        "raw_location": "~/.ocor-codex/rem-0037-q/ and ~/.ocor-codex/rem-0037-candidate/gates-b4ddd6987daa/ (outside Git)",
+        "reproduction": {
+          "campaign_result_sha256": "03899934c6203394dcca8762cbd63689288769ce86182516bc8780daf5c1541a",
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 2
+          },
+          "non_qualifying": true,
+          "selection": [
+            "tests/tasks/test_ocor_dev_0006.py::test_missing_pinned_image_cannot_fall_back_to_public_pull",
+            "tests/test_interpreter_pin.py::test_running_interpreter_matches_the_pin"
+          ],
+          "status": "FAIL",
+          "teardown": [
+            {
+              "error": "lane 1 teardown incomplete: residue inside the private daemon: {'containers': [], 'volumes': [], 'networks': ['8859d7f1511f']}",
+              "lane": 1,
+              "status": "FAIL"
+            },
+            {
+              "lane": 2,
+              "sandbox_found": true,
+              "status": "PASS"
+            }
+          ]
+        },
+        "serial_full_suite": {
+          "campaign_result_sha256": "89b2448d39d9d73b9fcdb65d069de39a49e1d4377b866bfa28b76ad61d24197f",
+          "cap_seconds": 5400,
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3224
+          },
+          "duration_seconds": 3795.978,
+          "junit_sha256": "84817839b6fddeccb86f4928d60736ad844aa53615a19f9b7bf4ba8d5c39fad3",
+          "margin_to_cap_seconds": 1604.022,
+          "over_notification_seconds": 195.978,
+          "status": "PASS",
+          "teardown": "PASS, ocor-bootstrap absent"
+        },
+        "two_lane_full_suite": {
+          "campaign_result_sha256": "b09fd3c5b23f80e6d787a2671d94417d2394efe38395328926f3d7e844e8e51f",
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3224
+          },
+          "duration_seconds": 2342.822,
+          "host_memory_samples": {
+            "interval_seconds": 5,
+            "mem_available_min_mib": 16530.0,
+            "mem_available_start_mib": 24023.0,
+            "peak_two_lane_occupancy_mib": 7493.0,
+            "samples": 469
+          },
+          "host_residue": {
+            "containers": [],
+            "networks": [],
+            "root_image": false,
+            "volumes": []
+          },
+          "junit_sha256": "762f522b73156dab1006fe622e0ca7d162d6e3a5de4189fe0e09bbb2f73115f9",
+          "lane_durations_seconds": {
+            "1": 1500.902,
+            "2": 2220.661
+          },
+          "margin_to_cap_seconds": 3057.178,
+          "margin_to_notification_seconds": 1257.178,
+          "memory_admission": {
+            "guard_mib": 3000,
+            "mem_available_kib": 24593616,
+            "mem_total_kib": 31743008,
+            "mode": "TWO_LANE",
+            "reason": "MemAvailable at or above the measured threshold",
+            "threshold_mib": 14340.6
+          },
+          "mode": "TWO_LANE",
+          "qualifying": false,
+          "same_case_set_as_serial": true,
+          "status": "FAIL",
+          "teardown": [
+            {
+              "error": "lane 1 teardown incomplete: residue inside the private daemon: {'containers': [], 'volumes': [], 'networks': ['c2570697d499']}",
+              "lane": 1,
+              "status": "FAIL"
+            },
+            {
+              "lane": 2,
+              "sandbox_found": true,
+              "status": "PASS"
+            }
+          ],
+          "union": {
+            "collected": 3224,
+            "duplicated": [],
+            "executed": 3224,
+            "lanes": [
+              1000,
+              2224
+            ],
+            "missing": [],
+            "unexpected": []
+          }
+        }
+      },
       "queue_position": "removed from the pre-G6 queue (supersedes only point 1 of LOCAL-SUITE-SPLIT); not to be resumed on own initiative; after G6 closure a new decision request with updated measurements may be opened",
       "reactivation": {
         "authority": "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26)",
@@ -25061,7 +25202,7 @@
         }
       },
       "scope": "Local full suite in 2 parallel parts, each with an isolated stack (Compose project, ports, kind cluster, volumes, .ocor directory, SPIRE CA, credentials) generated by the versioned procedure; default single-stack behaviour identical for CI, verifier and every other use; teardown of both stacks with zero residue.",
-      "status": "IN_PROGRESS_AWAITING_PRE_CAMPAIGN_REVIEW",
+      "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED",
       "status_history": [
         {
           "status": "SUSPENDED_BY_PO_UNTIL_AFTER_G6_NOT_CLOSED_NOT_VERIFIED",
@@ -25102,6 +25243,10 @@
         {
           "status": "IN_PROGRESS_CI_GUARD_WIRED",
           "until": "2026-10-27T19:58:12.788519+00:00"
+        },
+        {
+          "status": "IN_PROGRESS_AWAITING_PRE_CAMPAIGN_REVIEW",
+          "until": "2026-10-27T22:39:47.605618+00:00"
         }
       ],
       "suspension_effects": [
@@ -26759,7 +26904,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-27T19:58:12.788519+00:00",
+  "updated_at": "2026-10-27T22:39:47.605618+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
