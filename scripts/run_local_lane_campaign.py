@@ -69,6 +69,12 @@ LANE_SYSTEM_PATH = ("/usr/local/bin", "/usr/bin", "/bin")
 EMPTY_ROOT_DIRS = ("dev", "etc", "home", "proc", "root", "run", "sys", "tmp", "usr", "var", "var/lib", "var/lib/docker")
 USR_MERGED_LINKS = ("bin", "sbin", "lib", "lib64", "lib32", "libx32")
 PROVISION_TIMEOUT_SECONDS = 1200
+# A docker exec that reaches the sandbox before the delegation lands in its root
+# cgroup and makes the subtree_control write fail; the init moves late
+# processes and retries, bounded, then refuses to start dockerd.
+CGROUP_DELEGATION_ATTEMPTS = 50
+CGROUP_DELEGATION_PAUSE_SECONDS = 0.2
+REQUIRED_CONTROLLERS = frozenset({"cpu", "cpuset", "io", "memory", "pids"})
 
 
 def weight_key(nodeid: str) -> str:
@@ -270,9 +276,13 @@ def tool_mounts(paths: list[Path], home: Path) -> list[Path]:
 
 
 def sandbox_init(lane: Lane) -> str:
-    """cgroup v2 nesting, then the lane's own dockerd with its socket group."""
-    return ("mkdir -p /sys/fs/cgroup/init && xargs -rn1 < /sys/fs/cgroup/cgroup.procs > /sys/fs/cgroup/init/cgroup.procs; "
-            'sed -e "s/ / +/g" -e "s/^/+/" < /sys/fs/cgroup/cgroup.controllers > /sys/fs/cgroup/cgroup.subtree_control; '
+    """cgroup v2 nesting with a bounded, verified delegation, then the lane's own dockerd with its socket group."""
+    return ("mkdir -p /sys/fs/cgroup/init; "
+            f"for attempt in $(seq 1 {CGROUP_DELEGATION_ATTEMPTS}); do "
+            "xargs -rn1 < /sys/fs/cgroup/cgroup.procs > /sys/fs/cgroup/init/cgroup.procs 2>/dev/null; "
+            'sed -e "s/ / +/g" -e "s/^/+/" < /sys/fs/cgroup/cgroup.controllers > /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null && break; '
+            f"sleep {CGROUP_DELEGATION_PAUSE_SECONDS}; done; "
+            "grep -qw memory /sys/fs/cgroup/cgroup.subtree_control || exit 97; "
             f"ln -sfn /run /var/run; chown {lane.uid}:{lane.gid} {lane.home}; "
             f"exec /usr/bin/dockerd --host unix:///run/docker.sock --group {lane.gid} --data-root /var/lib/docker")
 
@@ -399,7 +409,11 @@ def start_sandbox(lane: Lane, mounts: list[Path], runner: Runner, *, output_root
     contents = inner_daemon_contents(lane, runner)
     if any(contents.values()):
         raise CampaignError(f"lane {lane.index} private daemon is not empty: {contents}")
-    return {"lane": lane.index, "sandbox": lane.name, "daemon_version": reply.stdout.strip(), "ready_after_seconds": waited}
+    delegated = runner(["docker", "exec", lane.name, "cat", "/sys/fs/cgroup/cgroup.subtree_control"]).stdout.split()
+    if missing := sorted(REQUIRED_CONTROLLERS - set(delegated)):
+        raise CampaignError(f"lane {lane.index} sandbox lacks delegated cgroup controllers: {missing}")
+    return {"lane": lane.index, "sandbox": lane.name, "daemon_version": reply.stdout.strip(), "ready_after_seconds": waited,
+            "delegated_controllers": delegated}
 
 
 def teardown_lane(lane: Lane, path: str, runner: Runner) -> dict[str, Any]:
@@ -562,10 +576,19 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
         head, selection = spec["head"], spec["selection"]
         decision_required = clock()
         campaign.verify_revision(repository, head)
+        failed: CommandResult | None = None
         with (output / "bootstrap.log").open("w") as log:
             for argv in LANE_BOOTSTRAP:
-                log.write(runner([sys.executable, *argv], cwd=repository, env=dict(os.environ), timeout=PROVISION_TIMEOUT_SECONDS).stdout + "\n")
-        bootstrap_ci.redact_campaign_log(repository, output / "bootstrap.log")
+                reply = runner([sys.executable, *argv], cwd=repository, env=dict(os.environ), timeout=PROVISION_TIMEOUT_SECONDS, check=False)
+                log.write(reply.stdout + "\n")
+                if reply.returncode:
+                    failed = reply
+                    break
+        if (repository / ".ocor/bootstrap.env").is_file():
+            bootstrap_ci.redact_campaign_log(repository, output / "bootstrap.log")
+        if failed is not None:
+            tail = (output / "bootstrap.log").read_text(errors="replace").strip()[-600:]
+            raise CampaignError(f"lane {spec['lane']} bootstrap failed (exit {failed.returncode}): {tail}")
         os.environ.update(lane_service_environment(repository))
         decision_required = clock() or decision_required
         if campaign.collect_nodeids(suite, selection) != selection:
