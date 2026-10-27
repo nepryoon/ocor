@@ -111,7 +111,7 @@ def test_partition_distributes_the_0049_module_across_both_lanes():
 def test_partition_balances_lanes_within_the_largest_unit():
     parts = LANES.lane_partition(nodes(), weights())
     loads = LANES.lane_loads(parts, weights())
-    assert max(loads) - min(loads) <= max(weights().values())
+    assert max(loads) - min(loads) <= max(LANES.case_weight(node, weights()) for node in nodes())
     # Helm (400 s) and the slow 0049 case (300 s) must not share a lane.
     assert not any(HELM in part and f'{M49}::test_slow' in part for part in parts)
 
@@ -278,9 +278,44 @@ def test_committed_weights_file_is_well_formed_and_covers_the_measured_slow_case
 def test_measured_partition_estimate_is_reported_with_its_lower_bound():
     data = json.loads(LANES.WEIGHTS_PATH.read_text(encoding='utf-8'))
     estimate = LANES.partition_estimate(list(data['weights'].keys()), data['weights'])
-    assert estimate['lower_bound_seconds'] == max(data['weights'].values())
+    nodeids = list(data['weights'].keys())
+    assert estimate['lower_bound_seconds'] == max(LANES.case_weight(node, data['weights']) for node in nodeids)
     assert len(estimate['lane_seconds']) == 2
     assert max(estimate['lane_seconds']) >= estimate['lower_bound_seconds']
+
+
+# The 0049 Helm case sleeps until the next tick of the approved */15 CronJob
+# schedule (wall-clock aligned, 0..900 s); a single measured time is therefore no
+# upper bound. Found by the REM-0037 kind smoke at 0724a04 (1224.5 s in a lane
+# against 429.1 s in the measurement). Partition weights only, never selection.
+def test_clock_aligned_case_weight_adds_a_full_cron_period():
+    key = 'tests.tasks.test_ocor_dev_0049::' + HELM.split('::')[-1]
+    assert LANES.CLOCK_ALIGNED_WAIT_SECONDS == {key: 900.0}
+    assert LANES.case_weight(HELM, {key: 429.129}) == pytest.approx(1329.129)
+    # unmeasured: the default plus the full period, never less than the period
+    assert LANES.case_weight(HELM, {}) == pytest.approx(LANES.DEFAULT_CASE_SECONDS + 900.0)
+    # every other case keeps its measured weight
+    assert LANES.case_weight(f'{M49}::test_slow', weights()) == 300.0
+
+
+def test_clock_aligned_wait_matches_the_only_cron_aligned_0049_case():
+    import ast
+    tree = ast.parse((ROOT / 'ocor-runtime' / M49).read_text(encoding='utf-8'))
+    period = [node.value for node in tree.body if isinstance(node, ast.Assign)
+              and any(isinstance(t, ast.Name) and t.id == 'CRON_PERIOD_SECONDS' for t in node.targets)]
+    assert len(period) == 1 and eval(compile(ast.Expression(period[0]), M49, 'eval')) == 900
+    users = sorted(fn.name for fn in tree.body if isinstance(fn, ast.FunctionDef)
+                   and any(isinstance(n, ast.Name) and n.id == 'CRON_PERIOD_SECONDS' for n in ast.walk(fn)))
+    assert users == [HELM.split('::')[-1]]
+    assert set(LANES.CLOCK_ALIGNED_WAIT_SECONDS.values()) == {900.0}
+
+
+def test_partition_estimate_counts_the_clock_aligned_wait_in_the_lower_bound():
+    estimate = LANES.partition_estimate(nodes(), weights())
+    assert estimate['lower_bound_seconds'] == pytest.approx(1300.0)
+    parts = LANES.lane_partition(nodes(), weights())
+    helm_lane = next(index for index, part in enumerate(parts) if HELM in part)
+    assert parts[helm_lane] == [HELM]
 
 
 def test_orchestrator_does_not_alter_the_serial_campaign_defaults():
