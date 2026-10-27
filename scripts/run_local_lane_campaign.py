@@ -30,6 +30,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tarfile
@@ -41,6 +42,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, NamedTuple, Protocol
 
+import bootstrap_ci_environment as bootstrap_ci
+import observe_kind_teardown as kind_observer
 import run_qualifying_campaign as campaign
 from run_qualifying_campaign import CampaignError
 
@@ -495,6 +498,163 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     return report
 
 
+# --- per-lane runner, executed inside the lane sandbox ----------------------
+# Mirrors the sealed supervisor's execution body on the lane's own stack. The
+# lane never selects its cases: it runs exactly the orchestrator's node list,
+# proven by collection, and shares the whole-campaign clock.
+
+LANE_POLL_SECONDS = 5
+LANE_JUNIT = "runtime_junit_post_approval.xml"
+LANE_LOGS = ("bootstrap.log", "post_remediation_runtime.log", "kubernetes-diagnostics.log", LANE_JUNIT)
+CI_POSTGRES_PORT = 55433
+LANE_BOOTSTRAP = (["scripts/bootstrap_ci_environment.py", "--teardown", "--execute"],
+                  ["scripts/bootstrap_ci_environment.py", "--execute", "--timeout", "600"])
+
+
+def load_lane_spec(path: Path) -> dict[str, Any]:
+    spec = json.loads(path.read_text(encoding="utf-8"))
+    selection = spec.get("selection")
+    if (not isinstance(spec.get("head"), str) or not re.fullmatch(r"[0-9a-f]{40}", spec["head"])
+            or spec.get("lane") not in range(1, LANE_COUNT + 1)
+            or not isinstance(selection, list) or not selection or len(selection) != len(set(selection))
+            or not all(isinstance(node, str) and "::" in node for node in selection)
+            or not isinstance(spec.get("campaign_start"), (int, float)) or spec["campaign_start"] <= 0
+            or not isinstance(spec.get("stop_file"), str) or not spec["stop_file"]):
+        raise CampaignError(f"incomplete or ambiguous lane spec: {path}")
+    return dict(spec)
+
+
+def lane_service_environment(repository: Path) -> dict[str, str]:
+    """The two variables the versioned CI exports after provisioning, for the lane's own stack."""
+    env_file = (repository / ".ocor/bootstrap.env").resolve()
+    values = dict(line.split("=", 1) for line in env_file.read_text(encoding="utf-8").splitlines() if "=" in line)
+    if not values.get("OCOR_LOCAL_POSTGRES_PASSWORD"):
+        raise CampaignError("lane bootstrap env has no generated PostgreSQL password")
+    return {"OCOR_BOOTSTRAP_ENV": str(env_file),
+            "OCOR_LIVE_POSTGRES_DSN": f"postgresql://ocor:{values['OCOR_LOCAL_POSTGRES_PASSWORD']}@127.0.0.1:{CI_POSTGRES_PORT}/ocor"}
+
+
+def lane_pytest_command(output: Path, selection: list[str]) -> list[str]:
+    return [sys.executable, "-m", "pytest", "-v", "--cov=src", "--cov-report=term-missing",
+            f"--cov-report=json:{output / 'runtime_coverage_post_approval.json'}", f"--junitxml={output / LANE_JUNIT}", *selection]
+
+
+def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner = run_command) -> int:
+    """Run one lane on its own stack; lane_result.json records PASS or the first failure."""
+    repository = (repository or Path(__file__).resolve().parents[1]).resolve()
+    output, suite = spec_path.parent, repository / "ocor-runtime"
+    junit = output / LANE_JUNIT
+    process: subprocess.Popen[Any] | None = None
+    recorder: Any = None
+    sampler: Any = None
+    health: subprocess.Popen[Any] | None = None
+    decision_required = False
+    spec: dict[str, Any] = {}
+
+    def clock() -> bool:
+        stop_file = Path(spec["stop_file"])
+        if stop_file.exists():
+            raise CampaignError(f"lane {spec['lane']} stopped by the orchestrator: {stop_file.read_text(errors='replace')[:200].strip()}")
+        return check_campaign_deadline(time.time() - spec["campaign_start"])
+
+    try:
+        spec = load_lane_spec(spec_path)
+        head, selection = spec["head"], spec["selection"]
+        decision_required = clock()
+        campaign.verify_revision(repository, head)
+        with (output / "bootstrap.log").open("w") as log:
+            for argv in LANE_BOOTSTRAP:
+                log.write(runner([sys.executable, *argv], cwd=repository, env=dict(os.environ), timeout=PROVISION_TIMEOUT_SECONDS).stdout + "\n")
+        bootstrap_ci.redact_campaign_log(repository, output / "bootstrap.log")
+        os.environ.update(lane_service_environment(repository))
+        decision_required = clock() or decision_required
+        if campaign.collect_nodeids(suite, selection) != selection:
+            raise CampaignError(f"lane {spec['lane']} selection does not collect exactly its node IDs")
+        initial = campaign.inspect_stack()
+        if len(initial) != campaign.MANDATORY_CONTAINERS:
+            raise CampaignError(f"expected {campaign.MANDATORY_CONTAINERS} mandatory containers, found {len(initial)}")
+        campaign.check_stack(initial, initial)
+        recorder = bootstrap_ci.SessionRecorder(repository)
+        health = campaign.start_health_observer(output, FULL_SUITE_LIMIT_SECONDS)
+        history: dict[str, dict[str, Any]] = {}
+        lane_start = time.monotonic()
+        with (output / "post_remediation_runtime.log").open("w") as log:
+            process = subprocess.Popen(lane_pytest_command(output, selection), cwd=suite, env=campaign.pytest_environment(suite),
+                                       stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            sampler = kind_observer.start_sampler(process.pid, campaign.qualification_kind_binary(repository))
+            while process.poll() is None:
+                campaign.check_stack(initial, campaign.inspect_stack())
+                current = campaign.inspect_kubernetes_runtimes()
+                with (output / "kubernetes-runtime.log").open("a") as runtime_log:
+                    runtime_log.write(json.dumps(current, sort_keys=True) + "\n")
+                campaign.check_kubernetes_runtimes(history, current)
+                decision_required = clock() or decision_required
+                time.sleep(LANE_POLL_SECONDS)
+            campaign.check_stack(initial, campaign.inspect_stack())
+            campaign.check_kubernetes_runtimes(history, campaign.inspect_kubernetes_runtimes())
+        decision_required = clock() or decision_required
+        if process.returncode:
+            raise CampaignError(f"pytest exit code {process.returncode}")
+        campaign.verify_revision(repository, head)
+        counts = campaign.check_junit(junit, required_modules=[])
+        if sorted(campaign.junit_cases(junit)) != sorted(campaign.junit_identity(node) for node in selection):
+            raise CampaignError("lane JUnit differs from its selection")
+        shutil.copyfile(suite / ".coverage", output / "runtime_coverage.data")
+        result: dict[str, Any] = {
+            "status": "PASS", "lane": spec["lane"], "candidate_head": head, "counts": counts, "selected": len(selection),
+            "selected_sha256": campaign.collection_digest(selection), "lane_duration_seconds": round(time.monotonic() - lane_start, 3),
+            "campaign_elapsed_seconds": round(time.time() - spec["campaign_start"], 3), "limit_seconds": FULL_SUITE_LIMIT_SECONDS,
+            "po_decision_required": decision_required}
+        status = 0
+    except (CampaignError, kind_observer.TeardownObservationError, OSError, subprocess.SubprocessError,
+            KeyError, ValueError, TypeError) as exc:
+        frozen = False
+        if process is not None and process.poll() is None:
+            try:
+                os.killpg(process.pid, signal.SIGSTOP)
+                frozen = True
+            except ProcessLookupError:
+                pass
+        try:
+            campaign.collect_kubernetes_diagnostics(output / "kubernetes-diagnostics.log")
+        finally:
+            if process is not None:
+                campaign.stop(process, resume=frozen)
+        try:
+            bootstrap_ci.collect_stack_diagnostics(repository, output / "docker-stats.log")
+        except Exception as diagnostics:  # noqa: BLE001 - diagnostics never mask the lane failure
+            (output / "docker-stats.log").write_text(f"stack diagnostics incomplete: {diagnostics}\n")
+        result = {"status": "FAIL", "lane": spec.get("lane"), "error": str(exc), "po_decision_required": decision_required}
+        status = 1
+    finally:
+        if process is not None:
+            campaign.stop(process)
+        campaign.finish_health_observer(health, output)
+        if sampler is not None:
+            kind_observer.stop_sampler(sampler)
+            observer = kind_observer
+            (output / "kind-teardown-observations.json").write_text(json.dumps({
+                "removals": observer.REMOVALS, "rejections": observer.REJECTIONS, "window_seconds": observer.WINDOW_SECONDS,
+                "remover_observations": observer.REMOVER_OBSERVATIONS, "probe_observations": observer.PROBE_OBSERVATIONS,
+                "bootstrap_recoveries": observer.BOOTSTRAP_RECOVERIES}, indent=2, sort_keys=True) + "\n")
+        if recorder is not None:
+            try:
+                recorder.finish()
+            except (OSError, ValueError, subprocess.SubprocessError, RuntimeError, KeyError, TypeError, AttributeError) as exc:
+                result, status = {"status": "FAIL", "lane": spec.get("lane"), "error": f"ownership recorder: {exc}",
+                                  "po_decision_required": decision_required}, 1
+            resources = repository / ".ocor/campaign-resources.json"
+            if resources.is_file():
+                shutil.copyfile(resources, output / "campaign-resources.json")
+        if (repository / ".ocor/bootstrap.env").is_file():
+            for name in LANE_LOGS:
+                if (output / name).is_file():
+                    bootstrap_ci.redact_campaign_log(repository, output / name)
+    (output / "lane_result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    print(json.dumps(result, sort_keys=True))
+    return status
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--derive-weights", type=Path, metavar="JUNIT", help="write the weights file content derived from a serial PASS JUnit")
@@ -503,7 +663,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="non-qualifying: provision both lane sandboxes at --expected-head, probe them and tear them down")
     parser.add_argument("--expected-head", help="exact head of this checkout, required with --lifecycle-check")
     parser.add_argument("--tool-bin", type=Path, action="append", default=[], help="directory of locked tool links, first on the lane PATH")
+    parser.add_argument("--run-lane", type=Path, metavar="LANE_SPEC", help="inside a lane sandbox: run the spec's exact node list on the lane stack")
     args = parser.parse_args(argv)
+    if args.run_lane:
+        return run_lane(args.run_lane.resolve())
     if args.lifecycle_check:
         if not args.expected_head or not args.tool_bin:
             parser.error("--lifecycle-check requires --expected-head and --tool-bin")
@@ -524,7 +687,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"status": "PASS", **plan}, sort_keys=True))
         return 0
-    parser.error("choose --derive-weights, --plan or --lifecycle-check")
+    parser.error("choose --derive-weights, --plan, --lifecycle-check or --run-lane")
     return 2
 
 
