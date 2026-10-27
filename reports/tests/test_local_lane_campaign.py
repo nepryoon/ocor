@@ -578,3 +578,254 @@ def test_host_residue_is_checked_by_campaign_label_and_root_image(tmp_path):
     image = FakeRunner()
     with pytest.raises(CAMPAIGN.CampaignError, match='residue'):
         LANES.check_host_residue(CAMPAIGN_ID, image)
+
+
+# --- per-lane runner inside the sandbox -----------------------------------
+# The lane runner mirrors the sealed supervisor's execution body on the lane's
+# own stack: exact head, CI bootstrap, the lane's explicit node list proven by
+# collection, pytest with JUnit and coverage, mandatory-stack and Kubernetes
+# checks, the whole-campaign clock, and a stop request from the orchestrator.
+
+LANE_SELECTION = ['tests/tasks/test_a.py::test_one', f'{M49}::test_slow', HELM]
+SECRET = 'lane-generated-password'
+
+
+def lane_spec(tmp_path, *, selection=None, started=None, head=HEAD, index=1):
+    output = tmp_path / 'out'
+    output.mkdir(exist_ok=True)
+    spec = {'campaign_start': LANE_CLOCK[0] - 10 if started is None else started, 'head': head, 'lane': index,
+            'selection': list(LANE_SELECTION if selection is None else selection), 'stop_file': str(output / 'STOP')}
+    path = output / 'lane_spec.json'
+    path.write_text(json.dumps(spec))
+    return path
+
+
+LANE_CLOCK = [1793000000.0]
+
+
+class FakeRecorder:
+    instances = []
+
+    def __init__(self, repository):
+        self.finished = False
+        FakeRecorder.instances.append(self)
+
+    def finish(self):
+        self.finished = True
+
+
+def container(name, *, restarts=0, running=True, oom=False):
+    return {'Id': f'id-{name}', 'RestartCount': restarts,
+            'State': {'StartedAt': 't0', 'Running': running, 'OOMKilled': oom}}
+
+
+def mandatory_stack(**changes):
+    stack = {f'/ocor-bootstrap-s{index}-1': container(f's{index}') for index in range(CAMPAIGN.MANDATORY_CONTAINERS)}
+    stack.update(changes)
+    return stack
+
+
+@pytest.fixture
+def lane_world(tmp_path, monkeypatch):
+    """A lane clone with a generated env file; sealed helpers observed, not rebound in the sealed module's callers."""
+    repository = tmp_path / 'repo'
+    (repository / 'ocor-runtime').mkdir(parents=True)
+    (repository / '.ocor').mkdir()
+    (repository / '.ocor/bootstrap.env').write_text(f'OCOR_LOCAL_POSTGRES_PASSWORD={SECRET}\nOTHER=1\n')
+    (repository / 'ocor-runtime/.coverage').write_bytes(b'coverage')
+    world = {'repository': repository, 'calls': [], 'stacks': [], 'collected': None, 'junit_cases': None,
+             'pytest_exit': 0, 'head': HEAD}
+    FakeRecorder.instances = []
+
+    def verify_revision(path, head):
+        world['calls'].append(('verify_revision', str(path), head))
+        if head != world['head']:
+            raise CAMPAIGN.CampaignError(f'candidate HEAD mismatch: {world["head"]}')
+
+    def collect_nodeids(directory, selection):
+        world['calls'].append(('collect', str(directory), list(selection)))
+        return list(selection) if world['collected'] is None else world['collected']
+
+    def inspect_stack():
+        return world['stacks'].pop(0) if len(world['stacks']) > 1 else (world['stacks'][0] if world['stacks'] else mandatory_stack())
+
+    def runner(argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+        world['calls'].append(('run', [str(item) for item in argv], dict(env or {})))
+        return LANES.CommandResult(0, '{"status": "PASS"}')
+
+    def pytest_command(output, selection):
+        cases = world['junit_cases'] or [CAMPAIGN.junit_identity(node) for node in selection]
+        source = write_junit(tmp_path / 'prepared.xml', cases)
+        world['calls'].append(('pytest', list(selection)))
+        return [sys.executable, '-c', 'import shutil, sys; shutil.copyfile(sys.argv[1], sys.argv[2]); sys.exit(int(sys.argv[3]))',
+                str(source), str(output / 'runtime_junit_post_approval.xml'), str(world['pytest_exit'])]
+
+    monkeypatch.setattr(CAMPAIGN, 'verify_revision', verify_revision)
+    monkeypatch.setattr(CAMPAIGN, 'collect_nodeids', collect_nodeids)
+    monkeypatch.setattr(CAMPAIGN, 'inspect_stack', inspect_stack)
+    monkeypatch.setattr(CAMPAIGN, 'inspect_kubernetes_runtimes', lambda: {})
+    monkeypatch.setattr(CAMPAIGN, 'start_health_observer', lambda output, limit: None)
+    monkeypatch.setattr(CAMPAIGN, 'finish_health_observer', lambda process, output: None)
+    monkeypatch.setattr(CAMPAIGN, 'SessionRecorder', FakeRecorder)
+    monkeypatch.setattr(CAMPAIGN, 'collect_kubernetes_diagnostics', lambda output: output.write_text('diag\n'))
+    monkeypatch.setattr(CAMPAIGN, 'collect_stack_diagnostics', lambda repository, output: output.write_text('stats\n'))
+    monkeypatch.setattr(CAMPAIGN.kind_observer, 'start_sampler', lambda pgid, kind_binary=None: None)
+    monkeypatch.setattr(CAMPAIGN.kind_observer, 'stop_sampler', lambda thread: None)
+    monkeypatch.setattr(LANES, 'lane_pytest_command', pytest_command)
+    monkeypatch.setattr(LANES, 'LANE_POLL_SECONDS', 0.01)
+    monkeypatch.setattr(LANES.time, 'time', lambda: LANE_CLOCK[0])
+    for key in ('OCOR_BOOTSTRAP_ENV', 'OCOR_LIVE_POSTGRES_DSN'):
+        monkeypatch.delenv(key, raising=False)
+    world['runner'] = runner
+    return world
+
+
+def run_lane(world, spec):
+    return LANES.run_lane(spec, repository=world['repository'], runner=world['runner'])
+
+
+def lane_result(spec):
+    return json.loads((spec.parent / 'lane_result.json').read_text())
+
+
+def test_lane_pytest_command_is_the_sealed_supervisor_command_with_the_explicit_selection(tmp_path):
+    command = LANES.lane_pytest_command(tmp_path, LANE_SELECTION)
+    assert command[:6] == [sys.executable, '-m', 'pytest', '-v', '--cov=src', '--cov-report=term-missing']
+    assert command[6:8] == [f'--cov-report=json:{tmp_path / "runtime_coverage_post_approval.json"}',
+                            f'--junitxml={tmp_path / "runtime_junit_post_approval.xml"}']
+    assert command[8:] == LANE_SELECTION
+    assert not any(item.startswith(('--deselect', '-k', '-m', '--lf', '-x')) for item in command)
+
+
+@pytest.mark.parametrize('change', [
+    {'head': HEAD[:39]}, {'head': HEAD.upper()}, {'selection': []}, {'selection': [HELM, HELM]},
+    {'campaign_start': 0}, {'lane': 3}, {'stop_file': ''}])
+def test_lane_spec_rejects_incomplete_or_ambiguous_input(tmp_path, change):
+    path = lane_spec(tmp_path)
+    data = {**json.loads(path.read_text()), **change}
+    path.write_text(json.dumps(data))
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.load_lane_spec(path)
+
+
+def test_lane_service_environment_is_the_ci_environment_of_the_lane_stack(tmp_path):
+    (tmp_path / '.ocor').mkdir()
+    (tmp_path / '.ocor/bootstrap.env').write_text(f'OCOR_LOCAL_POSTGRES_PASSWORD={SECRET}\n')
+    assert LANES.lane_service_environment(tmp_path) == {
+        'OCOR_BOOTSTRAP_ENV': str((tmp_path / '.ocor/bootstrap.env').resolve()),
+        'OCOR_LIVE_POSTGRES_DSN': f'postgresql://ocor:{SECRET}@127.0.0.1:55433/ocor'}
+    (tmp_path / '.ocor/bootstrap.env').write_text('OTHER=1\n')
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.lane_service_environment(tmp_path)
+
+
+def test_lane_runs_its_exact_selection_on_its_own_stack_and_records_a_pass(lane_world, tmp_path):
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 0
+    result = lane_result(spec)
+    assert result['status'] == 'PASS' and result['lane'] == 1 and result['candidate_head'] == HEAD
+    assert result['counts'] == {'tests': 3, 'failures': 0, 'errors': 0, 'skipped': 0}
+    assert result['selected'] == len(LANE_SELECTION) and result['po_decision_required'] is False
+    assert result['limit_seconds'] == 5400 and result['campaign_elapsed_seconds'] >= 10
+    assert (spec.parent / 'runtime_coverage.data').read_bytes() == b'coverage'
+    runs = [call[1] for call in lane_world['calls'] if call[0] == 'run']
+    assert [argv[1:] for argv in runs] == [['scripts/bootstrap_ci_environment.py', '--teardown', '--execute'],
+                                           ['scripts/bootstrap_ci_environment.py', '--execute', '--timeout', '600']]
+    order = [call[0] for call in lane_world['calls']]
+    assert order.index('verify_revision') < order.index('run') < order.index('collect') < order.index('pytest')
+    assert ('collect', str(lane_world['repository'] / 'ocor-runtime'), LANE_SELECTION) in lane_world['calls']
+    assert [call[0] for call in lane_world['calls']].count('verify_revision') == 2
+    assert FakeRecorder.instances and FakeRecorder.instances[0].finished
+    assert LANES.os.environ['OCOR_LIVE_POSTGRES_DSN'].endswith('@127.0.0.1:55433/ocor')
+
+
+def assert_lane_failed(spec, match):
+    result = lane_result(spec)
+    assert result['status'] == 'FAIL' and match in result['error']
+    return result
+
+
+def test_lane_fails_closed_on_a_head_mismatch_before_any_bootstrap(lane_world, tmp_path):
+    lane_world['head'] = '0' * 40
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'HEAD mismatch')
+    assert not [call for call in lane_world['calls'] if call[0] in ('run', 'pytest')]
+
+
+def test_lane_fails_closed_when_collection_differs_from_its_selection(lane_world, tmp_path):
+    lane_world['collected'] = LANE_SELECTION[:-1]
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'does not collect exactly')
+    assert not [call for call in lane_world['calls'] if call[0] == 'pytest']
+
+
+def test_lane_requires_exactly_the_mandatory_containers(lane_world, tmp_path):
+    stack = mandatory_stack()
+    stack.pop(next(iter(stack)))
+    lane_world['stacks'] = [stack]
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, f'expected {CAMPAIGN.MANDATORY_CONTAINERS} mandatory containers')
+
+
+def test_lane_stops_on_a_restarted_service(lane_world, tmp_path):
+    name = '/ocor-bootstrap-s0-1'
+    lane_world['stacks'] = [mandatory_stack(), mandatory_stack(), mandatory_stack(**{name: container('s0', restarts=1)})]
+    lane_world['pytest_exit'] = 0
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'service restarted')
+    assert (spec.parent / 'docker-stats.log').exists()
+
+
+def test_lane_stops_when_the_orchestrator_requests_it(lane_world, tmp_path):
+    spec = lane_spec(tmp_path)
+    (spec.parent / 'STOP').write_text('lane 2 failed\n')
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'stopped by the orchestrator')
+
+
+def test_lane_shares_the_whole_campaign_clock(lane_world, tmp_path):
+    spec = lane_spec(tmp_path, started=LANE_CLOCK[0] - 5400)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, '90-minute campaign limit reached')
+    assert not [call for call in lane_world['calls'] if call[0] in ('run', 'pytest')]
+
+
+def test_lane_reports_the_notification_threshold_on_the_whole_campaign_clock(lane_world, tmp_path):
+    spec = lane_spec(tmp_path, started=LANE_CLOCK[0] - 3601)
+    assert run_lane(lane_world, spec) == 0
+    assert lane_result(spec)['po_decision_required'] is True
+
+
+def test_lane_rejects_a_pytest_failure_exit(lane_world, tmp_path):
+    lane_world['pytest_exit'] = 1
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'pytest exit code 1')
+
+
+def test_lane_rejects_a_junit_that_differs_from_its_selection(lane_world, tmp_path):
+    lane_world['junit_cases'] = [CAMPAIGN.junit_identity(node) for node in LANE_SELECTION[:-1]]
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'lane JUnit differs from its selection')
+
+
+def test_lane_redacts_generated_credentials_from_its_logs(lane_world, tmp_path, monkeypatch):
+    monkeypatch.setattr(CAMPAIGN, 'redact_campaign_log', CAMPAIGN.redact_campaign_log)
+    spec = lane_spec(tmp_path)
+    assert run_lane(lane_world, spec) == 0
+    for path in spec.parent.iterdir():
+        if path.is_file():
+            assert SECRET not in path.read_text(errors='replace'), path.name
+
+
+def test_lane_cli_runs_the_spec_and_returns_its_status(lane_world, tmp_path, monkeypatch):
+    spec = lane_spec(tmp_path)
+    seen = {}
+    monkeypatch.setattr(LANES, 'run_lane', lambda path: seen.setdefault('spec', path) and 0)
+    assert LANES.main(['--run-lane', str(spec)]) == 0
+    assert seen['spec'] == spec.resolve()
