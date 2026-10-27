@@ -408,12 +408,12 @@ def test_build_timeout_retains_last_step_and_fails_closed(tmp_path):
     assert "downloading pinned archive" in (tmp_path / "reports/tests/ci_fuseki_build.log").read_text()
 
 
-def test_full_suite_budget_is_75_minutes_and_60_minutes_requires_decision():
+def test_full_suite_budget_is_90_minutes_and_60_minutes_requires_decision():
     assert GUARD.check_deadline(3599) is False
     assert GUARD.check_deadline(3601) is True
-    assert GUARD.check_deadline(4499) is True
-    with pytest.raises(GUARD.CampaignError, match="75-minute"):
-        GUARD.check_deadline(4500)
+    assert GUARD.check_deadline(5399) is True
+    with pytest.raises(GUARD.CampaignError, match="90-minute"):
+        GUARD.check_deadline(5400)
 
 
 def test_teardown_exports_exact_residue_even_when_reset_fails(tmp_path, monkeypatch, capsys):
@@ -514,9 +514,9 @@ def stub_completed_campaign(tmp_path, monkeypatch, *, seconds, recorder_error=Fa
 
 
 def test_completed_process_after_deadline_is_still_rejected(tmp_path, monkeypatch):
-    output, json = stub_completed_campaign(tmp_path, monkeypatch, seconds=4501)
+    output, json = stub_completed_campaign(tmp_path, monkeypatch, seconds=5401)
     assert GUARD.main() == 1
-    assert "75-minute" in json.loads((output / "campaign_result.json").read_text())["error"]
+    assert "90-minute" in json.loads((output / "campaign_result.json").read_text())["error"]
 
 
 def test_event_capture_failure_is_fail_closed_and_logs_are_still_redacted(tmp_path, monkeypatch):

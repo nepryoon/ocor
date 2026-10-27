@@ -681,6 +681,24 @@ def normalize_rem0038_campaign(text):
     return text
 
 
+REM0042_DOCSTRING = (
+    '"""Run the complete runtime suite, stopping on stack failure or the governed 90-minute full-suite limit.\n',
+    '"""Run the complete runtime suite, stopping on stack failure or the governed 75-minute full-suite limit.\n',
+)
+REM0042_LIMIT = ('FULL_SUITE_LIMIT_SECONDS = 5400\n', 'FULL_SUITE_LIMIT_SECONDS = 4500\n')
+
+
+def normalize_rem0042_campaign(text):
+    """PO LOCAL-FULL-SUITE-CAP-90 (2026-10-26) as amended by LOCAL-FULL-SUITE-CAP-90-AMENDMENT
+    (2026-10-26), point 3, under REM-0038-CAMPAIGN-GUARD-ADMISSION condition a: exact delta of
+    OCOR-DEV-REM-0042. Only FULL_SUITE_LIMIT_SECONDS (5400) and the module docstring (90-minute)
+    return to the baseline 4500 and 75-minute; each fragment must occur exactly once."""
+    for old, new in (REM0042_DOCSTRING, REM0042_LIMIT):
+        assert text.count(old) == 1, 'Unexpected REM-0042 source: ' + old[:90]
+        text = text.replace(old, new, 1)
+    return text
+
+
 def normalize_rem0038_workflow(path, after):
     """Same decision: only the two Compose-rendering placeholders of the tooling workflow."""
     if path != '.github/workflows/ocor-tooling-bootstrap.yml':
@@ -739,7 +757,7 @@ def observation_only_proof(overrides=None):
             return node
 
     path = 'scripts/run_qualifying_campaign.py'
-    before, after = ast.parse(source(path, True)), ast.parse(normalize_rem0038_campaign(source(path)))
+    before, after = ast.parse(source(path, True)), ast.parse(normalize_rem0038_campaign(normalize_rem0042_campaign(source(path))))
     before_functions = {n.name: n for n in before.body if isinstance(n, ast.FunctionDef)}
     after_functions = {n.name: n for n in after.body if isinstance(n, ast.FunctionDef)}
     results = {}
@@ -878,7 +896,7 @@ def bootstrap_probe_proof(case, overrides=None):
 
     path = 'scripts/run_qualifying_campaign.py'
     before = ast.dump(ast.parse(old(path)), include_attributes=False)
-    after = ast.dump(DropExport().visit(ast.parse(normalize_rem0038_campaign(read(path)))), include_attributes=False)
+    after = ast.dump(DropExport().visit(ast.parse(normalize_rem0038_campaign(normalize_rem0042_campaign(read(path))))), include_attributes=False)
     case.assertEqual(before, after)
     case.assertNotEqual(old(path), read(path))
 
@@ -923,7 +941,7 @@ class Rem0038GuardAdmission(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         campaign = (root / self.CAMPAIGN).read_text()
         self.assertEqual(campaign.count(REM0038_CONSTANT), 1)
-        normalised = normalize_rem0038_campaign(campaign)
+        normalised = normalize_rem0038_campaign(normalize_rem0042_campaign(campaign))
         self.assertNotIn('MANDATORY_CONTAINERS', normalised)
         self.assertEqual(normalised.count('*ids[:11]])'), 1)
         self.assertEqual(normalised.count('if len(initial) != 11:'), 1)
@@ -937,7 +955,7 @@ class Rem0038GuardAdmission(unittest.TestCase):
         for label, changed, expected in [
             ('MANDATORY_CONTAINERS 16', campaign.replace('MANDATORY_CONTAINERS = 15', 'MANDATORY_CONTAINERS = 16', 1), both),
             ('another constant', campaign.replace(REM0038_CONSTANT, REM0038_CONSTANT + 'EXTRA_CONTAINERS = 1\n', 1), both),
-            ('limit constant', campaign.replace('FULL_SUITE_LIMIT_SECONDS = 4500', 'FULL_SUITE_LIMIT_SECONDS = 5400', 1), both),
+            ('limit constant', campaign.replace('FULL_SUITE_LIMIT_SECONDS = 5400', 'FULL_SUITE_LIMIT_SECONDS = 6000', 1), both),
             ('another function changed', campaign.replace(stack, stack.replace('disappeared', 'vanished'), 1), both),
             ('another function added', campaign + '\n\ndef extra_gate() -> None:\n    return None\n', {'main-9b4d3be'}),
             ('inventory check weakened', campaign.replace('if len(initial) != MANDATORY_CONTAINERS:', 'if len(initial) < MANDATORY_CONTAINERS:', 1), both),
@@ -965,6 +983,47 @@ class Rem0038GuardAdmission(unittest.TestCase):
         ]:
             with self.subTest(change=label):
                 self.assertEqual(self.failing_proofs(overrides), both)
+
+
+class Rem0042GuardAdmission(Rem0038GuardAdmission):
+    """LOCAL-FULL-SUITE-CAP-90-AMENDMENT (2026-10-26), point 3: the exact REM-0042 delta (limit
+    5400 and the 90-minute docstring) is admitted; every other difference still fails. The
+    inherited workflow test proves that REM-0042 admits no workflow difference."""
+
+    def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_literal(self):
+        root = Path(__file__).resolve().parents[2]
+        campaign = (root / self.CAMPAIGN).read_text()
+        self.assertEqual(campaign.count(REM0042_LIMIT[0]), 1)
+        self.assertEqual(campaign.count(REM0042_DOCSTRING[0]), 1)
+        normalised = normalize_rem0042_campaign(campaign)
+        self.assertEqual(normalised.count(REM0042_LIMIT[1]), 1)
+        self.assertEqual(normalised.count(REM0042_DOCSTRING[1]), 1)
+        self.assertNotIn('5400', normalised)
+        self.assertNotIn('90-minute', normalised)
+        self.assertEqual(self.failing_proofs({}), set())
+
+    def test_every_other_campaign_difference_still_fails(self):
+        root = Path(__file__).resolve().parents[2]
+        campaign = (root / self.CAMPAIGN).read_text()
+        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        limit, docstring = REM0042_LIMIT[0], REM0042_DOCSTRING[0]
+        for label, changed, expected in [
+            ('limit 5401', campaign.replace(limit, 'FULL_SUITE_LIMIT_SECONDS = 5401\n', 1), both),
+            ('limit back to 4500 with the 90-minute docstring', campaign.replace(limit, REM0042_LIMIT[1], 1), both),
+            ('90-minute docstring missing', campaign.replace(docstring, REM0042_DOCSTRING[1], 1), both),
+            ('docstring wording changed', campaign.replace(docstring, docstring.replace('stopping on', 'halting on'), 1), both),
+            ('limit duplicated', campaign.replace(limit, limit + limit, 1), both),
+            ('limit as an expression', campaign.replace(limit, 'FULL_SUITE_LIMIT_SECONDS = 90 * 60\n', 1), both),
+            ('notification threshold', campaign.replace('PO_DECISION_THRESHOLD_SECONDS = 3600', 'PO_DECISION_THRESHOLD_SECONDS = 4500', 1), both),
+            ('part limit', campaign.replace('PART_LIMIT_SECONDS = 2700', 'PART_LIMIT_SECONDS = 3240', 1), both),
+            ('part rebalance', campaign.replace('PART_REBALANCE_SECONDS = 1800', 'PART_REBALANCE_SECONDS = 2160', 1), both),
+            ('observer timeout margin', campaign.replace('default=FULL_SUITE_LIMIT_SECONDS + 60', 'default=FULL_SUITE_LIMIT_SECONDS + 120', 1), both),
+            ('deadline message', campaign.replace('f"{limit // 60}-minute campaign limit reached"', 'f"{limit // 60}-minute limit reached"', 1), both),
+            ('another constant', campaign.replace(limit, limit + 'EXTRA_LIMIT_SECONDS = 5400\n', 1), both),
+        ]:
+            with self.subTest(change=label):
+                self.assertNotEqual(changed, campaign)
+                self.assertEqual(self.failing_proofs({self.CAMPAIGN: changed}), expected)
 
 if __name__ == '__main__':
     unittest.main()
