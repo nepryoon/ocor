@@ -4,13 +4,13 @@
     "TerminusDB was already provisioned and qualified by OCOR-DEV-0073; its requalification on the 15-container stack is its provisioning evidence here.",
     "DEP-011 benchmark NOT_EXECUTED here (needs the SDK worker), carried to OCOR-DEV-REM-0039; licence MIT verified."
   ],
-  "base_sha": "c887dcafc0f3ef7b66c1d11b7a169fd18ea6c160",
-  "baseline_commit": "c887dcafc0f3ef7b66c1d11b7a169fd18ea6c160",
-  "branch": "governed/state-sync-rem0037-execute-orchestration-20261027",
+  "base_sha": "856d79c9901313b5c7804084e50bc8337650292a",
+  "baseline_commit": "856d79c9901313b5c7804084e50bc8337650292a",
+  "branch": "governed/state-sync-rem0037-kind-smoke-20261027",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0037-local-suite-split",
-    "head_sha": "cfcfe78aa230cc201b8cf15e77668f311c1362ab",
-    "note": "WIP: measurement record, lane weights, partitioner, lane lifecycle, per-lane runner, --execute orchestration and their guard; not evidence, not sealed",
+    "head_sha": "21343d188c0f820300ea7fbe94b1dd04f4d76cb9",
+    "note": "WIP: measurement record, lane weights, partitioner (clock-aligned Helm weight), lane lifecycle, per-lane runner, --execute orchestration and their guard; not evidence, not sealed",
     "paths": [
       "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
       "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
@@ -36,37 +36,22 @@
   },
   "commands": [
     {
-      "command": "pytest reports/tests/test_local_lane_campaign.py (RED, 92cb4ad)",
-      "exit_code": 1,
-      "summary": "19 failed, 8 errors (orchestration functions absent), 81 passed"
-    },
-    {
-      "command": "pytest reports/tests/test_local_lane_campaign.py (GREEN, 8a7d081)",
+      "command": "run_local_lane_campaign.py --execute (explicit selection: 0049 Helm/kind, 0049 seal_and_restore[9-7], 0048 spiffe peer) at 0724a04",
       "exit_code": 0,
-      "summary": "108 passed"
+      "summary": "PASS non-qualifying: lane 1 Helm on its own kind cluster 1228.5 s, lane 2 two cases 197.7 s; union exact 3/3, zero skip; teardown PASS, zero residue; 1344.972 s; peak two-lane occupancy 5878.8 MiB"
     },
     {
-      "command": "run_local_lane_campaign.py --execute (3-case explicit selection) at 8a7d081",
+      "command": "pytest reports/tests/test_local_lane_campaign.py (RED, 5c33d25)",
       "exit_code": 1,
-      "summary": "FAIL: cgroup delegation race in the sandbox init; cross STOP, teardown PASS, zero residue, 84.6 s"
+      "summary": "3 failed, 114 passed"
     },
     {
-      "command": "pytest reports/tests/test_local_lane_campaign.py (repair RED, c7b068d)",
-      "exit_code": 1,
-      "summary": "6 failed, 108 passed"
-    },
-    {
-      "command": "pytest reports/tests/test_local_lane_campaign.py (repair GREEN, cfcfe78)",
+      "command": "pytest reports/tests/test_local_lane_campaign.py (GREEN, 21343d1)",
       "exit_code": 0,
-      "summary": "114 passed"
+      "summary": "117 passed"
     },
     {
-      "command": "run_local_lane_campaign.py --execute (3-case explicit selection) at cfcfe78",
-      "exit_code": 0,
-      "summary": "PASS non-qualifying: two lanes, each with its own 15-container stack in a private daemon; union exact 3/3, zero skip; teardown PASS, zero residue; 130.754 s"
-    },
-    {
-      "command": "ruff, mypy strict, validate_rccad, validate_language_policy, validate_ocor_change_scope, validate_ocor_development_plan --authorized-extension --base-ref origin/main, guard modules",
+      "command": "ruff, mypy strict, validate_rccad, validate_language_policy, validate_ocor_change_scope, validate_ocor_development_plan --authorized-extension --base-ref origin/main, guard modules, checksum",
       "exit_code": 0,
       "summary": "PASS"
     },
@@ -77,11 +62,11 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0037:execute-orchestration",
+  "current_task": "OCOR-DEV-REM-0037:kind-two-lane-smoke",
   "evidence_paths": [],
-  "exact_next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP cfcfe78aa230: partitioner, exact union, lane lifecycle, per-lane runner and --execute orchestration GREEN; real non-qualifying smoke PASS on a 3-case explicit selection). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit: (e) a real non-qualifying --execute smoke whose explicit selection puts one kind-backed case of tests/tasks/test_ocor_dev_0049.py in each lane (two kind clusters, each in its lane's private daemon), plus one case of test_ocor_dev_0048, to prove the Kubernetes path and measure per-lane bootstrap and kind time and peak host memory; any defect is fixed RED first in reports/tests/test_local_lane_campaign.py, then GREEN in scripts/run_local_lane_campaign.py only. Then (f) add reports/tests/test_local_lane_campaign.py to the validation-closure guard step only under REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization, verified counts, negative tests), otherwise a decision request; do not touch scripts/run_qualifying_campaign.py. Requalify sealed records whose inputs are touched (0005/0050/0082 regression-only on the plan allowlist). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
-  "head_sha": "cfcfe78aa230cc201b8cf15e77668f311c1362ab",
-  "head_sha_role": "REM-0037 WIP head (partitioner, lane lifecycle, per-lane runner and --execute orchestration GREEN; not a candidate)",
+  "exact_next_action": "Continue OCOR-DEV-REM-0037 on governed/ocor-dev-rem-0037-local-suite-split (worktree .ocor/worktrees/rem-0037, WIP 21343d188c0f: partitioner with the clock-aligned Helm weight, exact union, lane lifecycle, per-lane runner and --execute orchestration GREEN; real non-qualifying smokes PASS, including the kind-backed 0049 Helm case in a lane). At unit start read /proc/meminfo and compare MemAvailable with the measured threshold 14340.6 MiB (if lower, serial and record). Align non-destructively with origin/main. Next coherent unit: (f) add reports/tests/test_local_lane_campaign.py to the validation-closure guard step only under REM-0038-CAMPAIGN-GUARD-ADMISSION condition a (exact normalization in reports/tests/test_kind_teardown_observation.py, verified counts, negative tests), otherwise a decision request; do not touch scripts/run_qualifying_campaign.py. Then requalify sealed records whose inputs are touched (0005/0050/0082 regression-only on the plan allowlist). Then PRE-CAMPAIGN-GATE and PRE-CAMPAIGN-REVIEW before any full suite; equivalence proof on the same head (serial and two-lane suites, same case set, exact JUnit union, both PASS); independent verifier neither Anthropic nor OpenAI nor the preventive reviewer. OCOR-DEV-0062..0064 proceed while remediations await verification. Full-suite cap 5400 s, notification 3600 s, guard unchanged. No new DEC; claims unchanged.",
+  "head_sha": "21343d188c0f820300ea7fbe94b1dd04f4d76cb9",
+  "head_sha_role": "REM-0037 WIP head (partitioner with clock-aligned Helm weight, lane lifecycle, per-lane runner and --execute orchestration GREEN; not a candidate)",
   "independent_verification": {
     "next_verifier_constraint": "neither Anthropic nor OpenAI nor the preventive reviewer's provider",
     "status": "NOT_REQUESTED"
@@ -146,20 +131,20 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
-    "change_scope": "PASS (6 changed paths vs origin/main)",
+    "change_scope": "PASS",
     "checksum": "PASS 8/8",
     "evidence_input_drift": "FAIL expected: OCOR-DEV-0005, 0050, 0082 via scripts/validate_ocor_development_plan.py (regression-only requalifications at candidate time)",
-    "guards": "380 passed, 74 subtests, zero skip (validation-closure guard modules, tooling-bootstrap pytest guards and the lane module; log sha256 5f5a999a68aa915f...)",
+    "guards": "383 passed, 74 subtests, zero skip (validation-closure guard modules, tooling-bootstrap pytest guards and the lane module; log sha256 be2d8105ff2e3b1a...)",
     "language_policy": "PASS",
-    "mypy_strict": "PASS (86 source files)",
-    "plan_authorized_extension": "PASS 37, NOT_EXECUTED 2 (no planning file rewritten)",
+    "mypy_strict": "PASS",
+    "plan_authorized_extension": "PASS (no planning file rewritten)",
     "rccad": "PASS_LOCAL_PRECHECK",
     "ruff": "PASS",
     "runtime_evidence": "NOT_EXECUTED (no REM-0037 record yet)"
   },
-  "next_task": "OCOR-DEV-REM-0037:kind-two-lane-smoke",
-  "phase": "OCOR_DEV_REM_0037_EXECUTE_ORCHESTRATION_GREEN",
-  "raw_evidence_location": "~/.ocor-codex/rem-0037-execute (red.log, green.log, red2.log, green2.log, guards.log, smoke1-work, smoke-work)",
+  "next_task": "OCOR-DEV-REM-0037:ci-guard-wiring",
+  "phase": "OCOR_DEV_REM_0037_KIND_SMOKE_PASS",
+  "raw_evidence_location": "~/.ocor-codex/rem-0037-kind-smoke (work, mem.log, red.log, green.log, guards.log, gates.log)",
   "requirement_ids": [
     "NFR-058",
     "NFR-073"
@@ -171,7 +156,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0037 measurement, partitioner RED/GREEN, lane isolation probe, lane lifecycle RED/GREEN, per-lane runner RED/GREEN, --execute orchestration RED/GREEN and smoke repair, state syncs"
+        "scope": "REM-0037 measurement, partitioner RED/GREEN, lane isolation probe, lane lifecycle RED/GREEN, per-lane runner RED/GREEN, --execute orchestration RED/GREEN and smoke repair, state syncs, kind two-lane smoke and clock-aligned weight repair RED/GREEN"
       }
     ],
     "loop_counted_implementers": [
@@ -208,6 +193,6 @@
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-27T17:16:19.035133+00:00",
+  "updated_at": "2026-10-27T18:23:04.914388+00:00",
   "worktree": ".ocor/worktrees/rem-0037"
 }
