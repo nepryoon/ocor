@@ -4,32 +4,26 @@
     "TerminusDB was already provisioned and qualified by OCOR-DEV-0073; its requalification on the 15-container stack is its provisioning evidence here.",
     "DEP-011 benchmark NOT_EXECUTED here (needs the SDK worker), carried to OCOR-DEV-REM-0039; licence MIT verified."
   ],
-  "base_sha": "6583192f40788f37447d9e9ed75e326ed691c718",
-  "baseline_commit": "6583192f40788f37447d9e9ed75e326ed691c718",
-  "branch": "governed/state-sync-rem0038-repair2-candidate-20261027",
+  "base_sha": "57d0d9b31a7f7ef8132a048ba4dae49f19a2989a",
+  "baseline_commit": "57d0d9b31a7f7ef8132a048ba4dae49f19a2989a",
+  "branch": "governed/state-sync-rem0038-integrated-20261027",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0038-ba-services-repair-1",
-    "head_sha": "449142725058a1d5819f79805e7dbeca7dba5711",
-    "note": "repair-2 candidate (evidence-only over 15ca445) awaiting external verification; sealed original 03edc31 and PR #357 preserved, unmerged",
+    "head_sha": "7d92918f5dfa56b7227de94a69a78d547e581b20",
+    "merge_commit": "57d0d9b31a7f7ef8132a048ba4dae49f19a2989a",
+    "note": "repair 1/2 records sealed after GO and merged with PR #362; PR #357 reported merged by ancestry; 03edc31 preserved in history",
     "paths": [
-      "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.json",
-      "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.log",
       "reports/assurance/OCOR-DEV-REM-0038-RCCAD/README.md",
-      "reports/evidence/G0/MANIFEST.json",
+      "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.json",
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.json",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0038-repair1.log",
-      "reports/evidence/G2/MANIFEST.json",
       "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.log",
-      "reports/evidence/G5/MANIFEST.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.log"
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.json"
     ]
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
-    "reports/development/MODEL_HANDOFF.json",
-    "reports/development/ITERATION_LOG.md"
+    "reports/development/ITERATION_LOG.md",
+    "reports/development/MODEL_HANDOFF.json"
   ],
   "claims": {
     "E1": 0,
@@ -40,18 +34,53 @@
     "runtime_conformance": "NOT_ESTABLISHED"
   },
   "commands": [
-    "see ~/.ocor-codex/rem-0038-r2 (amend_record.py, run_gates.py, supply_chain.py, state_sync.py) and ~/.ocor-codex/rem-0038-r1 (campaign scripts)"
+    {
+      "command": "merge origin/main 96ba4ace2def into governed/ocor-dev-rem-0038-ba-services-repair-1 (non-destructive alignment)",
+      "exit_code": 0,
+      "summary": "aligned head a1e7ac38df64; only the three state files differ from 449142725058; non-state tree sha256 equal"
+    },
+    {
+      "command": "seal.py (verdict OCOR-DEV-REM-0038-449142725058-2)",
+      "exit_code": 0,
+      "summary": "repair-1.json and requalifications 0005/0050/0082 SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; README seal section; commit 7d92918f5dfa"
+    },
+    {
+      "command": "PRE-CAMPAIGN-GATE on the seal (locked PATH, clean env)",
+      "exit_code": 0,
+      "summary": "22 code gates PASS (inputs, ruff, mypy, rccad, language, scope, plan, verify.py, runtime evidence x12, drift 0, lock validation); validation-closure guards 239 PASS; supply-chain scanner 0 blocking; tooling-policy Compose step exit 0"
+    },
+    {
+      "command": "gh pr create (PR #362) and exact-head polling of the 13 ruleset checks",
+      "exit_code": 0,
+      "summary": "13/13 required checks success, zero reruns"
+    },
+    {
+      "command": "gh pr merge 362 --merge --match-head-commit 7d92918f5dfa56b7227de94a69a78d547e581b20",
+      "exit_code": 0,
+      "summary": "merge commit 57d0d9b31a7f7ef8132a048ba4dae49f19a2989a; origin/main equals the merge commit; sealed hashes unchanged"
+    },
+    {
+      "command": "gh pr close 357 (superseded by #362)",
+      "exit_code": 1,
+      "summary": "not needed: GitHub already reports PR #357 merged, its head 03edc31 being an ancestor of the #362 merge; branch and 03edc31 not rewritten"
+    }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0038:repair-2-verification-requested",
+  "current_task": "OCOR-DEV-REM-0038:integrated",
   "evidence_paths": [],
-  "exact_next_action": "Verifier esterno di fornitore diverso da Anthropic e OpenAI (Cursor/Grok xAI o Antigravity/Gemini Google) su OCOR-DEV-REM-0038-449142725058-2 (REMEDIATION, repair cycle 2 of 2, evidence-only delta 15ca445..4491427). Meanwhile OCOR-DEV-0062 implementation (FGM-11..FGM-20 campaign), the lowest executable task, with PRE-CAMPAIGN-GATE and the PRE-CAMPAIGN-REVIEW request before its full suite. On GO_FOR_EVIDENCE_SEAL: seal the four repair records (repair-1, 0005/0050/0082 requalified-rem0038-repair1) on governed/ocor-dev-rem-0038-ba-services-repair-1, align non-destructively with origin/main, run PRE-CAMPAIGN-GATE (validation-closure guards, supply-chain scanner, tooling Compose step, code gates) before the push, open the PR, wait for all 13 required checks on the exact head, merge with --match-head-commit, then close PR #357 as superseded (never rewrite 03edc31). On NO_GO: no repair cycle 3; escalation record (CC-OCOR-DELIVERY-COMPLETION par. 8). Then OCOR-DEV-REM-0042 (cap 5400 s for its own campaigns; exact guard normalisation of the constant and the docstring only), then OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT-REACTIVATION: new read-only inventory on the 15-container stack, disposition in the REM-0037 decision request file), then REM-0039..0041, then OCOR-DEV-0060. No new DEC; claims unchanged.",
-  "head_sha": "449142725058a1d5819f79805e7dbeca7dba5711",
-  "head_sha_role": "OCOR-DEV-REM-0038 repair-2 verification candidate on governed/ocor-dev-rem-0038-ba-services-repair-1",
+  "exact_next_action": "OCOR-DEV-REM-0042 (LOCAL-FULL-SUITE-CAP-90 as amended by LOCAL-FULL-SUITE-CAP-90-AMENDMENT): new isolated worktree and governed branch from origin/main, ID re-verified free by grep on all refs; read-only inventory of sealed records with scripts/run_qualifying_campaign.py among inputs (substantive requalifications >3 tasks or 0049/0050: stop and decision request; regression-only 0005/0050/0082 from the plan allowlist do not count); RED = the two updated tests of reports/tests/test_qualifying_campaign_guard.py (5399/5400/5401, '90-minute') failing with the constant at 4500; GREEN FULL_SUITE_LIMIT_SECONDS 5400 and the module docstring only; exact guard normalisation of constant and docstring in reports/tests/test_kind_teardown_observation.py with verified counts and negative tests (REM-0038-CAMPAIGN-GUARD-ADMISSION condition a); declare evidence paths in the plan allowlist in the code commit; PRE-CAMPAIGN-GATE; then the PRE-CAMPAIGN-REVIEW request before the full suite (cap 5400 s for REM-0042's own campaigns). Then OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT-REACTIVATION), REM-0039, 0040, 0041, then OCOR-DEV-0060. OCOR-DEV-0062..0064 proceed while remediations wait for verification. No new DEC; claims unchanged.",
+  "head_sha": "57d0d9b31a7f7ef8132a048ba4dae49f19a2989a",
+  "head_sha_role": "merge commit of PR #362 (OCOR-DEV-REM-0038 integrated)",
   "independent_verification": {
+    "head_sha": "449142725058a1d5819f79805e7dbeca7dba5711",
+    "next_verifier_constraint": "Cursor/Grok (xAI) or Antigravity/Gemini (Google); never OpenAI or Anthropic",
+    "repair_cycle": 2,
     "request_id": "OCOR-DEV-REM-0038-449142725058-2",
-    "status": "REQUESTED_EXTERNAL_LOOP",
-    "verifier_constraint": "Cursor/Grok (xAI) or Antigravity/Gemini (Google); never OpenAI or Anthropic"
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-27T03:11:06Z",
+    "verdict_file_sha256": "1c57e5996e9fdbb2aab2b3b0bba86258e960e672ebf93bfa0bf1b6a8f769b6dd",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI",
+    "verifier_full_suite": "3224 passed, 0 skipped, 4221.682 s; notification 3600 s exceeded by 621.682 s; margin under the 4500 s cap 278.318 s; mains power at start and end (verifier data)"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -139,8 +168,8 @@
     "validation-closure-guards": "PASS (239 passed, 57 subtests, 0 skipped)",
     "verify-harness": "PASS"
   },
-  "next_task": "OCOR-DEV-0062:implementation (while REM-0038 repair 2 awaits verification)",
-  "phase": "OCOR_DEV_REM_0038_REPAIR_2_VERIFICATION_REQUESTED",
+  "next_task": "OCOR-DEV-REM-0042:implementation",
+  "phase": "OCOR_DEV_REM_0038_INTEGRATED",
   "raw_evidence_location": "~/.ocor-codex/rem-0038-r2 (gates/*.log, guards.log, supply-chain*.log, tooling-step.log); campaign artifacts ~/.ocor-codex/rem-0038-r1",
   "requirement_ids": [
     "NFR-058",
@@ -153,13 +182,13 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0038 cycle 0 and repair 1 (previous iterations); this iteration: repair 2 (evidence-only correction of the unsealed repair-1 record after NO_GO), local gates, verification request, state sync"
+        "scope": "REM-0038 implementation, campaigns, repairs 1 and 2 (previous iterations); this iteration: alignment, sealing, PRE-CAMPAIGN-GATE, PR #362, exact-head CI, merge, PR #357 closure, state sync"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
     ],
-    "verifier": "external loop only: Cursor/Grok (xAI) or Antigravity/Gemini (Google); never Anthropic or OpenAI"
+    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0038-449142725058-2)"
   },
   "rollback_result": "revert 4491427; the repair-1 record returns to 15ca445 (NO_GO); no migration",
   "schema_version": "1.0",
@@ -190,6 +219,6 @@
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-27T00:51:09.837104+00:00",
-  "worktree": ".ocor/worktrees/rem-0038-repair-1"
+  "updated_at": "2026-10-27T03:51:26.747014+00:00",
+  "worktree": ".ocor/worktrees/rem-0038-repair-1 (integrated branch)"
 }
