@@ -89,7 +89,8 @@ anche reset e smontaggio).
   rendono `compose.yaml` con esattamente l'ambiente del workflow (lacuna locale della PR #357).
 - **TDD**: RED al commit `f6eefce` (HEAD sigillato unito a `origin/main`) con i soli test nuovi: 6 test
   falliti, tutti per i segnaposto mancanti; GREEN al commit di codice `12659a1cd847f53991e96991033104326abf1cda`. Tentativi non qualificanti, elencati
-  nel record con gli sha256 degli artefatti e mai contati come PASS o FAIL: `a0` su `6f748b3`, fermato
+  nel record (`non_qualifying_attempts`, aggiunto dalla riparazione 2) con commit, sha256 degli artefatti
+  e `counted: false`, mai contati come PASS o FAIL: `a0` su `6f748b3`, fermato
   prima di ogni test perché l'allowlist di piano non era ancora dichiarata; `a1` su `1b1160f`, campagna
   intera passata (3224/3224 in 4146,3 s) ma superata, perché l'estensione dell'allowlist fa derivare anche
   il record sigillato di `0082`; percorsi di `0082` dichiarati in `12659a1` e campagna rieseguita.
@@ -100,8 +101,8 @@ anche reset e smontaggio).
 - **Campagna** (stack reale a 15 container, shell pulita, PATH del lock): fasi A (bootstrap, verifica tipizzata 11 servizi
   READY prima e dopo fault e reset, qualifiche e fault injection) PASS; modulo del task 22/22 tre volte;
   regressione 325; portfolio dei report 362; suite completa seriale 3224/3224, zero skip, 4007,0 s
-  (66,8 min: sopra la notifica dei 60 minuti, sotto il tetto vigente di 75 minuti con più di 5 minuti di
-  margine); smontaggio senza residui. Alimentazione: rete elettrica a inizio e fine corsa (79%).
+  (66,8 min: 407,0 s sopra la notifica di 3600 s; margine dal tetto vigente di 4500 s: 493,0 s);
+  smontaggio senza residui. Alimentazione: rete elettrica a inizio e fine corsa (79%).
 - **Riqualifiche**: `0005` e `0050` (modulo di guardia e allowlist di piano, input sigillati) e `0082`
   (allowlist di piano; anche reset e smontaggio), tutte di sola regressione; le riqualifiche sigillate di
   `0070` e `0072`–`0079` restano le più recenti (deriva 0).
@@ -109,3 +110,22 @@ anche reset e smontaggio).
   Verifier richiesto di fornitore diverso: Cursor CLI / Grok (xAI) oppure Antigravity / Gemini (Google).
 - Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
   Nessun nuovo `DEC-*`; nessun limite, timeout o gate cambiato.
+
+## Riparazione 2 (ciclo 2, solo evidenza)
+
+- **Causa**: verdetto `NO_GO` `OCOR-DEV-REM-0038-15ca445f50e6-1` (Cursor CLI, grok-4.7-high, xAI) sull'HEAD
+  `15ca445`. `VF-001` (medium, bloccante): nel record mancava l'esito della revisione preventiva.
+  `VF-002` (low, non bloccante): questo README diceva che i tentativi `a0`/`a1` erano nel record, ma non c'erano.
+- **Correzione**: in `repair-1.json`, ancora non sigillato, si aggiungono tre campi: `preventive_review`,
+  `non_qualifying_attempts` ed `evidence_corrections`. Nessun campo esistente viene rimosso.
+  - `preventive_review` vale `SKIPPED`. Il motivo: `PRE-CAMPAIGN-REVIEW (2026-10-26)` non era nelle
+    istruzioni dell'iterazione che ha eseguito la campagna. Il loop ha attivato la revisione preventiva
+    solo al riavvio delle 2026-10-27T00:21:45+01:00, quando la campagna era finita e il candidato
+    `15ca445` era già committato. Il punto 7 esclude una revisione retroattiva. Le prove sono gli sha256
+    del prompt dell'iterazione e delle righe del log del loop.
+  - `non_qualifying_attempts` riporta i commit, il manifest sha256 e gli sha256 degli artefatti principali.
+- **Invariato**: codice, test, workflow, allowlist di piano, raw log, riqualifiche e manifest restano
+  byte-identici a `15ca445`. La campagna al commit `12659a1` non si riesegue, perché nessun input
+  qualificante cambia.
+- **Ruoli**: implementatore Claude Code (Anthropic); Codex (OpenAI) contato dal loop. È l'ultimo ciclo di
+  riparazione: un nuovo `NO_GO` porta all'escalation.

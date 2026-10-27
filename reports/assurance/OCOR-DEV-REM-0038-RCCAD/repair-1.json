@@ -777,6 +777,30 @@
       }
     }
   },
+  "evidence_corrections": [
+    {
+      "budget": "repair cycle 2 of 2 (CC-OCOR-DELIVERY-COMPLETION par. 8); a further NO_GO goes to escalation",
+      "changes": [
+        "VF-001: added preventive_review with outcome SKIPPED and the reason, backed by digests of the loop log and of the repair-1 iteration prompt",
+        "VF-002: added non_qualifying_attempts with commit ids, artifact digests and counted=false",
+        "README: the repair section now points to these fields, and the full-suite margin is given in seconds (PO decision LOCAL-FULL-SUITE-CAP-90-AMENDMENT, point 6)"
+      ],
+      "implementer": "Claude Code (Anthropic, claude-opus-5-5)",
+      "repair_cycle": 2,
+      "trigger": {
+        "findings": {
+          "VF-001": "medium, blocking: preventive-review record missing",
+          "VF-002": "low, non-blocking: README said the attempts were in the record, they were not"
+        },
+        "head_sha": "15ca445f50e6fcb67d02d4e7474259b91a7152a1",
+        "request_id": "OCOR-DEV-REM-0038-15ca445f50e6-1",
+        "verdict": "NO_GO",
+        "verdict_sha256": "96727f426b68027a0bb29430a6a8456865ea06ab88eb9b32544d9b29b7612dc0",
+        "verifier": "Cursor CLI, grok-4.7-high (xAI)"
+      },
+      "unchanged": "Code, tests, workflows, the planning allowlist, raw logs (raw_output_sha256), the requalification records and the MANIFEST entries are byte-identical to 15ca445. The campaign at 12659a1 is not re-run: the correction only adds disclosure fields, and no qualifying input changes."
+    }
+  ],
   "full_campaign": {
     "counts": {
       "errors": 0,
@@ -818,6 +842,63 @@
     "scripts/verify_external_services.py": "ac82aad9e49bc04fd871d7cfee746ea87e55497684553769e83f25c432b3905d"
   },
   "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "non_qualifying_attempts": {
+    "artifact_location": "~/.ocor-codex/rem-0038-r1/attempts/ (outside Git)",
+    "attempts": [
+      {
+        "artifact_manifest_files": 10,
+        "artifact_manifest_sha256": "a92384717690b81fd52d475008ea154f2ddccdf8930f10df8935c8660ed9f48f",
+        "artifacts_sha256": {
+          "a0-teardown.log": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+          "power.log": "6845c1b067af54ee1cf4b9124b5d80bfd6430de2684b59ec8b960fa3ccdd94d2",
+          "run.out": "493ecee4ce64f9ba6403285f86fe9ce3b4a5345afb53580d843fa2a05431228a",
+          "run.progress": "b286eae7a25c82a0b8b3eb3b6b11a4ef79f12b00214dc6747225e374ef344ec4"
+        },
+        "code_commit": "6f748b3f9096cde1b3efad139e4ae514215ec31e",
+        "counted": false,
+        "id": "a0",
+        "outcome": "STOPPED_BEFORE_TESTS",
+        "reason": "code commit 6f748b3: the campaign was stopped by the implementer during the first bootstrap of phase A (only stack-absent-initial had run) because the repair-1 evidence paths had not been declared in the planning allowlist before the campaign (precedent 4053ca9); the partial stack was torn down with reset_test_environment.py --execute (PASS, zero residue), its credentials archived here, and the paths declared in 1b1160f before restarting",
+        "started_at": "2026-10-26T20:07:06Z"
+      },
+      {
+        "artifact_manifest_files": 112,
+        "artifact_manifest_sha256": "13b90b1393d4fac004627cf80a263c5843e32f43e2d0d4d3a61c7063998631f2",
+        "artifacts_sha256": {
+          "evidence-commit-e37b4d5.patch": "c4ffc1a4115c8bd947d5293a14d15612a76cf8d064b9544be4f28397f7d212be",
+          "gates-evidence.json": "dfba9ca9b103f6be81fc77117c2603948cdc4c990ab75959da7318b46b8a595d",
+          "gates.json": "9235770ed6939ff3380d0e6b068f8d09c6b1a44d41da5ef189f87a96809c197e",
+          "power.log": "ec4044e67e757add84aa3795856bb0f3639d5e9a91c65c150fa44b9aa8314840",
+          "q/bootstrap-full.log": "3a74c8e6470e66da223127afa6d115cffb3e89867262403071bbfb82451919e5",
+          "q/full.log": "c39722384fe5151850e9859f005ff9edceb6118cf21854650bd889ddfc10d451",
+          "q/full/campaign_result.json": "1d0538d2bf5ab5293dfcc3a515096f3fb436592379b718fbeeb9c176a9ce38d3",
+          "q/full/runtime_junit_post_approval.xml": "ddf8cc578667cd818a4416dc0c9e70853414c906c2dbf11273250e635261cf91",
+          "run.out": "c25c2c17a6b269ec81aae41dfa7d64395b2d44cf32d2f7dc74a7c2e6557e601a",
+          "run.progress": "57b724764892b42cda7bf928d8f1d9aa03d212101c921899b3a9b168efb882ba"
+        },
+        "code_commit": "1b1160f720cf350818bffa2f37aac820133b367a",
+        "counted": false,
+        "full_suite_observed": {
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 3224
+          },
+          "duration_seconds": 4146.2723541989835,
+          "status_in_campaign_result": "PASS"
+        },
+        "id": "a1",
+        "outcome": "SUPERSEDED",
+        "reason": "code commit 1b1160f: the whole campaign passed (phase A, task 22/22 x3, regression 325, reports portfolio 362, full serial suite 3224/3224 in 4146.3 s, teardown), but the evidence gates then showed that the allowlist extension of 1b1160f also drifts the sealed OCOR-DEV-0082 record (scripts/validate_ocor_development_plan.py is one of its inputs); the pre-campaign drift check had been read by count, not by task list. 0082 paths were declared in 12659a1 and the whole campaign re-run at that commit; the unpushed evidence commit e37b4d5 is kept as a patch",
+        "started_at": "2026-10-26T20:08:51Z"
+      }
+    ],
+    "attempts_json_sha256": "83f879f89033cb53e47da4c327e1db3f251432c17b6a463a073b6e9e6526156d",
+    "counted": false,
+    "manifest_definition": "sha256 of the lines '<sha256>  ./<relative path>' of every file of the attempt directory, sorted by path in byte order, excluding the generated local credential files named bootstrap.env (secrets, not hashed into Git)",
+    "note": "Disclosed for completeness only. Neither attempt counts as PASS or FAIL; every qualifying command of this record has head_sha 12659a1cd847f53991e96991033104326abf1cda."
+  },
   "normative_interpretations": [
     "PO option 1 names 'le due sostituzioni di 11 (in main e in observe_health_event)'. In main the REM-0038 change touches the inventory comparison and the f-string message of the same raise; both are normalised as one fragment, the minimum needed to restore the baseline AST. Nothing else in main is normalised.",
     "The repair stays under the 75-minute full-suite cap: LOCAL-FULL-SUITE-CAP-90 is implemented by OCOR-DEV-REM-0042 after the integration of REM-0038 (decision point 4), so this campaign is still qualified with FULL_SUITE_LIMIT_SECONDS = 4500.",
@@ -838,6 +919,33 @@
       "reason": "not run for this change set; RED on origin/main and negative-branch unit contracts instead"
     }
   ],
+  "preventive_review": {
+    "authority": "PRE-CAMPAIGN-REVIEW (2026-10-26), points 6 and 7",
+    "blocking_dispositions": [],
+    "facts": {
+      "campaign_full_suite_window_utc": [
+        "2026-10-26T21:31:51Z",
+        "2026-10-26T22:38:38Z"
+      ],
+      "candidate_commit": "15ca445f50e6fcb67d02d4e7474259b91a7152a1",
+      "candidate_committed_at": "2026-10-26T22:39:10Z",
+      "loop_log_lines_992_997_sha256": "498a21823fd495536fbcd047172d18a8473ee60d47ed21a8bef005756bc90eda",
+      "loop_preventive_review_enabled_at": "2026-10-27T00:21:45+01:00",
+      "prereviews_directory_entries_for_unit": 0,
+      "repair_1_iteration_prompt": "~/.ocor-codex/logs/20261026T210057-implementer-task-claude.md",
+      "repair_1_iteration_prompt_pre_campaign_review_occurrences": 0,
+      "repair_1_iteration_prompt_sha256": "5cf24b82c2fc0e0041199a6b0820aae9213fa15ff39be0c009470336d11d5ebf"
+    },
+    "finding_counts": null,
+    "not_evidence": "A preventive review is advisory: it is not evidence and does not change the evidence state.",
+    "outcome": "SKIPPED",
+    "outcome_sha256": null,
+    "pre_campaign_gate_note": "PRE-CAMPAIGN-GATE (2026-10-26) was also absent from that prompt. The fast steps required by condition b of REM-0038-CAMPAIGN-GUARD-ADMISSION ran before the campaign anyway: the six validation-closure guard modules (239 PASS), the supply-chain scanner 1.1.0 (0 blocking), the exact tooling-policy Compose-rendering step and the code gates. They are in tdd.GREEN.runs and the gate commands of this record.",
+    "provider": null,
+    "reason": "No preventive review existed for this campaign. The decision was not in the instructions of the iteration that ran it (loop prompt 20261026T210057, zero occurrences of PRE-CAMPAIGN-REVIEW), and the loop had no reviewer configured: it enabled the preventive review only when it restarted at 2026-10-27T00:21:45+01:00 (23:21:45Z). By then the campaign had finished (full suite 21:31:51Z-22:38:38Z) and the candidate 15ca445 had been committed (22:39:10Z). Point 7 forbids a retroactive review of a candidate already produced; point 6 gives SKIPPED when no reviewer is available. ~/.ocor-codex/prereviews/ holds no request and no outcome for this unit.",
+    "request_id": null,
+    "reviewer": null
+  },
   "previous_record": {
     "independent_verification": {
       "head_sha": "dc5a404b350f",
@@ -1733,7 +1841,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0038 implementation and campaign (cycle 0); repair 1: RED/GREEN of the workflow placeholders, exact guard admission and negative cases, Compose-rendering regression tests, requalification campaign, evidence assembly, verification request"
+        "scope": "REM-0038 implementation and campaign (cycle 0); repair 1: RED/GREEN of the workflow placeholders, exact guard admission and negative cases, Compose-rendering regression tests, requalification campaign, evidence assembly, verification request; repair 2: evidence-only correction of this record (VF-001, VF-002)"
       },
       {
         "agent": "Codex",
