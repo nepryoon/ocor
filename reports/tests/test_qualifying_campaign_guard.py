@@ -483,7 +483,7 @@ def stub_completed_campaign(tmp_path, monkeypatch, *, seconds, recorder_error=Fa
     output = tmp_path / "run"
     monkeypatch.setattr(GUARD, "__file__", str(tmp_path / "scripts/campaign.py"))
     monkeypatch.setattr(sys, "argv", ["campaign.py", "--execute", "--output-dir", str(output)])
-    snapshot = {str(n): state() for n in range(11)}
+    snapshot = {str(n): state() for n in range(GUARD.MANDATORY_CONTAINERS)}
     monkeypatch.setattr(GUARD, "inspect_stack", lambda: snapshot)
     monkeypatch.setattr(GUARD, "inspect_kubernetes_runtimes", lambda: {})
     monkeypatch.setattr(GUARD, "collect_kubernetes_diagnostics", lambda path: path.write_text("no nodes\n"))

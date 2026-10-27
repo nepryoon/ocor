@@ -16,6 +16,11 @@ typed check defined here: lock validation, a live Docker inspection
 protocol-level positive probe, and -- only under ``--execute``, since they
 require a throwaway network client or a wrong-credential attempt -- a real
 protocol-level negative probe proving the service fails closed.
+
+OCOR-DEV-REM-0038 added Temporal (server, its own PostgreSQL and admin-tools)
+and SeaweedFS, each with a dedicated qualification module under
+``deploy/bootstrap/services/``; under ``--execute`` those modules also run
+their negative probes (absent Temporal namespace; S3 Object Lock deletes).
 """
 
 from __future__ import annotations
@@ -46,6 +51,8 @@ PORTS = {
     "kafka": 19092,
     "qdrant-http": 16333,
     "qdrant-grpc": 16334,
+    "temporal-grpc": 17233,
+    "seaweedfs-s3": 18333,
 }
 CONTAINERS = {
     "fuseki",
@@ -55,8 +62,12 @@ CONTAINERS = {
     "openbao",
     "postgresql",
     "qdrant",
+    "seaweedfs",
     "spire-agent",
     "spire-server",
+    "temporal",
+    "temporal-admin-tools",
+    "temporal-postgresql",
     "terminusdb",
     "typedb",
 }
@@ -353,6 +364,20 @@ def check_policy_identity(repository: Path) -> ServiceHealth:
     return ServiceHealth("opa-keycloak", status, payload or {"stderr": stderr})
 
 
+def check_temporal(repository: Path, *, execute: bool) -> ServiceHealth:
+    script = repository / "deploy/bootstrap/services/temporal/qualify.py"
+    returncode, payload, stderr = _run_qualify_script(repository, script, ["--execute"] if execute else [])
+    status = _status_from_qualify_payload(payload, returncode)
+    return ServiceHealth("temporal", status, payload or {"stderr": stderr})
+
+
+def check_seaweedfs(repository: Path, *, execute: bool) -> ServiceHealth:
+    script = repository / "deploy/bootstrap/services/seaweedfs/qualify.py"
+    returncode, payload, stderr = _run_qualify_script(repository, script, ["--execute"] if execute else [])
+    status = _status_from_qualify_payload(payload, returncode)
+    return ServiceHealth("seaweedfs", status, payload or {"stderr": stderr})
+
+
 def typed_health_checks(repository: Path, services: list[dict[str, Any]], *, execute: bool) -> list[ServiceHealth]:
     return [
         check_terminusdb(repository, services, execute=execute),
@@ -364,6 +389,8 @@ def typed_health_checks(repository: Path, services: list[dict[str, Any]], *, exe
         check_postgresql(repository, services, execute=execute),
         check_kafka(repository, services, execute=execute),
         check_qdrant(repository, services, execute=execute),
+        check_temporal(repository, execute=execute),
+        check_seaweedfs(repository, execute=execute),
     ]
 
 

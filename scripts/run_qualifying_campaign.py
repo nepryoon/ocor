@@ -35,6 +35,9 @@ FULL_SUITE_LIMIT_SECONDS = 4500
 PO_DECISION_THRESHOLD_SECONDS = 3600
 PART_LIMIT_SECONDS = 2700
 PART_REBALANCE_SECONDS = 1800
+# Every service of deploy/bootstrap/compose.yaml: the eleven original containers
+# plus Temporal, its PostgreSQL, its admin-tools and SeaweedFS (OCOR-DEV-REM-0038).
+MANDATORY_CONTAINERS = 15
 PART_ARTIFACTS = ("partition.json", "campaign_result.json", "runtime_junit_post_approval.xml", "runtime_coverage.data")
 
 # PO REM-0017-CI-0049-RELAY-HEALTH: observation only. These limits apply to
@@ -133,7 +136,7 @@ def observe_health_event(event: dict[str, Any], journal: HealthJournal) -> None:
     stack = health_command(["docker", "ps", "-aq", "--filter", "label=com.docker.compose.project=ocor-bootstrap"])
     ids = stack["output"].split()
     if stack["exit_code"] == 0 and ids and all(re.fullmatch(r"[0-9a-f]{12,64}", value) for value in ids):
-        commands.append(["docker", "stats", "--no-stream", "--format", "{{json .}}", identity, *ids[:11]])
+        commands.append(["docker", "stats", "--no-stream", "--format", "{{json .}}", identity, *ids[:MANDATORY_CONTAINERS]])
     else:
         journal.write({"kind": "stack_inventory", **stack})
         commands.append(["docker", "stats", "--no-stream", "--format", "{{json .}}", identity])
@@ -803,8 +806,8 @@ def main() -> int:
             required_modules = []
         command.extend(selection)
         initial = inspect_stack()
-        if len(initial) != 11:
-            raise CampaignError(f"expected 11 mandatory containers, found {len(initial)}")
+        if len(initial) != MANDATORY_CONTAINERS:
+            raise CampaignError(f"expected {MANDATORY_CONTAINERS} mandatory containers, found {len(initial)}")
         check_stack(initial, initial)
         recorder = SessionRecorder(repository)
         health_observer = start_health_observer(output, limit)
