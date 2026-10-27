@@ -791,6 +791,13 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0042.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0042.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0042.log",
+        # OCOR-DEV-REM-0037 (PO LOCAL-SUITE-SPLIT as reactivated by
+        # LOCAL-SUITE-SPLIT-REACTIVATION): additive two-lane orchestrator, its
+        # guard, the measured lane weights and the pre-code measurement record.
+        "scripts/run_local_lane_campaign.py",
+        "reports/tests/test_local_lane_campaign.py",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
