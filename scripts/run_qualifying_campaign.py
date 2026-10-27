@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the complete runtime suite, stopping on stack failure or the governed 75-minute full-suite limit.
+"""Run the complete runtime suite, stopping on stack failure or the governed 90-minute full-suite limit.
 
 In CI the suite runs as N >= 2 deterministic parts, each on its own runner and
 stack (45-minute part limit), and an aggregator proves that the union of the
@@ -31,7 +31,7 @@ import observe_kind_teardown as kind_observer
 from bootstrap_ci_environment import SessionRecorder, collect_stack_diagnostics, redact, redact_campaign_log
 
 
-FULL_SUITE_LIMIT_SECONDS = 4500
+FULL_SUITE_LIMIT_SECONDS = 5400
 PO_DECISION_THRESHOLD_SECONDS = 3600
 PART_LIMIT_SECONDS = 2700
 PART_REBALANCE_SECONDS = 1800

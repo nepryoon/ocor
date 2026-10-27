@@ -779,6 +779,18 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0038-repair1.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0038-repair1.log",
+        # OCOR-DEV-REM-0042 (PO LOCAL-FULL-SUITE-CAP-90 as amended by
+        # LOCAL-FULL-SUITE-CAP-90-AMENDMENT): remediation record and the regression-only
+        # requalifications of 0005, 0050 and 0082.
+        "reports/assurance/OCOR-DEV-REM-0042-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0042-RCCAD/OCOR-DEV-REM-0042.json",
+        "reports/assurance/OCOR-DEV-REM-0042-RCCAD/OCOR-DEV-REM-0042.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0042.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0042.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0042.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0042.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0042.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0042.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
