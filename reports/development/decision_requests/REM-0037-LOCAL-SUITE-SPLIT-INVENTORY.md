@@ -198,3 +198,40 @@ Registrazione: Claude Code (Anthropic, claude-opus-5-5, CLI 2.1.310),
 implementatore del loop secondo LOOP-IMPLEMENTER-ORDER. `OCOR-DEV-REM-0037` è
 registrata come sospesa dal PO, non chiusa e non verificata. Claim invariati:
 E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED, PoC/Production NO-GO.
+
+## Disposition PO (2026-10-26/27): riattivazione
+
+Decisione normativa `LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26)`, con istruzione
+esplicita del PO: la sospensione disposta il 2026-10-25 (opzione 3) è
+**revocata** e `OCOR-DEV-REM-0037` è **riattivata**. Stato della richiesta: da
+risolta con sospensione a **risolta, riattivata**. La disposition del
+2026-10-25 resta come storia.
+
+- Ordine: integrazione di `OCOR-DEV-REM-0038` e `OCOR-DEV-REM-0042` (entrambe
+  avvenute), poi `OCOR-DEV-REM-0037`, poi `0039`, `0040`, `0041`, poi
+  `OCOR-DEV-0060`.
+- L'inventario del 2026-10-25 (stack a 11 container) è superato: va rifatto in
+  sola lettura sull'`origin/main` corrente con lo stack a 15 container e
+  registrato nell'evidenza di REM-0037.
+- Per REM-0037 non si applica la soglia «più di 3 task, oppure 0049 o 0050»:
+  sono autorizzate le riqualifiche di tutti i record sigillati toccati,
+  compresi `OCOR-DEV-0049` e `OCOR-DEV-0050`, con supersession esplicita.
+- Ammesse soltanto modifiche che rendono configurabili le risorse condivise
+  con valore predefinito identico; asserzioni, casi, timer, timeout, soglie,
+  attese, semantica, contratti, port e schemi invariati.
+- I casi kind possono stare in corsie diverse; il modulo di `OCOR-DEV-0049` va
+  distribuito fra le corsie. Guard di invarianza secondo
+  `REM-0038-CAMPAIGN-GUARD-ADMISSION`, condizione a, o decision request.
+- Memoria (punto 8), come modificato da `LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL
+  (2026-10-27)`: se due stack, due cluster kind e gli agenti non stanno nella
+  memoria con la guardia invariata, nessuna decision request e nessun arresto
+  del loop: misure registrate, REM-0037 sospesa in attesa di memoria con
+  branch e artefatti preservati e non integrati, e si passa a
+  `OCOR-DEV-REM-0039`; ripresa automatica quando `MemTotal` aumenta o la
+  memoria disponibile all'avvio supera la soglia misurata.
+
+Registrazione: Claude Code (Anthropic, claude-opus-5-5), implementatore del
+loop, all'avvio dell'unità REM-0037 (2026-10-27). Nessun nuovo `DEC-*`: il
+mandato `CC-OCOR-DELIVERY-COMPLETION` non attiva l'eccezione di baseline
+promotion. Claim invariati: E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED,
+PoC/Production NO-GO.
