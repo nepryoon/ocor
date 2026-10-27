@@ -798,6 +798,18 @@ def main() -> int:
         "reports/tests/test_local_lane_campaign.py",
         "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
         "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
+        # OCOR-DEV-REM-0037 candidate: remediation record (inventory, memory and the
+        # serial/two-lane equivalence proof) and the requalifications of 0005, 0050
+        # (substantive, LOCAL-SUITE-SPLIT-REACTIVATION point 3) and 0082.
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.json",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
