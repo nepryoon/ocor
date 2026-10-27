@@ -4,14 +4,28 @@
     "TerminusDB was already provisioned and qualified by OCOR-DEV-0073; its requalification on the 15-container stack is its provisioning evidence here.",
     "DEP-011 benchmark NOT_EXECUTED here (needs the SDK worker), carried to OCOR-DEV-REM-0039; licence MIT verified."
   ],
-  "base_sha": "dd044538ce8f100f4f742cf2b3408186af0d1828",
-  "baseline_commit": "dd044538ce8f100f4f742cf2b3408186af0d1828",
-  "branch": "governed/state-sync-rem0042-prereview-20261027",
+  "base_sha": "4d6d174567d9c78e2cdc21322653396370e6d9cd",
+  "baseline_commit": "4d6d174567d9c78e2cdc21322653396370e6d9cd",
+  "branch": "governed/state-sync-rem0042-candidate-20261027",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0042-full-suite-cap-90",
-    "head_sha": "6ef0c33d23a2af8b61507abbaa8be76336953958",
-    "note": "pushed; no evidence records yet (full suite and requalifications after the preventive review)",
-    "paths": [],
+    "code_commit": "6ef0c33d23a2af8b61507abbaa8be76336953958",
+    "head_sha": "9f7456301d279086840e3fc6fe2252edc076ef1b",
+    "note": "pushed candidate; evidence lives on the candidate branch (CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION) until sealing and merge; not yet on main",
+    "paths": [
+      "reports/assurance/OCOR-DEV-REM-0042-RCCAD/OCOR-DEV-REM-0042.json",
+      "reports/assurance/OCOR-DEV-REM-0042-RCCAD/OCOR-DEV-REM-0042.log",
+      "reports/assurance/OCOR-DEV-REM-0042-RCCAD/README.md",
+      "reports/evidence/G0/MANIFEST.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0042.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0042.log",
+      "reports/evidence/G2/MANIFEST.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0042.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0042.log",
+      "reports/evidence/G5/MANIFEST.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0042.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0042.log"
+    ],
     "red_commit": "fa4721ad9e98ad3e49746d4ebe893701465a0b8b",
     "worktree": ".ocor/worktrees/rem-0042"
   },
@@ -30,45 +44,36 @@
   },
   "commands": [
     {
-      "command": "grep OCOR-DEV-REM-0042 on every local and remote ref",
+      "command": "prereview outcome OCOR-DEV-REM-0042-6ef0c33d23a2-pre",
       "exit_code": 0,
-      "summary": "planning references only; no implementation branch or record"
+      "summary": "NO_BLOCKING_FINDINGS, 0 findings (Antigravity/gemini-4-argon-high/Google); sha256 18b6fbfc4483a283482645b503bca3e28fff00654ec718c7f863f737c39b23a8"
     },
     {
-      "command": "read-only inventory of sealed records with the REM-0042 files among inputs",
+      "command": "qualification campaign at 6ef0c33d23a2 (env -i, locked PATH, bootstrap_ci_environment.py, 15 containers)",
       "exit_code": 0,
-      "summary": "completed-task drift: 0005, 0050, 0082 only (regression-only); run_qualifying_campaign.py only in remediation records"
+      "summary": "attempt a0 non-qualifying (SDK not built in the worktree); rerun: phase A PASS, task 3x PASS, regression PASS, reports portfolio PASS, full 3224/3224 in 3964.402 s (margin to 5400 s 1435.598 s), teardown zero residue"
     },
     {
-      "command": "pytest guard modules at RED commit fa4721ad9e98",
-      "exit_code": 1,
-      "summary": "15 failed, 177 passed; red.log sha256 bc05de677a6cda8a02b883c2cef35f0213835b99aa1716b3e3690a39e40f2778"
-    },
-    {
-      "command": "pytest validation-closure guards at 6ef0c33d23a2",
+      "command": "build evidence and gates at the evidence head",
       "exit_code": 0,
-      "summary": "242 passed, 74 subtests, 0 skipped"
+      "summary": "PRE-CAMPAIGN-GATE at evidence head 9f7456301d27: 42/42 workflow-derived steps PASS (drift 0, scope, plan, rccad, language, ruff, mypy, tsc, lock validation, runtime evidence 0005/0050/0082, validation-closure guards, supply-chain scanner, tooling-policy Compose step)"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE at 6ef0c33d23a2 (42 workflow steps, env -i, locked PATH)",
-      "exit_code": 1,
-      "summary": "41 PASS; drift lists exactly 0005/0050/0082 (requalifications pending)"
-    },
-    {
-      "command": "write ~/.ocor-codex/prereview_request.json",
+      "command": "write ~/.ocor-codex/verify_request.json",
       "exit_code": 0,
-      "summary": "OCOR-DEV-REM-0042-6ef0c33d23a2-pre"
+      "summary": "OCOR-DEV-REM-0042-9f7456301d27-0"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0042:awaiting-preventive-review",
+  "current_task": "OCOR-DEV-REM-0042:awaiting-independent-verification",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0042 after the preventive review OCOR-DEV-REM-0042-6ef0c33d23a2-pre (~/.ocor-codex/prereviews/OCOR-DEV-REM-0042-6ef0c33d23a2-pre.json): fix every blocking finding with a new commit or contest it with a reproducible command and result; record advisory dispositions (request_id, outcome sha256, reviewer/provider, counts by severity, blocker dispositions only); SKIPPED -> proceed and record why. Then on governed/ocor-dev-rem-0042-full-suite-cap-90 (worktree .ocor/worktrees/rem-0042): PRE-CAMPAIGN-GATE on the final head (drift may only list 0005/0050/0082), power state from /sys/class/power_supply at start and end, serial full suite from a clean shell with scripts/bootstrap_ci_environment.py --execute and scripts/run_qualifying_campaign.py --execute (own cap 5400 s, LOCAL-FULL-SUITE-CAP-90-AMENDMENT point 2), no tracked edits during the campaign; regression-only requalifications OCOR-DEV-0005, 0050, 0082 (.requalified-rem0042, supersedes the .requalified-rem0038-repair1 records) on the real stack; remediation record reports/assurance/OCOR-DEV-REM-0042-RCCAD/ (README, OCOR-DEV-REM-0042.json/.log) with RED fingerprint, test rename, inventory and the requalification-threshold interpretation; surgical MANIFEST G0/G2/G5 entries; push; verify_request REMEDIATION repair_cycle 0, verifier neither Anthropic nor OpenAI nor the preventive reviewer. Then OCOR-DEV-REM-0037, REM-0039..0041, OCOR-DEV-0060; 0062..0064 while remediations await verification. No new DEC; claims unchanged.",
-  "head_sha": "6ef0c33d23a2af8b61507abbaa8be76336953958",
-  "head_sha_role": "REM-0042 GREEN head submitted to the preventive review (not a candidate yet)",
+  "exact_next_action": "Wait for the external verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0042-9f7456301d27-0.json (REMEDIATION, repair_cycle 0, head 9f7456301d279086840e3fc6fe2252edc076ef1b; verifier neither Anthropic nor OpenAI nor Google, the provider of the preventive reviewer, i.e. Cursor/Grok xAI). GO_FOR_EVIDENCE_SEAL: non-destructive alignment with origin/main, seal OCOR-DEV-REM-0042.json and the 0005/0050/0082 .requalified-rem0042 records (independent_verification, roles.effective_verifier, status SEALED, surgical MANIFEST G0/G2/G5 hash updates), PRE-CAMPAIGN-GATE on the seal head, PR with the 13 required checks on the exact head, merge --match-head-commit, state sync. NO_GO: repair (max 2 materially different cycles). Then OCOR-DEV-REM-0037 (LOCAL-SUITE-SPLIT-REACTIVATION), REM-0039, 0040, 0041, then OCOR-DEV-0060; OCOR-DEV-0062..0064 while remediations await verification. No new DEC; claims unchanged.",
+  "head_sha": "9f7456301d279086840e3fc6fe2252edc076ef1b",
+  "head_sha_role": "REM-0042 candidate head submitted to independent verification",
   "independent_verification": {
-    "next_verifier_constraint": "neither Anthropic nor OpenAI nor the preventive reviewer's provider",
-    "status": "NOT_REQUESTED"
+    "next_verifier_constraint": "neither Anthropic nor OpenAI nor Google (preventive reviewer)",
+    "request_id": "OCOR-DEV-REM-0042-9f7456301d27-0",
+    "status": "REQUESTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -156,8 +161,8 @@
     "validation-closure-guards": "PASS (239 passed, 57 subtests, 0 skipped)",
     "verify-harness": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0042:full-suite-and-candidate",
-  "phase": "OCOR_DEV_REM_0042_AWAITING_PREVENTIVE_REVIEW",
+  "next_task": "OCOR-DEV-REM-0042:integration",
+  "phase": "OCOR_DEV_REM_0042_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
   "raw_evidence_location": "~/.ocor-codex/rem-0038-r2 (gates/*.log, guards.log, supply-chain*.log, tooling-step.log); campaign artifacts ~/.ocor-codex/rem-0038-r1",
   "requirement_ids": [
     "NFR-058",
@@ -168,16 +173,17 @@
     "implementers": [
       {
         "agent": "Claude Code",
+        "cli_version": "2.1.310",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0042 inventory, RED, GREEN, guard normalisation, plan allowlist, PRE-CAMPAIGN-GATE, preventive review request, state sync"
+        "scope": "REM-0042 inventory, RED, GREEN, guard normalisation, plan allowlist, PRE-CAMPAIGN-GATE, preventive review request, qualification campaign, requalifications, evidence, verification request, state sync"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
     ],
-    "preventive_reviewer": "chosen by the loop (Antigravity/Gemini, then Cursor/Grok); excluded from the final verification of REM-0042",
-    "verifier": "not yet requested; must differ from Anthropic, OpenAI and the preventive reviewer"
+    "preventive_reviewer": "Antigravity CLI (agy) / gemini-4-argon-high / Google (NO_BLOCKING_FINDINGS); excluded from the final verification of REM-0042",
+    "verifier": "requested from the loop; must be neither Anthropic nor OpenAI nor Google (Cursor/Grok xAI)"
   },
   "rollback_result": "revert 4491427; the repair-1 record returns to 15ca445 (NO_GO); no migration",
   "schema_version": "1.0",
@@ -208,6 +214,6 @@
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-27T04:39:28.250199+00:00",
+  "updated_at": "2026-10-27T06:40:40.487717+00:00",
   "worktree": ".ocor/worktrees/rem-0042"
 }
