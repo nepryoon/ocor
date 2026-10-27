@@ -300,12 +300,21 @@ def test_clock_aligned_case_weight_adds_a_full_cron_period():
     assert LANES.case_weight(f'{M49}::test_slow', weights()) == 300.0
 
 
+def _constant_product(node):
+    """Value of an integer literal or a product of integer literals; anything else fails."""
+    import ast
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+        return _constant_product(node.left) * _constant_product(node.right)
+    assert isinstance(node, ast.Constant) and type(node.value) is int, ast.dump(node)
+    return node.value
+
+
 def test_clock_aligned_wait_matches_the_only_cron_aligned_0049_case():
     import ast
     tree = ast.parse((ROOT / 'ocor-runtime' / M49).read_text(encoding='utf-8'))
     period = [node.value for node in tree.body if isinstance(node, ast.Assign)
               and any(isinstance(t, ast.Name) and t.id == 'CRON_PERIOD_SECONDS' for t in node.targets)]
-    assert len(period) == 1 and eval(compile(ast.Expression(period[0]), M49, 'eval')) == 900
+    assert len(period) == 1 and _constant_product(period[0]) == 900
     users = sorted(fn.name for fn in tree.body if isinstance(fn, ast.FunctionDef)
                    and any(isinstance(n, ast.Name) and n.id == 'CRON_PERIOD_SECONDS' for n in ast.walk(fn)))
     assert users == [HELM.split('::')[-1]]
