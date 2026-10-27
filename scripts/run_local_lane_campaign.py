@@ -655,18 +655,272 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
     return status
 
 
+# --- --execute orchestration on the host ------------------------------------
+# Memory admission, exact head, collection and partition on the host checkout;
+# both lanes provisioned and started, then launched in parallel with only HOME
+# and PATH. The host keeps the whole-campaign clock and stops the other lane on
+# the first failure; union, JUnit and coverage are checked on the host, and both
+# lanes are always torn down with zero residue.
+
+SUPERVISE_POLL_SECONDS = 5
+# A lane observes its STOP file between steps; its longest step that cannot be
+# interrupted is a bounded bootstrap command (PROVISION_TIMEOUT_SECONDS).
+STOP_GRACE_SECONDS = PROVISION_TIMEOUT_SECONDS + 120
+FULL_SUITE_SELECTION = ["tests/"]
+FULL_SUITE_REQUIRED_MODULES = ["test_ocor_dev_0048", "test_ocor_dev_0049"]
+POWER_SUPPLY_ROOT = Path("/sys/class/power_supply")
+SERIAL_COMMAND = "scripts/run_qualifying_campaign.py --execute --output-dir <dir> on the host ocor-bootstrap stack"
+
+
+class LaneProcess(Protocol):
+    def poll(self) -> int | None: ...
+    def kill(self) -> None: ...
+    def wait(self, timeout: float | None = None) -> int | None: ...
+
+
+def write_lane_spec(lane: Lane, head: str, selection: list[str], started: float) -> Path:
+    path = lane.output / "lane_spec.json"
+    spec = {"campaign_start": started, "head": head, "lane": lane.index, "selection": list(selection),
+            "stop_file": str(lane.output / "STOP")}
+    path.write_text(json.dumps(spec, indent=2, sort_keys=True) + "\n")
+    load_lane_spec(path)
+    return path
+
+
+def lane_run_argv(lane: Lane, path: str, spec: Path) -> list[str]:
+    """The lane runner inside the sandbox: clean shell, only HOME and PATH."""
+    python = str(lane.repository / "ocor-runtime/.venv/bin/python")
+    return sandbox_exec_argv(lane, path, [python, "scripts/run_local_lane_campaign.py", "--run-lane", str(spec)], {})
+
+
+def launch_lane(argv: list[str], log: Path) -> LaneProcess:
+    with log.open("w") as handle:
+        return subprocess.Popen(argv, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
+
+
+def supervise_lanes(processes: dict[int, LaneProcess], lanes: list[Lane], started: float, *,
+                    clock: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
+    """Wait for both lanes; the first failure or the whole-campaign limit stops the others."""
+    by_index = {lane.index: lane for lane in lanes}
+    returncodes: dict[int, int | None] = dict.fromkeys(processes)
+    first_failure: int | None = None
+    stop_reason: str | None = None
+    stop_at: float | None = None
+    killed: list[int] = []
+    decision = False
+
+    def request_stop(reason: str, exclude: int | None = None) -> None:
+        nonlocal stop_at
+        for index, code in returncodes.items():
+            if index != exclude and code is None:
+                (by_index[index].output / "STOP").write_text(reason + "\n")
+        if stop_at is None:
+            stop_at = clock()
+
+    while True:
+        for index, process in processes.items():
+            if returncodes[index] is None and (code := process.poll()) is not None:
+                returncodes[index] = code
+                if code and first_failure is None and stop_reason is None:
+                    first_failure = index
+                    request_stop(f"lane {index} failed (exit {code})", exclude=index)
+        running = [index for index, code in returncodes.items() if code is None]
+        if not running:
+            break
+        try:
+            decision = check_campaign_deadline(clock() - started) or decision
+        except CampaignError as exc:
+            if stop_reason is None:
+                stop_reason = str(exc)
+                request_stop(stop_reason)
+        if stop_at is not None and clock() - stop_at >= STOP_GRACE_SECONDS:
+            for index in running:
+                processes[index].kill()
+                processes[index].wait(timeout=60)
+                killed.append(index)
+        sleep(SUPERVISE_POLL_SECONDS)
+    return {"returncodes": returncodes, "first_failure": first_failure, "stop_reason": stop_reason,
+            "killed_after_grace": killed, "po_decision_required": decision}
+
+
+def read_lane_results(lanes: list[Lane], head: str, parts: list[list[str]]) -> list[dict[str, Any]]:
+    """Both lane results PASS, for this head, this lane and exactly its selection."""
+    results = []
+    for lane, part in zip(lanes, parts, strict=True):
+        try:
+            result = json.loads((lane.output / "lane_result.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise CampaignError(f"lane {lane.index} result absent or invalid") from exc
+        if result.get("status") != "PASS":
+            raise CampaignError(f"lane {lane.index} failed: {result.get('error')}")
+        if result.get("candidate_head") != head:
+            raise CampaignError(f"lane {lane.index} ran another head: {result.get('candidate_head')}")
+        if result.get("lane") != lane.index:
+            raise CampaignError(f"lane {lane.index} result names lane {result.get('lane')}")
+        if result.get("selected") != len(part) or result.get("selected_sha256") != campaign.collection_digest(part):
+            raise CampaignError(f"lane {lane.index} ran another selection")
+        results.append(result)
+    return results
+
+
+def merge_lane_junit(lanes: list[Lane], output: Path, *, required_modules: list[str]) -> dict[str, int]:
+    merged = ET.Element("testsuites")
+    for lane in lanes:
+        root = ET.parse(lane.output / LANE_JUNIT).getroot()
+        for suite in ([root] if root.tag == "testsuite" else list(root.iter("testsuite"))):
+            suite.set("name", f"{suite.get('name', 'pytest')}-lane-{lane.index}")
+            merged.append(suite)
+    ET.ElementTree(merged).write(output, encoding="utf-8", xml_declaration=True)
+    return campaign.check_junit(output, required_modules=required_modules)
+
+
+def combine_lane_coverage(suite: Path, lanes: list[Lane], output: Path, runner: Runner) -> None:
+    """Combine the lanes' data, remapping each lane clone onto the host checkout at the same head."""
+    rcfile = output / "lane_coverage.rc"
+    sources = [str(suite / "src"), *(str(lane.repository / "ocor-runtime/src") for lane in lanes)]
+    rcfile.write_text("[paths]\nsource =\n" + "".join(f"    {source}\n" for source in sources))
+    copies = []
+    for lane in lanes:
+        copies.append(output / f"runtime_coverage.lane-{lane.index}")
+        shutil.copyfile(lane.output / "runtime_coverage.data", copies[-1])
+    data = output / "runtime_coverage.combined"
+    runner([sys.executable, "-m", "coverage", "combine", f"--rcfile={rcfile}", f"--data-file={data}", *map(str, copies)], cwd=suite)
+    runner([sys.executable, "-m", "coverage", "json", f"--rcfile={rcfile}", f"--data-file={data}",
+            "-o", str(output / "runtime_coverage_post_approval.json")], cwd=suite)
+
+
+def power_reading(root: Path = POWER_SUPPLY_ROOT) -> dict[str, Any]:
+    """Informative only (LOCAL-FULL-SUITE-CAP-90 point 6): mains or battery, never a criterion."""
+    supplies: dict[str, dict[str, str]] = {}
+    try:
+        for entry in sorted(root.iterdir()):
+            supplies[entry.name] = {key: (entry / key).read_text().strip()
+                                    for key in ("type", "online", "status") if (entry / key).is_file()}
+    except OSError:
+        supplies = {}
+    mains = [values for values in supplies.values() if values.get("type") == "Mains" and "online" in values]
+    source = "NOT_EXECUTED" if not mains else ("MAINS" if any(values["online"] == "1" for values in mains) else "BATTERY")
+    return {"source": source, "supplies": supplies, "read_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
+
+def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: list[str], *, source: Path | None = None,
+                     runner: Runner = run_command, launcher: Callable[[list[str], Path], LaneProcess] = launch_lane,
+                     meminfo_path: Path = Path("/proc/meminfo"), power_root: Path = POWER_SUPPLY_ROOT) -> dict[str, Any]:
+    """Two-lane campaign at the exact head; campaign_result.json records PASS, FAIL or the serial fallback."""
+    source = (source or Path(__file__).resolve().parents[1]).resolve()
+    suite = source / "ocor-runtime"
+    full = selection == FULL_SUITE_SELECTION
+    required_modules = list(FULL_SUITE_REQUIRED_MODULES) if full else []
+    work.mkdir(parents=True, exist_ok=True)
+    started, monotonic_start = time.time(), time.monotonic()
+    result: dict[str, Any] = {
+        "status": "FAIL", "mode": "TWO_LANE", "head": head, "selection": selection,
+        "selection_scope": "FULL_SUITE" if full else "EXPLICIT_NON_QUALIFYING", "qualifying_scope": full,
+        "required_modules": required_modules, "limit_seconds": FULL_SUITE_LIMIT_SECONDS,
+        "threshold_seconds": PO_DECISION_THRESHOLD_SECONDS, "campaign_start": started,
+        "power_start": power_reading(power_root), "lanes": [], "teardown": []}
+    try:
+        result["memory"] = memory_admission(meminfo_path.read_text())
+    except OSError as exc:
+        result["memory"] = {"mode": "SERIAL", "reason": f"meminfo unreadable: {exc}"}
+    if result["memory"]["mode"] != "TWO_LANE":
+        result.update(status="SERIAL_FALLBACK", mode="SERIAL", next_action=f"run the serial suite: {SERIAL_COMMAND}",
+                      power_end=power_reading(power_root), total_duration_seconds=round(time.monotonic() - monotonic_start, 3))
+        (work / "campaign_result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+        return result
+    name = campaign_id(head, int(started))
+    result["campaign"] = name
+    lanes = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, LANE_COUNT + 1)]
+    paths = {lane.index: lane_path(lane, tool_bins) for lane in lanes}
+    try:
+        campaign.verify_revision(source, head)
+        collected = campaign.collect_nodeids(suite, selection)
+        weights = load_weights()
+        parts = lane_partition(collected, weights)
+        result["collection"] = {"collected": len(collected), "collected_sha256": campaign.collection_digest(collected),
+                                "partition_sha256": campaign.partition_digest(parts), "lane_cases": [len(part) for part in parts],
+                                "lane_estimated_seconds": lane_loads(parts, weights),
+                                "lower_bound_seconds": max(case_weight(node, weights) for node in collected)}
+        ensure_root_image(runner, host_usr_links())
+        specs = {}
+        for lane, part in zip(lanes, parts, strict=True):
+            provision_start = time.monotonic()
+            entry: dict[str, Any] = {"lane": lane.index, "provision": provision_lane(
+                lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
+            mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
+            entry["mounts"] = [str(mount) for mount in mounts]
+            entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["provisioning_seconds"] = round(time.monotonic() - provision_start, 3)
+            specs[lane.index] = write_lane_spec(lane, head, part, started)
+            result["lanes"].append(entry)
+        processes = {lane.index: launcher(lane_run_argv(lane, paths[lane.index], specs[lane.index]), lane.output / "lane_runner.log")
+                     for lane in lanes}
+        result["supervision"] = supervise_lanes(processes, lanes, started)
+        try:
+            lane_results = read_lane_results(lanes, head, parts)
+        finally:
+            for entry, lane in zip(result["lanes"], lanes, strict=False):
+                if (lane.output / "lane_result.json").is_file():
+                    entry["result"] = json.loads((lane.output / "lane_result.json").read_text(encoding="utf-8"))
+        if result["supervision"]["stop_reason"]:
+            raise CampaignError(result["supervision"]["stop_reason"])
+        result["union"] = check_exact_union(collected, [lane.output / LANE_JUNIT for lane in lanes])
+        result["counts"] = merge_lane_junit(lanes, work / LANE_JUNIT, required_modules=required_modules)
+        combine_lane_coverage(suite, lanes, work, runner)
+        campaign.verify_revision(source, head)
+        result["po_decision_required"] = (check_campaign_deadline(time.time() - started)
+                                          or result["supervision"]["po_decision_required"]
+                                          or any(item["po_decision_required"] for item in lane_results))
+        result["status"] = "PASS"
+    except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError) as exc:
+        result["error"] = str(exc)
+    finally:
+        for lane in lanes:
+            log = lane.output / "lane_runner.log"
+            if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
+                bootstrap_ci.redact_campaign_log(lane.repository, log)
+            try:
+                result["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
+            except CampaignError as exc:
+                result["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
+                result["status"] = "FAIL"
+        try:
+            remove_root_image(runner)
+            result["host_residue"] = check_host_residue(name, runner)
+        except CampaignError as exc:
+            result["host_residue"] = {"error": str(exc)}
+            result["status"] = "FAIL"
+        result["power_end"] = power_reading(power_root)
+        result["total_duration_seconds"] = round(time.monotonic() - monotonic_start, 3)
+        result.setdefault("po_decision_required", result["total_duration_seconds"] > PO_DECISION_THRESHOLD_SECONDS)
+        (work / "campaign_result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    # The returned record is the stored one (JSON keys are strings).
+    return dict(json.loads((work / "campaign_result.json").read_text(encoding="utf-8")))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--derive-weights", type=Path, metavar="JUNIT", help="write the weights file content derived from a serial PASS JUnit")
     parser.add_argument("--plan", action="store_true", help="collect on this checkout and print the memory decision and lane estimate")
     parser.add_argument("--lifecycle-check", type=Path, metavar="WORK_DIR",
                         help="non-qualifying: provision both lane sandboxes at --expected-head, probe them and tear them down")
-    parser.add_argument("--expected-head", help="exact head of this checkout, required with --lifecycle-check")
+    parser.add_argument("--expected-head", help="exact head of this checkout, required with --lifecycle-check and --execute")
     parser.add_argument("--tool-bin", type=Path, action="append", default=[], help="directory of locked tool links, first on the lane PATH")
     parser.add_argument("--run-lane", type=Path, metavar="LANE_SPEC", help="inside a lane sandbox: run the spec's exact node list on the lane stack")
+    parser.add_argument("--execute", type=Path, metavar="WORK_DIR",
+                        help="two-lane campaign at --expected-head (full suite unless --select); serial fallback below the memory threshold")
+    parser.add_argument("--select", action="append", default=[], metavar="NODE_ID",
+                        help="explicit node IDs for a non-qualifying run of --execute")
     args = parser.parse_args(argv)
     if args.run_lane:
         return run_lane(args.run_lane.resolve())
+    if args.execute:
+        if not args.expected_head or not args.tool_bin:
+            parser.error("--execute requires --expected-head and --tool-bin")
+        result = execute_campaign(args.execute.resolve(), args.expected_head, [path.resolve() for path in args.tool_bin],
+                                  args.select or list(FULL_SUITE_SELECTION))
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return {"PASS": 0, "SERIAL_FALLBACK": 3}.get(result["status"], 1)
     if args.lifecycle_check:
         if not args.expected_head or not args.tool_bin:
             parser.error("--lifecycle-check requires --expected-head and --tool-bin")
@@ -687,7 +941,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps({"status": "PASS", **plan}, sort_keys=True))
         return 0
-    parser.error("choose --derive-weights, --plan, --lifecycle-check or --run-lane")
+    parser.error("choose --derive-weights, --plan, --lifecycle-check, --run-lane or --execute")
     return 2
 
 
