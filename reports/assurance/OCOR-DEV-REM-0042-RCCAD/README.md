@@ -62,3 +62,21 @@ punto 3 dell'AMENDMENT, quindi rientra nell'esenzione del punto 4.
 - `inputs/` intatto; nessun nuovo `DEC-*`; nessun test indebolito; nessun limite cambiato oltre al tetto autorizzato.
 - `E1=0`, `E2=0`, nessun requisito `Verified`; runtime conformance `NOT_ESTABLISHED`, PoC-GO e Production
   readiness `NO-GO`.
+
+## Sigillo (dopo GO indipendente)
+
+- **Verdetto**: `OCOR-DEV-REM-0042-9f7456301d27-0`, `GO_FOR_EVIDENCE_SEAL`, zero finding, nulla `NOT_EXECUTED`
+  (file sha256 `5c1535a0a9910f06fb9f101442b0559f371a00d9329f37daff5b37d022f25722`). Verifier: Cursor CLI /
+  grok-4.7-high / xAI, contesto separato. Suite completa seriale del verifier 3224/3224, zero skip, unione JUnit
+  esatta, 4057,981 s: 457,981 s sopra la notifica di 3600 s, margine calcolato dal tetto di 5400 s 1342,019 s,
+  dalla soglia di decision request di 5100 s 1042,019 s. Rete elettrica a inizio e fine suite (dato del verifier).
+- **Allineamento**: HEAD verificato `9f74563` unito in modo non distruttivo con `origin/main` `e6ac9b7`
+  (`dcf2e0cd0f64eeff8868db096a781f7a58a0ef56`); cambiano soltanto i tre file di stato, albero non di stato identico.
+- **Sigillo**: `OCOR-DEV-REM-0042.json` e le riqualifiche `OCOR-DEV-0005`, `0050`, `0082` `.requalified-rem0042`
+  passano a `SEALED`; i manifest G0, G2 e G5 puntano agli hash sigillati. In `OCOR-DEV-REM-0042.json` i
+  `record_sha256` delle riqualifiche restano gli hash candidati verificati; gli hash sigillati sono affiancati in
+  `independent_verification.sealed_requalification_records`. Raw log invariati; nessun record sigillato precedente
+  modificato.
+- **Ruoli**: implementatore e integrazione Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato dal
+  loop; revisore preventivo Antigravity/Gemini (Google). Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime
+  `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
