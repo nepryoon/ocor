@@ -101,3 +101,26 @@ RED prima del codice in ogni unità (partizionatore, ciclo di vita delle corsie,
 - La modalità a due corsie è utilizzabile come qualifica soltanto dopo GO indipendente, sigillo e merge.
 - `E1=0`, `E2=0`, nessun requisito `Verified`; runtime conformance `NOT_ESTABLISHED`, PoC-GO e Production
   readiness `NO-GO`.
+
+## Sigillo (dopo GO indipendente)
+
+- **Verdetto**: `OCOR-DEV-REM-0037-f08ad7599fc5-0`, `GO_FOR_EVIDENCE_SEAL`, zero finding, nulla `NOT_EXECUTED`
+  (file sha256 `4ff1bf638b4c11884d976d0201bfa6849d3f089a4e420dbbeb88574e3bcd56fe`). Verifier: Cursor CLI /
+  grok-4.7-high / xAI, contesto separato, shell pulite. Prova di equivalenza del verifier sullo stesso head:
+  suite seriale 3243/3243, zero skip, 4252,115 s (652,115 s sopra la notifica di 3600 s; margine calcolato dal tetto
+  di 5400 s 1147,885 s, dalla soglia di decision request di 5100 s 847,885 s); suite a due corsie 3243/3243 (993 e
+  2250), zero skip, 2325,818 s (margine dal tetto di 5400 s 3074,182 s, dalla notifica di 3600 s 1274,182 s); unione
+  esatta, digest delle identità eseguite identico, residui dell'host vuoti. Guard del task 305/305, guard di
+  `validation-closure` 362/362, riqualifiche 227/227. Rete elettrica a inizio e fine di entrambe le suite (dato del
+  verifier).
+- **Allineamento**: HEAD verificato `f08ad75` unito in modo non distruttivo con `origin/main` `9fa7cae`
+  (`927e6a9`); cambiano soltanto i tre file di stato, albero non di stato identico.
+- **Sigillo**: `OCOR-DEV-REM-0037.json` e le 4 riqualifiche `.requalified-rem0037` (`OCOR-DEV-0005`, `0006`,
+  `0050`, `0082`) passano a `SEALED`; i manifest G0, G2 e G5 puntano agli hash sigillati. In
+  `OCOR-DEV-REM-0037.json` i `record_sha256` delle riqualifiche restano gli hash candidati verificati; gli hash
+  sigillati sono affiancati in `independent_verification.sealed_requalification_records`. Raw log invariati; nessun
+  record sigillato precedente modificato.
+- **Ruoli**: implementatore e integrazione Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato dal
+  loop; revisore preventivo Antigravity/Gemini (Google). Da qui la modalità a due corsie è utilizzabile per la suite
+  completa locale, con l'ammissione di memoria all'avvio. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime
+  `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
