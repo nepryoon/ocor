@@ -3,23 +3,23 @@
     "Existing C3 ports fit TerminusDB unchanged; consumers stay on PostgresC3Service until OCOR-DEV-0060 qualifies the BA cases on the selected components.",
     "TerminusDB 12.0.7 document-API data version is not a concurrent compare-and-swap; conditional WOQL transactions are.",
     "The two-lane local full suite is usable, with the memory admission at start (otherwise serial, recorded).",
-    "REM-0040 adapter placement awaits the PO disposition of REM-0040-C7-SEALED-RESULT-PORT."
+    "The unpublished REM-0040 branch of the interrupted iteration is development material, not evidence; it is re-checked against the disposition before use."
   ],
-  "base_sha": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
-  "baseline_commit": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
-  "branch": "governed/state-sync-rem0041-prereview-20261028",
+  "base_sha": "85bc0228fbded5bb9d2ecdfa1fa3420b43665815",
+  "baseline_commit": "85bc0228fbded5bb9d2ecdfa1fa3420b43665815",
+  "branch": "governed/state-sync-rem0041-integrated-20261028",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0041-terminusdb-c3-adapter",
-    "head_sha": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
-    "note": "candidate code head awaiting the preventive review; not evidence, not sealed",
+    "head_sha": "8dc9fd48520035015d958d477ec18c28f5caaf41",
+    "merge_commit": "85bc0228fbded5bb9d2ecdfa1fa3420b43665815",
+    "note": "REM-0041 C3-unit record and 3 requalifications sealed after GO and merged with PR #391",
     "paths": [
-      "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py",
-      "ocor-runtime/src/ocor_runtime/c3/terminusdb_service.py",
-      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py",
-      "scripts/validate_ocor_development_plan.py",
-      "reports/planning/OCOR_PLAN_RUN_STATE.json"
-    ],
-    "worktree": ".ocor/worktrees/rem-0041"
+      "reports/assurance/OCOR-DEV-REM-0041-RCCAD/OCOR-DEV-REM-0041.json",
+      "reports/assurance/OCOR-DEV-REM-0041-RCCAD/README.md",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0041.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041.json"
+    ]
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -36,50 +36,55 @@
   },
   "commands": [
     {
-      "command": "git grep OCOR-DEV-REM-0041 over every ref",
+      "command": "verdict OCOR-DEV-REM-0041-ee367a61cc59-0",
       "exit_code": 0,
-      "summary": "only forward references in PO decisions/state; ID free"
+      "summary": "GO_FOR_EVIDENCE_SEAL, zero findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 d83d01cc030cb684aa1b988966134ebad243d7455c823fd3535127310289751e"
     },
     {
-      "command": "TerminusDB 12.0.7 probes (disposable databases, deleted)",
+      "command": "merge origin/main 0e136cec6362 into governed/ocor-dev-rem-0041-terminusdb-c3-adapter (non-destructive alignment)",
       "exit_code": 0,
-      "summary": "data-version PUT not CAS under concurrency (8/8 applied); conditional WOQL serializable (1/8 applied); batches all-or-nothing"
+      "summary": "aligned head 51ace9d349f3; only the three state files differ from ee367a61cc59; non-state tree sha256 equal"
     },
     {
-      "command": "RED: pytest tests/tasks/test_ocor_dev_rem_0041.py on origin/main 3ba6abbc11ba",
-      "exit_code": 1,
-      "summary": "28/28 FAIL (7 failed, 21 errors)"
-    },
-    {
-      "command": "GREEN x3 at 63c6d5e8e094",
+      "command": "seal.py (verdict OCOR-DEV-REM-0041-ee367a61cc59-0)",
       "exit_code": 0,
-      "summary": "28 passed each"
+      "summary": "OCOR-DEV-REM-0041.json and 3 requalifications SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; README seal section; commit 8dc9fd485200"
     },
     {
-      "command": "regression (0005/0050/0082/0013/0015/0029/0039, mission thread)",
+      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
       "exit_code": 0,
-      "summary": "278 passed"
+      "summary": "42/42 workflow-derived non-suite steps PASS (inputs, mypy, ruff, tsc, contract generator, lock schemas, tooling Compose, plan, rccad, language, drift 0, scope, delivery validate, markdownlint, mermaid, verify.py, validation-closure guards, runtime evidence 0005/0050/0082, supply-chain scanner)"
     },
     {
-      "command": "mutation probe (9 adapter mutants)",
+      "command": "gh pr create (PR #391) and exact-head polling until mergeStateStatus CLEAN",
       "exit_code": 0,
-      "summary": "8 killed, 1 equivalent (store-enforced identity uniqueness)"
+      "summary": "13/13 required checks success, zero reruns"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE at 63c6d5e8e094",
-      "exit_code": 1,
-      "summary": "41/42 PASS; drift FAIL expected (0005/0050/0082)"
+      "command": "gh pr merge 391 --merge --match-head-commit 8dc9fd48520035015d958d477ec18c28f5caaf41",
+      "exit_code": 0,
+      "summary": "merge commit 85bc0228fbded5bb9d2ecdfa1fa3420b43665815; origin/main equals the merge commit; sealed hashes unchanged"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0041:candidate-head-pregate",
+  "current_task": "OCOR-DEV-REM-0041:c3-unit-integrated",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0041 after the preventive review OCOR-DEV-REM-0041-63c6d5e8e094-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0041-63c6d5e8e094-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0041-terminusdb-c3-adapter, worktree .ocor/worktrees/rem-0041, candidate code head 63c6d5e8e094 (pushed). At unit start read /proc/meminfo and check whether a PO disposition of REM-0040-C7-SEALED-RESULT-PORT is recorded (if so, REM-0040 resumes at the first coherent boundary after this unit). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0041/pregate.py), build the TypeScript SDK in the candidate worktree, and the qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; scripts/bootstrap_ci_environment.py --execute; two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, threshold 14340.6 MiB, otherwise serial and recorded; cap 5400 s, notification 3600 s; no tracked edits during the campaign); the task module three times on the real TerminusDB/TypeDB of the campaign stack; regression-only requalification records requalified-rem0041 of OCOR-DEV-0005/0050/0082 with explicit supersession (plan allowlist; sealed records untouched); remediation record reports/assurance/OCOR-DEV-REM-0041-RCCAD/ (README, json, log) with RED fingerprint, BA-01 conformance mapping (five crash windows, stale writer, fork without DeliveryAttempt), the measured TerminusDB data-version finding and the mutation probe; surgical MANIFEST entries; verify request REMEDIATION repair_cycle 0, verifier neither Anthropic nor the preventive reviewer's provider. Then OCOR-DEV-0060 after the integration of REM-0038..0041 (REM-0040 waits for its decision request); OCOR-DEV-0062..0064 while remediations await verification. No new DEC; claims unchanged.",
-  "head_sha": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
-  "head_sha_role": "REM-0041 candidate code head awaiting the preventive review (not evidence)",
+  "exact_next_action": "OCOR-DEV-REM-0040 per REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION (2026-10-28): first record the disposition in the decision request file reports/development/decision_requests/REM-0040-C7-SEALED-RESULT-PORT.md (PR #387) if not already on main; read MemTotal/MemAvailable from /proc/meminfo at unit start (two-lane threshold 14340.6 MiB); new worktree from origin/main on governed/ocor-dev-rem-0040-seaweedfs-c7-adapter, re-checking the unpublished local commit 8a7513a (patches in ~/.ocor-codex/salvage/20261028T1800-rem0040-interrupted) against the disposition without rewriting history; vendor-neutral sealResult/read-by-digest Protocol declared as a subset of ScenarioOverlayStore, SeaweedFS adapter with versioning and Object Lock COMPLIANCE (test retention <= 1 h, one reused bucket), stdlib SigV4, uv.lock unchanged, RED on real SeaweedFS before code, GREEN, regression-only requalifications 0005/0050/0082, task suite, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW request (stop the iteration after it), then the two-lane full suite. Then the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 subset without renaming), the WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit, then OCOR-DEV-0060. OCOR-DEV-0062..0064 proceed while remediations wait for review or verification. No new DEC; claims unchanged.",
+  "head_sha": "85bc0228fbded5bb9d2ecdfa1fa3420b43665815",
+  "head_sha_role": "merge commit of PR #391 (OCOR-DEV-REM-0041 C3 unit integrated)",
   "independent_verification": {
-    "next_verifier_constraint": "neither Anthropic nor the preventive reviewer's provider",
-    "status": "NOT_REQUESTED"
+    "head_sha": "ee367a61cc59ee4eb921a3d6afb05819840f7e87",
+    "next_verifier_constraint": "for REM-0040: provider different from every implementer and from its preventive reviewer",
+    "repair_cycle": 0,
+    "request_id": "OCOR-DEV-REM-0041-ee367a61cc59-0",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-28T19:31:09Z",
+    "verdict_file_sha256": "d83d01cc030cb684aa1b988966134ebad243d7455c823fd3535127310289751e",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI",
+    "verifier_full_suite_two_lane": "3276 passed (lanes 1039 and 2237), 0 skipped, 2430.311 s; margin under the 5400 s cap 2969.689 s, under the 3600 s notification 1169.689 s; exact union, collection sha256 identical to the recorded campaign; host residue empty; memory admission TWO_LANE; mains power at start and end",
+    "verifier_regression": "0005/0050/0082/0013/0015/0029/0039 and the first governed slice: 278 passed, 0 skipped",
+    "verifier_task_module": "tests/tasks/test_ocor_dev_rem_0041.py: 33 passed, 0 skipped on the live TerminusDB and TypeDB of ocor-bootstrap",
+    "verifier_validation_closure_guards": "362 passed, 0 skipped after the versioned npm ci/build (first run before npm ci failed only on absent @types/node, not a candidate defect)"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -149,9 +154,9 @@
     "ruff": "PASS",
     "runtime_evidence": "PASS for 0005/0050/0082 latest records; NOT_EXECUTED for REM-0041 (no record yet)"
   },
-  "next_task": "OCOR-DEV-REM-0041:campaign-after-prereview",
-  "phase": "OCOR_DEV_REM_0041_AWAITING_PRE_CAMPAIGN_REVIEW",
-  "raw_evidence_location": "~/.ocor-codex/rem-0041 (gates-63c6d5e8e094/, red-final.*, task-*.xml, regression-pre.xml, mutation.json, pregate.out)",
+  "next_task": "OCOR-DEV-REM-0040:implementation",
+  "phase": "OCOR_DEV_REM_0041_C3_UNIT_INTEGRATED",
+  "raw_evidence_location": "~/.ocor-codex/rem-0041 and ~/.ocor-codex/rem-0041-q (outside Git)",
   "requirement_ids": [
     "NFR-058",
     "NFR-064",
@@ -164,10 +169,14 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0041 ID verification, read-only C3 inventory, RED/GREEN of the TerminusDB adapter, mutation probe, PRE-CAMPAIGN-GATE, state sync"
+        "scope": "REM-0041 C3 unit implementation and campaign (previous iterations); this iteration: alignment, sealing, PRE-CAMPAIGN-GATE, PR #391, exact-head CI, merge, state sync"
       }
     ],
-    "verifier": "not yet requested; must differ from Anthropic and from the preventive reviewer's provider"
+    "loop_counted_implementers": [
+      "Codex (OpenAI)"
+    ],
+    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (OCOR-DEV-REM-0041-63c6d5e8e094-pre)",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0041-ee367a61cc59-0)"
   },
   "rollback_result": "revert the REM-0037 commits; the .requalified-rem0039 records become the most recent again; no migration",
   "schema_version": "1.0",
@@ -185,9 +194,7 @@
       "runs": 3
     }
   },
-  "unresolved_blockers": [
-    "REM-0040-C7-SEALED-RESULT-PORT"
-  ],
-  "updated_at": "2026-10-28T13:41:16.475122+00:00",
-  "worktree": ".ocor/worktrees/rem-0041"
+  "unresolved_blockers": [],
+  "updated_at": "2026-10-28T20:15:54.927276+00:00",
+  "worktree": ".ocor/worktrees/rem-0041 (integrated branch); REM-0040: new worktree from origin/main"
 }
