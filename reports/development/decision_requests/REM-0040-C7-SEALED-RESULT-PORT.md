@@ -120,3 +120,50 @@ aggiunge dipendenze né riqualifiche sostanziali.
 - SeaweedFS resta `Candidate Implementation` fino alla qualifica di `OCOR-DEV-0060`.
 - Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e
   Production `NO-GO`. Nessun nuovo `DEC-*`.
+
+## Disposition PO (2026-10-28)
+
+Decisione `REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION (2026-10-28)`, livello
+operativo: scelta l'**opzione 1** di questa richiesta, con le condizioni dei punti
+3–6 della disposition (file sha256
+`8c9efaa8a7fdad34608d344946a7f4cd4d5d9e6154e4a9d16c61fcfe11a25424`, commit
+`a60ab1e`, PR #387). Stato della richiesta: risolta.
+
+- Ambito: `Protocol` vendor-neutral in `ocor-runtime/src/ocor_runtime/c7/` per la sola
+  operazione `sealResult` di ADD v1.3 §4.2 e per la lettura di un risultato sigillato
+  dato il suo digest, con l'adapter SeaweedFS dietro di esso. Le operazioni di overlay
+  restano a `OCOR-DEV-REM-0041` (TerminusDB, ADD v1.3 riga 307). `c7/runtime.py`,
+  `CausalOutcome`, contratti e schemi non cambiano.
+- Adapter: chiave derivata da `reproducibility_digest`; bucket con versioning e Object
+  Lock `COMPLIANCE`; digest verificato a ogni lettura; nessun `DeleteObject` né header
+  di bypass della retention sul percorso applicativo; bucket senza Object Lock rifiutato
+  all'avvio; secondo sigillo con stesso digest e contenuto identico idempotente, con
+  contenuto diverso rifiutato.
+- Nome e composizione: il `Protocol` si dichiara sottoinsieme di `ScenarioOverlayStore`;
+  REM-0041 non ne rinomina i nomi né ne cambia le firme (altrimenti decision request).
+- Retention nei test `COMPLIANCE` non superiore a un'ora, fissata in un solo punto e
+  dichiarata nel test; bucket dedicato riusato fra le esecuzioni; nessuna dipendenza
+  dall'assenza di oggetti precedenti; controllo dei residui delle corsie pulito senza
+  deroghe. La retention di produzione resta configurazione candidata.
+- Serializzazione canonica unica, dimostrata da un test (digest ricalcolato uguale al
+  `reproducibility_digest`, byte identici fra due sigilli).
+- Firma SigV4 con la sola libreria standard; `ocor-runtime/uv.lock` invariato; RED su
+  SeaweedFS reale anche per firma errata e chiave di accesso sbagliata; nessuna
+  credenziale in log, evidenza o messaggi d'errore.
+- Prova e campagne: RED prima del codice con fingerprint; riqualifiche di sola
+  regressione `OCOR-DEV-0005`, `0050`, `0082` (altre: decision request);
+  PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, prova d'equivalenza sullo stesso head,
+  residui puliti.
+- Limite: modifiche a `c7/runtime.py`, `CausalOutcome`, contratti, schemi, reason code,
+  `c7_emission.EventSink` o `memory.stores.MemoryContentStore` richiedono una nuova
+  decision request. Job ledger, budget, progress e cancellazione di `BA-06` restano a
+  `OCOR-DEV-0060`. SeaweedFS resta `Candidate Implementation`.
+- Ordine: REM-0040 riprende al primo confine coerente; `OCOR-DEV-REM-0041` e
+  `0062`–`0064` restano non bloccati.
+
+Registrazione: Claude Code (Anthropic, claude-opus-5-5), implementatore del loop secondo
+LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK, all'inizio dell'unità REM-0040 dopo l'integrazione
+dell'unità C3 di `OCOR-DEV-REM-0041` (confine coerente). Il blocker si chiude nello stato
+con il riferimento a questa disposition. Nessun test, caso, limite, timeout, soglia o gate
+cambiato. Claim invariati: E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED,
+PoC/Production NO-GO.
