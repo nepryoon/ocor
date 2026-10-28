@@ -4,18 +4,29 @@
     "DEP-011 has no declared performance threshold: the benchmark is measured and recorded only.",
     "REM-0037-0006-NETWORK-RESIDUE-DISPOSITION (2026-10-28) is recorded; REM-0037 resumes with the 0006 teardown fix as its only scope extension."
   ],
-  "base_sha": "9fe22aef11fef1434430a3e253d92b257a07067b",
-  "baseline_commit": "9fe22aef11fef1434430a3e253d92b257a07067b",
-  "branch": "governed/state-sync-rem0037-0006-teardown-pregate-20261028",
+  "base_sha": "80808d104cafec557940e008bea903ad711e7c2c",
+  "baseline_commit": "80808d104cafec557940e008bea903ad711e7c2c",
+  "branch": "governed/state-sync-rem0037-candidate-20261028",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0037-local-suite-split",
-    "head_sha": "61654ea20771aafe890762b3531840e99ef12031",
-    "note": "candidate code head awaiting the preventive review; not evidence, not sealed",
+    "code_commit": "61654ea20771aafe890762b3531840e99ef12031",
+    "head_sha": "f08ad7599fc59dfd39d1b5e5adf8447248a26ecd",
+    "note": "pushed candidate; evidence CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION; paths live on the candidate branch only (handoff evidence_paths stays empty on main, AFF-008)",
     "paths": [
-      "ocor-runtime/tests/tasks/test_ocor_dev_0006.py",
-      "reports/tests/test_rem0037_0006_teardown_scope.py",
-      "scripts/validate_ocor_development_plan.py",
-      "reports/planning/OCOR_PLAN_RUN_STATE.json"
+      "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.json",
+      "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.log",
+      "reports/assurance/OCOR-DEV-REM-0037-RCCAD/README.md",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.log",
+      "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.json",
+      "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.log",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.log",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.log",
+      "reports/evidence/G0/MANIFEST.json",
+      "reports/evidence/G2/MANIFEST.json",
+      "reports/evidence/G5/MANIFEST.json"
     ],
     "worktree": ".ocor/worktrees/rem-0037"
   },
@@ -34,45 +45,41 @@
   },
   "commands": [
     {
-      "command": "git merge origin/main (9fe22ae) into the REM-0037 branch",
+      "command": "prereview outcome OCOR-DEV-REM-0037-61654ea20771-pre",
       "exit_code": 0,
-      "summary": "merge a2c75068ccb4; conflicts in the plan validator allowlist and its self-hash resolved by keeping both blocks"
+      "summary": "NO_BLOCKING_FINDINGS, 1 advisory finding applied (Antigravity/gemini-4-argon-high/Google); sha256 0fd7e8899019a86bf32c46bb991d56e64b840642b54aa40bca89a556080c0138"
     },
     {
-      "command": "docker network rm df15bf84d1be (pre-existing residue of the 0006 test on the host)",
-      "exit_code": 0,
-      "summary": "removed and logged"
-    },
-    {
-      "command": "pytest test_ocor_dev_0006.py::test_missing_pinned_image_cannot_fall_back_to_public_pull (sealed file)",
-      "exit_code": 0,
-      "summary": "RED: network ocor-missing-image-negative_default left"
-    },
-    {
-      "command": "same test with the finally teardown",
-      "exit_code": 0,
-      "summary": "GREEN: no project resource left; failure-path probe also leaves none"
-    },
-    {
-      "command": "pytest reports/tests/test_rem0037_0006_teardown_scope.py",
-      "exit_code": 0,
-      "summary": "2 passed, 11 mutations rejected (RED on the sealed file: 2 failed)"
-    },
-    {
-      "command": "PRE-CAMPAIGN-GATE at 61654ea20771",
+      "command": "PRE-CAMPAIGN-GATE at 61654ea20771 (head unchanged after the review)",
       "exit_code": 1,
-      "summary": "43/44 PASS; drift FAIL expected for OCOR-DEV-0005, OCOR-DEV-0006, OCOR-DEV-0050, OCOR-DEV-0082 (requalified at candidate time)"
+      "summary": "43/44 PASS; drift FAIL expected (0005/0006/0050/0082)"
+    },
+    {
+      "command": "qualification campaign at 61654ea20771 (env -i, locked PATH, bootstrap_ci_environment.py, 15 containers; then run_local_lane_campaign.py --execute)",
+      "exit_code": 0,
+      "summary": "phase A PASS, task 3x PASS (teardown guard included), regression 0005/0006/0050/0082 PASS, reports portfolio PASS; serial 3243/3243 in 3684.968 s (margin to 5400 s 1715.032 s); two lanes 3243/3243 in 2346.734 s (margin to 5400 s 3053.266 s, to 3600 s 1253.266 s); same case set, both PASS; zero residue"
+    },
+    {
+      "command": "build evidence and gates at the evidence head",
+      "exit_code": 0,
+      "summary": "PRE-CAMPAIGN-GATE steps at the evidence head f08ad7599fc5: 44/44 PASS, drift 0, runtime evidence 0005/0006/0050/0082 PASS, supply-chain scanner PASS"
+    },
+    {
+      "command": "write ~/.ocor-codex/verify_request.json",
+      "exit_code": 0,
+      "summary": "OCOR-DEV-REM-0037-f08ad7599fc5-0"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0037:0006-teardown-pregate",
+  "current_task": "OCOR-DEV-REM-0037:awaiting-independent-verification",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0037 after the preventive review OCOR-DEV-REM-0037-61654ea20771-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0037-61654ea20771-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0037-local-suite-split, worktree .ocor/worktrees/rem-0037, candidate code head 61654ea20771 (pushed). At unit start read /proc/meminfo (LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL point 2; if MemAvailable is below the measured two-lane threshold 14340.6 MiB, record it and wait/serial per REACTIVATION point 7). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0037-candidate/pregate2.py, which adds runtime-0006 and the teardown guard), build the TypeScript SDK in the candidate worktree, check that no ocor-missing-image-negative resource exists on the host, and run the equivalence proof on that same head from a clean shell with the locked PATH and power logging: serial full suite (scripts/run_qualifying_campaign.py, cap 5400 s, notification 3600 s) and two-lane full suite (scripts/run_local_lane_campaign.py --execute), same case set, exact JUnit union, zero skip, both PASS, clean residue in both. The b4ddd69 campaigns stay historical. Then regression runs of tests/tasks/test_ocor_dev_0005/0006/0050/0082 on the real stack, requalification records requalified-rem0037 (explicit supersedes, sealed records untouched) of 0005, 0006 (REM-0037-0006-NETWORK-RESIDUE-DISPOSITION point 3), 0050 and 0082, the REM-0037 record (inventory, memory, teardown RED/GREEN fingerprints from ~/.ocor-codex/rem-0037-q/teardown-0006, AST guard result, equivalence proof, preventive review) and the verify request (verifier neither Anthropic nor OpenAI nor the preventive reviewer's provider). REM-0040, REM-0041 and OCOR-DEV-0062..0064 remain unblocked while REM-0037 waits. No new DEC; claims unchanged.",
-  "head_sha": "61654ea20771aafe890762b3531840e99ef12031",
-  "head_sha_role": "REM-0037 candidate code head awaiting the preventive review (not evidence)",
+  "exact_next_action": "Wait for the external verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0037-f08ad7599fc5-0.json (REMEDIATION, repair_cycle 0, head f08ad7599fc59dfd39d1b5e5adf8447248a26ecd; verifier neither Anthropic nor OpenAI nor Google, the provider of the preventive reviewer). GO_FOR_EVIDENCE_SEAL: non-destructive alignment with origin/main, seal OCOR-DEV-REM-0037.json and the 0005/0006/0050/0082 .requalified-rem0037 records (independent_verification, roles.effective_verifier, status SEALED, surgical MANIFEST G0/G2/G5 hash updates), PRE-CAMPAIGN-GATE on the seal head, PR with the 13 required checks on the exact head, merge --match-head-commit, state sync; from then on the two-lane mode is usable for local full suites (memory admission at start). NO_GO: repair (max 2 materially different cycles). While waiting: OCOR-DEV-REM-0040, REM-0041 and OCOR-DEV-0062..0064 may proceed (first free REM id verified). After REM-0037: OCOR-DEV-REM-0040, 0041, then OCOR-DEV-0060. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). No new DEC; claims unchanged.",
+  "head_sha": "f08ad7599fc59dfd39d1b5e5adf8447248a26ecd",
+  "head_sha_role": "REM-0037 candidate head submitted to independent verification",
   "independent_verification": {
-    "next_verifier_constraint": "neither Anthropic nor OpenAI nor the preventive reviewer's provider",
-    "status": "NOT_REQUESTED"
+    "next_verifier_constraint": "neither Anthropic nor OpenAI nor Google (preventive reviewer)",
+    "request_id": "OCOR-DEV-REM-0037-f08ad7599fc5-0",
+    "status": "REQUESTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -135,12 +142,13 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "gates_json_sha256": "eb00ffe842a050eb57bb1c70c0c8c434448b7203069369bf61fdeb617faa6479",
-    "pre_campaign_gate": "43/44 PASS; drift FAIL expected for OCOR-DEV-0005, OCOR-DEV-0006, OCOR-DEV-0050, OCOR-DEV-0082 (requalified at candidate time)"
+    "gates_json_sha256": "66de72356e998e35f30ab4a296cf2146a105c89c77f8da167f8046b9c99a91d6",
+    "pre_campaign_gate_code_head": "61654ea20771: 43/44 PASS; drift FAIL expected for 0005/0006/0050/0082",
+    "pre_campaign_gate_evidence_head": "f08ad7599fc5: 44/44 PASS, drift 0"
   },
-  "next_task": "OCOR-DEV-REM-0037:campaigns-after-prereview",
-  "phase": "OCOR_DEV_REM_0037_AWAITING_PRE_CAMPAIGN_REVIEW",
-  "raw_evidence_location": "~/.ocor-codex/rem-0037-q/teardown-0006 and ~/.ocor-codex/rem-0037-candidate/gates-61654ea20771 (outside Git)",
+  "next_task": "OCOR-DEV-REM-0037:integration",
+  "phase": "OCOR_DEV_REM_0037_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "raw_evidence_location": "~/.ocor-codex/rem-0037-q2 (campaigns, builder), ~/.ocor-codex/rem-0037-candidate/gates-61654ea20771 and gates-f08ad7599fc5, ~/.ocor-codex/rem-0037-q/teardown-0006 (outside Git)",
   "requirement_ids": [
     "NFR-058",
     "NFR-064",
@@ -154,32 +162,53 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0037 (this iteration): alignment with origin/main, 0006 teardown fix with RED/GREEN and AST guard, allowlist, PRE-CAMPAIGN-GATE, preventive review request; earlier REM-0037 iterations by Claude Code and Codex"
+        "scope": "all of REM-0037 including the 0006 teardown fix, the 61654ea qualification campaigns, requalifications, evidence, verification request and state syncs"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
     ],
-    "preventive_reviewer": "to be chosen by the loop (OCOR-DEV-REM-0037-61654ea20771-pre)",
-    "verifier": "not requested yet"
+    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (NO_BLOCKING_FINDINGS, 1 advisory applied); excluded from the final verification of REM-0037",
+    "verifier": "requested from the loop; must be neither Anthropic nor OpenAI nor Google"
   },
-  "rollback_result": "revert 4491427; the repair-1 record returns to 15ca445 (NO_GO); no migration",
+  "rollback_result": "revert the REM-0037 commits; the .requalified-rem0039 records become the most recent again; no migration",
   "schema_version": "1.0",
   "seal_hashes": {},
   "security_observability_notes": [
-    "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 thread, 32 GB; no timing measured in this unit.",
-    "No runtime, test or harness change; no new DEC or evidence-fence promotion."
+    "HOST-MIGRATION (2026-10-24): Intel Core Ultra 9 275HX, 24 thread, 32 GB; mains power for the whole campaign.",
+    "Lane residue check unchanged and clean in both lanes; no ocor-missing-image-negative resource left on the host."
   ],
   "test_results": {
+    "serial_full_suite": {
+      "duration_seconds": 3684.968,
+      "failed": 0,
+      "skipped": 0,
+      "tests": 3243
+    },
     "task": {
-      "module": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0039.py",
-      "mutants_killed": "8/8",
-      "passed_each": 19,
-      "regression": 188,
+      "modules": [
+        "reports/tests/test_local_lane_campaign.py",
+        "reports/tests/test_rem0037_0006_teardown_scope.py",
+        "reports/tests/test_kind_teardown_observation.py",
+        "reports/tests/test_qualifying_campaign_guard.py"
+      ],
+      "passed_each": 399,
+      "regression_0005_0006_0050_0082": 227,
+      "reports_portfolio": 511,
       "runs": 3
+    },
+    "two_lane_full_suite": {
+      "duration_seconds": 2346.734,
+      "failed": 0,
+      "lanes": [
+        993,
+        2250
+      ],
+      "skipped": 0,
+      "tests": 3243
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-28T05:29:58.174210+00:00",
+  "updated_at": "2026-10-28T08:05:50.892663+00:00",
   "worktree": ".ocor/worktrees/rem-0037"
 }
