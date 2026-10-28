@@ -455,20 +455,29 @@ def test_a_wrong_secret_and_a_wrong_access_key_are_rejected_by_the_server_withou
 
 
 def test_a_corrupted_signature_is_rejected_by_the_server() -> None:
-    qualify = _qualify()
-    url = f"{URL}/{LOCKED_BUCKET}?versioning"
-    headers = qualify.sign("GET", url, ACCESS_KEY, _secret(), now=datetime.now(UTC))
-    signature = headers["authorization"].rsplit("Signature=", 1)[1]
-    flipped = ("0" if signature[0] != "0" else "1") + signature[1:]
-    headers["authorization"] = headers["authorization"].replace(f"Signature={signature}", f"Signature={flipped}")
-    headers.pop("host")
-    import urllib.error
-    import urllib.request
+    """The adapter's own SigV4 signature, with one hexadecimal digit flipped, is refused
+    by the server and translated to ``ACCESS_DENIED``; the same store with the signature
+    intact initializes, so the refusal is caused by the signature alone."""
+    _ensure_bucket(LOCKED_BUCKET, object_lock=True)
+    intact = _store()
+    intact.initialize()
+    corrupted = _store()
+    signed_headers = corrupted._signed_headers
+    flipped_requests: list[str] = []
 
-    request = urllib.request.Request(url, method="GET", headers=headers)
-    with pytest.raises(urllib.error.HTTPError) as caught:
-        urllib.request.urlopen(request, timeout=10)
-    assert caught.value.code == 403
+    def corrupt(method: str, url: str, payload: bytes, headers: Any) -> dict[str, str]:
+        signed: dict[str, str] = signed_headers(method, url, payload, headers)
+        signature = signed["authorization"].rsplit("Signature=", 1)[1]
+        flipped = ("0" if signature[0] != "0" else "1") + signature[1:]
+        signed["authorization"] = signed["authorization"].replace(f"Signature={signature}", f"Signature={flipped}")
+        flipped_requests.append(url)
+        return signed
+
+    corrupted._signed_headers = corrupt
+    with pytest.raises(_port_module().SealedResultError) as caught:
+        corrupted.initialize()
+    assert caught.value.code == "ACCESS_DENIED" and flipped_requests
+    assert _secret() not in f"{caught.value}|{caught.value!r}|{corrupted!r}"
 
 
 def test_an_unreachable_store_fails_closed_without_fallback() -> None:
