@@ -675,8 +675,138 @@
     "status": "PASS"
   },
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "5a34b2f41d06fad973745b53ad314c1e650f2de1",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "7f335fcf345d86229d0e76b859e47675035d2007",
+      "nonstate_git_tree_sha256": "c3f8dfab4793dfd268515b6bc9fbeac9b63352e7ce46c5c699f14c451c1f2c67",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the three state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "6251115923cd5b697ca04239c028e88eb1825145",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "7a87fee640dea4bff4687a71b98254e9e1468bb36dd23822362ff2743c54b707",
+    "commands": [
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py",
+        "exit_code": 0,
+        "summary": "PASS. Tool binaries on the verifier PATH match infra/toolchain.lock.json and infra/qualification_tools.lock.json (docker, git, gh, node, ruff, tsc, uv, helm, kind, kubectl). environment.json sha256 dbc6a8f7cb504aa91d38357bb22080f9ad2f944220f51676e8b73d8a6e9ac698. Host: Intel Core Ultra 9 275HX, 24 threads, MemTotal 31743008 kB."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "All normative checksums OK. inputs tree 60a73de8e47b38e94aeb0e2b8dedc689fab6eb35 matches the evidence record. HEAD 6251115923cd5b697ca04239c028e88eb1825145."
+      },
+      {
+        "command": "sha256 of every evidence_paths entry against the request evidence_sha256",
+        "exit_code": 0,
+        "summary": "0 mismatches across the 51 declared evidence files."
+      },
+      {
+        "command": "uv lock --check --project ocor-runtime && uv sync --project ocor-runtime --frozen --extra test --extra lint && uv pip check --python ocor-runtime/.venv/bin/python",
+        "exit_code": 0,
+        "summary": "Lock consistent. Added nexus-rpc 1.4.0, temporalio 1.34.0, types-protobuf 7.35.1.20260906; removed tomli; no existing package version changed; no shared wheel or sdist hash changed; 562 other-platform wheels pruned by the uv 0.12.5 rewrite."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+        "exit_code": 0,
+        "summary": "Drift 0 at the publication HEAD."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py",
+        "exit_code": 0,
+        "summary": "PASS. Diff base..HEAD is the Temporal adapter, its test, pyproject/uv.lock, the plan allowlist and self-hash, and the REM-0039 evidence. Ports, fsm, campaign limits, services.lock and toolchain.lock are unchanged. Sealed evidence files are unchanged; G0 manifest only moves the OCOR-DEV-0004 ledger row."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "PASS. Plan self-hash of validate_ocor_development_plan.py is 1780d720ac9e336bcc04ae91eecc8786146eb5384add8f97d4b4a8b49e3bebef."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS. Plain validate_rccad.py also exit 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy && ruff check .",
+        "exit_code": 0,
+        "summary": "mypy exit 0 and ruff check . exit 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task <each of 21 tasks> --manifest <gate MANIFEST> --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS for OCOR-DEV-0002, 0003, 0004, 0005, 0006, 0007, 0008, 0009, 0010, 0011, 0012, 0013, 0014, 0015, 0019, 0020, 0022, 0023, 0050, 0071 and 0082. Each requalified-rem0039 record supersedes an id present in the sealed history. evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped exit 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --non-skipped",
+        "exit_code": 2,
+        "summary": "CLI requires --task and --manifest. The non-skipped control was executed through those required arguments for every task above, all exit 0."
+      },
+      {
+        "command": "clean shell: ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "First provision PASS. fuseki_max_heap_bytes=1073741824, cgroup 2147483648, control-plane SVID present. Fuseki archive cache MISS from https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, verified SHA512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132. Temporal image sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049, 15 containers, no OOM, restart count 0."
+      },
+      {
+        "command": "cd ocor-runtime && .venv/bin/python -m pytest -s tests/tasks/test_ocor_dev_rem_0039.py",
+        "exit_code": 0,
+        "summary": "19 passed, 0 skipped, 0 failed, 26.104s. Live server_version 1.32.1. DEP-011 measured on that server: 200 ops, 1.572s, 127.2 op/s, p50 7.88 ms, p95 10.38 ms, max 11.79 ms, no threshold. Ambiguous timeout: late_consumption=None, retry=CONSUMED, exactly one CONSUMED. Exported names only: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN, plus OCOR_VERIFIER_WORKTREE from env.sh. bootstrap.env was not sourced. No implementer tools were executed."
+      },
+      {
+        "command": "cd ocor-runtime && .venv/bin/python -m pytest tests/tasks/test_ocor_dev_0002.py ... test_ocor_dev_0082.py (21 modules listed in the request, excluding 0071 which is lock-checked)",
+        "exit_code": 0,
+        "summary": "568 passed, 0 skipped, 0 failed, 26.50s. Task test files are byte-identical to the base."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute && remove generated .ocor/bootstrap.env and .ocor/spire && ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Teardown left zero ocor-bootstrap containers, volumes and networks, but the generated credential file remained, so the next --execute failed closed until that generated file and .ocor/spire were removed. Second provision from a new clean shell then PASS. Fuseki archive cache HIT, same official Apache source and SHA512. fuseki_max_heap_bytes=1073741824. control-plane SVID present. Power at suite start: ADP0 online=1, BAT0 Not charging."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head 6251115923cd5b697ca04239c028e88eb1825145 --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0039-6251115923cd-0/campaign",
+        "exit_code": 0,
+        "summary": "Serial full suite PASS. 3243 tests, 0 failures, 0 errors, 0 skipped, including test_ocor_dev_0048 (196 cases, 0 skipped) and test_ocor_dev_0049. Duration 3986.774 s. Margin to the 5400 s cap: 1413.226 s. Over the 3600 s notification by 386.774 s. Under 4500 s by 513.226 s and under 5100 s by 1113.226 s, so no decision request. No service OOM or restart. Power at suite end: ADP0 online=1, BAT0 Not charging."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "Final teardown PASS. Zero ocor-bootstrap containers, volumes and networks. Worktree git status clean. Campaigns started from a clean shell (env -i, then source env.sh); exported OCOR names were OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN, plus OCOR_VERIFIER_WORKTREE set by env.sh."
+      }
+    ],
+    "findings": [],
+    "findings_disposition": "Nessun finding. Suite completa seriale del verifier 3243/3243, zero skip, 3986,774 s: 386,774 s sopra la notifica dei 60 minuti (3600 s), margine calcolato dal tetto di 5400 s 1413,226 s e dalla soglia di decision request di 5100 s 1113,226 s; nessuna nuova decision request (REM-0033-LOCAL-FULL-DURATION punto 4 come modificato da LOCAL-FULL-SUITE-CAP-90). Suite del task 19/19 su Temporal reale (server 1.32.1), riqualifiche 568/568, DEP-011 misurato dal verifier 127,2 op/s p95 10,38 ms (nessuna soglia dichiarata). Rete elettrica a inizio e fine suite (dato del verifier: ADP0 online=1).",
+    "head_sha": "6251115923cd5b697ca04239c028e88eb1825145",
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "501fcb96d74d4c862a64acbfc05d7020bc3d973da557df59c06eee9d2507b1c1",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-28T03:55:50Z",
+    "verdict_file_sha256": "cbbd672cb4244b366558de420cc0079086be7ffc13dd32decdcfbfee8d77741d",
+    "verdict_head_sha": "6251115923cd5b697ca04239c028e88eb1825145",
+    "verdict_request_id": "OCOR-DEV-REM-0039-6251115923cd-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor / grok-4.7-high (xAI). Implementatori del task: Claude Code (Anthropic, claude-opus-5-5) e Codex (OpenAI). Revisore preventivo: Antigravity CLI / gemini-4-argon-high (Google). Nessun implementatore e non il revisore preventivo appartengono al fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py",
+      "exit_code": 0,
+      "summary": "PASS. Tool binaries on the verifier PATH match infra/toolchain.lock.json and infra/qualification_tools.lock.json (docker, git, gh, node, ruff, tsc, uv, helm, kind, kubectl). environment.json sha256 dbc6a8f7cb504aa91d38357bb22080f9ad2f944220f51676e8b73d8a6e9ac698. Host: Intel Core Ultra 9 275HX, 24 threads, MemTotal 31743008 kB."
+    }
   },
   "inputs": {
     "deploy/local/compose.yaml": "4aadb004cad77dbe29540fc35fe2dc4be352e36d28c276462820c916459b7b74",
@@ -773,6 +903,12 @@
   "review_scope": "requalification of the unchanged task on the changed dependency lock; not a re-assessment of its conformance beyond its own tests",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatori di REM-0039 (ciclo 0, sigillo e integrazione): Claude Code / claude-opus-5-5 / Anthropic; Codex / OpenAI contato dal loop. Revisore preventivo Antigravity / gemini-4-argon-high / Google. Nessun implementatore ne il revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "implementers": [
       {
         "agent": "Claude Code",
@@ -786,6 +922,12 @@
         "scope": "counted as implementer of the task by the loop rule; no REM-0039 code"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
     "preventive_reviewer": {
       "agent": "Antigravity CLI",
       "model": "gemini-4-argon-high",
@@ -801,11 +943,12 @@
       "process": "external loop only, separate clean context",
       "provider_constraint": "neither Anthropic nor OpenAI nor Google"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback_procedure_verified": "Mechanical review: revert the REM-0039 commits; the record OCOR-DEV-0006-requalified-583cef668320 becomes the most recent again once this record is removed with the revert. No data migration, no sealed-history rewrite.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-0006-requalified-583cef668320",
   "supersession_scope": "Requalification after the OCOR-DEV-REM-0039 change of sealed inputs ocor-runtime/uv.lock and/or ocor-runtime/pyproject.toml (temporalio==1.34.0 added to the test extra; transitive nexus-rpc 1.4.0 and types-protobuf 7.35.1.20260906; the lock rewritten by the locked uv 0.12.5 with every existing package version and its cp312/any wheel hash unchanged): the task's own tests, byte-identical to the base, re-run on the real 15-container stack in the frozen environment of the code commit.",
   "task_id": "OCOR-DEV-0006",

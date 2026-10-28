@@ -76,3 +76,24 @@ Al commit di codice il validatore della deriva elenca 21 task. Riqualifiche `.re
 - Temporal resta `Candidate Implementation` fino alla qualifica di `OCOR-DEV-0060`.
 - `E1=0`, `E2=0`, nessun requisito `Verified`; runtime conformance `NOT_ESTABLISHED`, PoC-GO e Production
   readiness `NO-GO`.
+
+## Sigillo (dopo GO indipendente)
+
+- **Verdetto**: `OCOR-DEV-REM-0039-6251115923cd-0`, `GO_FOR_EVIDENCE_SEAL`, zero finding, nulla `NOT_EXECUTED`
+  (file sha256 `cbbd672cb4244b366558de420cc0079086be7ffc13dd32decdcfbfee8d77741d`). Verifier: Cursor CLI /
+  grok-4.7-high / xAI, contesto separato. Suite del task 19/19 su Temporal reale (server 1.32.1); riqualifiche
+  568/568; suite completa seriale del verifier 3243/3243, zero skip, 3986,774 s: 386,774 s sopra la notifica di
+  3600 s, margine calcolato dal tetto di 5400 s 1413,226 s, dalla soglia di decision request di 5100 s 1113,226 s.
+  DEP-011 misurato dal verifier: 127,2 op/s, p95 10,38 ms, nessuna soglia dichiarata. Rete elettrica a inizio e
+  fine suite (dato del verifier).
+- **Allineamento**: HEAD verificato `6251115` unito in modo non distruttivo con `origin/main` `7f335fc`
+  (`5a34b2f`); cambiano soltanto i tre file di stato, albero non di stato identico.
+- **Sigillo**: `OCOR-DEV-REM-0039.json` e le 21 riqualifiche `.requalified-rem0039` (`OCOR-DEV-0002`–`0015`,
+  `0019`, `0020`, `0022`, `0023`, `0050`, `0071`, `0082`) passano a `SEALED`; i manifest G0, G1, G2 e G5 puntano
+  agli hash sigillati. In `OCOR-DEV-REM-0039.json` i `record_sha256` delle riqualifiche restano gli hash candidati
+  verificati; gli hash sigillati sono affiancati in `independent_verification.sealed_requalification_records`.
+  Raw log invariati; nessun record sigillato precedente modificato.
+- **Ruoli**: implementatore e integrazione Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato dal
+  loop; revisore preventivo Antigravity/Gemini (Google). Temporal resta `Candidate Implementation` fino alla
+  qualifica di `OCOR-DEV-0060`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e
+  Production `NO-GO`.
