@@ -868,6 +868,23 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.log",
+        # OCOR-DEV-REM-0040 (PO OCOR-DEV-0060-BA-SELECTED-COMPONENTS, change set c;
+        # REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION): sealResult subset port and
+        # SeaweedFS adapter of C7, remediation record and the regression-only
+        # requalifications of 0005, 0050 and 0082 (plan allowlist).
+        "ocor-runtime/src/ocor_runtime/c7/sealed_results.py",
+        "ocor-runtime/src/ocor_runtime/c7/adapters/__init__.py",
+        "ocor-runtime/src/ocor_runtime/c7/adapters/seaweedfs.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py",
+        "reports/assurance/OCOR-DEV-REM-0040-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0040-RCCAD/OCOR-DEV-REM-0040.json",
+        "reports/assurance/OCOR-DEV-REM-0040-RCCAD/OCOR-DEV-REM-0040.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0040.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0040.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
