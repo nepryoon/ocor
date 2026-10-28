@@ -2,23 +2,18 @@
   "assumptions": [
     "Temporal namespace ocor-c6 is created by the adapter, not by the bootstrap stack (REM-0038 provisioning unchanged).",
     "DEP-011 has no declared performance threshold: the benchmark is measured and recorded only.",
-    "The two-lane local full suite is usable from the REM-0037 merge, with the memory admission at start (otherwise serial, recorded)."
+    "The two-lane local full suite is usable from the REM-0037 merge, with the memory admission at start (otherwise serial, recorded).",
+    "REM-0040 adapter placement awaits the PO disposition of REM-0040-C7-SEALED-RESULT-PORT; REM-0041 is independent of it."
   ],
-  "base_sha": "969d2d2b18ad62c3d2df8d8321c3e4df7d0ea1b5",
-  "baseline_commit": "969d2d2b18ad62c3d2df8d8321c3e4df7d0ea1b5",
-  "branch": "governed/state-sync-rem0037-integrated-20261028",
+  "base_sha": "d9fb92ce600d95e79c48d625ca0ce88ed53a6304",
+  "baseline_commit": "d9fb92ce600d95e79c48d625ca0ce88ed53a6304",
+  "branch": "governed/state-sync-rem0040-decision-request-20261028",
   "candidate_branch_evidence": {
-    "branch": "governed/ocor-dev-rem-0037-local-suite-split",
-    "head_sha": "7b3520f7fc789421a34221526bff6d48a824bbe9",
-    "merge_commit": "969d2d2b18ad62c3d2df8d8321c3e4df7d0ea1b5",
-    "note": "REM-0037 record and 4 requalifications sealed after GO and merged with PR #385",
+    "branch": "governed/decision-request-rem0040-c7-sealed-result-port",
+    "head_sha": "a60ab1e94086b05d3d73aabe50874a1f63e8e7d4",
+    "note": "decision request file only; draft PR #387, not for merge",
     "paths": [
-      "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.json",
-      "reports/assurance/OCOR-DEV-REM-0037-RCCAD/README.md",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.json",
-      "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.json"
+      "reports/development/decision_requests/REM-0040-C7-SEALED-RESULT-PORT.md"
     ]
   },
   "changed_paths": [
@@ -36,42 +31,27 @@
   },
   "commands": [
     {
-      "command": "verdict OCOR-DEV-REM-0037-f08ad7599fc5-0",
+      "command": "git grep OCOR-DEV-REM-0040 over every ref",
       "exit_code": 0,
-      "summary": "GO_FOR_EVIDENCE_SEAL, zero findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 4ff1bf638b4c11884d976d0201bfa6849d3f089a4e420dbbeb88574e3bcd56fe"
+      "summary": "only planning references (state, log, handoff); ID free for the change set"
     },
     {
-      "command": "merge origin/main 9fa7caee5ce9 into governed/ocor-dev-rem-0037-local-suite-split (non-destructive alignment)",
+      "command": "read-only inventory of C7 ports in ocor-runtime/src (grep Protocol, ScenarioOverlayStore, sealResult; ADD v1.3 par. 4.2 and rows 275/307/359; LLD v1.1 par. 2.7, rows 357/372)",
       "exit_code": 0,
-      "summary": "aligned head 927e6a9bed97; only the three state files differ from f08ad7599fc5; non-state tree sha256 equal"
+      "summary": "no C7 port for sealed causal results; c7/runtime.py has no Protocol and no persistence; EventSink is the emission fence; MemoryContentStore is C8 with delete"
     },
     {
-      "command": "seal.py (verdict OCOR-DEV-REM-0037-f08ad7599fc5-0)",
+      "command": "decision request REM-0040-C7-SEALED-RESULT-PORT, commit a60ab1e, draft PR #387",
       "exit_code": 0,
-      "summary": "OCOR-DEV-REM-0037.json and 4 requalifications SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; README seal section; commit 7b3520f7fc78"
-    },
-    {
-      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
-      "exit_code": 0,
-      "summary": "46/46 workflow-derived non-suite steps PASS (inputs, mypy, ruff, tsc, contract generator, lock schemas, tooling Compose, plan, rccad, language, drift 0, scope, delivery validate, markdownlint, mermaid, verify.py, validation-closure guards incl. test_local_lane_campaign.py, 0006 teardown AST guard, runtime evidence 0005/0006/0050/0082, CI G0 evidence loop, supply-chain scanner)"
-    },
-    {
-      "command": "gh pr create (PR #385) and exact-head polling until mergeStateStatus CLEAN",
-      "exit_code": 0,
-      "summary": "13/13 required checks success, zero reruns"
-    },
-    {
-      "command": "gh pr merge 385 --merge --match-head-commit 7b3520f7fc789421a34221526bff6d48a824bbe9",
-      "exit_code": 0,
-      "summary": "merge commit 969d2d2b18ad62c3d2df8d8321c3e4df7d0ea1b5; origin/main equals the merge commit; sealed hashes unchanged"
+      "summary": "OPEN_PO_DECISION_REQUIRED (operative); recommendation option 1; sha256 8c9efaa8a7fdad34608d344946a7f4cd4d5d9e6154e4a9d16c61fcfe11a25424"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0037:integrated",
+  "current_task": "OCOR-DEV-REM-0040:blocked_by_decision_request",
   "evidence_paths": [],
-  "exact_next_action": "OCOR-DEV-REM-0040 (change set c of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26): SeaweedFS adapter of C7 behind the existing ports, buckets with S3 Object Lock and versioning, retention mode chosen and justified in the evidence, never the retention bypass on the application path); verify read-only that OCOR-DEV-REM-0040 is still free across every ref before use; read MemTotal/MemAvailable from /proc/meminfo at unit start; new worktree from origin/main; read-only inventory of consumers and sealed records touched, RED before code on real SeaweedFS (already in the 15-container stack of REM-0038), GREEN, requalifications with explicit supersedes, task suite, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW request (stop the iteration after it), then the local full suite: from now on the two-lane mode of scripts/run_local_lane_campaign.py --execute is usable for the implementer and the verifier (LOCAL-SUITE-SPLIT-REACTIVATION point 7; memory admission at start, two-lane threshold 14340.6 MiB, otherwise serial and recorded; cap 5400 s, notification 3600 s). Then REM-0041 (TerminusDB C3), then OCOR-DEV-0060. OCOR-DEV-0062..0064 proceed while the remediations wait for review or verification. No new DEC; claims unchanged.",
-  "head_sha": "969d2d2b18ad62c3d2df8d8321c3e4df7d0ea1b5",
-  "head_sha_role": "merge commit of PR #385 (OCOR-DEV-REM-0037 integrated)",
+  "exact_next_action": "OCOR-DEV-REM-0041 (change set d of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26): TerminusDB runtime adapter of C3 as the canonical VersionedAssertedState store behind the existing ports; PostgreSQL stays the atomicity verification adapter, never an implicit fallback, DEC-201; qualify BA-01 conformance on TerminusDB: the five crash windows of par. 2.3, the stale writer and the fork without DeliveryAttempt; if TerminusDB does not pass them, stop and open a change-control decision request, no fallback adopted). Verify read-only that OCOR-DEV-REM-0041 is still free across every ref; read MemTotal/MemAvailable from /proc/meminfo at unit start; start the ocor-bootstrap stack (scripts/bootstrap_ci_environment.py --execute from a clean shell; it was down at the start of iteration 31); new worktree from origin/main; read-only inventory of the existing C3 ports, consumers and sealed records touched (if no existing port fits, stop and open a decision request as for REM-0040), RED before code on real TerminusDB, GREEN, requalifications with explicit supersedes, task suite, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW request (stop the iteration after it), then the local full suite (two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, threshold 14340.6 MiB, otherwise serial and recorded; cap 5400 s, notification 3600 s). OCOR-DEV-REM-0040 is blocked by the decision request REM-0040-C7-SEALED-RESULT-PORT (PR #387, OPEN_PO_DECISION_REQUIRED): when a disposition is recorded, resume REM-0040 at the first coherent boundary. OCOR-DEV-0060 after the integration of REM-0038..0041. OCOR-DEV-0062..0064 proceed while the remediations wait for review, verification or a decision. No new DEC; claims unchanged.",
+  "head_sha": "d9fb92ce600d95e79c48d625ca0ce88ed53a6304",
+  "head_sha_role": "origin/main at the start of the unit (merge of PR #386); decision request commit a60ab1e on its own branch",
   "independent_verification": {
     "head_sha": "f08ad7599fc59dfd39d1b5e5adf8447248a26ecd",
     "next_verifier_constraint": "for REM-0040: provider different from every implementer and from its preventive reviewer",
@@ -151,8 +131,8 @@
     "pre_campaign_gate_code_head": "61654ea20771: 43/44 PASS; drift FAIL expected for 0005/0006/0050/0082",
     "pre_campaign_gate_evidence_head": "f08ad7599fc5: 44/44 PASS, drift 0"
   },
-  "next_task": "OCOR-DEV-REM-0040:implementation",
-  "phase": "OCOR_DEV_REM_0037_INTEGRATED",
+  "next_task": "OCOR-DEV-REM-0041:implementation",
+  "phase": "OCOR_DEV_REM_0040_DECISION_REQUEST_OPEN",
   "raw_evidence_location": "~/.ocor-codex/rem-0037-q2 (campaigns, builder), ~/.ocor-codex/rem-0037-candidate/gates-61654ea20771 and gates-f08ad7599fc5, ~/.ocor-codex/rem-0037-q/teardown-0006 (outside Git)",
   "requirement_ids": [
     "NFR-058",
@@ -213,7 +193,9 @@
       "tests": 3243
     }
   },
-  "unresolved_blockers": [],
-  "updated_at": "2026-10-28T11:33:27.224086+00:00",
-  "worktree": ".ocor/worktrees/rem-0037 (integrated branch); REM-0040: new worktree from origin/main"
+  "unresolved_blockers": [
+    "REM-0040-C7-SEALED-RESULT-PORT (PR #387, OPEN_PO_DECISION_REQUIRED; blocks OCOR-DEV-REM-0040 only)"
+  ],
+  "updated_at": "2026-10-28T12:19:19.505092+00:00",
+  "worktree": ".ocor/worktrees/ss-rem0040-dr (state sync); .ocor/worktrees/dr-rem0040 (decision request)"
 }
