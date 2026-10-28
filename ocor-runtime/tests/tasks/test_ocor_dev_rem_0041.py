@@ -586,34 +586,108 @@ def test_a_stale_writer_is_fenced_and_writes_nothing(service: Any, password: str
     assert dict(successor.read(TENANT, AGGREGATE_TYPE, AGGREGATE_REF).state)["status"] == "CURRENT"
 
 
-def test_two_distinct_commands_racing_the_same_revision_never_both_succeed(service: Any) -> None:
-    barrier = threading.Barrier(8)
+def _race(count: int, action: Any) -> list[str]:
+    """Starts ``count`` threads at one barrier; every outcome, including an unexpected
+    exception, is recorded so that a thread failure can never pass silently."""
+    barrier = threading.Barrier(count)
     outcomes: list[str] = []
     lock = threading.Lock()
 
-    def attempt(index: int) -> None:
-        command = _first(
-            command_id=f"urn:ocor:command:rem0041:race-{index}",
-            idempotency_key=f"rem0041-terminusdb-race-{index:04d}",
-            canonical_delta={"winner": index},
-        )
+    def run(index: int) -> None:
         barrier.wait()
         try:
-            service.commit(command)
-            result = "COMMITTED"
+            action(index)
+            result = "OK"
         except C3Error as error:
             result = error.reason_code
+        except BaseException as error:  # noqa: BLE001 - recorded and asserted by the caller
+            result = f"UNEXPECTED {type(error).__name__}: {error}"
         with lock:
             outcomes.append(result)
 
-    threads = [threading.Thread(target=attempt, args=(index,)) for index in range(8)]
+    threads = [threading.Thread(target=run, args=(index,)) for index in range(count)]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join(timeout=120)
-    assert sorted(outcomes) == ["COMMITTED"] + ["REVISION_CONFLICT"] * 7
+    assert len(outcomes) == count, outcomes
+    return sorted(outcomes)
+
+
+@pytest.mark.parametrize("expected_revision", [0, 1])
+def test_two_distinct_commands_racing_the_same_revision_never_both_succeed(
+    service: Any, password: str, database: str, expected_revision: int
+) -> None:
+    if expected_revision:
+        service.commit(_first(idempotency_key="rem0041-terminusdb-base-0001"))
+
+    def commit(index: int) -> None:
+        service.commit(
+            _first(
+                command_id=f"urn:ocor:command:rem0041:race-{index}",
+                idempotency_key=f"rem0041-terminusdb-race-{index:04d}",
+                expected_revision=expected_revision,
+                canonical_delta={"winner": index},
+            )
+        )
+
+    assert _race(8, commit) == ["OK"] + ["REVISION_CONFLICT"] * 7
+    snapshot = service.read(TENANT, AGGREGATE_TYPE, AGGREGATE_REF)
+    assert snapshot.revision == expected_revision + 1
+    commits = _documents(password, database, "C3Commit")
+    assert len(commits) == expected_revision + 1
+    winner = [doc for doc in commits if doc["to_revision"] == expected_revision + 1]
+    assert len(winner) == 1 and winner[0]["commit_id"] == snapshot.commit_id
+    assert len(service.claim_batch(limit=100)) == expected_revision + 1
+
+
+def test_the_same_command_racing_itself_commits_once_and_replays(service: Any) -> None:
+    receipts: list[Any] = []
+    lock = threading.Lock()
+
+    def commit(index: int) -> None:
+        receipt = service.commit(_first())
+        with lock:
+            receipts.append(receipt)
+
+    assert _race(6, commit) == ["OK"] * 6
+    assert sorted(receipt.replayed for receipt in receipts) == [False] + [True] * 5
+    assert len({receipt.commit_id for receipt in receipts}) == 1
     assert service.current_revision(TENANT, AGGREGATE_TYPE, AGGREGATE_REF) == 1
-    assert len(service.claim_batch(limit=100)) == 1
+
+
+def test_concurrent_acknowledgements_record_one_delivery_attempt(service: Any, password: str, database: str) -> None:
+    receipt = service.commit(_first())
+
+    def acknowledge(index: int) -> None:
+        service.acknowledge(receipt.outbox_event_id, acknowledged_at=datetime.now(UTC))
+
+    assert _race(6, acknowledge) == ["OK"] * 6
+    assert [doc["event_id"] for doc in _documents(password, database, "C3DeliveryAttempt")] == [
+        receipt.outbox_event_id
+    ]
+    assert service.claim_batch(limit=10) == ()
+
+
+def test_concurrent_writer_acquisitions_leave_exactly_one_writer(service: Any, password: str, database: str) -> None:
+    contenders = [
+        _service_module().TerminusDBC3Service(url=URL, password=password, database=database) for _ in range(5)
+    ]
+    assert _race(5, lambda index: contenders[index].initialize()) == ["OK"] * 5
+    epochs = sorted(contender.writer_epoch for contender in contenders)
+    assert epochs == list(range(service.writer_epoch + 1, service.writer_epoch + 6))
+    (fence,) = _documents(password, database, "C3WriterFence")
+    assert fence["writer_epoch"] == epochs[-1]
+    outcomes = []
+    for index, contender in enumerate([service, *contenders]):
+        try:
+            contender.commit(
+                _first(command_id=f"urn:ocor:command:rem0041:w-{index}", idempotency_key=f"rem0041-terminusdb-w-{index:04d}")
+            )
+            outcomes.append(contender.writer_epoch)
+        except C3Error as error:
+            assert error.reason_code == "SINGLE_WRITER_VIOLATION"
+    assert outcomes == [epochs[-1]]
 
 
 def test_concurrent_commits_on_distinct_aggregates_all_succeed(service: Any) -> None:
@@ -689,7 +763,7 @@ def test_reconcile_repairs_a_simulated_corruption_from_the_commit_record(
             f"/api/document/admin/{database}?author=tamper&message=corruption&id={urllib.parse.quote(doc['@id'], safe='')}",
             password,
         )
-        assert status == 200, body
+        assert status in (200, 204), body
     assert service.reconcile(limit=10) == 2
     assert service.reconcile(limit=10) == 0
     (outbox,) = _documents(password, database, "C3OutboxEntry")
