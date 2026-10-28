@@ -842,6 +842,32 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0039.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0039.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0039.log",
+        # OCOR-DEV-REM-0037 (PO LOCAL-SUITE-SPLIT as reactivated by
+        # LOCAL-SUITE-SPLIT-REACTIVATION): additive two-lane orchestrator, its
+        # guard, the measured lane weights and the pre-code measurement record.
+        "scripts/run_local_lane_campaign.py",
+        "reports/tests/test_local_lane_campaign.py",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
+        # OCOR-DEV-REM-0037 candidate: remediation record (inventory, memory and the
+        # serial/two-lane equivalence proof) and the requalifications of 0005, 0050
+        # (substantive, LOCAL-SUITE-SPLIT-REACTIVATION point 3) and 0082.
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.json",
+        "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.log",
+        # REM-0037-0006-NETWORK-RESIDUE-DISPOSITION (2026-10-28): teardown of its own
+        # Compose project in the sealed 0006 test, its exact AST guard and the 0006
+        # requalification.
+        "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.json",
+        "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.log",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0006.py",
+        "reports/tests/test_rem0037_0006_teardown_scope.py",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

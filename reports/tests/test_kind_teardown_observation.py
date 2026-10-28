@@ -707,6 +707,26 @@ def normalize_rem0038_workflow(path, after):
     return after.replace(REM0038_PLACEHOLDERS, '', 1)
 
 
+REM0037_GUARD_STEP = '      - name: Execute conditional report guards and campaign supervisor tests\n'
+REM0037_GUARD_COMMAND = (
+    'reports/tests/test_ci_fuseki_archive.py reports/tests/test_local_lane_campaign.py | tee reports/tests/ci_guards.log\n',
+    'reports/tests/test_ci_fuseki_archive.py | tee reports/tests/ci_guards.log\n',
+)
+
+
+def normalize_rem0037_workflow(path, after):
+    """LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26), point 6, under REM-0038-CAMPAIGN-GUARD-ADMISSION
+    condition a: exact delta of OCOR-DEV-REM-0037. Only the lane guard module appended to the
+    validation-closure guard command returns to the baseline command; the module must occur
+    exactly once in that workflow and the command fragment exactly once."""
+    if path != '.github/workflows/ocor-validation-closure.yml':
+        return after
+    added, baseline = REM0037_GUARD_COMMAND
+    assert after.count(added) == 1, 'Workflow drift: ' + path
+    assert after.count('test_local_lane_campaign') == 1, 'Workflow drift: ' + path
+    return after.replace(added, baseline, 1)
+
+
 def assert_governed_workflow(path, before, after):
     """Accept only the PO's exact pin lifecycle/N update and scope-gate reorder."""
     if path == '.github/workflows/ocor-delivery-activation.yml':
@@ -721,7 +741,7 @@ def assert_governed_workflow(path, before, after):
         suffix = suffix.replace('--shard-count 4', '--shard-count 5')
         before = prefix + '  conditional-infrastructure-0049-part:' + suffix
         before = retire_integrated_0049_pin(before)
-    after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, after))
+    after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, normalize_rem0037_workflow(path, after)))
     assert before == after, 'Workflow drift: ' + path
 
 
@@ -786,7 +806,7 @@ def observation_only_proof(overrides=None):
     return {'baseline': baseline, 'functions': results, 'workflows_unchanged': workflows,
             'campaign_constants_identical': True, 'window_poll_sample_identical': True,
             'normalisation': 'Only latency wrapper and two diagnostic export fields removed from AST. Workflows require the exact PO-authorised 0049 pin and N=5 delta; all other bytes, timers and gates identical.',
-            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts; 0049 integration CI repair: delivery-activation scope gate moved byte-identically before the first worktree writer; REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26): two tooling Compose-rendering placeholders',
+            'authorised_workflow_delta': 'REM-0017-CI-0049-RELAY-PROBE-REMEDIATION (2026-10-14): beab1b4 pin, five deterministic parts; 0049 integration CI repair: delivery-activation scope gate moved byte-identically before the first worktree writer; REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26): two tooling Compose-rendering placeholders; LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26) point 6: the REM-0037 lane guard module in the validation-closure guard command',
             'authorised_campaign_delta': 'REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26): MANDATORY_CONTAINERS = 15 and its two uses normalised back to 11'}
 
 
@@ -916,7 +936,7 @@ def bootstrap_probe_proof(case, overrides=None):
         before = old(path)
         if path == '.github/workflows/ocor-validation-closure.yml':
             before = retire_integrated_0049_pin(before)
-        after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, read(path)))
+        after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, normalize_rem0037_workflow(path, read(path))))
         case.assertEqual(before, after, workflow.name)
 
 
@@ -1024,6 +1044,59 @@ class Rem0042GuardAdmission(Rem0038GuardAdmission):
             with self.subTest(change=label):
                 self.assertNotEqual(changed, campaign)
                 self.assertEqual(self.failing_proofs({self.CAMPAIGN: changed}), expected)
+
+
+class Rem0037GuardAdmission(unittest.TestCase):
+    """LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26), point 6, under REM-0038-CAMPAIGN-GUARD-ADMISSION
+    condition a: the exact REM-0037 delta (reports/tests/test_local_lane_campaign.py appended to
+    the validation-closure guard command) is admitted; every other difference still fails. The
+    campaign tests of Rem0038GuardAdmission prove that REM-0037 admits no campaign difference."""
+    CLOSURE = '.github/workflows/ocor-validation-closure.yml'
+    failing_proofs = Rem0038GuardAdmission.failing_proofs
+
+    def test_the_lane_guard_module_runs_in_the_validation_closure_guard_step(self):
+        import yaml
+        root = Path(__file__).resolve().parents[2]
+        steps = yaml.safe_load((root / self.CLOSURE).read_text())['jobs']['validation-closure']['steps']
+        guard = [s for s in steps if s.get('name') == REM0037_GUARD_STEP.split('name: ', 1)[1].strip()]
+        self.assertEqual(len(guard), 1)
+        command = guard[0]['run'].splitlines()[1]
+        self.assertIn('--junitxml=reports/tests/guards_junit.xml', command)
+        self.assertEqual(command.split().count('reports/tests/test_local_lane_campaign.py'), 1)
+        self.assertIn('check_junit', guard[0]['run'])
+
+    def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_command(self):
+        root = Path(__file__).resolve().parents[2]
+        closure = (root / self.CLOSURE).read_text()
+        added, baseline = REM0037_GUARD_COMMAND
+        self.assertEqual(closure.count(added), 1)
+        normalised = normalize_rem0037_workflow(self.CLOSURE, closure)
+        self.assertNotIn('test_local_lane_campaign', normalised)
+        self.assertEqual(normalised.count(baseline), 1)
+        self.assertEqual(self.failing_proofs({}), set())
+
+    def test_every_other_workflow_difference_still_fails(self):
+        root = Path(__file__).resolve().parents[2]
+        closure = (root / self.CLOSURE).read_text()
+        added, baseline = REM0037_GUARD_COMMAND
+        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        module = 'reports/tests/test_local_lane_campaign.py'
+        rccad = '.github/workflows/ocor-rccad.yml'
+        for label, overrides in [
+            ('module missing', {self.CLOSURE: closure.replace(added, baseline, 1)}),
+            ('module duplicated', {self.CLOSURE: closure.replace(added, added.replace(module, module + ' ' + module), 1)}),
+            ('module first', {self.CLOSURE: closure.replace(added, added.replace('reports/tests/test_ci_fuseki_archive.py ' + module, module + ' reports/tests/test_ci_fuseki_archive.py'), 1)}),
+            ('another module added', {self.CLOSURE: closure.replace(added, added.replace(module, module + ' reports/tests/test_extra.py'), 1)}),
+            ('selection flag added', {self.CLOSURE: closure.replace(added, added.replace(module, module + ' -k not_slow'), 1)}),
+            ('tee log changed', {self.CLOSURE: closure.replace(added, added.replace('ci_guards.log', 'ci_guards_lanes.log'), 1)}),
+            ('junit path changed', {self.CLOSURE: closure.replace('--junitxml=reports/tests/guards_junit.xml', '--junitxml=reports/tests/lanes_junit.xml', 1)}),
+            ('module run in a second step', {self.CLOSURE: closure.replace(REM0037_GUARD_STEP, '      - name: Lane guard\n        run: pytest ' + module + '\n\n' + REM0037_GUARD_STEP, 1)}),
+            ('module in another workflow', {rccad: (root / rccad).read_text() + '# ' + module + '\n'}),
+        ]:
+            with self.subTest(change=label):
+                path, text = next(iter(overrides.items()))
+                self.assertNotEqual(text, (root / path).read_text())
+                self.assertEqual(self.failing_proofs(overrides), both)
 
 if __name__ == '__main__':
     unittest.main()

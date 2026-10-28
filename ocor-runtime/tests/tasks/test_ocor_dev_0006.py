@@ -97,14 +97,25 @@ def test_missing_pinned_image_cannot_fall_back_to_public_pull(tmp_path: Path):
 """,
         encoding="utf-8",
     )
-    result = subprocess.run(
-        ["docker", "compose", "-p", "ocor-missing-image-negative", "-f", str(missing), "up", "--detach"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode != 0
-    assert "pull access denied" not in (result.stdout + result.stderr).lower()
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "-p", "ocor-missing-image-negative", "-f", str(missing), "up", "--detach"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode != 0
+        assert "pull access denied" not in (result.stdout + result.stderr).lower()
+    finally:
+        # REM-0037-0006-NETWORK-RESIDUE-DISPOSITION (2026-10-28): remove the Compose
+        # project this test creates (network included), also when the test fails.
+        subprocess.run(
+            ["docker", "compose", "-p", "ocor-missing-image-negative", "-f", str(missing), "down", "--remove-orphans"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
 
 
 @pytest.mark.parametrize("service", sorted(SERVICES))
