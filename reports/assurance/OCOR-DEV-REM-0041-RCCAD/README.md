@@ -97,3 +97,24 @@ sigillati intatti; inserimenti chirurgici nei `MANIFEST.json`.
 
 Revert dei commit di REM-0041: spariscono adapter, servizio, modulo di test e voci dell'allowlist; i record di
 riqualifica precedenti tornano i più recenti. Nessun consumer, contratto, port, lock o migrazione coinvolti.
+
+## Sigillo (dopo GO indipendente)
+
+- **Verdetto**: `OCOR-DEV-REM-0041-ee367a61cc59-0`, `GO_FOR_EVIDENCE_SEAL`, zero finding, nulla `NOT_EXECUTED`
+  (file sha256 `d83d01cc030cb684aa1b988966134ebad243d7455c823fd3535127310289751e`). Verifier: Cursor CLI /
+  grok-4.7-high / xAI, contesto separato, shell pulite. Riesecuzione del verifier sullo stesso head: modulo del task
+  33/33 su TerminusDB e TypeDB reali, regressione 278/278, guard di `validation-closure` 362/362 dopo il build
+  versionato dell'SDK; suite completa a due corsie 3276/3276 (1039 e 2237), zero skip, 2430,311 s (margine dal tetto
+  di 5400 s 2969,689 s, dalla notifica di 3600 s 1169,689 s); unione esatta, residui dell'host vuoti, rete elettrica a
+  inizio e fine (dato del verifier).
+- **Allineamento**: HEAD verificato `ee367a6` unito in modo non distruttivo con `origin/main` `0e136ce`
+  (`51ace9d`); cambiano soltanto i tre file di stato, albero non di stato identico.
+- **Sigillo**: `OCOR-DEV-REM-0041.json` e le 3 riqualifiche `.requalified-rem0041` (`OCOR-DEV-0005`, `0050`,
+  `0082`) passano a `SEALED`; i manifest G0, G2 e G5 puntano agli hash sigillati. In `OCOR-DEV-REM-0041.json` i
+  `record_sha256` delle riqualifiche restano gli hash candidati verificati; gli hash sigillati sono affiancati in
+  `independent_verification.sealed_requalification_records`. Raw log invariati; nessun record sigillato precedente
+  modificato.
+- **Ruoli**: implementatore e integrazione Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato dal
+  loop; revisore preventivo Antigravity/Gemini (Google). L'adapter TerminusDB resta dietro i port sigillati di C3; i
+  consumer restano su `PostgresC3Service` fino alla qualifica di `OCOR-DEV-0060`. Claim invariati: `E1=0`, `E2=0`,
+  `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
