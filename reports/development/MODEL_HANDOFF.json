@@ -2,17 +2,31 @@
   "assumptions": [
     "The sealResult subset Protocol and the SeaweedFS adapter fit REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION points 1-6 without touching c7/runtime.py, CausalOutcome, contracts, schemas, reason codes or uv.lock.",
     "SeaweedFS (pinned) honours If-None-Match: * on PUT in a versioned Object Lock bucket (measured: 30/30 single-version races with it, 0/30 without).",
-    "The two-lane local full suite is usable, with the memory admission at start (otherwise serial, recorded).",
-    "The commits 95635f8..8a7513a of the interrupted iteration [34] are development material, re-checked against the disposition; they are not evidence."
+    "The two-lane local full suite is usable, with the memory admission at start (otherwise serial, recorded)."
   ],
-  "base_sha": "13946dcf735ac9c18850dfece4337886c77bc1c8",
-  "baseline_commit": "13946dcf735ac9c18850dfece4337886c77bc1c8",
-  "branch": "governed/state-sync-rem0040-prereview-20261028",
+  "base_sha": "b979a0c30bc39be708ae558e893db717082408b8",
+  "baseline_commit": "b979a0c30bc39be708ae558e893db717082408b8",
+  "branch": "governed/state-sync-rem0040-candidate-20261028",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0040-seaweedfs-c7-adapter",
-    "head_sha": "b9eda5fe1204a74bee24d007811d9b7bc7046f4c",
-    "note": "candidate code head awaiting the preventive review; not evidence, not sealed",
-    "paths": []
+    "code_commit": "f04375e279814c9649e58bbf7a39285e8f843ca1",
+    "head_sha": "8c498f9988b6465f77d9e955cdca9417898a0492",
+    "note": "pushed candidate; evidence CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+    "paths": [
+      "reports/assurance/OCOR-DEV-REM-0040-RCCAD/OCOR-DEV-REM-0040.json",
+      "reports/assurance/OCOR-DEV-REM-0040-RCCAD/OCOR-DEV-REM-0040.log",
+      "reports/assurance/OCOR-DEV-REM-0040-RCCAD/README.md",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0040.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0040.log",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.log",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.log",
+      "reports/evidence/G0/MANIFEST.json",
+      "reports/evidence/G2/MANIFEST.json",
+      "reports/evidence/G5/MANIFEST.json"
+    ],
+    "worktree": ".ocor/worktrees/rem-0040-seaweedfs"
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -29,65 +43,46 @@
   },
   "commands": [
     {
-      "command": "record the PO disposition in reports/development/decision_requests/REM-0040-C7-SEALED-RESULT-PORT.md (file sha256 8c9efaa8... verified at a60ab1e)",
+      "command": "prereview outcome OCOR-DEV-REM-0040-b9eda5fe1204-pre",
       "exit_code": 0,
-      "summary": "commit aad511f pushed; PR #387 closed as resolved"
+      "summary": "NO_BLOCKING_FINDINGS, 1 advisory (Antigravity/gemini-4-argon-high/Google); sha256 bf6b1adeb23b52cf0fa2f9b174dfdb22212d1791d90ecc96197d92d3786e7321"
     },
     {
-      "command": "git merge origin/main into governed/ocor-dev-rem-0040-seaweedfs-c7-adapter (non-destructive)",
+      "command": "P1 fix f04375e: corrupted-signature case through the adapter's own SigV4",
       "exit_code": 0,
-      "summary": "09920bb: conflicts only in the plan allowlist (union REM-0041 + REM-0040) and the plan validator self-hash"
+      "summary": "RED on 13946dc 20/21 (fingerprint 56105d60ff0b); GREEN 21/21 x3 on the live SeaweedFS"
     },
     {
-      "command": "scripts/bootstrap_ci_environment.py --execute --timeout 600 (clean shell, locked PATH)",
-      "exit_code": 0,
-      "summary": "PASS, 15 containers"
-    },
-    {
-      "command": "pytest tests/tasks/test_ocor_dev_rem_0040.py on base 13946dc with the final test (RED)",
+      "command": "PRE-CAMPAIGN-GATE at f04375e27981",
       "exit_code": 1,
-      "summary": "19 failed/errored by ModuleNotFoundError, 2 guards passed; fingerprint bf757dda537f"
+      "summary": "41/42 PASS; drift FAIL expected (0005/0050/0082)"
     },
     {
-      "command": "pytest tests/tasks/test_ocor_dev_rem_0040.py x3 at HEAD (GREEN)",
+      "command": "qualification campaign at f04375e27981 (env -i, locked PATH, bootstrap_ci_environment.py, 15 containers; then run_local_lane_campaign.py --execute)",
       "exit_code": 0,
-      "summary": "21 passed three times on the live SeaweedFS"
+      "summary": "phase A PASS, task 3x 21/21, regression 251, reports portfolio PASS; full suite TWO_LANE 3297/3297 in 2385.341 s (margin to 5400 s 3014.659 s); zero residue"
     },
     {
-      "command": "race measurement and mutation probe (outside Git)",
+      "command": "build evidence and gates at the evidence head",
       "exit_code": 0,
-      "summary": "If-None-Match 30/30 single version vs 0/30 without; 11/12 mutants killed, M1 equivalent"
+      "summary": "PRE-CAMPAIGN-GATE steps at the evidence head 8c498f9988b6: 42/42 PASS, drift 0, runtime evidence 0005/0050/0082 PASS, supply-chain scanner PASS"
     },
     {
-      "command": "regression 0005/0050/0082/0045 + first governed slice + c7 emission hardening",
+      "command": "write ~/.ocor-codex/verify_request.json",
       "exit_code": 0,
-      "summary": "251 passed, 0 skipped"
-    },
-    {
-      "command": "PRE-CAMPAIGN-GATE (~/.ocor-codex/rem-0040/pregate.py) at b9eda5f",
-      "exit_code": 1,
-      "summary": "41/42 PASS; drift FAIL only for 0005/0050/0082 on the plan validator (expected until the regression-only requalifications)"
-    },
-    {
-      "command": "write ~/.ocor-codex/prereview_request.json",
-      "exit_code": 0,
-      "summary": "OCOR-DEV-REM-0040-b9eda5fe1204-pre"
+      "summary": "OCOR-DEV-REM-0040-8c498f9988b6-0"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0040:awaiting-pre-campaign-review",
+  "current_task": "OCOR-DEV-REM-0040:awaiting-independent-verification",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0040 after the preventive review OCOR-DEV-REM-0040-b9eda5fe1204-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0040-b9eda5fe1204-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0040-seaweedfs-c7-adapter, worktree .ocor/worktrees/rem-0040-seaweedfs, candidate code head b9eda5fe1204 (pushed). At unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0040/pregate.py; never commit run artefacts such as reports/tests/ci_fuseki_build.log written by the bootstrap), build the TypeScript SDK in the candidate worktree, and the qualifying local full suite from a clean shell with the locked PATH and power logging (scripts/bootstrap_ci_environment.py --execute; two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, otherwise serial and recorded; cap 5400 s, notification 3600 s; no tracked edits during the campaign); the task module three times on the real SeaweedFS of the campaign stack; regression-only requalification records requalified-rem0040 of OCOR-DEV-0005/0050/0082 with explicit supersession (plan allowlist; sealed records untouched); remediation record reports/assurance/OCOR-DEV-REM-0040-RCCAD/ (README, json, log) with RED fingerprint bf757dda537f, the disposition-point mapping, the concurrent-seal measurement and the mutation probe; surgical MANIFEST entries; verify request REMEDIATION repair_cycle 0, verifier neither Anthropic nor OpenAI nor the preventive reviewer's provider. Then the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 subset without renaming), the WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit, then OCOR-DEV-0060; OCOR-DEV-0062..0064 while remediations await review or verification. No new DEC; claims unchanged.",
-  "head_sha": "b9eda5fe1204a74bee24d007811d9b7bc7046f4c",
-  "head_sha_role": "candidate code head of OCOR-DEV-REM-0040 under preventive review",
+  "exact_next_action": "Wait for the external verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0040-8c498f9988b6-0.json (REMEDIATION, repair_cycle 0, head 8c498f9988b6465f77d9e955cdca9417898a0492; verifier neither Anthropic nor OpenAI nor Google, the provider of the preventive reviewer). GO_FOR_EVIDENCE_SEAL: non-destructive alignment with origin/main, seal OCOR-DEV-REM-0040.json and the 0005/0050/0082 .requalified-rem0040 records (independent_verification, roles.effective_verifier, status SEALED, surgical MANIFEST G0/G2/G5 hash updates), PRE-CAMPAIGN-GATE on the seal head, PR with the 13 required checks on the exact head, merge --match-head-commit, state sync. NO_GO: repair (max 2 materially different cycles). While waiting: the WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit (separate governed change set; does not block nor is blocked by REM-0040), or OCOR-DEV-0062..0064; the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 sealResult subset without renaming) starts after the REM-0040 integration; then OCOR-DEV-0060. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). No new DEC; claims unchanged.",
+  "head_sha": "8c498f9988b6465f77d9e955cdca9417898a0492",
+  "head_sha_role": "REM-0040 candidate head submitted to independent verification",
   "independent_verification": {
-    "next_verifier_constraint": "for REM-0040: provider different from Anthropic, OpenAI and the preventive reviewer's provider",
-    "previous_unit": {
-      "merged": "85bc0228fbded5bb9d2ecdfa1fa3420b43665815",
-      "request_id": "OCOR-DEV-REM-0041-ee367a61cc59-0",
-      "status": "GO_FOR_EVIDENCE_SEAL"
-    },
-    "status": "NOT_REQUESTED"
+    "next_verifier_constraint": "neither Anthropic nor OpenAI nor Google (preventive reviewer)",
+    "request_id": "OCOR-DEV-REM-0040-8c498f9988b6-0",
+    "status": "REQUESTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -160,9 +155,9 @@
     "supply_chain_scanner": "PASS",
     "validation_closure_guards": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0040:full-suite-and-candidate",
-  "phase": "OCOR_DEV_REM_0040_AWAITING_PRE_CAMPAIGN_REVIEW",
-  "raw_evidence_location": "~/.ocor-codex/rem-0040 and ~/.ocor-codex/salvage/20261028T1800-rem0040-interrupted (outside Git)",
+  "next_task": "OCOR-DEV-REM-0040:integration (meanwhile WORKSTATION-TOOLS-ARCHIVE or OCOR-DEV-0062..0064)",
+  "phase": "OCOR_DEV_REM_0040_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "raw_evidence_location": "~/.ocor-codex/rem-0040 and ~/.ocor-codex/rem-0040-q (outside Git)",
   "requirement_ids": [
     "NFR-058",
     "NFR-064",
@@ -175,14 +170,14 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0040 inventory and decision request (iteration 31), branch of the interrupted iteration [34], this iteration: disposition recording, re-check, alignment, RED/GREEN, measurements, PRE-CAMPAIGN-GATE, state sync"
+        "scope": "all of REM-0040: port, adapter, tests, preventive-review disposition, campaign, requalifications, evidence, verification request and state syncs"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
     ],
-    "preventive_reviewer": "chosen by the loop; excluded from the final verification of REM-0040",
-    "verifier": "not yet requested"
+    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (NO_BLOCKING_FINDINGS, 1 advisory: P1 accepted and fixed); excluded from the final verification of REM-0040",
+    "verifier": "requested from the loop; must be neither Anthropic nor OpenAI nor Google"
   },
   "rollback_result": "revert the REM-0040 commits; no consumer is wired to the adapter, no migration; buckets in SeaweedFS are removed with the stack volumes",
   "schema_version": "1.0",
@@ -202,6 +197,6 @@
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-28T21:26:08.574427+00:00",
-  "worktree": ".ocor/worktrees/rem-0040-seaweedfs (branch governed/ocor-dev-rem-0040-seaweedfs-c7-adapter)"
+  "updated_at": "2026-10-28T23:01:16.494513+00:00",
+  "worktree": ".ocor/worktrees/rem-0040-seaweedfs"
 }
