@@ -292,7 +292,10 @@ def test_configuration_is_fail_closed() -> None:
 
 def test_a_malformed_digest_is_rejected_before_any_request(store: Any) -> None:
     for digest in ("", "A" * 64, "0" * 63, "urn:sha256:" + "0" * 64, "../" + "0" * 61):
-        assert _code(lambda digest=digest: store.read_sealed_result(digest)) == "INVALID_DIGEST"
+        assert _code(functools.partial(store.read_sealed_result, digest)) == "INVALID_DIGEST"
+        # Rejected even on an uninitialized store at a closed endpoint: no request is made.
+        offline = _store(endpoint=CLOSED_ENDPOINT, secret="offline-synthetic-secret")
+        assert _code(functools.partial(offline.read_sealed_result, digest)) == "INVALID_DIGEST"
 
 
 # --- canonical serialization (disposition point 5) ----------------------------------
@@ -378,6 +381,8 @@ def test_concurrent_seals_of_the_same_result_all_succeed_with_identical_bytes(st
     payload = _adapter_module().sealed_payload(outcome)
     versions = _versions(outcome.reproducibility_digest)
     assert versions and all(_version_bytes(outcome.reproducibility_digest, version) == payload for version in versions)
+    # Every version written was reported as newly sealed by exactly one caller.
+    assert sum(1 for result in results if result.newly_sealed) == len(versions)
     assert store.read_sealed_result(outcome.reproducibility_digest) == outcome
 
 
