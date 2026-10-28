@@ -29,7 +29,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
@@ -569,11 +569,12 @@ def test_a_stale_writer_is_fenced_and_writes_nothing(service: Any, password: str
         expected_revision=1,
         canonical_delta={"status": "STALE"},
     )
-    for attempt in (
+    attempts: tuple[Callable[[], object], ...] = (
         lambda: service.commit(stale),
         lambda: service.acknowledge(service.claim_batch(limit=1)[0].event_id, acknowledged_at=datetime.now(UTC)),
         lambda: service.reconcile(limit=10),
-    ):
+    )
+    for attempt in attempts:
         with pytest.raises(C3Error) as excinfo:
             attempt()
         assert excinfo.value.reason_code == "SINGLE_WRITER_VIOLATION"
@@ -802,3 +803,55 @@ def test_the_initialization_is_idempotent_and_keeps_canonical_state(service: Any
     snapshot = service.read(TENANT, AGGREGATE_TYPE, AGGREGATE_REF)
     assert snapshot is not None and snapshot.commit_id == receipt.commit_id
     assert database in _databases(password)
+
+
+@pytest.mark.parametrize(
+    "divergence",
+    ["field_type", "extra_field", "missing_field", "key_strategy"],
+)
+def test_an_existing_schema_with_the_same_classes_but_divergent_definitions_fails_closed(
+    password: str, database: str, divergence: str
+) -> None:
+    """Preventive review OCOR-DEV-REM-0041-63c6d5e8e094-pre, advisory P2: the schema
+    check compares every class definition, not only the class names."""
+    schema = json.loads(json.dumps(_adapter_module().SCHEMA))
+    aggregate = next(item for item in schema if item.get("@id") == "C3Aggregate")
+    if divergence == "field_type":
+        aggregate["revision"] = "xsd:string"
+    elif divergence == "extra_field":
+        aggregate["unexpected"] = "xsd:string"
+    elif divergence == "missing_field":
+        del aggregate["state_digest"]
+    else:
+        aggregate["@key"] = {"@type": "Random"}
+    status, body, _ = _raw("POST", f"/api/db/admin/{database}", password, {"label": database, "comment": "rem0041", "schema": True})
+    assert status == 200, body
+    status, body, _ = _raw(
+        "POST",
+        f"/api/document/admin/{database}?graph_type=schema&author=rem0041&message=divergent&full_replace=true",
+        password,
+        schema,
+    )
+    assert status == 200, body
+    adapter = _adapter_module().TerminusDBC3Adapter(url=URL, password=password, database=database, writer_id="urn:ocor:writer:rem0041")
+    with pytest.raises(_adapter_module().TerminusDBAdapterError) as excinfo:
+        adapter.initialize()
+    assert excinfo.value.reason_code == "SCHEMA_MISMATCH"
+
+
+def test_an_existing_schema_identical_to_the_canonical_one_is_accepted(password: str, database: str) -> None:
+    """Positive branch of the same check: a database created out of band with exactly
+    ``SCHEMA`` initializes without rewriting it."""
+    status, body, _ = _raw("POST", f"/api/db/admin/{database}", password, {"label": database, "comment": "rem0041", "schema": True})
+    assert status == 200, body
+    status, body, _ = _raw(
+        "POST",
+        f"/api/document/admin/{database}?graph_type=schema&author=rem0041&message=canonical&full_replace=true",
+        password,
+        list(_adapter_module().SCHEMA),
+    )
+    assert status == 200, body
+    before = _log_length(password, database)
+    adapter = _adapter_module().TerminusDBC3Adapter(url=URL, password=password, database=database, writer_id="urn:ocor:writer:rem0041")
+    adapter.initialize()
+    assert _log_length(password, database) == before
