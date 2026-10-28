@@ -362,8 +362,9 @@ def test_a_second_seal_of_the_same_result_is_idempotent_and_writes_no_new_versio
 
 def test_concurrent_seals_of_the_same_result_write_exactly_one_version(store: Any) -> None:
     """The conditional write (``If-None-Match: *``) lets one racing caller write; the
-    others re-read and settle idempotently. Measured on the pinned server: 30 of 30
-    races of 12 callers wrote one version with the condition, 4 to 12 without it."""
+    others re-read and settle idempotently. Measured on the pinned server (remediation
+    record): with the condition every race of 12 callers wrote one version; without it,
+    most races wrote several."""
     outcome = _outcome("concurrent")
     callers = 12
     barrier = threading.Barrier(callers)
