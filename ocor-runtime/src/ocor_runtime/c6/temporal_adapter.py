@@ -455,6 +455,11 @@ class TemporalEffectSink:
         }
 
     def persist_effect(self, record: PersistedEffect) -> None:
+        """Persist ``record`` once; the idempotency key is ``transition_id@occurred_at``.
+
+        A retry must pass the original ``PersistedEffect`` unchanged: a record rebuilt with a
+        new ``occurred_at`` has a different key and is stored as a distinct effect.
+        """
         effect = self._payload(record)
         workflow_id = self.workflow_id(record.correlation_id)
         runtime = self._runtime

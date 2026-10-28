@@ -163,6 +163,13 @@ def test_dependency_is_pinned_exactly_with_its_licence_and_wheel_identity() -> N
     )
     assert importlib.metadata.version("temporalio") == "1.34.0"
     assert importlib.metadata.metadata("temporalio")["License-Expression"] == "MIT"
+    # Transitive packages added to the lock by temporalio (NFR-073 licence inventory).
+    for name, version, licence in (("nexus-rpc", "1.4.0", "MIT"), ("types-protobuf", "7.35.1.20260906", "Apache-2.0")):
+        [transitive] = [item for item in lock["package"] if item["name"] == name]
+        assert transitive["version"] == version
+        assert transitive["source"] == {"registry": "https://pypi.org/simple"}
+        assert importlib.metadata.version(name) == version
+        assert importlib.metadata.metadata(name)["License-Expression"] == licence
 
 
 def test_workflow_module_imports_only_deterministic_dependencies() -> None:
