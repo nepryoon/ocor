@@ -116,3 +116,39 @@ corsie di REM-0037 e la sua correzione è necessaria alla loro qualifica.
   smontaggio aggiunto rimuove soltanto la rete creata dal test.
 - Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e
   Production `NO-GO`. Nessun nuovo `DEC-*`.
+
+## Disposition PO (2026-10-28)
+
+Decisione `REM-0037-0006-NETWORK-RESIDUE-DISPOSITION (2026-10-28)`, livello
+operativo: scelta l'**opzione 1** di questa richiesta (file sha256
+`9a4d5534fb4a975b7738731cb5dc29b5a50a6edcf1c2380c8f180cfb508918f8`, commit
+`1f2eeb5`, PR #377). Stato della richiesta: risolta.
+
+- Ambito: `OCOR-DEV-REM-0037` si estende a una sola modifica del test sigillato
+  `test_ocor_dev_0006.py::test_missing_pinned_image_cannot_fall_back_to_public_pull`,
+  cioè lo smontaggio del progetto Compose `ocor-missing-image-negative` creato
+  dal test (rete compresa), in un blocco `finally` o equivalente eseguito anche
+  in caso di fallimento. Nessun'altra modifica a quel file né ad altri test
+  sigillati.
+- Prova: RED con fingerprint su Docker reale (resta la rete
+  `ocor-missing-image-negative_default`), poi GREEN (nessuna risorsa del
+  progetto residua); confronto AST come in REM-0023, con l'unica differenza
+  ammessa nello smontaggio.
+- Riqualifica di `OCOR-DEV-0006` autorizzata secondo la procedura in uso.
+- Controllo dei residui delle corsie invariato e fail-closed; nessuna deroga,
+  allowlist o esclusione; `scripts/run_qualifying_campaign.py` non si tocca.
+- Campagne: PRE-CAMPAIGN-GATE e PRE-CAMPAIGN-REVIEW, poi prova d'equivalenza
+  sullo stesso nuovo head (suite seriale e a due corsie, stesso insieme di
+  casi, unione esatta, zero skip, entrambe PASS, residui puliti). Le campagne a
+  `b4ddd69` restano storiche e non qualificano il nuovo head. Tetto 5400 s,
+  notifica 3600 s, guard invariato.
+- Limite: se serve toccare altro, nuova decision request.
+- Ordine: REM-0037 riprende al primo confine coerente del lavoro in corso;
+  `REM-0039`, `0040`, `0041` e `0062`–`0064` restano non bloccati.
+
+Registrazione: Claude Code (Anthropic, claude-opus-5-5), implementatore del loop
+secondo LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK, dopo il GO e durante
+l'integrazione di `OCOR-DEV-REM-0039` (confine coerente). Il blocker si chiude
+nello stato con il riferimento a questa disposition. Nessun test, caso, limite,
+timeout, soglia o gate cambiato. Claim invariati: E1=0, E2=0, Verified=0;
+runtime NOT_ESTABLISHED, PoC/Production NO-GO.
