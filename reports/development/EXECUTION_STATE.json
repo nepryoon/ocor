@@ -1,21 +1,65 @@
 {
   "active_iteration": {
-    "baseline_commit": "d9fb92ce600d95e79c48d625ca0ce88ed53a6304",
-    "branch": "governed/state-sync-rem0040-decision-request-20261028",
-    "change_set": "OCOR-DEV-REM-0040 read-only C7 port inventory and decision request REM-0040-C7-SEALED-RESULT-PORT",
-    "decision_request": {
-      "branch": "governed/decision-request-rem0040-c7-sealed-result-port",
-      "commit": "a60ab1e94086b05d3d73aabe50874a1f63e8e7d4",
-      "pr": 387,
-      "sha256": "8c9efaa8a7fdad34608d344946a7f4cd4d5d9e6154e4a9d16c61fcfe11a25424"
+    "baseline_commit": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
+    "branch": "governed/state-sync-rem0041-prereview-20261028",
+    "campaign_background_processes_remaining": false,
+    "candidate": {
+      "branch": "governed/ocor-dev-rem-0041-terminusdb-c3-adapter",
+      "changed_paths": [
+        "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py",
+        "ocor-runtime/src/ocor_runtime/c3/terminusdb_service.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py",
+        "scripts/validate_ocor_development_plan.py",
+        "reports/planning/OCOR_PLAN_RUN_STATE.json"
+      ],
+      "code_commits": [
+        "4af8a29df14465cc821a3fd82cfe2559e1c2999a",
+        "a3387a671596fceaf227c84c78b49141a6f735d4",
+        "768c788556a02eac689a2c6e2af5e0ef8b124207",
+        "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58"
+      ],
+      "head_sha": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
+      "note": "candidate code head awaiting the preventive review; campaign, requalifications and record pending; not evidence, not sealed",
+      "pushed": true,
+      "worktree": ".ocor/worktrees/rem-0041"
     },
-    "executor": "Claude Code (Anthropic, claude-opus-5-5), loop iteration 31, reserve-implementer header; order LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-    "memory_at_unit_start": {
-      "MemAvailable_kB": 25623576,
-      "MemTotal_kB": 31743008
+    "change_set": "OCOR-DEV-REM-0041 candidate code head: TerminusDB adapter of C3 behind the sealed C3 ports, RED/GREEN, PRE-CAMPAIGN-GATE, preventive review requested",
+    "decisions": [
+      "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
+      "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26)",
+      "LOCAL-FULL-SUITE-CAP-90 (2026-10-26)",
+      "LOCAL-FULL-SUITE-CAP-90-AMENDMENT (2026-10-26)",
+      "LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26)",
+      "PRE-CAMPAIGN-GATE (2026-10-26)",
+      "PRE-CAMPAIGN-REVIEW (2026-10-26)",
+      "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
+      "AGENT-WAIT-HYGIENE (2026-10-27)"
+    ],
+    "executor": "Claude Code (Anthropic, claude-opus-5-5), reserve-implementer header; order LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
+    "host_memory_at_sync": {
+      "MemAvailable": 19221872,
+      "MemTotal": 31743008
     },
-    "phase": "OCOR_DEV_REM_0040_DECISION_REQUEST_OPEN",
-    "stack_at_start": "ocor-bootstrap down (0 containers); not started because the unit runs no tests"
+    "next_action": "Resume OCOR-DEV-REM-0041 after the preventive review OCOR-DEV-REM-0041-63c6d5e8e094-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0041-63c6d5e8e094-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0041-terminusdb-c3-adapter, worktree .ocor/worktrees/rem-0041, candidate code head 63c6d5e8e094 (pushed). At unit start read /proc/meminfo and check whether a PO disposition of REM-0040-C7-SEALED-RESULT-PORT is recorded (if so, REM-0040 resumes at the first coherent boundary after this unit). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0041/pregate.py), build the TypeScript SDK in the candidate worktree, and the qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; scripts/bootstrap_ci_environment.py --execute; two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, threshold 14340.6 MiB, otherwise serial and recorded; cap 5400 s, notification 3600 s; no tracked edits during the campaign); the task module three times on the real TerminusDB/TypeDB of the campaign stack; regression-only requalification records requalified-rem0041 of OCOR-DEV-0005/0050/0082 with explicit supersession (plan allowlist; sealed records untouched); remediation record reports/assurance/OCOR-DEV-REM-0041-RCCAD/ (README, json, log) with RED fingerprint, BA-01 conformance mapping (five crash windows, stale writer, fork without DeliveryAttempt), the measured TerminusDB data-version finding and the mutation probe; surgical MANIFEST entries; verify request REMEDIATION repair_cycle 0, verifier neither Anthropic nor the preventive reviewer's provider. Then OCOR-DEV-0060 after the integration of REM-0038..0041 (REM-0040 waits for its decision request); OCOR-DEV-0062..0064 while remediations await verification. No new DEC; claims unchanged.",
+    "normative_interpretations": [
+      "The existing sealed C3 ports fit TerminusDB without change: the service implements all five, so no decision request is needed (handoff condition of the REM-0040 precedent).",
+      "TerminusDB passes the BA-01 conformance column of ADD v1.3 Part I 2.6 in development runs only through conditional WOQL transactions; the measured behaviour of the data-version header is an adapter-technique finding, not a BA-01 failure, because the store does offer an atomic, serializable, multi-document conditional commit. No fallback is adopted.",
+      "No consumer is rewired to TerminusDB in this change set (ports unchanged; consumers keep PostgresC3Service); the qualification of the eight BA cases on the selected components is OCOR-DEV-0060.",
+      "No new Python dependency: the adapter uses the standard library HTTP client, so the dependency clause of decision point 3 applies to the already-provisioned server image only (REM-0038)."
+    ],
+    "phase": "OCOR_DEV_REM_0041_AWAITING_PRE_CAMPAIGN_REVIEW",
+    "roles": {
+      "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
+      "implementers": [
+        {
+          "agent": "Claude Code",
+          "model": "claude-opus-5-5",
+          "provider": "Anthropic",
+          "scope": "REM-0041 ID verification, read-only C3 inventory, RED/GREEN of the TerminusDB adapter, mutation probe, PRE-CAMPAIGN-GATE, state sync"
+        }
+      ],
+      "verifier": "not yet requested; must differ from Anthropic and from the preventive reviewer's provider"
+    }
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1743,7 +1787,7 @@
       }
     }
   },
-  "baseline_commit": "d9fb92ce600d95e79c48d625ca0ce88ed53a6304",
+  "baseline_commit": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -8335,8 +8379,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_REM_0040_BLOCKED_BY_DECISION_REQUEST_REM_0041_NEXT",
-  "next_executable_action": "OCOR-DEV-REM-0041 (change set d of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26): TerminusDB runtime adapter of C3 as the canonical VersionedAssertedState store behind the existing ports; PostgreSQL stays the atomicity verification adapter, never an implicit fallback, DEC-201; qualify BA-01 conformance on TerminusDB: the five crash windows of par. 2.3, the stale writer and the fork without DeliveryAttempt; if TerminusDB does not pass them, stop and open a change-control decision request, no fallback adopted). Verify read-only that OCOR-DEV-REM-0041 is still free across every ref; read MemTotal/MemAvailable from /proc/meminfo at unit start; start the ocor-bootstrap stack (scripts/bootstrap_ci_environment.py --execute from a clean shell; it was down at the start of iteration 31); new worktree from origin/main; read-only inventory of the existing C3 ports, consumers and sealed records touched (if no existing port fits, stop and open a decision request as for REM-0040), RED before code on real TerminusDB, GREEN, requalifications with explicit supersedes, task suite, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW request (stop the iteration after it), then the local full suite (two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, threshold 14340.6 MiB, otherwise serial and recorded; cap 5400 s, notification 3600 s). OCOR-DEV-REM-0040 is blocked by the decision request REM-0040-C7-SEALED-RESULT-PORT (PR #387, OPEN_PO_DECISION_REQUIRED): when a disposition is recorded, resume REM-0040 at the first coherent boundary. OCOR-DEV-0060 after the integration of REM-0038..0041. OCOR-DEV-0062..0064 proceed while the remediations wait for review, verification or a decision. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_REM_0041_IN_PROGRESS_AWAITING_PRE_CAMPAIGN_REVIEW_REM_0040_BLOCKED_BY_DECISION_REQUEST",
+  "next_executable_action": "Resume OCOR-DEV-REM-0041 after the preventive review OCOR-DEV-REM-0041-63c6d5e8e094-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0041-63c6d5e8e094-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0041-terminusdb-c3-adapter, worktree .ocor/worktrees/rem-0041, candidate code head 63c6d5e8e094 (pushed). At unit start read /proc/meminfo and check whether a PO disposition of REM-0040-C7-SEALED-RESULT-PORT is recorded (if so, REM-0040 resumes at the first coherent boundary after this unit). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0041/pregate.py), build the TypeScript SDK in the candidate worktree, and the qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; scripts/bootstrap_ci_environment.py --execute; two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, threshold 14340.6 MiB, otherwise serial and recorded; cap 5400 s, notification 3600 s; no tracked edits during the campaign); the task module three times on the real TerminusDB/TypeDB of the campaign stack; regression-only requalification records requalified-rem0041 of OCOR-DEV-0005/0050/0082 with explicit supersession (plan allowlist; sealed records untouched); remediation record reports/assurance/OCOR-DEV-REM-0041-RCCAD/ (README, json, log) with RED fingerprint, BA-01 conformance mapping (five crash windows, stale writer, fork without DeliveryAttempt), the measured TerminusDB data-version finding and the mutation probe; surgical MANIFEST entries; verify request REMEDIATION repair_cycle 0, verifier neither Anthropic nor the preventive reviewer's provider. Then OCOR-DEV-0060 after the integration of REM-0038..0041 (REM-0040 waits for its decision request); OCOR-DEV-0062..0064 while remediations await verification. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8383,10 +8427,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "969d2d2b18ad62c3d2df8d8321c3e4df7d0ea1b5",
-    "branch": "governed/state-sync-rem0037-integrated-20261028",
-    "change_set": "OCOR-DEV-REM-0037 integration (GO, seal 7b3520f, PR #385 merged 969d2d2)",
-    "phase": "OCOR_DEV_REM_0037_INTEGRATED"
+    "baseline_commit": "d9fb92ce600d95e79c48d625ca0ce88ed53a6304",
+    "branch": "governed/state-sync-rem0040-decision-request-20261028",
+    "change_set": "OCOR-DEV-REM-0040 read-only C7 port inventory and decision request REM-0040-C7-SEALED-RESULT-PORT",
+    "phase": "OCOR_DEV_REM_0040_DECISION_REQUEST_OPEN"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -8474,12 +8518,13 @@
     ],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-28T12:19:19.505092+00:00",
+    "observed_at": "2026-10-28T13:41:16.475122+00:00",
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
       "OCOR-DEV-0060": "after integration of the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
       "OCOR-DEV-REM-0037": "integrated: PR #385 merged (969d2d2b18ad)",
       "OCOR-DEV-REM-0039": "integrated: PR #381 merged (b8fee8c26bf9)",
+      "OCOR-DEV-REM-0041": "in progress: candidate code head 63c6d5e GREEN (28 task cases x3, 8/9 mutants killed, 1 equivalent), PRE-CAMPAIGN-GATE 41/42 (drift expected), preventive review requested; next local full suite, 3 regression-only requalifications and the record",
       "OCOR-DEV-REM-0042": "integrated: PR #366 merged (21000270090b)"
     },
     "suspended_by_po": []
@@ -26369,6 +26414,156 @@
       "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED",
       "work_done": "read-only port inventory only; no code, no change-set branch, no campaign, no evidence"
     },
+    "REM_0041_TERMINUSDB_C3_ADAPTER": {
+      "authority": "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26), normative PO decision, option 2, change set d (TerminusDB adapter of C3, BA-01 conformance)",
+      "branch": "governed/ocor-dev-rem-0041-terminusdb-c3-adapter",
+      "candidate_head_20261028": {
+        "ba01_conformance_cases": {
+          "crash_window_1": "test_crash_window_1_before_the_local_commit_leaves_nothing_and_the_retry_commits_once",
+          "crash_window_2": "test_crash_window_2_after_commit_before_publish_republishes_the_same_event_id",
+          "crash_window_3": "test_crash_window_3_after_publish_before_receipt_redelivers_and_the_consumer_deduplicates",
+          "crash_window_4": "test_crash_window_4_during_projection_leaves_the_canonical_commit_valid_and_replay_projects (real TypeDB)",
+          "crash_window_5": "test_crash_window_5_checksum_divergence_is_quarantined_and_never_reverse_written (real TypeDB, ProjectionDriftDetector)",
+          "fork_without_delivery_attempt": "test_a_scenario_fork_never_produces_a_delivery_attempt, test_an_entry_marked_for_a_scenario_branch_is_never_relayed_from_main",
+          "stale_writer": "test_a_stale_writer_is_fenced_and_writes_nothing, test_concurrent_writer_acquisitions_leave_exactly_one_writer, racing revisions 0 and 1",
+          "status": "development runs on the real stack; qualifying evidence comes from the campaign"
+        },
+        "design": {
+          "adapter": "ocor_runtime.c3.adapters.terminusdb.TerminusDBC3Adapter (stdlib HTTP; no new Python dependency, no lock change)",
+          "commit": "one WOQL transaction inserting aggregate (insert or update), C3Commit, C3Idempotency, immutable C3OutboxEntry under preconditions writer_epoch, absent idempotency binding, current revision",
+          "fallback": "none: an unreachable server raises TerminusDBUnavailable; PostgreSQL stays the verification adapter (DEC-201, LLD 5.2)",
+          "fencing": "C3WriterFence epoch advanced by initialize; every write requires the writer's own epoch in the same transaction (SINGLE_WRITER_VIOLATION)",
+          "relay": "main only; acknowledgement = separate C3DeliveryAttempt; scenario-branch entries never claimed (ADD 2.5 r.11)",
+          "service": "ocor_runtime.c3.terminusdb_service.TerminusDBC3Service (mirrors PostgresC3Service, no direct backend client)"
+        },
+        "development_stack": "ocor-bootstrap brought up with scripts/bootstrap_ci_environment.py --execute (15 containers); disposable C3 databases deleted by each test; stack torn down with --teardown --execute (zero containers, volumes, networks of the project)",
+        "executed_at": "2026-10-28T13:41:16.475122+00:00",
+        "executor": "Claude Code (Anthropic, claude-opus-5-5)",
+        "id_verification": "OCOR-DEV-REM-0041 free: on every ref only forward references in PO decisions and state (change set d of OCOR-DEV-0060-BA-SELECTED-COMPONENTS); no branch, record or artifact uses it",
+        "inventory": {
+          "consumers_unchanged": "c3.service.PostgresC3Service (0029), c3.recovery (0030), c4.rebuild ProjectionDriftDetector (0039, typed on PostgresC3Service, uses only the sealed read port), mission thread; no consumer rewired in this change set",
+          "existing_ports_fit": true,
+          "ports": "ocor_runtime.c3.ports GovernedCommitPort, CanonicalReadPort, OutboxRelayPort, RevisionPort, RecoveryPort (OCOR-DEV-0013), unchanged",
+          "sealed_records_touched": "none by code; plan allowlist only (0005/0050/0082 regression-only)"
+        },
+        "pre_campaign_gate": {
+          "base": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
+          "gates_json_sha256": "46522b68bdec451d80438bebd4df8c8d80fe80ab0ec165d12dae420d423628ed",
+          "head": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
+          "result": "41/42 PASS; drift FAIL expected for 0005/0050/0082",
+          "steps": [
+            "restore-env",
+            "prove-head",
+            "inputs-checksum",
+            "report-checksum",
+            "inputs-immutable",
+            "mypy",
+            "ruff",
+            "tsc",
+            "contract-generator",
+            "nfr-022",
+            "backlog-parity",
+            "runtime-evidence-validator-tests",
+            "drift-validator-tests",
+            "benchmark-harness",
+            "lock-schemas",
+            "tooling-acceptance",
+            "tooling-compose",
+            "plan",
+            "rccad",
+            "language-tests",
+            "language",
+            "drift",
+            "scope",
+            "delivery-validate",
+            "repo-protection-0001",
+            "markdownlint",
+            "mermaid",
+            "lld-add-alignment",
+            "poc-contract",
+            "poc-unit",
+            "poc-fgm",
+            "methodology-schema",
+            "rccad-acceptance",
+            "fitness-portfolio",
+            "document-harness",
+            "verify-harness",
+            "openapi",
+            "validation-closure-guards",
+            "runtime-0005",
+            "runtime-0050",
+            "runtime-0082",
+            "supply-chain-scanner"
+          ],
+          "supply_chain": "PASS (blocking findings 0; 3 suspended REM0034 registry findings)",
+          "validation_closure_guards": "362 passed, 83 subtests"
+        },
+        "pre_campaign_review": {
+          "base_sha": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
+          "request_id": "OCOR-DEV-REM-0041-63c6d5e8e094-pre",
+          "status": "REQUESTED"
+        },
+        "raw_location": "~/.ocor-codex/rem-0041/ (outside Git)",
+        "tdd": {
+          "defect_found_by_red_green": "the first GREEN used the document-API data version as compare-and-swap; the racing case committed several writers at one revision; replaced by conditional WOQL transactions",
+          "first_red": {
+            "commit": "4af8a29df14465cc821a3fd82cfe2559e1c2999a",
+            "result": "23/23 FAIL (7 failed, 16 errors)"
+          },
+          "green": {
+            "head": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
+            "junit_sha256": [
+              "3f6f40a43858adc6ac77726ad0d5102f050817024ff8a929f612fed1226a6aed",
+              "e69c64fb81c556f03f3a19d0c870afd9d46050b9c9ff1fe7111960bd3ce87a95",
+              "90718a328f795177b97250b62e6a77489b11f94d714476f013fd40aa96728e35"
+            ],
+            "passed_each": 28,
+            "runs": 3
+          },
+          "mutation_probe": {
+            "equivalent": "M2 (absent-aggregate precondition dropped): the server refuses a concurrent duplicate insert of the identity (DocumentIdAlreadyExists)",
+            "killed": 8,
+            "record_sha256": "0d1874ec312422b16b568eb9acb38d3139c8be000c75d846ed8d26be4515c9a9",
+            "total": 9
+          },
+          "red": {
+            "base": "3ba6abbc11ba3edafedfe66e232b807c7d78343a",
+            "fingerprint": "836fa5712775d105d41f87bbb6febea3335108ec0ff742f62833cd694e5ceaa8",
+            "result": "28/28 FAIL (7 failed, 21 errors) with only the final task module copied onto origin/main and the real stack",
+            "test_sha256": "7b73d1ee03c525231d4ddf0e5e6d922641346ffa0e2f3bc50393aff1e461f6bb"
+          },
+          "regression": {
+            "junit_sha256": "412e8cc386b25aed349fe3b37bc03bd16e3896bc6a91ed6e34ebb73d1734d9a7",
+            "modules": "tests/tasks/test_ocor_dev_0005/0050/0082/0013/0015/0029/0039, tests/mission_thread",
+            "passed": 278
+          }
+        },
+        "terminusdb_probes": {
+          "batch_atomicity": "a document-API and a WOQL batch with one schema-invalid document are refused whole (SchemaCheckFailure); nothing of the batch persists",
+          "data_version_put_is_not_cas": "8 concurrent document-API PUTs carrying the same TerminusDB-Data-Version all returned 200 (same document and distinct documents); sequentially a stale data version is refused (400 api:DataVersionMismatch). The header is therefore never used as compare-and-swap.",
+          "insert_uniqueness": "a concurrent InsertDocument of an existing identity refuses the whole transaction (api:DocumentIdAlreadyExists): treated as a failed precondition, nothing written",
+          "not_found_has_no_data_version": "a 404 single-document GET carries no TerminusDB-Data-Version; snapshot reads are pinned to local/commit/<id> of the branch data version",
+          "server": "terminusdb/terminusdb-server 12.0.7 (git 57f2093b, store 0.19.8), image pinned by digest in deploy/bootstrap/compose.yaml (REM-0038 provisioning, unchanged)",
+          "woql_conditional_transaction": "8 concurrent WOQL queries And(Triple condition, UpdateDocument, InsertDocument): exactly one applied (bindings 1), seven re-evaluated the condition on retry and wrote nothing (bindings 0)"
+        }
+      },
+      "head_sha": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
+      "id": "OCOR-DEV-REM-0041",
+      "recorded_at": "2026-10-28T13:41:16.475122+00:00",
+      "requalification_drift_at_candidate_head": {
+        "head": "63c6d5e8e0949a688c9d153dc7e85d19c8cacf58",
+        "kind": "regression-only (plan allowlist)",
+        "observed_at": "2026-10-28T13:41:16.475122+00:00",
+        "tasks": [
+          "OCOR-DEV-0005",
+          "OCOR-DEV-0050",
+          "OCOR-DEV-0082"
+        ]
+      },
+      "scope": "TerminusDB runtime adapter of C3 as the canonical VersionedAssertedState store behind the existing ports; PostgreSQL stays the atomicity verification adapter, never an implicit fallback (DEC-201); BA-01 conformance on TerminusDB",
+      "status": "IN_PROGRESS_AWAITING_PRE_CAMPAIGN_REVIEW",
+      "status_history": []
+    },
     "REM_0042_LOCAL_FULL_SUITE_CAP_90": {
       "allocation_evidence": {
         "checked_at": "2026-10-26T18:14:53Z",
@@ -27790,7 +27985,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-28T12:19:19.505092+00:00",
+  "updated_at": "2026-10-28T13:41:16.475122+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
