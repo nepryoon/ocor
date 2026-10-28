@@ -427,8 +427,9 @@ class TerminusDBC3Adapter:
             )
             if status != 200:
                 raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot write the schema: {status} {body}")
-        elif set(present) != set(expected):
-            raise TerminusDBAdapterError("SCHEMA_MISMATCH", f"unexpected C3 classes {sorted(present)}")
+        elif present != expected:
+            divergent = sorted(name for name in set(present) | set(expected) if present.get(name) != expected.get(name))
+            raise TerminusDBAdapterError("SCHEMA_MISMATCH", f"C3 class definitions differ from SCHEMA: {divergent}")
 
     def drop(self) -> None:
         status, body, _ = self._request("DELETE", f"/api/db/{self._organization}/{self._database}")
