@@ -857,10 +857,13 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0037-RCCAD/OCOR-DEV-REM-0037.log",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0037.log",
-        # REM-0037-0006-NETWORK-RESIDUE-DISPOSITION (2026-10-28): requalification of
-        # 0006 after the teardown of its own Compose project in the sealed test.
+        # REM-0037-0006-NETWORK-RESIDUE-DISPOSITION (2026-10-28): teardown of its own
+        # Compose project in the sealed 0006 test, its exact AST guard and the 0006
+        # requalification.
         "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.json",
         "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.log",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0006.py",
+        "reports/tests/test_rem0037_0006_teardown_scope.py",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0037.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0037.json",
