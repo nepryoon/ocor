@@ -751,6 +751,24 @@ def test_a_scenario_fork_never_produces_a_delivery_attempt(service: Any, passwor
     assert {doc["event_id"] for doc in _documents(password, database, "C3OutboxEntry")} == {receipt.outbox_event_id}
 
 
+def test_an_entry_marked_for_a_scenario_branch_is_never_relayed_from_main(
+    service: Any, password: str, database: str
+) -> None:
+    receipt = service.commit(_first())
+    (entry,) = _documents(password, database, "C3OutboxEntry")
+    foreign = {key: value for key, value in entry.items() if key != "@id"}
+    foreign.update({"key": "e" * 64, "event_id": "urn:ocor:event:foreign-branch", "branch": "scenario-rem0041"})
+    status, body, _ = _raw(
+        "POST", f"/api/document/admin/{database}?author=tamper&message=foreign-branch-entry", password, [foreign]
+    )
+    assert status == 200, body
+    assert [e.event_id for e in service.claim_batch(limit=100)] == [receipt.outbox_event_id]
+    with pytest.raises(_adapter_module().TerminusDBAdapterError) as excinfo:
+        service.acknowledge("urn:ocor:event:foreign-branch", acknowledged_at=datetime.now(UTC))
+    assert excinfo.value.reason_code == "OUTBOX_ENTRY_NOT_FOUND"
+    assert _documents(password, database, "C3DeliveryAttempt") == []
+
+
 def test_reconcile_repairs_a_simulated_corruption_from_the_commit_record(
     service: Any, password: str, database: str
 ) -> None:
