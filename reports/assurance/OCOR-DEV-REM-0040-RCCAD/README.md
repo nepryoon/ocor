@@ -92,3 +92,24 @@ sigillati intatti; inserimenti chirurgici nei `MANIFEST.json`.
 Revert dei commit di REM-0040: spariscono port, adapter, modulo di test e voci dell'allowlist; i record di
 riqualifica precedenti tornano i più recenti. Nessun consumer, contratto, lock o migrazione coinvolti; gli oggetti del
 bucket di test scadono con la loro retention.
+
+## Sigillo (dopo GO indipendente)
+
+- **Verdetto**: `OCOR-DEV-REM-0040-8c498f9988b6-0`, `GO_FOR_EVIDENCE_SEAL`, zero finding, nulla `NOT_EXECUTED`
+  (file sha256 `abf56330e6ddc3cd213de29ec50678ac6d80c8e603ffebeadae9a9c61fcdf802`). Verifier: Cursor CLI /
+  grok-4.7-high / xAI, contesto separato, shell pulite. Riesecuzione del verifier sullo stesso head: modulo del task
+  21/21 su SeaweedFS reale pinned, regressione 251/251, guard di `validation-closure` 362/362 dopo il build versionato
+  dell'SDK; suite completa a due corsie 3297/3297 (1024 e 2273), zero skip, 2381,346 s (margine dal tetto di 5400 s
+  3018,654 s, dalla notifica di 3600 s 1218,654 s); unione esatta, residui dell'host vuoti, rete elettrica a inizio e
+  fine (dato del verifier).
+- **Allineamento**: HEAD verificato `8c498f9` unito in modo non distruttivo con `origin/main` `cba83ee`
+  (`ad275d9`); cambiano soltanto i tre file di stato, albero non di stato identico.
+- **Sigillo**: `OCOR-DEV-REM-0040.json` e le 3 riqualifiche `.requalified-rem0040` (`OCOR-DEV-0005`, `0050`,
+  `0082`) passano a `SEALED`; i manifest G0, G2 e G5 puntano agli hash sigillati. In `OCOR-DEV-REM-0040.json` i
+  `record_sha256` delle riqualifiche restano gli hash candidati verificati; gli hash sigillati sono affiancati in
+  `independent_verification.sealed_requalification_records`. Raw log invariati; nessun record sigillato precedente
+  modificato.
+- **Ruoli**: implementatore e integrazione Claude Code (Anthropic, `claude-opus-5-5`); Codex (OpenAI) contato dal
+  loop; revisore preventivo Antigravity/Gemini (Google). Il port `sealResult` e l'adapter SeaweedFS restano dietro
+  C7 senza consumer runtime fino alla qualifica di `OCOR-DEV-0060`; SeaweedFS resta `Candidate Implementation`.
+  Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
