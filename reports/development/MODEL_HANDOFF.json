@@ -1,32 +1,24 @@
 {
   "assumptions": [
-    "The sealResult subset Protocol and the SeaweedFS adapter fit REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION points 1-6 without touching c7/runtime.py, CausalOutcome, contracts, schemas, reason codes or uv.lock.",
-    "SeaweedFS (pinned) honours If-None-Match: * on PUT in a versioned Object Lock bucket (measured: 30/30 single-version races with it, 0/30 without).",
+    "The sealResult subset Protocol and the SeaweedFS adapter have no runtime consumer until OCOR-DEV-0060 qualifies BA-06 on the selected components.",
+    "The REM-0041 overlay unit composes ScenarioOverlayStoreSealSubset into the full ScenarioOverlayStore without renaming or changing signatures (REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION point 3).",
     "The two-lane local full suite is usable, with the memory admission at start (otherwise serial, recorded)."
   ],
-  "base_sha": "b979a0c30bc39be708ae558e893db717082408b8",
-  "baseline_commit": "b979a0c30bc39be708ae558e893db717082408b8",
-  "branch": "governed/state-sync-rem0040-candidate-20261028",
+  "base_sha": "8075985e9778fbe2c6f24db64f6e455097b157c0",
+  "baseline_commit": "8075985e9778fbe2c6f24db64f6e455097b157c0",
+  "branch": "governed/state-sync-rem0040-integrated-20261029",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0040-seaweedfs-c7-adapter",
-    "code_commit": "f04375e279814c9649e58bbf7a39285e8f843ca1",
-    "head_sha": "8c498f9988b6465f77d9e955cdca9417898a0492",
-    "note": "pushed candidate; evidence CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+    "head_sha": "409398bee2fad1e9deb663fc21523f69789dee6c",
+    "merge_commit": "8075985e9778fbe2c6f24db64f6e455097b157c0",
+    "note": "REM-0040 record and 3 requalifications sealed after GO and merged with PR #395",
     "paths": [
       "reports/assurance/OCOR-DEV-REM-0040-RCCAD/OCOR-DEV-REM-0040.json",
-      "reports/assurance/OCOR-DEV-REM-0040-RCCAD/OCOR-DEV-REM-0040.log",
       "reports/assurance/OCOR-DEV-REM-0040-RCCAD/README.md",
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0040.json",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0040.log",
       "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.log",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.log",
-      "reports/evidence/G0/MANIFEST.json",
-      "reports/evidence/G2/MANIFEST.json",
-      "reports/evidence/G5/MANIFEST.json"
-    ],
-    "worktree": ".ocor/worktrees/rem-0040-seaweedfs"
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.json"
+    ]
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -43,46 +35,55 @@
   },
   "commands": [
     {
-      "command": "prereview outcome OCOR-DEV-REM-0040-b9eda5fe1204-pre",
+      "command": "verdict OCOR-DEV-REM-0040-8c498f9988b6-0",
       "exit_code": 0,
-      "summary": "NO_BLOCKING_FINDINGS, 1 advisory (Antigravity/gemini-4-argon-high/Google); sha256 bf6b1adeb23b52cf0fa2f9b174dfdb22212d1791d90ecc96197d92d3786e7321"
+      "summary": "GO_FOR_EVIDENCE_SEAL, zero findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 abf56330e6ddc3cd213de29ec50678ac6d80c8e603ffebeadae9a9c61fcdf802"
     },
     {
-      "command": "P1 fix f04375e: corrupted-signature case through the adapter's own SigV4",
+      "command": "merge origin/main cba83ee4b5e6 into governed/ocor-dev-rem-0040-seaweedfs-c7-adapter (non-destructive alignment)",
       "exit_code": 0,
-      "summary": "RED on 13946dc 20/21 (fingerprint 56105d60ff0b); GREEN 21/21 x3 on the live SeaweedFS"
+      "summary": "aligned head ad275d9988da; only the three state files differ from 8c498f9988b6; non-state tree sha256 equal"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE at f04375e27981",
-      "exit_code": 1,
-      "summary": "41/42 PASS; drift FAIL expected (0005/0050/0082)"
+      "command": "seal.py (verdict OCOR-DEV-REM-0040-8c498f9988b6-0)",
+      "exit_code": 0,
+      "summary": "OCOR-DEV-REM-0040.json and 3 requalifications SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; README seal section; commit 409398bee2fa"
     },
     {
-      "command": "qualification campaign at f04375e27981 (env -i, locked PATH, bootstrap_ci_environment.py, 15 containers; then run_local_lane_campaign.py --execute)",
+      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
       "exit_code": 0,
-      "summary": "phase A PASS, task 3x 21/21, regression 251, reports portfolio PASS; full suite TWO_LANE 3297/3297 in 2385.341 s (margin to 5400 s 3014.659 s); zero residue"
+      "summary": "42/42 workflow-derived non-suite steps PASS (inputs, mypy, ruff, tsc, contract generator, lock schemas, tooling Compose, plan, rccad, language, drift 0, scope, delivery validate, markdownlint, mermaid, verify.py, validation-closure guards, runtime evidence 0005/0050/0082, supply-chain scanner)"
     },
     {
-      "command": "build evidence and gates at the evidence head",
+      "command": "gh pr create (PR #395) and exact-head polling until mergeStateStatus CLEAN",
       "exit_code": 0,
-      "summary": "PRE-CAMPAIGN-GATE steps at the evidence head 8c498f9988b6: 42/42 PASS, drift 0, runtime evidence 0005/0050/0082 PASS, supply-chain scanner PASS"
+      "summary": "13/13 required checks success, zero reruns"
     },
     {
-      "command": "write ~/.ocor-codex/verify_request.json",
+      "command": "gh pr merge 395 --merge --match-head-commit 409398bee2fad1e9deb663fc21523f69789dee6c",
       "exit_code": 0,
-      "summary": "OCOR-DEV-REM-0040-8c498f9988b6-0"
+      "summary": "merge commit 8075985e9778fbe2c6f24db64f6e455097b157c0; origin/main equals the merge commit; sealed hashes unchanged"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0040:awaiting-independent-verification",
+  "current_task": "OCOR-DEV-REM-0040:integrated",
   "evidence_paths": [],
-  "exact_next_action": "Wait for the external verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0040-8c498f9988b6-0.json (REMEDIATION, repair_cycle 0, head 8c498f9988b6465f77d9e955cdca9417898a0492; verifier neither Anthropic nor OpenAI nor Google, the provider of the preventive reviewer). GO_FOR_EVIDENCE_SEAL: non-destructive alignment with origin/main, seal OCOR-DEV-REM-0040.json and the 0005/0050/0082 .requalified-rem0040 records (independent_verification, roles.effective_verifier, status SEALED, surgical MANIFEST G0/G2/G5 hash updates), PRE-CAMPAIGN-GATE on the seal head, PR with the 13 required checks on the exact head, merge --match-head-commit, state sync. NO_GO: repair (max 2 materially different cycles). While waiting: the WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit (separate governed change set; does not block nor is blocked by REM-0040), or OCOR-DEV-0062..0064; the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 sealResult subset without renaming) starts after the REM-0040 integration; then OCOR-DEV-0060. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). No new DEC; claims unchanged.",
-  "head_sha": "8c498f9988b6465f77d9e955cdca9417898a0492",
-  "head_sha_role": "REM-0040 candidate head submitted to independent verification",
+  "exact_next_action": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit (first coherent boundary after REM-0040): read MemTotal/MemAvailable from /proc/meminfo at unit start (two-lane threshold 14340.6 MiB); separate governed change set from origin/main; copy unchanged into tools/workstation/ the files listed in ~/ocor-workstation-export/tools/workstation/MANIFEST.json (sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef; stop and open a decision request if unreadable or mismatched), manifest included; British-English README.md (not in the manifest); CODEOWNERS and protected paths; automatic manifest-integrity check in the existing suite/CI; secret scanner on the files before publishing (any hit: stop, decision request); outside evidence, gate manifests, traceability and task counts. Then the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 sealResult subset ScenarioOverlayStoreSealSubset without renaming or changing signatures; RED/GREEN on real TerminusDB, campaign, verification), then OCOR-DEV-0060 on the selected components. OCOR-DEV-0062..0064 proceed while remediations wait for review or verification. No new DEC; claims unchanged.",
+  "head_sha": "8075985e9778fbe2c6f24db64f6e455097b157c0",
+  "head_sha_role": "merge commit of PR #395 (OCOR-DEV-REM-0040 integrated)",
   "independent_verification": {
-    "next_verifier_constraint": "neither Anthropic nor OpenAI nor Google (preventive reviewer)",
+    "head_sha": "8c498f9988b6465f77d9e955cdca9417898a0492",
+    "next_verifier_constraint": "for the next unit: provider different from every implementer and from its preventive reviewer",
+    "repair_cycle": 0,
     "request_id": "OCOR-DEV-REM-0040-8c498f9988b6-0",
-    "status": "REQUESTED"
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-29T00:47:03Z",
+    "verdict_file_sha256": "abf56330e6ddc3cd213de29ec50678ac6d80c8e603ffebeadae9a9c61fcdf802",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI",
+    "verifier_full_suite_two_lane": "3297 passed (lanes 1024 and 2273, overlap 0), 0 skipped, 2381.346 s; margin under the 5400 s cap 3018.654 s, under the 3600 s notification 1218.654 s; exact union; host residue empty; mains power at start and end (2026-10-28T23:57:32Z, 2026-10-29T00:37:14Z)",
+    "verifier_regression": "0005/0050/0082/0045, the first governed slice and the C7 emission hardening: 251 passed, 0 skipped",
+    "verifier_task_module": "tests/tasks/test_ocor_dev_rem_0040.py: 21 passed, 0 skipped on the live pinned SeaweedFS (Object Lock COMPLIANCE probe fail-closed on delete and bypass)",
+    "verifier_validation_closure_guards": "362 passed, 0 skipped after the versioned npm ci/build (first run before npm ci failed only on absent @types/node, not a candidate defect)"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -155,8 +156,8 @@
     "supply_chain_scanner": "PASS",
     "validation_closure_guards": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0040:integration (meanwhile WORKSTATION-TOOLS-ARCHIVE or OCOR-DEV-0062..0064)",
-  "phase": "OCOR_DEV_REM_0040_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "next_task": "WORKSTATION-TOOLS-ARCHIVE:maintenance",
+  "phase": "OCOR_DEV_REM_0040_INTEGRATED",
   "raw_evidence_location": "~/.ocor-codex/rem-0040 and ~/.ocor-codex/rem-0040-q (outside Git)",
   "requirement_ids": [
     "NFR-058",
@@ -170,14 +171,14 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "all of REM-0040: port, adapter, tests, preventive-review disposition, campaign, requalifications, evidence, verification request and state syncs"
+        "scope": "REM-0040 implementation and campaign (previous iterations); this iteration: alignment, sealing, PRE-CAMPAIGN-GATE, PR #395, exact-head CI, merge, state sync"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
     ],
-    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (NO_BLOCKING_FINDINGS, 1 advisory: P1 accepted and fixed); excluded from the final verification of REM-0040",
-    "verifier": "requested from the loop; must be neither Anthropic nor OpenAI nor Google"
+    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (OCOR-DEV-REM-0040-b9eda5fe1204-pre)",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0040-8c498f9988b6-0)"
   },
   "rollback_result": "revert the REM-0040 commits; no consumer is wired to the adapter, no migration; buckets in SeaweedFS are removed with the stack volumes",
   "schema_version": "1.0",
@@ -197,6 +198,6 @@
     }
   },
   "unresolved_blockers": [],
-  "updated_at": "2026-10-28T23:01:16.494513+00:00",
-  "worktree": ".ocor/worktrees/rem-0040-seaweedfs"
+  "updated_at": "2026-10-29T01:27:24.724142+00:00",
+  "worktree": ".ocor/worktrees/rem-0040-seaweedfs (integrated branch); next unit: new worktree from origin/main"
 }
