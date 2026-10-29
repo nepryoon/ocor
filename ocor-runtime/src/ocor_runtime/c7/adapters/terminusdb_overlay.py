@@ -143,13 +143,15 @@ def _terminus_branch(branch: ScenarioBranch) -> str:
 
 def _stored_revision(document: object) -> int | None:
     """The revision a stored delta declares, or ``None`` when it is absent or not an
-    integer: a malformed delta is tampering, never a raw ``ValueError``."""
+    exact integer: a malformed delta is tampering, never a raw ``ValueError``. Nothing
+    is converted or truncated (``true``, ``1.0``, ``1.9`` and ``"1"`` are not 1), with
+    the same predicate as ``read_at``."""
     if not isinstance(document, dict):
         return None
-    try:
-        return int(document["revision"])
-    except (KeyError, TypeError, ValueError):
+    revision = document.get("revision")
+    if isinstance(revision, bool) or not isinstance(revision, int):
         return None
+    return revision
 
 
 def _delta_key(revision: int) -> str:
@@ -293,7 +295,11 @@ class TerminusDBScenarioOverlayStore:
         status, body, _ = self._request("GET", f"/api/log/{self._db()}?count=1&start=0")
         if status != 200 or not isinstance(body, list) or not body:
             raise ScenarioOverlayError("BACKEND_ERROR", f"cannot read the log of main: {status}")
-        return str(body[0]["identifier"])
+        head = body[0]
+        identifier = head.get("identifier") if isinstance(head, dict) else None
+        if not isinstance(identifier, str) or COMMIT_REF.fullmatch(identifier) is None:
+            raise ScenarioOverlayError("BACKEND_ERROR", "the log of main names no commit")
+        return identifier
 
     def _in_main_history(self, commit_ref: str) -> bool:
         start = 0
