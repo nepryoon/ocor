@@ -18,14 +18,18 @@ admission service, the OCOR-DEV-0051/0053 store and embedding coordinators,
 the OCOR-DEV-0052 retrieval service, the OCOR-DEV-0054 consolidation service,
 the OCOR-DEV-0055 lifecycle coordinator and deletion saga, the OCOR-DEV-0056
 restore gate, the OCOR-DEV-0057 context assembler, the OCOR-DEV-0058
-promotion service and C6 consumer and the OCOR-DEV-0059 operations service --
-over the real, pinned backends of the G5 qualifying worlds: PostgreSQL 16 from
+promotion service and C6 consumer and the OCOR-DEV-0059 operations, backup
+and restore services -- over the real, pinned backends of the G5 qualifying worlds: PostgreSQL 16 from
 ``OCOR_LIVE_POSTGRES_DSN`` (metadata, encrypted content, full-text index,
 representation descriptors, denial and receipt audit, C3 canonical store; one
 schema per world), Qdrant 1.15.1 (native and parallel vector indexes, one
 namespace per world), OpenBao 2.6.2 transit (content encryption, C6 gate and
 deletion-checkpoint signatures) and the OPA of the bootstrap stack (C6
-promotion policy).  The worlds, the 0061 campaign world and the explicit
+promotion policy).  FGM-17 also runs the real C8 tool boundary of
+OCOR-DEV-0047/REM-0027 (``ToolCallRuntime`` over the real capability
+authority, emergency-stop controller, sandbox, budget and C6 outcome
+reconciler); its stop controller is the kill switch memory reads its stop
+epoch from, and its tools reach memory only through the lease channel.  The worlds, the 0061 campaign world and the explicit
 policy/authority test ports are imported from the sealed G5/G6 modules; no
 imported test function is collected again.  A missing backend fails, it
 never skips.  The two structural cases at the end bind the campaign to the
@@ -37,7 +41,20 @@ Declared limits: the timing channel of FGM-16 is observed as the backend work
 with and without unauthorized items; no wall-clock tolerance is defined by the
 normative text and none is asserted.  The use of procedural memory in FGM-14
 is retrieval and context assembly: no runtime component consumes memory
-instruction eligibility for tool execution.
+instruction eligibility for tool execution.  FGM-16 covers the
+cross-compartment case only: membership inference through retained digests
+remains an open, unassigned residual risk (PO decision
+OCOR-DEV-0055-VF002-REMEDIATION, VF-004).  FGM-17 does not close, and does
+not claim closed, two residual risks: the window between the last stop-epoch
+check and the append, commit or delivery of the memory lifecycle, promotion
+and operations services, which are not atomic with an external control plane
+(OCOR-DEV-0055-VF002-REMEDIATION, VF-001); and the in-process preemption of
+C8, best-effort between interpreter steps, so that a native call already
+running and the ``finally`` after it are not interruptible and an effect on a
+channel the platform does not govern is not contained
+(REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION).  What FGM-17 observes is
+that every use of memory and every tool effect on the lease channel after the
+stop or the revocation is refused.
 """
 
 from __future__ import annotations
@@ -48,10 +65,12 @@ import inspect
 import re
 import sys
 import tempfile
+import threading
+import time
 import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -71,7 +90,13 @@ import test_ocor_dev_0056 as t56  # noqa: E402
 import test_ocor_dev_0057 as t57  # noqa: E402
 import test_ocor_dev_0058 as t58  # noqa: E402
 import test_ocor_dev_0059 as ops  # noqa: E402
+from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry  # noqa: E402
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand  # noqa: E402
+from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet  # noqa: E402
+from ocor_runtime.c6.safety import EmergencyStopController, OutcomeReconciler, OutcomeStatus, SafetyError  # noqa: E402
+from ocor_runtime.c6_capabilities import CapabilityAuthority, CapabilityLease  # noqa: E402
+from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError  # noqa: E402
+from ocor_runtime.c8_agent import StrictSandbox, TokenBudget  # noqa: E402
 from ocor_runtime.kernel.canonical import canonical_digest  # noqa: E402
 from ocor_runtime.memory.deletion import DeletionJournalSnapshot, DeletionRecoveryError  # noqa: E402
 from ocor_runtime.memory.lifecycle import JournalTombstoneStore  # noqa: E402
@@ -213,6 +238,8 @@ class Campaign(f10.Campaign):
     def promotion_backends(self) -> t52.Backends:
         """The 0052 world view the sealed 0058 C6/C3 workflow runs on, over the same backends."""
 
+        if self.retrieval is not None:
+            self.retrieval.release()
         self.retrieval = t52.Backends(dsn=self.dsn, qdrant=self.qdrant, bao=self.bao)
         return self.retrieval
 
@@ -702,13 +729,21 @@ def test_fgm_15_negative_no_direct_write_smuggled_authority_or_missing_c6_contro
         t58.refused(lambda: x.consumer.commit(x.result.audit_ref, binding=t52.binding(x.ctx)), "C6_APPROVAL_INVALID")
         x.controls.put(x.result.audit_ref, x.body, broken_signature=True)
         t58.refused(lambda: x.consumer.commit(x.result.audit_ref, binding=t52.binding(x.ctx)), "C6_GATE_UNSIGNED")
+        # The real OPA of the C6 commit: a denial or another policy bundle never reaches C3.
+        x.controls.put(x.result.audit_ref, x.body)
+        x.policy.permitted = False
+        t58.refused(lambda: x.consumer.commit(x.result.audit_ref, binding=t52.binding(x.ctx)), "C6_POLICY_DENIED")
+        x.policy.permitted, x.policy.stale = True, True
+        t58.refused(lambda: x.consumer.commit(x.result.audit_ref, binding=t52.binding(x.ctx)), "POLICY_BUNDLE_MISMATCH")
+        x.policy.stale = False
         assert x.c3.read(x.ctx.tenant_id, "Situation", target) is None
         with psycopg.connect(campaign.dsn) as conn:
             assert conn.execute("SELECT count(*) FROM c3_outbox WHERE aggregate_ref=%s", (target,)).fetchone() == (0,)
         assert x.w.ledger.records() == before
         actions = x.audit.actions()
-        assert actions.count("proposeMemoryPromotion.denied") == 9 and actions.count("commitMemoryPromotion.denied") == 3
-        assert "commitMemoryPromotion.completed" not in actions and "commitMemoryPromotion.intent" not in actions
+        assert actions.count("proposeMemoryPromotion.denied") == 9 and actions.count("commitMemoryPromotion.denied") == 5
+        # The intent is audited before the live C6 revalidation, so only the two OPA refusals carry one.
+        assert "commitMemoryPromotion.completed" not in actions and actions.count("commitMemoryPromotion.intent") == 2
 
 
 # --------------------------------------------------------------------------
@@ -845,19 +880,196 @@ def test_fgm_16_negative_probes_of_unauthorized_memory_are_indistinguishable_fro
         noisy.service().search(body, binding=t52.binding(t52.context(compartments=("charlie",))))
     assert _lookups(noisy, since) == []
     # Operations on a partition outside the verified context: same refusal whether it holds items or not.
-    service, audit, _ = ops.setup(noisy, audit=campaign.receipts(noisy))
+    audit = campaign.receipts(noisy)  # ``ops.setup`` returns its own default audit, not this one
+    service, _, _ = ops.setup(noisy, audit=audit)
     hidden = MemoryPartition.for_item(noisy.ledger.get("x-tenant", 1).item)  # type: ignore[union-attr]
     empty = dataclasses.replace(hidden, tenant_id="tenant-z")
     refusals = [ops.refused(lambda p=p: ops.invoke(service, noisy, p), "PARTITION_DENIED") for p in (hidden, empty)]
     assert (refusals[0].reason_code, refusals[0].detail_code) == (refusals[1].reason_code, refusals[1].detail_code)
-    assert audit.actions()[-2:] == ["memoryOperations.denied", "memoryOperations.denied"] or all(
-        a.endswith(".denied") for a in audit.actions()[-2:]
-    )
+    assert audit.actions()[-2:] == ["memoryMonitor.denied", "memoryMonitor.denied"]
 
 
 # --------------------------------------------------------------------------
 # FGM-17 -- kill switch / delegation revocation race (FR-038, FR-174, NFR-048)
 # --------------------------------------------------------------------------
+
+
+# The FGM-17 tool path: the real OCOR-DEV-0047/REM-0027 C8 tool boundary.  Its
+# ``EmergencyStopController`` is the kill switch memory reads its stop epoch
+# from, so one accepted stop fences both memory use and tool dispatch; the
+# registered tools reach the world's real memory only through the lease channel
+# (``ToolCallRuntime.authorize_effect``).
+TOOL_MARKING = MarkingSet({"classification": "SECRET"})
+TOOL_CLEARANCE = MarkingSet({"classification": "TOP_SECRET"})
+RESET_APPROVERS = ("urn:ocor:human:fgm17-a", "urn:ocor:human:fgm17-b")
+RESET_REQUESTER = "urn:ocor:human:fgm17-c"
+RECALL = "harbour patrol schedule"
+STOP_AFTER_SECONDS = 0.3
+NATIVE_WAIT_SECONDS = 1.5
+CONTAINMENT_TARGET_SECONDS = 10.0
+
+
+class ControllerStop:
+    """Memory's stop-epoch port, read from the C6 controller of the tool boundary.
+
+    ``stop_at_read`` makes the external control plane accept the stop at that
+    read of the epoch: the race between the kill switch and a use in flight."""
+
+    def __init__(self, boundary: ToolBoundary) -> None:
+        self.boundary = boundary
+        self.reads = 0
+        self.stop_at_read: int | None = None
+
+    def current_epoch(self, ctx: Any) -> int:
+        self.reads += 1
+        if self.stop_at_read == self.reads:
+            self.boundary.accept_stop()
+        return self.boundary.stop.epoch
+
+
+class ToolBoundary:
+    """``ToolCallRuntime`` over the real ``CapabilityAuthority``, ``MarkingEngine``,
+    ``EmergencyStopController``, ``StrictSandbox``, ``TokenBudget`` and C6
+    ``OutcomeReconciler``, with tools that use the world's real memory."""
+
+    def __init__(self, world: f10.FgmWorld) -> None:
+        self.world = world
+        self.effects: list[tuple[str, tuple[str, ...]]] = []
+        self.late: list[str] = []
+        self.settled = threading.Event()
+        self.stop_accepted_at: float | None = None
+        self.sandbox = StrictSandbox()
+        self.authority = CapabilityAuthority(issuer="fgm-17-authority")
+        self.stop = EmergencyStopController()
+        self.identities = IdentityRegistry(
+            IdentityRecord(canonical_id=human, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""})
+            for human in (*RESET_APPROVERS, RESET_REQUESTER)
+        )
+        self.runtime = ToolCallRuntime(
+            sandbox=self.sandbox,
+            authority=self.authority,
+            marking_engine=MarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))]),
+            stop=self.stop,
+            reconciler=OutcomeReconciler(),
+        )
+        self.memory_stop = ControllerStop(self)
+        world.stop = self.memory_stop
+        self.lease = self.issue()
+        self.after_recall: Callable[[], None] | None = None
+        self.sandbox.register_tool("recall_memory", self._recall)
+        self.sandbox.register_tool("act_on", self._act)
+        self.sandbox.register_tool("slow_recall", self._slow_recall)
+
+    def issue(self) -> CapabilityLease:
+        return self.authority.issue(
+            subject=CALLER.effective_principal_id,
+            capabilities=[f"tool:{tool}" for tool in ("recall_memory", "act_on", "slow_recall")],
+            resources=["recall_memory", "act_on", "slow_recall"],
+            issued_at=datetime.now(UTC) - timedelta(minutes=1),
+            ttl=timedelta(hours=1),
+        )
+
+    def _authorize(self, tool: str) -> None:
+        self.runtime.authorize_effect(self.lease, tool, subject=CALLER.effective_principal_id, at=datetime.now(UTC))
+
+    def recall(self) -> tuple[str, ...]:
+        """One use of memory by a tool: lease channel, then the real governed search."""
+        self._authorize("recall_memory")
+        body = t52.request(RetrievalMode.HYBRID, text=RECALL, deadline=self.world.deadline())
+        found = tuple(sorted({hit.memory_item_id for hit in self.world.service().search(body, binding=t52.binding()).hits}))
+        self.effects.append(("recall_memory", found))
+        return found
+
+    def _recall(self, _: str) -> tuple[str, ...]:
+        found = self.recall()
+        if self.after_recall is not None:
+            self.after_recall()
+        return found
+
+    def _act(self, found: tuple[str, ...]) -> int:
+        self._authorize("act_on")
+        self.effects.append(("act_on", tuple(found)))
+        return len(found)
+
+    def _slow_recall(self, _: str) -> int:
+        """A tool that does not cooperate: a native wait, then a late use of memory from its ``finally``."""
+        try:
+            time.sleep(NATIVE_WAIT_SECONDS)
+        finally:
+            try:
+                self.recall()
+                self.late.append("RECALLED")
+            except ToolRuntimeError as error:
+                self.late.append(error.reason_code)
+            except BaseException as error:  # noqa: BLE001 - every late outcome is recorded
+                self.late.append(type(error).__name__)
+            finally:
+                self.settled.set()
+        return 0
+
+    def accept_stop(self) -> None:
+        """The external control plane accepts the stop on its own thread."""
+
+        def run() -> None:
+            self.stop.activate(reason="FGM-17 kill switch", at=datetime.now(UTC))
+            self.stop_accepted_at = time.monotonic()
+
+        worker = threading.Thread(target=run)
+        worker.start()
+        worker.join()
+
+    def accept_stop_later(self, delay: float) -> None:
+        def run() -> None:
+            time.sleep(delay)
+            self.accept_stop()
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def reset(self) -> None:
+        now = datetime.now(UTC)
+        self.stop.finish_draining(at=now)
+        self.stop.request_reset(approvers=RESET_APPROVERS, identities=self.identities, requester=RESET_REQUESTER, at=now)
+        self.stop.confirm_reset(at=now)
+
+    def invoke(self, expression: str, *, tool_name: str = "recall_memory", lease: CapabilityLease | None = None,
+               stop_epoch: int | None = None) -> Any:
+        return self.runtime.invoke(
+            tool_name,
+            expression,
+            bindings={"text": RECALL},
+            lease=lease or self.lease,
+            context=CALLER,
+            content_marking=TOOL_MARKING,
+            clearance=TOOL_CLEARANCE,
+            budget=TokenBudget(1000),
+            estimated_tokens=10,
+            stop_epoch=self.stop.epoch if stop_epoch is None else stop_epoch,
+            at=datetime.now(UTC),
+        )
+
+    def refused(self, expression: str, reason: str, **kwargs: Any) -> ToolRuntimeError:
+        with pytest.raises(ToolRuntimeError) as refused:
+            self.invoke(expression, **kwargs)
+        assert refused.value.reason_code == reason, str(refused.value)
+        return refused.value
+
+    def assert_reconciled(self, error: ToolRuntimeError, tool: str) -> None:
+        """The racing call is EXECUTION_UNKNOWN, recorded with the C6 reconciler, never auto-retried."""
+        outcome = error.reconciliation
+        assert error.execution_unknown is True and outcome is not None
+        assert (outcome.tool_name, outcome.lease_id, outcome.stop_epoch) == (tool, self.lease.lease_id, self.lease.stop_epoch)
+        assert outcome.correlation_id == CALLER.correlation_id
+        assert self.runtime.reconciler.records == (outcome.reconciliation,)
+        assert outcome.reconciliation.status is OutcomeStatus.UNKNOWN
+        with pytest.raises(SafetyError):
+            self.runtime.reconciler.require_may_auto_retry(outcome.command_id)
+
+    def names(self) -> list[str]:
+        return [name for name, _ in self.effects]
+
+
+def _search_events(world: f10.FgmWorld) -> list[tuple[object, object]]:
+    return [(e["action"], e.get("reason_code")) for e in world.audit.events if str(e["action"]).startswith("searchMemory")]
 
 
 def test_fgm_17_positive_a_kill_switch_or_revocation_racing_a_use_leaves_no_retrieval_or_tool_influence(
@@ -893,10 +1105,47 @@ def test_fgm_17_positive_a_kill_switch_or_revocation_racing_a_use_leaves_no_retr
             return dataclasses.replace(decision, permitted=decision.permitted and not revoked)
 
     # Delegation revoked between planning and materialisation: the whole answer is discarded.
+    granted = world.policy
     world.policy = RevokedAfterPlan()
     events = len(world.audit.events)
     t52.assert_retrieval_error(lambda: world.service().search(body, binding=t52.binding()), "REPRESENTATION_NOT_READY", "CANDIDATE_CHANGED")
     assert [(e["action"], e["detail_code"]) for e in world.audit.events[events:]] == [("searchMemory.denied", "CANDIDATE_CHANGED")]
+    world.policy = granted
+    # FR-038 tool path: the real C8 boundary, one kill switch with memory.  Control: before any
+    # stop a governed tool use of memory is dispatched and influences the next tool.
+    tools = ToolBoundary(world)
+    receipt = tools.invoke("act_on(recall_memory(text))")
+    found = tools.effects[0][1]
+    assert found and tools.effects == [("recall_memory", found), ("act_on", found)]
+    assert receipt.result == len(found) and receipt.stop_epoch == tools.stop.epoch == 0
+    assert tools.runtime.reconciler.records == ()
+    # Kill switch accepted while the tool's retrieval is in flight: the retrieval is denied and
+    # audited, the call is EXECUTION_UNKNOWN and reconciled, the next tool is never dispatched.
+    tools.effects.clear()
+    events = len(world.audit.events)
+    tools.memory_stop.stop_at_read = tools.memory_stop.reads + 2
+    refused = tools.refused("act_on(recall_memory(text))", "STOP_BOUND_DENIED")
+    assert tools.stop_accepted_at is not None and tools.effects == []
+    tools.assert_reconciled(refused, "recall_memory")
+    assert [(e["action"], e["reason_code"]) for e in world.audit.events[events:]] == [("searchMemory.denied", "STOP_EPOCH_MISMATCH")]
+    # After the stop the pre-stop lease is dead on the lease channel: no later use reaches memory.
+    with pytest.raises(ToolRuntimeError) as late:
+        tools.recall()
+    assert late.value.reason_code == "STOP_BOUND_DENIED" and len(world.audit.events) == events + 1
+    # Delegation revoked after a use of memory, while the expression runs: the tool that would act
+    # on it is refused at its dispatch (ADD v1.3 Part II §2.12: every tool invocation re-evaluates
+    # the live capability and delegation), so the revoked grant has no further tool influence.
+    tools = ToolBoundary(world)
+    tools.after_recall = lambda: tools.authority.revoke(tools.lease.lease_id, at=datetime.now(UTC))
+    with pytest.raises(Exception) as revoked:
+        tools.invoke("act_on(recall_memory(text))")
+    assert tools.names() == ["recall_memory"]
+    assert isinstance(revoked.value, ToolRuntimeError), f"the dispatch gate let the revoked lease through: {revoked.value!r}"
+    assert revoked.value.reason_code == "CAPABILITY_DENIED" and revoked.value.execution_unknown is False
+    events = len(world.audit.events)
+    with pytest.raises(ToolRuntimeError) as late:
+        tools.recall()
+    assert late.value.reason_code == "CAPABILITY_DENIED" and len(world.audit.events) == events
     # NFR-048: zero memory mutation by any racing use.
     assert life.ledger_snapshot(world) == ledger
 
@@ -922,6 +1171,37 @@ def test_fgm_17_negative_after_a_kill_switch_or_revoked_delegation_no_earlier_gr
         ),
         "STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED",
     )
+    # FR-038 tool path: a lease issued before the kill switch never reaches a tool or memory again,
+    # whatever epoch is presented and even after the dual-control reset (LLD v1.1 §4.3).
+    stopped = world.stop
+    tools = ToolBoundary(world)
+    tools.accept_stop()
+    events = len(world.audit.events)
+    tools.refused("act_on(recall_memory(text))", "STOP_BOUND_DENIED")
+    tools.refused("act_on(recall_memory(text))", "STOP_BOUND_DENIED", stop_epoch=0)
+    tools.reset()
+    assert tools.stop.epoch == 2
+    tools.refused("act_on(recall_memory(text))", "STOP_BOUND_DENIED")
+    with pytest.raises(ToolRuntimeError) as late:
+        tools.recall()
+    assert late.value.reason_code == "STOP_BOUND_DENIED"
+    # A revoked lease of the new epoch is refused before any tool or memory use.
+    tools.lease = tools.issue()
+    tools.authority.revoke(tools.lease.lease_id, at=datetime.now(UTC))
+    tools.refused("act_on(recall_memory(text))", "CAPABILITY_DENIED")
+    assert tools.effects == [] and tools.runtime.reconciler.records == () and len(world.audit.events) == events
+    # A tool that does not cooperate races the stop: the call is refused within the containment
+    # target and reconciled, and its late use of memory from a ``finally`` is refused on the lease
+    # channel.  An effect on a channel the platform does not govern stays the declared residual.
+    tools = ToolBoundary(world)
+    tools.accept_stop_later(STOP_AFTER_SECONDS)
+    refused = tools.refused("slow_recall(text)", "STOP_BOUND_DENIED", tool_name="slow_recall")
+    returned = time.monotonic()
+    assert tools.settled.wait(NATIVE_WAIT_SECONDS + 5.0)
+    assert tools.stop_accepted_at is not None and returned - tools.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
+    tools.assert_reconciled(refused, "slow_recall")
+    assert tools.late == ["STOP_BOUND_DENIED"] and tools.effects == [] and len(world.audit.events) == events
+    world.stop = stopped
     # Revoked delegation: retrieval is refused and earlier proposals cannot be consumed.
     world.policy.permitted = False
     body = t52.request(RetrievalMode.HYBRID, text="harbour patrol schedule", deadline=world.deadline())
@@ -980,6 +1260,19 @@ def test_fgm_18_positive_a_restored_backup_never_resurrects_and_reconciles_the_t
         again.serve(d.refs)
     assert again.reconcile().obligations == 1 and restarted.ledger.latest_version("x") == versions
     assert not t56.mentions(again.serve(d.refs), "x")
+    # The OCOR-DEV-0059 restore gate: a manifest signed by OpenBao before the deletion opens the
+    # restore only through the tombstone replay; the deleted item is never served again.
+    m = ops.live_drill(campaign, campaign.tmp())
+    backup, signer, _ = ops.live_capture(m, campaign)
+    assert m.source.delete("x", op="fgm18-manifest-forget-x").lifecycle_status == "DELETED"
+    m.deliver_journal()
+    assert ops.mentions(m.refs(), "x")
+    restore = ops.live_restore(m, campaign, signer)
+    ops.refused(lambda: restore.serve(m.refs), "RESTORE_NOT_OPEN")
+    opened = restore.open(backup.payload, backup.signature)
+    assert opened.obligations == 1 and opened.deleted_after_backup == ("x",) and opened.verified_items == 2
+    served = restore.serve(m.refs)
+    assert not ops.mentions(served, "x") and ops.mentions(served, "keep") and m.restored.status("x") == "DELETED"
 
 
 def test_fgm_18_negative_unauthenticated_incomplete_or_stale_reconciliation_keeps_the_restore_closed(
@@ -1017,6 +1310,21 @@ def test_fgm_18_negative_unauthenticated_incomplete_or_stale_reconciliation_keep
         gate.serve(d.refs)
     with pytest.raises(DeletionRecoveryError, match="RESTORE_NOT_RECONCILED"):
         gate.serve(d.refs)
+    # The OCOR-DEV-0059 restore gate: a tampered manifest, or a deletion authority behind the
+    # manifest (a journal rollback), never opens the restore and purges nothing.
+    m = ops.live_drill(campaign, campaign.tmp())
+    rollback = campaign.tmp() / "before-deletion.jsonl"
+    rollback.write_bytes(m.authority_journal.read_bytes())
+    assert m.source.delete("y", op="fgm18n-manifest-forget-y").lifecycle_status == "DELETED"
+    backup, signer, _ = ops.live_capture(m, campaign)
+    m.deliver_journal()
+    restore = ops.live_restore(m, campaign, signer)
+    ops.refused(lambda: restore.open(backup.payload.replace(b'"keep"', b'"kept"'), backup.signature), "BACKUP_UNAUTHENTICATED")
+    stale = ops.live_restore(m, campaign, signer, checkpoints=ops.Checkpoints(rollback))
+    ops.refused(lambda: stale.open(backup.payload, backup.signature), "STALE_DELETION_EPOCH")
+    for closed in (restore, stale):
+        ops.refused(lambda closed=closed: closed.serve(m.refs), "RESTORE_NOT_OPEN")
+    assert ops.mentions(m.refs(), "y")
 
 
 # --------------------------------------------------------------------------
