@@ -68,10 +68,10 @@ class Harness:
     """The real collaborators of OCOR-DEV-0047 plus an effects journal that
     only the registered tool callables append to."""
 
-    def __init__(self) -> None:
+    def __init__(self, authority: type[CapabilityAuthority] = CapabilityAuthority) -> None:
         self.effects: list[str] = []
         self.sandbox = StrictSandbox()
-        self.authority = CapabilityAuthority(issuer="rem-0043-authority")
+        self.authority = authority(issuer="rem-0043-authority")
         self.marking = MarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
         self.stop = EmergencyStopController()
         self.runtime = ToolCallRuntime(sandbox=self.sandbox, authority=self.authority, marking_engine=self.marking, stop=self.stop)
@@ -281,6 +281,33 @@ def test_the_effect_channel_refuses_a_stopped_and_revoked_lease_as_stop_bound() 
         harness.runtime.authorize_effect(lease, "note", subject="agent-1", at=harness.invoked_at)
 
     assert refused.value.reason_code == "STOP_BOUND_DENIED"
+
+
+def test_a_stop_accepted_between_the_authorization_and_the_live_read_stays_stop_bound() -> None:
+    """The stop is accepted at the one instant the authority's own epoch check
+    cannot see: after ``authorize`` has passed and before the live lease
+    record is read. Accepting it revokes the lease, and the refusal must still
+    be the stop's."""
+    armed: dict[str, Harness] = {}
+
+    class StopBeforeTheLiveRead(CapabilityAuthority):
+        def get(self, lease_id: str) -> CapabilityLease | None:
+            harness = armed.pop("harness", None)
+            if harness is not None:
+                harness.accept_stop()
+            return super().get(lease_id)
+
+    harness = Harness(StopBeforeTheLiveRead)
+    harness.tool("note")
+    lease = harness.lease("note")
+    armed["harness"] = harness
+    budget = TokenBudget(1000)
+
+    harness.refused("note(name)", lease, "STOP_BOUND_DENIED", budget=budget)
+
+    revoked = harness.authority.get(lease.lease_id)
+    assert revoked is not None and revoked.revoked_at is not None and "harness" not in armed
+    assert harness.effects == [] and budget.used == 0
 
 
 def test_a_revocation_racing_the_dispatch_from_another_thread_never_reaches_the_second_tool() -> None:
