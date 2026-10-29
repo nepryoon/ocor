@@ -606,6 +606,86 @@ def test_a_non_numeric_stored_revision_is_rejected_as_tampering() -> None:
         assert store.read_at(branch, 0).deltas == ()
 
 
+def test_a_stored_revision_that_is_not_an_exact_integer_is_rejected_as_tampering() -> None:
+    """Repair cycle 1, VF-001 of OCOR-DEV-REM-0041-e9aa8e1cc659-0: a delta whose chain and
+    digest are valid for revision 1 but whose stored revision is ``true``, ``1.0``,
+    ``1.9`` or ``"1"`` is tampering; nothing truncates or converts it to 1."""
+    adapter, port = _adapter(), _port()
+    database = "ocor_c7_rem0041_malformed"
+    token = adapter.run_token("urn:ocor:scenario:rem0041", "run-1", COMPARTMENTS)
+    branch = port.ScenarioBranch(
+        scenario_id="urn:ocor:scenario:rem0041",
+        run_id="run-1",
+        compartments=COMPARTMENTS,
+        canonical_commit_ref="abc123",
+        scenario_branch="scenario/" + token,
+    )
+    run = {
+        "scenario_id": branch.scenario_id,
+        "run_id": branch.run_id,
+        "compartments_json": adapter.canonical_bytes(list(COMPARTMENTS)).decode("utf-8"),
+        "canonical_commit_ref": branch.canonical_commit_ref,
+        "scenario_branch": branch.scenario_branch,
+    }
+    delta_json = '{"hypothesis":"h1"}'
+    delta = {
+        "key": "000000000001",
+        "delta_json": delta_json,
+        "delta_digest": adapter._chain_digest(branch.scenario_branch, 1, None, delta_json),
+        "previous_digest": "",
+    }
+
+    def answer(revision: object) -> Callable[[str], tuple[int, str, dict[str, str]]]:
+        def respond(path: str) -> tuple[int, str, dict[str, str]]:
+            if path == "/api/db":
+                return 200, json.dumps([{"path": f"admin/{database}"}]), {}
+            if "type=C7OverlayDelta" in path:
+                return 200, json.dumps([{**delta, "revision": revision}]), {"TerminusDB-Data-Version": "branch:c0ffee"}
+            return 200, json.dumps(run), {}
+
+        return respond
+
+    for revision in (True, 1.0, 1.9, "1"):
+        with _local_responder(answer(revision)) as url:
+            store = _store(database, url=url)
+            store.initialize()
+            assert _code(functools.partial(store.read_at, branch, 1)) == "OVERLAY_TAMPERED"
+            assert _code(functools.partial(store.read_at, branch, 0)) == "OVERLAY_TAMPERED"
+    # Positive control: the same delta with the integer revision 1 reads at revision 1.
+    with _local_responder(answer(1)) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        view = store.read_at(branch, 1)
+        assert [item.revision for item in view.deltas] == [1]
+        assert view.deltas[0].delta == {"hypothesis": "h1"}
+
+
+def test_a_malformed_log_of_main_fails_closed_as_a_backend_error() -> None:
+    """Repair cycle 1, VF-002 of OCOR-DEV-REM-0041-e9aa8e1cc659-0: a log of ``main`` whose
+    first entry is not an object with a commit identifier is a backend error, never a
+    raw ``KeyError`` or ``TypeError``."""
+    database = "ocor_c7_rem0041_malformed"
+
+    def answer(log: str) -> Callable[[str], tuple[int, str, dict[str, str]]]:
+        def respond(path: str) -> tuple[int, str, dict[str, str]]:
+            if path == "/api/db":
+                return 200, json.dumps([{"path": f"admin/{database}"}]), {}
+            return 200, log, {}
+
+        return respond
+
+    for log in ("[{}]", "[null]", '["x"]', '[{"identifier":7}]', '[{"identifier":"ab/../main"}]', '[{"identifier":""}]'):
+        with _local_responder(answer(log)) as url:
+            store = _store(database, url=url)
+            store.initialize()
+            assert _code(store.current_canonical_commit) == "BACKEND_ERROR"
+    # Positive control: a well-formed log answers the identifier of its first commit.
+    with _local_responder(answer('[{"identifier":"abc123"},{"identifier":"def456"}]')) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        assert store.current_canonical_commit() == "abc123"
+
+
 # --- live cases on TerminusDB (and SeaweedFS for sealed results) -----------------------
 
 
