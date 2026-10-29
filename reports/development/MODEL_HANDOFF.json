@@ -4,21 +4,9 @@
     "Tail truncation of an overlay by a principal with write access to the scenario branch is not detectable by the delta chain alone (the TerminusDB commit log keeps it).",
     "The two-lane local full suite is usable, with the memory admission at start (otherwise serial, recorded)."
   ],
-  "base_sha": "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa",
-  "baseline_commit": "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa",
-  "branch": "governed/state-sync-rem0041-overlay-integrated-20261029",
-  "candidate_branch_evidence": {
-    "branch": "governed/ocor-dev-rem-0041-scenario-overlay-store",
-    "head_sha": "b5db94d8cdddd93da371cd38b8fc63e55957ce4b",
-    "merge_commit": "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa",
-    "note": "REM-0041 overlay-unit record and 3 requalifications sealed after GO and merged with PR #403",
-    "paths": [
-      "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/OCOR-DEV-REM-0041.scenario-overlay.json",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0041-overlay.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.json"
-    ]
-  },
+  "base_sha": "f0f4a935cdb3115b9e4b58ba77b5d18c4703ec41",
+  "baseline_commit": "f0f4a935cdb3115b9e4b58ba77b5d18c4703ec41",
+  "branch": "governed/state-sync-workstation-archive-disposition-20261029",
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/ITERATION_LOG.md",
@@ -34,56 +22,37 @@
   },
   "commands": [
     {
-      "command": "verdict OCOR-DEV-REM-0041-c5176eed223f-1",
+      "command": "sha256 of reports/development/decision_requests/WORKSTATION-TOOLS-ARCHIVE-GATES.md at c196003",
       "exit_code": 0,
-      "summary": "GO_FOR_EVIDENCE_SEAL, zero findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 3d7ad1434954d199e02ffbc1c24a4d1cefd3409b90fe6d357d5555a5244c5b80"
+      "summary": "equals the cited 21e29076b29a239143fabb13b9690f264c28bb1c417756b23fa7f78266d086ac"
     },
     {
-      "command": "merge origin/main c9ef4be9c13d into governed/ocor-dev-rem-0041-scenario-overlay-store (non-destructive alignment)",
+      "command": "git ls-remote origin refs/heads/governed/workstation-tools-archive-20261029; git log origin/main..governed/workstation-tools-archive-20261029",
       "exit_code": 0,
-      "summary": "aligned head 74fdc0b05b02; only the three state files differ from c5176eed223f; non-state tree sha256 equal"
+      "summary": "both empty: unpublished, no commits"
     },
     {
-      "command": "seal.py (verdict OCOR-DEV-REM-0041-c5176eed223f-1)",
+      "command": "tar of the untracked tools/ copy to the salvage directory outside Git, then git worktree remove --force and git branch -D",
       "exit_code": 0,
-      "summary": "overlay record and 3 requalifications SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; commit b5db94d8cddd"
+      "summary": "copy equal to the manifest (52/52 + MANIFEST.json); salvage sha256 eb4ece81feec84b48b62de2c1a77cf5a86aefce87437f2c3910102d460ae2654; worktree and local branch removed"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
+      "command": "commit d425dcf on governed/decision-request-workstation-tools-archive-gates (disposition section) and push",
       "exit_code": 0,
-      "summary": "42/42 workflow-derived non-suite steps PASS (inputs, mypy, ruff, tsc, plan, rccad, language, drift 0, scope, validation-closure guards, runtime evidence 0005/0050/0082, supply-chain scanner, tooling Compose)"
+      "summary": "file sha256 after the update 027ecaf0e036a6d2e2412cf443adf2e0826394aa95ba36de7559b95c895c799b"
     },
     {
-      "command": "gh pr create (PR #403) and exact-head polling until mergeStateStatus CLEAN",
+      "command": "gh pr close 397 --repo nepryoon/ocor --comment ...",
       "exit_code": 0,
-      "summary": "13/13 required checks success, zero reruns"
-    },
-    {
-      "command": "gh pr merge 403 --merge --match-head-commit b5db94d8cdddd93da371cd38b8fc63e55957ce4b",
-      "exit_code": 0,
-      "summary": "merge commit 82b71d0db410bcdb8124e8ec8a8235631ecfa1fa; origin/main equals the merge commit; sealed hashes unchanged"
+      "summary": "PR #397 CLOSED as resolved, not merged"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0041:overlay-unit-integrated",
+  "current_task": "WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION:maintenance-recorded",
   "evidence_paths": [],
-  "exact_next_action": "WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION (2026-10-29) maintenance unit: record the disposition in reports/development/decision_requests/WORKSTATION-TOOLS-ARCHIVE-GATES.md and in the state (blocker WORKSTATION-TOOLS-ARCHIVE-GATES closed, remediation_status.WORKSTATION_TOOLS_ARCHIVE superseded), close PR #397, check that governed/workstation-tools-archive-20261029 is unpublished and has no commits, then remove the worktree .ocor/worktrees/workstation-tools-archive and the local branch; never touch ~/ocor-workstation-export or ~/ocor-strumenti; no tools/workstation/, no change to language policy, validators, scanner, pyproject.toml or CODEOWNERS. Then the consolidation decision request of REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition c (now due: OCOR-DEV-REM-0041 integrated; baselines 9b4d3be/7cd5f7a unchanged until the PO decides), then OCOR-DEV-0060 (all four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS integrated); OCOR-DEV-0062..0064 while remediations await verification. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB) and /sys/class/power_supply. No new DEC; claims unchanged.",
-  "head_sha": "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa",
-  "head_sha_role": "merge commit of PR #403 (OCOR-DEV-REM-0041 overlay unit integrated)",
-  "independent_verification": {
-    "head_sha": "c5176eed223f1d538d08fe4d97589a420c1cc8e6",
-    "next_verifier_constraint": "for the next unit: provider different from every implementer and from its preventive reviewer",
-    "repair_cycle": 1,
-    "request_id": "OCOR-DEV-REM-0041-c5176eed223f-1",
-    "status": "GO_FOR_EVIDENCE_SEAL",
-    "verdict_created_at": "2026-10-29T12:24:23Z",
-    "verdict_file_sha256": "3d7ad1434954d199e02ffbc1c24a4d1cefd3409b90fe6d357d5555a5244c5b80",
-    "verifier": "Cursor CLI / grok-4.7-high / xAI",
-    "verifier_full_suite_two_lane": "3334 passed, 0 skipped, 2427.187 s; margin under the 5400 s cap 2972.813 s, under the 3600 s notification 1172.813 s; exact union, collection sha256 aece5d924b34; host residue empty; memory admission TWO_LANE; mains power at start and end",
-    "verifier_regression": "0005/0050/0082/0045, first governed slice, C7 emission hardening, REM-0040 and REM-0041 C3 modules: 305 passed, 0 skipped",
-    "verifier_task_module": "tests/tasks/test_ocor_dev_rem_0041_overlay.py: 37 passed, 0 skipped on the live pinned TerminusDB and SeaweedFS of ocor-bootstrap",
-    "verifier_validation_closure_guards": "362 passed, 0 skipped after the versioned npm ci/build (first run before npm ci failed only test_generated_contracts_compile_under_tsc_strict, not a candidate defect)"
-  },
+  "exact_next_action": "Consolidation decision request of REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition c (due since OCOR-DEV-REM-0041 is integrated): read-only evaluation of whether to condense the exact normalizations of reports/tests/test_kind_teardown_observation.py (REM-0038, REM-0042, REM-0037, REM-0039, REM-0040, REM-0041) into a new baseline, with the equivalence proof; options under a single '## Opzioni' section, '## Raccomandazione' naming one option, registry recommendation starting 'Option N:'; status OPEN_PO_NORMATIVE_DECISION_REQUIRED if it changes the guard standard; baselines 9b4d3be/7cd5f7a unchanged until the PO decides. It does not block OCOR-DEV-0060: then OCOR-DEV-0060 on the selected components (all four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS integrated); OCOR-DEV-0062..0064 while remediations await verification. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB) and /sys/class/power_supply. No new DEC; claims unchanged.",
+  "head_sha": "f0f4a935cdb3115b9e4b58ba77b5d18c4703ec41",
+  "head_sha_role": "origin/main at the start of the state sync (merge of PR #404)",
   "latest_ci_evidence": {
     "bad_checks": [],
     "campaign_artifacts": [
@@ -154,8 +123,8 @@
     "scope": "PASS",
     "supply_chain_scanner": "PASS"
   },
-  "next_task": "WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION:maintenance",
-  "phase": "OCOR_DEV_REM_0041_OVERLAY_UNIT_INTEGRATED",
+  "next_task": "REM-0038-CAMPAIGN-GUARD-ADMISSION-CONDITION-C:decision-request",
+  "phase": "WORKSTATION_TOOLS_ARCHIVE_GATES_DISPOSITION_RECORDED",
   "raw_evidence_location": "~/.ocor-codex/rem-0041-overlay-r2, ~/.ocor-codex/rem-0041-overlay-q2 (outside Git); earlier in ~/.ocor-codex/rem-0041-overlay, -q and -r1",
   "requirement_ids": [],
   "roles": {
@@ -165,14 +134,10 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0041 overlay unit cycle 0 and repair cycle 1 (previous iterations); this iteration, as the backup implementer of the loop: alignment, sealing, PRE-CAMPAIGN-GATE, PR #403, exact-head CI, merge, state sync"
+        "scope": "maintenance unit, as the backup implementer of the loop: disposition recorded on the decision-request branch, PR #397 closed, local cleanup, state sync"
       }
     ],
-    "loop_counted_implementers": [
-      "Codex (OpenAI, C3 unit)"
-    ],
-    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (OCOR-DEV-REM-0041-da5e512efde2-pre, OCOR-DEV-REM-0041-22642a02169f-pre)",
-    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0041-c5176eed223f-1)"
+    "verifier": "not applicable (maintenance unit without candidate, full suite or evidence; PRE-CAMPAIGN-REVIEW not applicable, point 1)"
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
@@ -188,9 +153,7 @@
     "reports_portfolio": 428,
     "task_module": "37/37 x3"
   },
-  "unresolved_blockers": [
-    "WORKSTATION-TOOLS-ARCHIVE-GATES (PO disposition received 2026-10-29, to be recorded by the next maintenance unit)"
-  ],
-  "updated_at": "2026-10-29T13:06:34.015411+00:00",
-  "worktree": ".ocor/worktrees/rem-0041-overlay (integrated branch); next unit: new worktree from origin/main"
+  "unresolved_blockers": [],
+  "updated_at": "2026-10-29T13:49:12.871182+00:00",
+  "worktree": ".ocor/worktrees/ss-wta-disposition (state sync); next unit: new worktree from origin/main"
 }
