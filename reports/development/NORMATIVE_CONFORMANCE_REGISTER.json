@@ -1432,6 +1432,9 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
+      "related_seed_refs": [
+        "C4-3"
+      ],
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -1954,6 +1957,429 @@
         "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
         "outcome": "probe prints 'NCP-S04 TerminusDB claim writes a claim: False'. CONFIRMED as behaviour; the normative equivalent is not specified."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065",
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "203-222",
+          "note": "apply_commit: delete and re-insert the single c4-watermark",
+          "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "252-261",
+          "note": "served context from request digests, staleness_ms=0",
+          "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "273-286",
+          "note": "current(): placeholder ontology_release_digest",
+          "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+        }
+      ],
+      "component": "C4",
+      "depends_on": [
+        "NCR-C2-004"
+      ],
+      "id": "NCR-C4-001",
+      "norm_refs": [
+        {
+          "lines": "355",
+          "note": "LLD v1.1 \u00a76: C4/C5 per-aggregate ordering, monotonic watermark, durable deduplication",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "148",
+          "note": "LLD v1.1 \u00a72.4: projector verifies schema/release/GCS and applies idempotently",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "188",
+          "note": "FR-064: deduplicate by store, branch and commitId",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "331",
+          "note": "FR-148: activate a release only when adapter, projector and store declare the same release digest/watermark",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "180",
+          "note": "NFR-024",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "note": "NFR-077: branch, served commit, watermark, release and staleness per state-dependent response",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-064",
+        "FR-148",
+        "NFR-024",
+        "NFR-077"
+      ],
+      "seed_ref": "C4-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-064, FR-148, NFR-024 and NFR-077 are P0 PoC",
+      "statement": "The TypeDB projection keeps one global watermark entity, replaced on every apply_commit without a monotonicity check or deduplication by (store, branch, commit_id), so an older commit moves the watermark backwards and a replay re-applies; WatermarkPort.current() returns a placeholder release (urn:sha256:0...0) and a caller-supplied branch; the served context copies release and policy digests from the request with staleness_ms=0 (so the STALE_CONTEXT check of NCR-C2-004 cannot fail).",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
+        "outcome": "probe prints 'C4-1 current() release placeholder: True | read staleness_ms=0: True | served release copied from request: True' and 'C4-1 apply_commit compares against the current watermark before replacing it: False | single c4-watermark entity: True'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "82-92",
+          "note": "in-memory quarantine; PostgresC3Service source",
+          "path": "ocor-runtime/src/ocor_runtime/c4/rebuild.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "136-144",
+          "note": "read_if_healthy",
+          "path": "ocor-runtime/src/ocor_runtime/c4/rebuild.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "1-12",
+          "note": "SHACL-equivalent hand-written check",
+          "path": "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "37",
+          "note": "legacy MarkingEngine import",
+          "path": "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py"
+        }
+      ],
+      "component": "C4",
+      "depends_on": [],
+      "id": "NCR-C4-002",
+      "norm_refs": [
+        {
+          "lines": "148",
+          "note": "LLD v1.1 \u00a72.4: Jena exposes RDF/JSON-LD and SHACL with conservative marking; drift detector quarantines and prevents EXACT_AT_COMMIT; rebuild uses a signed checkpoint",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "396-401",
+          "note": "ADD v1.3 \u00a73.0.2: a single canonical marking form",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "189",
+          "note": "FR-065: detect drift, gap and checksum mismatch; replay or rebuild",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "192",
+          "note": "FR-068",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-065",
+        "FR-068",
+        "FR-131"
+      ],
+      "seed_ref": "C4-2",
+      "severity": "MEDIUM",
+      "severity_basis": "closed elements of LLD v1.1 \u00a72.4 and ADD v1.3 \u00a73.0.2; FR-065 is MVP; no P0 PoC acceptance criterion shown violated",
+      "statement": "Projection drift handling is local: ProjectionDriftDetector keeps quarantine in an in-memory set per instance, reconciles against PostgresC3Service rather than the canonical TerminusDB store, uses no signed checkpoint, and its quarantine is not consulted by the gateway (read_if_healthy has no caller). The Jena adapter has no watermark, replaces SHACL validation with a hand-written required/closed predicate check, and evaluates marking with the legacy c4_marking engine (one label per scheme) instead of the canonical marking object.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01> ; grep -rn 'ProjectionDriftDetector\\|is_quarantined\\|read_if_healthy' --include=*.py ocor-runtime/src | grep -v c4/rebuild.py",
+        "outcome": "probe prints the in-memory '_quarantined: set[str]', rebuild source PostgresC3Service, 'rdflib SHACL processor imported: False | watermark in Jena adapter: False | marking engine class: ocor_runtime.c4_marking'; the grep returns nothing. CONFIRMED. The legacy marking class is replaced in the current component, the legacy slice is unchanged (programme decision point 6)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "79-87",
+          "note": "_request catches HTTPError only",
+          "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+        }
+      ],
+      "component": "C4",
+      "depends_on": [
+        "NCR-C2-006"
+      ],
+      "id": "NCR-C4-003",
+      "norm_refs": [
+        {
+          "lines": "486-491",
+          "note": "Problem response: typed fail-closed error",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "346",
+          "note": "LLD v1.1 \u00a75.3: unavailable dependencies block, observably and with reason code",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_note": "the CONSISTENCY_DOWNGRADE part is bound to NCR-C2-012 (same code path in c2/ports.py:135-143)",
+      "seed_ref": "C4-3",
+      "severity": "MEDIUM",
+      "severity_basis": "typed error model of a \u00a70.2 contract is NCR-C2-006 (HIGH); this entry is the adapter translation",
+      "statement": "An unreachable TypeDB surfaces as a raw urllib URLError (only HTTPError is translated), not as a typed fail-closed error of the contract; a sealed test pins the raw exception. (The CONSISTENCY_DOWNGRADE part of the seed hypothesis is entry NCR-C2-012.)",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "158-165",
+          "note": "pytest.raises(urllib.error.URLError)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
+        "outcome": "probe prints 'C4-3 _request catches URLError: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "41-56",
+          "note": "REQUIRED_FIELDS (14)",
+          "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "117-147",
+          "note": "from_mapping",
+          "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
+        }
+      ],
+      "component": "C5",
+      "depends_on": [],
+      "id": "NCR-C5-001",
+      "norm_refs": [
+        {
+          "lines": "527-568",
+          "note": "ADD v1.3 \u00a73.2: canonical-ingestion-envelope:1.2, 29 required fields, mandatory second payload validation",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "154",
+          "note": "LLD v1.1 \u00a72.5: closed envelope; producer signs envelope and digest",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "199",
+          "note": "FR-069: envelope with eventId, source, schema version, times, aggregate identity, classification and provenance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "192",
+          "note": "FR-068",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "49",
+          "note": "FR-006",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U06",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-069",
+        "FR-068",
+        "FR-006"
+      ],
+      "seed_ref": "C5-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-069, FR-068 and FR-006 are P0 PoC",
+      "statement": "The ingestion envelope accepted by C5 has 14 fields, of which only five (event_id, idempotency_key, correlation_id, governed_context_digest, payload) share a name with the 29 required by canonical-ingestion-envelope:1.2 (additionalProperties false); there is no second validation of the payload against payload_schema and no verification of the producer signature.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
+        "outcome": "probe prints 'C5-1 envelope fields: 14 | ADD v1.3 required: 29 | common names: [5 names]' and 'producer signature verification in backbone: False | payload_schema second validation: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "99-141",
+          "note": "two failure classes; replay(window_reason)",
+          "path": "ocor-runtime/src/ocor_runtime/c5/operations.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "155-159",
+          "note": "DeliveredRecord(partition, offset, envelope)",
+          "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "424-467",
+          "note": "consume",
+          "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
+        }
+      ],
+      "component": "C5",
+      "depends_on": [],
+      "id": "NCR-C5-002",
+      "norm_refs": [
+        {
+          "lines": "158-165",
+          "note": "LLD v1.1 \u00a72.5 failure taxonomy and replay rules",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "286",
+          "note": "ADD v1.3 C5 operations Publish, Subscribe, Replay, Quarantine",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2573-2575",
+          "note": "ADD v1.3 \u00a73.8 Event Subscription Contract via port Subscribe",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "205",
+          "note": "FR-074: distinguish transient, permanent, policy-denied and poison",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "79",
+          "note": "FR-016 (MVP): subscription/change feed",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "202",
+          "note": "FR-072 (MVP): replay preserving schema and provenance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U06",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-074",
+        "FR-016",
+        "FR-072"
+      ],
+      "seed_ref": "C5-2",
+      "severity": "HIGH",
+      "severity_basis": "FR-074 is P0 PoC",
+      "statement": "The failure taxonomy has only PERMANENT and POISON: no TRANSIENT class with bounded exponential backoff and retry budget, no POLICY_DENIED class with audit and non-disclosing quarantine; replay takes only a free-text window_reason, with no declared window, no authorisation and no policy re-evaluation; there is no Subscribe surface (event-subscription-contract, opaque cursor) and consume() exposes Kafka partition and offset.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
+        "outcome": "probe prints \"C5-2 failure classes: ['PERMANENT', 'POISON'] | replay params: ['dead_letter', 'window_reason']\" and \"C5-2 Subscribe surface: False | DeliveredRecord fields: ['partition', 'offset', 'envelope']\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "36-97",
+          "note": "DeadLetter and publish_with_backpressure",
+          "path": "ocor-runtime/src/ocor_runtime/c5/operations.py"
+        }
+      ],
+      "component": "C5",
+      "depends_on": [],
+      "id": "NCR-C5-003",
+      "norm_refs": [
+        {
+          "lines": "165",
+          "note": "LLD v1.1 \u00a72.5: quotas per tenant and priority class; audit/security never dropped",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "161",
+          "note": "LLD v1.1 \u00a72.5: PERMANENT -> immutable DLQ",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "338",
+          "note": "LLD v1.1 \u00a75.1: ResourceClass CONTROL/INTERACTIVE/BATCH/AUDIT determines quota, priority and backpressure",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "406",
+          "note": "NFR-079: backpressure and priority without disabling authentication, policy, audit",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U06",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-079"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH: NFR-079 is P0 PoC",
+      "seed_ref": "C5-3",
+      "severity": "HIGH",
+      "severity_basis": "NFR-079 is P0 PoC",
+      "statement": "Backpressure applies only a per-tenant in-flight quota: no priority classes and no exemption for audit and security events; DLQ and quarantine are in-memory lists (not durable); DeadLetter.envelope_raw holds a mutable mapping inside a frozen record.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
+        "outcome": "probe prints \"C5-3 priority classes: False | audit/security exemption: False | dead letters held in: ['self._dead_letters: list[DeadLetter] = []']\". CONFIRMED."
+      }
     }
   ],
   "g6_g7_proposals": {},
@@ -2002,6 +2428,14 @@
     "NCP-U04": {
       "scope": "C3 commit admission (Decision/Authority/GatePackage/Evidence/preconditions/invariants/stop and writer epoch), C6->C3 composition replacing the legacy store, outbox relay (SKIP LOCKED, DeliveryAttempt, event payload) and outbox->C5->C4 chain, canonical_source_binding",
       "status": "DRAFT"
+    },
+    "NCP-U05": {
+      "scope": "C4 projections: monotonic per-branch watermark with durable deduplication, real served release/staleness, durable drift quarantine enforced on the read path, rebuild from the canonical store with signed checkpoint, Jena watermark/SHACL/canonical marking, typed adapter errors",
+      "status": "DRAFT"
+    },
+    "NCP-U06": {
+      "scope": "C5 backbone: canonical-ingestion-envelope:1.2 with payload second validation and producer signature, full failure taxonomy, authorised windowed replay, Subscribe surface with opaque cursor, priority-class backpressure with audit/security exemption, durable DLQ/quarantine",
+      "status": "DRAFT"
     }
   },
   "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
@@ -2010,11 +2444,11 @@
     "components_done": [
       "C1",
       "C2",
-      "C3"
+      "C3",
+      "C4",
+      "C5"
     ],
     "components_pending": [
-      "C4",
-      "C5",
       "C6",
       "C7",
       "C8",
@@ -2110,6 +2544,25 @@
     },
     "C3-5": {
       "entry_id": "NCR-C3-005"
+    },
+    "C4-1": {
+      "entry_id": "NCR-C4-001"
+    },
+    "C4-2": {
+      "entry_id": "NCR-C4-002"
+    },
+    "C4-3": {
+      "entry_id": "NCR-C4-003",
+      "note": "CONSISTENCY_DOWNGRADE part bound to NCR-C2-012"
+    },
+    "C5-1": {
+      "entry_id": "NCR-C5-001"
+    },
+    "C5-2": {
+      "entry_id": "NCR-C5-002"
+    },
+    "C5-3": {
+      "entry_id": "NCR-C5-003"
     }
   },
   "severity_rule": {
@@ -2140,13 +2593,20 @@
       "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; no backend needed",
       "sha256": "9cb598e894f238164e07f2bae90a9d80a39b34b0f806f30574a40ea87869acc6",
       "text": "import inspect\nfrom ocor_runtime.c3.ports import ClaimSourceBinding, GovernedCanonicalCommitCommand\nfrom ocor_runtime.c3.adapters.postgres import PostgresC3Adapter\nfrom ocor_runtime.c3.adapters import terminusdb as tdb\nfrom ocor_runtime.kernel.governed_context import GovernedContext\nD = lambda c: \"urn:sha256:\" + c * 64\ng = GovernedContext.from_mapping({\"tenant_id\": \"urn:ocor:tenant:t\", \"organization_id\": \"urn:ocor:org:o\", \"domain_id\": \"urn:ocor:domain:d\", \"compartments\": [\"urn:ocor:compartment:a\"], \"classification_marking_ref\": D(\"a\"), \"purpose\": \"probe\", \"effective_principal_id\": \"urn:ocor:principal:p\", \"actor_chain\": [\"urn:ocor:principal:p\"], \"ontology_release_digest\": D(\"b\"), \"policy_bundle_digest\": D(\"c\"), \"correlation_id\": \"018f2f95-01b2-7cc3-8d4e-123456789abc\"})\ncmd = GovernedCanonicalCommitCommand(command_id=\"x\", action_instance_id=\"y\", aggregate_type=\"t\", aggregate_ref=\"r\", expected_revision=0, canonical_delta={\"k\": 1}, decision_ref=\"not-a-decision\", authority_ref=\"not-an-authority\", evidence_refs=[\"not-evidence\"], claim_source_bindings=(ClaimSourceBinding(\"c\", \"s\", \"e\"),), precondition_bindings=[\"p\"], invariant_bindings=[\"i\"], idempotency_key=\"k\" * 16, governed_context=g, governed_context_digest=g.digest(), gate_package_digest=D(\"f\"), branch=\"main\")\nprint(\"C3-1 command with unresolvable decision/authority/evidence refs and arbitrary GatePackage digest: ACCEPTED\", cmd.command_id)\nparams = set(inspect.signature(PostgresC3Adapter.commit_transaction).parameters)\nprint(\"C3-1 adapter commit parameters missing:\", sorted({\"claim_source_bindings\", \"precondition_bindings\", \"invariant_bindings\", \"writer_epoch\", \"stop_epoch\", \"active_ontology_release\"} - params))\nsrc = inspect.getsource(PostgresC3Adapter.claim_outbox_batch)\nprint(\"NCP-S04 PostgreSQL claim uses SKIP LOCKED:\", \"SKIP LOCKED\" in src, \"| FOR UPDATE:\", \"FOR UPDATE\" in src)\nprint(\"NCP-S04 TerminusDB claim writes a claim:\", any(w in inspect.getsource(tdb.TerminusDBC3Adapter.claim_outbox_batch) for w in (\"_transact\", \"_insert\", \"_update\")))\nprint(\"C3-3 outbox payload keys:\", sorted(tdb._outbox_payload(\"c\", \"r\", 1, D(\"e\"))))\nprint(\"C3-4 PostgreSQL acknowledge:\", \" \".join(inspect.getsource(PostgresC3Adapter.acknowledge_outbox).split())[-110:])\nfrom ocor_runtime.c3.adapters.postgres import SCHEMA as PG\nprint(\"C3-4 PostgreSQL schema mentions source_binding, delivery_attempt, writer_epoch:\", [\"source_binding\" in PG, \"delivery_attempt\" in PG, \"writer_epoch\" in PG])\n"
+    },
+    "C45-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; static, no backend needed",
+      "sha256": "f988b541c5c18bff384226321af4e43f241a44c046e4a74f7ccc237577f12b63",
+      "text": "import dataclasses, inspect, re\nfrom ocor_runtime.c4 import typedb_adapter as t, rebuild as rb, jena_adapter as j\nfrom ocor_runtime.c5 import backbone as b, operations as o\nA = open(\"ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md\").read().split(\"\\n\")\nadd_required = re.findall(r'\"([a-z_]+)\"', \"\\n\".join(A[538:567]))\ncur = inspect.getsource(t.TypeDBProjectionAdapter.current); rd = inspect.getsource(t.TypeDBProjectionAdapter.read); ap = inspect.getsource(t.TypeDBProjectionAdapter.apply_commit)\nprint(\"C4-1 current() release placeholder:\", '\"0\" * 64' in cur, \"| read staleness_ms=0:\", \"staleness_ms=0\" in rd, \"| served release copied from request:\", \"request.governed_context.ontology_release_digest\" in rd)\nprint(\"C4-1 apply_commit compares against the current watermark before replacing it:\", any(op in ap for op in (\" < \", \" > \", \"<=\", \">=\")), \"| single c4-watermark entity:\", \"match $w isa c4-watermark; delete $w;\" in ap)\nprint(\"C4-3 _request catches URLError:\", \"URLError\" in inspect.getsource(t._request))\nprint(\"C4-2 drift quarantine storage:\", [l.strip() for l in inspect.getsource(rb).split(\"\\n\") if \"_quarantined:\" in l], \"| rebuild source:\", inspect.signature(rb.ProjectionDriftDetector.__init__).parameters[\"service\"].annotation)\nprint(\"C4-2 Jena: rdflib SHACL processor imported:\", \"pyshacl\" in inspect.getsource(j), \"| watermark in Jena adapter:\", \"watermark\" in inspect.getsource(j), \"| marking engine class:\", j.MarkingEngine.__module__)\nprint(\"C5-1 envelope fields:\", len(b.REQUIRED_FIELDS), \"| ADD v1.3 required:\", len(add_required), \"| common names:\", sorted(set(b.REQUIRED_FIELDS) & set(add_required)))\nbb = inspect.getsource(b)\nprint(\"C5-1 producer signature verification in backbone:\", any(w in bb for w in (\"signature\", \"verify_sig\", \"dsse\")), \"| payload_schema second validation:\", \"payload_schema\" in bb)\nops = inspect.getsource(o)\nprint(\"C5-2 failure classes:\", sorted(set(re.findall(r'\"(TRANSIENT|PERMANENT|POLICY_DENIED|POISON)\"', ops))), \"| replay params:\", list(inspect.signature(o.EventOperationsCoordinator.replay).parameters)[1:])\nprint(\"C5-2 Subscribe surface:\", any(\"subscribe\" in n.lower() for n in dir(b.CanonicalEventBackbone)), \"| DeliveredRecord fields:\", [f.name for f in dataclasses.fields(b.DeliveredRecord)])\nprint(\"C5-3 priority classes:\", \"priority\" in ops.lower(), \"| audit/security exemption:\", \"audit\" in ops.lower(), \"| dead letters held in:\", [l.strip() for l in ops.split(\"\\n\") if \"self._dead_letters\" in l and \"=\" in l][:1])\n"
     }
   },
   "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
   "verified_at_heads": {
     "C1": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
     "C2": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
-    "C3": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0"
+    "C3": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+    "C4": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+    "C5": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0"
   },
   "verified_at_heads_note": "ocor-runtime/ is identical at a631e69 and a325fc2 (git diff a631e69 a325fc2 touches only reports/development state files)"
 }
