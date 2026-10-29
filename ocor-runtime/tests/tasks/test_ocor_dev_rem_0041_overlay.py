@@ -710,7 +710,7 @@ def _offline_run() -> tuple[str, Any, dict[str, str]]:
 
 
 def test_a_first_delta_whose_stored_link_is_not_the_empty_string_is_rejected_as_tampering() -> None:
-    """Repair cycle 2, P1 of OCOR-DEV-REM-0041-22642a02169f-pre: the first delta stores
+    """Repair cycle 1, preventive-review P1 of OCOR-DEV-REM-0041-22642a02169f-pre: the first delta stores
     exactly the empty string as its link; an omitted link or ``false``, ``0``, ``[]``,
     ``{}`` or ``null`` is tampering, never read as the absent link of revision 1."""
     adapter = _adapter()
@@ -752,7 +752,7 @@ def test_a_first_delta_whose_stored_link_is_not_the_empty_string_is_rejected_as_
 
 
 def test_a_malformed_database_listing_fails_closed_as_a_backend_error() -> None:
-    """Repair cycle 2, P2 of OCOR-DEV-REM-0041-22642a02169f-pre: a listing entry that is
+    """Repair cycle 1, preventive-review P2 of OCOR-DEV-REM-0041-22642a02169f-pre: a listing entry that is
     not an object with a string path is a backend error, never a raw ``AttributeError``
     nor an absent store; a database of another organization is not the canonical one."""
     database = "ocor_c7_rem0041_malformed"
@@ -768,7 +768,7 @@ def test_a_malformed_database_listing_fails_closed_as_a_backend_error() -> None:
 
 
 def test_a_malformed_data_version_of_the_overlay_fails_closed_as_a_backend_error() -> None:
-    """Repair cycle 2, P3 of OCOR-DEV-REM-0041-22642a02169f-pre: the commit named by the
+    """Repair cycle 1, preventive-review P3 of OCOR-DEV-REM-0041-22642a02169f-pre: the commit named by the
     data version of the scenario branch is a commit reference, or the read fails closed
     before any further request (no raw ``InvalidURL``, no path traversal)."""
     database, branch, run = _offline_run()
@@ -802,7 +802,7 @@ def test_a_malformed_data_version_of_the_overlay_fails_closed_as_a_backend_error
 
 
 def test_a_malformed_log_page_fails_closed_when_a_snapshot_is_opened() -> None:
-    """Repair cycle 2, P4 (advisory) of OCOR-DEV-REM-0041-22642a02169f-pre: an entry of a
+    """Repair cycle 1, preventive-review P4 (advisory) of OCOR-DEV-REM-0041-22642a02169f-pre: an entry of a
     log page of ``main`` that is not an object with a commit identifier is a backend
     error, never read as a commit absent from ``main``."""
     database = "ocor_c7_rem0041_malformed"
@@ -862,7 +862,7 @@ def _raw_responder(payload: bytes) -> Iterator[str]:
 
 
 def test_a_broken_or_undecodable_answer_fails_closed_as_a_backend_error() -> None:
-    """Repair cycle 2, P5 (advisory) of OCOR-DEV-REM-0041-22642a02169f-pre: a broken status
+    """Repair cycle 1, preventive-review P5 (advisory) of OCOR-DEV-REM-0041-22642a02169f-pre: a broken status
     line, a truncated body or a body that is not UTF-8 is a backend error, never a raw
     ``http.client`` exception or ``UnicodeDecodeError``."""
     database = "ocor_c7_rem0041_malformed"
