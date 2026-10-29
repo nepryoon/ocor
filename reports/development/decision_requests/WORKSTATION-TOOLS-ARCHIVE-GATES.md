@@ -131,3 +131,37 @@ e PRE-CAMPAIGN-GATE prima del push. Nessun file dell'archivio modificato.
 - Il worktree locale e il branch non pubblicato restano conservati per la ripresa.
 - Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e
   Production `NO-GO`. Nessun nuovo `DEC-*`.
+
+## Disposition PO (2026-10-29)
+
+Decisione `WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION (2026-10-29)`, livello
+operativo: il PO **non sceglie nessuna delle opzioni proposte** da questa richiesta (file
+sha256 `21e29076b29a239143fabb13b9690f264c28bb1c417756b23fa7f78266d086ac`, commit
+`c196003`, PR #397). Gli strumenti della workstation saranno archiviati fuori da questo
+repository, in un repository separato gestito direttamente dal PO. Stato della richiesta:
+risolta senza adozione di opzioni.
+
+- Supersessione: la disposition supersede per intero `WORKSTATION-TOOLS-ARCHIVE
+  (2026-10-28)`, punti 1–8, e i relativi controlli per il verifier. La cartella
+  `tools/workstation/` non va creata in questo repository, né ora né in seguito, salvo
+  una nuova decisione del PO.
+- Nessuna modifica, per questo scopo, a `OCOR_LANGUAGE_POLICY.md`,
+  `scripts/validate_language_policy.py`, `scripts/validate_ocor_change_scope.py`, al
+  workflow `ocor-supply-chain.yml`, a `pyproject.toml` né a `.github/CODEOWNERS`.
+- Pulizia locale eseguita il 2026-10-29: il branch
+  `governed/workstation-tools-archive-20261029` (head `4b3b8fc`, uguale a un antenato di
+  `origin/main`) risultava non pubblicato (`git ls-remote` vuoto) e senza commit propri
+  (`origin/main..branch` vuoto). La worktree `.ocor/worktrees/workstation-tools-archive`
+  conteneva soltanto la copia non tracciata `tools/`, identica al manifest (52/52 file con
+  sha256 uguale, più `MANIFEST.json` sha256 `bebea250…`); prima della rimozione è stata
+  conservata fuori da Git come archivio di salvataggio locale. Worktree e branch locale
+  rimossi. `~/ocor-workstation-export` e `~/ocor-strumenti` non sono stati toccati.
+- Il repository separato degli strumenti non è fonte di stato né evidenza di OCOR: non
+  viene letto né scritto dagli agenti.
+
+Registrazione: Claude Code (Anthropic, claude-opus-5-5), implementatore del loop secondo
+LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK, come breve unità di manutenzione dopo
+l'integrazione dell'unità overlay di `OCOR-DEV-REM-0041` (confine coerente). Il blocker
+si chiude nello stato con il riferimento a questa disposition; la PR #397 si chiude come
+risolta, non mergiata. Nessun test, caso, limite, timeout, soglia o gate cambiato. Claim
+invariati: E1=0, E2=0, Verified=0; runtime NOT_ESTABLISHED, PoC/Production NO-GO.
