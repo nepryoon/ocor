@@ -1,6 +1,16 @@
 {
   "artifacts": [
     {
+      "path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "sha256": "07cd2d39e62438643314d1d239b888cbfc56518b472976506d174cc9100778dc",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "sha256": "af5e3bcd9e057858f0736d9dcdd1fcacd4e1bca918af74f4d7fbe5d1ae5a12aa",
+      "task_id": "OCOR-DEV-0047-RAW"
+    },
+    {
       "path": "OCOR-DEV-0044.requalified-rem0031.json",
       "sha256": "eb821b3b2cc4de72984a6605bd72b5483a35b9a5c518fcb83e85b5b414147637",
       "task_id": "OCOR-DEV-0044"
@@ -284,6 +294,87 @@
   "created_at": "2026-10-02T09:48:04Z",
   "gate": "G4",
   "requirement_results": [
+    {
+      "case_id": "OCOR-DEV-0047-FULLY-BOUND-CALL-PRODUCES-RECEIPT-AND-REAL-EFFECT",
+      "command": "a call passing all five bindings produces an immutable receipt and a real registered tool effect",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-REVOKED-CAPABILITY-PRODUCES-NO-TOOL-EFFECT",
+      "command": "a revoked lease, and a fabricated lease never issued by the authority, both produce zero tool effect",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "NFR-047",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-ESCAPE-SYNTAX-PRODUCES-NO-TOOL-EFFECT",
+      "command": "an escape-syntax attempt, and a call referencing a non-registered/forbidden-looking name, are both refused by the sealed sandbox's AST whitelist before the registered tool function is ever called",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "NFR-047",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-OVER-BUDGET-WORK-PRODUCES-NO-TOOL-EFFECT",
+      "command": "a call whose estimated token cost exceeds the remaining budget is refused before the sandbox is ever reached",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "NFR-047",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-MARKING-BOUND-INSUFFICIENT-CLEARANCE-DENIES",
+      "command": "a real clearance check via the sealed MarkingEngine refuses a call whose clearance does not dominate the content marking",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-PURPOSE-BOUND-AT-THE-SEALED-KERNEL-BOUNDARY",
+      "command": "the sealed GovernedContext itself fails closed on an empty purpose at construction, before this task's own code is ever reached",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-STOP-BOUND-ACTIVE-STOP-AND-STALE-EPOCH-DENY",
+      "command": "an active emergency stop, and a call fenced to a stale epoch after a stop/reset cycle, both produce zero tool effect via the sealed EmergencyStopController.guard_dispatch",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "NFR-081",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-ALL-DENIAL-PATHS-COMBINED-NEVER-EXCEED-ONE-REAL-EFFECT",
+      "command": "one legitimate call plus four distinct denial scenarios run in sequence against a shared effects list produce exactly one real effect",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "NFR-047",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
+    {
+      "case_id": "OCOR-DEV-0047-REGRESSION",
+      "command": "Fresh full regression at the REM-0043 code commit: two-lane full suite, exact collect/JUnit union, zero failure/error/skip (label two-lane-full).",
+      "evidence_path": "OCOR-DEV-0047.requalified-rem0043.json",
+      "raw_output_path": "OCOR-DEV-0047.requalified-rem0043.log",
+      "requirement_id": "BR-003",
+      "status": "PASS",
+      "task_id": "OCOR-DEV-0047"
+    },
     {
       "case_id": "OCOR-DEV-0044-STOP-RESET-CYCLE-ISSUES-NEW-EPOCH-INVALIDATING-OLD-ONE",
       "command": "the full activate/drain/reset cycle issues a new stop_epoch that permanently invalidates any command fenced to the pre-stop epoch",
