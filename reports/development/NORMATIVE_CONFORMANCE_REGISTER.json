@@ -1491,6 +1491,469 @@
         "command": "grep -rn 'CONSISTENCY_DOWNGRADE' --include=*.py ocor-runtime/src ocor-runtime/tests ; sed -n 369p docs/OCOR_LLD_v1.1.md",
         "outcome": "produced at c2/ports.py:137-143 and asserted by the listed tests; LLD line 369 prescribes PROJECTION_NOT_READY. CONFIRMED."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "143-191",
+          "note": "GovernedCanonicalCommitCommand.__post_init__: structural checks only",
+          "path": "ocor-runtime/src/ocor_runtime/c3/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "57-75",
+          "note": "bindings not passed to the PostgreSQL adapter",
+          "path": "ocor-runtime/src/ocor_runtime/c3/service.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "83-103",
+          "note": "bindings not passed to the TerminusDB adapter",
+          "path": "ocor-runtime/src/ocor_runtime/c3/terminusdb_service.py"
+        }
+      ],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-001",
+      "norm_refs": [
+        {
+          "lines": "97",
+          "note": "LLD v1.1 \u00a71.5: before the transaction C3 validates closed record, digest, branch=main, C6 provenance, Decision, Authority, Evidence, revision and bindings",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "342",
+          "note": "ADD v1.3 \u00a72.5 rule 10: C3 accepts AdmitClaim/CommitAggregate only with valid, unexpired Decision and Authority ref coherent with the frozen GatePackage",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3430",
+          "note": "ADD v1.3 \u00a76.2 step 1: aggregate_version, idempotency_key, writer_epoch, Policy and Authority validated",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3443",
+          "note": "ADD v1.3 \u00a76.2 mutation fence: canonical HEAD, aggregate version, active ontology release, writer epoch, idempotency key",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "186",
+          "note": "FR-062: expected revision, aggregate version, idempotency key, preconditions and invariants validated before every canonical commit",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "310",
+          "note": "FR-138 acceptance: every listed fault produces deny",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U04",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-062",
+        "FR-138"
+      ],
+      "seed_correction": "seed anchor ports.py:143-180 extended to :191; LLD anchor :97 confirmed",
+      "seed_ref": "C3-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-062 and FR-138 are P0 PoC",
+      "statement": "The canonical commit command is validated only structurally (required fields, types, duplicate bindings, idempotency-key length, GCS digest, branch=main). C3 does not validate C6 provenance, the validity, expiry and GatePackage coherence of Decision and Authority, Evidence, or the stop epoch and active ontology release of the mutation fence; precondition_bindings and invariant_bindings are neither evaluated nor passed to either adapter (claim_source_bindings are not persisted either), and the PostgreSQL adapter has no writer_epoch fencing.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
+        "outcome": "probe prints 'C3-1 command with unresolvable decision/authority/evidence refs and arbitrary GatePackage digest: ACCEPTED x' and \"C3-1 adapter commit parameters missing: ['active_ontology_release', 'claim_source_bindings', 'invariant_bindings', 'precondition_bindings', 'stop_epoch', 'writer_epoch']\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "26",
+          "note": "imports the legacy AtomicOutboxStore",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "154-158",
+          "note": "self._store.write(... writer_id=self._store.authoritative_writer)",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "41",
+          "note": "imports the legacy AtomicOutboxStore",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "136-206",
+          "note": "four self._store.write calls as authoritative_writer",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        }
+      ],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-002",
+      "norm_refs": [
+        {
+          "lines": "85-95",
+          "note": "LLD v1.1 \u00a71.5: GovernedCanonicalCommitCommand is the only mutative command",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "342",
+          "note": "ADD v1.3 \u00a72.5 rule 10: every canonical mutation is produced exclusively by C6 on the governed path",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "271",
+          "note": "ADD v1.3 \u00a72.2 C3: VersionedAssertedState uses TerminusDB; one logical writer; writer_epoch fencing",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "186",
+          "note": "FR-062",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "59",
+          "note": "FR-008 acceptance: no ActionCommand without Decision; retry with the same key does not duplicate",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U04",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-062",
+        "FR-008"
+      ],
+      "seed_ref": "C3-2",
+      "severity": "HIGH",
+      "severity_basis": "FR-062 and FR-008 are P0 PoC",
+      "statement": "C6 (GovernedActionEngine) and C8 (orchestrator) mutate canonical state through the in-memory legacy c3_store.AtomicOutboxStore, writing with writer_id=store.authoritative_writer, instead of issuing GovernedCanonicalCommitCommand to a C3 service on the real backends; C8 thereby writes canonical state, which only C6 may produce.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "grep -n 'c3_store\\|self._store.write' ocor-runtime/src/ocor_runtime/c6/engine.py ocor-runtime/src/ocor_runtime/c8/orchestrator.py ; grep -rn 'GovernedCanonicalCommitCommand' --include=*.py ocor-runtime/src/ocor_runtime/c6 ocor-runtime/src/ocor_runtime/c8",
+        "outcome": "both modules import c3_store.AtomicOutboxStore and call store.write (engine.py:154, orchestrator.py:138, 160, 181, 202); neither constructs GovernedCanonicalCommitCommand. CONFIRMED. Remediation replaces the use in the current components; the legacy slice is unchanged (programme decision point 6)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065",
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "237-242",
+          "note": "outbox payload",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "192-193",
+          "note": "_outbox_payload",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "75-95",
+          "note": "claim_and_deliver hands envelopes to a caller callable",
+          "path": "ocor-runtime/src/ocor_runtime/c3/recovery.py"
+        }
+      ],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-003",
+      "norm_refs": [
+        {
+          "lines": "293",
+          "note": "ADD v1.3 \u00a72.3: the worker reads committed outbox, publishes on the backbone and records a separate DeliveryAttempt",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3432",
+          "note": "ADD v1.3 \u00a76.2 step 3: relay publishes canonical-state-committed at-least-once",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "132",
+          "note": "LLD v1.1 \u00a72.3: relay publishes with stable event ID and marks delivered only after ACK",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "148",
+          "note": "LLD v1.1 \u00a72.4: every projector consumes C3 events in order per aggregate and verifies schema/release/GCS",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "188",
+          "note": "FR-064",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "192",
+          "note": "FR-068: tenant, domain, compartment, classification and purpose propagate through events",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "207",
+          "note": "FR-075: events correlated with eventId, decision/action/execution IDs, actor chain, causation/correlation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U04",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-064",
+        "FR-068",
+        "FR-075"
+      ],
+      "seed_correction": "seed anchors recovery.py:91 and c4/rebuild.py:125 replaced by the payload builders and claim_and_deliver; LLD :148 confirmed",
+      "seed_ref": "C3-3",
+      "severity": "HIGH",
+      "severity_basis": "FR-064, FR-068 and FR-075 are P0 PoC",
+      "statement": "The outbox -> C5 -> C4 chain is not composed: no module outside c5/ imports the event backbone, no relay publishes canonical-state-committed, and no projector consumes C3 events (the only relay consumer is the caller-supplied deliver callable of C3RecoveryCoordinator). The outbox payload carries only commit_id, aggregate_ref, to_revision and state_digest: no event type, tenant, aggregate_type, GovernedContext digest, release or correlation/causation.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01> ; grep -rn 'backbone' --include=*.py ocor-runtime/src | grep import | grep -v 'ocor_runtime/c5/'",
+        "outcome": "probe prints \"C3-3 outbox payload keys: ['aggregate_ref', 'commit_id', 'state_digest', 'to_revision']\"; the grep returns nothing. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "382-386",
+          "note": "UPDATE c3_outbox SET acknowledged_at",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "32-86",
+          "note": "schema: no source binding, delivery attempt or writer epoch",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "56",
+          "note": "document types: no source binding",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py"
+        }
+      ],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-004",
+      "norm_refs": [
+        {
+          "lines": "293",
+          "note": "ADD v1.3 \u00a72.3: a separate operational DeliveryAttempt",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "136-142",
+          "note": "LLD v1.1 \u00a72.3 minimal logical schema including canonical_source_binding (commit FK, claim/source/evidence refs)",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U04",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "C3-4",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of LLD v1.1 \u00a72.3 and ADD v1.3 \u00a72.3 not tied to a single P0 requirement",
+      "statement": "The PostgreSQL adapter acknowledges by updating the outbox row (acknowledged_at) with no separate DeliveryAttempt record and no writer_epoch (the TerminusDB adapter records a C3DeliveryAttempt with writer_epoch); the canonical_source_binding table of the minimal schema exists in neither adapter.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
+        "outcome": "probe prints the acknowledge UPDATE and 'C3-4 PostgreSQL schema mentions source_binding, delivery_attempt, writer_epoch: [False, False, False]'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "303-317",
+          "note": "select_atomic_backend",
+          "path": "ocor-runtime/src/ocor_runtime/fallback/postgres_outbox.py"
+        }
+      ],
+      "component": "C3",
+      "decision_options": [
+        "1. Leave fallback/ unchanged and record it as legacy-only, not wired (no runtime change).",
+        "2. Authorise removing the implicit selection (explicit configuration only) with requalification of the legacy test test_ba01_atomic_outbox.py.",
+        "3. Retire fallback/ with the legacy slice under a dedicated PO decision."
+      ],
+      "decision_reason": "programme decision points 4.d and 6: a change that alters the outcome of a legacy-slice test, including through fallback/",
+      "depends_on": [],
+      "id": "NCR-C3-005",
+      "norm_refs": [
+        {
+          "lines": "244",
+          "note": "DEC-201: atomic commit of state, revision, idempotency record and outbox; no implicit fallback",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Decision_Register_v1.3_APPROVED.md"
+        },
+        {
+          "lines": "18",
+          "note": "LLD v1.1 \u00a70.1: no implicit correction via technological fallback",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_correction": "severity raised from LOW to MEDIUM: implicit selection has an observable effect when invoked and violates DEC-201; status DECISION_REQUIRED because remediation changes a legacy-slice test outcome",
+      "seed_ref": "C3-5",
+      "severity": "MEDIUM",
+      "severity_basis": "DEC-201, a closed normative decision, with observable effect",
+      "statement": "fallback.postgres_outbox.select_atomic_backend selects the PostgreSQL transactional outbox implicitly from a capability attribute (supports_atomic_multi_document_writes), against 'no implicit fallback'; it is not wired to any operational path and raises non-normative errors (ConcurrencyConflict, ValueError, RuntimeError). Changing it changes the outcome of the legacy-slice test test_ba01_atomic_outbox.py.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "72-84",
+          "note": "legacy-slice test pinning the implicit selection",
+          "path": "ocor-runtime/tests/backend_assumptions/test_ba01_atomic_outbox.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "grep -rn 'select_atomic_backend' --include=*.py ocor-runtime",
+        "outcome": "used only by fallback/__init__.py and the legacy-slice test test_ba01_atomic_outbox.py:72,84. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "360-366",
+          "note": "SELECT ... WHERE acknowledged_at IS NULL ORDER BY occurred_at LIMIT",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "61-63",
+          "note": "global advisory lock",
+          "path": "ocor-runtime/src/ocor_runtime/c3/recovery.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "90-95",
+          "note": "claim/deliver/ack under the global lock",
+          "path": "ocor-runtime/src/ocor_runtime/c3/recovery.py"
+        }
+      ],
+      "component": "C3",
+      "depends_on": [],
+      "id": "NCR-C3-006",
+      "norm_refs": [
+        {
+          "lines": "132",
+          "note": "LLD v1.1 \u00a72.3: the relay acquires main rows with SKIP LOCKED",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U04",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of LLD v1.1 \u00a72.3 (SUPPLEMENT point 4: prescribed for PostgreSQL)",
+      "statement": "From supplement NCP-S04: the PostgreSQL outbox claim is a plain SELECT of unacknowledged rows with no row lock and no claim record, so two relays calling OutboxRelayPort.claim_batch read the same rows; the LLD prescribes that the relay acquires main rows with SKIP LOCKED. Only C3RecoveryCoordinator serialises claim-deliver-acknowledge, behind one global advisory lock.",
+      "status": "OPEN",
+      "supplement_ref": "NCP-S04",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
+        "outcome": "probe prints 'NCP-S04 PostgreSQL claim uses SKIP LOCKED: False | FOR UPDATE: False'. CONFIRMED. FR-062 (proposed by the supplement) concerns commit validation, not the relay: no requirement id is bound."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "609-632",
+          "note": "claim_outbox_batch: read-only snapshot",
+          "path": "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py"
+        }
+      ],
+      "component": "C3",
+      "decision_options": [
+        "1. Writer-epoch fencing suffices: only the fenced writer relays, so no per-entry claim is required (record as conforming).",
+        "2. Require a conditional claim document per entry (WOQL conditional insert) as the TerminusDB equivalent of SKIP LOCKED.",
+        "3. Require relays to run only through a single serialised coordinator and document it as the equivalent."
+      ],
+      "decision_reason": "SUPPLEMENT point 4 (NCP-S04): the TerminusDB equivalent is DECISION_REQUIRED when the norm does not specify it",
+      "depends_on": [],
+      "id": "NCR-C3-007",
+      "norm_refs": [
+        {
+          "lines": "132",
+          "note": "LLD v1.1 \u00a72.3: SKIP LOCKED (PostgreSQL row semantics only)",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "271",
+          "note": "ADD v1.3 \u00a72.2 C3 on TerminusDB: one logical writer, writer_epoch fencing",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of LLD v1.1 \u00a72.3 by analogy; not a P0 PoC requirement",
+      "statement": "From supplement NCP-S04, TerminusDB part: the TerminusDB claim_outbox_batch computes pending entries from a read snapshot without writing any claim, so concurrent relays read the same entries. The norm prescribes SKIP LOCKED for PostgreSQL rows and does not specify the TerminusDB equivalent.",
+      "status": "DECISION_REQUIRED",
+      "supplement_ref": "NCP-S04",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
+        "outcome": "probe prints 'NCP-S04 TerminusDB claim writes a claim: False'. CONFIRMED as behaviour; the normative equivalent is not specified."
+      }
     }
   ],
   "g6_g7_proposals": {},
@@ -1535,6 +1998,10 @@
     "NCP-U03": {
       "scope": "C2 Named Query Gateway: transport-bound principal and full policy context, six contract operations, closed request/served/Problem model, consistency ordering and bounded wait, contract-digest and release checks, denial audit",
       "status": "DRAFT"
+    },
+    "NCP-U04": {
+      "scope": "C3 commit admission (Decision/Authority/GatePackage/Evidence/preconditions/invariants/stop and writer epoch), C6->C3 composition replacing the legacy store, outbox relay (SKIP LOCKED, DeliveryAttempt, event payload) and outbox->C5->C4 chain, canonical_source_binding",
+      "status": "DRAFT"
     }
   },
   "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
@@ -1542,10 +2009,10 @@
     "complete": false,
     "components_done": [
       "C1",
-      "C2"
+      "C2",
+      "C3"
     ],
     "components_pending": [
-      "C3",
       "C4",
       "C5",
       "C6",
@@ -1563,6 +2030,9 @@
     "pending_sections": [
       "plan_units (point 4.e, completed after the reconnaissance)",
       "g6_g7_proposals (point 4.f)"
+    ],
+    "supplement_items_done": [
+      "NCP-S04"
     ]
   },
   "register_id": "OCOR-NORMATIVE-CONFORMANCE-REGISTER",
@@ -1625,6 +2095,21 @@
     },
     "C2-9": {
       "entry_id": "NCR-C2-009"
+    },
+    "C3-1": {
+      "entry_id": "NCR-C3-001"
+    },
+    "C3-2": {
+      "entry_id": "NCR-C3-002"
+    },
+    "C3-3": {
+      "entry_id": "NCR-C3-003"
+    },
+    "C3-4": {
+      "entry_id": "NCR-C3-004"
+    },
+    "C3-5": {
+      "entry_id": "NCR-C3-005"
     }
   },
   "severity_rule": {
@@ -1632,7 +2117,12 @@
     "LOW": "naming or hygiene without observable effect",
     "MEDIUM": "violates another closed normative element"
   },
-  "supplement_coverage": {},
+  "supplement_coverage": {
+    "NCP-S04": {
+      "entry_id": "NCR-C3-006",
+      "note": "PostgreSQL part OPEN; TerminusDB part NCR-C3-007 DECISION_REQUIRED (SUPPLEMENT point 4)"
+    }
+  },
   "supplement_decision": "NORMATIVE-CONFORMANCE-PROGRAMME-SUPPLEMENT (2026-10-29)",
   "verification_probes": {
     "C1-PROBE-01": {
@@ -1645,12 +2135,18 @@
       "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root",
       "sha256": "6a6afb41fc156797f19d91e3c67f9662885b64e382dc3fa13bb5a24d37a0d030",
       "text": "import dataclasses\nfrom datetime import UTC, datetime\nfrom ocor_runtime.c2.ports import C2Error, ConsistencyMode as M, ConsistencyRequirement as CR, NamedQueryRequest, ServedContext, Watermark\nfrom ocor_runtime.c2.planner import ConsistencyPlanner\nfrom ocor_runtime.c2.gateway import IdentityBackedAuthority, NamedQueryGateway, RegisteredNamedQuery, RegistrationAndMarkingPolicy\nfrom ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry\nfrom ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition\nfrom ocor_runtime.kernel.governed_context import GovernedContext\nD = lambda c: \"urn:sha256:\" + c * 64\nCID = \"urn:ocor:contract:named-query:probe\"\ndef ctx(principal=\"urn:ocor:principal:p\", tenant=\"urn:ocor:tenant:t\", comp=\"urn:ocor:compartment:a\", purpose=\"probe\", marking=D(\"a\")):\n    return GovernedContext.from_mapping({\"tenant_id\": tenant, \"organization_id\": \"urn:ocor:org:o\", \"domain_id\": \"urn:ocor:domain:d\", \"compartments\": [comp], \"classification_marking_ref\": marking, \"purpose\": purpose, \"effective_principal_id\": principal, \"actor_chain\": [\"urn:ocor:actor:x\", principal], \"ontology_release_digest\": D(\"b\"), \"policy_bundle_digest\": D(\"c\"), \"correlation_id\": \"018f2f95-01b2-7cc3-8d4e-123456789abc\"})\ndef req(c=None, cid=CID, params=None, cons=None):\n    c = c or ctx()\n    return NamedQueryRequest(request_id=\"018f2f95-01b2-7cc3-8d4e-123456789abc\", contract_id=cid, contract_version=\"1.0.0\", contract_digest=D(\"d\"), parameters=params or {}, governed_context=c, governed_context_digest=c.digest(), consistency=cons or CR(M.BEST_AVAILABLE))\ndef code(f):\n    try:\n        r = f(); return \"OK\" if r is not None else \"OK(None)\"\n    except C2Error as e: return e.reason_code\nclass WM:\n    def current(self, projection_id, branch): return Watermark(projection_id, branch, D(\"b\"), \"commit-2\", datetime.now(UTC))\nclass Permit:\n    def decide(self, request): return \"PERMIT\"\nplanner = ConsistencyPlanner(policy=Permit(), watermark_port=WM(), projection_id=\"p\", branch=\"main\")\nprint(\"C2-1 planner AT_LEAST_COMMIT(commit-1) with watermark commit-2:\", code(lambda: planner.plan(req(cons=CR(M.AT_LEAST_COMMIT, \"commit-1\", 5000)))))\nserved = ServedContext(\"main\", D(\"b\"), \"commit-2\", \"commit-2\", 0, req().governed_context_digest, D(\"c\"))\nprint(\"C2-1 verify_served AT_LEAST_COMMIT(commit-1) served commit-2:\", code(lambda: CR(M.AT_LEAST_COMMIT, \"commit-1\").verify_served(served)))\nprint(\"C2-9 BEST_AVAILABLE with required_commit:\", code(lambda: CR.from_mapping({\"mode\": \"BEST_AVAILABLE\", \"required_commit\": \"commit-1\"})))\nreg = {CID: RegisteredNamedQuery(CID, frozenset({\"1.0.0\"}), \"classification\")}\nclass NeverPort:\n    def exists_authorized(self, resource_id, clearance): raise AssertionError(\"not reached\")\npol = RegistrationAndMarkingPolicy(registry=reg, marking_engine=MarkingEngine([MarkingSchemeDefinition(\"classification\", levels=(\"U\", \"S\"))]), marking_port=NeverPort(), clearance_by_marking_ref={})\nprint(\"C2-3 decide, no resource_id, unresolvable classification_marking_ref:\", pol.decide(req(c=ctx(marking=D(\"e\")))))\nprint(\"C2-2 decide ignores tenant/compartment/purpose:\", {pol.decide(req(c=ctx(tenant=t, comp=k, purpose=p))) for t in (\"urn:ocor:tenant:t\", \"urn:ocor:tenant:other\") for k in (\"urn:ocor:compartment:a\", \"urn:ocor:compartment:z\") for p in (\"probe\", \"other\")})\nir = IdentityRegistry(); ir.register(IdentityRecord(canonical_id=\"urn:ocor:principal:p\", aliases=frozenset()))\nclass Proj:\n    def read(self, request): raise AssertionError(\"not reached\")\ngw = NamedQueryGateway(authority=IdentityBackedAuthority(ir), policy=pol, projection=Proj())\nbad = \"urn:ocor:contract:named-query:not-registered\"\nprint(\"C2-6 unregistered contract, known principal:\", code(lambda: gw.execute(req(c=ctx(), cid=bad))))\nprint(\"C2-6 unregistered contract, unknown principal:\", code(lambda: gw.execute(req(c=ctx(principal=\"urn:ocor:principal:unknown\"), cid=bad))))\nprint(\"C2-2 principal taken from request body: authority resolves\", IdentityBackedAuthority(ir).resolve(req()), \"from governed_context.effective_principal_id\")\nprint(\"C2-7 NamedQueryRequest fields:\", NamedQueryRequest.fields)\nprint(\"C2-7 ServedContext fields:\", tuple(f.name for f in dataclasses.fields(ServedContext)))\nprint(\"C2-7 deny-listed parameter accepted when not in FORBIDDEN_QUERY_FIELDS:\", code(lambda: req(params={\"cypher\": \"MATCH (n) RETURN n\"})))\nprint(\"C2-8 contract_digest 'sha256:<hex>' (gateway contract form):\", code(lambda: dataclasses.replace(req(), contract_digest=\"sha256:\" + \"d\" * 64)))\n"
+    },
+    "C3-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; no backend needed",
+      "sha256": "9cb598e894f238164e07f2bae90a9d80a39b34b0f806f30574a40ea87869acc6",
+      "text": "import inspect\nfrom ocor_runtime.c3.ports import ClaimSourceBinding, GovernedCanonicalCommitCommand\nfrom ocor_runtime.c3.adapters.postgres import PostgresC3Adapter\nfrom ocor_runtime.c3.adapters import terminusdb as tdb\nfrom ocor_runtime.kernel.governed_context import GovernedContext\nD = lambda c: \"urn:sha256:\" + c * 64\ng = GovernedContext.from_mapping({\"tenant_id\": \"urn:ocor:tenant:t\", \"organization_id\": \"urn:ocor:org:o\", \"domain_id\": \"urn:ocor:domain:d\", \"compartments\": [\"urn:ocor:compartment:a\"], \"classification_marking_ref\": D(\"a\"), \"purpose\": \"probe\", \"effective_principal_id\": \"urn:ocor:principal:p\", \"actor_chain\": [\"urn:ocor:principal:p\"], \"ontology_release_digest\": D(\"b\"), \"policy_bundle_digest\": D(\"c\"), \"correlation_id\": \"018f2f95-01b2-7cc3-8d4e-123456789abc\"})\ncmd = GovernedCanonicalCommitCommand(command_id=\"x\", action_instance_id=\"y\", aggregate_type=\"t\", aggregate_ref=\"r\", expected_revision=0, canonical_delta={\"k\": 1}, decision_ref=\"not-a-decision\", authority_ref=\"not-an-authority\", evidence_refs=[\"not-evidence\"], claim_source_bindings=(ClaimSourceBinding(\"c\", \"s\", \"e\"),), precondition_bindings=[\"p\"], invariant_bindings=[\"i\"], idempotency_key=\"k\" * 16, governed_context=g, governed_context_digest=g.digest(), gate_package_digest=D(\"f\"), branch=\"main\")\nprint(\"C3-1 command with unresolvable decision/authority/evidence refs and arbitrary GatePackage digest: ACCEPTED\", cmd.command_id)\nparams = set(inspect.signature(PostgresC3Adapter.commit_transaction).parameters)\nprint(\"C3-1 adapter commit parameters missing:\", sorted({\"claim_source_bindings\", \"precondition_bindings\", \"invariant_bindings\", \"writer_epoch\", \"stop_epoch\", \"active_ontology_release\"} - params))\nsrc = inspect.getsource(PostgresC3Adapter.claim_outbox_batch)\nprint(\"NCP-S04 PostgreSQL claim uses SKIP LOCKED:\", \"SKIP LOCKED\" in src, \"| FOR UPDATE:\", \"FOR UPDATE\" in src)\nprint(\"NCP-S04 TerminusDB claim writes a claim:\", any(w in inspect.getsource(tdb.TerminusDBC3Adapter.claim_outbox_batch) for w in (\"_transact\", \"_insert\", \"_update\")))\nprint(\"C3-3 outbox payload keys:\", sorted(tdb._outbox_payload(\"c\", \"r\", 1, D(\"e\"))))\nprint(\"C3-4 PostgreSQL acknowledge:\", \" \".join(inspect.getsource(PostgresC3Adapter.acknowledge_outbox).split())[-110:])\nfrom ocor_runtime.c3.adapters.postgres import SCHEMA as PG\nprint(\"C3-4 PostgreSQL schema mentions source_binding, delivery_attempt, writer_epoch:\", [\"source_binding\" in PG, \"delivery_attempt\" in PG, \"writer_epoch\" in PG])\n"
     }
   },
   "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
   "verified_at_heads": {
     "C1": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
-    "C2": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0"
+    "C2": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+    "C3": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0"
   },
   "verified_at_heads_note": "ocor-runtime/ is identical at a631e69 and a325fc2 (git diff a631e69 a325fc2 touches only reports/development state files)"
 }
