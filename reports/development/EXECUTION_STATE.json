@@ -1,33 +1,43 @@
 {
   "active_iteration": {
-    "baseline_commit": "f0f4a935cdb3115b9e4b58ba77b5d18c4703ec41",
-    "branch": "governed/state-sync-workstation-archive-disposition-20261029",
+    "baseline_commit": "e92bdef52e6cc1b0b46f581557adbcba76cde78f",
+    "branch": "governed/state-sync-rem0038-guard-consolidation-dr-20261029",
     "campaign_background_processes_remaining": false,
-    "change_set": "WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION (2026-10-29) maintenance unit (disposition recorded, PR #397 closed, local cleanup, blocker closed)",
+    "change_set": "REM-0038-CAMPAIGN-GUARD-ADMISSION condition c: consolidation decision request REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406, OPEN_PO_NORMATIVE_DECISION_REQUIRED) with read-only equivalence proof; no file of the guard changed",
     "decision_request": {
-      "branch": "governed/decision-request-workstation-tools-archive-gates",
-      "disposition_commit": "d425dcf93eca42a1726914eab9c1629f68d64ecf",
-      "file_sha256_after_disposition": "027ecaf0e036a6d2e2412cf443adf2e0826394aa95ba36de7559b95c895c799b",
-      "pr": 397,
-      "pr_state": "CLOSED"
+      "branch": "governed/decision-request-rem0038-guard-consolidation",
+      "commit": "4dbcaf38de77d0f1492030a8d4bb361536fca77e",
+      "equivalence_proof": {
+        "candidate_baseline": "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa",
+        "result_sha256": "ea005446ad600a79091b54d39cf7d80c265b4b93e23aabdad7a208af96f4d153",
+        "script": "~/.ocor-codex/dr-rem0038-consolidation/equivalence.py (outside Git)",
+        "script_sha256": "42787c9e020f6bd9624433f47481128bae658cd7dcc48fcb41ce170074a9286c",
+        "summary": "current guard 48 passed / 83 subtests; 10 guarded files identical at 82b71d0 and e92bdef; current chain reduces 82b71d0 exactly to 9b4d3be and 7cd5f7a; observer constants equal at the three commits; 34/34 existing negative cases rejected by the current guard, the byte-identity guard and the AST guard; byte-identity guard is a strict subset of the current one (two relocation probes accepted today); AST guard not comparable (accepts comment rewording); a probe edit of the guard module drifts OCOR-DEV-0005 and OCOR-DEV-0050"
+      },
+      "inventory_base": "e92bdef52e6cc1b0b46f581557adbcba76cde78f",
+      "path": "reports/development/decision_requests/REM-0038-GUARD-BASELINE-CONSOLIDATION.md",
+      "pr": 406,
+      "publication": "DRAFT_PR_NOT_TO_MERGE",
+      "sha256": "5090c34e45e4f3ea759ba63c0641ba76851249d98594b316e4fba121e63e4fdc"
     },
     "decisions": [
-      "WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION (2026-10-29)",
-      "WORKSTATION-TOOLS-ARCHIVE (2026-10-28) (superseded in full)",
-      "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-      "CC-OCOR-DELIVERY-COMPLETION par. 3 point 1 (never discard work without saving it)"
+      "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition c",
+      "CC-OCOR-DELIVERY-COMPLETION par. 7",
+      "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)"
     ],
     "host_memory_at_sync": {
-      "MemAvailable_kB": 28004340,
+      "MemAvailable_kB": 27541812,
       "MemTotal_kB": 31742988,
-      "observed_at": "2026-10-29T13:49:12.871182+00:00",
+      "observed_at": "2026-10-29T14:53:23.628075+00:00",
       "source": "/proc/meminfo (LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27) point 2)"
     },
-    "next_action": "Consolidation decision request of REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition c (due since OCOR-DEV-REM-0041 is integrated): read-only evaluation of whether to condense the exact normalizations of reports/tests/test_kind_teardown_observation.py (REM-0038, REM-0042, REM-0037, REM-0039, REM-0040, REM-0041) into a new baseline, with the equivalence proof; options under a single '## Opzioni' section, '## Raccomandazione' naming one option, registry recommendation starting 'Option N:'; status OPEN_PO_NORMATIVE_DECISION_REQUIRED if it changes the guard standard; baselines 9b4d3be/7cd5f7a unchanged until the PO decides. It does not block OCOR-DEV-0060: then OCOR-DEV-0060 on the selected components (all four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS integrated); OCOR-DEV-0062..0064 while remediations await verification. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB) and /sys/class/power_supply. No new DEC; claims unchanged.",
+    "next_action": "OCOR-DEV-0060 implementation on the selected components (OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26); all four REM change sets integrated): read MemTotal/MemAvailable from /proc/meminfo and /sys/class/power_supply at unit start (two-lane threshold 14340.6 MiB); branch task/OCOR-DEV-0060-<slug> in a new worktree from origin/main; read the backlog task in full and only the normative references it cites; executable criteria before code (RED->GREEN), real pinned backends, BA cases bound to the specific requirements of OCOR_TRACEABILITY_PLAN.csv; PRE-CAMPAIGN-GATE (including the validation-closure guards, REM-0038 condition b), then the preventive review before the full suite (PRE-CAMPAIGN-REVIEW); any change to run_qualifying_campaign.py or the workflows beyond REM-0038-CAMPAIGN-GUARD-ADMISSION condition a requires a decision request. The consolidation decision request REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406, OPEN_PO_NORMATIVE_DECISION_REQUIRED) blocks nothing; baselines 9b4d3be/7cd5f7a unchanged until the PO decides. OCOR-DEV-0062..0064 while remediations await verification. No new DEC; claims unchanged.",
     "normative_interpretations": [
-      "The untracked tools/ copy in the worktree to be removed was the PO's own archive, not agent work; it was nevertheless salvaged outside Git before removal (CC-OCOR-DELIVERY-COMPLETION par. 3 point 1, fail-closed reading), without touching ~/ocor-workstation-export or ~/ocor-strumenti."
+      "Condition c asks for a decision request on consolidation, not for the consolidation itself: the unit is read-only and the guard module, baselines 9b4d3be/7cd5f7a and every normalisation stay unchanged until the PO decides; options 1 and 2 change the guard standard, so the status is OPEN_PO_NORMATIVE_DECISION_REQUIRED.",
+      "REM-0039, REM-0040 and REM-0041 added no normalisation: the first-parent history after the REM-0037 merge 969d2d2 does not touch the guarded paths."
     ],
-    "phase": "WORKSTATION_TOOLS_ARCHIVE_GATES_DISPOSITION_RECORDED",
+    "phase": "REM0038_GUARD_CONSOLIDATION_DECISION_REQUESTED",
+    "previous_change_set": "WORKSTATION-TOOLS-ARCHIVE-GATES-DISPOSITION (2026-10-29) maintenance unit (disposition recorded, PR #397 closed, local cleanup, blocker closed)",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -35,10 +45,10 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "maintenance unit, as the backup implementer of the loop: disposition recorded on the decision-request branch, PR #397 closed, local cleanup, state sync"
+          "scope": "decision-request unit, as the backup implementer of the loop: read-only equivalence proof, decision request REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406), state sync"
         }
       ],
-      "verifier": "not applicable (maintenance unit without candidate, full suite or evidence; PRE-CAMPAIGN-REVIEW not applicable, point 1)"
+      "verifier": "not applicable (decision-request unit without candidate, full suite or evidence; PRE-CAMPAIGN-REVIEW not applicable, point 1)"
     }
   },
   "backlog_escalations": {
@@ -1767,7 +1777,7 @@
       }
     }
   },
-  "baseline_commit": "f0f4a935cdb3115b9e4b58ba77b5d18c4703ec41",
+  "baseline_commit": "e92bdef52e6cc1b0b46f581557adbcba76cde78f",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6204,6 +6214,38 @@
           "until": "2026-10-29T13:49:12.871182+00:00"
         }
       ]
+    },
+    {
+      "blocked_tasks": [],
+      "created_at": "2026-10-29T14:53:23.628075+00:00",
+      "decision": "REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition c (after the integration of OCOR-DEV-REM-0041, a separate decision request on condensing the normalisations into a new baseline, with the equivalence proof; baselines unchanged until then); CC-OCOR-DELIVERY-COMPLETION par. 7",
+      "decision_level": "NORMATIVE (guard standard)",
+      "does_not_block": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "equivalence_proof": {
+        "candidate_baseline": "82b71d0db410bcdb8124e8ec8a8235631ecfa1fa",
+        "result_sha256": "ea005446ad600a79091b54d39cf7d80c265b4b93e23aabdad7a208af96f4d153",
+        "script": "~/.ocor-codex/dr-rem0038-consolidation/equivalence.py (outside Git)",
+        "script_sha256": "42787c9e020f6bd9624433f47481128bae658cd7dcc48fcb41ce170074a9286c",
+        "summary": "current guard 48 passed / 83 subtests; 10 guarded files identical at 82b71d0 and e92bdef; current chain reduces 82b71d0 exactly to 9b4d3be and 7cd5f7a; observer constants equal at the three commits; 34/34 existing negative cases rejected by the current guard, the byte-identity guard and the AST guard; byte-identity guard is a strict subset of the current one (two relocation probes accepted today); AST guard not comparable (accepts comment rewording); a probe edit of the guard module drifts OCOR-DEV-0005 and OCOR-DEV-0050"
+      },
+      "evidence": {
+        "branch": "governed/decision-request-rem0038-guard-consolidation",
+        "commit": "4dbcaf38de77d0f1492030a8d4bb361536fca77e",
+        "inventory_base": "e92bdef52e6cc1b0b46f581557adbcba76cde78f",
+        "path": "reports/development/decision_requests/REM-0038-GUARD-BASELINE-CONSOLIDATION.md",
+        "pr": 406,
+        "publication": "DRAFT_PR_NOT_TO_MERGE",
+        "sha256": "5090c34e45e4f3ea759ba63c0641ba76851249d98594b316e4fba121e63e4fdc"
+      },
+      "id": "REM-0038-GUARD-BASELINE-CONSOLIDATION",
+      "reason": "The invariance guard of reports/tests/test_kind_teardown_observation.py compares the campaign supervisor, the observer and all workflows with two historical baselines (9b4d3be, 7cd5f7a) through seven normalisation layers plus two AST transforms (0049 scope reorder, pin/N, pin retirement, REM-0034, REM-0038, REM-0042, REM-0037); count-verified single replacements do not check position, so two relocations are accepted today.",
+      "recommendation": "Option 1: single baseline 82b71d0 (REM-0041 integration merge, guarded files identical to e92bdef) with byte identity for every workflow and the campaign supervisor, observer constants against 82b71d0 and probe timeouts {10}; the current chain frozen in a historical test run on git show 82b71d0 contents proving the reduction to 9b4d3be and 7cd5f7a; the 34 negative cases retargeted plus the two relocation probes; governed OCOR-DEV-REM-* change set with RED/GREEN, regression-only requalifications of 0005/0050 (0082 if needed), external verification, seal, exact-head CI, merge; no change to supervisor, observer or workflows.",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8440,8 +8482,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_WORKSTATION_DISPOSITION_RECORDED_CONSOLIDATION_DR_NEXT",
-  "next_executable_action": "Consolidation decision request of REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26) condition c (due since OCOR-DEV-REM-0041 is integrated): read-only evaluation of whether to condense the exact normalizations of reports/tests/test_kind_teardown_observation.py (REM-0038, REM-0042, REM-0037, REM-0039, REM-0040, REM-0041) into a new baseline, with the equivalence proof; options under a single '## Opzioni' section, '## Raccomandazione' naming one option, registry recommendation starting 'Option N:'; status OPEN_PO_NORMATIVE_DECISION_REQUIRED if it changes the guard standard; baselines 9b4d3be/7cd5f7a unchanged until the PO decides. It does not block OCOR-DEV-0060: then OCOR-DEV-0060 on the selected components (all four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS integrated); OCOR-DEV-0062..0064 while remediations await verification. At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB) and /sys/class/power_supply. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_REM0038_GUARD_CONSOLIDATION_DR_OPEN_0060_NEXT",
+  "next_executable_action": "OCOR-DEV-0060 implementation on the selected components (OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26); all four REM change sets integrated): read MemTotal/MemAvailable from /proc/meminfo and /sys/class/power_supply at unit start (two-lane threshold 14340.6 MiB); branch task/OCOR-DEV-0060-<slug> in a new worktree from origin/main; read the backlog task in full and only the normative references it cites; executable criteria before code (RED->GREEN), real pinned backends, BA cases bound to the specific requirements of OCOR_TRACEABILITY_PLAN.csv; PRE-CAMPAIGN-GATE (including the validation-closure guards, REM-0038 condition b), then the preventive review before the full suite (PRE-CAMPAIGN-REVIEW); any change to run_qualifying_campaign.py or the workflows beyond REM-0038-CAMPAIGN-GUARD-ADMISSION condition a requires a decision request. The consolidation decision request REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406, OPEN_PO_NORMATIVE_DECISION_REQUIRED) blocks nothing; baselines 9b4d3be/7cd5f7a unchanged until the PO decides. OCOR-DEV-0062..0064 while remediations await verification. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8567,12 +8609,9 @@
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "blocked_by_po_decision": {
-      "WORKSTATION-TOOLS-ARCHIVE": "WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397)"
-    },
+    "blocked_by_po_decision": {},
     "completed_evidence_tasks_count": 75,
     "executable_now": [
-      "REM-0038-CAMPAIGN-GUARD-ADMISSION condition c consolidation decision request",
       "OCOR-DEV-0060",
       "OCOR-DEV-0062",
       "OCOR-DEV-0063",
@@ -8580,10 +8619,13 @@
     ],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-29T13:49:12.871182+00:00",
+    "observed_at": "2026-10-29T14:53:23.628075+00:00",
+    "open_po_decision_requests_non_blocking": {
+      "REM-0038-GUARD-BASELINE-CONSOLIDATION": "PR #406, OPEN_PO_NORMATIVE_DECISION_REQUIRED; blocks no task"
+    },
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
-      "OCOR-DEV-0060": "the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26) are integrated; after the REM-0038-CAMPAIGN-GUARD-ADMISSION condition c decision request (which does not block it)",
+      "OCOR-DEV-0060": "the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26) are integrated and the REM-0038-CAMPAIGN-GUARD-ADMISSION condition c decision request is open (PR #406, non-blocking): next unit",
       "OCOR-DEV-REM-0037": "integrated: PR #385 merged (969d2d2b18ad)",
       "OCOR-DEV-REM-0039": "integrated: PR #381 merged (b8fee8c26bf9)",
       "OCOR-DEV-REM-0040": "integrated: PR #395 merged (8075985e9778)",
@@ -28984,7 +29026,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-29T13:49:12.871182+00:00",
+  "updated_at": "2026-10-29T14:53:23.628075+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
