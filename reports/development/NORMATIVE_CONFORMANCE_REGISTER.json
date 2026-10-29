@@ -625,6 +625,872 @@
         "command": "grep -rnE 'def (publish|run)\\(' --include=*.py ocor-runtime/src/ocor_runtime/c1 ; grep -rnE 'class (Retained|Frontend)' ocor-runtime/src/ocor_runtime/c1",
         "outcome": "publish and run occur only in the Protocols at c1/ports.py; the implemented classes are the parsers, validators, builders, diff engine, checker, migration planner and artefact generator. CONFIRMED."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "75-80",
+          "note": "observed.canonical_commit != required_commit -> PROJECTION_NOT_READY",
+          "path": "ocor-runtime/src/ocor_runtime/c2/planner.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "132-141",
+          "note": "ConsistencyRequirement.verify_served: served.projection_watermark != required_commit",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "94-102",
+          "note": "wait_timeout_ms validated, never read elsewhere",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-001",
+      "norm_refs": [
+        {
+          "lines": "179",
+          "note": "FR-057 acceptance: a projection beyond Cn serves at-least but not exact-at-commit(Cn); dependency 'branch/commit ordering'",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "126",
+          "note": "LLD v1.1 \u00a72.2: AT_LEAST_COMMIT(c,t) waits bounded until watermark >= c, then PROJECTION_NOT_READY",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1361",
+          "note": "ADD v1.3 \u00a73.3: AT_LEAST_COMMIT(Cn) may serve Cm>Cn declaring Cm",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-057",
+        "NFR-024"
+      ],
+      "seed_ref": "C2-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-057 and NFR-024 are P0 PoC",
+      "statement": "AT_LEAST_COMMIT is evaluated by string equality between the watermark (or served watermark) and the required commit, with no branch/commit ordering and no bounded wait on wait_timeout_ms: a projection already beyond the required commit answers PROJECTION_NOT_READY instead of serving and declaring the later commit. wait_timeout_ms is validated (0..30000) but never used.",
+      "status": "OPEN",
+      "supplement_note": "SUPPLEMENT point 4 (C2-1): FR-057 requires branch and commit ordering; OPEN, only a part that would change a contract or schema would be DECISION_REQUIRED (none identified: commit ordering needs no contract change)",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "180-191",
+          "note": "covers only a watermark behind the required commit; does not pin the beyond case",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0035.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "141-145",
+          "note": "covers only a served commit behind the required commit",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0012.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01> ; grep -rn 'wait_timeout_ms' --include=*.py ocor-runtime/src",
+        "outcome": "probe prints 'C2-1 planner AT_LEAST_COMMIT(commit-1) with watermark commit-2: PROJECTION_NOT_READY' and 'C2-1 verify_served AT_LEAST_COMMIT(commit-1) served commit-2: PROJECTION_NOT_READY'; wait_timeout_ms occurs only in c2/ports.py (field, validation, mapping). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "72-76",
+          "note": "resolve(request.governed_context.effective_principal_id)",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "139-147",
+          "note": "resolved_identity is not passed on",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "101-114",
+          "note": "decide reads contract_id, contract_version, resource_id and classification_marking_ref only",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-002",
+      "norm_refs": [
+        {
+          "lines": "380",
+          "note": "ADD v1.3 \u00a73.0.1: Query surface, principal origin TRANSPORT, no Principal in the body, DENY without lookup",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "41",
+          "note": "LLD v1.1 \u00a71.1: effective_principal_id and actor_chain derive from the authenticated identity, never accepted as authority from client input",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "142-164",
+          "note": "QueryContext: principal_id and actor_chain deliberately absent (impersonation vector)",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "1361",
+          "note": "ADD v1.3 \u00a73.3: effective Principal derived from mTLS/workload identity and verified token",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "49",
+          "note": "FR-006 acceptance: every surface receives the same policy context; a principal sees only authorised elements",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "50",
+          "note": "NFR-006 acceptance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-006",
+        "NFR-006"
+      ],
+      "seed_correction": "seed ADD anchors :380 and :1362 adjusted: the principal rule of ADD v1.3 \u00a73.3 is at :1361",
+      "seed_ref": "C2-2",
+      "severity": "HIGH",
+      "severity_basis": "FR-006 and NFR-006 are P0 PoC",
+      "statement": "The requester principal is read from the request body (governed_context.effective_principal_id, and actor_chain travels in the body as well) with no verified transport binding; the identity resolved by IdentityBackedAuthority is only compared with ABSTAIN and then discarded, so neither the policy decision nor the projection read receives it; the policy decision reads only contract id/version, resource_id and classification_marking_ref, so tenant, organisation, domain, compartments and purpose never influence the decision.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "110-140",
+          "note": "fixture places effective_principal_id and actor_chain in the request body",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01>",
+        "outcome": "probe prints \"C2-2 decide ignores tenant/compartment/purpose: {'PERMIT'}\" over 8 combinations of tenant, compartment and purpose, and resolves the principal from governed_context.effective_principal_id. CONFIRMED (seed audit check PARTIAL completed)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "105-107",
+          "note": "no resource_id -> PERMIT",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-003",
+      "norm_refs": [
+        {
+          "lines": "401",
+          "note": "ADD v1.3 \u00a73.0.2: an unresolvable *_marking_ref or a non-matching marking_digest produces DENY, not a permissive posture",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "398",
+          "note": "ADD v1.3 \u00a73.0.2: classification_marking_ref is urn:sha256:<marking_digest>",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "49",
+          "note": "FR-006 acceptance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-006",
+        "NFR-006"
+      ],
+      "seed_ref": "C2-3",
+      "severity": "HIGH",
+      "severity_basis": "FR-006 and NFR-006 are P0 PoC (seed listed no requirement; FR-006 acceptance anchors it)",
+      "statement": "When the request carries no resource_id parameter, RegistrationAndMarkingPolicy.decide returns PERMIT before resolving the classification_marking_ref, so an unresolvable marking reference is permitted; the norm requires DENY for an unresolvable *_marking_ref. A sealed test asserts the permissive behaviour.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "325-335",
+          "note": "asserts a response with an empty clearance map and no resource_id",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01>",
+        "outcome": "probe prints 'C2-3 decide, no resource_id, unresolvable classification_marking_ref: PERMIT' (empty clearance map). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "177",
+          "note": "_digest only",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "242-250",
+          "note": "verify_served after the read",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "252-261",
+          "note": "ServedContext built from the request digests, then verify_served",
+          "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "51-59",
+          "note": "RegisteredNamedQuery holds no contract digest",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [
+        "NCR-C1-002"
+      ],
+      "id": "NCR-C2-004",
+      "norm_refs": [
+        {
+          "lines": "1361",
+          "note": "ADD v1.3 \u00a73.3: the Gateway rejects non-matching digest or release",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "452-466",
+          "note": "Problem reason_code enum includes CONTRACT_DIGEST_MISMATCH and RELEASE_MISMATCH",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "142",
+          "note": "FR-046 acceptance: the Gateway does not switch until all targets declare READY for coherent release and watermark",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "177",
+          "note": "FR-055",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-046",
+        "FR-055"
+      ],
+      "seed_correction": "seed anchor ADD :1364 is the traceability line; the rule is at :1361; the seed code anchor typedb_adapter.py:254-259 is the copy of the request digests",
+      "seed_ref": "C2-4",
+      "severity": "HIGH",
+      "severity_basis": "FR-046 and FR-055 are P0 PoC",
+      "statement": "The gateway never compares contract_digest with the registered contract nor the request release with the active release: contract_digest is only format-checked, RELEASE_MISMATCH and CONTRACT_DIGEST_MISMATCH are never produced by C1 or C2, and the only release comparison (NamedQueryRequest.verify_served -> STALE_CONTEXT) runs after the read against a ServedContext whose release and policy digests the TypeDB adapter copies from the request, so it cannot fail.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rn 'contract_digest' --include=*.py ocor-runtime/src | grep -v c2/ports.py ; grep -rln 'RELEASE_MISMATCH\\|CONTRACT_DIGEST_MISMATCH' --include=*.py ocor-runtime/src/ocor_runtime/c1 ocor-runtime/src/ocor_runtime/c2",
+        "outcome": "contract_digest is used only by c4/rebuild.py (construction) and memory/retrieval.py (a different record); no c1/c2 file produces RELEASE_MISMATCH or CONTRACT_DIGEST_MISMATCH. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "138-147",
+          "note": "execute raises without any audit record",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-005",
+      "norm_refs": [
+        {
+          "lines": "178",
+          "note": "FR-056 acceptance: direct access and non-allow-listed queries are denied and audited",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "257",
+          "note": "NFR-034: arbitrary backend queries or commands MUST be denied and audited",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "302",
+          "note": "FR-134 acceptance: every catalogue event (Policy Decision, sensitive queries) generates a record with actor, time, resource, reason, authority and correlation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-056",
+        "NFR-034",
+        "FR-134"
+      ],
+      "seed_ref": "C2-5",
+      "severity": "HIGH",
+      "severity_basis": "FR-056, NFR-034 and FR-134 are P0 PoC",
+      "statement": "Denied or rejected gateway requests are not audited: c2/ contains no audit call or audit port, so non-allow-listed queries are denied but not audited.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rniE 'audit' ocor-runtime/src/ocor_runtime/c2 | wc -l",
+        "outcome": "0. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "26-29",
+          "note": "C2Error(reason_code, message)",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "139-145",
+          "note": "identity before allow-list",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "76-80",
+          "note": "PROJECTION_NOT_READY without served",
+          "path": "ocor-runtime/src/ocor_runtime/c2/planner.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-006",
+      "norm_refs": [
+        {
+          "lines": "435-485",
+          "note": "Problem: closed RFC 9457 profile, closed reason_code enum, served required for STALE_CONTEXT/PROJECTION_NOT_READY/RELEASE_MISMATCH",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "1362",
+          "note": "ADD v1.3 \u00a73.3: every version-sensitive response, error responses included, carries served",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "380",
+          "note": "ADD v1.3 \u00a73.0.1: mismatch or missing field -> DENY without lookup",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "note": "NFR-024 acceptance: fields present in 100% of version-sensitive responses",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "50",
+          "note": "NFR-006 acceptance: errors reveal no unauthorised content or existence",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-006"
+      ],
+      "seed_ref": "C2-6",
+      "severity": "HIGH",
+      "severity_basis": "contract of LLD v1.1 \u00a70.2 (ocor-named-query-gateway.openapi.yaml); NFR-024 and NFR-006 are P0 PoC",
+      "statement": "C2 has no Problem model: C2Error carries only reason_code and message (no type, title, status, correlation_id, served or deferred_element), so PROJECTION_NOT_READY and STALE_CONTEXT are raised without the mandatory served context. Nine reason codes emitted by C2 and its read adapters are outside the closed Problem enum (ARBITRARY_QUERY_FORBIDDEN, CONSISTENCY_DOWNGRADE, CONSISTENCY_INVALID, GOVERNED_CONTEXT_MISMATCH, IDENTITY_AMBIGUOUS, PROJECTION_QUARANTINED, PURPOSE_MISSING, QUERY_CONTRACT_INVALID, RESULT_NOT_FOUND); eleven of the thirteen enum codes are never emitted. Identity resolution runs before the allow-list check, so for an unregistered contract the error code differs according to whether the body principal resolves (IDENTITY_AMBIGUOUS vs ARBITRARY_QUERY_FORBIDDEN), instead of a DENY without lookup.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "221",
+          "note": "asserts ARBITRARY_QUERY_FORBIDDEN",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "261",
+          "note": "asserts IDENTITY_AMBIGUOUS",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "418",
+          "note": "asserts ARBITRARY_QUERY_FORBIDDEN",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01> ; AST scan of C2Error(...) first arguments in ocor-runtime/src/ocor_runtime/c2/*.py, c4/typedb_adapter.py and c4/rebuild.py (command text in verification_probes C2-PROBE-01 note)",
+        "outcome": "probe prints 'C2-6 unregistered contract, known principal: ARBITRARY_QUERY_FORBIDDEN' and 'C2-6 unregistered contract, unknown principal: IDENTITY_AMBIGUOUS'; the AST scan yields the nine non-enum codes listed and only PROJECTION_NOT_READY and STALE_CONTEXT from the enum. CONFIRMED (the seed count of seven non-enum codes is corrected to nine when the C4 read adapters behind ProjectionReadPort are included)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "158-167",
+          "note": "NamedQueryRequest.fields",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "23",
+          "note": "FORBIDDEN_QUERY_FIELDS deny-list",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "189-191",
+          "note": "deny-list screening",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "67-87",
+          "note": "ServedContext fields",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "147",
+          "note": "projection result returned unfiltered",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [
+        "NCR-C2-008"
+      ],
+      "id": "NCR-C2-007",
+      "norm_refs": [
+        {
+          "lines": "142-195",
+          "note": "QueryContext (branch, logic_version, scenario_id) and ContractCall (closed parameters schema)",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "254-273",
+          "note": "ServedContext requires result_marking_ref and provenance_ref",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "117-124",
+          "note": "LLD v1.1 \u00a72.2 algorithm: allow-list of name/version/parameters and cost budget; marking join and post-filter; provenance; served branch",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1361",
+          "note": "ADD v1.3 \u00a73.3: parameters replaced by closed schemas additionalProperties false",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "58",
+          "note": "FR-007 acceptance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-007",
+        "NFR-024"
+      ],
+      "seed_ref": "C2-7",
+      "severity": "HIGH",
+      "severity_basis": "FR-007 and NFR-024 are P0 PoC; contract of LLD v1.1 \u00a70.2",
+      "statement": "NamedQueryRequest lacks branch, logic_version, scenario_id and any cost budget; parameters are screened with a deny-list of six key names (any other key, e.g. 'cypher', passes) instead of the closed generated schema selected by contract_id and digest; ServedContext lacks result_marking_ref, provenance_ref and redaction_count; results are returned by the projection without a result marking join or post-filter.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01>",
+        "outcome": "probe prints the eight NamedQueryRequest fields and seven ServedContext fields (no branch, logic_version, cost budget, result_marking_ref, provenance_ref) and 'C2-7 deny-listed parameter accepted when not in FORBIDDEN_QUERY_FIELDS: OK' for a 'cypher' key. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "21",
+          "note": "DIGEST = urn:sha256 only",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "177-178",
+          "note": "contract_digest and governed_context_digest checked against DIGEST",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        }
+      ],
+      "component": "C2",
+      "decision_options": [
+        "1. The LLD v1.1 \u00a71.1 form urn:sha256 prevails: the gateway contract patterns are corrected by a governed contract change (new decision), the code stays.",
+        "2. The gateway contract form sha256: prevails on the query wire: C2 maps between wire form and the internal urn:sha256 form at the transport boundary; the GovernedContext schema stays.",
+        "3. Accept both forms on the gateway wire and canonicalise to urn:sha256 before digest comparison (requires a contract clarification)."
+      ],
+      "decision_reason": "programme decision point 4.d: a divergence between normative sources that the precedence of LLD v1.1 \u00a70.1 does not resolve (the decision names this example)",
+      "depends_on": [],
+      "id": "NCR-C2-008",
+      "norm_refs": [
+        {
+          "lines": "170-192",
+          "note": "^sha256: patterns in QueryContext and ContractCall",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "118",
+          "note": "SchemaPin.digest ^sha256:",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "43-48",
+          "note": "GovernedContext digest $def ^urn:sha256:",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/governed-context.schema.json"
+        },
+        {
+          "lines": "37",
+          "note": "LLD v1.1 \u00a71.1: SHA-256 represented as urn:sha256:<64 lowercase hex>",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "note": "LLD v1.1 \u00a70.1 precedence",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-022"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH: whichever form prevails, the code violates one contract of LLD v1.1 \u00a70.2",
+      "seed_ref": "C2-8",
+      "severity": "HIGH",
+      "severity_basis": "contract of LLD v1.1 \u00a70.2 violated under either reading",
+      "statement": "Digest format conflict between normative sources: the Named Query Gateway contract requires '^sha256:<hex>' for policy_bundle_digest, governed_context_digest, ontology_release_digest, contract_digest and SchemaPin.digest, while LLD v1.1 \u00a71.1 and the GovernedContext schema prescribe 'urn:sha256:<hex>' (and the same gateway contract uses urn:sha256 for classification_marking_ref and provenance_ref). The code follows urn:sha256 and rejects every contract-form digest. Both sources are contracts of LLD v1.1 \u00a70.2 / LLD text; the precedence of LLD v1.1 \u00a70.1 does not settle a conflict inside the materialised contract set.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [],
+      "type": "CONFLICT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01>",
+        "outcome": "probe prints \"C2-8 contract_digest 'sha256:<hex>' (gateway contract form): QUERY_CONTRACT_INVALID\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "109-110",
+          "note": "BEST_AVAILABLE cannot declare required_commit",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-009",
+      "norm_refs": [
+        {
+          "lines": "126-141",
+          "note": "Consistency: required_commit required only when mode is AT_LEAST_COMMIT or EXACT_AT_COMMIT",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-057"
+      ],
+      "seed_correction": "severity raised from LOW to HIGH: rejecting a contract-valid request has an observable effect and violates a contract of LLD v1.1 \u00a70.2",
+      "seed_ref": "C2-9",
+      "severity": "HIGH",
+      "severity_basis": "contract of LLD v1.1 \u00a70.2 (ocor-named-query-gateway.openapi.yaml)",
+      "statement": "ConsistencyRequirement rejects BEST_AVAILABLE with a required_commit (CONSISTENCY_INVALID, a code outside the Problem enum), while the gateway contract only requires required_commit for the strong modes and allows it otherwise, so a contract-valid request is rejected.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01>",
+        "outcome": "probe prints 'C2-9 BEST_AVAILABLE with required_commit: CONSISTENCY_INVALID'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "1-29",
+          "note": "identity-registry provisioning boundary",
+          "path": "ocor-runtime/src/ocor_runtime/c2/provisioning.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-010",
+      "norm_refs": [
+        {
+          "lines": "8-98",
+          "note": "the six query paths, the only users of the Problem response",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "C2-10",
+      "severity": "LOW",
+      "severity_basis": "hygiene without a violated closed element",
+      "statement": "Hypothesis: eight PROVISIONING_* reason codes of c2/provisioning.py have no normative anchor. Refuted as a divergence: the provisioning boundary is not a gateway operation and is not reachable through the Named Query Gateway surface, whose closed Problem enum governs only the responses of the six query operations; no closed normative element enumerates provisioning outcomes. The boundary exists under the PO decision REM-0024-IDENTITY-REGISTRY-WRITER-AUTHORITY (2026-10-14).",
+      "status": "REFUTED",
+      "test_refs": [],
+      "type": "EXTRA",
+      "verification": {
+        "command": "grep -c PROVISIONING ocor-runtime/docs/governance_dossier/contracts/* docs/OCOR_LLD_v1.1.md ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md ; grep -rn 'provisioning' --include=*.py ocor-runtime/src/ocor_runtime/c2/gateway.py ocor-runtime/src/ocor_runtime/c2/planner.py",
+        "outcome": "no normative file mentions PROVISIONING; the gateway and planner do not import provisioning. REFUTED as a divergence (the eight codes exist; no closed element is violated)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "68",
+          "note": "the only concrete named-query contract id",
+          "path": "ocor-runtime/src/ocor_runtime/c4/rebuild.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "302-304",
+          "note": "EvidenceReadPort Protocol without implementation",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [
+        "NCR-C2-008"
+      ],
+      "id": "NCR-C2-011",
+      "norm_refs": [
+        {
+          "lines": "8-98",
+          "note": "six operations",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "283",
+          "note": "ADD v1.3 C2 operations GetObject ... GetProvenance",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "note": "FR-055 acceptance: every contract is invocable by the conformance client without backend language",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "58",
+          "note": "FR-007 acceptance: golden queries return identity, relations, validity, claims, evidence, provenance, truth status, uncertainty and explanation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "113",
+          "note": "LLD v1.1 \u00a72.2 ports include EvidenceReadPort",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-055",
+        "FR-007"
+      ],
+      "seed_ref": "OBS-C2-OPERATIONS",
+      "severity": "HIGH",
+      "severity_basis": "FR-055 and FR-007 are P0 PoC; contract of LLD v1.1 \u00a70.2",
+      "statement": "From observation OBS-C2-OPERATIONS: none of the six operations of the Named Query Gateway contract (GetObject, QueryObjectSet, Search, Traverse, Explain, GetProvenance) is implemented or registered as a named query, and no ObjectSnapshot, GraphResponse or SearchResponse is produced; only generated TypeScript types exist. The only concrete named-query contract id in the runtime is the internal C4 drift-reconciliation read; EvidenceReadPort has no implementation; no composition root instantiates NamedQueryGateway outside the tests.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rlnE 'GetObject|QueryObjectSet|GetProvenance|get_provenance|query_object_set' --include=*.py ocor-runtime/src ; grep -rn 'named-query:' --include=*.py ocor-runtime/src ; grep -rn 'EvidenceReadPort\\|NamedQueryGateway(' --include=*.py ocor-runtime/src",
+        "outcome": "no Python file names the operations; the only named-query ids are the NAMED_CONTRACT pattern and c4/rebuild.py:68; EvidenceReadPort appears only as its Protocol; no NamedQueryGateway(...) construction under ocor-runtime/src. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "135-143",
+          "note": "EXACT_AT_COMMIT mismatch -> CONSISTENCY_DOWNGRADE",
+          "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-012",
+      "norm_refs": [
+        {
+          "lines": "369",
+          "note": "LLD v1.1 \u00a77.1 BA-03: TypeDB exact-at-commit or PROJECTION_NOT_READY, never downgrade",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1363",
+          "note": "ADD v1.3 \u00a73.3: emulation unavailable -> UNSUPPORTED_CAPABILITY, no silent degrade",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "452-466",
+          "note": "closed reason_code enum",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "179",
+          "note": "FR-057 acceptance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-057"
+      ],
+      "seed_ref": "",
+      "severity": "HIGH",
+      "severity_basis": "FR-057 is P0 PoC; contract of LLD v1.1 \u00a70.2 (closed enum)",
+      "statement": "Beyond the seed (from observation OBS-TESTS-PINNING-NON-NORMATIVE): an EXACT_AT_COMMIT request whose required commit has not landed is rejected with CONSISTENCY_DOWNGRADE, a code outside the Problem enum; BA-03 prescribes exact-at-commit or PROJECTION_NOT_READY, never downgrade. Several sealed tests pin CONSISTENCY_DOWNGRADE (the separate case of an unavailable emulation, UNSUPPORTED_CAPABILITY per ADD v1.3 \u00a73.3, has no implementation either).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "107-117",
+          "note": "asserts CONSISTENCY_DOWNGRADE for a not-yet-landed exact commit",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "134-138",
+          "note": "asserts CONSISTENCY_DOWNGRADE",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0012.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "108",
+          "note": "asserts CONSISTENCY_DOWNGRADE",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0017.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "126",
+          "note": "asserts CONSISTENCY_DOWNGRADE",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0017.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "165",
+          "note": "pytest.raises match CONSISTENCY_DOWNGRADE",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0017.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "178",
+          "note": "pytest.raises match CONSISTENCY_DOWNGRADE",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0017.py"
+        },
+        {
+          "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+          "lines": "553",
+          "note": "accepts either code",
+          "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "grep -rn 'CONSISTENCY_DOWNGRADE' --include=*.py ocor-runtime/src ocor-runtime/tests ; sed -n 369p docs/OCOR_LLD_v1.1.md",
+        "outcome": "produced at c2/ports.py:137-143 and asserted by the listed tests; LLD line 369 prescribes PROJECTION_NOT_READY. CONFIRMED."
+      }
     }
   ],
   "g6_g7_proposals": {},
@@ -645,6 +1511,18 @@
   },
   "language": "en-GB",
   "nature": "Register of divergences between code and closed normative elements. It is not evidence: an entry, resolved or not, makes no requirement Verified and changes no claim.",
+  "observation_coverage": {
+    "OBS-C2-OPERATIONS": {
+      "entry_id": "NCR-C2-011"
+    },
+    "OBS-TESTS-PINNING-NON-NORMATIVE": {
+      "entry_ids": [
+        "NCR-C2-003",
+        "NCR-C2-012"
+      ],
+      "note": "partial; completed with the TESTS component"
+    }
+  },
   "plan_units": {
     "NCP-U01": {
       "scope": "C1 OaC metamodel, Canonical IR structure, normalisation, signing and admission, artefact generation, semantic diff",
@@ -653,16 +1531,20 @@
     "NCP-U02": {
       "scope": "Function and Model Registry (ocor.registry.v1)",
       "status": "DRAFT"
+    },
+    "NCP-U03": {
+      "scope": "C2 Named Query Gateway: transport-bound principal and full policy context, six contract operations, closed request/served/Problem model, consistency ordering and bounded wait, contract-digest and release checks, denial audit",
+      "status": "DRAFT"
     }
   },
   "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
   "progress": {
     "complete": false,
     "components_done": [
-      "C1"
+      "C1",
+      "C2"
     ],
     "components_pending": [
-      "C2",
       "C3",
       "C4",
       "C5",
@@ -677,7 +1559,7 @@
       "GOVERNANCE"
     ],
     "iteration_limit": 8,
-    "iterations_used": 1,
+    "iterations_used": 2,
     "pending_sections": [
       "plan_units (point 4.e, completed after the reconnaissance)",
       "g6_g7_proposals (point 4.f)"
@@ -713,6 +1595,36 @@
     },
     "C1-9": {
       "entry_id": "NCR-C1-009"
+    },
+    "C2-1": {
+      "entry_id": "NCR-C2-001"
+    },
+    "C2-10": {
+      "entry_id": "NCR-C2-010"
+    },
+    "C2-2": {
+      "entry_id": "NCR-C2-002"
+    },
+    "C2-3": {
+      "entry_id": "NCR-C2-003"
+    },
+    "C2-4": {
+      "entry_id": "NCR-C2-004"
+    },
+    "C2-5": {
+      "entry_id": "NCR-C2-005"
+    },
+    "C2-6": {
+      "entry_id": "NCR-C2-006"
+    },
+    "C2-7": {
+      "entry_id": "NCR-C2-007"
+    },
+    "C2-8": {
+      "entry_id": "NCR-C2-008"
+    },
+    "C2-9": {
+      "entry_id": "NCR-C2-009"
     }
   },
   "severity_rule": {
@@ -727,7 +1639,18 @@
       "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root",
       "sha256": "3db5955a1decd5517fc840b673bbc855d86afaef231641c9f844e335a8a63106",
       "text": "import json, sys\nfrom ocor_runtime.c1.ports import SourceUnit, SourceSyntax, CompilerRequest, C1Error, DependencyLockEntry\nfrom ocor_runtime.c1.frontend import FrontendCanonicalIrBuilder\nC=\"0\"*40\ndef src(rid, body):\n    return SourceUnit.create(resource_id=rid, version=\"1\", syntax=SourceSyntax.JSON, content=json.dumps(body).encode(), source_path=rid+\".json\")\ndef req(sources, ver=\"1.0.0\", lock=()):\n    return CompilerRequest(package_id=\"urn:ocor:package:p\", semantic_version=ver, source_commit=C, compiler_version=\"0.1.0\", mapping_version=\"1\", release_profile=\"poc\", sources=sources, dependency_lock=lock)\nb=lambda rid, **k: dict(id=rid, fields={\"name\":\"x\"}, field_types={\"name\":\"string\"}, **k)\nr=FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", b(\"urn:ocor:resource:a\", references=[\"urn:ocor:resource:c\",\"urn:ocor:resource:b\",\"urn:ocor:resource:b\"])), src(\"urn:ocor:resource:b\", b(\"urn:ocor:resource:b\")), src(\"urn:ocor:resource:c\", b(\"urn:ocor:resource:c\")))))\nprint(\"C1-8 references in core:\", r.core[\"resources\"][\"urn:ocor:resource:a\"][\"references\"])\nprint(\"C1-3 core keys:\", sorted(r.core))\nprint(\"C1-2 signature_envelope_ref:\", r.signature_envelope_ref[:24])\ntry:\n    FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", b(\"urn:ocor:resource:a\")),), ver=\"not-semver\")); print(\"C1-9 semantic_version 'not-semver': ACCEPTED\")\nexcept C1Error as e: print(\"C1-9 rejected\", e)\nn1=FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", dict(id=\"urn:ocor:resource:a\", fields={\"name\":\"\u00e9\"}, field_types={\"name\":\"string\"})),)))\nn2=FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", dict(id=\"urn:ocor:resource:a\", fields={\"name\":\"e\u0301\"}, field_types={\"name\":\"string\"})),)))\nprint(\"C1-4 NFC-equivalent sources same ir_digest:\", n1.ir_digest==n2.ir_digest)\ntry:\n    FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", dict(id=\"urn:ocor:resource:a\", fields={\"t\":\"2026-01-01\"}, field_types={\"t\":\"datetime\"})),))); print(\"C1-4 datetime type ACCEPTED\")\nexcept C1Error as e: print(\"C1-4 type 'datetime' rejected:\", e.diagnostics[0].code)\ns=lambda: SourceUnit.create(resource_id=\"urn:ocor:resource:a\", version=\"1\", syntax=SourceSyntax.JSON, content=json.dumps(b(\"urn:ocor:resource:a\")).encode(), source_path=\"a.json\", imports=(\"urn:ocor:resource:ext\",))\nl1=(DependencyLockEntry(\"urn:ocor:resource:ext\",\"1\",\"urn:sha256:\"+\"1\"*64),); l2=(DependencyLockEntry(\"urn:ocor:resource:ext\",\"1\",\"urn:sha256:\"+\"2\"*64),)\nprint(\"C1-3 different lock digests same ir_digest:\", FrontendCanonicalIrBuilder().build(req((s(),),lock=l1)).ir_digest==FrontendCanonicalIrBuilder().build(req((s(),),lock=l2)).ir_digest)\n"
+    },
+    "C2-PROBE-01": {
+      "note": "NCR-C2-006 reason-code scan: ast.walk over ocor-runtime/src/ocor_runtime/c2/*.py, c4/typedb_adapter.py and c4/rebuild.py collecting the constant (or IfExp branch constants) first argument of every C2Error(...) call",
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root",
+      "sha256": "6a6afb41fc156797f19d91e3c67f9662885b64e382dc3fa13bb5a24d37a0d030",
+      "text": "import dataclasses\nfrom datetime import UTC, datetime\nfrom ocor_runtime.c2.ports import C2Error, ConsistencyMode as M, ConsistencyRequirement as CR, NamedQueryRequest, ServedContext, Watermark\nfrom ocor_runtime.c2.planner import ConsistencyPlanner\nfrom ocor_runtime.c2.gateway import IdentityBackedAuthority, NamedQueryGateway, RegisteredNamedQuery, RegistrationAndMarkingPolicy\nfrom ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry\nfrom ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition\nfrom ocor_runtime.kernel.governed_context import GovernedContext\nD = lambda c: \"urn:sha256:\" + c * 64\nCID = \"urn:ocor:contract:named-query:probe\"\ndef ctx(principal=\"urn:ocor:principal:p\", tenant=\"urn:ocor:tenant:t\", comp=\"urn:ocor:compartment:a\", purpose=\"probe\", marking=D(\"a\")):\n    return GovernedContext.from_mapping({\"tenant_id\": tenant, \"organization_id\": \"urn:ocor:org:o\", \"domain_id\": \"urn:ocor:domain:d\", \"compartments\": [comp], \"classification_marking_ref\": marking, \"purpose\": purpose, \"effective_principal_id\": principal, \"actor_chain\": [\"urn:ocor:actor:x\", principal], \"ontology_release_digest\": D(\"b\"), \"policy_bundle_digest\": D(\"c\"), \"correlation_id\": \"018f2f95-01b2-7cc3-8d4e-123456789abc\"})\ndef req(c=None, cid=CID, params=None, cons=None):\n    c = c or ctx()\n    return NamedQueryRequest(request_id=\"018f2f95-01b2-7cc3-8d4e-123456789abc\", contract_id=cid, contract_version=\"1.0.0\", contract_digest=D(\"d\"), parameters=params or {}, governed_context=c, governed_context_digest=c.digest(), consistency=cons or CR(M.BEST_AVAILABLE))\ndef code(f):\n    try:\n        r = f(); return \"OK\" if r is not None else \"OK(None)\"\n    except C2Error as e: return e.reason_code\nclass WM:\n    def current(self, projection_id, branch): return Watermark(projection_id, branch, D(\"b\"), \"commit-2\", datetime.now(UTC))\nclass Permit:\n    def decide(self, request): return \"PERMIT\"\nplanner = ConsistencyPlanner(policy=Permit(), watermark_port=WM(), projection_id=\"p\", branch=\"main\")\nprint(\"C2-1 planner AT_LEAST_COMMIT(commit-1) with watermark commit-2:\", code(lambda: planner.plan(req(cons=CR(M.AT_LEAST_COMMIT, \"commit-1\", 5000)))))\nserved = ServedContext(\"main\", D(\"b\"), \"commit-2\", \"commit-2\", 0, req().governed_context_digest, D(\"c\"))\nprint(\"C2-1 verify_served AT_LEAST_COMMIT(commit-1) served commit-2:\", code(lambda: CR(M.AT_LEAST_COMMIT, \"commit-1\").verify_served(served)))\nprint(\"C2-9 BEST_AVAILABLE with required_commit:\", code(lambda: CR.from_mapping({\"mode\": \"BEST_AVAILABLE\", \"required_commit\": \"commit-1\"})))\nreg = {CID: RegisteredNamedQuery(CID, frozenset({\"1.0.0\"}), \"classification\")}\nclass NeverPort:\n    def exists_authorized(self, resource_id, clearance): raise AssertionError(\"not reached\")\npol = RegistrationAndMarkingPolicy(registry=reg, marking_engine=MarkingEngine([MarkingSchemeDefinition(\"classification\", levels=(\"U\", \"S\"))]), marking_port=NeverPort(), clearance_by_marking_ref={})\nprint(\"C2-3 decide, no resource_id, unresolvable classification_marking_ref:\", pol.decide(req(c=ctx(marking=D(\"e\")))))\nprint(\"C2-2 decide ignores tenant/compartment/purpose:\", {pol.decide(req(c=ctx(tenant=t, comp=k, purpose=p))) for t in (\"urn:ocor:tenant:t\", \"urn:ocor:tenant:other\") for k in (\"urn:ocor:compartment:a\", \"urn:ocor:compartment:z\") for p in (\"probe\", \"other\")})\nir = IdentityRegistry(); ir.register(IdentityRecord(canonical_id=\"urn:ocor:principal:p\", aliases=frozenset()))\nclass Proj:\n    def read(self, request): raise AssertionError(\"not reached\")\ngw = NamedQueryGateway(authority=IdentityBackedAuthority(ir), policy=pol, projection=Proj())\nbad = \"urn:ocor:contract:named-query:not-registered\"\nprint(\"C2-6 unregistered contract, known principal:\", code(lambda: gw.execute(req(c=ctx(), cid=bad))))\nprint(\"C2-6 unregistered contract, unknown principal:\", code(lambda: gw.execute(req(c=ctx(principal=\"urn:ocor:principal:unknown\"), cid=bad))))\nprint(\"C2-2 principal taken from request body: authority resolves\", IdentityBackedAuthority(ir).resolve(req()), \"from governed_context.effective_principal_id\")\nprint(\"C2-7 NamedQueryRequest fields:\", NamedQueryRequest.fields)\nprint(\"C2-7 ServedContext fields:\", tuple(f.name for f in dataclasses.fields(ServedContext)))\nprint(\"C2-7 deny-listed parameter accepted when not in FORBIDDEN_QUERY_FIELDS:\", code(lambda: req(params={\"cypher\": \"MATCH (n) RETURN n\"})))\nprint(\"C2-8 contract_digest 'sha256:<hex>' (gateway contract form):\", code(lambda: dataclasses.replace(req(), contract_digest=\"sha256:\" + \"d\" * 64)))\n"
     }
   },
-  "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b"
+  "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+  "verified_at_heads": {
+    "C1": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+    "C2": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0"
+  },
+  "verified_at_heads_note": "ocor-runtime/ is identical at a631e69 and a325fc2 (git diff a631e69 a325fc2 touches only reports/development state files)"
 }
