@@ -1,0 +1,733 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "entries": [
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "230",
+          "note": "EmbeddingModelRegistry, the only registry class (memory embeddings)",
+          "path": "ocor-runtime/src/ocor_runtime/memory/embeddings.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-001",
+      "norm_refs": [
+        {
+          "lines": "9-37",
+          "note": "LLD v1.1 \u00a70.2 contract: services FunctionRegistry and ModelRegistry, EffectClass, ModelOutputKind",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor_registry.proto"
+        },
+        {
+          "lines": "29",
+          "note": "LLD v1.1 \u00a70.2: Registry contract is ocor_registry.proto, package ocor.registry.v1",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1370",
+          "note": "ADD v1.3 \u00a73.4 Function & Model Registry",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "181",
+          "note": "FR-058 acceptance: a Function without mandatory metadata is not published",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "184",
+          "note": "FR-060 acceptance: model output reconstructible against pinned inputs and versions",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U02",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-058",
+        "FR-059",
+        "FR-060",
+        "FR-061",
+        "NFR-025"
+      ],
+      "seed_ref": "C1-1",
+      "severity": "HIGH",
+      "severity_basis": "contract of LLD v1.1 \u00a70.2 (ocor_registry.proto) not realised; FR-060 and FR-061 are P0 PoC",
+      "statement": "No Function and Model Registry exists in the runtime: neither service of the ocor.registry.v1 contract (FunctionRegistry: PublishFunction, ResolveFunction, InvokeFunction; ModelRegistry: PublishModel, ResolveModel, InvokeModel), nor EffectClass, ModelOutputKind or the publication constraints on mandatory Function metadata. The only Python registry near the subject is the governed-memory EmbeddingModelRegistry, a different object; the registry types exist only as generated TypeScript.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rlnE 'PublishFunction|ResolveFunction|InvokeFunction|PublishModel|ResolveModel|InvokeModel|EffectClass|ModelOutputKind' --include=*.py ocor-runtime/src ; grep -rlnE 'PublishFunction|InvokeModel' --include=*.ts ocor-runtime/sdk/typescript/src",
+        "outcome": "no Python file under ocor-runtime/src matches; only ocor-runtime/sdk/typescript/src/generated/ocor_contracts.ts matches (generated types). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "316",
+          "note": "signature_envelope_ref=f'urn:ocor:unsigned:{core_digest}'",
+          "path": "ocor-runtime/src/ocor_runtime/c1/frontend.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "155",
+          "note": "same unsigned reference in the retained builder",
+          "path": "ocor-runtime/src/ocor_runtime/c1/compiler.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "310-312",
+          "note": "IrSigner Protocol, no implementation in ocor-runtime/src",
+          "path": "ocor-runtime/src/ocor_runtime/c1/ports.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-002",
+      "norm_refs": [
+        {
+          "lines": "466-521",
+          "note": "ADD v1.3 \u00a73.1.2 signed-canonical-ir:1.0 DSSE envelope schema",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "523",
+          "note": "ADD v1.3 \u00a73.1.2: admission verifies trust root, revocation, DSSE PAE, digest, lock, compiler and artifact manifest before activation",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "282",
+          "note": "ADD v1.3 C1 operations include PackageRelease and VerifyRelease",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "152",
+          "note": "NFR-021 acceptance: admission rejects tampered bundle, invalid signature, inconsistent digest or missing artefact",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "326",
+          "note": "NFR-051 acceptance: modified or unsigned artefact is rejected",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-021",
+        "NFR-051"
+      ],
+      "seed_ref": "C1-2",
+      "severity": "HIGH",
+      "severity_basis": "NFR-021 and NFR-051 are P0 PoC",
+      "statement": "Canonical IR releases are unsigned: both builders set signature_envelope_ref to 'urn:ocor:unsigned:<core digest>'; the IrSigner port has no implementation, no DSSE envelope (signed-canonical-ir:1.0) is produced, and no admission verifies trust root, revocation, DSSE PAE, digest, lock, compiler and artifact manifest before activation (ADD v1.3 C1 operation VerifyRelease absent).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "81",
+          "note": "asserts the unsigned reference as the expected value",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0028.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python <probe C1-PROBE-01> ; grep -rn 'IrSigner' --include=*.py ocor-runtime/src",
+        "outcome": "probe prints 'C1-2 signature_envelope_ref: urn:ocor:unsigned:urn:sh'; IrSigner appears only as the Protocol at c1/ports.py:311. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "274-293",
+          "note": "core dictionary of FrontendCanonicalIrBuilder",
+          "path": "ocor-runtime/src/ocor_runtime/c1/frontend.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "115-132",
+          "note": "core dictionary of RetainedCanonicalIrBuilder",
+          "path": "ocor-runtime/src/ocor_runtime/c1/compiler.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-003",
+      "norm_refs": [
+        {
+          "lines": "441-462",
+          "note": "ADD v1.3 \u00a73.1.2 CanonicalIRCore structure (release.lock_digest, namespaces, modules, symbol_table, security_profiles, capability_matrix, artifact_plan)",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "438-439",
+          "note": "ADD v1.3 \u00a73.1.1 normalisation steps 5-6",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "136",
+          "note": "FR-040 acceptance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "137",
+          "note": "FR-041 acceptance: the same lockfile resolves the same digests online and offline",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-040",
+        "FR-041",
+        "FR-042",
+        "NFR-018"
+      ],
+      "seed_ref": "C1-3",
+      "severity": "HIGH",
+      "severity_basis": "FR-040, FR-041, FR-042 and NFR-018 are P0 PoC",
+      "statement": "The Canonical IR core is flat: its keys are package_id, semantic_version, source_commit, compiler_version, mapping_version, release_profile and resources; there is no format, namespaces, modules, symbol_table, security_profiles, capability_matrix or artifact_plan, and no lock_digest, so the dependency lock does not enter ir_digest (two builds differing only in the lock digest produce the same ir_digest). Per-adapter capability classification and the fail-closed rejection of unapproved 'unsupported' dispositions (normalisation steps 5 and 6) are therefore absent.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python <probe C1-PROBE-01>",
+        "outcome": "probe prints the seven flat core keys and 'C1-3 different lock digests same ir_digest: True'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "41-51",
+          "note": "REQUIRED_KEYS and the five _SUPPORTED_TYPES",
+          "path": "ocor-runtime/src/ocor_runtime/c1/frontend.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-004",
+      "norm_refs": [
+        {
+          "lines": "415",
+          "note": "ADD v1.3 \u00a73.1.1: authoritative source is YAML validated by a meta-schema",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "417-431",
+          "note": "ADD v1.3 \u00a73.1.1 construct table",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "435",
+          "note": "ADD v1.3 \u00a73.1.1 normalisation step 2: Unicode NFC",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "114",
+          "note": "FR-024 acceptance: fixtures cover every family",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "138",
+          "note": "FR-042 acceptance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-024",
+        "FR-026",
+        "FR-027",
+        "FR-042"
+      ],
+      "seed_ref": "C1-4",
+      "severity": "HIGH",
+      "severity_basis": "FR-024, FR-026, FR-027 and FR-042 are P0 PoC (FR-024, FR-026 thin slice)",
+      "statement": "The OaC metamodel is reduced to resources with 'fields' and five field types (string, integer, number, boolean, list); the constructs of ADD v1.3 \u00a73.1.1 (OntologyPackage, Namespace, Module, TypeDefinition kinds, LinkDefinition, ConstraintDefinition, TemporalAnnotation, ContractDefinition, MarkingSchemeDefinition, CapabilityDisposition) are not represented, there is no meta-schema validation, and Unicode NFC normalisation is not applied (NFC-equivalent sources produce different ir_digest values).",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python <probe C1-PROBE-01> ; grep -rn 'unicodedata' --include=*.py ocor-runtime/src/ocor_runtime/c1",
+        "outcome": "probe prints 'C1-4 NFC-equivalent sources same ir_digest: False' and rejects field type 'datetime' with UNSUPPORTED_CAPABILITY; no unicodedata use in c1/. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "125-161",
+          "note": "RetainedArtifactGenerator.generate: one release-manifest entry",
+          "path": "ocor-runtime/src/ocor_runtime/c1/releases.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "295-311",
+          "note": "migration-metadata artefact only",
+          "path": "ocor-runtime/src/ocor_runtime/c1/frontend.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-005",
+      "norm_refs": [
+        {
+          "lines": "107",
+          "note": "LLD v1.1 \u00a72.1: generators produce JSON Schema, OpenAPI, AsyncAPI, Proto, MCP descriptor and Python/TypeScript SDK from the same IR; drift blocks the release",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "139",
+          "note": "FR-043 acceptance: all declared targets produced and traced to the same irDigest; modified files fail the drift check",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "140",
+          "note": "FR-044",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "151",
+          "note": "NFR-020",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-043",
+        "FR-044",
+        "NFR-020"
+      ],
+      "seed_ref": "C1-5",
+      "severity": "HIGH",
+      "severity_basis": "FR-043 (PoC thin slice), FR-044 and NFR-020 are P0 PoC",
+      "statement": "No JSON Schema, OpenAPI, AsyncAPI, Protobuf, MCP descriptor or SDK artefact is generated from the IR: RetainedArtifactGenerator.generate emits only a release-manifest digest, and the builders emit only a migration-metadata digest; there is no drift check between generated artefacts and the IR.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -nE 'media_type=' ocor-runtime/src/ocor_runtime/c1/*.py",
+        "outcome": "only application/vnd.ocor.release-manifest+json and application/vnd.ocor.migration-metadata+json are produced. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "28-30",
+          "note": "IDENTICAL/COMPATIBLE/BREAKING constants",
+          "path": "ocor-runtime/src/ocor_runtime/c1/releases.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "60-88",
+          "note": "RetainedCompatibilityChecker.check",
+          "path": "ocor-runtime/src/ocor_runtime/c1/releases.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "163-180",
+          "note": "generate_governed: BREAKING needs only migration_steps",
+          "path": "ocor-runtime/src/ocor_runtime/c1/releases.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-006",
+      "norm_refs": [
+        {
+          "lines": "141",
+          "note": "FR-045 text and acceptance: five classes; destructive change without backup/replay plan rejected",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "107",
+          "note": "LLD v1.1 \u00a72.1: breaking change requires migration plan, dual control and new major",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "note": "LLD v1.1 \u00a70.1 precedence: the approved IRB prevails over ADD, ADD over LLD",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "142",
+          "note": "FR-046",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-045",
+        "FR-046"
+      ],
+      "seed_ref": "C1-6",
+      "severity": "HIGH",
+      "severity_basis": "FR-045 (PoC dry-run) and FR-046 are P0 PoC",
+      "statement": "The semantic diff classifies IDENTICAL, COMPATIBLE or BREAKING; the normative classes are compatible, conditional, breaking, destructive and causal-breaking (FR-045, which prevails over the additive/compatible/breaking wording of LLD v1.1 \u00a72.1 under LLD v1.1 \u00a70.1). A BREAKING change only needs a non-empty migration_steps list: dual control and a new major version are not required, no destructive class exists, so a destructive change without backup/replay plan is not rejected, and no backfill, alias, deprecation, dry-run or recovery plan is produced.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "grep -nE '^(IDENTICAL|COMPATIBLE|BREAKING) =|migration_steps|dual|major' ocor-runtime/src/ocor_runtime/c1/releases.py",
+        "outcome": "three constants only; the only BREAKING guard tests migration_plan.get('migration_steps'); no dual-control or major-version check. CONFIRMED (the precedence of LLD v1.1 \u00a70.1 resolves the class set in favour of FR-045)."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "1-30",
+          "note": "title, version 1.2.0, 'Normative C1-C8 contract', /compile and /identities:resolve without security",
+          "path": "ocor-runtime/schemas/ocor.openapi.yaml"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "98-102",
+          "note": "validate returns when no validator is configured",
+          "path": "ocor-runtime/src/ocor_runtime/c1_compiler.py"
+        }
+      ],
+      "component": "C1",
+      "decision_options": [
+        "1. Keep the legacy artefact unchanged and record it as non-normative in the register only (no runtime change).",
+        "2. Authorise a change of the legacy slice that marks the artefact non-normative and secures or removes the two operations, with requalification of the legacy tests.",
+        "3. Retire the legacy slice surface under a dedicated PO decision."
+      ],
+      "decision_reason": "programme decision point 4.d: any item that would require changing the legacy slice",
+      "depends_on": [],
+      "id": "NCR-C1-007",
+      "norm_refs": [
+        {
+          "lines": "20-31",
+          "note": "LLD v1.1 \u00a70.2: the six materialised contracts",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "371",
+          "note": "ADD v1.3 \u00a73.0 cross-cutting contract rules",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "C1-7",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of LLD v1.1 \u00a70.2 / ADD v1.3 \u00a73.0; not a P0 PoC requirement nor a \u00a70.2 contract",
+      "statement": "The legacy artefact ocor-runtime/schemas/ocor.openapi.yaml (version 1.2.0) describes itself as the 'Normative C1-C8 contract' although it is not among the contracts materialised by LLD v1.1 \u00a70.2, and its /compile and /identities:resolve operations declare no security requirement; the legacy SemanticCompiler validates nothing when no schema is configured. Remediation would change the legacy slice (ocor-runtime/schemas/, c1_compiler.py).",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "60",
+          "note": "legacy schema integrity test reads this file",
+          "path": "ocor-runtime/tests/schemas/test_schema_integrity.py"
+        }
+      ],
+      "type": "EXTRA",
+      "verification": {
+        "command": "sed -n 1,30p ocor-runtime/schemas/ocor.openapi.yaml | grep -nE 'version|Normative|^  /|security'",
+        "outcome": "version 1.2.0 and 'Normative C1-C8 contract'; /compile and /identities:resolve have no security line (the first security line is under /actions). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "280",
+          "note": "'references': list(document.get('references', ()))",
+          "path": "ocor-runtime/src/ocor_runtime/c1/frontend.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-008",
+      "norm_refs": [
+        {
+          "lines": "39",
+          "note": "LLD v1.1 \u00a71.1: semantically set-like arrays are sorted lexicographically before the digest and reject duplicates",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "436",
+          "note": "ADD v1.3 \u00a73.1.1 normalisation step 3",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-018"
+      ],
+      "seed_correction": "the seed test anchor tests/tasks/test_ocor_dev_0032.py:180 is the execution-owner case and does not pin reference ordering; no test pinning the divergent behaviour was found",
+      "seed_ref": "C1-8",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of LLD v1.1 \u00a71.1; observable effect on ir_digest",
+      "statement": "The set-like 'references' array of each IR resource is copied in source order: it is neither sorted before the digest nor de-duplicated, and a duplicated reference is accepted. ('fields' and 'field_types' are mappings whose key order RFC 8785 already canonicalises, so the seed hypothesis is corrected to 'references' only.)",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python <probe C1-PROBE-01>",
+        "outcome": "probe prints \"C1-8 references in core: ('urn:ocor:resource:c', 'urn:ocor:resource:b', 'urn:ocor:resource:b')\". CONFIRMED (corrected scope)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "167-175",
+          "note": "_required only",
+          "path": "ocor-runtime/src/ocor_runtime/c1/ports.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-009",
+      "norm_refs": [
+        {
+          "lines": "419",
+          "note": "ADD v1.3 \u00a73.1.1 OntologyPackage: version SemVer",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-040"
+      ],
+      "seed_correction": "severity raised from the proposed LOW to MEDIUM: accepting an invalid version has an observable effect, so the LOW rule (no observable effect) does not apply",
+      "seed_ref": "C1-9",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of ADD v1.3 \u00a73.1.1 with observable effect",
+      "statement": "CompilerRequest.semantic_version is only required to be non-empty; a non-SemVer value such as 'not-semver' compiles into a release.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python <probe C1-PROBE-01>",
+        "outcome": "probe prints \"C1-9 semantic_version 'not-semver': ACCEPTED\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "315-317",
+          "note": "ReleasePublisher Protocol",
+          "path": "ocor-runtime/src/ocor_runtime/c1/ports.py"
+        },
+        {
+          "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
+          "lines": "340-342",
+          "note": "ConformanceSuitePort Protocol",
+          "path": "ocor-runtime/src/ocor_runtime/c1/ports.py"
+        }
+      ],
+      "component": "C1",
+      "depends_on": [],
+      "id": "NCR-C1-010",
+      "norm_refs": [
+        {
+          "lines": "103-107",
+          "note": "LLD v1.1 \u00a72.1 classes/ports and pipeline '... signature -> immutable release'",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "282",
+          "note": "ADD v1.3 C1 operations ValidatePackage, Compile, SemanticDiff, PackageRelease, VerifyRelease",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "114",
+          "note": "FR-024 acceptance: a capability disposition per backend",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U01",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-024",
+        "NFR-020"
+      ],
+      "seed_ref": "",
+      "severity": "HIGH",
+      "severity_basis": "FR-024 (PoC thin slice) and NFR-020 are P0 PoC",
+      "statement": "Beyond the seed: of the LLD v1.1 \u00a72.1 ports, ReleasePublisher (immutable release) and ConformanceSuitePort have no implementation, and the ADD v1.3 C1 operations ValidatePackage, PackageRelease and VerifyRelease have no runtime counterpart; the pipeline ends at an unsigned, unpublished in-memory release.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rnE 'def (publish|run)\\(' --include=*.py ocor-runtime/src/ocor_runtime/c1 ; grep -rnE 'class (Retained|Frontend)' ocor-runtime/src/ocor_runtime/c1",
+        "outcome": "publish and run occur only in the Protocols at c1/ports.py; the implemented classes are the parsers, validators, builders, diff engine, checker, migration planner and artefact generator. CONFIRMED."
+      }
+    }
+  ],
+  "g6_g7_proposals": {},
+  "inputs": {
+    "seed": {
+      "items": 59,
+      "location": "outside the repository (PO data, not copied)",
+      "name": "NORMATIVE-CONFORMANCE-PROGRAMME-2026-10-29.seed.json",
+      "observations": 6,
+      "sha256": "50546f83acf714db667f8d6b8423515407c8c62738038f6ef1021d20fc4009b3"
+    },
+    "supplement": {
+      "items": 11,
+      "location": "outside the repository (PO data, not copied)",
+      "name": "NORMATIVE-CONFORMANCE-PROGRAMME-2026-10-29.supplement.json",
+      "sha256": "36ca1212b3201de6343a176af87f6abf3158ed9a94836138d64cf6d1e0959ee2"
+    }
+  },
+  "language": "en-GB",
+  "nature": "Register of divergences between code and closed normative elements. It is not evidence: an entry, resolved or not, makes no requirement Verified and changes no claim.",
+  "plan_units": {
+    "NCP-U01": {
+      "scope": "C1 OaC metamodel, Canonical IR structure, normalisation, signing and admission, artefact generation, semantic diff",
+      "status": "DRAFT"
+    },
+    "NCP-U02": {
+      "scope": "Function and Model Registry (ocor.registry.v1)",
+      "status": "DRAFT"
+    }
+  },
+  "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
+  "progress": {
+    "complete": false,
+    "components_done": [
+      "C1"
+    ],
+    "components_pending": [
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "MEMORY",
+      "LEGACY",
+      "TESTS",
+      "PLAN",
+      "EVIDENCE",
+      "GOVERNANCE"
+    ],
+    "iteration_limit": 8,
+    "iterations_used": 1,
+    "pending_sections": [
+      "plan_units (point 4.e, completed after the reconnaissance)",
+      "g6_g7_proposals (point 4.f)"
+    ]
+  },
+  "register_id": "OCOR-NORMATIVE-CONFORMANCE-REGISTER",
+  "register_unit": "OCOR-DEV-REM-0044",
+  "schema_version": "1.0",
+  "seed_coverage": {
+    "C1-1": {
+      "entry_id": "NCR-C1-001"
+    },
+    "C1-2": {
+      "entry_id": "NCR-C1-002"
+    },
+    "C1-3": {
+      "entry_id": "NCR-C1-003"
+    },
+    "C1-4": {
+      "entry_id": "NCR-C1-004"
+    },
+    "C1-5": {
+      "entry_id": "NCR-C1-005"
+    },
+    "C1-6": {
+      "entry_id": "NCR-C1-006"
+    },
+    "C1-7": {
+      "entry_id": "NCR-C1-007"
+    },
+    "C1-8": {
+      "entry_id": "NCR-C1-008"
+    },
+    "C1-9": {
+      "entry_id": "NCR-C1-009"
+    }
+  },
+  "severity_rule": {
+    "HIGH": "violates a P0 PoC requirement or a contract of LLD v1.1 \u00a70.2",
+    "LOW": "naming or hygiene without observable effect",
+    "MEDIUM": "violates another closed normative element"
+  },
+  "supplement_coverage": {},
+  "supplement_decision": "NORMATIVE-CONFORMANCE-PROGRAMME-SUPPLEMENT (2026-10-29)",
+  "verification_probes": {
+    "C1-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root",
+      "sha256": "3db5955a1decd5517fc840b673bbc855d86afaef231641c9f844e335a8a63106",
+      "text": "import json, sys\nfrom ocor_runtime.c1.ports import SourceUnit, SourceSyntax, CompilerRequest, C1Error, DependencyLockEntry\nfrom ocor_runtime.c1.frontend import FrontendCanonicalIrBuilder\nC=\"0\"*40\ndef src(rid, body):\n    return SourceUnit.create(resource_id=rid, version=\"1\", syntax=SourceSyntax.JSON, content=json.dumps(body).encode(), source_path=rid+\".json\")\ndef req(sources, ver=\"1.0.0\", lock=()):\n    return CompilerRequest(package_id=\"urn:ocor:package:p\", semantic_version=ver, source_commit=C, compiler_version=\"0.1.0\", mapping_version=\"1\", release_profile=\"poc\", sources=sources, dependency_lock=lock)\nb=lambda rid, **k: dict(id=rid, fields={\"name\":\"x\"}, field_types={\"name\":\"string\"}, **k)\nr=FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", b(\"urn:ocor:resource:a\", references=[\"urn:ocor:resource:c\",\"urn:ocor:resource:b\",\"urn:ocor:resource:b\"])), src(\"urn:ocor:resource:b\", b(\"urn:ocor:resource:b\")), src(\"urn:ocor:resource:c\", b(\"urn:ocor:resource:c\")))))\nprint(\"C1-8 references in core:\", r.core[\"resources\"][\"urn:ocor:resource:a\"][\"references\"])\nprint(\"C1-3 core keys:\", sorted(r.core))\nprint(\"C1-2 signature_envelope_ref:\", r.signature_envelope_ref[:24])\ntry:\n    FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", b(\"urn:ocor:resource:a\")),), ver=\"not-semver\")); print(\"C1-9 semantic_version 'not-semver': ACCEPTED\")\nexcept C1Error as e: print(\"C1-9 rejected\", e)\nn1=FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", dict(id=\"urn:ocor:resource:a\", fields={\"name\":\"\u00e9\"}, field_types={\"name\":\"string\"})),)))\nn2=FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", dict(id=\"urn:ocor:resource:a\", fields={\"name\":\"e\u0301\"}, field_types={\"name\":\"string\"})),)))\nprint(\"C1-4 NFC-equivalent sources same ir_digest:\", n1.ir_digest==n2.ir_digest)\ntry:\n    FrontendCanonicalIrBuilder().build(req((src(\"urn:ocor:resource:a\", dict(id=\"urn:ocor:resource:a\", fields={\"t\":\"2026-01-01\"}, field_types={\"t\":\"datetime\"})),))); print(\"C1-4 datetime type ACCEPTED\")\nexcept C1Error as e: print(\"C1-4 type 'datetime' rejected:\", e.diagnostics[0].code)\ns=lambda: SourceUnit.create(resource_id=\"urn:ocor:resource:a\", version=\"1\", syntax=SourceSyntax.JSON, content=json.dumps(b(\"urn:ocor:resource:a\")).encode(), source_path=\"a.json\", imports=(\"urn:ocor:resource:ext\",))\nl1=(DependencyLockEntry(\"urn:ocor:resource:ext\",\"1\",\"urn:sha256:\"+\"1\"*64),); l2=(DependencyLockEntry(\"urn:ocor:resource:ext\",\"1\",\"urn:sha256:\"+\"2\"*64),)\nprint(\"C1-3 different lock digests same ir_digest:\", FrontendCanonicalIrBuilder().build(req((s(),),lock=l1)).ir_digest==FrontendCanonicalIrBuilder().build(req((s(),),lock=l2)).ir_digest)\n"
+    }
+  },
+  "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b"
+}
