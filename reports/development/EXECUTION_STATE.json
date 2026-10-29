@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "8075985e9778fbe2c6f24db64f6e455097b157c0",
-    "branch": "governed/state-sync-rem0040-integrated-20261029",
+    "baseline_commit": "4b3b8fc8faaa1190cae5aee21eb0ead7d1f80f32",
+    "branch": "governed/state-sync-workstation-archive-dr-20261029",
     "campaign_background_processes_remaining": false,
     "candidate": {
       "aligned_head": "ad275d9988da495f2283880aa6b9f3ea2df97cd8",
@@ -96,7 +96,7 @@
       "verdict": "GO_FOR_EVIDENCE_SEAL",
       "verdict_file_sha256": "abf56330e6ddc3cd213de29ec50678ac6d80c8e603ffebeadae9a9c61fcdf802"
     },
-    "change_set": "OCOR-DEV-REM-0040 integration (GO, seal, exact-head CI PASS, merged)",
+    "change_set": "WORKSTATION-TOOLS-ARCHIVE maintenance unit: archive verified against the manifest, secret scan clean, gate conflicts found, decision request WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397); unit blocked, nothing of the archive published",
     "decisions": [
       "CC-OCOR-DELIVERY-COMPLETION par. 5 point 8",
       "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
@@ -110,17 +110,18 @@
       "AGENT-WAIT-HYGIENE (2026-10-27)"
     ],
     "host_memory_at_sync": {
-      "MemAvailable_kB": 26827860,
+      "MemAvailable_kB": 26823600,
       "MemTotal_kB": 31742988,
-      "observed_at": "2026-10-29T01:27:24.724142+00:00",
+      "observed_at": "2026-10-29T02:09:12.762521+00:00",
       "source": "/proc/meminfo (LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27) point 2)"
     },
-    "next_action": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit (first coherent boundary after REM-0040): read MemTotal/MemAvailable from /proc/meminfo at unit start (two-lane threshold 14340.6 MiB); separate governed change set from origin/main; copy unchanged into tools/workstation/ the files listed in ~/ocor-workstation-export/tools/workstation/MANIFEST.json (sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef; stop and open a decision request if unreadable or mismatched), manifest included; British-English README.md (not in the manifest); CODEOWNERS and protected paths; automatic manifest-integrity check in the existing suite/CI; secret scanner on the files before publishing (any hit: stop, decision request); outside evidence, gate manifests, traceability and task counts. Then the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 sealResult subset ScenarioOverlayStoreSealSubset without renaming or changing signatures; RED/GREEN on real TerminusDB, campaign, verification), then OCOR-DEV-0060 on the selected components. OCOR-DEV-0062..0064 proceed while remediations wait for review or verification. No new DEC; claims unchanged.",
+    "next_action": "OCOR-DEV-REM-0041 overlay unit of ScenarioOverlayStore (REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION (2026-10-28) points 1, 3 and 9): read MemTotal/MemAvailable from /proc/meminfo at unit start (two-lane threshold 14340.6 MiB); new worktree from origin/main; read-only inventory of ScenarioOverlayStoreSealSubset (REM-0040) and the TerminusDB C3 adapter (REM-0041 C3 unit); compose the sealResult subset into the full ScenarioOverlayStore (openSnapshot, forkScenario, appendOverlay, readAt, discard on TerminusDB, ADD v1.3 par. 4.2 and line 307) without renaming or changing signatures (otherwise stop and open a decision request); RED before code on real TerminusDB, GREEN, regression-only requalifications with explicit supersedes, task suite, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW request (stop the iteration after it), then the local full suite (two-lane, memory admission at start; cap 5400 s, notification 3600 s) and the verification request. WORKSTATION-TOOLS-ARCHIVE is blocked by the decision request WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397, OPEN_PO_DECISION_REQUIRED): when a disposition is recorded, resume it at the first coherent boundary from the preserved local worktree .ocor/worktrees/workstation-tools-archive (branch governed/workstation-tools-archive-20261029, unpublished, archive copied unchanged and uncommitted). Then OCOR-DEV-0060 on the selected components. OCOR-DEV-0062..0064 proceed while remediations wait for review, verification or a decision. No new DEC; claims unchanged.",
     "normative_interpretations": [
       "OCOR-DEV-REM-0040.json requalifications[].record_sha256 keep the verified candidate hashes; the post-seal hashes are recorded beside them in independent_verification.sealed_requalification_records, as for REM-0038, REM-0042, REM-0039, REM-0037 and REM-0041.",
       "WORKSTATION-TOOLS-ARCHIVE (2026-10-28) point 7 places the maintenance unit at the first coherent boundary after the unit in progress (REM-0040); it is therefore sequenced before the REM-0041 overlay unit, which is not yet started."
     ],
-    "phase": "OCOR_DEV_REM_0040_INTEGRATED",
+    "phase": "WORKSTATION_TOOLS_ARCHIVE_BLOCKED_OPEN_PO_DECISION",
+    "previous_change_set": "OCOR-DEV-REM-0040 integration (GO, seal, exact-head CI PASS, merged)",
     "roles": {
       "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -1864,7 +1865,7 @@
       }
     }
   },
-  "baseline_commit": "8075985e9778fbe2c6f24db64f6e455097b157c0",
+  "baseline_commit": "4b3b8fc8faaa1190cae5aee21eb0ead7d1f80f32",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6232,6 +6233,41 @@
           "until": "2026-10-28T17:56:39.594336+00:00"
         }
       ]
+    },
+    {
+      "blocked_tasks": [],
+      "blocked_units": [
+        "WORKSTATION-TOOLS-ARCHIVE"
+      ],
+      "created_at": "2026-10-29T02:09:12.762521+00:00",
+      "decision": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28) points 1, 3, 4 and 5 (manifest sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef); CC-OCOR-DELIVERY-COMPLETION par. 7 and par. 10 (no weakening of tests, validators or CI workflows)",
+      "decision_level": "NORMATIVE (DEC-212 language policy) and OPERATIVE (gates)",
+      "does_not_block": [
+        "OCOR-DEV-REM-0041",
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-workstation-tools-archive-gates",
+        "commit": "c1960038bfee146b0c14c2cc64ec38b388b311b0",
+        "inventory_base": "4b3b8fc8faaa1190cae5aee21eb0ead7d1f80f32",
+        "path": "reports/development/decision_requests/WORKSTATION-TOOLS-ARCHIVE-GATES.md",
+        "pr": 397,
+        "publication": "DRAFT_PR_NOT_TO_MERGE",
+        "sha256": "21e29076b29a239143fabb13b9690f264c28bb1c417756b23fa7f78266d086ac"
+      },
+      "id": "WORKSTATION-TOOLS-ARCHIVE-GATES",
+      "preserved_work": {
+        "branch": "governed/workstation-tools-archive-20261029",
+        "content": "archive copied unchanged, uncommitted; nothing of the archive published",
+        "published": false,
+        "worktree": ".ocor/worktrees/workstation-tools-archive"
+      },
+      "reason": "The unchanged copy of the archive matches MANIFEST.json (52 files, sha256 and size equal, no unlisted file) and the repository secret scanner finds nothing (also applied to all 53 files regardless of suffix), but three required gates reject it: DEC-212 language policy (46 violations, 42 .sh and 4 .py without an authorized area), the static supply-chain scanner (DYNAMIC_CODE_EXECUTION at tools/workstation/sorveglianza/delega.py line 96, exec of hash-verified bytes), ruff (16 E741 in sentinella.py); and adding tools/workstation/ to IMMUTABLE of validate_ocor_change_scope.py fails the very PR that creates the folder (base...head diff).",
+      "recommendation": "1a (language-policy row and validator area for the non-executed archive) + 2a (static-finding suspension registry bound to path, file sha256, line and rule, as REM-0019) + 3a (ruff extend-exclude with a comment) + 4a (single PR; changes under tools/workstation/ allowed only when MANIFEST.json and README.md match sha256 values pinned in the scope validator).",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8469,7 +8505,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "G6_REM_0040_INTEGRATED_WORKSTATION_TOOLS_ARCHIVE_NEXT",
-  "next_executable_action": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28) maintenance unit (first coherent boundary after REM-0040): read MemTotal/MemAvailable from /proc/meminfo at unit start (two-lane threshold 14340.6 MiB); separate governed change set from origin/main; copy unchanged into tools/workstation/ the files listed in ~/ocor-workstation-export/tools/workstation/MANIFEST.json (sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef; stop and open a decision request if unreadable or mismatched), manifest included; British-English README.md (not in the manifest); CODEOWNERS and protected paths; automatic manifest-integrity check in the existing suite/CI; secret scanner on the files before publishing (any hit: stop, decision request); outside evidence, gate manifests, traceability and task counts. Then the REM-0041 overlay unit of ScenarioOverlayStore (composing the REM-0040 sealResult subset ScenarioOverlayStoreSealSubset without renaming or changing signatures; RED/GREEN on real TerminusDB, campaign, verification), then OCOR-DEV-0060 on the selected components. OCOR-DEV-0062..0064 proceed while remediations wait for review or verification. No new DEC; claims unchanged.",
+  "next_executable_action": "OCOR-DEV-REM-0041 overlay unit of ScenarioOverlayStore (REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION (2026-10-28) points 1, 3 and 9): read MemTotal/MemAvailable from /proc/meminfo at unit start (two-lane threshold 14340.6 MiB); new worktree from origin/main; read-only inventory of ScenarioOverlayStoreSealSubset (REM-0040) and the TerminusDB C3 adapter (REM-0041 C3 unit); compose the sealResult subset into the full ScenarioOverlayStore (openSnapshot, forkScenario, appendOverlay, readAt, discard on TerminusDB, ADD v1.3 par. 4.2 and line 307) without renaming or changing signatures (otherwise stop and open a decision request); RED before code on real TerminusDB, GREEN, regression-only requalifications with explicit supersedes, task suite, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW request (stop the iteration after it), then the local full suite (two-lane, memory admission at start; cap 5400 s, notification 3600 s) and the verification request. WORKSTATION-TOOLS-ARCHIVE is blocked by the decision request WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397, OPEN_PO_DECISION_REQUIRED): when a disposition is recorded, resume it at the first coherent boundary from the preserved local worktree .ocor/worktrees/workstation-tools-archive (branch governed/workstation-tools-archive-20261029, unpublished, archive copied unchanged and uncommitted). Then OCOR-DEV-0060 on the selected components. OCOR-DEV-0062..0064 proceed while remediations wait for review, verification or a decision. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8595,10 +8631,11 @@
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "blocked_by_po_decision": {},
+    "blocked_by_po_decision": {
+      "WORKSTATION-TOOLS-ARCHIVE": "WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397)"
+    },
     "completed_evidence_tasks_count": 75,
     "executable_now": [
-      "WORKSTATION-TOOLS-ARCHIVE",
       "OCOR-DEV-REM-0041 (overlay unit)",
       "OCOR-DEV-0062",
       "OCOR-DEV-0063",
@@ -8606,7 +8643,7 @@
     ],
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-29T01:27:24.724142+00:00",
+    "observed_at": "2026-10-29T02:09:12.762521+00:00",
     "queue_before_g6": [],
     "sequenced_by_po_decision": {
       "OCOR-DEV-0060": "after integration of the four REM change sets of OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)",
@@ -27296,6 +27333,22 @@
         "test_rename": "test_full_suite_budget_is_75_minutes_and_60_minutes_requires_decision -> test_full_suite_budget_is_90_minutes_and_60_minutes_requires_decision"
       },
       "verify_request_id": "OCOR-DEV-REM-0042-9f7456301d27-0"
+    },
+    "WORKSTATION_TOOLS_ARCHIVE": {
+      "authority": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28), normative PO decision; recorded with the manifest sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef (point 8)",
+      "blocker": "WORKSTATION-TOOLS-ARCHIVE-GATES",
+      "decision_request": {
+        "branch": "governed/decision-request-workstation-tools-archive-gates",
+        "commit": "c1960038bfee146b0c14c2cc64ec38b388b311b0",
+        "inventory_base": "4b3b8fc8faaa1190cae5aee21eb0ead7d1f80f32",
+        "path": "reports/development/decision_requests/WORKSTATION-TOOLS-ARCHIVE-GATES.md",
+        "pr": 397,
+        "publication": "DRAFT_PR_NOT_TO_MERGE",
+        "sha256": "21e29076b29a239143fabb13b9690f264c28bb1c417756b23fa7f78266d086ac"
+      },
+      "excluded_from": "evidence, gate manifests, requirement traceability and task counts (point 6)",
+      "implementer": "Claude Code / claude-opus-5-5 / Anthropic",
+      "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED"
     }
   },
   "repository": "nepryoon/ocor",
@@ -28492,7 +28545,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-29T01:27:24.724142+00:00",
+  "updated_at": "2026-10-29T02:09:12.762521+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
