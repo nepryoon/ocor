@@ -1,23 +1,32 @@
 {
   "assumptions": [
     "The ScenarioOverlayStore and its TerminusDB adapter have no runtime consumer until OCOR-DEV-0060 qualifies BA-01/BA-06 on the selected components.",
-    "Tail truncation of an overlay by a principal with write access to the scenario branch is not detectable by the delta chain alone (the TerminusDB commit log keeps it); every non-final removal, modification or reordering is rejected.",
+    "Tail truncation of an overlay by a principal with write access to the scenario branch is not detectable by the delta chain alone (the TerminusDB commit log keeps it).",
     "The two-lane local full suite is usable, with the memory admission at start (otherwise serial, recorded)."
   ],
-  "base_sha": "f72ebd66e403418653d597c0fb44e9adf38b4814",
-  "baseline_commit": "f72ebd66e403418653d597c0fb44e9adf38b4814",
-  "branch": "governed/state-sync-rem0041-overlay-prereview-20261029",
+  "base_sha": "a9b0eeee30c5e1ef234c357ea7d8ce89a49eb3c1",
+  "baseline_commit": "a9b0eeee30c5e1ef234c357ea7d8ce89a49eb3c1",
+  "branch": "governed/state-sync-rem0041-overlay-candidate-20261029",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0041-scenario-overlay-store",
-    "head_sha": "da5e512efde2af280cb6a707ed225cde77c3f202",
-    "note": "candidate code head, preventive review requested; not evidence",
+    "code_commit": "ed1574d11d1755d5e8dc686c05c6550f39ad79eb",
+    "head_sha": "e9aa8e1cc659b217790a6862751439ae3c02d413",
+    "note": "pushed candidate; evidence CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
     "paths": [
-      "ocor-runtime/src/ocor_runtime/c7/scenario_overlay.py",
-      "ocor-runtime/src/ocor_runtime/c7/adapters/terminusdb_overlay.py",
-      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
-      "scripts/validate_ocor_development_plan.py",
-      "reports/planning/OCOR_PLAN_RUN_STATE.json"
-    ]
+      "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/OCOR-DEV-REM-0041.scenario-overlay.json",
+      "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/OCOR-DEV-REM-0041.scenario-overlay.log",
+      "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/README.md",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0041-overlay.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0041-overlay.log",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.log",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.log",
+      "reports/evidence/G0/MANIFEST.json",
+      "reports/evidence/G2/MANIFEST.json",
+      "reports/evidence/G5/MANIFEST.json"
+    ],
+    "worktree": ".ocor/worktrees/rem-0041-overlay"
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -34,50 +43,51 @@
   },
   "commands": [
     {
-      "command": "pytest tests/tasks/test_ocor_dev_rem_0041_overlay.py on base f72ebd6 (RED, final test)",
+      "command": "prereview outcome OCOR-DEV-REM-0041-da5e512efde2-pre",
+      "exit_code": 0,
+      "summary": "NO_BLOCKING_FINDINGS, 3 advisory (Antigravity/gemini-4-argon-high/Google); sha256 61e6afdc349aa9333ad041bb047652404f456ab9c43b6a86e9a9bf3f92589f49"
+    },
+    {
+      "command": "P1 fix ed1574d: malformed answers and non-integer stored revisions fail closed as ScenarioOverlayError",
+      "exit_code": 0,
+      "summary": "RED on da5e512 2/2 failed (fingerprint a8060d678d89); final RED on f72ebd6 fingerprint f341be0788fa; GREEN 30/30 x3 on the live TerminusDB and SeaweedFS"
+    },
+    {
+      "command": "mutation probe at ed1574d11d17",
+      "exit_code": 0,
+      "summary": "15/15 killed, M0 baseline 30/30"
+    },
+    {
+      "command": "PRE-CAMPAIGN-GATE at ed1574d11d17",
       "exit_code": 1,
-      "summary": "27 failed or errored, 1 passed; fingerprint 469faa0768cd"
+      "summary": "41/42 PASS; drift FAIL expected (0005/0050/0082)"
     },
     {
-      "command": "pytest tests/tasks/test_ocor_dev_rem_0041_overlay.py x3 at da5e512 (live TerminusDB and SeaweedFS)",
+      "command": "qualification campaign at ed1574d11d17 (env -i, locked PATH, bootstrap_ci_environment.py, 15 containers; then run_local_lane_campaign.py --execute)",
       "exit_code": 0,
-      "summary": "28 passed x3, 0 skipped"
+      "summary": "phase A PASS, task 3x 30/30, regression 305, reports portfolio PASS; full suite TWO_LANE 3327/3327 in 2394.822 s (margin to 5400 s 3005.178 s); zero residue"
     },
     {
-      "command": "~/.ocor-codex/rem-0041-overlay/mutation.py da5e512",
+      "command": "build evidence and gates at the evidence head",
       "exit_code": 0,
-      "summary": "13/13 mutants killed, baseline 28/28"
+      "summary": "PRE-CAMPAIGN-GATE steps at the evidence head e9aa8e1cc659: 42/42 PASS, drift 0, runtime evidence 0005/0050/0082 PASS, supply-chain scanner PASS"
     },
     {
-      "command": "pytest 0005 0050 0082 0045 first_governed_slice c7_emission_hardening rem_0040 rem_0041",
+      "command": "write ~/.ocor-codex/verify_request.json",
       "exit_code": 0,
-      "summary": "305 passed, 0 skipped"
-    },
-    {
-      "command": "~/.ocor-codex/rem-0041-overlay/pregate.py (PRE-CAMPAIGN-GATE at da5e512)",
-      "exit_code": 1,
-      "summary": "41/42 PASS; drift FAIL expected for 0005/0050/0082 only"
+      "summary": "OCOR-DEV-REM-0041-e9aa8e1cc659-0"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0041:overlay-awaiting-pre-campaign-review",
+  "current_task": "OCOR-DEV-REM-0041:overlay-awaiting-independent-verification",
   "evidence_paths": [],
-  "exact_next_action": "Resume the OCOR-DEV-REM-0041 overlay unit after the preventive review OCOR-DEV-REM-0041-da5e512efde2-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0041-da5e512efde2-pre.json; fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record the reason). Branch governed/ocor-dev-rem-0041-scenario-overlay-store, worktree .ocor/worktrees/rem-0041-overlay, candidate code head da5e512efde2 (pushed). At unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0041-overlay/pregate.py; never commit run artefacts such as reports/tests/ci_fuseki_build.log written by the bootstrap), build the TypeScript SDK in the candidate worktree, and the qualifying local full suite from a clean shell with the locked PATH and power logging (scripts/bootstrap_ci_environment.py --execute; two-lane mode of scripts/run_local_lane_campaign.py --execute with memory admission at start, otherwise serial and recorded; cap 5400 s, notification 3600 s; no tracked edits during the campaign); the task module three times on the real TerminusDB and SeaweedFS of the campaign stack; regression-only requalification records requalified-rem0041-overlay of OCOR-DEV-0005/0050/0082 with explicit supersession (plan allowlist; sealed records untouched); remediation record reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/ (README, json, log) with RED fingerprint 469faa0768cd, the disposition-point mapping, the concurrent-fork measurement (TerminusDB 12.0.7 answers 500 to the losers of a concurrent branch creation) and the mutation probe; surgical MANIFEST entries; verify request REMEDIATION repair_cycle 0, verifier neither Anthropic nor OpenAI nor the preventive reviewer's provider. Then OCOR-DEV-0060 on the selected components (after the REM-0041 overlay integration); WORKSTATION-TOOLS-ARCHIVE stays blocked by WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397) and resumes from the preserved worktree after a disposition; OCOR-DEV-0062..0064 while remediations await review or verification. No new DEC; claims unchanged.",
-  "head_sha": "da5e512efde2af280cb6a707ed225cde77c3f202",
-  "head_sha_role": "candidate code head of the REM-0041 overlay unit, preventive review requested",
+  "exact_next_action": "Wait for the external verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0041-e9aa8e1cc659-0.json (REMEDIATION, repair_cycle 0, head e9aa8e1cc659b217790a6862751439ae3c02d413; verifier neither Anthropic nor OpenAI nor Google, the provider of the preventive reviewer). GO_FOR_EVIDENCE_SEAL: non-destructive alignment with origin/main, seal OCOR-DEV-REM-0041.scenario-overlay.json and the 0005/0050/0082 .requalified-rem0041-overlay records (independent_verification, roles.effective_verifier, status SEALED, surgical MANIFEST G0/G2/G5 hash updates), PRE-CAMPAIGN-GATE on the seal head, PR with the 13 required checks on the exact head, merge --match-head-commit, state sync (REM-0041 then fully integrated; then the consolidation decision request of REM-0038-CAMPAIGN-GUARD-ADMISSION condition c, then OCOR-DEV-0060). NO_GO: repair (max 2 materially different cycles). While waiting: OCOR-DEV-0062..0064; WORKSTATION-TOOLS-ARCHIVE stays blocked by WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397). At every unit start read /proc/meminfo (two-lane threshold 14340.6 MiB). No new DEC; claims unchanged.",
+  "head_sha": "e9aa8e1cc659b217790a6862751439ae3c02d413",
+  "head_sha_role": "REM-0041 overlay-unit candidate head submitted to independent verification",
   "independent_verification": {
-    "head_sha": "8c498f9988b6465f77d9e955cdca9417898a0492",
-    "next_verifier_constraint": "for the next unit: provider different from every implementer and from its preventive reviewer",
-    "repair_cycle": 0,
-    "request_id": "OCOR-DEV-REM-0040-8c498f9988b6-0",
-    "status": "GO_FOR_EVIDENCE_SEAL",
-    "verdict_created_at": "2026-10-29T00:47:03Z",
-    "verdict_file_sha256": "abf56330e6ddc3cd213de29ec50678ac6d80c8e603ffebeadae9a9c61fcdf802",
-    "verifier": "Cursor CLI / grok-4.7-high / xAI",
-    "verifier_full_suite_two_lane": "3297 passed (lanes 1024 and 2273, overlap 0), 0 skipped, 2381.346 s; margin under the 5400 s cap 3018.654 s, under the 3600 s notification 1218.654 s; exact union; host residue empty; mains power at start and end (2026-10-28T23:57:32Z, 2026-10-29T00:37:14Z)",
-    "verifier_regression": "0005/0050/0082/0045, the first governed slice and the C7 emission hardening: 251 passed, 0 skipped",
-    "verifier_task_module": "tests/tasks/test_ocor_dev_rem_0040.py: 21 passed, 0 skipped on the live pinned SeaweedFS (Object Lock COMPLIANCE probe fail-closed on delete and bypass)",
-    "verifier_validation_closure_guards": "362 passed, 0 skipped after the versioned npm ci/build (first run before npm ci failed only on absent @types/node, not a candidate defect)"
+    "next_verifier_constraint": "neither Anthropic nor OpenAI nor Google (preventive reviewer)",
+    "request_id": "OCOR-DEV-REM-0041-e9aa8e1cc659-0",
+    "status": "REQUESTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -148,9 +158,9 @@
     "scope": "PASS",
     "supply_chain_scanner": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0041:overlay-campaign-after-preventive-review",
-  "phase": "OCOR_DEV_REM_0041_OVERLAY_UNIT_AWAITING_PRE_CAMPAIGN_REVIEW",
-  "raw_evidence_location": "~/.ocor-codex/rem-0041-overlay (outside Git)",
+  "next_task": "OCOR-DEV-REM-0041:overlay-integration (meanwhile OCOR-DEV-0062..0064)",
+  "phase": "OCOR_DEV_REM_0041_OVERLAY_UNIT_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "raw_evidence_location": "~/.ocor-codex/rem-0041-overlay and ~/.ocor-codex/rem-0041-overlay-q (outside Git)",
   "requirement_ids": [],
   "roles": {
     "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
@@ -159,12 +169,14 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "REM-0041 overlay unit: probes, RED/GREEN, mutation probe, PRE-CAMPAIGN-GATE, preventive review request, state sync"
+        "scope": "all of the REM-0041 overlay unit: port, adapter, tests, preventive-review dispositions, campaign, requalifications, evidence, verification request and state syncs (backup implementer of the loop)"
       }
     ],
     "loop_counted_implementers": [
       "Codex (OpenAI)"
-    ]
+    ],
+    "preventive_reviewer": "Antigravity CLI / gemini-4-argon-high / Google (NO_BLOCKING_FINDINGS, 3 advisory: P1 fixed, P2 deferred to OCOR-DEV-0060, P3 applied); excluded from the final verification of the overlay unit",
+    "verifier": "requested from the loop; must be neither Anthropic nor OpenAI nor Google"
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
@@ -182,9 +194,7 @@
     "static": "ruff PASS; mypy --strict src/scripts PASS (95 files) and on the task module PASS",
     "terminusdb_measurement": "TerminusDB 12.0.7: of 6 concurrent creations of one branch exactly one answers 200 and the others 500 InternalServerError (3/3 trials); the adapter re-reads the branch list and answers SCENARIO_EXISTS; a class absent from the branch schema lists as empty; branch names cannot contain '/', so the TerminusDB branch is scenario_<token> and the C7 handle scenario/<token>"
   },
-  "unresolved_blockers": [
-    "WORKSTATION-TOOLS-ARCHIVE-GATES (PR #397, OPEN_PO_DECISION_REQUIRED; blocks only WORKSTATION-TOOLS-ARCHIVE)"
-  ],
-  "updated_at": "2026-10-29T03:52:19.701257+00:00",
+  "unresolved_blockers": [],
+  "updated_at": "2026-10-29T05:40:24.297625+00:00",
   "worktree": ".ocor/worktrees/rem-0041-overlay"
 }
