@@ -23,8 +23,10 @@ from __future__ import annotations
 
 import ast
 import base64
+import contextlib
 import functools
 import hashlib
+import http.server
 import importlib
 import importlib.util
 import inspect
@@ -520,6 +522,88 @@ def test_invalid_inputs_are_rejected_before_any_request() -> None:
 def test_an_unreachable_server_fails_closed_without_fallback() -> None:
     store = _store("ocor_c7_rem0041_unreachable", url=CLOSED_ENDPOINT)
     assert _code(store.initialize) == "STORE_UNAVAILABLE"
+
+
+@contextlib.contextmanager
+def _local_responder(answer: Callable[[str], tuple[int, str, dict[str, str]]]) -> Iterator[str]:
+    """A loopback HTTP server that answers every GET with ``answer(path)``: it exercises
+    only the adapter's local handling of malformed answers, never a TerminusDB contract."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            status, text, headers = answer(self.path)
+            payload = text.encode("utf-8")
+            self.send_response(status)
+            for name, value in headers.items():
+                self.send_header(name, value)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_address[1]}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join()
+
+
+def test_a_malformed_server_answer_fails_closed_as_a_backend_error() -> None:
+    database = "ocor_c7_rem0041_malformed"
+    listing = json.dumps([{"path": f"admin/{database}"}])
+    for status, text in ((502, "HTTP 502 {invalid}"), (200, "<html>{ broken"), (500, "{"), (200, "[{]")):
+        with _local_responder(lambda path, s=status, t=text: (s, t, {})) as url:
+            assert _code(_store(database, url=url).initialize) == "BACKEND_ERROR"
+    # Positive control: a well-formed listing that names the database initializes.
+    with _local_responder(lambda path: (200, listing, {})) as url:
+        _store(database, url=url).initialize()
+
+
+def test_a_non_numeric_stored_revision_is_rejected_as_tampering() -> None:
+    adapter, port = _adapter(), _port()
+    database = "ocor_c7_rem0041_malformed"
+    token = adapter.run_token("urn:ocor:scenario:rem0041", "run-1", COMPARTMENTS)
+    branch = port.ScenarioBranch(
+        scenario_id="urn:ocor:scenario:rem0041",
+        run_id="run-1",
+        compartments=COMPARTMENTS,
+        canonical_commit_ref="abc123",
+        scenario_branch="scenario/" + token,
+    )
+    run = {
+        "scenario_id": branch.scenario_id,
+        "run_id": branch.run_id,
+        "compartments_json": adapter.canonical_bytes(list(COMPARTMENTS)).decode("utf-8"),
+        "canonical_commit_ref": branch.canonical_commit_ref,
+        "scenario_branch": branch.scenario_branch,
+    }
+
+    def answer(deltas: list[object]) -> Callable[[str], tuple[int, str, dict[str, str]]]:
+        def respond(path: str) -> tuple[int, str, dict[str, str]]:
+            if path == "/api/db":
+                return 200, json.dumps([{"path": f"admin/{database}"}]), {}
+            if "type=C7OverlayDelta" in path:
+                return 200, json.dumps(deltas), {"TerminusDB-Data-Version": "branch:c0ffee"}
+            return 200, json.dumps(run), {}
+
+        return respond
+
+    for revision in ("x", None, [1], {"n": 1}):
+        with _local_responder(answer([{"revision": revision, "key": "000000000001"}])) as url:
+            store = _store(database, url=url)
+            store.initialize()
+            assert _code(functools.partial(store.read_at, branch, 0)) == "OVERLAY_TAMPERED"
+    # Positive control: the same run record with no delta reads as an empty overlay.
+    with _local_responder(answer([])) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        assert store.read_at(branch, 0).deltas == ()
 
 
 # --- live cases on TerminusDB (and SeaweedFS for sealed results) -----------------------

@@ -141,6 +141,17 @@ def _terminus_branch(branch: ScenarioBranch) -> str:
     return name
 
 
+def _stored_revision(document: object) -> int | None:
+    """The revision a stored delta declares, or ``None`` when it is absent or not an
+    integer: a malformed delta is tampering, never a raw ``ValueError``."""
+    if not isinstance(document, dict):
+        return None
+    try:
+        return int(document["revision"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def _delta_key(revision: int) -> str:
     return f"{revision:012d}"
 
@@ -240,7 +251,14 @@ class TerminusDBScenarioOverlayStore:
             return json.loads(text)
         except json.JSONDecodeError:
             start = text.find("{")
-            return json.loads(text[start:]) if start >= 0 else {"raw": text}
+            if start < 0:
+                return {"raw": text}
+            try:
+                return json.loads(text[start:])
+            except json.JSONDecodeError:
+                # An answer that is not JSON even from its first brace is kept raw:
+                # every caller then refuses it as BACKEND_ERROR.
+                return {"raw": text}
 
     @staticmethod
     def _error_type(body: Any) -> str:
@@ -416,11 +434,11 @@ class TerminusDBScenarioOverlayStore:
         }
         if any(run.get(field) != value for field, value in expected.items()):
             raise ScenarioOverlayError("SCENARIO_HANDLE_INVALID", "the run record does not match the handle")
-        documents = sorted(body, key=lambda item: int(item.get("revision", 0)) if isinstance(item, dict) else 0)
+        documents = sorted(body, key=lambda item: _stored_revision(item) or 0)
         deltas: list[OverlayDelta] = []
         previous: str | None = None
         for expected_revision, document in enumerate(documents, start=1):
-            if not isinstance(document, dict) or int(document.get("revision", -1)) != expected_revision:
+            if _stored_revision(document) != expected_revision:
                 raise ScenarioOverlayError("OVERLAY_TAMPERED", f"delta {expected_revision} is missing or out of order")
             if document.get("key") != _delta_key(expected_revision):
                 raise ScenarioOverlayError("OVERLAY_TAMPERED", f"delta {expected_revision} has a foreign key")
