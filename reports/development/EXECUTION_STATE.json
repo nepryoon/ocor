@@ -1,7 +1,7 @@
 {
   "active_iteration": {
-    "baseline_commit": "0555aa28cb815406f44f6a3974a53aca23888603",
-    "branch": "governed/state-sync-ocor-dev-0062-prereview-20261029",
+    "baseline_commit": "7aea31100e0979260fab87b8297366e1ec6e05d5",
+    "branch": "governed/state-sync-ocor-dev-0062-rem0043-20261029",
     "campaign_background_processes_remaining": false,
     "candidate": {
       "branch": "task/OCOR-DEV-0062-fgm-11-20-campaign",
@@ -9,74 +9,60 @@
         "ocor-runtime/tests/conformance/fgm/test_fgm_11_20.py"
       ],
       "code_commits": [
-        "1e76937"
+        "1e76937",
+        "fb7117a"
       ],
-      "head_sha": "1e769372763358d43d751e088205abdea9596178",
+      "head_sha": "fb7117a07c650ff51f144b466e883f85f7bbdc31",
       "merge_base": "0555aa28cb815406f44f6a3974a53aca23888603",
-      "note": "candidate code head awaiting the preventive review; full suite, evidence and verification pending; not evidence, not sealed",
+      "note": "WIP head after the preventive-review fixes; one qualifying case RED on runtime defect OCOR-DEV-REM-0043; not a candidate, not evidence",
       "pushed": true,
       "worktree": ".ocor/worktrees/ocor-dev-0062"
     },
-    "change_set": "OCOR-DEV-0062 implementation: qualifying FGM-11..FGM-20 module (10 positive and 10 negative real-stack cases bound to FR-006, FR-010, FR-038, FR-118, FR-140, FR-174, NFR-006, NFR-016, NFR-048, plus two structural cases)",
+    "change_set": "OCOR-DEV-0062 preventive-review disposition (OCOR-DEV-0062-1e7693727633-pre) and registration of OCOR-DEV-REM-0043",
     "decisions": [
-      "CC-OCOR-DELIVERY-COMPLETION par. 5",
-      "PRE-CAMPAIGN-GATE (2026-10-26)",
-      "PRE-CAMPAIGN-REVIEW (2026-10-26)",
-      "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-      "OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26) point 5 (0062-0064 proceed)"
-    ],
-    "declared_limits": [
-      "FGM-16 timing is observed as identical ordered index lookups with and without unauthorized items, not as a wall-clock measurement: the normative text defines no tolerance and none is asserted.",
-      "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
-      "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
+      "CC-OCOR-DELIVERY-COMPLETION par. 5 and par. 7 (defect remediation with the first free REM)",
+      "PRE-CAMPAIGN-REVIEW (2026-10-26) point 3",
+      "INFO-C (2026-10-05)",
+      "REM-0027-REPAIR-2-SCOPE-AND-VF001-DISPOSITION (2026-10-14)",
+      "OCOR-DEV-0055-VF002-REMEDIATION (2026-10-10) VF-001 and VF-004",
+      "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)"
     ],
     "executor": "Claude Code (Anthropic, claude-opus-5-5), reserve-implementer header; order LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
     "host_memory_at_sync": {
-      "MemAvailable_kB": 24251428,
+      "MemAvailable_kB": 23593280,
       "MemTotal_kB": 31742988,
-      "observed_at": "2026-10-29T18:14:55.301918+00:00",
+      "observed_at": "2026-10-29T19:31:25.300358+00:00",
       "source": "/proc/meminfo"
     },
-    "memory_at_unit_start": {
-      "MemAvailable_kB": 27411872,
-      "MemTotal_kB": 31742988
+    "next_action": "Implement OCOR-DEV-REM-0043 (C8 dispatch-time live revocation) on governed/ocor-dev-rem-0043-c8-dispatch-live-revocation from origin/main: inventory of the sealed inputs (validate_evidence_input_drift.py after a probe edit), RED test first with fingerprint on the real collaborators, minimal fix in c8/tool_runtime.py keeping STOP_BOUND_DENIED first, sealed suites of 0047 and REM-0027 green, requalifications with supersession, PRE-CAMPAIGN-GATE, preventive review, full suite, verification REMEDIATION. Then resume OCOR-DEV-0062 from fb7117a07c65 on task/OCOR-DEV-0062-fgm-11-20-campaign: merge main non-destructively, module 22/22 (the FGM-17 revocation race must turn GREEN without editing the test), PRE-CAMPAIGN-GATE on the final head with gates.json regenerated with every step exit 0 (advisory P5 of OCOR-DEV-0062-1e7693727633-pre), full suite, evidence G6 and TASK_EVIDENCE request; no second preventive review for 0062 (PRE-CAMPAIGN-REVIEW point 3). OCOR-DEV-0060 and 0065-0069 stay blocked by OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408). No new DEC; claims unchanged.",
+    "phase": "OCOR_DEV_0062_BLOCKED_BY_REM_0043",
+    "preventive_review_disposition": {
+      "dispositions": {
+        "P1": "blocking, FIXED in fb7117a07c65: FGM-17 runs the real C8 ToolCallRuntime sharing the kill switch with memory (tool retrieval racing the stop, pre-stop lease after stop and reset, revoked lease, non-cooperative native tool); residual risks of OCOR-DEV-0055 VF-001 and REM-0027 declared open in the module. The fix exposed runtime defect OCOR-DEV-REM-0043 (revocation race RED).",
+        "P2": "advisory, APPLIED in fb7117a07c65: FGM-18 also exercises the OCOR-DEV-0059 signed manifest and MemoryRestoreGate (positive open/serve; BACKUP_UNAUTHENTICATED and STALE_DELETION_EPOCH negatives).",
+        "P3": "advisory, APPLIED in fb7117a07c65: the assertion was vacuous (audit object returned by ops.setup is not the injected one; both operands passed on an empty list); now exact memoryMonitor.denied pair on the injected audit; VF-004 note declared.",
+        "P4": "advisory, APPLIED in fb7117a07c65: OPA denial and policy-bundle mismatch on the C6 commit; promotion_backends releases a previous view. The proposal side keeps the sealed 0058 test port (real OPA proposal path is qualified by 0058).",
+        "P5": "advisory, ACCEPTED: gates.json to be regenerated on the final head with every step exit 0 before evidence; robustness note recorded (no production adapter touched)."
+      },
+      "file_sha256": "cba35c57e3d8141cbc267a54de3159a8a32303c73d40dafa65a23db26e3ef7d2",
+      "findings_by_severity": {
+        "advisory": 4,
+        "blocking": 1
+      },
+      "request_id": "OCOR-DEV-0062-1e7693727633-pre",
+      "reviewed_head": "1e769372763358d43d751e088205abdea9596178",
+      "reviewer": {
+        "model": "gemini-4-argon-high",
+        "process": "Antigravity CLI",
+        "vendor": "Google"
+      },
+      "verdict": "BLOCKING_FINDINGS"
     },
-    "next_action": "Resume OCOR-DEV-0062 after the preventive review OCOR-DEV-0062-1e7693727633-pre (~/.ocor-codex/prereviews/OCOR-DEV-0062-1e7693727633-pre.json): BLOCKING_FINDINGS -> fix with a new commit or contest with a reproducible proof; advisory findings -> record the decision; SKIPPED -> record the reason. Then PRE-CAMPAIGN-GATE on the final head (plan step with --base-ref HEAD as the workflow does on task/ branches, scope on a clean scratch tree), the local full suite (two lanes if MemAvailable at start exceeds 14340.6 MiB, otherwise serial; cap 5400 s, notice 3600 s; power read at start and end), task module three times plus the backlog validation command, evidence reports/evidence/G6/OCOR-DEV-0062.json/.log with surgical G6 MANIFEST insertion, verify request TASK_EVIDENCE (implementers Claude Code/Anthropic, Codex/OpenAI counted by the loop; verifier neither Anthropic nor OpenAI nor the provider of the preventive reviewer). OCOR-DEV-0060 and 0065-0069 stay blocked by OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408); REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406) blocks nothing. At every unit start read /proc/meminfo and /sys/class/power_supply. No new DEC; claims unchanged.",
-    "normative_interpretations": [
-      "Requirement binding: each requirement of OCOR_TRACEABILITY_PLAN.csv with verification_task OCOR-DEV-0062 is bound to the FGM row whose oracle observes its own acceptance text (structural test keeps the binding mechanical); BR-003 is never used.",
-      "FGM-14: ADD v1.3 Part II states that live policy, capability, delegation and kill switch apply at every use of procedural memory; the most restrictive reading available in the runtime is used (retrieval and context assembly), and the absence of a tool-execution consumer is declared, not claimed."
-    ],
-    "phase": "OCOR_DEV_0062_AWAITING_PRE_CAMPAIGN_REVIEW",
-    "preventive_review_request": {
-      "file": "~/.ocor-codex/prereview_request.json",
-      "request_id": "OCOR-DEV-0062-1e7693727633-pre"
-    },
-    "previous_change_set": "OCOR-DEV-0060 implementation start: eight BA conformance modules plus a structural module written on the real stack (WIP, not a candidate); runtime gaps in BA-03/04/05/06 recorded in decision request OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408)",
+    "previous_change_set": "OCOR-DEV-0062 implementation: qualifying FGM-11..FGM-20 module (10 positive and 10 negative real-stack cases bound to FR-006, FR-010, FR-038, FR-118, FR-140, FR-174, NFR-006, NFR-016, NFR-048, plus two structural cases)",
     "results": {
-      "green": "22/22 three times at 1e7693727633 on the live ocor-bootstrap stack (PostgreSQL 16, Qdrant 1.15.1, OpenBao 2.6.2, OPA), zero skips, about 47 s per run",
-      "mutation_probe": "10/10 mutants killed at 1e7693727633 (10/10 by a case of their own FGM row; baseline 22/22); survivors: none; one control per FGM row removed in a git-archive scratch tree",
-      "pre_campaign_gate": "42/42 workflow-derived non-suite steps PASS at 1e769372 (clean shell, locked PATH, detached scratch worktree; workflows, scripts and reports/tests unchanged since 95257ce): the plan step of the 0060 template ran with the merge-base and FAILed on the new module (authorized planning-only diff); re-run as the workflow does on task/ branches (--base-ref HEAD) PASS; scope FAILed only on files rewritten in the scratch tree by earlier steps, re-run on the restored tree PASS; drift 0; runtime evidence 0005/0050/0082 PASS; validation-closure guards PASS; supply-chain scanner 1.1.0 PASS",
-      "red": "pytest exit 4 on the backlog module path before the module existed (no tests ran); ~/.ocor-codex/ocor-dev-0062/red-absent.log",
+      "feasibility": "feasibility probe (local, uncommitted, reverted): a revocation check on the authority's own lease record at each dispatch made test_fgm_11_20.py 22/22, but the naive ordering (revocation before the stop-epoch check) turned the sealed REM-0027 case test_a_stop_accepted_after_the_gates_and_before_the_sandbox_produces_no_effect from STOP_BOUND_DENIED into CAPABILITY_DENIED (73 passed, 1 failed across 0062, REM-0027 and 0047): the remediation must keep the stop-epoch refusal first.",
       "ruff": "PASS",
-      "sanity_0061": "test_fgm_01_10.py 22/22 on the same stack before the new module (reused campaign world)"
-    },
-    "roles": {
-      "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-      "implementers": [
-        {
-          "agent": "Claude Code",
-          "model": "claude-opus-5-5",
-          "provider": "Anthropic",
-          "scope": "OCOR-DEV-0062 implementation: FGM-11..FGM-20 module, RED/GREEN, mutation probe, PRE-CAMPAIGN-GATE, preventive review request, state sync"
-        },
-        {
-          "agent": "Codex",
-          "provider": "OpenAI",
-          "scope": "counted among the implementers of the task by the loop (LOOP-IMPLEMENTER-ORDER (2026-10-25) point 2)"
-        }
-      ],
-      "preventive_reviewer": "chosen by the loop (PRE-CAMPAIGN-REVIEW (2026-10-26)); not yet known",
-      "verifier": "not yet requested (no full suite, no evidence)"
+      "task_module": "21/22 at fb7117a07c65 on the live stack; RED: ocor-runtime/tests/conformance/fgm/test_fgm_11_20.py::test_fgm_17_positive_a_kill_switch_or_revocation_racing_a_use_leaves_no_retrieval_or_tool_influence at fb7117a07c65 on the live ocor-bootstrap stack: 1 failed, 21 passed; AssertionError 'the dispatch gate let the revoked lease through: SandboxViolation(... CAPABILITY_DENIED: effect of tool act_on is not covered by the lease ...)'; fingerprint sha256 of the FAILED line c87e9cbc13a3; raw log ~/.ocor-codex/ocor-dev-0062/red-rem0043.log (outside Git)"
     }
   },
   "backlog_escalations": {
@@ -1805,7 +1791,7 @@
       }
     }
   },
-  "baseline_commit": "0555aa28cb815406f44f6a3974a53aca23888603",
+  "baseline_commit": "7aea31100e0979260fab87b8297366e1ec6e05d5",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6314,6 +6300,27 @@
       "reason": "Part of the properties of ADD v1.3 Part I 2.6 rows BA-03..BA-06 and of the LLD v1.1 7.1 oracles has no runtime implementation; OCOR-DEV-0060 may only add tests.",
       "recommendation": "Option 1: governed remediations of the runtime already specified by the approved design, each with the first free OCOR-DEV-REM-* (today REM-0043) and the full cycle, in order: a. C7 job ledger on PostgreSQL (ADD 4.2 lifecycle, budget, quota, progress, cancellation, timeout, backpressure, resource release within PT30S of ADD 4.1.3) behind a new internal C7 port; b. C6 FSM with current state and guards of LLD 3.2 executed in the Temporal workflow of REM-0039; c. TypeDB EXACT_AT_COMMIT sandbox with UNSUPPORTED_CAPABILITY, AT_LEAST_COMMIT ordering fix and _write transaction close; d. SHACL validation of the ADD 3.6 shapes on Fuseki and export watermark; then the complete OCOR-DEV-0060 campaign without fallbacks, reusing the WIP modules.",
       "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+    },
+    {
+      "blocked_tasks": [
+        "OCOR-DEV-0062"
+      ],
+      "created_at": "2026-10-29T19:31:25.300358+00:00",
+      "decision": "CC-OCOR-DELIVERY-COMPLETION par. 7 (defect remediation with the first free REM-* verified, autonomous); INFO-C (2026-10-05) item 3 (ToolCallRuntime is the PoC tool boundary qualified by G6 FGM-17)",
+      "decision_level": "OPERATIVE (defect remediation, no semantic change: aligns the runtime with ADD v1.3 Part II par. 2.12 and its own docstring)",
+      "defect": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py: ToolCallRuntime re-authorizes every dispatch (_dispatch -> _authorize_tool) and authorizes the call itself at the caller's invocation instant `at`, while CapabilityLease.is_active treats a revocation as effective only from its revoked_at onwards; a lease revoked while the expression runs (revoked_at later than `at`) therefore still dispatches the next tool. The stop path is unaffected (StopEpochDenied is epoch-based). The module docstring claims 'a lease revoked mid-expression stops the next tool'; the sealed REM-0027 case passes only because it revokes at the same fixed instant it invokes at. ADD v1.3 Part II par. 2.12: 'Tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch'; LLD v1.1 par. 7.2 FGM-17 'race kill switch/revoca delega' -> 'nessuna retrieval o tool influence successiva'. The tool effect itself stays refused by the lease channel (authorize_effect at the current instant) inside the tool, which surfaces as a SandboxViolation, not as a CAPABILITY_DENIED refusal before dispatch.",
+      "does_not_block": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "evidence": {
+        "branch": "task/OCOR-DEV-0062-fgm-11-20-campaign",
+        "commit": "fb7117a07c650ff51f144b466e883f85f7bbdc31",
+        "feasibility": "feasibility probe (local, uncommitted, reverted): a revocation check on the authority's own lease record at each dispatch made test_fgm_11_20.py 22/22, but the naive ordering (revocation before the stop-epoch check) turned the sealed REM-0027 case test_a_stop_accepted_after_the_gates_and_before_the_sandbox_produces_no_effect from STOP_BOUND_DENIED into CAPABILITY_DENIED (73 passed, 1 failed across 0062, REM-0027 and 0047): the remediation must keep the stop-epoch refusal first.",
+        "red": "ocor-runtime/tests/conformance/fgm/test_fgm_11_20.py::test_fgm_17_positive_a_kill_switch_or_revocation_racing_a_use_leaves_no_retrieval_or_tool_influence at fb7117a07c65 on the live ocor-bootstrap stack: 1 failed, 21 passed; AssertionError 'the dispatch gate let the revoked lease through: SandboxViolation(... CAPABILITY_DENIED: effect of tool act_on is not covered by the lease ...)'; fingerprint sha256 of the FAILED line c87e9cbc13a3; raw log ~/.ocor-codex/ocor-dev-0062/red-rem0043.log (outside Git)"
+      },
+      "id": "OCOR-DEV-REM-0043",
+      "status": "OPEN_REMEDIATION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8550,8 +8557,8 @@
     },
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
-  "mandate_phase_status": "G6_0062_IN_PROGRESS_AWAITING_PRE_CAMPAIGN_REVIEW_0060_BLOCKED_BA_RUNTIME_GAPS",
-  "next_executable_action": "Resume OCOR-DEV-0062 after the preventive review OCOR-DEV-0062-1e7693727633-pre (~/.ocor-codex/prereviews/OCOR-DEV-0062-1e7693727633-pre.json): BLOCKING_FINDINGS -> fix with a new commit or contest with a reproducible proof; advisory findings -> record the decision; SKIPPED -> record the reason. Then PRE-CAMPAIGN-GATE on the final head (plan step with --base-ref HEAD as the workflow does on task/ branches, scope on a clean scratch tree), the local full suite (two lanes if MemAvailable at start exceeds 14340.6 MiB, otherwise serial; cap 5400 s, notice 3600 s; power read at start and end), task module three times plus the backlog validation command, evidence reports/evidence/G6/OCOR-DEV-0062.json/.log with surgical G6 MANIFEST insertion, verify request TASK_EVIDENCE (implementers Claude Code/Anthropic, Codex/OpenAI counted by the loop; verifier neither Anthropic nor OpenAI nor the provider of the preventive reviewer). OCOR-DEV-0060 and 0065-0069 stay blocked by OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408); REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406) blocks nothing. At every unit start read /proc/meminfo and /sys/class/power_supply. No new DEC; claims unchanged.",
+  "mandate_phase_status": "G6_0062_BLOCKED_BY_REM_0043_0060_BLOCKED_BA_RUNTIME_GAPS",
+  "next_executable_action": "Implement OCOR-DEV-REM-0043 (C8 dispatch-time live revocation) on governed/ocor-dev-rem-0043-c8-dispatch-live-revocation from origin/main: inventory of the sealed inputs (validate_evidence_input_drift.py after a probe edit), RED test first with fingerprint on the real collaborators, minimal fix in c8/tool_runtime.py keeping STOP_BOUND_DENIED first, sealed suites of 0047 and REM-0027 green, requalifications with supersession, PRE-CAMPAIGN-GATE, preventive review, full suite, verification REMEDIATION. Then resume OCOR-DEV-0062 from fb7117a07c65 on task/OCOR-DEV-0062-fgm-11-20-campaign: merge main non-destructively, module 22/22 (the FGM-17 revocation race must turn GREEN without editing the test), PRE-CAMPAIGN-GATE on the final head with gates.json regenerated with every step exit 0 (advisory P5 of OCOR-DEV-0062-1e7693727633-pre), full suite, evidence G6 and TASK_EVIDENCE request; no second preventive review for 0062 (PRE-CAMPAIGN-REVIEW point 3). OCOR-DEV-0060 and 0065-0069 stay blocked by OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408). No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -8598,10 +8605,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "95257ce70f9500756c74259c855461d14ab7c3f8",
-    "branch": "governed/state-sync-0060-ba-runtime-gaps-dr-20261029",
-    "change_set": "OCOR-DEV-0060 implementation start: eight BA conformance modules plus a structural module written on the real stack (WIP, not a candidate); runtime gaps in BA-03/04/05/06 recorded in decision request OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408)",
-    "phase": "OCOR_DEV_0060_PAUSED_OPEN_PO_NORMATIVE_DECISION"
+    "baseline_commit": "0555aa28cb815406f44f6a3974a53aca23888603",
+    "branch": "governed/state-sync-ocor-dev-0062-prereview-20261029",
+    "change_set": "OCOR-DEV-0062 implementation: qualifying FGM-11..FGM-20 module (10 positive and 10 negative real-stack cases bound to FR-006, FR-010, FR-038, FR-118, FR-140, FR-174, NFR-006, NFR-016, NFR-048, plus two structural cases)",
+    "phase": "OCOR_DEV_0062_AWAITING_PRE_CAMPAIGN_REVIEW"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -8692,11 +8699,12 @@
       "OCOR-DEV-0064"
     ],
     "in_progress": {
-      "OCOR-DEV-0062": "implementation: code candidate 1e7693727633 on task/OCOR-DEV-0062-fgm-11-20-campaign, awaiting preventive review OCOR-DEV-0062-1e7693727633-pre"
+      "OCOR-DEV-0062": "implementation WIP fb7117a07c65 on task/OCOR-DEV-0062-fgm-11-20-campaign, blocked by OCOR-DEV-REM-0043 (one FGM-17 case RED)",
+      "OCOR-DEV-REM-0043": "registered, next unit"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-29T18:14:55.301918+00:00",
+    "observed_at": "2026-10-29T19:31:25.300358+00:00",
     "open_po_decision_requests_non_blocking": {
       "REM-0038-GUARD-BASELINE-CONSOLIDATION": "PR #406, OPEN_PO_NORMATIVE_DECISION_REQUIRED; blocks no task"
     },
@@ -27860,6 +27868,19 @@
       },
       "verify_request_id": "OCOR-DEV-REM-0042-9f7456301d27-0"
     },
+    "REM_0043_C8_DISPATCH_LIVE_REVOCATION": {
+      "authority": "CC-OCOR-DELIVERY-COMPLETION par. 7 (autonomous defect remediation)",
+      "branch": "governed/ocor-dev-rem-0043-c8-dispatch-live-revocation (not yet created)",
+      "defect": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py: ToolCallRuntime re-authorizes every dispatch (_dispatch -> _authorize_tool) and authorizes the call itself at the caller's invocation instant `at`, while CapabilityLease.is_active treats a revocation as effective only from its revoked_at onwards; a lease revoked while the expression runs (revoked_at later than `at`) therefore still dispatches the next tool. The stop path is unaffected (StopEpochDenied is epoch-based). The module docstring claims 'a lease revoked mid-expression stops the next tool'; the sealed REM-0027 case passes only because it revokes at the same fixed instant it invokes at. ADD v1.3 Part II par. 2.12: 'Tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch'; LLD v1.1 par. 7.2 FGM-17 'race kill switch/revoca delega' -> 'nessuna retrieval o tool influence successiva'. The tool effect itself stays refused by the lease channel (authorize_effect at the current instant) inside the tool, which surfaces as a SandboxViolation, not as a CAPABILITY_DENIED refusal before dispatch.",
+      "discovered_by": "OCOR-DEV-0062 FGM-17 tool path, after the preventive review OCOR-DEV-0062-1e7693727633-pre (P1)",
+      "id_allocation": {
+        "checked_at": "2026-10-29T19:31:25.300358+00:00",
+        "observed_main": "7aea31100e0979260fab87b8297366e1ec6e05d5",
+        "result": "highest OCOR-DEV-REM-* on origin/main, on every local and remote branch and in all PR titles is 0042; 0043 free"
+      },
+      "scope": "Closed scope: ocor-runtime/src/ocor_runtime/c8/tool_runtime.py only (dispatch-time and effect-time re-authorization see a revocation recorded by the bound CapabilityAuthority while the call runs, refused with CAPABILITY_DENIED before the next tool is dispatched; the stop-epoch refusal STOP_BOUND_DENIED keeps precedence; reason codes, ToolCallReceipt, contracts and schemas unchanged; no change to c6_capabilities.py or c8_agent.py) plus a RED-first real-collaborator test of its own (lease revoked at the current instant during the expression; positive control without revocation; revocation after the last tool changes nothing); requalification of the sealed tasks whose inputs include tool_runtime.py (OCOR-DEV-0047 and OCOR-DEV-REM-0027 records; inventory with validate_evidence_input_drift.py) with supersession; PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification REMEDIATION. If the fix needs a change to the capability authority, the sandbox, reason codes or a sealed test, stop and open a decision request.",
+      "status": "REGISTERED_NOT_STARTED"
+    },
     "WORKSTATION_TOOLS_ARCHIVE": {
       "authority": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28), normative PO decision; recorded with the manifest sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef (point 8)",
       "blocker": "WORKSTATION-TOOLS-ARCHIVE-GATES",
@@ -29103,7 +29124,7 @@
     "recorded_at": "2026-10-26T02:10:37.061152+00:00",
     "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE"
   },
-  "updated_at": "2026-10-29T18:14:55.301918+00:00",
+  "updated_at": "2026-10-29T19:31:25.300358+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
