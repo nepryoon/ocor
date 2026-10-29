@@ -731,6 +731,81 @@ def test_a_removed_delta_is_rejected(overlay: Any, password: str, database: str)
     assert _code(lambda: overlay.append_overlay(branch, {"step": "refill"})) == "OVERLAY_TAMPERED"
 
 
+def _stored_deltas(password: str, database: str, branch: Any) -> dict[int, dict[str, Any]]:
+    documents = _documents(password, database, "C7OverlayDelta", branch=_terminus_branch(branch))
+    return {int(doc["revision"]): doc for doc in documents}
+
+
+def test_a_tampered_last_delta_is_rejected(overlay: Any, password: str, database: str) -> None:
+    """The newest delta has no successor whose link could expose it: its own digest
+    must."""
+    branch = _fork(overlay)
+    overlay.append_overlay(branch, {"step": 1})
+    overlay.append_overlay(branch, {"step": 2})
+    assert overlay.read_at(branch, 2).revision == 2  # positive control before the tamper
+    tampered = dict(_stored_deltas(password, database, branch)[2])
+    tampered["delta_json"] = json.dumps({"step": 99}, separators=(",", ":"))
+    _tamper(password, database, branch, tampered)
+    assert _code(lambda: overlay.read_at(branch, 2)) == "OVERLAY_TAMPERED"
+    assert _code(lambda: overlay.append_overlay(branch, {"step": 3})) == "OVERLAY_TAMPERED"
+
+
+def test_a_stored_link_that_disagrees_with_the_chain_is_rejected(overlay: Any, password: str, database: str) -> None:
+    branch = _fork(overlay)
+    first = overlay.append_overlay(branch, {"step": 1})
+    overlay.append_overlay(branch, {"step": 2})
+    tampered = dict(_stored_deltas(password, database, branch)[2])
+    assert tampered["previous_digest"] == first.delta_digest  # positive control: the stored link
+    tampered["previous_digest"] = "urn:sha256:" + "e" * 64
+    _tamper(password, database, branch, tampered)
+    assert _code(lambda: overlay.read_at(branch, 2)) == "OVERLAY_TAMPERED"
+
+
+def test_a_stored_revision_that_disagrees_with_its_key_is_rejected(overlay: Any, password: str, database: str) -> None:
+    branch = _fork(overlay)
+    for index in range(3):
+        overlay.append_overlay(branch, {"step": index})
+    tampered = dict(_stored_deltas(password, database, branch)[3])
+    assert tampered["key"] == "000000000003"  # positive control: key and revision agree
+    tampered["revision"] = 4
+    _tamper(password, database, branch, tampered)
+    assert _code(lambda: overlay.read_at(branch, 2)) == "OVERLAY_TAMPERED"
+
+
+def test_an_append_computed_from_a_superseded_read_writes_nothing(
+    overlay: Any, password: str, database: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The transaction requires the previous delta it was computed from: if that delta
+    disappears between the read and the write, the write is refused and recomputed,
+    so the stored chain stays readable."""
+    branch = _fork(overlay)
+    overlay.append_overlay(branch, {"step": 1})
+    overlay.append_overlay(branch, {"step": 2})
+    original = overlay._read_overlay
+    removed: list[bool] = []
+
+    def read_then_remove_the_head(handle: Any) -> Any:
+        result = original(handle)
+        if not removed:
+            removed.append(True)
+            status, body, _ = _raw(
+                "DELETE",
+                f"/api/document/admin/{database}/local/branch/{_terminus_branch(branch)}?author=tamper&message=remove"
+                f"&id={urllib.parse.quote('C7OverlayDelta/000000000002', safe='')}",
+                password,
+            )
+            assert status in (200, 204), body
+        return result
+
+    monkeypatch.setattr(overlay, "_read_overlay", read_then_remove_the_head)
+    appended = overlay.append_overlay(branch, {"step": 3})
+    monkeypatch.undo()
+    assert removed == [True] and appended.revision == 2
+    view = overlay.read_at(branch, 2)
+    assert [dict(delta.delta) for delta in view.deltas] == [{"step": 1}, {"step": 3}]
+    assert sorted(_stored_deltas(password, database, branch)) == [1, 2]
+
+
 def test_a_handle_that_does_not_match_the_run_record_is_rejected(overlay: Any, canonical: TerminusDBC3Service) -> None:
     branch = _fork(overlay)
     canonical.commit(_command(expected_revision=0, delta={"status": "ASSESSED"}, key="handle-1"))
