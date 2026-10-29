@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import http.client
 import json
 import re
 import urllib.error
@@ -235,14 +236,22 @@ class TerminusDBScenarioOverlayStore:
         request.add_header("Authorization", self._auth)
         if data is not None:
             request.add_header("Content-Type", "application/json")
+        where = f"{method} {urllib.parse.urlsplit(path).path}"
         try:
             with urllib.request.urlopen(request, timeout=self._timeout) as response:
                 status, text = response.status, response.read().decode("utf-8")
                 version = response.headers.get("TerminusDB-Data-Version", "")
         except urllib.error.HTTPError as error:
-            status, text, version = error.code, error.read().decode("utf-8"), ""
+            try:
+                status, text, version = error.code, error.read().decode("utf-8"), ""
+            except (http.client.HTTPException, OSError, UnicodeDecodeError) as broken:
+                raise ScenarioOverlayError("BACKEND_ERROR", f"{where}: unreadable error answer") from broken
         except (urllib.error.URLError, OSError) as error:
-            raise ScenarioOverlayError("STORE_UNAVAILABLE", f"{method} {urllib.parse.urlsplit(path).path}: {error}") from error
+            raise ScenarioOverlayError("STORE_UNAVAILABLE", f"{where}: {error}") from error
+        except (http.client.HTTPException, UnicodeDecodeError) as error:
+            # A broken status line, a truncated body or a body that is not UTF-8: the
+            # server answered, but not with anything the adapter can read.
+            raise ScenarioOverlayError("BACKEND_ERROR", f"{where}: unreadable answer") from error
         return status, self._parse(text), version
 
     @staticmethod
@@ -282,8 +291,9 @@ class TerminusDBScenarioOverlayStore:
         status, body, _ = self._request("GET", "/api/db")
         if status != 200 or not isinstance(body, list):
             raise ScenarioOverlayError("BACKEND_ERROR", f"cannot list databases: {status}")
-        existing = {entry.get("path", "").split("/")[-1] for entry in body if isinstance(entry, dict)}
-        if self._database not in existing:
+        if not all(isinstance(entry, dict) and isinstance(entry.get("path"), str) for entry in body):
+            raise ScenarioOverlayError("BACKEND_ERROR", "the database listing is malformed")
+        if self._db() not in {entry["path"] for entry in body}:
             raise ScenarioOverlayError("CANONICAL_STORE_ABSENT", f"database {self._database!r} does not exist")
         self._initialized = True
 
@@ -307,7 +317,10 @@ class TerminusDBScenarioOverlayStore:
             status, body, _ = self._request("GET", f"/api/log/{self._db()}?count={LOG_PAGE}&start={start}")
             if status != 200 or not isinstance(body, list):
                 raise ScenarioOverlayError("BACKEND_ERROR", f"cannot read the log of main: {status}")
-            if any(isinstance(entry, dict) and entry.get("identifier") == commit_ref for entry in body):
+            identifiers = [entry.get("identifier") if isinstance(entry, dict) else None for entry in body]
+            if not all(isinstance(item, str) and COMMIT_REF.fullmatch(item) for item in identifiers):
+                raise ScenarioOverlayError("BACKEND_ERROR", "the log of main names no commit")
+            if commit_ref in identifiers:
                 return True
             if len(body) < LOG_PAGE:
                 return False
@@ -422,6 +435,8 @@ class TerminusDBScenarioOverlayStore:
         if status != 200 or not isinstance(body, list) or not version.startswith("branch:"):
             raise ScenarioOverlayError("BACKEND_ERROR", f"cannot read the overlay: {status}")
         commit = version.partition(":")[2]
+        if COMMIT_REF.fullmatch(commit) is None:
+            raise ScenarioOverlayError("BACKEND_ERROR", "the data version of the overlay names no commit")
         run_id = urllib.parse.quote(f"C7ScenarioRun/{RUN_KEY}", safe="")
         status, run, _ = self._request("GET", f"/api/document/{self._db()}/local/commit/{commit}?id={run_id}")
         if status == 404 and self._error_type(run) == "api:DocumentNotFound":
@@ -448,9 +463,10 @@ class TerminusDBScenarioOverlayStore:
                 raise ScenarioOverlayError("OVERLAY_TAMPERED", f"delta {expected_revision} is missing or out of order")
             if document.get("key") != _delta_key(expected_revision):
                 raise ScenarioOverlayError("OVERLAY_TAMPERED", f"delta {expected_revision} has a foreign key")
-            stored_previous = document.get("previous_digest") or None
+            # ``append_overlay`` stores the first link as exactly the empty string: an
+            # omitted or falsy non-string link is tampering, never the absent link.
             delta_json = document.get("delta_json")
-            if stored_previous != previous or not isinstance(delta_json, str):
+            if document.get("previous_digest") != (previous or "") or not isinstance(delta_json, str):
                 raise ScenarioOverlayError("OVERLAY_TAMPERED", f"delta {expected_revision} breaks the chain")
             digest = _chain_digest(branch.scenario_branch, expected_revision, previous, delta_json)
             if document.get("delta_digest") != digest:
