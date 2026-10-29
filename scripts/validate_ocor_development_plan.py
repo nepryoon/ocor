@@ -900,6 +900,23 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0040.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0040.log",
+        # OCOR-DEV-REM-0041 overlay unit (REM-0040-C7-SEALED-RESULT-PORT-DISPOSITION,
+        # points 1, 3 and 9): the complete ScenarioOverlayStore port composing the
+        # REM-0040 sealResult subset, its TerminusDB adapter of C7, the overlay
+        # remediation record and the regression-only requalifications of 0005, 0050
+        # and 0082 (plan allowlist).
+        "ocor-runtime/src/ocor_runtime/c7/scenario_overlay.py",
+        "ocor-runtime/src/ocor_runtime/c7/adapters/terminusdb_overlay.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
+        "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/README.md",
+        "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/OCOR-DEV-REM-0041.scenario-overlay.json",
+        "reports/assurance/OCOR-DEV-REM-0041-RCCAD/scenario-overlay/OCOR-DEV-REM-0041.scenario-overlay.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0041-overlay.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0041-overlay.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
