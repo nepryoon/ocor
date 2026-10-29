@@ -32,6 +32,7 @@ import importlib.util
 import inspect
 import json
 import os
+import socket
 import threading
 import urllib.error
 import urllib.parse
@@ -684,6 +685,200 @@ def test_a_malformed_log_of_main_fails_closed_as_a_backend_error() -> None:
         store = _store(database, url=url)
         store.initialize()
         assert store.current_canonical_commit() == "abc123"
+
+
+def _offline_run() -> tuple[str, Any, dict[str, str]]:
+    """The loopback database, a well-formed handle and its run record for the offline
+    malformed-answer cases."""
+    adapter, port = _adapter(), _port()
+    token = adapter.run_token("urn:ocor:scenario:rem0041", "run-1", COMPARTMENTS)
+    branch = port.ScenarioBranch(
+        scenario_id="urn:ocor:scenario:rem0041",
+        run_id="run-1",
+        compartments=COMPARTMENTS,
+        canonical_commit_ref="abc123",
+        scenario_branch="scenario/" + token,
+    )
+    run = {
+        "scenario_id": branch.scenario_id,
+        "run_id": branch.run_id,
+        "compartments_json": adapter.canonical_bytes(list(COMPARTMENTS)).decode("utf-8"),
+        "canonical_commit_ref": branch.canonical_commit_ref,
+        "scenario_branch": branch.scenario_branch,
+    }
+    return "ocor_c7_rem0041_malformed", branch, run
+
+
+def test_a_first_delta_whose_stored_link_is_not_the_empty_string_is_rejected_as_tampering() -> None:
+    """Repair cycle 2, P1 of OCOR-DEV-REM-0041-22642a02169f-pre: the first delta stores
+    exactly the empty string as its link; an omitted link or ``false``, ``0``, ``[]``,
+    ``{}`` or ``null`` is tampering, never read as the absent link of revision 1."""
+    adapter = _adapter()
+    database, branch, run = _offline_run()
+    delta_json = '{"hypothesis":"h1"}'
+    delta = {
+        "key": "000000000001",
+        "revision": 1,
+        "delta_json": delta_json,
+        "delta_digest": adapter._chain_digest(branch.scenario_branch, 1, None, delta_json),
+    }
+    absent = object()
+
+    def answer(link: object) -> Callable[[str], tuple[int, str, dict[str, str]]]:
+        stored = dict(delta) if link is absent else {**delta, "previous_digest": link}
+
+        def respond(path: str) -> tuple[int, str, dict[str, str]]:
+            if path == "/api/db":
+                return 200, json.dumps([{"path": f"admin/{database}"}]), {}
+            if "type=C7OverlayDelta" in path:
+                return 200, json.dumps([stored]), {"TerminusDB-Data-Version": "branch:c0ffee"}
+            return 200, json.dumps(run), {}
+
+        return respond
+
+    for link in (absent, False, 0, [], {}, None):
+        with _local_responder(answer(link)) as url:
+            store = _store(database, url=url)
+            store.initialize()
+            assert _code(functools.partial(store.read_at, branch, 1)) == "OVERLAY_TAMPERED"
+            assert _code(functools.partial(store.read_at, branch, 0)) == "OVERLAY_TAMPERED"
+    # Positive control: the link the adapter stores for revision 1 is the empty string.
+    with _local_responder(answer("")) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        view = store.read_at(branch, 1)
+        assert [item.revision for item in view.deltas] == [1]
+        assert view.deltas[0].previous_digest is None
+
+
+def test_a_malformed_database_listing_fails_closed_as_a_backend_error() -> None:
+    """Repair cycle 2, P2 of OCOR-DEV-REM-0041-22642a02169f-pre: a listing entry that is
+    not an object with a string path is a backend error, never a raw ``AttributeError``
+    nor an absent store; a database of another organization is not the canonical one."""
+    database = "ocor_c7_rem0041_malformed"
+    for listing in ('[{"path":null}]', '[{"path":7}]', "[null]", '["x"]', "[{}]", f'[{{"path":"admin/{database}"}},{{"path":null}}]'):
+        with _local_responder(lambda path, text=listing: (200, text, {})) as url:
+            assert _code(_store(database, url=url).initialize) == "BACKEND_ERROR"
+    for listing in ("[]", f'[{{"path":"other/{database}"}}]', f'[{{"path":"{database}"}}]'):
+        with _local_responder(lambda path, text=listing: (200, text, {})) as url:
+            assert _code(_store(database, url=url).initialize) == "CANONICAL_STORE_ABSENT"
+    # Positive control: the database of the configured organization initializes.
+    with _local_responder(lambda path: (200, f'[{{"path":"other/x"}},{{"path":"admin/{database}"}}]', {})) as url:
+        _store(database, url=url).initialize()
+
+
+def test_a_malformed_data_version_of_the_overlay_fails_closed_as_a_backend_error() -> None:
+    """Repair cycle 2, P3 of OCOR-DEV-REM-0041-22642a02169f-pre: the commit named by the
+    data version of the scenario branch is a commit reference, or the read fails closed
+    before any further request (no raw ``InvalidURL``, no path traversal)."""
+    database, branch, run = _offline_run()
+    requested: list[str] = []
+
+    def answer(version: str) -> Callable[[str], tuple[int, str, dict[str, str]]]:
+        def respond(path: str) -> tuple[int, str, dict[str, str]]:
+            requested.append(path)
+            if path == "/api/db":
+                return 200, json.dumps([{"path": f"admin/{database}"}]), {}
+            if "type=C7OverlayDelta" in path:
+                return 200, "[]", {"TerminusDB-Data-Version": version}
+            return 200, json.dumps(run), {}
+
+        return respond
+
+    for version in ("branch:bad ref", "branch:", "branch:../../branch/main", "branch:c0ffee/x", "branch:C0FFEE", "branch:" + "a" * 65):
+        requested.clear()
+        with _local_responder(answer(version)) as url:
+            store = _store(database, url=url)
+            store.initialize()
+            assert _code(functools.partial(store.read_at, branch, 0)) == "BACKEND_ERROR"
+        assert not any("/local/commit/" in path for path in requested)
+    # Positive control: a well-formed data version reads the run record at its commit.
+    requested.clear()
+    with _local_responder(answer("branch:c0ffee")) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        assert store.read_at(branch, 0).deltas == ()
+    assert any("/local/commit/c0ffee?" in path for path in requested)
+
+
+def test_a_malformed_log_page_fails_closed_when_a_snapshot_is_opened() -> None:
+    """Repair cycle 2, P4 (advisory) of OCOR-DEV-REM-0041-22642a02169f-pre: an entry of a
+    log page of ``main`` that is not an object with a commit identifier is a backend
+    error, never read as a commit absent from ``main``."""
+    database = "ocor_c7_rem0041_malformed"
+
+    def answer(log: str) -> Callable[[str], tuple[int, str, dict[str, str]]]:
+        def respond(path: str) -> tuple[int, str, dict[str, str]]:
+            if path == "/api/db":
+                return 200, json.dumps([{"path": f"admin/{database}"}]), {}
+            return 200, log, {}
+
+        return respond
+
+    for log in ("[null]", "[{}]", '["x"]', '[{"identifier":7}]', '[{"identifier":""}]', '[{"identifier":"ab/../main"}]', '[{"identifier":"def456"},null]'):
+        with _local_responder(answer(log)) as url:
+            store = _store(database, url=url)
+            store.initialize()
+            assert _code(functools.partial(store.open_snapshot, "abc123")) == "BACKEND_ERROR"
+    # Positive controls: a well-formed page without the commit is not in main; with it, it is.
+    with _local_responder(answer('[{"identifier":"def456"}]')) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        assert _code(functools.partial(store.open_snapshot, "abc123")) == "SNAPSHOT_NOT_IN_MAIN"
+    with _local_responder(answer('[{"identifier":"def456"},{"identifier":"abc123"}]')) as url:
+        store = _store(database, url=url)
+        store.initialize()
+        assert store.open_snapshot("abc123").canonical_commit_ref == "abc123"
+
+
+@contextlib.contextmanager
+def _raw_responder(payload: bytes) -> Iterator[str]:
+    """A loopback socket that answers every connection with the raw ``payload`` and
+    closes it: it exercises only the adapter's local handling of broken answers."""
+    listener = socket.create_server(("127.0.0.1", 0))
+    listener.settimeout(0.2)
+    stop = threading.Event()
+
+    def serve() -> None:
+        while not stop.is_set():
+            try:
+                connection, _ = listener.accept()
+            except TimeoutError:
+                continue
+            with connection:
+                connection.settimeout(5)
+                with contextlib.suppress(OSError):
+                    connection.recv(65536)
+                    connection.sendall(payload)
+
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{listener.getsockname()[1]}"
+    finally:
+        stop.set()
+        thread.join()
+        listener.close()
+
+
+def test_a_broken_or_undecodable_answer_fails_closed_as_a_backend_error() -> None:
+    """Repair cycle 2, P5 (advisory) of OCOR-DEV-REM-0041-22642a02169f-pre: a broken status
+    line, a truncated body or a body that is not UTF-8 is a backend error, never a raw
+    ``http.client`` exception or ``UnicodeDecodeError``."""
+    database = "ocor_c7_rem0041_malformed"
+    listing = json.dumps([{"path": f"admin/{database}"}]).encode("utf-8")
+    for payload in (
+        b"garbage\r\n\r\n",
+        b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n[]",
+        b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n\xff\xfe",
+        b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 2\r\n\r\n\xff\xfe",
+    ):
+        with _raw_responder(payload) as url:
+            assert _code(_store(database, url=url).initialize) == "BACKEND_ERROR"
+    # Positive control: the same socket with a well-formed answer initializes.
+    answer = b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s" % (len(listing), listing)
+    with _raw_responder(answer) as url:
+        _store(database, url=url).initialize()
 
 
 # --- live cases on TerminusDB (and SeaweedFS for sealed results) -----------------------
