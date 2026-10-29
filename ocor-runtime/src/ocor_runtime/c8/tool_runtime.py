@@ -43,6 +43,15 @@ OCOR-DEV-REM-0027 (LLD v1.1 sections 1.4, 4.3 and 6; ADD v1.3 section
 * every registered tool the expression calls must be covered by the
   lease, checked before anything is charged or run and again at each
   dispatch (a lease revoked mid-expression stops the next tool);
+* OCOR-DEV-REM-0043 (ADD v1.3 Part II section 2.12: tool invocation
+  always re-evaluates live capability and delegation; LLD v1.1 section
+  7.2, FGM-17): every authorization -- of the call, of each called tool,
+  of each dispatch and on the lease channel -- also reads the live lease
+  record and its delegation chain on the bound authority, so a revocation
+  recorded at any instant, even later than the ``at`` the caller
+  presents, refuses it with ``CAPABILITY_DENIED`` before the next tool is
+  dispatched; the stop-epoch check runs first, so a lease revoked by an
+  accepted stop stays ``STOP_BOUND_DENIED``;
 * each tool dispatch is fenced against the controller's current epoch
   and runs on a worker thread the runtime supervises: a stop accepted
   while it runs, or the per-call deadline (at most the ``<=10 s``
@@ -330,11 +339,13 @@ class ToolCallRuntime:
         ``CAPABILITY_DENIED`` outside the lease)."""
         instant = require_aware(at, field="at")
         try:
-            return self._authority.authorize(lease, f"tool:{tool_name}", tool_name, at=instant, subject=subject)
+            authorized = self._authority.authorize(lease, f"tool:{tool_name}", tool_name, at=instant, subject=subject)
         except StopEpochDenied as error:
             raise ToolRuntimeError("STOP_BOUND_DENIED", f"effect of tool {tool_name!r} is fenced by the emergency stop: {error}") from error
         except AuthorizationError as error:
             raise ToolRuntimeError("CAPABILITY_DENIED", f"effect of tool {tool_name!r} is not covered by the lease: {error}") from error
+        self._require_live(authorized.lease_id, f"effect of tool {tool_name!r}", authorized.stop_epoch)
+        return authorized
 
     def invoke(
         self,
@@ -353,14 +364,19 @@ class ToolCallRuntime:
     ) -> ToolCallReceipt:
         instant = require_aware(at, field="at")
 
-        try:
-            authorized = self._authority.authorize(
-                lease, f"tool:{tool_name}", tool_name, at=instant, subject=context.effective_principal_id, consume=True
-            )
-        except StopEpochDenied as error:
-            raise ToolRuntimeError("STOP_BOUND_DENIED", str(error)) from error
-        except AuthorizationError as error:
-            raise ToolRuntimeError("CAPABILITY_DENIED", str(error)) from error
+        # live revocation is checked before the use is consumed, so a revoked
+        # lease is never charged a use (OCOR-DEV-REM-0043)
+        for consume in (False, True):
+            try:
+                authorized = self._authority.authorize(
+                    lease, f"tool:{tool_name}", tool_name, at=instant, subject=context.effective_principal_id, consume=consume
+                )
+            except StopEpochDenied as error:
+                raise ToolRuntimeError("STOP_BOUND_DENIED", str(error)) from error
+            except AuthorizationError as error:
+                raise ToolRuntimeError("CAPABILITY_DENIED", str(error)) from error
+            if not consume:
+                self._require_live(authorized.lease_id, f"tool call {tool_name!r}", authorized.stop_epoch)
 
         subject = context.effective_principal_id
         for called in self._called_tools(expression):
@@ -431,11 +447,35 @@ class ToolCallRuntime:
 
     def _authorize_tool(self, lease_id: str, name: str, *, subject: str, at: datetime) -> None:
         try:
-            self._authority.authorize(lease_id, f"tool:{name}", name, at=at, subject=subject)
+            authorized = self._authority.authorize(lease_id, f"tool:{name}", name, at=at, subject=subject)
         except StopEpochDenied as error:
             raise ToolRuntimeError("STOP_BOUND_DENIED", f"tool {name!r} is fenced by the emergency stop: {error}") from error
         except AuthorizationError as error:
             raise ToolRuntimeError("CAPABILITY_DENIED", f"tool {name!r} is not covered by the lease: {error}") from error
+        self._require_live(authorized.lease_id, f"tool {name!r}", authorized.stop_epoch)
+
+    def _require_live(self, lease_id: str, what: str, fenced_epoch: int | None) -> None:
+        """Live revocation (OCOR-DEV-REM-0043): the lease and every lease of
+        its delegation chain, as recorded now by the bound authority, carry
+        no revocation -- whatever instant the caller presented. Runs after
+        the authority's own stop-epoch check; a revoked record found here is
+        still reported ``STOP_BOUND_DENIED`` when a stop has meanwhile been
+        accepted, and ``CAPABILITY_DENIED`` otherwise."""
+        seen: set[str] = set()
+        current: str | None = lease_id
+        while current is not None:
+            if current in seen:
+                raise ToolRuntimeError("CAPABILITY_DENIED", f"{what}: capability delegation cycle detected")
+            seen.add(current)
+            record = self._authority.get(current)
+            if record is None:
+                raise ToolRuntimeError("CAPABILITY_DENIED", f"{what}: capability lease is unknown to its authority")
+            if record.revoked_at is not None:
+                if fenced_epoch is not None:
+                    self._fence(fenced_epoch)
+                kind = "capability lease" if current == lease_id else "delegating parent lease"
+                raise ToolRuntimeError("CAPABILITY_DENIED", f"{what}: {kind} has been revoked")
+            current = record.parent_lease_id
 
     def _fence(self, fenced_epoch: int) -> None:
         try:

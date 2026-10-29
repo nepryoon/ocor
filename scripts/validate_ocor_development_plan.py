@@ -917,6 +917,22 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.log",
+        # OCOR-DEV-REM-0043 (CC-OCOR-DELIVERY-COMPLETION par. 7): C8 dispatch-time live
+        # revocation, its RED-first test, remediation record, the OCOR-DEV-0047
+        # requalification and the regression-only requalifications of 0005, 0050 and
+        # 0082 forced by this allowlist.
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0043.py",
+        "reports/assurance/OCOR-DEV-REM-0043-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0043-RCCAD/OCOR-DEV-REM-0043.json",
+        "reports/assurance/OCOR-DEV-REM-0043-RCCAD/OCOR-DEV-REM-0043.log",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0043.json",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0043.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0043.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0043.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0043.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0043.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0043.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0043.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
