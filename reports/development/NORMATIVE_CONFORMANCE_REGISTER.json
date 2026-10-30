@@ -2380,6 +2380,1532 @@
         "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
         "outcome": "probe prints \"C5-3 priority classes: False | audit/security exemption: False | dead letters held in: ['self._dead_letters: list[DeadLetter] = []']\". CONFIRMED."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "53-83",
+          "note": "Approval and Decision records",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "136-151",
+          "note": "Human Gate and G-DECISION checks: action_id and boolean only",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-014"
+      ],
+      "id": "NCR-C6-001",
+      "norm_refs": [
+        {
+          "lines": "2849-2850",
+          "note": "ADD v1.3 \u00a74.1.1 G-APPROVAL (no approver equals the proposer; signatures bound to proposal digest, revision, release and expiry) and G-DECISION (signed, not expired, bounded to effect, target, parameters and validity window)",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "254",
+          "note": "LLD v1.1 \u00a73.1: G-APPROVAL quorum/SoD/signatures/scope/TTL; G-DECISION only a signed, unexpired Decision",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "45",
+          "note": "FR-003: two valid approvals of distinct principals; conflict of interest blocks",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "46",
+          "note": "NFR-005: self-approval, expired approval, scope mismatch and replay rejected",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "259",
+          "note": "FR-111: zero self-approval",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-003",
+        "NFR-005",
+        "FR-111"
+      ],
+      "seed_ref": "C6-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-003, NFR-005 and FR-111 are P0 PoC",
+      "statement": "On the action path Approval and Decision are free values with no signature, no binding to proposal digest, revision, release or validity window, and no expiry (Approval: action_id, approver, approved, approved_at; Decision: action_id, decided_by, accepted, rationale, decided_at); the engine never compares the approver with the proposer, so a self-approval is accepted, and it does not use HumanGateCoordinator, which does exclude the proposer. A sealed test builds the Approval by hand.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "92-93",
+          "note": "make_approval builds an unsigned Approval by hand",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints the Approval and Decision field lists above and 'C6-1 engine compares approver with proposer: False | engine uses HumanGateCoordinator: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "43-50",
+          "note": "ActionProposal.risk_bearing",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "136-145",
+          "note": "gate skipped when not risk_bearing",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "153-162",
+          "note": "canonical write regardless",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-014"
+      ],
+      "id": "NCR-C6-002",
+      "norm_refs": [
+        {
+          "lines": "2847",
+          "note": "ADD v1.3 \u00a74.1.1 G-CONTRACT: signed, active ActionType declaring effect_class and risk_class",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3298",
+          "note": "ADD v1.3 \u00a75.4: without a valid risk classification the mutative request is denied",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "268",
+          "note": "LLD v1.1 \u00a73.2 ACT-T07: NOT_REQUIRED only when the gate is not required and the target is not canonical",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "211",
+          "note": "FR-079: Approval obligation computed from risk class, policy, authority, domain and effect type",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "212",
+          "note": "NFR-029: zero executions without the required Approval",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-079",
+        "NFR-029",
+        "FR-080"
+      ],
+      "seed_ref": "C6-2",
+      "severity": "HIGH",
+      "severity_basis": "FR-079 and NFR-029 are P0 PoC",
+      "statement": "The risk class is declared by the proposer (ActionProposal.risk_bearing: bool) instead of coming from the signed ActionType; with risk_bearing=False the Human Gate is skipped and the aggregate is written, although the target is canonical; there is no G-CONTRACT and no denial for a missing or invalid risk classification. A sealed test asserts that a non-risk-bearing action executes without approval.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "207-217",
+          "note": "test_non_risk_bearing_action_does_not_require_a_human_gate_approval",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-2 ActionProposal fields: ['action_id', 'subject', 'capability', 'resource', 'aggregate_id', 'risk_bearing'] | gate skipped when not risk_bearing: True\". CONFIRMED; norm univocal per NORMATIVE-CONFORMANCE-PROGRAMME-SUPPLEMENT point 4 (C6-2)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "180-203",
+          "note": "apply: lookup and persist",
+          "path": "ocor-runtime/src/ocor_runtime/c6/fsm.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "178-197",
+          "note": "persist_effect: no source-state check",
+          "path": "ocor-runtime/src/ocor_runtime/c6/temporal_workflows.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-003",
+      "norm_refs": [
+        {
+          "lines": "254-256",
+          "note": "LLD v1.1 \u00a73.1 guards and EMISSION-FENCE",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "260-305",
+          "note": "LLD v1.1 \u00a73.2: each transition has a source state and an event/guard",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "307",
+          "note": "LLD v1.1 \u00a73.2: ACT-T23 precedes T14, T19 and T29",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "2905",
+          "note": "ADD v1.3 \u00a74.1.2: ACT-T23 precedence; single evaluation snapshot",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077: trace with every mandatory record in a valid order",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "59",
+          "note": "FR-008: every state in canonical order",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-077",
+        "FR-008"
+      ],
+      "seed_ref": "C6-3",
+      "severity": "HIGH",
+      "severity_basis": "FR-077 and FR-008 are P0 PoC; BA-05 (LLD v1.1 :369) requires guards and precedence",
+      "statement": "GovernedActionFSM.apply (and its durable Temporal form ActionEffectsWorkflow.persist_effect) checks neither the current state nor the guard: any of the 44 transitions is persisted on request, so for example ACT-T30 (CANONICAL_COMMIT_PENDING -> EXECUTION_CONFIRMED) is recorded for an action with no prior state; the ACT-T23 precedence over ACT-T14/T19/T29 is not implemented. The 0042 tests apply each transition in isolation and have no guard-negative or invalid-source case; a REM-0039 test applies ACT-T14 on a fresh action.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "128-141",
+          "note": "every transition applied independently",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0042.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "473-482",
+          "note": "ACT-T14 then ACT-T18a on a fresh action",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0039.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints 'C6-3 apply() reads a current state: False | evaluates guard: False' and 'ACT-T30 ... applied on a fresh action with no prior state: True'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "123-134",
+          "note": "legacy authorize(consume=True) before commit",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "69-106",
+          "note": "legacy CapabilityLease",
+          "path": "ocor-runtime/src/ocor_runtime/c6_capabilities.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "360-420",
+          "note": "normative CapabilityLease",
+          "path": "ocor-runtime/src/ocor_runtime/kernel/governance.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "691-713",
+          "note": "LeaseConsumptionLedger",
+          "path": "ocor-runtime/src/ocor_runtime/kernel/governance.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "107",
+          "note": "C8 imports the legacy lease",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-014"
+      ],
+      "id": "NCR-C6-004",
+      "norm_refs": [
+        {
+          "lines": "3194-3212",
+          "note": "ADD v1.3 \u00a75.2 CapabilityLease: expires_at <= PT5S, single use per (action_instance_id, emission_attempt)",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "69-81",
+          "note": "LLD v1.1 \u00a71.4: LeaseValidator.consume in the DeliveryAttempt transaction, reason codes, no permissive fallback",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "25",
+          "note": "LLD v1.1 \u00a70.2: Capability Lease contract",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1",
+          "note": "capability-lease.schema.json",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/capability-lease.schema.json"
+        },
+        {
+          "lines": "404",
+          "note": "FR-162: pre-dispatch revalidation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-162",
+        "NFR-047"
+      ],
+      "seed_ref": "C6-4",
+      "severity": "HIGH",
+      "severity_basis": "violates the Capability Lease contract of LLD v1.1 \u00a70.2; FR-162 is P0 PoC",
+      "statement": "The normative CapabilityLease (closed record bound to effective principal, delegation, action instance, GovernedContext digest, GatePackage digest, stop epoch and fencing token, at most PT5S, single use per emission attempt) and its LeaseConsumptionLedger exist in kernel/governance.py but are used only by the Temporal lease-state adapter; the engine, the C8 tool runtime and the legacy fence use the legacy c6_capabilities lease (subject, capabilities, resources, caller-chosen TTL, no GCS/GatePackage/fencing binding), and the engine consumes it at authorisation, before the commit, not at emission. A sealed test issues a one-hour lease on the action path.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "82-89",
+          "note": "grant_lease ttl=timedelta(hours=1)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints 'C6-4 engine lease type: ocor_runtime.c6_capabilities', 'legacy lease has gate_package_digest/governed_context_digest: False | engine consumes at authorisation (consume=True before commit): True' and \"modules using the normative lease ledger: [...c6/temporal_adapter.py, ...kernel/governance.py]\". CONFIRMED; the remediation composes the normative lease in the current components, the legacy slice is unchanged (SUPPLEMENT point 4, C6-4)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "153-170",
+          "note": "store.write before fence.emit(event, sink, at)",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "115-179",
+          "note": "legacy fence: lease/marking checks only when supplied",
+          "path": "ocor-runtime/src/ocor_runtime/c7_emission.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-004",
+        "NCR-C3-002"
+      ],
+      "id": "NCR-C6-005",
+      "norm_refs": [
+        {
+          "lines": "2851-2854",
+          "note": "ADD v1.3 \u00a74.1.1 G-FRESHNESS, G-DISPATCH, EMISSION-FENCE atomic before every send, with the DeliveryAttempt",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "256",
+          "note": "LLD v1.1 \u00a73.1: EMISSION-FENCE before first dispatch, retry, compensation and canonical commit",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "302",
+          "note": "LLD v1.1 \u00a73.2 ACT-T29: canonical target; EMISSION-FENCE before sending to C3",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "210",
+          "note": "FR-078: revalidate before emitting ActionCommand",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "404",
+          "note": "FR-162: pre-dispatch revalidation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-078",
+        "FR-162"
+      ],
+      "seed_ref": "C6-5",
+      "severity": "HIGH",
+      "severity_basis": "FR-078 and FR-162 are P0 PoC",
+      "statement": "On the engine path the canonical commit happens before the fence, and the fence is the legacy c7_emission.EmissionFence called with no lease, marking or clearance, so it checks only registration, integrity and per-aggregate order: G-FRESHNESS (revision, commit, GCS, policy, authority, approval set, release, adapter, watermark, ConflictScope) and G-DISPATCH (stop epoch, lease, fencing token, audit, circuit breaker, idempotency key, deadline, command digest) are not evaluated, and no DeliveryAttempt is recorded in the same transaction.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints 'C6-5 commit before fence: True | fence.emit called with lease/markings: False'. CONFIRMED; norm univocal per SUPPLEMENT point 4 (C6-5); the legacy EmissionFence is replaced in the current component, not changed."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "43-90",
+          "note": "ActionProposal, Approval, Decision, ActionOutcome only",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-006",
+      "norm_refs": [
+        {
+          "lines": "171",
+          "note": "LLD v1.1 \u00a72.6: distinct immutable records, none an alias of another",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "320",
+          "note": "LLD v1.1 \u00a74.1: GatePackage content, immutable, digest recomputed by every consumer",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "156",
+          "note": "ADD v1.3: OutcomeAssessment distinct from ExecutionResult",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "384",
+          "note": "ADD v1.3: Action Instance/Command carries the GatePackage digest",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "59",
+          "note": "FR-008: Proposal, Policy/Authority, Approval, Decision, ActionIntent, ActionCommand, adapter, ExecutionResult, OutcomeAssessment",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "121",
+          "note": "FR-031",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "123",
+          "note": "FR-033",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "208",
+          "note": "FR-076: ACK, Result and Outcome not equivalent",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-008",
+        "FR-031",
+        "FR-033",
+        "FR-076"
+      ],
+      "seed_correction": "list extended from seven to ten records after re-verification",
+      "seed_ref": "C6-6",
+      "severity": "HIGH",
+      "severity_basis": "FR-008, FR-031, FR-033 and FR-076 are P0 PoC",
+      "statement": "Ten of the thirteen distinct immutable C6 records of LLD v1.1 \u00a72.6 have no implementation in ocor_runtime: PolicyAuthorityDecision, ApprovalSet, ActionIntent, GatePackage, ActionCommand, DeliveryAttempt, ExecutionResult, OutcomeAssessment, ConflictScope and IndeterminateEffectAdjudication (only ActionProposal, Approval and Decision exist, in reduced form; C3 has a store-level C3DeliveryAttempt document, not the C6 record).",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-6 LLD v1.1 \u00a72.6 records with no class in ocor_runtime: ['PolicyAuthorityDecision', 'ApprovalSet', 'ActionIntent', 'GatePackage', 'ActionCommand', 'DeliveryAttempt', 'ExecutionResult', 'OutcomeAssessment', 'ConflictScope', 'IndeterminateEffectAdjudication']\". CONFIRMED and extended (PolicyAuthorityDecision, ActionCommand and DeliveryAttempt added)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "599-607",
+          "note": "mark_ambiguous overwrites",
+          "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "628-645",
+          "note": "resolve_with_evidence(effect_confirmed: bool)",
+          "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "181-209",
+          "note": "legacy drain re-emits the outbox",
+          "path": "ocor-runtime/src/ocor_runtime/c7_emission.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-005"
+      ],
+      "id": "NCR-C6-007",
+      "norm_refs": [
+        {
+          "lines": "282-287",
+          "note": "LLD v1.1 \u00a73.2 ACT-T18a/T18b/T20a-c: ambiguous timeout -> EXECUTION_UNKNOWN, resolution only on positive Evidence",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "307",
+          "note": "LLD v1.1 \u00a73.2: post-dispatch timeout gives UNKNOWN and suspends retry",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "2841",
+          "note": "ADD v1.3 \u00a74.1: never infer the outcome from absence of response",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "407",
+          "note": "FR-163: timeout after non-idempotent dispatch -> EXECUTION_UNKNOWN, retry suspended, audited reconciliation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-163",
+        "FR-076"
+      ],
+      "seed_ref": "C6-7",
+      "severity": "HIGH",
+      "severity_basis": "FR-163 and FR-076 are P0 PoC",
+      "statement": "Ambiguous-outcome handling: OutcomeReconciler.mark_ambiguous unconditionally replaces any record, so a terminal EXECUTION_CONFIRMED becomes EXECUTION_UNKNOWN; resolve_with_evidence takes a boolean effect_confirmed and no Evidence reference; reconciliation state is in memory; and on the engine path the legacy fence drain re-emits every pending outbox event after a failed or timed-out send without passing through reconciliation, i.e. a blind retry.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints 'C6-7 terminal EXECUTION_CONFIRMED overwritten by mark_ambiguous: True | resolve_with_evidence params: [command_id, effect_confirmed, at]' and 'legacy drain re-emits every store.outbox() event without consulting a reconciler: True'. CONFIRMED (seed audit_check PARTIAL now reproduced)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "52-71",
+          "note": "caller-supplied ApprovalPolicy",
+          "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "174",
+          "note": "per-signature TTL",
+          "path": "ocor-runtime/src/ocor_runtime/c6/human_gate.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-002"
+      ],
+      "id": "NCR-C6-008",
+      "norm_refs": [
+        {
+          "lines": "3300-3307",
+          "note": "ADD v1.3 \u00a75.4 risk classes and gates",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3334",
+          "note": "ADD v1.3 \u00a75.4: R3 ApprovalSet expires ten minutes after the second signature, not renewable",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3338",
+          "note": "ADD v1.3 \u00a75.4: High-Impact quorum Domain Approver + National Approver",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "211",
+          "note": "FR-079: Approval obligation computed from risk class",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "45",
+          "note": "FR-003: two valid approvals for high-impact",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-079",
+        "FR-003"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH: FR-079 and FR-003 are P0 PoC",
+      "seed_ref": "C6-8",
+      "severity": "HIGH",
+      "severity_basis": "FR-079 and FR-003 are P0 PoC",
+      "statement": "The ApprovalPolicy (required roles, minimum signatories, TTL) is supplied by the caller instead of being derived from the risk class and operation, so an R3_HIGH_IMPACT action can be approved by one signatory or without Domain and National Approver roles; the TTL is checked per signature from its own signing time, not as ApprovalSet expiry ten minutes after the second signature.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-8 ApprovalPolicy fields (caller-supplied): ['required_roles', 'minimum_signatories', 'ttl', 'excluded_principal_id'] | per-signature TTL check: True\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "551",
+          "note": "self._c3.commit(command)",
+          "path": "ocor-runtime/src/ocor_runtime/memory/promotion.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "598-600",
+          "note": "risk class 0-3 accepted",
+          "path": "ocor-runtime/src/ocor_runtime/memory/promotion.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-003",
+        "NCR-C6-005"
+      ],
+      "id": "NCR-C6-009",
+      "norm_refs": [
+        {
+          "lines": "2789",
+          "note": "ADD v1.3 \u00a74.1: every canonical mutation follows the same FSM, guards and Human Gate; no second path",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "238",
+          "note": "LLD v1.1 \u00a72.8.7: promotion path through C6 control/approval/decision",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "302",
+          "note": "LLD v1.1 \u00a73.2 ACT-T29: EMISSION-FENCE before the canonical commit",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "3302-3303",
+          "note": "ADD v1.3 \u00a75.4: R0_READ and R1_ANALYZE admit no mutation",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "267",
+          "note": "FR-118: no direct canonical promotion",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-118",
+        "FR-053"
+      ],
+      "seed_ref": "C6-9",
+      "severity": "MEDIUM",
+      "severity_basis": "closed elements of ADD v1.3 \u00a74.1 and LLD v1.1 \u00a73.2; the promotion does pass C6 control, approval and decision, so no P0 PoC acceptance criterion (FR-118 'no direct canonical promotion') is shown violated",
+      "statement": "Memory promotion to canonical state (C6MemoryPromotionConsumer.commit) calls c3.commit directly after its own control checks, without the C6 FSM, the normative capability lease or the EMISSION-FENCE of ACT-T29, and accepts any risk class 0-3, including R0 and R1, which admit no mutation.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-9 classes calling c3.commit directly: ['C6MemoryPromotionConsumer'] | uses GovernedActionFSM/EmissionFence/lease: False | accepted risk classes: [0, 1, 2, 3]\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "137-148",
+          "note": "activate(reason, at)",
+          "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "160-184",
+          "note": "request_reset",
+          "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "209-250",
+          "note": "BreakGlassGrant",
+          "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-010",
+      "norm_refs": [
+        {
+          "lines": "3343",
+          "note": "ADD v1.3 \u00a75.4: stop activated by an authorised Safety Officer; reset with two approvers",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3347",
+          "note": "ADD v1.3 \u00a75.5: break-glass is a signed exceptional Delegation with mandatory purpose",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3351",
+          "note": "ADD v1.3 \u00a75.5: activation increments a signed stop_epoch",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "324",
+          "note": "LLD v1.1 \u00a74.2: typed reason, incident, minimal scope, short TTL",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "328",
+          "note": "LLD v1.1 \u00a74.3: reset requires dual control and incident/recovery verification",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "311",
+          "note": "FR-139 (P0 MVP): break-glass prerequisites",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "312",
+          "note": "NFR-047 (P0 MVP)",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U08",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-139",
+        "NFR-047",
+        "NFR-081"
+      ],
+      "seed_correction": "break-glass part narrowed: incident_ref, minimal scope, TTL <= 15 min and the Security Duty Officer + Domain Owner quorum are implemented; signature and typed reason are missing",
+      "seed_ref": "C6-10",
+      "severity": "MEDIUM",
+      "severity_basis": "FR-139 and NFR-047 are P0 MVP; NFR-081 (P0 PoC) acceptance (limited, expiring, audited break-glass; no single principal enabling high-impact) is not shown violated",
+      "statement": "Emergency stop: activate(reason, at) takes no principal, so activation is not limited to an authorised Safety Officer, and the stop_epoch is not signed; request_reset checks dual control but not incident and recovery verification. Break-glass grants carry incident, minimal scope, TTL and a role quorum, but no signature (it is not a signed Delegation) and the reason is free text, not a typed reason or purpose.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-10 activate params: ['reason', 'at'] | request_reset params: ['approvers', 'identities', 'requester', 'at']\" and the BreakGlassGrant field list with 'signature field: False'. CONFIRMED with correction: the break-glass incident, scope, TTL and role quorum exist."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "1920",
+          "note": "effect = PERMIT if raw_result else DENY",
+          "path": "ocor-runtime/src/ocor_runtime/security/control_plane.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "1946",
+          "note": "obligations=()",
+          "path": "ocor-runtime/src/ocor_runtime/security/control_plane.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "223-228",
+          "note": "PolicyEffect enum",
+          "path": "ocor-runtime/src/ocor_runtime/security/ports.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-011",
+      "norm_refs": [
+        {
+          "lines": "3141",
+          "note": "ADD v1.3 \u00a75.1: decisions Permit, Deny, PermitWithConstraints, RequireApproval, Obligate",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "295",
+          "note": "FR-130: apply Permit, Deny, PermitWithConstraints, RequireApproval or Obligate",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U08",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-130"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH for this part: FR-130 is P0 PoC",
+      "seed_note": "the seed item has three parts: policy effects (this entry), missing marking (NCR-C6-012) and risk-class names (NCR-C6-013)",
+      "seed_ref": "C6-11",
+      "severity": "HIGH",
+      "severity_basis": "FR-130 is P0 PoC",
+      "statement": "The OPA policy decision point maps a boolean result to PERMIT or DENY and always returns empty obligations: PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL and OBLIGATE exist in the PolicyEffect enum but are never produced, so policy cannot impose constraints, an approval requirement or obligations.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-11 PolicyEffect members: ['PERMIT', 'DENY', 'PERMIT_WITH_CONSTRAINTS', 'REQUIRE_APPROVAL', 'OBLIGATE'] | OPA decision obligations hard-coded empty: True\". CONFIRMED with correction: the enum has five effects, the decision point produces two."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "248-266",
+          "note": "legacy join (missing -> bottom) and is_authorized (missing -> no requirement)",
+          "path": "ocor-runtime/src/ocor_runtime/c4_marking.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "27",
+          "note": "legacy MarkingEngine import",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "105",
+          "note": "legacy MarkingEngine import",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C2-003"
+      ],
+      "id": "NCR-C6-012",
+      "norm_refs": [
+        {
+          "lines": "67",
+          "note": "LLD v1.1 \u00a71.3: missing, incomparable or unresolvable marking produces MARKING_UNRESOLVED",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "298",
+          "note": "FR-131: conservative propagation of mandatory controls",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "49",
+          "note": "FR-006",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U08",
+      "po_decision_ref": null,
+      "related_seed_refs": [
+        "C6-11"
+      ],
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-131",
+        "FR-006"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "FR-131 and FR-006 are P0 PoC",
+      "statement": "Current components (C2 gateway, C8 tool runtime, Jena adapter, and the legacy fence on the C6 path) evaluate marking with the legacy c4_marking.MarkingEngine, which treats a missing scheme as the scheme bottom in join and as no requirement in is_authorized, instead of producing MARKING_UNRESOLVED.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01> ; grep -rn 'c4_marking import' --include=*.py ocor-runtime/src",
+        "outcome": "probe prints 'C6-12 legacy join defaults a missing scheme to bottom: True | is_authorized iterates only the present schemes: True'; the grep lists c2/gateway.py, c4/jena_adapter.py, c8/tool_runtime.py, memory/model.py, c7_emission.py, __init__.py and the top-level ocor-runtime/src/c4_marking.py. CONFIRMED; the remediation replaces the legacy class in the current components, the legacy slice is unchanged (programme point 6)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "62-66",
+          "note": "RiskClass",
+          "path": "ocor-runtime/src/ocor_runtime/kernel/governance.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "670-680",
+          "note": "OperationClass",
+          "path": "ocor-runtime/src/ocor_runtime/security/control_plane.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C6-002"
+      ],
+      "id": "NCR-C6-013",
+      "norm_refs": [
+        {
+          "lines": "3300-3305",
+          "note": "ADD v1.3 \u00a75.4 risk classes and gates",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2193",
+          "note": "ADD v1.3 \u00a73.7 Action Type Contract risk_class enum",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "313-318",
+          "note": "LLD v1.1 \u00a74.1 classes",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "note": "LLD v1.1 \u00a70.1 precedence; conflict is LLD_CONFORMANCE_FAILURE",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U08",
+      "po_decision_ref": null,
+      "related_seed_refs": [
+        "C6-11"
+      ],
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-079"
+      ],
+      "seed_ref": null,
+      "severity": "MEDIUM",
+      "severity_basis": "the names alone are nomenclature, but the R2 gate differs between ADD and LLD and the code follows neither consistently; FR-079 itself is covered by NCR-C6-008",
+      "statement": "Risk classes disagree between normative sources and in the code: ADD v1.3 \u00a75.4 and the Action Type Contract name R0_READ, R1_ANALYZE, R2_CONTROLLED (one independent human approver), R3_HIGH_IMPACT; LLD v1.1 \u00a74.1 names R0_READ, R1_DERIVE, R2_MUTATE (Decision + Authority + C6 path + fence), R3_HIGH_IMPACT. kernel.governance.RiskClass uses R0_INFORMATIONAL and R1_LOW, security.control_plane.OperationClass uses the LLD names. Precedence (LLD v1.1 \u00a70.1: ADD prevails over LLD) resolves the names and the R2 gate in favour of ADD v1.3, so the entry is OPEN, not DECISION_REQUIRED; the documents are not changed.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "CONFLICT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C6-PROBE-01>",
+        "outcome": "probe prints \"C6-11 kernel RiskClass names: ['R0_INFORMATIONAL', 'R1_LOW', 'R2_CONTROLLED', 'R3_HIGH_IMPACT'] | control_plane OperationClass names: ['R0_READ', 'R1_DERIVE', 'R2_MUTATE', 'R3_HIGH_IMPACT']\". CONFIRMED and extended with the ADD/LLD conflict."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "100-109",
+          "note": "engine composed of legacy authority, store and fence only",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [
+        "NCR-C3-002"
+      ],
+      "id": "NCR-C6-014",
+      "norm_refs": [
+        {
+          "lines": "169-171",
+          "note": "LLD v1.1 \u00a72.6 packages and records composing the action path",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "3318-3331",
+          "note": "ADD v1.3 \u00a75.4 sequence: risk, policy, authority, Human Gate, ApprovalSet, Decision, recheck, dispatch",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "59",
+          "note": "FR-008: execution through the canonical sequence",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "observation_ref": "OBS-C6-COMPOSITION",
+      "plan_unit": "NCP-U07",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-008",
+        "FR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "FR-008 and FR-077 are P0 PoC",
+      "statement": "From observation OBS-C6-COMPOSITION: no composition root under ocor-runtime/src, scripts or deploy instantiates GovernedActionEngine, GovernedActionFSM, HumanGateCoordinator, EmergencyStopController or BreakGlassController (only OutcomeReconciler, inside the C8 tool runtime); Human Gate, safety, the normative lease and the FSM exist as separate pieces that are not composed into the action path, so no runtime trace traverses the C6 states in order.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rnE 'GovernedActionEngine\\(|GovernedActionFSM\\(|HumanGateCoordinator\\(|EmergencyStopController\\(|OutcomeReconciler\\(|BreakGlassController\\(' --include=*.py ocor-runtime/src scripts deploy",
+        "outcome": "one hit only: ocor-runtime/src/ocor_runtime/c8/tool_runtime.py:309 (OutcomeReconciler). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "164-212",
+          "note": "_validate_and_stratify: model checked only by digest; stratified difference",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "215-232",
+          "note": "estimate_intervention: one intervention",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-001",
+      "norm_refs": [
+        {
+          "lines": "2977",
+          "note": "ADD v1.3 \u00a74.2: SimulateIntervention(do(X=x)) replaces F_X and removes the incoming edges of X",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2965-2972",
+          "note": "ADD v1.3 \u00a74.2 flow: identification, NOT_IDENTIFIED, do(X) in an isolated SCM",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "235",
+          "note": "FR-094: do(X) output matches the interventional ground truth within tolerance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "60",
+          "note": "FR-009: intervention comparison; a non-identifiable case returns NOT_IDENTIFIED",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U09",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-094",
+        "FR-009"
+      ],
+      "seed_ref": "C7-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-094 and FR-009 are P0 PoC",
+      "statement": "There is no do(X) on a structural causal model: the model is only a digest pin (the estimator never reads it), the effect is a stratified treated-minus-control difference on observed rows (STRATIFIED_BACKDOOR_ATE), so no identifiability test under the registered SCM exists and NOT_IDENTIFIED is never produced; each call takes one intervention and no comparison between interventions exists.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+        "outcome": "probe prints 'C7-1 model used only as a digest pin (model keys read by the estimator): True | method: STRATIFIED_BACKDOOR_ATE | status: IDENTIFIED' and the single-intervention signature. CONFIRMED; OPEN per NORMATIVE-CONFORMANCE-PROGRAMME-SUPPLEMENT point 4 (C7-1). A new dependency (e.g. an SCM library) would be an option in the plan decision request."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "170-204",
+          "note": "six _Abstain codes in fixed check order",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "decision_options": [
+        "A (recommended): ADD v1.3 closed set with the univocal mappings (RELEASE_MISMATCH -> REJECTED, OUT_OF_DOMAIN on an explicit envelope -> OUTSIDE_VALIDITY_ENVELOPE) and a PO-fixed mapping MAIN_CONTAMINATED -> REJECTED (policy), MISSING_FACTUAL_SET -> REJECTED (contract; cf. FR-095 acceptance), UNRESOLVED_CONFOUNDING -> NOT_IDENTIFIED, POSITIVITY_FAILURE -> ASSUMPTION_VIOLATION, with the ADD precedence",
+        "B: ADD v1.3 closed set with POSITIVITY_FAILURE -> INSUFFICIENT_EVIDENCE and MISSING_FACTUAL_SET -> INSUFFICIENT_EVIDENCE",
+        "C: keep the LLD v1.1 \u00a72.7 codes; requires a normative change (new DEC), outside this programme"
+      ],
+      "depends_on": [
+        "NCR-C7-001"
+      ],
+      "id": "NCR-C7-002",
+      "norm_refs": [
+        {
+          "lines": "3007-3022",
+          "note": "ADD v1.3 \u00a74.2 closed ABSTAIN.reason_code set and precedence",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3024",
+          "note": "ADD v1.3 \u00a74.2: signature, schema, policy or version-pin errors produce REJECTED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "note": "LLD v1.1 \u00a72.7: OOD, positivity failure, unresolved confounding, missing factual set, incompatible release or contaminated main produce disjoint reason codes",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "note": "LLD v1.1 \u00a70.1 precedence",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "60",
+          "note": "FR-009",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "239",
+          "note": "FR-098: out-of-envelope fixture produces abstention",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U09",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-009",
+        "FR-098"
+      ],
+      "seed_ref": "C7-2",
+      "severity": "HIGH",
+      "severity_basis": "FR-009 and FR-098 are P0 PoC",
+      "statement": "The six abstention codes produced (MAIN_CONTAMINATED, RELEASE_MISMATCH, MISSING_FACTUAL_SET, UNRESOLVED_CONFOUNDING, OUT_OF_DOMAIN, POSITIVITY_FAILURE) are outside the closed ABSTAIN set of ADD v1.3 \u00a74.2 and no precedence is applied. LLD v1.1 \u00a72.7 names exactly these six conditions as disjoint reason codes, ADD v1.3 \u00a74.2 prescribes eight different codes with a precedence and sends signature, schema, policy and version-pin errors to REJECTED. ADD prevails (LLD v1.1 \u00a70.1), and some mappings are univocal (RELEASE_MISMATCH -> REJECTED; an explicit valid_envelope violation -> OUTSIDE_VALIDITY_ENVELOPE), but the mapping of MAIN_CONTAMINATED, MISSING_FACTUAL_SET, UNRESOLVED_CONFOUNDING and POSITIVITY_FAILURE is not fixed by either text.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "136-140",
+          "note": "asserts reason_code OUT_OF_DOMAIN",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py"
+        }
+      ],
+      "type": "CONFLICT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+        "outcome": "probe prints \"C7-2 abstain codes produced: ['MAIN_CONTAMINATED', 'MISSING_FACTUAL_SET', 'OUT_OF_DOMAIN', 'POSITIVITY_FAILURE', 'RELEASE_MISMATCH', 'UNRESOLVED_CONFOUNDING'] | in the ADD v1.3 closed set: []\". CONFIRMED; DECISION_REQUIRED for the non-univocal mappings (programme point 4.d)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "77-90",
+          "note": "CausalOutcome",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "164-169",
+          "note": "pin mismatch raises",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "215-232",
+          "note": "IDENTIFIED without uncertainty",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-003",
+      "norm_refs": [
+        {
+          "lines": "2979-3005",
+          "note": "ADD v1.3 \u00a74.2 CausalRunOutcome := ESTIMATED | ABSTAIN | REJECTED | FAILED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3024",
+          "note": "ADD v1.3 \u00a74.2: pin errors produce REJECTED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "note": "LLD v1.1 \u00a72.7: result includes uncertainty, sensitivity, lineage, inputs, seed and reproducibility digest",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "233",
+          "note": "FR-093: incomplete SimulationResult fails schema validation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "238",
+          "note": "FR-097: no P0 quantitative result without uncertainty descriptor",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "228",
+          "note": "NFR-030: invalid digest or signature blocks the run",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U09",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-093",
+        "FR-097",
+        "NFR-030"
+      ],
+      "seed_ref": "C7-3",
+      "severity": "HIGH",
+      "severity_basis": "FR-093, FR-097 and NFR-030 are P0 PoC",
+      "statement": "The outcome is only IDENTIFIED or ABSTAIN: model, data and intervention pin mismatches raise CausalRuntimeError instead of returning REJECTED, there is no FAILED with retry safety, ABSTAIN carries no diagnostics, failed_conditions, evidence_refs or permissible_next_steps, the intervention estimate has no uncertainty descriptor or sensitivity, and no immutable SimulationResult is produced. A sealed test asserts the exception.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "143-146",
+          "note": "pytest.raises(CausalRuntimeError, match='PIN_MISMATCH')",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+        "outcome": "probe prints \"C7-3 statuses produced: ['ABSTAIN', 'IDENTIFIED']\", the CausalOutcome field list, 'C7-3 pin mismatch raises: CausalRuntimeError MODEL_PIN_MISMATCH' and 'release mismatch outcome: ABSTAIN RELEASE_MISMATCH | intervention outcome carries uncertainty: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "58-74",
+          "note": "CausalQuery",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "172-179",
+          "note": "caller booleans decide abstention",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-004",
+      "norm_refs": [
+        {
+          "lines": "2949-2961",
+          "note": "ADD v1.3 \u00a74.2 ScenarioRunSpec fields and overlay",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3026-3032",
+          "note": "ADD v1.3 \u00a74.2 L2 job lifecycle; budget, quota, progress, cancellation, timeout mandatory",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "note": "LLD v1.1 \u00a72.7 CausalQuery content",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "357",
+          "note": "LLD v1.1 \u00a76: C7 job cancellable with resource release",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "232",
+          "note": "FR-092: scenario version pinning",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "244",
+          "note": "FR-103: cancel and timeout release resources and are audited",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "402",
+          "note": "FR-161: submit, observe, cancel and retrieve a job",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U09",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-092",
+        "FR-103",
+        "FR-161"
+      ],
+      "seed_ref": "C7-4",
+      "severity": "HIGH",
+      "severity_basis": "FR-092, FR-103 and FR-161 are P0 PoC",
+      "statement": "CausalQuery has no scenario_id, run_id, estimand, population, validity envelope, budget, time_horizon, validity_at, projection watermarks, policy or logic bundle digests or governed_context, and is not built from a ScenarioRunSpec or read from the scenario overlay; main contamination and unresolved confounding are decided by two booleans declared by the caller; there is no asynchronous job lifecycle (queued, running, paused, cancelled, completed, failed, expired) with budget, cancellation and timeout.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01> ; grep -rnE 'queued|ScenarioRunSpec|SimulationResult' --include=*.py ocor-runtime/src/ocor_runtime",
+        "outcome": "probe prints the 15 CausalQuery fields and 'C7-7 runtime reads an overlay: False'; the grep returns nothing. CONFIRMED and extended (estimand, population, envelope, overlay composition)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "98-109",
+          "note": "lineage includes correlation_id and causation_id",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        },
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "112-143",
+          "note": "digest over the lineage",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-005",
+      "norm_refs": [
+        {
+          "lines": "61",
+          "note": "NFR-007: identical runs give identical digests or differences within the preregistered tolerance; tolerance is mandatory",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "232",
+          "note": "FR-092: equivalent output within the declared tolerance",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "133",
+          "note": "NFR-015",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "177",
+          "note": "LLD v1.1 \u00a72.7: reproducibility digest",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U09",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-007",
+        "FR-092",
+        "NFR-015"
+      ],
+      "seed_ref": "C7-5",
+      "severity": "HIGH",
+      "severity_basis": "NFR-007, FR-092 and NFR-015 are P0 PoC",
+      "statement": "Reproducibility: no tolerance is declared or applied for any operation (including the bootstrap interval), and the reproducibility digest covers correlation_id and causation_id, so two runs with identical inputs and artefacts but a different causation get different digests.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+        "outcome": "probe prints 'C7-5 same inputs, different causation_id -> same digest: False | tolerance field anywhere in runtime: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "235-275",
+          "note": "estimate_counterfactual",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "decision_options": [
+        "A (recommended, fail-closed): treat every unit-level counterfactual query as ELM-070 and return REJECTED{CAPABILITY_DEFERRED, ELM-070} in the PoC profile",
+        "B: keep the operation as a non-AAP interventional by-product, renamed and documented so that it makes no counterfactual claim (no IDENTIFIED counterfactual outcome)"
+      ],
+      "depends_on": [],
+      "id": "NCR-C7-006",
+      "norm_refs": [
+        {
+          "lines": "3036",
+          "note": "ADD v1.3 \u00a74.2: ELM-070 deferred; PoC returns REJECTED{CAPABILITY_DEFERRED, ELM-070} for full AAP execution",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "236",
+          "note": "FR-095 (P0 MVP): AAP counterfactual",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U09",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-095"
+      ],
+      "seed_ref": "C7-6",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of ADD v1.3 \u00a74.2 (capability deferral); FR-095 is MVP, not PoC",
+      "statement": "estimate_counterfactual returns IDENTIFIED with a unit-level counterfactual outcome (STRATIFIED_BACKDOOR_COUNTERFACTUAL: observed outcome plus the within-stratum arm difference). In the PoC profile the Counterfactual Query (ELM-070) is deferred and full abduction-action-prediction execution returns REJECTED{CAPABILITY_DEFERRED, ELM-070}; the operation is not AAP (no abduction of U), but it answers a unit-level counterfactual query, and the norm does not say whether such a non-AAP imputation is inside the deferred capability.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [],
+      "type": "EXTRA",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+        "outcome": "probe prints 'C7-6 counterfactual status/method: IDENTIFIED STRATIFIED_BACKDOOR_COUNTERFACTUAL | CAPABILITY_DEFERRED in runtime: False'. CONFIRMED as fact; DECISION_REQUIRED on whether the operation falls under the deferred ELM-070."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [
+        {
+          "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+          "lines": "1-123",
+          "note": "ScenarioOverlayStore port",
+          "path": "ocor-runtime/src/ocor_runtime/c7/scenario_overlay.py"
+        }
+      ],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-007",
+      "norm_refs": [
+        {
+          "lines": "2934-2961",
+          "note": "ADD v1.3 \u00a74.2 ScenarioOverlayStore and COW overlay",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "C7-7",
+      "severity": "MEDIUM",
+      "severity_basis": "seed severity kept for traceability; refuted",
+      "statement": "At c9ef4be the copy-on-write overlay for (scenario_id, run_id, compartments) was missing. At the current head the ScenarioOverlayStore port of OCOR-DEV-REM-0041 has all six ADD operations (openSnapshot, forkScenario, appendOverlay, readAt, sealResult, discard), isolation per (scenario_id, run_id, compartments), a read-only main baseline and append-only chained deltas. The hypothesis is refuted; the remaining gap, that the causal runtime does not read the overlay, is part of NCR-C7-004.",
+      "status": "REFUTED",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+        "outcome": "probe prints \"C7-7 ScenarioOverlayStore operations: ['append_overlay', 'discard', 'fork_scenario', 'open_snapshot', 'read_at', 'seal_result'] | ScenarioBranch fields: ['scenario_id', 'run_id', 'compartments', 'canonical_commit_ref', 'scenario_branch']\". REFUTED at the current head (superseded by the OCOR-DEV-REM-0041 overlay unit, as the seed note anticipated)."
+      }
     }
   ],
   "g6_g7_proposals": {},
@@ -2403,6 +3929,9 @@
   "observation_coverage": {
     "OBS-C2-OPERATIONS": {
       "entry_id": "NCR-C2-011"
+    },
+    "OBS-C6-COMPOSITION": {
+      "entry_id": "NCR-C6-014"
     },
     "OBS-TESTS-PINNING-NON-NORMATIVE": {
       "entry_ids": [
@@ -2436,6 +3965,18 @@
     "NCP-U06": {
       "scope": "C5 backbone: canonical-ingestion-envelope:1.2 with payload second validation and producer signature, full failure taxonomy, authorised windowed replay, Subscribe surface with opaque cursor, priority-class backpressure with audit/security exemption, durable DLQ/quarantine",
       "status": "DRAFT"
+    },
+    "NCP-U07": {
+      "scope": "C6 action path: composition root; G-CONTRACT with risk class from the signed ActionType; FSM with current state, guards and ACT-T23 precedence; signed, bound Approval/ApprovalSet/Decision with risk-derived quorum and expiry; normative CapabilityLease consumed at emission; EMISSION-FENCE (G-FRESHNESS and G-DISPATCH) before C3 commit and dispatch with DeliveryAttempt; the LLD v1.1 \u00a72.6 records; evidence-based reconciliation without blind retry; memory promotion through the same path",
+      "status": "DRAFT"
+    },
+    "NCP-U08": {
+      "scope": "C6 safety and policy: authorised stop activation with signed stop epoch, reset with incident/recovery verification, signed break-glass delegation with typed reason; OPA effects with constraints, approval requirement and obligations; MARKING_UNRESOLVED instead of the legacy bottom default in current components; ADD v1.3 risk-class names and gates",
+      "status": "DRAFT"
+    },
+    "NCP-U09": {
+      "scope": "C7 causal runtime: SCM with do(X) and identification (NOT_IDENTIFIED), intervention comparison, CausalRunOutcome ESTIMATED/ABSTAIN/REJECTED/FAILED with the ADD closed reason set and precedence (after the PO decision on NCR-C7-002), uncertainty and sensitivity on every estimate, immutable SimulationResult, CausalQuery from ScenarioRunSpec read through the overlay, L2 job lifecycle, declared tolerance and a digest independent of trace identifiers, ELM-070 per the PO decision on NCR-C7-006",
+      "status": "DRAFT"
     }
   },
   "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
@@ -2446,11 +3987,11 @@
       "C2",
       "C3",
       "C4",
-      "C5"
+      "C5",
+      "C6",
+      "C7"
     ],
     "components_pending": [
-      "C6",
-      "C7",
       "C8",
       "MEMORY",
       "LEGACY",
@@ -2460,7 +4001,7 @@
       "GOVERNANCE"
     ],
     "iteration_limit": 8,
-    "iterations_used": 2,
+    "iterations_used": 3,
     "pending_sections": [
       "plan_units (point 4.e, completed after the reconnaissance)",
       "g6_g7_proposals (point 4.f)"
@@ -2563,6 +4104,61 @@
     },
     "C5-3": {
       "entry_id": "NCR-C5-003"
+    },
+    "C6-1": {
+      "entry_id": "NCR-C6-001"
+    },
+    "C6-10": {
+      "entry_id": "NCR-C6-010"
+    },
+    "C6-11": {
+      "entry_id": "NCR-C6-011",
+      "note": "split: policy effects here; missing marking NCR-C6-012; risk-class names NCR-C6-013"
+    },
+    "C6-2": {
+      "entry_id": "NCR-C6-002"
+    },
+    "C6-3": {
+      "entry_id": "NCR-C6-003"
+    },
+    "C6-4": {
+      "entry_id": "NCR-C6-004"
+    },
+    "C6-5": {
+      "entry_id": "NCR-C6-005"
+    },
+    "C6-6": {
+      "entry_id": "NCR-C6-006"
+    },
+    "C6-7": {
+      "entry_id": "NCR-C6-007"
+    },
+    "C6-8": {
+      "entry_id": "NCR-C6-008"
+    },
+    "C6-9": {
+      "entry_id": "NCR-C6-009"
+    },
+    "C7-1": {
+      "entry_id": "NCR-C7-001"
+    },
+    "C7-2": {
+      "entry_id": "NCR-C7-002"
+    },
+    "C7-3": {
+      "entry_id": "NCR-C7-003"
+    },
+    "C7-4": {
+      "entry_id": "NCR-C7-004"
+    },
+    "C7-5": {
+      "entry_id": "NCR-C7-005"
+    },
+    "C7-6": {
+      "entry_id": "NCR-C7-006"
+    },
+    "C7-7": {
+      "entry_id": "NCR-C7-007"
     }
   },
   "severity_rule": {
@@ -2598,6 +4194,16 @@
       "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; static, no backend needed",
       "sha256": "f988b541c5c18bff384226321af4e43f241a44c046e4a74f7ccc237577f12b63",
       "text": "import dataclasses, inspect, re\nfrom ocor_runtime.c4 import typedb_adapter as t, rebuild as rb, jena_adapter as j\nfrom ocor_runtime.c5 import backbone as b, operations as o\nA = open(\"ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md\").read().split(\"\\n\")\nadd_required = re.findall(r'\"([a-z_]+)\"', \"\\n\".join(A[538:567]))\ncur = inspect.getsource(t.TypeDBProjectionAdapter.current); rd = inspect.getsource(t.TypeDBProjectionAdapter.read); ap = inspect.getsource(t.TypeDBProjectionAdapter.apply_commit)\nprint(\"C4-1 current() release placeholder:\", '\"0\" * 64' in cur, \"| read staleness_ms=0:\", \"staleness_ms=0\" in rd, \"| served release copied from request:\", \"request.governed_context.ontology_release_digest\" in rd)\nprint(\"C4-1 apply_commit compares against the current watermark before replacing it:\", any(op in ap for op in (\" < \", \" > \", \"<=\", \">=\")), \"| single c4-watermark entity:\", \"match $w isa c4-watermark; delete $w;\" in ap)\nprint(\"C4-3 _request catches URLError:\", \"URLError\" in inspect.getsource(t._request))\nprint(\"C4-2 drift quarantine storage:\", [l.strip() for l in inspect.getsource(rb).split(\"\\n\") if \"_quarantined:\" in l], \"| rebuild source:\", inspect.signature(rb.ProjectionDriftDetector.__init__).parameters[\"service\"].annotation)\nprint(\"C4-2 Jena: rdflib SHACL processor imported:\", \"pyshacl\" in inspect.getsource(j), \"| watermark in Jena adapter:\", \"watermark\" in inspect.getsource(j), \"| marking engine class:\", j.MarkingEngine.__module__)\nprint(\"C5-1 envelope fields:\", len(b.REQUIRED_FIELDS), \"| ADD v1.3 required:\", len(add_required), \"| common names:\", sorted(set(b.REQUIRED_FIELDS) & set(add_required)))\nbb = inspect.getsource(b)\nprint(\"C5-1 producer signature verification in backbone:\", any(w in bb for w in (\"signature\", \"verify_sig\", \"dsse\")), \"| payload_schema second validation:\", \"payload_schema\" in bb)\nops = inspect.getsource(o)\nprint(\"C5-2 failure classes:\", sorted(set(re.findall(r'\"(TRANSIENT|PERMANENT|POLICY_DENIED|POISON)\"', ops))), \"| replay params:\", list(inspect.signature(o.EventOperationsCoordinator.replay).parameters)[1:])\nprint(\"C5-2 Subscribe surface:\", any(\"subscribe\" in n.lower() for n in dir(b.CanonicalEventBackbone)), \"| DeliveredRecord fields:\", [f.name for f in dataclasses.fields(b.DeliveredRecord)])\nprint(\"C5-3 priority classes:\", \"priority\" in ops.lower(), \"| audit/security exemption:\", \"audit\" in ops.lower(), \"| dead letters held in:\", [l.strip() for l in ops.split(\"\\n\") if \"self._dead_letters\" in l and \"=\" in l][:1])\n"
+    },
+    "C6-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; static, no backend needed",
+      "sha256": "ba34517d9308714b6f8ba08551dc197014207059df39726aad540d997ac3fb02",
+      "text": "import dataclasses, inspect, re, subprocess\nfrom datetime import UTC, datetime, timedelta\nfrom ocor_runtime.c6 import engine as e, fsm as f, human_gate as h, safety as s\nfrom ocor_runtime import c7_emission as c7\nfrom ocor_runtime.kernel import governance as g\nfrom ocor_runtime.memory import promotion as mp\nfrom ocor_runtime.security import control_plane as cp\nex = inspect.getsource(e.GovernedActionEngine.execute)\nprint(\"C6-1 Approval fields:\", [x.name for x in dataclasses.fields(e.Approval)], \"| Decision fields:\", [x.name for x in dataclasses.fields(e.Decision)])\nprint(\"C6-1 engine compares approver with proposer:\", \"subject\" in ex.split(\"Human Gate\")[1].split(\"G-DECISION\")[0], \"| engine uses HumanGateCoordinator:\", \"HumanGateCoordinator\" in inspect.getsource(e))\nprint(\"C6-2 ActionProposal fields:\", [x.name for x in dataclasses.fields(e.ActionProposal)], \"| gate skipped when not risk_bearing:\", \"if proposal.risk_bearing:\" in ex)\nap = inspect.getsource(f.GovernedActionFSM.apply)\nprint(\"C6-3 apply() reads a current state:\", any(w in ap for w in (\"current\", \"state\", \"_state\")), \"| evaluates guard:\", \"guard\" in ap.replace(\"transition.guard\", \"\"))\nseq = f.GovernedActionFSM(); sink = []\nt0 = datetime(2026, 1, 1, tzinfo=UTC)\nr = seq.apply(\"ACT-T30\", sink=sink.append, at=t0, correlation_id=\"probe\")\nprint(\"C6-3 ACT-T30 (CANONICAL_COMMIT_PENDING->EXECUTION_CONFIRMED) applied on a fresh action with no prior state:\", r.destination == \"EXECUTION_CONFIRMED\" and len(sink) == 1)\nprint(\"C6-4 engine lease type:\", e.CapabilityLease.__module__, \"| normative lease fields:\", [x.name for x in dataclasses.fields(g.CapabilityLease)][:11])\nprint(\"C6-4 legacy lease has gate_package_digest/governed_context_digest:\", any(x.name in (\"gate_package_digest\", \"governed_context_digest\") for x in dataclasses.fields(e.CapabilityLease)), \"| engine consumes at authorisation (consume=True before commit):\", ex.index(\"consume=True\") < ex.index(\"self._store.write\"))\nusers = subprocess.run([\"grep\", \"-rlE\", \"LeaseConsumptionLedger|kernel.governance import .*CapabilityLease\", \"--include=*.py\", \"ocor-runtime/src/ocor_runtime\"], capture_output=True, text=True).stdout.split()\nprint(\"C6-4 modules using the normative lease ledger:\", sorted(users))\nprint(\"C6-5 commit before fence:\", ex.index(\"self._store.write\") < ex.index(\"self._fence.emit\"), \"| fence.emit called with lease/markings:\", \"lease=\" in ex.split(\"self._fence.emit\")[1][:120])\nmissing = [n for n in (\"ActionProposal\", \"PolicyAuthorityDecision\", \"Approval\", \"ApprovalSet\", \"Decision\", \"ActionIntent\", \"GatePackage\", \"ActionCommand\", \"DeliveryAttempt\", \"ExecutionResult\", \"OutcomeAssessment\", \"ConflictScope\", \"IndeterminateEffectAdjudication\")\n           if not subprocess.run([\"grep\", \"-rqE\", rf\"^class {n}\\b\", \"--include=*.py\", \"ocor-runtime/src/ocor_runtime\"]).returncode == 0]\nprint(\"C6-6 LLD v1.1 \u00a72.6 records with no class in ocor_runtime:\", missing)\nrc = s.OutcomeReconciler()\nrc.mark_ambiguous(\"cmd\", idempotent_effect_proven=False, at=t0)\nrc.resolve_with_evidence(\"cmd\", effect_confirmed=True, at=t0)\nrc.mark_ambiguous(\"cmd\", idempotent_effect_proven=False, at=t0 + timedelta(seconds=1))\nprint(\"C6-7 terminal EXECUTION_CONFIRMED overwritten by mark_ambiguous:\", rc.status(\"cmd\").value == \"EXECUTION_UNKNOWN\", \"| resolve_with_evidence params:\", list(inspect.signature(s.OutcomeReconciler.resolve_with_evidence).parameters)[1:])\ndr = inspect.getsource(c7.EmissionFence.drain)\nprint(\"C6-7 legacy drain re-emits every store.outbox() event without consulting a reconciler:\", \"self._store.outbox()\" in dr and \"reconcil\" not in dr)\nprint(\"C6-8 ApprovalPolicy fields (caller-supplied):\", [x.name for x in dataclasses.fields(h.ApprovalPolicy)], \"| per-signature TTL check:\", \"instant - signature.signed_at < policy.ttl\" in inspect.getsource(h.HumanGateCoordinator.validate))\ncls = [n for n, o in inspect.getmembers(mp, inspect.isclass) if \"self._c3.commit(\" in (inspect.getsource(o) if o.__module__ == mp.__name__ else \"\")]\nsrc = inspect.getsource(mp)\nprint(\"C6-9 classes calling c3.commit directly:\", cls, \"| uses GovernedActionFSM/EmissionFence/lease:\", any(w in src for w in (\"GovernedActionFSM\", \"EmissionFence\", \"LeaseConsumptionLedger\")), \"| accepted risk classes:\", sorted(int(c) for c in g.RiskClass))\nprint(\"C6-10 activate params:\", list(inspect.signature(s.EmergencyStopController.activate).parameters)[1:], \"| request_reset params:\", list(inspect.signature(s.EmergencyStopController.request_reset).parameters)[1:])\nprint(\"C6-10 BreakGlassGrant fields:\", [x.name for x in dataclasses.fields(s.BreakGlassGrant)], \"| signature field:\", any(\"signature\" in x.name for x in dataclasses.fields(s.BreakGlassGrant)))\nprint(\"C6-11 PolicyEffect members:\", [m.name for m in cp.PolicyEffect], \"| OPA decision obligations hard-coded empty:\", \"obligations=(),\" in inspect.getsource(cp))\nprint(\"C6-11 kernel RiskClass names:\", [m.name for m in g.RiskClass], \"| control_plane OperationClass names:\", [m.name for m in cp.OperationClass])\nfrom ocor_runtime import c4_marking as mk\nprint(\"C6-12 legacy join defaults a missing scheme to bottom:\", \"marking_set.values.get(scheme_id, scheme.bottom)\" in inspect.getsource(mk.MarkingEngine.join), \"| is_authorized iterates only the present schemes:\", \"for scheme_id, required in markings.values.items():\" in inspect.getsource(mk.MarkingEngine.is_authorized))\n"
+    },
+    "C7-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; static apart from in-process calls on synthetic rows, no backend needed",
+      "sha256": "e852f2e41fc181fe67f43c07dc566191c72e9048d461c37a4769df8d7f1623cd",
+      "text": "import dataclasses, inspect, re, subprocess\nfrom dataclasses import replace\nfrom ocor_runtime.c7 import runtime as r\nfrom ocor_runtime.c7 import scenario_overlay as so\nmodel = {\"dag\": [[\"z\", \"t\"], [\"z\", \"y\"], [\"t\", \"y\"]]}\nrows = [{\"z\": z, \"t\": t, \"y\": y} for z, t, y in [(0, 0, 1), (0, 1, 3), (1, 0, 2), (1, 1, 5), (0, 0, 1), (1, 1, 4)]]\niv = {\"value\": 1, \"valid_envelope\": [0, 1]}\nq = r.CausalQuery(baseline_commit=\"c\" * 40, scenario_branch=\"scenario/probe\", model_digest=r.canonical_digest(model),\n                  data_digest=r.canonical_digest(rows), intervention_digest=r.canonical_digest(iv), ontology_release_digest=\"a\" * 64,\n                  expected_release_digest=\"a\" * 64, treatment=\"t\", outcome=\"y\", adjustment=\"z\", seed=7, correlation_id=\"corr-1\", causation_id=\"cause-1\")\nout = r.estimate_intervention(q, model=model, factual_rows=rows, intervention=iv)\nsrc = inspect.getsource(r)\nprint(\"C7-1 model used only as a digest pin (model keys read by the estimator):\", \"model[\" not in src and \"model.get(\" not in src, \"| method:\", out.method, \"| status:\", out.status)\nprint(\"C7-1 interventions per call:\", list(inspect.signature(r.estimate_intervention).parameters))\ncodes = sorted(set(re.findall(r'_Abstain\\(\"([A-Z_]+)\"\\)', src)))\nadd_codes = [\"NOT_IDENTIFIED\", \"INSUFFICIENT_EVIDENCE\", \"OUTSIDE_VALIDITY_ENVELOPE\", \"OUT_OF_DISTRIBUTION\", \"EXTRAPOLATIVE\", \"STALE_CONTEXT\", \"NOT_TRANSPORTABLE\", \"ASSUMPTION_VIOLATION\"]\nprint(\"C7-2 abstain codes produced:\", codes, \"| in the ADD v1.3 closed set:\", sorted(set(codes) & set(add_codes)))\nprint(\"C7-3 statuses produced:\", sorted(set(re.findall(r'status=\"([A-Z_]+)\"', src))), \"| CausalOutcome fields:\", [f.name for f in dataclasses.fields(r.CausalOutcome)])\ntry:\n    r.estimate_intervention(replace(q, model_digest=\"0\" * 64), model=model, factual_rows=rows, intervention=iv)\n    print(\"C7-3 pin mismatch outcome: returned\")\nexcept r.CausalRuntimeError as exc:\n    print(\"C7-3 pin mismatch raises:\", type(exc).__name__, exc)\nrel = r.estimate_intervention(replace(q, expected_release_digest=\"b\" * 64), model=model, factual_rows=rows, intervention=iv)\nprint(\"C7-3 release mismatch outcome:\", rel.status, rel.reason_code, \"| intervention outcome carries uncertainty:\", any(\"uncertain\" in k or \"interval\" in k for k in out.details))\nprint(\"C7-4 CausalQuery fields:\", [f.name for f in dataclasses.fields(r.CausalQuery)])\nother = r.estimate_intervention(replace(q, causation_id=\"cause-2\"), model=model, factual_rows=rows, intervention=iv)\nprint(\"C7-5 same inputs, different causation_id -> same digest:\", other.reproducibility_digest == out.reproducibility_digest, \"| tolerance field anywhere in runtime:\", \"tolerance\" in src)\ncf = r.estimate_counterfactual(q, model=model, factual_rows=rows, intervention=iv, unit_index=0)\nprint(\"C7-6 counterfactual status/method:\", cf.status, cf.method, \"| CAPABILITY_DEFERRED in runtime:\", \"CAPABILITY_DEFERRED\" in src)\nprint(\"C7-7 ScenarioOverlayStore operations:\", sorted(m for m in (\"open_snapshot\", \"fork_scenario\", \"append_overlay\", \"read_at\", \"seal_result\", \"discard\") if hasattr(so.ScenarioOverlayStore, m)), \"| ScenarioBranch fields:\", [f.name for f in dataclasses.fields(so.ScenarioBranch)])\nprint(\"C7-7 runtime reads an overlay:\", \"scenario_overlay\" in src or \"OverlayView\" in src)\n"
     }
   },
   "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
@@ -2606,7 +4212,9 @@
     "C2": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
     "C3": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
     "C4": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
-    "C5": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0"
+    "C5": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
+    "C6": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+    "C7": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45"
   },
   "verified_at_heads_note": "ocor-runtime/ is identical at a631e69 and a325fc2 (git diff a631e69 a325fc2 touches only reports/development state files)"
 }
