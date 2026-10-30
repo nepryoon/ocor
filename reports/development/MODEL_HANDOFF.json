@@ -4,20 +4,27 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "e289027453732cf104d4b56ddac6facd07cfdd6d",
-  "baseline_commit": "e289027453732cf104d4b56ddac6facd07cfdd6d",
-  "branch": "governed/state-sync-rem0045-iter1-20261030",
+  "base_sha": "959c2885bf43e8cbbcb034eb43b8a51685fc8d32",
+  "baseline_commit": "959c2885bf43e8cbbcb034eb43b8a51685fc8d32",
+  "branch": "governed/state-sync-rem0045-iter2-20261030",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0045-guard-baseline-consolidation",
-    "head_sha": "bc1f4e699c0dfbf6b306505fab901cb68f711e76",
-    "note": "REM-0045 head submitted to the preventive review; not yet a candidate, no evidence",
+    "code_commit": "1a98c1f89c060dbc3f9d62b734d4dda245c9c51d",
+    "head_sha": "7244f52a0e460956bc7787753e6148ce4c2a6489",
+    "note": "REM-0045 candidate awaiting independent verification; evidence lives on the candidate branch only",
     "paths": [
-      "reports/tests/test_kind_teardown_observation.py",
-      "scripts/validate_ocor_development_plan.py",
-      "reports/planning/OCOR_PLAN_RUN_STATE.json",
-      "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
-      "reports/development/decision_requests/OCOR-DEV-0060-BA-RUNTIME-GAPS.md",
-      "reports/development/decision_requests/REM-0038-GUARD-BASELINE-CONSOLIDATION.md"
+      "reports/assurance/OCOR-DEV-REM-0045-RCCAD/OCOR-DEV-REM-0045.json",
+      "reports/assurance/OCOR-DEV-REM-0045-RCCAD/OCOR-DEV-REM-0045.log",
+      "reports/assurance/OCOR-DEV-REM-0045-RCCAD/README.md",
+      "reports/evidence/G0/MANIFEST.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0045.json",
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0045.log",
+      "reports/evidence/G2/MANIFEST.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0045.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0045.log",
+      "reports/evidence/G5/MANIFEST.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0045.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0045.log"
     ],
     "worktree": ".ocor/worktrees/rem-0045"
   },
@@ -41,40 +48,48 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest reports/tests/test_kind_teardown_observation.py (RED 56bb7bc)",
-      "exit_code": 1,
-      "summary": "4 failed, 51 passed, 84 subtests (expected RED)"
+      "command": "python3 ~/.ocor-codex/rem-0045/pregate.py (at 1a98c1f89c06)",
+      "exit_code": 0,
+      "summary": "42/43 PASS, drift expected (0005, 0050, 0082)"
     },
     {
-      "command": "pytest reports/tests/test_kind_teardown_observation.py reports/tests/test_rem0034_secret_registry.py (GREEN)",
+      "command": "~/.ocor-codex/rem-0045-q/run.sh (phases A, A3, B, C)",
       "exit_code": 0,
-      "summary": "89 passed, 94 subtests"
+      "summary": "two-lane full suite 3334/3334 PASS, zero skip, exact JUnit union, 2445.579 s (margin 2954.421 s to the 5400 s cap, 1154.421 s to the 3600 s notification), zero host residue, mains power throughout; task suite 3 runs x 89 cases (94 subtests); regression 0005/0050/0082 and reports portfolio PASS; mutation probe 6 mutants of the current proof killed beyond M0"
     },
     {
-      "command": "validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "command": "mutation_probe.py (~/.ocor-codex/rem-0045-q/mutation)",
       "exit_code": 0,
-      "summary": "PASS"
+      "summary": "M0 57 passed; M1-M6 killed"
     },
     {
-      "command": "python3 ~/.ocor-codex/rem-0045/pregate.py",
+      "command": "build_evidence.py, gen_readme.py (~/.ocor-codex/rem-0045-q-tools)",
       "exit_code": 0,
-      "summary": "PRE-CAMPAIGN-GATE 42/43 PASS at bc1f4e699c0d (only drift FAILs: OCOR-DEV-0005, 0050 and 0082 on scripts/validate_ocor_development_plan.py and reports/tests/test_kind_teardown_observation.py, expected; regression-only requalifications at candidate time); supply-chain scanner PASS (0 blocking); validation-closure guards 371 passed, 94 subtests"
+      "summary": "unit record and three regression-only requalifications"
     },
     {
       "command": "validate_evidence_input_drift.py --root .",
-      "exit_code": 1,
-      "summary": "drifted_tasks OCOR-DEV-0005, 0050, 0082 (expected)"
+      "exit_code": 0,
+      "summary": "PASS, drifted_tasks []"
+    },
+    {
+      "command": "python3 ~/.ocor-codex/rem-0045/pregate.py (at 7244f52a0e46)",
+      "exit_code": 0,
+      "summary": "43/43 PASS"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0045:implementation (awaiting preventive review)",
+  "current_task": "OCOR-DEV-REM-0045:candidate (awaiting independent verification)",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0045 after the preventive review OCOR-DEV-REM-0045-bc1f4e699c0d-pre (outcome in ~/.ocor-codex/prereviews/OCOR-DEV-REM-0045-bc1f4e699c0d-pre.json): on governed/ocor-dev-rem-0045-guard-baseline-consolidation from bc1f4e699c0d in .ocor/worktrees/rem-0045 (venv and .ocor/tools in place; locked PATH ~/.ocor-codex/rem-0045/locked-path; gate script ~/.ocor-codex/rem-0045/pregate.py). Dispose of every blocking finding (fix commit or reproducible rebuttal) and record advisory ones; merge origin/main non-destructively if it moved (state files only); rerun PRE-CAMPAIGN-GATE on the final head; bring the ocor-bootstrap stack up (it is down; check .ocor/spire CA validity), build the TypeScript SDK in the worktree, run the task suite (guard module and test_rem0034_secret_registry.py, 3 runs) and the full suite (cap 90 min, power logged once a minute; campaign kit to adapt from ~/.ocor-codex/rem-0044-q); write the unit record reports/assurance/OCOR-DEV-REM-0045-RCCAD/ (README, json, log: implementer Claude Code/Anthropic, RED/GREEN, mutation probes, the 34 retargeted negative cases and the new probes, gate steps, preventive review reference, the three DR files with their sha256) and the regression-only requalifications OCOR-DEV-0005/0050/0082 .requalified-rem0045 with surgical MANIFEST entries (paths already in the plan allowlist); verify request REMEDIATION (verifier not Anthropic); then seal, PR, exact-head CI, merge. Its integration state sync applies the register patch of NORMATIVE-CONFORMANCE-PLAN point 12 (~/.ocor-codex/ss-ncp-plan-20261030/apply_patch.py, @@HEAD@@ = origin/main at that sync, verification commands rerun) and runs the integrity test. Then NCP-U13 (first unit of plan_order), with its own first free OCOR-DEV-REM-*, the full cycle of programme point 5 and the extra scope of decision point 3. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
-  "head_sha": "bc1f4e699c0dfbf6b306505fab901cb68f711e76",
-  "head_sha_role": "REM-0045 head submitted to the preventive review",
+  "exact_next_action": "Read the verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0045-7244f52a0e46-0.json (head 7244f52a0e46). On GO_FOR_EVIDENCE_SEAL integrate OCOR-DEV-REM-0045 from governed/ocor-dev-rem-0045-guard-baseline-consolidation at 7244f52a0e46 (worktree .ocor/worktrees/rem-0045; builders in ~/.ocor-codex/rem-0045-q-tools; seal toolkit to adapt from ~/.ocor-codex/integrate-rem0044-20261030/): seal the record and the three .requalified-rem0045 records, PR, the 13 required checks on the exact head (wait for CLEAN), merge with --match-head-commit, then the integration state sync, which also applies the register patch of NORMATIVE-CONFORMANCE-PLAN point 12 (~/.ocor-codex/ss-ncp-plan-20261030/apply_patch.py, @@HEAD@@ = origin/main at that sync, verification commands rerun) and runs the register integrity test. On NO_GO repair (at most 2 cycles). Then NCP-U13 (first unit of plan_order) with its own first free OCOR-DEV-REM-*, the full cycle of programme point 5 and the extra scope of decision point 3. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
+  "head_sha": "7244f52a0e460956bc7787753e6148ce4c2a6489",
+  "head_sha_role": "REM-0045 candidate submitted to independent verification",
   "independent_verification": {
-    "note": "preventive review OCOR-DEV-REM-0045-bc1f4e699c0d-pre requested; independent verification not yet requested",
-    "status": "NOT_REQUESTED"
+    "head_sha": "7244f52a0e460956bc7787753e6148ce4c2a6489",
+    "note": "verifier chosen by the loop, provider neither Anthropic nor OpenAI",
+    "request_id": "OCOR-DEV-REM-0045-7244f52a0e46-0",
+    "review_type": "REMEDIATION",
+    "status": "REQUESTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -137,19 +152,20 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "FAIL (expected: 0005, 0050, 0082)",
+    "evidence_input_drift": "PASS",
     "language": "PASS",
     "mypy_strict": "PASS",
     "plan": "PASS",
-    "pre_campaign_gate": "42/43 PASS at bc1f4e699c0d (drift expected)",
+    "pre_campaign_gate": "43/43 PASS at 7244f52a0e46",
     "rccad": "PASS",
     "ruff": "PASS",
+    "runtime_evidence_0005_0050_0082": "PASS",
     "scope": "PASS",
     "supply_chain_scanner": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0045:campaign, candidate and verify request",
-  "phase": "REM_0045_AWAITING_PREVENTIVE_REVIEW",
-  "raw_evidence_location": "~/.ocor-codex/rem-0045 (RED/GREEN logs, mutation log, gates), outside Git",
+  "next_task": "OCOR-DEV-REM-0045:integration (after the verdict)",
+  "phase": "REM_0045_CANDIDATE_AWAITING_VERIFICATION",
+  "raw_evidence_location": "~/.ocor-codex/rem-0045-q (campaign, mutation probe), ~/.ocor-codex/rem-0045-q-tools (builders), ~/.ocor-codex/rem-0045 (gates, RED/GREEN), outside Git",
   "requirement_ids": [
     "FR-006",
     "FR-010",
@@ -168,25 +184,31 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0045 iteration 1 (RED, GREEN, plan allowlist and DR files, PRE-CAMPAIGN-GATE) and this state sync"
+        "scope": "OCOR-DEV-REM-0045 iterations 1-2 (RED, GREEN, allowlist and DR files, PRE-CAMPAIGN-GATE, campaign, mutation probe, requalifications, unit record, verification request) and these state syncs"
       }
-    ]
+    ],
+    "preventive_reviewer": {
+      "agent": "Codex CLI",
+      "model": "GPT-6",
+      "provider": "OpenAI",
+      "reserve": true
+    },
+    "verifier_constraint": "provider neither Anthropic (implementer) nor OpenAI (preventive reviewer)"
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
   "seal_hashes": {},
   "security_observability_notes": [
-    "Mains power during the iteration; no full suite run.",
-    "The ocor-bootstrap stack is down (no containers); needed at the full suite."
+    "Mains power for the whole campaign; MemTotal unchanged (REM-0037 stays suspended).",
+    "The ocor-bootstrap stack and both lane sandboxes were torn down after the campaign (zero host residue)."
   ],
   "test_results": {
-    "green": "GREEN b689e8c: guard module plus test_rem0034_secret_registry.py 89 passed, 94 subtests; mutation probes outside Git (M0 57 passed): no current proof 67 failed, AST comparison 67 failed, supervisor by AST (option 2) 2 subtests failed (comment probes only), workflow set unchecked 1 failed, observer constants unchecked 3 failed, probe timeouts unchecked 1 failed",
-    "pre_campaign_gate": "42/43",
-    "red": "RED 56bb7bc: 4 failed, 51 passed, 84 subtests (GuardBaselineConsolidation: two relocation probes, the comment appended to the campaign module and a workflow absent at 82b71d0 are accepted by the normalisation chain); fingerprint sha256 ee5ddae3e473f69b8fce1af86128cd8f96e8c19dedc5e30f8ed64ef7fc4a0927 (sorted failed ids + summary line), raw log sha256 7fb20caaf7551275a0c86d1145a2b5ba5d36c7e9b298328a392a637e48b0303c"
+    "campaign": "two-lane full suite 3334/3334 PASS, zero skip, exact JUnit union, 2445.579 s (margin 2954.421 s to the 5400 s cap, 1154.421 s to the 3600 s notification), zero host residue, mains power throughout; task suite 3 runs x 89 cases (94 subtests); regression 0005/0050/0082 and reports portfolio PASS; mutation probe 6 mutants of the current proof killed beyond M0",
+    "pre_campaign_gate_candidate": "43/43"
   },
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME: G6 start conditions of decision point 11; 0068/0069 blocked"
   ],
-  "updated_at": "2026-10-30T11:48:38.861214+00:00",
+  "updated_at": "2026-10-30T13:21:39.888572+00:00",
   "worktree": ".ocor/worktrees/ss-ncp-plan (this state sync); next unit: new worktree from origin/main"
 }
