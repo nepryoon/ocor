@@ -72,3 +72,22 @@ soggetto a tutte le regole, e nessun test o soglia si allenta.
 Interpretazione registrata: `CC-OCOR-DELIVERY-COMPLETION` §7 chiede la lettura fail-closed più restrittiva.
 L'opzione 1 cambia l'ambito della condizione 1 rispetto alla sua lettura letterale («ogni record nuovo»), e
 l'opzione 2 cambia test fuori dal punto 5: entrambe sono scelte normative, quindi riservate al PO.
+
+## Disposition del Product Owner — 2026-10-30
+
+Decisione normativa del PO `REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)`: opzione 1 (classe dichiarata di record non qualificanti), con le precisazioni dei punti 2 e 3 della decisione. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `86559cf`, sha256 `2095cd3ba20db529be33240ab8cfad969d61fd4d297d7bae85df497b5cd2b851`. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) — decisione normativa del PO
+
+Decisione **di livello normativo**, presa dal PO con istruzione esplicita, sulla decision request `REM-0046-REGRESSION-REQUALIFICATION-RECORDS` (`reports/development/decision_requests/REM-0046-REGRESSION-REQUALIFICATION-RECORDS.md`, PR #432, commit `86559cf`, sha256 `2095cd3ba20db529be33240ab8cfad969d61fd4d297d7bae85df497b5cd2b851`). Il PO sceglie l'opzione 1, con le precisazioni dei punti 2 e 3. Integra il punto 3 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)` (condizione 1 e paragrafo su `OCOR-DEV-0061`). Nessun nuovo `DEC-*`. Restano invariati ADD, LLD, contratti, schemi, registri normativi e claim.
+
+1. **Record di riqualifica di sola regressione: classe non qualificante.**
+   - Il record dichiara `requalification_kind: "regression"` e `qualifies_requirements: false`, ha `supersedes` verso il record precedente dello stesso task e non ha `requirement_results` né casi legati a requisiti.
+   - Il validatore di NCP-U13 (`scripts/validate_runtime_evidence.py`) gli applica tutti i controlli che non riguardano i requisiti: comandi eseguiti, raw log content-addressed, esito `PASS`, contatori `failed`, `skipped`, `not_executed` e `xfailed` a zero, campi obbligatori.
+   - Lo rifiuta se contiene anche un solo caso legato a un requisito, se manca `supersedes` o se il record superato non è dello stesso task.
+   - Non lo conta mai come evidenza di un requisito, né in `--requirement-evidence` né nei criteri di `OCOR-DEV-0067`.
+   - I casi negativi di queste regole entrano in `reports/tests/test_runtime_evidence_validator.py`, nell'ambito di NCP-U13. Un record che lega un caso a un requisito resta soggetto a tutte le regole della condizione 1.
+2. **Ambito.** La classe vale per ogni riqualifica di sola regressione autorizzata dal programma o dalle decisioni del PO e prodotta da NCP-U13 in poi: quelle di `OCOR-DEV-0005`, `0050` e `0082` di ogni unità, quelle del punto 7 (dipendenze, NCP-U06), quelle del punto 2 (spostamento degli adapter, NCP-U11) e quelle di `OCOR-DEV-0061` prima della sua riqualifica con supersession. Per `0061` sostituisce la frase del punto 3 di `NORMATIVE-CONFORMANCE-PLAN` secondo cui il record di regressione dichiara «fuori dal profilo PoC» i legami con `FR-135`, `NFR-025` e `NFR-033`: il record di regressione di `0061` non lega alcun requisito. La riqualifica con supersession di `0061` è invece qualificante e segue tutte le regole della condizione 1.
+3. **Evidenza dei requisiti per `OCOR-DEV-0067`.** L'evidenza di un requisito resta quella dell'ultimo record qualificante della catena `supersedes` del task. Un record di regressione attesta che quel record regge all'head della riqualifica; non lo sostituisce come evidenza e non ne estende i requisiti. I record sigillati non conformi restano esclusi (condizione 2 del punto 3).
+4. **Nessun allentamento.** Nessun test, soglia, limite, timeout o gate cambia. I test rieseguiti dalle riqualifiche non cambiano: l'opzione 2 non è scelta.
+5. **Registrazione.** Al primo state sync registra questa decisione come disposition nel file della decision request, secondo `AGENTS.md`, e nell'`ITERATION_LOG.md`. Se il validatore del piano non ammette il file della decision request in un change set di solo stato, il file entra in `main` con il change set di NCP-U13, come per `NORMATIVE-CONFORMANCE-PLAN`. Poi riprendi `OCOR-DEV-REM-0046` dal punto in cui si è fermato.
