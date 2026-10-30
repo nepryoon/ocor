@@ -405,3 +405,177 @@ Ancore: `docs/OCOR_LLD_v1.1.md:288`, `docs/OCOR_LLD_v1.1.md:363-374`, `docs/OCOR
 - Bloccati fino alla decisione: `OCOR-DEV-0060`, `0062`–`0069` (blocker `NORMATIVE-CONFORMANCE-PROGRAMME`), `OCOR-DEV-REM-0043` (sospesa, `REM-0043-NCP-SUSPENSION`). `OCOR-DEV-0060`, `0065`–`0069` dipendono anche da `OCOR-DEV-0060-BA-RUNTIME-GAPS` (PR #408).
 - Nessun lavoro ammesso resta eseguibile prima della decisione: il loop chiude con `TERMINAL_BLOCKED` (punto 5).
 - Nessun nuovo `DEC-*`; ADD v1.3, LLD v1.1, contratti, schemi, registri normativi e profilo degli SDK generati invariati; `inputs/` intatto.
+
+## Disposition del Product Owner — 2026-10-30
+
+Decisione normativa del PO `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`: opzione 1 (approvazione del piano) con le modifiche della decisione. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Da questa registrazione il file non cambia più: è il riferimento `po_decision_ref` delle voci del registro elencate dal file dati della decisione (`NORMATIVE-CONFORMANCE-PLAN-2026-10-30.register-patch.json`, sha256 `945859b57776dcedfc8f26aaae898adcb17b48c9e26bedfe265a3ed274a45495`, fuori dal repository). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NORMATIVE-CONFORMANCE-PLAN (2026-10-30) — decisione normativa del PO
+
+Decisione **di livello normativo**, presa dal PO con istruzione esplicita, sulla decision request `NORMATIVE-CONFORMANCE-PLAN` (`reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md`, PR #424). La richiesta è stata aperta dall'unità del registro `OCOR-DEV-REM-0044` secondo il punto 4.g di `NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)`. Il PO sceglie l'opzione 1 della richiesta, approvazione del piano, con le modifiche di questa decisione. La decisione risolve anche le decision request `OCOR-DEV-0060-BA-RUNTIME-GAPS` (PR #408) e `REM-0038-GUARD-BASELINE-CONSOLIDATION` (PR #406). Nessun nuovo `DEC-*`. Restano invariati ADD, LLD, contratti, schemi, registri normativi e claim.
+
+**Piano approvato.** È il file `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json` al commit `4781e06de140f770ef0f61d9dab7a6c189cdf97b` di `main`, sha256 `1b9b0885e19fdb139548a76c44782d8200e95f013c7ca280f245fc9799ac9590`, nei campi `plan_units`, `plan_order`, `plan_summary` e `g6_g7_proposals`. Nel seguito lo chiamiamo «il piano». I punti 2–5 e 8–11 di questa decisione fanno parte del piano approvato e, dove differiscono dal file, prevalgono.
+
+**File dati della decisione.** `~/.ocor-codex/decisioni/NORMATIVE-CONFORMANCE-PLAN-2026-10-30.register-patch.json`, sha256 `945859b57776dcedfc8f26aaae898adcb17b48c9e26bedfe265a3ed274a45495`. Contiene le modifiche del registro del punto 12 e l'elenco `g6_exclusions` del punto 3. È un dato: puoi leggerlo, non modificarlo. Controlla la sha256; se il file manca o non corrisponde, fermati e apri una decision request.
+
+1. **Unità approvate.** Sono approvate le 13 unità del piano. Si eseguono una alla volta, nell'ordine di `plan_order`: NCP-U13, U01, U02, U03, U04, U06, U05, U07, U08, U09, U10, U11, U12.
+   - Per ciascuna sono approvati come scritti nel piano: `scope`, `resolves`, `acceptance_criteria`, `red_tests`, `consumers_to_inventory` e `requalifications`.
+   - È approvato anche `existing_tests_to_realign_or_adapt`, con la differenza autorizzata registrata lì (`kind`, `current_assertion`, `prescribed`), insieme ai test e alle scelte del punto 5.
+   - Ogni unità usa il primo `OCOR-DEV-REM-*` libero, verificato in sola lettura, e segue il ciclo completo del punto 5 della decisione del programma.
+   - Un'unità parte solo quando le unità di `depends_on_units` sono integrate in `main`.
+   - Le stime sono indicative. Per il client di Kafka (punti 2 e 7) la stima di NCP-U06 passa da 3 a 6 iterazioni. Se un'unità supera il doppio della stima, fermati e apri una decision request di livello normativo con lo stato del lavoro.
+   - Fermati e apri una decision request anche se devi riallineare o adattare un test che né il piano né il punto 5 prevedono per quell'unità, o con una differenza diversa da quella autorizzata (punto 7 della decisione del programma).
+2. **Orientamento al prodotto.** A parità di conformità alla norma, scegli la soluzione destinata alla produzione e non introdurre surrogati da sostituire in seguito. Se un'unità tocca un componente che ha requisiti MVP o Production nel Register, progettala in modo da non precluderli, senza implementarli, e registra queste scelte nel record dell'unità. Sono criteri aggiuntivi delle unità indicate:
+
+   | Unità | Criterio aggiuntivo | Ancora |
+   |---|---|---|
+   | NCP-U03 | L'audit di C2 (`NCR-C2-005`) scrive attraverso un unico port di audit, con record append-only, hash-linked e firmati. Le unità successive che scrivono audit (NCP-U07, NCP-U08) usano lo stesso port. | ADD v1.3 riga 3143 |
+   | NCP-U06 | Il backbone di C5 parla con Kafka da processo, con il client del punto 7, dietro il port Publish/Subscribe/Replay/Quarantine. Il ciclo di vita del broker (container, volumi, topic di prova) resta negli strumenti di qualifica, fuori dal percorso di prodotto: nessun `docker exec` né CLI di Kafka nel componente. | ADD v1.3 righe 273 e 360 |
+   | NCP-U08 | Lo `stop_epoch` firmato (`NCR-C6-010`) è durevole e si legge attraverso un port, da `G-DISPATCH` e dal tool runtime di C8. Non è un attributo del processo che attiva lo stop. | ADD v1.3 righe 3351 e 3360 |
+   | NCP-U09 | Il modello causale registrato dichiara variabili endogene `V`, esogene `U` con `P(U)` e meccanismi `F`; `do(X)` sostituisce `F_X`. Il port del motore tiene distinte abduction, action e prediction; il profilo PoC usa solo action e prediction. Il job ledger di C7 è su PostgreSQL. | ADD v1.3 righe 275, 2977 e 3036 |
+   | NCP-U11 | Gli adapter reali della memoria definiti oggi in `ocor-runtime/tests/tasks/test_ocor_dev_0051.py` passano nel pacchetto `ocor_runtime`, con lo stesso comportamento. In quel modulo di test le loro definizioni, e le funzioni di supporto usate solo da loro, sono sostituite dall'import dal pacchetto; gli altri moduli di test che usano `base.<adapter>` non cambiano. | ADD v1.3 riga 3763 |
+
+   Per lo spostamento di NCP-U11 sono autorizzate le riqualifiche di sola regressione dei task il cui ultimo record di evidenza ha fra gli input un file cambiato dallo spostamento.
+3. **Ambito di NCP-U13.** In aggiunta al piano, NCP-U13:
+   - modifica il backlog (`docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json`), il piano di tracciabilità (`docs/development_plan/OCOR_TRACEABILITY_PLAN.csv`), `scripts/validate_rccad.py` (fitness function `AFF-009` e `AFF-010`) e `scripts/validate_runtime_evidence.py`;
+   - modifica il generatore `scripts/build_ocor_development_plan.py` perché il backlog generato coincida con quello scritto, e aggiorna in `reports/planning/OCOR_PLAN_RUN_STATE.json` solo gli hash dei file che cambia: i controlli della CI `reports/tests/test_backlog_generator_reality_parity.py` e `scripts/validate_ocor_development_plan.py` devono passare senza essere cambiati. Non esegue il generatore da riga di comando, che riscriverebbe tutti gli artefatti, compreso il piano di tracciabilità che il test di parità non confronta;
+   - adatta le fixture positive di `reports/tests/test_runtime_evidence_validator.py` ai nuovi campi obbligatori, con le asserzioni invariate, e vi aggiunge i casi negativi delle nuove regole;
+   - può creare un indice non normativo della tracciabilità inversa dei test, con il suo validatore;
+   - scrive nel backlog, per `OCOR-DEV-0060` e `0062`–`0067`, i criteri e i requisiti di `g6_g7_proposals.tasks` (`proposed_acceptance_criteria`, `proposed_requirement_ids` e i casi per requisito), senza altre differenze che queste tre:
+     - i requisiti di `g6_exclusions` (66 requisiti, 72 coppie task–requisito, compresi `BR-018` e `FR-017` di `0067`), la cui release nel Register non comprende il PoC, escono da requisiti, criteri e casi del task;
+     - nei criteri di `0067` il ledger ha ancora una riga per ognuno dei 285 requisiti: per quelli la cui release non comprende il PoC la riga dichiara «fuori dal profilo PoC», senza evidenza di qualifica; i record sigillati non conformi non contano come evidenza (condizione 2 qui sotto);
+     - i conteggi tra parentesi nei criteri proposti («(N here)») si ricalcolano dopo le esclusioni;
+   - aggiorna la voce di backlog di `OCOR-DEV-0061` con `FR-118` e `FR-119` e con i casi FGM che il Register assegna a ciascuno;
+   - legge priorità, release, metodo di verifica e criteri solo dal Register v1.1, mai dalla matrice normativa `reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.*`, che ha colonne slittate (voce `NCR-GOVERNANCE-002`, punto 12);
+   - riporta nel piano di tracciabilità la release del Register per ogni requisito. Le righe la cui release non comprende il PoC non sono assegnate a task G6: passano a `verification_task` `OCOR-DEV-0067` e `target_gate` `G7` e dichiarano «fuori dal profilo PoC», restando valide per `scripts/validate_ocor_development_plan.py`. Fanno eccezione le righe con `verification_task` `OCOR-DEV-0061` e la riga di `FR-118`, che cambiano solo con la riqualifica con supersession di `0061` (qui sotto). Il validatore rifiuta un caso G6 che qualifica un requisito fuori dal profilo della campagna;
+   - propone nel proprio record, requisito per requisito, i criteri di `OCOR-DEV-0068` e `0069`, senza scriverli nel backlog;
+   - non modifica la matrice normativa, alcun record di evidenza sigillato, i guard, i workflow né altri controlli della CI. I record sigillati esistenti sono riconosciuti per percorso e sha256; ogni altro record è nuovo.
+
+   **Voci la cui difformità resta anche nei record sigillati.** Riguarda `NCR-EVIDENCE-001`, `NCR-EVIDENCE-002`, `NCR-PLAN-001` e `NCR-PLAN-004`. NCP-U13 le elenca in `resolved_register_entries` solo quando valgono tutte e quattro queste condizioni:
+   1. un validatore fail-closed rifiuta ogni record nuovo che lega un caso a un requisito non dichiarato dal test, o che non ha i campi di `NFR-004` e di LLD v1.1 §7.3 (metodo, metrica, soglia, baseline, dataset o scenario, risultato, owner, firma);
+   2. il record di NCP-U13 elenca i record sigillati non conformi; i criteri di `OCOR-DEV-0067` scritti nel backlog e il validatore li escludono come evidenza di qualsiasi requisito P0;
+   3. il backlog contiene i criteri per requisito di `0060` e `0062`–`0067` e lega `FR-118` e `FR-119` a `0061`;
+   4. il record di NCP-U13 registra, come prova di risoluzione di ciascuna voce, sonde che controllano i punti 1–3 e non i conteggi sui record sigillati. `verification` e `verification_probes` del registro restano invariati.
+
+   **`OCOR-DEV-0061`.** È già chiuso. Il suo test `ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py` controlla che i requisiti legati ai casi in `CAMPAIGN` coincidano con le righe del piano di tracciabilità che hanno `verification_task` `OCOR-DEV-0061`. Fra queste righe ci sono tre requisiti la cui release non comprende il PoC: `FR-135`, `NFR-025` e `NFR-033`.
+   - Fino alla riqualifica con supersession, il test e quelle righe non cambiano. Le riqualifiche di sola regressione di `0061` usano il test invariato; il loro record dichiara «fuori dal profilo PoC» i legami con `FR-135`, `NFR-025` e `NFR-033`, che quindi non qualificano quei requisiti.
+   - Dopo l'integrazione di NCP-U11 e NCP-U13, e prima dell'avvio di `OCOR-DEV-0067`, si esegue la riqualifica con supersession di `0061`, con un change set governato (primo `OCOR-DEV-REM-*` libero, ciclo completo). Lega i casi FGM ai requisiti secondo il Register e il punto 3: cambia insieme i legami in `CAMPAIGN` e le righe del piano di tracciabilità di `0061` e di `FR-118`. Può aggiungere casi; non ne toglie né ne indebolisce. È un riallineamento del caso 1 del punto 5, con RED e con le regole del punto 7 del programma.
+   - Fino ad allora l'evidenza di `0061` non conta per `0067`.
+4. **Voci `DECISION_REQUIRED`.** Il PO sceglie fra le opzioni registrate in `decision_options` di ciascuna voce:
+   - **`NCR-C2-008`: opzione 2.** Sul wire del gateway i cinque digest `policy_bundle_digest`, `governed_context_digest`, `ontology_release_digest`, `contract_digest` e `SchemaPin.digest` restano nella forma `sha256:<hex>` del contratto. L'adapter di trasporto del gateway (le operazioni di `NCR-C2-011`) li converte in modo biunivoco da e verso la forma interna `urn:sha256:<hex>`: il modello di dominio e i suoi test restano nella forma interna, e `governed_context_digest` si calcola sulla forma interna del GovernedContext. L'adapter di trasporto rifiuta un digest malformato con `SCHEMA_VIOLATION`. Gli altri campi restano nella forma che il contratto prescrive. Contratti e schema del GovernedContext non cambiano. La voce passa a `OPEN` in NCP-U03.
+   - **`NCR-C7-002`: opzione A, con due precisazioni.** Vale l'insieme chiuso di ADD v1.3 §4.2 (righe 3007–3024). Le precisazioni riguardano due casi di `OUT_OF_DOMAIN` e di `POSITIVITY_FAILURE` che sono errori di schema, e quindi `REJECTED` (riga 3024). Mappatura delle condizioni attuali:
+
+     | Condizione attuale | Esito |
+     |---|---|
+     | `RELEASE_MISMATCH` | `REJECTED`, `contract_or_policy_reason` `RELEASE_MISMATCH` |
+     | `MAIN_CONTAMINATED` | `REJECTED`, `MAIN_CONTAMINATED` |
+     | `MISSING_FACTUAL_SET` | `REJECTED`, `MISSING_FACTUAL_SET` |
+     | `FACTUAL_SCHEMA_INVALID` | `REJECTED`, `FACTUAL_SCHEMA_INVALID` |
+     | trattamento non binario (oggi `POSITIVITY_FAILURE`) | `REJECTED`, `FACTUAL_SCHEMA_INVALID` |
+     | envelope assente o malformato, oppure valore non numerico (oggi `OUT_OF_DOMAIN`) | `REJECTED`, `INTERVENTION_SCHEMA_INVALID` |
+     | valore fuori da un constraint esplicito di un envelope ben formato (oggi `OUT_OF_DOMAIN`) | `ABSTAIN` `OUTSIDE_VALIDITY_ENVELOPE`, con `failed_conditions` |
+     | `UNRESOLVED_CONFOUNDING` | `ABSTAIN` `NOT_IDENTIFIED` |
+     | uno strato senza uno dei due bracci (oggi `POSITIVITY_FAILURE`) | `ABSTAIN` `ASSUMPTION_VIOLATION` |
+
+     Le condizioni di `REJECTED` si valutano prima di quelle di `ABSTAIN`; fra le `ABSTAIN` vale la precedenza di ADD v1.3 riga 3020. `OUT_OF_DISTRIBUTION` si usa solo con diagnostiche del supporto empirico, a constraint espliciti soddisfatti. Gli errori dei pin restano a `NCR-C7-003`. La voce passa a `OPEN` in NCP-U09.
+   - **`NCR-C7-006`: opzione A.** Nel profilo PoC ogni query controfattuale a livello di unità valida per struttura restituisce `REJECTED{CAPABILITY_DEFERRED, ELM-070}` senza leggere il factual set, anche sul ramo `main` o con un indice di unità fuori intervallo (ADD v1.3 riga 3036). Una query non valida per struttura restituisce `REJECTED` per il suo errore di schema. A input identici corrisponde un esito identico e riproducibile. La voce passa a `OPEN` in NCP-U09.
+   - **`NCR-C3-007`: opzione 1, con prova.** Il relay di TerminusDB conferma una consegna solo sotto il writer con l'epoch corrente (ADD v1.3 riga 271). NCP-U04 lo dimostra sul backend reale con un test di caratterizzazione: un relay con un'epoch non corrente non può confermare una consegna. Una sonda di mutazione mostra che il test fallisce se il controllo dell'epoch viene rimosso; se il test passa già sul codice di partenza, la sonda sostituisce il RED. La voce passa a `OPEN` in NCP-U04.
+   - **`NCR-C8-006`: opzione A.**
+     - L'`AgentKernel` legacy resta invariato.
+     - Il kernel C8 corrente (NCP-U10) non si costruisce senza un'Authority: nessun default permissivo. È un criterio aggiuntivo di NCP-U10.
+     - Il mission thread (NCP-U12) usa il kernel corrente.
+
+     La voce diventa `DEFERRED_BY_PO` fino al ritiro della slice legacy (punto 6).
+   - **`NCR-LEGACY-001`: opzione A ora, opzione C in seguito.**
+     - La slice legacy resta invariata.
+     - Il registro, l'evidenza G6 e il registro di tracciabilità di `OCOR-DEV-0067` citano solo identificatori LLD. Ogni citazione di un test legacy è qualificata come legacy.
+     - NCP-U13 aggiunge al validatore il rifiuto di un caso G6 che lega un test legacy (`acceptance_ev`, `backend_assumptions`) a un identificatore normativo `ACT-T*`, `BA-*` o `EV-*`.
+
+     La voce diventa `DEFERRED_BY_PO` fino al ritiro (punto 6).
+   - **`NCR-C1-007` e `NCR-C3-005`: opzione 1.** Restano invariate e registrate come parti legacy non normative. Diventano `DEFERRED_BY_PO` fino al ritiro (punto 6).
+5. **Test esistenti.** Oltre a `existing_tests_to_realign_or_adapt` del piano, un'unità può riallineare o adattare:
+   - i test della tabella qui sotto, con la scelta indicata;
+   - ogni altro test che rientra in uno di questi tre casi, per una voce della stessa unità:
+     1. asserisce un valore o un comportamento che contraddice l'elemento normativo chiuso che la voce realizza: riallineamento, con RED e con la citazione della norma con file e riga;
+     2. fissa la sha256 di un file che l'unità modifica: il valore diventa la sha256 del file all'head dell'unità, senza RED;
+     3. costruisce oggetti, fixture o precondizioni che l'unità cambia per un elemento normativo chiuso: adattamento della costruzione o della precondizione, senza RED.
+
+   Fra i casi già noti: `test_ocor_dev_0012.py` righe 124 e 131 (NCP-U03); i pin di `test_ocor_dev_rem_0041_overlay.py` righe 69–71 (NCP-U04 e NCP-U09) e la sua riga 1225 (NCP-U09); `test_ocor_dev_rem_0039.py` righe 437–456 (NCP-U07); in `test_ocor_dev_0045.py` lo stato `IDENTIFIED`, che `NCR-C7-003` porta a `ESTIMATED`, `MODEL`, la fixture `query` e il confronto con lo spike sigillato, dove l'uguaglianza dell'effetto resta (NCP-U09); in `test_ocor_dev_0040.py` e `test_ocor_dev_rem_0026.py` i campi fuori dall'envelope 1.2 e la partizione e l'offset esposti da `consume` (NCP-U06).
+
+   Il record dell'unità elenca ogni test così cambiato, nella forma di `existing_tests_to_realign_or_adapt`: tipo, file e righe, asserzione attuale, valore prescritto, ancora normativa. Valgono le regole del punto 7 del programma:
+   - numero di funzioni e di casi invariato o maggiore, nomi delle funzioni invariati;
+   - nessun test, asserzione, caso, input, timeout, soglia o limite meno severo;
+   - nessun test rimosso, saltato, marcato, deselezionato o spostato, salvo dove la tabella lo dice;
+   - nessun valore accettato in più;
+   - negli adattamenti, il confronto dell'albero sintattico mostra invariati l'elenco delle funzioni di test, le asserzioni, i `pytest.raises` e le parametrizzazioni.
+
+   Fuori da questi casi, fermati e apri una decision request.
+
+   | Unità | Test | Scelta |
+   |---|---|---|
+   | NCP-U03 | `test_ocor_dev_0034.py`, righe 221 e 261 | `CONTRACT_NOT_FOUND` per entrambi, prima di qualsiasi lookup dell'identità |
+   | NCP-U03 | `test_ocor_dev_0034.py`, riga 418 | `CONTROL_PLANE_UNAVAILABLE` (ADD v1.3 righe 174 e 3141) |
+   | NCP-U06 | `test_ocor_dev_0040.py`, `test_ocor_dev_0041.py`, `test_ocor_dev_rem_0022.py`, `test_ocor_dev_rem_0025.py` e `test_ocor_dev_rem_0026.py` | Per il criterio del punto 2: fixture, classi di supporto, osservazioni degli offset e punti di iniezione dei guasti passano al client e agli strumenti di qualifica del broker, senza RED; il tipo di ogni guasto iniettato resta lo stesso. Le asserzioni che `NCR-C5-001` e `NCR-C5-002` rendono non conformi si riallineano con RED (caso 1) |
+   | NCP-U05 | `test_ocor_dev_0037.py`, righe 158–165 | All'adapter, errore tipizzato con reason code `PROJECTION_NOT_READY` al posto di `URLError`. C4 registra in modo durevole, fuori dallo store di proiezione, l'ultimo watermark e l'ultimo commit confermati: con la proiezione irraggiungibile il gateway restituisce `PROJECTION_NOT_READY` con `served` costruito da quei valori e la staleness calcolata dal loro istante (ADD v1.3 righe 1364 e 3406). Nessun valore fabbricato |
+   | NCP-U07 | `test_ocor_dev_0042.py`, righe 128–141, e `test_ocor_dev_rem_0039.py`, righe 437–456 e 473–482 | Adattamento della precondizione, senza RED: ogni transizione parte dal suo stato sorgente, con evento e guardia soddisfatti |
+   | NCP-U09 | `test_ocor_dev_0045.py` e `test_ocor_dev_rem_0040.py` | Esiti attesi secondo il punto 4 (`NCR-C7-002`, `NCR-C7-006`) e lo stato `ESTIMATED` (`NCR-C7-003`). Dove una condizione oggi è un booleano del chiamante che `NCR-C7-004` elimina (`contaminated_main`, `unresolved_confounding`), la precondizione si costruisce con il ramo, lo scenario o il modello che la producono. L'esito astenuto del round trip di REM-0040 si costruisce con un caso non identificabile e attende `NOT_IDENTIFIED` |
+   | NCP-U10 | `test_ocor_dev_0047.py`, riga 286 | `POLICY_DENIED` |
+   | NCP-U10 | `test_ocor_dev_rem_0027.py`, riga 410 | `EXECUTION_UNKNOWN` (LLD v1.1 riga 282); l'asserzione sull'esito sconosciuto resta |
+   | NCP-U11 | `test_ocor_dev_0055.py`, righe 481–483 | I tre casi passano a un test positivo di cancellazione, con almeno lo stesso numero di casi |
+6. **Ritiro della slice legacy.** È approvato in linea di principio (opzione C di `NCR-LEGACY-001`). Quando NCP-U04, U07, U08, U10 e U12 sono integrate, apri la decision request di livello normativo `NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT`. Deve contenere:
+   - le dipendenze residue dalla slice legacy (attese: nessuna);
+   - i file da rimuovere;
+   - i test da ritirare, con le riqualifiche;
+   - l'effetto sui record sigillati;
+   - le voci `DEFERRED_BY_PO` che il ritiro risolve.
+
+   Fino ad allora la slice legacy non cambia.
+7. **Nuove dipendenze.** In deroga allo stop sulle dipendenze del punto 6 della decisione del programma, sono ammesse solo:
+   - `confluent-kafka` (Apache-2.0), client di Kafka per il backbone di C5 (Kafka è configuration item di C5 secondo ADD v1.3 riga 273), dietro il port del backbone, fra le dipendenze di runtime di `ocor-runtime/pyproject.toml`;
+   - DoWhy (PyWhy), configuration item di C7 secondo ADD v1.3 riga 275, dietro un port di C7, fra le dipendenze di runtime di `ocor-runtime/pyproject.toml`;
+   - Hypothesis, come dipendenza di solo test, nell'extra `test` di `ocor-runtime/pyproject.toml`.
+
+   Tutte e tre entrano con un'unica modifica di `pyproject.toml` e `uv.lock`, solo per aggiunta, in NCP-U06, la prima unità che ne ha bisogno. NCP-U09 e NCP-U12 le usano senza altre modifiche. Condizioni:
+   - ogni pacchetto aggiunto, anche transitivo, e ogni libreria nativa che contiene hanno una licenza compatibile con un prodotto proprietario: MIT, BSD, Apache-2.0, ISC, PSF, zlib o equivalente; MPL-2.0 per pacchetti usati senza modifiche. Le librerie di runtime native non modificate e collegate dinamicamente sono ammesse anche con LGPL o con GPL e GCC Runtime Library Exception (per esempio libgfortran e libquadmath nei wheel di numpy e scipy). Escluse le altre licenze GPL, AGPL, SSPL e BUSL;
+   - versioni esatte con hash in `uv.lock`;
+   - nel record dell'unità, l'elenco completo dei pacchetti aggiunti, anche transitivi, con le licenze e la scansione delle vulnerabilità;
+   - nessun accesso di rete a runtime oltre ai servizi configurati dello stack (per `confluent-kafka`, solo i broker Kafka configurati): nessun download, nessuna telemetria;
+   - per DoWhy, risultati deterministici con seed.
+
+   Per quella modifica sono autorizzate le riqualifiche di sola regressione dei task il cui ultimo record di evidenza ha `uv.lock` o `pyproject.toml` fra gli input. Nessun'altra modifica di `uv.lock`. Se una condizione non è soddisfatta, fermati e apri una decision request.
+8. **`OCOR-DEV-0060-BA-RUNTIME-GAPS` (PR #408): opzione 1, dentro il programma.** Nessun fallback di ADD §2.6 si attiva: resta valida la decisione del 2026-10-26. Le lacune si chiudono nelle unità del programma, non con remediation separate:
+
+   | Lacuna | Contenuto | Voci | Unità |
+   |---|---|---|---|
+   | `BA-03` | `PROJECTION_NOT_READY` invece del downgrade; `AT_LEAST_COMMIT` corretto | `NCR-C2-012`, `NCR-C2-001` | NCP-U03 |
+   | `BA-03` | sandbox disposable per `EXACT_AT_COMMIT(Cn)` sulle query logiche nominate; `UNSUPPORTED_CAPABILITY` quando l'emulazione non è disponibile | `NCR-C4-004` (nuova) | NCP-U05 |
+   | `BA-04` | validazione SHACL delle shape di ADD §3.6 con il servizio SHACL di Fuseki; export watermark correlato al commit canonico | `NCR-C4-002` | NCP-U05 |
+   | Transazione TypeDB | transazione chiusa su ogni percorso d'errore, compresi gli errori di connessione e un commit fallito | `NCR-C4-003`, criterio esteso | NCP-U05 |
+   | `BA-05` | FSM con stato corrente e guardie | `NCR-C6-003` | NCP-U07 |
+   | `BA-06` | job ledger di C7 su PostgreSQL: lifecycle di ADD §4.2, budget, quota, progress, cancellation, timeout, backpressure, rilascio delle risorse entro `PT30S` (ADD v1.3 riga 2927) | `NCR-C7-004`, criterio esteso | NCP-U09 |
+
+   - Le unità indicate devono risolvere queste voci.
+   - `OCOR-DEV-0060` parte solo quando ogni voce che lo indica in `blocks` è risolta oppure `DEFERRED_BY_PO`.
+   - Il branch `task/OCOR-DEV-0060-ba-campaign` (`43d9616`) si conserva e si riusa quando riprende `OCOR-DEV-0060`.
+9. **`REM-0038-GUARD-BASELINE-CONSOLIDATION` (PR #406): opzione 1.** Come descritto nella decision request:
+   - baseline unica `82b71d0db410bcdb8124e8ec8a8235631ecfa1fa`, con identità di byte;
+   - catena storica congelata in un test storico;
+   - i 34 casi negativi più le sonde di ricollocazione.
+
+   Si realizza con un change set governato, con il primo `OCOR-DEV-REM-*` libero e ciclo completo, e con le riqualifiche di sola regressione di `0005` e `0050` (e di `0082`, se serve). Supervisore, osservatore e workflow non cambiano. Non è un'unità del programma: la modifica del guard è autorizzata da questa decisione. Si esegue subito dopo questa decisione, prima di NCP-U13.
+10. **`OCOR-DEV-REM-0043`.** NCP-U10 riprende test e correzione del branch `governed/ocor-dev-rem-0043-c8-dispatch-live-revocation` (RED `81a8b76`, correzione `105b781`) per `NCR-C8-007`, alle condizioni dei punti 6–8 della decisione del programma. `OCOR-DEV-REM-0043` non si integra da sola: si chiude come superata da NCP-U10 quando NCP-U10 è integrata.
+11. **Task G6 e G7.**
+    - Sono sbloccati per nome `OCOR-DEV-0060`, `0062`, `0063`, `0064`, `0065`, `0066` e `0067`. Ciascuno parte solo quando:
+      - NCP-U13 è integrata e il backlog contiene i suoi criteri approvati (punto 3);
+      - ogni voce del registro che lo indica in `blocks` è risolta oppure `DEFERRED_BY_PO`;
+      - le sue dipendenze del backlog sono soddisfatte;
+      - per `OCOR-DEV-0067`, inoltre, ogni voce `HIGH` è risolta, `REFUTED` o `DEFERRED_BY_PO`, e la riqualifica con supersession di `OCOR-DEV-0061` (punto 3) è integrata.
+    - Fino ad allora restano fra i `blocked_tasks` della voce `NORMATIVE-CONFORMANCE-PROGRAMME` di `blockers`. Lo state sync che constata le condizioni di un task lo toglie da quell'elenco e, se c'è, da `suspended_by_po`.
+    - `OCOR-DEV-0068` e `0069` restano bloccati: il piano non propone i loro criteri. NCP-U13 li propone (punto 3); il PO deciderà a parte.
+    - Per `OCOR-DEV-0061` vale il punto 3.
+12. **Registrazione.** I candidati non portano stato. Al primo state sync:
+    - registra questa decisione come disposition nei file delle tre decision request, secondo `AGENTS.md`, e nell'`ITERATION_LOG.md`. Da quel momento il file della decision request `NORMATIVE-CONFORMANCE-PLAN` non cambia più: è il riferimento di `po_decision_ref`;
+    - applica al registro le operazioni del file dati, con le sue regole e nessun'altra modifica: quattro voci a `OPEN` con la loro unità, quattro voci a `DEFERRED_BY_PO`, le voci nuove `NCR-C4-004` e `NCR-GOVERNANCE-002`, `OCOR-DEV-0060` in `blocks` di `NCR-C4-002` e `NCR-C4-003`, gli elementi aggiunti alle unità e i due criteri estesi. Sostituisci i segnaposto come indica il file: l'HEAD dello state sync, l'esito reale delle verifiche delle voci nuove, il `po_decision_ref` di ogni voce elencata in `po_decision_ref_entries`;
+    - il test di integrità del registro passa;
+    - aggiorna la voce `NORMATIVE-CONFORMANCE-PROGRAMME` di `blockers` con le condizioni di avvio del punto 11;
+    - riscrivi `next_action` e `next_executable_action`: prima il change set del punto 9, poi NCP-U13.
