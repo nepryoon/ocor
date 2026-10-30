@@ -10,12 +10,16 @@ OCOR-DEV-REM-0046 (NCP-U13, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3): th
 fixture record is a new record, so it carries a requirement case with the
 evidence-package fields of LLD v1.1 §7.3 (docs/OCOR_LLD_v1.1.md:411) and NFR-004
 (Requirement Register v1.1 :26), bound to a requirement its test declares; the
-negative cases of the new rules follow the original ones.
+negative cases of the new rules follow the original ones. REM-0046-REGRESSION-REQUALIFICATION-RECORDS
+(2026-10-30, option 1): a regression-only requalification record is a declared
+non-qualifying class; it gets every check that does not concern requirements and is
+rejected if it binds a case to a requirement or does not supersede a record of its task.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -116,6 +120,61 @@ def _write_fixture(
         "gate": gate,
         "schema_version": "1.0",
     }
+    (base / "MANIFEST.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+_PREVIOUS = "evidence/OCOR-DEV-9999.previous.json"
+
+
+def _write_regression_fixture(
+    base: Path,
+    *,
+    commands: list[dict[str, Any]] | None = None,
+    previous_task: str = _TASK,
+    manifest_cases: list[dict[str, Any]] | None = None,
+    drop: tuple[str, ...] = (),
+    **overrides: Any,
+) -> None:
+    """A regression-only requalification record superseding an earlier record of the task."""
+    previous = {"record_id": "OCOR-DEV-9999-previous", "task_id": previous_task}
+    previous_bytes = json.dumps(previous, indent=2, sort_keys=True).encode("utf-8")
+    (base / _PREVIOUS).parent.mkdir(parents=True, exist_ok=True)
+    (base / _PREVIOUS).write_bytes(previous_bytes)
+    record: dict[str, Any] = {
+        "task_id": _TASK,
+        "result": "PASS",
+        "commands": [_full_command()] if commands is None else commands,
+        "raw_output_sha256": _sha256(_RAW),
+        "commit": "0" * 40,
+        "environment": {"host": "test"},
+        "created_at": "2026-10-30T00:00:00Z",
+        "requalification_kind": "regression",
+        "qualifies_requirements": False,
+        "supersedes": "OCOR-DEV-9999-previous",
+        "previous_record": {
+            "record_id": "OCOR-DEV-9999-previous",
+            "record_path": _PREVIOUS,
+            "record_sha256": _sha256(previous_bytes),
+        },
+    }
+    record.update(overrides)
+    for key in drop:
+        del record[key]
+    record_bytes = json.dumps(record, indent=2, sort_keys=True).encode("utf-8")
+    (base / f"{_TASK}.json").write_bytes(record_bytes)
+    (base / f"{_TASK}.log").write_bytes(_RAW)
+    manifest: dict[str, Any] = {
+        "artifacts": [
+            {"path": f"{_TASK}.json", "sha256": _sha256(record_bytes), "task_id": _TASK},
+            {"path": f"{_TASK}.log", "sha256": _sha256(_RAW), "task_id": f"{_TASK}-RAW"},
+        ],
+        "gate": "G9",
+        "schema_version": "1.0",
+    }
+    if manifest_cases is not None:
+        manifest["requirement_results"] = manifest_cases
     (base / "MANIFEST.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -386,6 +445,84 @@ class RuntimeEvidenceValidatorTests(unittest.TestCase):
             case = _case(tests=[f"{legacy}::test_fixture_case"], ba_id="BA-01")
             _write_fixture(base, [_full_command()], cases=[case], gate="G6")
             _assert_fail(self, base, expected="binds the legacy test")
+
+    # REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30), option 1: the regression class.
+    def test_accepts_regression_requalification_record(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_regression_fixture(base)
+            _assert_pass(self, base)
+
+    def test_rejects_regression_record_with_a_requirement_case(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_regression_fixture(base, requirement_results=[_case()])
+            _assert_fail(self, base, expected="regression requalification record binds a case to a requirement")
+
+    def test_rejects_regression_record_with_a_manifest_requirement_case(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            row = {"case_id": "OCOR-DEV-9999-REGRESSION", "evidence_path": f"{_TASK}.json", "requirement_id": "FR-062", "status": "PASS"}
+            _write_regression_fixture(base, manifest_cases=[row])
+            _assert_fail(self, base, expected="regression requalification record binds a case to a requirement")
+
+    def test_rejects_regression_record_that_qualifies_requirements(self) -> None:
+        for value in (True, None, "false"):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_regression_fixture(base, qualifies_requirements=value)
+                _assert_fail(self, base, expected="qualifies_requirements is not false")
+
+    def test_rejects_regression_record_without_supersedes(self) -> None:
+        for drop in (("supersedes",), ("previous_record",)):
+            with self.subTest(drop=drop), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_regression_fixture(base, drop=drop)
+                _assert_fail(self, base, expected="does not supersede a record")
+
+    def test_rejects_regression_record_superseding_another_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_regression_fixture(base, previous_task="OCOR-DEV-9998")
+            _assert_fail(self, base, expected="supersedes a record of OCOR-DEV-9998")
+
+    def test_rejects_regression_record_with_a_mismatched_superseded_record(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_regression_fixture(base, supersedes="OCOR-DEV-9999-other")
+            _assert_fail(self, base, expected="does not supersede a record")
+
+    def test_rejects_regression_record_failing_the_non_requirement_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_regression_fixture(base, commands=[_full_command(skipped=1)])
+            _assert_fail(self, base, expected="command result.skipped is not a valid zero: 1")
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_regression_fixture(base, drop=("commit",))
+            _assert_fail(self, base, expected="evidence fields missing: commit")
+
+    def test_regression_record_never_counts_as_requirement_evidence(self) -> None:
+        spec = importlib.util.spec_from_file_location("validate_runtime_evidence_fixture", VALIDATOR)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.requirement_register()
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            gate = base / "reports/evidence/G5"
+            gate.mkdir(parents=True)
+            registry = base / "reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json"
+            registry.parent.mkdir(parents=True)
+            registry.write_text(json.dumps({"records": []}), encoding="utf-8")
+            (base / _TEST_FILE).parent.mkdir(parents=True, exist_ok=True)
+            (base / _TEST_FILE).write_text(_TEST_SOURCE, encoding="utf-8")
+            _write_regression_fixture(gate, requirement_results=[_case()])
+            module.ROOT = base
+            report = module.requirement_evidence("FR-062")
+        self.assertEqual([], report["qualifying_records"])
+        self.assertEqual(["reports/evidence/G5/OCOR-DEV-9999.json"], [item["path"] for item in report["rejected_records"]])
+        self.assertIn("regression requalification record", report["rejected_records"][0]["reason"])
 
 
 if __name__ == "__main__":
