@@ -456,7 +456,10 @@
         }
       ],
       "plan_unit": "",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [],
@@ -464,7 +467,7 @@
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a70.2 / ADD v1.3 \u00a73.0; not a P0 PoC requirement nor a \u00a70.2 contract",
       "statement": "The legacy artefact ocor-runtime/schemas/ocor.openapi.yaml (version 1.2.0) describes itself as the 'Normative C1-C8 contract' although it is not among the contracts materialised by LLD v1.1 \u00a70.2, and its /compile and /identities:resolve operations declare no security requirement; the legacy SemanticCompiler validates nothing when no schema is configured. Remediation would change the legacy slice (ocor-runtime/schemas/, c1_compiler.py).",
-      "status": "DECISION_REQUIRED",
+      "status": "DEFERRED_BY_PO",
       "test_refs": [
         {
           "commit": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
@@ -1222,8 +1225,11 @@
           "path": "docs/OCOR_LLD_v1.1.md"
         }
       ],
-      "plan_unit": "",
-      "po_decision_ref": null,
+      "plan_unit": "NCP-U03",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -1234,7 +1240,7 @@
       "severity": "HIGH",
       "severity_basis": "contract of LLD v1.1 \u00a70.2 violated under either reading",
       "statement": "Digest format conflict between normative sources: the Named Query Gateway contract requires '^sha256:<hex>' for policy_bundle_digest, governed_context_digest, ontology_release_digest, contract_digest and SchemaPin.digest, while LLD v1.1 \u00a71.1 and the GovernedContext schema prescribe 'urn:sha256:<hex>' (and the same gateway contract uses urn:sha256 for classification_marking_ref and provenance_ref). The code follows urn:sha256 and rejects every contract-form digest. Both sources are contracts of LLD v1.1 \u00a70.2 / LLD text; the precedence of LLD v1.1 \u00a70.1 does not settle a conflict inside the materialised contract set.",
-      "status": "DECISION_REQUIRED",
+      "status": "OPEN",
       "test_refs": [],
       "type": "CONFLICT",
       "verification": {
@@ -1833,7 +1839,10 @@
         }
       ],
       "plan_unit": "",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [],
@@ -1842,7 +1851,7 @@
       "severity": "MEDIUM",
       "severity_basis": "DEC-201, a closed normative decision, with observable effect",
       "statement": "fallback.postgres_outbox.select_atomic_backend selects the PostgreSQL transactional outbox implicitly from a capability attribute (supports_atomic_multi_document_writes), against 'no implicit fallback'; it is not wired to any operational path and raises non-normative errors (ConcurrencyConflict, ValueError, RuntimeError). Changing it changes the outcome of the legacy-slice test test_ba01_atomic_outbox.py.",
-      "status": "DECISION_REQUIRED",
+      "status": "DEFERRED_BY_PO",
       "test_refs": [
         {
           "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
@@ -1940,8 +1949,11 @@
           "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
         }
       ],
-      "plan_unit": "",
-      "po_decision_ref": null,
+      "plan_unit": "NCP-U04",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [],
@@ -1949,7 +1961,7 @@
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a72.3 by analogy; not a P0 PoC requirement",
       "statement": "From supplement NCP-S04, TerminusDB part: the TerminusDB claim_outbox_batch computes pending entries from a read snapshot without writing any claim, so concurrent relays read the same entries. The norm prescribes SKIP LOCKED for PostgreSQL rows and does not specify the TerminusDB equivalent.",
-      "status": "DECISION_REQUIRED",
+      "status": "OPEN",
       "supplement_ref": "NCP-S04",
       "test_refs": [],
       "type": "DIVERGENT",
@@ -2045,6 +2057,7 @@
     },
     {
       "blocks": [
+        "OCOR-DEV-0060",
         "OCOR-DEV-0066"
       ],
       "code_refs": [
@@ -2099,7 +2112,10 @@
         }
       ],
       "plan_unit": "NCP-U05",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -2121,6 +2137,7 @@
     },
     {
       "blocks": [
+        "OCOR-DEV-0060",
         "OCOR-DEV-0064"
       ],
       "code_refs": [
@@ -2149,7 +2166,10 @@
         }
       ],
       "plan_unit": "NCP-U05",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [],
@@ -2171,6 +2191,63 @@
       "verification": {
         "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
         "outcome": "probe prints 'C4-3 _request catches URLError: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060"
+      ],
+      "code_refs": [
+        {
+          "commit": "12f6088592ce98393b8df119deeb28f626ef46a8",
+          "lines": "241-251",
+          "note": "read serves only the currently projected commit",
+          "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+        }
+      ],
+      "component": "C4",
+      "depends_on": [
+        "NCR-C2-012"
+      ],
+      "id": "NCR-C4-004",
+      "norm_refs": [
+        {
+          "lines": "356",
+          "note": "ADD v1.3 section 2.6, BA-03: disposable sandbox serving EXACT_AT_COMMIT(Cn) on named logical queries",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1366",
+          "note": "ADD v1.3 section 3.3: emulation unavailable gives UNSUPPORTED_CAPABILITY, never a silent downgrade to AT_LEAST_COMMIT",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "369",
+          "note": "LLD v1.1 section 7.1, oracle BA-03",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
+      "provenance": "gap BA-03 of decision request OCOR-DEV-0060-BA-RUNTIME-GAPS, registered by PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-057"
+      ],
+      "seed_ref": "",
+      "severity": "HIGH",
+      "severity_basis": "BA-03 is to be qualified by OCOR-DEV-0060 and FR-057 is P0 PoC: the strongest consistency mode is not served on named logical queries",
+      "statement": "No disposable sandbox serves EXACT_AT_COMMIT(Cn) for named logical queries: the TypeDB adapter serves only the currently projected commit, and no module under c2/ or c4/ returns UNSUPPORTED_CAPABILITY when the emulation is unavailable.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "grep -rn 'UNSUPPORTED_CAPABILITY' --include=*.py ocor-runtime/src/ocor_runtime/c2 ocor-runtime/src/ocor_runtime/c4 ; sed -n '241,251p' ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py",
+        "outcome": "grep finds no UNSUPPORTED_CAPABILITY under ocor_runtime/c2 or ocor_runtime/c4 (exit 1); typedb_adapter.py lines 241-251: read serves the commit of the row actually read or the current watermark, with no sandbox at an earlier commit Cn. CONFIRMED at 12f6088592ce98393b8df119deeb28f626ef46a8 (state sync after the OCOR-DEV-REM-0045 integration, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 12)."
       }
     },
     {
@@ -3563,7 +3640,10 @@
         }
       ],
       "plan_unit": "NCP-U09",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -3574,7 +3654,7 @@
       "severity": "HIGH",
       "severity_basis": "FR-009 and FR-098 are P0 PoC",
       "statement": "The six abstention codes produced (MAIN_CONTAMINATED, RELEASE_MISMATCH, MISSING_FACTUAL_SET, UNRESOLVED_CONFOUNDING, OUT_OF_DOMAIN, POSITIVITY_FAILURE) are outside the closed ABSTAIN set of ADD v1.3 \u00a74.2 and no precedence is applied. LLD v1.1 \u00a72.7 names exactly these six conditions as disjoint reason codes, ADD v1.3 \u00a74.2 prescribes eight different codes with a precedence and sends signature, schema, policy and version-pin errors to REJECTED. ADD prevails (LLD v1.1 \u00a70.1), and some mappings are univocal (RELEASE_MISMATCH -> REJECTED; an explicit valid_envelope violation -> OUTSIDE_VALIDITY_ENVELOPE), but the mapping of MAIN_CONTAMINATED, MISSING_FACTUAL_SET, UNRESOLVED_CONFOUNDING and POSITIVITY_FAILURE is not fixed by either text.",
-      "status": "DECISION_REQUIRED",
+      "status": "OPEN",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -3737,7 +3817,10 @@
         }
       ],
       "plan_unit": "NCP-U09",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -3852,7 +3935,10 @@
         }
       ],
       "plan_unit": "NCP-U09",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -3862,7 +3948,7 @@
       "severity": "MEDIUM",
       "severity_basis": "closed element of ADD v1.3 \u00a74.2 (capability deferral); FR-095 is MVP, not PoC",
       "statement": "estimate_counterfactual returns IDENTIFIED with a unit-level counterfactual outcome (STRATIFIED_BACKDOOR_COUNTERFACTUAL: observed outcome plus the within-stratum arm difference). In the PoC profile the Counterfactual Query (ELM-070) is deferred and full abduction-action-prediction execution returns REJECTED{CAPABILITY_DEFERRED, ELM-070}; the operation is not AAP (no abduction of U), but it answers a unit-level counterfactual query, and the norm does not say whether such a non-AAP imputation is inside the deferred capability.",
-      "status": "DECISION_REQUIRED",
+      "status": "OPEN",
       "test_refs": [],
       "type": "EXTRA",
       "verification": {
@@ -4402,7 +4488,10 @@
         }
       ],
       "plan_unit": "NCP-U10",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [
@@ -4414,7 +4503,7 @@
       "severity": "HIGH",
       "severity_basis": "FR-004 and NFR-037 are P0 PoC",
       "statement": "The legacy AgentKernel built without capability_authority (its default) runs invoke and execute_sandboxed with no capability at all: authorisation is skipped instead of failing closed. No current component under ocor-runtime/src constructs AgentKernel; legacy-slice tests (acceptance_ev) and the mission-thread test construct it without an authority, so making it fail closed changes the legacy slice and the outcome of its tests.",
-      "status": "DECISION_REQUIRED",
+      "status": "DEFERRED_BY_PO",
       "test_refs": [
         {
           "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
@@ -5141,7 +5230,10 @@
         }
       ],
       "plan_unit": "",
-      "po_decision_ref": null,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
       "remediation_record": "",
       "remediation_unit": "",
       "requirement_ids": [],
@@ -5149,7 +5241,7 @@
       "severity": "LOW",
       "severity_basis": "nomenclature without observable runtime effect; the collision can mislead evidence binding in OCOR-DEV-0060, 0063 and 0067",
       "statement": "The legacy slice uses identifiers that collide with normative ones. (a) c5_actions.py implements ACT-T01..ACT-T31b with different semantics (legacy ACT-T21 is RUNNING -> SUCCEEDED on SUCCEED; LLD v1.1 ACT-T21 is EXECUTION_FAILED -> COMPENSATING) and ocor_runtime/__init__.py re-exports it. (b) tests/acceptance_ev uses EV-0xx identifiers that collide with the EV identifiers of the Decision Register (EV-020 is bit-for-bit replay, DEC-102). (c) tests/backend_assumptions/test_ba01..test_ba08 use the BA numbering with meanings different from LLD v1.1 \u00a77.1 (for example test_ba05_temporal_guards against BA-05, Temporal/PostgreSQL running the 44 transitions); they were created as BA01-BA08 (commit ddfa97d), not renamed from RBA-*. Current components that depend on legacy classes are recorded per component (NCR-C3-002, NCR-C6-004, NCR-C6-005, NCR-C6-012, NCR-C8-004, NCR-C8-006). Renaming changes the legacy slice: DECISION_REQUIRED by point 4.d.",
-      "status": "DECISION_REQUIRED",
+      "status": "DEFERRED_BY_PO",
       "test_refs": [
         {
           "commit": "e8d73370acb970de2aca55a1316551d59e5b81cb",
@@ -5800,6 +5892,49 @@
       "verification": {
         "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe OBS-PROBE-01>",
         "outcome": "probe prints the AFF-009 file list (c6_capabilities.py AuthorizationError, c7_emission.py EmissionBlocked, c8_agent.py SandboxViolation); validate_rccad.py:328-330 tests only the truthiness of requirement_ids. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [],
+      "code_refs": [],
+      "component": "GOVERNANCE",
+      "decision_options": [
+        "1. Governed erratum of the matrix (JSON and Markdown), regenerated from the Register v1.1 under a dedicated PO decision.",
+        "2. Keep the matrix unchanged; tools read priority, release, method and criteria only from the Register (PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30), point 3)."
+      ],
+      "depends_on": [],
+      "id": "NCR-GOVERNANCE-002",
+      "norm_refs": [
+        {
+          "lines": "112",
+          "note": "Register v1.1 row of FR-022: priority and release",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "46",
+          "note": "matrix row of FR-022 with shifted priority and release",
+          "path": "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.md"
+        }
+      ],
+      "plan_unit": "",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+      },
+      "provenance": "observed by the MVP and Production review of 2026-10-30, registered by PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "",
+      "severity": "MEDIUM",
+      "severity_basis": "the Register v1.1 prevails and carries the correct values; a tool that reads priority or release from the matrix gets wrong values",
+      "statement": "In the normative traceability matrix (reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json and .md) the priority and release columns are shifted for more than one hundred rows: priority holds decision or source identifiers (for example DEC-063) and release holds dependencies or statuses (for example Confermato) instead of the Register values. The Register v1.1 prevails; correcting the matrix is a normative erratum for the PO.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "python3 -c \"import json,re; rows=json.load(open('reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json'))['rows']; print(sum(1 for r in rows if not re.fullmatch(r'P[0-3]', str(r.get('priority','')).strip())))\"",
+        "outcome": "prints 115: 115 of the 285 matrix rows have a priority outside P0-P3; the FR-022 row has priority 'DEC-060' and release 'Context Pack \u00a76.2; `FR-039' (matrix .md line 46), while the Register v1.1 line 112 gives P0. CONFIRMED at 12f6088592ce98393b8df119deeb28f626ef46a8 (state sync after the OCOR-DEV-REM-0045 integration, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 12)."
       }
     }
   ],
@@ -17072,6 +17207,40 @@
           ]
         },
         {
+          "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option 2): on the gateway wire the five digests policy_bundle_digest, governed_context_digest, ontology_release_digest, contract_digest and SchemaPin.digest use the contract form sha256:<hex>; the gateway transport adapter converts them bijectively to and from the internal form urn:sha256:<hex>, so the domain model keeps the internal form, and governed_context_digest is computed over the internal GovernedContext form; the transport adapter rejects a malformed digest with SCHEMA_VIOLATION; every other field keeps the form its contract prescribes; contracts and the GovernedContext schema are unchanged.",
+          "entry": "NCR-C2-008",
+          "norm_refs": [
+            {
+              "lines": "170-192",
+              "note": "^sha256: patterns in QueryContext and ContractCall",
+              "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+            },
+            {
+              "lines": "118",
+              "note": "SchemaPin.digest ^sha256:",
+              "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+            },
+            {
+              "lines": "43-48",
+              "note": "GovernedContext digest $def ^urn:sha256:",
+              "path": "ocor-runtime/docs/governance_dossier/contracts/governed-context.schema.json"
+            },
+            {
+              "lines": "37",
+              "note": "LLD v1.1 \u00a71.1: SHA-256 represented as urn:sha256:<64 lowercase hex>",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "16-18",
+              "note": "LLD v1.1 \u00a70.1 precedence",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            }
+          ],
+          "requirement_ids": [
+            "NFR-022"
+          ]
+        },
+        {
           "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: Consistency: required_commit required only when mode is AT_LEAST_COMMIT or EXACT_AT_COMMIT",
           "entry": "NCR-C2-009",
           "norm_refs": [
@@ -17458,6 +17627,13 @@
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c2_007_conforms"
         },
         {
+          "asserts": "a request carrying the five digests in the contract form is accepted on the wire and converted bijectively; a malformed digest is rejected with SCHEMA_VIOLATION",
+          "entry": "NCR-C2-008",
+          "fails_on_current_code_because": "probe prints \"C2-8 contract_digest 'sha256:<hex>' (gateway contract form): QUERY_CONTRACT_INVALID\". CONFIRMED.",
+          "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C2-PROBE-01>",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c2_008_conforms"
+        },
+        {
           "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
           "entry": "NCR-C2-009",
           "fails_on_current_code_because": "probe prints 'C2-9 BEST_AVAILABLE with required_commit: CONSISTENCY_INVALID'. CONFIRMED.",
@@ -17543,6 +17719,7 @@
         "NCR-C2-005",
         "NCR-C2-006",
         "NCR-C2-007",
+        "NCR-C2-008",
         "NCR-C2-009",
         "NCR-C2-011",
         "NCR-C2-012"
@@ -17680,6 +17857,23 @@
             }
           ],
           "requirement_ids": []
+        },
+        {
+          "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option 1, with proof): the TerminusDB relay confirms a delivery only under the current writer epoch (one logical writer per aggregate and branch); a relay holding a stale epoch cannot confirm a delivery; proven on the real backend by a characterisation test and by a mutation probe that makes the test fail when the epoch check is removed.",
+          "entry": "NCR-C3-007",
+          "norm_refs": [
+            {
+              "lines": "132",
+              "note": "LLD v1.1 \u00a72.3: SKIP LOCKED (PostgreSQL row semantics only)",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "271",
+              "note": "ADD v1.3 \u00a72.2 C3 on TerminusDB: one logical writer, writer_epoch fencing",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            }
+          ],
+          "requirement_ids": []
         }
       ],
       "closed_scope_note": "only the entries in resolves; entries of other units, DECISION_REQUIRED entries and the legacy slice are out of scope",
@@ -17782,6 +17976,13 @@
           "fails_on_current_code_because": "probe prints 'NCP-S04 PostgreSQL claim uses SKIP LOCKED: False | FOR UPDATE: False'. CONFIRMED. FR-062 (proposed by the supplement) concerns commit validation, not the relay: no requirement id is bound.",
           "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c3_006_conforms"
+        },
+        {
+          "asserts": "a relay holding a non-current writer epoch cannot confirm a delivery on the real TerminusDB backend",
+          "entry": "NCR-C3-007",
+          "fails_on_current_code_because": "probe prints 'NCP-S04 TerminusDB claim writes a claim: False'. CONFIRMED as behaviour; the normative equivalent is not specified. If the characterisation test already passes at the unit base, the mutation probe (epoch check removed, test fails) replaces the RED.",
+          "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C3-PROBE-01>",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c3_007_conforms"
         }
       ],
       "requalifications": {
@@ -17831,7 +18032,8 @@
         "NCR-C3-002",
         "NCR-C3-003",
         "NCR-C3-004",
-        "NCR-C3-006"
+        "NCR-C3-006",
+        "NCR-C3-007"
       ],
       "scope": "C3 commit admission (Decision/Authority/GatePackage/Evidence/preconditions/invariants/stop and writer epoch), C6->C3 composition replacing the legacy store, outbox relay (SKIP LOCKED, DeliveryAttempt, event payload) and outbox->C5->C4 chain, canonical_source_binding",
       "status": "PROPOSED"
@@ -17902,7 +18104,7 @@
           ]
         },
         {
-          "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: Problem response: typed fail-closed error; LLD v1.1 \u00a75.3: unavailable dependencies block, observably and with reason code",
+          "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: Problem response: typed fail-closed error; LLD v1.1 \u00a75.3: unavailable dependencies block, observably and with reason code The transaction opened by _write, _schema_write or _read is closed on every error path, including connection-level errors and a failed commit (decision request OCOR-DEV-0060-BA-RUNTIME-GAPS).",
           "entry": "NCR-C4-003",
           "norm_refs": [
             {
@@ -17915,6 +18117,30 @@
             }
           ],
           "requirement_ids": []
+        },
+        {
+          "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 8 (gap BA-03): a disposable sandbox serves EXACT_AT_COMMIT(Cn) for named logical queries on TypeDB; when the emulation is unavailable the gateway returns UNSUPPORTED_CAPABILITY and never degrades to AT_LEAST_COMMIT; the sandbox creation benchmark, the resource exhaustion test and the negative test with the emulation unavailable run on the real backend.",
+          "entry": "NCR-C4-004",
+          "norm_refs": [
+            {
+              "lines": "356",
+              "note": "ADD v1.3 section 2.6, BA-03: disposable sandbox serving EXACT_AT_COMMIT(Cn) on named logical queries",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "1366",
+              "note": "ADD v1.3 section 3.3: emulation unavailable gives UNSUPPORTED_CAPABILITY, never a silent downgrade to AT_LEAST_COMMIT",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "369",
+              "note": "LLD v1.1 section 7.1, oracle BA-03",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-057"
+          ]
         }
       ],
       "closed_scope_note": "only the entries in resolves; entries of other units, DECISION_REQUIRED entries and the legacy slice are out of scope",
@@ -17995,11 +18221,18 @@
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c4_002_conforms"
         },
         {
-          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs; a connection-level error or a failed commit leaves no open TypeDB transaction",
           "entry": "NCR-C4-003",
           "fails_on_current_code_because": "probe prints 'C4-3 _request catches URLError: False'. CONFIRMED.",
           "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C45-PROBE-01>",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c4_003_conforms"
+        },
+        {
+          "asserts": "an EXACT_AT_COMMIT(Cn) logical query for an earlier commit is served from a sandbox at Cn; with the emulation unavailable the response is UNSUPPORTED_CAPABILITY",
+          "entry": "NCR-C4-004",
+          "fails_on_current_code_because": "the verification outcome of the entry",
+          "reproduction": "grep -rn 'UNSUPPORTED_CAPABILITY' --include=*.py ocor-runtime/src/ocor_runtime/c2 ocor-runtime/src/ocor_runtime/c4 ; sed -n '241,251p' ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c4_004_conforms"
         }
       ],
       "requalifications": {
@@ -18035,7 +18268,8 @@
       "resolves": [
         "NCR-C4-001",
         "NCR-C4-002",
-        "NCR-C4-003"
+        "NCR-C4-003",
+        "NCR-C4-004"
       ],
       "scope": "C4 projections: monotonic per-branch watermark with durable deduplication, real served release/staleness, durable drift quarantine enforced on the read path, rebuild from the canonical store with signed checkpoint, Jena watermark/SHACL/canonical marking, typed adapter errors",
       "status": "PROPOSED"
@@ -19219,6 +19453,46 @@
           ]
         },
         {
+          "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option A with two precisions): causal outcomes use only the closed sets of ADD v1.3 section 4.2. REJECTED, with contract_or_policy_reason equal to the current code: RELEASE_MISMATCH, MAIN_CONTAMINATED, MISSING_FACTUAL_SET, FACTUAL_SCHEMA_INVALID; REJECTED with INTERVENTION_SCHEMA_INVALID for a missing or malformed validity envelope or a non-numeric value; REJECTED with FACTUAL_SCHEMA_INVALID for a non-binary treatment. ABSTAIN OUTSIDE_VALIDITY_ENVELOPE with failed_conditions for a value outside an explicit constraint of a well-formed envelope; ABSTAIN NOT_IDENTIFIED for unresolved confounding; ABSTAIN ASSUMPTION_VIOLATION for a stratum without one of the two arms; OUT_OF_DISTRIBUTION only with empirical-support diagnostics. REJECTED conditions are evaluated before ABSTAIN conditions; among ABSTAIN conditions the ADD precedence applies.",
+          "entry": "NCR-C7-002",
+          "norm_refs": [
+            {
+              "lines": "3007-3022",
+              "note": "ADD v1.3 \u00a74.2 closed ABSTAIN.reason_code set and precedence",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3024",
+              "note": "ADD v1.3 \u00a74.2: signature, schema, policy or version-pin errors produce REJECTED",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "177",
+              "note": "LLD v1.1 \u00a72.7: OOD, positivity failure, unresolved confounding, missing factual set, incompatible release or contaminated main produce disjoint reason codes",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "16-18",
+              "note": "LLD v1.1 \u00a70.1 precedence",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "60",
+              "note": "FR-009",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "239",
+              "note": "FR-098: out-of-envelope fixture produces abstention",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-009",
+            "FR-098"
+          ]
+        },
+        {
           "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.2 CausalRunOutcome := ESTIMATED | ABSTAIN | REJECTED | FAILED; ADD v1.3 \u00a74.2: pin errors produce REJECTED; LLD v1.1 \u00a72.7: result includes uncertainty, sensitivity, lineage, inputs, seed and reproducibility digest; FR-093: incomplete SimulationResult fails schema validation; FR-097: no P0 quantitative result without uncertainty descriptor; NFR-030: invalid digest or signature blocks the run",
           "entry": "NCR-C7-003",
           "norm_refs": [
@@ -19254,7 +19528,7 @@
           ]
         },
         {
-          "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.2 ScenarioRunSpec fields and overlay; ADD v1.3 \u00a74.2 L2 job lifecycle; budget, quota, progress, cancellation, timeout mandatory; LLD v1.1 \u00a72.7 CausalQuery content; LLD v1.1 \u00a76: C7 job cancellable with resource release; FR-092: scenario version pinning; FR-103: cancel and timeout release resources and are audited; FR-161: submit, observe, cancel and retrieve a job",
+          "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.2 ScenarioRunSpec fields and overlay; ADD v1.3 \u00a74.2 L2 job lifecycle; budget, quota, progress, cancellation, timeout mandatory; LLD v1.1 \u00a72.7 CausalQuery content; LLD v1.1 \u00a76: C7 job cancellable with resource release; FR-092: scenario version pinning; FR-103: cancel and timeout release resources and are audited; FR-161: submit, observe, cancel and retrieve a job Cancelling a causal job releases its resources within PT30S (ADD v1.3 section 4.1.3).",
           "entry": "NCR-C7-004",
           "norm_refs": [
             {
@@ -19284,6 +19558,11 @@
             {
               "lines": "402",
               "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "2927",
+              "note": "ADD v1.3 section 4.1.3: a cancelled causal job releases resources within PT30S",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
             }
           ],
           "requirement_ids": [
@@ -19317,6 +19596,25 @@
             "NFR-007",
             "FR-092",
             "NFR-015"
+          ]
+        },
+        {
+          "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option A): in the PoC profile every structurally valid unit-level counterfactual query returns REJECTED{CAPABILITY_DEFERRED, ELM-070} without reading the factual set; a structurally invalid one returns REJECTED for its schema error; identical inputs give an identical, reproducible outcome.",
+          "entry": "NCR-C7-006",
+          "norm_refs": [
+            {
+              "lines": "3036",
+              "note": "ADD v1.3 \u00a74.2: ELM-070 deferred; PoC returns REJECTED{CAPABILITY_DEFERRED, ELM-070} for full AAP execution",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "236",
+              "note": "FR-095 (P0 MVP): AAP counterfactual",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-095"
           ]
         }
       ],
@@ -19391,6 +19689,13 @@
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c7_001_conforms"
         },
         {
+          "asserts": "one case per row of the mapping, one case with two ABSTAIN conditions (precedence) and one case with a REJECTED and an ABSTAIN condition (REJECTED first)",
+          "entry": "NCR-C7-002",
+          "fails_on_current_code_because": "probe prints \"C7-2 abstain codes produced: ['MAIN_CONTAMINATED', 'MISSING_FACTUAL_SET', 'OUT_OF_DOMAIN', 'POSITIVITY_FAILURE', 'RELEASE_MISMATCH', 'UNRESOLVED_CONFOUNDING'] | in the ADD v1.3 closed set: []\". CONFIRMED; DECISION_REQUIRED for the non-univocal mappings (programme point 4.d).",
+          "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c7_002_conforms"
+        },
+        {
           "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
           "entry": "NCR-C7-003",
           "fails_on_current_code_because": "probe prints \"C7-3 statuses produced: ['ABSTAIN', 'IDENTIFIED']\", the CausalOutcome field list, 'C7-3 pin mismatch raises: CausalRuntimeError MODEL_PIN_MISMATCH' and 'release mismatch outcome: ABSTAIN RELEASE_MISMATCH | intervention outcome carries uncertainty: False'. CONFIRMED.",
@@ -19398,7 +19703,7 @@
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c7_003_conforms"
         },
         {
-          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs; a cancelled causal job releases its resources within PT30S",
           "entry": "NCR-C7-004",
           "fails_on_current_code_because": "probe prints the 15 CausalQuery fields and 'C7-7 runtime reads an overlay: False'; the grep returns nothing. CONFIRMED and extended (estimand, population, envelope, overlay composition).",
           "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01> ; grep -rnE 'queued|ScenarioRunSpec|SimulationResult' --include=*.py ocor-runtime/src/ocor_runtime",
@@ -19410,6 +19715,13 @@
           "fails_on_current_code_because": "probe prints 'C7-5 same inputs, different causation_id -> same digest: False | tolerance field anywhere in runtime: False'. CONFIRMED.",
           "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c7_005_conforms"
+        },
+        {
+          "asserts": "a structurally valid unit-level counterfactual query, including one on main and one with an out-of-range unit index, returns REJECTED{CAPABILITY_DEFERRED, ELM-070}",
+          "entry": "NCR-C7-006",
+          "fails_on_current_code_because": "probe prints 'C7-6 counterfactual status/method: IDENTIFIED STRATIFIED_BACKDOOR_COUNTERFACTUAL | CAPABILITY_DEFERRED in runtime: False'. CONFIRMED as fact; DECISION_REQUIRED on whether the operation falls under the deferred ELM-070.",
+          "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c7_006_conforms"
         }
       ],
       "requalifications": {
@@ -19432,9 +19744,11 @@
       "required_backend": "PostgreSQL/S3 (sealed result, overlay store)",
       "resolves": [
         "NCR-C7-001",
+        "NCR-C7-002",
         "NCR-C7-003",
         "NCR-C7-004",
-        "NCR-C7-005"
+        "NCR-C7-005",
+        "NCR-C7-006"
       ],
       "scope": "C7 causal runtime: SCM with do(X) and identification (NOT_IDENTIFIED), intervention comparison, CausalRunOutcome ESTIMATED/ABSTAIN/REJECTED/FAILED with the ADD closed reason set and precedence (after the PO decision on NCR-C7-002), uncertainty and sensitivity on every estimate, immutable SimulationResult, CausalQuery from ScenarioRunSpec read through the overlay, L2 job lifecycle, declared tolerance and a digest independent of trace identifiers, ELM-070 per the PO decision on NCR-C7-006",
       "status": "PROPOSED"
