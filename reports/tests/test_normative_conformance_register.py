@@ -8,6 +8,9 @@ seed and supplement coverage, the HIGH/plan_unit/blocks rules, the
 IN_REMEDIATION and DEFERRED_BY_PO references, and prints the resolved entries
 computed from the remediation records (never read from the register).
 
+Since iteration 6 it also checks the remediation plan (point 4.e) and the G6/G7
+proposals (point 4.f).
+
 It stays outside CI workflows and guards: the units that touch the register
 and the verifier run it locally.
 """
@@ -55,6 +58,33 @@ SEED_ID = re.compile(r"^[A-Z0-9]+-[0-9]+$")
 SUPPLEMENT_ID = re.compile(r"^NCP-S(0[1-9]|1[01])$")
 LINES = re.compile(r"^([0-9]+)(?:-([0-9]+))?$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
+PLAN_UNIT_FIELDS = (
+    "scope",
+    "resolves",
+    "depends_on_units",
+    "acceptance_criteria",
+    "red_tests",
+    "existing_tests_to_realign_or_adapt",
+    "consumers_to_inventory",
+    "requalifications",
+    "g6_tasks_unblocked",
+    "estimate_iterations",
+)
+REALIGN_KINDS = {
+    "REALIGN",
+    "ADAPT_CONSTRUCTION",
+    "ADAPT_PRECONDITION",
+    "PO_CHOICE_REQUIRED",
+}
+PROPOSAL_TASKS = {
+    "OCOR-DEV-0060",
+    "OCOR-DEV-0062",
+    "OCOR-DEV-0063",
+    "OCOR-DEV-0064",
+    "OCOR-DEV-0065",
+    "OCOR-DEV-0066",
+    "OCOR-DEV-0067",
+}
 SEED_COUNT = 59
 SUPPLEMENT_COUNT = 11
 
@@ -295,6 +325,67 @@ class NormativeConformanceRegisterTest(unittest.TestCase):
                 data = path.read_bytes()
                 self.assertEqual(hashlib.sha256(data).hexdigest(), ref["sha256"])
                 self.assertIn(entry["id"], data.decode("utf-8"))
+
+    def test_plan_units_cover_the_open_entries_in_dependency_order(self) -> None:
+        """Point 4.e: every planned unit lists the entries it resolves, in order."""
+        units = self.register["plan_units"]
+        order = self.register.get("plan_order") or []
+        if not all(unit.get("status") == "PROPOSED" for unit in units.values()):
+            self.skipTest("plan not built yet")
+        self.assertEqual(sorted(order), sorted(units))
+        position = {unit_id: index for index, unit_id in enumerate(order)}
+        for unit_id, unit in units.items():
+            with self.subTest(unit=unit_id):
+                for key in PLAN_UNIT_FIELDS:
+                    self.assertIn(key, unit)
+                self.assertTrue(unit["resolves"])
+                self.assertIsInstance(unit["estimate_iterations"], int)
+                for dependency in unit["depends_on_units"]:
+                    self.assertLess(position[dependency], position[unit_id])
+                criteria = {item["entry"] for item in unit["acceptance_criteria"]}
+                reds = {item["entry"] for item in unit["red_tests"]}
+                self.assertEqual(criteria, set(unit["resolves"]))
+                self.assertEqual(reds, set(unit["resolves"]))
+                for item in unit["acceptance_criteria"]:
+                    self.assertTrue(item["norm_refs"])
+                for item in unit["existing_tests_to_realign_or_adapt"]:
+                    self.assertIn(item["kind"], REALIGN_KINDS)
+                    self.assertTrue((ROOT / item["path"]).is_file(), item["path"])
+                    self.assertTrue(item["norm_refs"])
+                    self.assertEqual(unit_id, self.by_id[item["entry"]]["plan_unit"])
+        for entry in self.entries:
+            if entry["status"] == "OPEN" and entry["plan_unit"]:
+                with self.subTest(entry=entry["id"]):
+                    self.assertIn(entry["id"], units[entry["plan_unit"]]["resolves"])
+                    for dependency in entry["depends_on"]:
+                        other = self.by_id[dependency]["plan_unit"]
+                        if other:
+                            self.assertLessEqual(
+                                position[other], position[entry["plan_unit"]]
+                            )
+
+    def test_g6_g7_proposals_are_requirement_specific(self) -> None:
+        """Point 4.f: proposals for OCOR-DEV-0060 and 0062-0067, never BR-003 alone."""
+        proposals = self.register["g6_g7_proposals"]
+        if not proposals:
+            self.skipTest("proposals not built yet")
+        self.assertEqual(set(proposals["tasks"]), PROPOSAL_TASKS)
+        for task, proposal in proposals["tasks"].items():
+            with self.subTest(task=task):
+                self.assertTrue(proposal["proposed_requirement_ids"])
+                self.assertNotEqual(proposal["proposed_requirement_ids"], ["BR-003"])
+                for requirement in proposal["proposed_requirement_ids"]:
+                    self.assertRegex(requirement, REQUIREMENT_ID)
+                self.assertTrue(proposal["normative_anchors"])
+                for case in proposal["requirement_cases"]:
+                    self.assertIn(
+                        case["requirement_id"], proposal["proposed_requirement_ids"]
+                    )
+        fields = proposals["tasks"]["OCOR-DEV-0067"]["evidence_package_fields"]
+        self.assertLessEqual(
+            {"metric", "threshold", "baseline", "result", "owner", "signature"},
+            set(fields["union"]),
+        )
 
     def test_print_resolved_entries(self) -> None:
         resolved = resolved_entries(self.register)
