@@ -124,9 +124,18 @@ def parse_requirement_register() -> dict[str, dict[str, Any]]:
 REG = parse_requirement_register()
 
 
+# Register v1.1 release that includes every release, the PoC among them (NFR-073, :368).
+EVERY_RELEASE = "Ogni release"
+# NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3: g6_exclusions holds 66 requirements in
+# 72 task-requirement pairs of OCOR-DEV-0060 and 0062-0067.
+G6_EXCLUDED_REQUIREMENTS = 66
+G6_EXCLUDED_PAIRS = 72
+
+
 def in_poc_profile(requirement_id: str) -> bool:
     """Decision point 3: a requirement is in the PoC profile when its Register release includes the PoC."""
-    return "PoC" in REG[requirement_id]["release"]
+    release = REG[requirement_id]["release"]
+    return "PoC" in release or release == EVERY_RELEASE
 
 
 def method_kind(method: str) -> str:
@@ -199,6 +208,9 @@ def test_ncr_plan_001_conforms() -> None:
             assert case["priority"] == REG[rid]["priority"], rid
             assert case["method_kind"] == method_kind(REG[rid]["method"]), rid
             assert case["expected_evidence"] == f"reports/evidence/G6/{rid}.json + raw-log hash", rid
+    excluded = [(t, r) for t in G6_G7_TASKS for r in proposals[t]["proposed_requirement_ids"] if not in_poc_profile(r)]
+    assert (len({r for _, r in excluded}), len(excluded)) == (G6_EXCLUDED_REQUIREMENTS, G6_EXCLUDED_PAIRS), excluded
+    assert "NFR-073" in tasks["OCOR-DEV-0064"]["requirement_ids"], "NFR-073 (release 'Ogni release') is in the PoC profile"
     ledger = " ".join(tasks["OCOR-DEV-0067"]["acceptance_criteria"])
     assert "285" in ledger and OUT_OF_PROFILE in ledger
     for field in EVIDENCE_PACKAGE_FIELDS:
@@ -319,6 +331,31 @@ def test_ncr_plan_006_conforms() -> None:
             timeout=300,
         )
         assert result.returncode == 1 and "ORPHAN_DESIGN" in result.stdout + result.stderr
+    # PRE-REVIEW-INPUT-ROBUSTNESS: a malformed index fails through the typed FAIL outcome.
+    first = dict(json.loads(index_path.read_text(encoding="utf-8"))["tests"][0])
+    malformed = {
+        "index list": [],
+        "tests object": {"tests": {}},
+        "entry null": {"tests": [None]},
+        "requirement_ids [{}]": {"tests": [{**first, "requirement_ids": [{}]}]},
+        "requirement_ids true": {"tests": [{**first, "requirement_ids": True}]},
+        "basis list": {"tests": [{**first, "basis": []}]},
+        "links object": {"tests": [{**first, "basis": {r: {} for r in first["requirement_ids"]}}]},
+        "path list": {"tests": [{**first, "path": [first["path"]]}]},
+    }
+    for label, content in malformed.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            mutated = Path(tmp) / "index.json"
+            mutated.write_text(json.dumps(content), encoding="utf-8")
+            result = subprocess.run(
+                [PY, str(ROOT / REVERSE_VALIDATOR), "--index", str(mutated)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            assert result.returncode == 1 and "Traceback" not in result.stderr, (label, result.stderr[-400:])
+            assert '"status": "FAIL"' in result.stdout, (label, result.stdout[-400:])
 
 
 # --------------------------------------------------------------------------- evidence fixtures

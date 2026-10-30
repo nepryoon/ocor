@@ -525,5 +525,307 @@ class RuntimeEvidenceValidatorTests(unittest.TestCase):
         self.assertIn("regression requalification record", report["rejected_records"][0]["reason"])
 
 
+# Preventive review OCOR-DEV-REM-0046-2dae278d970d-pre: shape of the evidence-package fields,
+# provenance of declarations, legacy-path normalisation and the --requirement-evidence query.
+_TWO_FUNCTION_SOURCE = '''"""Fixture test module."""
+
+
+def test_fixture_case():
+    """Qualifies FR-062."""
+    assert True
+
+
+def test_other_case():
+    """Qualifies FR-064."""
+    assert True
+'''
+
+
+def _assert_typed_fail(self: unittest.TestCase, base: Path, *, expected: str) -> None:
+    """Fail through the validator's FAIL outcome, never through an unhandled exception."""
+    result = _run_validator(base)
+    self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+    self.assertNotIn("Traceback", result.stderr)
+    self.assertIn("FAIL", result.stderr)
+    self.assertIn(expected, result.stderr)
+
+
+def _rewrite_record(base: Path, mutate: Any) -> None:
+    """Replace the fixture record with ``mutate(record)`` and refresh its manifest digest."""
+    record = json.loads((base / f"{_TASK}.json").read_text(encoding="utf-8"))
+    record_bytes = json.dumps(mutate(record), indent=2, sort_keys=True).encode("utf-8")
+    (base / f"{_TASK}.json").write_bytes(record_bytes)
+    manifest = json.loads((base / "MANIFEST.json").read_text(encoding="utf-8"))
+    manifest["artifacts"][0]["sha256"] = _sha256(record_bytes)
+    (base / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def _load_validator(base: Path) -> Any:
+    """The validator module rooted at ``base``; the Register is read from the repository first."""
+    spec = importlib.util.spec_from_file_location("validate_runtime_evidence_query", VALIDATOR)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.requirement_register()
+    registry = base / "reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(json.dumps({"records": []}), encoding="utf-8")
+    backlog = base / "docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json"
+    backlog.parent.mkdir(parents=True, exist_ok=True)
+    backlog.write_text(json.dumps({"tasks": []}), encoding="utf-8")
+    (base / _TEST_FILE).parent.mkdir(parents=True, exist_ok=True)
+    (base / _TEST_FILE).write_text(_TEST_SOURCE, encoding="utf-8")
+    (base / "reports/evidence/G5").mkdir(parents=True, exist_ok=True)
+    module.ROOT = base
+    return module
+
+
+def _query_record(
+    base: Path,
+    name: str,
+    *,
+    record_id: str,
+    cases: list[dict[str, Any]] | None = None,
+    **overrides: Any,
+) -> list[dict[str, Any]]:
+    """A record of the fixture task under reports/evidence/G5 and its manifest entries."""
+    gate = base / "reports/evidence/G5"
+    record: dict[str, Any] = {
+        "task_id": _TASK,
+        "record_id": record_id,
+        "result": "PASS",
+        "commands": [_full_command()],
+        "raw_output_sha256": _sha256(_RAW),
+        "commit": "0" * 40,
+        "environment": {"host": "test"},
+        "created_at": "2026-10-30T00:00:00Z",
+        "requirement_results": [_case(raw_log={"path": f"{name}.log", "sha256": _sha256(_RAW)})] if cases is None else cases,
+    }
+    record.update(overrides)
+    record_bytes = json.dumps(record, indent=2, sort_keys=True).encode("utf-8")
+    (gate / f"{name}.json").write_bytes(record_bytes)
+    (gate / f"{name}.log").write_bytes(_RAW)
+    return [
+        {"path": f"{name}.json", "sha256": _sha256(record_bytes), "task_id": _TASK},
+        {"path": f"{name}.log", "sha256": _sha256(_RAW), "task_id": f"{_TASK}-RAW"},
+    ]
+
+
+def _query_manifest(base: Path, entries: list[dict[str, Any]]) -> None:
+    manifest = {"artifacts": entries, "gate": "G5", "schema_version": "1.0"}
+    (base / "reports/evidence/G5/MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+class PreventiveReviewRemediationTests(unittest.TestCase):
+    # P3: a present but malformed evidence-package field is not evidence.
+    def test_rejects_malformed_evidence_package_fields(self) -> None:
+        malformed = {
+            "requirement_id": ["FR-062"],
+            "metric": False,
+            "threshold": True,
+            "baseline": 42,
+            "dataset_or_scenario": [None],
+            "release_digest": False,
+            "result": True,
+            "owner": ["fixture owner"],
+            "raw_log": "FR-062.log",
+            "signature": {"scheme": False, "signer": 17, "value": [None]},
+            "status": True,
+        }
+        for field, value in malformed.items():
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_fixture(base, [_full_command()], cases=[_case(**{field: value})])
+                _assert_typed_fail(self, base, expected="requirement_results[0]")
+
+    def test_rejects_case_result_without_the_outcome_counters(self) -> None:
+        for result in ({}, {"passed": 1}, {"failed": 0, "passed": 1}, {"failed": 0, "skipped": 0, "not_executed": False}):
+            with self.subTest(result=result), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_fixture(base, [_full_command()], cases=[_case(result=result)])
+                _assert_typed_fail(self, base, expected="requirement_results[0] result")
+
+    def test_rejects_release_digest_outside_the_sha256_form(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(release_digest="release 1.0")])
+            _assert_typed_fail(self, base, expected="release_digest")
+
+    def test_accepts_scenario_list_of_names(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(dataset_or_scenario=["scenario a", "scenario b"])])
+            _assert_pass(self, base)
+
+    # P4: every parsing path fails through the typed FAIL outcome.
+    def test_rejects_malformed_case_collections(self) -> None:
+        for field, value in (
+            ("tests", True),
+            ("tests", [None]),
+            ("tests", [""]),
+            ("method_evidence", True),
+            ("method_evidence", [None]),
+        ):
+            with self.subTest(field=field, value=value), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_fixture(base, [_full_command()], cases=[_case(**{field: value})])
+                _assert_typed_fail(self, base, expected=f"requirement_results[0] {field}")
+
+    def test_rejects_malformed_manifest_and_record_structures(self) -> None:
+        mutations = {
+            "manifest null": ("MANIFEST.json", None),
+            "artifacts false": ("MANIFEST.json", {"artifacts": False, "gate": "G9"}),
+            "artifacts [null]": ("MANIFEST.json", {"artifacts": [None], "gate": "G9"}),
+        }
+        for label, (name, content) in mutations.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_fixture(base, [_full_command()])
+                (base / name).write_text(json.dumps(content), encoding="utf-8")
+                _assert_typed_fail(self, base, expected="manifest")
+        for label, mutate, expected in (
+            ("record list", lambda record: [record], "evidence record is not an object"),
+            ("commands object", lambda record: {**record, "commands": {"exit_code": 0}}, "commands is not a list"),
+            ("requirement_results true", lambda record: {**record, "requirement_results": True}, "requirement_results"),
+        ):
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                _write_fixture(base, [_full_command()])
+                _rewrite_record(base, mutate)
+                _assert_typed_fail(self, base, expected=expected)
+
+    # P2: a declaration belongs to the selected test function, never to its file.
+    def test_rejects_requirement_named_by_another_function_of_the_module(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            index = base / "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json"
+            index.parent.mkdir(parents=True)
+            entry = {"basis": {"FR-064": [{"kind": "named_in_test"}]}, "path": _TEST_FILE, "requirement_ids": ["FR-064"]}
+            index.write_text(json.dumps({"tests": [entry]}), encoding="utf-8")
+            _write_fixture(base, [_full_command()], cases=[_case(requirement_id="FR-064", method="fault-injection test")])
+            (base / _TEST_FILE).write_text(_TWO_FUNCTION_SOURCE, encoding="utf-8")
+            _assert_typed_fail(self, base, expected="FR-064 is not declared by the test")
+
+    def test_accepts_requirement_declared_by_the_selected_function(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            case = _case(requirement_id="FR-064", method="fault-injection test", tests=[f"{_TEST_FILE}::test_other_case"])
+            _write_fixture(base, [_full_command()], cases=[case])
+            (base / _TEST_FILE).write_text(_TWO_FUNCTION_SOURCE, encoding="utf-8")
+            _assert_pass(self, base)
+
+    # P6: the legacy slice is recognised on the resolved test path.
+    def test_rejects_g6_legacy_binding_through_an_equivalent_path(self) -> None:
+        legacy = "ocor-runtime/tests/backend_assumptions/test_ba01_atomic_outbox.py"
+        for form in ("./" + legacy, "ocor-runtime/tests/../tests/backend_assumptions/test_ba01_atomic_outbox.py", "{base}/" + legacy):
+            with self.subTest(form=form), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp).resolve()
+                (base / legacy).parent.mkdir(parents=True)
+                (base / legacy).write_text(_TEST_SOURCE, encoding="utf-8")
+                reference = form.format(base=base) + "::test_fixture_case"
+                _write_fixture(base, [_full_command()], cases=[_case(tests=[reference], ba_id="BA-01")], gate="G6")
+                _assert_typed_fail(self, base, expected="binds the legacy test")
+
+    def test_rejects_test_reference_outside_the_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            base = Path(tmp)
+            (Path(outside) / "test_outside.py").write_text(_TEST_SOURCE, encoding="utf-8")
+            for reference in (f"{outside}/test_outside.py::test_fixture_case", f"../{Path(outside).name}/test_outside.py::test_fixture_case"):
+                with self.subTest(reference=reference):
+                    _write_fixture(base, [_full_command()], cases=[_case(tests=[reference])])
+                    _assert_typed_fail(self, base, expected="test reference does not resolve")
+
+    # P1: the query applies the integrity and outcome checks of the task validation.
+    def test_requirement_evidence_accepts_a_conforming_record(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            module = _load_validator(base)
+            _query_manifest(base, _query_record(base, "record", record_id="R1"))
+            report = module.requirement_evidence("FR-062")
+        self.assertEqual(["reports/evidence/G5/record.json"], report["qualifying_records"])
+        self.assertEqual([], report["rejected_records"])
+
+    def test_requirement_evidence_applies_the_task_record_checks(self) -> None:
+        variants: dict[str, Any] = {
+            "record result FAIL": {"result": "FAIL"},
+            "failed command": {"commands": [_full_command(exit_code=1)]},
+            "skipped command": {"commands": [{**_full_command(), "status": "SKIPPED"}]},
+            "no command": {"commands": []},
+            "raw digest": {"raw_output_sha256": "0" * 64},
+            "missing commit": {"commit": None},
+        }
+        for label, overrides in [*variants.items(), ("manifest digest", None), ("no raw entry", None)]:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                module = _load_validator(base)
+                entries = _query_record(base, "record", record_id="R1", **(overrides or {}))
+                if label == "missing commit":
+                    path = base / "reports/evidence/G5/record.json"
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    del record["commit"]
+                    data = json.dumps(record).encode("utf-8")
+                    path.write_bytes(data)
+                    entries[0]["sha256"] = _sha256(data)
+                if label == "manifest digest":
+                    entries[0]["sha256"] = "incorrect"
+                if label == "no raw entry":
+                    entries = entries[:1]
+                _query_manifest(base, entries)
+                report = module.requirement_evidence("FR-062")
+                self.assertEqual([], report["qualifying_records"])
+                self.assertEqual(["reports/evidence/G5/record.json"], [item["path"] for item in report["rejected_records"]])
+
+    # P5: only the latest qualifying record of the task chain is evidence.
+    def test_requirement_evidence_counts_only_the_latest_qualifying_record(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            module = _load_validator(base)
+            entries = _query_record(base, "new", record_id="R2", supersedes="R1") + _query_record(base, "old", record_id="R1")
+            _query_manifest(base, entries)
+            report = module.requirement_evidence("FR-062")
+        self.assertEqual(["reports/evidence/G5/new.json"], report["qualifying_records"])
+        self.assertEqual(["reports/evidence/G5/old.json"], [item["path"] for item in report["rejected_records"]])
+        self.assertIn("superseded", report["rejected_records"][0]["reason"])
+
+    def test_requirement_evidence_drops_a_requirement_the_successor_leaves(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            module = _load_validator(base)
+            successor = [_case(requirement_id="FR-064", method="fault-injection test", raw_log={"path": "new.log", "sha256": _sha256(_RAW)})]
+            entries = _query_record(base, "new", record_id="R2", supersedes="R1", cases=successor) + _query_record(base, "old", record_id="R1")
+            _query_manifest(base, entries)
+            report = module.requirement_evidence("FR-062")
+        self.assertEqual([], report["qualifying_records"])
+        self.assertEqual(["reports/evidence/G5/old.json"], [item["path"] for item in report["rejected_records"]])
+
+    def test_requirement_evidence_keeps_the_record_through_a_regression_successor(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            module = _load_validator(base)
+            regression = _query_record(
+                base,
+                "regression",
+                record_id="R2",
+                cases=[],
+                requalification_kind="regression",
+                qualifies_requirements=False,
+                supersedes="R1",
+            )
+            _query_manifest(base, regression + _query_record(base, "old", record_id="R1"))
+            report = module.requirement_evidence("FR-062")
+        self.assertEqual(["reports/evidence/G5/old.json"], report["qualifying_records"])
+
+    def test_requirement_evidence_rejects_an_ambiguous_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            module = _load_validator(base)
+            entries = _query_record(base, "first", record_id="R1") + _query_record(base, "second", record_id="R2")
+            _query_manifest(base, entries)
+            report = module.requirement_evidence("FR-062")
+        self.assertEqual([], report["qualifying_records"])
+        self.assertEqual(2, len(report["rejected_records"]))
+        self.assertTrue(all("supersedes chain" in item["reason"] for item in report["rejected_records"]))
+
+
 if __name__ == "__main__":
     unittest.main()
