@@ -366,9 +366,10 @@ def _artifact_entries(manifest: object) -> list[dict[str, Any]]:
 
 
 def _entry_path(manifest_dir: Path, entry: dict[str, Any]) -> Path:
-    if not _text(entry.get("path")):
+    path = entry.get("path")
+    if not isinstance(path, str) or not path.strip():
         raise ValueError(f"manifest entry has no path: {entry!r}")
-    return manifest_dir / entry["path"]
+    return manifest_dir / path
 
 
 def check_task_record(

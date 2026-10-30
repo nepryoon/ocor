@@ -73,8 +73,8 @@ def _check_link(root: Path, path: str, requirement: str, link: Any, tasks: dict[
         if kind == "subject_task" and not str(link.get("rationale", "")).strip():
             return [f"MISSING_RATIONALE: {label}"]
         return [] if requirement in tasks[task] else [f"BASIS_MISMATCH: {label} is not a requirement of {task}"]
-    source = link.get("source")
-    source_path = root / source if isinstance(source, str) and source else None
+    record = link.get("source")
+    source_path = root / record if isinstance(record, str) and record else None
     if source_path is None or not source_path.is_file():
         return [f"MISSING_FILE: {label}: remediation record {link.get('source')!r}"]
     if requirement not in _record_requirements(source_path):
