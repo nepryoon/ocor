@@ -26,7 +26,8 @@
       "iterations": [
         1,
         2,
-        3
+        3,
+        4
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -54,6 +55,92 @@
     "Register method column": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:14"
   },
   "plan_unit": "NCP-U13",
+  "preventive_review": {
+    "base_sha": "1b0085478866d559c758eed2b29ccc5036138aa1",
+    "decision": "PRE-CAMPAIGN-REVIEW (2026-10-26) points 3-4; PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30)",
+    "dispositions": [
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed: requirement_evidence runs check_task_record (manifest and raw digests, commands, PASS outcome, raw-output digest, mandatory fields) before check_new_record",
+        "finding": "P1"
+      },
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed: declarations come only from the selected function (class-qualified when given) and the module docstring; the per-file reverse index no longer extends them",
+        "finding": "P2"
+      },
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed: typed shape of every evidence-package field (text fields, scenario, sha256:<hex> release digest, result object with failed/skipped/not_executed zero, signature text fields, status string)",
+        "finding": "P3"
+      },
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed for the whole class: manifest, artifacts, record, commands, case tests/method_evidence and reverse-index entries are shape-checked and fail through FAIL, with negative tests for each parsing path",
+        "finding": "P4"
+      },
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed: per task only the latest qualifying record of the supersedes chain counts; regression-only successors pass the chain through; ambiguous chains and superseded records are rejected",
+        "finding": "P5"
+      },
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed: test references resolve to a root-confined path; the legacy slice is classified on the resolved relative path",
+        "finding": "P6"
+      },
+      {
+        "commits": [
+          "132230f",
+          "5582f04"
+        ],
+        "disposition": "fixed: release 'Ogni release' is in the PoC profile in generator, validator and unit test; NFR-073 back to OCOR-DEV-0064 (backlog from the generator functions, traceability row, plan hashes); exclusions now 66 requirements / 72 pairs as in g6_exclusions",
+        "finding": "P7"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 0,
+      "blocking": 7
+    },
+    "head_sha": "2dae278d970d81f19f36d32306ed31aa73744902",
+    "outcome_sha256": "223af1a937add673620cbb1a6dd3618107b59ec964c7ae578a31495f2dc9f26d",
+    "red": {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_runtime_evidence_validator.py reports/tests/test_ocor_dev_rem_0046.py",
+      "commit": "132230fd872ec1d545aaa328b14250d009af6047",
+      "fingerprint": "50d2728a7f3e",
+      "fingerprint_definition": "sha256 of the sorted FAILED/SUBFAILED node lines (first 12 hex)",
+      "raw_log_sha256": "3cf4abd436b92e0955aa72a2c8e43544bc4506be3563c917cdc0e548dd91df45",
+      "summary": "41 failed, 63 passed",
+      "test_design_correction": "result={} removed from test_rejects_case_result_without_the_outcome_counters at GREEN: an empty result is already rejected by the presence check (lacks evidence-package field result), a different message than the subtest expected"
+    },
+    "request_id": "OCOR-DEV-REM-0046-2dae278d970d-pre",
+    "reviewer": {
+      "independence_limits": "reserve reviewer (nominal main implementer of the loop, not started as implementer on this task since the previous GO); consultative only",
+      "model": "GPT-6",
+      "process": "Codex CLI",
+      "reserve": true,
+      "vendor": "OpenAI"
+    },
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "proposed_criteria_not_in_backlog": {
     "OCOR-DEV-0068": [
       {
@@ -180,7 +267,7 @@
         "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_005_conforms"
       },
       {
-        "checks": "every test file traces to at least one requirement (ORPHAN_DESIGN otherwise); only named_in_test links are declarations",
+        "checks": "every test file traces to at least one requirement (ORPHAN_DESIGN otherwise); the index is never a declaration of a test function",
         "entry": "NCR-PLAN-006",
         "outcome": "PENDING_CAMPAIGN",
         "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_006_conforms"
@@ -244,7 +331,7 @@
   "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
   "reverse_traceability_index": {
     "builder": "~/.ocor-codex/rem-0046/build_reverse_index.py with curated.json (outside Git)",
-    "nature": "non-normative (decision point 3); only named_in_test links are declarations for scripts/validate_runtime_evidence.py",
+    "nature": "non-normative (decision point 3); never a declaration for scripts/validate_runtime_evidence.py, whose named_in_test links are per file (preventive review finding P2): a declaration comes only from the selected test function and its module docstring",
     "path": "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
     "validator": "scripts/validate_test_reverse_traceability.py"
   },

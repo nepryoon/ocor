@@ -13,8 +13,9 @@ Requirement Register v1.1 it traces to and the basis of each link:
 - ``subject_task``: a requirement of the backlog task whose deliverable the test exercises,
   with a rationale.
 
-Only ``named_in_test`` is a declaration by the test (scripts/validate_runtime_evidence.py);
-the other links are traceability, never evidence. The validator never modifies the index
+No link is a declaration by a test function: ``named_in_test`` is per file, and
+scripts/validate_runtime_evidence.py reads declarations from the selected function only;
+the links are traceability, never evidence. The validator never modifies the index
 and never converts a missing link into PASS.
 """
 
