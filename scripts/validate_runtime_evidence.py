@@ -24,7 +24,6 @@ BACKLOG = "docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json"
 # Evidence records sealed before OCOR-DEV-REM-0046, recognised by path and sha256
 # (NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3); every other record is new.
 SEALED_REGISTRY = "reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json"
-REVERSE_INDEX = "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json"
 # Per-case evidence-package fields: LLD v1.1 §7.3 (docs/OCOR_LLD_v1.1.md:411) and
 # NFR-004 (Register v1.1 :26); raw_log carries the NFR-004 "evidence".
 EVIDENCE_PACKAGE_FIELDS = (
@@ -41,11 +40,19 @@ EVIDENCE_PACKAGE_FIELDS = (
     "signature",
 )
 SIGNATURE_FIELDS = ("scheme", "signer", "value")
+TEXT_FIELDS = ("requirement_id", "method", "metric", "threshold", "baseline", "owner")
+# Outcome counters a case result must carry; xfailed is checked when present.
+CASE_COUNTERS = ("failed", "skipped", "not_executed")
+SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+# Release digest in the sha256:<hex> form of the approved contracts.
+RELEASE_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 LEGACY_TEST_DIRS = ("ocor-runtime/tests/acceptance_ev/", "ocor-runtime/tests/backend_assumptions/")
 # LLD v1.1 transition, backend-assumption and Decision Register evidence identifiers
 # (NCR-LEGACY-001, option A): a G6 case never binds a legacy test to them.
 LLD_IDENTIFIER = re.compile(r"\b(?:ACT-T\d+[a-z]?|BA-0\d|EV-\d{3})\b")
 OUT_OF_PROFILE = "fuori dal profilo PoC"
+# Register v1.1 release that includes every release, the PoC among them (NFR-073, :368).
+EVERY_RELEASE = "Ogni release"
 # REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30), option 1: a regression-only
 # requalification is a declared non-qualifying class of record.
 REGRESSION_KIND = "regression"
@@ -128,7 +135,8 @@ def requirement_register() -> dict[str, dict[str, Any]]:
 
 def in_poc_profile(requirement_id: str) -> bool:
     """NORMATIVE-CONFORMANCE-PLAN point 3: in the PoC profile when the Register release includes the PoC."""
-    return "PoC" in requirement_register()[requirement_id]["release"]
+    release = requirement_register()[requirement_id]["release"]
+    return "PoC" in release or release == EVERY_RELEASE
 
 
 def method_kind(method: str) -> str:
@@ -166,21 +174,49 @@ def _empty(value: object) -> bool:
     return value is None or (isinstance(value, (str, list, dict)) and not value)
 
 
+def _text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _resolve_test(root: Path, reference: object) -> tuple[str, Path, list[str]]:
+    """A test reference ``path::[Class::]function[param]`` resolved inside the root: the
+    root-relative path, the file and the qualified name."""
+    if not _text(reference):
+        raise ValueError(f"test reference does not resolve: {reference!r}")
+    path_text, _, qualified = str(reference).partition("::")
+    candidate = Path(path_text)
+    path = (candidate if candidate.is_absolute() else root / candidate).resolve()
+    try:
+        relative = path.relative_to(root.resolve()).as_posix()
+    except ValueError:
+        raise ValueError(f"test reference does not resolve: {reference}") from None
+    names = [part.split("[", 1)[0] for part in qualified.split("::")] if qualified else []
+    if not names or not all(names) or not path.is_file():
+        raise ValueError(f"test reference does not resolve: {reference}")
+    return relative, path, names
+
+
 def _declared_requirements(root: Path, reference: str) -> set[str]:
     """Requirement identifiers a test declares: in its own source (decorators, docstring,
-    body), in its module docstring, or for its file in the reverse traceability index with
-    basis ``named_in_test``. Traceability links of the index (task_binding,
-    remediation_record, subject_task) are never a declaration by the test."""
-    path_text, _, function = reference.partition("::")
-    function = function.split("[", 1)[0].split("::")[-1]
-    path = root / path_text
-    if not function or not path.is_file():
-        raise ValueError(f"test reference does not resolve: {reference}")
+    body) or in its module docstring. A declaration belongs to the selected function: the
+    reverse traceability index, whose ``named_in_test`` links are per file, and the other
+    functions of the module never extend it."""
+    _, path, names = _resolve_test(root, reference)
     source = path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(path))
+    *classes, function = names
+    scopes: list[list[ast.stmt]] = [tree.body]
+    for name in classes:
+        scopes = [
+            node.body
+            for body in scopes
+            for node in body
+            if isinstance(node, ast.ClassDef) and node.name == name
+        ]
     nodes = [
         node
-        for node in ast.walk(tree)
+        for body in scopes
+        for node in body
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function
     ]
     if not nodes:
@@ -189,24 +225,18 @@ def _declared_requirements(root: Path, reference: str) -> set[str]:
     for node in nodes:
         text += " " + " ".join(ast.unparse(decorator) for decorator in node.decorator_list)
     text += " " + (ast.get_docstring(tree) or "")
-    declared = set(re.findall(r"\b(?:BR|FR|NFR)-\d{3}\b", text))
-    index_path = root / REVERSE_INDEX
-    if index_path.is_file():
-        index = json.loads(index_path.read_text(encoding="utf-8"))
-        for entry in index.get("tests", []):
-            if entry.get("path") == path_text:
-                declared.update(
-                    requirement
-                    for requirement, links in (entry.get("basis") or {}).items()
-                    if any(isinstance(link, dict) and link.get("kind") == "named_in_test" for link in links)
-                )
-    return declared
+    return set(re.findall(r"\b(?:BR|FR|NFR)-\d{3}\b", text))
 
 
 def _check_artifact(base: Path, item: object, label: str) -> None:
-    if not isinstance(item, dict) or _empty(item.get("path")) or _empty(item.get("sha256")):
+    if (
+        not isinstance(item, dict)
+        or not _text(item.get("path"))
+        or not isinstance(item.get("sha256"), str)
+        or not SHA256_HEX.fullmatch(item["sha256"])
+    ):
         raise ValueError(f"{label} is not a {{path, sha256}} reference: {item!r}")
-    target = base / str(item["path"])
+    target = base / item["path"]
     if not target.is_file() or digest(target) != item["sha256"]:
         raise ValueError(f"{label} digest mismatch or missing file: {item['path']}")
 
@@ -221,11 +251,10 @@ def check_regression_record(record: dict[str, Any], manifest: dict[str, Any], ev
     the checks that do not concern requirements are applied by the caller."""
     if record.get("qualifies_requirements") is not False:
         raise ValueError("regression requalification record: qualifies_requirements is not false")
-    manifest_cases = [
-        row
-        for row in manifest.get("requirement_results", [])
-        if isinstance(row, dict) and row.get("evidence_path") == evidence_name
-    ]
+    rows = manifest.get("requirement_results", [])
+    if not isinstance(rows, list):
+        raise ValueError("manifest requirement_results is not a list")
+    manifest_cases = [row for row in rows if isinstance(row, dict) and row.get("evidence_path") == evidence_name]
     if not _empty(record.get("requirement_results")) or manifest_cases:
         raise ValueError("regression requalification record binds a case to a requirement")
     supersedes = record.get("supersedes")
@@ -240,6 +269,30 @@ def check_regression_record(record: dict[str, Any], manifest: dict[str, Any], ev
         raise ValueError("regression requalification record does not supersede a record: record_id mismatch")
     if superseded.get("task_id") != record.get("task_id"):
         raise ValueError(f"regression requalification record supersedes a record of {superseded.get('task_id')}")
+
+
+def _check_case_shape(case: dict[str, Any], label: str) -> None:
+    """Shape of the evidence-package fields of a case, without conversions: a present but
+    malformed field is not evidence (PRE-REVIEW-INPUT-ROBUSTNESS)."""
+    for field in TEXT_FIELDS:
+        if not _text(case[field]):
+            raise ValueError(f"{label} {field} is malformed: {case[field]!r}")
+    scenario = case["dataset_or_scenario"]
+    if not (_text(scenario) or (isinstance(scenario, list) and scenario and all(_text(item) for item in scenario))):
+        raise ValueError(f"{label} dataset_or_scenario is malformed: {scenario!r}")
+    if not isinstance(case["release_digest"], str) or not RELEASE_DIGEST.fullmatch(case["release_digest"]):
+        raise ValueError(f"{label} release_digest is not a sha256:<hex> digest: {case['release_digest']!r}")
+    result = case["result"]
+    if not isinstance(result, dict):
+        raise ValueError(f"{label} result is not an outcome object: {result!r}")
+    for key in RESULT_COUNTERS:
+        if key in result or key in CASE_COUNTERS:
+            if key not in result:
+                raise ValueError(f"{label} result lacks the outcome counter {key}")
+            _require_zero_int(result[key], f"{label} result.{key}")
+    signature = case["signature"]
+    if not isinstance(signature, dict) or not all(_text(signature.get(key)) for key in SIGNATURE_FIELDS):
+        raise ValueError(f"{label} signature lacks one of {', '.join(SIGNATURE_FIELDS)}")
 
 
 def check_new_record(record: dict[str, Any], gate: str | None, evidence_dir: Path, root: Path) -> None:
@@ -258,7 +311,8 @@ def check_new_record(record: dict[str, Any], gate: str | None, evidence_dir: Pat
         for field in EVIDENCE_PACKAGE_FIELDS:
             if _empty(case.get(field)):
                 raise ValueError(f"{label} lacks evidence-package field {field} (NFR-004, LLD v1.1 §7.3)")
-        requirement = str(case["requirement_id"])
+        _check_case_shape(case, label)
+        requirement = case["requirement_id"]
         if requirement not in register:
             raise ValueError(f"{label} requirement {requirement} is not in the Requirement Register v1.1")
         if gate == "G6" and not in_poc_profile(requirement):
@@ -268,22 +322,19 @@ def check_new_record(record: dict[str, Any], gate: str | None, evidence_dir: Pat
         method = register[requirement]["method"]
         if case["method"] != method:
             raise ValueError(f"{label} method {case['method']!r} is not the Register method {method!r} (NCP-S08)")
-        signature = case["signature"]
-        if not isinstance(signature, dict) or any(_empty(signature.get(key)) for key in SIGNATURE_FIELDS):
-            raise ValueError(f"{label} signature lacks one of {', '.join(SIGNATURE_FIELDS)}")
         _check_artifact(evidence_dir, case["raw_log"], f"{label} raw_log")
-        result = case["result"]
-        if isinstance(result, dict):
-            for key in RESULT_COUNTERS:
-                if key in result:
-                    _require_zero_int(result[key], f"{label} result.{key}")
-        if str(case.get("status", "")).upper() != "PASS":
+        status = case.get("status")
+        if not isinstance(status, str) or status.upper() != "PASS":
             raise ValueError(f"{label} status is not PASS")
         kind = method_kind(method)
-        tests = case.get("tests") or []
-        evidence = case.get("method_evidence") or []
+        tests = case.get("tests", [])
+        evidence = case.get("method_evidence", [])
+        if not isinstance(tests, list) or not all(_text(reference) for reference in tests):
+            raise ValueError(f"{label} tests is not a list of test references: {tests!r}")
+        if not isinstance(evidence, list):
+            raise ValueError(f"{label} method_evidence is not a list: {evidence!r}")
         for reference in tests:
-            if requirement not in _declared_requirements(root, str(reference)):
+            if requirement not in _declared_requirements(root, reference):
                 raise ValueError(f"{label} requirement {requirement} is not declared by the test {reference}")
         if kind in ("AUTOMATED_TEST", "MIXED") and not tests:
             raise ValueError(f"{label} requirement {requirement} has a test method and no tests")
@@ -292,7 +343,7 @@ def check_new_record(record: dict[str, Any], gate: str | None, evidence_dir: Pat
         for item in evidence:
             _check_artifact(root, item, f"{label} method_evidence")
         if gate == "G6":
-            legacy = [str(ref) for ref in tests if str(ref).startswith(LEGACY_TEST_DIRS)]
+            legacy = [ref for ref in tests if _resolve_test(root, ref)[0].startswith(LEGACY_TEST_DIRS)]
             bound = sorted(
                 {
                     match
@@ -305,43 +356,164 @@ def check_new_record(record: dict[str, Any], gate: str | None, evidence_dir: Pat
                 raise ValueError(f"{label} binds the legacy test {legacy[0]} to the LLD identifier {bound[0]} (NCR-LEGACY-001)")
 
 
+def _artifact_entries(manifest: object) -> list[dict[str, Any]]:
+    if not isinstance(manifest, dict):
+        raise ValueError("manifest is not an object")
+    entries = manifest.get("artifacts")
+    if not isinstance(entries, list) or not all(isinstance(item, dict) for item in entries):
+        raise ValueError("manifest artifacts is not a list of objects")
+    return entries
+
+
+def _entry_path(manifest_dir: Path, entry: dict[str, Any]) -> Path:
+    if not _text(entry.get("path")):
+        raise ValueError(f"manifest entry has no path: {entry!r}")
+    return manifest_dir / entry["path"]
+
+
+def check_task_record(
+    manifest_dir: Path,
+    evidence: dict[str, Any],
+    raw_entry: dict[str, Any] | None,
+    *,
+    non_skipped: bool,
+) -> dict[str, Any]:
+    """Integrity and outcome checks of a task evidence record and of its raw log: manifest
+    digests, executed commands, PASS outcome, raw-output digest and mandatory fields."""
+    evidence_path = _entry_path(manifest_dir, evidence)
+    record = json.loads(evidence_path.read_text(encoding="utf-8"))
+    if not isinstance(record, dict):
+        raise ValueError("evidence record is not an object")
+    if record.get("task_id") != evidence.get("task_id"):
+        raise ValueError("task identifier mismatch")
+    if evidence.get("sha256") != digest(evidence_path):
+        raise ValueError("evidence digest mismatch")
+    if raw_entry is None:
+        raise ValueError("manifest has no raw evidence entry")
+    raw_digest = digest(_entry_path(manifest_dir, raw_entry))
+    if raw_entry.get("sha256") != raw_digest:
+        raise ValueError("raw manifest digest mismatch")
+    commands = record.get("commands", [])
+    if not isinstance(commands, list):
+        raise ValueError("evidence commands is not a list")
+    if not commands:
+        raise ValueError("evidence has no executed command")
+    for command in commands:
+        if not isinstance(command, dict):
+            raise ValueError(f"command entry is not an object: {command!r}")
+        _validate_command(command)
+    statuses = {str(item.get("status", "")).upper() for item in commands}
+    if non_skipped and statuses & NON_QUALIFYING:
+        raise ValueError(f"non-qualifying result present: {sorted(statuses & NON_QUALIFYING)}")
+    if statuses != {"PASS"} or record.get("result") != "PASS":
+        raise ValueError(f"mandatory evidence is not all PASS: {sorted(statuses)}")
+    if record.get("raw_output_sha256") != raw_digest:
+        raise ValueError("record raw-output digest mismatch")
+    required = {"commit", "environment", "raw_output_sha256", "created_at"}
+    missing = sorted(required - record.keys())
+    if missing:
+        raise ValueError(f"evidence fields missing: {', '.join(missing)}")
+    return record
+
+
+def _binds(record: dict[str, Any], requirement: str) -> bool:
+    cases = record.get("requirement_results")
+    return isinstance(cases, list) and any(
+        isinstance(case, dict) and case.get("requirement_id") == requirement for case in cases
+    )
+
+
+def _superseded_ids(group: list[dict[str, Any]]) -> set[str]:
+    """Record identifiers of a task replaced by a later record that is not a regression-only
+    requalification; a regression record passes the chain through without replacing it
+    (REM-0046-REGRESSION-REQUALIFICATION-RECORDS point 3)."""
+    by_id = {item["record"]["record_id"]: item["record"] for item in group if _text(item["record"].get("record_id"))}
+    out: set[str] = set()
+    for item in group:
+        if is_regression_record(item["record"]):
+            continue
+        target = item["record"].get("supersedes")
+        while _text(target) and target not in out:
+            out.add(target)
+            target = by_id.get(target, {}).get("supersedes")
+    return out
+
+
 def requirement_evidence(requirement: str) -> dict[str, Any]:
-    """Records that qualify a requirement: sealed legacy records never count (point 3, condition 2)."""
+    """Records that qualify a requirement: for each task only the latest qualifying record of
+    its supersedes chain, with the integrity and outcome checks of the task validation;
+    sealed legacy records never count (point 3, condition 2)."""
     if requirement not in requirement_register():
         raise ValueError(f"requirement {requirement} is not in the Requirement Register v1.1")
-    qualifying: list[str] = []
-    excluded: list[str] = []
-    rejected: list[dict[str, str]] = []
+    groups: dict[str, list[dict[str, Any]]] = {}
     for manifest_path in sorted((ROOT / "reports/evidence").glob("G[0-7]/MANIFEST.json")):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        for item in manifest.get("artifacts", []):
-            path = manifest_path.parent / item["path"]
+        entries = _artifact_entries(manifest)
+        for item in entries:
+            path = _entry_path(manifest_path.parent, item)
             if path.suffix != ".json" or not path.is_file():
                 continue
             record = json.loads(path.read_text(encoding="utf-8"))
-            cases = record.get("requirement_results")
-            if not isinstance(cases, list) or not any(
-                isinstance(case, dict) and case.get("requirement_id") == requirement for case in cases
-            ):
+            if not isinstance(record, dict) or not _text(record.get("task_id")):
                 continue
-            relative = path.relative_to(ROOT).as_posix()
-            if is_sealed_legacy_record(path):
+            raw = Path(item["path"]).with_suffix(".log").as_posix()
+            groups.setdefault(record["task_id"], []).append(
+                {
+                    "entry": item,
+                    "manifest": manifest,
+                    "manifest_dir": manifest_path.parent,
+                    "path": path,
+                    "raw_entry": next(
+                        (
+                            other
+                            for other in entries
+                            if other.get("path") == raw and other.get("task_id") == f"{record['task_id']}-RAW"
+                        ),
+                        None,
+                    ),
+                    "record": record,
+                }
+            )
+    qualifying: list[str] = []
+    excluded: list[str] = []
+    rejected: list[dict[str, str]] = []
+    for task, group in sorted(groups.items()):
+        superseded = _superseded_ids(group)
+        heads = [
+            item
+            for item in group
+            if not is_sealed_legacy_record(item["path"])
+            and not is_regression_record(item["record"])
+            and item["record"].get("record_id") not in superseded
+        ]
+        for item in group:
+            if not _binds(item["record"], requirement):
+                continue
+            relative = item["path"].relative_to(ROOT).as_posix()
+            if is_sealed_legacy_record(item["path"]):
                 excluded.append(relative)
                 continue
-            if is_regression_record(record):
+            if is_regression_record(item["record"]):
                 rejected.append({"path": relative, "reason": "regression requalification record never qualifies a requirement"})
                 continue
+            if not any(head is item for head in heads):
+                rejected.append({"path": relative, "reason": f"superseded: not the latest qualifying record of the {task} supersedes chain"})
+                continue
+            if len(heads) > 1:
+                rejected.append({"path": relative, "reason": f"ambiguous supersedes chain of {task}: {len(heads)} latest qualifying records"})
+                continue
             try:
-                check_new_record(record, manifest.get("gate"), manifest_path.parent, ROOT)
+                record = check_task_record(item["manifest_dir"], item["entry"], item["raw_entry"], non_skipped=True)
+                check_new_record(record, item["manifest"].get("gate"), item["manifest_dir"], ROOT)
             except (OSError, ValueError, KeyError, SyntaxError) as exc:
                 rejected.append({"path": relative, "reason": str(exc)})
                 continue
             qualifying.append(relative)
     return {
-        "excluded_non_conforming_sealed_records": excluded,
+        "excluded_non_conforming_sealed_records": sorted(excluded),
         "priority": requirement_register()[requirement]["priority"],
-        "qualifying_records": qualifying,
-        "rejected_records": rejected,
+        "qualifying_records": sorted(qualifying),
+        "rejected_records": sorted(rejected, key=lambda item: item["path"]),
         "requirement_id": requirement,
     }
 
@@ -366,48 +538,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = (args.root or Path(os.environ.get("OCOR_EVIDENCE_ROOT") or ROOT)).resolve()
     try:
         manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
-        entries = manifest.get("artifacts", [])
+        entries = _artifact_entries(manifest)
         evidence = next((item for item in entries if item.get("task_id") == args.task), None)
         if evidence is None:
             raise ValueError(f"manifest has no evidence entry for {args.task}")
-        evidence_path = args.manifest.parent / evidence["path"]
-        record = json.loads(evidence_path.read_text(encoding="utf-8"))
-        if record.get("task_id") != args.task:
-            raise ValueError("task identifier mismatch")
-        if evidence.get("sha256") != digest(evidence_path):
-            raise ValueError("evidence digest mismatch")
-        raw_entry = next(
-            (
-                item
-                for item in entries
-                if item.get("task_id") == f"{args.task}-RAW"
-            ),
-            None,
-        )
-        if raw_entry is None:
-            raise ValueError("manifest has no raw evidence entry")
-        raw_path = args.manifest.parent / raw_entry["path"]
-        raw_digest = digest(raw_path)
-        if raw_entry.get("sha256") != raw_digest:
-            raise ValueError("raw manifest digest mismatch")
-        commands = record.get("commands", [])
-        if not commands:
-            raise ValueError("evidence has no executed command")
-        for command in commands:
-            if not isinstance(command, dict):
-                raise ValueError(f"command entry is not an object: {command!r}")
-            _validate_command(command)
-        statuses = {str(item.get("status", "")).upper() for item in commands}
-        if args.non_skipped and statuses & NON_QUALIFYING:
-            raise ValueError(f"non-qualifying result present: {sorted(statuses & NON_QUALIFYING)}")
-        if statuses != {"PASS"} or record.get("result") != "PASS":
-            raise ValueError(f"mandatory evidence is not all PASS: {sorted(statuses)}")
-        if record.get("raw_output_sha256") != raw_digest:
-            raise ValueError("record raw-output digest mismatch")
-        required = {"commit", "environment", "raw_output_sha256", "created_at"}
-        missing = sorted(required - record.keys())
-        if missing:
-            raise ValueError(f"evidence fields missing: {', '.join(missing)}")
+        raw_entry = next((item for item in entries if item.get("task_id") == f"{args.task}-RAW"), None)
+        record = check_task_record(args.manifest.parent, evidence, raw_entry, non_skipped=args.non_skipped)
+        evidence_path = _entry_path(args.manifest.parent, evidence)
         if not is_sealed_legacy_record(evidence_path):
             if is_regression_record(record):
                 check_regression_record(record, manifest, evidence["path"], root)

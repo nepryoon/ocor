@@ -734,7 +734,8 @@ def apply_normative_conformance_plan(by_num: dict[int, dict[str, Any]]) -> None:
     proposals = json.loads((ROOT / NORMATIVE_CONFORMANCE_REGISTER).read_text(encoding="utf-8"))["g6_g7_proposals"]["tasks"]
 
     def poc(rid: str) -> bool:
-        return "PoC" in register[rid]["release"]
+        # "Ogni release" (NFR-073, Register v1.1 :368) includes every release, the PoC among them
+        return "PoC" in register[rid]["release"] or register[rid]["release"] == "Ogni release"
 
     for rid, number in IMPLEMENTATION_ALLOCATION.items():
         if rid not in by_num[number]["requirement_ids"]:

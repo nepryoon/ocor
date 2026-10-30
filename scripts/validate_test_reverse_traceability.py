@@ -72,8 +72,9 @@ def _check_link(root: Path, path: str, requirement: str, link: Any, tasks: dict[
         if kind == "subject_task" and not str(link.get("rationale", "")).strip():
             return [f"MISSING_RATIONALE: {label}"]
         return [] if requirement in tasks[task] else [f"BASIS_MISMATCH: {label} is not a requirement of {task}"]
-    source_path = root / str(link.get("source", ""))
-    if not link.get("source") or not source_path.is_file():
+    source = link.get("source")
+    source_path = root / source if isinstance(source, str) and source else None
+    if source_path is None or not source_path.is_file():
         return [f"MISSING_FILE: {label}: remediation record {link.get('source')!r}"]
     if requirement not in _record_requirements(source_path):
         return [f"BASIS_MISMATCH: {label} is not in the requirement_results of {link['source']}"]
@@ -91,9 +92,9 @@ def validate(root: Path, index_path: Path) -> list[str]:
     findings: list[str] = []
     declared: dict[str, dict[str, Any]] = {}
     for entry in entries:
-        path = str(entry.get("path", "")) if isinstance(entry, dict) else ""
-        if not path or path in declared:
-            findings.append(f"INVALID_ENTRY: duplicate or unnamed entry {entry!r}")
+        path = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(path, str) or not path or path in declared:
+            findings.append(f"INVALID_ENTRY: duplicate, unnamed or malformed entry {entry!r}")
             continue
         declared[path] = entry
         if not (root / path).is_file():
@@ -104,7 +105,10 @@ def validate(root: Path, index_path: Path) -> list[str]:
         if not isinstance(requirements, list) or not requirements:
             findings.append(f"ORPHAN_DESIGN: {path} declares no requirement")
             continue
-        unknown = sorted(set(map(str, requirements)) - known)
+        if not all(isinstance(requirement, str) for requirement in requirements):
+            findings.append(f"INVALID_ENTRY: {path}: requirement_ids is not a list of identifiers")
+            continue
+        unknown = sorted(set(requirements) - known)
         if unknown:
             findings.append(f"UNKNOWN_REQUIREMENT: {path}: {', '.join(unknown)}")
         if not isinstance(basis, dict) or set(basis) != set(requirements):

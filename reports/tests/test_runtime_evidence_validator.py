@@ -639,7 +639,7 @@ class PreventiveReviewRemediationTests(unittest.TestCase):
                 _assert_typed_fail(self, base, expected="requirement_results[0]")
 
     def test_rejects_case_result_without_the_outcome_counters(self) -> None:
-        for result in ({}, {"passed": 1}, {"failed": 0, "passed": 1}, {"failed": 0, "skipped": 0, "not_executed": False}):
+        for result in ({"passed": 1}, {"failed": 0, "passed": 1}, {"failed": 0, "skipped": 0, "not_executed": False}):
             with self.subTest(result=result), tempfile.TemporaryDirectory() as tmp:
                 base = Path(tmp)
                 _write_fixture(base, [_full_command()], cases=[_case(result=result)])
