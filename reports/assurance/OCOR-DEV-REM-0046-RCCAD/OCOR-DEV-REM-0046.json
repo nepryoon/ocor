@@ -1,0 +1,206 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 3 and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5",
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "non_conforming_sealed_records": {
+    "base_commit": "1b0085478866d559c758eed2b29ccc5036138aa1",
+    "registry": "reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json",
+    "registry_sha256": "a0877068a76ecaa14de52e08908c6221130bced62a8d0ff821ce2fcfae402b1d",
+    "rule": "condition 2 of decision point 3: every listed record is excluded as evidence of any requirement, P0 included (scripts/validate_runtime_evidence.py requirement_evidence and the OCOR-DEV-0067 criteria in the backlog)",
+    "summary": {
+      "conforming": 0,
+      "non_conforming": 260,
+      "records": 260
+    }
+  },
+  "norm_anchors": {
+    "AFF-009/AFF-010": "docs/development_methodology/OCOR_ARCHITECTURE_FITNESS_FUNCTIONS.md:20-21",
+    "FR-118/FR-119": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:267-268",
+    "LLD v1.1 \u00a77.3": "docs/OCOR_LLD_v1.1.md:411",
+    "LLD v1.1 \u00a78": "docs/OCOR_LLD_v1.1.md:425-434",
+    "NFR-003": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:25",
+    "NFR-004": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:26",
+    "Register method column": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:14"
+  },
+  "open_decision_requests": [
+    "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (PR #432): regression-only requalifications of 0005/0050/0082 versus condition 1 of decision point 3"
+  ],
+  "plan_unit": "NCP-U13",
+  "proposed_criteria_not_in_backlog": {
+    "OCOR-DEV-0068": [
+      {
+        "criterion": "The independent adversarial review, on a clean clone with the stack recreated from scratch, finds every Core stage sharing verifiable trace and versions in the qualified mission thread; every critical/high finding becomes a REM and is closed before 0069.",
+        "register_line": 18,
+        "requirement_id": "BR-003"
+      },
+      {
+        "criterion": "The review re-derives, from the 0067 ledger and the raw logs, an individual outcome for every P0 PoC requirement and confirms zero failed P0 in the acceptance report; a P0 without criterion, evidence or individual outcome is a critical finding.",
+        "register_line": 25,
+        "requirement_id": "NFR-003"
+      },
+      {
+        "criterion": "The reviewer reproduces the run from the same manifest, seed and versions within the declared tolerances and checks the separation between visible inputs and the evaluator's ground truth.",
+        "register_line": 429,
+        "requirement_id": "NFR-090"
+      },
+      {
+        "criterion": "The review confirms zero actions without the required Decision/Authority/Approval, zero automatic promotion of claims or predictions, zero contamination of main, zero policy/audit bypass and zero lineage loss in the qualifying evidence.",
+        "register_line": 431,
+        "requirement_id": "NFR-092"
+      },
+      {
+        "criterion": "The reviewer verifies the signatures of the evidence package and completes the clean-room replay.",
+        "register_line": 433,
+        "requirement_id": "NFR-093"
+      }
+    ],
+    "OCOR-DEV-0069": [
+      {
+        "criterion": "The candidate package shows every P0 PoC passed, the evidence package complete, no untreated critical security/safety/licence risk and limitations and gaps listed for formal PO acceptance; status PROPOSED - AWAITING PRODUCT OWNER DECISION.",
+        "register_line": 434,
+        "requirement_id": "BR-016"
+      },
+      {
+        "criterion": "The acceptance report in the package lists an individual outcome per P0 with zero failed P0; one failed P0 makes the package non-approvable.",
+        "register_line": 25,
+        "requirement_id": "NFR-003"
+      },
+      {
+        "criterion": "The package reports a separate outcome per gate and fails if any gate failed; a missing threshold blocks the PoC gate.",
+        "register_line": 68,
+        "requirement_id": "NFR-009"
+      },
+      {
+        "criterion": "Every deliverable carries the disclaimer and coverage status; zero unsupported claims (no compliance, certification, Production readiness).",
+        "register_line": 318,
+        "requirement_id": "NFR-050"
+      },
+      {
+        "criterion": "The bundle includes source/config, OaC/IR/compiler/build provenance, image digests, SBOM and licences, data/scenario/model manifests, seeds, policy bundle, raw outputs, traces/logs/receipts, lineage, capability matrix and limitations, signed and content-addressed.",
+        "register_line": 433,
+        "requirement_id": "NFR-093"
+      },
+      {
+        "criterion": "The package states that no PoC outcome promotes the MVP or Production profiles.",
+        "register_line": 69,
+        "requirement_id": "BR-012"
+      },
+      {
+        "criterion": "No requirement reaches Verified through the package; Verified remains 0 until a governed transition with reviewer, timestamp, baseline and immutable evidence reference.",
+        "register_line": 85,
+        "requirement_id": "NFR-011"
+      }
+    ],
+    "note": "decision point 3: proposed requirement by requirement for the PO, not written in the backlog; OCOR-DEV-0068 and 0069 stay blocked (point 11). Acceptance text from the Requirement Register v1.1 (line in brackets)."
+  },
+  "resolution_probes": {
+    "condition_1": [
+      {
+        "checks": "a new record binding a case to a requirement its test does not declare is rejected; a G6 case binding a legacy test to an LLD identifier or qualifying an out-of-profile requirement is rejected",
+        "entry": "NCR-EVIDENCE-001",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_evidence_001_conforms"
+      },
+      {
+        "checks": "a new record whose case lacks any NFR-004 / LLD v1.1 \u00a77.3 field (method, metric, threshold, baseline, dataset or scenario, result, owner, signature and the others) is rejected; a new record without cases is rejected",
+        "entry": "NCR-EVIDENCE-002",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_evidence_002_conforms"
+      },
+      {
+        "checks": "the case method must be the Register method; non-test methods need their method evidence",
+        "entry": "NCR-PLAN-005",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_005_conforms"
+      },
+      {
+        "checks": "every test file traces to at least one requirement (ORPHAN_DESIGN otherwise); only named_in_test links are declarations",
+        "entry": "NCR-PLAN-006",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_006_conforms"
+      }
+    ],
+    "condition_2": [
+      {
+        "checks": "the sealed records are recognised by path and sha256 and the validator excludes them as evidence (requirement_evidence)",
+        "entry": "NCR-EVIDENCE-001",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_evidence_001_conforms"
+      },
+      {
+        "checks": "the OCOR-DEV-0067 criteria keep one ledger row per requirement, declare out-of-profile rows and exclude the non-conforming sealed records",
+        "entry": "NCR-PLAN-002",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_002_conforms"
+      }
+    ],
+    "condition_3": [
+      {
+        "checks": "per-requirement criteria and requirement_ids of OCOR-DEV-0060 and 0062-0067 from g6_g7_proposals minus g6_exclusions",
+        "entry": "NCR-PLAN-001",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_001_conforms"
+      },
+      {
+        "checks": "OCOR-DEV-0061 is bound to FR-118 and FR-119 with the FGM cases the Register assigns",
+        "entry": "NCR-PLAN-004",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_004_conforms"
+      },
+      {
+        "checks": "implementation allocation of FR-164, FR-045 and NFR-088",
+        "entry": "NCR-PLAN-003",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_plan_003_conforms"
+      }
+    ],
+    "governance": [
+      {
+        "checks": "AFF-009 and AFF-010 fail closed",
+        "entry": "NCR-GOVERNANCE-001",
+        "outcome": "PENDING_CAMPAIGN",
+        "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider reports/tests/test_ocor_dev_rem_0046.py::test_ncr_governance_001_conforms"
+      }
+    ],
+    "rule": "condition 4 of decision point 3: the probes check conditions 1-3, never counts over the sealed records; verification and verification_probes of the register are unchanged"
+  },
+  "resolved_register_entries": [
+    "NCR-PLAN-001",
+    "NCR-PLAN-002",
+    "NCR-PLAN-003",
+    "NCR-PLAN-004",
+    "NCR-PLAN-005",
+    "NCR-PLAN-006",
+    "NCR-EVIDENCE-001",
+    "NCR-EVIDENCE-002",
+    "NCR-GOVERNANCE-001"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "reverse_traceability_index": {
+    "builder": "~/.ocor-codex/rem-0046/build_reverse_index.py with curated.json (outside Git)",
+    "nature": "non-normative (decision point 3); only named_in_test links are declarations for scripts/validate_runtime_evidence.py",
+    "path": "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
+    "validator": "scripts/validate_test_reverse_traceability.py"
+  },
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0046"
+}
