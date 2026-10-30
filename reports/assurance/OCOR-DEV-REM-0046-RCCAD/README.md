@@ -7,8 +7,11 @@ verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-
 Stato: `CANDIDATE_IN_PROGRESS`. Il record `OCOR-DEV-REM-0046.json` contiene per ora le parti che non dipendono
 dalla campagna: voci risolte, ancore, record sigillati non conformi, sonde delle condizioni 1–4 del punto 3,
 criteri proposti di `OCOR-DEV-0068` e `0069` (non scritti nel backlog). Campagna, riqualifiche, revisione
-preventiva e verifica indipendente si aggiungono a campagna eseguita. Le riqualifiche di sola regressione di
-`0005`, `0050` e `0082` attendono la decision request `REM-0046-REGRESSION-REQUALIFICATION-RECORDS` (PR #432).
+preventiva e verifica indipendente si aggiungono a campagna eseguita. La decision request
+`REM-0046-REGRESSION-REQUALIFICATION-RECORDS` (PR #432) è decisa dal PO (opzione 1): le riqualifiche di sola
+regressione di `0005`, `0050` e `0082` sono record della classe non qualificante (`requalification_kind:
+"regression"`, `qualifies_requirements: false`), che `scripts/validate_runtime_evidence.py` controlla e non conta
+mai come evidenza di un requisito.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, guard o workflow è modificato. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,

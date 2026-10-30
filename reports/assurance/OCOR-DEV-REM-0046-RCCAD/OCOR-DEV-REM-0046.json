@@ -7,13 +7,26 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
+  "decided_decision_requests": [
+    {
+      "branch_commit": "4dfb0c3dcc94a264a938a82069aa484e9ee08082",
+      "disposition": "option 1 with the clarifications of points 2 and 3 (PO normative decision of 2026-10-30)",
+      "id": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+      "path": "reports/development/decision_requests/REM-0046-REGRESSION-REQUALIFICATION-RECORDS.md",
+      "pr": 432,
+      "request_commit": "86559cf",
+      "request_sha256": "2095cd3ba20db529be33240ab8cfad969d61fd4d297d7bae85df497b5cd2b851",
+      "sha256": "d3174033d88acf426f59c2e65c122588025d246fa80f04c5fee18cc4aa3510d9"
+    }
+  ],
   "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 3 and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5",
   "implementers": [
     {
       "agent": "Claude Code",
       "iterations": [
         1,
-        2
+        2,
+        3
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -40,9 +53,6 @@
     "NFR-004": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:26",
     "Register method column": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:14"
   },
-  "open_decision_requests": [
-    "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (PR #432): regression-only requalifications of 0005/0050/0082 versus condition 1 of decision point 3"
-  ],
   "plan_unit": "NCP-U13",
   "proposed_criteria_not_in_backlog": {
     "OCOR-DEV-0068": [
@@ -110,6 +120,44 @@
       }
     ],
     "note": "decision point 3: proposed requirement by requirement for the PO, not written in the backlog; OCOR-DEV-0068 and 0069 stay blocked (point 11). Acceptance text from the Requirement Register v1.1 (line in brackets)."
+  },
+  "regression_requalification_class": {
+    "decision": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1",
+    "green": {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -q reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider",
+      "commit": "1acfca36925f",
+      "summary": "36 passed, 15 subtests passed"
+    },
+    "implementation": "scripts/validate_runtime_evidence.py: is_regression_record, check_regression_record, requirement_evidence, main",
+    "negative_cases": [
+      "test_rejects_regression_record_with_a_requirement_case",
+      "test_rejects_regression_record_with_a_manifest_requirement_case",
+      "test_rejects_regression_record_that_qualifies_requirements",
+      "test_rejects_regression_record_without_supersedes",
+      "test_rejects_regression_record_superseding_another_task",
+      "test_rejects_regression_record_with_a_mismatched_superseded_record",
+      "test_rejects_regression_record_failing_the_non_requirement_checks",
+      "test_regression_record_never_counts_as_requirement_evidence"
+    ],
+    "note": "test_rejects_regression_record_failing_the_non_requirement_checks already passed at the RED head: it pins that the pre-existing non-requirement checks keep applying to the class",
+    "positive_cases": [
+      "test_accepts_regression_requalification_record"
+    ],
+    "red": {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -q reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -rf",
+      "commit": "9ad15e1215472e7c574b0b4835854680577fcb7f",
+      "fingerprint_definition": "sha256 of the sorted FAILED/SUBFAILED ids followed by the summary line",
+      "fingerprint_sha256": "2017c549553875f5a027eef2827d28f0854df55d6b295360194d11e7eb9f5db7",
+      "raw_log_sha256": "29720b050a2ad15639da3e66244aea42614919c673a7724b35292b2bcbfe293b",
+      "summary": "11 failed, 30 passed, 10 subtests passed in 1.53s"
+    },
+    "rules": [
+      "a record with requalification_kind regression must declare qualifies_requirements false",
+      "it binds no case to a requirement: no requirement_results in the record and no manifest requirement_results row for its evidence path",
+      "supersedes equals previous_record.record_id; previous_record.record_path resolves with record_sha256 to a record with that record_id and the same task_id",
+      "every check that does not concern requirements still applies (commands, content-addressed raw log, PASS, zero failed/skipped/not_executed/xfailed counters, mandatory fields)",
+      "requirement_evidence never counts it: it is listed among rejected_records with the reason 'regression requalification record never qualifies a requirement'"
+    ]
   },
   "resolution_probes": {
     "condition_1": [
