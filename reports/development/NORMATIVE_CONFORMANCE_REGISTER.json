@@ -3906,6 +3906,618 @@
         "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C7-PROBE-01>",
         "outcome": "probe prints \"C7-7 ScenarioOverlayStore operations: ['append_overlay', 'discard', 'fork_scenario', 'open_snapshot', 'read_at', 'seal_result'] | ScenarioBranch fields: ['scenario_id', 'run_id', 'compartments', 'canonical_commit_ref', 'scenario_branch']\". REFUTED at the current head (superseded by the OCOR-DEV-REM-0041 overlay unit, as the seed note anticipated)."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "138-146",
+          "note": "assign: store.write as authoritative writer",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "160-168",
+          "note": "commit",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "181-189",
+          "note": "handoff",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "202-210",
+          "note": "register_dissent",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [
+        "NCR-C3-002"
+      ],
+      "id": "NCR-C8-001",
+      "norm_refs": [
+        {
+          "lines": "342",
+          "note": "ADD v1.3 \u00a72.5 rule 10: every canonical mutation is produced only by C6 on the governed path",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "339",
+          "note": "ADD v1.3 \u00a72.5 rule 7: Agent Message, Memory, retrieved content and tool output remain tainted and non-canonical",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3116",
+          "note": "ADD v1.3 \u00a74.3.1 invariant 3: Goal, Plan, Message, Memory, Recommendation and tool output do not become Canonical Assertion without an explicit workflow",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "183",
+          "note": "LLD v1.1 \u00a72.8 closed C8 records AgentRun, Task, Assignment, Commitment, Handoff, Dissent",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "266",
+          "note": "FR-117: a Message does not become a Canonical Assertion nor grant Authority without an explicit process",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "264",
+          "note": "FR-115: coordination only through the Agent Kernel and typed contracts, not shared datastore access",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-117",
+        "FR-115"
+      ],
+      "seed_ref": "C8-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-117 and FR-115 are P0 PoC",
+      "statement": "AgentRunOrchestrator writes every coordination record (task assignment, commitment, handoff, dissent) as an aggregate urn:ocor:agentrun:* of the canonical store through store.write with writer_id=store.authoritative_writer, outside C6: agent coordination state, which is tainted and non-canonical, becomes canonical state through a path that no Decision, Authority or GatePackage governs. The store itself is the legacy c3_store.AtomicOutboxStore (NCR-C3-002); this entry is the C8 side: the records belong to the C8 AgentRun state (LLD v1.1 \u00a72.8), not to canonical aggregates.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "52-69",
+          "note": "test_the_full_assign_commit_dissent_lifecycle_writes_real_canonical_state pins the canonical write",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C8-PROBE-01>",
+        "outcome": "probe prints 'C8-1 assignment written to the canonical store as authoritative writer: True | writes with writer_id=store.authoritative_writer: 4 | C6 engine referenced: False'. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "73-79",
+          "note": "Handoff record",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "179",
+          "note": "authorisation with subject=to_agent_id",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-002",
+      "norm_refs": [
+        {
+          "lines": "3068-3098",
+          "note": "ADD v1.3 \u00a74.3 HandoffEnvelope attested by the Kernel",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3042",
+          "note": "ADD v1.3 \u00a74.3: every handoff crosses the Kernel, which authenticates the Principal and checks capability, Delegation, Policy, schema, budget, marking, taint, expiry and version fence",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "388",
+          "note": "ADD v1.3 \u00a71.4 GCS table: the declared handoff sender is compared with the transport Principal; mismatch CAPABILITY_DENIED + audit",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "183",
+          "note": "LLD v1.1 \u00a72.8: Handoff keeps sender, recipient, schema, input/output refs, GCS digest and accepted/rejected status",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "62",
+          "note": "FR-010: every handoff validates a schema",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "278",
+          "note": "FR-128: actor chain, purpose and effective authority checked at every hop",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-010",
+        "FR-128"
+      ],
+      "seed_ref": "C8-2",
+      "severity": "HIGH",
+      "severity_basis": "FR-010 and FR-128 are P0 PoC",
+      "statement": "Handoff is a five-field record (task_id, from_agent_id, to_agent_id, reason, handed_off_at) instead of the kernel-attested HandoffEnvelope (28 fields: contract and schema pin, payload digest, evidence and provenance refs, taint labels, governed_context and its digest, delegation and effective authority, correlation, expiry, remaining budget, signature) with accepted/rejected status, and no schema is validated. The handoff is authorised with a lease checked against the recipient (subject=to_agent_id, resource=to_agent_id): the sender holding the commitment is neither authenticated nor compared with a transport Principal, so a lease held by the recipient alone moves another agent's commitment.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "78",
+          "note": "handoff lease granted to the recipient agent-2 only",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C8-PROBE-01>",
+        "outcome": "probe prints 'C8-2 handoff of agent-1's commitment authorised by a lease held by the recipient agent-2: agent-1 -> agent-2' and \"C8-2 Handoff fields: ['task_id', 'from_agent_id', 'to_agent_id', 'reason', 'handed_off_at'] | HandoffEnvelope fields in ADD v1.3: 28\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "57-91",
+          "note": "TaskAssignment, Commitment, Handoff, Dissent",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "122-148",
+          "note": "assign checks a lease only",
+          "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-003",
+      "norm_refs": [
+        {
+          "lines": "3057-3064",
+          "note": "ADD v1.3 \u00a74.3 roles, typed outputs and hard prohibitions",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3101-3110",
+          "note": "ADD v1.3 \u00a74.3 task lifecycle, Commitment, attempts, cycle detection, maximum delegation depth, timeout, termination; Critical dissent blocks a High-Impact proposal",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "183",
+          "note": "LLD v1.1 \u00a72.8: task graph rejects cycles and depth beyond policy; assignment checks machine identity, capability, delegation, autonomy tier, budget and termination condition; dissent resolution is a separate record",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "358",
+          "note": "LLD v1.1 \u00a76: C8 task claim with bounded lease; cycle/depth/budget enforcement",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "62",
+          "note": "FR-010: distinct roles; budget or termination condition stop the task; dissent kept",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "263",
+          "note": "FR-114: team, roles, task, assignment, commitment, dependencies, state and termination condition",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "270",
+          "note": "FR-121: termination condition, max delegation depth, timeout and escalation target; a cycle or excessive depth is stopped",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-010",
+        "FR-114",
+        "FR-121"
+      ],
+      "seed_ref": "C8-3",
+      "severity": "HIGH",
+      "severity_basis": "FR-010, FR-114 and FR-121 are P0 PoC",
+      "statement": "The C8 coordination model has no AgentRun, Task or DecisionProposal record, no team or role (Fusion/Identity, Hypothesis, Causal, Policy, Challenger, Coordinator) with its typed outputs and hard prohibitions, no task lifecycle (PROPOSED, POLICY_AUTHORIZED, ACCEPTED, COMPLETED, ABSTAINED, FAILED, EXPIRED, CANCELLED), no logical_task_id or attempts, no dependencies, and no cycle detection, maximum delegation depth, timeout or termination condition; assignment checks only a capability lease (no machine identity binding, delegation, autonomy tier, budget or termination condition). Dissent has no severity, so a Critical dissent cannot block a High-Impact proposal, and there is no separate resolution record.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C8-PROBE-01>",
+        "outcome": "probe prints \"C8-3 records: ['CapabilityLease', 'Commitment', 'Dissent', 'Handoff', 'TaskAssignment'] | Dissent fields: ['task_id', 'agent_id', 'reason', 'registered_at']\" and every lifecycle/cycle/depth/termination/timeout/role/severity token False. CONFIRMED and extended (AgentRun, Task, DecisionProposal, assignment checks)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "192-204",
+          "note": "legacy StrictSandbox.register_tool: name and callable only",
+          "path": "ocor-runtime/src/ocor_runtime/c8_agent.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "339-409",
+          "note": "ToolCallRuntime.invoke: no contract lookup or argument validation",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "113-135",
+          "note": "ToolRuntimeError reason codes",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-004",
+      "norm_refs": [
+        {
+          "lines": "1589-1620",
+          "note": "ADD v1.3 \u00a73.5 mcp-tool-contract:1.2 required fields",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1759-1778",
+          "note": "ADD v1.3 \u00a73.5 error_codes enum",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1988",
+          "note": "ADD v1.3 \u00a73.5: every tools/call carries a transport-attested invocation envelope; non allow-listed tools are not exportable capabilities",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3117",
+          "note": "ADD v1.3 \u00a74.3.1 invariant 4: every tool call is allow-listed, schema-bound, parameter-constrained and mediated by Kernel, Gateway and Policy Engine",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "255",
+          "note": "FR-108: Tool Contract schema",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "277",
+          "note": "FR-127: schema validation, provenance/taint, allow-list, parameter constraints, sandbox and egress policy before and after every tool call",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-108",
+        "FR-127"
+      ],
+      "seed_correction": "the seed anchor c8_agent.py:192-204 is the legacy registration that the current runtime reuses; the divergence is recorded on the current component, the legacy slice is not changed",
+      "seed_ref": "C8-4",
+      "severity": "HIGH",
+      "severity_basis": "FR-108 and FR-127 are P0 PoC",
+      "statement": "The current tool runtime has no Tool Contract: tools are the callables registered by name in the legacy StrictSandbox, with no contract id and digest, input/output schema pin, effect and risk class, allowed autonomy tiers, preconditions, policy refs, approval, idempotency, timeout, retry, compensation, provenance or evidence requirements; arguments are not schema-validated or parameter-constrained and no taint or egress control applies before or after the call. Five of the six reason codes it raises (MARKING_DENIED, PURPOSE_REQUIRED, RECONCILIATION_UNAVAILABLE, STOP_BOUND_DENIED, TOOL_DEADLINE_EXCEEDED) are outside the Tool Contract error_codes enum. The remediation composes a contract-bound tool registry in the current component; the legacy StrictSandbox does not change.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "286",
+          "note": "asserts reason_code MARKING_DENIED",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "410",
+          "note": "asserts reason_code TOOL_DEADLINE_EXCEEDED",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C8-PROBE-01>",
+        "outcome": "probe prints \"C8-4 StrictSandbox.register_tool signature: (self, name: 'str', tool: 'Callable[..., Any]') -> 'None' | Tool Contract in c8: False\" and \"outside the ADD v1.3 error_codes enum: ['MARKING_DENIED', 'PURPOSE_REQUIRED', 'RECONCILIATION_UNAVAILABLE', 'STOP_BOUND_DENIED', 'TOOL_DEADLINE_EXCEEDED']\". CONFIRMED; the reason-code part maps univocally only where the enum names the same condition (STOP_BOUND_DENIED -> EMERGENCY_STOP_ACTIVE, TOOL_DEADLINE_EXCEEDED -> EXECUTION_UNKNOWN when execution_unknown); the plan unit fixes the mapping with the anchors."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "279-287",
+          "note": "ToolCallReceipt fields",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "369-370",
+          "note": "purpose checked as non-empty",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "386",
+          "note": "token charge only",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [
+        "NCR-C6-011"
+      ],
+      "id": "NCR-C8-005",
+      "norm_refs": [
+        {
+          "lines": "3115",
+          "note": "ADD v1.3 \u00a74.3.1 invariant 2: PoC autonomy tiers observe, analyze, simulate, propose",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3119",
+          "note": "ADD v1.3 \u00a74.3.1 invariant 6: budget per tool, steps, token/cost, wall time, compute and risk exposure at agent, run, team and tenant",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3856",
+          "note": "ADD v1.3 Part II \u00a72.12: tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3140",
+          "note": "ADD v1.3 \u00a75.1: agent identity binds workload identity, agent_principal_id, agent_run_id, owner, autonomy tier and agent version",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "47",
+          "note": "FR-004: every sensitive operation records agent ID, capability, delegator, scope, budget and autonomy tier",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "258",
+          "note": "FR-110: autonomy tiers enforced",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "269",
+          "note": "FR-120: multidimensional agent budget",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-004",
+        "FR-110",
+        "FR-120"
+      ],
+      "seed_ref": "C8-5",
+      "severity": "HIGH",
+      "severity_basis": "FR-004, FR-110 and FR-120 are P0 PoC",
+      "statement": "At each tool call the runtime evaluates no policy decision, no autonomy tier (observe, analyze, simulate, propose) and no memory instruction eligibility; purpose is checked only as a non-empty string; the ToolCallReceipt records tool, lease, purpose, tokens, stop epoch and result but no agent principal, agent_run_id, delegator, scope, autonomy tier or taint; the budget is the legacy token budget only, with no tool, step, wall-time, compute or risk-exposure quota at agent, run, team or tenant level.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "100",
+          "note": "test_a_fully_bound_call_produces_a_receipt_and_a_real_tool_effect pins the receipt",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C8-PROBE-01>",
+        "outcome": "probe prints the invoke parameters (no policy, tier or eligibility input), every policy/autonomy/eligib/taint/delegat token False, \"ToolCallReceipt fields: ['tool_name', 'lease_id', 'purpose', 'tokens_spent', 'stop_epoch', 'result', 'called_at'] | purpose check: True\" and the token-only TokenBudget methods. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "448-458",
+          "note": "capability_authority defaults to None",
+          "path": "ocor-runtime/src/ocor_runtime/c8_agent.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "493-510",
+          "note": "execute_sandboxed skips authorisation",
+          "path": "ocor-runtime/src/ocor_runtime/c8_agent.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "533-560",
+          "note": "invoke skips authorisation",
+          "path": "ocor-runtime/src/ocor_runtime/c8_agent.py"
+        }
+      ],
+      "component": "C8",
+      "decision_options": [
+        "A (recommended): leave the legacy AgentKernel unchanged and give the current C8 kernel (NCP-U10) a mandatory authority with no fail-open default; the mission thread (OCOR-DEV-0065) uses the current kernel",
+        "B: make capability_authority mandatory in the legacy AgentKernel; changes the legacy slice and the outcome of acceptance_ev tests, needs a PO decision"
+      ],
+      "decision_reason": "remediation in place would change the legacy slice (c8_agent.py) and the outcome of legacy-slice tests",
+      "depends_on": [],
+      "id": "NCR-C8-006",
+      "norm_refs": [
+        {
+          "lines": "47",
+          "note": "FR-004 acceptance: capability not allow-listed produces deny; capability evaluated before every sensitive operation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "279",
+          "note": "NFR-037: mutative capabilities fail closed when identity, policy, audit or version fence is unavailable",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "3121",
+          "note": "ADD v1.3 \u00a74.3.1 invariant 8: unavailability produces stop or fail-closed",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-004",
+        "NFR-037"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH by the point 4.b rule (FR-004 and NFR-037 are P0 PoC); the norm anchor is derived from the Requirement Register acceptance criteria, as the seed note asked",
+      "seed_ref": "C8-6",
+      "severity": "HIGH",
+      "severity_basis": "FR-004 and NFR-037 are P0 PoC",
+      "statement": "The legacy AgentKernel built without capability_authority (its default) runs invoke and execute_sandboxed with no capability at all: authorisation is skipped instead of failing closed. No current component under ocor-runtime/src constructs AgentKernel; legacy-slice tests (acceptance_ev) and the mission-thread test construct it without an authority, so making it fail closed changes the legacy slice and the outcome of its tests.",
+      "status": "DECISION_REQUIRED",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "146",
+          "note": "legacy-slice test: AgentKernel() without authority",
+          "path": "ocor-runtime/tests/acceptance_ev/test_ev_029_035_fence_agent_e2e.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "212",
+          "note": "mission thread builds AgentKernel without authority",
+          "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe C8-PROBE-01> ; grep -rn 'AgentKernel' --include=*.py ocor-runtime/src scripts deploy",
+        "outcome": "probe prints 'C8-6 AgentKernel() capability_authority: None | execute_sandboxed without lease: 2'; the grep finds AgentKernel only in c8_agent.py, __init__.py and a docstring of c8/orchestrator.py. CONFIRMED; DECISION_REQUIRED because the remediation changes the legacy slice (programme point 4.d)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "460",
+          "note": "_dispatch re-authorises at the caller's instant",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "432-438",
+          "note": "_authorize_tool",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "324-337",
+          "note": "authorize_effect at the presented instant",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "108",
+          "note": "CapabilityLease.is_active: revocation effective from revoked_at",
+          "path": "ocor-runtime/src/ocor_runtime/c6_capabilities.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-007",
+      "norm_refs": [
+        {
+          "lines": "3856",
+          "note": "ADD v1.3 Part II \u00a72.12: tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3121",
+          "note": "ADD v1.3 \u00a74.3.1 invariant 8: revocation produces stop or fail-closed",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "398",
+          "note": "LLD v1.1 \u00a77.2 FGM-17: kill switch/delegation revocation race, no subsequent retrieval or tool influence",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "271",
+          "note": "NFR-036: no new tool call after the effective revocation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": null,
+      "provenance": {
+        "branch": "governed/ocor-dev-rem-0043-c8-dispatch-live-revocation",
+        "branch_head": "4c0102805412",
+        "correction_commit": "105b781838e6b1b2dc196fdb1538972e37903a8d",
+        "disposition": "REM-0043-NCP-SUSPENSION (2026-10-29) point 2: suspended, not integrated; a programme unit only by a PO decision on NORMATIVE-CONFORMANCE-PLAN",
+        "red_commit": "81a8b760ef4872e63cb81c02d6303092f5f70639",
+        "red_fingerprint": "550812c2c1b3",
+        "unit": "OCOR-DEV-REM-0043"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-036",
+        "FR-128"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "NFR-036 and FR-128 are P0 PoC",
+      "statement": "Dispatch-time live revocation (defect found by the OCOR-DEV-0062 campaign, FGM-17): ToolCallRuntime re-authorises every dispatch at the caller's invocation instant, while a lease revocation is effective only from its revoked_at, so a lease or delegation revoked while the expression runs still dispatches the next tool, and the effect channel accepts a revoked lease for an earlier presented instant. The correction exists on the suspended branch of OCOR-DEV-REM-0043 (105b781); the plan may propose to resume its test and correction in a programme remediation unit.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "git show 81a8b76:ocor-runtime/tests/tasks/test_ocor_dev_rem_0043.py > /tmp/rem0043red/test_ocor_dev_rem_0043.py && cd /tmp/rem0043red && PYTHONPATH=<repo>/ocor-runtime/src <repo>/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q test_ocor_dev_rem_0043.py (RED test file sha256 791a22289f69cf71819599f390ff66e3431be5c3417b71f342d553ba5a1998cd, run outside the repository against the runtime of main f5433029b97b)",
+        "outcome": "7 failed, 4 passed: the seven revocation cases fail with 'DID NOT RAISE ToolRuntimeError' (e.g. test_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool). CONFIRMED on the current main head (runtime identical to main f5433029b97b); the defect is not refuted."
+      }
     }
   ],
   "g6_g7_proposals": {},
@@ -3977,6 +4589,10 @@
     "NCP-U09": {
       "scope": "C7 causal runtime: SCM with do(X) and identification (NOT_IDENTIFIED), intervention comparison, CausalRunOutcome ESTIMATED/ABSTAIN/REJECTED/FAILED with the ADD closed reason set and precedence (after the PO decision on NCR-C7-002), uncertainty and sensitivity on every estimate, immutable SimulationResult, CausalQuery from ScenarioRunSpec read through the overlay, L2 job lifecycle, declared tolerance and a digest independent of trace identifiers, ELM-070 per the PO decision on NCR-C7-006",
       "status": "DRAFT"
+    },
+    "NCP-U10": {
+      "scope": "C8 Governed Agent Kernel: AgentRun/Task/Assignment/Commitment/Handoff/Dissent/DecisionProposal/ToolInvocation records in C8 state (not canonical aggregates), kernel-attested HandoffEnvelope with sender bound to the transport Principal, roles and task lifecycle with cycle/depth/timeout/termination, dissent severity and blocking, contract-bound tool registry (mcp-tool-contract:1.2) with schema, taint and egress checks and the contract error codes, live policy/autonomy-tier/instruction-eligibility/capability/delegation re-evaluation at every dispatch (with the OCOR-DEV-REM-0043 correction), multidimensional budget, a current kernel with no fail-open default",
+      "status": "DRAFT"
     }
   },
   "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
@@ -3989,10 +4605,10 @@
       "C4",
       "C5",
       "C6",
-      "C7"
+      "C7",
+      "C8"
     ],
     "components_pending": [
-      "C8",
       "MEMORY",
       "LEGACY",
       "TESTS",
@@ -4001,11 +4617,12 @@
       "GOVERNANCE"
     ],
     "iteration_limit": 8,
-    "iterations_used": 3,
+    "iterations_used": 4,
     "pending_sections": [
       "plan_units (point 4.e, completed after the reconnaissance)",
       "g6_g7_proposals (point 4.f)"
     ],
+    "rem_0043_entry": "NCR-C8-007",
     "supplement_items_done": [
       "NCP-S04"
     ]
@@ -4159,6 +4776,24 @@
     },
     "C7-7": {
       "entry_id": "NCR-C7-007"
+    },
+    "C8-1": {
+      "entry_id": "NCR-C8-001"
+    },
+    "C8-2": {
+      "entry_id": "NCR-C8-002"
+    },
+    "C8-3": {
+      "entry_id": "NCR-C8-003"
+    },
+    "C8-4": {
+      "entry_id": "NCR-C8-004"
+    },
+    "C8-5": {
+      "entry_id": "NCR-C8-005"
+    },
+    "C8-6": {
+      "entry_id": "NCR-C8-006"
     }
   },
   "severity_rule": {
@@ -4204,6 +4839,11 @@
       "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; static apart from in-process calls on synthetic rows, no backend needed",
       "sha256": "e852f2e41fc181fe67f43c07dc566191c72e9048d461c37a4769df8d7f1623cd",
       "text": "import dataclasses, inspect, re, subprocess\nfrom dataclasses import replace\nfrom ocor_runtime.c7 import runtime as r\nfrom ocor_runtime.c7 import scenario_overlay as so\nmodel = {\"dag\": [[\"z\", \"t\"], [\"z\", \"y\"], [\"t\", \"y\"]]}\nrows = [{\"z\": z, \"t\": t, \"y\": y} for z, t, y in [(0, 0, 1), (0, 1, 3), (1, 0, 2), (1, 1, 5), (0, 0, 1), (1, 1, 4)]]\niv = {\"value\": 1, \"valid_envelope\": [0, 1]}\nq = r.CausalQuery(baseline_commit=\"c\" * 40, scenario_branch=\"scenario/probe\", model_digest=r.canonical_digest(model),\n                  data_digest=r.canonical_digest(rows), intervention_digest=r.canonical_digest(iv), ontology_release_digest=\"a\" * 64,\n                  expected_release_digest=\"a\" * 64, treatment=\"t\", outcome=\"y\", adjustment=\"z\", seed=7, correlation_id=\"corr-1\", causation_id=\"cause-1\")\nout = r.estimate_intervention(q, model=model, factual_rows=rows, intervention=iv)\nsrc = inspect.getsource(r)\nprint(\"C7-1 model used only as a digest pin (model keys read by the estimator):\", \"model[\" not in src and \"model.get(\" not in src, \"| method:\", out.method, \"| status:\", out.status)\nprint(\"C7-1 interventions per call:\", list(inspect.signature(r.estimate_intervention).parameters))\ncodes = sorted(set(re.findall(r'_Abstain\\(\"([A-Z_]+)\"\\)', src)))\nadd_codes = [\"NOT_IDENTIFIED\", \"INSUFFICIENT_EVIDENCE\", \"OUTSIDE_VALIDITY_ENVELOPE\", \"OUT_OF_DISTRIBUTION\", \"EXTRAPOLATIVE\", \"STALE_CONTEXT\", \"NOT_TRANSPORTABLE\", \"ASSUMPTION_VIOLATION\"]\nprint(\"C7-2 abstain codes produced:\", codes, \"| in the ADD v1.3 closed set:\", sorted(set(codes) & set(add_codes)))\nprint(\"C7-3 statuses produced:\", sorted(set(re.findall(r'status=\"([A-Z_]+)\"', src))), \"| CausalOutcome fields:\", [f.name for f in dataclasses.fields(r.CausalOutcome)])\ntry:\n    r.estimate_intervention(replace(q, model_digest=\"0\" * 64), model=model, factual_rows=rows, intervention=iv)\n    print(\"C7-3 pin mismatch outcome: returned\")\nexcept r.CausalRuntimeError as exc:\n    print(\"C7-3 pin mismatch raises:\", type(exc).__name__, exc)\nrel = r.estimate_intervention(replace(q, expected_release_digest=\"b\" * 64), model=model, factual_rows=rows, intervention=iv)\nprint(\"C7-3 release mismatch outcome:\", rel.status, rel.reason_code, \"| intervention outcome carries uncertainty:\", any(\"uncertain\" in k or \"interval\" in k for k in out.details))\nprint(\"C7-4 CausalQuery fields:\", [f.name for f in dataclasses.fields(r.CausalQuery)])\nother = r.estimate_intervention(replace(q, causation_id=\"cause-2\"), model=model, factual_rows=rows, intervention=iv)\nprint(\"C7-5 same inputs, different causation_id -> same digest:\", other.reproducibility_digest == out.reproducibility_digest, \"| tolerance field anywhere in runtime:\", \"tolerance\" in src)\ncf = r.estimate_counterfactual(q, model=model, factual_rows=rows, intervention=iv, unit_index=0)\nprint(\"C7-6 counterfactual status/method:\", cf.status, cf.method, \"| CAPABILITY_DEFERRED in runtime:\", \"CAPABILITY_DEFERRED\" in src)\nprint(\"C7-7 ScenarioOverlayStore operations:\", sorted(m for m in (\"open_snapshot\", \"fork_scenario\", \"append_overlay\", \"read_at\", \"seal_result\", \"discard\") if hasattr(so.ScenarioOverlayStore, m)), \"| ScenarioBranch fields:\", [f.name for f in dataclasses.fields(so.ScenarioBranch)])\nprint(\"C7-7 runtime reads an overlay:\", \"scenario_overlay\" in src or \"OverlayView\" in src)\n"
+    },
+    "C8-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; in-process calls on the real classes, no backend needed",
+      "sha256": "161f9c86667e0485b56a51f5964aa07cb6d92041741e31b908b4ceaa11b9deab",
+      "text": "import dataclasses, inspect, re\nfrom datetime import UTC, datetime, timedelta\nfrom ocor_runtime.c3_store import AtomicOutboxStore\nfrom ocor_runtime.c6_capabilities import CapabilityAuthority\nfrom ocor_runtime.c8 import orchestrator as o\nfrom ocor_runtime.c8 import tool_runtime as t\nfrom ocor_runtime import c8_agent as k\nNOW = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)\nauth = CapabilityAuthority(issuer=\"probe-authority\")\nstore = AtomicOutboxStore(authoritative_writer=\"ocor-c8-orchestrator\")\norc = o.AgentRunOrchestrator(authority=auth, store=store)\ndef grant(subject, cap, res):\n    return auth.issue(subject=subject, capabilities=[cap], resources=[res], issued_at=NOW, ttl=timedelta(hours=1))\norc.assign(\"task-1\", \"agent-1\", capability=\"act:x\", lease=grant(\"lead-1\", \"agent:assign\", \"agent-1\"), assigned_by=\"lead-1\", at=NOW)\norc.commit(\"task-1\", lease=grant(\"agent-1\", \"agent:commit\", \"agent-1\"), at=NOW)\nosrc = inspect.getsource(o)\nrec = store.get(\"urn:ocor:agentrun:assignment:task-1\")\nprint(\"C8-1 assignment written to the canonical store as authoritative writer:\", rec is not None, \"| writes with writer_id=store.authoritative_writer:\", osrc.count(\"writer_id=self._store.authoritative_writer\"), \"| C6 engine referenced:\", \"c6.engine\" in osrc or \"GovernedActionEngine\" in osrc)\nh = orc.handoff(\"task-1\", to_agent_id=\"agent-2\", reason=\"overloaded\", lease=grant(\"agent-2\", \"agent:handoff\", \"agent-2\"), at=NOW)\nprint(\"C8-2 handoff of agent-1's commitment authorised by a lease held by the recipient agent-2:\", h.from_agent_id, \"->\", h.to_agent_id)\nprint(\"C8-2 Handoff fields:\", [f.name for f in dataclasses.fields(o.Handoff)], \"| HandoffEnvelope fields in ADD v1.3: 28\")\nprint(\"C8-3 records:\", sorted(n for n, v in vars(o).items() if dataclasses.is_dataclass(v)), \"| Dissent fields:\", [f.name for f in dataclasses.fields(o.Dissent)])\nprint(\"C8-3 lifecycle/cycle/depth/termination/role tokens in c8/orchestrator.py:\", {w: bool(re.search(w, osrc, re.I)) for w in (\"POLICY_AUTHORIZED\", \"cycle\", \"depth\", \"termination\", \"timeout\", \"role\", \"severity\")})\ntsrc = inspect.getsource(t)\nprint(\"C8-4 StrictSandbox.register_tool signature:\", str(inspect.signature(k.StrictSandbox.register_tool)), \"| Tool Contract in c8:\", bool(re.search(\"contract\", tsrc + osrc, re.I) and re.search(\"ToolContract|tool_contract|mcp-tool-contract\", tsrc + osrc)))\ncodes = sorted(set(re.findall(r'ToolRuntimeError\\(\\s*\"([A-Z_]+)\"', tsrc)) | set(re.findall(r'unknown\\(\\s*\"([A-Z_]+)\"', tsrc)))\nadd_enum = [\"POLICY_DENIED\", \"AUTHORITY_MISSING\", \"CAPABILITY_DENIED\", \"APPROVAL_REQUIRED\", \"APPROVAL_EXPIRED\", \"CAPABILITY_REVOKED\", \"BUDGET_EXCEEDED\", \"SCHEMA_VIOLATION\", \"STALE_CONTEXT\", \"EMERGENCY_STOP_ACTIVE\", \"EXECUTION_UNKNOWN\", \"COMPENSATION_REQUIRED\", \"COMPENSATION_UNKNOWN\"]\nprint(\"C8-4 tool runtime reason codes:\", codes, \"| outside the ADD v1.3 error_codes enum:\", [c for c in codes if c not in add_enum])\nprint(\"C8-5 invoke parameters:\", list(inspect.signature(t.ToolCallRuntime.invoke).parameters)[1:], \"| policy/autonomy/eligibility tokens in tool_runtime:\", {w: bool(re.search(w, tsrc, re.I)) for w in (\"policy\", \"autonomy\", \"eligib\", \"taint\", \"delegat\")})\nprint(\"C8-5 ToolCallReceipt fields:\", [f.name for f in dataclasses.fields(t.ToolCallReceipt)], \"| purpose check:\", \"if not context.purpose:\" in tsrc, \"| TokenBudget public methods:\", sorted(m for m in vars(k.TokenBudget) if not m.startswith(\"_\")))\nkern = k.AgentKernel()\nprint(\"C8-6 AgentKernel() capability_authority:\", kern.capability_authority, \"| execute_sandboxed without lease:\", kern.execute_sandboxed(\"1 + 1\"))\n"
     }
   },
   "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
@@ -4214,7 +4854,8 @@
     "C4": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
     "C5": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
     "C6": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
-    "C7": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45"
+    "C7": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
+    "C8": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f"
   },
   "verified_at_heads_note": "ocor-runtime/ is identical at a631e69 and a325fc2 (git diff a631e69 a325fc2 touches only reports/development state files)"
 }
