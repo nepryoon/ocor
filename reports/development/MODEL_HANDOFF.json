@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
-  "baseline_commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
-  "branch": "governed/state-sync-rem0044-iter4-20261030",
+  "base_sha": "e8d73370acb970de2aca55a1316551d59e5b81cb",
+  "baseline_commit": "e8d73370acb970de2aca55a1316551d59e5b81cb",
+  "branch": "governed/state-sync-rem0044-iter5-20261030",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0044-normative-conformance-register",
-    "head_sha": "bd7f36fb455934e20a018705b1c35ca8f8943823",
-    "note": "register unit WIP (partial register C1-C8 and MEMORY, integrity test); not a candidate, no evidence",
+    "head_sha": "30ce938d10d0fba9f7c39f94c18f32279b32c0fe",
+    "note": "register unit WIP (reconnaissance complete, plan units in draft, integrity test); not a candidate, no evidence",
     "paths": [
       "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
       "reports/tests/test_normative_conformance_register.py"
@@ -42,19 +42,14 @@
       "summary": "both match the PO decisions"
     },
     {
-      "command": "C8 and MEMORY probes ~/.ocor-codex/rem-0044-register/{c8probe,memprobe}.py (text and sha256 in the register)",
+      "command": "observations and supplement probe ~/.ocor-codex/rem-0044-register/obsprobe.py (text and sha256 in the register, OBS-PROBE-01)",
       "exit_code": 0,
-      "summary": "C8-1..C8-6 and M-1..M-5 reproduced (M-5 corrected scope); no backend"
-    },
-    {
-      "command": "pytest -q test_ocor_dev_rem_0043.py from 81a8b76, outside the repository, against the runtime of main f543302",
-      "exit_code": 1,
-      "summary": "7 failed, 4 passed: REM-0043 defect confirmed on the current head (NCR-C8-007)"
+      "summary": "NCP-S01..S03, S05..S11 and OBS-LEGACY-IDENTIFIERS, OBS-TEST-TECHNIQUES, OBS-TRACEABILITY reproduced; no backend"
     },
     {
       "command": "pytest -q reports/tests/test_normative_conformance_register.py",
-      "exit_code": 1,
-      "summary": "12 passed, 1 failed by construction (supplement coverage 1/11; seed 59/59)"
+      "exit_code": 0,
+      "summary": "13 passed (seed 59/59, supplement 11/11)"
     },
     {
       "command": "validate_rccad.py; validate_language_policy.py; validate_ocor_change_scope.py (register branch)",
@@ -63,11 +58,11 @@
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0044:register-reconnaissance",
+  "current_task": "OCOR-DEV-REM-0044:register-reconnaissance (complete)",
   "evidence_paths": [],
-  "exact_next_action": "Continue OCOR-DEV-REM-0044 (register unit of NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 4, supplement folded in: register not yet on main) on governed/ocor-dev-rem-0044-normative-conformance-register from bd7f36fb4559 in .ocor/worktrees/rem-0044: iteration 5 of 8. C1-C8 and MEMORY are done (seed 59/59). Next: the remaining observations (OBS-TESTS-PINNING-NON-NORMATIVE completion, OBS-LEGACY-IDENTIFIERS, OBS-TEST-TECHNIQUES, OBS-TRACEABILITY: components LEGACY, TESTS, PLAN, EVIDENCE, GOVERNANCE) and the supplement NCP-S01..NCP-S03, NCP-S05..NCP-S11 (supplement_coverage 1/11, NCP-S04 done); then plan units (4.e, drafts NCP-U01..NCP-U11 exist), G6/G7 proposals (4.f) and closure (4.g: plan allowlist with 0005/0050/0082 regression requalifications, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, independent verification, seal, merge, then decision request NORMATIVE-CONFORMANCE-PLAN). Builders and probes for C1-C8 and MEMORY are in ~/.ocor-codex/rem-0044-register (append-only, one per slice; the versioned register is the source of truth). Re-verify every item on the current head; commit and push the partial register at the end of each iteration. Nothing else is admitted: G6 tasks 0060/0062-0066 and OCOR-DEV-REM-0043 suspended by the PO, 0067-0069 blocked; no code remediation before the PO decision on the plan. The ocor-bootstrap stack is down: bring it up only for the closure full suite. At every unit start read /proc/meminfo and /sys/class/power_supply. No new DEC; claims unchanged.",
-  "head_sha": "bd7f36fb455934e20a018705b1c35ca8f8943823",
-  "head_sha_role": "REM-0044 register unit WIP head (iteration 4, C1-C8 and MEMORY)",
+  "exact_next_action": "Continue OCOR-DEV-REM-0044 (register unit of NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 4, supplement folded in: register not yet on main) on governed/ocor-dev-rem-0044-normative-conformance-register from 30ce938d10d0 in .ocor/worktrees/rem-0044: iteration 6 of 8. The reconnaissance is complete (C1-C8, MEMORY, LEGACY, TESTS, PLAN, EVIDENCE, GOVERNANCE; seed 59/59, supplement 11/11, all six observations covered; integrity test 13/13). Next: the remediation plan (point 4.e): complete NCP-U01..NCP-U13 from DRAFT, each with closed scope and resolved entries, acceptance criteria citing the normative elements with file and line, RED tests to write on the current code, the existing tests to realign (file, function, current assertion, prescribed value with norm file and line), consumers and planned requalifications, G6 tasks unblocked and an iteration estimate, in dependency order (C3->C5->C4 before the C6 action path); then the G6/G7 proposals (4.f) for OCOR-DEV-0060 and 0062-0067 (criteria anchored to normative elements, requirement-specific cases, NFR-004 and LLD v1.1 par. 7.3 fields for 0067, incoherent allocations of OCOR_TRACEABILITY_PLAN.csv); iterations 7-8: closure (4.g: plan allowlist with 0005/0050/0082 regression requalifications, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, independent verification, seal, merge, then decision request NORMATIVE-CONFORMANCE-PLAN). Builders and probes are in ~/.ocor-codex/rem-0044-register (append-only; the versioned register is the source of truth). Commit and push the partial register at the end of each iteration. Nothing else is admitted: G6 tasks 0060/0062-0066 and OCOR-DEV-REM-0043 suspended by the PO, 0067-0069 blocked; no code remediation before the PO decision on the plan. The ocor-bootstrap stack is down: bring it up only for the closure full suite. At every unit start read /proc/meminfo and /sys/class/power_supply. No new DEC; claims unchanged.",
+  "head_sha": "30ce938d10d0fba9f7c39f94c18f32279b32c0fe",
+  "head_sha_role": "REM-0044 register unit WIP head (iteration 5, reconnaissance complete)",
   "independent_verification": {
     "note": "REM-0043 request OCOR-DEV-REM-0043-4c0102805412-0 answered NO_GO and not acted upon (suspended by the PO)",
     "status": "NOT_REQUESTED"
@@ -142,7 +137,7 @@
     "scope": "PASS",
     "supply_chain_scanner": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0044:register-reconnaissance (iteration 5, observations and supplement)",
+  "next_task": "OCOR-DEV-REM-0044:remediation-plan (iteration 6, points 4.e and 4.f)",
   "phase": "NCP_REGISTER_UNIT_IN_PROGRESS",
   "raw_evidence_location": "~/.ocor-codex/rem-0044-register (builders and probes, outside Git)",
   "requirement_ids": [
@@ -163,7 +158,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0044 iterations 1-4 (C1-C8 and MEMORY reconnaissance, register, integrity test) and these state syncs"
+        "scope": "OCOR-DEV-REM-0044 iterations 1-5 (C1-C8, MEMORY, observations and supplement reconnaissance, register, integrity test) and these state syncs"
       }
     ],
     "loop_counted_implementers": [
@@ -179,13 +174,13 @@
     "The ocor-bootstrap stack is down (no containers); it is needed only at closure."
   ],
   "test_results": {
-    "register_integrity": "12 passed, 1 failed by construction (supplement coverage 1/11; seed 59/59)"
+    "register_integrity": "13 passed (seed 59/59, supplement 11/11)"
   },
   "unresolved_blockers": [
     "OCOR-DEV-REM-0043 (OPEN_REMEDIATION_IN_PROGRESS, blocks OCOR-DEV-0062)",
     "OCOR-DEV-0060-BA-RUNTIME-GAPS (OPEN_PO_NORMATIVE_DECISION_REQUIRED, PR #408, blocks 0060 and 0065-0069)",
     "REM-0038-GUARD-BASELINE-CONSOLIDATION (OPEN_PO_NORMATIVE_DECISION_REQUIRED, PR #406, non-blocking)"
   ],
-  "updated_at": "2026-10-30T01:55:11.671753+00:00",
+  "updated_at": "2026-10-30T02:41:33.522343+00:00",
   "worktree": ".ocor/worktrees/rem-0044 (REM-0044 register WIP); .ocor/worktrees/rem-0043 (REM-0043 suspended, preserved); .ocor/worktrees/ocor-dev-0062 (0062 WIP, suspended, preserved); .ocor/worktrees/ocor-dev-0060 (0060 WIP, suspended, preserved)"
 }
