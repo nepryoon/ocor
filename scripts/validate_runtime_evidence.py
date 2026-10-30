@@ -165,7 +165,9 @@ def _empty(value: object) -> bool:
 
 def _declared_requirements(root: Path, reference: str) -> set[str]:
     """Requirement identifiers a test declares: in its own source (decorators, docstring,
-    body), in its module docstring, or for its file in the reverse traceability index."""
+    body), in its module docstring, or for its file in the reverse traceability index with
+    basis ``named_in_test``. Traceability links of the index (task_binding,
+    remediation_record, subject_task) are never a declaration by the test."""
     path_text, _, function = reference.partition("::")
     function = function.split("[", 1)[0].split("::")[-1]
     path = root / path_text
@@ -190,7 +192,11 @@ def _declared_requirements(root: Path, reference: str) -> set[str]:
         index = json.loads(index_path.read_text(encoding="utf-8"))
         for entry in index.get("tests", []):
             if entry.get("path") == path_text:
-                declared.update(entry.get("requirement_ids", []))
+                declared.update(
+                    requirement
+                    for requirement, links in (entry.get("basis") or {}).items()
+                    if any(isinstance(link, dict) and link.get("kind") == "named_in_test" for link in links)
+                )
     return declared
 
 

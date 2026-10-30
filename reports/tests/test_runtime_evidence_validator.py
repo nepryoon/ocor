@@ -339,6 +339,23 @@ class RuntimeEvidenceValidatorTests(unittest.TestCase):
             _write_fixture(base, [_full_command()], cases=[_case(requirement_id="FR-064", method="fault-injection test")])
             _assert_fail(self, base, expected="FR-064 is not declared by the test")
 
+    def test_rejects_requirement_only_traced_by_the_reverse_index(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            index = base / "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json"
+            index.parent.mkdir(parents=True)
+            links = {
+                "FR-064": [
+                    {"kind": "task_binding", "task_id": "OCOR-DEV-0041"},
+                    {"kind": "subject_task", "task_id": "OCOR-DEV-0041", "rationale": "fixture"},
+                    {"kind": "remediation_record", "task_id": "OCOR-DEV-REM-0026", "source": "fixture.json"},
+                ]
+            }
+            entry = {"basis": links, "path": _TEST_FILE, "requirement_ids": ["FR-064"]}
+            index.write_text(json.dumps({"tests": [entry]}), encoding="utf-8")
+            _write_fixture(base, [_full_command()], cases=[_case(requirement_id="FR-064", method="fault-injection test")])
+            _assert_fail(self, base, expected="FR-064 is not declared by the test")
+
     def test_rejects_unresolvable_test_reference(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
