@@ -4,16 +4,18 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "0f591deb7ebfe6761014773e34855e4fe246e1b0",
-  "baseline_commit": "0f591deb7ebfe6761014773e34855e4fe246e1b0",
-  "branch": "governed/state-sync-rem0044-iter6-20261030",
+  "base_sha": "8cbce5426dee99884711c5bfdf7b5afecda1d8b5",
+  "baseline_commit": "8cbce5426dee99884711c5bfdf7b5afecda1d8b5",
+  "branch": "governed/state-sync-rem0044-iter7-20261030",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0044-normative-conformance-register",
-    "head_sha": "bfd194e97b46ef8a01fb0a161b58a2557f09c1a1",
-    "note": "register unit WIP (reconnaissance, plan 4.e and proposals 4.f complete, integrity test); not a candidate, no evidence",
+    "head_sha": "775bc07408b1e70c40d71b69b40831184bc41cc5",
+    "note": "register unit closure head (plan allowlist committed); not yet a candidate, no evidence",
     "paths": [
       "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
-      "reports/tests/test_normative_conformance_register.py"
+      "reports/tests/test_normative_conformance_register.py",
+      "scripts/validate_ocor_development_plan.py",
+      "reports/planning/OCOR_PLAN_RUN_STATE.json"
     ],
     "worktree": ".ocor/worktrees/rem-0044"
   },
@@ -37,34 +39,34 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "sha256 of the seed and supplement lists",
+      "command": "validate_ocor_development_plan.py --base-ref origin/main --authorized-extension (register branch)",
       "exit_code": 0,
-      "summary": "both match the PO decisions"
-    },
-    {
-      "command": "plan builder ~/.ocor-codex/rem-0044-register/build_plan.py <worktree> <main> (text and sha256 in the register, PLAN-PROBE-01)",
-      "exit_code": 0,
-      "summary": "13 units, 73 OPEN entries resolved by the plan, 48 estimated iterations, 63 incoherent allocations"
+      "summary": "PASS"
     },
     {
       "command": "pytest -q reports/tests/test_normative_conformance_register.py",
       "exit_code": 0,
-      "summary": "15 passed (seed 59/59, supplement 11/11, plan, proposals); three tampering probes fail as expected"
+      "summary": "15 passed"
     },
     {
-      "command": "validate_rccad.py; validate_language_policy.py; validate_ocor_change_scope.py (register branch)",
+      "command": "python3 ~/.ocor-codex/rem-0044-closure/pregate.py",
       "exit_code": 0,
-      "summary": "PASS"
+      "summary": "PRE-CAMPAIGN-GATE 41/42 PASS at 775bc07408b1 (only drift FAILs: OCOR-DEV-0005, 0050 and 0082 on scripts/validate_ocor_development_plan.py, expected; regression-only requalifications at candidate time); supply-chain scanner PASS (0 blocking)"
+    },
+    {
+      "command": "validate_evidence_input_drift.py --root .",
+      "exit_code": 1,
+      "summary": "drifted_tasks OCOR-DEV-0005, 0050, 0082 (expected)"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0044:remediation-plan-and-proposals (complete)",
+  "current_task": "OCOR-DEV-REM-0044:closure (part 1 done; awaiting preventive review)",
   "evidence_paths": [],
-  "exact_next_action": "Continue OCOR-DEV-REM-0044 (register unit of NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 4, supplement folded in: register not yet on main) on governed/ocor-dev-rem-0044-normative-conformance-register from bfd194e97b46 in .ocor/worktrees/rem-0044: iterations 7-8 of 8, closure (point 4.g). The reconnaissance (iterations 1-5) and the plan and proposals (iteration 6: 13 NCP units PROPOSED in dependency order U13, U01, U02, U03, U04, U06, U05, U07, U08, U09, U10, U11, U12, resolving all 73 OPEN entries, 48 estimated iterations; 4.f proposals for 0060 and 0062-0067 with requirement cases, method split and 63 incoherent traceability-plan allocations) are complete; integrity test 15/15. Closure: add the two new paths to the list of scripts/validate_ocor_development_plan.py (base ref origin/main) with the regression-only requalifications of OCOR-DEV-0005, 0050 and 0082; bring the ocor-bootstrap stack up (it is down); PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite (cap 90 min), unit record with implementers and providers (Claude Code/Anthropic), verify request (REMEDIATION; the verifier must not be Anthropic, the lists were authored by Anthropic), seal, PR and merge; then the decision request NORMATIVE-CONFORMANCE-PLAN (OPEN_PO_NORMATIVE_DECISION_REQUIRED) with counts by component/severity/status, the plan, the 4.f proposals, the DECISION_REQUIRED entries with options and the plan options (po_choice rows, ADAPT_PRECONDITION authorisations, NCR-MEMORY-003 parametrised cases, new dependencies for NCR-C7-001 and NCR-TESTS-005). Builders and probes are in ~/.ocor-codex/rem-0044-register (build_plan.py is PLAN-PROBE-01). Nothing else is admitted: G6 tasks 0060/0062-0066 and OCOR-DEV-REM-0043 suspended by the PO, 0067-0069 blocked; no code remediation before the PO decision on the plan. At every unit start read /proc/meminfo and /sys/class/power_supply. No new DEC; claims unchanged.",
-  "head_sha": "bfd194e97b46ef8a01fb0a161b58a2557f09c1a1",
-  "head_sha_role": "REM-0044 register unit WIP head (iteration 6, plan and proposals complete)",
+  "exact_next_action": "Resume OCOR-DEV-REM-0044 after the preventive review OCOR-DEV-REM-0044-775bc07408b1-pre (outcome in ~/.ocor-codex/prereviews/OCOR-DEV-REM-0044-775bc07408b1-pre.json): iteration 8 of 8, closure 4.g part 2, on governed/ocor-dev-rem-0044-normative-conformance-register from 775bc07408b1 in .ocor/worktrees/rem-0044 (venv and .ocor/tools in place; locked PATH ~/.ocor-codex/rem-0044-closure/locked-path; gate script ~/.ocor-codex/rem-0044-closure/pregate.py). Dispose of every blocking finding (fix commit or reproducible rebuttal) and record advisory ones; rerun PRE-CAMPAIGN-GATE on the final head; bring the ocor-bootstrap stack up (it is down; check .ocor/spire CA validity), build the TypeScript SDK in the worktree, run the full suite (cap 90 min, power logged once a minute); write the unit record reports/assurance/OCOR-DEV-REM-0044-RCCAD/ (README, json, log: implementers and providers Claude Code/Anthropic plus Codex/OpenAI counted by the loop, register counts, integrity test result, gate steps, preventive review reference) and the regression-only requalifications OCOR-DEV-0005/0050/0082 .requalified-rem0044 with surgical MANIFEST entries (paths already in the plan allowlist); verify request REMEDIATION (verifier neither Anthropic nor OpenAI); then seal, PR, merge, state sync and the decision request NORMATIVE-CONFORMANCE-PLAN (OPEN_PO_NORMATIVE_DECISION_REQUIRED) with counts by component/severity/status, the plan, the 4.f proposals, the DECISION_REQUIRED entries and the plan options. If the 8-iteration limit of point 4 (SUPPLEMENT point 3) is exhausted before the merge, stop and open a normative decision request with the state of the work. Nothing else is admitted: G6 0060/0062-0066 and OCOR-DEV-REM-0043 suspended by the PO, 0067-0069 blocked; no code remediation before the PO decision on the plan. No new DEC; claims unchanged.",
+  "head_sha": "775bc07408b1e70c40d71b69b40831184bc41cc5",
+  "head_sha_role": "REM-0044 register unit closure head submitted to the preventive review",
   "independent_verification": {
-    "note": "REM-0043 request OCOR-DEV-REM-0043-4c0102805412-0 answered NO_GO and not acted upon (suspended by the PO)",
+    "note": "preventive review OCOR-DEV-REM-0044-775bc07408b1-pre requested; independent verification not yet requested",
     "status": "NOT_REQUESTED"
   },
   "latest_ci_evidence": {
@@ -128,18 +130,19 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "evidence_head": "PRE-CAMPAIGN-GATE steps at the evidence head c5176eed223f: 42/42 PASS, drift 0, runtime evidence 0005/0050/0082 PASS, supply-chain scanner PASS",
-    "evidence_input_drift": "PASS (0)",
+    "evidence_input_drift": "FAIL (expected: 0005, 0050, 0082)",
+    "language": "PASS",
     "mypy_strict": "PASS",
     "plan": "PASS",
-    "pre_campaign_gate": "42/42 PASS at 621c0a41ffe1",
+    "pre_campaign_gate": "41/42 PASS at 775bc07408b1 (drift expected)",
+    "rccad": "PASS",
     "ruff": "PASS",
     "scope": "PASS",
     "supply_chain_scanner": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0044:closure (iterations 7-8, point 4.g)",
-  "phase": "NCP_REGISTER_UNIT_IN_PROGRESS",
-  "raw_evidence_location": "~/.ocor-codex/rem-0044-register (builders and probes, outside Git)",
+  "next_task": "OCOR-DEV-REM-0044:closure part 2 (iteration 8 of 8)",
+  "phase": "NCP_REGISTER_UNIT_CLOSURE_AWAITING_PREVENTIVE_REVIEW",
+  "raw_evidence_location": "~/.ocor-codex/rem-0044-register (builders and probes) and ~/.ocor-codex/rem-0044-closure (gates), outside Git",
   "requirement_ids": [
     "FR-006",
     "FR-010",
@@ -158,7 +161,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0044 iterations 1-6 (C1-C8, MEMORY, observations and supplement reconnaissance, register, remediation plan and G6/G7 proposals, integrity test) and these state syncs"
+        "scope": "OCOR-DEV-REM-0044 iterations 1-7 (C1-C8, MEMORY, observations and supplement reconnaissance, register, remediation plan and G6/G7 proposals, integrity test, plan allowlist and PRE-CAMPAIGN-GATE) and these state syncs"
       }
     ],
     "loop_counted_implementers": [
@@ -171,16 +174,17 @@
   "seal_hashes": {},
   "security_observability_notes": [
     "Mains power during the iteration; no full suite run.",
-    "The ocor-bootstrap stack is down (no containers); it is needed only at closure."
+    "The ocor-bootstrap stack is down (no containers); needed at the full suite."
   ],
   "test_results": {
-    "register_integrity": "15 passed (seed 59/59, supplement 11/11, plan and proposals)"
+    "pre_campaign_gate": "41/42",
+    "register_integrity": "15 passed"
   },
   "unresolved_blockers": [
     "OCOR-DEV-REM-0043 (OPEN_REMEDIATION_IN_PROGRESS, blocks OCOR-DEV-0062)",
     "OCOR-DEV-0060-BA-RUNTIME-GAPS (OPEN_PO_NORMATIVE_DECISION_REQUIRED, PR #408, blocks 0060 and 0065-0069)",
     "REM-0038-GUARD-BASELINE-CONSOLIDATION (OPEN_PO_NORMATIVE_DECISION_REQUIRED, PR #406, non-blocking)"
   ],
-  "updated_at": "2026-10-30T03:31:46.499357+00:00",
+  "updated_at": "2026-10-30T04:16:45.424496+00:00",
   "worktree": ".ocor/worktrees/rem-0044 (REM-0044 register WIP); .ocor/worktrees/rem-0043 (REM-0043 suspended, preserved); .ocor/worktrees/ocor-dev-0062 (0062 WIP, suspended, preserved); .ocor/worktrees/ocor-dev-0060 (0060 WIP, suspended, preserved)"
 }
