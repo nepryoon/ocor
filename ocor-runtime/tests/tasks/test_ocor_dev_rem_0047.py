@@ -837,9 +837,12 @@ def test_ncr_c1_008_conforms() -> None:
             sources=(source("urn:ocor:resource:a", refs), source("urn:ocor:resource:b", ()),
                      source("urn:ocor:resource:c", ())), dependency_lock=())
 
-    forward = frontend.FrontendCanonicalIrBuilder().build(legacy(("urn:ocor:resource:c", "urn:ocor:resource:b")))
-    backward = frontend.FrontendCanonicalIrBuilder().build(legacy(("urn:ocor:resource:b", "urn:ocor:resource:c")))
-    assert forward.ir_digest == backward.ir_digest
+    # The IR array is sorted whatever the source order (the source bytes, and so their
+    # content_digest, legitimately differ between the two sources).
+    for order in (("urn:ocor:resource:c", "urn:ocor:resource:b"), ("urn:ocor:resource:b", "urn:ocor:resource:c")):
+        built = frontend.FrontendCanonicalIrBuilder().build(legacy(order))
+        assert tuple(built.core["resources"]["urn:ocor:resource:a"]["references"]) == (
+            "urn:ocor:resource:b", "urn:ocor:resource:c")
     _rejected(lambda: frontend.FrontendCanonicalIrBuilder().build(
         legacy(("urn:ocor:resource:c", "urn:ocor:resource:b", "urn:ocor:resource:b"))),
         DiagnosticCode.DUPLICATE_RESOURCE)

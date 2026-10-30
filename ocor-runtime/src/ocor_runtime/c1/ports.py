@@ -14,6 +14,12 @@ from ..kernel.canonical import canonical_bytes, canonical_digest
 
 DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
 COMMIT = re.compile(r"[0-9a-f]{40}")
+# SemVer 2.0.0 (https://semver.org), the OntologyPackage version of ADD v1.3 :419.
+SEMVER = re.compile(
+    r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?"
+    r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+)
 
 
 class SourceSyntax(StrEnum):
@@ -173,6 +179,12 @@ class CompilerRequest:
             "release_profile",
         ):
             _required(field, getattr(self, field))
+        if SEMVER.fullmatch(self.semantic_version) is None:
+            raise _reject(
+                DiagnosticCode.SOURCE_INVALID,
+                "semantic_version",
+                "semantic_version must be a SemVer 2.0.0 version (ADD v1.3 :419)",
+            )
         if COMMIT.fullmatch(self.source_commit) is None:
             raise _reject(
                 DiagnosticCode.SOURCE_INVALID,
