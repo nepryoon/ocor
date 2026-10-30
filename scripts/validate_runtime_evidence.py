@@ -46,6 +46,9 @@ LEGACY_TEST_DIRS = ("ocor-runtime/tests/acceptance_ev/", "ocor-runtime/tests/bac
 # (NCR-LEGACY-001, option A): a G6 case never binds a legacy test to them.
 LLD_IDENTIFIER = re.compile(r"\b(?:ACT-T\d+[a-z]?|BA-0\d|EV-\d{3})\b")
 OUT_OF_PROFILE = "fuori dal profilo PoC"
+# REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30), option 1: a regression-only
+# requalification is a declared non-qualifying class of record.
+REGRESSION_KIND = "regression"
 
 
 def digest(path: Path) -> str:
@@ -208,6 +211,37 @@ def _check_artifact(base: Path, item: object, label: str) -> None:
         raise ValueError(f"{label} digest mismatch or missing file: {item['path']}")
 
 
+def is_regression_record(record: dict[str, Any]) -> bool:
+    return record.get("requalification_kind") == REGRESSION_KIND
+
+
+def check_regression_record(record: dict[str, Any], manifest: dict[str, Any], evidence_name: str, root: Path) -> None:
+    """REM-0046-REGRESSION-REQUALIFICATION-RECORDS point 1: a regression-only requalification
+    record binds no case to a requirement and supersedes an earlier record of its own task;
+    the checks that do not concern requirements are applied by the caller."""
+    if record.get("qualifies_requirements") is not False:
+        raise ValueError("regression requalification record: qualifies_requirements is not false")
+    manifest_cases = [
+        row
+        for row in manifest.get("requirement_results", [])
+        if isinstance(row, dict) and row.get("evidence_path") == evidence_name
+    ]
+    if not _empty(record.get("requirement_results")) or manifest_cases:
+        raise ValueError("regression requalification record binds a case to a requirement")
+    supersedes = record.get("supersedes")
+    previous = record.get("previous_record")
+    if _empty(supersedes) or not isinstance(previous, dict) or previous.get("record_id") != supersedes:
+        raise ValueError("regression requalification record does not supersede a record")
+    target = root / str(previous.get("record_path") or "")
+    if not target.is_file() or digest(target) != previous.get("record_sha256"):
+        raise ValueError("regression requalification record does not supersede a record: superseded record missing or digest mismatch")
+    superseded = json.loads(target.read_text(encoding="utf-8"))
+    if not isinstance(superseded, dict) or superseded.get("record_id") != supersedes:
+        raise ValueError("regression requalification record does not supersede a record: record_id mismatch")
+    if superseded.get("task_id") != record.get("task_id"):
+        raise ValueError(f"regression requalification record supersedes a record of {superseded.get('task_id')}")
+
+
 def check_new_record(record: dict[str, Any], gate: str | None, evidence_dir: Path, root: Path) -> None:
     """Evidence-package rules for a record that is not a sealed legacy record (NFR-003,
     NFR-004, LLD v1.1 §7.3 and §8, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3)."""
@@ -294,6 +328,9 @@ def requirement_evidence(requirement: str) -> dict[str, Any]:
             if is_sealed_legacy_record(path):
                 excluded.append(relative)
                 continue
+            if is_regression_record(record):
+                rejected.append({"path": relative, "reason": "regression requalification record never qualifies a requirement"})
+                continue
             try:
                 check_new_record(record, manifest.get("gate"), manifest_path.parent, ROOT)
             except (OSError, ValueError, KeyError, SyntaxError) as exc:
@@ -372,7 +409,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         if missing:
             raise ValueError(f"evidence fields missing: {', '.join(missing)}")
         if not is_sealed_legacy_record(evidence_path):
-            check_new_record(record, manifest.get("gate"), evidence_path.parent, root)
+            if is_regression_record(record):
+                check_regression_record(record, manifest, evidence["path"], root)
+            else:
+                check_new_record(record, manifest.get("gate"), evidence_path.parent, root)
         print(f"PASS: qualifying task evidence for {args.task}")
         return 0
     except (OSError, json.JSONDecodeError, KeyError, ValueError, SyntaxError) as exc:
