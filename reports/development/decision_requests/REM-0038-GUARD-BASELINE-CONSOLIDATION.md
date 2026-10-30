@@ -152,3 +152,22 @@ indicazione del PO.
 - Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e
   Production `NO-GO`. Nessun nuovo `DEC-*`: `CC-OCOR-DELIVERY-COMPLETION` non attiva
   l'eccezione di baseline promotion di `AGENTS.md`.
+
+## Disposition del Product Owner — 2026-10-30
+
+Risolta dalla decisione normativa del PO `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`,
+punto 9: **opzione 1**, come descritta in questa richiesta:
+
+- baseline unica `82b71d0db410bcdb8124e8ec8a8235631ecfa1fa`, con identità di byte;
+- catena storica congelata in un test storico;
+- i 34 casi negativi più le sonde di ricollocazione.
+
+Si realizza con un change set governato, con il primo `OCOR-DEV-REM-*` libero e ciclo
+completo, e con le riqualifiche di sola regressione di `0005` e `0050` (e di `0082`, se
+serve). Supervisore, osservatore e workflow non cambiano. Non è un'unità del programma:
+la modifica del guard è autorizzata dalla decisione. Si esegue subito dopo la decisione,
+prima di NCP-U13.
+
+Il testo integrale della decisione è registrato come disposition in
+`reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md`. Stato:
+`DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
