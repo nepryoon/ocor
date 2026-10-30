@@ -170,3 +170,29 @@ qualifica `0060` in una sola campagna.
   record di evidenza o allowlist modificato. Nessun nuovo `DEC-*`. `E1=0`, `E2=0`,
   `Verified=0`, runtime `NOT_ESTABLISHED`, PoC/Production `NO-GO` invariati.
 - Implementatori che hanno toccato `0060`: Claude Code (Anthropic, claude-opus-5-5).
+
+## Disposition del Product Owner — 2026-10-30
+
+Risolta dalla decisione normativa del PO `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`,
+punto 8: **opzione 1, dentro il programma**. Nessun fallback di ADD §2.6 si attiva:
+resta valida la decisione `OCOR-DEV-0060-BA-SELECTED-COMPONENTS (2026-10-26)`. Le
+lacune si chiudono nelle unità del programma, non con remediation separate:
+
+| Lacuna | Contenuto | Voci | Unità |
+|---|---|---|---|
+| `BA-03` | `PROJECTION_NOT_READY` invece del downgrade; `AT_LEAST_COMMIT` corretto | `NCR-C2-012`, `NCR-C2-001` | NCP-U03 |
+| `BA-03` | sandbox disposable per `EXACT_AT_COMMIT(Cn)` sulle query logiche nominate; `UNSUPPORTED_CAPABILITY` quando l'emulazione non è disponibile | `NCR-C4-004` (nuova) | NCP-U05 |
+| `BA-04` | validazione SHACL delle shape di ADD §3.6 con il servizio SHACL di Fuseki; export watermark correlato al commit canonico | `NCR-C4-002` | NCP-U05 |
+| Transazione TypeDB | transazione chiusa su ogni percorso d'errore, compresi gli errori di connessione e un commit fallito | `NCR-C4-003`, criterio esteso | NCP-U05 |
+| `BA-05` | FSM con stato corrente e guardie | `NCR-C6-003` | NCP-U07 |
+| `BA-06` | job ledger di C7 su PostgreSQL: lifecycle di ADD §4.2, budget, quota, progress, cancellation, timeout, backpressure, rilascio delle risorse entro `PT30S` (ADD v1.3 riga 2927) | `NCR-C7-004`, criterio esteso | NCP-U09 |
+
+- Le unità indicate devono risolvere queste voci.
+- `OCOR-DEV-0060` parte solo quando ogni voce che lo indica in `blocks` è risolta
+  oppure `DEFERRED_BY_PO`.
+- Il branch `task/OCOR-DEV-0060-ba-campaign` (`43d9616`) si conserva e si riusa quando
+  riprende `OCOR-DEV-0060`.
+
+Il testo integrale della decisione è registrato come disposition in
+`reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md`. Stato:
+`DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
