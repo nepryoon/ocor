@@ -1,16 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "1b0085478866d559c758eed2b29ccc5036138aa1",
-    "branch": "governed/state-sync-rem0046-iter1-20261030",
+    "baseline_commit": "ccf01549c1024aec7dcc7982b7a243a06e347d18",
+    "branch": "governed/state-sync-rem0046-iter2-20261030",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0046 (NCP-U13) iteration 1 (RED, GREEN part 1)",
+    "change_set": "state sync after OCOR-DEV-REM-0046 (NCP-U13) iteration 2 and decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 26221644,
+      "MemAvailable": 26221200,
       "MemTotal": 31742988
     },
-    "next_action": "Resume OCOR-DEV-REM-0046 (NCP-U13) iteration 2 on governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance from d35ee3e4ba1d in .ocor/worktrees/rem-0046 (venv in place; locked PATH ~/.ocor-codex/rem-0046/locked-path; helper scripts write_backlog.py, write_trace_plan.py, build_sealed_registry.py, obs_probe.py in ~/.ocor-codex/rem-0046/). (1) NCR-PLAN-006: create reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json (non-normative; every test_*.py of ocor-runtime/tests and reports/tests with at least one requirement and a basis per requirement: named_in_test, or task_binding from the backlog requirement_ids of the task the test belongs to) and scripts/validate_test_reverse_traceability.py (--index option, ORPHAN_DESIGN on a test without requirement, unknown IDs, missing files) until test_ncr_plan_006_conforms passes; then restrict _declared_requirements of validate_runtime_evidence.py to explicit declarations (test source or index basis named_in_test), never task_binding. (2) Decide and record how the regression-only requalifications of 0005/0050/0082 satisfy the new-record rules (cases with the evidence-package fields bound only to requirements their tests declare) or stop with a decision request if they cannot. (3) Plan allowlist entries for the new paths (RED test, registry, index, its validator, unit record, .requalified-rem0046 records) and OCOR_PLAN_RUN_STATE.json artifact hashes of backlog, plan CSV and generator plus the self-hash line; plan validator PASS with --base-ref origin/main. (4) Unit record reports/assurance/OCOR-DEV-REM-0046-RCCAD/ with resolved_register_entries, anchors, the non-conforming sealed records, the probes of conditions 1-4 of decision point 3, the proposed OCOR-DEV-0068/0069 criteria and implementers/providers; register entries NCR-PLAN-001..006, NCR-EVIDENCE-001/002 and NCR-GOVERNANCE-001 OPEN->IN_REMEDIATION (programme point 5 rules), integrity test PASS. (5) PRE-CAMPAIGN-GATE, preventive review, task suite, full suite (cap 90 min, stack ocor-bootstrap is down), verify request REMEDIATION (verifier neither Anthropic nor the preventive reviewer). Estimate 3 iterations; stop at 6 with a decision request. Then NCP-U01 and the rest of plan_order. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
-    "phase": "REM_0046_NCP_U13_GREEN_IN_PROGRESS",
+    "next_action": "Read the PO disposition of decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS (PR #432, branch governed/decision-request-rem0046-regression-requalification-records). If undecided and no other work is admissible (plan_order runs one unit at a time; G6/G7 blocked; REM-0037 suspended for memory), close the loop with TERMINAL_BLOCKED after a governed TERMINAL_BLOCKED_REPORT.json. Once decided: resume OCOR-DEV-REM-0046 (NCP-U13) iteration 3 on governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance from 29ccb961afa4 in .ocor/worktrees/rem-0046 (locked PATH ~/.ocor-codex/rem-0046/locked-path; helpers in ~/.ocor-codex/rem-0046/: build_reverse_index.py + curated.json, build_record_draft.py, write_backlog.py, write_trace_plan.py, build_sealed_registry.py). Apply the chosen option (option 1: regression record class in validate_runtime_evidence.py with RED negative cases in test_runtime_evidence_validator.py), import the decided DR file byte-identical (allowlist entry already present), rebuild the reverse index if test files changed, then PRE-CAMPAIGN-GATE, preventive review, task suite, full suite on the real stack (cap 90 min; ocor-bootstrap is down), regression-only requalifications of 0005/0050/0082 (.requalified-rem0046), complete the unit record (commands, raw log, environment, campaign, requalifications, roles) and request the REMEDIATION verification (verifier neither Anthropic nor the preventive reviewer). Iterations used 2 of estimate 3 (stop at 6). Then NCP-U01 and the rest of plan_order. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
+    "phase": "REM_0046_NCP_U13_AWAITING_PO_DECISION",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -18,7 +18,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0046 iteration 1 (RED, GREEN part 1) and this state sync"
+          "scope": "OCOR-DEV-REM-0046 iterations 1-2, decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS and this state sync"
         }
       ]
     },
@@ -1750,7 +1750,7 @@
       }
     }
   },
-  "baseline_commit": "1b0085478866d559c758eed2b29ccc5036138aa1",
+  "baseline_commit": "ccf01549c1024aec7dcc7982b7a243a06e347d18",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6716,6 +6716,29 @@
           "until": "2026-10-30T10:41:22.495203+00:00"
         }
       ]
+    },
+    {
+      "blocked_scope": "regression-only requalifications of OCOR-DEV-0005, 0050 and 0082 of OCOR-DEV-REM-0046 and therefore its campaign, verification, seal and merge; the later units of plan_order wait for NCP-U13 (one unit at a time)",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0046"
+      ],
+      "created_at": "2026-10-30T17:35:56.154424+00:00",
+      "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3 condition 1 versus NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 4.g, 7 and Stop (regression requalifications always foreseen)",
+      "decision_level": "NORMATIVE",
+      "does_not_block": [
+        "the rest of the NCP-U13 GREEN (done at 29ccb961afa4)"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-rem0046-regression-requalification-records",
+        "commit": "86559cf7d660471a5d1fa44e4838d1843da447e8",
+        "path": "reports/development/decision_requests/REM-0046-REGRESSION-REQUALIFICATION-RECORDS.md",
+        "pr": 432,
+        "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+        "sha256": "2095cd3ba20db529be33240ab8cfad969d61fd4d297d7bae85df497b5cd2b851"
+      },
+      "id": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+      "recommendation": "option 1: declared non-qualifying regression record class",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -8987,7 +9010,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0046 (NCP-U13) iteration 2 on governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance from d35ee3e4ba1d in .ocor/worktrees/rem-0046 (venv in place; locked PATH ~/.ocor-codex/rem-0046/locked-path; helper scripts write_backlog.py, write_trace_plan.py, build_sealed_registry.py, obs_probe.py in ~/.ocor-codex/rem-0046/). (1) NCR-PLAN-006: create reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json (non-normative; every test_*.py of ocor-runtime/tests and reports/tests with at least one requirement and a basis per requirement: named_in_test, or task_binding from the backlog requirement_ids of the task the test belongs to) and scripts/validate_test_reverse_traceability.py (--index option, ORPHAN_DESIGN on a test without requirement, unknown IDs, missing files) until test_ncr_plan_006_conforms passes; then restrict _declared_requirements of validate_runtime_evidence.py to explicit declarations (test source or index basis named_in_test), never task_binding. (2) Decide and record how the regression-only requalifications of 0005/0050/0082 satisfy the new-record rules (cases with the evidence-package fields bound only to requirements their tests declare) or stop with a decision request if they cannot. (3) Plan allowlist entries for the new paths (RED test, registry, index, its validator, unit record, .requalified-rem0046 records) and OCOR_PLAN_RUN_STATE.json artifact hashes of backlog, plan CSV and generator plus the self-hash line; plan validator PASS with --base-ref origin/main. (4) Unit record reports/assurance/OCOR-DEV-REM-0046-RCCAD/ with resolved_register_entries, anchors, the non-conforming sealed records, the probes of conditions 1-4 of decision point 3, the proposed OCOR-DEV-0068/0069 criteria and implementers/providers; register entries NCR-PLAN-001..006, NCR-EVIDENCE-001/002 and NCR-GOVERNANCE-001 OPEN->IN_REMEDIATION (programme point 5 rules), integrity test PASS. (5) PRE-CAMPAIGN-GATE, preventive review, task suite, full suite (cap 90 min, stack ocor-bootstrap is down), verify request REMEDIATION (verifier neither Anthropic nor the preventive reviewer). Estimate 3 iterations; stop at 6 with a decision request. Then NCP-U01 and the rest of plan_order. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
+  "next_executable_action": "Read the PO disposition of decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS (PR #432, branch governed/decision-request-rem0046-regression-requalification-records). If undecided and no other work is admissible (plan_order runs one unit at a time; G6/G7 blocked; REM-0037 suspended for memory), close the loop with TERMINAL_BLOCKED after a governed TERMINAL_BLOCKED_REPORT.json. Once decided: resume OCOR-DEV-REM-0046 (NCP-U13) iteration 3 on governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance from 29ccb961afa4 in .ocor/worktrees/rem-0046 (locked PATH ~/.ocor-codex/rem-0046/locked-path; helpers in ~/.ocor-codex/rem-0046/: build_reverse_index.py + curated.json, build_record_draft.py, write_backlog.py, write_trace_plan.py, build_sealed_registry.py). Apply the chosen option (option 1: regression record class in validate_runtime_evidence.py with RED negative cases in test_runtime_evidence_validator.py), import the decided DR file byte-identical (allowlist entry already present), rebuild the reverse index if test files changed, then PRE-CAMPAIGN-GATE, preventive review, task suite, full suite on the real stack (cap 90 min; ocor-bootstrap is down), regression-only requalifications of 0005/0050/0082 (.requalified-rem0046), complete the unit record (commands, raw log, environment, campaign, requalifications, roles) and request the REMEDIATION verification (verifier neither Anthropic nor the preventive reviewer). Iterations used 2 of estimate 3 (stop at 6). Then NCP-U01 and the rest of plan_order. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9162,10 +9185,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "12f6088592ce98393b8df119deeb28f626ef46a8",
-    "branch": "governed/state-sync-rem0045-integrated-20261030",
-    "change_set": "OCOR-DEV-REM-0045 integration (GO cycle 0, seal, exact-head CI PASS, merged PR #429); register patch of NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 12 applied",
-    "phase": "REM_0045_INTEGRATED_REGISTER_PATCHED_NCP_U13_NEXT"
+    "baseline_commit": "1b0085478866d559c758eed2b29ccc5036138aa1",
+    "branch": "governed/state-sync-rem0046-iter1-20261030",
+    "change_set": "state sync after OCOR-DEV-REM-0046 (NCP-U13) iteration 1 (RED, GREEN part 1)",
+    "phase": "REM_0046_NCP_U13_GREEN_IN_PROGRESS"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -9261,11 +9284,11 @@
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0046": "NCP-U13 (NORMATIVE-CONFORMANCE-PLAN point 3), RED b164e37, GREEN part 1 at d35ee3e4ba1d"
+      "OCOR-DEV-REM-0046": "NCP-U13, GREEN complete at 29ccb961afa4; requalifications await PO decision REM-0046-REGRESSION-REQUALIFICATION-RECORDS (PR #432)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-10-30T16:45:35.777832+00:00",
+    "observed_at": "2026-10-30T17:35:56.154424+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U13",
@@ -29285,25 +29308,33 @@
     },
     "REM_0046_NCP_U13_PLAN_EVIDENCE_GOVERNANCE": {
       "authority": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1 and 3: plan unit NCP-U13, first of plan_order, programme unit under NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5",
-      "base": "1b0085478866d559c758eed2b29ccc5036138aa1",
+      "base": "ccf01549c1024aec7dcc7982b7a243a06e347d18",
       "branch": "governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance",
       "commits": {
         "GREEN_part_1": "d35ee3e4ba1dc431b75fd958ff4e2a2d3cce703e",
-        "RED": "b164e37d422d74c386966e3bee080f23e9969103"
+        "GREEN_part_2": "7b4b6a5",
+        "RED": "b164e37d422d74c386966e3bee080f23e9969103",
+        "record_draft": "29ccb961afa493f91af4d4921e340aff332b321b"
+      },
+      "decision_request": {
+        "branch": "governed/decision-request-rem0046-regression-requalification-records",
+        "commit": "86559cf7d660471a5d1fa44e4838d1843da447e8",
+        "id": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "path": "reports/development/decision_requests/REM-0046-REGRESSION-REQUALIFICATION-RECORDS.md",
+        "pr": 432,
+        "sha256": "2095cd3ba20db529be33240ab8cfad969d61fd4d297d7bae85df497b5cd2b851"
       },
       "estimate_iterations": 3,
-      "head": "d35ee3e4ba1dc431b75fd958ff4e2a2d3cce703e",
+      "head": "29ccb961afa493f91af4d4921e340aff332b321b",
       "id_verification": "first free OCOR-DEV-REM-* verified read-only at the start: OCOR-DEV-REM-0046 appeared only as a forecast in the state files; no branch, record or PR used it",
       "implementers": [
         "Claude Code (Anthropic, claude-opus-5-5)"
       ],
-      "iterations_used": 1,
+      "iterations_used": 2,
       "pending": [
-        "NCR-PLAN-006 reverse traceability index and validator",
-        "requalification design under the new evidence rules",
-        "plan allowlist and OCOR_PLAN_RUN_STATE hashes",
-        "unit record and register IN_REMEDIATION transitions",
-        "PRE-CAMPAIGN-GATE, preventive review, full suite, independent verification"
+        "PO decision REM-0046-REGRESSION-REQUALIFICATION-RECORDS and its application",
+        "PRE-CAMPAIGN-GATE, preventive review, full suite, regression requalifications of 0005/0050/0082",
+        "completion of the unit record and independent verification"
       ],
       "plan_unit": "NCP-U13",
       "requalifications_planned": [
@@ -29322,13 +29353,14 @@
         "NCR-EVIDENCE-002",
         "NCR-GOVERNANCE-001"
       ],
-      "status": "IN_PROGRESS_GREEN_PART_1",
+      "status": "IN_PROGRESS_AWAITING_PO_DECISION_ON_REQUALIFICATION_RECORDS",
       "stop_at_iterations": 6,
       "tdd": {
         "GREEN": "GREEN part 1 d35ee3e: 18 of 19 RED cases pass (NCR-PLAN-006 pending); backlog written through the generator functions (CLI not run; 17 tasks changed, DAG and context manifest unchanged; test_backlog_generator_reality_parity.py 5 passed); traceability plan with register_release, register_method, method_kind, campaign_profile, out-of-profile rows to 0067/G7 (0061 rows and FR-118 unchanged), method evidence for non-test methods, implementation allocation BR-001/FR-022->0032, BR-003->0031, BR-018->0049, FR-014/NFR-011->0004, FR-017/FR-150/NFR-014->0034, FR-029->0009, FR-161->0045, NFR-021->0005, FR-164/FR-045/NFR-088->0033; validate_runtime_evidence.py evidence-package rules for new records with reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json (260 records at 1b00854, 0 conforming) and --requirement-evidence; validate_rccad.py AFF-009 on current components and AFF-010 on requirement bindings (head PASS_LOCAL_PRECHECK); test_runtime_evidence_validator.py 26 passed, 10 subtests (positive fixtures adapted, 12 negative cases); register integrity 15 passed, 879 subtests; ruff and mypy strict PASS",
+        "GREEN_part_2": "GREEN part 2 7b4b6a5: reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json (non-normative; 138 test files, every one with at least one Register v1.1 requirement and a basis per link: named_in_test 37, task_binding 352, remediation_record 40, subject_task 175 with rationale for the 48 files without another basis, legacy tests traced to OCOR-DEV-0031 and never to BA/EV identifiers) and scripts/validate_test_reverse_traceability.py (ORPHAN_DESIGN, UNKNOWN_REQUIREMENT, BASIS_MISMATCH, MISSING_FILE, --index); validate_runtime_evidence.py takes from the index only named_in_test links as declarations; new negative case test_rejects_requirement_only_traced_by_the_reverse_index, RED on the GREEN part 1 validator (1 failed) and GREEN after. Allowlist and OCOR_PLAN_RUN_STATE hashes at 29c6349: plan validator PASS 37/0/2 with --base-ref origin/main. Unit record draft and register entries of NCP-U13 OPEN -> IN_REMEDIATION with remediation_unit, remediation_record and resolution_proof at 29ccb96. 19/19 RED cases GREEN; task tests 66 passed, 889 subtests; integrity test PASS; ruff, mypy strict, validate_rccad, language policy, change scope (15 paths), plan validator PASS; drift: exactly 0005, 0050, 0082 on scripts/validate_ocor_development_plan.py (expected, requalifications pending the decision request)",
         "RED": "RED b164e37: reports/tests/test_ocor_dev_rem_0046.py 19 failed (one test per entry of plan_units.NCP-U13.red_tests, NCR-EVIDENCE-002 parametrised over the 11 evidence-package fields), each for the divergence of its entry: G6 tasks bound to BR-003 alone, twelve requirements implemented by 0067/0069, FR-164/FR-045/NFR-088 misallocated, 0061 without FR-118/FR-119, no Register release/method in the plan, no reverse traceability index (ORPHAN_DESIGN, 138 test files), validator accepting a case undeclared by its test and cases without the LLD v1.1 \u00a77.3 fields, AFF-009 accepting a permissive default in a current component; fingerprint sha256 3dcc2ef1325c0355d9c4b04cbc75e2f404edf63b6ae4b8373b4bd2343a1be17d (sorted failed ids + summary line), raw log sha256 d247a94e6fe1ffe5614b5e6c74108ff48e3076697cda01a663e1ec5c300f1ed1"
       },
-      "updated_at": "2026-10-30T16:45:35.777832+00:00",
+      "updated_at": "2026-10-30T17:35:56.154424+00:00",
       "worktree": ".ocor/worktrees/rem-0046"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -30574,7 +30606,7 @@
     "recorded_at": "2026-10-30T15:47:01.430593+00:00",
     "status": "SUPERSEDED_PO_DECISION_NORMATIVE_CONFORMANCE_PLAN"
   },
-  "updated_at": "2026-10-30T16:45:35.777832+00:00",
+  "updated_at": "2026-10-30T17:35:56.154424+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
