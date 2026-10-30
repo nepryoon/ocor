@@ -1098,5 +1098,69 @@ class Rem0037GuardAdmission(unittest.TestCase):
                 self.assertNotEqual(text, (root / path).read_text())
                 self.assertEqual(self.failing_proofs(overrides), both)
 
+
+GUARD_BASELINE = '82b71d0db410bcdb8124e8ec8a8235631ecfa1fa'
+CURRENT_PROOF = 'bytes-82b71d0'
+
+
+def current_guard_failures(overrides=None):
+    """RED stand-in (OCOR-DEV-REM-0045): the guard as it stands before the consolidation, i.e. the
+    normalisation chain applied to the working tree against 9b4d3be and 7cd5f7a."""
+    case = unittest.TestCase()
+    try:
+        bootstrap_probe_proof(case, overrides)
+        observation_only_proof(overrides)
+    except AssertionError:
+        return {CURRENT_PROOF}
+    return set()
+
+
+def baseline_text(path, revision=GUARD_BASELINE):
+    root = Path(__file__).resolve().parents[2]
+    return subprocess.check_output(['git', '-C', str(root), 'show', revision + ':' + path], text=True)
+
+
+class GuardBaselineConsolidation(unittest.TestCase):
+    """NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9, REM-0038-GUARD-BASELINE-CONSOLIDATION option 1:
+    one baseline (82b71d0) with byte identity. The probes of fact 6 of the decision request, accepted
+    by the normalisation chain, must be rejected."""
+    CAMPAIGN = 'scripts/run_qualifying_campaign.py'
+    TOOLING = '.github/workflows/ocor-tooling-bootstrap.yml'
+
+    def test_the_working_tree_passes_the_current_proof(self):
+        self.assertEqual(current_guard_failures({}), set())
+
+    def test_relocations_of_admitted_fragments_are_rejected(self):
+        campaign, tooling = baseline_text(self.CAMPAIGN), baseline_text(self.TOOLING)
+        rendering = 'docker compose -f deploy/bootstrap/compose.yaml config --quiet\n'
+        self.assertEqual(campaign.count(REM0038_CONSTANT), 1)
+        self.assertEqual(tooling.count(REM0038_PLACEHOLDERS), 1)
+        self.assertEqual(tooling.count(rendering), 1)
+        moved = tooling.replace(REM0038_PLACEHOLDERS, '', 1)
+        for label, overrides in [
+            ('REM-0038 constant moved to the end of the module',
+             {self.CAMPAIGN: campaign.replace(REM0038_CONSTANT, '', 1) + '\n' + REM0038_CONSTANT}),
+            ('REM-0038 placeholders moved after the rendering command',
+             {self.TOOLING: moved.replace(rendering, rendering + REM0038_PLACEHOLDERS, 1)}),
+        ]:
+            with self.subTest(change=label):
+                path, text = next(iter(overrides.items()))
+                self.assertNotEqual(text, baseline_text(path))
+                self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
+
+    def test_comment_only_edits_are_rejected(self):
+        campaign = baseline_text(self.CAMPAIGN)
+        for label, changed in [
+            ('REM-0038 constant comment reworded', campaign.replace('# plus Temporal, its PostgreSQL', '# plus Temporal, the PostgreSQL', 1)),
+            ('comment appended to the campaign module', campaign + '# note\n'),
+        ]:
+            with self.subTest(change=label):
+                self.assertNotEqual(changed, campaign)
+                self.assertEqual(current_guard_failures({self.CAMPAIGN: changed}), {CURRENT_PROOF})
+
+    def test_a_workflow_absent_at_the_baseline_is_rejected(self):
+        rccad = baseline_text('.github/workflows/ocor-rccad.yml')
+        self.assertEqual(current_guard_failures({'.github/workflows/ocor-extra.yml': rccad}), {CURRENT_PROOF})
+
 if __name__ == '__main__':
     unittest.main()
