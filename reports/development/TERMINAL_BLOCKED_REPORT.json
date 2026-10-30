@@ -1,55 +1,70 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "60afecfb0428350b552f77861455b695ebbd24f1",
+  "baseline_commit": "4781e06de140f770ef0f61d9dab7a6c189cdf97b",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "bff791ccea394ce1bce6ee45cd3040b0d7c6489f7fd33249aaf9ed5cef9a033c"
+    "sha256": "f036c4d68a1cd3274a4d9fa2f6906c9657ebc6c614dc282984109fc8f6299991"
   },
-  "blocking_tasks": [],
+  "blocking_tasks": [
+    "OCOR-DEV-0060",
+    "OCOR-DEV-0062",
+    "OCOR-DEV-0063",
+    "OCOR-DEV-0064",
+    "OCOR-DEV-0065",
+    "OCOR-DEV-0066",
+    "OCOR-DEV-0067",
+    "OCOR-DEV-0068",
+    "OCOR-DEV-0069",
+    "OCOR-DEV-REM-0043"
+  ],
   "claims": {
     "E1": 0,
     "E2": 0,
     "PoC_GO": "NO-GO",
     "Production_readiness": "NO-GO",
+    "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "completed_evidence_tasks": 74,
+  "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "branch": "governed/decision-request-rem0031-registry-consumer-scope",
-      "commit": "4daecbf19c07f88b88edc1a1e16bd2d08701caac",
-      "disposition_record": {
-        "branch": "governed/decision-request-rem0031-registry-consumer-scope",
-        "commit": "7bcd138063f0d204e5dcff1989867a1b6ae9a717",
-        "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
-        "pr": 345,
-        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
-        "sha256": "d159dfa691464e92c6ace8349b80f8b03c1d230f967dffb8e340b283d0ecf248"
-      },
-      "id": "REM-0031-REGISTRY-CONSUMER-SCOPE",
-      "path": "reports/development/decision_requests/REM-0031-REGISTRY-CONSUMER-SCOPE.md",
-      "po_decision": "REM-0031-REGISTRY-CONSUMER-SCOPE (2026-10-25), option1",
-      "pr": 345,
+      "branch": "governed/decision-request-normative-conformance-plan",
+      "commit": "6b4040c52ed1e2d54fa48c1f029e21fdbe989b9b",
+      "id": "NORMATIVE-CONFORMANCE-PLAN",
+      "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+      "pr": 424,
+      "publication": "DRAFT_PR_OPEN",
       "recommendation": "option 1",
-      "sha256": "4efd0f22c1c0bb13ee8f9fe48644bf0f3e2528cc5f131ea3c1307b8d7ea12c67",
-      "status": "RESOLVED_PO_DECISION_EXECUTION_CANDIDATE"
+      "sha256": "a6bb253769d8a7119bcc0a765f06582bf48ebf04da8ae9e6e7a4ac416e694ead",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+    },
+    {
+      "blocks": "no task",
+      "id": "REM-0038-GUARD-BASELINE-CONSOLIDATION",
+      "pr": 406,
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+    },
+    {
+      "blocks": "OCOR-DEV-0060, 0065-0069 (also behind NORMATIVE-CONFORMANCE-PLAN)",
+      "id": "OCOR-DEV-0060-BA-RUNTIME-GAPS",
+      "pr": 408,
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
     }
   ],
-  "direct_ready_disposition": "NOT_EXECUTABLE_BEHIND_MANDATORY_REMEDIATION_REM_0031",
+  "direct_ready_disposition": "NOT_EXECUTABLE_SUSPENDED_OR_BLOCKED_BY_PO_NORMATIVE_CONFORMANCE_PROGRAMME",
   "direct_ready_tasks": [
     "OCOR-DEV-0060",
-    "OCOR-DEV-0061",
     "OCOR-DEV-0062",
     "OCOR-DEV-0063",
     "OCOR-DEV-0064"
   ],
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "independent_verifier": {
-    "head_sha": "a29e00da3a32919da6124d806a74625875e6c4f4",
+    "head_sha": "f8270ae90ca904a44da5f7d9de3333be1f68ade8",
     "implementers": [
       {
         "agent": "Claude Code",
-        "contribution": "REM-0031 inventory, decision request and provisioning boundary WIP",
+        "contribution": "all of REM-0044, seal, integration and the plan decision request",
         "provider": "Anthropic"
       },
       {
@@ -58,33 +73,33 @@
         "provider": "OpenAI"
       }
     ],
-    "request_id": "OCOR-DEV-REM-0031-a29e00da3a32-0",
-    "status": "REQUESTED_EXTERNAL_LOOP"
+    "request_id": "OCOR-DEV-REM-0044-f8270ae90ca9-0",
+    "status": "COMPLETED_GO_FOR_EVIDENCE_SEAL_INTEGRATED",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI"
   },
   "local_controls": {
-    "evidence_input_drift": "74 tasks / 224 inputs / 0 drift",
-    "full_suite": "3180/3180 serial, 0 skipped, 3487.8 s",
-    "guard": "3/3, 47 subtests",
+    "evidence_input_drift": "0 drift",
+    "full_suite": "3334/3334 two-lane at the qualified head (implementer and verifier)",
+    "integrity_test": "15/15, 861 subtests",
     "normative_sha256": "8/8 PASS",
-    "regression": "852/852, 0 skipped",
-    "resources": "Stack torn down: 0 containers, 0 volumes, 0 networks",
-    "task_suite": "73/73, 0 skipped"
+    "pre_campaign_gate": "42/42 PASS on the seal head 3b29de0269be",
+    "required_checks": "13/13 required checks success, 0 reruns"
   },
-  "minimal_unblock_action": "Done: PO disposition REM-0031-REGISTRY-CONSUMER-SCOPE (2026-10-25), option 1.",
-  "next_executable_action": "Attendere il verdetto esterno OCOR-DEV-REM-0031-a29e00da3a32-0 (verifier Cursor/Grok xAI o Antigravity/Gemini Google; mai OpenAI o Anthropic) sul candidato OCOR-DEV-REM-0031 governed/ocor-dev-rem-0031-identity-registry-writer-authority @ a29e00da3a32919da6124d806a74625875e6c4f4. Con GO_FOR_EVIDENCE_SEAL: registrare verifier e verdetto nei sette record (REM-0031 e riqualifiche 0043, 0044, 0058, 0005, 0050, 0082) e sigillarli, allineamento non distruttivo a origin/main solo se necessario con prova di albero invariato, PR con i 13 check obbligatori verdi sull HEAD esatto, merge --match-head-commit, state sync. Con NO_GO: riparazione (ciclo 1 di 2) e nuova verifica. Poi G6 (OCOR-DEV-0060 e seguenti). OCOR-DEV-REM-0037 sospesa dal PO fino a dopo la chiusura di G6. Nessun nuovo DEC, E1/E2/Verified o claim.",
-  "no_new_po_normative_decision_required": true,
-  "open_pull_requests": 8,
+  "minimal_unblock_action": "PO decision on the normative decision request NORMATIVE-CONFORMANCE-PLAN (draft PR #424), recommended option 1.",
+  "next_executable_action": "TERMINAL_BLOCKED: no admitted work remains (NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5). Wait for the PO decision on the normative decision request NORMATIVE-CONFORMANCE-PLAN (draft PR #424, reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md, sha256 a6bb253769d8a7119bcc0a765f06582bf48ebf04da8ae9e6e7a4ac416e694ead). After the decision: lift TERMINAL_BLOCKED with a tracked state update, register the decision (and any DEFERRED_BY_PO entries, with po_decision_ref path and sha256) in a state sync, then start the approved NCP-Uxx units in the approved order, each with the first free OCOR-DEV-REM-* verified read-only at its start and the full remediation cycle of point 5 (inventory, RED on current code, GREEN, requalifications with supersession, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, independent verification, seal, merge). G6 tasks 0060/0062-0066 only when the decision unblocks them by name and every register entry naming them in blocks is resolved or DEFERRED_BY_PO; 0067 only when every HIGH entry is resolved, REFUTED or DEFERRED_BY_PO. Also pending, non-blocking for the plan: REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406) and OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408). No new DEC; claims unchanged.",
+  "no_new_po_normative_decision_required": false,
+  "open_pull_requests": 10,
   "previous_report": {
-    "commit": "12d07e38884e548213e7eef90a41b155c64da6d5",
+    "commit": "78e7d0d579ac853958571efc5237aa146689b626",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "c8499f0ef95bceac09814a69b88b7ad194508f190f343fe5629882bc0b95b5c2",
+    "sha256": "49cb3c0d7e32432ee881930904ef98f843401f14fdecb73f5af0f7703fb15617",
     "status": "HISTORICAL_PRESERVED_IN_GIT"
   },
-  "recorded_at": "2026-10-25T18:05:07.598286+00:00",
-  "remaining_backlog_tasks": 10,
+  "recorded_at": "2026-10-30T08:33:34.096978+00:00",
+  "remaining_backlog_tasks": 9,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "SUPERSEDED_PO_DISPOSITION_REM0031_CONSUMER_SCOPE",
-  "terminal_state": "NOT_TERMINAL_LOOP_CONTINUE",
-  "updated_at": "2026-10-26T02:10:37.061152+00:00"
+  "status": "TERMINAL_BLOCKED",
+  "terminal_state": "TERMINAL_BLOCKED",
+  "updated_at": "2026-10-30T08:33:34.096978+00:00"
 }
