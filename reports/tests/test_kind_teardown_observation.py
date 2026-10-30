@@ -5,6 +5,11 @@ an OCOR backend or a runtime case. A removal is accepted only when bound to the 
 delete process of the running pytest group, the same node UUID and its Docker
 destroy event inside the declared bounded window. Crash, OOM, restart, PID change,
 live node without intent, expired window and missing event stay fatal.
+
+Invariance guard (NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9,
+REM-0038-GUARD-BASELINE-CONSOLIDATION option 1, OCOR-DEV-REM-0045): every workflow and the
+campaign supervisor must be byte-identical to the single baseline 82b71d0. The normalisation
+chain against 9b4d3be and 7cd5f7a is frozen history: it runs only on the content of 82b71d0.
 """
 import ast
 import hashlib
@@ -751,6 +756,8 @@ def observation_only_proof(overrides=None):
     Normalisation removes only the three newly exported diagnostic fields and
     unwraps the latency recorder back to subprocess.run; every call argument
     remains in the AST, including the ten-second timeout and check flag.
+    Frozen history (OCOR-DEV-REM-0045): the compared content is that of the
+    guard baseline 82b71d0, never the working tree; ``overrides`` replaces it.
     """
     root = Path(__file__).resolve().parents[2]
     baseline = '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0'
@@ -758,7 +765,7 @@ def observation_only_proof(overrides=None):
     def source(path, old=False):
         if old:
             return subprocess.check_output(['git', '-C', str(root), 'show', baseline + ':' + path], text=True)
-        return (overrides or {}).get(path, (root / path).read_text())
+        return (overrides or {}).get(path, baseline_text(path))
 
     class DiagnosticsOnly(ast.NodeTransformer):
         def visit_Call(self, node):
@@ -799,10 +806,9 @@ def observation_only_proof(overrides=None):
                         and any(isinstance(t, ast.Name) and t.id == variable for t in n.targets))
         assert value(True) == value(False), variable + ' drift'
     workflows = {}
-    for p in sorted((root / '.github/workflows').glob('*.yml')):
-        relative = str(p.relative_to(root))
+    for relative in baseline_workflows():
         assert_governed_workflow(relative, source(relative, True), source(relative))
-        workflows[relative] = hashlib.sha256(p.read_bytes()).hexdigest()
+        workflows[relative] = hashlib.sha256(source(relative).encode()).hexdigest()
     return {'baseline': baseline, 'functions': results, 'workflows_unchanged': workflows,
             'campaign_constants_identical': True, 'window_poll_sample_identical': True,
             'normalisation': 'Only latency wrapper and two diagnostic export fields removed from AST. Workflows require the exact PO-authorised 0049 pin and N=5 delta; all other bytes, timers and gates identical.',
@@ -833,11 +839,12 @@ class ExecutionInvariants(unittest.TestCase):
         self.assertIn('conditional-infrastructure-0049', jobs['validation-closure']['needs'])
 
     def test_workflow_invariant_rejects_every_unapproved_change(self):
+        """Frozen history on the content of 82b71d0; every change also fails the current proof."""
         root = Path(__file__).resolve().parents[2]
         path = '.github/workflows/ocor-validation-closure.yml'
         before = subprocess.check_output(['git', '-C', str(root), 'show',
                   '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0:' + path], text=True)
-        current = (root / path).read_text()
+        current = baseline_text(path)
         assert_governed_workflow(path, before, current)
         for old, new in [
             ('--expected-head "${{ github.sha }}"', '--expected-head beab1b4cc16d0678ce5554fcebd6495b328f5342'),
@@ -855,11 +862,12 @@ class ExecutionInvariants(unittest.TestCase):
                 self.assertIn(old, current)
                 with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
                     assert_governed_workflow(path, before, current.replace(old, new, 1))
+                self.assertEqual(current_guard_failures({path: current.replace(old, new, 1)}), {CURRENT_PROOF})
         # The scope-gate reorder is the only accepted delivery-activation delta.
         path = '.github/workflows/ocor-delivery-activation.yml'
         before = subprocess.check_output(['git', '-C', str(root), 'show',
                   '7cd5f7a30e04d1671fe122eff58dfb5f54fb58b0:' + path], text=True)
-        current = (root / path).read_text()
+        current = baseline_text(path)
         assert_governed_workflow(path, before, current)
         block_start = current.index(SCOPE_STEP)
         block_end = current.index('\n\n', block_start) + 2
@@ -876,6 +884,7 @@ class ExecutionInvariants(unittest.TestCase):
                 self.assertNotEqual(changed, current)
                 with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
                     assert_governed_workflow(path, before, changed)
+                self.assertEqual(current_guard_failures({path: changed}), {CURRENT_PROOF})
         # No pin/N exception in any other workflow.
         with self.assertRaisesRegex(AssertionError, 'Workflow drift'):
             assert_governed_workflow('.github/workflows/ocor-rccad.yml', 'unchanged', 'changed')
@@ -895,11 +904,13 @@ class ExecutionInvariants(unittest.TestCase):
 
 def bootstrap_probe_proof(case, overrides=None):
     """Body of the CI-0049-KIND-BOOTSTRAP-EXEC-PROBE proof; ``overrides`` replaces file text
-    so that the negative cases of REM-0038-CAMPAIGN-GUARD-ADMISSION run the same checks."""
+    so that the negative cases of REM-0038-CAMPAIGN-GUARD-ADMISSION run the same checks.
+    Frozen history (OCOR-DEV-REM-0045): the compared content is that of the guard baseline
+    82b71d0, never the working tree."""
     root = Path(__file__).resolve().parents[2]
 
     def read(path):
-        return (overrides or {}).get(path, (root / path).read_text())
+        return (overrides or {}).get(path, baseline_text(path))
 
     baseline = '9b4d3be8ec5bd785b02072a99037dd801b53d9a5'
 
@@ -926,29 +937,29 @@ def bootstrap_probe_proof(case, overrides=None):
                 for t in n.targets if isinstance(t, ast.Name)
                 and t.id in {'WINDOW_SECONDS', 'POLL_SECONDS', 'SAMPLE_SECONDS', 'KIND_BINARY'}}
     observer = 'scripts/observe_kind_teardown.py'
-    case.assertEqual(constants(old(observer)), constants((root / observer).read_text()))
-    timeouts = {ast.unparse(k.value) for n in ast.walk(ast.parse((root / observer).read_text()))
+    case.assertEqual(constants(old(observer)), constants(read(observer)))
+    timeouts = {ast.unparse(k.value) for n in ast.walk(ast.parse(read(observer)))
                 if isinstance(n, ast.Call) and ast.unparse(n.func) == 'run_probe'
                 for k in n.keywords if k.arg == 'timeout'}
     case.assertEqual(timeouts, {'10'})
-    for workflow in sorted((root / '.github/workflows').glob('*.yml')):
-        path = str(workflow.relative_to(root))
+    for path in baseline_workflows():
         before = old(path)
         if path == '.github/workflows/ocor-validation-closure.yml':
             before = retire_integrated_0049_pin(before)
         after = normalize_rem0034_secret_scanner(path, before, normalize_rem0038_workflow(path, normalize_rem0037_workflow(path, read(path))))
-        case.assertEqual(before, after, workflow.name)
+        case.assertEqual(before, after, Path(path).name)
 
 
 
 class Rem0038GuardAdmission(unittest.TestCase):
     """PO REM-0038-CAMPAIGN-GUARD-ADMISSION (2026-10-26), option 1: the exact REM-0038 delta is
-    admitted; every other difference still fails the invariance proofs."""
+    admitted; every other difference still fails the invariance proofs. Since OCOR-DEV-REM-0045 the
+    cases mutate the content of 82b71d0 and must also fail the current byte proof."""
     CAMPAIGN = 'scripts/run_qualifying_campaign.py'
     TOOLING = '.github/workflows/ocor-tooling-bootstrap.yml'
 
     def failing_proofs(self, overrides):
-        failed = set()
+        failed = set(current_guard_failures(overrides))
         for name, proof in (('main-9b4d3be', lambda: bootstrap_probe_proof(self, overrides)),
                             ('ast-7cd5f7a', lambda: observation_only_proof(overrides))):
             try:
@@ -958,8 +969,7 @@ class Rem0038GuardAdmission(unittest.TestCase):
         return failed
 
     def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_literal(self):
-        root = Path(__file__).resolve().parents[2]
-        campaign = (root / self.CAMPAIGN).read_text()
+        campaign = baseline_text(self.CAMPAIGN)
         self.assertEqual(campaign.count(REM0038_CONSTANT), 1)
         normalised = normalize_rem0038_campaign(normalize_rem0042_campaign(campaign))
         self.assertNotIn('MANDATORY_CONTAINERS', normalised)
@@ -968,16 +978,15 @@ class Rem0038GuardAdmission(unittest.TestCase):
         self.assertEqual(self.failing_proofs({}), set())
 
     def test_every_other_campaign_difference_still_fails(self):
-        root = Path(__file__).resolve().parents[2]
-        campaign = (root / self.CAMPAIGN).read_text()
-        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        campaign = baseline_text(self.CAMPAIGN)
+        both = {'main-9b4d3be', 'ast-7cd5f7a', CURRENT_PROOF}
         stack = '        raise CampaignError("mandatory stack disappeared")\n'
         for label, changed, expected in [
             ('MANDATORY_CONTAINERS 16', campaign.replace('MANDATORY_CONTAINERS = 15', 'MANDATORY_CONTAINERS = 16', 1), both),
             ('another constant', campaign.replace(REM0038_CONSTANT, REM0038_CONSTANT + 'EXTRA_CONTAINERS = 1\n', 1), both),
             ('limit constant', campaign.replace('FULL_SUITE_LIMIT_SECONDS = 5400', 'FULL_SUITE_LIMIT_SECONDS = 6000', 1), both),
             ('another function changed', campaign.replace(stack, stack.replace('disappeared', 'vanished'), 1), both),
-            ('another function added', campaign + '\n\ndef extra_gate() -> None:\n    return None\n', {'main-9b4d3be'}),
+            ('another function added', campaign + '\n\ndef extra_gate() -> None:\n    return None\n', {'main-9b4d3be', CURRENT_PROOF}),
             ('inventory check weakened', campaign.replace('if len(initial) != MANDATORY_CONTAINERS:', 'if len(initial) < MANDATORY_CONTAINERS:', 1), both),
             ('constant used elsewhere', campaign.replace('PART_LIMIT_SECONDS = 2700', 'PART_LIMIT_SECONDS = 180 * MANDATORY_CONTAINERS', 1), both),
             ('literal 11 kept in main', campaign.replace('if len(initial) != MANDATORY_CONTAINERS:', 'if len(initial) != 11:', 1), both),
@@ -987,17 +996,16 @@ class Rem0038GuardAdmission(unittest.TestCase):
                 self.assertEqual(self.failing_proofs({self.CAMPAIGN: changed}), expected)
 
     def test_every_other_workflow_difference_still_fails(self):
-        root = Path(__file__).resolve().parents[2]
-        tooling = (root / self.TOOLING).read_text()
+        tooling = baseline_text(self.TOOLING)
         self.assertEqual(tooling.count(REM0038_PLACEHOLDERS), 1)
-        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        both = {'main-9b4d3be', 'ast-7cd5f7a', CURRENT_PROOF}
         extra = '          OCOR_LOCAL_EXTRA_PASSWORD=x \\\n'
         rccad = '.github/workflows/ocor-rccad.yml'
         for label, overrides in [
             ('one more placeholder line', {self.TOOLING: tooling.replace(REM0038_PLACEHOLDERS, REM0038_PLACEHOLDERS + extra, 1)}),
             ('placeholder missing', {self.TOOLING: tooling.replace(REM0038_PLACEHOLDERS, REM0038_PLACEHOLDERS.split('\n')[0] + '\n', 1)}),
             ('placeholder duplicated', {self.TOOLING: tooling.replace(REM0038_PLACEHOLDERS, REM0038_PLACEHOLDERS * 2, 1)}),
-            ('placeholders in another workflow', {rccad: (root / rccad).read_text() + REM0038_PLACEHOLDERS}),
+            ('placeholders in another workflow', {rccad: baseline_text(rccad) + REM0038_PLACEHOLDERS}),
             ('other tooling line', {self.TOOLING: tooling.replace('docker compose -f deploy/bootstrap/compose.yaml config --quiet',
                                                                   'docker compose -f deploy/bootstrap/compose.yaml config', 1)}),
         ]:
@@ -1011,8 +1019,7 @@ class Rem0042GuardAdmission(Rem0038GuardAdmission):
     inherited workflow test proves that REM-0042 admits no workflow difference."""
 
     def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_literal(self):
-        root = Path(__file__).resolve().parents[2]
-        campaign = (root / self.CAMPAIGN).read_text()
+        campaign = baseline_text(self.CAMPAIGN)
         self.assertEqual(campaign.count(REM0042_LIMIT[0]), 1)
         self.assertEqual(campaign.count(REM0042_DOCSTRING[0]), 1)
         normalised = normalize_rem0042_campaign(campaign)
@@ -1023,9 +1030,8 @@ class Rem0042GuardAdmission(Rem0038GuardAdmission):
         self.assertEqual(self.failing_proofs({}), set())
 
     def test_every_other_campaign_difference_still_fails(self):
-        root = Path(__file__).resolve().parents[2]
-        campaign = (root / self.CAMPAIGN).read_text()
-        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        campaign = baseline_text(self.CAMPAIGN)
+        both = {'main-9b4d3be', 'ast-7cd5f7a', CURRENT_PROOF}
         limit, docstring = REM0042_LIMIT[0], REM0042_DOCSTRING[0]
         for label, changed, expected in [
             ('limit 5401', campaign.replace(limit, 'FULL_SUITE_LIMIT_SECONDS = 5401\n', 1), both),
@@ -1050,7 +1056,8 @@ class Rem0037GuardAdmission(unittest.TestCase):
     """LOCAL-SUITE-SPLIT-REACTIVATION (2026-10-26), point 6, under REM-0038-CAMPAIGN-GUARD-ADMISSION
     condition a: the exact REM-0037 delta (reports/tests/test_local_lane_campaign.py appended to
     the validation-closure guard command) is admitted; every other difference still fails. The
-    campaign tests of Rem0038GuardAdmission prove that REM-0037 admits no campaign difference."""
+    campaign tests of Rem0038GuardAdmission prove that REM-0037 admits no campaign difference. Since
+    OCOR-DEV-REM-0045 the cases mutate the content of 82b71d0 and must also fail the current byte proof."""
     CLOSURE = '.github/workflows/ocor-validation-closure.yml'
     failing_proofs = Rem0038GuardAdmission.failing_proofs
 
@@ -1066,8 +1073,7 @@ class Rem0037GuardAdmission(unittest.TestCase):
         self.assertIn('check_junit', guard[0]['run'])
 
     def test_the_exact_delta_is_admitted_and_normalised_to_the_baseline_command(self):
-        root = Path(__file__).resolve().parents[2]
-        closure = (root / self.CLOSURE).read_text()
+        closure = baseline_text(self.CLOSURE)
         added, baseline = REM0037_GUARD_COMMAND
         self.assertEqual(closure.count(added), 1)
         normalised = normalize_rem0037_workflow(self.CLOSURE, closure)
@@ -1076,10 +1082,9 @@ class Rem0037GuardAdmission(unittest.TestCase):
         self.assertEqual(self.failing_proofs({}), set())
 
     def test_every_other_workflow_difference_still_fails(self):
-        root = Path(__file__).resolve().parents[2]
-        closure = (root / self.CLOSURE).read_text()
+        closure = baseline_text(self.CLOSURE)
         added, baseline = REM0037_GUARD_COMMAND
-        both = {'main-9b4d3be', 'ast-7cd5f7a'}
+        both = {'main-9b4d3be', 'ast-7cd5f7a', CURRENT_PROOF}
         module = 'reports/tests/test_local_lane_campaign.py'
         rccad = '.github/workflows/ocor-rccad.yml'
         for label, overrides in [
@@ -1091,12 +1096,182 @@ class Rem0037GuardAdmission(unittest.TestCase):
             ('tee log changed', {self.CLOSURE: closure.replace(added, added.replace('ci_guards.log', 'ci_guards_lanes.log'), 1)}),
             ('junit path changed', {self.CLOSURE: closure.replace('--junitxml=reports/tests/guards_junit.xml', '--junitxml=reports/tests/lanes_junit.xml', 1)}),
             ('module run in a second step', {self.CLOSURE: closure.replace(REM0037_GUARD_STEP, '      - name: Lane guard\n        run: pytest ' + module + '\n\n' + REM0037_GUARD_STEP, 1)}),
-            ('module in another workflow', {rccad: (root / rccad).read_text() + '# ' + module + '\n'}),
+            ('module in another workflow', {rccad: baseline_text(rccad) + '# ' + module + '\n'}),
         ]:
             with self.subTest(change=label):
                 path, text = next(iter(overrides.items()))
-                self.assertNotEqual(text, (root / path).read_text())
+                self.assertNotEqual(text, baseline_text(path))
                 self.assertEqual(self.failing_proofs(overrides), both)
+
+
+GUARD_BASELINE = '82b71d0db410bcdb8124e8ec8a8235631ecfa1fa'
+CURRENT_PROOF = 'bytes-82b71d0'
+
+
+WORKFLOW_DIR = '.github/workflows'
+CAMPAIGN_PATH = 'scripts/run_qualifying_campaign.py'
+OBSERVER_PATH = 'scripts/observe_kind_teardown.py'
+OBSERVER_CONSTANTS = ('WINDOW_SECONDS', 'POLL_SECONDS', 'SAMPLE_SECONDS', 'KIND_BINARY')
+
+
+def baseline_bytes(path, revision=GUARD_BASELINE):
+    root = Path(__file__).resolve().parents[2]
+    return subprocess.check_output(['git', '-C', str(root), 'show', revision + ':' + path])
+
+
+def baseline_text(path, revision=GUARD_BASELINE):
+    return baseline_bytes(path, revision).decode()
+
+
+def baseline_workflows(revision=GUARD_BASELINE):
+    root = Path(__file__).resolve().parents[2]
+    listing = subprocess.check_output(['git', '-C', str(root), 'ls-tree', '-r', '--name-only', revision, '--', WORKFLOW_DIR], text=True)
+    return sorted(listing.splitlines())
+
+
+def observer_constants(text):
+    tree = ast.parse(text)
+    return {t.id: ast.dump(n.value) for n in tree.body if isinstance(n, ast.Assign)
+            for t in n.targets if isinstance(t, ast.Name) and t.id in OBSERVER_CONSTANTS}
+
+
+def current_baseline_proof(overrides=None):
+    """NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9, REM-0038-GUARD-BASELINE-CONSOLIDATION option 1.
+
+    Every workflow and the campaign supervisor must be byte-identical to 82b71d0, and the set of
+    workflow files must equal that of 82b71d0 (a workflow added, removed or renamed fails). The
+    observer keeps the window, cadence, sampler and kind binary of 82b71d0 and ten-second probe
+    timeouts. No normalisation applies to the working tree: a future difference needs a new exact
+    normalisation on 82b71d0 authorised by a PO decision, or a new consolidation decided by the PO.
+    ``overrides`` replaces file text (``None`` removes the file) for the negative cases.
+    """
+    root = Path(__file__).resolve().parents[2]
+    overrides = overrides or {}
+
+    def current(path):
+        if path in overrides:
+            return None if overrides[path] is None else overrides[path].encode()
+        file = root / path
+        return file.read_bytes() if file.is_file() else None
+
+    expected = baseline_workflows()
+    present = {str(p.relative_to(root)) for p in (root / WORKFLOW_DIR).rglob('*') if p.is_file()}
+    present |= {p for p in overrides if p.startswith(WORKFLOW_DIR + '/')}
+    present -= {p for p, text in overrides.items() if text is None}
+    if sorted(present) != expected:
+        raise AssertionError('Workflow set drift from 82b71d0: ' + repr(sorted(set(expected) ^ present)))
+    digests = {}
+    for path in expected + [CAMPAIGN_PATH]:
+        data = current(path)
+        if data != baseline_bytes(path):
+            raise AssertionError('Byte drift from 82b71d0: ' + path)
+        digests[path] = hashlib.sha256(data).hexdigest()
+    observer = current(OBSERVER_PATH)
+    if observer is None:
+        raise AssertionError('Observer missing: ' + OBSERVER_PATH)
+    observer = observer.decode()
+    if observer_constants(observer) != observer_constants(baseline_text(OBSERVER_PATH)):
+        raise AssertionError('Observer constants drift from 82b71d0')
+    timeouts = {ast.unparse(k.value) for n in ast.walk(ast.parse(observer))
+                if isinstance(n, ast.Call) and ast.unparse(n.func) == 'run_probe'
+                for k in n.keywords if k.arg == 'timeout'}
+    if timeouts != {'10'}:
+        raise AssertionError('Probe timeout drift: ' + repr(sorted(timeouts)))
+    return {'baseline': GUARD_BASELINE, 'byte_identical_sha256': digests,
+            'observer_constants': sorted(observer_constants(observer)), 'probe_timeouts': sorted(timeouts)}
+
+
+def current_guard_failures(overrides=None):
+    """The single current proof as a set of failed proof names, for the negative cases."""
+    try:
+        current_baseline_proof(overrides)
+    except AssertionError:
+        return {CURRENT_PROOF}
+    return set()
+
+
+class GuardBaselineConsolidation(unittest.TestCase):
+    """NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9, REM-0038-GUARD-BASELINE-CONSOLIDATION option 1:
+    one baseline (82b71d0) with byte identity. The probes of fact 6 of the decision request, accepted
+    by the normalisation chain, must be rejected."""
+    CAMPAIGN = 'scripts/run_qualifying_campaign.py'
+    TOOLING = '.github/workflows/ocor-tooling-bootstrap.yml'
+
+    def test_the_working_tree_passes_the_current_proof(self):
+        self.assertEqual(current_guard_failures({}), set())
+
+    def test_relocations_of_admitted_fragments_are_rejected(self):
+        campaign, tooling = baseline_text(self.CAMPAIGN), baseline_text(self.TOOLING)
+        rendering = 'docker compose -f deploy/bootstrap/compose.yaml config --quiet\n'
+        self.assertEqual(campaign.count(REM0038_CONSTANT), 1)
+        self.assertEqual(tooling.count(REM0038_PLACEHOLDERS), 1)
+        self.assertEqual(tooling.count(rendering), 1)
+        moved = tooling.replace(REM0038_PLACEHOLDERS, '', 1)
+        for label, overrides in [
+            ('REM-0038 constant moved to the end of the module',
+             {self.CAMPAIGN: campaign.replace(REM0038_CONSTANT, '', 1) + '\n' + REM0038_CONSTANT}),
+            ('REM-0038 placeholders moved after the rendering command',
+             {self.TOOLING: moved.replace(rendering, rendering + REM0038_PLACEHOLDERS, 1)}),
+        ]:
+            with self.subTest(change=label):
+                path, text = next(iter(overrides.items()))
+                self.assertNotEqual(text, baseline_text(path))
+                self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
+
+    def test_comment_only_edits_are_rejected(self):
+        campaign = baseline_text(self.CAMPAIGN)
+        for label, changed in [
+            ('REM-0038 constant comment reworded', campaign.replace('# plus Temporal, its PostgreSQL', '# plus Temporal, the PostgreSQL', 1)),
+            ('comment appended to the campaign module', campaign + '# note\n'),
+        ]:
+            with self.subTest(change=label):
+                self.assertNotEqual(changed, campaign)
+                self.assertEqual(current_guard_failures({self.CAMPAIGN: changed}), {CURRENT_PROOF})
+
+    def test_a_workflow_absent_at_the_baseline_is_rejected(self):
+        rccad = baseline_text('.github/workflows/ocor-rccad.yml')
+        self.assertEqual(current_guard_failures({'.github/workflows/ocor-extra.yml': rccad}), {CURRENT_PROOF})
+
+    def test_the_baseline_is_the_rem0041_integration_merge_and_an_ancestor(self):
+        root = Path(__file__).resolve().parents[2]
+        self.assertEqual(GUARD_BASELINE, '82b71d0db410bcdb8124e8ec8a8235631ecfa1fa')
+        subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor', GUARD_BASELINE, 'HEAD'], check=True)
+
+    def test_the_current_proof_covers_every_workflow_and_the_supervisor(self):
+        proof = current_baseline_proof()
+        self.assertEqual(sorted(proof['byte_identical_sha256']), sorted(baseline_workflows() + [self.CAMPAIGN]))
+        self.assertEqual(len(baseline_workflows()), 8)
+        self.assertEqual(proof['observer_constants'], sorted(OBSERVER_CONSTANTS))
+        self.assertEqual(proof['probe_timeouts'], ['10'])
+
+    def test_the_frozen_chain_reduces_the_baseline_to_9b4d3be_and_7cd5f7a(self):
+        bootstrap_probe_proof(self)
+        proof = observation_only_proof()
+        self.assertEqual(sorted(proof['workflows_unchanged']), baseline_workflows())
+        self.assertEqual(proof['workflows_unchanged'], {p: hashlib.sha256(baseline_bytes(p)).hexdigest() for p in baseline_workflows()})
+
+    def test_a_workflow_removed_or_renamed_is_rejected(self):
+        tooling = baseline_text(self.TOOLING)
+        for label, overrides in [
+            ('removed', {self.TOOLING: None}),
+            ('renamed', {self.TOOLING: None, '.github/workflows/ocor-tooling.yml': tooling}),
+            ('extension changed', {self.TOOLING: None, '.github/workflows/ocor-tooling-bootstrap.yaml': tooling}),
+        ]:
+            with self.subTest(change=label):
+                self.assertEqual(current_guard_failures(overrides), {CURRENT_PROOF})
+
+    def test_observer_drift_is_rejected(self):
+        observer = baseline_text(OBSERVER_PATH)
+        for label, old, new in [
+            ('window', 'WINDOW_SECONDS = 30.0', 'WINDOW_SECONDS = 31.0'),
+            ('poll', 'POLL_SECONDS = 0.5', 'POLL_SECONDS = 1.0'),
+            ('sample', 'SAMPLE_SECONDS = 0.2', 'SAMPLE_SECONDS = 0.3'),
+            ('probe timeout', 'timeout=10', 'timeout=11'),
+        ]:
+            with self.subTest(change=label):
+                self.assertGreaterEqual(observer.count(old), 1)
+                self.assertEqual(current_guard_failures({OBSERVER_PATH: observer.replace(old, new, 1)}), {CURRENT_PROOF})
+        self.assertEqual(current_guard_failures({OBSERVER_PATH: None}), {CURRENT_PROOF})
 
 if __name__ == '__main__':
     unittest.main()

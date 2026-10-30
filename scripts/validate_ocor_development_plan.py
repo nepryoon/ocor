@@ -932,6 +932,23 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0044.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0044.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0044.log",
+        # OCOR-DEV-REM-0045 (NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9,
+        # REM-0038-GUARD-BASELINE-CONSOLIDATION option 1): the three decision request files
+        # carrying the PO disposition, byte-identical from their branches, the unit record and
+        # the regression-only requalifications of 0005, 0050 and 0082 forced by this allowlist
+        # and by the guard module.
+        "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
+        "reports/development/decision_requests/OCOR-DEV-0060-BA-RUNTIME-GAPS.md",
+        "reports/development/decision_requests/REM-0038-GUARD-BASELINE-CONSOLIDATION.md",
+        "reports/assurance/OCOR-DEV-REM-0045-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0045-RCCAD/OCOR-DEV-REM-0045.json",
+        "reports/assurance/OCOR-DEV-REM-0045-RCCAD/OCOR-DEV-REM-0045.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0045.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0045.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0045.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0045.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0045.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0045.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
