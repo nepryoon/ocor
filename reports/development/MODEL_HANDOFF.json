@@ -4,34 +4,26 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "64b5ac4487aec24222b4abebf213587b55de4b6f",
-  "baseline_commit": "64b5ac4487aec24222b4abebf213587b55de4b6f",
-  "branch": "governed/state-sync-rem0044-iter8-20261030",
+  "base_sha": "4781e06de140f770ef0f61d9dab7a6c189cdf97b",
+  "baseline_commit": "4781e06de140f770ef0f61d9dab7a6c189cdf97b",
+  "branch": "governed/state-sync-rem0044-integrated-20261030",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0044-normative-conformance-register",
-    "code_commit": "c90b99907f4f67d7a9134dd7c1ce0429592f20a9",
-    "head_sha": "f8270ae90ca904a44da5f7d9de3333be1f68ade8",
-    "note": "register unit candidate awaiting independent verification; integration awaits the PO decision on the iteration limit; evidence paths live on the candidate branch only (handoff evidence_paths stays empty on main, AFF-008)",
+    "head_sha": "3b29de0269bed6b9420bf3b31a09d0f9062d5386",
+    "merge_commit": "4781e06de140f770ef0f61d9dab7a6c189cdf97b",
+    "note": "REM-0044 unit record and 3 regression-only requalifications sealed after GO and merged with PR #423",
     "paths": [
       "reports/assurance/OCOR-DEV-REM-0044-RCCAD/OCOR-DEV-REM-0044.json",
-      "reports/assurance/OCOR-DEV-REM-0044-RCCAD/OCOR-DEV-REM-0044.log",
-      "reports/assurance/OCOR-DEV-REM-0044-RCCAD/README.md",
-      "reports/evidence/G0/MANIFEST.json",
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0044.json",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0044.log",
-      "reports/evidence/G2/MANIFEST.json",
       "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0044.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0044.log",
-      "reports/evidence/G5/MANIFEST.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0044.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0044.log"
-    ],
-    "worktree": ".ocor/worktrees/rem-0044"
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0044.json"
+    ]
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/ITERATION_LOG.md",
-    "reports/development/MODEL_HANDOFF.json"
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/TERMINAL_BLOCKED_REPORT.json"
   ],
   "claims": {
     "E1": 0,
@@ -43,48 +35,65 @@
   },
   "commands": [
     {
-      "command": "sha256sum -c inputs/normative/SHA256SUMS",
+      "command": "verdict OCOR-DEV-REM-0044-f8270ae90ca9-0",
       "exit_code": 0,
-      "summary": "8/8 OK"
+      "summary": "GO_FOR_EVIDENCE_SEAL, zero findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 0141dc0e443ca7952a3d65287fb037cf027c3a85269c4fbbbd8cd471c689d171"
     },
     {
-      "command": "python3 ~/.ocor-codex/rem-0044-closure/pregate.py (at c90b99907f4f)",
+      "command": "merge origin/main 6fb80aa7f25e into governed/ocor-dev-rem-0044-normative-conformance-register (non-destructive alignment)",
       "exit_code": 0,
-      "summary": "41/42 PASS, drift expected (0005, 0050, 0082)"
+      "summary": "aligned head 1cda65aa65fc; only the three state files differ from f8270ae90ca9; non-state tree sha256 equal"
     },
     {
-      "command": "~/.ocor-codex/rem-0044-q/run.sh (phases A, A3, B, C)",
+      "command": "seal.py (verdict OCOR-DEV-REM-0044-f8270ae90ca9-0)",
       "exit_code": 0,
-      "summary": "two-lane full suite 3334/3334 PASS, zero skip, exact JUnit union, 2445.122 s (margin 2954.878 s to the 5400 s cap, 1154.878 s to the 3600 s notification), zero host residue, mains power throughout; integrity test 3 runs x 15 cases (861 subtests); regression 0005/0050/0082 and reports portfolio PASS; 15 negative controls of the integrity test each rejected by the targeted test"
+      "summary": "unit record and 3 requalifications SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; integrity test 15/15 and runtime evidence 0005/0050/0082 PASS after sealing; commit 3b29de0269be"
     },
     {
-      "command": "build_evidence.py, gen_readme.py (~/.ocor-codex/rem-0044-q-tools)",
+      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
       "exit_code": 0,
-      "summary": "unit record and three regression-only requalifications"
+      "summary": "42/42 workflow-derived non-suite steps PASS"
     },
     {
-      "command": "validate_evidence_input_drift.py --root .",
+      "command": "gh pr create (PR #423) and exact-head polling until mergeStateStatus CLEAN",
       "exit_code": 0,
-      "summary": "PASS, drifted_tasks []"
+      "summary": "13/13 required checks success, 0 reruns"
     },
     {
-      "command": "python3 ~/.ocor-codex/rem-0044-closure/pregate.py (at f8270ae90ca9)",
+      "command": "gh pr merge 423 --merge --match-head-commit 3b29de0269bed6b9420bf3b31a09d0f9062d5386",
       "exit_code": 0,
-      "summary": "42/42 PASS"
+      "summary": "merge commit 4781e06de140f770ef0f61d9dab7a6c189cdf97b; origin/main equals the merge commit; sealed hashes unchanged"
+    },
+    {
+      "command": "gen_plan_dr.py 4781e06de140 423; gh pr create --draft (PR #424)",
+      "exit_code": 0,
+      "summary": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md sha256 a6bb253769d8a7119bcc0a765f06582bf48ebf04da8ae9e6e7a4ac416e694ead, commit 6b4040c52ed1"
+    },
+    {
+      "command": "gh pr close 421 (disposition REM-0044-ITERATION-LIMIT (2026-10-30) option 1)",
+      "exit_code": 0,
+      "summary": "closed as resolved, not merged"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0044:candidate (awaiting independent verification and the PO decision on the iteration limit)",
+  "current_task": "TERMINAL_BLOCKED:NORMATIVE-CONFORMANCE-PLAN",
   "evidence_paths": [],
-  "exact_next_action": "Read the verdict ~/.ocor-codex/verdicts/OCOR-DEV-REM-0044-f8270ae90ca9-0.json (head f8270ae90ca9) and the PO decision on REM-0044-ITERATION-LIMIT (draft PR #421). OCOR-DEV-REM-0044 has used the 8 iterations of NORMATIVE-CONFORMANCE-PROGRAMME point 4 (SUPPLEMENT point 3): its integration (seal, PR, required checks, merge with --match-head-commit, state sync, then the decision request NORMATIVE-CONFORMANCE-PLAN with status OPEN_PO_NORMATIVE_DECISION_REQUIRED, counts by component/severity/status, the plan, the 4.f proposals, the DECISION_REQUIRED entries and the plan options) waits for that PO decision. With option 1 granted: on GO_FOR_EVIDENCE_SEAL integrate from governed/ocor-dev-rem-0044-normative-conformance-register at f8270ae90ca9 (worktree .ocor/worktrees/rem-0044; builders in ~/.ocor-codex/rem-0044-q-tools; seal toolkit to adapt from the latest ~/.ocor-codex/integrate-rem*/); on NO_GO repair within the register, its integrity test and the unit evidence (at most 2 cycles). Without a PO decision there is no admitted work: close with TERMINAL_BLOCKED (G6 0060/0062-0066 and OCOR-DEV-REM-0043 suspended by the PO, 0067-0069 blocked, no code remediation before the PO decision on the plan). No new DEC; claims unchanged.",
-  "head_sha": "f8270ae90ca904a44da5f7d9de3333be1f68ade8",
-  "head_sha_role": "REM-0044 register unit candidate submitted to independent verification",
+  "exact_next_action": "TERMINAL_BLOCKED: no admitted work remains (NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5). Wait for the PO decision on the normative decision request NORMATIVE-CONFORMANCE-PLAN (draft PR #424, reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md, sha256 a6bb253769d8a7119bcc0a765f06582bf48ebf04da8ae9e6e7a4ac416e694ead). After the decision: lift TERMINAL_BLOCKED with a tracked state update, register the decision (and any DEFERRED_BY_PO entries, with po_decision_ref path and sha256) in a state sync, then start the approved NCP-Uxx units in the approved order, each with the first free OCOR-DEV-REM-* verified read-only at its start and the full remediation cycle of point 5 (inventory, RED on current code, GREEN, requalifications with supersession, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, independent verification, seal, merge). G6 tasks 0060/0062-0066 only when the decision unblocks them by name and every register entry naming them in blocks is resolved or DEFERRED_BY_PO; 0067 only when every HIGH entry is resolved, REFUTED or DEFERRED_BY_PO. Also pending, non-blocking for the plan: REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406) and OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408). No new DEC; claims unchanged.",
+  "head_sha": "4781e06de140f770ef0f61d9dab7a6c189cdf97b",
+  "head_sha_role": "merge commit of PR #423 (OCOR-DEV-REM-0044 integrated)",
   "independent_verification": {
     "head_sha": "f8270ae90ca904a44da5f7d9de3333be1f68ade8",
-    "note": "verifier chosen by the loop, provider neither Anthropic nor OpenAI",
+    "next_verifier_constraint": "for the next unit: provider different from every implementer and from its preventive reviewer",
+    "repair_cycle": 0,
     "request_id": "OCOR-DEV-REM-0044-f8270ae90ca9-0",
-    "review_type": "REMEDIATION",
-    "status": "REQUESTED"
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-10-30T07:44:53Z",
+    "verdict_file_sha256": "0141dc0e443ca7952a3d65287fb037cf027c3a85269c4fbbbd8cd471c689d171",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI",
+    "verifier_full_suite_two_lane": "3334 passed, 0 skipped, 2690.524 s; margin under the 5400 s cap 2709.476 s, under the 3600 s notification 909.476 s; exact union; host residue empty; memory admission TWO_LANE",
+    "verifier_integrity_test": "reports/tests/test_normative_conformance_register.py: 15 passed, 861 subtests, zero skip; seed_coverage 59/59, supplement_coverage NCP-S01..S11; 15 negative controls rejected, register restored byte-identical",
+    "verifier_probes": "ten verification probes reproduced with stored sha256; RED 81a8b76 of NCR-C8-007 7 failed, 4 passed; PLAN-PROBE-01 not executed because it writes the register (text sha256 equal)",
+    "verifier_validation_closure_guards": "362 passed, zero skip after npm ci from the official lock"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -159,8 +168,8 @@
     "scope": "PASS",
     "supply_chain_scanner": "PASS"
   },
-  "next_task": "OCOR-DEV-REM-0044:integration (after the verdict and the PO decision on REM-0044-ITERATION-LIMIT)",
-  "phase": "NCP_REGISTER_UNIT_CANDIDATE_AWAITING_VERIFICATION_AND_PO_DECISION",
+  "next_task": "PO decision on NORMATIVE-CONFORMANCE-PLAN",
+  "phase": "NCP_REGISTER_UNIT_INTEGRATED_PLAN_DECISION_PENDING_TERMINAL_BLOCKED",
   "raw_evidence_location": "~/.ocor-codex/rem-0044-q (campaign, tamper probe), ~/.ocor-codex/rem-0044-q-tools (builders), ~/.ocor-codex/rem-0044-closure (gates), outside Git",
   "requirement_ids": [
     "FR-006",
@@ -174,20 +183,20 @@
     "NFR-048"
   ],
   "roles": {
-    "authority": "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
     "implementers": [
       {
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0044 iterations 1-8 (reconnaissance, register, plan and proposals, integrity test, plan allowlist, PRE-CAMPAIGN-GATE, campaign, requalifications, unit record, verification request, decision request) and these state syncs"
+        "scope": "all of REM-0044 (iterations 1-8); this iteration 9 (first of the three granted by REM-0044-ITERATION-LIMIT), as the backup implementer of the loop: alignment, sealing, PRE-CAMPAIGN-GATE, PR #423, exact-head CI, merge, decision request NORMATIVE-CONFORMANCE-PLAN (PR #424), state sync"
       }
     ],
     "loop_counted_implementers": [
-      "Codex (OpenAI)"
+      "Codex (OpenAI), counted by the loop, no REM-0044 content"
     ],
-    "note": "the seed and supplement lists were authored by Anthropic (verifier constraint recorded by the loop)",
-    "verifier_constraint": "provider neither Anthropic nor OpenAI"
+    "preventive_reviewer": "SKIPPED by the loop (no reviewer of a provider different from the implementers and the expected verifier)",
+    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0044-f8270ae90ca9-0)"
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
@@ -201,10 +210,10 @@
     "register_integrity": "3 x 15 passed"
   },
   "unresolved_blockers": [
-    "OCOR-DEV-REM-0043 (OPEN_REMEDIATION_IN_PROGRESS, blocks OCOR-DEV-0062)",
-    "OCOR-DEV-0060-BA-RUNTIME-GAPS (OPEN_PO_NORMATIVE_DECISION_REQUIRED, PR #408, blocks 0060 and 0065-0069)",
-    "REM-0038-GUARD-BASELINE-CONSOLIDATION (OPEN_PO_NORMATIVE_DECISION_REQUIRED, PR #406, non-blocking)"
+    "NORMATIVE-CONFORMANCE-PLAN (PR #424, OPEN_PO_NORMATIVE_DECISION_REQUIRED)",
+    "REM-0038-GUARD-BASELINE-CONSOLIDATION (PR #406)",
+    "OCOR-DEV-0060-BA-RUNTIME-GAPS (PR #408)"
   ],
-  "updated_at": "2026-10-30T05:46:54.572956+00:00",
-  "worktree": ".ocor/worktrees/rem-0044 (REM-0044 register WIP); .ocor/worktrees/rem-0043 (REM-0043 suspended, preserved); .ocor/worktrees/ocor-dev-0062 (0062 WIP, suspended, preserved); .ocor/worktrees/ocor-dev-0060 (0060 WIP, suspended, preserved)"
+  "updated_at": "2026-10-30T08:33:34.096978+00:00",
+  "worktree": ".ocor/worktrees/rem-0044 (integrated branch); next unit: new worktree from origin/main"
 }
