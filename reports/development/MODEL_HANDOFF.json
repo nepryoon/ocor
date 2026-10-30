@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "ccf01549c1024aec7dcc7982b7a243a06e347d18",
-  "baseline_commit": "ccf01549c1024aec7dcc7982b7a243a06e347d18",
-  "branch": "governed/state-sync-rem0046-iter2-20261030",
+  "base_sha": "8ee93ca911586410c6cb159a0fed5fa05d12d6a9",
+  "baseline_commit": "8ee93ca911586410c6cb159a0fed5fa05d12d6a9",
+  "branch": "governed/state-sync-rem0046-iter3-20261030",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance",
-    "head_sha": "29ccb961afa493f91af4d4921e340aff332b321b",
-    "note": "REM-0046 GREEN complete, record draft; not a candidate, no evidence",
+    "head_sha": "2dae278d970d81f19f36d32306ed31aa73744902",
+    "note": "REM-0046 GREEN complete incl. regression class, record in progress, PRE-CAMPAIGN-GATE done; not a candidate, no evidence",
     "paths": [
       "reports/tests/test_ocor_dev_rem_0046.py",
       "reports/tests/test_runtime_evidence_validator.py",
@@ -25,7 +25,8 @@
       "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
       "reports/planning/OCOR_PLAN_RUN_STATE.json",
       "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
-      "reports/assurance/OCOR-DEV-REM-0046-RCCAD/"
+      "reports/assurance/OCOR-DEV-REM-0046-RCCAD/",
+      "reports/development/decision_requests/REM-0046-REGRESSION-REQUALIFICATION-RECORDS.md"
     ],
     "worktree": ".ocor/worktrees/rem-0046"
   },
@@ -49,42 +50,27 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest test_ocor_dev_rem_0046.py test_runtime_evidence_validator.py test_backlog_generator_reality_parity.py test_normative_conformance_register.py",
-      "exit_code": 0,
-      "summary": "66 passed, 889 subtests"
-    },
-    {
-      "command": "pytest test_runtime_evidence_validator.py::...::test_rejects_requirement_only_traced_by_the_reverse_index on the GREEN part 1 validator",
+      "command": "pytest -q reports/tests/test_runtime_evidence_validator.py at RED 9ad15e1",
       "exit_code": 1,
-      "summary": "1 failed (RED of the new negative case)"
+      "summary": "RED of the regression class (fingerprint 2017c5495538)"
     },
     {
-      "command": "validate_test_reverse_traceability.py",
+      "command": "pytest -q reports/tests/test_runtime_evidence_validator.py at GREEN",
       "exit_code": 0,
-      "summary": "PASS, 138 test files"
+      "summary": "36 passed, 15 subtests"
     },
     {
-      "command": "validate_ocor_development_plan.py --authorized-extension --base-ref origin/main",
+      "command": "python3 ~/.ocor-codex/rem-0046/pregate.py (PRE-CAMPAIGN-GATE, clean shell, locked PATH, scratch worktree at head)",
       "exit_code": 0,
-      "summary": "PASS 37, NOT_EXECUTED 2"
-    },
-    {
-      "command": "validate_rccad.py; validate_language_policy.py; validate_ocor_change_scope.py; ruff check .; mypy",
-      "exit_code": 0,
-      "summary": "PASS"
-    },
-    {
-      "command": "validate_evidence_input_drift.py",
-      "exit_code": 1,
-      "summary": "drift exactly 0005, 0050, 0082 on scripts/validate_ocor_development_plan.py (expected, requalifications pending)"
+      "summary": "PRE-CAMPAIGN-GATE 45/46 PASS at 2dae278d970d (only drift FAIL: OCOR-DEV-0005, 0050 and 0082 on scripts/validate_ocor_development_plan.py, expected; regression-class requalifications at candidate time); rem0046 unit 19 passed, register integrity 15 passed/879 subtests, reverse traceability PASS, runtime evidence 0005/0050/0082 PASS, scope PASS 16 paths, supply-chain scanner PASS (0 blocking), validation-closure guards PASS; artefacts in ~/.ocor-codex/rem-0046/gates-2dae278d970d"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0046:implementation (NCP-U13, awaiting PO decision REM-0046-REGRESSION-REQUALIFICATION-RECORDS)",
+  "current_task": "OCOR-DEV-REM-0046:implementation (NCP-U13, awaiting preventive review OCOR-DEV-REM-0046-2dae278d970d-pre)",
   "evidence_paths": [],
-  "exact_next_action": "Read the PO disposition of decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS (PR #432, branch governed/decision-request-rem0046-regression-requalification-records). If undecided and no other work is admissible (plan_order runs one unit at a time; G6/G7 blocked; REM-0037 suspended for memory), close the loop with TERMINAL_BLOCKED after a governed TERMINAL_BLOCKED_REPORT.json. Once decided: resume OCOR-DEV-REM-0046 (NCP-U13) iteration 3 on governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance from 29ccb961afa4 in .ocor/worktrees/rem-0046 (locked PATH ~/.ocor-codex/rem-0046/locked-path; helpers in ~/.ocor-codex/rem-0046/: build_reverse_index.py + curated.json, build_record_draft.py, write_backlog.py, write_trace_plan.py, build_sealed_registry.py). Apply the chosen option (option 1: regression record class in validate_runtime_evidence.py with RED negative cases in test_runtime_evidence_validator.py), import the decided DR file byte-identical (allowlist entry already present), rebuild the reverse index if test files changed, then PRE-CAMPAIGN-GATE, preventive review, task suite, full suite on the real stack (cap 90 min; ocor-bootstrap is down), regression-only requalifications of 0005/0050/0082 (.requalified-rem0046), complete the unit record (commands, raw log, environment, campaign, requalifications, roles) and request the REMEDIATION verification (verifier neither Anthropic nor the preventive reviewer). Iterations used 2 of estimate 3 (stop at 6). Then NCP-U01 and the rest of plan_order. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
-  "head_sha": "29ccb961afa493f91af4d4921e340aff332b321b",
-  "head_sha_role": "REM-0046 work-in-progress head (GREEN complete, record draft)",
+  "exact_next_action": "Resume OCOR-DEV-REM-0046 (NCP-U13) after the preventive review OCOR-DEV-REM-0046-2dae278d970d-pre (outcome in ~/.ocor-codex/prereviews/OCOR-DEV-REM-0046-2dae278d970d-pre.json): on governed/ocor-dev-rem-0046-ncp-u13-plan-evidence-governance from 2dae278d970d in .ocor/worktrees/rem-0046 (locked PATH ~/.ocor-codex/rem-0046/locked-path; gate script ~/.ocor-codex/rem-0046/pregate.py; helpers in ~/.ocor-codex/rem-0046/). Dispose of every blocking finding (fix commit or reproducible rebuttal) and record advisory ones; merge origin/main non-destructively if it moved (state files only); rerun PRE-CAMPAIGN-GATE on the final head; bring the ocor-bootstrap stack up (it is down; check .ocor/spire CA validity), build the TypeScript SDK in the worktree, run the task suite (test_ocor_dev_rem_0046.py, test_runtime_evidence_validator.py, test_normative_conformance_register.py, test_backlog_generator_reality_parity.py; 3 runs) and the full suite (cap 90 min, power logged once a minute; campaign kit to adapt from ~/.ocor-codex/rem-0045 and rem-0044-q); write the regression-only requalifications OCOR-DEV-0005/0050/0082 .requalified-rem0046 in the regression class (requalification_kind regression, qualifies_requirements false, supersedes + previous_record of the .requalified-rem0045 record, no requirement_results and no manifest requirement row) with surgical MANIFEST artifact entries first; complete the unit record (commands, raw log, environment, campaign, requalifications, roles, preventive review reference) and request the REMEDIATION verification (verifier neither Anthropic nor the preventive reviewer). Iterations used 3 of estimate 3 (stop at 6). Then NCP-U01 and the rest of plan_order. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked. No new DEC; claims unchanged.",
+  "head_sha": "2dae278d970d81f19f36d32306ed31aa73744902",
+  "head_sha_role": "REM-0046 work-in-progress head (GREEN complete incl. regression class; preventive review head)",
   "independent_verification": {
     "note": "not yet requested",
     "status": "NOT_REQUESTED"
@@ -149,19 +135,11 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
-    "checksum": "PASS 8/8",
-    "drift": "FAIL expected (0005/0050/0082)",
-    "mypy_strict": "PASS",
-    "plan": "PASS",
-    "rccad": "PASS",
-    "ruff": "PASS",
-    "unit_tests": "19/19 RED cases GREEN"
+    "pre_campaign_gate": "PRE-CAMPAIGN-GATE 45/46 PASS at 2dae278d970d (only drift FAIL: OCOR-DEV-0005, 0050 and 0082 on scripts/validate_ocor_development_plan.py, expected; regression-class requalifications at candidate time); rem0046 unit 19 passed, register integrity 15 passed/879 subtests, reverse traceability PASS, runtime evidence 0005/0050/0082 PASS, scope PASS 16 paths, supply-chain scanner PASS (0 blocking), validation-closure guards PASS; artefacts in ~/.ocor-codex/rem-0046/gates-2dae278d970d"
   },
-  "next_task": "PO decision REM-0046-REGRESSION-REQUALIFICATION-RECORDS, then OCOR-DEV-REM-0046 iteration 3 (campaign and verification request)",
-  "phase": "REM_0046_NCP_U13_AWAITING_PO_DECISION",
-  "po_decisions_pending": [
-    "REM-0046-REGRESSION-REQUALIFICATION-RECORDS"
-  ],
+  "next_task": "preventive review OCOR-DEV-REM-0046-2dae278d970d-pre, then OCOR-DEV-REM-0046 campaign, requalifications and verification request",
+  "phase": "REM_0046_NCP_U13_AWAITING_PREVENTIVE_REVIEW",
+  "po_decisions_pending": [],
   "raw_evidence_location": "~/.ocor-codex/rem-0046 (RED log and fingerprint, helper scripts), outside Git",
   "requirement_ids": [
     "FR-006",
@@ -181,7 +159,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0046 iterations 1-2, decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS and this state sync"
+        "scope": "OCOR-DEV-REM-0046 iterations 1-3, decision request REM-0046-REGRESSION-REQUALIFICATION-RECORDS and its disposition, and this state sync"
       }
     ]
   },
@@ -193,11 +171,11 @@
     "The ocor-bootstrap stack is down (no containers); needed at the full suite."
   ],
   "test_results": {
-    "green_part_2": "GREEN part 2 7b4b6a5: reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json (non-normative; 138 test files, every one with at least one Register v1.1 requirement and a basis per link: named_in_test 37, task_binding 352, remediation_record 40, subject_task 175 with rationale for the 48 files without another basis, legacy tests traced to OCOR-DEV-0031 and never to BA/EV identifiers) and scripts/validate_test_reverse_traceability.py (ORPHAN_DESIGN, UNKNOWN_REQUIREMENT, BASIS_MISMATCH, MISSING_FILE, --index); validate_runtime_evidence.py takes from the index only named_in_test links as declarations; new negative case test_rejects_requirement_only_traced_by_the_reverse_index, RED on the GREEN part 1 validator (1 failed) and GREEN after. Allowlist and OCOR_PLAN_RUN_STATE hashes at 29c6349: plan validator PASS 37/0/2 with --base-ref origin/main. Unit record draft and register entries of NCP-U13 OPEN -> IN_REMEDIATION with remediation_unit, remediation_record and resolution_proof at 29ccb96. 19/19 RED cases GREEN; task tests 66 passed, 889 subtests; integrity test PASS; ruff, mypy strict, validate_rccad, language policy, change scope (15 paths), plan validator PASS; drift: exactly 0005, 0050, 0082 on scripts/validate_ocor_development_plan.py (expected, requalifications pending the decision request)"
+    "regression_class": "Regression requalification class (decision REM-0046-REGRESSION-REQUALIFICATION-RECORDS option 1): RED 9ad15e1 (11 failed incl. subtests, fingerprint 2017c5495538: sorted FAILED/SUBFAILED ids + summary line), GREEN 1acfca3: scripts/validate_runtime_evidence.py is_regression_record/check_regression_record - requalification_kind regression requires qualifies_requirements false, no requirement_results and no manifest requirement row for the record, supersedes = previous_record.record_id with record_path/record_sha256 resolving to a record of the same task; non-requirement checks unchanged; requirement_evidence lists it among rejected_records, never qualifying; sealed records still recognised first. test_runtime_evidence_validator.py 36 passed, 15 subtests (9 new cases, 1 positive). Decided DR file imported byte-identical at 9ad15e1 (sha256 d3174033d88acf42...), unit record updated at 2dae278; reverse index unchanged (rebuilt, identical)"
   },
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-10-30T17:35:56.154424+00:00",
+  "updated_at": "2026-10-30T18:41:35.291181+00:00",
   "worktree": ".ocor/worktrees/rem-0045 (integrated branch); next unit: new worktree from origin/main"
 }
