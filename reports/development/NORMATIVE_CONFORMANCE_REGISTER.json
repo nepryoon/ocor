@@ -4518,6 +4518,338 @@
         "command": "git show 81a8b76:ocor-runtime/tests/tasks/test_ocor_dev_rem_0043.py > /tmp/rem0043red/test_ocor_dev_rem_0043.py && cd /tmp/rem0043red && PYTHONPATH=<repo>/ocor-runtime/src <repo>/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q test_ocor_dev_rem_0043.py (RED test file sha256 791a22289f69cf71819599f390ff66e3431be5c3417b71f342d553ba5a1998cd, run outside the repository against the runtime of main f5433029b97b)",
         "outcome": "7 failed, 4 passed: the seven revocation cases fail with 'DID NOT RAISE ToolRuntimeError' (e.g. test_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool). CONFIRMED on the current main head (runtime identical to main f5433029b97b); the defect is not refuted."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1070-1131",
+          "note": "_eligible: live materialisation policy drops the hit",
+          "path": "ocor-runtime/src/ocor_runtime/memory/retrieval.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1137-1188",
+          "note": "_index_pool: page widening and RETRIEVAL_BACKPRESSURE",
+          "path": "ocor-runtime/src/ocor_runtime/memory/retrieval.py"
+        }
+      ],
+      "component": "MEMORY",
+      "depends_on": [],
+      "id": "NCR-MEMORY-001",
+      "norm_refs": [
+        {
+          "lines": "268",
+          "note": "FR-119: unauthorised elements must not influence content, existence, count, rank, score, cache or error",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "214",
+          "note": "LLD v1.1 \u00a72.8.3: unauthorised items do not influence ANN graph, score normalisation, rank, count, pagination, diversity, cache, explanation, error or timing bucket",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "397",
+          "note": "LLD v1.1 \u00a77.2 FGM-16: zero leakage of content/existence/rank/count/cache/timing",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U11",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-119"
+      ],
+      "seed_ref": "M-1",
+      "severity": "HIGH",
+      "severity_basis": "FR-119 is P0 PoC",
+      "statement": "Index-backed retrieval (FULL_TEXT, VECTOR, HYBRID) drops policy-denied hits only after the index query: the denied hits still fill the page, so _index_pool widens the page (more index lookups) and, past the max_candidates bound, fails with REPRESENTATION_NOT_READY/RETRIEVAL_BACKPRESSURE. Unauthorised items inside an authorised partition therefore change the work done and the error returned. A sealed test pins the divergent outcome (130 denied items produce RETRIEVAL_BACKPRESSURE and 15 lookups).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "23-25",
+          "note": "F2 declared out of scope and tracked towards FGM-16",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "547-570",
+          "note": "test_f2_policy_denied_items_cost_no_more_index_work_than_before asserts RETRIEVAL_BACKPRESSURE for 130 denied items",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe MEMORY-PROBE-01>",
+        "outcome": "probe prints 'M-1 policy-denied hit dropped after the index query (returns None when not permitted): True | page widened while eligible < pool: True | RETRIEVAL_BACKPRESSURE raised in the same loop: True'; the sealed test at test_ocor_dev_rem_0020.py:547-570 pins 1/6/15 lookups and RETRIEVAL_BACKPRESSURE for 0/40/130 denied items (real backends; not rerun here, the stack is down outside closure). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1203-1261",
+          "note": "MemoryAdmissionService.admit: no quota",
+          "path": "ocor-runtime/src/ocor_runtime/memory/model.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "495-520",
+          "note": "MemoryQuotaWriter: quota only here",
+          "path": "ocor-runtime/src/ocor_runtime/memory/operations.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1521-1564",
+          "note": "_admit_and_commit: admission.admit then coordinator.commit",
+          "path": "ocor-runtime/src/ocor_runtime/memory/consolidation.py"
+        }
+      ],
+      "component": "MEMORY",
+      "depends_on": [],
+      "id": "NCR-MEMORY-002",
+      "norm_refs": [
+        {
+          "lines": "206",
+          "note": "LLD v1.1 \u00a72.8.2: admitMemory verifies scope/retention/quota/policy and writes atomically",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "400",
+          "note": "LLD v1.1 \u00a77.2 FGM-19: quota/retention pressure",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U11",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": "M-2",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of LLD v1.1 \u00a72.8.2; no P0 PoC requirement names memory quota",
+      "statement": "admitMemory does not check quota: MemoryAdmissionService.admit contains no quota check, which exists only in the separate MemoryQuotaWriter port; the consolidation service admits derived items through MemoryAdmissionService.admit and commits them through the store coordinator directly, bypassing the quota-bearing writer, so consolidation output is never counted against quota at admission.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe MEMORY-PROBE-01>",
+        "outcome": "probe prints 'M-2 quota in MemoryAdmissionService: False | consolidation admits through MemoryAdmissionService.admit: True | commits through the coordinator: True | MemoryQuotaWriter used by consolidation: False'. CONFIRMED (seed NOT_RECHECKED, now rechecked)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0062"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "151-153",
+          "note": "SUPPORTED_DELETION_SCOPES = {ALL_VERSIONS}",
+          "path": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1507-1512",
+          "note": "refusal",
+          "path": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py"
+        }
+      ],
+      "component": "MEMORY",
+      "depends_on": [],
+      "id": "NCR-MEMORY-003",
+      "norm_refs": [
+        {
+          "lines": "273",
+          "note": "Governed Memory API 1.0.0 MemoryDeletionRequest.deletion_scope enum",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-governed-memory.openapi.yaml"
+        },
+        {
+          "lines": "26",
+          "note": "LLD v1.1 \u00a70.2: Governed Memory API is a materialised contract",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "421",
+          "note": "LLD v1.1: undeclared combinations are UNSUPPORTED_CAPABILITY",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "3836",
+          "note": "ADD v1.3 Part II \u00a72.10: deletion saga by authorised request",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "267",
+          "note": "FR-118: the PoC supports forgetting and the deletion saga",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U11",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-118"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH by the point 4.b rule (contract of LLD v1.1 \u00a70.2)",
+      "seed_ref": "M-3",
+      "severity": "HIGH",
+      "severity_basis": "violates the Governed Memory API contract of LLD v1.1 \u00a70.2; FR-118 is P0 PoC",
+      "statement": "requestMemoryDeletion accepts the four deletion_scope values of the Governed Memory API (LATEST_VERSION, ALL_VERSIONS, PROJECT_SCOPE, PRINCIPAL_SCOPE) but executes only ALL_VERSIONS: the other three are refused with UNSUPPORTED_CAPABILITY/DELETION_SCOPE_UNSUPPORTED, although the contract declares them and UNSUPPORTED_CAPABILITY is reserved for undeclared capability combinations. A sealed test pins the refusal.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "481-483",
+          "note": "asserts DELETION_SCOPE_UNSUPPORTED for the three scopes",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0055.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe MEMORY-PROBE-01>",
+        "outcome": "probe prints \"M-3 contract deletion scopes: ['ALL_VERSIONS', 'LATEST_VERSION', 'PRINCIPAL_SCOPE', 'PROJECT_SCOPE'] | supported: ['ALL_VERSIONS']\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0061",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1612-1633",
+          "note": "read_version: partition check only",
+          "path": "ocor-runtime/src/ocor_runtime/memory/stores.py"
+        }
+      ],
+      "component": "MEMORY",
+      "depends_on": [],
+      "id": "NCR-MEMORY-004",
+      "norm_refs": [
+        {
+          "lines": "21-29",
+          "note": "Governed Memory API 1.0.0 getMemoryItemVersion",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-governed-memory.openapi.yaml"
+        },
+        {
+          "lines": "26",
+          "note": "LLD v1.1 \u00a70.2: Governed Memory API is a materialised contract",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "3761",
+          "note": "ADD v1.3 Part II \u00a72.2: GovernedMemoryService includes MemoryReadPort",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3789",
+          "note": "ADD v1.3 Part II \u00a72.5: the GCS digest is recalculated at retrieval",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "268",
+          "note": "FR-119: every retrieval is policy-filtered",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U11",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-119"
+      ],
+      "seed_correction": "severity raised from MEDIUM to HIGH by the point 4.b rule (contract of LLD v1.1 \u00a70.2)",
+      "seed_ref": "M-4",
+      "severity": "HIGH",
+      "severity_basis": "violates the Governed Memory API contract of LLD v1.1 \u00a70.2; FR-119 is P0 PoC",
+      "statement": "The contract operation getMemoryItemVersion has no service implementation: no governed operation binds a GovernedContext, evaluates policy, marking and lifecycle and audits the read; only the internal store read MemoryStoreCoordinator.read_version(partition, memory_item_id, memory_version) exists, which checks the partition digest and nothing about the caller.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe MEMORY-PROBE-01>",
+        "outcome": "probe prints \"M-4 getMemoryItemVersion service operation in ocor-runtime/src: False | read_version parameters: ['self', 'partition', 'memory_item_id', 'memory_version']\". CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0066"
+      ],
+      "code_refs": [
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1259-1263",
+          "note": "replayed COMMITTED commit returns the receipt",
+          "path": "ocor-runtime/src/ocor_runtime/memory/stores.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1503-1545",
+          "note": "_write_projection: the only lexical index writer",
+          "path": "ocor-runtime/src/ocor_runtime/memory/stores.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1623-1625",
+          "note": "read_version: PROJECTION_DRIFT",
+          "path": "ocor-runtime/src/ocor_runtime/memory/stores.py"
+        },
+        {
+          "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+          "lines": "1085",
+          "note": "representation rebuild reads through read_version",
+          "path": "ocor-runtime/src/ocor_runtime/memory/embeddings.py"
+        }
+      ],
+      "component": "MEMORY",
+      "depends_on": [],
+      "id": "NCR-MEMORY-005",
+      "norm_refs": [
+        {
+          "lines": "3763",
+          "note": "ADD v1.3 Part II \u00a72.2: full-text and vector stores are rebuildable projections",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3797-3799",
+          "note": "ADD v1.3 Part II storage table: rebuildable projections; the event journal is the replay source",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "202",
+          "note": "LLD v1.1 \u00a72.8.1: lexical and vector indexes are rebuildable projections",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "plan_unit": "NCP-U11",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_correction": "the parallel vector representation rebuild of embeddings.py exists; the divergence is the rebuild of lost or drifted committed projections",
+      "seed_ref": "M-5",
+      "severity": "MEDIUM",
+      "severity_basis": "closed element of ADD v1.3 Part II \u00a72.2; no P0 PoC requirement or contract names projection rebuild",
+      "statement": "Committed full-text and vector projections cannot be rebuilt from metadata and content: the lexical index is written only inside the commit path (_commit/_write_projection); a replayed commit of a COMMITTED version returns without re-projecting; read_version fails with PROJECTION_DRIFT on an unbound projection, and the embedding rebuild (a parallel representation version for model upgrades) reads through read_version, so it too needs the original projections intact. Corrected scope: a parallel vector rebuild exists; a rebuild after a lost or drifted projection does not.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "MISSING",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < <probe MEMORY-PROBE-01>",
+        "outcome": "probe prints \"M-5 replayed COMMITTED commit re-projects: False | read_version fails on an unbound projection: True | coordinator methods writing the lexical index: ['_commit', '_write_projection']\". CONFIRMED with corrected scope (seed NOT_RECHECKED, now rechecked)."
+      }
     }
   ],
   "g6_g7_proposals": {},
@@ -4593,6 +4925,10 @@
     "NCP-U10": {
       "scope": "C8 Governed Agent Kernel: AgentRun/Task/Assignment/Commitment/Handoff/Dissent/DecisionProposal/ToolInvocation records in C8 state (not canonical aggregates), kernel-attested HandoffEnvelope with sender bound to the transport Principal, roles and task lifecycle with cycle/depth/timeout/termination, dissent severity and blocking, contract-bound tool registry (mcp-tool-contract:1.2) with schema, taint and egress checks and the contract error codes, live policy/autonomy-tier/instruction-eligibility/capability/delegation re-evaluation at every dispatch (with the OCOR-DEV-REM-0043 correction), multidimensional budget, a current kernel with no fail-open default",
       "status": "DRAFT"
+    },
+    "NCP-U11": {
+      "scope": "Governed memory: retrieval whose work and errors are independent of policy-denied items (pre-query policy partition, FGM-16), quota at admitMemory and on consolidation, the four contract deletion scopes, a governed getMemoryItemVersion operation, rebuild of committed full-text and vector projections from metadata, content and the event journal",
+      "status": "DRAFT"
     }
   },
   "programme_decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29)",
@@ -4606,10 +4942,10 @@
       "C5",
       "C6",
       "C7",
-      "C8"
+      "C8",
+      "MEMORY"
     ],
     "components_pending": [
-      "MEMORY",
       "LEGACY",
       "TESTS",
       "PLAN",
@@ -4794,6 +5130,21 @@
     },
     "C8-6": {
       "entry_id": "NCR-C8-006"
+    },
+    "M-1": {
+      "entry_id": "NCR-MEMORY-001"
+    },
+    "M-2": {
+      "entry_id": "NCR-MEMORY-002"
+    },
+    "M-3": {
+      "entry_id": "NCR-MEMORY-003"
+    },
+    "M-4": {
+      "entry_id": "NCR-MEMORY-004"
+    },
+    "M-5": {
+      "entry_id": "NCR-MEMORY-005"
     }
   },
   "severity_rule": {
@@ -4844,6 +5195,11 @@
       "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; in-process calls on the real classes, no backend needed",
       "sha256": "161f9c86667e0485b56a51f5964aa07cb6d92041741e31b908b4ceaa11b9deab",
       "text": "import dataclasses, inspect, re\nfrom datetime import UTC, datetime, timedelta\nfrom ocor_runtime.c3_store import AtomicOutboxStore\nfrom ocor_runtime.c6_capabilities import CapabilityAuthority\nfrom ocor_runtime.c8 import orchestrator as o\nfrom ocor_runtime.c8 import tool_runtime as t\nfrom ocor_runtime import c8_agent as k\nNOW = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)\nauth = CapabilityAuthority(issuer=\"probe-authority\")\nstore = AtomicOutboxStore(authoritative_writer=\"ocor-c8-orchestrator\")\norc = o.AgentRunOrchestrator(authority=auth, store=store)\ndef grant(subject, cap, res):\n    return auth.issue(subject=subject, capabilities=[cap], resources=[res], issued_at=NOW, ttl=timedelta(hours=1))\norc.assign(\"task-1\", \"agent-1\", capability=\"act:x\", lease=grant(\"lead-1\", \"agent:assign\", \"agent-1\"), assigned_by=\"lead-1\", at=NOW)\norc.commit(\"task-1\", lease=grant(\"agent-1\", \"agent:commit\", \"agent-1\"), at=NOW)\nosrc = inspect.getsource(o)\nrec = store.get(\"urn:ocor:agentrun:assignment:task-1\")\nprint(\"C8-1 assignment written to the canonical store as authoritative writer:\", rec is not None, \"| writes with writer_id=store.authoritative_writer:\", osrc.count(\"writer_id=self._store.authoritative_writer\"), \"| C6 engine referenced:\", \"c6.engine\" in osrc or \"GovernedActionEngine\" in osrc)\nh = orc.handoff(\"task-1\", to_agent_id=\"agent-2\", reason=\"overloaded\", lease=grant(\"agent-2\", \"agent:handoff\", \"agent-2\"), at=NOW)\nprint(\"C8-2 handoff of agent-1's commitment authorised by a lease held by the recipient agent-2:\", h.from_agent_id, \"->\", h.to_agent_id)\nprint(\"C8-2 Handoff fields:\", [f.name for f in dataclasses.fields(o.Handoff)], \"| HandoffEnvelope fields in ADD v1.3: 28\")\nprint(\"C8-3 records:\", sorted(n for n, v in vars(o).items() if dataclasses.is_dataclass(v)), \"| Dissent fields:\", [f.name for f in dataclasses.fields(o.Dissent)])\nprint(\"C8-3 lifecycle/cycle/depth/termination/role tokens in c8/orchestrator.py:\", {w: bool(re.search(w, osrc, re.I)) for w in (\"POLICY_AUTHORIZED\", \"cycle\", \"depth\", \"termination\", \"timeout\", \"role\", \"severity\")})\ntsrc = inspect.getsource(t)\nprint(\"C8-4 StrictSandbox.register_tool signature:\", str(inspect.signature(k.StrictSandbox.register_tool)), \"| Tool Contract in c8:\", bool(re.search(\"contract\", tsrc + osrc, re.I) and re.search(\"ToolContract|tool_contract|mcp-tool-contract\", tsrc + osrc)))\ncodes = sorted(set(re.findall(r'ToolRuntimeError\\(\\s*\"([A-Z_]+)\"', tsrc)) | set(re.findall(r'unknown\\(\\s*\"([A-Z_]+)\"', tsrc)))\nadd_enum = [\"POLICY_DENIED\", \"AUTHORITY_MISSING\", \"CAPABILITY_DENIED\", \"APPROVAL_REQUIRED\", \"APPROVAL_EXPIRED\", \"CAPABILITY_REVOKED\", \"BUDGET_EXCEEDED\", \"SCHEMA_VIOLATION\", \"STALE_CONTEXT\", \"EMERGENCY_STOP_ACTIVE\", \"EXECUTION_UNKNOWN\", \"COMPENSATION_REQUIRED\", \"COMPENSATION_UNKNOWN\"]\nprint(\"C8-4 tool runtime reason codes:\", codes, \"| outside the ADD v1.3 error_codes enum:\", [c for c in codes if c not in add_enum])\nprint(\"C8-5 invoke parameters:\", list(inspect.signature(t.ToolCallRuntime.invoke).parameters)[1:], \"| policy/autonomy/eligibility tokens in tool_runtime:\", {w: bool(re.search(w, tsrc, re.I)) for w in (\"policy\", \"autonomy\", \"eligib\", \"taint\", \"delegat\")})\nprint(\"C8-5 ToolCallReceipt fields:\", [f.name for f in dataclasses.fields(t.ToolCallReceipt)], \"| purpose check:\", \"if not context.purpose:\" in tsrc, \"| TokenBudget public methods:\", sorted(m for m in vars(k.TokenBudget) if not m.startswith(\"_\")))\nkern = k.AgentKernel()\nprint(\"C8-6 AgentKernel() capability_authority:\", kern.capability_authority, \"| execute_sandboxed without lease:\", kern.execute_sandboxed(\"1 + 1\"))\n"
+    },
+    "MEMORY-PROBE-01": {
+      "run": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python - < probe.py (text below), from the repository root; static source inspection, no backend needed",
+      "sha256": "fe3b3a3ae4c71875d435a9f0c6c7ae657b3e02c9fa0901b76ea3845cf6d8dc9e",
+      "text": "import inspect, re, subprocess\nfrom ocor_runtime.memory import consolidation as cons, lifecycle as lc, model as mdl, operations as ops, retrieval as rt, stores as st\npool = inspect.getsource(rt.MemorySearchService._index_pool)\nelig = inspect.getsource(rt.MemorySearchService._eligible)\nprint(\"M-1 policy-denied hit dropped after the index query (returns None when not permitted):\", \"if not decision.permitted:\\n            return None\" in elig,\n      \"| page widened while eligible < pool:\", \"limit = min(limit * 2\" in pool, \"| RETRIEVAL_BACKPRESSURE raised in the same loop:\", \"RETRIEVAL_BACKPRESSURE\" in pool)\nadmit = inspect.getsource(mdl.MemoryAdmissionService)\ncsrc = inspect.getsource(cons)\nprint(\"M-2 quota in MemoryAdmissionService:\", \"quota\" in admit.lower(), \"| consolidation admits through MemoryAdmissionService.admit:\", \"self._admission.admit(\" in csrc,\n      \"| commits through the coordinator:\", \"self._coordinator.commit(\" in csrc, \"| MemoryQuotaWriter used by consolidation:\", \"MemoryQuotaWriter\" in csrc or bool(re.search(r\"[^_]admit_and_commit\\(\", csrc)))\nprint(\"M-3 contract deletion scopes:\", sorted(lc.DELETION_SCOPES), \"| supported:\", sorted(lc.SUPPORTED_DELETION_SCOPES))\nsrc = subprocess.run([\"grep\", \"-rniE\", \"getMemoryItemVersion|get_memory_item_version\", \"ocor-runtime/src\"], capture_output=True, text=True).stdout\nprint(\"M-4 getMemoryItemVersion service operation in ocor-runtime/src:\", bool(src.strip()), \"| read_version parameters:\", list(inspect.signature(st.MemoryStoreCoordinator.read_version).parameters))\ncommit = inspect.getsource(st.MemoryStoreCoordinator._commit)\nreplay = commit.split(\"if stored.state is VersionState.COMMITTED:\")[1].split(\"return self._receipt(stored)\")[0]\nread = inspect.getsource(st.MemoryStoreCoordinator.read_version)\nlex_writers = sorted(m for m, f in vars(st.MemoryStoreCoordinator).items() if callable(f) and (\"self._lexical.upsert\" in inspect.getsource(f) or \"self._write_projection(\" in inspect.getsource(f)))\nprint(\"M-5 replayed COMMITTED commit re-projects:\", \"upsert\" in replay, \"| read_version fails on an unbound projection:\", \"PROJECTION_DRIFT\" in read, \"| coordinator methods writing the lexical index:\", lex_writers)\n"
     }
   },
   "verified_at_head": "a631e69827d1e1aea1a7b1fd0ec39b41a053770b",
@@ -4855,7 +5211,8 @@
     "C5": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
     "C6": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
     "C7": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
-    "C8": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f"
+    "C8": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
+    "MEMORY": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f"
   },
   "verified_at_heads_note": "ocor-runtime/ is identical at a631e69 and a325fc2 (git diff a631e69 a325fc2 touches only reports/development state files)"
 }
