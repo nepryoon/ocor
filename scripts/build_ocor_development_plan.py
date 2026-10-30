@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import re
 import subprocess
 from collections import Counter, defaultdict, deque
 from datetime import datetime, timezone
@@ -648,11 +649,169 @@ def build_tasks(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         by_num[47]["requirement_ids"].remove("FR-047")
     if "FR-047" not in by_num[10]["requirement_ids"]:
         by_num[10]["requirement_ids"].append("FR-047")
+    apply_normative_conformance_plan(by_num)
 
     _order, waves, _critical, _duration = topological(tasks)
     for task in tasks:
         task["parallel_wave"] = waves[task["id"]]
     return tasks
+
+
+REGISTER_V11 = "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+NORMATIVE_CONFORMANCE_REGISTER = "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json"
+SEALED_EVIDENCE_REGISTRY = "reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json"
+G6_G7_PROPOSAL_TASKS = (60, 62, 63, 64, 65, 66, 67)
+# NCR-PLAN-002 and NCR-PLAN-003 (NCP-U13): implementation allocation of the twelve
+# requirements allocated to the ledger or the decision package and of the three
+# misallocated ones. A planning allocation, not a claim that the task implements them.
+IMPLEMENTATION_ALLOCATION = {
+    "BR-001": 32, "BR-003": 31, "BR-018": 49, "FR-014": 4, "FR-017": 34, "FR-022": 32,
+    "FR-029": 9, "FR-150": 34, "FR-161": 45, "NFR-011": 4, "NFR-014": 34, "NFR-021": 5,
+    "FR-164": 33, "FR-045": 33, "NFR-088": 33,
+}
+MISALLOCATED = {"FR-164": 47, "FR-045": 45, "NFR-088": 45}
+EVIDENCE_PACKAGE_UNION = (
+    "baseline", "dataset_or_scenario", "evidence", "method", "metric", "owner", "raw_log",
+    "release_digest", "requirement_id", "result", "scenario_or_dataset", "signature", "threshold",
+)
+
+
+def requirement_register() -> dict[str, dict[str, Any]]:
+    """Requirement Register v1.1 rows parsed by header name (header = row before a separator)."""
+    lines = (ROOT / REGISTER_V11).read_text(encoding="utf-8").splitlines()
+    out: dict[str, dict[str, Any]] = {}
+    header: list[str] | None = None
+    for index, line in enumerate(lines):
+        if not line.startswith("|"):
+            header = None
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if index + 1 < len(lines) and re.fullmatch(r"\|[\s\-:|]+\|?", lines[index + 1].strip()):
+            header = cells
+            continue
+        rid = cells[0].strip("`")
+        if header is None or not re.fullmatch(r"(BR|FR|NFR)-[0-9]{3}", rid):
+            continue
+        row = dict(zip(header, cells))
+        values = {key: next(v for k, v in row.items() if k.startswith(key)) for key in ("Priorit", "Criteri", "Metodo", "Release")}
+        out[rid] = {"line": index + 1, "priority": values["Priorit"], "acceptance": values["Criteri"], "method": values["Metodo"], "release": values["Release"]}
+    if len(out) != 285:
+        raise ValueError(f"Requirement Register has {len(out)} requirements, expected 285")
+    return out
+
+
+def method_kind(method: str) -> str:
+    """NCP-S08: inspection, demonstration, benchmark or audit is not proven by an automated test case."""
+    lowered = method.lower()
+    has_test = bool(re.search(r"test|replay|fault|injection", lowered))
+    has_other = bool(re.search(r"ispezion|inspection|dimostraz|demonstrat|benchmark|audit|analisi|review|tabletop|drill|scan|game day", lowered))
+    if has_test and has_other:
+        return "MIXED"
+    return "AUTOMATED_TEST" if has_test else "NON_TEST_METHOD"
+
+
+def fgm_requirements(register: dict[str, dict[str, Any]]) -> dict[str, list[str]]:
+    """FGM cases the Register acceptance criteria of FR-118 and FR-119 assign (Register v1.1 :267-268)."""
+    out: dict[str, list[str]] = {f"FGM-{n:02d}": [] for n in range(1, 21)}
+    for rid in ("FR-118", "FR-119"):
+        text = register[rid]["acceptance"].replace("`", "")
+        named = set(re.findall(r"FGM-\d{2}", text))
+        for first, last in re.findall(r"FGM-(\d{2})\s*(?:\.\.|–|-|to)\s*(?:FGM-)?(\d{2})", text):
+            named.update(f"FGM-{n:02d}" for n in range(int(first), int(last) + 1))
+        for fgm in sorted(named):
+            out[fgm].append(rid)
+    return out
+
+
+def apply_normative_conformance_plan(by_num: dict[int, dict[str, Any]]) -> None:
+    """NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3, unit NCP-U13 (OCOR-DEV-REM-0046):
+    criteria, requirements and per-requirement cases of OCOR-DEV-0060 and 0062-0067 from
+    g6_g7_proposals of the approved plan, without the requirements whose Register release
+    does not include the PoC; FR-118/FR-119 bound to OCOR-DEV-0061; implementation
+    allocation of NCR-PLAN-002/003. Priority, release, method and criteria come from the
+    Register v1.1 only, never from the normative matrix (NCR-GOVERNANCE-002)."""
+    register = requirement_register()
+    proposals = json.loads((ROOT / NORMATIVE_CONFORMANCE_REGISTER).read_text(encoding="utf-8"))["g6_g7_proposals"]["tasks"]
+
+    def poc(rid: str) -> bool:
+        return "PoC" in register[rid]["release"]
+
+    for rid, number in IMPLEMENTATION_ALLOCATION.items():
+        if rid not in by_num[number]["requirement_ids"]:
+            by_num[number]["requirement_ids"].append(rid)
+    for rid, number in MISALLOCATED.items():
+        if rid in by_num[number]["requirement_ids"]:
+            by_num[number]["requirement_ids"].remove(rid)
+
+    def case(source: dict[str, Any]) -> dict[str, Any]:
+        out = dict(source)
+        if out["requirement_id"] in IMPLEMENTATION_ALLOCATION:
+            out["implementation_task"] = task_id(IMPLEMENTATION_ALLOCATION[out["requirement_id"]])
+        return out
+
+    for number in G6_G7_PROPOSAL_TASKS:
+        task, proposal = by_num[number], proposals[task_id(number)]
+        kept = [rid for rid in proposal["proposed_requirement_ids"] if poc(rid)]
+        split = proposal["method_split"]
+        other = len([rid for rid in split["non_test_method"] if rid in kept])
+        mixed = len([rid for rid in split["mixed_test_and_method"] if rid in kept])
+        criteria = []
+        for criterion in proposal["proposed_acceptance_criteria"]:
+            criterion = re.sub(r"is not an automated test \(\d+ here\)", f"is not an automated test ({other} here)", criterion)
+            criteria.append(re.sub(r"mixed method \(\d+ here\)", f"mixed method ({mixed} here)", criterion))
+        if number == 67:
+            criteria.append(
+                "The ledger keeps one row for each of the 285 requirements; for a requirement whose Register release does not "
+                "include the PoC the row declares «fuori dal profilo PoC», without qualifying evidence. Every case carries the "
+                "evidence-package fields " + ", ".join(EVIDENCE_PACKAGE_UNION) + " (NFR-004, Register v1.1 :26; LLD v1.1 §7.3 :411). "
+                f"The non-conforming sealed records listed in {SEALED_EVIDENCE_REGISTRY} are not evidence of any P0 requirement, "
+                "and the OCOR-DEV-0061 evidence counts only after its supersession requalification (NORMATIVE-CONFORMANCE-PLAN point 3)."
+            )
+        task["requirement_ids"] = kept
+        task["acceptance_criteria"] = criteria
+        cases = {c["requirement_id"]: c for c in proposal["requirement_cases"]}
+        for rid in kept:
+            # FR-119 joins OCOR-DEV-0062 through its FGM cases (FGM-16, FGM-17) and has no plan row there
+            cases.setdefault(rid, {
+                "acceptance_criterion": {"path": REGISTER_V11, "lines": str(register[rid]["line"])},
+                "expected_evidence": f"reports/evidence/G6/{rid}.json + raw-log hash",
+                "method_kind": method_kind(register[rid]["method"]),
+                "priority": register[rid]["priority"],
+                "register_method": register[rid]["method"],
+                "release": register[rid]["release"],
+                "requirement_id": rid,
+            })
+        task["requirement_cases"] = [case(cases[rid]) for rid in kept]
+        if "ba_cases" in proposal:
+            task["ba_cases"] = [
+                {**ba, "requirement_ids": [r for r in ba["requirement_ids"] if poc(r)],
+                 "requirement_cases": [case(c) for c in ba["requirement_cases"] if poc(c["requirement_id"])]}
+                for ba in proposal["ba_cases"]
+            ]
+        if "fgm_cases" in proposal:
+            task["fgm_cases"] = [dict(c) for c in proposal["fgm_cases"]]
+
+    fgm = fgm_requirements(register)
+    lld = (ROOT / "docs/OCOR_LLD_v1.1.md").read_text(encoding="utf-8").splitlines()
+    task = by_num[61]
+    for rid in ("FR-118", "FR-119"):
+        if rid not in task["requirement_ids"]:
+            task["requirement_ids"].append(rid)
+    task["fgm_cases"] = [
+        {"fgm": f"FGM-{n:02d}", "norm_ref": {"path": "docs/OCOR_LLD_v1.1.md", "lines": str(381 + n)}, "requirement_ids": fgm[f"FGM-{n:02d}"]}
+        for n in range(1, 11)
+    ]
+    for item in task["fgm_cases"]:
+        if item["fgm"] not in lld[int(item["norm_ref"]["lines"]) - 1]:
+            raise ValueError(f"LLD v1.1 FGM row not found for {item['fgm']}")
+    named = {rid: ", ".join(c["fgm"] for c in task["fgm_cases"] if rid in c["requirement_ids"]) for rid in ("FR-118", "FR-119")}
+    criterion = (
+        f"FGM cases are bound to the requirements the Register v1.1 assigns them (:267-268): FR-118 to {named['FR-118']}, "
+        f"FR-119 to {named['FR-119']}; the evidence of OCOR-DEV-0061 counts for OCOR-DEV-0067 only after its supersession "
+        "requalification (NORMATIVE-CONFORMANCE-PLAN point 3)."
+    )
+    if criterion not in task["acceptance_criteria"]:
+        task["acceptance_criteria"].append(criterion)
 
 
 def strategy_decision() -> dict[str, Any]:

@@ -159,6 +159,7 @@ def approved_proposals() -> dict[str, dict[str, Any]]:
 
 def expand_fgm(text: str) -> set[str]:
     """FGM identifiers named by a Register acceptance cell, ranges (FGM-01..FGM-04, FGM-01–04) expanded."""
+    text = text.replace("`", "")
     found: set[str] = set()
     for first, last in re.findall(r"FGM-(\d{2})\s*(?:\.\.|–|-|to)\s*(?:FGM-)?(\d{2})", text):
         found.update(f"FGM-{n:02d}" for n in range(int(first), int(last) + 1))

@@ -5,12 +5,19 @@ Hermetic: builds a temporary manifest + evidence record + raw log and asserts th
 validator's fail-closed behaviour on the numeric outcome fields (exit_code and the
 failed/skipped/not_executed counters), so that a bare `status: PASS` label is never
 accepted on its own.
+
+OCOR-DEV-REM-0046 (NCP-U13, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3): the
+fixture record is a new record, so it carries a requirement case with the
+evidence-package fields of LLD v1.1 §7.3 (docs/OCOR_LLD_v1.1.md:411) and NFR-004
+(Requirement Register v1.1 :26), bound to a requirement its test declares; the
+negative cases of the new rules follow the original ones.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -50,7 +57,44 @@ def _full_command(
     }
 
 
-def _write_fixture(base: Path, commands: list[dict[str, Any]]) -> None:
+_TEST_FILE = "tests/test_ocor_dev_9999.py"
+_TEST_SOURCE = '''"""Fixture test module."""
+
+
+def test_fixture_case():
+    """Qualifies FR-062."""
+    assert True
+'''
+
+
+def _case(**overrides: Any) -> dict[str, Any]:
+    case: dict[str, Any] = {
+        "requirement_id": "FR-062",
+        "method": "test",
+        "metric": "failed, skipped and not executed test cases",
+        "threshold": "0 failed, 0 skipped, 0 not executed",
+        "baseline": "fixture baseline",
+        "dataset_or_scenario": "fixture scenario",
+        "release_digest": "sha256:" + "0" * 64,
+        "result": {"failed": 0, "not_executed": 0, "passed": 1, "skipped": 0},
+        "raw_log": {"path": f"{_TASK}.log", "sha256": _sha256(_RAW)},
+        "owner": "fixture owner",
+        "signature": {"scheme": "fixture", "signer": "fixture signer", "value": "fixture"},
+        "status": "PASS",
+        "tests": [f"{_TEST_FILE}::test_fixture_case"],
+    }
+    case.update(overrides)
+    return case
+
+
+def _write_fixture(
+    base: Path,
+    commands: list[dict[str, Any]],
+    cases: list[dict[str, Any]] | None = None,
+    gate: str = "G9",
+) -> None:
+    (base / "tests").mkdir(exist_ok=True)
+    (base / _TEST_FILE).write_text(_TEST_SOURCE, encoding="utf-8")
     record = {
         "task_id": _TASK,
         "result": "PASS",
@@ -59,6 +103,7 @@ def _write_fixture(base: Path, commands: list[dict[str, Any]]) -> None:
         "commit": "0" * 40,
         "environment": {"host": "test"},
         "created_at": "2026-10-02T00:00:00Z",
+        "requirement_results": [_case()] if cases is None else cases,
     }
     record_bytes = json.dumps(record, indent=2, sort_keys=True).encode("utf-8")
     (base / f"{_TASK}.json").write_bytes(record_bytes)
@@ -68,7 +113,7 @@ def _write_fixture(base: Path, commands: list[dict[str, Any]]) -> None:
             {"path": f"{_TASK}.json", "sha256": _sha256(record_bytes), "task_id": _TASK},
             {"path": f"{_TASK}.log", "sha256": _sha256(_RAW), "task_id": f"{_TASK}-RAW"},
         ],
-        "gate": "G9",
+        "gate": gate,
         "schema_version": "1.0",
     }
     (base / "MANIFEST.json").write_text(
@@ -91,6 +136,7 @@ def _run_validator(base: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         capture_output=True,
         check=False,
+        env={**os.environ, "OCOR_EVIDENCE_ROOT": str(base)},
     )
 
 
@@ -240,6 +286,89 @@ class RuntimeEvidenceValidatorTests(unittest.TestCase):
             }
             _write_fixture(base, [command])
             _assert_pass(self, base)
+
+    # OCOR-DEV-REM-0046: negative cases of the evidence-package rules for new records.
+    def test_rejects_new_record_without_requirement_results(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[])
+            _assert_fail(self, base, expected="new evidence record has no requirement_results")
+
+    def test_rejects_case_without_evidence_package_field(self) -> None:
+        for field in ("method", "metric", "threshold", "baseline", "dataset_or_scenario", "release_digest", "owner", "signature", "raw_log", "result"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                case = _case()
+                del case[field]
+                _write_fixture(base, [_full_command()], cases=[case])
+                _assert_fail(self, base, expected=f"lacks evidence-package field {field}")
+
+    def test_rejects_requirement_outside_the_register(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(requirement_id="FR-999")])
+            _assert_fail(self, base, expected="FR-999 is not in the Requirement Register v1.1")
+
+    def test_rejects_method_other_than_the_register_method(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(method="ispezione")])
+            _assert_fail(self, base, expected="is not the Register method")
+
+    def test_rejects_incomplete_signature(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(signature={"scheme": "fixture", "signer": "fixture"})])
+            _assert_fail(self, base, expected="signature lacks one of scheme, signer, value")
+
+    def test_rejects_raw_log_digest_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(raw_log={"path": f"{_TASK}.log", "sha256": "0" * 64})])
+            _assert_fail(self, base, expected="raw_log digest mismatch")
+
+    def test_rejects_failed_case_result(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(result={"failed": 1, "passed": 0, "skipped": 0})])
+            _assert_fail(self, base, expected="result.failed is not a valid zero: 1")
+
+    def test_rejects_requirement_not_declared_by_the_test(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(requirement_id="FR-064", method="fault-injection test")])
+            _assert_fail(self, base, expected="FR-064 is not declared by the test")
+
+    def test_rejects_unresolvable_test_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_fixture(base, [_full_command()], cases=[_case(tests=[f"{_TEST_FILE}::test_missing"])])
+            _assert_fail(self, base, expected="test function does not exist")
+
+    def test_rejects_non_test_method_without_method_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "tests").mkdir()
+            case = _case(requirement_id="BR-002", method="dimostrazione", tests=[])
+            _write_fixture(base, [_full_command()], cases=[case])
+            _assert_fail(self, base, expected="needs the evidence of its Register method")
+
+    def test_rejects_g6_case_outside_the_poc_profile(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            case = _case(requirement_id="NFR-001", method="test")
+            _write_fixture(base, [_full_command()], cases=[case], gate="G6")
+            _assert_fail(self, base, expected="NFR-001 is fuori dal profilo PoC")
+
+    def test_rejects_g6_case_binding_a_legacy_test_to_an_lld_identifier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            legacy = "ocor-runtime/tests/backend_assumptions/test_ba01_atomic_outbox.py"
+            (base / legacy).parent.mkdir(parents=True)
+            (base / legacy).write_text(_TEST_SOURCE, encoding="utf-8")
+            case = _case(tests=[f"{legacy}::test_fixture_case"], ba_id="BA-01")
+            _write_fixture(base, [_full_command()], cases=[case], gate="G6")
+            _assert_fail(self, base, expected="binds the legacy test")
 
 
 if __name__ == "__main__":
