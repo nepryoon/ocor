@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import csv
 import hashlib
 import json
 import os
@@ -68,6 +69,89 @@ def git_changed(root: Path, base_ref: str | None) -> list[str]:
             raise RuntimeError(result.stderr.decode("utf-8", "replace").strip() or "git diff failed")
         changed.update(os.fsdecode(name) for name in result.stdout.split(b"\0") if name)
     return sorted(changed)
+
+
+LEGACY_SLICE_MODULES = {
+    "c1_compiler.py", "c2_identity.py", "c3_store.py", "c4_marking.py", "c5_actions.py",
+    "c6_capabilities.py", "c7_emission.py", "c8_agent.py", "__init__.py", "canonical.py", "errors.py",
+}
+# AFF-009 (authorization defaults fail closed) on the current components: a parameter or
+# field whose name grants authorization never defaults to a permissive value, and an
+# exception handler never returns a permissive decision (NCR-GOVERNANCE-001, NCP-U13).
+AUTHORIZATION_NAME = re.compile(
+    r"(?:^|_)(?:allow|allowed|permit|permitted|authori[sz]ed|approved|granted|fail_open|bypass|skip_(?:auth\w*|policy|check|gate))(?:$|_)",
+    re.IGNORECASE,
+)
+PERMISSIVE_VALUES = {"ALLOW", "ALLOWED", "PERMIT", "PERMITTED", "GRANTED", "NOT_REQUIRED", "APPROVED"}
+
+
+def _permissive(node: ast.AST | None, *, bare_true: bool) -> bool:
+    if isinstance(node, ast.Constant):
+        return (bare_true and node.value is True) or (isinstance(node.value, str) and node.value.upper() in PERMISSIVE_VALUES)
+    if isinstance(node, ast.Attribute):
+        return node.attr.upper() in PERMISSIVE_VALUES
+    if isinstance(node, ast.Call):
+        name = ast.unparse(node.func)
+        return any(token in name for token in ("Permissive", "AllowAll", "PermitAll"))
+    return False
+
+
+def aff009_current_component_findings(package_root: Path) -> list[tuple[str, str]]:
+    """(relative path, detail) of permissive authorization defaults in current components."""
+    findings: list[tuple[str, str]] = []
+    for path in sorted(package_root.rglob("*.py")):
+        relative = path.relative_to(package_root).as_posix()
+        if relative in LEGACY_SLICE_MODULES or relative.startswith("fallback/"):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                arguments = node.args
+                positional = arguments.posonlyargs + arguments.args
+                defaults = [None] * (len(positional) - len(arguments.defaults)) + list(arguments.defaults)
+                pairs = list(zip(positional, defaults)) + list(zip(arguments.kwonlyargs, arguments.kw_defaults))
+                for argument, default in pairs:
+                    if default is not None and AUTHORIZATION_NAME.search(argument.arg) and _permissive(default, bare_true=True):
+                        findings.append((relative, f"permissive authorization default {node.name}({argument.arg}={ast.unparse(default)})"))
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                if AUTHORIZATION_NAME.search(node.target.id) and _permissive(node.value, bare_true=True):
+                    findings.append((relative, f"permissive authorization default field {node.target.id}"))
+            elif isinstance(node, ast.ExceptHandler):
+                for inner in ast.walk(ast.Module(body=node.body, type_ignores=[])):
+                    if isinstance(inner, ast.Return) and inner.value is not None and _permissive(inner.value, bare_true=False):
+                        findings.append((relative, f"fail-open exception fallback returns {ast.unparse(inner.value)} (line {inner.lineno})"))
+    return findings
+
+
+G6_G7_VERIFICATION_TASKS = {f"OCOR-DEV-{n:04d}" for n in range(60, 68)}
+LEDGER_OR_PACKAGE = {"OCOR-DEV-0067", "OCOR-DEV-0068", "OCOR-DEV-0069"}
+
+
+def aff010_binding_findings(backlog: dict[str, Any], trace_rows: list[dict[str, str]]) -> list[tuple[str, str]]:
+    """(subject, detail) where a requirement does not map to its own implementation and
+    test plan: a G6/G7 campaign bound to BR-003 alone or without per-requirement cases,
+    a requirement implemented by the ledger or decision package, or an implementation
+    task that does not declare its requirement (NCR-GOVERNANCE-001, NCP-U13)."""
+    findings: list[tuple[str, str]] = []
+    tasks = {task.get("id"): task for task in backlog.get("tasks", [])}
+    for task_id in sorted(G6_G7_VERIFICATION_TASKS & set(tasks)):
+        task = tasks[task_id]
+        requirements = list(task.get("requirement_ids") or [])
+        if not requirements or set(requirements) == {"BR-003"}:
+            findings.append((task_id, "campaign is bound to BR-003 alone, not to the requirements it qualifies"))
+        if task_id != "OCOR-DEV-0061":
+            cases = [case.get("requirement_id") for case in task.get("requirement_cases") or []]
+            if cases != requirements:
+                findings.append((task_id, "requirement_cases do not list exactly the task requirement_ids"))
+    for row in trace_rows:
+        rid, implementation = row.get("requirement_id", ""), row.get("implementation_task", "")
+        if implementation in LEDGER_OR_PACKAGE or implementation in G6_G7_VERIFICATION_TASKS:
+            findings.append((rid, f"implementation task {implementation} is a campaign, the ledger or the decision package"))
+        elif rid not in (tasks.get(implementation) or {}).get("requirement_ids", []):
+            findings.append((rid, f"implementation task {implementation} does not declare the requirement"))
+        if row.get("verification_task") not in tasks:
+            findings.append((rid, f"verification task {row.get('verification_task')} is not in the backlog"))
+    return findings
 
 
 def validate(args: argparse.Namespace) -> dict[str, Any]:
@@ -320,6 +404,8 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
     ):
         if token not in (root / relative).read_text(encoding="utf-8"):
             fail("AFF-009", f"fail-closed control absent: {token}", relative)
+    for relative, detail in aff009_current_component_findings(package_root):
+        fail("AFF-009", detail, f"ocor-runtime/src/ocor_runtime/{relative}")
 
     backlog_path = root / "docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json"
     trace_path = root / "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json"
@@ -332,6 +418,13 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
         requirement_identifiers = [row.get("requirement_id") for row in trace.get("rows", [])]
         if len(requirement_identifiers) != 285 or len(set(requirement_identifiers)) != 285:
             fail("AFF-010", "authoritative requirement traceability is not a 285-row bijection", str(trace_path.relative_to(root)))
+        plan_path = root / "docs/development_plan/OCOR_TRACEABILITY_PLAN.csv"
+        with plan_path.open(encoding="utf-8", newline="") as handle:
+            plan_rows = list(csv.DictReader(handle))
+        if sorted(str(row.get("requirement_id")) for row in plan_rows) != sorted(str(rid) for rid in requirement_identifiers):
+            fail("AFF-010", "traceability plan rows are not the 285 requirements of the matrix", str(plan_path.relative_to(root)))
+        for subject, detail in aff010_binding_findings(backlog, plan_rows):
+            fail("AFF-010", detail, subject)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         fail("AFF-010", str(exc), str(backlog_path.relative_to(root)))
 
