@@ -917,6 +917,21 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0041-overlay.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0041-overlay.log",
+        # OCOR-DEV-REM-0044 (NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 4 and its
+        # SUPPLEMENT): the normative conformance register, its integrity test (point 4.c),
+        # the register unit record and the regression-only requalifications of 0005, 0050
+        # and 0082 forced by this allowlist (point 4.g).
+        "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
+        "reports/tests/test_normative_conformance_register.py",
+        "reports/assurance/OCOR-DEV-REM-0044-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0044-RCCAD/OCOR-DEV-REM-0044.json",
+        "reports/assurance/OCOR-DEV-REM-0044-RCCAD/OCOR-DEV-REM-0044.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0044.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0044.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0044.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0044.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0044.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0044.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
