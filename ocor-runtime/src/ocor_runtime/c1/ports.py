@@ -10,7 +10,7 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Protocol, runtime_checkable
 
-from ..kernel.canonical import canonical_bytes, canonical_digest
+from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
 
 DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
 COMMIT = re.compile(r"[0-9a-f]{40}")
@@ -282,6 +282,14 @@ class CanonicalIrRelease:
             ir_digest=canonical_digest(stable_core),
             artifacts=manifest,
             signature_envelope_ref=_required("signature_envelope_ref", signature_envelope_ref),
+        )
+
+    def with_artifacts(self, artifacts: Sequence[ArtifactManifestEntry]) -> CanonicalIrRelease:
+        """The same core and ir_digest with the generated artefact manifest attached."""
+        return CanonicalIrRelease.create(
+            core=parse_i_json(self.canonical_bytes),
+            artifacts=artifacts,
+            signature_envelope_ref=self.signature_envelope_ref,
         )
 
 

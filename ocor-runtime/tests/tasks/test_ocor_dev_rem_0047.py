@@ -335,8 +335,9 @@ def _openssl_verify(public_pem: Path, message: bytes, signature: bytes, workdir:
 def _envelope_schema() -> Mapping[str, Any]:
     """The signed-canonical-ir:1.0 schema exactly as embedded in ADD v1.3 :466-521."""
     lines = ADD.read_text(encoding="utf-8").splitlines()
-    start = next(i for i, line in enumerate(lines) if '"$id": "urn:ocor:schema:signed-canonical-ir:1.0"' in line) - 2
-    end = next(i for i in range(start + 1, len(lines)) if lines[i].startswith("~~~"))
+    anchor = next(i for i, line in enumerate(lines) if '"$id": "urn:ocor:schema:signed-canonical-ir:1.0"' in line)
+    start = max(i for i in range(anchor) if lines[i].startswith("~~~"))  # the opening ~~~json fence
+    end = next(i for i in range(anchor, len(lines)) if lines[i].startswith("~~~"))
     schema: Mapping[str, Any] = json.loads("\n".join(lines[start + 1 : end]))
     assert schema["$id"] == "urn:ocor:schema:signed-canonical-ir:1.0"
     return schema
@@ -957,3 +958,68 @@ def _flat_release() -> Any:
                               compiler_version="1.0.0", mapping_version="1", release_profile="poc",
                               sources=(source,), dependency_lock=())
     return frontend.RetainedCanonicalIrBuilder().build(request)
+
+
+# --------------------------------------------------------------------------- #
+# Parsing paths of the conforming pipeline fail closed with a typed C1Error.
+# --------------------------------------------------------------------------- #
+
+
+def test_ncr_c1_parsing_paths_fail_closed() -> None:
+    """Every parser of the pipeline rejects malformed or tampered input with C1Error."""
+    oac = c1("oac")
+    ir = c1("ir")
+    parser = oac.YamlOacParser()
+
+    def unit(content: bytes, syntax: SourceSyntax = SourceSyntax.YAML) -> SourceUnit:
+        return SourceUnit.create(resource_id="urn:ocor:package:fleet", version="1.2.0", syntax=syntax,
+                                 content=content, source_path="package.yaml")
+
+    # OaC sources: duplicate keys, binary floats, non-mappings, syntax errors.
+    _rejected(lambda: parser.parse(unit(b"a: 1\na: 2\n")), DiagnosticCode.SOURCE_INVALID)
+    _rejected(lambda: parser.parse(unit(b"a: 1.5\n")), DiagnosticCode.TYPE_ERROR)
+    _rejected(lambda: parser.parse(unit(b"- a\n- b\n")), DiagnosticCode.TYPE_ERROR)
+    _rejected(lambda: parser.parse(unit(b"a: [1,\n")), DiagnosticCode.SOURCE_INVALID)
+    _rejected(lambda: parser.parse(unit(b'{"a": 1, "a": 2}', SourceSyntax.JSON)), DiagnosticCode.SOURCE_INVALID)
+    _rejected(lambda: parser.parse(unit(b"a: 2026-10-31T10:00:00\n")), DiagnosticCode.TYPE_ERROR)
+    for bad in ("1e3", "01.5", "1.", " 1.5"):
+        _rejected(lambda bad=bad: oac.canonical_decimal(bad, "d"), DiagnosticCode.TYPE_ERROR)
+    for bad in ("2026-10-31T10:00:00", "2026-13-31T10:00:00Z", "yesterday"):
+        _rejected(lambda bad=bad: oac.canonical_timestamp(bad, "t"), DiagnosticCode.TYPE_ERROR)
+    for bad in ("list<varchar>", "map<integer,string>", "geo:sphere", "quantity:", "ref:not-a-urn"):
+        _rejected(lambda bad=bad: oac.parse_value_type(bad, "v"), DiagnosticCode.TYPE_ERROR)
+
+    # IR Protobuf form: truncated, tampered and foreign encodings.
+    release = compiler().build(oac_request())
+    encoded = ir.encode_protobuf(release)
+    _rejected(lambda: ir.decode_protobuf(encoded[:-3]), DiagnosticCode.SOURCE_INVALID)
+    tampered = encoded.replace(b"urn:ocor:type:vessel", b"urn:ocor:type:vassel", 1)
+    _rejected(lambda: ir.decode_protobuf(tampered), DiagnosticCode.SIGNATURE_INVALID)
+    _rejected(lambda: ir.decode_protobuf(b"\x0f"), DiagnosticCode.SOURCE_INVALID)
+    _rejected(lambda: ir.parse_core(b'{"b":1, "a":2}'), DiagnosticCode.SOURCE_INVALID)
+    _rejected(lambda: ir.parse_core(b"not json"), DiagnosticCode.SOURCE_INVALID)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        workdir = Path(tmp)
+        signing = _Signing(workdir)
+        package = _package(signing, oac_request())
+        # Envelope: non-base64 payload and signature are signature failures.
+        for mutate in (lambda e: e.__setitem__("payload", "%%%"),
+                       lambda e: e["signatures"][0].__setitem__("sig", "%%%")):
+            env = copy.deepcopy(dict(package.signed.envelope))
+            mutate(env)
+            forged = signing.module.ReleasePackage.create(
+                signed=signing.module.SignedRelease(release=package.signed.release, envelope=env),
+                dependency_lock=package.dependency_lock, artifacts=package.artifacts)
+            _rejected(lambda forged=forged: signing.admission().verify(forged), DiagnosticCode.SIGNATURE_INVALID)
+        # Stored release records: unknown reference, malformed and non-canonical records.
+        publisher_module = c1("publisher")
+        store = publisher_module.FileSystemReleaseStore(workdir / "releases")
+        publisher = publisher_module.ImmutableReleasePublisher(admission=signing.admission(), store=store)
+        _rejected(lambda: publisher.read("urn:sha256:" + "0" * 64), DiagnosticCode.RELEASE_REJECTED)
+        _rejected(lambda: publisher.read("not-a-ref"), DiagnosticCode.RELEASE_REJECTED)
+        for record in (b"not json", b'{"format":"other"}', canonical_bytes({"format": "ocor.c1.release-record/1.0"})):
+            ref = store.put(record)
+            _rejected(lambda ref=ref: publisher.read(ref), DiagnosticCode.RELEASE_REJECTED)
+        ref = publisher.publish(package)
+        assert publisher.verify(ref).ir_digest == package.signed.release.ir_digest
