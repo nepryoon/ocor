@@ -1,9 +1,9 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "1f41d3053ef3c175413dc6280a190e24176f71a9",
+  "baseline_commit": "17bb8b0b39987b6c0944bc3fc1b4578c9883acd6",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "cf3f37c47d58e15c39bad09351307ec27630b619d3debfb95c2ead5dfd28aa5a"
+    "sha256": "0d1c542f17503c09140a2e9a008711db5523c72ed1733cf0a24a88952902a7ea"
   },
   "blocking_tasks": [
     "OCOR-DEV-0060",
@@ -28,16 +28,24 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocks": "OCOR-DEV-REM-0047 (NCP-U01) campaign, requalifications, verification, seal and merge; hence every later NCP unit of plan_order and the G6/G7 tasks behind them",
+      "blocks": "nothing after the decision",
       "branch": "governed/decision-request-ncp-u01-retained-c1-builders",
       "commit": "51abcaa54d83f0ff2900271bb4cf7a96e80d9678",
+      "disposition_record": {
+        "commit": "4ee017d53271846c83d1ebd092082734f7a9afc4",
+        "path": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md",
+        "pr": 438,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "397a400792f7c5f0912b2bed227e750862994be9a4def0e5282cdf5d7057791c"
+      },
       "id": "NCP-U01-RETAINED-C1-BUILDERS",
       "path": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md",
+      "po_decision": "NCP-U01-RETAINED-C1-BUILDERS (2026-11-01)",
       "pr": 438,
       "publication": "DRAFT_PR_OPEN",
       "recommendation": "option 2",
       "sha256": "5813165b79d483dc7ca61282bc7674e0883cb4de9f1be47b16b28743201008be",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "DECIDED_BY_PO"
     }
   ],
   "direct_ready_disposition": "NOT_EXECUTABLE_SUSPENDED_OR_BLOCKED_BY_PO_NORMATIVE_CONFORMANCE_PROGRAMME",
@@ -49,37 +57,38 @@
   ],
   "in_progress_unit": {
     "branch": "governed/ocor-dev-rem-0047-ncp-u01-c1-conformance",
-    "done": "Option-independent closure work at c26bea055c28 (commits e4ed2c6, c26bea0): plan allowlist of scripts/validate_ocor_development_plan.py for the nine C1 modules (ports.py and the eight new ones), the RED test, the decision request file, the unit record, README and log, and the option-independent requalifications (0011 and 0032 with supersession; 0005, 0050 and 0082 regression-only), with the plan validator self-hash settled in reports/planning/OCOR_PLAN_RUN_STATE.json (only that line); register entries C1-003/C1-004/C1-005/C1-006/C1-008/C1-009/C1-010 OPEN -> IN_REMEDIATION with remediation_unit, remediation_record and resolution_proof (red_test of the plan, record_field resolution_probes), NCR-C1-002 kept OPEN until the disposition; reverse traceability index entry for test_ocor_dev_rem_0047.py (builder ~/.ocor-codex/rem-0046, 139 tests); unit record draft reports/assurance/OCOR-DEV-REM-0047-RCCAD/OCOR-DEV-REM-0047.json (CANDIDATE_IN_PROGRESS: resolved entries, criteria with tests, 15 anchors of every behaviour or signature change with file, function and normative element, resolution probes, fail-closed ambiguities, planned requalifications). Gates: normative digests 8/8; register integrity test 15 passed, 879 subtests; reports/tests/test_ocor_dev_rem_0046.py 19 passed (no ORPHAN_DESIGN); validate_test_reverse_traceability PASS; plan validator --base-ref origin/main --authorized-extension PASS 37 + 2 NOT_EXECUTED; validate_rccad PASS_LOCAL_PRECHECK; language policy, ruff, mypy strict (104 files) PASS; unit test file 15 passed; evidence input drift FAIL as expected on exactly 0005, 0011, 0032, 0050 and 0082 (the planned requalifications; none on 0028, 0031 or 0033)",
+    "done": "Disposition applied on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance: RED d2dcec51284a (3 failed: the signer signed a retained core; admission had no core/format rejection; removing a CAUSAL type carried causal-breaking only; fingerprint 2049a9de99a1), GREEN a76d9656f564 (signing.py _require_ir_format in DsseIrSigner.sign_release and ReleaseAdmission.verify: only an ocor.cir/1.0 core is signed or admitted, RELEASE_REJECTED at core/format, so a retained output wrapped in a genuine envelope of a trusted key is still rejected and the publisher inherits it; migration.py: removal of a CAUSAL type or of a property of a CAUSAL type emits destructive and causal-breaking; docstrings of compiler.py, frontend.py, releases.py declare the retained builders pre-normative non-releasable candidates, behaviour unchanged), registration e0e5f32929c6 (decision request file with the disposition byte-identical to 4ee017d on its branch, sha256 397a400792f7c5f0...; NCR-C1-002 OPEN -> IN_REMEDIATION; resolution_proof.retained_builders on NCR-C1-002/003/004/005/006/008 with the two rejection tests; unit record: FR-045 mapping row by row, 6 new anchors, requalification plan, decided decision request; plan allowlist for the 0028/0031/0033 regression records and the validator self-hash). Tests: unit file 18 passed (3 new: test_retained_builder_output_rejected_by_admission, test_retained_builder_output_rejected_by_publisher, test_fr_045_change_class_mapping, each with positive and negative cases); C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing (80 with the unit file). PR #438 closed as resolved, not merged",
     "estimate_iterations": 4,
-    "head": "c26bea055c285418d55f7bd396ad38bfc9ede1e9",
+    "head": "e0e5f32929c6af09b995fa3cab7edc5a6fd689b1",
     "id": "OCOR-DEV-REM-0047",
-    "iterations_used": 3,
+    "iterations_used": 4,
     "plan_unit": "NCP-U01",
     "stop_at_iterations": 8
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "local_controls": {
-    "evidence_input_drift": "FAIL as expected on the unit branch only (0005, 0011, 0032, 0050, 0082: planned requalifications); main unchanged",
-    "full_suite": "NOT_EXECUTED (campaign waits for the disposition; stack ocor-bootstrap down)",
+    "evidence_input_drift": "FAIL as expected on the unit branch only (0005, 0011, 0028, 0032, 0033, 0050, 0082: planned requalifications); main unchanged",
+    "full_suite": "NOT_EXECUTED (after the preventive review; stack ocor-bootstrap down)",
     "integrity_test": "15 passed, 879 subtests",
     "normative_sha256": "8/8 PASS",
-    "plan_validator": "PASS (37 PASS, 2 NOT_EXECUTED)"
+    "plan_validator": "PASS (37 PASS, 2 NOT_EXECUTED)",
+    "pre_campaign_gate": "PASS 46/47 steps of the workflows at the head; the only non-zero step is the evidence input drift, expected on 0005/0011/0028/0032/0033/0050/0082 (planned requalifications) at e0e5f32929c6"
   },
-  "minimal_unblock_action": "PO decision on the normative decision request NCP-U01-RETAINED-C1-BUILDERS (draft PR #438, reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md on branch governed/decision-request-ncp-u01-retained-c1-builders, sha256 5813165b79d483dc7ca61282bc7674e0883cb4de9f1be47b16b28743201008be); recommended option 2.",
-  "next_executable_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U01-RETAINED-C1-BUILDERS (draft PR #438, sha256 5813165b79d483dc...): the option-independent work of OCOR-DEV-REM-0047 (NCP-U01) is done; the campaign, requalifications, verification, seal and merge depend on the disposition; the next units of plan_order start only after NCP-U01 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. After the decision: lift TERMINAL_BLOCKED with a tracked state update registering the disposition, then continue OCOR-DEV-REM-0047 iteration 4 on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance from c26bea055c28 in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path): apply the disposition to the retained builders (option 2: docstring declaring them pre-normative candidates, admission and publisher rejecting their output, no 0028:81 realign; option 1/3: realign with RED, construction adaptation of the mission thread, requalify 0028/0031/0033 too, extend the allowlist for their records), NCR-C1-002 OPEN -> IN_REMEDIATION and its anchors in the record; then PRE-CAMPAIGN-GATE, preventive review, full suite on the real stack (stack currently down: bootstrap first), requalifications (0005/0050/0082 regression class; 0011/0032 with supersession), REMEDIATION verification. Iterations used 3 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
-  "no_new_po_normative_decision_required": false,
-  "open_pull_requests": 8,
+  "minimal_unblock_action": "Done: PO decision NCP-U01-RETAINED-C1-BUILDERS (2026-11-01), option 2.",
+  "next_executable_action": "Resume OCOR-DEV-REM-0047 (NCP-U01) after the preventive review OCOR-DEV-REM-0047-e0e5f32929c6-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0047-e0e5f32929c6-pre.json; fix each blocking finding with a new commit or contest it with a reproducible proof, record the advisory ones; then PRE-CAMPAIGN-GATE on the final head (template ~/.ocor-codex/rem-0047/pregate_unit_iter4.py; drift FAIL expected only on 0005/0011/0028/0032/0033/0050/0082), bootstrap the ocor-bootstrap stack (down), full suite on the real stack (cap 90 min), requalifications (0011, 0032 with supersession; 0005, 0028, 0031, 0033, 0050, 0082 regression-only, class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS, 0031 included by the more restrictive reading of the decision point 5), record completion, candidate push on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path), REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer. Iterations used 4 of estimate 4 (stop at 8). NCP-U12 later carries the mission thread to the conforming pipeline (decision point 4). G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. No new DEC; claims unchanged.",
+  "no_new_po_normative_decision_required": true,
+  "open_pull_requests": 7,
   "previous_report": {
-    "commit": "e16e0e6ee3d0b4d539986087fffeeca73bfec328",
+    "commit": "7038ffc09c3e5325751555586330b930e04ba2ff",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "d26c62bde1212be2757cc594e2a35ca06e89085e3274975d61e2d80edb1ba206",
+    "sha256": "5a93335b0bf31959926786fb65d3d30dbda39b811013113178715489a3dca3f0",
     "status": "HISTORICAL_PRESERVED_IN_GIT"
   },
-  "recorded_at": "2026-11-01T21:37:39.704231+00:00",
+  "recorded_at": "2026-11-01T22:36:29.567369+00:00",
   "remaining_backlog_tasks": 9,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "TERMINAL_BLOCKED",
-  "terminal_state": "TERMINAL_BLOCKED",
-  "updated_at": "2026-11-01T21:37:39.704231+00:00"
+  "status": "SUPERSEDED_PO_DECISION_NCP_U01_RETAINED_C1_BUILDERS",
+  "terminal_state": "NOT_TERMINAL_LOOP_CONTINUE",
+  "updated_at": "2026-11-01T22:36:29.567369+00:00"
 }
