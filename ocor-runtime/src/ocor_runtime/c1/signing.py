@@ -28,7 +28,7 @@ from typing import Any
 import jsonschema
 
 from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp
-from .ir import parse_core
+from .ir import IR_FORMAT, parse_core
 from .ports import (
     ArtifactManifestEntry,
     C1Diagnostic,
@@ -241,6 +241,17 @@ class ReleasePackage:
         return cls(signed=signed, dependency_lock=tuple(dependency_lock), artifacts=_frozen_bytes(artifacts))
 
 
+def _require_ir_format(core: Mapping[str, Any]) -> None:
+    """Only a CanonicalIRCore ``ocor.cir/1.0`` is signed or admitted (ADD v1.3 :441-462, :523).
+
+    The retained builders of ``compiler.py``, ``frontend.py`` and ``releases.py`` are
+    pre-normative candidates (NCP-U01-RETAINED-C1-BUILDERS, 2026-11-01): their flat core
+    never becomes a signed, admitted or published release.
+    """
+    if core.get("format") != IR_FORMAT:
+        raise _reject(DiagnosticCode.RELEASE_REJECTED, "core/format", f"the core is not {IR_FORMAT}")
+
+
 class DsseIrSigner:
     """IrSigner: signs the RFC 8785 core bytes in a ``signed-canonical-ir:1.0`` envelope."""
 
@@ -258,6 +269,7 @@ class DsseIrSigner:
         payload = release.canonical_bytes
         if canonical_bytes(parse_core(payload)) != payload or canonical_digest(parse_core(payload)) != release.ir_digest:
             raise _reject(DiagnosticCode.SIGNATURE_INVALID, "core", "release bytes do not bind its ir_digest")
+        _require_ir_format(parse_core(payload))
         signature = self._key.sign(dsse_pae(PAYLOAD_TYPE, payload))
         envelope = {
             "payloadType": PAYLOAD_TYPE,
@@ -335,6 +347,7 @@ class ReleaseAdmission:
         envelope = _thaw(package.signed.envelope)
         signature = self._verify_envelope(release, envelope)
         core = parse_core(release.canonical_bytes)
+        _require_ir_format(core)
         meta = core.get("release")
         if not isinstance(meta, dict):
             raise _reject(DiagnosticCode.RELEASE_REJECTED, "core/release", "the core has no release block")

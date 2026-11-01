@@ -276,7 +276,11 @@ class FrontendCanonicalIrBuilder:
     """Assembles the canonical IR release exactly like OCOR-DEV-0028's
     sealed builder, additionally carrying the validated
     field_types/references/execution_owner metadata into each
-    resource's core entry."""
+    resource's core entry.
+
+    Pre-normative candidate, not releasable: admission and the publisher
+    reject its output (NCP-U01-RETAINED-C1-BUILDERS, 2026-11-01).
+    """
 
     def __init__(
         self,

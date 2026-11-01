@@ -85,7 +85,11 @@ def _type_changes(before: Mapping[str, Any], after: Mapping[str, Any], causal: b
     type_id = str(after["type_id"])
     base = f"types/{type_id}"
     if causal and before != after:
-        return [_change(base, "changed", ChangeClass.CAUSAL_BREAKING, type_id)]
+        # NCP-U01-RETAINED-C1-BUILDERS point 3: a removal in a CAUSAL type is both
+        # destructive and causal-breaking, with the obligations of both classes.
+        removed = sorted({p["property_id"] for p in before["properties"]} - {p["property_id"] for p in after["properties"]})
+        return [_change(base, "changed", ChangeClass.CAUSAL_BREAKING, type_id)] + [
+            _change(f"{base}/properties/{prop_id}", "removed", ChangeClass.DESTRUCTIVE, prop_id) for prop_id in removed]
     changes: list[dict[str, str]] = []
     if before["kind"] != after["kind"]:
         changes.append(_change(f"{base}/kind", "changed", ChangeClass.BREAKING, type_id))
@@ -122,9 +126,9 @@ def semantic_changes(previous: CanonicalIrRelease, candidate: CanonicalIrRelease
     for type_id in sorted(set(new_types) - set(old_types)):
         changes.append(_change(f"types/{type_id}", "added", ChangeClass.COMPATIBLE, type_id))
     for type_id in sorted(set(old_types) - set(new_types)):
-        causal = old_types[type_id]["kind"] == "CAUSAL"
-        changes.append(_change(f"types/{type_id}", "removed",
-                               ChangeClass.CAUSAL_BREAKING if causal else ChangeClass.DESTRUCTIVE, type_id))
+        changes.append(_change(f"types/{type_id}", "removed", ChangeClass.DESTRUCTIVE, type_id))
+        if old_types[type_id]["kind"] == "CAUSAL":
+            changes.append(_change(f"types/{type_id}", "removed", ChangeClass.CAUSAL_BREAKING, type_id))
     for type_id in sorted(set(old_types) & set(new_types)):
         causal = "CAUSAL" in {old_types[type_id]["kind"], new_types[type_id]["kind"]}
         changes += _type_changes(old_types[type_id], new_types[type_id], causal)
@@ -134,7 +138,7 @@ def semantic_changes(previous: CanonicalIrRelease, candidate: CanonicalIrRelease
         changes += [_change(f"{collection}/{i}", "removed", removed, i) for i in sorted(set(old) - set(new))]
         changes += [_change(f"{collection}/{i}", "changed", changed, i)
                     for i in sorted(set(old) & set(new)) if old[i] != new[i]]
-    return sorted(changes, key=lambda c: (c["path"], c["op"]))
+    return sorted(changes, key=lambda c: (c["path"], c["op"], c["class"]))
 
 
 def _classify(changes: Sequence[Mapping[str, str]]) -> ChangeClass:
