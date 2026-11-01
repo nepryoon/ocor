@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import base64
 import copy
+import dataclasses
 import hashlib
 import importlib
 import json
@@ -1023,3 +1024,181 @@ def test_ncr_c1_parsing_paths_fail_closed() -> None:
             _rejected(lambda ref=ref: publisher.read(ref), DiagnosticCode.RELEASE_REJECTED)
         ref = publisher.publish(package)
         assert publisher.verify(ref).ir_digest == package.signed.release.ir_digest
+
+
+# --------------------------------------------------------------------------- #
+# NCP-U01-RETAINED-C1-BUILDERS (2026-11-01), points 1 and 3: the retained builders
+# are pre-normative candidates; only the conforming pipeline produces a release that
+# admission and the publisher accept. FR-045 classes as mapped by the PO.
+# --------------------------------------------------------------------------- #
+
+
+def _retained_outputs() -> list[tuple[str, Any]]:
+    """Every release a retained builder can produce, with the retained artefact manifest attached."""
+    releases_module = importlib.import_module("ocor_runtime.c1.releases")
+    frontend = importlib.import_module("ocor_runtime.c1.frontend")
+    body = {"id": "urn:ocor:resource:a", "fields": {"name": "x"}, "field_types": {"name": "string"}}
+    source = SourceUnit.create(resource_id="urn:ocor:resource:a", version="1", syntax=SourceSyntax.YAML,
+                               content=yaml.safe_dump(body, sort_keys=True).encode(), source_path="a.yaml")
+    request = CompilerRequest(package_id="urn:ocor:package:fleet", semantic_version="1.2.0", source_commit=COMMIT,
+                              compiler_version="1.0.0", mapping_version="1", release_profile="poc",
+                              sources=(source,), dependency_lock=())
+    outputs = [("compiler.RetainedCanonicalIrBuilder", _flat_release()),
+               ("frontend.FrontendCanonicalIrBuilder", frontend.FrontendCanonicalIrBuilder().build(request))]
+    generator = releases_module.RetainedArtifactGenerator()
+    outputs += [(f"releases.RetainedArtifactGenerator over {name}", release.with_artifacts(generator.generate(release)))
+                for name, release in list(outputs)]
+    for name, release in outputs:
+        assert release.signature_envelope_ref.startswith("urn:ocor:unsigned:"), name
+        assert release.core.get("format") != "ocor.cir/1.0", name
+    return outputs
+
+
+def _retained_packages(signing: _Signing) -> list[tuple[str, Any, DiagnosticCode]]:
+    """Each retained output as found (unsigned) and wrapped in a valid DSSE envelope of a trusted key."""
+    module = signing.module
+    packages: list[tuple[str, Any, DiagnosticCode]] = []
+    for name, release in _retained_outputs():
+        packages.append((f"{name} unsigned", module.ReleasePackage.create(
+            signed=module.SignedRelease(release=release, envelope={}), dependency_lock=(), artifacts={}),
+            DiagnosticCode.SIGNATURE_INVALID))
+        # The conforming signer refuses a core that is not ocor.cir/1.0.
+        _rejected(lambda release=release: signing.signer.sign_release(release), DiagnosticCode.RELEASE_REJECTED)
+        # A genuine signature of a trusted key, built outside the signer, does not make it admissible.
+        payload = release.canonical_bytes
+        envelope = {
+            "payloadType": module.PAYLOAD_TYPE, "payload": base64.b64encode(payload).decode("ascii"),
+            "canonicalization": "RFC8785", "digest": "sha256:" + hashlib.sha256(payload).hexdigest(),
+            "signingProfile": module.ED25519_PROFILE,
+            "signatures": [{"keyid": signing.keyid, "certificateChainRef": signing.chain,
+                            "signedAt": "2026-10-31T09:00:00Z",
+                            "sig": base64.b64encode(signing.key.sign(module.dsse_pae(module.PAYLOAD_TYPE,
+                                                                                     payload))).decode("ascii")}],
+        }
+        signed = module.SignedRelease(
+            release=dataclasses.replace(release, signature_envelope_ref=canonical_digest(envelope)), envelope=envelope)
+        packages.append((f"{name} signed", module.ReleasePackage.create(signed=signed, dependency_lock=(),
+                                                                        artifacts={}),
+                         DiagnosticCode.RELEASE_REJECTED))
+    return packages
+
+
+def test_retained_builder_output_rejected_by_admission() -> None:
+    """NCP-U01-RETAINED-C1-BUILDERS point 1: admission (ADD v1.3 :523) rejects every retained output."""
+    with tempfile.TemporaryDirectory() as tmp:
+        signing = _Signing(Path(tmp))
+        admission = signing.admission()
+        # Positive case: the conforming pipeline's package is admitted.
+        genuine = _package(signing, oac_request())
+        assert admission.verify(genuine).ir_digest == genuine.signed.release.ir_digest
+        for name, package, code in _retained_packages(signing):
+            error = _rejected(lambda package=package: admission.verify(package), code)
+            if code is DiagnosticCode.RELEASE_REJECTED:
+                # Rejected because the core is not ocor.cir/1.0, not for an incidental reason.
+                assert any(d.path == "core/format" for d in error.diagnostics), (name, error.diagnostics)
+
+
+def test_retained_builder_output_rejected_by_publisher() -> None:
+    """NCP-U01-RETAINED-C1-BUILDERS point 1: the immutable publisher never stores a retained output."""
+    with tempfile.TemporaryDirectory() as tmp:
+        workdir = Path(tmp)
+        signing = _Signing(workdir)
+        publisher_module = c1("publisher")
+        store = publisher_module.FileSystemReleaseStore(workdir / "releases")
+        publisher = publisher_module.ImmutableReleasePublisher(admission=signing.admission(), store=store)
+        for name, package, code in _retained_packages(signing):
+            error = _rejected(lambda package=package: publisher.publish(package), code)
+            if code is DiagnosticCode.RELEASE_REJECTED:
+                assert any(d.path == "core/format" for d in error.diagnostics), (name, error.diagnostics)
+        assert store.versions("urn:ocor:package:fleet") == []
+        assert not list((workdir / "releases").rglob("*.json"))
+        # Positive case: the conforming package is published.
+        ref = publisher.publish(_package(signing, oac_request()))
+        assert store.versions("urn:ocor:package:fleet") == ["1.2.0"]
+        assert publisher.verify(ref).semantic_version == "1.2.0"
+
+
+def test_fr_045_change_class_mapping() -> None:
+    """NCP-U01-RETAINED-C1-BUILDERS point 3: FR-045 (Register v1.1 :141) classes, LLD v1.1 :107."""
+    migration = c1("migration")
+    classes = migration.ChangeClass
+    engine = migration.IrSemanticDiffEngine()
+    planner = migration.IrMigrationPlanner()
+    gate = migration.ReleaseChangeGate()
+    two = ("urn:ocor:principal:a", "urn:ocor:principal:b")
+    recovery = {"backup_ref": "urn:ocor:backup:fleet", "replay_plan_ref": "urn:ocor:replay:fleet"}
+
+    def build(version: str, *mutations: Callable[[dict[str, dict[str, Any]]], None]) -> Any:
+        docs = copy.deepcopy(oac_documents(version=version))
+        for mutate in mutations:
+            mutate(docs)
+        return compiler().build(oac_request(documents=docs, semantic_version=version))
+
+    def add_causal(d: dict[str, dict[str, Any]]) -> None:
+        d["module.yaml"]["definitions"].append(
+            {"construct": "TypeDefinition", "type_id": "urn:ocor:type:delay-mechanism", "kind": "CAUSAL",
+             "version": "1.0.0", "keys": [], "interfaces": [],
+             "security_profile_ref": "urn:ocor:security-profile:restricted",
+             "properties": [{"property_id": "urn:ocor:property:delay-cause", "value_type_ref": "string",
+                             "cardinality": "ONE", "nullable": True, "constraint_refs": []},
+                            {"property_id": "urn:ocor:property:delay-minutes", "value_type_ref": "integer",
+                             "cardinality": "ONE", "nullable": True, "constraint_refs": []}]})
+
+    def drop_causal_type(d: dict[str, dict[str, Any]]) -> None:
+        d["module.yaml"]["definitions"] = [x for x in d["module.yaml"]["definitions"]
+                                           if x.get("type_id") != "urn:ocor:type:delay-mechanism"]
+
+    def drop_causal_property(d: dict[str, dict[str, Any]]) -> None:
+        causal = next(x for x in d["module.yaml"]["definitions"] if x.get("type_id") == "urn:ocor:type:delay-mechanism")
+        causal["properties"] = causal["properties"][:1]
+
+    def add_required(d: dict[str, dict[str, Any]]) -> None:
+        _vessel(d)["properties"].append({"property_id": "urn:ocor:property:vessel-imo", "value_type_ref": "string",
+                                         "cardinality": "ONE", "nullable": False, "constraint_refs": []})
+
+    def retype(d: dict[str, dict[str, Any]]) -> None:
+        _vessel(d)["properties"][0]["value_type_ref"] = "integer"
+
+    # Two identical releases are compatible, without changes.
+    base = build("1.2.0")
+    assert planner.plan(base, base)["changes"] == []
+    assert engine.classify(base, base) is classes.COMPATIBLE
+    assert gate.admit(base, base, plan=None, approvals=())["classification"] == "compatible"
+
+    # Removing a CAUSAL type or a property of a CAUSAL type carries both destructive and
+    # causal-breaking, and the release is destructive (the most restrictive class).
+    causal_base = build("1.3.0", add_causal)
+    for mutation in (drop_causal_type, drop_causal_property):
+        target = build("2.0.0", add_causal, mutation)
+        plan = planner.plan(causal_base, target, **recovery)
+        assert set(plan["change_classes"]) == {"destructive", "causal-breaking"}, (mutation.__name__, plan["changes"])
+        assert plan["classification"] == "destructive"
+        assert engine.classify(causal_base, target) is classes.DESTRUCTIVE
+        # Obligations of both classes: backup and replay, migration, dual control, new major.
+        gate.admit(causal_base, target, plan=plan, approvals=two)
+        bare = planner.plan(causal_base, target)
+        _rejected(lambda t=target, p=bare: gate.admit(causal_base, t, plan=p, approvals=two),
+                  DiagnosticCode.RELEASE_REJECTED)
+        _rejected(lambda t=target, p=plan: gate.admit(causal_base, t, plan=p, approvals=two[:1]),
+                  DiagnosticCode.RELEASE_REJECTED)
+        same_major = build("1.4.0", add_causal, mutation)
+        _rejected(lambda t=same_major: gate.admit(causal_base, t, plan=planner.plan(causal_base, t, **recovery),
+                                                   approvals=two), DiagnosticCode.RELEASE_REJECTED)
+
+    # A change of a CAUSAL type without removal is causal-breaking only.
+    def retype_causal(d: dict[str, dict[str, Any]]) -> None:
+        causal = next(x for x in d["module.yaml"]["definitions"] if x.get("type_id") == "urn:ocor:type:delay-mechanism")
+        causal["properties"][1]["value_type_ref"] = "string"
+
+    retyped = build("2.0.0", add_causal, retype_causal)
+    assert planner.plan(causal_base, retyped)["change_classes"] == ["causal-breaking"]
+
+    # The gate applies the obligations of every class present, not only of the dominant one:
+    # a breaking release that also adds a required property still needs its backfill plan.
+    mixed = build("2.0.0", add_required, retype)
+    mixed_plan = planner.plan(base, mixed)
+    assert set(mixed_plan["change_classes"]) == {"conditional", "breaking"}
+    assert mixed_plan["classification"] == "breaking"
+    gate.admit(base, mixed, plan=mixed_plan, approvals=two)
+    _rejected(lambda: gate.admit(base, mixed, plan={**mixed_plan, "backfill": []}, approvals=two),
+              DiagnosticCode.RELEASE_REJECTED)
