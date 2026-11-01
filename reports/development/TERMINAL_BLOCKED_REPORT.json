@@ -1,11 +1,22 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "70af4d9c87831056102548662aac1afb3f846ac9",
+  "baseline_commit": "1f41d3053ef3c175413dc6280a190e24176f71a9",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "e047cf30a89e807c86aae994b712ab34864ebe6775617a45a3ea92feb949ca6b"
+    "sha256": "cf3f37c47d58e15c39bad09351307ec27630b619d3debfb95c2ead5dfd28aa5a"
   },
-  "blocking_tasks": [],
+  "blocking_tasks": [
+    "OCOR-DEV-0060",
+    "OCOR-DEV-0062",
+    "OCOR-DEV-0063",
+    "OCOR-DEV-0064",
+    "OCOR-DEV-0065",
+    "OCOR-DEV-0066",
+    "OCOR-DEV-0067",
+    "OCOR-DEV-0068",
+    "OCOR-DEV-0069",
+    "OCOR-DEV-REM-0043"
+  ],
   "claims": {
     "E1": 0,
     "E2": 0,
@@ -17,48 +28,16 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "branch": "governed/decision-request-normative-conformance-plan",
-      "commit": "6b4040c52ed1e2d54fa48c1f029e21fdbe989b9b",
-      "disposition_record": {
-        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
-        "pr": 424,
-        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
-        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
-      },
-      "id": "NORMATIVE-CONFORMANCE-PLAN",
-      "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
-      "po_decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
-      "pr": 424,
+      "blocks": "OCOR-DEV-REM-0047 (NCP-U01) campaign, requalifications, verification, seal and merge; hence every later NCP unit of plan_order and the G6/G7 tasks behind them",
+      "branch": "governed/decision-request-ncp-u01-retained-c1-builders",
+      "commit": "51abcaa54d83f0ff2900271bb4cf7a96e80d9678",
+      "id": "NCP-U01-RETAINED-C1-BUILDERS",
+      "path": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md",
+      "pr": 438,
       "publication": "DRAFT_PR_OPEN",
-      "recommendation": "option 1",
-      "sha256": "a6bb253769d8a7119bcc0a765f06582bf48ebf04da8ae9e6e7a4ac416e694ead",
-      "status": "DECIDED_BY_PO"
-    },
-    {
-      "blocks": "no task",
-      "disposition_record": {
-        "path": "reports/development/decision_requests/REM-0038-GUARD-BASELINE-CONSOLIDATION.md",
-        "pr": 406,
-        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
-        "sha256": "d9b086ee1b8f9c870a2b8f7021b82723181bc2d6d805915567cf1bc1c7a4f542"
-      },
-      "id": "REM-0038-GUARD-BASELINE-CONSOLIDATION",
-      "po_decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
-      "pr": 406,
-      "status": "DECIDED_BY_PO"
-    },
-    {
-      "blocks": "OCOR-DEV-0060, 0065-0069 (also behind NORMATIVE-CONFORMANCE-PLAN)",
-      "disposition_record": {
-        "path": "reports/development/decision_requests/OCOR-DEV-0060-BA-RUNTIME-GAPS.md",
-        "pr": 408,
-        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
-        "sha256": "83d32410bfed5377f370d96ce660c659368a711ba397818383f2c517a12c33e6"
-      },
-      "id": "OCOR-DEV-0060-BA-RUNTIME-GAPS",
-      "po_decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
-      "pr": 408,
-      "status": "DECIDED_BY_PO"
+      "recommendation": "option 2",
+      "sha256": "5813165b79d483dc7ca61282bc7674e0883cb4de9f1be47b16b28743201008be",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
   "direct_ready_disposition": "NOT_EXECUTABLE_SUSPENDED_OR_BLOCKED_BY_PO_NORMATIVE_CONFORMANCE_PROGRAMME",
@@ -68,48 +47,39 @@
     "OCOR-DEV-0063",
     "OCOR-DEV-0064"
   ],
+  "in_progress_unit": {
+    "branch": "governed/ocor-dev-rem-0047-ncp-u01-c1-conformance",
+    "done": "Option-independent closure work at c26bea055c28 (commits e4ed2c6, c26bea0): plan allowlist of scripts/validate_ocor_development_plan.py for the nine C1 modules (ports.py and the eight new ones), the RED test, the decision request file, the unit record, README and log, and the option-independent requalifications (0011 and 0032 with supersession; 0005, 0050 and 0082 regression-only), with the plan validator self-hash settled in reports/planning/OCOR_PLAN_RUN_STATE.json (only that line); register entries C1-003/C1-004/C1-005/C1-006/C1-008/C1-009/C1-010 OPEN -> IN_REMEDIATION with remediation_unit, remediation_record and resolution_proof (red_test of the plan, record_field resolution_probes), NCR-C1-002 kept OPEN until the disposition; reverse traceability index entry for test_ocor_dev_rem_0047.py (builder ~/.ocor-codex/rem-0046, 139 tests); unit record draft reports/assurance/OCOR-DEV-REM-0047-RCCAD/OCOR-DEV-REM-0047.json (CANDIDATE_IN_PROGRESS: resolved entries, criteria with tests, 15 anchors of every behaviour or signature change with file, function and normative element, resolution probes, fail-closed ambiguities, planned requalifications). Gates: normative digests 8/8; register integrity test 15 passed, 879 subtests; reports/tests/test_ocor_dev_rem_0046.py 19 passed (no ORPHAN_DESIGN); validate_test_reverse_traceability PASS; plan validator --base-ref origin/main --authorized-extension PASS 37 + 2 NOT_EXECUTED; validate_rccad PASS_LOCAL_PRECHECK; language policy, ruff, mypy strict (104 files) PASS; unit test file 15 passed; evidence input drift FAIL as expected on exactly 0005, 0011, 0032, 0050 and 0082 (the planned requalifications; none on 0028, 0031 or 0033)",
+    "estimate_iterations": 4,
+    "head": "c26bea055c285418d55f7bd396ad38bfc9ede1e9",
+    "id": "OCOR-DEV-REM-0047",
+    "iterations_used": 3,
+    "plan_unit": "NCP-U01",
+    "stop_at_iterations": 8
+  },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
-  "independent_verifier": {
-    "head_sha": "f8270ae90ca904a44da5f7d9de3333be1f68ade8",
-    "implementers": [
-      {
-        "agent": "Claude Code",
-        "contribution": "all of REM-0044, seal, integration and the plan decision request",
-        "provider": "Anthropic"
-      },
-      {
-        "agent": "Codex",
-        "contribution": "counted by the loop among the task implementers",
-        "provider": "OpenAI"
-      }
-    ],
-    "request_id": "OCOR-DEV-REM-0044-f8270ae90ca9-0",
-    "status": "COMPLETED_GO_FOR_EVIDENCE_SEAL_INTEGRATED",
-    "verifier": "Cursor CLI / grok-4.7-high / xAI"
-  },
   "local_controls": {
-    "evidence_input_drift": "0 drift",
-    "full_suite": "3334/3334 two-lane at the qualified head (implementer and verifier)",
-    "integrity_test": "15/15, 861 subtests",
+    "evidence_input_drift": "FAIL as expected on the unit branch only (0005, 0011, 0032, 0050, 0082: planned requalifications); main unchanged",
+    "full_suite": "NOT_EXECUTED (campaign waits for the disposition; stack ocor-bootstrap down)",
+    "integrity_test": "15 passed, 879 subtests",
     "normative_sha256": "8/8 PASS",
-    "pre_campaign_gate": "42/42 PASS on the seal head 3b29de0269be",
-    "required_checks": "13/13 required checks success, 0 reruns"
+    "plan_validator": "PASS (37 PASS, 2 NOT_EXECUTED)"
   },
-  "minimal_unblock_action": "Done: PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30), option 1 with changes.",
-  "next_executable_action": "Run the governed change set of NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 9 (REM-0038-GUARD-BASELINE-CONSOLIDATION, option 1, not a programme unit): first free OCOR-DEV-REM-* verified read-only at its start (today OCOR-DEV-REM-0045), new worktree from origin/main, branch governed/; single guard baseline 82b71d0db410bcdb8124e8ec8a8235631ecfa1fa with byte identity for every workflow and the campaign supervisor, observer constants against 82b71d0, the current normalisation chain frozen in a historical test proving the reduction to 9b4d3be and 7cd5f7a, the 34 negative cases retargeted plus the two relocation probes; RED/GREEN, regression-only requalifications of 0005 and 0050 (and 0082 if needed) with supersession; the same change set carries the three decision request files byte-identical from their branches (NORMATIVE-CONFORMANCE-PLAN.md sha256 2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f) with their exact entries in the allowlist of scripts/validate_ocor_development_plan.py; PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW (rotation of PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30)), full suite, independent verification, seal, exact-head CI, merge; supervisor, observer and workflows unchanged. Its integration state sync applies the register patch of decision point 12 (~/.ocor-codex/ss-ncp-plan-20261030/apply_patch.py, @@HEAD@@ = origin/main at that sync, verification commands rerun) and runs the integrity test. Then NCP-U13 (first unit of plan_order NCP-U13, U01, U02, U03, U04, U06, U05, U07, U08, U09, U10, U11, U12), with its own first free OCOR-DEV-REM-*, the full cycle of programme point 5 and the extra scope of decision point 3. Each unit starts only when its depends_on_units are integrated; stop with a normative decision request beyond twice the estimate (NCP-U06: 6) or for a test realignment the plan and point 5 do not authorise. G6 0060/0062-0067 start only under decision point 11 (NCP-U13 integrated with the approved criteria in the backlog, every register entry naming the task in blocks resolved or DEFERRED_BY_PO, backlog dependencies met; for 0067 also every HIGH entry resolved, REFUTED or DEFERRED_BY_PO and the supersession requalification of 0061 integrated); 0068/0069 stay blocked; REM-0043 is resumed by NCP-U10 and closed as superseded when NCP-U10 is integrated. No new DEC; claims unchanged.",
-  "no_new_po_normative_decision_required": true,
-  "open_pull_requests": 10,
+  "minimal_unblock_action": "PO decision on the normative decision request NCP-U01-RETAINED-C1-BUILDERS (draft PR #438, reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md on branch governed/decision-request-ncp-u01-retained-c1-builders, sha256 5813165b79d483dc7ca61282bc7674e0883cb4de9f1be47b16b28743201008be); recommended option 2.",
+  "next_executable_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U01-RETAINED-C1-BUILDERS (draft PR #438, sha256 5813165b79d483dc...): the option-independent work of OCOR-DEV-REM-0047 (NCP-U01) is done; the campaign, requalifications, verification, seal and merge depend on the disposition; the next units of plan_order start only after NCP-U01 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. After the decision: lift TERMINAL_BLOCKED with a tracked state update registering the disposition, then continue OCOR-DEV-REM-0047 iteration 4 on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance from c26bea055c28 in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path): apply the disposition to the retained builders (option 2: docstring declaring them pre-normative candidates, admission and publisher rejecting their output, no 0028:81 realign; option 1/3: realign with RED, construction adaptation of the mission thread, requalify 0028/0031/0033 too, extend the allowlist for their records), NCR-C1-002 OPEN -> IN_REMEDIATION and its anchors in the record; then PRE-CAMPAIGN-GATE, preventive review, full suite on the real stack (stack currently down: bootstrap first), requalifications (0005/0050/0082 regression class; 0011/0032 with supersession), REMEDIATION verification. Iterations used 3 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
+  "no_new_po_normative_decision_required": false,
+  "open_pull_requests": 8,
   "previous_report": {
-    "commit": "5e6c9022ef775f61489eb2d7434ee4f1d8483261",
+    "commit": "e16e0e6ee3d0b4d539986087fffeeca73bfec328",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "1d149d4c6aa130a9591c070a0a4cd6115e16293d064804d486e5ee710846435c",
+    "sha256": "d26c62bde1212be2757cc594e2a35ca06e89085e3274975d61e2d80edb1ba206",
     "status": "HISTORICAL_PRESERVED_IN_GIT"
   },
-  "recorded_at": "2026-10-30T10:41:22.495203+00:00",
+  "recorded_at": "2026-11-01T21:37:39.704231+00:00",
   "remaining_backlog_tasks": 9,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "SUPERSEDED_PO_DECISION_NORMATIVE_CONFORMANCE_PLAN",
-  "terminal_state": "NOT_TERMINAL_LOOP_CONTINUE",
-  "updated_at": "2026-10-30T10:41:22.495203+00:00"
+  "status": "TERMINAL_BLOCKED",
+  "terminal_state": "TERMINAL_BLOCKED",
+  "updated_at": "2026-11-01T21:37:39.704231+00:00"
 }

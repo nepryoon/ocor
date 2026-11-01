@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "d8f6a2beec625b259600df076ba51d0a00f30fb5",
-  "baseline_commit": "d8f6a2beec625b259600df076ba51d0a00f30fb5",
-  "branch": "governed/state-sync-rem0047-iter2-20261031",
+  "base_sha": "1f41d3053ef3c175413dc6280a190e24176f71a9",
+  "baseline_commit": "1f41d3053ef3c175413dc6280a190e24176f71a9",
+  "branch": "governed/state-sync-rem0047-iter3-20261101",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0047-ncp-u01-c1-conformance",
-    "head_sha": "49d52ce42e25a97ec66adfe2491daa5f2ca02773",
-    "note": "REM-0047 RED and GREEN parts 1-2; not a candidate, no evidence",
+    "head_sha": "c26bea055c285418d55f7bd396ad38bfc9ede1e9",
+    "note": "REM-0047 RED, GREEN parts 1-2 and option-independent closure work; not a candidate, no evidence",
     "paths": [
       "ocor-runtime/src/ocor_runtime/c1/codegen.py",
       "ocor-runtime/src/ocor_runtime/c1/conformance.py",
@@ -23,14 +23,21 @@
       "ocor-runtime/src/ocor_runtime/c1/service.py",
       "ocor-runtime/src/ocor_runtime/c1/signing.py",
       "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py",
-      "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md"
+      "reports/assurance/OCOR-DEV-REM-0047-RCCAD/OCOR-DEV-REM-0047.json",
+      "reports/assurance/OCOR-DEV-REM-0047-RCCAD/README.md",
+      "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
+      "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md",
+      "reports/planning/OCOR_PLAN_RUN_STATE.json",
+      "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
+      "scripts/validate_ocor_development_plan.py"
     ],
     "worktree": ".ocor/worktrees/rem-0047"
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/ITERATION_LOG.md",
-    "reports/development/MODEL_HANDOFF.json"
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/TERMINAL_BLOCKED_REPORT.json"
   ],
   "claims": {
     "E1": 0,
@@ -47,32 +54,47 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py at 49d52ce42e25",
+      "command": "pytest reports/tests/test_normative_conformance_register.py at c26bea055c28",
+      "exit_code": 0,
+      "summary": "15 passed, 879 subtests passed"
+    },
+    {
+      "command": "pytest reports/tests/test_ocor_dev_rem_0046.py at c26bea055c28",
+      "exit_code": 0,
+      "summary": "19 passed"
+    },
+    {
+      "command": "python scripts/validate_test_reverse_traceability.py at c26bea055c28",
+      "exit_code": 0,
+      "summary": "PASS"
+    },
+    {
+      "command": "python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension at c26bea055c28",
+      "exit_code": 0,
+      "summary": "PASS (37 PASS, 2 NOT_EXECUTED)"
+    },
+    {
+      "command": "pytest ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py at c26bea055c28",
       "exit_code": 0,
       "summary": "15 passed"
     },
     {
-      "command": "pytest test_ocor_dev_0011/0028/0032/0033/rem_0011 + acceptance_ev/test_ev_001_010 + rem_0047 at 49d52ce42e25",
-      "exit_code": 0,
-      "summary": "87 passed"
-    },
-    {
-      "command": "pytest ocor-runtime/tests/mission_thread",
+      "command": "python scripts/validate_evidence_input_drift.py at c26bea055c28",
       "exit_code": 1,
-      "summary": "NOT_EXECUTED: stack ocor-bootstrap down, real backends mandatory (5 setup errors)"
+      "summary": "FAIL as expected: drifted_tasks 0005, 0011, 0032, 0050, 0082 (planned requalifications)"
     },
     {
-      "command": "ruff check .; mypy (strict, 104 files); validate_rccad.py; validate_language_policy.py; supply-chain scanner",
+      "command": "ruff check .; mypy (strict, 104 files); validate_rccad.py; validate_language_policy.py",
       "exit_code": 0,
       "summary": "PASS"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0047:implementation (NCP-U01, iteration 2 done: conforming C1 pipeline GREEN; retained builders await PO decision NCP-U01-RETAINED-C1-BUILDERS)",
+  "current_task": "OCOR-DEV-REM-0047:implementation (NCP-U01, iteration 3 done: option-independent closure work; TERMINAL_BLOCKED on PO decision NCP-U01-RETAINED-C1-BUILDERS)",
   "evidence_paths": [],
-  "exact_next_action": "Continue OCOR-DEV-REM-0047 (NCP-U01) iteration 3 on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance from 49d52ce42e25 in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path): if the PO has decided NCP-U01-RETAINED-C1-BUILDERS (PR #438), apply the disposition to the retained builders (option 2 recommended: unchanged, rejected by admission and publisher, no 0028:81 realign; option 1/3: realign with RED and requalify 0031 too); otherwise do the option-independent closure work: reverse traceability index entry for test_ocor_dev_rem_0047.py (builder ~/.ocor-codex/rem-0046), plan allowlist for the eight new c1 modules, register entries NCR-C1-003/004/005/006/008/009/010 OPEN -> IN_REMEDIATION with the resolution proofs (NCR-C1-002 waits for the disposition because of the 0028:81 realign), unit record draft with the anchors of every behaviour change. Then PRE-CAMPAIGN-GATE, preventive review, full suite on the real stack (stack currently down: bootstrap first), requalifications (0005/0050/0082 regression class; 0011/0032 with supersession, plus 0028/0033/0031 only if the chosen option requires them), REMEDIATION verification. Iterations used 2 of estimate 4 (stop at 8). If the decision is still pending when the option-independent work is done, close with TERMINAL_BLOCKED after a governed TERMINAL_BLOCKED_REPORT.json. G6 0060/0062-0067 only under decision point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
-  "head_sha": "49d52ce42e25a97ec66adfe2491daa5f2ca02773",
-  "head_sha_role": "REM-0047 work-in-progress head (RED, GREEN parts 1-2, decision request file)",
+  "exact_next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U01-RETAINED-C1-BUILDERS (draft PR #438, sha256 5813165b79d483dc...): the option-independent work of OCOR-DEV-REM-0047 (NCP-U01) is done; the campaign, requalifications, verification, seal and merge depend on the disposition; the next units of plan_order start only after NCP-U01 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. After the decision: lift TERMINAL_BLOCKED with a tracked state update registering the disposition, then continue OCOR-DEV-REM-0047 iteration 4 on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance from c26bea055c28 in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path): apply the disposition to the retained builders (option 2: docstring declaring them pre-normative candidates, admission and publisher rejecting their output, no 0028:81 realign; option 1/3: realign with RED, construction adaptation of the mission thread, requalify 0028/0031/0033 too, extend the allowlist for their records), NCR-C1-002 OPEN -> IN_REMEDIATION and its anchors in the record; then PRE-CAMPAIGN-GATE, preventive review, full suite on the real stack (stack currently down: bootstrap first), requalifications (0005/0050/0082 regression class; 0011/0032 with supersession), REMEDIATION verification. Iterations used 3 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
+  "head_sha": "c26bea055c285418d55f7bd396ad38bfc9ede1e9",
+  "head_sha_role": "REM-0047 work-in-progress head (RED, GREEN parts 1-2, decision request file, allowlist, register IN_REMEDIATION, record draft)",
   "independent_verification": {
     "note": "not yet requested",
     "status": "NOT_REQUESTED"
@@ -138,15 +160,18 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
+    "evidence_input_drift": "expected drift 0005/0011/0032/0050/0082 on the unit branch",
     "language_policy": "PASS",
     "mypy_strict": "PASS",
+    "plan_validator": "PASS",
     "rccad": "PASS",
+    "register_integrity": "15 passed, 879 subtests",
+    "reverse_traceability": "PASS",
     "ruff": "PASS",
-    "supply_chain_scanner": "PASS",
-    "unit_tests": "15 passed (14 RED cases GREEN plus 1 parsing-path negative test); consumers 87 passed; mission thread NOT_EXECUTED"
+    "unit_tests": "15 passed; full suite NOT_EXECUTED"
   },
-  "next_task": "OCOR-DEV-REM-0047 iteration 3 (PO disposition of NCP-U01-RETAINED-C1-BUILDERS or the option-independent closure work)",
-  "phase": "REM_0047_NCP_U01_GREEN_DONE_AWAITING_PO_DECISION",
+  "next_task": "OCOR-DEV-REM-0047 iteration 4 after the PO disposition of NCP-U01-RETAINED-C1-BUILDERS",
+  "phase": "REM_0047_NCP_U01_TERMINAL_BLOCKED_AWAITING_PO_DECISION",
   "po_decisions_pending": [
     "NCP-U01-RETAINED-C1-BUILDERS"
   ],
@@ -169,7 +194,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0047 iterations 1-2 (RED, GREEN parts 1-2), decision request NCP-U01-RETAINED-C1-BUILDERS and the state syncs"
+        "scope": "OCOR-DEV-REM-0047 iterations 1-3 (RED, GREEN parts 1-2, option-independent closure work), decision request NCP-U01-RETAINED-C1-BUILDERS and the state syncs"
       }
     ]
   },
@@ -182,6 +207,7 @@
     "The ocor-bootstrap stack is down (no containers); needed at the full suite."
   ],
   "test_results": {
+    "closure_option_independent": "Option-independent closure work at c26bea055c28 (commits e4ed2c6, c26bea0): plan allowlist of scripts/validate_ocor_development_plan.py for the nine C1 modules (ports.py and the eight new ones), the RED test, the decision request file, the unit record, README and log, and the option-independent requalifications (0011 and 0032 with supersession; 0005, 0050 and 0082 regression-only), with the plan validator self-hash settled in reports/planning/OCOR_PLAN_RUN_STATE.json (only that line); register entries C1-003/C1-004/C1-005/C1-006/C1-008/C1-009/C1-010 OPEN -> IN_REMEDIATION with remediation_unit, remediation_record and resolution_proof (red_test of the plan, record_field resolution_probes), NCR-C1-002 kept OPEN until the disposition; reverse traceability index entry for test_ocor_dev_rem_0047.py (builder ~/.ocor-codex/rem-0046, 139 tests); unit record draft reports/assurance/OCOR-DEV-REM-0047-RCCAD/OCOR-DEV-REM-0047.json (CANDIDATE_IN_PROGRESS: resolved entries, criteria with tests, 15 anchors of every behaviour or signature change with file, function and normative element, resolution probes, fail-closed ambiguities, planned requalifications). Gates: normative digests 8/8; register integrity test 15 passed, 879 subtests; reports/tests/test_ocor_dev_rem_0046.py 19 passed (no ORPHAN_DESIGN); validate_test_reverse_traceability PASS; plan validator --base-ref origin/main --authorized-extension PASS 37 + 2 NOT_EXECUTED; validate_rccad PASS_LOCAL_PRECHECK; language policy, ruff, mypy strict (104 files) PASS; unit test file 15 passed; evidence input drift FAIL as expected on exactly 0005, 0011, 0032, 0050 and 0082 (the planned requalifications; none on 0028, 0031 or 0033)",
     "green_part_1": "GREEN part 1 7b075d2: SemVer 2.0.0 in CompilerRequest (c1/ports.py, NCR-C1-009, ADD v1.3 :419) and the set-like 'references' of the frontend IR sorted and duplicate-free (c1/frontend.py, NCR-C1-008, LLD v1.1 :39). One RED subtest design error corrected (it compared ir_digest values that include the content_digest of different source bytes; it now asserts the sorted IR array, failing on the RED code and passing now); no assertion weakened. C1 consumer suites 0011/0028/0032/0033/rem_0011 and EV-001..010: 72 passed; ruff, mypy strict (96 files), validate_rccad, language policy PASS",
     "green_part_2": "GREEN part 2 49d52ce: conforming C1 pipeline in new modules of ocor_runtime.c1 - oac.py (OAC_META_SCHEMA Draft 2020-12 for the ADD v1.3 :417-431 construct table; strict YAML/JSON parser rejecting duplicate keys and binary floats; NFC, RFC 3339 UTC and canonical decimals, :435; FR-024 value-type grammar), ir.py (OacCompiler -> CanonicalIRCore ocor.cir/1.0, :441-462, lock_digest in ir_digest FR-041, symbol table, set-like arrays sorted and duplicate-free LLD v1.1 :39, capability matrix fail-closed :438-439; IR Protobuf form google.protobuf.Struct encoded with the stdlib, same ir_digest :464), signing.py (RFC 8032 Ed25519, DSSE PAE, signed-canonical-ir:1.0 envelope :466-521, ReleaseAdmission :523), codegen.py (JSON Schema, OpenAPI 3.1, AsyncAPI 3.0, proto3/gRPC, MCP descriptor, Python/TypeScript SDK with the NFR-020 identifiers; check_drift), migration.py (FR-045 five classes, plan parts, gate with dual control and new major LLD v1.1 :107), publisher.py, conformance.py, service.py (ValidatePackage, Compile, SemanticDiff, PackageRelease, VerifyRelease, ADD v1.3 :282); ports.py CanonicalIrRelease.with_artifacts. No new dependency. RED test file: one design error corrected (the ADD schema extraction started one line late and skipped the opening brace; it now reads from the ~~~json fence), no assertion weakened; one added negative test per parsing path (test_ncr_c1_parsing_paths_fail_closed), which found and fixed duplicate JSON keys accepted by the parser. 15 passed; C1 consumers 0011/0028/0032/0033/rem_0011 and EV-001..010: 87 passed with the unit file; mission thread NOT_EXECUTED (stack down, real backends mandatory); ruff, mypy strict (104 files), validate_rccad, language policy, supply-chain scanner PASS. Retained builders untouched pending NCP-U01-RETAINED-C1-BUILDERS",
     "red": "RED fb27e601c35d: ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py, one test per resolved entry (test_ncr_c1_00N_conforms; NCR-C1-009 parametrised over 7 non-SemVer values), 14 failed, fingerprint 65ebdb63dbe8 (sha256 of the sorted FAILED list): MISSING entries fail on the absent conforming modules ocor_runtime.c1.ir/oac/signing/migration; NCR-C1-009 on 'DID NOT RAISE C1Error'; NCR-C1-008 on the unsorted IR 'references' of the frontend builder. Oracles independent of the implementation: OpenSSL (Ed25519 key generation and signature verification), the signed-canonical-ir:1.0 schema read from ADD v1.3 :466-521, RFC 8032 test vector 1, openapi-spec-validator, grpc_tools.protoc and google.protobuf Struct"
@@ -189,6 +215,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-10-31T01:14:06.359292+00:00",
+  "updated_at": "2026-11-01T21:37:39.704231+00:00",
   "worktree": ".ocor/worktrees/rem-0046 (integrated branch); next unit: new worktree from origin/main"
 }
