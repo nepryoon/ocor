@@ -9,10 +9,14 @@
         "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:152",
         "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:326"
       ],
-      "outcome": "PENDING_DISPOSITION",
+      "outcome": "PENDING_CAMPAIGN",
       "requirement_ids": [
         "NFR-021",
         "NFR-051"
+      ],
+      "retained_rejection_tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_retained_builder_output_rejected_by_admission",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_retained_builder_output_rejected_by_publisher"
       ],
       "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_ncr_c1_002_conforms"
     },
@@ -76,6 +80,7 @@
         "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:142"
       ],
       "outcome": "PENDING_CAMPAIGN",
+      "po_mapping_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_fr_045_change_class_mapping",
       "requirement_ids": [
         "FR-045",
         "FR-046"
@@ -118,12 +123,29 @@
         "NFR-020"
       ],
       "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_ncr_c1_010_conforms"
+    },
+    {
+      "entry": "NCP-U01-RETAINED-C1-BUILDERS point 1",
+      "norm_refs": [
+        "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:441-462",
+        "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:523",
+        "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md"
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-021",
+        "NFR-051"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_retained_builder_output_rejected_by_admission",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_retained_builder_output_rejected_by_publisher"
+      ]
     }
   ],
   "ambiguities_resolved_fail_closed": [
     "fields not fixed by the norm are mandatory in the OaC package (adapter_roles, artifact_targets); closed sets for cardinality, status and precision",
-    "precedence of the FR-045 classes for the overall classification of a release; the gate still applies the obligations of every class present",
-    "PackageRelease is idempotent by content (ir_digest, manifest and artefact bytes)"
+    "PackageRelease is idempotent by content (ir_digest, manifest and artefact bytes)",
+    "NCP-U01-RETAINED-C1-BUILDERS point 5 names 0031 among the regression-only requalifications although its last record has no input NCP-U01 modifies (the mission thread consumes the retained compiler without listing it): 0031 is requalified regression-only anyway, the more restrictive reading"
   ],
   "change_anchors": [
     {
@@ -260,6 +282,60 @@
       "lines": "32-82",
       "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:282",
       "path": "ocor-runtime/src/ocor_runtime/c1/service.py"
+    },
+    {
+      "change": "the signer refuses a core whose format is not ocor.cir/1.0 (RELEASE_REJECTED, path core/format); previously any canonical core was signed, including the flat core of the retained builders",
+      "commit": "a76d9656f56450e3f2d51a6988c2a6f721525b19",
+      "entry": "NCR-C1-002",
+      "function": "_require_ir_format; DsseIrSigner.sign_release",
+      "lines": "244-252, 268-272",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:441-462, ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:466-521; reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 1",
+      "path": "ocor-runtime/src/ocor_runtime/c1/signing.py"
+    },
+    {
+      "change": "admission rejects a core whose format is not ocor.cir/1.0 (RELEASE_REJECTED, path core/format) after the envelope check, so a retained output wrapped in a genuine envelope of a trusted key is still rejected; the publisher inherits it through admission",
+      "commit": "a76d9656f56450e3f2d51a6988c2a6f721525b19",
+      "entry": "NCR-C1-002",
+      "function": "ReleaseAdmission.verify",
+      "lines": "345-350",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:523; reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 1",
+      "path": "ocor-runtime/src/ocor_runtime/c1/signing.py"
+    },
+    {
+      "change": "removing a CAUSAL type emits two changes, destructive and causal-breaking (previously causal-breaking only); a change of a CAUSAL type that removes properties adds a destructive change per removed property; changes are ordered by (path, op, class)",
+      "commit": "a76d9656f56450e3f2d51a6988c2a6f721525b19",
+      "entry": "NCR-C1-006",
+      "function": "_type_changes; semantic_changes",
+      "lines": "87-92, 128-131, 141",
+      "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:141; reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 3",
+      "path": "ocor-runtime/src/ocor_runtime/c1/migration.py"
+    },
+    {
+      "change": "docstring only: the retained builders are declared pre-normative candidates, not releasable; behaviour and contract unchanged",
+      "commit": "a76d9656f56450e3f2d51a6988c2a6f721525b19",
+      "entry": "NCR-C1-002",
+      "function": "module docstring; RetainedCanonicalIrBuilder",
+      "lines": "11-17, 112-113",
+      "normative_element": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 2",
+      "path": "ocor-runtime/src/ocor_runtime/c1/compiler.py"
+    },
+    {
+      "change": "docstring only: FrontendCanonicalIrBuilder declared a pre-normative candidate, not releasable; behaviour and contract unchanged beyond NCR-C1-008",
+      "commit": "a76d9656f56450e3f2d51a6988c2a6f721525b19",
+      "entry": "NCR-C1-002",
+      "function": "FrontendCanonicalIrBuilder",
+      "lines": "281-282",
+      "normative_element": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 2",
+      "path": "ocor-runtime/src/ocor_runtime/c1/frontend.py"
+    },
+    {
+      "change": "docstring only: the retained release classes are declared pre-normative candidates, not releasable; behaviour and contract unchanged",
+      "commit": "a76d9656f56450e3f2d51a6988c2a6f721525b19",
+      "entry": "NCR-C1-006",
+      "function": "module docstring",
+      "lines": "13-19",
+      "normative_element": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 2",
+      "path": "ocor-runtime/src/ocor_runtime/c1/releases.py"
     }
   ],
   "change_anchors_note": "every observable behaviour or signature change of the unit up to the code commit; new modules add behaviour only in ocor_runtime.c1 and change no existing caller",
@@ -271,14 +347,187 @@
     "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
-  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1 and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8",
+  "decided_decision_requests": [
+    "NCP-U01-RETAINED-C1-BUILDERS: decided by the PO on 2026-11-01, option 2 with the FR-045 mapping of point 3; disposition in reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md (sha256 397a400792f7c5f0912b2bed227e750862994be9a4def0e5282cdf5d7057791c); PR #438 closed as resolved"
+  ],
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1 and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U01-RETAINED-C1-BUILDERS (2026-11-01), option 2",
+  "fr_045_class_mapping": {
+    "decision": "NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 3; FR-045 Register v1.1 :141; LLD v1.1 :107 under :16-18; conforming pipeline only (ocor_runtime.c1.migration)",
+    "dominance_order": [
+      "compatible",
+      "conditional",
+      "breaking",
+      "causal-breaking",
+      "destructive"
+    ],
+    "gate": "ReleaseChangeGate.admit applies the obligations of every class present (backfill for conditional; migration plan, dual control by two distinct principals and a new major for breaking, causal-breaking and destructive; backup and replay plan for destructive), not only of the dominant class",
+    "identical_releases": "compatible, no changes, no plan required",
+    "rows": [
+      {
+        "change": "type added",
+        "class": "compatible",
+        "rationale": "PO table: new type is an optional element"
+      },
+      {
+        "change": "property added, nullable or with default",
+        "class": "compatible",
+        "rationale": "PO table row 1"
+      },
+      {
+        "change": "property added, required without default",
+        "class": "conditional",
+        "rationale": "PO table row 2: backfill plan"
+      },
+      {
+        "change": "property value_type, cardinality or unit_ref changed",
+        "class": "breaking",
+        "rationale": "PO table row 3: type or cardinality change"
+      },
+      {
+        "change": "property nullable -> required",
+        "class": "conditional",
+        "rationale": "criterion: effect resolved by a backfill of the missing values"
+      },
+      {
+        "change": "property required -> nullable",
+        "class": "breaking",
+        "rationale": "criterion: consumers relying on presence become incompatible"
+      },
+      {
+        "change": "property constraint_refs changed",
+        "class": "conditional",
+        "rationale": "criterion: existing data may need a backfill to satisfy the new constraints"
+      },
+      {
+        "change": "property, any other difference",
+        "class": "breaking",
+        "rationale": "criterion, fail-closed: unnamed property change treated as a consumer incompatibility"
+      },
+      {
+        "change": "type kind, keys, interfaces, security_profile_ref, lifecycle_ref or values changed",
+        "class": "breaking",
+        "rationale": "PO table row 3 (keys) and criterion: consumer incompatibility"
+      },
+      {
+        "change": "type label changed",
+        "class": "compatible",
+        "rationale": "criterion: no effect on data or consumers"
+      },
+      {
+        "change": "type removed",
+        "class": "destructive",
+        "rationale": "PO table row 4: backup and replay plan, otherwise rejected"
+      },
+      {
+        "change": "property removed",
+        "class": "destructive",
+        "rationale": "PO table row 4"
+      },
+      {
+        "change": "CAUSAL type removed",
+        "class": "destructive + causal-breaking",
+        "rationale": "PO point 3: both classes with the obligations of both"
+      },
+      {
+        "change": "property removed in a CAUSAL type",
+        "class": "destructive + causal-breaking",
+        "rationale": "PO point 3"
+      },
+      {
+        "change": "CAUSAL type changed without removal",
+        "class": "causal-breaking",
+        "rationale": "PO table row 5"
+      },
+      {
+        "change": "causal manifest added",
+        "class": "compatible",
+        "rationale": "criterion: new optional element"
+      },
+      {
+        "change": "causal manifest removed or changed",
+        "class": "causal-breaking",
+        "rationale": "PO table row 5"
+      },
+      {
+        "change": "release lock_digest or mapping_version changed",
+        "class": "conditional",
+        "rationale": "criterion: effect resolved by re-resolution and backfill of derived mappings"
+      },
+      {
+        "change": "release package_id changed",
+        "class": "breaking",
+        "rationale": "criterion: consumer incompatibility (identity)"
+      },
+      {
+        "change": "namespace or link added",
+        "class": "compatible",
+        "rationale": "criterion: new optional element"
+      },
+      {
+        "change": "namespace or link removed",
+        "class": "destructive",
+        "rationale": "criterion: loss of data addressed through them"
+      },
+      {
+        "change": "namespace or link changed",
+        "class": "breaking",
+        "rationale": "criterion: consumer incompatibility"
+      },
+      {
+        "change": "constraint added or changed",
+        "class": "conditional",
+        "rationale": "criterion: existing data may need a backfill"
+      },
+      {
+        "change": "constraint removed",
+        "class": "compatible",
+        "rationale": "criterion: relaxation, no effect on data or consumers"
+      },
+      {
+        "change": "temporal semantics added",
+        "class": "conditional",
+        "rationale": "criterion: backfill of temporal fields"
+      },
+      {
+        "change": "temporal semantics removed",
+        "class": "destructive",
+        "rationale": "criterion: loss of temporal history"
+      },
+      {
+        "change": "temporal semantics changed",
+        "class": "breaking",
+        "rationale": "criterion: consumer incompatibility"
+      },
+      {
+        "change": "derived definition, named contract, security profile or artifact plan entry added",
+        "class": "compatible",
+        "rationale": "criterion: new optional element"
+      },
+      {
+        "change": "derived definition, named contract, security profile or artifact plan entry removed or changed",
+        "class": "breaking",
+        "rationale": "criterion: consumer incompatibility, no stored data lost"
+      },
+      {
+        "change": "capability matrix entry added",
+        "class": "compatible",
+        "rationale": "criterion: new optional element"
+      },
+      {
+        "change": "capability matrix entry removed or changed",
+        "class": "conditional",
+        "rationale": "criterion: re-evaluation of the adapter disposition before activation (backfill step); fail-closed by the normalisation of ADD v1.3 :438-439"
+      }
+    ]
+  },
   "implementers": [
     {
       "agent": "Claude Code",
       "iterations": [
         1,
         2,
-        3
+        3,
+        4
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -286,18 +535,14 @@
     }
   ],
   "no_new_dependency": "stdlib, PyYAML and jsonschema only; uv.lock and pyproject.toml unchanged",
-  "open_decision_requests": [
-    "NCP-U01-RETAINED-C1-BUILDERS (PR #438): retained C1 builders versus the mission thread OCOR-DEV-0031 and the FR-045 change mapping; blocks the NCR-C1-002 transition, the test_ocor_dev_0028.py:81 realign, the campaign, the seal and the merge"
-  ],
+  "open_decision_requests": [],
   "plan_unit": "NCP-U01",
   "requalifications_planned": {
-    "depending_on_disposition": [
-      "OCOR-DEV-0028",
-      "OCOR-DEV-0031",
-      "OCOR-DEV-0033"
-    ],
     "regression_only": [
       "OCOR-DEV-0005",
+      "OCOR-DEV-0028",
+      "OCOR-DEV-0031",
+      "OCOR-DEV-0033",
       "OCOR-DEV-0050",
       "OCOR-DEV-0082"
     ],
@@ -308,6 +553,11 @@
   },
   "required_backend": "none (pure C1 compiler; signing with a locally generated test key)",
   "resolution_probes": [
+    {
+      "entry": "NCR-C1-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_ncr_c1_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_retained_builder_output_rejected_by_admission ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py::test_retained_builder_output_rejected_by_publisher"
+    },
     {
       "entry": "NCR-C1-003",
       "outcome": "PENDING_CAMPAIGN",
@@ -345,6 +595,7 @@
     }
   ],
   "resolved_register_entries": [
+    "NCR-C1-002",
     "NCR-C1-003",
     "NCR-C1-004",
     "NCR-C1-005",
@@ -353,7 +604,7 @@
     "NCR-C1-009",
     "NCR-C1-010"
   ],
-  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main. NCR-C1-002 joins the list after the PO disposition of NCP-U01-RETAINED-C1-BUILDERS",
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
   "schema_version": "1.0",
   "status": "CANDIDATE_IN_PROGRESS",
   "task_id": "OCOR-DEV-REM-0047",
@@ -365,10 +616,21 @@
       ],
       "summary": "15 passed (14 RED cases plus one parsing-path negative test)"
     },
+    "GREEN_disposition": {
+      "commits": [
+        "a76d9656f564"
+      ],
+      "summary": "18 passed; C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing"
+    },
     "RED": {
       "commit": "fb27e601c35d",
       "fingerprint": "65ebdb63dbe8",
       "summary": "14 failed"
+    },
+    "RED_disposition": {
+      "commit": "d2dcec51284a",
+      "fingerprint": "2049a9de99a1",
+      "summary": "3 failed: signer signs a retained core; no core/format rejection; CAUSAL removal carries causal-breaking only"
     }
   }
 }

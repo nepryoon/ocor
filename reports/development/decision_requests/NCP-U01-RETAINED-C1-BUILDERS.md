@@ -85,3 +85,38 @@ publisher, di ogni output dei builder retained.
   `frontend.py` e di `NCR-C1-009` in `ports.py` (comuni alle tre opzioni).
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, registri normativi, test, soglie, timeout, gate e claim
   invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-01
+
+Decisione normativa del PO `NCP-U01-RETAINED-C1-BUILDERS (2026-11-01)`: opzione 2 (pipeline conforme nuovo; builder retained confinati come candidati non rilasciabili), con la mappatura delle classi di FR-045 del punto 3. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `51abcaa`, sha256 `5813165b79d483dc7ca61282bc7674e0883cb4de9f1be47b16b28743201008be`. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) — decisione normativa del PO
+
+Decisione **di livello normativo**, presa dal PO con istruzione esplicita, sulla decision request `NCP-U01-RETAINED-C1-BUILDERS` (`reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md`, PR #438, commit `51abcaa`, sha256 `5813165b79d483dc7ca61282bc7674e0883cb4de9f1be47b16b28743201008be`). Il PO sceglie l'opzione 2 e fissa la mappatura delle classi di FR-045 del punto 3. Integra `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)` per NCP-U01 e NCP-U12. Nessun nuovo `DEC-*`. Restano invariati ADD, LLD, contratti, schemi, registri normativi e claim.
+
+1. **Percorso normativo della release.** Una release di C1 firmata, ammessa e pubblicata nasce solo dal pipeline conforme di NCP-U01: sorgente OaC validato dal meta-schema, `CanonicalIRCore` `ocor.cir/1.0`, busta DSSE firmata, admission e publisher immutabile. Admission e publisher rifiutano ogni output dei builder retained (`RetainedCanonicalIrBuilder` in `c1/compiler.py`, `FrontendCanonicalIrBuilder` in `c1/frontend.py` e le classi di `c1/releases.py`), perché non è firmato o ha un core diverso da `ocor.cir/1.0`. Un test lo dimostra per l'admission e uno per il publisher.
+2. **Builder retained.**
+   - Comportamento e contratto restano invariati, salvo le correzioni di `NCR-C1-008` (`frontend.py`) e `NCR-C1-009` (`ports.py`). La docstring li dichiara candidati pre-normativi, non rilasciabili.
+   - Il riallineamento di `test_ocor_dev_0028.py` riga 81 previsto dal piano non si applica. Non cambiano le asserzioni sul core piatto di `test_ocor_dev_0028.py`, `test_ocor_dev_0032.py` e `test_ocor_dev_rem_0011.py`, né i test di `test_ocor_dev_0033.py`.
+   - I builder retained e `c1/releases.py` entrano fra i file da ritirare della decision request `NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT` (punto 6 della decisione sul piano). Fino ad allora non cambiano oltre a quanto detto qui.
+   - Nel registro, la prova di risoluzione delle voci di NCP-U01 che li citano fra i `code_refs` è il pipeline conforme insieme al rifiuto del punto 1, ciascuno con il proprio test.
+3. **Classi di FR-045 nel pipeline conforme** (Register v1.1 riga 141; LLD v1.1 riga 107). Valgono solo per il pipeline conforme.
+
+   | Cambiamento | Classe e obblighi |
+   |---|---|
+   | aggiunta di un elemento opzionale: proprietà nullable o con default, nuovo tipo | `compatible` |
+   | aggiunta di un elemento obbligatorio senza default | `conditional`: piano di backfill |
+   | cambio di tipo, cardinalità o chiavi | `breaking`: piano di migrazione, dual control, nuovo major |
+   | rimozione di un tipo o di una proprietà, anche in un tipo `CAUSAL` | `destructive`: in più, piano di backup e replay; senza, la release è rifiutata |
+   | cambio di un tipo `CAUSAL` o di un manifest causale | `causal-breaking`: gli obblighi di `breaking` |
+
+   - Due release identiche sono `compatible`, senza cambiamenti.
+   - Una rimozione in un tipo `CAUSAL` porta entrambe le classi, `destructive` e `causal-breaking`, con gli obblighi di tutte e due.
+   - La classe della release è la più restrittiva fra quelle dei suoi cambiamenti, nell'ordine `compatible` < `conditional` < `breaking` < `causal-breaking` < `destructive`. Il gate applica gli obblighi di ogni classe presente, non solo di quella dominante.
+   - I cambiamenti che la tabella non nomina seguono lo stesso criterio: nessun effetto su dati e consumer, `compatible`; effetto risolto da un backfill, `conditional`; incompatibilità per i consumer, `breaking`; perdita di dati, `destructive`; effetto sui modelli causali, `causal-breaking`. Il record dell'unità riporta la mappatura implementata completa, riga per riga, con la motivazione.
+4. **Mission thread (NCP-U12).** Il mission thread usa il pipeline conforme di C1, non i builder retained. In `ocor-runtime/tests/mission_thread/test_first_governed_slice.py`, `compile_mission_fixture` usa una sorgente OaC e un firmatario. È un adattamento della costruzione (caso 3 del punto 5 della decisione sul piano), con il confronto dell'albero sintattico, e con la riqualifica con supersession di `OCOR-DEV-0031` già prevista per NCP-U12. Il resto del mission thread segue l'ambito di NCP-U12 del piano.
+5. **Riqualifiche di NCP-U01.**
+   - Con supersession: `OCOR-DEV-0011` e `0032`, come nel piano. `0028` e `0033` non hanno riqualifica con supersession, perché i loro test non cambiano.
+   - Di sola regressione, nella classe non qualificante di `REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)`: `0005`, `0050`, `0082` e ogni task il cui ultimo record ha fra gli input un file che NCP-U01 modifica, compresi `0028`, `0031` e `0033`.
+   - Nessun test di `0028`, `0031` o `0033` cambia in NCP-U01.
+6. **Registrazione.** Al primo state sync registra questa decisione come disposition nel file della decision request, secondo `AGENTS.md`, e nell'`ITERATION_LOG.md`. Se il validatore del piano non ammette il file in un change set di solo stato, il file entra in `main` con il change set di NCP-U01, come per le decisioni precedenti. Poi riprendi `OCOR-DEV-REM-0047`. Le iterazioni già usate contano per la stima di NCP-U01.

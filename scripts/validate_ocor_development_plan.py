@@ -997,6 +997,14 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0047.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0047.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0047.log",
+        # NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 5: regression-only requalifications
+        # of the tasks whose last record has a file NCP-U01 modifies (0028, 0033), and 0031.
+        "reports/evidence/G3/OCOR-DEV-0028.requalified-rem0047.json",
+        "reports/evidence/G3/OCOR-DEV-0028.requalified-rem0047.log",
+        "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0047.json",
+        "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0047.log",
+        "reports/evidence/G4/OCOR-DEV-0033.requalified-rem0047.json",
+        "reports/evidence/G4/OCOR-DEV-0033.requalified-rem0047.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
