@@ -94,7 +94,12 @@ class FileSystemReleaseStore:
         path = self._index(package_id, version)
         if not path.is_file():
             return None
-        return path.read_text(encoding="ascii").strip()
+        try:
+            ref = path.read_bytes().decode("ascii").strip()
+        except UnicodeDecodeError as exc:
+            raise _reject(DiagnosticCode.RELEASE_REJECTED, "index", "the release index is not ASCII") from exc
+        self._object(ref)  # a bound reference is a SHA-256 URN, or the index is corrupt
+        return ref
 
     def versions(self, package_id: str) -> list[str]:
         folder = self._root / "index" / _key(package_id)
@@ -124,21 +129,37 @@ def _thaw(value: Any) -> Any:
     return value
 
 
-def _package(record: Any) -> ReleasePackage:
+def _entries(value: Any, fields: tuple[str, ...], path: str) -> list[dict[str, str]]:
+    """A stored list of records with exactly ``fields``, every value a string."""
+    if not isinstance(value, list) or not all(
+        isinstance(item, dict) and set(item) == set(fields) and all(isinstance(v, str) for v in item.values())
+        for item in value
+    ):
+        raise _reject(DiagnosticCode.RELEASE_REJECTED, f"record/{path}", "stored field has the wrong shape")
+    return value
+
+
+def _package(record: dict[str, Any]) -> ReleasePackage:
+    envelope, artifacts = record.get("envelope"), record.get("artifacts")
+    if not isinstance(envelope, dict) or not isinstance(envelope.get("payload"), str):
+        raise _reject(DiagnosticCode.RELEASE_REJECTED, "record/envelope", "stored envelope has the wrong shape")
+    if not isinstance(artifacts, dict) or not all(isinstance(v, str) for v in artifacts.values()):
+        raise _reject(DiagnosticCode.RELEASE_REJECTED, "record/artifacts", "stored artefacts have the wrong shape")
+    manifest = _entries(record.get("artifact_manifest"), ("artifact_id", "media_type", "digest"), "artifact_manifest")
+    lock = _entries(record.get("dependency_lock"), ("resource_id", "version", "digest"), "dependency_lock")
     try:
-        envelope = record["envelope"]
         core = parse_core(base64.b64decode(envelope["payload"], validate=True))
         release = CanonicalIrRelease.create(
             core=core,
-            artifacts=tuple(ArtifactManifestEntry(**entry) for entry in record["artifact_manifest"]),
+            artifacts=tuple(ArtifactManifestEntry(**entry) for entry in manifest),
             signature_envelope_ref=canonical_digest(envelope),
         )
         return ReleasePackage.create(
             signed=SignedRelease(release=release, envelope=envelope),
-            dependency_lock=tuple(DependencyLockEntry(**entry) for entry in record["dependency_lock"]),
-            artifacts={key: base64.b64decode(value, validate=True) for key, value in record["artifacts"].items()},
+            dependency_lock=tuple(DependencyLockEntry(**entry) for entry in lock),
+            artifacts={key: base64.b64decode(value, validate=True) for key, value in artifacts.items()},
         )
-    except (KeyError, TypeError, binascii.Error, ValueError) as exc:
+    except (KeyError, TypeError, AttributeError, binascii.Error, ValueError) as exc:
         if isinstance(exc, C1Error):
             raise
         raise _reject(DiagnosticCode.RELEASE_REJECTED, "record", "stored release record is malformed") from exc
@@ -170,6 +191,12 @@ class ImmutableReleasePublisher:
         return ref
 
     def read(self, ref: str) -> ReleasePackage:
+        """The stored package, returned only if admission accepts it again (ADD v1.3 :523)."""
+        package = self._load(ref)
+        self._admission.verify(package)
+        return package
+
+    def _load(self, ref: str) -> ReleasePackage:
         data = self._store.get(ref)
         try:
             record = parse_i_json(data)
@@ -180,7 +207,7 @@ class ImmutableReleasePublisher:
         return _package(record)
 
     def verify(self, ref: str) -> Any:
-        return self._admission.verify(self.read(ref))
+        return self._admission.verify(self._load(ref))
 
     def latest(self, package_id: str) -> str | None:
         versions = self._store.versions(package_id)

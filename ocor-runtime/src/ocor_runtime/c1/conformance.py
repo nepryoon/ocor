@@ -95,14 +95,17 @@ class IrConformanceSuite:
                     "checks": [{"check": "digest", "status": "FAIL", "detail": str(error)[:200]}]}
         checks.append({"check": "digest", "status": "PASS" if digest_ok else "FAIL",
                        "detail": "" if digest_ok else "ir_digest does not bind the core"})
-        structure_ok = _core_structure(core) is None
+        try:
+            structure_ok = _core_structure(core) is None
+        except (KeyError, TypeError, AttributeError):
+            structure_ok = False
         for name, check in self.CHECKS:
             if name != "core_structure" and not structure_ok:
                 checks.append({"check": name, "status": "FAIL", "detail": "not evaluated: core structure invalid"})
                 continue
             try:
                 problem = check(core)
-            except (KeyError, TypeError) as error:
+            except (KeyError, TypeError, AttributeError) as error:
                 problem = f"malformed core: {error!r}"[:200]
             checks.append({"check": name, "status": "FAIL" if problem else "PASS", "detail": problem or ""})
         status = "PASS" if all(item["status"] == "PASS" for item in checks) else "FAIL"

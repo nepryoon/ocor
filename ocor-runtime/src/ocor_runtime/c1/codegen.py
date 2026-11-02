@@ -18,7 +18,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from .ir import ARTIFACT_MEDIA_TYPES, parse_core
+from .ir import ARTIFACT_MEDIA_TYPES, malformed_core_rejected, parse_core, require_core_shape
 from .ports import ArtifactManifestEntry, C1Diagnostic, C1Error, CanonicalIrRelease, DiagnosticCode
 
 DECIMAL_PATTERN = r"^-?(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$"
@@ -420,13 +420,15 @@ class IrArtifactGenerator:
 
     def render(self, release: CanonicalIrRelease) -> dict[str, bytes]:
         core = parse_core(release.canonical_bytes)
-        model = _Model(core, release.ir_digest)
-        files: dict[str, bytes] = {}
-        for entry in core["artifact_plan"]:
-            renderer = _RENDERERS.get(entry["artifact_kind"])
-            if renderer is None or ARTIFACT_MEDIA_TYPES.get(entry["artifact_kind"]) != entry["media_type"]:
-                raise C1Error((_drift(entry["artifact_id"], "artifact kind has no generator"),))
-            files[entry["artifact_id"]] = renderer(model)
+        require_core_shape(core)
+        with malformed_core_rejected():
+            model = _Model(core, release.ir_digest)
+            files: dict[str, bytes] = {}
+            for entry in core["artifact_plan"]:
+                renderer = _RENDERERS.get(entry["artifact_kind"])
+                if renderer is None or ARTIFACT_MEDIA_TYPES.get(entry["artifact_kind"]) != entry["media_type"]:
+                    raise C1Error((_drift(entry["artifact_id"], "artifact kind has no generator"),))
+                files[entry["artifact_id"]] = renderer(model)
         return dict(sorted(files.items()))
 
     def generate(self, release: CanonicalIrRelease) -> tuple[ArtifactManifestEntry, ...]:
@@ -443,7 +445,9 @@ class IrArtifactGenerator:
         problems += [_drift(key, "artefact is not in the artifact plan") for key in sorted(set(files) - set(expected))]
         problems += [_drift(key, "artefact differs from the IR") for key in sorted(set(expected) & set(files))
                      if bytes(files[key]) != expected[key]]
-        if release.artifacts and tuple(release.artifacts) != self.generate(release):
-            problems.append(_drift("artifacts", "the artefact manifest differs from the IR"))
+        # Admission verifies the artifact manifest (ADD v1.3 :523): a missing or partial
+        # manifest is drift from the artifact_plan, never a manifest left unchecked.
+        if tuple(release.artifacts) != self.generate(release):
+            problems.append(_drift("artifacts", "the artefact manifest is missing, incomplete or differs from the IR"))
         if problems:
             raise C1Error(tuple(problems))

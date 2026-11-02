@@ -22,10 +22,12 @@ standard library, so the runtime gains no dependency.
 
 from __future__ import annotations
 
+import math
 import re
 import struct
 import unicodedata
 from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from typing import Any
 
 import jsonschema
@@ -729,42 +731,66 @@ def _fields(data: bytes) -> Iterator[tuple[int, int, Any]]:
             raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "protobuf", f"unsupported wire type {wire}"),))
 
 
+def _invalid(message: str) -> C1Error:
+    return C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "protobuf", message),))
+
+
+def _utf8(payload: bytes) -> str:
+    try:
+        return payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise _invalid("a Struct string is not UTF-8") from exc
+
+
 def _decode_value(data: bytes) -> Any:
-    result: Any = None
-    for number, wire, payload in _fields(data):
-        if number == 1 and wire == 0:
-            result = None
-        elif number == 2 and wire == 1:
-            number_value = struct.unpack("<d", payload)[0]
-            result = int(number_value) if float(number_value).is_integer() else number_value
-        elif number == 3 and wire == 2:
-            result = payload.decode("utf-8")
-        elif number == 4 and wire == 0:
-            result = bool(payload)
-        elif number == 5 and wire == 2:
-            result = _decode_struct(payload)
-        elif number == 6 and wire == 2:
-            result = [_decode_value(item) for n, w, item in _fields(payload) if n == 1 and w == 2]
-        else:
-            raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "protobuf", f"unexpected Value field {number}"),))
-    return result
+    """Exactly one kind per Value (oneof), each in the only form the encoder writes."""
+    kinds = list(_fields(data))
+    if len(kinds) != 1:
+        raise _invalid("a Value carries exactly one kind")
+    number, wire, payload = kinds[0]
+    if number == 1 and wire == 0:
+        if payload != 0:
+            raise _invalid("null_value is not NULL_VALUE")
+        return None
+    if number == 2 and wire == 1:
+        number_value = struct.unpack("<d", payload)[0]
+        if not math.isfinite(number_value):
+            raise _invalid("number_value is not finite")
+        if not number_value.is_integer():
+            return number_value
+        if abs(number_value) > 2**53:
+            raise _invalid("integer exceeds the exact double range")
+        return int(number_value)
+    if number == 3 and wire == 2:
+        return _utf8(payload)
+    if number == 4 and wire == 0:
+        if payload not in (0, 1):
+            raise _invalid("bool_value is not 0 or 1")
+        return payload == 1
+    if number == 5 and wire == 2:
+        return _decode_struct(payload)
+    if number == 6 and wire == 2:
+        items = []
+        for n, w, item in _fields(payload):
+            if n != 1 or w != 2:
+                raise _invalid("unexpected ListValue field")
+            items.append(_decode_value(item))
+        return items
+    raise _invalid(f"unexpected Value field {number}")
 
 
 def _decode_struct(data: bytes) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for number, wire, entry in _fields(data):
         if number != 1 or wire != 2:
-            raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "protobuf", "unexpected Struct field"),))
-        key: str | None = None
-        value: Any = None
-        for n, w, payload in _fields(entry):
-            if n == 1 and w == 2:
-                key = payload.decode("utf-8")
-            elif n == 2 and w == 2:
-                value = _decode_value(payload)
-        if key is None or key in out:
-            raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "protobuf", "missing or duplicate Struct key"),))
-        out[key] = value
+            raise _invalid("unexpected Struct field")
+        parts = list(_fields(entry))
+        if [(n, w) for n, w, _ in parts] != [(1, 2), (2, 2)]:
+            raise _invalid("a Struct entry is exactly one key and one value")
+        key = _utf8(parts[0][2])
+        if key in out:
+            raise _invalid("duplicate Struct key")
+        out[key] = _decode_value(parts[1][2])
     return out
 
 
@@ -780,7 +806,11 @@ def decode_protobuf(data: bytes) -> tuple[str, dict[str, Any]]:
     digest, core = envelope.get("ir_digest"), envelope.get("core")
     if set(envelope) != {"core", "ir_digest"} or not isinstance(digest, str) or not isinstance(core, dict):
         raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "protobuf", "not an IR Protobuf envelope"),))
-    if canonical_digest(core) != digest:
+    try:
+        bound = canonical_digest(core)
+    except ValueError as exc:
+        raise _invalid("the core is not I-JSON") from exc
+    if bound != digest:
         raise C1Error((_diag(DiagnosticCode.SIGNATURE_INVALID, "protobuf", "ir_digest does not bind the core"),))
     return digest, core
 
@@ -795,6 +825,78 @@ def parse_core(data: bytes) -> dict[str, Any]:
     if not isinstance(core, dict) or canonical_bytes(core) != bytes(data):
         raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, "core", "IR bytes are not RFC 8785 canonical"),))
     return core
+
+
+# Entry fields of each CanonicalIRCore collection as the compiler writes them
+# (required, optional); the first required field is the stable identifier.
+_ENTRY_FIELDS: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "namespaces": (("namespace_id", "default_marking", "ownership_boundary", "prefix", "uri"), ()),
+    "modules": (("module_id", "definition_refs", "exports", "imports", "namespace_ref", "owner", "review_date",
+                 "reviewer", "status", "steward", "version"), ()),
+    "symbol_table": (("symbol_id", "kind", "module_ref", "version"), ()),
+    "types": (("type_id", "interfaces", "keys", "kind", "properties", "security_profile_ref", "version"),
+              ("label", "lifecycle_ref", "values")),
+    "links": (("link_id", "properties", "roles", "security_profile_ref"), ()),
+    "constraints": (("constraint_id", "evaluation_phase", "execution_owner", "kind", "repair_strategy", "scope_ref",
+                     "severity", "typed_expression", "validity"), ()),
+    "temporal_semantics": (("owner_ref", "mode", "precision", "system_from_field", "system_to_field",
+                            "timezone_policy", "valid_from_field", "valid_to_field"), ()),
+    "derived_definitions": (("derived_id", "dependency_refs", "execution_owner", "materialization_policy",
+                             "result_type_ref", "typed_ast"), ()),
+    "named_contracts": (("contract_id", "approval_refs", "effect_class", "error_model", "input_schema", "kind",
+                         "output_schema", "policy_refs", "risk_class", "version"), ()),
+    "causal_manifests": (("type_id", "mechanism_digest", "version"), ()),
+    "security_profiles": (("security_profile_id", "default_marking", "marking_scheme", "marking_scheme_ref"), ()),
+    "capability_matrix": (("semantic_capability_id", "adapter_role", "approved_exception", "disposition",
+                           "evidence_ref", "limitation"), ()),
+    "artifact_plan": (("artifact_kind", "artifact_id", "media_type"), ()),
+}
+
+
+def require_core_shape(core: Mapping[str, Any]) -> None:
+    """The CanonicalIRCore shape (ADD v1.3 :441-462): keys, release block, collections and entries.
+
+    Every release field is a string (the semantic version a SemVer); every collection
+    is a list of objects with the fields the compiler writes, identifiers as strings.
+    Nested values are read under ``malformed_core_rejected``.
+    """
+    def invalid(path: str, message: str) -> C1Error:
+        return C1Error((_diag(DiagnosticCode.SOURCE_INVALID, path, message),))
+
+    if set(core) != set(CORE_KEYS) or core.get("format") != IR_FORMAT:
+        raise invalid("core", "core keys or format differ from CanonicalIRCore")
+    release = core["release"]
+    if not isinstance(release, Mapping) or set(release) != set(RELEASE_KEYS):
+        raise invalid("core/release", "release block differs from CanonicalIRCore")
+    for key in RELEASE_KEYS:
+        if not isinstance(release[key], str):
+            raise invalid(f"core/release/{key}", "not a string")
+    if SEMVER.fullmatch(release["semantic_version"]) is None:
+        raise invalid("core/release/semantic_version", "not a SemVer version")
+    for key, (required, optional) in _ENTRY_FIELDS.items():
+        entries = core[key]
+        if not isinstance(entries, list):
+            raise invalid(f"core/{key}", "not a list of objects")
+        for index, entry in enumerate(entries):
+            if (not isinstance(entry, Mapping) or not set(required) <= set(entry) <= set(required) | set(optional)
+                    or not isinstance(entry[required[0]], str)):
+                raise invalid(f"core/{key}/{index}", "entry fields differ from CanonicalIRCore")
+
+
+@contextmanager
+def malformed_core_rejected(path: str = "core") -> Iterator[None]:
+    """Translate a shape error met while reading an ``ocor.cir/1.0`` core into ``C1Error``.
+
+    A core is external data once stored or signed: a missing key, a ``null`` or a value
+    of the wrong type is rejected with the typed error, never a raw Python exception.
+    """
+    try:
+        yield
+    except C1Error:
+        raise
+    except (KeyError, TypeError, AttributeError, IndexError, ValueError) as exc:
+        raise C1Error((_diag(DiagnosticCode.SOURCE_INVALID, path,
+                             f"the core does not have the CanonicalIRCore shape: {type(exc).__name__}"),)) from exc
 
 
 def semver_major(version: str) -> int:

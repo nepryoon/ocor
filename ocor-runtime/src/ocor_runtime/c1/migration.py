@@ -18,7 +18,7 @@ from enum import StrEnum
 from typing import Any
 
 from ..kernel.canonical import canonical_digest
-from .ir import parse_core, semver_major, semver_precedence
+from .ir import malformed_core_rejected, parse_core, require_core_shape, semver_major, semver_precedence
 from .ports import C1Diagnostic, C1Error, CanonicalIrRelease, DiagnosticCode
 
 
@@ -84,12 +84,6 @@ def _property_change(before: Mapping[str, Any], after: Mapping[str, Any]) -> Cha
 def _type_changes(before: Mapping[str, Any], after: Mapping[str, Any], causal: bool) -> list[dict[str, str]]:
     type_id = str(after["type_id"])
     base = f"types/{type_id}"
-    if causal and before != after:
-        # NCP-U01-RETAINED-C1-BUILDERS point 3: a removal in a CAUSAL type is both
-        # destructive and causal-breaking, with the obligations of both classes.
-        removed = sorted({p["property_id"] for p in before["properties"]} - {p["property_id"] for p in after["properties"]})
-        return [_change(base, "changed", ChangeClass.CAUSAL_BREAKING, type_id)] + [
-            _change(f"{base}/properties/{prop_id}", "removed", ChangeClass.DESTRUCTIVE, prop_id) for prop_id in removed]
     changes: list[dict[str, str]] = []
     if before["kind"] != after["kind"]:
         changes.append(_change(f"{base}/kind", "changed", ChangeClass.BREAKING, type_id))
@@ -110,12 +104,71 @@ def _type_changes(before: Mapping[str, Any], after: Mapping[str, Any], causal: b
         if old[prop_id] != new[prop_id]:
             changes.append(_change(f"{base}/properties/{prop_id}", "changed",
                                    _property_change(old[prop_id], new[prop_id]), prop_id))
+    if causal and before != after:
+        # NCP-U01-RETAINED-C1-BUILDERS point 3: a change of a CAUSAL type is
+        # causal-breaking (with the obligations of breaking); the conditional and
+        # destructive changes it contains keep their own class, so the gate applies
+        # backfill, backup and replay too ("ogni classe presente").
+        kept = (ChangeClass.CONDITIONAL.value, ChangeClass.DESTRUCTIVE.value)
+        changes = [_change(base, "changed", ChangeClass.CAUSAL_BREAKING, type_id)] + [
+            change if change["class"] in kept else {**change, "class": ChangeClass.CAUSAL_BREAKING.value}
+            for change in changes]
     return changes
+
+
+# Module fields (ADD v1.3 :446) and their class when changed, by the criterion of
+# NCP-U01-RETAINED-C1-BUILDERS point 3 for changes the FR-045 table does not name.
+_MODULE_FIELDS: Mapping[str, ChangeClass] = {
+    "namespace_ref": ChangeClass.BREAKING,      # every exported symbol changes namespace
+    "imports": ChangeClass.CONDITIONAL,         # resolved by the dependency lock, as lock_digest
+    "owner": ChangeClass.COMPATIBLE,            # governance metadata: no effect on data or consumers
+    "steward": ChangeClass.COMPATIBLE,
+    "reviewer": ChangeClass.COMPATIBLE,
+    "review_date": ChangeClass.COMPATIBLE,
+    "version": ChangeClass.COMPATIBLE,          # the release version is gated separately
+}
+# definition_refs is derived from the definitions, each classified in its own collection
+# (a definition moved between modules is classified through the symbol table).
+
+
+def _module_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[dict[str, str]]:
+    module_id = str(after["module_id"])
+    base = f"modules/{module_id}"
+    changes = [_change(f"{base}/{field}", "changed", klass, module_id)
+               for field, klass in sorted(_MODULE_FIELDS.items()) if before[field] != after[field]]
+    # A removed export breaks the consumers that import it; an added export does not.
+    changes += [_change(f"{base}/exports/{symbol}", "removed", ChangeClass.BREAKING, symbol)
+                for symbol in sorted(set(before["exports"]) - set(after["exports"]))]
+    changes += [_change(f"{base}/exports/{symbol}", "added", ChangeClass.COMPATIBLE, symbol)
+                for symbol in sorted(set(after["exports"]) - set(before["exports"]))]
+    if before["status"] != after["status"]:
+        # Deprecation announces the removal to consumers: it carries the deprecation
+        # plan, dual control and a new major. The review states before it are metadata.
+        deprecated = "DEPRECATED" in {before["status"], after["status"]}
+        changes.append(_change(f"{base}/status", "changed",
+                               ChangeClass.BREAKING if deprecated else ChangeClass.COMPATIBLE, module_id))
+    return changes
+
+
+def _symbol_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[dict[str, str]]:
+    """A symbol that moves to another module, or changes kind, breaks the importers of the old one."""
+    old = {str(e["symbol_id"]): e for e in before["symbol_table"]}
+    new = {str(e["symbol_id"]): e for e in after["symbol_table"]}
+    return [_change(f"symbol_table/{symbol}", "changed", ChangeClass.BREAKING, symbol)
+            for symbol in sorted(set(old) & set(new))
+            if (old[symbol]["module_ref"], old[symbol]["kind"]) != (new[symbol]["module_ref"], new[symbol]["kind"])]
 
 
 def semantic_changes(previous: CanonicalIrRelease, candidate: CanonicalIrRelease) -> list[dict[str, str]]:
     """The classified, ordered list of semantic changes between two releases."""
     before, after = parse_core(previous.canonical_bytes), parse_core(candidate.canonical_bytes)
+    require_core_shape(before)
+    require_core_shape(after)
+    with malformed_core_rejected():
+        return _semantic_changes(before, after)
+
+
+def _semantic_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[dict[str, str]]:
     changes: list[dict[str, str]] = []
     for field in ("lock_digest", "mapping_version"):
         if before["release"][field] != after["release"][field]:
@@ -132,6 +185,16 @@ def semantic_changes(previous: CanonicalIrRelease, candidate: CanonicalIrRelease
     for type_id in sorted(set(old_types) & set(new_types)):
         causal = "CAUSAL" in {old_types[type_id]["kind"], new_types[type_id]["kind"]}
         changes += _type_changes(old_types[type_id], new_types[type_id], causal)
+    old_modules, new_modules = _index(before["modules"], "module_id"), _index(after["modules"], "module_id")
+    changes += [_change(f"modules/{i}", "added", ChangeClass.COMPATIBLE, i)
+                for i in sorted(set(new_modules) - set(old_modules))]
+    # Removing a module removes what its importers resolve; its definitions are
+    # classified in their own collections (a removed type stays destructive).
+    changes += [_change(f"modules/{i}", "removed", ChangeClass.BREAKING, i)
+                for i in sorted(set(old_modules) - set(new_modules))]
+    for module_id in sorted(set(old_modules) & set(new_modules)):
+        changes += _module_changes(old_modules[module_id], new_modules[module_id])
+    changes += _symbol_changes(before, after)
     for collection, key, added, removed, changed in _COLLECTIONS:
         old, new = _index(before[collection], key), _index(after[collection], key)
         changes += [_change(f"{collection}/{i}", "added", added, i) for i in sorted(set(new) - set(old))]
@@ -170,8 +233,9 @@ class IrMigrationPlanner:
              backup_ref: str | None = None, replay_plan_ref: str | None = None) -> dict[str, Any]:
         changes = self._engine.changes(previous, candidate)
         classes = sorted({c["class"] for c in changes} or {ChangeClass.COMPATIBLE.value})
-        before = parse_core(previous.canonical_bytes)["release"]
-        after = parse_core(candidate.canonical_bytes)["release"]
+        with malformed_core_rejected():
+            before = parse_core(previous.canonical_bytes)["release"]
+            after = parse_core(candidate.canonical_bytes)["release"]
         migration = [{"op": {"added": "expand", "changed": "expand-migrate-contract", "removed": "contract"}[c["op"]],
                       "path": c["path"], "class": c["class"]}
                      for c in changes if c["class"] != ChangeClass.COMPATIBLE.value]

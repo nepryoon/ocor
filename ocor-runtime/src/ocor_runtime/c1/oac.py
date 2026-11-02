@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Hashable, Mapping, Sequence
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -334,6 +334,8 @@ def _construct_mapping(loader: _StrictLoader, node: yaml.MappingNode, deep: bool
     result: dict[Any, Any] = {}
     for key_node, value_node in node.value:
         key = loader.construct_object(key_node, deep=deep)
+        if not isinstance(key, Hashable):
+            raise yaml.constructor.ConstructorError(None, None, "a mapping key is not a scalar", key_node.start_mark)
         if key in result:
             raise yaml.constructor.ConstructorError(None, None, f"duplicate key {key!r}", key_node.start_mark)
         result[key] = loader.construct_object(value_node, deep=deep)

@@ -703,7 +703,9 @@ def test_ncr_c1_005_conforms() -> None:
 
         assert protoc.main(["protoc", f"-I{tmp}", f"--python_out={tmp}", str(proto)]) == 0
 
-    # Drift between a generated artefact and the IR blocks the release.
+    # Drift between a generated artefact and the IR blocks the release. The release
+    # carries its artifact manifest (ADD v1.3 :523), as PackageRelease attaches it.
+    release = release.with_artifacts(manifest)
     generator.check_drift(release, files)
     _rejected(lambda: generator.check_drift(release, {**files, f"{package_id}:openapi": b"{}"}),
               DiagnosticCode.ARTIFACT_DRIFT)

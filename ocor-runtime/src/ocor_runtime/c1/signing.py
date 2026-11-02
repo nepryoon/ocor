@@ -23,12 +23,12 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import MappingProxyType
-from typing import Any
+from typing import Any, cast
 
 import jsonschema
 
 from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp
-from .ir import IR_FORMAT, parse_core
+from .ir import IR_FORMAT, malformed_core_rejected, parse_core, require_core_shape
 from .ports import (
     ArtifactManifestEntry,
     C1Diagnostic,
@@ -337,10 +337,12 @@ class ReleaseAdmission:
     def __init__(self, *, trust_root: TrustRoot, accepted_compiler_versions: Sequence[str],
                  generator: Any | None = None) -> None:
         from .codegen import IrArtifactGenerator
+        from .conformance import IrConformanceSuite
 
         self._trust = trust_root
         self._compilers = frozenset(accepted_compiler_versions)
         self._generator = generator or IrArtifactGenerator()
+        self._conformance = IrConformanceSuite()
 
     def verify(self, package: ReleasePackage) -> AdmissionReceipt:
         release = package.signed.release
@@ -348,9 +350,16 @@ class ReleaseAdmission:
         signature = self._verify_envelope(release, envelope)
         core = parse_core(release.canonical_bytes)
         _require_ir_format(core)
-        meta = core.get("release")
-        if not isinstance(meta, dict):
-            raise _reject(DiagnosticCode.RELEASE_REJECTED, "core/release", "the core has no release block")
+        # The core is external data: its CanonicalIRCore shape (ADD v1.3 :441-462) is
+        # verified by the conformance suite before any field is read.
+        with malformed_core_rejected():
+            require_core_shape(core)
+        report = self._conformance.run(release)
+        if report["status"] != "PASS":
+            checks = cast(list[dict[str, str]], report["checks"])
+            failed = sorted(item["check"] for item in checks if item["status"] != "PASS")
+            raise _reject(DiagnosticCode.RELEASE_REJECTED, "core", f"the core fails the conformance suite: {failed}")
+        meta = core["release"]
         if meta.get("compiler_version") not in self._compilers:
             raise _reject(DiagnosticCode.RELEASE_REJECTED, "core/release/compiler_version",
                           "the compiler version is not admitted")
@@ -358,9 +367,10 @@ class ReleaseAdmission:
                        for e in package.dependency_lock), key=lambda e: (e["resource_id"], e["version"]))
         if canonical_digest(lock) != meta.get("lock_digest"):
             raise _reject(DiagnosticCode.LOCK_INVALID, "dependency_lock", "the lock does not match lock_digest")
-        self._generator.check_drift(release, dict(package.artifacts))
+        with malformed_core_rejected():
+            self._generator.check_drift(release, dict(package.artifacts))
         return AdmissionReceipt(
-            package_id=str(meta["package_id"]), semantic_version=str(meta["semantic_version"]),
+            package_id=meta["package_id"], semantic_version=meta["semantic_version"],
             ir_digest=release.ir_digest, envelope_ref=release.signature_envelope_ref, keyid=signature,
             artifact_manifest_digest=manifest_digest(release.artifacts),
         )
