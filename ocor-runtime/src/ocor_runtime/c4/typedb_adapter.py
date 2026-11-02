@@ -31,9 +31,11 @@ file, no adapters/ split, since it is itself already the adapter).
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import urllib.error
 import urllib.request
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -175,6 +177,85 @@ def _read(query: str) -> list[dict[str, Any]]:
     return list(answers)
 
 
+# Every way a TypeDB answer can fail to be a well-formed result: transport (refused,
+# protocol, HTTP status), decoding (non UTF-8, non JSON) and shape.
+_ANSWER_FAILURES = (TypeDBAdapterError, OSError, http.client.HTTPException, ValueError, KeyError, TypeError)
+
+
+def _strict_request(method: str, url: str, *, token: str | None = None, body: object = None) -> object:
+    """One TypeDB HTTP exchange whose answer is untrusted: a non-200 status, a body that is
+    not UTF-8 or not JSON fails here, before any field is read."""
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    data = None if body is None else json.dumps(body).encode("utf-8")
+    request = urllib.request.Request(url, method=method, data=data, headers=headers)
+    with urllib.request.urlopen(request, timeout=10.0) as response:
+        if response.status != 200:
+            raise TypeDBAdapterError(f"TypeDB answered HTTP {response.status}")
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _field(answer: object, name: str) -> str:
+    if not isinstance(answer, Mapping):
+        raise TypeDBAdapterError("the TypeDB answer is not an object")
+    value = answer.get(name)
+    if not isinstance(value, str) or not value:
+        raise TypeDBAdapterError(f"the TypeDB answer has no {name}")
+    return value
+
+
+def read_rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]:
+    """Run a read query and return, for each answer row, the raw ``value`` of each named
+    variable -- never converted. Every failure, of the transport or of the answer shape,
+    is the typed fail-closed ``CONTROL_PLANE_UNAVAILABLE`` (ADD v1.3 :174; Named Query
+    Gateway contract :486-491): no raw exception and no partial result leaves the adapter."""
+
+    try:
+        token = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/signin",
+                                       body={"username": "admin", "password": "password"}), "token")
+        transaction = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/transactions/open", token=token,
+                                             body={"databaseName": DATABASE, "transactionType": "read"}),
+                             "transactionId")
+        try:
+            result = _strict_request("POST", f"{TYPEDB_URL}/v1/transactions/{transaction}/query", token=token,
+                                     body={"query": query})
+        finally:
+            _close(transaction, token)
+        if not isinstance(result, Mapping) or not isinstance(result.get("answers"), list):
+            raise TypeDBAdapterError("the TypeDB answer has no answer list")
+        rows: list[dict[str, object]] = []
+        for answer in result["answers"]:
+            data = answer.get("data") if isinstance(answer, Mapping) else None
+            if not isinstance(data, Mapping):
+                raise TypeDBAdapterError("a TypeDB answer row has no data")
+            row: dict[str, object] = {}
+            for name in variables:
+                concept = data.get(name)
+                if not isinstance(concept, Mapping) or "value" not in concept:
+                    raise TypeDBAdapterError(f"a TypeDB answer row has no value for {name}")
+                row[name] = concept["value"]
+            rows.append(row)
+        return rows
+    except C2Error:
+        raise
+    except _ANSWER_FAILURES as exc:
+        raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
+
+
+def _position_value(value: object) -> int:
+    """A commit position is a positive integer as stored: no bool, float or text."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection returned a malformed commit position")
+    return value
+
+
+def _text_value(value: object) -> str:
+    if not isinstance(value, str) or not value:
+        raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection returned a malformed value")
+    return value
+
+
 def _ensure_database() -> None:
     token = _token()
     status, body = _request("GET", f"{TYPEDB_URL}/v1/databases", headers={"Authorization": f"Bearer {token}"})
@@ -236,18 +317,19 @@ class TypeDBProjectionAdapter:
         _write(*statements)
 
     def _next_sequence(self) -> int:
-        rows = _read("match $o isa c4-commit-order, has c4-commit-seq $s;")
-        return 1 + max((int(row["data"]["s"]["value"]) for row in rows), default=0)
+        rows = read_rows("match $o isa c4-commit-order, has c4-commit-seq $s;", ("s",))
+        return 1 + max((_position_value(row["s"]) for row in rows), default=0)
 
     def position(self, branch: str, commit: str) -> int | None:
         """``CommitOrderingPort``: the position of ``commit`` among the commits applied
         to ``branch``, or ``None`` when it has not landed (or on another branch)."""
         if branch != BRANCH or not isinstance(commit, str) or not commit:
             return None
-        rows = _read(f"match $o isa c4-commit-order, has c4-commit-id {_literal(commit)}, has c4-commit-seq $s;")
+        rows = read_rows(f"match $o isa c4-commit-order, has c4-commit-id {_literal(commit)}, has c4-commit-seq $s;",
+                         ("s",))
         if not rows:
             return None
-        return int(rows[0]["data"]["s"]["value"])
+        return _position_value(rows[0]["s"])
 
     def current_watermark(self) -> str | None:
         rows = _read("match $w isa c4-watermark, has c4-commit-id $c;")
@@ -256,14 +338,14 @@ class TypeDBProjectionAdapter:
         return str(rows[0]["data"]["c"]["value"])
 
     def _lookup_fact(self, fact_id: str) -> tuple[str, str] | None:
-        rows = _read(
+        rows = read_rows(
             f"match $f isa c4-fact, has c4-fact-id {_literal(fact_id)}, "
-            f"has c4-commit-id $c, has c4-payload $p;"
+            f"has c4-commit-id $c, has c4-payload $p;",
+            ("c", "p"),
         )
         if not rows:
             return None
-        row = rows[0]["data"]
-        return str(row["c"]["value"]), str(row["p"]["value"])
+        return _text_value(rows[0]["c"]), _text_value(rows[0]["p"])
 
     def read(self, request: NamedQueryRequest) -> NamedQueryResponse:
         fact_id = request.parameters.get("fact_id")

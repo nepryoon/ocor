@@ -20,10 +20,17 @@ operations of ``ocor-named-query-gateway.openapi.yaml`` (:8-98; ADD v1.3 :283):
 8. every response discloses the served branch, release, commit, watermark, staleness,
    result marking and provenance (NFR-024, Register :180; contract :254-273).
 
-Every failure is a typed ``C2Error`` of the closed Problem enum; every denial or
-rejection is appended to the single audit port before it is answered (FR-056,
+Every failure is a typed ``C2Error`` of the closed Problem enum; every denial, rejection
+or failure is appended to the single audit port before it is answered (FR-056,
 Register :178; NFR-034; FR-134; ADD v1.3 :3143), and an audit that cannot be made
-durable turns the answer into ``CONTROL_PLANE_UNAVAILABLE``.
+durable turns the answer into ``CONTROL_PLANE_UNAVAILABLE``. The context-policy decision
+is verified against the very request before it permits anything (ADD v1.3 :3141); an
+invalid transport identity is ``AUTHORITY_MISSING``, an unavailable control
+``CONTROL_PLANE_UNAVAILABLE`` (ADD v1.3 :174). The marking join precedes paging and graph
+expansion: pages, tokens and walks are built from authorised objects only, and a
+withheld node is never expanded (LLD v1.1 :121-122; NFR-006, Register :50). The requested
+branch and scenario reach the planned read; a branch or scenario the projections do not
+serve is ``UNSUPPORTED_CAPABILITY``, never answered from ``main`` (LLD v1.1 :124, :126).
 """
 
 from __future__ import annotations
@@ -35,7 +42,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, NoReturn, Protocol, runtime_checkable
 
 import jsonschema
 
@@ -44,7 +51,7 @@ from ..c2_identity import IdentityRegistry, ResolutionStatus
 from ..c4_marking import MarkingEngine, MarkingSet
 from ..kernel.canonical import canonical_digest
 from ..security.ports import PolicyDecisionPort as ContextPolicyPort
-from ..security.ports import PolicyEffect, PolicyRequest, SecurityControlError
+from ..security.ports import PolicyDecision, PolicyEffect, PolicyRequest, SecurityControlError
 from .planner import ConsistencyPlanner, served_from_watermark
 from .ports import (
     AuthorityResolutionPort,
@@ -62,6 +69,16 @@ from .problem import PROBLEM_REASON_CODES
 PERMIT = "PERMIT"
 DENY = "DENY"
 PROJECTION_ID = "urn:ocor:projection:c4-typedb"
+# Branches the C4 projections serve (the canonical projection of ``main``).
+SERVED_BRANCHES = frozenset({"main"})
+# Refusals of the transport identity itself (security.ports.AuthenticatedPrincipal and
+# PolicyRequest bindings): the request has no valid authority, which is AUTHORITY_MISSING
+# (contract :455), not an outage. Every other security-control failure -- an unavailable
+# control or a policy decision that cannot be verified for the request -- is
+# CONTROL_PLANE_UNAVAILABLE on a read (ADD v1.3 :174, :3141).
+AUTHENTICATION_REFUSALS = frozenset({
+    "IDENTITY_EXPIRED", "ANONYMOUS_IDENTITY_FORBIDDEN", "IDENTITY_BINDING_MISMATCH", "PRINCIPAL_BINDING_MISMATCH",
+})
 
 
 class QueryOperation(StrEnum):
@@ -297,6 +314,7 @@ class NamedQueryGateway:
         commit_ordering: CommitOrderingPort | None = None,
         watermarks: WatermarkPort | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        served_branches: frozenset[str] = SERVED_BRANCHES,
     ) -> None:
         self._catalog = catalog
         self._authority = authority
@@ -310,6 +328,7 @@ class NamedQueryGateway:
             watermarks = projection
         self._watermarks = watermarks
         self._clock = clock
+        self._branches = frozenset(served_branches)
 
     @property
     def audit_port(self) -> AuditPort:
@@ -333,7 +352,7 @@ class NamedQueryGateway:
                 reason_code=error.reason_code,
                 authority_ref=bound.principal.session_id,
                 correlation_id=bound.query.context.correlation_id,
-                outcome="REJECTED" if error.reason_code == "SCHEMA_VIOLATION" else "DENIED",
+                outcome=_OUTCOME.get(error.reason_code, "DENIED"),
                 governed_context=None if context is None else context.to_mapping(),
                 governed_context_digest=None if context is None else context.digest(),
                 detail={"operation": operation, "request_id": bound.query.context.request_id},
@@ -343,28 +362,36 @@ class NamedQueryGateway:
 
     def _guarded(self, bound: TransportBoundQuery, operation: str,
                  work: Callable[[NamedQueryRequest], Any]) -> Any:
+        if not isinstance(bound, TransportBoundQuery):
+            # no transport principal: nothing in a body can stand in for it (ADD v1.3 :380)
+            raise C2Error("SCHEMA_VIOLATION", "a transport-bound query is required")
         holder: list[NamedQueryRequest] = []
         try:
             request = self._admit(bound, holder)
             return work(request)
         except C2Error as error:
-            typed = error
-            if error.reason_code not in PROBLEM_REASON_CODES:
-                # a sealed adapter code outside the closed enum never reaches the caller
-                typed = C2Error("POLICY_DENIED", "the request is not authorised")
-            if typed.reason_code != "CONTROL_PLANE_UNAVAILABLE":
-                self._audit_denial(bound, typed, holder[0] if holder else None, operation)
-            if typed is error:
-                raise
-            raise typed from error
-        except (SecurityControlError, OSError) as exc:
-            # identity, policy or marking control unavailable: fail closed (ADD v1.3 :174, :3141)
-            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control is unavailable") from exc
+            self._refuse(bound, holder, operation, error, error)
+        except SecurityControlError as exc:
+            refusal = C2Error("AUTHORITY_MISSING" if exc.reason_code in AUTHENTICATION_REFUSALS
+                              else "CONTROL_PLANE_UNAVAILABLE", "the governance controls refused the request")
+            self._refuse(bound, holder, operation, refusal, exc)
+        except Exception as exc:  # a port failed outside its typed contract: fail closed (ADD v1.3 :174)
+            self._refuse(bound, holder, operation,
+                         C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable"), exc)
+
+    def _refuse(self, bound: TransportBoundQuery, holder: list[NamedQueryRequest], operation: str,
+                error: C2Error, cause: BaseException) -> NoReturn:
+        typed = error
+        if error.reason_code not in PROBLEM_REASON_CODES:
+            # a sealed adapter code outside the closed enum never reaches the caller
+            typed = C2Error("POLICY_DENIED", "the request is not authorised")
+        self._audit_denial(bound, typed, holder[0] if holder else None, operation)
+        if typed is cause:
+            raise typed
+        raise typed from cause
 
     # -- steps 1-3 -----------------------------------------------------------------
     def _admit(self, bound: TransportBoundQuery, holder: list[NamedQueryRequest]) -> NamedQueryRequest:
-        if not isinstance(bound, TransportBoundQuery):
-            raise C2Error("SCHEMA_VIOLATION", "a transport-bound query is required")
         context = bound.query.context
         call = bound.query.call
         # step 2, before any identity lookup: allow-list, digest, release, parameters
@@ -385,24 +412,36 @@ class NamedQueryGateway:
         request = NamedQueryRequest(
             request_id=context.request_id, contract_id=call.contract_id, contract_version=call.contract_version,
             contract_digest=call.contract_digest, parameters=_thaw(call.parameters), governed_context=governed,
-            governed_context_digest=governed.digest(), consistency=context.consistency)
+            governed_context_digest=governed.digest(), consistency=context.consistency, branch=context.branch,
+            logic_version=context.logic_version, scenario_id=context.scenario_id)
         holder.append(request)
         # identity: an unidentified principal does not see the contract (PO choice on
         # test_ocor_dev_0034.py :261, CONTRACT_NOT_FOUND; ADD v1.3 :380)
         if self._authority.resolve(request) != principal.principal_id:
             raise C2Error("CONTRACT_NOT_FOUND", "the named contract is not allow-listed")
-        # step 3: context policy over the full GCS, then registration and marking
-        decision = self._context_policy.evaluate(PolicyRequest(
+        # step 3: context policy over the full GCS -- a decision counts only if it binds this
+        # very request within its validity (ADD v1.3 :3141) -- then registration and marking
+        policy_request = PolicyRequest(
             principal=principal, action=f"ocor.query:{call.contract_id}", resource=call.contract_id,
-            governed_context=governed, governed_context_digest=governed.digest(), at=self._clock()))
+            governed_context=governed, governed_context_digest=governed.digest(), at=self._clock())
+        decision = self._context_policy.evaluate(policy_request)
+        if not isinstance(decision, PolicyDecision):
+            raise SecurityControlError("POLICY_DECISION_INVALID", "the context policy returned no decision")
+        decision.verify(policy_request, at=self._clock())
         if decision.effect is not PolicyEffect.PERMIT:
             raise C2Error("POLICY_DENIED", "the context policy does not permit the query")
         if self._policy.decide(request) != PERMIT:
             raise C2Error("POLICY_DENIED", "the query is not authorised")
+        # step 4 starts with the projection: only the branches it serves, never a scenario
+        # world answered from main (LLD v1.1 :124, :126)
+        if request.branch not in self._branches or request.scenario_id is not None:
+            raise C2Error("UNSUPPORTED_CAPABILITY", "the projection does not serve the requested branch or scenario")
         return request
 
     def _served_now(self, context: Any) -> ServedContext:
-        watermark = None if self._watermarks is None else self._watermarks.current(PROJECTION_ID, context.branch)
+        served_branch = context.branch in self._branches and context.scenario_id is None
+        watermark = None if self._watermarks is None or not served_branch else self._watermarks.current(
+            PROJECTION_ID, context.branch)
         commit = "urn:ocor:commit:none" if watermark is None else watermark.canonical_commit
         return ServedContext(
             branch=context.branch, ontology_release_digest=self._catalog.ontology_release_digest,
@@ -442,11 +481,14 @@ class NamedQueryGateway:
                 return PERMIT
 
         planner = ConsistencyPlanner(policy=_Permit(), watermark_port=self._watermarks, projection_id=PROJECTION_ID,
-                                     branch="main", commit_ordering=self._ordering,
+                                     branch=request.branch, commit_ordering=self._ordering,
                                      monotonic=time.monotonic, sleep=time.sleep)
         observed = planner.plan(request).observed_watermark
-        served = served_from_watermark(observed, request)
-        return dataclasses.replace(served, ontology_release_digest=self._catalog.ontology_release_digest)
+        served = dataclasses.replace(served_from_watermark(observed, request),
+                                     ontology_release_digest=self._catalog.ontology_release_digest)
+        if served.branch != request.branch:
+            raise C2Error("STALE_CONTEXT", "the served branch is not the requested branch", served=served)
+        return served
 
     def _disclosure(self, request: NamedQueryRequest) -> _Disclosure:
         clearance = self._policy.clearance(request)
@@ -512,20 +554,47 @@ class NamedQueryGateway:
         result: GatewayAnswer = self._guarded(bound, QueryOperation.GET_OBJECT.value, work)
         return result
 
-    def _page(self, bound: TransportBoundQuery, operation: QueryOperation, page_size: int,
-              fetch: Callable[[ObjectProjectionPort, int], tuple[ProjectedObject, ...]],
+    def _page(self, bound: TransportBoundQuery, operation: QueryOperation, page_size: int, page_token: str | None,
+              fetch: Callable[[ObjectProjectionPort, int, str | None], tuple[ProjectedObject, ...]],
               shape: Callable[[ProjectedObject, NamedQueryRequest, _Disclosure], dict[str, Any]],
               key: str) -> GatewayAnswer:
+        """A page holds the first ``page_size`` authorised objects after the token: the
+        marking join runs before the page is cut, the token is the last authorised object
+        returned, and it is issued only when a further authorised object exists -- so neither
+        an identifier nor the existence of a withheld object past the page is disclosed
+        (LLD v1.1 :121-122, :126; NFR-006, Register :50). Withheld objects between the first
+        and the last returned object are counted as redactions (contract :322)."""
+
         def work(request: NamedQueryRequest) -> GatewayAnswer:
             self._budget(bound, items=page_size)
             objects = self._require_objects()
             served = self._served(request)
             disclosure = self._disclosure(request)
-            page = fetch(objects, page_size + 1)
-            visible = [item for item in page[:page_size] if disclosure.admit(item)]
+            visible: list[ProjectedObject] = []
+            pending: list[str] = []
+            more = False
+            cursor = page_token
+            while not more:
+                batch = fetch(objects, page_size + 1, cursor)
+                for item in batch:
+                    if not disclosure.authorized(item.resource_id):
+                        pending.append(item.resource_id)
+                    elif len(visible) == page_size:
+                        more = True
+                        break
+                    else:
+                        for withheld in pending:
+                            disclosure.withhold(withheld)
+                        pending.clear()
+                        visible.append(item)
+                if len(batch) <= page_size:
+                    break
+                cursor = batch[-1].resource_id
+            for item in visible:
+                disclosure.admit(item)
             body: dict[str, Any] = {key: [shape(item, request, disclosure) for item in visible]}
-            if len(page) > page_size:
-                body["next_page_token"] = page[page_size - 1].resource_id
+            if more:
+                body["next_page_token"] = visible[-1].resource_id
             return self._answer(request, served, disclosure, body)
 
         result: GatewayAnswer = self._guarded(bound, operation.value, work)
@@ -533,8 +602,8 @@ class NamedQueryGateway:
 
     def query_object_set(self, bound: TransportBoundQuery, *, page_size: int,
                          page_token: str | None = None) -> GatewayAnswer:
-        return self._page(bound, QueryOperation.QUERY_OBJECT_SET, page_size,
-                          lambda objects, limit: objects.page(limit=limit, after=page_token),
+        return self._page(bound, QueryOperation.QUERY_OBJECT_SET, page_size, page_token,
+                          lambda objects, limit, after: objects.page(limit=limit, after=after),
                           self._snapshot, "items")
 
     def search(self, bound: TransportBoundQuery, *, text: str, page_size: int,
@@ -548,29 +617,38 @@ class NamedQueryGateway:
                     "score": float(sum(item.text.lower().count(term) for term in terms)),
                     "score_semantics": "LEXICAL_RELEVANCE"}
 
-        return self._page(bound, QueryOperation.SEARCH, page_size,
-                          lambda objects, limit: objects.search(text, limit=limit, after=page_token), hit, "hits")
+        return self._page(bound, QueryOperation.SEARCH, page_size, page_token,
+                          lambda objects, limit, after: objects.search(text, limit=limit, after=after), hit, "hits")
 
-    def _walk(self, starts: tuple[str, ...], depth: int, follow: Callable[[ProjectedObject], tuple[str, ...]]
+    def _roots(self, refs: tuple[Mapping[str, str], ...], disclosure: _Disclosure) -> dict[str, ProjectedObject]:
+        """The requested start objects that exist with the requested type and that the
+        clearance authorises; any other start is absent -- not shown and not counted, so a
+        withheld start is indistinguishable from a missing one (NFR-006, Register :50)."""
+        wanted = {ref["resource_id"]: ref["resource_type_id"] for ref in refs}
+        return {item.resource_id: item for item in self._require_objects().get(tuple(sorted(wanted)))
+                if wanted.get(item.resource_id) == item.resource_type_id and disclosure.authorized(item.resource_id)}
+
+    def _walk(self, roots: dict[str, ProjectedObject], depth: int,
+              follow: Callable[[ProjectedObject], tuple[str, ...]], disclosure: _Disclosure
               ) -> tuple[dict[str, ProjectedObject], list[tuple[str, str]]]:
+        """Breadth-first walk that expands only authorised nodes: a withheld node may be
+        reached (and is then counted as a redaction) but its links are never followed."""
         objects = self._require_objects()
-        seen: dict[str, ProjectedObject] = {}
+        seen = dict(roots)
         edges: list[tuple[str, str]] = []
-        frontier = tuple(sorted(set(starts)))
-        for level in range(depth + 1):
-            for item in objects.get(tuple(key for key in frontier if key not in seen)):
-                seen[item.resource_id] = item
-            if level == depth:
-                break
+        frontier = tuple(sorted(roots))
+        for level in range(depth):
             following: list[str] = []
             for key in frontier:
-                if key in seen:
+                if key in seen and disclosure.authorized(key):
                     for target in follow(seen[key]):
                         edges.append((key, target))
                         following.append(target)
             frontier = tuple(sorted(set(following) - set(seen)))
             if not frontier:
                 break
+            for item in objects.get(frontier):
+                seen[item.resource_id] = item
         return seen, edges
 
     def _graph_answer(self, request: NamedQueryRequest, served: ServedContext, disclosure: _Disclosure,
@@ -598,7 +676,7 @@ class NamedQueryGateway:
             self._budget(bound, items=len(start))
             served = self._served(request)
             disclosure = self._disclosure(request)
-            seen, edges = self._walk(tuple(ref["resource_id"] for ref in start), 1, lambda item: item.link_ids)
+            seen, edges = self._walk(self._roots(start, disclosure), 1, lambda item: item.link_ids, disclosure)
             return self._graph_answer(request, served, disclosure, seen, edges, "urn:ocor:edge:link")
 
         result: GatewayAnswer = self._guarded(bound, QueryOperation.TRAVERSE.value, work)
@@ -609,7 +687,8 @@ class NamedQueryGateway:
             self._budget(bound, depth=max_depth)
             served = self._served(request)
             disclosure = self._disclosure(request)
-            seen, edges = self._walk((target["resource_id"],), max_depth, lambda item: item.link_ids)
+            seen, edges = self._walk(self._roots((target,), disclosure), max_depth, lambda item: item.link_ids,
+                                     disclosure)
             return self._graph_answer(request, served, disclosure, seen, edges, "urn:ocor:edge:explains")
 
         result: GatewayAnswer = self._guarded(bound, QueryOperation.EXPLAIN.value, work)
@@ -629,7 +708,11 @@ class NamedQueryGateway:
             served = self._served(request)
             disclosure = self._disclosure(request)
             root = target["resource_id"]
-            seen: dict[str, ProjectedObject] = {item.resource_id: item for item in objects.get((root,))}
+            # a withheld, mistyped or absent target is POLICY_DENIED alike, before any
+            # derivation is looked up (NFR-006, Register :50; LLD v1.1 :123)
+            seen = self._roots((target,), disclosure)
+            if root not in seen:
+                raise C2Error("POLICY_DENIED", "the target is not authorised")
             edges: list[tuple[str, str]] = []
             if direction in {"DOWNSTREAM", "BOTH"}:
                 derived = [item for item in objects.page(limit=self._catalog.queries[
@@ -656,21 +739,30 @@ class NamedQueryGateway:
         return result
 
     # -- EvidenceReadPort ----------------------------------------------------------
-    def get(self, evidence_ref_value: str, request: NamedQueryRequest) -> Mapping[str, object]:
-        """``EvidenceReadPort`` (LLD v1.1 :113): an evidence reference resolves only through
-        an object the requester's clearance authorises; anything else is POLICY_DENIED."""
-        objects = self._require_objects()
-        disclosure = self._disclosure(request)
-        for item in objects.page(limit=MAX_EVIDENCE_SCAN, after=None):
-            for source in item.provenance_ids:
-                if evidence_ref(item.resource_id, source) == evidence_ref_value and disclosure.admit(item):
-                    return {"evidence_ref": evidence_ref_value, "object_ref": item.resource_id, "source": source,
-                            "marking_ref": item.marking_ref, "commit": item.commit_id}
-        raise C2Error("POLICY_DENIED", "the evidence is not authorised")
+    def get(self, evidence_ref_value: str, query: TransportBoundQuery) -> Mapping[str, object]:
+        """``EvidenceReadPort`` (LLD v1.1 :113): an evidence read is admitted exactly like the
+        six operations -- transport principal, allow-list, digest, release, identity, verified
+        context policy (LLD v1.1 :117-120; FR-006) -- and every refusal is audited (FR-134);
+        the reference then resolves only through an object the clearance authorises, anything
+        else being POLICY_DENIED."""
+
+        def work(request: NamedQueryRequest) -> Mapping[str, object]:
+            objects = self._require_objects()
+            disclosure = self._disclosure(request)
+            for item in objects.page(limit=MAX_EVIDENCE_SCAN, after=None):
+                for source in item.provenance_ids:
+                    if evidence_ref(item.resource_id, source) == evidence_ref_value and disclosure.admit(item):
+                        return {"evidence_ref": evidence_ref_value, "object_ref": item.resource_id,
+                                "source": source, "marking_ref": item.marking_ref, "commit": item.commit_id}
+            raise C2Error("POLICY_DENIED", "the evidence is not authorised")
+
+        result: Mapping[str, object] = self._guarded(query, "EvidenceRead", work)
+        return result
 
 
 EVIDENCE_TYPE = "urn:ocor:type:evidence"
 MAX_EVIDENCE_SCAN = 1000
+_OUTCOME = {"SCHEMA_VIOLATION": "REJECTED", "CONTROL_PLANE_UNAVAILABLE": "FAILED"}
 
 
 def evidence_ref(object_id: str, source: str) -> str:
@@ -691,11 +783,16 @@ class _Disclosure:
         self.withheld: set[str] = set()
         self.markings: set[str] = set()
 
-    def allows(self, resource_id: str) -> bool:
+    def authorized(self, resource_id: str) -> bool:
+        """The marking join of one resource, without recording a disclosure or redaction."""
         decision = self._decisions.get(resource_id)
         if decision is None:
             decision = self._policy.authorized(resource_id, self._clearance)
             self._decisions[resource_id] = decision
+        return decision
+
+    def allows(self, resource_id: str) -> bool:
+        decision = self.authorized(resource_id)
         if not decision:
             self.withheld.add(resource_id)
         return decision

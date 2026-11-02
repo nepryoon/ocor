@@ -228,6 +228,10 @@ class ConsistencyRequirement:
 
 @dataclass(frozen=True, slots=True)
 class NamedQueryRequest:
+    """The admitted named query. Besides the call and the GCS it carries the branch,
+    logic version and scenario of the contract ``QueryContext`` (:142-184) into the planned
+    read (LLD v1.1 :124, :126); ``branch`` defaults to ``main``."""
+
     request_id: str
     contract_id: str
     contract_version: str
@@ -236,7 +240,11 @@ class NamedQueryRequest:
     governed_context: GovernedContext
     governed_context_digest: str
     consistency: ConsistencyRequirement
+    branch: str = "main"
+    logic_version: str | None = None
+    scenario_id: str | None = None
 
+    optional_fields: ClassVar[tuple[str, ...]] = ("branch", "logic_version", "scenario_id")
     fields: ClassVar[tuple[str, ...]] = (
         "request_id",
         "contract_id",
@@ -258,6 +266,18 @@ class NamedQueryRequest:
         _required("contract_version", self.contract_version)
         _digest("contract_digest", self.contract_digest)
         _digest("governed_context_digest", self.governed_context_digest)
+        # contract :180-184: branch 1..256, logic_version 1..128, scenario_id a UUID
+        if not isinstance(self.branch, str) or not 1 <= len(self.branch) <= 256:
+            raise C2Error("SCHEMA_VIOLATION", "branch must be 1..256 characters")
+        if self.logic_version is not None and (
+            not isinstance(self.logic_version, str) or not 1 <= len(self.logic_version) <= 128
+        ):
+            raise C2Error("SCHEMA_VIOLATION", "logic_version must be 1..128 characters")
+        if self.scenario_id is not None:
+            try:
+                validate_correlation_id(self.scenario_id)
+            except (IdentifierError, TypeError) as exc:
+                raise C2Error("SCHEMA_VIOLATION", "scenario_id is invalid") from exc
         # ADD v1.3 :380 (Query surface): an absent or mismatching GCS field is DENY.
         if not self.governed_context.purpose:
             raise C2Error("POLICY_DENIED", "purpose is required before routing")
@@ -277,7 +297,7 @@ class NamedQueryRequest:
     @classmethod
     def from_mapping(cls, value: Mapping[str, object]) -> NamedQueryRequest:
         present = set(value)
-        additional = present - set(cls.fields)
+        additional = present - set(cls.fields) - set(cls.optional_fields)
         missing = set(cls.fields) - present
         if additional:
             raise C2Error("SCHEMA_VIOLATION", f"additional query fields: {sorted(additional)}")
@@ -303,6 +323,9 @@ class NamedQueryRequest:
             governed_context=context,
             governed_context_digest=value["governed_context_digest"],  # type: ignore[arg-type]
             consistency=ConsistencyRequirement.from_mapping(consistency_value),
+            branch=value.get("branch", "main"),  # type: ignore[arg-type]
+            logic_version=value.get("logic_version"),  # type: ignore[arg-type]
+            scenario_id=value.get("scenario_id"),  # type: ignore[arg-type]
         )
 
     @property
@@ -310,7 +333,7 @@ class NamedQueryRequest:
         return self.governed_context.isolation_key()
 
     def to_mapping(self) -> dict[str, object]:
-        return {
+        result: dict[str, object] = {
             "request_id": self.request_id,
             "contract_id": self.contract_id,
             "contract_version": self.contract_version,
@@ -319,7 +342,13 @@ class NamedQueryRequest:
             "governed_context": self.governed_context.to_mapping(),
             "governed_context_digest": self.governed_context_digest,
             "consistency": self.consistency.to_mapping(),
+            "branch": self.branch,
         }
+        if self.logic_version is not None:
+            result["logic_version"] = self.logic_version
+        if self.scenario_id is not None:
+            result["scenario_id"] = self.scenario_id
+        return result
 
     def verify_served(self, served: ServedContext, ordering: CommitOrderingPort | None = None) -> ServedContext:
         context = self.governed_context
@@ -489,7 +518,10 @@ class AuthorityResolutionPort(Protocol):
 
 @runtime_checkable
 class EvidenceReadPort(Protocol):
-    def get(self, evidence_ref: str, request: NamedQueryRequest) -> Mapping[str, object]: ...
+    """LLD v1.1 :113. The read is bound to the transport principal and admitted like a
+    named query (LLD v1.1 :117-120), never to a body-borne request."""
+
+    def get(self, evidence_ref: str, query: TransportBoundQuery) -> Mapping[str, object]: ...
 
 
 @runtime_checkable

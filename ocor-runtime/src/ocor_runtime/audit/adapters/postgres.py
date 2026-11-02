@@ -3,14 +3,16 @@
 The table is append-only: row triggers reject ``UPDATE`` and ``DELETE`` and a statement
 trigger rejects ``TRUNCATE``. Appends to the chain are serialised with a
 transaction-scoped advisory lock, so the chain has one predecessor per record. A
-connection-level failure is ``AuditUnavailable``; rows read back are untrusted and are
-type-checked before use.
+connection-level failure is ``AuditUnavailable``. Rows read back are untrusted: their shape
+is checked without conversion, and a malformed or tampered row is an integrity failure
+(``AUDIT_RECORD_INVALID`` or ``AUDIT_CHAIN_BROKEN``), never reported as an unavailable store;
+an append never extends a chain whose last link is malformed.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import psycopg
@@ -104,7 +106,7 @@ class PostgresAuditLog:
             row = connection.execute(
                 f"SELECT record_hash FROM {self._schema}.audit_record ORDER BY seq DESC LIMIT 1"
             ).fetchone()
-            previous = GENESIS_HASH if row is None else _hash(row.get("record_hash"))
+            previous = GENESIS_HASH if row is None else _hash(_row(row).get("record_hash"))
             record_hash = link_hash(previous, record)
             signature = self._signer.sign(link_payload(previous, record, record_hash))
             inserted = connection.execute(
@@ -112,42 +114,59 @@ class PostgresAuditLog:
                 "VALUES (%s, %s, %s, %s, %s) RETURNING seq",
                 (Jsonb(record), previous, record_hash, signature, self._signer.keyid),
             ).fetchone()
-            if inserted is None or not isinstance(inserted.get("seq"), int):
-                raise psycopg.DataError("the audit insert returned no sequence")
             return SealedAuditRecord(
-                sequence=inserted["seq"], record=record, previous_hash=previous, record_hash=record_hash,
+                sequence=_sequence(_row(inserted).get("seq")), record=record, previous_hash=previous,
+                record_hash=record_hash,
                 signature=signature, keyid=self._signer.keyid,
             )
 
         return self._run(work)
 
     def records(self) -> list[SealedAuditRecord]:
-        from .. import SealedAuditRecord
+        from .. import AuditError, SealedAuditRecord, validate_record
 
         def work(connection: psycopg.Connection[dict[str, Any]]) -> list[SealedAuditRecord]:
             rows = connection.execute(
                 f"SELECT seq, record, previous_hash, record_hash, signature, keyid "
                 f"FROM {self._schema}.audit_record ORDER BY seq"
             ).fetchall()
+            if not isinstance(rows, list):
+                raise AuditError("AUDIT_RECORD_INVALID", "the audit store returned no row list")
             result = []
-            for row in rows:
-                if not isinstance(row.get("seq"), int) or not isinstance(row.get("record"), dict):
-                    raise psycopg.DataError("malformed audit row")
+            for value in rows:
+                row = _row(value)
                 for column in ("signature", "keyid"):
                     if not isinstance(row.get(column), str) or not row[column]:
-                        raise psycopg.DataError("malformed audit row")
+                        raise AuditError("AUDIT_RECORD_INVALID", f"stored audit {column} is malformed")
                 result.append(SealedAuditRecord(
-                    sequence=row["seq"], record=row["record"], previous_hash=_hash(row.get("previous_hash")),
-                    record_hash=_hash(row.get("record_hash")), signature=row["signature"], keyid=row["keyid"],
+                    sequence=_sequence(row.get("seq")), record=validate_record(row.get("record")),
+                    previous_hash=_hash(row.get("previous_hash")), record_hash=_hash(row.get("record_hash")),
+                    signature=row["signature"], keyid=row["keyid"],
                 ))
             return result
 
         return self._run(work)
 
 
+def _row(value: object) -> Mapping[str, Any]:
+    from .. import AuditError
+
+    if not isinstance(value, Mapping):
+        raise AuditError("AUDIT_RECORD_INVALID", "the audit store returned a malformed row")
+    return value
+
+
+def _sequence(value: object) -> int:
+    from .. import AuditError
+
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise AuditError("AUDIT_RECORD_INVALID", "the audit store returned a malformed sequence")
+    return value
+
+
 def _hash(value: object) -> str:
-    from .. import DIGEST
+    from .. import DIGEST, AuditError
 
     if not isinstance(value, str) or DIGEST.fullmatch(value) is None:
-        raise psycopg.DataError("malformed audit hash")
+        raise AuditError("AUDIT_CHAIN_BROKEN", "a stored audit link hash is malformed")
     return value

@@ -141,7 +141,10 @@ class NamedQueryHttpAdapter:
                 raise
             answer = self._call(operation, bound, arguments)
             document = self._wire_response(answer)
-            self._validator(response_schema).validate(document)
+            if next(self._validator(response_schema).iter_errors(document), None) is not None:
+                # an answer that would not conform to the contract never leaves, and its
+                # content is not echoed in the Problem (contract :486-491; ADD v1.3 :174)
+                raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the answer does not conform to the contract")
             return GatewayReply(200, "application/json", document)
         except C2Error as error:
             return self._problem(error, body)

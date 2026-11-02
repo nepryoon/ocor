@@ -22,12 +22,15 @@ from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
 from ..c1.signing import Ed25519SigningKey, dsse_pae, ed25519_verify
-from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp
+from ..kernel.canonical import UTC_TIMESTAMP, canonical_bytes, canonical_digest, format_utc_timestamp
 
 GENESIS_HASH = "urn:sha256:" + "0" * 64
 PAYLOAD_TYPE = "application/vnd.ocor.audit-record+json"
 DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
 OUTCOMES = frozenset({"DENIED", "REJECTED", "PERMITTED", "FAILED"})
+TEXT_FIELDS = ("event_type", "actor", "resource", "reason_code", "authority_ref", "correlation_id")
+RECORD_FIELDS = frozenset({*TEXT_FIELDS, "occurred_at", "outcome", "detail"})
+CONTEXT_FIELDS = frozenset({"governed_context", "governed_context_digest"})
 
 
 class AuditError(RuntimeError):
@@ -110,6 +113,29 @@ class SealedAuditRecord:
     keyid: str
 
 
+def validate_record(value: object) -> dict[str, Any]:
+    """Check a record read back from storage against the shape ``AuditEvent.to_record``
+    writes, without conversion; anything else is ``AUDIT_RECORD_INVALID``."""
+
+    if not isinstance(value, dict) or not RECORD_FIELDS <= set(value) <= RECORD_FIELDS | CONTEXT_FIELDS:
+        raise AuditError("AUDIT_RECORD_INVALID", "the stored record does not have the audit record fields")
+    for name in TEXT_FIELDS:
+        _text(name, value[name])
+    if value["outcome"] not in OUTCOMES:
+        raise AuditError("AUDIT_RECORD_INVALID", "the stored outcome is outside the closed set")
+    if not isinstance(value["occurred_at"], str) or UTC_TIMESTAMP.fullmatch(value["occurred_at"]) is None:
+        raise AuditError("AUDIT_RECORD_INVALID", "the stored time is not RFC 3339 UTC")
+    if not isinstance(value["detail"], dict):
+        raise AuditError("AUDIT_RECORD_INVALID", "the stored detail is not an object")
+    if CONTEXT_FIELDS & set(value):
+        context, digest = value.get("governed_context"), value.get("governed_context_digest")
+        if not isinstance(context, dict) or not isinstance(digest, str) or DIGEST.fullmatch(digest) is None:
+            raise AuditError("AUDIT_RECORD_INVALID", "the stored governed context is malformed")
+        if canonical_digest(context) != digest:
+            raise AuditError("AUDIT_RECORD_INVALID", "the stored governed context does not match its digest")
+    return value
+
+
 def link_hash(previous_hash: str, record: Mapping[str, Any]) -> str:
     return canonical_digest({"previous_hash": previous_hash, "record": dict(record)})
 
@@ -184,5 +210,6 @@ __all__ = [
     "SealedAuditRecord",
     "link_hash",
     "signing_payload",
+    "validate_record",
     "verify_audit_chain",
 ]
