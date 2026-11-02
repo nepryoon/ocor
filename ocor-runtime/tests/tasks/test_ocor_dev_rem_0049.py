@@ -25,7 +25,9 @@ from __future__ import annotations
 import ast
 import base64
 import dataclasses
+import http.server
 import importlib
+import json
 import os
 import re
 import subprocess
@@ -277,7 +279,7 @@ class Gateway:
     def __init__(self, typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any,
                  *, clearance_level: str = "SECRET", marking_ref: str = internal("a"),
                  identity_lookups: list[str] | None = None, cost_budget: Any = None,
-                 projection: Any = None) -> None:
+                 projection: Any = None, context_policy: Any = None, objects: Any = None) -> None:
         gateway = module("c2.gateway")
         identity = importlib.import_module("ocor_runtime.c2_identity")
         registry = identity.IdentityRegistry()
@@ -291,7 +293,7 @@ class Gateway:
                 return result
 
         self.lookups = lookups
-        self.context_policy = ContextPolicy()
+        self.context_policy = ContextPolicy() if context_policy is None else context_policy
         self.engine = MarkingEngine([SCHEME])
         self.catalog = gateway.NamedQueryCatalog(
             ontology_release_digest=RELEASE,
@@ -308,7 +310,8 @@ class Gateway:
         self.objects.reset()
         self.gateway = gateway.NamedQueryGateway(
             catalog=self.catalog, authority=CountingAuthority(registry), context_policy=self.context_policy,
-            policy=self.policy, projection=typedb if projection is None else projection, objects=self.objects,
+            policy=self.policy, projection=typedb if projection is None else projection,
+            objects=self.objects if objects is None else objects,
             audit=audit_log,
             commit_ordering=typedb, clock=lambda: NOW)
         self.http = module("c2.transport").NamedQueryHttpAdapter(self.gateway)
@@ -317,10 +320,10 @@ class Gateway:
         return self.http.invoke(operation, body, principal(who))
 
 
-def bound_query(who: str = PRINCIPAL) -> Any:
+def bound_query(who: str = PRINCIPAL, *, contract_id: str = CONTRACT_ID, **changes: Any) -> Any:
     """A generic named query bound to the transport principal (internal digest form)."""
     ports = module("c2.ports")
-    gcs = governed_context()
+    gcs = governed_context(**({"principal_id": who} if who != PRINCIPAL else {}), **changes)
     context = ports.QueryContext(
         request_id="018f2f95-01b2-7cc3-8d4e-123456789abc", correlation_id=gcs.correlation_id,
         tenant_id=gcs.tenant_id, organization_id=gcs.organization_id, domain_id=gcs.domain_id,
@@ -328,7 +331,7 @@ def bound_query(who: str = PRINCIPAL) -> Any:
         ontology_release_digest=gcs.ontology_release_digest, policy_bundle_digest=gcs.policy_bundle_digest,
         governed_context_digest=gcs.digest(), logic_version="1.0.0", branch="main",
         consistency=ports.ConsistencyRequirement(ports.ConsistencyMode.BEST_AVAILABLE))
-    call = ports.ContractCall(contract_id=CONTRACT_ID, contract_version="1.0.0", contract_digest=CONTRACT_DIGEST,
+    call = ports.ContractCall(contract_id=contract_id, contract_version="1.0.0", contract_digest=CONTRACT_DIGEST,
                               parameters={"fleet": "alpha"})
     return ports.TransportBoundQuery(principal=principal(who), query=ports.NamedQueryCall(context=context, call=call))
 
@@ -813,19 +816,15 @@ def test_ncr_c2_011_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     assert len(evidence_nodes) == 1 and provenance["edges"][0]["edge_type_id"] == "urn:ocor:edge:derived-from"
     without = fixture.invoke("GetProvenance", dict(bodies["GetProvenance"][0], include_evidence=False)).body
     assert [node["node_ref"]["resource_id"] for node in without["nodes"]] == [V1]
-    # EvidenceReadPort (LLD v1.1 :113): evidence resolves only through an authorised object
+    # EvidenceReadPort (LLD v1.1 :113): evidence resolves only through an authorised object,
+    # for a query admitted like the six operations (LLD v1.1 :117-120)
     gateway = module("c2.gateway")
     ports = module("c2.ports")
-    gcs = governed_context()
-    request = ports.NamedQueryRequest(
-        request_id="018f2f95-01b2-7cc3-8d4e-123456789abc", contract_id=CONTRACT_ID, contract_version="1.0.0",
-        contract_digest=CONTRACT_DIGEST, parameters={}, governed_context=gcs, governed_context_digest=gcs.digest(),
-        consistency=ports.ConsistencyRequirement(ports.ConsistencyMode.BEST_AVAILABLE))
     assert isinstance(fixture.gateway, ports.EvidenceReadPort)
-    resolved = fixture.gateway.get(gateway.evidence_ref(V1, "source-1"), request)
+    resolved = fixture.gateway.get(gateway.evidence_ref(V1, "source-1"), bound_query())
     assert resolved["object_ref"] == V1 and resolved["evidence_ref"] == evidence_nodes[0]["node_ref"]["resource_id"]
     with pytest.raises(ports.C2Error) as hidden:
-        fixture.gateway.get(gateway.evidence_ref(V2, "source-1"), request)
+        fixture.gateway.get(gateway.evidence_ref(V2, "source-1"), bound_query())
     assert hidden.value.reason_code == "POLICY_DENIED"
     unknown = fixture.invoke("Unknown", bodies["GetObject"][0])
     assert (unknown.status, unknown.body["reason_code"]) == (404, "CONTRACT_NOT_FOUND")
@@ -982,3 +981,685 @@ def _thaw(value: Any) -> Any:
 
 def _named_query_release(workdir: Path) -> _NamedQueryRelease:
     return _NamedQueryRelease(workdir)
+
+
+# --------------------------------------------------------------------------- #
+# Marking join before paging and walking; branch routing; evidence admission;
+# verified policy decision (NCR-C2-002, -005, -007, -011; NFR-006)
+# --------------------------------------------------------------------------- #
+VESSEL = "urn:ocor:type:vessel"
+TS_A = "urn:ocor:vessel:a-top-secret"
+S_B = "urn:ocor:vessel:b-secret"
+S_C = "urn:ocor:vessel:c-secret"
+TS_D = "urn:ocor:vessel:d-top-secret"
+HIDDEN = "urn:ocor:vessel:e-secret-behind-top-secret"
+SCENARIO = "018f2f95-01b2-7cc3-8d4e-000000000099"
+
+
+def project(fixture: Gateway, jena: JenaSHACLProjectionAdapter, object_id: str, level: str, *,
+            links: tuple[str, ...] = (), provenance: tuple[str, ...] = ("source-1",)) -> None:
+    """Projects one object; only SECRET objects are published to the marking join, so a
+    TOP_SECRET object is withheld from a SECRET clearance (OCOR-DEV-0018)."""
+    fixture.objects.project(object_id=object_id, resource_type_id=VESSEL, commit_id="commit-1",
+                            marking=MarkingSet({"classification": level}), values={"name": object_id},
+                            link_ids=links, provenance_ids=provenance, text=f"{object_id} alpha fleet")
+    if level == "SECRET":
+        jena.publish(object_id, {"label": object_id, "classification": "SECRET",
+                                 "provenanceRef": "urn:ocor:provenance:source-1"})
+
+
+def ref(object_id: str, type_id: str = VESSEL) -> dict[str, str]:
+    return {"resource_type_id": type_id, "resource_id": object_id}
+
+
+def node_ids(body: Mapping[str, Any]) -> set[str]:
+    return {node["node_ref"]["resource_id"] for node in body["nodes"]}
+
+
+def test_ncr_c2_011_paging_applies_the_marking_join_before_the_page(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """LLD v1.1 :121-122 (marking join and post-filter on what is returned), :126 (deny and
+    miss reveal no count or rank); NFR-006 (Register :50: no unauthorised content or
+    existence); Contract :380-409 (pages of ObjectSnapshot and SearchHit with next_page_token):
+    a page holds the first authorised objects after the token, the token is an authorised
+    object, and the existence of withheld objects past the page is not disclosed."""
+    fixture = Gateway(typedb, jena, audit_log)
+    typedb.apply_commit(fact_id="fact-1", commit_id="commit-1", payload="p")
+    for object_id, level in ((TS_A, "TOP_SECRET"), (S_B, "SECRET"), (S_C, "SECRET"), (TS_D, "TOP_SECRET")):
+        project(fixture, jena, object_id, level)
+    shapes = (("QueryObjectSet", {"object_set_contract": contract_call()}, "items"),
+              ("Search", {"search_contract": contract_call(), "text": "alpha"}, "hits"))
+    for operation, call, key in shapes:
+        def page(token: str | None, call: dict[str, Any] = call, operation: str = operation) -> Any:
+            body = {"context": wire_context(), **call, "page_size": 1}
+            if token is not None:
+                body["page_token"] = token
+            reply = fixture.invoke(operation, body)
+            assert reply.status == 200, (operation, reply.body)
+            assert TS_A not in json.dumps(reply.body) and TS_D not in json.dumps(reply.body), operation
+            return reply.body
+
+        def ids(body: Mapping[str, Any], key: str = key) -> list[str]:
+            return [(entry if key == "items" else entry["object"])["object_ref"]["resource_id"] for entry in body[key]]
+
+        first = page(None)
+        assert ids(first) == [S_B], operation
+        assert first["next_page_token"] == S_B, operation
+        second = page(first["next_page_token"])
+        assert ids(second) == [S_C], operation
+        assert "next_page_token" not in second, operation  # only a withheld object follows
+        assert ids(page(S_C)) == [] and "next_page_token" not in page(S_C), operation
+    # a page larger than the authorised set: every authorised object, no token
+    whole = fixture.invoke("QueryObjectSet", {"context": wire_context(), "object_set_contract": contract_call(),
+                                              "page_size": 10})
+    assert [item["object_ref"]["resource_id"] for item in whole.body["items"]] == [S_B, S_C]
+    assert "next_page_token" not in whole.body
+
+
+def test_ncr_c2_011_walks_never_expand_a_withheld_node(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """LLD v1.1 :121-122; NFR-006 (Register :50); FR-006 (Register :49: a principal sees
+    only authorised elements): Explain and Traverse follow links only from authorised
+    nodes, so an object reachable only through a withheld node is never returned and the
+    links of the withheld node are not counted; a withheld or mistyped start is absent."""
+    fixture = Gateway(typedb, jena, audit_log)
+    typedb.apply_commit(fact_id="fact-1", commit_id="commit-1", payload="p")
+    project(fixture, jena, S_B, "SECRET", links=(TS_A,))
+    project(fixture, jena, TS_A, "TOP_SECRET", links=(HIDDEN, S_C))
+    project(fixture, jena, HIDDEN, "SECRET")
+    project(fixture, jena, S_C, "SECRET")
+    explain = fixture.invoke("Explain", {"context": wire_context(), "target": ref(S_B), "max_depth": 3,
+                                         "explanation_contract": contract_call()})
+    assert explain.status == 200, explain.body
+    assert node_ids(explain.body) == {S_B}
+    assert explain.body["served"]["redaction_count"] == 1
+    assert HIDDEN not in json.dumps(explain.body) and S_C not in json.dumps(explain.body)
+    traverse = fixture.invoke("Traverse", {"context": wire_context(), "start": [ref(S_B)],
+                                           "traversal_contract": contract_call()})
+    assert traverse.status == 200 and node_ids(traverse.body) == {S_B}
+    for body in ({"context": wire_context(), "start": [ref(TS_A)], "traversal_contract": contract_call()},
+                 {"context": wire_context(), "start": [ref(S_B, "urn:ocor:type:other")],
+                  "traversal_contract": contract_call()}):
+        reply = fixture.invoke("Traverse", body)
+        assert (reply.status, reply.body["reason_code"]) == (403, "POLICY_DENIED")
+        assert HIDDEN not in json.dumps(reply.body)
+    for target in (ref(TS_A), ref(S_B, "urn:ocor:type:other")):
+        reply = fixture.invoke("Explain", {"context": wire_context(), "target": target, "max_depth": 3,
+                                           "explanation_contract": contract_call()})
+        assert (reply.status, reply.body["reason_code"]) == (403, "POLICY_DENIED")
+    # a start list with a withheld start: the withheld start is neither shown nor counted
+    mixed = fixture.invoke("Traverse", {"context": wire_context(), "start": [ref(HIDDEN), ref(TS_A)],
+                                        "traversal_contract": contract_call()})
+    assert mixed.status == 200 and node_ids(mixed.body) == {HIDDEN}
+    assert mixed.body["served"].get("redaction_count", 0) == 0
+
+
+def test_ncr_c2_011_provenance_of_a_withheld_target_is_denied(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """NFR-006 (Register :50), LLD v1.1 :121-123 (policy-safe provenance), Contract :244-253:
+    GetProvenance of a target the clearance does not authorise -- or of a mistyped target --
+    is POLICY_DENIED in every direction, exactly as an absent target, and never discloses
+    the objects derived from it; an authorised target still lists its authorised derivations."""
+    fixture = Gateway(typedb, jena, audit_log)
+    typedb.apply_commit(fact_id="fact-1", commit_id="commit-1", payload="p")
+    project(fixture, jena, TS_A, "TOP_SECRET")
+    project(fixture, jena, S_C, "SECRET", provenance=(TS_A,))
+    project(fixture, jena, S_B, "SECRET")
+    project(fixture, jena, HIDDEN, "SECRET", provenance=(S_B,))
+    for direction in ("UPSTREAM", "DOWNSTREAM", "BOTH"):
+        for target in (ref(TS_A), ref("urn:ocor:vessel:never-projected"), ref(S_B, "urn:ocor:type:other")):
+            reply = fixture.invoke("GetProvenance", {"context": wire_context(), "target": target,
+                                                     "direction": direction, "max_depth": 1})
+            assert (reply.status, reply.body["reason_code"]) == (403, "POLICY_DENIED"), (direction, target)
+            assert S_C not in json.dumps(reply.body) and HIDDEN not in json.dumps(reply.body)
+    downstream = fixture.invoke("GetProvenance", {"context": wire_context(), "target": ref(S_B),
+                                                  "direction": "DOWNSTREAM", "max_depth": 1})
+    assert downstream.status == 200 and node_ids(downstream.body) == {S_B, HIDDEN}
+
+
+def test_ncr_c2_007_the_requested_branch_is_served_or_refused(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """Contract :142-184 (QueryContext branch, logic_version, scenario_id); LLD v1.1 :124 and
+    :126 (served branch; main and scenario are always declared); NFR-024 (Register :180);
+    FR-057 (Register :179, branch/commit ordering): the request carries branch, logic version
+    and scenario into the planned read, and a branch or scenario the projection does not
+    serve is refused with a typed, audited Problem -- never answered from main."""
+    ports = module("c2.ports")
+    assert {"branch", "logic_version", "scenario_id"} <= {f.name for f in dataclasses.fields(ports.NamedQueryRequest)}
+    gcs = governed_context()
+    base = {"request_id": "018f2f95-01b2-7cc3-8d4e-123456789abc", "contract_id": CONTRACT_ID,
+            "contract_version": "1.0.0", "contract_digest": CONTRACT_DIGEST, "parameters": {},
+            "governed_context": gcs.to_mapping(), "governed_context_digest": gcs.digest(),
+            "consistency": {"mode": "BEST_AVAILABLE"}}
+    scoped = ports.NamedQueryRequest.from_mapping(
+        {**base, "branch": "scenario/sim-01", "logic_version": "1.0.0", "scenario_id": SCENARIO})
+    assert (scoped.branch, scoped.logic_version, scoped.scenario_id) == ("scenario/sim-01", "1.0.0", SCENARIO)
+    assert ports.NamedQueryRequest.from_mapping(scoped.to_mapping()) == scoped
+    assert ports.NamedQueryRequest.from_mapping(base).branch == "main"
+    for invalid in ({"branch": ""}, {"branch": "x" * 257}, {"logic_version": ""}, {"scenario_id": "not-a-uuid"}):
+        with pytest.raises(ports.C2Error) as caught:
+            ports.NamedQueryRequest.from_mapping({**base, **invalid})
+        assert caught.value.reason_code == "SCHEMA_VIOLATION", invalid
+
+    fixture = Gateway(typedb, jena, audit_log)
+    load_fleet(fixture, typedb)
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
+    served = fixture.invoke("GetObject", get_object_body())
+    assert served.status == 200 and served.body["served"]["branch"] == "main"
+    for changes in ({"branch": "scenario/sim-01"}, {"branch": "scenario/sim-01", "scenario_id": SCENARIO},
+                    {"scenario_id": SCENARIO}):
+        context = {**wire_context(), **changes}
+        reply = fixture.invoke("GetObject", get_object_body(context))
+        assert (reply.status, reply.body["reason_code"]) == (501, "UNSUPPORTED_CAPABILITY"), changes
+        assert "object" not in reply.body and "served" not in reply.body
+        assert_contract_valid("Problem", reply.body)
+    assert [record.record["reason_code"] for record in audit_log.records()] == ["UNSUPPORTED_CAPABILITY"] * 3
+
+
+def test_ncr_c2_011_evidence_read_is_admitted_like_the_operations(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """LLD v1.1 :113 (EvidenceReadPort) and :117-120 (principal, allow-list, release, policy
+    before any read); FR-006 (Register :49: the same full policy context on every surface);
+    FR-134 (Register :302) and ADD v1.3 :3143 (every denial audited): an evidence read is
+    transport-bound and passes allow-list, digest, release, identity and context policy, and
+    each refusal is audited like a query denial."""
+    gateway = module("c2.gateway")
+    ports = module("c2.ports")
+    fixture = Gateway(typedb, jena, audit_log)
+    load_fleet(fixture, typedb)
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
+    evidence = gateway.evidence_ref(V1, "source-1")
+    assert fixture.gateway.get(evidence, bound_query())["object_ref"] == V1
+    assert audit_log.records() == []
+    refused = (
+        (bound_query("urn:ocor:principal:unregistered"), "CONTRACT_NOT_FOUND"),
+        (bound_query(tenant="urn:ocor:tenant:attacker"), "POLICY_DENIED"),
+        (bound_query(purpose="exfiltrate"), "POLICY_DENIED"),
+        (bound_query(release="urn:sha256:" + "0" * 64), "RELEASE_MISMATCH"),
+        (bound_query(contract_id="urn:ocor:contract:named-query:unregistered"), "CONTRACT_NOT_FOUND"),
+    )
+    for query, code in refused:
+        with pytest.raises(ports.C2Error) as caught:
+            fixture.gateway.get(evidence, query)
+        assert caught.value.reason_code == code
+    with pytest.raises(ports.C2Error) as hidden:
+        fixture.gateway.get(gateway.evidence_ref(V2, "source-1"), bound_query())
+    assert hidden.value.reason_code == "POLICY_DENIED"
+    records = audit_log.records()
+    assert [record.record["reason_code"] for record in records] == [code for _, code in refused] + ["POLICY_DENIED"]
+    assert {record.record["detail"]["operation"] for record in records} == {"EvidenceRead"}
+    gcs = governed_context()
+    untrusted = ports.NamedQueryRequest(
+        request_id="018f2f95-01b2-7cc3-8d4e-123456789abc", contract_id=CONTRACT_ID, contract_version="1.0.0",
+        contract_digest=CONTRACT_DIGEST, parameters={}, governed_context=gcs, governed_context_digest=gcs.digest(),
+        consistency=ports.ConsistencyRequirement(ports.ConsistencyMode.BEST_AVAILABLE))
+    with pytest.raises(ports.C2Error) as unbound:
+        fixture.gateway.get(evidence, untrusted)  # no transport principal: no body-borne identity
+    assert unbound.value.reason_code == "SCHEMA_VIOLATION"
+
+
+class ForgedDecisionPolicy(ContextPolicy):
+    """A context-policy port that answers PERMIT with a decision that does not bind the
+    request (expired, or for another principal, action, resource, purpose, context or
+    bundle), or with no decision at all."""
+
+    def __init__(self, forge: str) -> None:
+        super().__init__()
+        self.forge = forge
+
+    def evaluate(self, request: PolicyRequest) -> Any:
+        self.requests.append(request)
+        status = ControlStatus.available(ControlName.POLICY, observed_at=request.at, source_digest=POLICY)
+        decision = PolicyDecision.from_request(request, effect=PolicyEffect.PERMIT,
+                                               decision_id=f"urn:ocor:decision:{uuid.uuid4()}",
+                                               valid_until=request.at + timedelta(minutes=5), status=status)
+        if self.forge == "not-a-decision":
+            return {"effect": PolicyEffect.PERMIT}
+        if self.forge == "expired":
+            return dataclasses.replace(decision, evaluated_at=request.at - timedelta(hours=2),
+                                       valid_until=request.at - timedelta(hours=1))
+        if self.forge == "bundle":
+            other = internal("e")
+            return dataclasses.replace(decision, policy_bundle_digest=other, status=ControlStatus.available(
+                ControlName.POLICY, observed_at=request.at, source_digest=other))
+        field, value = {
+            "principal": ("principal_id", "urn:ocor:principal:someone-else"),
+            "action": ("action", "ocor.query:wrong"),
+            "resource": ("resource", "urn:ocor:contract:named-query:wrong"),
+            "purpose": ("purpose", "another-purpose"),
+            "context": ("governed_context_digest", internal("f")),
+        }[self.forge]
+        return dataclasses.replace(decision, **{field: value})
+
+
+@pytest.mark.parametrize("forge", ["not-a-decision", "expired", "bundle", "principal", "action", "resource",
+                                   "purpose", "context"])
+def test_ncr_c2_002_a_permit_that_does_not_bind_the_request_is_not_a_permit(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any, forge: str) -> None:
+    """ADD v1.3 :3141 (a policy decision outside its validity or not evaluable: no read,
+    CONTROL_PLANE_UNAVAILABLE), :3143 and FR-134 (Register :302, audited); FR-006 (Register
+    :49): the decision is verified against the very request -- principal, action, resource,
+    purpose, GCS digest, policy bundle and validity window -- before it permits anything."""
+    fixture = Gateway(typedb, jena, audit_log, context_policy=ForgedDecisionPolicy(forge))
+    load_fleet(fixture, typedb)
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
+    reply = fixture.invoke("GetObject", get_object_body())
+    assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE"), forge
+    assert "object" not in reply.body
+    records = audit_log.records()
+    assert [(r.record["reason_code"], r.record["outcome"]) for r in records] == [("CONTROL_PLANE_UNAVAILABLE",
+                                                                                  "FAILED")]
+    # positive control: the same gateway with a binding decision serves the object
+    honest = Gateway(typedb, jena, audit_log)
+    load_fleet(honest, typedb)
+    assert honest.invoke("GetObject", get_object_body()).status == 200
+
+
+def test_ncr_c2_002_an_expired_transport_identity_is_an_audited_authentication_refusal(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """ADD v1.3 :380 and :1361 (the principal is the verified transport identity); Contract
+    :455 (AUTHORITY_MISSING, 401) and ADD v1.3 :174 (CONTROL_PLANE_UNAVAILABLE only for an
+    unavailable control); FR-134 (Register :302) and ADD v1.3 :3143: an expired transport
+    identity is refused as missing authority and audited, never reported as an outage."""
+    fixture = Gateway(typedb, jena, audit_log)
+    load_fleet(fixture, typedb)
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
+    expired = dataclasses.replace(principal(), authenticated_at=NOW - timedelta(hours=2),
+                                  expires_at=NOW - timedelta(hours=1))
+    reply = fixture.http.invoke("GetObject", get_object_body(), expired)
+    assert (reply.status, reply.body["reason_code"]) == (401, "AUTHORITY_MISSING")
+    assert "object" not in reply.body
+    assert [(r.record["reason_code"], r.record["actor"]) for r in audit_log.records()] == [
+        ("AUTHORITY_MISSING", PRINCIPAL)]
+
+
+# --------------------------------------------------------------------------- #
+# Input robustness of the adapters (PRE-REVIEW-INPUT-ROBUSTNESS): TypeDB object
+# projection and commit ordering, PostgreSQL audit store
+# --------------------------------------------------------------------------- #
+class TypeDBResponder:
+    """A local HTTP responder standing in for TypeDB on the failure paths only: malformed,
+    hostile or failing answers (status, body or raw bytes per endpoint), so every parsing
+    path of the adapters is exercised negatively. Positive paths run on the real TypeDB."""
+
+    def __init__(self) -> None:
+        self.routes: dict[str, tuple[int, bytes] | bytes] = {}
+        responder = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _answer(self) -> None:
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                key = next((name for name in ("signin", "open", "query", "close", "commit", "databases")
+                            if self.path.rstrip("/").endswith(name)), "other")
+                route = responder.routes.get(key, responder.default(key))
+                self.close_connection = True
+                if isinstance(route, bytes):
+                    self.wfile.write(route)
+                    return
+                status, body = route
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            do_POST = _answer
+            do_GET = _answer
+
+            def log_message(self, format: str, *args: Any) -> None:
+                return None
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    @staticmethod
+    def default(key: str) -> tuple[int, bytes]:
+        return {"signin": (200, b'{"token": "t"}'), "open": (200, b'{"transactionId": "tx"}'),
+                "query": (200, b'{"answers": []}')}.get(key, (200, b"{}"))
+
+    def answers(self, answers: object) -> None:
+        self.routes = {"query": (200, json.dumps({"answers": answers}).encode("utf-8"))}
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+@pytest.fixture
+def responder(monkeypatch: pytest.MonkeyPatch) -> Iterator[TypeDBResponder]:
+    value = TypeDBResponder()
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", value.url)
+    try:
+        yield value
+    finally:
+        value.close()
+
+
+TRANSPORT_FAILURES: dict[str, dict[str, tuple[int, bytes] | bytes]] = {
+    "bad-status-line": {"signin": b"GARBAGE\r\n\r\n"},
+    "signin-not-json": {"signin": (200, b"{bad!")},
+    "signin-without-token": {"signin": (200, b"{}")},
+    "signin-token-not-text": {"signin": (200, b'{"token": 7}')},
+    "signin-refused": {"signin": (503, b"{}")},
+    "transaction-not-object": {"open": (200, b"[]")},
+    "query-failed": {"query": (503, b"{}")},
+    "query-not-utf8": {"query": (200, b'{"answers": [{"data": {"s": {"value": "\xff\xfe"}}}]}')},
+    "query-not-json": {"query": (200, b"{bad!")},
+    "query-null": {"query": (200, b"null")},
+    "answers-not-a-list": {"query": (200, b'{"answers": "x"}')},
+    "answers-absent": {"query": (200, b"{}")},
+}
+
+
+def _object_row(document: dict[str, Any] | None = None, drop: tuple[str, ...] = (), **values: Any) -> dict[str, Any]:
+    body: dict[str, Any] = {"values": {"name": "x"}, "link_ids": [V2], "provenance_ids": ["source-1"],
+                            "text": "alpha", "valid_from": "2026-11-02T12:00:00Z",
+                            "system_from": "2026-11-02T12:00:01.5Z"}
+    body.update(document or {})
+    for name in drop:
+        body.pop(name)
+    columns: dict[str, Any] = {"i": V1, "t": VESSEL, "c": "commit-1", "m": internal("a"),
+                               "d": json.dumps(body)}
+    columns.update(values)
+    return {"data": {name: {"value": value} for name, value in columns.items()}}
+
+
+MALFORMED_OBJECT_ANSWERS: dict[str, object] = {
+    "row-empty": [{}],
+    "row-null": [None],
+    "row-not-object": ["row"],
+    "data-null": [{"data": None}],
+    "column-null": [{"data": {**_object_row()["data"], "i": None}}],
+    "column-without-value": [{"data": {**_object_row()["data"], "t": {}}}],
+    "column-missing": [{"data": {k: v for k, v in _object_row()["data"].items() if k != "m"}}],
+    "id-int": [_object_row(i=12345)],
+    "id-bool": [_object_row(i=True)],
+    "id-empty": [_object_row(i="")],
+    "id-too-long": [_object_row(i="x" * 513)],
+    "type-none": [_object_row(t=None)],
+    "type-not-urn": [_object_row(t="vessel")],
+    "commit-bool": [_object_row(c=True)],
+    "commit-empty": [_object_row(c="")],
+    "marking-tampered": [_object_row(m="TAMPERED_MARKING")],
+    "marking-not-sha256-urn": [_object_row(m="not-a-sha256-urn")],
+    "document-not-json": [_object_row(d="{bad!")],
+    "document-not-object": [_object_row(d="[]")],
+    "document-not-text": [_object_row(d=7)],
+    "document-missing-field": [_object_row(drop=("text",))],
+    "document-extra-field": [_object_row({"query": "match $x;"})],
+    "values-not-object": [_object_row({"values": ["k", 1]})],
+    "links-a-string": [_object_row({"link_ids": "urn:x"})],
+    "links-null-element": [_object_row({"link_ids": [None]})],
+    "provenance-number-element": [_object_row({"provenance_ids": [None, 7]})],
+    "provenance-empty-element": [_object_row({"provenance_ids": [""]})],
+    "text-null": [_object_row({"text": None})],
+    "valid-from-not-rfc3339": [_object_row({"valid_from": "bad-date"})],
+    "system-from-not-rfc3339": [_object_row({"system_from": "99"})],
+    "valid-from-offset": [_object_row({"valid_from": "2026-11-02T12:00:00+01:00"})],
+}
+
+
+@pytest.mark.parametrize("case", sorted(TRANSPORT_FAILURES))
+def test_object_projection_translates_every_transport_failure(responder: TypeDBResponder, case: str) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS points 1-4; Contract :486-491 (only typed Problems);
+    ADD v1.3 :174: every failure of the projection transport is a typed fail-closed
+    CONTROL_PLANE_UNAVAILABLE on each read shape, never a raw exception."""
+    projection = module("c4.object_projection").TypeDBObjectProjection()
+    ports = module("c2.ports")
+    responder.routes = dict(TRANSPORT_FAILURES[case])
+    for read in (lambda: projection.get((V1,)), lambda: projection.get((V1, V2)),
+                 lambda: projection.page(limit=2, after=None), lambda: projection.search("alpha", limit=2, after=None)):
+        with pytest.raises(ports.C2Error) as caught:
+            read()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", case
+
+
+def test_object_projection_unreachable_is_typed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", "http://127.0.0.1:1")
+    ports = module("c2.ports")
+    with pytest.raises(ports.C2Error) as caught:
+        module("c4.object_projection").TypeDBObjectProjection().get((V1,))
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_OBJECT_ANSWERS))
+def test_object_projection_rejects_malformed_or_tampered_rows(responder: TypeDBResponder, case: str) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS points 1-4; ADD v1.3 :398 (marking_ref is urn:sha256);
+    Contract :313-373 (ObjectRef type URN, resource_id 1..512, RFC 3339 times): a row read back
+    from the projection is checked for shape and integrity without conversion, and a
+    malformed or tampered row is a typed refusal of the whole read, never a coerced object."""
+    projection = module("c4.object_projection").TypeDBObjectProjection()
+    ports = module("c2.ports")
+    responder.answers(MALFORMED_OBJECT_ANSWERS[case])
+    with pytest.raises(ports.C2Error) as caught:
+        projection.page(limit=10, after=None)
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", case
+
+
+def test_object_projection_accepts_a_well_formed_row(responder: TypeDBResponder) -> None:
+    """Positive control of the parsing path: the same row, well formed, is read exactly."""
+    gateway = module("c2.gateway")
+    responder.answers([_object_row()])
+    (item,) = module("c4.object_projection").TypeDBObjectProjection().page(limit=10, after=None)
+    assert item == gateway.ProjectedObject(
+        resource_type_id=VESSEL, resource_id=V1, commit_id="commit-1", marking_ref=internal("a"),
+        values={"name": "x"}, link_ids=(V2,), provenance_ids=("source-1",), text="alpha",
+        valid_from="2026-11-02T12:00:00Z", system_from="2026-11-02T12:00:01.5Z")
+
+
+def test_a_tampered_projected_object_is_a_typed_problem_end_to_end(
+        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+    """On the real TypeDB: an object whose stored marking reference was tampered with is
+    refused with a typed Problem (Contract :486-491), not returned and not leaked in an error;
+    a gateway answer that would not conform to the contract never leaves the transport."""
+    adapter = importlib.import_module("ocor_runtime.c4.typedb_adapter")
+    fixture = Gateway(typedb, jena, audit_log)
+    load_fleet(fixture, typedb)
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
+    assert fixture.invoke("GetObject", get_object_body()).status == 200
+    adapter._write(f"match $o isa c4-object, has c4-object-id {adapter._literal(V1)}; delete $o;",
+                   f"insert $o isa c4-object, has c4-object-id {adapter._literal(V1)}, "
+                   f"has c4-object-type {adapter._literal(VESSEL)}, has c4-object-commit \"commit-2\", "
+                   f"has c4-object-marking \"TAMPERED_MARKING\", "
+                   f"has c4-object-document {adapter._literal(json.loads(json.dumps(_object_row()))['data']['d']['value'])};")
+    reply = fixture.invoke("GetObject", get_object_body())
+    assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE")
+    assert "TAMPERED" not in json.dumps(reply.body) and "object" not in reply.body
+
+    gateway = module("c2.gateway")
+
+    class NonConformingObjects:
+        """An object port whose answer would violate the contract response schema."""
+
+        def get(self, resource_ids: tuple[str, ...]) -> tuple[Any, ...]:
+            return (gateway.ProjectedObject(VESSEL, V1, "commit-2", "TAMPERED_MARKING", {}, (), (), "", "x", "y"),)
+
+        def page(self, *, limit: int, after: str | None) -> tuple[Any, ...]:
+            return ()
+
+        def search(self, text: str, *, limit: int, after: str | None) -> tuple[Any, ...]:
+            return ()
+
+    raw = Gateway(typedb, jena, audit_log, objects=NonConformingObjects())
+    reply = raw.invoke("GetObject", get_object_body())
+    assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE")
+    assert "TAMPERED" not in json.dumps(reply.body)
+
+
+SEQUENCE_ANSWERS: dict[str, object] = {
+    "bool-true": [{"data": {"s": {"value": True}}}],
+    "bool-false": [{"data": {"s": {"value": False}}}],
+    "text": [{"data": {"s": {"value": "12"}}}],
+    "float": [{"data": {"s": {"value": 1.5}}}],
+    "zero": [{"data": {"s": {"value": 0}}}],
+    "negative": [{"data": {"s": {"value": -1}}}],
+    "null": [{"data": {"s": {"value": None}}}],
+    "row-empty": [{}],
+    "row-null": [None],
+    "data-not-object": [{"data": "s"}],
+    "column-missing": [{"data": {}}],
+}
+
+
+@pytest.mark.parametrize("case", sorted(SEQUENCE_ANSWERS) + sorted(TRANSPORT_FAILURES))
+def test_commit_ordering_rejects_malformed_answers(responder: TypeDBResponder, case: str) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS points 1, 2, 4; FR-057 (Register :179, branch/commit
+    ordering): a commit position is a positive integer read without conversion (no bool, no
+    float, no text); anything else, and any transport failure, is a typed refusal."""
+    adapter = TypeDBProjectionAdapter()
+    ports = module("c2.ports")
+    if case in SEQUENCE_ANSWERS:
+        responder.answers(SEQUENCE_ANSWERS[case])
+    else:
+        responder.routes = dict(TRANSPORT_FAILURES[case])
+    for read in (lambda: adapter.position("main", "commit-1"), adapter._next_sequence):
+        with pytest.raises(ports.C2Error) as caught:
+            read()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", case
+
+
+def test_commit_ordering_reads_well_formed_positions(responder: TypeDBResponder) -> None:
+    """Positive control of the parsing paths: well-formed positions are read exactly."""
+    adapter = TypeDBProjectionAdapter()
+    responder.answers([{"data": {"s": {"value": 3}}}])
+    assert adapter.position("main", "commit-1") == 3
+    responder.answers([{"data": {"s": {"value": 3}}}, {"data": {"s": {"value": 7}}}])
+    assert adapter._next_sequence() == 8
+    responder.answers([])
+    assert adapter.position("main", "commit-1") is None and adapter._next_sequence() == 1
+
+
+def _audit_event(**changes: Any) -> Any:
+    audit = module("audit")
+    gcs = governed_context()
+    values: dict[str, Any] = dict(
+        event_type="C2_QUERY_DENIED", actor=PRINCIPAL, occurred_at=NOW, resource="urn:ocor:contract:x@1",
+        reason_code="POLICY_DENIED", authority_ref="urn:ocor:session:rem0049",
+        correlation_id=gcs.correlation_id, outcome="DENIED", governed_context=gcs.to_mapping(),
+        governed_context_digest=gcs.digest(), detail={"operation": "GetObject"})
+    values.update(changes)
+    return audit.AuditEvent(**values)
+
+
+def _insert_raw(log: Any, record: object, *, previous: str | None = None, record_hash: str | None = None,
+                signature: str = "c2ln", keyid: str = "urn:ocor:key:c2-audit-test") -> None:
+    audit = module("audit")
+    psycopg = importlib.import_module("psycopg")
+    previous = audit.GENESIS_HASH if previous is None else previous
+    if record_hash is None:
+        record_hash = audit.link_hash(previous, record) if isinstance(record, Mapping) else internal("9")
+    with psycopg.connect(_dsn(), autocommit=True) as connection:
+        connection.execute(
+            f"INSERT INTO {log.schema}.audit_record (record, previous_hash, record_hash, signature, keyid) "
+            "VALUES (%s::jsonb, %s, %s, %s, %s)", (json.dumps(record), previous, record_hash, signature, keyid))
+
+
+TAMPERED_AUDIT_ROWS: dict[str, dict[str, Any]] = {
+    "record-null": {"record": None},
+    "record-array": {"record": []},
+    "record-not-an-event": {"record": {"a": 1}},
+    "record-actor-missing": {"drop": "actor"},
+    "record-actor-null": {"change": {"actor": None}},
+    "record-outcome-outside-set": {"change": {"outcome": "MAYBE"}},
+    "record-time-not-rfc3339": {"change": {"occurred_at": "yesterday"}},
+    "record-detail-not-object": {"change": {"detail": "x"}},
+    "record-extra-field": {"change": {"secret": "x"}},
+    "record-context-digest-mismatch": {"change": {"governed_context_digest": "urn:sha256:" + "0" * 64}},
+    "previous-hash-tampered": {"previous": "TAMPERED"},
+    "record-hash-tampered": {"record_hash": "TAMPERED"},
+    "signature-empty": {"signature": ""},
+    "keyid-empty": {"keyid": ""},
+}
+
+
+@pytest.mark.parametrize("case", sorted(TAMPERED_AUDIT_ROWS))
+def test_audit_rows_read_back_are_verified_not_trusted(audit_log: Any, case: str) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS points 1-4; ADD v1.3 :3143 and NFR-043 (Register :303):
+    a stored audit row is checked for shape and integrity on read, and a tampered or
+    malformed row is an integrity failure of the audit chain (AUDIT_RECORD_INVALID or
+    AUDIT_CHAIN_BROKEN), never reported as an unavailable store; an append never extends a
+    chain whose last link is tampered."""
+    audit = module("audit")
+    audit_log.append(_audit_event())
+    assert len(audit_log.records()) == 1  # positive control on the same log
+    spec = TAMPERED_AUDIT_ROWS[case]
+    record = spec["record"] if "record" in spec else _audit_event().to_record()
+    if "drop" in spec:
+        record.pop(spec["drop"])
+    record = {**record, **spec.get("change", {})} if isinstance(record, dict) else record
+    previous = audit_log.records()[0].record_hash
+    _insert_raw(audit_log, record, previous=spec.get("previous", previous), record_hash=spec.get("record_hash"),
+                signature=spec.get("signature", "c2ln"), keyid=spec.get("keyid", "urn:ocor:key:c2-audit-test"))
+    with pytest.raises(audit.AuditError) as caught:
+        audit_log.records()
+    assert not isinstance(caught.value, audit.AuditUnavailable), case
+    assert caught.value.reason_code in {"AUDIT_RECORD_INVALID", "AUDIT_CHAIN_BROKEN"}, case
+    if case == "record-hash-tampered":
+        with pytest.raises(audit.AuditError) as appended:
+            audit_log.append(_audit_event())
+        assert appended.value.reason_code == "AUDIT_CHAIN_BROKEN"
+
+
+class _ScriptedConnection:
+    """A psycopg connection whose answers are scripted, for row shapes a real PostgreSQL
+    cannot return (a boolean or zero sequence, a non-mapping row)."""
+
+    def __init__(self, previous: object, inserted: object, rows: object) -> None:
+        self.answers = {"SELECT record_hash": previous, "INSERT": inserted, "SELECT seq": rows}
+
+    def __enter__(self) -> _ScriptedConnection:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def transaction(self) -> _ScriptedConnection:
+        return self
+
+    def execute(self, sql: str, params: object = None) -> Any:
+        answer = next((value for key, value in self.answers.items() if sql.strip().startswith(key)), None)
+
+        class Cursor:
+            def fetchone(self) -> object:
+                return answer
+
+            def fetchall(self) -> object:
+                return answer
+
+        return Cursor()
+
+
+SCRIPTED_AUDIT_ROWS: dict[str, tuple[object, object, object, str]] = {
+    "append-previous-row-not-mapping": (["urn:sha256:" + "0" * 64], {"seq": 1}, [], "append"),
+    "append-previous-hash-tampered": ({"record_hash": "TAMPERED"}, {"seq": 1}, [], "append"),
+    "append-sequence-bool": (None, {"seq": True}, [], "append"),
+    "append-sequence-zero": (None, {"seq": 0}, [], "append"),
+    "append-insert-not-mapping": (None, [1], [], "append"),
+    "records-not-a-list": (None, None, "rows", "records"),
+    "records-row-null": (None, None, [None], "records"),
+    "records-sequence-bool": (None, None, "bool", "records"),
+    "records-sequence-zero": (None, None, "zero", "records"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(SCRIPTED_AUDIT_ROWS))
+def test_audit_store_rejects_impossible_row_shapes(audit_log: Any, monkeypatch: pytest.MonkeyPatch,
+                                                    case: str) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS point 1 (no bool as integer, Mapping checked before use):
+    every row shape is verified, and a wrong one is a typed audit integrity failure."""
+    audit = module("audit")
+    postgres = importlib.import_module("ocor_runtime.audit.adapters.postgres")
+    previous, inserted, rows, operation = SCRIPTED_AUDIT_ROWS[case]
+    if isinstance(rows, str) and rows in {"bool", "zero"}:
+        sealed = _audit_event().to_record()
+        rows = [{"seq": True if rows == "bool" else 0, "record": sealed, "previous_hash": audit.GENESIS_HASH,
+                 "record_hash": audit.link_hash(audit.GENESIS_HASH, sealed), "signature": "c2ln",
+                 "keyid": "urn:ocor:key:c2-audit-test"}]
+    monkeypatch.setattr(postgres.psycopg, "connect",
+                        lambda *args, **kwargs: _ScriptedConnection(previous, inserted, rows))
+    with pytest.raises(audit.AuditError) as caught:
+        audit_log.append(_audit_event()) if operation == "append" else audit_log.records()
+    assert not isinstance(caught.value, audit.AuditUnavailable), case
+    assert caught.value.reason_code in {"AUDIT_RECORD_INVALID", "AUDIT_CHAIN_BROKEN"}, case
