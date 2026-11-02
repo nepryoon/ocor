@@ -1,9 +1,9 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "4c7671ad2a278ba1aae6e0422a3b174c8e077b80",
+  "baseline_commit": "853798575f44f0167d60ce9ab267db2058a9fde4",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "7998aea2f0bc72a1b2b062beec003164a45d66c5c445027c4b7dd14f356a1a64"
+    "sha256": "7fde60289083836c432b7a7e5d515b422fde60a59fe3d1db06bcd7ffcb04e680"
   },
   "blocking_tasks": [
     "OCOR-DEV-0060",
@@ -28,16 +28,24 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocks": "OCOR-DEV-REM-0047 (NCP-U01) requalification records, candidate, verification, seal and merge; hence every later NCP unit of plan_order and the G6/G7 tasks behind them",
+      "blocks": "nothing after the decision",
       "branch": "governed/decision-request-ncp-u01-supersession-requalifications",
       "commit": "ace1e559a2bd582ee966ab626592f7bc9478b71c",
+      "disposition_record": {
+        "commit": "9a78936c49a24349d3757c65bcf2a60da816e194",
+        "path": "reports/development/decision_requests/NCP-U01-SUPERSESSION-REQUALIFICATIONS.md",
+        "pr": 444,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "2b14044da6b2d6b5ced6986c8f70bf61fe2eb635da267f24283ee77ad99c0801"
+      },
       "id": "NCP-U01-SUPERSESSION-REQUALIFICATIONS",
       "path": "reports/development/decision_requests/NCP-U01-SUPERSESSION-REQUALIFICATIONS.md",
+      "po_decision": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02)",
       "pr": 444,
       "publication": "DRAFT_PR_OPEN",
       "recommendation": "options A1 and B1",
       "sha256": "fa9e06fc2039d4f720da5ee9dda1061e3ad418a18e79440af17f48c1f106f45f",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "DECIDED_BY_PO"
     }
   ],
   "direct_ready_disposition": "NOT_EXECUTABLE_SUSPENDED_OR_BLOCKED_BY_PO_NORMATIVE_CONFORMANCE_PROGRAMME",
@@ -49,36 +57,36 @@
   ],
   "in_progress_unit": {
     "branch": "governed/ocor-dev-rem-0047-ncp-u01-c1-conformance",
-    "done": "Full suite on the real stack at dda0eff19132 from a clean shell with the locked PATH (~/.ocor-codex/rem-0047-q, run.sh and qualify_run.py adapted from REM-0046, mains power): PASS: 21/21 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; task module test_ocor_dev_rem_0047.py with the register, REM-0046 and evidence-validator tests 3x1043 passed; regression of 0005/0011/0028/0032/0033/0050/0082, mission thread 0031 and rem_0011 281 passed; reports portfolio 1585 passed; two-lane full suite TWO_LANE 3359 tests, 0 failures/errors/skips, exact union 3359/3359, 2413 s of cap 5400 s, mains power, zero host residue). Not a candidate and not evidence: no record was written, because every option of question B of the decision request changes the code head; the outputs stay outside Git as a documented run of the suite at this head",
+    "done": "Disposition applied on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance: RED c002b338ff47 (9 cases added to reports/tests/test_runtime_evidence_validator.py, SealedRecordSupersessionTests: 2 failed for the expected reason - the positive case and the other-task negative stop at 'record_id mismatch' - and 7 negatives already rejected for the reason they assert; fingerprint 9e5618a59483), GREEN c9a7fe7839dc (check_regression_record: the superseded identifier is previous_record.record_path only for a record without record_id whose canonical path and sha256 the sealed evidence registry lists; 61 passed, 53 subtests), registration 1ab725f3ce4c (decision request file with the disposition byte-identical to 9a78936 on its branch, sha256 2b14044da6b2d6b5...; plan allowlist entry for the file and plan validator self-hash; unit record: decision, every requalification regression-only, RED/GREEN and anchor of the validator change). Probe of check_regression_record on the real last records of the eight tasks: PASS for all (0028, 0031 and 0033 by path). PR #444 closed as resolved, not merged; campaign: PASS: 21/21 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; task module test_ocor_dev_rem_0047.py with the register, REM-0046 and evidence-validator tests 3x1052 passed; regression of 0005/0011/0028/0032/0033/0050/0082, mission thread 0031 and rem_0011 281 passed; reports portfolio 1594 passed; two-lane full suite TWO_LANE 3359 tests, 0 failures/errors/skips, exact union 3359/3359, 2429 s of cap 5400 s, mains power, zero host residue)",
     "estimate_iterations": 4,
-    "head": "dda0eff19132e32c2467194bfffd4d74f339d0d9",
+    "head": "c427d2c5d50478b78d0cc42dc6c31f0b67aaee44",
     "id": "OCOR-DEV-REM-0047",
-    "iterations_used": 6,
+    "iterations_used": 7,
     "plan_unit": "NCP-U01",
-    "stop_at_iterations": 8
+    "stop_at_iterations": 10
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "local_controls": {
-    "evidence_input_drift": "FAIL as expected on the unit branch only (0005, 0011, 0028, 0032, 0033, 0050, 0082); main unchanged",
-    "full_suite": "PASS: 21/21 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; task module test_ocor_dev_rem_0047.py with the register, REM-0046 and evidence-validator tests 3x1043 passed; regression of 0005/0011/0028/0032/0033/0050/0082, mission thread 0031 and rem_0011 281 passed; reports portfolio 1585 passed; two-lane full suite TWO_LANE 3359 tests, 0 failures/errors/skips, exact union 3359/3359, 2413 s of cap 5400 s, mains power, zero host residue)",
+    "evidence_input_drift": "PASS at the candidate head (requalification records of 0005, 0011, 0028, 0031, 0032, 0033, 0050, 0082); main unchanged",
+    "full_suite": "PASS: 21/21 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; task module test_ocor_dev_rem_0047.py with the register, REM-0046 and evidence-validator tests 3x1052 passed; regression of 0005/0011/0028/0032/0033/0050/0082, mission thread 0031 and rem_0011 281 passed; reports portfolio 1594 passed; two-lane full suite TWO_LANE 3359 tests, 0 failures/errors/skips, exact union 3359/3359, 2429 s of cap 5400 s, mains power, zero host residue)",
     "normative_sha256": "8/8 PASS",
-    "pre_campaign_gate": "PASS 46/47 at dda0eff19132 (only the expected drift)"
+    "pre_campaign_gate": "PASS 46/47 steps of the workflows at the head; the only non-zero step is the evidence input drift, expected on 0005/0011/0028/0032/0033/0050/0082 (planned requalifications); 47/47 PASS at the candidate head c427d2c5d504 (drift 0) at 1ab725f3ce4c"
   },
-  "minimal_unblock_action": "PO decision on the normative decision request NCP-U01-SUPERSESSION-REQUALIFICATIONS (draft PR #444, reports/development/decision_requests/NCP-U01-SUPERSESSION-REQUALIFICATIONS.md on branch governed/decision-request-ncp-u01-supersession-requalifications, commit ace1e559a2bd, sha256 fa9e06fc2039d4f720da5ee9dda1061e3ad418a18e79440af17f48c1f106f45f); recommended options A1 (0011 and 0032 regression class) and B1 (sealed records without record_id superseded by path, validator change with RED/GREEN).",
-  "next_executable_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U01-SUPERSESSION-REQUALIFICATIONS (draft PR #444, sha256 fa9e06fc2039d4f7...): the requalification records, hence the candidate, verification, seal and merge of OCOR-DEV-REM-0047 (NCP-U01), depend on it; the next units of plan_order start only after NCP-U01 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. After the decision: lift TERMINAL_BLOCKED with a tracked state update registering the disposition, then continue OCOR-DEV-REM-0047 on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance from dda0eff19132 in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path): apply the disposition (B1: RED/GREEN in reports/tests/test_runtime_evidence_validator.py and check_regression_record; A2: requirement declarations in the two test modules with AST comparison), PRE-CAMPAIGN-GATE on the new head, full suite again (kit ~/.ocor-codex/rem-0047-q, new output dir), requalification records (builder adapted from ~/.ocor-codex/rem-0046-q-tools/build_evidence.py), record completion, candidate push, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer. Iterations used 6 of estimate 4 (stop at 8 unless the PO says otherwise). No new DEC; claims unchanged.",
-  "no_new_po_normative_decision_required": false,
-  "open_pull_requests": 8,
+  "minimal_unblock_action": "Done: PO decision NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02), options A1 and B1.",
+  "next_executable_action": "Integrate OCOR-DEV-REM-0047 (NCP-U01) after the verdict of OCOR-DEV-REM-0047-c427d2c5d504-0: read ~/.ocor-codex/verdicts/OCOR-DEV-REM-0047-c427d2c5d504-0.json; with GO_FOR_EVIDENCE_SEAL record verifier identity and verdict in the unit record and the eight requalification records, seal, open the PR, wait for every required check on the exact head (memory: --required misses 3 aggregates), merge with --match-head-commit, verify origin/main and the sealed hashes, then state sync (register NCP-U01 entries resolved per the sealed record); with NO_GO repair (at most 2 materially different cycles). Candidate c427d2c5d504 (code 1ab725f3ce4c) on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance in .ocor/worktrees/rem-0047. Iterations used 7 of estimate 4 (stop at 10, NCP-U01-SUPERSESSION-REQUALIFICATIONS point 5). NCP-U12 later carries the mission thread to the conforming pipeline. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. No new DEC; claims unchanged.",
+  "no_new_po_normative_decision_required": true,
+  "open_pull_requests": 7,
   "previous_report": {
-    "commit": "5860794",
+    "commit": "86ad1a8",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "6d8b64e5e9e5842f79d97c5ac487f46125122c79cb6e02bfd757c44ef07d65d8",
+    "sha256": "6e47171e2d0d1c191f02d81ce05162998176ccee6bd8c77670fbe3e6ac4c9c80",
     "status": "HISTORICAL_PRESERVED_IN_GIT"
   },
-  "recorded_at": "2026-11-02T01:47:52.284452+00:00",
+  "recorded_at": "2026-11-02T04:04:18.264227+00:00",
   "remaining_backlog_tasks": 9,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "TERMINAL_BLOCKED",
-  "terminal_state": "TERMINAL_BLOCKED",
-  "updated_at": "2026-11-02T01:47:52.284452+00:00"
+  "status": "SUPERSEDED_PO_DECISION_NCP_U01_SUPERSESSION_REQUALIFICATIONS",
+  "terminal_state": "NOT_TERMINAL_LOOP_CONTINUE",
+  "updated_at": "2026-11-02T04:04:18.264227+00:00"
 }
