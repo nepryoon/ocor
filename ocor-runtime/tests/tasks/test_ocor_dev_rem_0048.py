@@ -859,7 +859,7 @@ def test_fr_061_model_publication_constraints(world: World) -> None:
 # Idempotency, immutability and control-plane availability
 # --------------------------------------------------------------------------- #
 def test_publication_is_immutable_and_invocation_idempotent(world: World) -> None:
-    """LLD v1.1 :40 recalculated digests; immutable pins; idempotency key (FR-062 pattern, ACT-T03)."""
+    """LLD v1.1 :40 recalculated digests; immutable pins; idempotency key replay and conflict."""
     descriptor = world.function()
     first = world.publish_function(descriptor)
     assert world.publish_function(descriptor) == first
