@@ -34,7 +34,11 @@
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_unsigned_or_out_of_release_publication_fails_closed",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_revoked_artifact_or_key_fails_closed_after_publication",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_registry_tables_are_append_only"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_registry_tables_are_append_only",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_model_deployment_and_mapping_are_signed_and_bound_to_the_release",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_manifest_fields_are_type_checked_never_coerced",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_tampered_function_entry_fails_closed_on_resolve_and_invoke",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_tampered_model_entry_fails_closed_on_resolve_and_invoke"
       ]
     },
     {
@@ -60,7 +64,10 @@
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_every_overrun_ends_fail_safe_and_is_audited",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_sandbox_denies_files_sockets_and_imports",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_quotas_are_configurable_per_function"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_quotas_are_configurable_per_function",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_memory_quota_below_the_interpreter_baseline_is_an_audited_overrun",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_budget_values_beyond_the_canonical_range_are_rejected_typed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_nfr_025_sandbox_start_failure_is_a_typed_error"
       ]
     },
     {
@@ -78,7 +85,8 @@
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_fr_060_model_output_is_reconstructible_from_pinned_inputs",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_fr_060_unreproducible_model_fails_reconstruction",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_ncr_c1_001_conforms"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_ncr_c1_001_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_tampered_model_lineage_fails_closed_on_reconstruction"
       ]
     },
     {
@@ -97,7 +105,12 @@
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_publication_is_immutable_and_invocation_idempotent",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_unreachable_store_is_control_plane_unavailable",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_message_decoding_and_signature_parsing_fail_closed"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_message_decoding_and_signature_parsing_fail_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_replayed_invocation_digests_are_recalculated",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_contract_decoding_rejects_overflow_foreign_keys_and_non_utf8",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_signature_envelope_parsing_rejects_ill_typed_entries",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_postgres_adapter_translates_every_driver_and_decoding_error",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py::test_postgres_adapter_rejects_malformed_rows_without_coercion"
       ]
     }
   ],
@@ -109,7 +122,12 @@
     "InvocationContext.ontology_release_digest must equal the ir_digest of the C1 release the entry was bound to at publication (RELEASE_MISMATCH otherwise)",
     "ModelDescriptor has no budget: the ModelRegistry runs models under a configured ResourceBudget",
     "publication binds the pin to a named contract of kind FUNCTION or MODEL_FUNCTION of an admitted C1 release: version, contract digest (RFC 8785 of the contract), effect class, input/output schema digests, policy refs (Functions) and risk class (Models) must match",
-    "a pin is immutable: a different descriptor under the same exact pin is IDEMPOTENCY_CONFLICT"
+    "a pin is immutable: a different descriptor under the same exact pin is IDEMPOTENCY_CONFLICT",
+    "ResourceBudget quotas are proto uint64 but every signed object is RFC 8785 JSON (LLD v1.1 :36), whose numbers are binary64: a quota above 2**53 - 1 is rejected with SCHEMA_VIOLATION (the bound of c1/ir.py), and a timeout above the Duration range (315576000000 s) likewise",
+    "ModelDescriptor has a single artifact_signature_ref: the signed manifest names the DSSE artefact signatures of the deployment and of the mapping (deployment_signature_ref, mapping_signature_ref); a manifest without them is CONTRACT_REJECTED",
+    "'fuori release' for a deployment or mapping: its pin carries the contract_digest and semantic_version of the Model contract of the admitted release (CONTRACT_DIGEST_MISMATCH / RELEASE_MISMATCH otherwise), the most restrictive reading",
+    "the memory quota is the absolute RLIMIT_AS of the sandboxed process; a quota that the started interpreter already exceeds is an audited MEMORY overrun, not an execution failure",
+    "a DSSE envelope with any malformed signature entry is rejected even when another entry verifies"
   ],
   "change_anchors": [
     {
@@ -183,6 +201,48 @@
       "function": "PostgresRegistryStore",
       "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:184; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:182 (audit)",
       "path": "ocor-runtime/src/ocor_runtime/registry/adapters/postgres.py"
+    },
+    {
+      "change": "preventive review P1: the stored entry record is rebuilt from the signed manifest, signatures, revocations and the re-admitted release on every resolve and invoke and must equal the stored one; malformed stored data is a typed error",
+      "function": "FunctionRegistry._function_record/_resolved, ModelRegistry._model_record/_resolved, _stored, _stored_entry, _same_record",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:40; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1582",
+      "path": "ocor-runtime/src/ocor_runtime/registry/service.py"
+    },
+    {
+      "change": "preventive review P1: provenance and result digests recalculated and output re-validated before replay; stored lineage shape-checked before reconstruction",
+      "function": "_replayed, ModelRegistry.ReconstructModelInvocation",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:40; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:184",
+      "path": "ocor-runtime/src/ocor_runtime/registry/service.py"
+    },
+    {
+      "change": "preventive review P3: deployment and mapping DSSE artefact signatures named by the signed manifest, verified and revocation-checked; deployment and mapping bound to the Model contract of the admitted release; release_ref and output_kind type-checked",
+      "function": "ModelRegistry._model_record, _RegistryCore._signature_ref",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1582",
+      "path": "ocor-runtime/src/ocor_runtime/registry/service.py"
+    },
+    {
+      "change": "preventive review P5: every DSSE envelope and signature entry field type-checked before use; an invalid pinned JSON Schema is a typed rejection",
+      "function": "StatementVerifier.verify, _validate",
+      "normative_element": "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) points 1, 2 and 4",
+      "path": "ocor-runtime/src/ocor_runtime/registry/service.py"
+    },
+    {
+      "change": "preventive review P4: memory quota applied by the runner after start (quota below the started interpreter is a MEMORY overrun; reserve to report the artefact overrun); limits clamped to host hard limits; budget re-admitted; start failures typed",
+      "function": "_RUNNER, _limits, _clamped, PythonSandbox.run",
+      "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:182",
+      "path": "ocor-runtime/src/ocor_runtime/registry/sandbox.py"
+    },
+    {
+      "change": "preventive review P4/P5: quotas at most 2**53 - 1 and Duration at most 315576000000 s; bounded Duration decoding; non-string member names and non-text base64 rejected",
+      "function": "require_budget, _decode, from_mapping, json_mapping",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:36; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:182",
+      "path": "ocor-runtime/src/ocor_runtime/registry/contract.py"
+    },
+    {
+      "change": "preventive review P2: every column of every row type-checked without coercion; connection-level driver errors CONTROL_PLANE_UNAVAILABLE, every other driver or decoding error and malformed row CONTRACT_REJECTED",
+      "function": "PostgresRegistryStore._run, _row and every read",
+      "normative_element": "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) points 1-4",
+      "path": "ocor-runtime/src/ocor_runtime/registry/adapters/postgres.py"
     }
   ],
   "change_anchors_note": "the unit only adds the package ocor_runtime.registry; no existing module, caller, test, contract or schema changes",
@@ -210,7 +270,8 @@
     {
       "agent": "Claude Code",
       "iterations": [
-        1
+        1,
+        2
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -220,6 +281,31 @@
   "no_new_dependency": "stdlib, jsonschema and psycopg (already used by the C3 adapter) only; uv.lock and pyproject.toml unchanged",
   "open_decision_requests": [],
   "plan_unit": "NCP-U02",
+  "pre_campaign_review": {
+    "advisory_dispositions": {
+      "P6": "accepted: the pre_campaign_gate section with the steps, outcomes and head is recorded before the campaign"
+    },
+    "blocking_dispositions": {
+      "P1": "fixed: stored entries rebuilt from signed and admitted inputs and compared on every use; replay and reconstruction digests recalculated; typed errors (RED 5a4043f, GREEN 08b6839)",
+      "P2": "fixed: row shape checks without coercion and full driver/decoding error translation in the PostgreSQL adapter; local-responder negative tests (RED 5a4043f, GREEN 08b6839)",
+      "P3": "fixed: deployment and mapping signed (manifest-named DSSE artefact signatures), revocation-checked and bound to the release contract; manifest fields type-checked (RED 5a4043f, GREEN 08b6839)",
+      "P4": "fixed: runner-applied memory quota with audited MEMORY overrun below the interpreter baseline, clamped limits, typed start failures, quotas bounded to 2**53 - 1 (RED 5a4043f, GREEN 08b6839)",
+      "P5": "fixed: bounded Duration, string member names, text base64, typed DSSE entries, non-UTF-8 negative tests (RED 5a4043f, GREEN 08b6839)"
+    },
+    "findings_by_severity": {
+      "advisory": 1,
+      "blocking": 5
+    },
+    "request_id": "OCOR-DEV-REM-0048-50c3a1e68535-pre",
+    "result_file_sha256": "372bc91dd8332e92dac18134370656b3174175bc303d9427846e7e0f54376e50",
+    "reviewer": {
+      "model": "gemini-4-argon-high",
+      "process": "Antigravity CLI",
+      "reserve": false,
+      "vendor": "Google"
+    },
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "product_orientation": [
     "operations carry the proto RPC names, so a gRPC transport (FunctionRegistry/ModelRegistry servicers) binds them without change; no grpcio runtime dependency is added now",
     "the registry store is a port; artefacts are content-addressed and re-hashed on read, so an object-storage adapter (FR-060 dependency 'object storage') can replace the PostgreSQL artefact table without changing the service",
@@ -259,11 +345,23 @@
       ],
       "summary": "52 passed against PostgreSQL (the 50 RED cases plus two sandbox containment cases); fixture-only test corrections recorded in the commit message"
     },
+    "GREEN_PRE_REVIEW": {
+      "commits": [
+        "08b6839"
+      ],
+      "summary": "65 passed against PostgreSQL; ruff and mypy strict clean"
+    },
     "RED": {
       "commit": "f578a4e5698f",
       "fingerprint": "6e3bf7e52a9e",
       "fingerprint_command": "grep -E \"^(FAILED|ERROR)\" red.log | sed \"s/ - .*//\" | LC_ALL=C sort | sha256sum",
       "summary": "50 cases: 1 failed, 49 errors, every one ModuleNotFoundError: No module named 'ocor_runtime.registry' (the divergence itself); run on a checkout of the RED commit against PostgreSQL"
+    },
+    "RED_PRE_REVIEW": {
+      "commit": "5a4043f",
+      "fingerprint": "79ccb7feb1ed",
+      "fingerprint_command": "grep -E \"^(FAILED|ERROR)\" red2.log | sed \"s/ - .*//\" | LC_ALL=C sort | sha256sum",
+      "summary": "13 new cases for the blocking findings P1-P5 of the preventive review: 12 failed, 1 passed (manifest field type checks already rejected), 53 passed, against PostgreSQL; each failure is the reported defect (no typed rejection, raw KeyError/OverflowError/TypeError/InterfaceError, EXECUTION_FAILED instead of an audited MEMORY overrun)"
     }
   }
 }
