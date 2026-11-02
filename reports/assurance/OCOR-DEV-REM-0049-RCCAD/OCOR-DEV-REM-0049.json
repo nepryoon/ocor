@@ -1,0 +1,761 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: FR-057 acceptance: a projection beyond Cn serves at-least but not exact-at-commit(Cn); dependency 'branch/commit ordering'; LLD v1.1 \u00a72.2: AT_LEAST_COMMIT(c,t) waits bounded until watermark >= c, then PROJECTION_NOT_READY; ADD v1.3 \u00a73.3: AT_LEAST_COMMIT(Cn) may serve Cm>Cn declaring Cm",
+      "entry": "NCR-C2-001",
+      "norm_refs": [
+        {
+          "lines": "179",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "126",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1361",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-057",
+        "NFR-024"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a73.0.1: Query surface, principal origin TRANSPORT, no Principal in the body, DENY without lookup; LLD v1.1 \u00a71.1: effective_principal_id and actor_chain derive from the authenticated identity, never accepted as authority from client input; QueryContext: principal_id and actor_chain deliberately absent (impersonation vector); ADD v1.3 \u00a73.3: effective Principal derived from mTLS/workload identity and verified token; FR-006 acceptance: every surface receives the same policy context; a principal sees only authorised elements; NFR-006 acceptance",
+      "entry": "NCR-C2-002",
+      "norm_refs": [
+        {
+          "lines": "380",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "41",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "142-164",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "1361",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "49",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "50",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-006",
+        "NFR-006"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a73.0.2: an unresolvable *_marking_ref or a non-matching marking_digest produces DENY, not a permissive posture; ADD v1.3 \u00a73.0.2: classification_marking_ref is urn:sha256:<marking_digest>; FR-006 acceptance",
+      "entry": "NCR-C2-003",
+      "norm_refs": [
+        {
+          "lines": "401",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "398",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "49",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-006",
+        "NFR-006"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_003_conforms"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a73.3: the Gateway rejects non-matching digest or release; Problem reason_code enum includes CONTRACT_DIGEST_MISMATCH and RELEASE_MISMATCH; FR-046 acceptance: the Gateway does not switch until all targets declare READY for coherent release and watermark; FR-055",
+      "entry": "NCR-C2-004",
+      "norm_refs": [
+        {
+          "lines": "1361",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "452-466",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "142",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "177",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-046",
+        "FR-055"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_004_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_004_catalog_is_built_from_an_admitted_c1_release"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: FR-056 acceptance: direct access and non-allow-listed queries are denied and audited; NFR-034: arbitrary backend queries or commands MUST be denied and audited; FR-134 acceptance: every catalogue event (Policy Decision, sensitive queries) generates a record with actor, time, resource, reason, authority and correlation",
+      "entry": "NCR-C2-005",
+      "norm_refs": [
+        {
+          "lines": "178",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "257",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "302",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-056",
+        "NFR-034",
+        "FR-134"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: Problem: closed RFC 9457 profile, closed reason_code enum, served required for STALE_CONTEXT/PROJECTION_NOT_READY/RELEASE_MISMATCH; ADD v1.3 \u00a73.3: every version-sensitive response, error responses included, carries served; ADD v1.3 \u00a73.0.1: mismatch or missing field -> DENY without lookup; NFR-024 acceptance: fields present in 100% of version-sensitive responses; NFR-006 acceptance: errors reveal no unauthorised content or existence",
+      "entry": "NCR-C2-006",
+      "norm_refs": [
+        {
+          "lines": "435-485",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "1362",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "380",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "50",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-006"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: QueryContext (branch, logic_version, scenario_id) and ContractCall (closed parameters schema); ServedContext requires result_marking_ref and provenance_ref; LLD v1.1 \u00a72.2 algorithm: allow-list of name/version/parameters and cost budget; marking join and post-filter; provenance; served branch; ADD v1.3 \u00a73.3: parameters replaced by closed schemas additionalProperties false; FR-007 acceptance",
+      "entry": "NCR-C2-007",
+      "norm_refs": [
+        {
+          "lines": "142-195",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "254-273",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "117-124",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1361",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "58",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-007",
+        "NFR-024"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option 2): on the gateway wire the five digests policy_bundle_digest, governed_context_digest, ontology_release_digest, contract_digest and SchemaPin.digest use the contract form sha256:<hex>; the gateway transport adapter converts them bijectively to and from the internal form urn:sha256:<hex>, so the domain model keeps the internal form, and governed_context_digest is computed over the internal GovernedContext form; the transport adapter rejects a malformed digest with SCHEMA_VIOLATION; every other field keeps the form its contract prescribes; contracts and the GovernedContext schema are unchanged.",
+      "entry": "NCR-C2-008",
+      "norm_refs": [
+        {
+          "lines": "170-192",
+          "note": "^sha256: patterns in QueryContext and ContractCall",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "118",
+          "note": "SchemaPin.digest ^sha256:",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "43-48",
+          "note": "GovernedContext digest $def ^urn:sha256:",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/governed-context.schema.json"
+        },
+        {
+          "lines": "37",
+          "note": "LLD v1.1 \u00a71.1: SHA-256 represented as urn:sha256:<64 lowercase hex>",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "note": "LLD v1.1 \u00a70.1 precedence",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-022"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_008_conforms"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: Consistency: required_commit required only when mode is AT_LEAST_COMMIT or EXACT_AT_COMMIT",
+      "entry": "NCR-C2-009",
+      "norm_refs": [
+        {
+          "lines": "126-141",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-057"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_009_conforms"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: six operations; ADD v1.3 C2 operations GetObject ... GetProvenance; FR-055 acceptance: every contract is invocable by the conformance client without backend language; FR-007 acceptance: golden queries return identity, relations, validity, claims, evidence, provenance, truth status, uncertainty and explanation; LLD v1.1 \u00a72.2 ports include EvidenceReadPort",
+      "entry": "NCR-C2-011",
+      "norm_refs": [
+        {
+          "lines": "8-98",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "283",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "58",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "113",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-055",
+        "FR-007"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a77.1 BA-03: TypeDB exact-at-commit or PROJECTION_NOT_READY, never downgrade; ADD v1.3 \u00a73.3: emulation unavailable -> UNSUPPORTED_CAPABILITY, no silent degrade; closed reason_code enum; FR-057 acceptance",
+      "entry": "NCR-C2-012",
+      "norm_refs": [
+        {
+          "lines": "369",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "1363",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "452-466",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "179",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-057"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_012_conforms"
+      ]
+    }
+  ],
+  "ambiguities_resolved_fail_closed": [
+    "an absent projection result is POLICY_DENIED: errors must not disclose existence (NFR-006, Register :50)",
+    "a quarantined projection is PROJECTION_NOT_READY with the served watermark (LLD v1.1 :350)",
+    "a call above the cost budget of its contract is POLICY_DENIED before the read (LLD v1.1 :120 fixes no code)",
+    "a context policy effect other than PERMIT (PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL, OBLIGATE) is POLICY_DENIED for reads: the gateway enforces no obligation",
+    "an absent or empty governed-context field on the wire is POLICY_DENIED (ADD v1.3 :380); a malformed wire digest is SCHEMA_VIOLATION (PO NCR-C2-008 option 2); a principal or actor_chain in the body is SCHEMA_VIOLATION (closed QueryContext)",
+    "the served context of an error carries the request classification_marking_ref as result_marking_ref and the content address of the served observation as provenance_ref (both mandatory in the contract ServedContext)",
+    "GetProvenance (no contract call in ProvenanceRequest) is served by the provenance contract registered in the active release; without one it is UNSUPPORTED_CAPABILITY",
+    "redaction_count counts distinct withheld resources (objects, links, graph targets)",
+    "EXACT_AT_COMMIT waits within wait_timeout_ms while the projection is behind; once overtaken it answers PROJECTION_NOT_READY immediately",
+    "a code outside the closed enum raised by a sealed spike adapter behind ProjectionReadPort is answered POLICY_DENIED",
+    "a transport-stage rejection is audited with the authenticated principal; an absent correlation id is recorded as 'unparsed-request'"
+  ],
+  "change_anchors": [
+    {
+      "change": "new: closed Problem model (13 codes, served and deferred_element rules, no other extension), wire form",
+      "function": "PROBLEM_REASON_CODES, PROBLEM_STATUS, problem_document, served_document",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:435-491; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1362",
+      "path": "ocor-runtime/src/ocor_runtime/c2/problem.py"
+    },
+    {
+      "change": "typed failure with served/deferred_element; served mandatory for STALE_CONTEXT/PROJECTION_NOT_READY/RELEASE_MISMATCH, deferred element for CAPABILITY_DEFERRED",
+      "function": "C2Error",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:472-485",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "every code in the closed enum: QUERY_CONTRACT_INVALID/CONSISTENCY_INVALID/ARBITRARY_QUERY_FORBIDDEN -> SCHEMA_VIOLATION; PURPOSE_MISSING/GOVERNED_CONTEXT_MISMATCH -> POLICY_DENIED",
+      "function": "_required, _digest, ServedContext, NamedQueryRequest.__post_init__/from_mapping, ConsistencyRequirement, Watermark",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:452-466; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "BEST_AVAILABLE accepts required_commit; required_commit 1..256",
+      "function": "ConsistencyRequirement.__post_init__",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:126-141",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "AT_LEAST_COMMIT served by Cm >= Cn by branch order; EXACT never downgrades: PROJECTION_NOT_READY with served",
+      "function": "CommitOrderingPort, commit_reached, ConsistencyRequirement.verify_served, NamedQueryRequest.verify_served",
+      "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:179; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1361; docs/OCOR_LLD_v1.1.md:126, :369",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "result_marking_ref, provenance_ref, redaction_count",
+      "function": "ServedContext",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:254-273; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:180",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "new: closed query body without principal (branch, logic_version, scenario_id); GCS rebuilt with the transport principal, body digest recomputed, mismatch DENY",
+      "function": "QueryContext, ContractCall, NamedQueryCall, TransportBoundQuery",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:142-195; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380, :1361; docs/OCOR_LLD_v1.1.md:38, :41",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "bounded wait on wait_timeout_ms, branch/commit ordering, PROJECTION_NOT_READY with served; policy denial POLICY_DENIED",
+      "function": "ConsistencyPlanner.plan, served_from_watermark",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:126; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:179; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454, :460",
+      "path": "ocor-runtime/src/ocor_runtime/c2/planner.py"
+    },
+    {
+      "change": "allow-list with per-version contract digest and closed parameter schema, cost budget, active release from the admitted C1 release (NAMED_QUERY contracts only)",
+      "function": "RegisteredNamedQuery, CostBudget, NamedQueryCatalog(.from_release, .provenance_call)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1361; docs/OCOR_LLD_v1.1.md:120; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:142, :177",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "the classification_marking_ref is always resolved: unresolvable -> DENY, with or without resource_id",
+      "function": "RegistrationAndMarkingPolicy.decide/clearance/authorized",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:398, :401",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "pipeline: allow-list/digest/release/parameters before identity lookup (CONTRACT_NOT_FOUND, CONTRACT_DIGEST_MISMATCH, RELEASE_MISMATCH, SCHEMA_VIOLATION), transport principal, context policy on the full GCS, registration/marking; every denial audited, CONTROL_PLANE_UNAVAILABLE when the audit or a control is unavailable; non-enum codes of sealed spike adapters mapped to POLICY_DENIED",
+      "function": "NamedQueryGateway._admit, _guarded, _audit_denial, execute",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380, :1361, :174, :3141, :3143; docs/OCOR_LLD_v1.1.md:117-124; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:49, :178, :257, :302",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "new: the six operations with marking join and post-filter, withheld resources counted, ObjectSnapshot/GraphResponse/SearchResponse, evidence reads only through authorised objects, composition root",
+      "function": "get_object, query_object_set, search, traverse, explain, get_provenance, get (EvidenceReadPort), _Disclosure, compose_named_query_gateway",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:8-98, :254-434; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:283; docs/OCOR_LLD_v1.1.md:113, :121-124; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:50, :58, :177",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "new: wire boundary by operationId, contract-validated requests and responses, application/problem+json, bijective sha256:/urn:sha256: digest conversion, malformed digest SCHEMA_VIOLATION, absent GCS field POLICY_DENIED",
+      "function": "to_internal_digest, to_wire_digest, NamedQueryHttpAdapter.invoke",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:5-98, :118, :170-192, :486-491; docs/OCOR_LLD_v1.1.md:37; ocor-runtime/docs/governance_dossier/contracts/governed-context.schema.json:43-48; NORMATIVE-CONFORMANCE-PLAN point 4 (NCR-C2-008 option 2); ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380",
+      "path": "ocor-runtime/src/ocor_runtime/c2/transport.py"
+    },
+    {
+      "change": "new: the single audit port (FR-134 fields, GovernedContext and digest, RFC 8785 hash chain, Ed25519 signature over DSSE PAE)",
+      "function": "AuditEvent, SealedAuditRecord, AuditSigner, AuditPort, link_hash, signing_payload, verify_audit_chain",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3143, :393; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:302; NORMATIVE-CONFORMANCE-PLAN point 2 (NCP-U03 row)",
+      "path": "ocor-runtime/src/ocor_runtime/audit/__init__.py"
+    },
+    {
+      "change": "new: append-only PostgreSQL audit (row and TRUNCATE triggers), advisory-locked chain, AuditUnavailable on connection failure",
+      "function": "PostgresAuditLog",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3143",
+      "path": "ocor-runtime/src/ocor_runtime/audit/adapters/postgres.py"
+    },
+    {
+      "change": "commit order recorded with the watermark advance in one transaction (CommitOrderingPort); read verifies with the order; absent result POLICY_DENIED; identifier contract SCHEMA_VIOLATION",
+      "function": "SCHEMA_QUERY, reset, apply_commit, position, read, _require_value",
+      "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:179; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:50; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454, :459",
+      "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+    },
+    {
+      "change": "quarantined projection PROJECTION_NOT_READY with the served watermark; peek absence follows the adapter's POLICY_DENIED",
+      "function": "ProjectionDriftDetector.read_if_healthy, _peek_served_payload_digest",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:350; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:460, :472-479",
+      "path": "ocor-runtime/src/ocor_runtime/c4/rebuild.py"
+    },
+    {
+      "change": "new: TypeDB object projection with marking digest (fixed read shapes, escaped literals) behind ObjectProjectionPort",
+      "function": "TypeDBObjectProjection, marking_ref",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:398; docs/OCOR_LLD_v1.1.md:121-122; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:283",
+      "path": "ocor-runtime/src/ocor_runtime/c4/object_projection.py"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c2/gateway.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0035.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c2/planner.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0035.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c2/ports.py": [
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0012.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0017.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0035.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0037.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c4/rebuild.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0037.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py"
+    ]
+  },
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 4 (NCR-C2-008 option 2), 5 and 8 (BA-03 for NCR-C2-001/012); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4",
+  "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; AST comparison at the candidate head; test_ocor_dev_rem_0014.py is an input of no latest evidence record (drift validator), its run is part of the 0037 requalification",
+  "existing_tests_realigned_or_adapted": [
+    {
+      "current_assertion": "principal in the request body; gateway(authority, policy, projection)",
+      "function": "make_request, make_gateway, test_a_real_marking_backend_failure_propagates_and_never_defaults_to_permit (gateway construction)",
+      "kind": "ADAPT_CONSTRUCTION",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380; plan existing_tests_to_realign_or_adapt NCR-C2-002",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "TransportBoundQuery with the authenticated principal and a body without principal; gateway with catalog, context policy test port and PostgreSQL audit; assertions unchanged"
+    },
+    {
+      "current_assertion": "ARBITRARY_QUERY_FORBIDDEN",
+      "function": "test_an_unregistered_contract_id_is_denied_without_any_response",
+      "kind": "REALIGN",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:457",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "CONTRACT_NOT_FOUND before any identity lookup (PO choice, NORMATIVE-CONFORMANCE-PLAN point 5)"
+    },
+    {
+      "current_assertion": "IDENTITY_AMBIGUOUS",
+      "function": "test_an_ambiguous_unregistered_identity_is_denied_without_any_response",
+      "kind": "REALIGN",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:457",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "CONTRACT_NOT_FOUND (PO choice, point 5)"
+    },
+    {
+      "current_assertion": "pytest.raises(OSError)",
+      "function": "test_a_real_marking_backend_failure_propagates_and_never_defaults_to_permit",
+      "kind": "REALIGN",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:174, :3141",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "C2Error CONTROL_PLANE_UNAVAILABLE (PO choice, point 5)"
+    },
+    {
+      "current_assertion": "response.served.canonical_commit == 'commit-1' with an unresolvable marking reference",
+      "function": "test_a_registered_query_without_a_resource_parameter_skips_the_marking_join",
+      "kind": "REALIGN",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "C2Error POLICY_DENIED, no response (plan, NCR-C2-003)"
+    },
+    {
+      "current_assertion": "ARBITRARY_QUERY_FORBIDDEN",
+      "function": "test_an_unregistered_version_is_denied_without_any_response",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:457",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "CONTRACT_NOT_FOUND"
+    },
+    {
+      "current_assertion": "ARBITRARY_QUERY_FORBIDDEN",
+      "function": "test_a_resource_outside_the_requesters_clearance_is_denied_before_projection_is_ever_read, test_a_resource_missing_its_marking_triple_is_denied_never_disclosed, test_an_unresolvable_clearance_reference_is_denied_without_any_response",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "POLICY_DENIED"
+    },
+    {
+      "current_assertion": "ARBITRARY_QUERY_FORBIDDEN",
+      "function": "test_an_arbitrary_query_shape_is_rejected_before_any_gateway_or_backend_call",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:190, :459",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "prescribed": "SCHEMA_VIOLATION"
+    },
+    {
+      "current_assertion": "ARBITRARY_QUERY_FORBIDDEN, PURPOSE_MISSING, GOVERNED_CONTEXT_MISMATCH, CONSISTENCY_INVALID, CONSISTENCY_DOWNGRADE",
+      "function": "test_arbitrary_query_text_is_rejected (5 cases), test_empty_purpose_is_rejected_before_routing, test_mismatched_gcs_digest_is_rejected, test_invalid_consistency_contract_is_rejected (4 cases; the BEST_AVAILABLE case keeps its shape with an empty required_commit), test_exact_consistency_cannot_silently_downgrade",
+      "kind": "REALIGN (point 5 cases 1 and known case :124/:131)",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:126-141, :454, :459; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380; docs/OCOR_LLD_v1.1.md:369",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0012.py",
+      "prescribed": "SCHEMA_VIOLATION, POLICY_DENIED, POLICY_DENIED, SCHEMA_VIOLATION, PROJECTION_NOT_READY"
+    },
+    {
+      "current_assertion": "CONSISTENCY_DOWNGRADE",
+      "function": "test_exact_at_commit_fails_closed_when_the_fact_is_ingested_ahead_of_the_watermark, test_exact_at_commit_fails_closed_when_the_row_has_moved_ahead_of_the_watermark, test_stale_reads_are_never_served_as_exact_across_a_real_commit_progression (2 raises)",
+      "kind": "REALIGN",
+      "norm": "docs/OCOR_LLD_v1.1.md:369",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0017.py",
+      "prescribed": "PROJECTION_NOT_READY"
+    },
+    {
+      "current_assertion": "ARBITRARY_QUERY_FORBIDDEN; clearance_by_marking_ref={}",
+      "function": "test_an_unregistered_contract_never_reaches_the_watermark_check, test_a_denied_policy_never_leaks_the_real_watermark_in_its_result; make_planner and test_a_real_watermark_backend_failure_propagates_and_never_defaults_to_best_available (clearance map)",
+      "kind": "REALIGN (point 5 case 1) and ADAPT_CONSTRUCTION (case 3)",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0035.py",
+      "prescribed": "POLICY_DENIED; the request's classification_marking_ref resolves"
+    },
+    {
+      "current_assertion": "CONSISTENCY_DOWNGRADE; RESULT_NOT_FOUND",
+      "function": "test_exact_at_commit_never_masquerades_a_stale_projection_as_exact; test_result_not_found_is_reached_only_after_consistency_is_confirmed (point 5 case 1)",
+      "kind": "REALIGN",
+      "norm": "docs/OCOR_LLD_v1.1.md:369; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:50; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py",
+      "prescribed": "PROJECTION_NOT_READY; POLICY_DENIED"
+    },
+    {
+      "current_assertion": "PROJECTION_QUARANTINED",
+      "function": "test_serving_a_quarantined_projection_is_prohibited",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "docs/OCOR_LLD_v1.1.md:350; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:460",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "prescribed": "PROJECTION_NOT_READY"
+    },
+    {
+      "current_assertion": "QUERY_CONTRACT_INVALID",
+      "function": "test_fact_id_/test_commit_id_/test_payload_contract_rejects_malformed_values (12 cases)",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:459",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py",
+      "prescribed": "SCHEMA_VIOLATION"
+    },
+    {
+      "current_assertion": "reason_code in {PROJECTION_NOT_READY, CONSISTENCY_DOWNGRADE}",
+      "function": "test_typedb_projection_read_enforces_exact_at_commit_consistency_with_the_real_canonical_commit",
+      "kind": "REALIGN",
+      "norm": "docs/OCOR_LLD_v1.1.md:369",
+      "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "prescribed": "== PROJECTION_NOT_READY (the accepted set narrows)"
+    }
+  ],
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "no_new_dependency": "stdlib, jsonschema, PyYAML and psycopg (already in the lock); uv.lock and pyproject.toml unchanged",
+  "open_decision_requests": [],
+  "plan_unit": "NCP-U03",
+  "product_orientation": [
+    "the single audit port ocor_runtime.audit is component-neutral (AuditEvent with FR-134 fields and the GovernedContext): NCP-U07 and NCP-U08 append through the same port (NORMATIVE-CONFORMANCE-PLAN point 2)",
+    "the transport adapter is bound to the contract file and operationId, so an HTTP server (mTLS listener) mounts it without change; the principal is an AuthenticatedPrincipal of the OCOR-DEV-0048 identity port, never a body field",
+    "the catalog is built from the admitted C1 release (NCP-U01 pipeline), so release switches (FR-046 activation fence) replace the catalog atomically",
+    "the context policy is the security.ports.PolicyDecisionPort (OPA in production); the gateway forwards the full GCS (FR-006)",
+    "VECTOR_SIMILARITY and HYBRID_RANK stay UNSUPPORTED_CAPABILITY while ELM-011 is deferred (ADD v1.3 :1361): only lexical search is served",
+    "snapshot/version-pin emulation for EXACT_AT_COMMIT on overtaken projections is NCR-C4-004 (NCP-U05): the planner answers PROJECTION_NOT_READY meanwhile and never downgrades"
+  ],
+  "requalifications_planned": {
+    "note": "drifted tasks at the code head (scripts/validate_evidence_input_drift.py): exactly the plan candidates; each has a realigned or adapted test, so its requalification is qualifying under NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3); 0005/0050/0082 are regression-only (the plan allowlist changes)",
+    "qualifying": [
+      "OCOR-DEV-0012",
+      "OCOR-DEV-0017",
+      "OCOR-DEV-0031",
+      "OCOR-DEV-0034",
+      "OCOR-DEV-0035",
+      "OCOR-DEV-0037",
+      "OCOR-DEV-0039"
+    ],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "TypeDB, Jena, Keycloak/SPIFFE (transport principal), PostgreSQL audit; C1 releases signed with a locally generated key; audit keys generated with OpenSSL",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C2-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms"
+    },
+    {
+      "entry": "NCR-C2-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms"
+    },
+    {
+      "entry": "NCR-C2-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_003_conforms"
+    },
+    {
+      "entry": "NCR-C2-004",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_004_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_004_catalog_is_built_from_an_admitted_c1_release"
+    },
+    {
+      "entry": "NCR-C2-005",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed"
+    },
+    {
+      "entry": "NCR-C2-006",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem"
+    },
+    {
+      "entry": "NCR-C2-007",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read"
+    },
+    {
+      "entry": "NCR-C2-008",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_008_conforms"
+    },
+    {
+      "entry": "NCR-C2-009",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_009_conforms"
+    },
+    {
+      "entry": "NCR-C2-011",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms"
+    },
+    {
+      "entry": "NCR-C2-012",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_012_conforms"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C2-001",
+    "NCR-C2-002",
+    "NCR-C2-003",
+    "NCR-C2-004",
+    "NCR-C2-005",
+    "NCR-C2-006",
+    "NCR-C2-007",
+    "NCR-C2-008",
+    "NCR-C2-009",
+    "NCR-C2-011",
+    "NCR-C2-012"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0049 commits: the C2 Problem/transport modules, the audit package, the C4 object projection and the unit test disappear, c2/ports.py, gateway.py, planner.py, c4/typedb_adapter.py and rebuild.py and the realigned tests return to the base, the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0049",
+  "tdd": {
+    "GREEN": {
+      "commits": [
+        "34ba322",
+        "49fe988"
+      ],
+      "summary": "unit module 15 passed, realigned/adapted modules 0012/0017/0034/0035/0037/0039/rem_0014 passed on real TypeDB, Fuseki and PostgreSQL (94 passed); C2/C4 consumers 377 passed with only 0058 refused for backends not started in development"
+    },
+    "RED": {
+      "commit": "5e1e0e6",
+      "fingerprint": "84c4e7449c84",
+      "fingerprint_command": "grep -E \"^(FAILED|ERROR)\" red.log | sed \"s/ - .*//\" | LC_ALL=C sort | sha256sum",
+      "summary": "unit module plus every realigned module on real TypeDB, Fuseki and PostgreSQL: 38 failed, 33 passed, 11 errors; the unit cases fail on the absent API (ocor_runtime.audit, NamedQueryCatalog, TypeDBProjectionAdapter.position) or on the divergent behaviour (CONSISTENCY_INVALID for BEST_AVAILABLE+required_commit, CONSISTENCY_DOWNGRADE), every realigned assertion fails on the old reason code, test_ocor_dev_0034.py fails at collection on the adapted construction"
+    },
+    "red_design_corrections": [
+      "the unknown-principal case of test_ncr_c2_006_conforms now carries its own correct GCS digest (with the fixture principal's digest the prescribed answer is POLICY_DENIED for a digest mismatch, ADD v1.3 :380)",
+      "the assertion that C2Error rejects a non-enum code at construction is replaced by the gateway mapping of a non-enum code raised behind a port to POLICY_DENIED: the sealed spike adapter of OCOR-DEV-0017 (outside the unit) still raises RESULT_NOT_FOUND; closure on the wire is asserted instead, and the AST scan keeps every C2/C4 runtime code in the enum"
+    ]
+  }
+}
