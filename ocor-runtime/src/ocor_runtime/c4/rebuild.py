@@ -22,6 +22,7 @@ import hashlib
 import threading
 from dataclasses import dataclass
 
+from ..c2.planner import served_from_watermark
 from ..c2.ports import C2Error, ConsistencyMode, ConsistencyRequirement, NamedQueryRequest, NamedQueryResponse
 from ..c3.service import PostgresC3Service
 from ..c4.typedb_adapter import TypeDBProjectionAdapter
@@ -99,7 +100,7 @@ class ProjectionDriftDetector:
         try:
             response = self._projection.read(_peek_request(aggregate_ref))
         except C2Error as error:
-            if error.reason_code == "RESULT_NOT_FOUND":
+            if error.reason_code == "POLICY_DENIED":
                 return None
             raise DriftError("BACKEND_ERROR", str(error)) from error
         return response.result_digest
@@ -138,5 +139,12 @@ class ProjectionDriftDetector:
         served, regardless of what the request's own consistency mode
         would otherwise allow."""
         if self.is_quarantined(aggregate_ref):
-            raise C2Error("PROJECTION_QUARANTINED", f"{aggregate_ref!r} is quarantined pending reconciliation")
+            # a quarantined projection is not ready to serve (LLD v1.1 :350); the Problem
+            # carries what the projection currently serves (contract :472-479).
+            watermark = self._projection.current("urn:ocor:projection:c4-typedb", "main")
+            raise C2Error(
+                "PROJECTION_NOT_READY",
+                f"{aggregate_ref!r} is quarantined pending reconciliation",
+                served=served_from_watermark(watermark, request),
+            )
         return self._projection.read(request)

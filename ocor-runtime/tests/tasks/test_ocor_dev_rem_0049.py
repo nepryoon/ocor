@@ -74,6 +74,8 @@ TENANT = "urn:ocor:tenant:synthetic"
 COMPARTMENT = "urn:ocor:compartment:alpha"
 PURPOSE = "fleet-investigation"
 SCHEME = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))
+V1 = "urn:ocor:vessel:1"
+V2 = "urn:ocor:vessel:2"
 OPERATIONS = ("GetObject", "QueryObjectSet", "Search", "Traverse", "Explain", "GetProvenance")
 
 
@@ -274,7 +276,8 @@ class Gateway:
 
     def __init__(self, typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any,
                  *, clearance_level: str = "SECRET", marking_ref: str = internal("a"),
-                 identity_lookups: list[str] | None = None, cost_budget: Any = None) -> None:
+                 identity_lookups: list[str] | None = None, cost_budget: Any = None,
+                 projection: Any = None) -> None:
         gateway = module("c2.gateway")
         identity = importlib.import_module("ocor_runtime.c2_identity")
         registry = identity.IdentityRegistry()
@@ -295,7 +298,8 @@ class Gateway:
             queries={CONTRACT_ID: gateway.RegisteredNamedQuery(
                 contract_id=CONTRACT_ID, versions=frozenset({"1.0.0"}), marking_scheme_id="classification",
                 contract_digests={"1.0.0": CONTRACT_DIGEST}, parameters_schema=PARAMETERS_SCHEMA,
-                **({} if cost_budget is None else {"cost_budget": cost_budget}))})
+                **({} if cost_budget is None else {"cost_budget": cost_budget}))},
+            provenance_contract_id=CONTRACT_ID)
         self.policy = gateway.RegistrationAndMarkingPolicy(
             registry=self.catalog.queries, marking_engine=self.engine, marking_port=jena,
             clearance_by_marking_ref={marking_ref: MarkingSet({"classification": clearance_level})})
@@ -304,7 +308,8 @@ class Gateway:
         self.objects.reset()
         self.gateway = gateway.NamedQueryGateway(
             catalog=self.catalog, authority=CountingAuthority(registry), context_policy=self.context_policy,
-            policy=self.policy, projection=typedb, objects=self.objects, audit=audit_log,
+            policy=self.policy, projection=typedb if projection is None else projection, objects=self.objects,
+            audit=audit_log,
             commit_ordering=typedb, clock=lambda: NOW)
         self.http = module("c2.transport").NamedQueryHttpAdapter(self.gateway)
 
@@ -312,7 +317,23 @@ class Gateway:
         return self.http.invoke(operation, body, principal(who))
 
 
-def get_object_body(context: dict[str, Any] | None = None, *, object_id: str = "vessel-1",
+def bound_query(who: str = PRINCIPAL) -> Any:
+    """A generic named query bound to the transport principal (internal digest form)."""
+    ports = module("c2.ports")
+    gcs = governed_context()
+    context = ports.QueryContext(
+        request_id="018f2f95-01b2-7cc3-8d4e-123456789abc", correlation_id=gcs.correlation_id,
+        tenant_id=gcs.tenant_id, organization_id=gcs.organization_id, domain_id=gcs.domain_id,
+        compartments=gcs.compartments, purpose=gcs.purpose, classification_marking_ref=gcs.classification_marking_ref,
+        ontology_release_digest=gcs.ontology_release_digest, policy_bundle_digest=gcs.policy_bundle_digest,
+        governed_context_digest=gcs.digest(), logic_version="1.0.0", branch="main",
+        consistency=ports.ConsistencyRequirement(ports.ConsistencyMode.BEST_AVAILABLE))
+    call = ports.ContractCall(contract_id=CONTRACT_ID, contract_version="1.0.0", contract_digest=CONTRACT_DIGEST,
+                              parameters={"fleet": "alpha"})
+    return ports.TransportBoundQuery(principal=principal(who), query=ports.NamedQueryCall(context=context, call=call))
+
+
+def get_object_body(context: dict[str, Any] | None = None, *, object_id: str = V1,
                     call: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"context": context or wire_context(),
             "object_ref": {"resource_type_id": "urn:ocor:type:vessel", "resource_id": object_id},
@@ -320,11 +341,12 @@ def get_object_body(context: dict[str, Any] | None = None, *, object_id: str = "
 
 
 def load_fleet(fixture: Gateway, typedb: TypeDBProjectionAdapter) -> None:
-    """Projected objects at canonical commits commit-1 and commit-2: vessel-1 (SECRET)
-    linked to vessel-2 (TOP_SECRET, redacted for a SECRET clearance)."""
-    typedb.apply_commit(fact_id="vessel-1", commit_id="commit-1", payload="v1")
-    typedb.apply_commit(fact_id="vessel-2", commit_id="commit-2", payload="v2")
-    for object_id, level, links in (("vessel-1", "SECRET", ("vessel-2",)), ("vessel-2", "TOP_SECRET", ())):
+    """Projected objects at canonical commits commit-1 and commit-2: V1 (SECRET) linked
+    to V2 (TOP_SECRET, never published to the marking join, so redacted for a SECRET
+    clearance)."""
+    typedb.apply_commit(fact_id=V1, commit_id="commit-1", payload="v1")
+    typedb.apply_commit(fact_id=V2, commit_id="commit-2", payload="v2")
+    for object_id, level, links in ((V1, "SECRET", (V2,)), (V2, "TOP_SECRET", ())):
         fixture.objects.project(
             object_id=object_id, resource_type_id="urn:ocor:type:vessel", commit_id="commit-2",
             marking=MarkingSet({"classification": level}), values={"name": f"{object_id} alpha"},
@@ -400,7 +422,7 @@ def test_ncr_c2_002_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     Contract :142-164 (QueryContext without principal_id/actor_chain); FR-006 (Register :49)."""
     fixture = Gateway(typedb, jena, audit_log)
     load_fleet(fixture, typedb)
-    jena.publish("vessel-1", {"label": "vessel-1", "classification": "SECRET", "provenanceRef": "source-1"})
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
     for field, value in (("effective_principal_id", PRINCIPAL), ("actor_chain", [PRINCIPAL]),
                          ("principal_id", PRINCIPAL)):
         context = wire_context()
@@ -581,8 +603,6 @@ def test_ncr_c2_006_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     assert tuple(problem.PROBLEM_REASON_CODES) == enum
     assert _c2error_codes() <= set(enum), sorted(_c2error_codes() - set(enum))
     with pytest.raises(ValueError):
-        ports.C2Error("ARBITRARY_QUERY_FORBIDDEN", "outside the closed enum")
-    with pytest.raises(ValueError):
         ports.C2Error("PROJECTION_NOT_READY", "served is mandatory")
     with pytest.raises(ValueError):
         ports.C2Error("CAPABILITY_DEFERRED", "deferred_element is mandatory")
@@ -609,8 +629,19 @@ def test_ncr_c2_006_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     assert reply.media_type == "application/problem+json"
     assert_contract_valid("Problem", reply.body)
     assert lookups == []  # DENY without identity lookup
-    reply = fixture.invoke("GetObject", get_object_body(), who="urn:ocor:principal:never-registered")
+    unknown = "urn:ocor:principal:never-registered"  # its own correct GCS digest, unknown identity
+    reply = fixture.invoke("GetObject", get_object_body(wire_context(principal_id=unknown)), who=unknown)
     assert (reply.status, reply.body["reason_code"]) == (404, "CONTRACT_NOT_FOUND")
+
+    # a code outside the closed enum raised behind a port never reaches the caller
+    class LegacyCodeProjection:
+        def read(self, request: Any) -> Any:
+            raise ports.C2Error("RESULT_NOT_FOUND", "sealed spike adapter code")
+
+    legacy = Gateway(typedb, jena, audit_log, projection=LegacyCodeProjection())
+    with pytest.raises(ports.C2Error) as caught:
+        legacy.gateway.execute(bound_query())
+    assert caught.value.reason_code == "POLICY_DENIED"
 
 
 def test_ncr_c2_006_backend_failure_is_a_typed_problem(typedb: TypeDBProjectionAdapter, audit_log: Any) -> None:
@@ -641,7 +672,7 @@ def test_ncr_c2_007_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     assert {"branch", "logic_version", "scenario_id"} <= {f.name for f in dataclasses.fields(ports.QueryContext)}
     fixture = Gateway(typedb, jena, audit_log)
     load_fleet(fixture, typedb)
-    jena.publish("vessel-1", {"label": "vessel-1", "classification": "SECRET", "provenanceRef": "source-1"})
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
     for parameters in ({"cypher": "MATCH (n) RETURN n"}, {"fleet": 7}, {"fleet": "x" * 65}):
         reply = fixture.invoke("GetObject", get_object_body(call=contract_call(**parameters)))
         assert (reply.status, reply.body["reason_code"]) == (400, "SCHEMA_VIOLATION"), parameters
@@ -652,13 +683,13 @@ def test_ncr_c2_007_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     assert (reply.status, reply.body["reason_code"]) == (400, "SCHEMA_VIOLATION")  # maxItems 100
 
     reply = fixture.invoke("Traverse", {"context": wire_context(), "start": [
-        {"resource_type_id": "urn:ocor:type:vessel", "resource_id": "vessel-1"}],
+        {"resource_type_id": "urn:ocor:type:vessel", "resource_id": V1}],
         "traversal_contract": contract_call()})
     assert reply.status == 200, reply.body
     assert_contract_valid("GraphResponse", reply.body)
     served = reply.body["served"]
     assert served["redaction_count"] == 1  # vessel-2 is TOP_SECRET for a SECRET clearance
-    assert {node["node_ref"]["resource_id"] for node in reply.body["nodes"]} == {"vessel-1"}
+    assert {node["node_ref"]["resource_id"] for node in reply.body["nodes"]} == {V1}
     assert re.fullmatch(r"urn:sha256:[0-9a-f]{64}", served["result_marking_ref"])
     assert re.fullmatch(r"urn:sha256:[0-9a-f]{64}", served["provenance_ref"])
     assert served["branch"] == "main" and served["served_commit"] == "commit-2"
@@ -700,7 +731,7 @@ def test_ncr_c2_008_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
         assert caught.value.reason_code == "SCHEMA_VIOLATION"
     fixture = Gateway(typedb, jena, audit_log)
     load_fleet(fixture, typedb)
-    jena.publish("vessel-1", {"label": "vessel-1", "classification": "SECRET", "provenanceRef": "source-1"})
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
     reply = fixture.invoke("GetObject", get_object_body())
     assert reply.status == 200, reply.body
     assert_contract_valid("GetObjectResponse", reply.body)
@@ -744,8 +775,8 @@ def test_ncr_c2_011_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     FR-007 (Register :58); LLD v1.1 :113 (EvidenceReadPort among the C2 ports)."""
     fixture = Gateway(typedb, jena, audit_log)
     load_fleet(fixture, typedb)
-    jena.publish("vessel-1", {"label": "vessel-1", "classification": "SECRET", "provenanceRef": "source-1"})
-    ref = {"resource_type_id": "urn:ocor:type:vessel", "resource_id": "vessel-1"}
+    jena.publish(V1, {"label": V1, "classification": "SECRET", "provenanceRef": "urn:ocor:provenance:source-1"})
+    ref = {"resource_type_id": "urn:ocor:type:vessel", "resource_id": V1}
     bodies = {
         "GetObject": (get_object_body(), "GetObjectResponse"),
         "QueryObjectSet": ({"context": wire_context(), "object_set_contract": contract_call(), "page_size": 10},
@@ -768,7 +799,7 @@ def test_ncr_c2_011_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
         assert_contract_valid(response_schema, reply.body)
         assert reply.body["served"]["served_commit"] == "commit-2", operation
     page = fixture.invoke("QueryObjectSet", bodies["QueryObjectSet"][0]).body
-    assert [item["object_ref"]["resource_id"] for item in page["items"]] == ["vessel-1"]
+    assert [item["object_ref"]["resource_id"] for item in page["items"]] == [V1]
     assert page["served"]["redaction_count"] == 1
     hits = fixture.invoke("Search", bodies["Search"][0]).body["hits"]
     assert [hit["score_semantics"] for hit in hits] == ["LEXICAL_RELEVANCE"]

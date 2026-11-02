@@ -51,7 +51,9 @@ SCHEMA_QUERY = (
     "attribute c4-payload, value string; "
     "entity c4-fact, owns c4-fact-id @key, owns c4-commit-id @card(1..1), "
     "owns c4-payload @card(1..1); "
-    "entity c4-watermark, owns c4-commit-id @card(1..1);"
+    "entity c4-watermark, owns c4-commit-id @card(1..1); "
+    "attribute c4-commit-seq, value integer; "
+    "entity c4-commit-order, owns c4-commit-id @key, owns c4-commit-seq @card(1..1);"
 )
 
 
@@ -72,7 +74,7 @@ def _require_value(field: str, value: object) -> str:
     """Rejects a missing/empty/non-string value before any query is built, so a
     malformed identifier or payload can never reach TypeDB (fail-closed)."""
     if not isinstance(value, str) or not value:
-        raise C2Error("QUERY_CONTRACT_INVALID", f"{field} is required")
+        raise C2Error("SCHEMA_VIOLATION", f"{field} is required")
     return value
 
 
@@ -198,7 +200,11 @@ class TypeDBProjectionAdapter:
         _schema_write(SCHEMA_QUERY)
 
     def reset(self) -> None:
-        _write("match $f isa c4-fact; delete $f;", "match $w isa c4-watermark; delete $w;")
+        _write(
+            "match $f isa c4-fact; delete $f;",
+            "match $w isa c4-watermark; delete $w;",
+            "match $o isa c4-commit-order; delete $o;",
+        )
 
     def apply_commit(self, *, fact_id: str, commit_id: str, payload: str) -> None:
         """Ingests the fact and advances the watermark to ``commit_id``
@@ -220,7 +226,28 @@ class TypeDBProjectionAdapter:
         if self.current_watermark() is not None:
             statements.append("match $w isa c4-watermark; delete $w;")
         statements.append(f"insert $w isa c4-watermark, has c4-commit-id {_literal(commit_id)};")
+        if self.position(BRANCH, commit_id) is None:
+            # canonical order of the branch, recorded in the same transaction as the
+            # watermark advance (FR-057 "branch/commit ordering", Register :179).
+            statements.append(
+                f"insert $o isa c4-commit-order, has c4-commit-id {_literal(commit_id)}, "
+                f"has c4-commit-seq {self._next_sequence()};"
+            )
         _write(*statements)
+
+    def _next_sequence(self) -> int:
+        rows = _read("match $o isa c4-commit-order, has c4-commit-seq $s;")
+        return 1 + max((int(row["data"]["s"]["value"]) for row in rows), default=0)
+
+    def position(self, branch: str, commit: str) -> int | None:
+        """``CommitOrderingPort``: the position of ``commit`` among the commits applied
+        to ``branch``, or ``None`` when it has not landed (or on another branch)."""
+        if branch != BRANCH or not isinstance(commit, str) or not commit:
+            return None
+        rows = _read(f"match $o isa c4-commit-order, has c4-commit-id {_literal(commit)}, has c4-commit-seq $s;")
+        if not rows:
+            return None
+        return int(rows[0]["data"]["s"]["value"])
 
     def current_watermark(self) -> str | None:
         rows = _read("match $w isa c4-watermark, has c4-commit-id $c;")
@@ -241,7 +268,7 @@ class TypeDBProjectionAdapter:
     def read(self, request: NamedQueryRequest) -> NamedQueryResponse:
         fact_id = request.parameters.get("fact_id")
         if not isinstance(fact_id, str) or not fact_id:
-            raise C2Error("QUERY_CONTRACT_INVALID", "fact_id parameter is required")
+            raise C2Error("SCHEMA_VIOLATION", "fact_id parameter is required")
         watermark = self.current_watermark()
         found = self._lookup_fact(fact_id)
         # the served commit reflects the row actually read, never the
@@ -258,9 +285,11 @@ class TypeDBProjectionAdapter:
             governed_context_digest=request.governed_context_digest,
             policy_bundle_digest=request.governed_context.policy_bundle_digest,
         )
-        request.verify_served(served)
+        request.verify_served(served, ordering=self)
         if found is None:
-            raise C2Error("RESULT_NOT_FOUND", f"no fact projected for {fact_id!r} as of watermark {watermark!r}")
+            # an absent result is indistinguishable from a denial: errors never disclose
+            # existence (NFR-006, Register :50; contract :454).
+            raise C2Error("POLICY_DENIED", "no authorised result for the request")
         _, payload = found
         result_digest = "urn:sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
         return NamedQueryResponse(
