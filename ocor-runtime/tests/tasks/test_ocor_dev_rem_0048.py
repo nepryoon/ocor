@@ -309,7 +309,8 @@ class World:
         descriptor = self.c.FunctionDescriptor(
             pin=pin, input_schema=self.schema_pin(INPUT_SCHEMA),
             output_schema=self.schema_pin(output, output_url, "urn:ocor:schema:output"), dependencies=(),
-            effect_class=self.c.EffectClass[CONTRACTS[contract_id][1]], deterministic=True,
+            effect_class=changes.pop("effect_class", None) or self.c.EffectClass[CONTRACTS[contract_id][1]],
+            deterministic=True,
             execution_owner="urn:ocor:owner:fleet-team", budget=budget or self.budget(),
             policy_refs=("urn:ocor:policy:fleet-functions",), artifact_signature_ref=self.artifact_signature(pin),
             provenance_ref="urn:ocor:provenance:build-1")
@@ -728,6 +729,8 @@ def test_nfr_025_every_overrun_ends_fail_safe_and_is_audited(world: World, kind:
     b"import socket\ndef invoke(value):\n    return {'score': 1}\n",
     b"def invoke(value):\n    raise RuntimeError('boom')\n",
     b"def invoke(value):\n    import os\n    return {'score': os.getpid()}\n",
+    b"def invoke(value):\n    return {'score': eval('1')}\n",
+    b"def invoke(value):\n    return {'score': __import__('sys').maxsize}\n",
 ])
 def test_nfr_025_sandbox_denies_files_sockets_and_imports(world: World, source: bytes) -> None:
     """NFR-025: the sandbox contains hostile code; a failure returns no output."""
@@ -742,7 +745,7 @@ def test_nfr_025_quotas_are_configurable_per_function(world: World) -> None:
     ample = world.function(source=source, budget=world.budget(cpu_millis=20000))
     world.publish_function(ample)
     assert _decode(world.invoke(ample, {"speed": 1}).output) == {"score": 1}
-    tight = world.function(source=source, budget=world.budget(cpu_millis=1))
+    tight = world.function(source=source + b"# tight budget\n", budget=world.budget(cpu_millis=1))
     world.publish_function(tight)
     world.rejected(lambda: world.invoke(tight, {"speed": 1}), "BUDGET_EXCEEDED")
 
