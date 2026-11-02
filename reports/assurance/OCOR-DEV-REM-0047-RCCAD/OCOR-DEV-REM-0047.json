@@ -145,7 +145,8 @@
   "ambiguities_resolved_fail_closed": [
     "fields not fixed by the norm are mandatory in the OaC package (adapter_roles, artifact_targets); closed sets for cardinality, status and precision",
     "PackageRelease is idempotent by content (ir_digest, manifest and artefact bytes)",
-    "NCP-U01-RETAINED-C1-BUILDERS point 5 names 0031 among the regression-only requalifications although its last record has no input NCP-U01 modifies (the mission thread consumes the retained compiler without listing it): 0031 is requalified regression-only anyway, the more restrictive reading"
+    "NCP-U01-RETAINED-C1-BUILDERS point 5 names 0031 among the regression-only requalifications although its last record has no input NCP-U01 modifies (the mission thread consumes the retained compiler without listing it): 0031 is requalified regression-only anyway, the more restrictive reading",
+    "module changes are not named by the FR-045 table of the PO: classified by the criterion of NCP-U01-RETAINED-C1-BUILDERS point 3; deprecation is breaking (most restrictive reading, preventive review P3)"
   ],
   "change_anchors": [
     {
@@ -336,6 +337,87 @@
       "lines": "13-19",
       "normative_element": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 2",
       "path": "ocor-runtime/src/ocor_runtime/c1/releases.py"
+    },
+    {
+      "change": "a release whose artifact manifest is missing or partial is ARTIFACT_DRIFT (previously an empty manifest was not compared); preventive review P1",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-005",
+      "function": "IrArtifactGenerator.check_drift",
+      "lines": "441-453",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:523; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:152",
+      "path": "ocor-runtime/src/ocor_runtime/c1/codegen.py"
+    },
+    {
+      "change": "before reading any core field admission checks the CanonicalIRCore shape and runs the conformance suite: a malformed or non-conforming ocor.cir/1.0 core is RELEASE_REJECTED/SOURCE_INVALID, never KeyError/TypeError; the receipt carries the core strings without str() conversion; preventive review P7",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-002",
+      "function": "ReleaseAdmission.verify",
+      "lines": "347-377",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:441-462; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:523; docs/OCOR_LLD_v1.1.md:105",
+      "path": "ocor-runtime/src/ocor_runtime/c1/signing.py"
+    },
+    {
+      "change": "new: shape check of the CanonicalIRCore (keys, release strings, SemVer, entry fields per collection) and translation of shape errors into C1Error SOURCE_INVALID; preventive review P7",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-003",
+      "function": "require_core_shape; malformed_core_rejected",
+      "lines": "830-899",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:441-462",
+      "path": "ocor-runtime/src/ocor_runtime/c1/ir.py"
+    },
+    {
+      "change": "the IR Protobuf decoder rejects with C1Error SOURCE_INVALID: non-UTF-8 strings, non-finite doubles, integers beyond 2^53, bool other than 0/1, null other than NULL_VALUE, Values with zero or several kinds, unknown ListValue/Struct entry fields, entries without exactly one key and one value, and a core that is not I-JSON; preventive review P5",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-003",
+      "function": "_decode_value; _decode_struct; decode_protobuf",
+      "lines": "734-815",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:464",
+      "path": "ocor-runtime/src/ocor_runtime/c1/ir.py"
+    },
+    {
+      "change": "a YAML mapping key that is not a scalar (unhashable) is SOURCE_INVALID instead of a raw TypeError; preventive review P4",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-004",
+      "function": "_construct_mapping",
+      "lines": "333-343",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:415; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:440",
+      "path": "ocor-runtime/src/ocor_runtime/c1/oac.py"
+    },
+    {
+      "change": "a change of a CAUSAL type is causal-breaking and keeps the conditional and destructive classes of the changes it contains (backfill, backup and replay obligations), instead of reporting causal-breaking only; preventive review P2",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-006",
+      "function": "_type_changes",
+      "lines": "84-117",
+      "normative_element": "reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 3; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:141",
+      "path": "ocor-runtime/src/ocor_runtime/c1/migration.py"
+    },
+    {
+      "change": "modules and the symbol table of the CanonicalIRCore are diffed (export removal, deprecation, namespace change, module removal, symbol moved: breaking; imports: conditional; governance metadata: compatible); malformed cores are rejected with C1Error; preventive review P3 and P7",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-006",
+      "function": "_module_changes; _symbol_changes; semantic_changes; IrMigrationPlanner.plan",
+      "lines": "119-275",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:446; reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md point 3; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:141",
+      "path": "ocor-runtime/src/ocor_runtime/c1/migration.py"
+    },
+    {
+      "change": "stored records and the version index are shape-checked and errors translated into C1Error RELEASE_REJECTED; read returns a stored package only if admission accepts it again (forged signature, non-conforming core or incoherent manifest rejected); preventive review P6",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-010",
+      "function": "FileSystemReleaseStore.lookup; _entries; _package; ImmutableReleasePublisher.read; ImmutableReleasePublisher.verify",
+      "lines": "93-210",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:523; docs/OCOR_LLD_v1.1.md:107",
+      "path": "ocor-runtime/src/ocor_runtime/c1/publisher.py"
+    },
+    {
+      "change": "a malformed core yields a FAIL report (AttributeError included, structure check guarded) instead of a raw exception; preventive review P7",
+      "commit": "8e2e1ad52ac88954975caf4b1a1ee2466082123e",
+      "entry": "NCR-C1-010",
+      "function": "IrConformanceSuite.run",
+      "lines": "88-112",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:441-462; docs/OCOR_LLD_v1.1.md:105",
+      "path": "ocor-runtime/src/ocor_runtime/c1/conformance.py"
     }
   ],
   "change_anchors_note": "every observable behaviour or signature change of the unit up to the code commit; new modules add behaviour only in ocor_runtime.c1 and change no existing caller",
@@ -435,8 +517,8 @@
       },
       {
         "change": "CAUSAL type changed without removal",
-        "class": "causal-breaking",
-        "rationale": "PO table row 5"
+        "class": "causal-breaking, plus conditional for each contained change that the rows above class conditional",
+        "rationale": "PO table row 5 and point 3: the gate applies the obligations of every class present (preventive review P2); a contained compatible or breaking change is causal-breaking"
       },
       {
         "change": "causal manifest added",
@@ -517,6 +599,56 @@
         "change": "capability matrix entry removed or changed",
         "class": "conditional",
         "rationale": "criterion: re-evaluation of the adapter disposition before activation (backfill step); fail-closed by the normalisation of ADD v1.3 :438-439"
+      },
+      {
+        "change": "module added",
+        "class": "compatible",
+        "rationale": "criterion: new optional element"
+      },
+      {
+        "change": "module removed",
+        "class": "breaking",
+        "rationale": "criterion: importers lose what they resolve; its definitions keep their own class (a removed type stays destructive)"
+      },
+      {
+        "change": "module export removed",
+        "class": "breaking",
+        "rationale": "criterion: consumer incompatibility for the importers of the symbol"
+      },
+      {
+        "change": "module export added",
+        "class": "compatible",
+        "rationale": "criterion: new optional element"
+      },
+      {
+        "change": "module namespace_ref changed",
+        "class": "breaking",
+        "rationale": "criterion: every exported symbol changes namespace"
+      },
+      {
+        "change": "module imports changed",
+        "class": "conditional",
+        "rationale": "criterion: resolved through the dependency lock, as lock_digest"
+      },
+      {
+        "change": "module status changed to or from DEPRECATED",
+        "class": "breaking",
+        "rationale": "criterion, fail-closed: deprecation announces a removal to consumers and carries the deprecation plan, dual control and a new major"
+      },
+      {
+        "change": "module status changed among DRAFT, IN_REVIEW, APPROVED; owner, steward, reviewer, review_date or version changed",
+        "class": "compatible",
+        "rationale": "criterion: governance metadata, no effect on data or consumers"
+      },
+      {
+        "change": "module definition_refs changed",
+        "class": "not classified on its own",
+        "rationale": "derived from the definitions, each classified in its own collection"
+      },
+      {
+        "change": "symbol moved to another module or kind changed",
+        "class": "breaking",
+        "rationale": "criterion: importers of the old module lose the symbol"
       }
     ]
   },
@@ -527,7 +659,8 @@
         1,
         2,
         3,
-        4
+        4,
+        5
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -537,6 +670,31 @@
   "no_new_dependency": "stdlib, PyYAML and jsonschema only; uv.lock and pyproject.toml unchanged",
   "open_decision_requests": [],
   "plan_unit": "NCP-U01",
+  "pre_campaign_review": {
+    "advisory_dispositions": {
+      "P8": "recorded, not changed: ports.ReleasePublisher.publish(release) is part of ports.py, which NCP-U01-RETAINED-C1-BUILDERS point 2 limits to NCR-C1-009; the conforming publisher takes the ReleasePackage that admission needs; the isinstance check is structural only; the alignment of the port signature is left to the legacy retirement decision request",
+      "P9": "applied: the PRE-CAMPAIGN-GATE steps, results and head are recorded in pre_campaign_gate"
+    },
+    "blocking_dispositions": {
+      "P1": "fixed in 8e2e1ad52ac8 (check_drift compares the manifest always)",
+      "P2": "fixed in 8e2e1ad52ac8 (CAUSAL type keeps conditional/destructive)",
+      "P3": "fixed in 8e2e1ad52ac8 (modules and symbol table diffed)",
+      "P4": "fixed in 8e2e1ad52ac8 (non-scalar YAML keys rejected; non-UTF-8 tests added)",
+      "P5": "fixed in 8e2e1ad52ac8 (strict Protobuf decoding)",
+      "P6": "fixed in 8e2e1ad52ac8 (store shapes checked; read re-admits)",
+      "P7": "fixed in 8e2e1ad52ac8 (core shape check before any field read)"
+    },
+    "findings_by_severity": {
+      "advisory": 2,
+      "blocking": 7
+    },
+    "outcome_sha256": "2936abc24369b00f42569dfbace45db1d064dbc10831a9f2b29a2badce0f2eb9",
+    "request_id": "OCOR-DEV-REM-0047-e0e5f32929c6-pre",
+    "reserve": false,
+    "reviewer": "Antigravity CLI (gemini-4-argon-high)",
+    "vendor": "Google",
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "requalifications_planned": {
     "regression_only": [
       "OCOR-DEV-0005",
@@ -622,6 +780,12 @@
       ],
       "summary": "18 passed; C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing"
     },
+    "GREEN_prereview": {
+      "commits": [
+        "8e2e1ad52ac8"
+      ],
+      "summary": "25 passed; C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing (87 passed); test_ncr_c1_005_conforms adapted: the drift positive control attaches the manifest as PackageRelease does (construction only, assertions unchanged)"
+    },
     "RED": {
       "commit": "fb27e601c35d",
       "fingerprint": "65ebdb63dbe8",
@@ -631,6 +795,12 @@
       "commit": "d2dcec51284a",
       "fingerprint": "2049a9de99a1",
       "summary": "3 failed: signer signs a retained core; no core/format rejection; CAUSAL removal carries causal-breaking only"
+    },
+    "RED_prereview": {
+      "commit": "e7288730e972",
+      "fingerprint": "f406145c2b5a",
+      "fingerprint_method": "sha256 of the sorted 'FAILED <node id>' lines of the pytest output",
+      "summary": "7 failed: incomplete manifest admitted; CAUSAL type without conditional; modules not diffed; unhashable YAML key TypeError; Protobuf UnicodeDecodeError/CanonicalizationError; publisher AttributeError/UnicodeDecodeError and forged record returned; malformed core KeyError"
     }
   }
 }
