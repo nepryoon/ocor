@@ -23,7 +23,9 @@
         "NFR-024"
       ],
       "tests": [
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_commit_ordering_rejects_malformed_answers",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_commit_ordering_reads_well_formed_positions"
       ]
     },
     {
@@ -61,7 +63,9 @@
         "NFR-006"
       ],
       "tests": [
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_a_permit_that_does_not_bind_the_request_is_not_a_permit",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_an_expired_transport_identity_is_an_audited_authentication_refusal"
       ]
     },
     {
@@ -146,7 +150,9 @@
       ],
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_conforms",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_audit_rows_read_back_are_verified_not_trusted",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_audit_store_rejects_impossible_row_shapes"
       ]
     },
     {
@@ -181,7 +187,12 @@
       ],
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_conforms",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_translates_every_transport_failure",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_unreachable_is_typed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_rejects_malformed_or_tampered_rows",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_accepts_a_well_formed_row",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_a_tampered_projected_object_is_a_typed_problem_end_to_end"
       ]
     },
     {
@@ -216,7 +227,8 @@
       ],
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_conforms",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_the_requested_branch_is_served_or_refused"
       ]
     },
     {
@@ -305,7 +317,11 @@
         "FR-007"
       ],
       "tests": [
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_paging_applies_the_marking_join_before_the_page",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_walks_never_expand_a_withheld_node",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_provenance_of_a_withheld_target_is_denied",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_evidence_read_is_admitted_like_the_operations"
       ]
     },
     {
@@ -349,7 +365,14 @@
     "redaction_count counts distinct withheld resources (objects, links, graph targets)",
     "EXACT_AT_COMMIT waits within wait_timeout_ms while the projection is behind; once overtaken it answers PROJECTION_NOT_READY immediately",
     "a code outside the closed enum raised by a sealed spike adapter behind ProjectionReadPort is answered POLICY_DENIED",
-    "a transport-stage rejection is audited with the authenticated principal; an absent correlation id is recorded as 'unparsed-request'"
+    "a transport-stage rejection is audited with the authenticated principal; an absent correlation id is recorded as 'unparsed-request'",
+    "a branch other than the one the C4 projections serve (main), or any scenario_id, is UNSUPPORTED_CAPABILITY: the canonical projection never answers for another branch or a scenario world, and the norm fixes no other code (LLD v1.1 :126 only requires main and scenario to be declared)",
+    "a context-policy answer that is not a PolicyDecision, or a decision that does not verify against the request (expired, other principal, action, resource, purpose, GCS digest or bundle), is a policy that cannot be evaluated: CONTROL_PLANE_UNAVAILABLE on the read (ADD v1.3 :3141), audited with outcome FAILED",
+    "a transport identity refused by the security port (IDENTITY_EXPIRED, ANONYMOUS_IDENTITY_FORBIDDEN, IDENTITY_BINDING_MISMATCH, PRINCIPAL_BINDING_MISMATCH) is AUTHORITY_MISSING (contract :455), audited; an unavailable control stays CONTROL_PLANE_UNAVAILABLE (ADD v1.3 :174)",
+    "CONTROL_PLANE_UNAVAILABLE answers are also audited (outcome FAILED); if that audit cannot be made durable the answer stays CONTROL_PLANE_UNAVAILABLE",
+    "in a page, redactions are counted only for withheld objects between the first and the last returned object; withheld objects after the last returned object, and the start objects of a walk, are neither counted nor hinted at",
+    "a malformed or tampered row of the object projection fails the whole read with CONTROL_PLANE_UNAVAILABLE (no partial answer); a stored audit row that is malformed or tampered is an audit integrity failure (AUDIT_RECORD_INVALID, or AUDIT_CHAIN_BROKEN for a link hash)",
+    "an evidence read without a transport-bound query is SCHEMA_VIOLATION and cannot be audited with an actor: no principal exists to record"
   ],
   "change_anchors": [
     {
@@ -459,6 +482,72 @@
       "function": "TypeDBObjectProjection, marking_ref",
       "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:398; docs/OCOR_LLD_v1.1.md:121-122; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:283",
       "path": "ocor-runtime/src/ocor_runtime/c4/object_projection.py"
+    },
+    {
+      "change": "iteration 2: the marking join runs before the page is cut; next_page_token is the last authorised object returned and is issued only when a further authorised object exists; withheld objects are counted only between returned objects",
+      "function": "NamedQueryGateway._page, query_object_set, search, _Disclosure.authorized",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:121-122, :126; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:50; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:322, :380-409",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "iteration 2: only authorised nodes are expanded; a withheld, mistyped or absent start or provenance target is absent (POLICY_DENIED when nothing remains), never counted and never used to reach derived objects",
+      "function": "NamedQueryGateway._roots, _walk, traverse, explain, get_provenance",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:121-123; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:49, :50; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:244-253",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "iteration 2: branch, logic_version and scenario_id reach the NamedQueryRequest and the planner; a branch the projections do not serve or a scenario world is UNSUPPORTED_CAPABILITY (audited), never answered from main; the served branch must be the requested one",
+      "function": "NamedQueryGateway._admit, _served, _served_now, SERVED_BRANCHES",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:142-184; docs/OCOR_LLD_v1.1.md:124, :126; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:179, :180",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "iteration 2: the evidence read is transport-bound and passes allow-list, digest, release, identity and verified context policy through _guarded; every refusal audited",
+      "function": "NamedQueryGateway.get (EvidenceReadPort)",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:113, :117-120; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:49, :302; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3143",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "iteration 2: the context-policy decision must be a PolicyDecision verified against the request (principal, action, resource, purpose, GCS digest, bundle, validity); transport-identity refusals are AUTHORITY_MISSING; other control failures and port failures outside their typed contract are CONTROL_PLANE_UNAVAILABLE; every refusal, including CONTROL_PLANE_UNAVAILABLE (outcome FAILED), is appended to the audit port",
+      "function": "NamedQueryGateway._admit, _guarded, _refuse, AUTHENTICATION_REFUSALS",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:174, :380, :3141, :3143; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:455; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:302",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "iteration 2: the request carries branch (default main), logic_version and scenario_id with the contract bounds; EvidenceReadPort.get takes the transport-bound query",
+      "function": "NamedQueryRequest (branch, logic_version, scenario_id; from_mapping, to_mapping), EvidenceReadPort",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:142-184; docs/OCOR_LLD_v1.1.md:113",
+      "path": "ocor-runtime/src/ocor_runtime/c2/ports.py"
+    },
+    {
+      "change": "iteration 2: an answer that does not conform to the contract response schema is CONTROL_PLANE_UNAVAILABLE without its content",
+      "function": "NamedQueryHttpAdapter.invoke",
+      "normative_element": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:174",
+      "path": "ocor-runtime/src/ocor_runtime/c2/transport.py"
+    },
+    {
+      "change": "iteration 2: strict TypeDB read (HTTP status, UTF-8, JSON, answer and row shape, raw values) whose every failure is CONTROL_PLANE_UNAVAILABLE; commit positions are positive non-boolean integers; current_watermark and _ensure_database keep their behaviour (URLError of current_watermark pinned by test_ocor_dev_0037.py, NCR-C4-003 of NCP-U05)",
+      "function": "read_rows, _strict_request, _position_value, _text_value, position, _next_sequence, _lookup_fact",
+      "normative_element": "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) points 1-4; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:179; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:174",
+      "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+    },
+    {
+      "change": "iteration 2: rows checked without conversion (ResourceRef type URN and identifier bounds, urn:sha256 marking reference, closed snapshot document, identifier lists, canonical RFC 3339 UTC times); malformed or tampered rows and transport failures are CONTROL_PLANE_UNAVAILABLE of the whole read",
+      "function": "TypeDBObjectProjection._select, project, initialize, reset, _object, _typed",
+      "normative_element": "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) points 1-4; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:398; ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:313-373",
+      "path": "ocor-runtime/src/ocor_runtime/c4/object_projection.py"
+    },
+    {
+      "change": "iteration 2: a stored record must have exactly the AuditEvent.to_record shape (closed field set, outcome set, RFC 3339 UTC time, detail object, governed context matching its digest); otherwise AUDIT_RECORD_INVALID",
+      "function": "validate_record",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3143; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:302, :303",
+      "path": "ocor-runtime/src/ocor_runtime/audit/__init__.py"
+    },
+    {
+      "change": "iteration 2: rows must be mappings, sequences positive non-boolean integers, link hashes urn:sha256; a malformed or tampered row is AUDIT_RECORD_INVALID or AUDIT_CHAIN_BROKEN (never AuditUnavailable) and no append extends a malformed last link",
+      "function": "PostgresAuditLog.append, records, _row, _sequence, _hash",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3143; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:303",
+      "path": "ocor-runtime/src/ocor_runtime/audit/adapters/postgres.py"
     }
   ],
   "claims": {
@@ -628,7 +717,8 @@
     {
       "agent": "Claude Code",
       "iterations": [
-        1
+        1,
+        2
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -638,6 +728,50 @@
   "no_new_dependency": "stdlib, jsonschema, PyYAML and psycopg (already in the lock); uv.lock and pyproject.toml unchanged",
   "open_decision_requests": [],
   "plan_unit": "NCP-U03",
+  "preventive_review": {
+    "dispositions": [
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): object projection rows checked without conversion, typed failures for every transport and shape failure, tampered rows refused; contract-nonconforming answers typed in the transport",
+        "id": "P1"
+      },
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): strict reader for position and _next_sequence (and _lookup_fact), positive non-boolean integers, typed failures",
+        "id": "P2"
+      },
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): audit rows and records verified on read, AUDIT_RECORD_INVALID/AUDIT_CHAIN_BROKEN instead of AuditUnavailable, no append on a malformed last link",
+        "id": "P3"
+      },
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): marking join before paging and tokens, walks expand only authorised nodes, withheld or mistyped targets and starts are absent",
+        "id": "P4"
+      },
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): branch, logic_version and scenario_id carried into the request and the planner; unserved branch or scenario UNSUPPORTED_CAPABILITY",
+        "id": "P5"
+      },
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): EvidenceReadPort.get transport-bound and admitted through the guarded pipeline, refusals audited",
+        "id": "P6"
+      },
+      {
+        "disposition": "FIXED (RED 8880d62, GREEN 62164b3): decision type and bindings verified, identity refusals AUTHORITY_MISSING, every refusal audited",
+        "id": "P7"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 0,
+      "blocking": 7
+    },
+    "independence_limits": "none declared: not an implementer of the task, not of the implementer's vendor",
+    "note": "consultative (PRE-CAMPAIGN-REVIEW point 4); finding text not copied into the repository",
+    "outcome_sha256": "41be23a91209b747568952871f3c4b72fd73e909392aa0b2824228d7e2a75215",
+    "request_id": "OCOR-DEV-REM-0049-530fe1e687e2-pre",
+    "reserve": false,
+    "reviewer": "Antigravity CLI / gemini-4-argon-high",
+    "vendor": "Google",
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "product_orientation": [
     "the single audit port ocor_runtime.audit is component-neutral (AuditEvent with FR-134 fields and the GovernedContext): NCP-U07 and NCP-U08 append through the same port (NORMATIVE-CONFORMANCE-PLAN point 2)",
     "the transport adapter is bound to the contract file and operationId, so an HTTP server (mTLS listener) mounts it without change; the principal is an AuthenticatedPrincipal of the OCOR-DEV-0048 identity port, never a body field",
@@ -668,12 +802,12 @@
     {
       "entry": "NCR-C2-001",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_commit_ordering_rejects_malformed_answers ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_commit_ordering_reads_well_formed_positions"
     },
     {
       "entry": "NCR-C2-002",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_a_permit_that_does_not_bind_the_request_is_not_a_permit ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_an_expired_transport_identity_is_an_audited_authentication_refusal"
     },
     {
       "entry": "NCR-C2-003",
@@ -688,17 +822,17 @@
     {
       "entry": "NCR-C2-005",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_audit_rows_read_back_are_verified_not_trusted ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_audit_store_rejects_impossible_row_shapes"
     },
     {
       "entry": "NCR-C2-006",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_translates_every_transport_failure ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_unreachable_is_typed ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_rejects_malformed_or_tampered_rows ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_object_projection_accepts_a_well_formed_row ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_a_tampered_projected_object_is_a_typed_problem_end_to_end"
     },
     {
       "entry": "NCR-C2-007",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_the_requested_branch_is_served_or_refused"
     },
     {
       "entry": "NCR-C2-008",
@@ -713,7 +847,7 @@
     {
       "entry": "NCR-C2-011",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_paging_applies_the_marking_join_before_the_page ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_walks_never_expand_a_withheld_node ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_provenance_of_a_withheld_target_is_denied ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_evidence_read_is_admitted_like_the_operations"
     },
     {
       "entry": "NCR-C2-012",
@@ -747,11 +881,24 @@
       ],
       "summary": "unit module 15 passed, realigned/adapted modules 0012/0017/0034/0035/0037/0039/rem_0014 passed on real TypeDB, Fuseki and PostgreSQL (94 passed); C2/C4 consumers 377 passed with only 0058 refused for backends not started in development"
     },
+    "GREEN_ITERATION_2": {
+      "commits": [
+        "62164b3"
+      ],
+      "summary": "unit module 122 passed; realigned and consumer modules 0012/0017/0034/0035/0037/0039/rem_0014/0038/0043/0044/rem_0010/rem_0031/EV-001..010 and the mission-thread exact-at-commit case 186 passed, 31 skipped only in rem_0031 for OPA not started in development (full suite pending); ruff, mypy --strict and validate_rccad PASS"
+    },
     "RED": {
       "commit": "5e1e0e6",
       "fingerprint": "84c4e7449c84",
       "fingerprint_command": "grep -E \"^(FAILED|ERROR)\" red.log | sed \"s/ - .*//\" | LC_ALL=C sort | sha256sum",
       "summary": "unit module plus every realigned module on real TypeDB, Fuseki and PostgreSQL: 38 failed, 33 passed, 11 errors; the unit cases fail on the absent API (ocor_runtime.audit, NamedQueryCatalog, TypeDBProjectionAdapter.position) or on the divergent behaviour (CONSISTENCY_INVALID for BEST_AVAILABLE+required_commit, CONSISTENCY_DOWNGRADE), every realigned assertion fails on the old reason code, test_ocor_dev_0034.py fails at collection on the adapted construction"
+    },
+    "RED_ITERATION_2": {
+      "commit": "8880d62",
+      "fingerprint": "627149fb0079",
+      "fingerprint_command": "grep -E \"^(FAILED|ERROR)\" red2.log | sed \"s/ - .*//\" | LC_ALL=C sort | sha256sum",
+      "fingerprint_note": "the commit message cites a32125249aed, the same list sorted with the host locale",
+      "summary": "unit module on real TypeDB, Fuseki and PostgreSQL at 530fe1e code with the new tests: 96 failed, 26 passed (positive controls and cases the old code already rejected); failures on the absent behaviour: TOP_SECRET identifiers in pages, expansion through withheld nodes, derivations of a withheld target, absent branch fields, evidence read without admission, forged decisions permitted, expired identity unaudited as CONTROL_PLANE_UNAVAILABLE, raw transport exceptions and coerced rows of the TypeDB adapters, tampered audit rows reported as AuditUnavailable"
     },
     "red_design_corrections": [
       "the unknown-principal case of test_ncr_c2_006_conforms now carries its own correct GCS digest (with the fixture principal's digest the prescribed answer is POLICY_DENIED for a digest mismatch, ADD v1.3 :380)",
