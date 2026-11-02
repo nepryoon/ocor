@@ -448,48 +448,51 @@ class NamedQueryGateway:
         served = served_from_watermark(observed, request)
         return dataclasses.replace(served, ontology_release_digest=self._catalog.ontology_release_digest)
 
-    def _disclose(self, request: NamedQueryRequest, objects: tuple[ProjectedObject, ...]
-                  ) -> tuple[list[ProjectedObject], int]:
+    def _disclosure(self, request: NamedQueryRequest) -> _Disclosure:
         clearance = self._policy.clearance(request)
         if clearance is None:
             raise C2Error("POLICY_DENIED", "the clearance does not resolve")
-        disclosed = [item for item in objects if self._policy.authorized(item.resource_id, clearance)]
-        return disclosed, len(objects) - len(disclosed)
+        return _Disclosure(self._policy, clearance)
 
     @staticmethod
-    def _ref(item: ProjectedObject) -> dict[str, str]:
-        return {"resource_type_id": item.resource_type_id, "resource_id": item.resource_id}
+    def _ref(resource_type_id: str, resource_id: str) -> dict[str, str]:
+        return {"resource_type_id": resource_type_id, "resource_id": resource_id}
 
-    def _snapshot(self, item: ProjectedObject, request: NamedQueryRequest) -> dict[str, Any]:
+    def _snapshot(self, item: ProjectedObject, request: NamedQueryRequest, disclosure: _Disclosure) -> dict[str, Any]:
+        """``ObjectSnapshot`` (contract :313-362, FR-007): links to resources the clearance
+        does not authorise are withheld and counted, never shown as references."""
         provenance = canonical_digest({"object": item.resource_id, "provenance": list(item.provenance_ids),
                                        "commit": item.commit_id})
         explanation = canonical_digest({"object": item.resource_id, "contract": request.contract_id,
                                         "commit": item.commit_id})
+        links = [link for link in item.link_ids if disclosure.allows(link)]
         return {
-            "object_ref": self._ref(item),
+            "object_ref": self._ref(item.resource_type_id, item.resource_id),
             "object_schema": {"schema_id": item.resource_type_id, "version": request.contract_version,
                               "digest": request.contract_digest},
             "valid_time": {"from": item.valid_from, "to": None},
             "system_time": {"from": item.system_from, "to": None},
             "values": dict(item.values),
             "epistemic_status": {"status": "CANONICAL", "accepting_decision_ref": None},
-            "link_refs": [{"resource_type_id": item.resource_type_id, "resource_id": link} for link in item.link_ids],
+            "link_refs": [self._ref(item.resource_type_id, link) for link in links],
             "uncertainty": {"semantics": "NONE"},
             "claim_refs": [],
-            "evidence_refs": [canonical_digest({"evidence": source}) for source in item.provenance_ids],
+            "evidence_refs": [evidence_ref(item.resource_id, source) for source in item.provenance_ids],
             "identity_candidates": [],
             "provenance_ref": provenance,
             "explanation_ref": explanation,
             "marking_ref": item.marking_ref,
         }
 
-    def _answer(self, request: NamedQueryRequest, served: ServedContext, disclosed: list[ProjectedObject],
-                redacted: int, body: dict[str, Any]) -> GatewayAnswer:
-        result_marking = canonical_digest({"markings": sorted({item.marking_ref for item in disclosed})})
+    def _answer(self, request: NamedQueryRequest, served: ServedContext, disclosure: _Disclosure,
+                body: dict[str, Any]) -> GatewayAnswer:
+        """Step 8 (LLD v1.1 :124): the served context with the result marking join, the
+        provenance of the answer and the number of withheld resources."""
+        result_marking = canonical_digest({"markings": sorted(disclosure.markings)})
         provenance = canonical_digest({"request_id": request.request_id, "served_commit": served.canonical_commit,
-                                       "objects": sorted(item.resource_id for item in disclosed)})
+                                       "objects": sorted(disclosure.disclosed)})
         served = dataclasses.replace(served, result_marking_ref=result_marking, provenance_ref=provenance,
-                                     redaction_count=redacted)
+                                     redaction_count=len(disclosure.withheld))
         return GatewayAnswer(body=body, served=served)
 
     def get_object(self, bound: TransportBoundQuery, *, object_ref: Mapping[str, str]) -> GatewayAnswer:
@@ -497,94 +500,106 @@ class NamedQueryGateway:
             self._budget(bound)
             objects = self._require_objects()
             served = self._served(request)
-            found = tuple(item for item in objects.get((object_ref["resource_id"],))
-                          if item.resource_type_id == object_ref["resource_type_id"])
-            disclosed, _ = self._disclose(request, found)
-            if not disclosed:
+            disclosure = self._disclosure(request)
+            found = [item for item in objects.get((object_ref["resource_id"],))
+                     if item.resource_type_id == object_ref["resource_type_id"] and disclosure.admit(item)]
+            if not found:
                 # absent and unauthorised are indistinguishable (NFR-006, Register :50)
                 raise C2Error("POLICY_DENIED", "the object is not authorised")
-            return self._answer(request, served, disclosed, 0, {"object": self._snapshot(disclosed[0], request)})
+            body = {"object": self._snapshot(found[0], request, disclosure)}
+            return self._answer(request, served, disclosure, body)
 
         result: GatewayAnswer = self._guarded(bound, QueryOperation.GET_OBJECT.value, work)
         return result
 
-    def query_object_set(self, bound: TransportBoundQuery, *, page_size: int,
-                         page_token: str | None = None) -> GatewayAnswer:
+    def _page(self, bound: TransportBoundQuery, operation: QueryOperation, page_size: int,
+              fetch: Callable[[ObjectProjectionPort, int], tuple[ProjectedObject, ...]],
+              shape: Callable[[ProjectedObject, NamedQueryRequest, _Disclosure], dict[str, Any]],
+              key: str) -> GatewayAnswer:
         def work(request: NamedQueryRequest) -> GatewayAnswer:
             self._budget(bound, items=page_size)
             objects = self._require_objects()
             served = self._served(request)
-            page = objects.page(limit=page_size + 1, after=page_token)
-            disclosed, redacted = self._disclose(request, page[:page_size])
-            body: dict[str, Any] = {"items": [self._snapshot(item, request) for item in disclosed]}
+            disclosure = self._disclosure(request)
+            page = fetch(objects, page_size + 1)
+            visible = [item for item in page[:page_size] if disclosure.admit(item)]
+            body: dict[str, Any] = {key: [shape(item, request, disclosure) for item in visible]}
             if len(page) > page_size:
                 body["next_page_token"] = page[page_size - 1].resource_id
-            return self._answer(request, served, disclosed, redacted, body)
+            return self._answer(request, served, disclosure, body)
 
-        result: GatewayAnswer = self._guarded(bound, QueryOperation.QUERY_OBJECT_SET.value, work)
+        result: GatewayAnswer = self._guarded(bound, operation.value, work)
         return result
+
+    def query_object_set(self, bound: TransportBoundQuery, *, page_size: int,
+                         page_token: str | None = None) -> GatewayAnswer:
+        return self._page(bound, QueryOperation.QUERY_OBJECT_SET, page_size,
+                          lambda objects, limit: objects.page(limit=limit, after=page_token),
+                          self._snapshot, "items")
 
     def search(self, bound: TransportBoundQuery, *, text: str, page_size: int,
                page_token: str | None = None) -> GatewayAnswer:
-        def work(request: NamedQueryRequest) -> GatewayAnswer:
-            self._budget(bound, items=page_size)
-            objects = self._require_objects()
-            served = self._served(request)
-            page = objects.search(text, limit=page_size + 1, after=page_token)
-            disclosed, redacted = self._disclose(request, page[:page_size])
-            terms = text.lower().split()
-            hits = [{"object": self._snapshot(item, request),
-                     "score": float(sum(item.text.lower().count(term) for term in terms)),
-                     "score_semantics": "LEXICAL_RELEVANCE"} for item in disclosed]
-            body: dict[str, Any] = {"hits": hits}
-            if len(page) > page_size:
-                body["next_page_token"] = page[page_size - 1].resource_id
-            return self._answer(request, served, disclosed, redacted, body)
+        terms = text.lower().split()
 
-        result: GatewayAnswer = self._guarded(bound, QueryOperation.SEARCH.value, work)
-        return result
+        def hit(item: ProjectedObject, request: NamedQueryRequest, disclosure: _Disclosure) -> dict[str, Any]:
+            # PoC profile: lexical relevance only; VECTOR_SIMILARITY and HYBRID_RANK are
+            # UNSUPPORTED_CAPABILITY while ELM-011 is deferred (ADD v1.3 :1361).
+            return {"object": self._snapshot(item, request, disclosure),
+                    "score": float(sum(item.text.lower().count(term) for term in terms)),
+                    "score_semantics": "LEXICAL_RELEVANCE"}
 
-    def _graph(self, request: NamedQueryRequest, served: ServedContext, starts: tuple[str, ...], *,
-               depth: int, follow: Callable[[ProjectedObject], tuple[str, ...]], edge_type: str) -> GatewayAnswer:
+        return self._page(bound, QueryOperation.SEARCH, page_size,
+                          lambda objects, limit: objects.search(text, limit=limit, after=page_token), hit, "hits")
+
+    def _walk(self, starts: tuple[str, ...], depth: int, follow: Callable[[ProjectedObject], tuple[str, ...]]
+              ) -> tuple[dict[str, ProjectedObject], list[tuple[str, str]]]:
         objects = self._require_objects()
         seen: dict[str, ProjectedObject] = {}
         edges: list[tuple[str, str]] = []
-        frontier = starts
-        for _ in range(depth + 1):
-            fetched = [item for item in objects.get(tuple(sorted(set(frontier) - set(seen))))]
-            for item in fetched:
+        frontier = tuple(sorted(set(starts)))
+        for level in range(depth + 1):
+            for item in objects.get(tuple(key for key in frontier if key not in seen)):
                 seen[item.resource_id] = item
+            if level == depth:
+                break
             following: list[str] = []
-            for item in fetched:
-                for target in follow(item):
-                    edges.append((item.resource_id, target))
-                    following.append(target)
-            frontier = tuple(following)
+            for key in frontier:
+                if key in seen:
+                    for target in follow(seen[key]):
+                        edges.append((key, target))
+                        following.append(target)
+            frontier = tuple(sorted(set(following) - set(seen)))
             if not frontier:
                 break
-        # targets reached but not loaded within the depth count as candidates too
+        return seen, edges
+
+    def _graph_answer(self, request: NamedQueryRequest, served: ServedContext, disclosure: _Disclosure,
+                      seen: dict[str, ProjectedObject], edges: list[tuple[str, str]], edge_type: str,
+                      extra_nodes: list[dict[str, Any]] | None = None,
+                      extra_edges: list[dict[str, Any]] | None = None) -> GatewayAnswer:
+        visible = {key: item for key, item in sorted(seen.items()) if disclosure.admit(item)}
         for _, target in edges:
             if target not in seen:
-                loaded = objects.get((target,))
-                for item in loaded:
-                    seen[item.resource_id] = item
-        disclosed, redacted = self._disclose(request, tuple(seen[key] for key in sorted(seen)))
-        visible = {item.resource_id: item for item in disclosed}
+                disclosure.withhold(target)  # dangling or not loaded within the bound: never shown
         if not visible:
             raise C2Error("POLICY_DENIED", "no authorised node")
-        nodes = [{"node_ref": self._ref(item), "node_kind": item.resource_type_id, "marking_ref": item.marking_ref}
-                 for item in disclosed]
-        graph_edges = [{"edge_type_id": edge_type, "from_ref": self._ref(visible[source]),
-                        "to_ref": self._ref(visible[target]), "marking_ref": visible[target].marking_ref}
+        nodes = [{"node_ref": self._ref(item.resource_type_id, key), "node_kind": item.resource_type_id,
+                  "marking_ref": item.marking_ref} for key, item in visible.items()]
+        graph_edges = [{"edge_type_id": edge_type,
+                        "from_ref": self._ref(visible[source].resource_type_id, source),
+                        "to_ref": self._ref(visible[target].resource_type_id, target),
+                        "marking_ref": visible[target].marking_ref}
                        for source, target in sorted(set(edges)) if source in visible and target in visible]
-        return self._answer(request, served, disclosed, redacted, {"nodes": nodes, "edges": graph_edges})
+        body = {"nodes": nodes + (extra_nodes or []), "edges": graph_edges + (extra_edges or [])}
+        return self._answer(request, served, disclosure, body)
 
     def traverse(self, bound: TransportBoundQuery, *, start: tuple[Mapping[str, str], ...]) -> GatewayAnswer:
         def work(request: NamedQueryRequest) -> GatewayAnswer:
             self._budget(bound, items=len(start))
             served = self._served(request)
-            return self._graph(request, served, tuple(ref["resource_id"] for ref in start), depth=1,
-                               follow=lambda item: item.link_ids, edge_type="urn:ocor:edge:link")
+            disclosure = self._disclosure(request)
+            seen, edges = self._walk(tuple(ref["resource_id"] for ref in start), 1, lambda item: item.link_ids)
+            return self._graph_answer(request, served, disclosure, seen, edges, "urn:ocor:edge:link")
 
         result: GatewayAnswer = self._guarded(bound, QueryOperation.TRAVERSE.value, work)
         return result
@@ -593,24 +608,131 @@ class NamedQueryGateway:
         def work(request: NamedQueryRequest) -> GatewayAnswer:
             self._budget(bound, depth=max_depth)
             served = self._served(request)
-            return self._graph(request, served, (target["resource_id"],), depth=max_depth,
-                               follow=lambda item: item.link_ids, edge_type="urn:ocor:edge:explains")
+            disclosure = self._disclosure(request)
+            seen, edges = self._walk((target["resource_id"],), max_depth, lambda item: item.link_ids)
+            return self._graph_answer(request, served, disclosure, seen, edges, "urn:ocor:edge:explains")
 
         result: GatewayAnswer = self._guarded(bound, QueryOperation.EXPLAIN.value, work)
         return result
 
     def get_provenance(self, bound: TransportBoundQuery, *, target: Mapping[str, str], direction: str,
                        max_depth: int, include_evidence: bool = True) -> GatewayAnswer:
+        """``GetProvenance`` (contract :244-253): UPSTREAM follows the provenance of the
+        target (and, with ``include_evidence``, its evidence nodes); DOWNSTREAM the objects
+        derived from it; BOTH the union -- always after the marking join."""
+
         def work(request: NamedQueryRequest) -> GatewayAnswer:
             if direction not in _PROVENANCE_DIRECTIONS:
                 raise C2Error("SCHEMA_VIOLATION", "direction is outside the closed set")
             self._budget(bound, depth=max_depth)
+            objects = self._require_objects()
             served = self._served(request)
-            answer = self._graph(request, served, (target["resource_id"],), depth=max_depth,
-                                 follow=lambda item: (), edge_type="urn:ocor:edge:derived-from")
-            if include_evidence:
-                return answer
-            return answer
+            disclosure = self._disclosure(request)
+            root = target["resource_id"]
+            seen: dict[str, ProjectedObject] = {item.resource_id: item for item in objects.get((root,))}
+            edges: list[tuple[str, str]] = []
+            if direction in {"DOWNSTREAM", "BOTH"}:
+                derived = [item for item in objects.page(limit=self._catalog.queries[
+                    bound.query.call.contract_id].cost_budget.max_items, after=None) if root in item.provenance_ids]
+                for item in derived[:max_depth * 100]:
+                    seen[item.resource_id] = item
+                    edges.append((item.resource_id, root))
+            extra_nodes: list[dict[str, Any]] = []
+            extra_edges: list[dict[str, Any]] = []
+            target_item = seen.get(root)
+            if direction in {"UPSTREAM", "BOTH"} and include_evidence and target_item is not None \
+                    and disclosure.admit(target_item):
+                for source in target_item.provenance_ids:
+                    ref = self._ref(EVIDENCE_TYPE, evidence_ref(root, source))
+                    extra_nodes.append({"node_ref": ref, "node_kind": EVIDENCE_TYPE,
+                                        "marking_ref": target_item.marking_ref})
+                    extra_edges.append({"edge_type_id": "urn:ocor:edge:derived-from",
+                                        "from_ref": self._ref(target_item.resource_type_id, root), "to_ref": ref,
+                                        "marking_ref": target_item.marking_ref})
+            return self._graph_answer(request, served, disclosure, seen, edges, "urn:ocor:edge:derived-from",
+                                      extra_nodes, extra_edges)
 
         result: GatewayAnswer = self._guarded(bound, QueryOperation.GET_PROVENANCE.value, work)
         return result
+
+    # -- EvidenceReadPort ----------------------------------------------------------
+    def get(self, evidence_ref_value: str, request: NamedQueryRequest) -> Mapping[str, object]:
+        """``EvidenceReadPort`` (LLD v1.1 :113): an evidence reference resolves only through
+        an object the requester's clearance authorises; anything else is POLICY_DENIED."""
+        objects = self._require_objects()
+        disclosure = self._disclosure(request)
+        for item in objects.page(limit=MAX_EVIDENCE_SCAN, after=None):
+            for source in item.provenance_ids:
+                if evidence_ref(item.resource_id, source) == evidence_ref_value and disclosure.admit(item):
+                    return {"evidence_ref": evidence_ref_value, "object_ref": item.resource_id, "source": source,
+                            "marking_ref": item.marking_ref, "commit": item.commit_id}
+        raise C2Error("POLICY_DENIED", "the evidence is not authorised")
+
+
+EVIDENCE_TYPE = "urn:ocor:type:evidence"
+MAX_EVIDENCE_SCAN = 1000
+
+
+def evidence_ref(object_id: str, source: str) -> str:
+    """Content address of one evidence item of an object (``urn:sha256``, contract :356)."""
+    return canonical_digest({"object": object_id, "evidence": source})
+
+
+class _Disclosure:
+    """The marking join of one answer (LLD v1.1 :121-122): which resources the clearance
+    authorises, which are withheld (counted once each, contract :322) and the markings of
+    what is disclosed."""
+
+    def __init__(self, policy: RegistrationAndMarkingPolicy, clearance: MarkingSet) -> None:
+        self._policy = policy
+        self._clearance = clearance
+        self._decisions: dict[str, bool] = {}
+        self.disclosed: set[str] = set()
+        self.withheld: set[str] = set()
+        self.markings: set[str] = set()
+
+    def allows(self, resource_id: str) -> bool:
+        decision = self._decisions.get(resource_id)
+        if decision is None:
+            decision = self._policy.authorized(resource_id, self._clearance)
+            self._decisions[resource_id] = decision
+        if not decision:
+            self.withheld.add(resource_id)
+        return decision
+
+    def admit(self, item: ProjectedObject) -> bool:
+        if not self.allows(item.resource_id):
+            return False
+        self.disclosed.add(item.resource_id)
+        self.markings.add(item.marking_ref)
+        return True
+
+    def withhold(self, resource_id: str) -> None:
+        if resource_id not in self.disclosed:
+            self.withheld.add(resource_id)
+
+
+def compose_named_query_gateway(
+    *,
+    release_package: Any,
+    identity_registry: IdentityRegistry,
+    context_policy: ContextPolicyPort,
+    marking_engine: MarkingEngine,
+    marking_port: MarkingAuthorizationPort,
+    clearance_by_marking_ref: Mapping[str, MarkingSet],
+    projection: ProjectionReadPort,
+    objects: ObjectProjectionPort,
+    audit: AuditPort,
+    commit_ordering: CommitOrderingPort | None = None,
+    provenance_contract_id: str | None = None,
+) -> NamedQueryGateway:
+    """Composition root of C2: the allow-list and active release come from the admitted C1
+    release; identity, context policy, marking join, projections and audit are ports."""
+    base = NamedQueryCatalog.from_release(release_package)
+    catalog = NamedQueryCatalog(ontology_release_digest=base.ontology_release_digest, queries=base.queries,
+                                provenance_contract_id=provenance_contract_id)
+    policy = RegistrationAndMarkingPolicy(registry=catalog.queries, marking_engine=marking_engine,
+                                          marking_port=marking_port, clearance_by_marking_ref=clearance_by_marking_ref)
+    return NamedQueryGateway(catalog=catalog, authority=IdentityBackedAuthority(identity_registry),
+                             context_policy=context_policy, policy=policy, projection=projection, audit=audit,
+                             objects=objects, commit_ordering=commit_ordering)

@@ -505,6 +505,7 @@ def test_ncr_c2_004_catalog_is_built_from_an_admitted_c1_release() -> None:
         assert entry.contract_digests == {"1.0.0": release.contract_digest(CONTRACT_ID)}
         assert entry.parameters_schema == release.contracts[CONTRACT_ID]["input_schema"]
         assert catalog.ontology_release_digest == release.package.signed.release.ir_digest
+        assert release.contracts["urn:ocor:contract:score"]["kind"] == "FUNCTION"  # never allow-listed
 
 
 # --------------------------------------------------------------------------- #
@@ -803,6 +804,29 @@ def test_ncr_c2_011_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
     assert page["served"]["redaction_count"] == 1
     hits = fixture.invoke("Search", bodies["Search"][0]).body["hits"]
     assert [hit["score_semantics"] for hit in hits] == ["LEXICAL_RELEVANCE"]
+    # NFR-006 (Register :50): a link to a withheld object is neither shown nor hinted at
+    snapshot = fixture.invoke("GetObject", bodies["GetObject"][0]).body
+    assert snapshot["object"]["link_refs"] == []
+    assert snapshot["served"]["redaction_count"] == 1
+    provenance = fixture.invoke("GetProvenance", bodies["GetProvenance"][0]).body
+    evidence_nodes = [node for node in provenance["nodes"] if node["node_kind"] == "urn:ocor:type:evidence"]
+    assert len(evidence_nodes) == 1 and provenance["edges"][0]["edge_type_id"] == "urn:ocor:edge:derived-from"
+    without = fixture.invoke("GetProvenance", dict(bodies["GetProvenance"][0], include_evidence=False)).body
+    assert [node["node_ref"]["resource_id"] for node in without["nodes"]] == [V1]
+    # EvidenceReadPort (LLD v1.1 :113): evidence resolves only through an authorised object
+    gateway = module("c2.gateway")
+    ports = module("c2.ports")
+    gcs = governed_context()
+    request = ports.NamedQueryRequest(
+        request_id="018f2f95-01b2-7cc3-8d4e-123456789abc", contract_id=CONTRACT_ID, contract_version="1.0.0",
+        contract_digest=CONTRACT_DIGEST, parameters={}, governed_context=gcs, governed_context_digest=gcs.digest(),
+        consistency=ports.ConsistencyRequirement(ports.ConsistencyMode.BEST_AVAILABLE))
+    assert isinstance(fixture.gateway, ports.EvidenceReadPort)
+    resolved = fixture.gateway.get(gateway.evidence_ref(V1, "source-1"), request)
+    assert resolved["object_ref"] == V1 and resolved["evidence_ref"] == evidence_nodes[0]["node_ref"]["resource_id"]
+    with pytest.raises(ports.C2Error) as hidden:
+        fixture.gateway.get(gateway.evidence_ref(V2, "source-1"), request)
+    assert hidden.value.reason_code == "POLICY_DENIED"
     unknown = fixture.invoke("Unknown", bodies["GetObject"][0])
     assert (unknown.status, unknown.body["reason_code"]) == (404, "CONTRACT_NOT_FOUND")
 
