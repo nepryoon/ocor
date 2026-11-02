@@ -34,7 +34,8 @@ import base64
 import binascii
 import hmac
 import uuid
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Protocol
 
@@ -176,12 +177,16 @@ class StatementVerifier:
         def rejected(message: str) -> RegistryError:
             return RegistryError("CONTRACT_REJECTED", message)
 
+        if not isinstance(envelope_bytes, bytes):
+            raise rejected("the signature envelope is not bytes")
         try:
             envelope = parse_i_json(envelope_bytes)
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise rejected("the signature envelope is not I-JSON") from exc
         if not isinstance(envelope, dict) or set(envelope) != {"payloadType", "payload", "signingProfile",
                                                                 "signatures"}:
+            raise rejected("the signature envelope is malformed")
+        if not all(isinstance(envelope[name], str) for name in ("payloadType", "payload", "signingProfile")):
             raise rejected("the signature envelope is malformed")
         if envelope["payloadType"] != payload_type or envelope["signingProfile"] != ED25519_PROFILE:
             raise rejected("the signature envelope has the wrong payload type or signing profile")
@@ -193,14 +198,16 @@ class StatementVerifier:
         signatures = envelope["signatures"]
         if not isinstance(statement, dict) or not isinstance(signatures, list) or not signatures:
             raise rejected("the signed payload is malformed")
+        for item in signatures:
+            if (not isinstance(item, dict) or set(item) != {"keyid", "certificateChainRef", "sig"}
+                    or not all(isinstance(item[name], str) for name in ("keyid", "certificateChainRef", "sig"))):
+                raise rejected("a signature entry is malformed")
         pae = dsse_pae(payload_type, payload)
         for item in signatures:
-            if not isinstance(item, dict) or set(item) != {"keyid", "certificateChainRef", "sig"}:
-                raise rejected("a signature entry is malformed")
             trusted = self._trust.keys.get(item["keyid"])
             if trusted is None or item["keyid"] in self._trust.revoked_keyids:
                 continue
-            if trusted.signing_profile != ED25519_PROFILE or not isinstance(item["certificateChainRef"], str):
+            if trusted.signing_profile != ED25519_PROFILE:
                 continue
             if not hmac.compare_digest(trusted.certificate_chain_ref, item["certificateChainRef"]):
                 continue
@@ -231,9 +238,58 @@ def _parse_json(raw: bytes, where: str) -> Any:
 
 
 def _validate(schema: Mapping[str, Any], value: Any, where: str) -> None:
-    errors = sorted(jsonschema.Draft202012Validator(schema).iter_errors(value), key=lambda e: e.json_path)
+    try:
+        jsonschema.Draft202012Validator.check_schema(schema)
+        errors = sorted(jsonschema.Draft202012Validator(schema).iter_errors(value), key=lambda e: e.json_path)
+    except (jsonschema.SchemaError, TypeError, ValueError) as exc:
+        raise RegistryError("CONTRACT_REJECTED", f"the pinned schema of {where} is not a valid JSON Schema") from exc
     if errors:
         raise violation(f"{where} violates its pinned schema: {errors[0].message[:128]}")
+
+
+# Every failure of reading stored data: a row or record that is missing a field, has the
+# wrong type or does not decode (PRE-REVIEW-INPUT-ROBUSTNESS points 1-3).
+_STORED_ERRORS = (KeyError, TypeError, ValueError, AttributeError, IndexError, OverflowError)
+
+
+@contextmanager
+def _stored(reason: str, where: str) -> Iterator[None]:
+    """Stored data is untrusted: malformed or tampered data is a typed fail-closed error.
+
+    A schema violation raised while decoding stored data is reported with ``reason``;
+    every other registry error (unavailable store, revocation, release) is unchanged.
+    """
+    try:
+        yield
+    except RegistryError as exc:
+        if exc.reason_code != "SCHEMA_VIOLATION":
+            raise
+        raise RegistryError(reason, f"{where} is malformed: {exc.message}") from exc
+    except _STORED_ERRORS as exc:
+        raise RegistryError(reason, f"{where} is malformed or tampered: {type(exc).__name__}") from exc
+
+
+def _stored_entry(entry: object, kind: str, entry_key: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Shape of a stored registry entry row; raises inside ``_stored``."""
+    if not isinstance(entry, Mapping):
+        raise TypeError("entry")
+    if entry["kind"] != kind or entry["entry_key"] != entry_key:
+        raise ValueError("the stored entry is not the requested one")
+    for name in ("descriptor_digest", "registry_commit", "audit_ref"):
+        require_digest(entry[name], f"entry.{name}")
+    accepted = entry["accepted_at"]
+    if not isinstance(accepted, datetime) or accepted.tzinfo is None:
+        raise TypeError("entry.accepted_at")
+    record = entry["record"]
+    if not isinstance(record, dict):
+        raise TypeError("entry.record")
+    return dict(entry), record
+
+
+def _same_record(trusted: Mapping[str, Any], stored: Mapping[str, Any]) -> None:
+    """The stored record must be exactly the record rebuilt from verified inputs."""
+    if canonical_digest(json_mapping(trusted)) != canonical_digest(json_mapping(stored)):
+        raise ValueError("the stored record differs from the record rebuilt from its signed inputs")
 
 
 class _RegistryCore:
@@ -316,16 +372,6 @@ class _RegistryCore:
         if context.ontology_release_digest != record["release_ir_digest"]:
             raise RegistryError("RELEASE_MISMATCH", "the context release is not the release the entry is bound to")
 
-    def _live(self, record: Mapping[str, Any], signed: Iterable[tuple[str, VersionPin]],
-              digests: Iterable[str]) -> None:
-        """Re-verify a stored entry: signatures, revocation and admission of its release."""
-        for signature_ref, pin in signed:
-            self._verify_artifact_signature(signature_ref, pin)
-        self._verifier.verify(self._store.get_artifact(record["signed_manifest_ref"]), MANIFEST_PAYLOAD_TYPE)
-        self._not_revoked(digests)
-        if self._release(record["release_ref"]).signed.release.ir_digest != record["release_ir_digest"]:
-            raise RegistryError("RELEASE_MISMATCH", "the bound release changed")
-
     def _entry(self, kind: str, key: str, pin: VersionPin) -> dict[str, Any]:
         entry = self._store.find_entry(kind, key)
         if entry is None:
@@ -333,6 +379,11 @@ class _RegistryCore:
                 raise RegistryError("CONTRACT_DIGEST_MISMATCH", "the pin does not match the published digests")
             raise RegistryError("CONTRACT_NOT_FOUND", f"{pin.resource_id}@{pin.semantic_version} is not published")
         return entry
+
+    def _signature_ref(self, manifest: Mapping[str, Any], name: str) -> str:
+        if name not in manifest:
+            raise RegistryError("CONTRACT_REJECTED", f"the signed manifest names no {name}")
+        return require_digest(manifest[name], f"manifest.{name}")
 
     def _run(self, *, kind: str, pin: VersionPin, request_id: str, source_digest: str, entrypoint: str,
              arguments: list[Any], budget: ResourceBudget) -> Any:
@@ -360,6 +411,23 @@ class FunctionRegistry(_RegistryCore):
         descriptor = admit_function_descriptor(request.descriptor)
         manifest_ref = require_digest(request.signed_manifest_ref, "signed_manifest_ref")
         proposal = require_urn(request.change_proposal_ref, "change_proposal_ref")
+        record, descriptor_digest = self._function_record(descriptor, manifest_ref, proposal)
+        pin = descriptor.pin
+        assert pin is not None
+        row = self._store.append_entry(
+            kind=FUNCTION, entry_key=pin_key(pin), resource_id=pin.resource_id,
+            semantic_version=pin.semantic_version, record=record, descriptor_digest=descriptor_digest,
+            audit_detail={"pin": to_mapping(pin), "descriptor_digest": descriptor_digest,
+                          "change_proposal_ref": proposal, "release_ir_digest": record["release_ir_digest"]})
+        return _receipt(row, FUNCTION, pin_key(pin))
+
+    def _function_record(self, descriptor: FunctionDescriptor, manifest_ref: str,
+                         proposal: str) -> tuple[dict[str, Any], str]:
+        """The entry record of an admitted descriptor, built only from signed and admitted inputs.
+
+        Used on publication and, again, on every resolve and invoke: the stored record must
+        equal the rebuilt one, so a tampered stored descriptor, schema or release fails closed.
+        """
         pin = descriptor.pin
         assert pin is not None and descriptor.input_schema is not None and descriptor.output_schema is not None
         descriptor_digest = message_digest(descriptor)
@@ -371,7 +439,7 @@ class FunctionRegistry(_RegistryCore):
             self._entry(FUNCTION, pin_key(dependency), dependency)
         self._not_revoked([pin.artifact_digest, manifest_ref, descriptor.artifact_signature_ref,
                            *(d.artifact_digest for d in descriptor.dependencies)])
-        release_ref = str(manifest.get("release_ref", ""))
+        release_ref = require_digest(manifest.get("release_ref"), "manifest.release_ref")
         ir_digest, contract = self._bind(release_ref, kind=FUNCTION, pin=pin, effect=descriptor.effect_class,
                                          input_schema=descriptor.input_schema,
                                          output_schema=descriptor.output_schema)
@@ -380,20 +448,23 @@ class FunctionRegistry(_RegistryCore):
         record = {"descriptor": to_mapping(descriptor), "release_ref": release_ref, "release_ir_digest": ir_digest,
                   "input_json_schema": contract["input_schema"], "output_json_schema": contract["output_schema"],
                   "signed_manifest_ref": manifest_ref, "change_proposal_ref": proposal}
-        row = self._store.append_entry(
-            kind=FUNCTION, entry_key=pin_key(pin), resource_id=pin.resource_id,
-            semantic_version=pin.semantic_version, record=record, descriptor_digest=descriptor_digest,
-            audit_detail={"pin": to_mapping(pin), "descriptor_digest": descriptor_digest,
-                          "change_proposal_ref": proposal, "release_ir_digest": ir_digest})
-        return _receipt(row)
+        return record, descriptor_digest
 
     def _resolved(self, pin: VersionPin) -> tuple[FunctionDescriptor, dict[str, Any], dict[str, Any]]:
-        entry = self._entry(FUNCTION, pin_key(pin), pin)
-        record = entry["record"]
-        descriptor = from_mapping(FunctionDescriptor, record["descriptor"], "descriptor")
-        self._live(record, [(descriptor.artifact_signature_ref, pin)],
-                   [pin.artifact_digest, record["signed_manifest_ref"], descriptor.artifact_signature_ref,
-                    *(d.artifact_digest for d in descriptor.dependencies)])
+        key = pin_key(pin)
+        found = self._entry(FUNCTION, key, pin)
+        with _stored("CONTRACT_REJECTED", "the stored Function entry"):
+            entry, stored = _stored_entry(found, FUNCTION, key)
+            descriptor = admit_function_descriptor(from_mapping(FunctionDescriptor, stored["descriptor"],
+                                                                "descriptor"))
+            if descriptor.pin != pin:
+                raise ValueError("the stored descriptor does not carry the requested pin")
+            record, descriptor_digest = self._function_record(
+                descriptor, require_digest(stored["signed_manifest_ref"], "record.signed_manifest_ref"),
+                require_urn(stored["change_proposal_ref"], "record.change_proposal_ref"))
+            if entry["descriptor_digest"] != descriptor_digest:
+                raise ValueError("the stored descriptor digest is not the recalculated one")
+            _same_record(record, stored)
         return descriptor, record, entry
 
     def ResolveFunction(self, request: ResolveFunctionRequest, *,  # noqa: N802 - proto RPC name
@@ -432,7 +503,7 @@ class FunctionRegistry(_RegistryCore):
                                         "branch": context.branch, "scenario_id": context.scenario_id})
         replay = self._store.find_invocation_by_key(FUNCTION, pin_key(pin), key)
         if replay is not None:
-            return _replayed(replay, fingerprint)
+            return _replayed(replay, fingerprint, key=key, descriptor=descriptor, record=record)
         output = self._run(kind=FUNCTION, pin=pin, request_id=context.request_id, source_digest=pin.artifact_digest,
                            entrypoint=FUNCTION_ENTRYPOINT, arguments=[value], budget=descriptor.budget)
         _validate(record["output_json_schema"], output, "output")
@@ -453,19 +524,53 @@ class FunctionRegistry(_RegistryCore):
         stored = self._store.record_invocation(
             invocation_id=result.invocation_id, kind=FUNCTION, entry_key=pin_key(pin), idempotency_key=key,
             request_digest=fingerprint, record={"result": to_mapping(result), "provenance": provenance})
-        return _replayed(stored, fingerprint)
+        return _replayed(stored, fingerprint, key=key, descriptor=descriptor, record=record)
 
 
-def _receipt(row: Mapping[str, Any]) -> PublishReceipt:
-    accepted: datetime = row["accepted_at"]
-    return PublishReceipt(registry_commit=row["registry_commit"], descriptor_digest=row["descriptor_digest"],
-                          accepted_at=accepted, audit_ref=row["audit_ref"])
+def _receipt(row: object, kind: str, entry_key: str) -> PublishReceipt:
+    with _stored("CONTRACT_REJECTED", "the stored entry"):
+        entry, _ = _stored_entry(row, kind, entry_key)
+        return PublishReceipt(registry_commit=entry["registry_commit"], descriptor_digest=entry["descriptor_digest"],
+                              accepted_at=entry["accepted_at"], audit_ref=entry["audit_ref"])
 
 
-def _replayed(row: Mapping[str, Any], fingerprint: str) -> FunctionResult:
-    if row["request_digest"] != fingerprint:
+def _replayed(row: object, fingerprint: str, *, key: str, descriptor: FunctionDescriptor,
+              record: Mapping[str, Any]) -> FunctionResult:
+    """A stored Function invocation, with every digest recalculated before replay (LLD v1.1 :40)."""
+    pin = descriptor.pin
+    assert pin is not None and descriptor.output_schema is not None
+    with _stored("EXECUTION_FAILED", "the stored Function invocation"):
+        if not isinstance(row, Mapping):
+            raise TypeError("invocation")
+        if row["kind"] != FUNCTION or row["entry_key"] != pin_key(pin) or row["idempotency_key"] != key:
+            raise ValueError("the stored invocation is not the requested one")
+        request_digest = require_digest(row["request_digest"], "invocation.request_digest")
+    if request_digest != fingerprint:
         raise RegistryError("IDEMPOTENCY_CONFLICT", "the idempotency key was used for a different request")
-    return from_mapping(FunctionResult, row["record"]["result"], "result")
+    with _stored("EXECUTION_FAILED", "the stored Function invocation"):
+        stored = row["record"]
+        if not isinstance(stored, Mapping) or set(stored) != {"result", "provenance"}:
+            raise ValueError("invocation.record")
+        result = from_mapping(FunctionResult, stored["result"], "result")
+        provenance = stored["provenance"]
+        require_text(result.invocation_id, "result.invocation_id")
+        if canonical_digest(json_mapping(provenance)) != result.provenance_ref:
+            raise ValueError("the stored provenance does not match its digest")
+        if (provenance["function_pin"] != to_mapping(pin)
+                or provenance["release_ir_digest"] != record["release_ir_digest"]):
+            raise ValueError("the stored provenance names another Function or release")
+        if result.effect_class is not descriptor.effect_class:
+            raise ValueError("the stored effect class differs from the descriptor")
+        typed = require_typed_value(result.output, descriptor.output_schema, "result.output")
+        assert typed.value is not None
+        _validate(record["output_json_schema"], _parse_json(typed.value.value, "result.output.value"), "output")
+        body = {"output": to_mapping(typed), "effect_class": result.effect_class.name,
+                "provenance_ref": result.provenance_ref,
+                "classification_marking_ref": result.classification_marking_ref,
+                "served_commit": result.served_commit, "watermark": result.watermark}
+        if canonical_digest(body) != result.result_digest:
+            raise ValueError("the stored result does not match its result_digest")
+    return result
 
 
 # ------------------------------------------------------------------------------------
@@ -506,6 +611,27 @@ class ModelRegistry(_RegistryCore):
         descriptor = admit_model_descriptor(request.descriptor)
         manifest_ref = require_digest(request.signed_manifest_ref, "signed_manifest_ref")
         proposal = require_urn(request.change_proposal_ref, "change_proposal_ref")
+        record, descriptor_digest = self._model_record(descriptor, manifest_ref, proposal)
+        model, deployment, mapping = descriptor.model_pin, descriptor.deployment_pin, descriptor.mapping_pin
+        assert model is not None and deployment is not None and mapping is not None
+        key = _model_key(model, deployment, mapping)
+        row = self._store.append_entry(
+            kind=MODEL, entry_key=key, resource_id=model.resource_id,
+            semantic_version=model.semantic_version, record=record, descriptor_digest=descriptor_digest,
+            audit_detail={"model_pin": to_mapping(model), "deployment_pin": to_mapping(deployment),
+                          "mapping_pin": to_mapping(mapping), "descriptor_digest": descriptor_digest,
+                          "change_proposal_ref": proposal, "release_ir_digest": record["release_ir_digest"]})
+        return _receipt(row, MODEL, key)
+
+    def _model_record(self, descriptor: ModelDescriptor, manifest_ref: str,
+                      proposal: str) -> tuple[dict[str, Any], str]:
+        """The entry record of an admitted Model descriptor, built only from signed and admitted inputs.
+
+        ADD v1.3 §3.4: the Model artefact, the deployment and the mapping each carry a DSSE
+        artefact signature (the descriptor names the Model one, the signed manifest the
+        other two); the deployment and the mapping are versions of the Model contract of
+        the admitted release (same ``contract_digest`` and ``semantic_version``).
+        """
         model, deployment, mapping = descriptor.model_pin, descriptor.deployment_pin, descriptor.mapping_pin
         assert model is not None and deployment is not None and mapping is not None
         assert descriptor.input_schema is not None and descriptor.output_schema is not None
@@ -513,41 +639,52 @@ class ModelRegistry(_RegistryCore):
         manifest = self._verify_manifest(manifest_ref, kind=MODEL, descriptor_digest=descriptor_digest,
                                          change_proposal_ref=proposal)
         output_kind = manifest.get("output_kind")
-        if output_kind not in ("PREDICTION", "BELIEF", "RECOMMENDATION"):
+        if not isinstance(output_kind, str) or output_kind not in ("PREDICTION", "BELIEF", "RECOMMENDATION"):
             raise RegistryError("CONTRACT_REJECTED", "the manifest declares no Prediction, Belief or Recommendation")
+        deployment_signature = self._signature_ref(manifest, "deployment_signature_ref")
+        mapping_signature = self._signature_ref(manifest, "mapping_signature_ref")
         self._verify_artifact_signature(descriptor.artifact_signature_ref, model)
+        self._verify_artifact_signature(deployment_signature, deployment)
+        self._verify_artifact_signature(mapping_signature, mapping)
         self._store.get_artifact(model.artifact_digest)
         self._json_artifact(deployment.artifact_digest, DEPLOYMENT_SCHEMA, "deployment")
         self._json_artifact(mapping.artifact_digest, {"type": "object"}, "mapping")
         self._json_artifact(descriptor.validity_envelope_ref, ENVELOPE_SCHEMA, "validity envelope")
         self._not_revoked([model.artifact_digest, deployment.artifact_digest, mapping.artifact_digest,
-                           descriptor.validity_envelope_ref, manifest_ref, descriptor.artifact_signature_ref])
-        release_ref = str(manifest.get("release_ref", ""))
+                           descriptor.validity_envelope_ref, manifest_ref, descriptor.artifact_signature_ref,
+                           deployment_signature, mapping_signature])
+        release_ref = require_digest(manifest.get("release_ref"), "manifest.release_ref")
         ir_digest, contract = self._bind(release_ref, kind="MODEL_FUNCTION", pin=model,
                                          effect=descriptor.effect_class, input_schema=descriptor.input_schema,
                                          output_schema=descriptor.output_schema)
         if contract.get("risk_class") != descriptor.risk_class:
             raise RegistryError("CONTRACT_REJECTED", "risk_class differs from the release contract")
+        for name, pin in (("deployment_pin", deployment), ("mapping_pin", mapping)):
+            if pin.contract_digest != model.contract_digest:
+                raise RegistryError("CONTRACT_DIGEST_MISMATCH", f"{name}.contract_digest is not the release contract")
+            if pin.semantic_version != contract.get("version"):
+                raise RegistryError("RELEASE_MISMATCH", f"{name}.semantic_version is not the version of the release")
         record = {"descriptor": to_mapping(descriptor), "release_ref": release_ref, "release_ir_digest": ir_digest,
                   "input_json_schema": contract["input_schema"], "output_json_schema": contract["output_schema"],
                   "signed_manifest_ref": manifest_ref, "change_proposal_ref": proposal, "output_kind": output_kind}
-        row = self._store.append_entry(
-            kind=MODEL, entry_key=_model_key(model, deployment, mapping), resource_id=model.resource_id,
-            semantic_version=model.semantic_version, record=record, descriptor_digest=descriptor_digest,
-            audit_detail={"model_pin": to_mapping(model), "deployment_pin": to_mapping(deployment),
-                          "mapping_pin": to_mapping(mapping), "descriptor_digest": descriptor_digest,
-                          "change_proposal_ref": proposal, "release_ir_digest": ir_digest})
-        return _receipt(row)
+        return record, descriptor_digest
 
     def _resolved(self, model: VersionPin, deployment: VersionPin,
                   mapping: VersionPin) -> tuple[ModelDescriptor, dict[str, Any], dict[str, Any]]:
-        entry = self._entry(MODEL, _model_key(model, deployment, mapping), model)
-        record = entry["record"]
-        descriptor = from_mapping(ModelDescriptor, record["descriptor"], "descriptor")
-        self._live(record, [(descriptor.artifact_signature_ref, model)],
-                   [model.artifact_digest, deployment.artifact_digest, mapping.artifact_digest,
-                    descriptor.validity_envelope_ref, record["signed_manifest_ref"],
-                    descriptor.artifact_signature_ref])
+        key = _model_key(model, deployment, mapping)
+        found = self._entry(MODEL, key, model)
+        with _stored("CONTRACT_REJECTED", "the stored Model entry"):
+            entry, stored = _stored_entry(found, MODEL, key)
+            descriptor = admit_model_descriptor(from_mapping(ModelDescriptor, stored["descriptor"], "descriptor"))
+            if (descriptor.model_pin, descriptor.deployment_pin, descriptor.mapping_pin) != (model, deployment,
+                                                                                             mapping):
+                raise ValueError("the stored descriptor does not carry the requested pins")
+            record, descriptor_digest = self._model_record(
+                descriptor, require_digest(stored["signed_manifest_ref"], "record.signed_manifest_ref"),
+                require_urn(stored["change_proposal_ref"], "record.change_proposal_ref"))
+            if entry["descriptor_digest"] != descriptor_digest:
+                raise ValueError("the stored descriptor digest is not the recalculated one")
+            _same_record(record, stored)
         return descriptor, record, entry
 
     def ResolveModel(self, request: ResolveModelRequest, *,  # noqa: N802 - proto RPC name
@@ -630,23 +767,41 @@ class ModelRegistry(_RegistryCore):
 
     def ReconstructModelInvocation(self, invocation_id: str) -> ModelResult:  # noqa: N802 - registry operation
         """FR-060: rebuild a stored output from its pinned input and versions; mismatch fails closed."""
-        row = self._store.get_invocation(require_text(invocation_id, "invocation_id"))
-        if row is None or row["kind"] != MODEL:
+        identifier = require_text(invocation_id, "invocation_id")
+        row = self._store.get_invocation(identifier)
+        if row is None:
             raise RegistryError("CONTRACT_NOT_FOUND", "no Model invocation with this identifier")
-        stored = row["record"]
-        request = from_mapping(InvokeModelRequest, stored["request"], "request")
-        assert request.model_pin and request.deployment_pin and request.mapping_pin and request.context
-        assert request.input is not None and request.input.value is not None
-        descriptor, record, entry = self._resolved(request.model_pin, request.deployment_pin, request.mapping_pin)
-        value = _parse_json(request.input.value.value, "input.value")
-        if canonical_digest(value) != request.input_digest:
-            raise violation("the stored input does not match its input_digest")
+        with _stored("EXECUTION_FAILED", "the stored Model invocation"):
+            if not isinstance(row, Mapping):
+                raise TypeError("invocation")
+            if row["kind"] != MODEL:
+                raise RegistryError("CONTRACT_NOT_FOUND", "no Model invocation with this identifier")
+            if row["invocation_id"] != identifier:
+                raise ValueError("the stored invocation is not the requested one")
+            stored = row["record"]
+            if not isinstance(stored, Mapping) or set(stored) != {"request", "result", "provenance", "result_body"}:
+                raise ValueError("invocation.record")
+            request = from_mapping(InvokeModelRequest, stored["request"], "request")
+            pins = (require_pin(request.model_pin, "request.model_pin"),
+                    require_pin(request.deployment_pin, "request.deployment_pin"),
+                    require_pin(request.mapping_pin, "request.mapping_pin"))
+            if row["entry_key"] != _model_key(*pins):
+                raise ValueError("the stored invocation names another Model entry")
+            context = request.context
+            if not isinstance(context, InvocationContext) or request.input is None or request.input.value is None:
+                raise ValueError("the stored request has no context or input")
+            governed_context_digest = require_digest(stored["provenance"]["governed_context_digest"],
+                                                     "provenance.governed_context_digest")
+            stored_digest = require_digest(stored["result"]["result_digest"], "result.result_digest")
+            value = _parse_json(request.input.value.value, "input.value")
+            if canonical_digest(value) != request.input_digest:
+                raise ValueError("the stored input does not match its input_digest")
+        descriptor, record, entry = self._resolved(*pins)
         body, _ = self._evaluate(descriptor=descriptor, record=record, entry=entry, value=value,
-                                 request_id=request.context.request_id,
-                                 governed_context_digest=stored["provenance"]["governed_context_digest"],
-                                 classification_marking_ref=request.context.classification_marking_ref)
-        rebuilt = _model_result(row["invocation_id"], body)
-        if rebuilt.result_digest != stored["result"]["result_digest"]:
+                                 request_id=context.request_id, governed_context_digest=governed_context_digest,
+                                 classification_marking_ref=context.classification_marking_ref)
+        rebuilt = _model_result(identifier, body)
+        if rebuilt.result_digest != stored_digest:
             raise RegistryError("EXECUTION_FAILED", "the Model output is not reproducible from its pinned inputs")
         return rebuilt
 

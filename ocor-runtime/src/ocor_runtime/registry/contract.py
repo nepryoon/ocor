@@ -324,7 +324,13 @@ def to_mapping(message: Any) -> Any:
 
 
 M = TypeVar("M")
-DURATION = re.compile(r"(0|[1-9][0-9]*)(?:\.([0-9]{6}))?s")
+# ``google.protobuf.Duration`` spans at most 315,576,000,000 s (about 10,000 years);
+# the bounded digit count keeps every match inside ``timedelta``.
+DURATION_MAX_SECONDS = 315_576_000_000
+DURATION = re.compile(r"(0|[1-9][0-9]{0,11})(?:\.([0-9]{6}))?s")
+# RFC 8785 serialises numbers as IEEE-754 binary64: a uint64 quota of a signed object
+# is exact only up to 2**53 - 1 (LLD v1.1 :36; the same bound as c1/ir.py).
+MAX_CANONICAL_UINT = 2**53 - 1
 
 
 def _decode(hint: Any, value: Any, where: str) -> Any:
@@ -348,13 +354,15 @@ def _decode(hint: Any, value: Any, where: str) -> Any:
             raise violation(f"{where} must be {hint.__name__}")
         return value
     if hint is bytes:
+        if not isinstance(value, str):
+            raise violation(f"{where} must be base64 text")
         try:
             return base64.b64decode(value, validate=True)
         except (binascii.Error, TypeError, ValueError) as exc:
             raise violation(f"{where} must be base64") from exc
     if hint is timedelta:
         match = DURATION.fullmatch(value) if isinstance(value, str) else None
-        if match is None:
+        if match is None or int(match.group(1)) > DURATION_MAX_SECONDS:
             raise violation(f"{where} must be a Duration")
         return timedelta(seconds=int(match.group(1)), microseconds=int(match.group(2) or 0))
     if hint is datetime:
@@ -371,6 +379,8 @@ def from_mapping(cls: type[M], value: Any, where: str = "message") -> M:
     """Rebuild a message from ``to_mapping`` output; closed: extra or missing fields fail."""
     if not isinstance(value, Mapping):
         raise violation(f"{where} must be an object")
+    if not all(isinstance(key, str) for key in value):
+        raise violation(f"{where} has a non-string field name")
     hints = typing.get_type_hints(cls)
     names = [f.name for f in fields(cls)]  # type: ignore[arg-type]
     if set(value) != set(names):
@@ -450,12 +460,13 @@ def require_budget(budget: object, where: str) -> ResourceBudget:
     """NFR-025: timeout and CPU, memory and output quotas are all configured and positive."""
     if not isinstance(budget, ResourceBudget):
         raise violation(f"{where} is required")
-    if not isinstance(budget.timeout, timedelta) or budget.timeout <= timedelta(0):
-        raise violation(f"{where}.timeout must be positive")
+    if (not isinstance(budget.timeout, timedelta) or budget.timeout <= timedelta(0)
+            or budget.timeout > timedelta(seconds=DURATION_MAX_SECONDS)):
+        raise violation(f"{where}.timeout must be a positive Duration")
     for name in ("cpu_millis", "memory_bytes", "output_bytes"):
         value = getattr(budget, name)
-        if not isinstance(value, int) or isinstance(value, bool) or not 0 < value < 2**64:
-            raise violation(f"{where}.{name} must be a positive uint64")
+        if not isinstance(value, int) or isinstance(value, bool) or not 0 < value <= MAX_CANONICAL_UINT:
+            raise violation(f"{where}.{name} must be a positive uint64 of at most 2**53 - 1")
     return budget
 
 
@@ -539,9 +550,11 @@ def admit_model_result(result: object) -> ModelResult:
 
 
 def json_mapping(value: Mapping[str, Any] | Sequence[Any]) -> Any:
-    """A defensive deep copy of plain JSON data."""
+    """A defensive deep copy of plain JSON data; a non-string member name is rejected."""
     if isinstance(value, Mapping):
-        return {str(k): json_mapping(v) for k, v in value.items()}
+        if not all(isinstance(k, str) for k in value):
+            raise violation("a JSON object has a non-string member name")
+        return {k: json_mapping(v) for k, v in value.items()}
     if isinstance(value, list | tuple):
         return [json_mapping(v) for v in value]
     return value

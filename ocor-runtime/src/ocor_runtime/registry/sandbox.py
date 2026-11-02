@@ -6,10 +6,13 @@ output is returned) and is reported as a ``SandboxOverrun`` that the registry au
 
 Profile ``SANDBOX_PROFILE``: the artefact is Python source run by a fresh isolated
 interpreter (``-I -S``, empty environment, empty temporary working directory, new
-session, no inherited descriptors) under ``RLIMIT_CPU``, ``RLIMIT_AS``,
-``RLIMIT_FSIZE=0``, ``RLIMIT_CORE=0`` and ``RLIMIT_NPROC=0`` (no fork). After reading
-its request the runner lowers ``RLIMIT_NOFILE`` to the three standard descriptors, so
-the artefact cannot open a file or a socket; as defence in depth its builtins have no
+session, no inherited descriptors) under ``RLIMIT_CPU``, ``RLIMIT_FSIZE=0``,
+``RLIMIT_CORE=0`` and ``RLIMIT_NPROC=0`` (no fork). After reading its request the runner
+lowers ``RLIMIT_NOFILE`` to the three standard descriptors, so the artefact cannot open a
+file or a socket, and applies the memory quota as ``RLIMIT_AS``: a quota that the started
+interpreter already exceeds is reported at once as a ``MEMORY`` overrun, and a reserve
+held until the quota is hit lets the runner report the overrun of the artefact. Limits
+above a host hard limit are clamped to it, which is stricter than the quota; as defence in depth its builtins have no
 ``open``, ``exec``, ``eval`` or ``compile`` and import only ``json`` and ``math``. The wall-clock timeout, the
 CPU time actually consumed (``wait4`` resource usage) and the canonical output size
 are enforced by the parent. Artefact bytes are checked against their pinned digest
@@ -34,7 +37,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..kernel.canonical import canonical_bytes, parse_i_json
-from .contract import RegistryError, ResourceBudget
+from .contract import RegistryError, ResourceBudget, require_budget
 
 SANDBOX_PROFILE = "urn:ocor:registry:sandbox:python-rlimit:1"
 OVERRUN_KINDS = ("TIMEOUT", "CPU", "MEMORY", "OUTPUT")
@@ -43,13 +46,25 @@ _STREAM_SLACK = 4096
 # The runner: reads one JSON request from stdin, closes the descriptor budget, executes
 # the artefact source and writes one JSON response to stdout.
 _RUNNER = r"""
-import json, math, resource, sys
+import json, math, os, resource, sys
 request = json.loads(sys.stdin.buffer.read())
 sys.stdin.close()
-resource.setrlimit(resource.RLIMIT_NOFILE, (3, 3))
 def respond(value):
     sys.stdout.write(json.dumps(value, sort_keys=True, separators=(",", ":")))
     sys.stdout.flush()
+with open("/proc/self/statm", "rb") as statm:
+    pages = int(statm.read().split()[0])
+reserve = bytearray(1 << 20)
+used = pages * os.sysconf("SC_PAGE_SIZE") + len(reserve)
+resource.setrlimit(resource.RLIMIT_NOFILE, (3, 3))
+quota = request["memory_bytes"]
+hard = resource.getrlimit(resource.RLIMIT_AS)[1]
+if hard != resource.RLIM_INFINITY:
+    quota = min(quota, hard)
+if used >= quota:
+    respond({"status": "MEMORY"})
+    raise SystemExit(0)
+resource.setrlimit(resource.RLIMIT_AS, (quota, quota))
 import builtins
 ALLOWED = {"json": json, "math": math}
 def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
@@ -66,6 +81,7 @@ try:
     output = scope[request["entrypoint"]](*request["arguments"])
     respond({"status": "OK", "output": output})
 except MemoryError:
+    del reserve
     respond({"status": "MEMORY"})
 except BaseException as exc:
     respond({"status": "FAILED", "error": type(exc).__name__})
@@ -90,12 +106,18 @@ class SandboxRun:
     output_bytes: int
 
 
+def _clamped(limit: int, value: int) -> int:
+    """``value``, lowered to the host hard limit of ``limit`` when that is stricter."""
+    hard = resource.getrlimit(limit)[1]
+    return value if hard == resource.RLIM_INFINITY else min(value, hard)
+
+
 def _limits(budget: ResourceBudget) -> Callable[[], None]:
     cpu_seconds = max(1, math.ceil(budget.cpu_millis / 1000))
 
     def apply() -> None:
-        resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds + 1))
-        resource.setrlimit(resource.RLIMIT_AS, (budget.memory_bytes, budget.memory_bytes))
+        resource.setrlimit(resource.RLIMIT_CPU, (_clamped(resource.RLIMIT_CPU, cpu_seconds),
+                                                 _clamped(resource.RLIMIT_CPU, cpu_seconds + 1)))
         resource.setrlimit(resource.RLIMIT_FSIZE, (0, 0))
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
         resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
@@ -117,6 +139,7 @@ class PythonSandbox:
 
     def run(self, *, source: bytes, artifact_digest: str, entrypoint: str, arguments: list[Any],
             budget: ResourceBudget) -> SandboxRun:
+        require_budget(budget, "budget")
         if "urn:sha256:" + hashlib.sha256(source).hexdigest() != artifact_digest:
             raise RegistryError("CONTRACT_REJECTED", "artefact bytes do not match the pinned artifact_digest")
         try:
@@ -124,13 +147,17 @@ class PythonSandbox:
         except UnicodeDecodeError as exc:
             raise RegistryError("CONTRACT_REJECTED", "artefact source is not UTF-8") from exc
         assert budget.timeout is not None
-        request = json.dumps({"source": text, "entrypoint": entrypoint, "arguments": arguments}).encode("utf-8")
+        request = json.dumps({"source": text, "entrypoint": entrypoint, "arguments": arguments,
+                              "memory_bytes": budget.memory_bytes}).encode("utf-8")
         with tempfile.TemporaryDirectory(prefix="ocor-registry-sandbox-") as workdir:
-            process = subprocess.Popen(  # noqa: S603 - fixed interpreter and runner, no shell
-                [sys.executable, "-I", "-S", "-c", _RUNNER],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                cwd=workdir, env={}, close_fds=True, start_new_session=True, preexec_fn=_limits(budget),
-            )
+            try:
+                process = subprocess.Popen(  # noqa: S603 - fixed interpreter and runner, no shell
+                    [sys.executable, "-I", "-S", "-c", _RUNNER],
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                    cwd=workdir, env={}, close_fds=True, start_new_session=True, preexec_fn=_limits(budget),
+                )
+            except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                raise RegistryError("EXECUTION_FAILED", f"the sandbox did not start: {type(exc).__name__}") from exc
             return self._supervise(process, request, budget)
 
     def _supervise(self, process: subprocess.Popen[bytes], request: bytes, budget: ResourceBudget) -> SandboxRun:

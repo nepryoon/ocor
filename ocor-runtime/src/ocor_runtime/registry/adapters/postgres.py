@@ -7,6 +7,10 @@ second hash chain (``audit_ref``), artefacts are content-addressed and re-hashed
 every read, and invocation lineage (FR-060) is stored with the exact request and
 result. Commits of each chain are serialised with a transaction-scoped advisory lock.
 An unreachable server is ``CONTROL_PLANE_UNAVAILABLE``: the registry never falls back.
+
+Rows read back are untrusted (PRE-REVIEW-INPUT-ROBUSTNESS): every column is checked for
+its type and form before use and never converted; any other driver, protocol or
+decoding error, and any malformed row, is ``CONTRACT_REJECTED``.
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from ...kernel.canonical import canonical_digest
-from ..contract import RegistryError, json_mapping
+from ..contract import DIGEST, RegistryError, json_mapping
 
 SCHEMA_NAME = re.compile(r"[a-z_][a-z0-9_]{0,40}")
 T = TypeVar("T")
@@ -57,6 +61,68 @@ def _unavailable(exc: Exception) -> RegistryError:
     return RegistryError("CONTROL_PLANE_UNAVAILABLE", f"registry store unavailable: {type(exc).__name__}")
 
 
+# Connection-level failures; every other driver error and every decoding error of a row
+# (UnicodeDecodeError and JSONDecodeError are ValueErrors) is a rejected operation.
+_UNAVAILABLE = (psycopg.OperationalError, psycopg.InterfaceError)
+_REJECTED = (psycopg.Error, KeyError, TypeError, ValueError, AttributeError, IndexError, OverflowError)
+
+
+def _malformed(what: str) -> RegistryError:
+    return RegistryError("CONTRACT_REJECTED", f"the registry store returned a malformed {what}")
+
+
+def _text(value: object) -> bool:
+    return isinstance(value, str) and bool(value)
+
+
+def _optional_text(value: object) -> bool:
+    return value is None or _text(value)
+
+
+def _digest(value: object) -> bool:
+    return isinstance(value, str) and DIGEST.fullmatch(value) is not None
+
+
+def _json(value: object) -> bool:
+    if isinstance(value, dict):
+        return all(isinstance(key, str) and _json(item) for key, item in value.items())
+    if isinstance(value, list):
+        return all(_json(item) for item in value)
+    return value is None or isinstance(value, bool | int | float | str)
+
+
+def _json_object(value: object) -> bool:
+    return isinstance(value, dict) and _json(value)
+
+
+def _instant(value: object) -> bool:
+    return isinstance(value, datetime) and value.tzinfo is not None
+
+
+_ENTRY = {"kind": _text, "entry_key": _text, "resource_id": _text, "semantic_version": _text,
+          "record": _json_object, "descriptor_digest": _digest, "previous_commit": _digest,
+          "registry_commit": _digest, "audit_ref": _digest, "accepted_at": _instant}
+_INVOCATION = {"invocation_id": _text, "kind": _text, "entry_key": _text, "idempotency_key": _optional_text,
+               "request_digest": _digest, "record": _json_object, "created_at": _instant}
+_AUDIT = {"event": _text, "detail": _json_object, "previous_hash": _digest, "audit_hash": _digest}
+_CHAIN = {"kind": _text, "record": _json_object, "previous_commit": _digest, "registry_commit": _digest}
+
+
+def _row(row: object, columns: Mapping[str, Callable[[object], bool]], what: str) -> dict[str, Any]:
+    """A row whose named columns all have their declared type and form; nothing is coerced."""
+    if not isinstance(row, Mapping):
+        raise _malformed(what)
+    checked = dict(row)
+    for name, valid in columns.items():
+        if name not in checked or not valid(checked[name]):
+            raise _malformed(f"{what} ({name})")
+    return checked
+
+
+def _optional_row(row: object, columns: Mapping[str, Callable[[object], bool]], what: str) -> dict[str, Any] | None:
+    return None if row is None else _row(row, columns, what)
+
+
 class PostgresRegistryStore:
     """``RegistryStore`` on PostgreSQL; ``schema`` isolates one registry instance."""
 
@@ -81,8 +147,13 @@ class PostgresRegistryStore:
             with psycopg.connect(self._dsn, row_factory=dict_row, connect_timeout=self._timeout) as connection:
                 with connection.transaction():
                     return work(connection)
-        except psycopg.OperationalError as exc:
+        except RegistryError:
+            raise
+        except _UNAVAILABLE as exc:
             raise _unavailable(exc) from exc
+        except _REJECTED as exc:
+            raise RegistryError("CONTRACT_REJECTED",
+                                f"the registry store rejected the operation: {type(exc).__name__}") from exc
 
     def _t(self, table: str) -> str:
         return f"{self._schema}.{table}"
@@ -123,7 +194,7 @@ class PostgresRegistryStore:
             f"SELECT content FROM {self._t('registry_artifact')} WHERE digest = %s", (digest,)).fetchone())
         if row is None:
             raise RegistryError("CONTRACT_REJECTED", f"artefact {digest} is not in the registry store")
-        content = bytes(row["content"])
+        content: bytes = _row(row, {"content": lambda value: isinstance(value, bytes)}, "artefact row")["content"]
         if "urn:sha256:" + hashlib.sha256(content).hexdigest() != digest:
             raise RegistryError("CONTRACT_REJECTED", f"stored artefact {digest} does not match its digest")
         return content
@@ -133,7 +204,7 @@ class PostgresRegistryStore:
         connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (self._schema + "/audit",))
         row = connection.execute(
             f"SELECT audit_hash FROM {self._t('registry_audit')} ORDER BY seq DESC LIMIT 1").fetchone()
-        previous = row["audit_hash"] if row else _GENESIS
+        previous = _GENESIS if row is None else _row(row, {"audit_hash": _digest}, "audit row")["audit_hash"]
         body = json_mapping(detail)
         audit_hash = canonical_digest({"previous_hash": previous, "event": event, "detail": body})
         connection.execute(
@@ -145,9 +216,10 @@ class PostgresRegistryStore:
         return self._run(lambda connection: self._audit(connection, event, detail))
 
     def audit_chain(self) -> list[dict[str, Any]]:
-        return self._run(lambda connection: connection.execute(
+        rows = self._run(lambda connection: connection.execute(
             f"SELECT event, detail, previous_hash, audit_hash FROM {self._t('registry_audit')} ORDER BY seq"
         ).fetchall())
+        return [_row(row, _AUDIT, "audit row") for row in rows]
 
     # -- entries ----------------------------------------------------------------------
     def append_entry(self, *, kind: str, entry_key: str, resource_id: str, semantic_version: str,
@@ -161,12 +233,14 @@ class PostgresRegistryStore:
                 f"SELECT * FROM {self._t('registry_entry')} WHERE kind = %s AND entry_key = %s",
                 (kind, entry_key)).fetchone()
             if existing is not None:
-                if existing["descriptor_digest"] != descriptor_digest:
+                checked = _row(existing, _ENTRY, "entry row")
+                if checked["descriptor_digest"] != descriptor_digest:
                     raise RegistryError("IDEMPOTENCY_CONFLICT", "a published pin is immutable")
-                return dict(existing)
+                return checked
             row = connection.execute(
                 f"SELECT registry_commit FROM {self._t('registry_entry')} ORDER BY seq DESC LIMIT 1").fetchone()
-            previous = row["registry_commit"] if row else _GENESIS
+            previous = _GENESIS if row is None else _row(row, {"registry_commit": _digest},
+                                                         "entry row")["registry_commit"]
             body = json_mapping(record)
             commit = canonical_digest({"previous_commit": previous, "kind": kind, "record": body})
             audit_ref = self._audit(connection, f"{kind}_PUBLISHED", dict(audit_detail) | {"registry_commit": commit})
@@ -176,8 +250,7 @@ class PostgresRegistryStore:
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
                 (kind, entry_key, resource_id, semantic_version, Jsonb(body), descriptor_digest, previous, commit,
                  audit_ref)).fetchone()
-            assert inserted is not None
-            return dict(inserted)
+            return _row(inserted, _ENTRY, "entry row")
 
         return self._run(work)
 
@@ -185,7 +258,7 @@ class PostgresRegistryStore:
         row = self._run(lambda connection: connection.execute(
             f"SELECT * FROM {self._t('registry_entry')} WHERE kind = %s AND entry_key = %s",
             (kind, entry_key)).fetchone())
-        return dict(row) if row else None
+        return _optional_row(row, _ENTRY, "entry row")
 
     def has_version(self, kind: str, resource_id: str, semantic_version: str) -> bool:
         row = self._run(lambda connection: connection.execute(
@@ -194,9 +267,10 @@ class PostgresRegistryStore:
         return row is not None
 
     def entry_chain(self) -> list[dict[str, Any]]:
-        return self._run(lambda connection: connection.execute(
+        rows = self._run(lambda connection: connection.execute(
             f"SELECT kind, record, previous_commit, registry_commit FROM {self._t('registry_entry')} ORDER BY seq"
         ).fetchall())
+        return [_row(row, _CHAIN, "entry row") for row in rows]
 
     # -- revocation -------------------------------------------------------------------
     def revoke(self, digest: str, *, reason: str, change_proposal_ref: str) -> str:
@@ -204,7 +278,8 @@ class PostgresRegistryStore:
             existing = connection.execute(
                 f"SELECT audit_ref FROM {self._t('registry_revocation')} WHERE digest = %s", (digest,)).fetchone()
             if existing is not None:
-                return str(existing["audit_ref"])
+                audit: str = _row(existing, {"audit_ref": _digest}, "revocation row")["audit_ref"]
+                return audit
             audit_ref = self._audit(connection, "ARTIFACT_REVOKED", {
                 "digest": digest, "reason": reason, "change_proposal_ref": change_proposal_ref})
             connection.execute(
@@ -218,7 +293,10 @@ class PostgresRegistryStore:
         wanted = sorted(set(digests))
         rows = self._run(lambda connection: connection.execute(
             f"SELECT digest FROM {self._t('registry_revocation')} WHERE digest = ANY(%s)", (wanted,)).fetchall())
-        return frozenset(str(row["digest"]) for row in rows)
+        found = [_row(row, {"digest": _digest}, "revocation row")["digest"] for row in rows]
+        if not set(found) <= set(wanted):
+            raise _malformed("revocation row (digest)")
+        return frozenset(found)
 
     # -- invocations ------------------------------------------------------------------
     def record_invocation(self, *, invocation_id: str, kind: str, entry_key: str, idempotency_key: str | None,
@@ -231,7 +309,7 @@ class PostgresRegistryStore:
                     f"SELECT * FROM {self._t('registry_invocation')} WHERE kind = %s AND entry_key = %s "
                     "AND idempotency_key = %s", (kind, entry_key, idempotency_key)).fetchone()
                 if existing is not None:
-                    return dict(existing)
+                    return _row(existing, _INVOCATION, "invocation row")
             inserted = connection.execute(
                 f"INSERT INTO {self._t('registry_invocation')} (invocation_id, kind, entry_key, idempotency_key, "
                 "request_digest, record) VALUES (%s, %s, %s, %s, %s, %s) "
@@ -242,9 +320,8 @@ class PostgresRegistryStore:
                 raced = connection.execute(
                     f"SELECT * FROM {self._t('registry_invocation')} WHERE kind = %s AND entry_key = %s "
                     "AND idempotency_key = %s", (kind, entry_key, idempotency_key)).fetchone()
-                assert raced is not None
-                return dict(raced)
-            return dict(inserted)
+                return _row(raced, _INVOCATION, "invocation row")
+            return _row(inserted, _INVOCATION, "invocation row")
 
         return self._run(work)
 
@@ -252,15 +329,14 @@ class PostgresRegistryStore:
         row = self._run(lambda connection: connection.execute(
             f"SELECT * FROM {self._t('registry_invocation')} WHERE kind = %s AND entry_key = %s "
             "AND idempotency_key = %s", (kind, entry_key, idempotency_key)).fetchone())
-        return dict(row) if row else None
+        return _optional_row(row, _INVOCATION, "invocation row")
 
     def get_invocation(self, invocation_id: str) -> dict[str, Any] | None:
         row = self._run(lambda connection: connection.execute(
             f"SELECT * FROM {self._t('registry_invocation')} WHERE invocation_id = %s", (invocation_id,)).fetchone())
-        return dict(row) if row else None
+        return _optional_row(row, _INVOCATION, "invocation row")
 
     def now(self) -> datetime:
         row = self._run(lambda connection: connection.execute("SELECT now() AS at").fetchone())
-        assert row is not None
-        value: datetime = row["at"]
+        value: datetime = _row(row, {"at": _instant}, "clock row")["at"]
         return value
