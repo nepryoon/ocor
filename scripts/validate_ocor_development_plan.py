@@ -1008,6 +1008,26 @@ def main() -> int:
         # NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02): the decided request; with option A1
         # the requalifications of 0011 and 0032 above are regression-only too.
         "reports/development/decision_requests/NCP-U01-SUPERSESSION-REQUALIFICATIONS.md",
+        # OCOR-DEV-REM-0048 (NCP-U02 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): the Function &
+        # Model Registry package (ocor.registry.v1), its test module, the unit record and the
+        # regression-only requalifications of 0005, 0050 and 0082 forced by this allowlist (no
+        # existing file changes, so no other sealed input is touched).
+        "ocor-runtime/src/ocor_runtime/registry/__init__.py",
+        "ocor-runtime/src/ocor_runtime/registry/adapters/__init__.py",
+        "ocor-runtime/src/ocor_runtime/registry/adapters/postgres.py",
+        "ocor-runtime/src/ocor_runtime/registry/contract.py",
+        "ocor-runtime/src/ocor_runtime/registry/sandbox.py",
+        "ocor-runtime/src/ocor_runtime/registry/service.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0048.py",
+        "reports/assurance/OCOR-DEV-REM-0048-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0048-RCCAD/OCOR-DEV-REM-0048.json",
+        "reports/assurance/OCOR-DEV-REM-0048-RCCAD/OCOR-DEV-REM-0048.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0048.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0048.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0048.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0048.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0048.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0048.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
