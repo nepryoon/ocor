@@ -166,17 +166,6 @@ def _schema_write(query: str) -> None:
     _commit(transaction_id, token)
 
 
-def _read(query: str) -> list[dict[str, Any]]:
-    token = _token()
-    transaction_id = _transaction("read", token)
-    status, result = _query(transaction_id, query, token)
-    _close(transaction_id, token)
-    if status != 200:
-        raise TypeDBAdapterError(f"read failed: {status} {result}")
-    answers = result.get("answers") or []
-    return list(answers)
-
-
 # Every way a TypeDB answer can fail to be a well-formed result: transport (refused,
 # protocol, HTTP status), decoding (non UTF-8, non JSON) and shape.
 _ANSWER_FAILURES = (TypeDBAdapterError, OSError, http.client.HTTPException, ValueError, KeyError, TypeError)
@@ -205,6 +194,25 @@ def _field(answer: object, name: str) -> str:
     return value
 
 
+def _read(query: str) -> list[Any]:
+    """The adapter's one read primitive: a read transaction whose answer is untrusted. A
+    transport failure stays raw (``URLError``/``OSError``); a non-200 status, a body that is
+    not UTF-8 JSON or an answer without an answer list fails here, before any row is read."""
+    token = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/signin",
+                                   body={"username": "admin", "password": "password"}), "token")
+    transaction = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/transactions/open", token=token,
+                                         body={"databaseName": DATABASE, "transactionType": "read"}),
+                         "transactionId")
+    try:
+        result = _strict_request("POST", f"{TYPEDB_URL}/v1/transactions/{transaction}/query", token=token,
+                                 body={"query": query})
+    finally:
+        _close(transaction, token)
+    if not isinstance(result, Mapping) or not isinstance(result.get("answers"), list):
+        raise TypeDBAdapterError("the TypeDB answer has no answer list")
+    return list(result["answers"])
+
+
 def read_rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]:
     """Run a read query and return, for each answer row, the raw ``value`` of each named
     variable -- never converted. Every failure, of the transport or of the answer shape,
@@ -212,20 +220,8 @@ def read_rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]
     Gateway contract :486-491): no raw exception and no partial result leaves the adapter."""
 
     try:
-        token = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/signin",
-                                       body={"username": "admin", "password": "password"}), "token")
-        transaction = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/transactions/open", token=token,
-                                             body={"databaseName": DATABASE, "transactionType": "read"}),
-                             "transactionId")
-        try:
-            result = _strict_request("POST", f"{TYPEDB_URL}/v1/transactions/{transaction}/query", token=token,
-                                     body={"query": query})
-        finally:
-            _close(transaction, token)
-        if not isinstance(result, Mapping) or not isinstance(result.get("answers"), list):
-            raise TypeDBAdapterError("the TypeDB answer has no answer list")
         rows: list[dict[str, object]] = []
-        for answer in result["answers"]:
+        for answer in _read(query):
             data = answer.get("data") if isinstance(answer, Mapping) else None
             if not isinstance(data, Mapping):
                 raise TypeDBAdapterError("a TypeDB answer row has no data")
