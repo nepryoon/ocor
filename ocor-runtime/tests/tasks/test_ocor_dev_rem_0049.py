@@ -1531,6 +1531,31 @@ def test_commit_ordering_reads_well_formed_positions(responder: TypeDBResponder)
     assert adapter.position("main", "commit-1") is None and adapter._next_sequence() == 1
 
 
+def test_repair_1_every_adapter_read_goes_through_the_one_read_seam(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Repair cycle 1 (CI of PR #457): the TypeDB adapter has ONE read primitive, ``_read``,
+    which the backend-free REM-0010 test replaces to isolate the adapter. Every read of
+    ``apply_commit``, ``position``, ``_next_sequence`` and ``current_watermark`` goes through
+    it: with ``_read`` replaced and the TypeDB endpoint unreachable, no read reaches the network."""
+    adapter_module = importlib.import_module("ocor_runtime.c4.typedb_adapter")
+    queries: list[str] = []
+    writes: list[str] = []
+
+    def answers(query: str) -> list[object]:
+        queries.append(query)
+        return [{"data": {"s": {"value": 4}}}] if "c4-commit-seq $s;" in query and "c4-commit-id" not in query else []
+
+    monkeypatch.setattr(adapter_module, "TYPEDB_URL", "http://127.0.0.1:1")
+    monkeypatch.setattr(adapter_module, "_read", answers)
+    monkeypatch.setattr(adapter_module, "_write", lambda *statements: writes.extend(statements))
+    adapter = TypeDBProjectionAdapter()
+    assert adapter.position("main", "commit-9") is None
+    assert adapter._next_sequence() == 5
+    assert adapter.current_watermark() is None
+    adapter.apply_commit(fact_id="urn:ocor:vessel:9", commit_id="commit-9", payload="p")
+    assert any("c4-commit-seq 5;" in statement for statement in writes)
+    assert any("c4-fact-id" in query for query in queries) and any("c4-watermark" in query for query in queries)
+
+
 def _audit_event(**changes: Any) -> Any:
     audit = module("audit")
     gcs = governed_context()
