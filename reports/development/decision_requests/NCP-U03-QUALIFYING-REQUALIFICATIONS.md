@@ -94,3 +94,16 @@ e i record attestano che reggono; non estende l'evidenza dei requisiti (punto 3 
 
 Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime conformance `NOT_ESTABLISHED`,
 PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-02
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U03-QUALIFYING-REQUALIFICATIONS (2026-11-02)`, **opzione 1** (sette riqualifiche nella classe di regressione, nessuna docstring, head di codice `511091f` invariato). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `d5b9ace19d337fd187215bb61b913ebe9ba9ff68`, sha256 `ca21e0f2c4f54b120ffc13e0f0e820e5ca8036da7c866613f0d0b06a1f6c502e` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U03-QUALIFYING-REQUALIFICATIONS (2026-11-02) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U03-QUALIFYING-REQUALIFICATIONS` (branch `governed/decision-request-ncp-u03-qualifying-requalifications`, commit `d5b9ace19d337fd187215bb61b913ebe9ba9ff68`, file `reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md`, sha256 `ca21e0f2c4f54b120ffc13e0f0e820e5ca8036da7c866613f0d0b06a1f6c502e`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
