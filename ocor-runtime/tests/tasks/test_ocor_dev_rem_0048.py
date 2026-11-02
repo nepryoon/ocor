@@ -39,6 +39,8 @@ Implementer: Claude Code (Anthropic), reserve implementer of the OCOR loop.
 from __future__ import annotations
 
 import ast
+import base64
+import copy
 import dataclasses
 import hashlib
 import importlib
@@ -367,6 +369,15 @@ class World:
 
     def publish_model(self, descriptor: Any, output_kind: str | None = "PREDICTION", **manifest: Any) -> Any:
         extra = {} if output_kind is None else {"output_kind": output_kind}
+        # The deployment and the mapping carry their own artefact signatures, named by the
+        # signed manifest (ADD v1.3 §3.4); ``None`` omits one from the manifest.
+        for name, pin in (("deployment_signature_ref", descriptor.deployment_pin),
+                          ("mapping_signature_ref", descriptor.mapping_pin)):
+            value = manifest.pop(name, ...)
+            if value is ...:
+                value = None if pin is None else self.artifact_signature(pin)
+            if value is not None:
+                extra[name] = value
         request = self.c.PublishModelRequest(
             descriptor=descriptor, signed_manifest_ref=self.manifest("MODEL", descriptor, **manifest, **extra),
             change_proposal_ref="urn:ocor:change-proposal:cp-1")
@@ -925,3 +936,553 @@ def test_message_decoding_and_signature_parsing_fail_closed(world: World) -> Non
     for request in (None, object(), c.PublishFunctionRequest(descriptor=None, signed_manifest_ref="",
                                                                change_proposal_ref="")):
         world.rejected(lambda r=request: world.functions.PublishFunction(r), "SCHEMA_VIOLATION")
+
+
+# --------------------------------------------------------------------------- #
+# Stored data is re-verified before every use (LLD v1.1 :40; ADD v1.3 §3.4)
+# --------------------------------------------------------------------------- #
+class TamperingStore:
+    """The live PostgreSQL store, with the rows returned by some reads altered in transit."""
+
+    def __init__(self, inner: Any, **hooks: Callable[[Any], Any]) -> None:
+        self._inner = inner
+        self._hooks = hooks
+
+    def __getattr__(self, name: str) -> Any:
+        attribute = getattr(self._inner, name)
+        hook = self._hooks.get(name)
+        if hook is None:
+            return attribute
+
+        def call(*args: Any, **kwargs: Any) -> Any:
+            return hook(attribute(*args, **kwargs))
+
+        return call
+
+
+def _tampered(change: Callable[[dict[str, Any]], None]) -> Callable[[Any], Any]:
+    def hook(row: Any) -> Any:
+        if row is None:
+            return None
+        altered = copy.deepcopy(row)
+        change(altered)
+        return altered
+
+    return hook
+
+
+def _set(path: tuple[Any, ...], value: Any) -> Callable[[dict[str, Any]], None]:
+    def change(row: dict[str, Any]) -> None:
+        target: Any = row
+        for part in path[:-1]:
+            target = target[part]
+        target[path[-1]] = value
+
+    return change
+
+
+def _drop(path: tuple[Any, ...]) -> Callable[[dict[str, Any]], None]:
+    def change(row: dict[str, Any]) -> None:
+        target: Any = row
+        for part in path[:-1]:
+            target = target[part]
+        del target[path[-1]]
+
+    return change
+
+
+def _replace_row(value: Any) -> Callable[[Any], Any]:
+    return lambda row: None if row is None else value
+
+
+def _registries(world: World, **hooks: Callable[[Any], Any]) -> tuple[Any, Any]:
+    store = TamperingStore(world.store, **hooks)
+    functions = world.svc.FunctionRegistry(store=store, releases=world.release.publisher,
+                                           trust_root=world.keys.trust_root(),
+                                           sandbox=world.sandbox_module.PythonSandbox())
+    models = world.svc.ModelRegistry(store=store, releases=world.release.publisher,
+                                     trust_root=world.keys.trust_root(),
+                                     sandbox=world.sandbox_module.PythonSandbox(), budget=world.budget())
+    return functions, models
+
+
+def test_tampered_function_entry_fails_closed_on_resolve_and_invoke(world: World) -> None:
+    """LLD v1.1 :40 recalculated before retrieval; ADD v1.3 §3.4 signed descriptor bound to the release."""
+    descriptor = world.function()
+    world.publish_function(descriptor)
+    other = world.function(source=SCORE_SOURCE + b"# other\n")
+    world.publish_function(other)
+    other_record = world.store.find_entry("FUNCTION", world.c.pin_key(other.pin))["record"]
+    tamperings = [
+        _tampered(_set(("record", "descriptor", "deterministic"), False)),
+        _tampered(_set(("record", "descriptor", "budget", "cpu_millis"), 1)),
+        _tampered(_set(("record", "input_json_schema"), {})),
+        _tampered(_set(("record", "output_json_schema"), {"type": "object"})),
+        _tampered(_set(("record", "release_ref"), "urn:sha256:" + "4" * 64)),
+        _tampered(_set(("record", "release_ir_digest"), "urn:sha256:" + "5" * 64)),
+        _tampered(_set(("record", "change_proposal_ref"), "urn:ocor:change-proposal:cp-2")),
+        _tampered(_set(("record", "signed_manifest_ref"), other_record["signed_manifest_ref"])),
+        _tampered(_set(("record",), other_record)),
+        _tampered(_set(("record", "extra"), 1)),
+        _tampered(_set(("descriptor_digest",), "urn:sha256:" + "6" * 64)),
+        _tampered(_set(("record",), {})),
+        _tampered(_set(("record",), "not an object")),
+        _tampered(_set(("record", "descriptor"), None)),
+        _tampered(_set(("record", "input_json_schema"), {"type": 12})),
+        _tampered(_drop(("record", "input_json_schema"))),
+        _tampered(_drop(("registry_commit",))),
+        _tampered(_set(("registry_commit",), 7)),
+        _replace_row({}),
+        _replace_row("row"),
+    ]
+    for index, hook in enumerate(tamperings):
+        functions, _ = _registries(world, find_entry=hook)
+        world.rejected(lambda f=functions: f.ResolveFunction(
+            world.c.ResolveFunctionRequest(pin=descriptor.pin, context=world.context), binding=world.binding),
+            "CONTRACT_REJECTED")
+        request = world.c.InvokeFunctionRequest(function_pin=descriptor.pin, context=world.context,
+                                                input=world.typed({"speed": 2}), idempotency_key=f"tamper-{index}")
+        world.rejected(lambda f=functions, r=request: f.InvokeFunction(r, binding=world.binding),
+                       "CONTRACT_REJECTED")
+        assert world.store.find_invocation_by_key("FUNCTION", world.c.pin_key(descriptor.pin),
+                                                  f"tamper-{index}") is None
+    functions, _ = _registries(world)
+    resolved = functions.ResolveFunction(world.c.ResolveFunctionRequest(pin=descriptor.pin, context=world.context),
+                                         binding=world.binding)
+    assert resolved == descriptor
+
+
+def test_tampered_model_entry_fails_closed_on_resolve_and_invoke(world: World) -> None:
+    """ADD v1.3 §3.4: envelope, output kind and schemas of a stored Model entry are re-verified."""
+    model = world.model()
+    world.publish_model(model)
+    loose_envelope = world.store.put_artifact(canonical_bytes({"envelope_version": "9.9.9", "conditions": []}))
+
+    def reviewer_case(row: dict[str, Any]) -> None:
+        row["record"]["descriptor"]["validity_envelope_ref"] = loose_envelope
+        row["record"]["output_kind"] = "RECOMMENDATION"
+        row["record"]["input_json_schema"] = {}
+
+    tamperings = [
+        _tampered(reviewer_case),
+        _tampered(_set(("record", "output_kind"), "RECOMMENDATION")),
+        _tampered(_set(("record", "output_kind"), "MODEL_OUTPUT_KIND_UNSPECIFIED")),
+        _tampered(_set(("record", "descriptor", "validity_envelope_ref"), loose_envelope)),
+        _tampered(_set(("record", "descriptor", "risk_class"), "R0")),
+        _tampered(_set(("record", "input_json_schema"), {})),
+        _tampered(_set(("record", "release_ir_digest"), "urn:sha256:" + "5" * 64)),
+        _tampered(_drop(("record", "output_kind"))),
+        _tampered(_set(("record",), {})),
+        _tampered(_set(("accepted_at",), "yesterday")),
+        _replace_row({}),
+    ]
+    for hook in tamperings:
+        _, models = _registries(world, find_entry=hook)
+        world.rejected(lambda m=models: m.ResolveModel(world.c.ResolveModelRequest(
+            model_pin=model.model_pin, deployment_pin=model.deployment_pin, mapping_pin=model.mapping_pin,
+            context=world.context), binding=world.binding), "CONTRACT_REJECTED")
+        for value in ({"speed": 999999, "extra": 1}, {"speed": 4}):
+            request = world.c.InvokeModelRequest(
+                model_pin=model.model_pin, deployment_pin=model.deployment_pin, mapping_pin=model.mapping_pin,
+                context=world.context, input=world.typed(value), input_digest=canonical_digest(value))
+            world.rejected(lambda m=models, r=request: m.InvokeModel(r, binding=world.binding), "CONTRACT_REJECTED")
+    _, models = _registries(world)
+    outcome = models.InvokeModel(world.c.InvokeModelRequest(
+        model_pin=model.model_pin, deployment_pin=model.deployment_pin, mapping_pin=model.mapping_pin,
+        context=world.context, input=world.typed({"speed": 4}), input_digest=canonical_digest({"speed": 4})),
+        binding=world.binding)
+    assert outcome.output_kind is world.c.ModelOutputKind.PREDICTION and outcome.validity.inside_envelope
+
+
+def test_replayed_invocation_digests_are_recalculated(world: World) -> None:
+    """LLD v1.1 :40: a digest is recalculated before replay; a tampered stored result fails closed."""
+    descriptor = world.function()
+    world.publish_function(descriptor)
+    first = world.invoke(descriptor, {"speed": 2}, key="k1")
+    forged_value = base64.b64encode(b'{"score":999999}').decode("ascii")
+    other_schema = world.c.to_mapping(world.schema_pin(INPUT_SCHEMA))
+    tamperings = [
+        _tampered(_set(("record", "result", "output", "value", "value"), forged_value)),
+        _tampered(_set(("record", "result", "result_digest"), "urn:sha256:" + "7" * 64)),
+        _tampered(_set(("record", "result", "provenance_ref"), "urn:sha256:" + "7" * 64)),
+        _tampered(_set(("record", "result", "effect_class"), "PROPOSE_MUTATION")),
+        _tampered(_set(("record", "result", "output", "schema"), other_schema)),
+        _tampered(_set(("record", "provenance", "release_ir_digest"), "urn:sha256:" + "5" * 64)),
+        _tampered(_set(("record", "provenance", "function_pin", "artifact_digest"), "urn:sha256:" + "5" * 64)),
+        _tampered(_set(("kind",), "MODEL")),
+        _tampered(_set(("idempotency_key",), "k2")),
+        _tampered(_drop(("record", "provenance"))),
+        _tampered(_set(("record",), {})),
+        _tampered(_set(("record", "result"), [])),
+        _tampered(_drop(("request_digest",))),
+        _replace_row({}),
+        _replace_row("row"),
+    ]
+    for hook in tamperings:
+        functions, _ = _registries(world, find_invocation_by_key=hook)
+        request = world.c.InvokeFunctionRequest(function_pin=descriptor.pin, context=world.context,
+                                                input=world.typed({"speed": 2}), idempotency_key="k1")
+        world.rejected(lambda f=functions, r=request: f.InvokeFunction(r, binding=world.binding),
+                       "EXECUTION_FAILED")
+    assert world.invoke(descriptor, {"speed": 2}, key="k1") == first
+
+
+def test_tampered_model_lineage_fails_closed_on_reconstruction(world: World) -> None:
+    """FR-060 (Register :184): reconstruction re-verifies the stored lineage before replaying it."""
+    model = world.model()
+    world.publish_model(model)
+    outcome = world.invoke_model(model, {"speed": 4})
+    tamperings = [
+        _tampered(_set(("record",), {})),
+        _tampered(_drop(("record", "request"))),
+        _tampered(_set(("record", "request"), "request")),
+        _tampered(_drop(("record", "provenance", "governed_context_digest"))),
+        _tampered(_set(("record", "provenance"), None)),
+        _tampered(_set(("record", "result", "result_digest"), "urn:sha256:" + "7" * 64)),
+        _tampered(_set(("record", "result"), {})),
+        _tampered(_set(("entry_key",), "other")),
+        _tampered(_set(("invocation_id",), 12)),
+        _replace_row({}),
+        _replace_row("row"),
+    ]
+    for hook in tamperings:
+        _, models = _registries(world, get_invocation=hook)
+        world.rejected(lambda m=models: m.ReconstructModelInvocation(outcome.invocation_id), "EXECUTION_FAILED")
+    _, models = _registries(world)
+    assert models.ReconstructModelInvocation(outcome.invocation_id) == outcome
+
+
+# --------------------------------------------------------------------------- #
+# ADD v1.3 §3.4: the deployment and the mapping are signed and inside the release
+# --------------------------------------------------------------------------- #
+def test_model_deployment_and_mapping_are_signed_and_bound_to_the_release(world: World) -> None:
+    """ADD v1.3 :1582 artifact, deployment o mapping non firmati, revocati o fuori release: fail-closed."""
+    model = world.model()
+    bogus = "urn:sha256:" + "0" * 64
+    for name in ("deployment_pin", "mapping_pin"):
+        pin = getattr(model, name)
+        outside_digest = dataclasses.replace(model, **{name: dataclasses.replace(pin, contract_digest=bogus)})
+        world.rejected(lambda d=outside_digest: world.publish_model(d), "CONTRACT_DIGEST_MISMATCH")
+        outside_version = dataclasses.replace(model, **{name: dataclasses.replace(pin, semantic_version="9.9.9")})
+        world.rejected(lambda d=outside_version: world.publish_model(d), "RELEASE_MISMATCH")
+    both = dataclasses.replace(
+        model, deployment_pin=dataclasses.replace(model.deployment_pin, contract_digest=bogus, semantic_version="9.9.9"),
+        mapping_pin=dataclasses.replace(model.mapping_pin, contract_digest=bogus, semantic_version="9.9.9"))
+    world.rejected(lambda: world.publish_model(both), "CONTRACT_DIGEST_MISMATCH")
+    for name, pin in (("deployment_signature_ref", model.deployment_pin), ("mapping_signature_ref", model.mapping_pin)):
+        world.rejected(lambda n=name: world.publish_model(model, **{n: None}), "CONTRACT_REJECTED")
+        world.rejected(lambda n=name, p=pin: world.publish_model(
+            model, **{n: world.artifact_signature(p, rogue=True)}), "CONTRACT_REJECTED")
+        world.rejected(lambda n=name: world.publish_model(
+            model, **{n: world.artifact_signature(model.model_pin)}), "CONTRACT_REJECTED")
+        world.rejected(lambda n=name: world.publish_model(model, **{n: 12}), "SCHEMA_VIOLATION")
+        world.rejected(lambda n=name: world.publish_model(model, **{n: "urn:sha256:" + "9" * 64}),
+                       "CONTRACT_REJECTED")
+    assert world.store.entry_chain() == []
+    world.publish_model(model)
+    manifest_ref = world.store.find_entry("MODEL", world.svc._model_key(
+        model.model_pin, model.deployment_pin, model.mapping_pin))["record"]["signed_manifest_ref"]
+    import json
+
+    statement = json.loads(base64.b64decode(json.loads(world.store.get_artifact(manifest_ref))["payload"]))
+    assert world.invoke_model(model, {"speed": 4}).output is not None
+    world.store.revoke(statement["deployment_signature_ref"], reason="deployment signature withdrawn",
+                       change_proposal_ref="urn:ocor:change-proposal:cp-9")
+    world.rejected(lambda: world.invoke_model(model, {"speed": 4}), "CONTRACT_REJECTED")
+    world.rejected(lambda: world.models.ResolveModel(world.c.ResolveModelRequest(
+        model_pin=model.model_pin, deployment_pin=model.deployment_pin, mapping_pin=model.mapping_pin,
+        context=world.context), binding=world.binding), "CONTRACT_REJECTED")
+
+
+def _signed_manifest(world: World, kind: str, descriptor: Any, **changes: Any) -> str:
+    """A signed manifest statement with fields changed; ``...`` removes a field."""
+    statement: dict[str, Any] = {"kind": kind, "descriptor_digest": world.c.message_digest(descriptor),
+                                 "release_ref": world.release.ref,
+                                 "change_proposal_ref": "urn:ocor:change-proposal:cp-1"}
+    if kind == "MODEL":
+        statement |= {"output_kind": "PREDICTION",
+                      "deployment_signature_ref": world.artifact_signature(descriptor.deployment_pin),
+                      "mapping_signature_ref": world.artifact_signature(descriptor.mapping_pin)}
+    for name, value in changes.items():
+        if value is ...:
+            statement.pop(name)
+        else:
+            statement[name] = value
+    digest: str = world.store.put_artifact(world.keys.sign(world.svc.MANIFEST_PAYLOAD_TYPE, statement))
+    return digest
+
+
+def test_manifest_fields_are_type_checked_never_coerced(world: World) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS point 1: the signed manifest fields are checked, not converted with str()."""
+    descriptor = world.function()
+    model = world.model()
+    proposal = "urn:ocor:change-proposal:cp-1"
+    for value in (12, None, ..., ["urn:sha256:" + "4" * 64], {"ref": world.release.ref}, "", "release"):
+        function_request = world.c.PublishFunctionRequest(
+            descriptor=descriptor, signed_manifest_ref=_signed_manifest(world, "FUNCTION", descriptor,
+                                                                        release_ref=value),
+            change_proposal_ref=proposal)
+        world.rejected(lambda r=function_request: world.functions.PublishFunction(r), "SCHEMA_VIOLATION")
+        model_request = world.c.PublishModelRequest(
+            descriptor=model, signed_manifest_ref=_signed_manifest(world, "MODEL", model, release_ref=value),
+            change_proposal_ref=proposal)
+        world.rejected(lambda r=model_request: world.models.PublishModel(r), "SCHEMA_VIOLATION")
+    for value in (3, ["PREDICTION"], None, ..., "MODEL_OUTPUT_KIND_UNSPECIFIED", "prediction"):
+        model_request = world.c.PublishModelRequest(
+            descriptor=model, signed_manifest_ref=_signed_manifest(world, "MODEL", model, output_kind=value),
+            change_proposal_ref=proposal)
+        world.rejected(lambda r=model_request: world.models.PublishModel(r), "CONTRACT_REJECTED")
+    assert world.store.entry_chain() == []
+
+
+# --------------------------------------------------------------------------- #
+# NFR-025: every quota value is enforced or rejected with the typed error
+# --------------------------------------------------------------------------- #
+def test_nfr_025_memory_quota_below_the_interpreter_baseline_is_an_audited_overrun(world: World) -> None:
+    """NFR-025 (Register :182): a memory quota too small to start the artefact is an audited overrun."""
+    for memory in (8 << 20, 1 << 20, 4096, 1):
+        descriptor = world.function(source=SCORE_SOURCE + f"# {memory}\n".encode(),
+                                    budget=world.budget(memory_bytes=memory))
+        world.publish_function(descriptor)
+        error = world.rejected(lambda d=descriptor: world.invoke(d, {"speed": 2}), "BUDGET_EXCEEDED")
+        audit = {row["audit_hash"]: row for row in world.store.audit_chain()}
+        assert audit[error.audit_ref]["detail"]["overrun"] == "MEMORY"
+        assert audit[error.audit_ref]["event"] == "SANDBOX_BUDGET_EXCEEDED"
+
+
+def test_nfr_025_budget_values_beyond_the_canonical_range_are_rejected_typed(world: World) -> None:
+    """NFR-025; LLD v1.1 :36 every signed object is RFC 8785 JSON, whose integers stop at 2**53 - 1."""
+    c = world.c
+    source = SCORE_SOURCE
+    digest = "urn:sha256:" + hashlib.sha256(source).hexdigest()
+    sandbox = world.sandbox_module.PythonSandbox()
+    for name in ("cpu_millis", "memory_bytes", "output_bytes"):
+        for value in ((1 << 53), (1 << 53) + 1, 1 << 63, (1 << 64) - 1):
+            budget = dataclasses.replace(world.budget(), **{name: value})
+            world.rejected(lambda b=budget: c.require_budget(b, "budget"), "SCHEMA_VIOLATION")
+            world.rejected(lambda b=budget: sandbox.run(source=source, artifact_digest=digest, entrypoint="invoke",
+                                                        arguments=[{"speed": 1}], budget=b), "SCHEMA_VIOLATION")
+            request = c.PublishFunctionRequest(descriptor=world.function(budget=budget), signed_manifest_ref=DIGEST_A,
+                                               change_proposal_ref="urn:ocor:change-proposal:cp-1")
+            world.rejected(lambda r=request: world.functions.PublishFunction(r), "SCHEMA_VIOLATION")
+            world.rejected(lambda b=budget: world.svc.ModelRegistry(
+                store=world.store, releases=world.release.publisher, trust_root=world.keys.trust_root(),
+                sandbox=sandbox, budget=b), "SCHEMA_VIOLATION")
+    for timeout in (timedelta(seconds=315_576_000_001), timedelta(days=999_999_999)):
+        world.rejected(lambda t=timeout: c.require_budget(dataclasses.replace(world.budget(), timeout=t), "b"),
+                       "SCHEMA_VIOLATION")
+    largest = world.budget(memory_bytes=(1 << 53) - 1, output_bytes=(1 << 53) - 1)
+    run = sandbox.run(source=source, artifact_digest=digest, entrypoint="invoke", arguments=[{"speed": 1}],
+                      budget=largest)
+    assert run.output == {"score": 2}
+    assert c.message_digest(largest).startswith("urn:sha256:")
+
+
+def test_nfr_025_sandbox_start_failure_is_a_typed_error(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS point 2: a failure to start the sandbox is a RegistryError."""
+    module = world.sandbox_module
+    source = SCORE_SOURCE
+    digest = "urn:sha256:" + hashlib.sha256(source).hexdigest()
+    for exc in (OSError("no interpreter"), subprocess.SubprocessError("preexec failed"), ValueError("bad limit")):
+        def refuse(*args: Any, e: BaseException = exc, **kwargs: Any) -> Any:
+            raise e
+
+        monkeypatch.setattr(module.subprocess, "Popen", refuse)
+        world.rejected(lambda: module.PythonSandbox().run(source=source, artifact_digest=digest, entrypoint="invoke",
+                                                          arguments=[{"speed": 1}], budget=world.budget()),
+                       "EXECUTION_FAILED")
+
+
+# --------------------------------------------------------------------------- #
+# PRE-REVIEW-INPUT-ROBUSTNESS: contract decoding and signature parsing
+# --------------------------------------------------------------------------- #
+def test_contract_decoding_rejects_overflow_foreign_keys_and_non_utf8(world: World) -> None:
+    """Every decoding path translates TypeError/ValueError/OverflowError into the typed error."""
+    c = world.c
+    budget = c.to_mapping(world.budget())
+    for duration in ("99999999999999999999s", "315576000001s", "9" * 400 + "s", "-1s", "1.5s"):
+        world.rejected(lambda d=duration: c.from_mapping(c.ResourceBudget, budget | {"timeout": d}),
+                       "SCHEMA_VIOLATION")
+    assert c.from_mapping(c.ResourceBudget, budget | {"timeout": "315576000000s"}).timeout == timedelta(
+        seconds=315_576_000_000)
+    for mapping in ({1: "a", "b": 2}, {**budget, 1: "x"}, {None: 1}, {("t",): 1}):
+        world.rejected(lambda m=mapping: c.from_mapping(c.ResourceBudget, m), "SCHEMA_VIOLATION")
+    typed = c.to_mapping(world.typed({"speed": 1}))
+    for raw in (123, None, [], {"b": 1}, b"AA=="):
+        world.rejected(lambda r=raw: c.from_mapping(c.TypedValue, typed | {"value": {"type_url": TYPE_URL,
+                                                                                    "value": r}}),
+                       "SCHEMA_VIOLATION")
+    for data in ({1: 2}, [{"a": {3: 4}}]):
+        world.rejected(lambda d=data: c.json_mapping(d), "SCHEMA_VIOLATION")
+    descriptor = world.function()
+    world.publish_function(descriptor)
+    for value in (b"\xff\xfe", b"\xff\xfe{}", b"\xc3"):
+        world.rejected(lambda v=value: world.invoke(descriptor, None, key="utf8", typed=world.c.TypedValue(
+            schema=world.schema_pin(INPUT_SCHEMA), value=world.c.AnyValue(type_url=TYPE_URL, value=v))),
+            "SCHEMA_VIOLATION")
+    model = world.model()
+    non_utf8_envelope = world.store.put_artifact(b"\xff\xfe")
+    world.rejected(lambda: world.publish_model(dataclasses.replace(model, validity_envelope_ref=non_utf8_envelope)),
+                   "SCHEMA_VIOLATION")
+
+
+def test_signature_envelope_parsing_rejects_ill_typed_entries(world: World) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS points 1, 2 and 4 on the DSSE envelope of every statement."""
+    import json
+
+    verifier = world.svc.StatementVerifier(world.keys.trust_root())
+    good = world.keys.sign(world.svc.MANIFEST_PAYLOAD_TYPE, {"kind": "FUNCTION"})
+    envelope = json.loads(good)
+    signature = envelope["signatures"][0]
+    tampered = [b"\xff\xfe", b"\xff\xfe" + good, base64.b64encode(b"\xff\xfe")]
+    for keyid in ([], {}, ["a"], {"k": "v"}, 12, None, True):
+        tampered.append(canonical_bytes(envelope | {"signatures": [signature | {"keyid": keyid}]}))
+    for chain in ([], {}, 12, None):
+        tampered.append(canonical_bytes(envelope | {"signatures": [signature | {"certificateChainRef": chain}]}))
+    for sig in ([], {}, 12, None):
+        tampered.append(canonical_bytes(envelope | {"signatures": [signature | {"sig": sig}]}))
+    for field in ("payloadType", "signingProfile", "payload"):
+        for value in ([], {}, 12, None):
+            tampered.append(canonical_bytes(envelope | {field: value}))
+    tampered.append(canonical_bytes(envelope | {"payload": base64.b64encode(b"\xff\xfe").decode("ascii")}))
+    tampered.append(canonical_bytes(envelope | {"signatures": "sig"}))
+    tampered.append(canonical_bytes(envelope | {"signatures": [signature, "x"]}))
+    for data in tampered:
+        world.rejected(lambda d=data: verifier.verify(d, world.svc.MANIFEST_PAYLOAD_TYPE), "CONTRACT_REJECTED")
+    assert verifier.verify(good, world.svc.MANIFEST_PAYLOAD_TYPE) == {"kind": "FUNCTION"}
+
+
+# --------------------------------------------------------------------------- #
+# PRE-REVIEW-INPUT-ROBUSTNESS: the PostgreSQL adapter, with a local responder
+# --------------------------------------------------------------------------- #
+class _Responder:
+    """A local stand-in for a psycopg connection that answers every query with fixed rows."""
+
+    def __init__(self, rows: list[Any], fail: BaseException | None = None) -> None:
+        self._rows = rows
+        self._fail = fail
+
+    def __enter__(self) -> _Responder:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def transaction(self) -> _Responder:
+        return self
+
+    def execute(self, *args: Any, **kwargs: Any) -> _Responder:
+        if self._fail is not None:
+            raise self._fail
+        return self
+
+    def fetchone(self) -> Any:
+        return self._rows[0] if self._rows else None
+
+    def fetchall(self) -> list[Any]:
+        return list(self._rows)
+
+
+DIGEST_A = "urn:sha256:" + "a" * 64
+
+
+def _respond(monkeypatch: pytest.MonkeyPatch, rows: list[Any], fail: BaseException | None = None) -> Any:
+    module = registry("adapters.postgres")
+    monkeypatch.setattr(module.psycopg, "connect", lambda *a, **k: _Responder(rows, fail))
+    return module.PostgresRegistryStore("postgresql://local-responder/ocor", schema="rem0048_responder")
+
+
+def test_postgres_adapter_translates_every_driver_and_decoding_error(world: World,
+                                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS point 2: no raw driver, protocol or decoding error leaves the adapter."""
+    import json
+
+    import psycopg
+
+    module = registry("adapters.postgres")
+    unavailable = (psycopg.OperationalError("down"), psycopg.InterfaceError("closed"))
+    rejected = (psycopg.DataError("bad"), psycopg.ProgrammingError("bad"), psycopg.InternalError("bad"),
+                psycopg.IntegrityError("bad"), psycopg.DatabaseError("bad"), psycopg.Error("bad"),
+                UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid"), json.JSONDecodeError("bad", "x", 0),
+                KeyError("content"), TypeError("bad"), ValueError("bad"), OverflowError("bad"))
+    calls = [lambda s: s.has_version("FUNCTION", "urn:ocor:x", "1.0.0"), lambda s: s.get_artifact(DIGEST_A),
+             lambda s: s.find_entry("FUNCTION", "k"), lambda s: s.revoked([DIGEST_A]), lambda s: s.now(),
+             lambda s: s.put_artifact(b"x"), lambda s: s.append_audit("E", {"a": 1}),
+             lambda s: s.get_invocation("urn:uuid:x")]
+    for exc in unavailable + rejected:
+        for fail_at in ("connect", "execute"):
+            if fail_at == "connect":
+                def refuse(*a: Any, e: BaseException = exc, **k: Any) -> Any:
+                    raise e
+
+                monkeypatch.setattr(module.psycopg, "connect", refuse)
+                store = module.PostgresRegistryStore("postgresql://local-responder/ocor", schema="rem0048_responder")
+            else:
+                store = _respond(monkeypatch, [], exc)
+            expected = "CONTROL_PLANE_UNAVAILABLE" if exc in unavailable else "CONTRACT_REJECTED"
+            for call in calls:
+                world.rejected(lambda c=call, s=store: c(s), expected)
+
+
+def test_postgres_adapter_rejects_malformed_rows_without_coercion(world: World,
+                                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """PRE-REVIEW-INPUT-ROBUSTNESS points 1, 3 and 4: rows are type-checked, never converted."""
+    from datetime import datetime, timezone
+
+    entry = {"seq": 1, "kind": "FUNCTION", "entry_key": "k", "resource_id": "urn:ocor:x", "semantic_version": "1.0.0",
+             "record": {"a": 1}, "descriptor_digest": DIGEST_A, "previous_commit": DIGEST_A,
+             "registry_commit": DIGEST_A, "audit_ref": DIGEST_A, "accepted_at": datetime(2026, 9, 1, tzinfo=timezone.utc)}
+    invocation = {"invocation_id": "urn:uuid:1", "kind": "FUNCTION", "entry_key": "k", "idempotency_key": "i",
+                  "request_digest": DIGEST_A, "record": {"a": 1},
+                  "created_at": datetime(2026, 9, 1, tzinfo=timezone.utc)}
+    store = _respond(monkeypatch, [entry])
+    assert store.find_entry("FUNCTION", "k") == entry
+    store = _respond(monkeypatch, [invocation])
+    assert store.get_invocation("urn:uuid:1") == invocation
+    malformed_entries = [
+        {}, "row", [entry], entry | {"record": "{}"}, entry | {"record": None}, entry | {"record": [1]},
+        entry | {"registry_commit": None}, entry | {"registry_commit": 7}, entry | {"descriptor_digest": b"x"},
+        entry | {"audit_ref": "None"}, entry | {"accepted_at": "2026-09-01"},
+        entry | {"accepted_at": datetime(2026, 9, 1)}, entry | {"kind": 1}, entry | {"entry_key": None},
+        {k: v for k, v in entry.items() if k != "record"}, entry | {"record": {1: "a"}},
+    ]
+    for row in malformed_entries:
+        store = _respond(monkeypatch, [row])
+        world.rejected(lambda s=store: s.find_entry("FUNCTION", "k"), "CONTRACT_REJECTED")
+        world.rejected(lambda s=store: s.append_entry(
+            kind="FUNCTION", entry_key="k", resource_id="urn:ocor:x", semantic_version="1.0.0", record={},
+            descriptor_digest=DIGEST_A, audit_detail={}), "CONTRACT_REJECTED")
+    malformed_invocations = [
+        {}, "row", invocation | {"record": None}, invocation | {"request_digest": 3},
+        invocation | {"idempotency_key": 4}, invocation | {"invocation_id": None}, invocation | {"kind": []},
+        {k: v for k, v in invocation.items() if k != "record"},
+    ]
+    for row in malformed_invocations:
+        store = _respond(monkeypatch, [row])
+        world.rejected(lambda s=store: s.get_invocation("urn:uuid:1"), "CONTRACT_REJECTED")
+        world.rejected(lambda s=store: s.find_invocation_by_key("FUNCTION", "k", "i"), "CONTRACT_REJECTED")
+        world.rejected(lambda s=store: s.record_invocation(
+            invocation_id="urn:uuid:1", kind="FUNCTION", entry_key="k", idempotency_key="i",
+            request_digest=DIGEST_A, record={}), "CONTRACT_REJECTED")
+    for row in ({"content": None}, {}, {"content": "text"}, {"content": 5}, {"content": b"corrupted"},
+                {"content": [1, 2]}, "row"):
+        store = _respond(monkeypatch, [row])
+        world.rejected(lambda s=store: s.get_artifact(DIGEST_A), "CONTRACT_REJECTED")
+    for row in ({"audit_ref": None}, {"audit_ref": 5}, {"audit_ref": "None"}, {}, "row"):
+        store = _respond(monkeypatch, [row])
+        world.rejected(lambda s=store: s.revoke(DIGEST_A, reason="r", change_proposal_ref="urn:ocor:cp:1"),
+                       "CONTRACT_REJECTED")
+    for rows in ([{"digest": 123}], [{}], [{"digest": None}], [{"digest": "urn:sha256:" + "b" * 64}], ["row"]):
+        store = _respond(monkeypatch, rows)
+        world.rejected(lambda s=store: s.revoked([DIGEST_A]), "CONTRACT_REJECTED")
+    for row in ({"audit_hash": None}, {"audit_hash": 5}, {}, "row"):
+        store = _respond(monkeypatch, [row])
+        world.rejected(lambda s=store: s.append_audit("E", {"a": 1}), "CONTRACT_REJECTED")
+    for rows in ([], [{"at": "now"}], [{"at": None}], [{}], [{"at": datetime(2026, 9, 1)}]):
+        store = _respond(monkeypatch, rows)
+        world.rejected(lambda s=store: s.now(), "CONTRACT_REJECTED")
+    for rows in ([{"event": 1, "detail": {}, "previous_hash": DIGEST_A, "audit_hash": DIGEST_A}], ["row"]):
+        store = _respond(monkeypatch, rows)
+        world.rejected(lambda s=store: s.audit_chain(), "CONTRACT_REJECTED")
+    store = _respond(monkeypatch, [{"digest": DIGEST_A}])
+    assert store.revoked([DIGEST_A]) == frozenset({DIGEST_A})
