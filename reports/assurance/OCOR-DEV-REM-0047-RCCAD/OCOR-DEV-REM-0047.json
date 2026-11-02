@@ -418,6 +418,15 @@
       "lines": "88-112",
       "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:441-462; docs/OCOR_LLD_v1.1.md:105",
       "path": "ocor-runtime/src/ocor_runtime/c1/conformance.py"
+    },
+    {
+      "change": "a regression requalification record may supersede a sealed record without record_id by its path: supersedes and previous_record.record_id equal previous_record.record_path, only when the record has no record_id and reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json lists that canonical path with its sha256; record_sha256, same task_id and every other rule unchanged; NCP-U01-SUPERSESSION-REQUALIFICATIONS option B1",
+      "commit": "c9a7fe7839dcddb292e8f1101d9cd2b744f724dd",
+      "entry": "NCP-U01-SUPERSESSION-REQUALIFICATIONS",
+      "function": "check_regression_record",
+      "lines": "268-280",
+      "normative_element": "PO decision NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 2; REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1",
+      "path": "scripts/validate_runtime_evidence.py"
     }
   ],
   "change_anchors_note": "every observable behaviour or signature change of the unit up to the code commit; new modules add behaviour only in ocor_runtime.c1 and change no existing caller",
@@ -430,9 +439,10 @@
     "runtime_conformance": "NOT_ESTABLISHED"
   },
   "decided_decision_requests": [
-    "NCP-U01-RETAINED-C1-BUILDERS: decided by the PO on 2026-11-01, option 2 with the FR-045 mapping of point 3; disposition in reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md (sha256 397a400792f7c5f0912b2bed227e750862994be9a4def0e5282cdf5d7057791c); PR #438 closed as resolved"
+    "NCP-U01-RETAINED-C1-BUILDERS: decided by the PO on 2026-11-01, option 2 with the FR-045 mapping of point 3; disposition in reports/development/decision_requests/NCP-U01-RETAINED-C1-BUILDERS.md (sha256 397a400792f7c5f0912b2bed227e750862994be9a4def0e5282cdf5d7057791c); PR #438 closed as resolved",
+    "NCP-U01-SUPERSESSION-REQUALIFICATIONS: decided by the PO on 2026-11-02, options A1 (0011 and 0032 regression-only) and B1 (a sealed record without record_id superseded by its path, validator change with RED/GREEN), points 3-5 (A1 for every unit of the programme; qualifying requalification when a unit changes tests of a closed task; NCP-U01 iteration stop at 10); disposition in reports/development/decision_requests/NCP-U01-SUPERSESSION-REQUALIFICATIONS.md (sha256 2b14044da6b2d6b5ced6986c8f70bf61fe2eb635da267f24283ee77ad99c0801); PR #444 closed as resolved"
   ],
-  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1 and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U01-RETAINED-C1-BUILDERS (2026-11-01), option 2",
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1 and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U01-RETAINED-C1-BUILDERS (2026-11-01), option 2; NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02), options A1 and B1 with points 3-5",
   "fr_045_class_mapping": {
     "decision": "NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 3; FR-045 Register v1.1 :141; LLD v1.1 :107 under :16-18; conforming pipeline only (ocor_runtime.c1.migration)",
     "dominance_order": [
@@ -660,7 +670,9 @@
         2,
         3,
         4,
-        5
+        5,
+        6,
+        7
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -696,18 +708,18 @@
     "verdict": "BLOCKING_FINDINGS"
   },
   "requalifications_planned": {
+    "note": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 1 (A1): the requalifications of 0011 and 0032 are regression-only, their tests do not change; the new behaviour of NCR-C1-008 and NCR-C1-009 is qualified by the unit tests. Point 2 (B1): the regression records of 0028, 0031 and 0033 supersede their original sealed records, which have no record_id, by path.",
     "regression_only": [
       "OCOR-DEV-0005",
+      "OCOR-DEV-0011",
       "OCOR-DEV-0028",
       "OCOR-DEV-0031",
+      "OCOR-DEV-0032",
       "OCOR-DEV-0033",
       "OCOR-DEV-0050",
       "OCOR-DEV-0082"
     ],
-    "with_supersession": [
-      "OCOR-DEV-0011",
-      "OCOR-DEV-0032"
-    ]
+    "with_supersession": []
   },
   "required_backend": "none (pure C1 compiler; signing with a locally generated test key)",
   "resolution_probes": [
@@ -786,6 +798,12 @@
       ],
       "summary": "25 passed; C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing (87 passed); test_ncr_c1_005_conforms adapted: the drift positive control attaches the manifest as PackageRelease does (construction only, assertions unchanged)"
     },
+    "GREEN_validator_b1": {
+      "commits": [
+        "c9a7fe7839dc"
+      ],
+      "summary": "61 passed, 53 subtests (test_runtime_evidence_validator.py, cases added only); check_regression_record lets supersedes and previous_record.record_id equal previous_record.record_path only for a superseded record without record_id whose canonical path and sha256 the sealed evidence registry lists"
+    },
     "RED": {
       "commit": "fb27e601c35d",
       "fingerprint": "65ebdb63dbe8",
@@ -801,6 +819,12 @@
       "fingerprint": "f406145c2b5a",
       "fingerprint_method": "sha256 of the sorted 'FAILED <node id>' lines of the pytest output",
       "summary": "7 failed: incomplete manifest admitted; CAUSAL type without conditional; modules not diffed; unhashable YAML key TypeError; Protobuf UnicodeDecodeError/CanonicalizationError; publisher AttributeError/UnicodeDecodeError and forged record returned; malformed core KeyError"
+    },
+    "RED_validator_b1": {
+      "commit": "c002b338ff47",
+      "fingerprint": "9e5618a59483",
+      "fingerprint_method": "sha256 of the sorted 'FAILED <node id>' lines of the pytest output (grep '^FAILED' red.log | sed 's/ - .*//' | LC_ALL=C sort | sha256sum)",
+      "summary": "2 failed of 9 new cases in reports/tests/test_runtime_evidence_validator.py (SealedRecordSupersessionTests): a regression record superseding by path a registry-listed sealed record without record_id is rejected with record_id mismatch; the other-task negative stops at the same check; 7 negatives already rejected for the expected reason"
     }
   }
 }

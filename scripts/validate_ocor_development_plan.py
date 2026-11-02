@@ -1005,6 +1005,9 @@ def main() -> int:
         "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0047.log",
         "reports/evidence/G4/OCOR-DEV-0033.requalified-rem0047.json",
         "reports/evidence/G4/OCOR-DEV-0033.requalified-rem0047.log",
+        # NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02): the decided request; with option A1
+        # the requalifications of 0011 and 0032 above are regression-only too.
+        "reports/development/decision_requests/NCP-U01-SUPERSESSION-REQUALIFICATIONS.md",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

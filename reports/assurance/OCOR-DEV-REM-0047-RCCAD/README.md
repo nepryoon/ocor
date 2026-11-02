@@ -9,9 +9,13 @@ dalla campagna: voci risolte, criteri con i test, ancore di ogni modifica di com
 risoluzione, mappatura delle classi di FR-045 riga per riga. Il PO ha deciso il 2026-11-01 la decision request
 `NCP-U01-RETAINED-C1-BUILDERS` (opzione 2): i builder retained restano invariati come candidati pre-normativi,
 firmatario, admission e publisher rifiutano ogni core diverso da `ocor.cir/1.0`, `test_ocor_dev_0028.py:81`
-non cambia, `NCR-C1-002` è `IN_REMEDIATION`. Riqualifiche: `0011` e `0032` con supersession; `0005`, `0028`,
-`0031`, `0033`, `0050` e `0082` di sola regressione. Campagna, riqualifiche, revisione preventiva e verifica
-indipendente si aggiungono a campagna eseguita.
+non cambia, `NCR-C1-002` è `IN_REMEDIATION`. Il PO ha deciso il 2026-11-02 la decision request
+`NCP-U01-SUPERSESSION-REQUALIFICATIONS` (opzioni A1 e B1): tutte le riqualifiche dell'unità (`0005`, `0011`,
+`0028`, `0031`, `0032`, `0033`, `0050` e `0082`) sono di sola regressione, nella classe non qualificante;
+`check_regression_record` di `scripts/validate_runtime_evidence.py` ammette che un record di regressione superi
+per percorso un record sigillato senza `record_id`, solo se il registro dei record sigillati lo riconosce per
+percorso e sha256 (RED `c002b33`, GREEN `c9a7fe7`). Campagna, riqualifiche e verifica indipendente si
+aggiungono a campagna eseguita.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, guard, workflow o dipendenza è modificato. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
