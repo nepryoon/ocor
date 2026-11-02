@@ -7,6 +7,14 @@ shape contract, and a canonical IR builder that assembles one
 deterministic core document plus a migration-metadata artifact
 summarizing the release's resource/version identity for a future
 ``MigrationPlanner`` to diff against.
+
+Pre-normative candidate, not releasable (NCP-U01-RETAINED-C1-BUILDERS,
+2026-11-01): its output is unsigned and its core is not ``ocor.cir/1.0``,
+so ``signing.DsseIrSigner``, ``signing.ReleaseAdmission`` and
+``publisher.ImmutableReleasePublisher`` reject it. A signed, admitted and
+published C1 release comes only from the conforming pipeline (``oac``,
+``ir``, ``signing``, ``codegen``, ``migration``, ``publisher``). Kept
+unchanged until NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT.
 """
 
 from __future__ import annotations
@@ -99,7 +107,11 @@ class RetainedSemanticValidator:
 
 class RetainedCanonicalIrBuilder:
     """Assembles a deterministic canonical IR release: one core document
-    keyed by resource_id, plus a migration-metadata artifact."""
+    keyed by resource_id, plus a migration-metadata artifact.
+
+    Pre-normative candidate, not releasable: admission and the publisher
+    reject its output (NCP-U01-RETAINED-C1-BUILDERS, 2026-11-01).
+    """
 
     def __init__(
         self,

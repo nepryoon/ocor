@@ -14,12 +14,17 @@ negative cases of the new rules follow the original ones. REM-0046-REGRESSION-RE
 (2026-10-30, option 1): a regression-only requalification record is a declared
 non-qualifying class; it gets every check that does not concern requirements and is
 rejected if it binds a case to a requirement or does not supersede a record of its task.
+NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02, option B1): a regression record supersedes
+a sealed record without record_id by its path, only when the sealed evidence registry
+recognises that record by path and sha256; every other rule is unchanged.
 """
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -825,6 +830,119 @@ class PreventiveReviewRemediationTests(unittest.TestCase):
         self.assertEqual([], report["qualifying_records"])
         self.assertEqual(2, len(report["rejected_records"]))
         self.assertTrue(all("supersedes chain" in item["reason"] for item in report["rejected_records"]))
+
+
+# NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02), option B1: a sealed record without
+# record_id is superseded by its path, recognised by the sealed evidence registry.
+_SEALED = "reports/evidence/G9/OCOR-DEV-9999.json"
+
+
+def _write_sealed_regression_fixture(
+    base: Path,
+    *,
+    registered: bool = True,
+    registry_sha256: str | None = None,
+    previous: dict[str, Any] | None = None,
+    supersedes: str = _SEALED,
+    record_id: str = _SEALED,
+    record_path: str = _SEALED,
+    drop_record_sha256: bool = False,
+) -> Path:
+    """A regression record superseding the sealed record of the task at ``_SEALED``; returns the manifest."""
+    sealed = {"task_id": _TASK, "result": "PASS"} if previous is None else previous
+    sealed_bytes = json.dumps(sealed, indent=2, sort_keys=True).encode("utf-8")
+    (base / _SEALED).parent.mkdir(parents=True, exist_ok=True)
+    (base / _SEALED).write_bytes(sealed_bytes)
+    entries = [{"path": _SEALED, "sha256": registry_sha256 or _sha256(sealed_bytes)}] if registered else []
+    registry = base / "reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(json.dumps({"records": entries}), encoding="utf-8")
+    previous_record = {"record_id": record_id, "record_path": record_path, "record_sha256": _sha256(sealed_bytes)}
+    if drop_record_sha256:
+        del previous_record["record_sha256"]
+    record: dict[str, Any] = {
+        "task_id": _TASK,
+        "result": "PASS",
+        "commands": [_full_command()],
+        "raw_output_sha256": _sha256(_RAW),
+        "commit": "0" * 40,
+        "environment": {"host": "test"},
+        "created_at": "2026-11-02T00:00:00Z",
+        "requalification_kind": "regression",
+        "qualifies_requirements": False,
+        "supersedes": supersedes,
+        "previous_record": previous_record,
+    }
+    gate = base / "reports/evidence/G9"
+    record_bytes = json.dumps(record, indent=2, sort_keys=True).encode("utf-8")
+    (gate / "OCOR-DEV-9999.requalified.json").write_bytes(record_bytes)
+    (gate / "OCOR-DEV-9999.requalified.log").write_bytes(_RAW)
+    manifest = {
+        "artifacts": [
+            {"path": "OCOR-DEV-9999.requalified.json", "sha256": _sha256(record_bytes), "task_id": _TASK},
+            {"path": "OCOR-DEV-9999.requalified.log", "sha256": _sha256(_RAW), "task_id": f"{_TASK}-RAW"},
+        ],
+        "gate": "G9",
+        "schema_version": "1.0",
+    }
+    (gate / "MANIFEST.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return gate / "MANIFEST.json"
+
+
+def _run_rooted(base: Path, manifest: Path) -> tuple[int, str, str]:
+    """The validator run in process with its repository root at ``base`` (sealed registry included)."""
+    spec = importlib.util.spec_from_file_location("validate_runtime_evidence_sealed", VALIDATOR)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.ROOT = base.resolve()
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = module.main(["--task", _TASK, "--non-skipped", "--manifest", str(manifest), "--root", str(base)])
+    return code, out.getvalue(), err.getvalue()
+
+
+class SealedRecordSupersessionTests(unittest.TestCase):
+    def _assert_rejected(self, expected: str, **fixture: Any) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            code, _, err = _run_rooted(base, _write_sealed_regression_fixture(base, **fixture))
+        self.assertEqual(1, code, err)
+        self.assertIn("FAIL", err)
+        self.assertIn(expected, err)
+
+    def test_accepts_regression_record_superseding_a_sealed_record_by_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            code, out, err = _run_rooted(base, _write_sealed_regression_fixture(base))
+        self.assertEqual(0, code, err)
+        self.assertIn("PASS", out)
+
+    def test_rejects_superseding_by_path_a_record_the_registry_does_not_list(self) -> None:
+        self._assert_rejected("record_id mismatch", registered=False)
+
+    def test_rejects_superseding_by_path_a_sealed_record_with_another_sha256(self) -> None:
+        self._assert_rejected("record_id mismatch", registry_sha256="0" * 64)
+
+    def test_rejects_superseding_a_sealed_record_by_another_path(self) -> None:
+        other = "reports/evidence/G9/OCOR-DEV-9999.other.json"
+        self._assert_rejected("record_id mismatch", supersedes=other, record_id=other)
+
+    def test_rejects_superseding_by_a_non_canonical_path_of_the_sealed_record(self) -> None:
+        alias = "reports/evidence/G9/../G9/OCOR-DEV-9999.json"
+        self._assert_rejected("record_id mismatch", supersedes=alias, record_id=alias, record_path=alias)
+
+    def test_rejects_a_previous_record_id_other_than_the_path(self) -> None:
+        self._assert_rejected("does not supersede a record", record_id="OCOR-DEV-9999-previous")
+
+    def test_rejects_superseding_by_path_a_sealed_record_that_has_a_record_id(self) -> None:
+        self._assert_rejected("record_id mismatch", previous={"record_id": "OCOR-DEV-9999-sealed", "task_id": _TASK})
+
+    def test_rejects_superseding_by_path_without_the_record_sha256(self) -> None:
+        self._assert_rejected("superseded record missing or digest mismatch", drop_record_sha256=True)
+
+    def test_rejects_superseding_by_path_a_sealed_record_of_another_task(self) -> None:
+        self._assert_rejected("supersedes a record of OCOR-DEV-9998", previous={"task_id": "OCOR-DEV-9998"})
 
 
 if __name__ == "__main__":

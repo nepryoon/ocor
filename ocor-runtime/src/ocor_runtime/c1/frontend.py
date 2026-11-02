@@ -227,6 +227,25 @@ class FrontendTypeAndSemanticValidator:
                     )
                     continue
 
+            references = document.get("references", [])
+            if not isinstance(references, list) or not all(isinstance(ref, str) and ref for ref in references):
+                diagnostics.append(
+                    C1Diagnostic(
+                        DiagnosticCode.TYPE_ERROR, source.source_path, "'references' must be a list of identifiers"
+                    )
+                )
+                continue
+            # LLD v1.1 :39 -- a set-like array rejects duplicates and is sorted before the digest.
+            if len(references) != len(set(references)):
+                diagnostics.append(
+                    C1Diagnostic(
+                        DiagnosticCode.DUPLICATE_RESOURCE,
+                        source.source_path,
+                        f"'references' contains duplicates: {sorted(references)}",
+                    )
+                )
+                continue
+
             by_id[source.resource_id] = document
 
         if diagnostics:
@@ -257,7 +276,11 @@ class FrontendCanonicalIrBuilder:
     """Assembles the canonical IR release exactly like OCOR-DEV-0028's
     sealed builder, additionally carrying the validated
     field_types/references/execution_owner metadata into each
-    resource's core entry."""
+    resource's core entry.
+
+    Pre-normative candidate, not releasable: admission and the publisher
+    reject its output (NCP-U01-RETAINED-C1-BUILDERS, 2026-11-01).
+    """
 
     def __init__(
         self,
@@ -277,7 +300,7 @@ class FrontendCanonicalIrBuilder:
                 "content_digest": source.content_digest,
                 "fields": document["fields"],
                 "field_types": document["field_types"],
-                "references": list(document.get("references", ())),
+                "references": sorted(document.get("references", ())),
                 "execution_owner": document.get("execution_owner"),
             }
             for source, document in zip(request.sources, parsed, strict=True)

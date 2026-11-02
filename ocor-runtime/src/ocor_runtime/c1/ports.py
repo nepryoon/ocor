@@ -10,10 +10,16 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Protocol, runtime_checkable
 
-from ..kernel.canonical import canonical_bytes, canonical_digest
+from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
 
 DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
 COMMIT = re.compile(r"[0-9a-f]{40}")
+# SemVer 2.0.0 (https://semver.org), the OntologyPackage version of ADD v1.3 :419.
+SEMVER = re.compile(
+    r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?"
+    r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+)
 
 
 class SourceSyntax(StrEnum):
@@ -173,6 +179,12 @@ class CompilerRequest:
             "release_profile",
         ):
             _required(field, getattr(self, field))
+        if SEMVER.fullmatch(self.semantic_version) is None:
+            raise _reject(
+                DiagnosticCode.SOURCE_INVALID,
+                "semantic_version",
+                "semantic_version must be a SemVer 2.0.0 version (ADD v1.3 :419)",
+            )
         if COMMIT.fullmatch(self.source_commit) is None:
             raise _reject(
                 DiagnosticCode.SOURCE_INVALID,
@@ -270,6 +282,14 @@ class CanonicalIrRelease:
             ir_digest=canonical_digest(stable_core),
             artifacts=manifest,
             signature_envelope_ref=_required("signature_envelope_ref", signature_envelope_ref),
+        )
+
+    def with_artifacts(self, artifacts: Sequence[ArtifactManifestEntry]) -> CanonicalIrRelease:
+        """The same core and ir_digest with the generated artefact manifest attached."""
+        return CanonicalIrRelease.create(
+            core=parse_i_json(self.canonical_bytes),
+            artifacts=artifacts,
+            signature_envelope_ref=self.signature_envelope_ref,
         )
 
 
