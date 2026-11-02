@@ -4,19 +4,20 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "2ebf2a9848399cadb794ceb627514387980d8417",
-  "baseline_commit": "2ebf2a9848399cadb794ceb627514387980d8417",
-  "branch": "governed/state-sync-rem0049-iter1-20261102",
+  "base_sha": "6b20644ca7084cfc0e7712208a0df7bc29b17a74",
+  "baseline_commit": "6b20644ca7084cfc0e7712208a0df7bc29b17a74",
+  "branch": "governed/state-sync-rem0049-iter2-20261102",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0049-ncp-u03-c2-gateway",
-    "head_sha": "530fe1e687e27583d3792832596f53cb9375bed1",
-    "note": "REM-0049 RED, GREEN and closure work; PRE-CAMPAIGN-GATE passed (drift expected); not a candidate, no evidence",
+    "head_sha": "511091f41409718d6002c92ec004e5481b33987b",
+    "note": "REM-0049 work up to the preventive-review fixes and the record draft; PRE-CAMPAIGN-GATE passed (drift expected); full suite run at this head; not a candidate, no evidence",
     "paths": []
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/ITERATION_LOG.md",
-    "reports/development/MODEL_HANDOFF.json"
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/TERMINAL_BLOCKED_REPORT.json"
   ],
   "claims": {
     "E1": 0,
@@ -33,35 +34,35 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest unit module and realigned modules at 5e1e0e6 (RED, real TypeDB, Fuseki, PostgreSQL)",
+      "command": "pytest test_ocor_dev_rem_0049.py at the 530fe1e code with the new tests (RED 8880d62, real TypeDB, Fuseki, PostgreSQL)",
       "exit_code": 1,
-      "summary": "38 failed, 33 passed, 11 errors; fingerprint 84c4e7449c84"
+      "summary": "96 failed, 26 passed; fingerprint 627149fb0079"
     },
     {
-      "command": "pytest test_ocor_dev_rem_0049.py and 0012/0017/0034/0035/0037/0039/rem_0014 at 530fe1e687e2",
+      "command": "pytest test_ocor_dev_rem_0049.py and the realigned/consumer modules at 62164b3",
       "exit_code": 0,
-      "summary": "unit module green; 94 passed with the realigned modules"
+      "summary": "122 passed; 186 passed, 31 skipped only for OPA not started in development"
     },
     {
-      "command": "pytest register integrity and REM-0046 tests",
+      "command": "PRE-CAMPAIGN-GATE ~/.ocor-codex/rem-0049/pregate.py at 511091f41409",
       "exit_code": 0,
-      "summary": "34 passed, 879 subtests"
+      "summary": "PASS 48/49 workflow-derived non-suite steps (the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks)"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE ~/.ocor-codex/rem-0049/pregate.py at 530fe1e687e2",
+      "command": "~/.ocor-codex/rem-0049-q/run.sh (bootstrap, typed verification, reset, task module x3, requalified modules, regression 0005/0050/0082, reports portfolio, full suite) at 511091f41409",
       "exit_code": 0,
-      "summary": "48/49 workflow-derived non-suite steps PASS; the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks"
+      "summary": "PASS: 25/26 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; unit module test_ocor_dev_rem_0049.py with the register, REM-0046 and evidence-validator tests 3x1149 passed; realigned modules of the seven requalified tasks and rem_0014 84 passed; regression of 0005/0050/0082 214 passed; reports portfolio 1594 passed; two-lane admission SERIAL_FALLBACK (MemAvailable 14230.0 MiB below 14340.6 MiB, no test run); serial full suite 3546 tests, 0 failures, 0 errors, 0 skips in 4233.925 s of cap 5400 s (above the 3600 s notification threshold), mains power, ocor-bootstrap absent after teardown)"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0049:implementation (NCP-U03, iteration 1 done; awaiting preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre)",
+  "current_task": "OCOR-DEV-REM-0049:implementation (NCP-U03, iteration 2 done: preventive-review fixes, full suite run; TERMINAL_BLOCKED on PO decision NCP-U03-QUALIFYING-REQUALIFICATIONS)",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0049 (NCP-U03) after the preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-530fe1e687e2-pre.json; fix each blocking finding with a new commit (RED first) or contest it with a reproducible proof, record the advisory ones; then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049/pregate.py, needs dev postgresql+typedb+fuseki of ocor-bootstrap up with ~/.ocor-codex/rem-0049/dev.env, then down -v; drift FAIL expected only on the 10 planned tasks), full suite on the real stack two lanes (cap 90 min; kit to adapt from ~/.ocor-codex/rem-0049-q with unit module test_ocor_dev_rem_0049.py and the realigned modules), qualifying requalifications of 0012/0017/0031/0034/0035/0037/0039 (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3, optional module docstring declaring the exercised requirements per NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4) and regression-only 0005/0050/0082, AST comparison of the realigned tests, record completion, candidate push on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway (.ocor/worktrees/rem-0049, locked PATH ~/.ocor-codex/rem-0049/locked-path), REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U04, U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-  "head_sha": "530fe1e687e27583d3792832596f53cb9375bed1",
-  "head_sha_role": "REM-0049 work-in-progress head submitted to the preventive review",
+  "exact_next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (draft PR #454, sha256 ca21e0f2c4f54b12...): the requalification records, hence the record completion, candidate, verification, seal and merge of OCOR-DEV-REM-0049 (NCP-U03), depend on it; the next units of plan_order (NCP-U04, U06, U05, U07-U12) start only after NCP-U03 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the unit change set, PR #454 closed as resolved), then continue OCOR-DEV-REM-0049 on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway from 511091f41409 in .ocor/worktrees/rem-0049 (locked PATH ~/.ocor-codex/rem-0049/locked-path): with option 1 build the ten requalification records (0012/0017/0031/0034/0035/0037/0039 and 0005/0050/0082 in the regression class, superseding the latest record of each task, with the AST comparison of the realigned tests) from the campaign outputs in ~/.ocor-codex/rem-0049-q (builder adapted from ~/.ocor-codex/rem-0048-q-tools/build_evidence.py), complete the unit record, PRE-CAMPAIGN-GATE on the candidate head, push the candidate, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer; with option 2 add the docstring to test_ocor_dev_0034.py, then PRE-CAMPAIGN-GATE and a new campaign before the records. Iterations used 2 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
+  "head_sha": "511091f41409718d6002c92ec004e5481b33987b",
+  "head_sha_role": "REM-0049 code head after the preventive-review fixes; full suite run there; candidate head with option 1",
   "independent_verification": {
     "head_sha": "b850283814341f9f5a6137e1f82bee4250b23e07",
-    "next_verifier_constraint": "provider different from Anthropic (implementer) and from the preventive reviewer of REM-0049",
+    "next_verifier_constraint": "provider different from Anthropic (implementer) and from Google (preventive reviewer of REM-0049)",
     "repair_cycle": 0,
     "request_id": "OCOR-DEV-REM-0048-b85028381434-0",
     "review_type": "REMEDIATION",
@@ -135,13 +136,15 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "expected drift on 0005/0012/0017/0031/0034/0035/0037/0039/0050/0082 on the unit branch",
-    "pre_campaign_gate": "48/49 workflow-derived non-suite steps PASS; the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks",
-    "unit_tests": "unit and realigned modules passed on TypeDB, Fuseki, PostgreSQL; full suite NOT_EXECUTED"
+    "evidence_input_drift": "expected drift 0005/0012/0017/0031/0034/0035/0037/0039/0050/0082 on the unit branch",
+    "full_suite": "PASS: 25/26 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; unit module test_ocor_dev_rem_0049.py with the register, REM-0046 and evidence-validator tests 3x1149 passed; realigned modules of the seven requalified tasks and rem_0014 84 passed; regression of 0005/0050/0082 214 passed; reports portfolio 1594 passed; two-lane admission SERIAL_FALLBACK (MemAvailable 14230.0 MiB below 14340.6 MiB, no test run); serial full suite 3546 tests, 0 failures, 0 errors, 0 skips in 4233.925 s of cap 5400 s (above the 3600 s notification threshold), mains power, ocor-bootstrap absent after teardown)",
+    "pre_campaign_gate": "PASS 48/49 workflow-derived non-suite steps (the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks) at 511091f41409"
   },
-  "next_task": "OCOR-DEV-REM-0049 iteration 2 after the preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre",
-  "phase": "REM_0049_NCP_U03_AWAITING_PREVENTIVE_REVIEW",
-  "po_decisions_pending": [],
+  "next_task": "OCOR-DEV-REM-0049 iteration 3 after the PO disposition of NCP-U03-QUALIFYING-REQUALIFICATIONS",
+  "phase": "REM_0049_NCP_U03_TERMINAL_BLOCKED_AWAITING_PO_DECISION",
+  "po_decisions_pending": [
+    "NCP-U03-QUALIFYING-REQUALIFICATIONS"
+  ],
   "raw_evidence_location": "~/.ocor-codex/rem-0046 (RED log and fingerprint, helper scripts), outside Git",
   "requirement_ids": [
     "FR-006",
@@ -161,9 +164,16 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0049 iteration 1 (RED, GREEN, closure, PRE-CAMPAIGN-GATE) and the state sync"
+        "scope": "OCOR-DEV-REM-0049 iterations 1-2 (RED, GREEN, closure, preventive-review fixes, PRE-CAMPAIGN-GATE, full-suite campaign), decision request and the state syncs"
       }
-    ]
+    ],
+    "preventive_reviewer": {
+      "agent": "Antigravity CLI",
+      "model": "gemini-4-argon-high",
+      "provider": "Google",
+      "request_id": "OCOR-DEV-REM-0049-530fe1e687e2-pre",
+      "reserve": false
+    }
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
@@ -178,17 +188,19 @@
     "closure_option_independent": "Option-independent closure work at c26bea055c28 (commits e4ed2c6, c26bea0): plan allowlist of scripts/validate_ocor_development_plan.py for the nine C1 modules (ports.py and the eight new ones), the RED test, the decision request file, the unit record, README and log, and the option-independent requalifications (0011 and 0032 with supersession; 0005, 0050 and 0082 regression-only), with the plan validator self-hash settled in reports/planning/OCOR_PLAN_RUN_STATE.json (only that line); register entries C1-003/C1-004/C1-005/C1-006/C1-008/C1-009/C1-010 OPEN -> IN_REMEDIATION with remediation_unit, remediation_record and resolution_proof (red_test of the plan, record_field resolution_probes), NCR-C1-002 kept OPEN until the disposition; reverse traceability index entry for test_ocor_dev_rem_0047.py (builder ~/.ocor-codex/rem-0046, 139 tests); unit record draft reports/assurance/OCOR-DEV-REM-0047-RCCAD/OCOR-DEV-REM-0047.json (CANDIDATE_IN_PROGRESS: resolved entries, criteria with tests, 15 anchors of every behaviour or signature change with file, function and normative element, resolution probes, fail-closed ambiguities, planned requalifications). Gates: normative digests 8/8; register integrity test 15 passed, 879 subtests; reports/tests/test_ocor_dev_rem_0046.py 19 passed (no ORPHAN_DESIGN); validate_test_reverse_traceability PASS; plan validator --base-ref origin/main --authorized-extension PASS 37 + 2 NOT_EXECUTED; validate_rccad PASS_LOCAL_PRECHECK; language policy, ruff, mypy strict (104 files) PASS; unit test file 15 passed; evidence input drift FAIL as expected on exactly 0005, 0011, 0032, 0050 and 0082 (the planned requalifications; none on 0028, 0031 or 0033)",
     "disposition_2_applied": "Disposition applied on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance: RED c002b338ff47 (9 cases added to reports/tests/test_runtime_evidence_validator.py, SealedRecordSupersessionTests: 2 failed for the expected reason - the positive case and the other-task negative stop at 'record_id mismatch' - and 7 negatives already rejected for the reason they assert; fingerprint 9e5618a59483), GREEN c9a7fe7839dc (check_regression_record: the superseded identifier is previous_record.record_path only for a record without record_id whose canonical path and sha256 the sealed evidence registry lists; 61 passed, 53 subtests), registration 1ab725f3ce4c (decision request file with the disposition byte-identical to 9a78936 on its branch, sha256 2b14044da6b2d6b5...; plan allowlist entry for the file and plan validator self-hash; unit record: decision, every requalification regression-only, RED/GREEN and anchor of the validator change). Probe of check_regression_record on the real last records of the eight tasks: PASS for all (0028, 0031 and 0033 by path). PR #444 closed as resolved, not merged",
     "disposition_applied": "Disposition applied on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance: RED d2dcec51284a (3 failed: the signer signed a retained core; admission had no core/format rejection; removing a CAUSAL type carried causal-breaking only; fingerprint 2049a9de99a1), GREEN a76d9656f564 (signing.py _require_ir_format in DsseIrSigner.sign_release and ReleaseAdmission.verify: only an ocor.cir/1.0 core is signed or admitted, RELEASE_REJECTED at core/format, so a retained output wrapped in a genuine envelope of a trusted key is still rejected and the publisher inherits it; migration.py: removal of a CAUSAL type or of a property of a CAUSAL type emits destructive and causal-breaking; docstrings of compiler.py, frontend.py, releases.py declare the retained builders pre-normative non-releasable candidates, behaviour unchanged), registration e0e5f32929c6 (decision request file with the disposition byte-identical to 4ee017d on its branch, sha256 397a400792f7c5f0...; NCR-C1-002 OPEN -> IN_REMEDIATION; resolution_proof.retained_builders on NCR-C1-002/003/004/005/006/008 with the two rejection tests; unit record: FR-045 mapping row by row, 6 new anchors, requalification plan, decided decision request; plan allowlist for the 0028/0031/0033 regression records and the validator self-hash). Tests: unit file 18 passed (3 new: test_retained_builder_output_rejected_by_admission, test_retained_builder_output_rejected_by_publisher, test_fr_045_change_class_mapping, each with positive and negative cases); C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing (80 with the unit file). PR #438 closed as resolved, not merged",
+    "full_suite_campaign_rem0049": "Full suite on the real stack at 511091f41409 from a clean shell with the locked PATH (~/.ocor-codex/rem-0049-q, run.sh and qualify_run.py adapted from REM-0048, mains power): PASS: 25/26 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; unit module test_ocor_dev_rem_0049.py with the register, REM-0046 and evidence-validator tests 3x1149 passed; realigned modules of the seven requalified tasks and rem_0014 84 passed; regression of 0005/0050/0082 214 passed; reports portfolio 1594 passed; two-lane admission SERIAL_FALLBACK (MemAvailable 14230.0 MiB below 14340.6 MiB, no test run); serial full suite 3546 tests, 0 failures, 0 errors, 0 skips in 4233.925 s of cap 5400 s (above the 3600 s notification threshold), mains power, ocor-bootstrap absent after teardown). No record written: the requalification records wait for the decision NCP-U03-QUALIFYING-REQUALIFICATIONS; with its recommended option 1 the code head is unchanged and this campaign is the candidate's",
     "full_suite_run_not_candidate": "Full suite on the real stack at dda0eff19132 from a clean shell with the locked PATH (~/.ocor-codex/rem-0047-q, run.sh and qualify_run.py adapted from REM-0046, mains power): PASS: 21/21 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; task module test_ocor_dev_rem_0047.py with the register, REM-0046 and evidence-validator tests 3x1043 passed; regression of 0005/0011/0028/0032/0033/0050/0082, mission thread 0031 and rem_0011 281 passed; reports portfolio 1585 passed; two-lane full suite TWO_LANE 3359 tests, 0 failures/errors/skips, exact union 3359/3359, 2413 s of cap 5400 s, mains power, zero host residue). Not a candidate and not evidence: no record was written, because every option of question B of the decision request changes the code head; the outputs stay outside Git as a documented run of the suite at this head",
     "green_part_1": "GREEN part 1 7b075d2: SemVer 2.0.0 in CompilerRequest (c1/ports.py, NCR-C1-009, ADD v1.3 :419) and the set-like 'references' of the frontend IR sorted and duplicate-free (c1/frontend.py, NCR-C1-008, LLD v1.1 :39). One RED subtest design error corrected (it compared ir_digest values that include the content_digest of different source bytes; it now asserts the sorted IR array, failing on the RED code and passing now); no assertion weakened. C1 consumer suites 0011/0028/0032/0033/rem_0011 and EV-001..010: 72 passed; ruff, mypy strict (96 files), validate_rccad, language policy PASS",
     "green_part_2": "GREEN part 2 49d52ce: conforming C1 pipeline in new modules of ocor_runtime.c1 - oac.py (OAC_META_SCHEMA Draft 2020-12 for the ADD v1.3 :417-431 construct table; strict YAML/JSON parser rejecting duplicate keys and binary floats; NFC, RFC 3339 UTC and canonical decimals, :435; FR-024 value-type grammar), ir.py (OacCompiler -> CanonicalIRCore ocor.cir/1.0, :441-462, lock_digest in ir_digest FR-041, symbol table, set-like arrays sorted and duplicate-free LLD v1.1 :39, capability matrix fail-closed :438-439; IR Protobuf form google.protobuf.Struct encoded with the stdlib, same ir_digest :464), signing.py (RFC 8032 Ed25519, DSSE PAE, signed-canonical-ir:1.0 envelope :466-521, ReleaseAdmission :523), codegen.py (JSON Schema, OpenAPI 3.1, AsyncAPI 3.0, proto3/gRPC, MCP descriptor, Python/TypeScript SDK with the NFR-020 identifiers; check_drift), migration.py (FR-045 five classes, plan parts, gate with dual control and new major LLD v1.1 :107), publisher.py, conformance.py, service.py (ValidatePackage, Compile, SemanticDiff, PackageRelease, VerifyRelease, ADD v1.3 :282); ports.py CanonicalIrRelease.with_artifacts. No new dependency. RED test file: one design error corrected (the ADD schema extraction started one line late and skipped the opening brace; it now reads from the ~~~json fence), no assertion weakened; one added negative test per parsing path (test_ncr_c1_parsing_paths_fail_closed), which found and fixed duplicate JSON keys accepted by the parser. 15 passed; C1 consumers 0011/0028/0032/0033/rem_0011 and EV-001..010: 87 passed with the unit file; mission thread NOT_EXECUTED (stack down, real backends mandatory); ruff, mypy strict (104 files), validate_rccad, language policy, supply-chain scanner PASS. Retained builders untouched pending NCP-U01-RETAINED-C1-BUILDERS",
     "prereview_fixes": "Preventive review OCOR-DEV-REM-0047-e0e5f32929c6-pre (Antigravity CLI, gemini-4-argon-high, Google; outcome sha256 2936abc24369b00f...): BLOCKING_FINDINGS, 7 blocking and 2 advisory. All 7 blocking fixed, none contested: RED e7288730e972 (7 new tests failing for the reported reason, fingerprint f406145c2b5a), GREEN 8e2e1ad52ac8: P1 check_drift compares the artifact manifest always, so a release signed without its manifest or with a partial one is ARTIFACT_DRIFT at admission and publication (ADD v1.3 :523); P2 a change of a CAUSAL type keeps the conditional and destructive classes of the changes it contains, so the gate requires the backfill too (PO point 3, every class present); P3 modules and the symbol table of the CanonicalIRCore are diffed (export removal, deprecation, namespace change, module removal, symbol moved: breaking; imports: conditional; governance metadata: compatible), rows added to the FR-045 mapping of the record; P4 non-scalar YAML keys are SOURCE_INVALID, non-UTF-8 YAML/JSON tested; P5 strict IR Protobuf decoding (UTF-8, finite doubles, exact integers, bool/null values, one kind per Value, exact Struct entries, I-JSON core); P6 stored records and the version index are shape-checked and publisher.read re-admits the stored package; P7 require_core_shape and malformed_core_rejected: admission (also running the conformance suite), generators and diff reject a malformed core with C1Error. Advisory: P8 (ReleasePublisher port signature) recorded, not changed, ports.py being limited to NCR-C1-009 by the PO decision point 2; P9 applied (gate steps in the record). Own test adapted: test_ncr_c1_005_conforms attaches the manifest before the drift positive control (construction only). Unit file 25 passed; C1 consumers 0011/0028/0032/0033/rem_0011 unchanged and passing (87 passed); ruff and mypy strict clean",
     "preventive_review_dispositions": "Preventive review OCOR-DEV-REM-0048-50c3a1e68535-pre (Antigravity CLI / gemini-4-argon-high / Google, outcome sha256 372bc91dd8332e92...): BLOCKING_FINDINGS, 5 blocking and 1 advisory. All 5 blocking fixed: RED 5a4043f (13 new cases in test_ocor_dev_rem_0048.py: 12 failed for the reported defect, fingerprint 79ccb7feb1ed), GREEN 08b6839 (65 passed on PostgreSQL): P1 stored entries rebuilt from the signed manifest, artefact signatures, revocations and the re-admitted C1 release on every resolve/invoke and compared with the stored record and descriptor digest; replayed Function invocations and reconstructed Model lineage recalculate provenance/result digests and re-validate the output; malformed stored data typed; P2 PostgreSQL adapter rows type-checked without coercion, connection-level errors CONTROL_PLANE_UNAVAILABLE, every other driver/decoding error CONTRACT_REJECTED, local-responder negative tests; P3 deployment and mapping DSSE artefact signatures named by the signed manifest, verified and revocation-checked, deployment/mapping bound to the Model contract of the admitted release, manifest fields type-checked; P4 runner-applied memory quota (below the started interpreter: audited MEMORY overrun), limits clamped to host hard limits, typed start failures, quotas at most 2**53 - 1; P5 bounded Duration, string member names, text base64, typed DSSE entries, non-UTF-8 negatives. Advisory P6 applied (pre_campaign_gate section). Record 7c48e32",
     "red": "RED fb27e601c35d: ocor-runtime/tests/tasks/test_ocor_dev_rem_0047.py, one test per resolved entry (test_ncr_c1_00N_conforms; NCR-C1-009 parametrised over 7 non-SemVer values), 14 failed, fingerprint 65ebdb63dbe8 (sha256 of the sorted FAILED list): MISSING entries fail on the absent conforming modules ocor_runtime.c1.ir/oac/signing/migration; NCR-C1-009 on 'DID NOT RAISE C1Error'; NCR-C1-008 on the unsorted IR 'references' of the frontend builder. Oracles independent of the implementation: OpenSSL (Ed25519 key generation and signature verification), the signed-canonical-ir:1.0 schema read from ADD v1.3 :466-521, RFC 8032 test vector 1, openapi-spec-validator, grpc_tools.protoc and google.protobuf Struct",
-    "requalification_conformance_finding": "Requalification records cannot be produced conforming at this head: (A) the supersession requalifications of OCOR-DEV-0011 and 0032 (NCP-U01-RETAINED-C1-BUILDERS point 5) are qualifying (REM-0046-REGRESSION-REQUALIFICATION-RECORDS point 2) and need cases whose requirements are declared in the test source (scripts/validate_runtime_evidence.py check_new_record :298-342), but test_ocor_dev_0011.py and test_ocor_dev_0032.py declare none and the plan does not authorise changing them; (B) the regression records of 0028, 0031 and 0033 fail check_regression_record (:248-272, 'record_id mismatch') because the superseded original sealed records have no record_id (probe with synthetic records outside the repository: PASS for 0005/0050/0082/0011/0032, FAIL for 0028/0031/0033). Programme point 6 Stop"
+    "requalification_conformance_finding": "Requalification records cannot be produced conforming at this head: (A) the supersession requalifications of OCOR-DEV-0011 and 0032 (NCP-U01-RETAINED-C1-BUILDERS point 5) are qualifying (REM-0046-REGRESSION-REQUALIFICATION-RECORDS point 2) and need cases whose requirements are declared in the test source (scripts/validate_runtime_evidence.py check_new_record :298-342), but test_ocor_dev_0011.py and test_ocor_dev_0032.py declare none and the plan does not authorise changing them; (B) the regression records of 0028, 0031 and 0033 fail check_regression_record (:248-272, 'record_id mismatch') because the superseded original sealed records have no record_id (probe with synthetic records outside the repository: PASS for 0005/0050/0082/0011/0032, FAIL for 0028/0031/0033). Programme point 6 Stop",
+    "requalification_conformance_finding_rem0049": "Qualifying requalification records cannot be produced conforming for five of the seven tasks whose tests NCP-U03 realigns: NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 makes the requalifications of 0012, 0017, 0031, 0034, 0035, 0037 and 0039 qualifying (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3), but 0012, 0017, 0031, 0035 and 0037 have only BR-003 (Register :18, method test/dimostrazione, MIXED), which no automated case proves (NCP-S08), so their qualifying records would have no bindable requirement and scripts/validate_runtime_evidence.py check_new_record rejects them (:313, :331, :348, :352); 0034 could bind NFR-034/NFR-040 only partially exercised, 0039 none. Programme point 6 Stop"
   },
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-02T13:52:30.944602+00:00",
+  "updated_at": "2026-11-02T16:42:48.197441+00:00",
   "worktree": "rem-0048 worktree removed after the merge (REPO-HYGIENE point 5); next unit: new worktree from origin/main"
 }

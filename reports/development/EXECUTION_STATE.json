@@ -1,16 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "2ebf2a9848399cadb794ceb627514387980d8417",
-    "branch": "governed/state-sync-rem0049-iter1-20261102",
+    "baseline_commit": "6b20644ca7084cfc0e7712208a0df7bc29b17a74",
+    "branch": "governed/state-sync-rem0049-iter2-20261102",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0049 (NCP-U03) iteration 1: RED, GREEN, closure, PRE-CAMPAIGN-GATE, preventive review requested",
+    "change_set": "state sync after OCOR-DEV-REM-0049 (NCP-U03) iteration 2 (preventive-review fixes, full suite at 511091f41409); TERMINAL_BLOCKED on NCP-U03-QUALIFYING-REQUALIFICATIONS",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 10610012,
+      "MemAvailable": 25045548,
       "MemTotal": 31742996
     },
-    "next_action": "Resume OCOR-DEV-REM-0049 (NCP-U03) after the preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-530fe1e687e2-pre.json; fix each blocking finding with a new commit (RED first) or contest it with a reproducible proof, record the advisory ones; then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049/pregate.py, needs dev postgresql+typedb+fuseki of ocor-bootstrap up with ~/.ocor-codex/rem-0049/dev.env, then down -v; drift FAIL expected only on the 10 planned tasks), full suite on the real stack two lanes (cap 90 min; kit to adapt from ~/.ocor-codex/rem-0049-q with unit module test_ocor_dev_rem_0049.py and the realigned modules), qualifying requalifications of 0012/0017/0031/0034/0035/0037/0039 (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3, optional module docstring declaring the exercised requirements per NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4) and regression-only 0005/0050/0082, AST comparison of the realigned tests, record completion, candidate push on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway (.ocor/worktrees/rem-0049, locked PATH ~/.ocor-codex/rem-0049/locked-path), REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U04, U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-    "phase": "REM_0049_NCP_U03_AWAITING_PREVENTIVE_REVIEW",
+    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (draft PR #454, sha256 ca21e0f2c4f54b12...): the requalification records, hence the record completion, candidate, verification, seal and merge of OCOR-DEV-REM-0049 (NCP-U03), depend on it; the next units of plan_order (NCP-U04, U06, U05, U07-U12) start only after NCP-U03 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the unit change set, PR #454 closed as resolved), then continue OCOR-DEV-REM-0049 on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway from 511091f41409 in .ocor/worktrees/rem-0049 (locked PATH ~/.ocor-codex/rem-0049/locked-path): with option 1 build the ten requalification records (0012/0017/0031/0034/0035/0037/0039 and 0005/0050/0082 in the regression class, superseding the latest record of each task, with the AST comparison of the realigned tests) from the campaign outputs in ~/.ocor-codex/rem-0049-q (builder adapted from ~/.ocor-codex/rem-0048-q-tools/build_evidence.py), complete the unit record, PRE-CAMPAIGN-GATE on the candidate head, push the candidate, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer; with option 2 add the docstring to test_ocor_dev_0034.py, then PRE-CAMPAIGN-GATE and a new campaign before the records. Iterations used 2 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
+    "phase": "REM_0049_NCP_U03_TERMINAL_BLOCKED_AWAITING_PO_DECISION",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
       "implementers": [
@@ -18,9 +18,16 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0049 iteration 1 (RED, GREEN, closure, PRE-CAMPAIGN-GATE) and the state sync"
+          "scope": "OCOR-DEV-REM-0049 iterations 1-2 (RED, GREEN, closure, preventive-review fixes, PRE-CAMPAIGN-GATE, full-suite campaign), decision request and the state syncs"
         }
-      ]
+      ],
+      "preventive_reviewer": {
+        "agent": "Antigravity CLI",
+        "model": "gemini-4-argon-high",
+        "provider": "Google",
+        "request_id": "OCOR-DEV-REM-0049-530fe1e687e2-pre",
+        "reserve": false
+      }
     },
     "unit": "OCOR-DEV-REM-0049"
   },
@@ -1750,7 +1757,7 @@
       }
     }
   },
-  "baseline_commit": "2ebf2a9848399cadb794ceb627514387980d8417",
+  "baseline_commit": "6b20644ca7084cfc0e7712208a0df7bc29b17a74",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6828,6 +6835,32 @@
       "release_condition": "a PO decision on NCP-U01-SUPERSESSION-REQUALIFICATIONS",
       "resolved_at": "2026-11-02T04:04:18.264227+00:00",
       "status": "DECIDED_BY_PO"
+    },
+    {
+      "blocked_scope": "the requalification records of OCOR-DEV-REM-0049 (NCP-U03) for 0012/0017/0031/0034/0035/0037/0039; therefore record completion, candidate, verification, seal and merge of the unit; the later units of plan_order wait for NCP-U03 (one unit at a time)",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0049"
+      ],
+      "created_at": "2026-11-02T16:42:48.197441+00:00",
+      "decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 6 Stop; NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 4 against condition 1 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 3 as implemented by scripts/validate_runtime_evidence.py",
+      "decision_level": "NORMATIVE",
+      "does_not_block": [
+        "the code of NCP-U03 at 511091f41409 (PRE-CAMPAIGN-GATE PASS 48/49 workflow-derived non-suite steps (the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks), full suite run on the real stack)",
+        "the regression-only requalifications of 0005, 0050 and 0082"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-ncp-u03-qualifying-requalifications",
+        "commit": "d5b9ace19d337fd187215bb61b913ebe9ba9ff68",
+        "path": "reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md",
+        "pr": 454,
+        "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+        "sha256": "ca21e0f2c4f54b120ffc13e0f0e820e5ca8036da7c866613f0d0b06a1f6c502e"
+      },
+      "finding": "Qualifying requalification records cannot be produced conforming for five of the seven tasks whose tests NCP-U03 realigns: NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 makes the requalifications of 0012, 0017, 0031, 0034, 0035, 0037 and 0039 qualifying (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3), but 0012, 0017, 0031, 0035 and 0037 have only BR-003 (Register :18, method test/dimostrazione, MIXED), which no automated case proves (NCP-S08), so their qualifying records would have no bindable requirement and scripts/validate_runtime_evidence.py check_new_record rejects them (:313, :331, :348, :352); 0034 could bind NFR-034/NFR-040 only partially exercised, 0039 none. Programme point 6 Stop",
+      "id": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+      "recommendation": "option 1: the seven requalifications of 0012, 0017, 0031, 0034, 0035, 0037 and 0039 in the regression class, no docstring, code head unchanged",
+      "release_condition": "a PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -7575,13 +7608,11 @@
     "status": "CLOSED_RESOLVED_BY_IMPLEMENTATION"
   },
   "historical_terminal_loop_disposition": {
-    "decision_request": "NCP-U01-SUPERSESSION-REQUALIFICATIONS",
-    "loop_status": "TERMINAL_BLOCKED",
-    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U01-SUPERSESSION-REQUALIFICATIONS (draft PR #444, sha256 fa9e06fc2039d4f7...): the requalification records, hence the candidate, verification, seal and merge of OCOR-DEV-REM-0047 (NCP-U01), depend on it; the next units of plan_order start only after NCP-U01 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended. After the decision: lift TERMINAL_BLOCKED with a tracked state update registering the disposition, then continue OCOR-DEV-REM-0047 on governed/ocor-dev-rem-0047-ncp-u01-c1-conformance from dda0eff19132 in .ocor/worktrees/rem-0047 (locked PATH ~/.ocor-codex/rem-0047/locked-path): apply the disposition (B1: RED/GREEN in reports/tests/test_runtime_evidence_validator.py and check_regression_record; A2: requirement declarations in the two test modules with AST comparison), PRE-CAMPAIGN-GATE on the new head, full suite again (kit ~/.ocor-codex/rem-0047-q, new output dir), requalification records (builder adapted from ~/.ocor-codex/rem-0046-q-tools/build_evidence.py), record completion, candidate push, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer. Iterations used 6 of estimate 4 (stop at 8 unless the PO says otherwise). No new DEC; claims unchanged.",
-    "reason": "all residual admitted work depends on the PO decision on NCP-U01-SUPERSESSION-REQUALIFICATIONS (programme point 6 stop), or on the plan order, suspensions and blocks set by the PO",
-    "recorded_at": "2026-11-02T01:47:52.284452+00:00",
-    "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "status": "TERMINAL_BLOCKED"
+    "loop_status": "CONTINUE",
+    "next_action": "Resume OCOR-DEV-REM-0049 (NCP-U03) after the preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-530fe1e687e2-pre.json; fix each blocking finding with a new commit (RED first) or contest it with a reproducible proof, record the advisory ones; then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049/pregate.py, needs dev postgresql+typedb+fuseki of ocor-bootstrap up with ~/.ocor-codex/rem-0049/dev.env, then down -v; drift FAIL expected only on the 10 planned tasks), full suite on the real stack two lanes (cap 90 min; kit to adapt from ~/.ocor-codex/rem-0049-q with unit module test_ocor_dev_rem_0049.py and the realigned modules), qualifying requalifications of 0012/0017/0031/0034/0035/0037/0039 (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3, optional module docstring declaring the exercised requirements per NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4) and regression-only 0005/0050/0082, AST comparison of the realigned tests, record completion, candidate push on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway (.ocor/worktrees/rem-0049, locked PATH ~/.ocor-codex/rem-0049/locked-path), REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U04, U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "reason": "PO decision NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) received and registered; the residual work of OCOR-DEV-REM-0047 is executable again. Historical TERMINAL_BLOCKED preserved in historical_terminal_loop_disposition and in Git (86ad1a8)",
+    "recorded_at": "2026-11-02T12:09:17.985124+00:00",
+    "status": "SUPERSEDED_PO_DECISION_NCP_U01_SUPERSESSION_REQUALIFICATIONS"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -9107,7 +9138,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0049 (NCP-U03) after the preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-530fe1e687e2-pre.json; fix each blocking finding with a new commit (RED first) or contest it with a reproducible proof, record the advisory ones; then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049/pregate.py, needs dev postgresql+typedb+fuseki of ocor-bootstrap up with ~/.ocor-codex/rem-0049/dev.env, then down -v; drift FAIL expected only on the 10 planned tasks), full suite on the real stack two lanes (cap 90 min; kit to adapt from ~/.ocor-codex/rem-0049-q with unit module test_ocor_dev_rem_0049.py and the realigned modules), qualifying requalifications of 0012/0017/0031/0034/0035/0037/0039 (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3, optional module docstring declaring the exercised requirements per NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4) and regression-only 0005/0050/0082, AST comparison of the realigned tests, record completion, candidate push on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway (.ocor/worktrees/rem-0049, locked PATH ~/.ocor-codex/rem-0049/locked-path), REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U04, U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "next_executable_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (draft PR #454, sha256 ca21e0f2c4f54b12...): the requalification records, hence the record completion, candidate, verification, seal and merge of OCOR-DEV-REM-0049 (NCP-U03), depend on it; the next units of plan_order (NCP-U04, U06, U05, U07-U12) start only after NCP-U03 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the unit change set, PR #454 closed as resolved), then continue OCOR-DEV-REM-0049 on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway from 511091f41409 in .ocor/worktrees/rem-0049 (locked PATH ~/.ocor-codex/rem-0049/locked-path): with option 1 build the ten requalification records (0012/0017/0031/0034/0035/0037/0039 and 0005/0050/0082 in the regression class, superseding the latest record of each task, with the AST comparison of the realigned tests) from the campaign outputs in ~/.ocor-codex/rem-0049-q (builder adapted from ~/.ocor-codex/rem-0048-q-tools/build_evidence.py), complete the unit record, PRE-CAMPAIGN-GATE on the candidate head, push the candidate, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer; with option 2 add the docstring to test_ocor_dev_0034.py, then PRE-CAMPAIGN-GATE and a new campaign before the records. Iterations used 2 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9335,10 +9366,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "3bb60581f91c171f43a66c6a6d00e05490f68a36",
-    "branch": "governed/state-sync-rem0048-integrated-20261102",
-    "change_set": "OCOR-DEV-REM-0048 (NCP-U02) integration (GO cycle 0, seal, exact-head CI PASS, merged PR #451)",
-    "phase": "REM_0048_NCP_U02_INTEGRATED_NCP_U03_NEXT"
+    "baseline_commit": "2ebf2a9848399cadb794ceb627514387980d8417",
+    "branch": "governed/state-sync-rem0049-iter1-20261102",
+    "change_set": "state sync after OCOR-DEV-REM-0049 (NCP-U03) iteration 1: RED, GREEN, closure, PRE-CAMPAIGN-GATE, preventive review requested",
+    "phase": "REM_0049_NCP_U03_AWAITING_PREVENTIVE_REVIEW"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -9434,11 +9465,11 @@
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0049": "NCP-U03 at 530fe1e687e2; PRE-CAMPAIGN-GATE 48/49 workflow-derived non-suite steps PASS; the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks; preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre requested; campaign next"
+      "OCOR-DEV-REM-0049": "NCP-U03 at 511091f41409 (PRE-CAMPAIGN-GATE PASS 48/49 workflow-derived non-suite steps (the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks), full suite run); requalification records await PO decision NCP-U03-QUALIFYING-REQUALIFICATIONS (PR #454)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-02T13:52:30.944602+00:00",
+    "observed_at": "2026-11-02T16:42:48.197441+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U03",
@@ -30095,29 +30126,59 @@
       "branch": "governed/ocor-dev-rem-0049-ncp-u03-c2-gateway",
       "commits": {
         "GREEN": "34ba322",
+        "GREEN_2": "62164b3",
         "RED": "5e1e0e6",
+        "RED_2": "8880d62",
         "allowlist": "86afba7",
         "closure": "530fe1e",
+        "closure_2": "511091f",
         "green_2": "49fe988"
       },
+      "decision_request": {
+        "branch": "governed/decision-request-ncp-u03-qualifying-requalifications",
+        "commit": "d5b9ace19d337fd187215bb61b913ebe9ba9ff68",
+        "id": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+        "path": "reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md",
+        "pr": 454,
+        "recommendation": "option 1",
+        "sha256": "ca21e0f2c4f54b120ffc13e0f0e820e5ca8036da7c866613f0d0b06a1f6c502e",
+        "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+      },
       "estimate_iterations": 4,
-      "head": "530fe1e687e27583d3792832596f53cb9375bed1",
+      "full_suite_campaign": {
+        "head": "511091f41409718d6002c92ec004e5481b33987b",
+        "kit": "~/.ocor-codex/rem-0049-q",
+        "note": "with option 1 of NCP-U03-QUALIFYING-REQUALIFICATIONS the code head is unchanged and this campaign is the candidate's; with option 2 it is superseded",
+        "status": "RUN_AT_CODE_HEAD_RECORDS_PENDING_DECISION",
+        "steps": 26,
+        "summary": "PASS: 25/26 steps (bootstrap 15 containers, 11 typed services READY twice, reset idempotent; unit module test_ocor_dev_rem_0049.py with the register, REM-0046 and evidence-validator tests 3x1149 passed; realigned modules of the seven requalified tasks and rem_0014 84 passed; regression of 0005/0050/0082 214 passed; reports portfolio 1594 passed; two-lane admission SERIAL_FALLBACK (MemAvailable 14230.0 MiB below 14340.6 MiB, no test run); serial full suite 3546 tests, 0 failures, 0 errors, 0 skips in 4233.925 s of cap 5400 s (above the 3600 s notification threshold), mains power, ocor-bootstrap absent after teardown)"
+      },
+      "head": "511091f41409718d6002c92ec004e5481b33987b",
       "iteration_stop": 8,
-      "iterations_used": 1,
+      "iterations_used": 2,
       "pending": [
-        "preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre",
-        "full suite on the real stack, requalifications, record completion, candidate, verification, seal, merge"
+        "PO decision NCP-U03-QUALIFYING-REQUALIFICATIONS",
+        "requalification records, record completion, candidate, verification, seal, merge"
       ],
       "pre_campaign_gate": {
-        "head": "530fe1e687e27583d3792832596f53cb9375bed1",
-        "outputs": "~/.ocor-codex/rem-0049/gate/gates-530fe1e687e2",
-        "result": "48/49 workflow-derived non-suite steps PASS; the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks",
+        "head": "511091f41409718d6002c92ec004e5481b33987b",
+        "outputs": "~/.ocor-codex/rem-0049/gate/gates-511091f41409",
+        "result": "PASS 48/49 workflow-derived non-suite steps (the only non-zero step is the evidence input drift, expected on the 10 planned requalification tasks)",
         "script": "~/.ocor-codex/rem-0049/pregate.py"
       },
       "preventive_review": {
+        "disposition": "P1-P7 FIXED (RED 8880d62, GREEN 62164b3); dispositions in the unit record",
+        "findings_by_severity": {
+          "advisory": 0,
+          "blocking": 7
+        },
+        "outcome_sha256": "41be23a91209b747568952871f3c4b72fd73e909392aa0b2824228d7e2a75215",
         "request_id": "OCOR-DEV-REM-0049-530fe1e687e2-pre",
-        "requested_at": "2026-11-02T13:52:30.944602+00:00",
-        "status": "REQUESTED"
+        "reserve": false,
+        "reviewer": "Antigravity CLI / gemini-4-argon-high",
+        "status": "DISPOSED",
+        "vendor": "Google",
+        "verdict": "BLOCKING_FINDINGS"
       },
       "register_in_remediation": [
         "NCR-C2-001",
@@ -30132,6 +30193,7 @@
         "NCR-C2-011",
         "NCR-C2-012"
       ],
+      "requalification_conformance_finding": "Qualifying requalification records cannot be produced conforming for five of the seven tasks whose tests NCP-U03 realigns: NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 makes the requalifications of 0012, 0017, 0031, 0034, 0035, 0037 and 0039 qualifying (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3), but 0012, 0017, 0031, 0035 and 0037 have only BR-003 (Register :18, method test/dimostrazione, MIXED), which no automated case proves (NCP-S08), so their qualifying records would have no bindable requirement and scripts/validate_runtime_evidence.py check_new_record rejects them (:313, :331, :348, :352); 0034 could bind NFR-034/NFR-040 only partially exercised, 0039 none. Programme point 6 Stop",
       "requalifications_planned": [
         "OCOR-DEV-0005",
         "OCOR-DEV-0012",
@@ -30145,19 +30207,28 @@
         "OCOR-DEV-0082"
       ],
       "requalifications_planned_note": "qualifying for 0012/0017/0031/0034/0035/0037/0039 (tests realigned or adapted, NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4); regression-only for 0005/0050/0082 (REM-0046-REGRESSION-REQUALIFICATION-RECORDS)",
-      "status": "IN_PROGRESS_PRE_CAMPAIGN_GATE_PASSED_AWAITING_PREVENTIVE_REVIEW",
+      "status": "IN_PROGRESS_AWAITING_PO_DECISION_ON_REQUALIFICATION_RECORDS",
       "tdd": {
         "GREEN": {
           "commit": "34ba322",
           "summary": "unit 15 passed, realigned modules 94 passed on TypeDB, Fuseki and PostgreSQL"
         },
+        "GREEN_2": {
+          "commit": "62164b3",
+          "summary": "unit 122 passed; realigned and consumer modules 186 passed"
+        },
         "RED": {
           "commit": "5e1e0e6",
           "fingerprint": "84c4e7449c84",
           "summary": "unit module plus realigned modules: 38 failed, 11 errors for the divergence (absent API or old reason code)"
+        },
+        "RED_2": {
+          "commit": "8880d62",
+          "fingerprint": "627149fb0079",
+          "summary": "96 failed, 26 passed: the preventive-review defects"
         }
       },
-      "updated_at": "2026-11-02T13:52:30.944602+00:00",
+      "updated_at": "2026-11-02T16:42:48.197441+00:00",
       "worktree": ".ocor/worktrees/rem-0049"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -31397,13 +31468,15 @@
   },
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
-    "loop_status": "CONTINUE",
-    "next_action": "Resume OCOR-DEV-REM-0049 (NCP-U03) after the preventive review OCOR-DEV-REM-0049-530fe1e687e2-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-530fe1e687e2-pre.json; fix each blocking finding with a new commit (RED first) or contest it with a reproducible proof, record the advisory ones; then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049/pregate.py, needs dev postgresql+typedb+fuseki of ocor-bootstrap up with ~/.ocor-codex/rem-0049/dev.env, then down -v; drift FAIL expected only on the 10 planned tasks), full suite on the real stack two lanes (cap 90 min; kit to adapt from ~/.ocor-codex/rem-0049-q with unit module test_ocor_dev_rem_0049.py and the realigned modules), qualifying requalifications of 0012/0017/0031/0034/0035/0037/0039 (condition 1 of NORMATIVE-CONFORMANCE-PLAN point 3, optional module docstring declaring the exercised requirements per NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4) and regression-only 0005/0050/0082, AST comparison of the realigned tests, record completion, candidate push on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway (.ocor/worktrees/rem-0049, locked PATH ~/.ocor-codex/rem-0049/locked-path), REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U04, U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-    "reason": "PO decision NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) received and registered; the residual work of OCOR-DEV-REM-0047 is executable again. Historical TERMINAL_BLOCKED preserved in historical_terminal_loop_disposition and in Git (86ad1a8)",
-    "recorded_at": "2026-11-02T12:09:17.985124+00:00",
-    "status": "SUPERSEDED_PO_DECISION_NCP_U01_SUPERSESSION_REQUALIFICATIONS"
+    "decision_request": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+    "loop_status": "TERMINAL_BLOCKED",
+    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (draft PR #454, sha256 ca21e0f2c4f54b12...): the requalification records, hence the record completion, candidate, verification, seal and merge of OCOR-DEV-REM-0049 (NCP-U03), depend on it; the next units of plan_order (NCP-U04, U06, U05, U07-U12) start only after NCP-U03 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the unit change set, PR #454 closed as resolved), then continue OCOR-DEV-REM-0049 on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway from 511091f41409 in .ocor/worktrees/rem-0049 (locked PATH ~/.ocor-codex/rem-0049/locked-path): with option 1 build the ten requalification records (0012/0017/0031/0034/0035/0037/0039 and 0005/0050/0082 in the regression class, superseding the latest record of each task, with the AST comparison of the realigned tests) from the campaign outputs in ~/.ocor-codex/rem-0049-q (builder adapted from ~/.ocor-codex/rem-0048-q-tools/build_evidence.py), complete the unit record, PRE-CAMPAIGN-GATE on the candidate head, push the candidate, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer; with option 2 add the docstring to test_ocor_dev_0034.py, then PRE-CAMPAIGN-GATE and a new campaign before the records. Iterations used 2 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
+    "reason": "all residual admitted work depends on the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (programme point 6 stop), or on the plan order, suspensions and blocks set by the PO",
+    "recorded_at": "2026-11-02T16:42:48.197441+00:00",
+    "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
+    "status": "TERMINAL_BLOCKED"
   },
-  "updated_at": "2026-11-02T13:52:30.944602+00:00",
+  "updated_at": "2026-11-02T16:42:48.197441+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
