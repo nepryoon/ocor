@@ -97,7 +97,9 @@ def test_fact_id_identifier_contract_rejects_malformed_values(
 ) -> None:
     with pytest.raises(C2Error) as excinfo:
         adapter.apply_commit(fact_id=bad, commit_id="commit-1", payload="V1")  # type: ignore[arg-type]
-    assert excinfo.value.reason_code == "QUERY_CONTRACT_INVALID"
+    # NCP-U03 (NCR-C2-006): SCHEMA_VIOLATION of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:459
+    assert excinfo.value.reason_code == "SCHEMA_VIOLATION"
 
 
 @pytest.mark.parametrize("bad", [None, "", 42, []])
@@ -106,7 +108,9 @@ def test_commit_id_identifier_contract_rejects_malformed_values(
 ) -> None:
     with pytest.raises(C2Error) as excinfo:
         adapter.apply_commit(fact_id="fact-1", commit_id=bad, payload="V1")  # type: ignore[arg-type]
-    assert excinfo.value.reason_code == "QUERY_CONTRACT_INVALID"
+    # NCP-U03 (NCR-C2-006): SCHEMA_VIOLATION of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:459
+    assert excinfo.value.reason_code == "SCHEMA_VIOLATION"
 
 
 @pytest.mark.parametrize("bad", [None, "", 42, []])
@@ -115,4 +119,6 @@ def test_payload_contract_rejects_malformed_values(
 ) -> None:
     with pytest.raises(C2Error) as excinfo:
         adapter.apply_commit(fact_id="fact-1", commit_id="commit-1", payload=bad)  # type: ignore[arg-type]
-    assert excinfo.value.reason_code == "QUERY_CONTRACT_INVALID"
+    # NCP-U03 (NCR-C2-006): SCHEMA_VIOLATION of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:459
+    assert excinfo.value.reason_code == "SCHEMA_VIOLATION"

@@ -219,7 +219,9 @@ def test_an_unregistered_contract_never_reaches_the_watermark_check() -> None:
     with pytest.raises(C2Error) as excinfo:
         planner.plan(request)
 
-    assert excinfo.value.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+    # NCP-U03 (NCR-C2-006): a policy denial is POLICY_DENIED of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454
+    assert excinfo.value.reason_code == "POLICY_DENIED"
 
 
 def test_a_denied_policy_never_leaks_the_real_watermark_in_its_result(typedb: TypeDBExactCommitAdapter) -> None:
@@ -232,7 +234,8 @@ def test_a_denied_policy_never_leaks_the_real_watermark_in_its_result(typedb: Ty
     try:
         result = planner.plan(request)
     except C2Error as error:
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # NCP-U03 (NCR-C2-006): POLICY_DENIED -- ocor-named-query-gateway.openapi.yaml:454
+        assert error.reason_code == "POLICY_DENIED"
     assert result is None
 
 

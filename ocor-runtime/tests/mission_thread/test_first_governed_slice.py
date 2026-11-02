@@ -550,7 +550,8 @@ def test_typedb_projection_read_enforces_exact_at_commit_consistency_with_the_re
     # silently serve the row as if it were already exact.
     with pytest.raises(C2Error) as excinfo:
         typedb.read(make_typedb_query(fact_id=correlation_id, context=context, required_commit=commit_receipt.commit_id))
-    assert excinfo.value.reason_code in {"PROJECTION_NOT_READY", "CONSISTENCY_DOWNGRADE"}
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"
 
 
 def test_a_real_kafka_broker_restart_during_the_event_step_is_detected_and_recovers(kafka_topic):

@@ -105,7 +105,8 @@ def test_exact_at_commit_fails_closed_when_the_fact_is_ingested_ahead_of_the_wat
     )
     with pytest.raises(C2Error) as excinfo:
         adapter.read(request)
-    assert excinfo.value.reason_code == "CONSISTENCY_DOWNGRADE"
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"
     assert adapter.current_watermark() is None, "watermark must remain honestly unset, not falsely advanced"
 
 
@@ -123,7 +124,8 @@ def test_exact_at_commit_fails_closed_when_the_row_has_moved_ahead_of_the_waterm
     )
     with pytest.raises(C2Error) as excinfo:
         adapter.read(request)
-    assert excinfo.value.reason_code == "CONSISTENCY_DOWNGRADE", (
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY", (
         "the watermark still reads commit-1, but the underlying row has already moved to "
         "commit-2's content; serving it as an exact commit-1 answer would silently return "
         "a newer fact mislabeled as the older, requested one"
@@ -162,7 +164,8 @@ def test_stale_reads_are_never_served_as_exact_across_a_real_commit_progression(
     assert adapter.read(request_c1).served.canonical_commit == "commit-1"
 
     adapter.ingest("fact-5", "commit-2", "V2")
-    with pytest.raises(C2Error, match="CONSISTENCY_DOWNGRADE"):
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    with pytest.raises(C2Error, match="PROJECTION_NOT_READY"):
         adapter.read(request_c1)
 
     adapter.advance_watermark("commit-2")
@@ -175,7 +178,8 @@ def test_stale_reads_are_never_served_as_exact_across_a_real_commit_progression(
 
     # commit-1 is now superseded; requesting it exactly must still fail,
     # never fall back to serving commit-2's content as if it were commit-1.
-    with pytest.raises(C2Error, match="CONSISTENCY_DOWNGRADE"):
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    with pytest.raises(C2Error, match="PROJECTION_NOT_READY"):
         adapter.read(request_c1)
 
 

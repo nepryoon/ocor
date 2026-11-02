@@ -14,14 +14,20 @@ qualifying test drives real backends -- no mocks.
 
 from __future__ import annotations
 
+import os
 import socket
 import sys
+import uuid
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from ocor_runtime.audit import AuditSigner, PostgresAuditLog
+from ocor_runtime.c1.signing import Ed25519SigningKey
 from ocor_runtime.c2.gateway import (
     IdentityBackedAuthority,
     MarkingAuthorizationPort,
+    NamedQueryCatalog,
     NamedQueryGateway,
     RegisteredNamedQuery,
     RegistrationAndMarkingPolicy,
@@ -31,13 +37,25 @@ from ocor_runtime.c2.ports import (
     C2Error,
     ConsistencyMode,
     ConsistencyRequirement,
+    ContractCall,
+    NamedQueryCall,
     NamedQueryPort,
     NamedQueryRequest,
     PolicyDecisionPort,
+    QueryContext,
+    TransportBoundQuery,
 )
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.kernel.governed_context import GovernedContext, GovernedContextError
+from ocor_runtime.security.ports import (
+    AuthenticatedPrincipal,
+    ControlName,
+    ControlStatus,
+    PolicyDecision,
+    PolicyEffect,
+    PolicyRequest,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 if str(REPOSITORY_ROOT) not in sys.path:
@@ -58,6 +76,13 @@ DIGEST_C = "urn:sha256:" + "c" * 64
 
 CONTRACT_ID = "urn:ocor:contract:named-query:gateway-fixture"
 RESOURCE_ID = "urn:ocor:resource:gateway-fixture"
+
+FIXTURE_PARAMETERS_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["fact_id"],
+    "properties": {"fact_id": {"type": "string", "minLength": 1}, "resource_id": {"type": "string", "minLength": 1}},
+}
 
 CLASSIFICATION_SCHEME = MarkingSchemeDefinition(
     "classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET")
@@ -110,7 +135,10 @@ def make_request(
     resource_id: str | None = RESOURCE_ID,
     contract_id: str = CONTRACT_ID,
     contract_version: str = "1.0.0",
-) -> NamedQueryRequest:
+) -> TransportBoundQuery:
+    # NCP-U03 (NCR-C2-002), construction only: no Principal in the Query body; the principal is
+    # bound by the verified transport (TRANSPORT) --
+    # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380
     context = GovernedContext.from_mapping(
         {
             "tenant_id": "urn:ocor:tenant:synthetic",
@@ -129,16 +157,70 @@ def make_request(
     parameters: dict[str, object] = {"fact_id": "fact-1"}
     if resource_id is not None:
         parameters["resource_id"] = resource_id
-    return NamedQueryRequest(
-        request_id="018f2f95-01b2-7cc3-8d4e-123456789abc",
-        contract_id=contract_id,
-        contract_version=contract_version,
-        contract_digest=DIGEST_A,
-        parameters=parameters,
-        governed_context=context,
-        governed_context_digest=context.digest(),
-        consistency=ConsistencyRequirement(mode=ConsistencyMode.EXACT_AT_COMMIT, required_commit="commit-1"),
+    now = datetime.now(UTC)
+    transport_principal = AuthenticatedPrincipal(
+        principal_id=principal,
+        session_id="urn:ocor:session:gateway-fixture",
+        actor_chain=("urn:ocor:actor:synthetic", principal),
+        assurance_level="aal2",
+        authenticated_at=now - timedelta(minutes=5),
+        expires_at=now + timedelta(hours=1),
+        status=ControlStatus.available(ControlName.IDENTITY, observed_at=now, source_digest=DIGEST_C),
     )
+    return TransportBoundQuery(
+        principal=transport_principal,
+        query=NamedQueryCall(
+            context=QueryContext(
+                request_id="018f2f95-01b2-7cc3-8d4e-123456789abc",
+                correlation_id=context.correlation_id,
+                tenant_id=context.tenant_id,
+                organization_id=context.organization_id,
+                domain_id=context.domain_id,
+                compartments=context.compartments,
+                purpose=context.purpose,
+                classification_marking_ref=context.classification_marking_ref,
+                ontology_release_digest=context.ontology_release_digest,
+                policy_bundle_digest=context.policy_bundle_digest,
+                governed_context_digest=context.digest(),
+                logic_version="1.0.0",
+                branch="main",
+                consistency=ConsistencyRequirement(mode=ConsistencyMode.EXACT_AT_COMMIT, required_commit="commit-1"),
+            ),
+            call=ContractCall(
+                contract_id=contract_id,
+                contract_version=contract_version,
+                contract_digest=DIGEST_A,
+                parameters=parameters,
+            ),
+        ),
+    )
+
+
+class _FixtureContextPolicy:
+    """Explicit test port of the sealed ``security.ports.PolicyDecisionPort`` (OPA in
+    production, OCOR-DEV-0048): permits the fixture's governed context."""
+
+    def evaluate(self, request: PolicyRequest) -> PolicyDecision:
+        return PolicyDecision.from_request(
+            request,
+            effect=PolicyEffect.PERMIT,
+            decision_id=f"urn:ocor:decision:{uuid.uuid4()}",
+            valid_until=request.at + timedelta(minutes=5),
+            status=ControlStatus.available(ControlName.POLICY, observed_at=request.at, source_digest=DIGEST_C),
+        )
+
+
+def _audit_log() -> PostgresAuditLog:
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+    if not dsn:
+        pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory qualifying evidence (real PostgreSQL audit)")
+    log = PostgresAuditLog(
+        dsn,
+        schema="ocor_audit_dev0034",
+        signer=AuditSigner(key=Ed25519SigningKey.from_seed(os.urandom(32)), keyid="urn:ocor:key:dev0034"),
+    )
+    log.initialize()
+    return log
 
 
 def make_gateway(
@@ -151,7 +233,11 @@ def make_gateway(
     engine = MarkingEngine([CLASSIFICATION_SCHEME])
     registry = {
         CONTRACT_ID: RegisteredNamedQuery(
-            contract_id=CONTRACT_ID, versions=frozenset({"1.0.0"}), marking_scheme_id="classification"
+            contract_id=CONTRACT_ID,
+            versions=frozenset({"1.0.0"}),
+            marking_scheme_id="classification",
+            contract_digests={"1.0.0": DIGEST_A},
+            parameters_schema=FIXTURE_PARAMETERS_SCHEMA,
         )
     }
     clearance_by_marking_ref = {ref: clearance(level) for ref, level in marking_ref_to_clearance_level.items()}
@@ -162,7 +248,14 @@ def make_gateway(
         clearance_by_marking_ref=clearance_by_marking_ref,
     )
     authority = IdentityBackedAuthority(identity_registry)
-    return NamedQueryGateway(authority=authority, policy=policy, projection=typedb)
+    return NamedQueryGateway(
+        catalog=NamedQueryCatalog(ontology_release_digest=DIGEST_B, queries=registry),
+        authority=authority,
+        context_policy=_FixtureContextPolicy(),
+        policy=policy,
+        projection=typedb,
+        audit=_audit_log(),
+    )
 
 
 def test_identity_backed_authority_conforms_to_the_sealed_port(identity_registry: IdentityRegistry) -> None:
@@ -218,7 +311,10 @@ def test_an_unregistered_contract_id_is_denied_without_any_response(
     try:
         result = gateway.execute(request)
     except C2Error as error:
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # NCP-U03 (NCR-C2-006, PO choice): CONTRACT_NOT_FOUND before any identity lookup --
+        # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380,
+        # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:457
+        assert error.reason_code == "CONTRACT_NOT_FOUND"
     assert result is None
 
 
@@ -238,7 +334,9 @@ def test_an_unregistered_version_is_denied_without_any_response(
     try:
         result = gateway.execute(request)
     except C2Error as error:
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # NCP-U03 (NCR-C2-006): the (contract_id, version) pair is not allow-listed: CONTRACT_NOT_FOUND --
+        # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:457
+        assert error.reason_code == "CONTRACT_NOT_FOUND"
     assert result is None
 
 
@@ -258,7 +356,10 @@ def test_an_ambiguous_unregistered_identity_is_denied_without_any_response(
     try:
         result = gateway.execute(request)
     except C2Error as error:
-        assert error.reason_code == "IDENTITY_AMBIGUOUS"
+        # NCP-U03 (NCR-C2-006, PO choice): CONTRACT_NOT_FOUND before any identity lookup --
+        # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380,
+        # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:457
+        assert error.reason_code == "CONTRACT_NOT_FOUND"
     assert result is None
 
 
@@ -278,10 +379,12 @@ def test_a_resource_outside_the_requesters_clearance_is_denied_before_projection
     try:
         result = gateway.execute(request)
     except C2Error as error:
-        # the same reason code as an unregistered contract: a caller must
-        # not be able to distinguish "not registered" from "marking denied"
-        # from the error alone.
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # a caller must not be able to distinguish "marking denied" from
+        # "marking missing" or "clearance unresolvable" from the error alone.
+        # NCP-U03 (NCR-C2-006): marking DENY is POLICY_DENIED --
+        # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401,
+        # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454
+        assert error.reason_code == "POLICY_DENIED"
     assert result is None
 
 
@@ -301,7 +404,10 @@ def test_a_resource_missing_its_marking_triple_is_denied_never_disclosed(
     try:
         result = gateway.execute(request)
     except C2Error as error:
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # NCP-U03 (NCR-C2-006): marking DENY is POLICY_DENIED --
+        # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401,
+        # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454
+        assert error.reason_code == "POLICY_DENIED"
     assert result is None
 
 
@@ -318,7 +424,10 @@ def test_an_unresolvable_clearance_reference_is_denied_without_any_response(
     try:
         result = gateway.execute(request)
     except C2Error as error:
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # NCP-U03 (NCR-C2-006): marking DENY is POLICY_DENIED --
+        # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401,
+        # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454
+        assert error.reason_code == "POLICY_DENIED"
     assert result is None
 
 
@@ -330,9 +439,11 @@ def test_a_registered_query_without_a_resource_parameter_skips_the_marking_join(
     )
     request = make_request(principal="urn:ocor:principal:analyst-1", resource_id=None)
 
-    response = gateway.execute(request)
-
-    assert response.served.canonical_commit == "commit-1"
+    # NCP-U03 (NCR-C2-003): an unresolvable classification_marking_ref is DENY, never a permissive
+    # posture -- ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401
+    with pytest.raises(C2Error) as excinfo:
+        gateway.execute(request)
+    assert excinfo.value.reason_code == "POLICY_DENIED"
 
 
 def test_missing_purpose_is_rejected_before_any_gateway_or_backend_call(identity_registry: IdentityRegistry) -> None:
@@ -382,7 +493,9 @@ def test_an_arbitrary_query_shape_is_rejected_before_any_gateway_or_backend_call
             governed_context_digest=context.digest(),
             consistency=ConsistencyRequirement(mode=ConsistencyMode.BEST_AVAILABLE),
         )
-    assert excinfo.value.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+    # NCP-U03 (NCR-C2-006): a contract_id outside the contract pattern is a SCHEMA_VIOLATION --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:190, :459
+    assert excinfo.value.reason_code == "SCHEMA_VIOLATION"
 
 
 class _UnreachableMarkingPort:
@@ -411,9 +524,28 @@ def test_a_real_marking_backend_failure_propagates_and_never_defaults_to_permit(
         clearance_by_marking_ref={DIGEST_A: clearance("SECRET")},
     )
     gateway = NamedQueryGateway(
-        authority=IdentityBackedAuthority(identity_registry), policy=policy, projection=typedb
+        catalog=NamedQueryCatalog(
+            ontology_release_digest=DIGEST_B,
+            queries={
+                CONTRACT_ID: RegisteredNamedQuery(
+                    contract_id=CONTRACT_ID,
+                    versions=frozenset({"1.0.0"}),
+                    marking_scheme_id="classification",
+                    contract_digests={"1.0.0": DIGEST_A},
+                    parameters_schema=FIXTURE_PARAMETERS_SCHEMA,
+                )
+            },
+        ),
+        authority=IdentityBackedAuthority(identity_registry),
+        context_policy=_FixtureContextPolicy(),
+        policy=policy,
+        projection=typedb,
+        audit=_audit_log(),
     )
     request = make_request(principal="urn:ocor:principal:analyst-1")
 
-    with pytest.raises(OSError):
+    # NCP-U03 (NCR-C2-006, PO choice): typed fail-closed Problem CONTROL_PLANE_UNAVAILABLE --
+    # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:174, :3141
+    with pytest.raises(C2Error) as excinfo:
         gateway.execute(request)
+    assert excinfo.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
