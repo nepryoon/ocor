@@ -589,8 +589,154 @@
     "status": "PASS"
   },
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "aeb27364b9a9084c3483be2eeb765967c97988dd",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json",
+        "reports/development/TERMINAL_BLOCKED_REPORT.json"
+      ],
+      "main_head": "374046a22eb012f9cd22b6d166faf0eafc586a54",
+      "nonstate_git_tree_sha256": "2f63423ea8696a0aa9f12ce94d4edf73aa5358fac181b595ed63916934322702",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the four state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "a40b82f86230b5b44a2bda9c417282dad6779a09",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "7a29521e7b1254cce260bd8030d6a74bf169cfcf4bd7517b83025d55337dbe7a",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "8 file normativi OK; inputs/ immutato"
+      },
+      {
+        "command": "python scripts/preflight_environment.py",
+        "exit_code": 0,
+        "summary": "PASS, errors vuoti. environment.json sha256 99064dee34f3ca6961117b41dbd8e18bbdb4aac079fba82d7b9f98f3de448655. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199664 kB. Strumenti del lock (docker, git, gh, java, node, python, ruff, tsc, uv) e helm/kind/kubectl con sha256 del lock."
+      },
+      {
+        "command": "git rev-parse HEAD && git diff --name-status 2ebf2a9848399cadb794ceb627514387980d8417..HEAD",
+        "exit_code": 0,
+        "summary": "HEAD a40b82f86230b5b44a2bda9c417282dad6779a09. Diff 511091f..HEAD solo evidenza e record. 55 path nello scope; nessun file in inputs/."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute && ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Prima provision: teardown ALREADY_REMOVED, PASS in 47.1 s. fuseki_max_heap_bytes 1073741824. SVID spiffe://ocor.test/ocor/control-plane presente. Archivio Fuseki MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA512 ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132 verificato."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py",
+        "exit_code": 0,
+        "summary": "JUnit 1149 test, 0 failure, 0 error, 0 skipped, 80.285 s. Shell pulita: esportate solo OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_0012.py ocor-runtime/tests/tasks/test_ocor_dev_0017.py ocor-runtime/tests/mission_thread/test_first_governed_slice.py ocor-runtime/tests/tasks/test_ocor_dev_0034.py ocor-runtime/tests/tasks/test_ocor_dev_0035.py ocor-runtime/tests/tasks/test_ocor_dev_0037.py ocor-runtime/tests/tasks/test_ocor_dev_0039.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py",
+        "exit_code": 0,
+        "summary": "84 passed, 0 skipped, 51.14 s. Confronto AST: nessuna funzione di test rimossa, docstring di modulo invariate, nessuna asserzione in meno."
+      },
+      {
+        "command": "cd ocor-runtime && .venv/bin/python -m pytest -p no:cacheprovider tests/tasks/test_ocor_dev_0005.py tests/tasks/test_ocor_dev_0050.py tests/tasks/test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "214 passed, 0 skipped, 4.86 s. I tre moduli sono byte-identici a 2ebf2a9."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 116 source files"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+        "exit_code": 0,
+        "summary": "PASS, drifted_tasks vuoto, drifted_inputs 0, 75 task, 241 input"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_test_reverse_traceability.py",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "PASS: 37 PASS e 2 NOT_EXECUTED opzionali interni (markdownlint e mermaid, non contati come PASS dal validatore). Un primo exit 1 era il log non tracciato ci_fuseki_build.log creato dal bootstrap; rimosso, rieseguito, PASS. I file di planning riscritti dal validatore sono stati ripristinati a HEAD."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base 2ebf2a9848399cadb794ceb627514387980d8417 --head HEAD --branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway",
+        "exit_code": 0,
+        "summary": "PASS: 55 path, superfici immutabili intatte"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0012|0017|0031|0034|0035|0037|0039|0005|0050|0082 --manifest <G*> --non-skipped",
+        "exit_code": 0,
+        "summary": "10/10 PASS. I dieci record .requalified-rem0049 sono regression, qualifies_requirements false, senza requirement_results, supersedes verso il record precedente dello stesso task. Hash di evidenza della richiesta tutti coincidenti."
+      },
+      {
+        "command": "npm ci && npm run build (ocor-runtime/sdk/typescript) && pytest test_generated_contracts_compile_under_tsc_strict test_component_1_measurement_end_to_end_smoke",
+        "exit_code": 0,
+        "summary": "Prima esecuzione dei report test: tsc TS2688 e uno skip TEST-INFRA-004 perche node_modules assente. npm ci e build con Node v20.20.2 del lock, poi 2 passed in 0.38 s. Non e un difetto del candidato."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_kind_teardown_observation.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_local_lane_campaign.py",
+        "exit_code": 0,
+        "summary": "Coperti dalla suite completa successiva (3546, 0 skipped) e, per i due casi di ambiente, dalla riesecuzione dopo npm ci."
+      },
+      {
+        "command": "rm del solo .ocor/bootstrap.env generato && ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Il teardown versionato non cancella il file di credenziali generato e la provision rifiuta di sovrascriverlo. Rimosso il file non tracciato, senza leggerlo in shell, poi provision PASS in 44.4 s. Heap 1073741824. Archivio Fuseki HIT, stessa fonte Apache e stesso SHA512. SVID control-plane presente. Nuova shell pulita."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_qualifying_campaign.py --execute --repository . --expected-head a40b82f86230b5b44a2bda9c417282dad6779a09 --output-dir /tmp/ocor-verify-OCOR-DEV-REM-0049-a40b82f86230-0/full-suite",
+        "exit_code": 0,
+        "summary": "PASS seriale. 3546 test, 0 failure, 0 error, 0 skipped. Durata 3722.898 s; margine al tetto 5400 s: 1677.102 s; 122.898 s oltre la notifica 3600 s e sotto i 75 minuti (4500 s) e sotto la soglia di decision request 5100 s. pytest --collect-only: 3546. JUnit identico. Alimentazione iniziale e finale: rete elettrica (ADP0 online=1), batteria Not charging. Variabili esportate: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN. Nessuno strumento dell'implementatore."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Stack rimosso, residui ocor-bootstrap vuoti. La rete docker kind preesiste (creata 2026-10-25) ed e vuota. git status pulito."
+      }
+    ],
+    "findings": [],
+    "findings_disposition": "Nessun finding, nulla NOT_EXECUTED, al ciclo 0. Revisione preventiva consultiva (Antigravity CLI / gemini-4-argon-high / Google, PRE-CAMPAIGN-REVIEW-ROTATION, OCOR-DEV-REM-0049-530fe1e687e2-pre; finding bloccanti P1-P7 corretti con RED 8880d62 e GREEN 62164b3), esclusa dalla verifica finale. Il verifier ha rieseguito da shell pulita: preflight PASS, inputs 8/8; diff 2ebf2a9..a40b82f di 55 percorsi nello scope di NCP-U03 e delle dieci riqualifiche di sola regressione (NCP-U03-QUALIFYING-REQUALIFICATIONS opzione 1, decisa su delega completa del PO), nessun record sigillato modificato; suite dell unita con registro, REM-0046 e validatore di evidenza 1149 passed su backend reali, zero skip; moduli riallineati dei sette task e rem_0014 84 passed con confronto AST; regressione di 0005, 0050 e 0082 214 passed su moduli byte-identici; ruff, mypy, language, drift 0, tracciabilita inversa, rccad, piano, scope PASS; evidenza runtime dei dieci task PASS; portfolio reports verde dopo npm ci e build dell SDK; suite completa seriale 3546/3546, zero skip, 3722,898 s (margine dal tetto di 5400 s 1677,102 s; 122,898 s oltre la notifica di 3600 s, sotto 4500 s e sotto la soglia di decision request di 5100 s), alimentazione MAINS.",
+    "head_sha": "a40b82f86230b5b44a2bda9c417282dad6779a09",
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "1833199b7cea8c7d6fe7a0b22b5cd2ec0734459cc2b05607ded13295ac73100e",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-02T21:43:24Z",
+    "verdict_file_sha256": "70facf569ce171ba8df26e1ee996a35976d1c4d6c639432e7d72354aed6caf3b",
+    "verdict_head_sha": "a40b82f86230b5b44a2bda9c417282dad6779a09",
+    "verdict_request_id": "OCOR-DEV-REM-0049-a40b82f86230-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor, Grok 4.7 (xAI). Implementatore del task: Claude Code (Anthropic, claude-opus-5-5), unico implementatore che ha toccato il task. Revisore preventivo: Antigravity CLI (Google, gemini-4-argon-high), non usato come prova. Autore degli elenchi del programma di conformita normativa: Anthropic; il verifier non e di quel fornitore.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, sessione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "python scripts/preflight_environment.py",
+      "exit_code": 0,
+      "summary": "PASS, errors vuoti. environment.json sha256 99064dee34f3ca6961117b41dbd8e18bbdb4aac079fba82d7b9f98f3de448655. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199664 kB. Strumenti del lock (docker, git, gh, java, node, python, ruff, tsc, uv) e helm/kind/kubectl con sha256 del lock."
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -727,6 +873,12 @@
   "review_scope": "regression-only: proves the task's tests pass at the REM-0049 code head after its input changes; not a re-assessment of its conformance",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatore di REM-0049: Claude Code / claude-opus-5-5 / Anthropic per tutta l unita (iterazioni 1-3, sigillo e integrazione, come implementatore di riserva del loop). Revisore preventivo consultivo: Antigravity CLI / gemini-4-argon-high / Google. Nessun implementatore ne il revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "implementers": [
       {
         "agent": "Claude Code",
@@ -735,6 +887,12 @@
         "scope": "all of REM-0049, iterations 1-3: RED/GREEN of NCR-C2-001..009/011/012 (RED 5e1e0e6, GREEN 34ba322/49fe988), preventive review dispositions (RED 8880d62, GREEN 62164b3), PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
     "preventive_reviewer": {
       "agent": "Antigravity CLI",
       "model": "gemini-4-argon-high",
@@ -751,11 +909,12 @@
       "constraint": "provider neither Anthropic nor Google (implementer and preventive reviewer)",
       "process": "external loop only, separate clean context"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback_procedure_verified": "Mechanical review: revert the REM-0049 commits; the sealed OCOR-DEV-0039.json record becomes the most recent again once this record is removed with the revert. No data migration, no sealed-history rewrite.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "supersedes": "reports/evidence/G4/OCOR-DEV-0039.json",
   "supersession_scope": "Regression-only after the OCOR-DEV-REM-0049 realignments and construction adaptations of the task's tests (NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5, listed in the unit record) and its changes of the C2/C4 modules among the task's inputs; NCP-U03-QUALIFYING-REQUALIFICATIONS (2026-11-02), decision of the PO on full delegation (option 1, decision request at d5b9ace19d33, sha256 ca21e0f2c4f54b120ffc13e0f0e820e5ca8036da7c866613f0d0b06a1f6c502e) places the requalification of 0012, 0017, 0031, 0034, 0035, 0037 and 0039 in the non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30), for NCP-U03 only; NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 stays in force for the other units; the task's tests are realigned or adapted only as listed in realigned_tests, with the syntax-tree comparison. Not a re-assessment of its conformance and never evidence of a requirement: the requirement evidence of the task stays that of the supersedes chain; the new C2 behaviour is qualified by the unit tests and the requirements by the G6 tasks.",
   "task_id": "OCOR-DEV-0039",
