@@ -265,7 +265,17 @@ def check_regression_record(record: dict[str, Any], manifest: dict[str, Any], ev
     if not target.is_file() or digest(target) != previous.get("record_sha256"):
         raise ValueError("regression requalification record does not supersede a record: superseded record missing or digest mismatch")
     superseded = json.loads(target.read_text(encoding="utf-8"))
-    if not isinstance(superseded, dict) or superseded.get("record_id") != supersedes:
+    superseded_id = superseded.get("record_id") if isinstance(superseded, dict) else None
+    # NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02), option B1: a sealed record without
+    # record_id, recognised by the sealed evidence registry by path and sha256, is superseded by its path.
+    if (
+        isinstance(superseded, dict)
+        and "record_id" not in superseded
+        and previous.get("record_path") in sealed_registry()
+        and is_sealed_legacy_record(target)
+    ):
+        superseded_id = previous.get("record_path")
+    if not isinstance(superseded, dict) or superseded_id != supersedes:
         raise ValueError("regression requalification record does not supersede a record: record_id mismatch")
     if superseded.get("task_id") != record.get("task_id"):
         raise ValueError(f"regression requalification record supersedes a record of {superseded.get('task_id')}")
