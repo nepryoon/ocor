@@ -1202,3 +1202,233 @@ def test_fr_045_change_class_mapping() -> None:
     gate.admit(base, mixed, plan=mixed_plan, approvals=two)
     _rejected(lambda: gate.admit(base, mixed, plan={**mixed_plan, "backfill": []}, approvals=two),
               DiagnosticCode.RELEASE_REJECTED)
+
+
+# --------------------------------------------------------------------------- #
+# Preventive review OCOR-DEV-REM-0047-e0e5f32929c6-pre: blocking findings P1-P7.
+# Each case asserts the prescribed rejection and keeps a positive control.
+# --------------------------------------------------------------------------- #
+
+
+def test_admission_rejects_an_incomplete_artifact_manifest() -> None:
+    """P1: admission verifies the artifact manifest (ADD v1.3 :523); NFR-021 (:152), LLD v1.1 :107."""
+    generator = c1("codegen").IrArtifactGenerator()
+    release = compiler().build(oac_request())
+    files = generator.render(release)
+    # A release without its manifest, or with a partial one, drifts from its artifact plan.
+    _rejected(lambda: generator.check_drift(release, files), DiagnosticCode.ARTIFACT_DRIFT)
+    partial = release.with_artifacts(generator.generate(release)[:-1])
+    _rejected(lambda: generator.check_drift(partial, files), DiagnosticCode.ARTIFACT_DRIFT)
+    generator.check_drift(release.with_artifacts(generator.generate(release)), files)
+    with tempfile.TemporaryDirectory() as tmp:
+        workdir = Path(tmp)
+        signing = _Signing(workdir)
+        request = oac_request()
+        for candidate in (release, partial):
+            package = signing.module.ReleasePackage.create(
+                signed=signing.signer.sign_release(candidate), dependency_lock=request.dependency_lock,
+                artifacts=files)
+            _rejected(lambda package=package: signing.admission().verify(package), DiagnosticCode.ARTIFACT_DRIFT)
+            store = c1("publisher").FileSystemReleaseStore(workdir / "releases")
+            publisher = c1("publisher").ImmutableReleasePublisher(admission=signing.admission(), store=store)
+            _rejected(lambda package=package, publisher=publisher: publisher.publish(package),
+                      DiagnosticCode.ARTIFACT_DRIFT)
+            assert store.versions("urn:ocor:package:fleet") == []
+        assert signing.admission().verify(_package(signing, request)).ir_digest == release.ir_digest
+
+
+def test_fr_045_causal_type_keeps_the_obligations_of_every_class() -> None:
+    """P2: NCP-U01-RETAINED-C1-BUILDERS point 3, FR-045 (Register v1.1 :141): every class present applies."""
+    migration = c1("migration")
+    planner = migration.IrMigrationPlanner()
+    gate = migration.ReleaseChangeGate()
+    two = ("urn:ocor:principal:a", "urn:ocor:principal:b")
+
+    def build(version: str, *properties: dict[str, Any]) -> Any:
+        docs = copy.deepcopy(oac_documents(version=version))
+        docs["module.yaml"]["definitions"].append(
+            {"construct": "TypeDefinition", "type_id": "urn:ocor:type:delay-mechanism", "kind": "CAUSAL",
+             "version": "1.0.0", "keys": [], "interfaces": [],
+             "security_profile_ref": "urn:ocor:security-profile:restricted", "properties": list(properties)})
+        return compiler().build(oac_request(documents=docs, semantic_version=version))
+
+    optional = {"property_id": "urn:ocor:property:delay-cause", "value_type_ref": "string", "cardinality": "ONE",
+                "nullable": True, "constraint_refs": []}
+    required = {"property_id": "urn:ocor:property:delay-minutes", "value_type_ref": "integer",
+                "cardinality": "ONE", "nullable": False, "constraint_refs": []}
+    base = build("1.3.0", optional)
+    for target in (build("2.0.0", optional, required), build("2.0.0", {**optional, "nullable": False})):
+        plan = planner.plan(base, target)
+        assert set(plan["change_classes"]) == {"causal-breaking", "conditional"}, plan["changes"]
+        assert plan["classification"] == "causal-breaking"
+        assert plan["backfill"]
+        gate.admit(base, target, plan=plan, approvals=two)
+        _rejected(lambda target=target, plan=plan: gate.admit(base, target, plan={**plan, "backfill": []},
+                                                              approvals=two), DiagnosticCode.RELEASE_REJECTED)
+        _rejected(lambda target=target, plan=plan: gate.admit(base, target, plan=plan, approvals=two[:1]),
+                  DiagnosticCode.RELEASE_REJECTED)
+
+
+def test_fr_045_module_changes_are_classified() -> None:
+    """P3: the CanonicalIRCore modules (ADD v1.3 :446) are diffed; PO point 3 criterion for unnamed changes."""
+    migration = c1("migration")
+    planner = migration.IrMigrationPlanner()
+    gate = migration.ReleaseChangeGate()
+    base = compiler().build(oac_request())
+
+    def build(version: str, **module: Any) -> Any:
+        docs = copy.deepcopy(oac_documents(version=version))
+        docs["module.yaml"].update(module)
+        return compiler().build(oac_request(documents=docs, semantic_version=version))
+
+    for module in ({"exports": ["urn:ocor:type:vessel"]}, {"status": "DEPRECATED"},
+                   {"exports": [], "status": "DEPRECATED"}):
+        patch = build("1.2.1", **module)
+        assert patch.ir_digest != base.ir_digest
+        plan = planner.plan(base, patch)
+        assert plan["classification"] == "breaking", (module, plan["changes"])
+        assert all(change["path"].startswith("modules/") for change in plan["changes"]), plan["changes"]
+        _rejected(lambda patch=patch: gate.admit(base, patch, plan=None, approvals=()),
+                  DiagnosticCode.RELEASE_REJECTED)
+        _rejected(lambda patch=patch: gate.admit(base, patch, plan=planner.plan(base, patch),
+                                                 approvals=("urn:ocor:principal:a", "urn:ocor:principal:b")),
+                  DiagnosticCode.RELEASE_REJECTED)
+        major = build("2.0.0", **module)
+        gate.admit(base, major, plan=planner.plan(base, major),
+                   approvals=("urn:ocor:principal:a", "urn:ocor:principal:b"))
+    # Governance metadata of a module is compatible.
+    reviewed = build("1.2.1", review_date="2026-11-30", reviewer="urn:ocor:owner:other-reviewer")
+    assert planner.plan(base, reviewed)["classification"] == "compatible"
+    assert gate.admit(base, reviewed, plan=None, approvals=())["classification"] == "compatible"
+
+
+def test_oac_parser_rejects_unhashable_keys_and_non_utf8() -> None:
+    """P4: PRE-REVIEW-INPUT-ROBUSTNESS; ADD v1.3 :415 (YAML validated), :440 fail-closed rejection."""
+    parser = c1("oac").YamlOacParser()
+
+    def unit(content: bytes, syntax: SourceSyntax = SourceSyntax.YAML) -> SourceUnit:
+        return SourceUnit.create(resource_id="urn:ocor:package:fleet", version="1.2.0", syntax=syntax,
+                                 content=content, source_path="package.yaml")
+
+    for content in (b"? [a, b]\n: 1\n", b"{[1]: 2}\n", b"a:\n  ? {b: 1}\n  : 2\n"):
+        _rejected(lambda content=content: parser.parse(unit(content)), DiagnosticCode.SOURCE_INVALID)
+    for syntax in (SourceSyntax.YAML, SourceSyntax.JSON):
+        _rejected(lambda syntax=syntax: parser.parse(unit(b'{"a": "\xff\xfe"}', syntax)),
+                  DiagnosticCode.SOURCE_INVALID)
+    assert parser.parse(unit(b"a: b\n")) == {"a": "b"}
+
+
+def test_ir_protobuf_decoding_fails_closed() -> None:
+    """P5: the IR Protobuf form (ADD v1.3 :464) rejects every malformed or non-canonical encoding."""
+    import math
+    import struct
+
+    ir = c1("ir")
+    release = compiler().build(oac_request())
+    digest, core = ir.decode_protobuf(ir.encode_protobuf(release))
+    assert digest == release.ir_digest and canonical_digest(core) == release.ir_digest
+
+    def envelope(value: bytes) -> bytes:
+        """An IR envelope whose core holds one field with the given encoded Value."""
+        entry = ir._field(1, 2, ir._field(1, 2, b"x") + ir._field(2, 2, value))
+        core_value = ir._field(5, 2, entry)
+        return (ir._field(1, 2, ir._field(1, 2, b"core") + ir._field(2, 2, core_value))
+                + ir._field(1, 2, ir._field(1, 2, b"ir_digest")
+                            + ir._field(2, 2, ir._field(3, 2, b"urn:sha256:" + b"0" * 64))))
+
+    bad_values = [
+        ir._field(3, 2, b"\xff\xfe"),                               # string not UTF-8
+        ir._field(2, 1, struct.pack("<d", math.nan)),               # NaN
+        ir._field(2, 1, struct.pack("<d", math.inf)),               # +Infinity
+        ir._field(2, 1, struct.pack("<d", -math.inf)),              # -Infinity
+        ir._field(2, 1, struct.pack("<d", 1e100)),                  # integer beyond the exact double range
+        ir._field(4, 0, ir._varint(2)),                             # bool other than 0/1
+        ir._field(1, 0, ir._varint(1)),                             # null_value other than NULL_VALUE
+        b"",                                                        # Value without a kind
+        ir._field(3, 2, b"a") + ir._field(3, 2, b"b"),              # two kinds (oneof)
+        ir._field(6, 2, ir._field(2, 2, b"x")),                     # ListValue with an unknown field
+    ]
+    for value in bad_values:
+        _rejected(lambda value=value: ir.decode_protobuf(envelope(value)), DiagnosticCode.SOURCE_INVALID,
+                  DiagnosticCode.TYPE_ERROR)
+    entry_cases = [
+        ir._field(1, 2, b"\xff"),                                    # key not UTF-8
+        ir._field(1, 2, b"x"),                                       # entry without a value
+        ir._field(1, 2, b"x") + ir._field(2, 2, ir._field(3, 2, b"v")) + ir._field(3, 2, b"?"),  # unknown field
+        ir._field(1, 2, b"x") + ir._field(1, 2, b"y") + ir._field(2, 2, ir._field(3, 2, b"v")),  # two keys
+    ]
+    for entry in entry_cases:
+        _rejected(lambda entry=entry: ir.decode_protobuf(ir._field(1, 2, entry)), DiagnosticCode.SOURCE_INVALID,
+                  DiagnosticCode.TYPE_ERROR)
+
+
+def test_publisher_store_paths_fail_closed() -> None:
+    """P6: stored records and the version index are validated; read re-admits the package (ADD v1.3 :523)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        workdir = Path(tmp)
+        signing = _Signing(workdir)
+        publisher_module = c1("publisher")
+        store = publisher_module.FileSystemReleaseStore(workdir / "releases")
+        publisher = publisher_module.ImmutableReleasePublisher(admission=signing.admission(), store=store)
+        package = _package(signing, oac_request())
+        ref = publisher.publish(package)
+        genuine = json.loads(store.get(ref))
+        assert publisher.read(ref).signed.release.ir_digest == package.signed.release.ir_digest
+
+        def stored(**changes: Any) -> str:
+            return str(store.put(canonical_bytes({**genuine, **changes})))
+
+        malformed = [stored(artifacts=value) for value in ([], None, 7, {"k": 7})]
+        malformed += [stored(artifact_manifest=value) for value in ({}, None, [7], [{"artifact_id": 1}])]
+        malformed += [stored(dependency_lock=value) for value in ({}, None, [7])]
+        malformed += [stored(envelope=value) for value in ([], None, {"payload": 7})]
+        for bad in malformed:
+            _rejected(lambda bad=bad: publisher.read(bad), DiagnosticCode.RELEASE_REJECTED)
+        # A well-formed record with a forged signature or a manifest that does not match is not returned.
+        forged_envelope = copy.deepcopy(genuine["envelope"])
+        forged_envelope["signatures"][0]["sig"] = base64.b64encode(b"\x00" * 64).decode("ascii")
+        _rejected(lambda: publisher.read(stored(envelope=forged_envelope)), DiagnosticCode.SIGNATURE_INVALID,
+                  DiagnosticCode.RELEASE_REJECTED)
+        _rejected(lambda: publisher.read(stored(artifact_manifest=genuine["artifact_manifest"][:-1])),
+                  DiagnosticCode.ARTIFACT_DRIFT, DiagnosticCode.RELEASE_REJECTED)
+        # A corrupted version index is rejected with the typed error.
+        index = store._index("urn:ocor:package:fleet", "1.2.0")
+        for content in (b"\xff\xfe", b"not-a-ref"):
+            index.write_bytes(content)
+            _rejected(lambda: store.lookup("urn:ocor:package:fleet", "1.2.0"), DiagnosticCode.RELEASE_REJECTED)
+        index.write_bytes(ref.encode("ascii"))
+        assert store.lookup("urn:ocor:package:fleet", "1.2.0") == ref
+
+
+def test_malformed_ir_cores_fail_closed() -> None:
+    """P7: admission, generators and the diff reject a malformed ocor.cir/1.0 core with C1Error (ADD v1.3 :441-462)."""
+    from ocor_runtime.c1.ports import CanonicalIrRelease
+
+    good = compiler().build(oac_request())
+    core = json.loads(good.canonical_bytes)
+    broken_cores = [
+        {"format": "ocor.cir/1.0", "release": {"compiler_version": "1.0.0",
+                                               "lock_digest": core["release"]["lock_digest"]}},
+        {**core, "types": None},
+        {**core, "types": [7]},
+        {**core, "artifact_plan": [{"artifact_kind": "openapi"}]},
+        {**core, "release": {**core["release"], "package_id": 7}},
+        {**core, "release": {**core["release"], "semantic_version": None}},
+    ]
+    generator = c1("codegen").IrArtifactGenerator()
+    migration = c1("migration")
+    with tempfile.TemporaryDirectory() as tmp:
+        signing = _Signing(Path(tmp))
+        request = oac_request()
+        for broken in broken_cores:
+            release = CanonicalIrRelease.create(core=broken, artifacts=(),
+                                                signature_envelope_ref="urn:ocor:unsigned:x")
+            package = signing.module.ReleasePackage.create(signed=signing.signer.sign_release(release),
+                                                           dependency_lock=request.dependency_lock, artifacts={})
+            _rejected(lambda package=package: signing.admission().verify(package), DiagnosticCode.RELEASE_REJECTED,
+                      DiagnosticCode.SOURCE_INVALID)
+            _rejected(lambda release=release: generator.render(release), DiagnosticCode.SOURCE_INVALID,
+                      DiagnosticCode.RELEASE_REJECTED)
+            _rejected(lambda release=release: migration.semantic_changes(good, release),
+                      DiagnosticCode.SOURCE_INVALID, DiagnosticCode.RELEASE_REJECTED)
+        assert signing.admission().verify(_package(signing, request)).ir_digest == good.ir_digest
