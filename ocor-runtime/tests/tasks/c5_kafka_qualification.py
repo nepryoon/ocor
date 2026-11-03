@@ -21,12 +21,29 @@ import socket
 import subprocess
 import time
 import uuid
+from dataclasses import dataclass
+from typing import Any
 
 BOOTSTRAP = "127.0.0.1:29092"
 EXTERNAL_PORT = "19092/tcp"
 KAFKA_IMAGE = "confluentinc/cp-kafka:7.6.0@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047"
 PREFIX = "ocor-c5-backbone-"
 LABEL = "ocor.kafka.lifecycle.owner"
+
+
+RECORD_LINE = re.compile(r"Partition:([0-9]+)\tOffset:([0-9]+)\t(.*)")
+
+
+@dataclass(frozen=True, slots=True)
+class TopicRecord:
+    """One record of a test topic as the broker stores it."""
+
+    partition: int
+    offset: int
+    value: str
+
+    def json(self) -> Any:
+        return json.loads(self.value)
 
 
 class KafkaBrokerError(RuntimeError):
@@ -158,6 +175,28 @@ class QualificationKafkaBroker:
 
     def record_count(self, topic: str) -> int:
         return sum(self.end_offsets(topic).values())
+
+    def records(self, topic: str) -> list[TopicRecord]:
+        """Observation of the real topic: every record with its physical partition and offset,
+        read by the Kafka CLI inside the broker, ordered by partition and offset. The count is
+        fixed by the end offsets, so a dropped or duplicated record cannot hide."""
+        count = self.record_count(topic)
+        if not count:
+            return []
+        output = self._exec(
+            "kafka-console-consumer", "--bootstrap-server", BOOTSTRAP, "--topic", topic, "--from-beginning",
+            "--max-messages", str(count), "--timeout-ms", "20000",
+            "--property", "print.partition=true", "--property", "print.offset=true", "--property", "print.key=false",
+            timeout=60,
+        )
+        found: list[TopicRecord] = []
+        for line in output.splitlines():
+            match = RECORD_LINE.fullmatch(line)
+            if match is not None:
+                found.append(TopicRecord(int(match.group(1)), int(match.group(2)), match.group(3)))
+        if len(found) != count:
+            raise KafkaBrokerError(f"topic {topic!r} holds {count} records, the console consumer read {len(found)}")
+        return sorted(found, key=lambda record: (record.partition, record.offset))
 
     def stop(self) -> None:
         """Stop the broker container (a broker outage for fault injection); ``start`` resumes it."""
