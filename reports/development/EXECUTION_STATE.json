@@ -1,15 +1,15 @@
 {
   "active_iteration": {
-    "baseline_commit": "84fb7e7aae69c78d3f22df42225399cd70822209",
-    "branch": "governed/state-sync-rem0050-iter1-20261103",
+    "baseline_commit": "7f6bcade94020fac00e2b404e6939950eb7963e8",
+    "branch": "governed/state-sync-rem0050-iter2-20261103",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0050 (NCP-U04) iteration 1: RED, GREEN, consumer construction adaptations part 1",
+    "change_set": "state sync after OCOR-DEV-REM-0050 (NCP-U04) iteration 2: 0046 realigned, mission thread and 0058 adapted, decision request NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 57086040,
+      "MemAvailable": 56737944,
       "MemTotal": 64199664
     },
-    "next_action": "Resume OCOR-DEV-REM-0050 (NCP-U04) on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 9b56f4dfaee2, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): realign test_ocor_dev_0046.py with RED on the base (case 1 of NORMATIVE-CONFORMANCE-PLAN point 5: store.get and the legacy SingleWriterViolation assertions contradict ADD v1.3 :276 and :342), adapt or realign the mission thread (tests/mission_thread/test_first_governed_slice.py) and test_ocor_dev_0058.py, rerun the whole consumer inventory with every dev service up; harden the touched adapters for the preventive review; unit record, register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and its allowlist entry, requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS, PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request; then full suite, verification, seal, merge. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "next_action": "OCOR-DEV-REM-0050 (NCP-U04) waits for the PO decision on NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md on governed/decision-request-ncp-u04-memory-promotion-gate-package, commit 4313a8e, sha256 3ced4d4cc1c0, draft PR #465) only for the three cases of test_ocor_dev_0058.py that reach C3 and therefore the full suite, record, candidate, verification and merge. Meanwhile resume on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 8afc3ad66255, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki opa of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): rerun the whole consumer inventory with every dev service up; harden the touched C3 adapters for the preventive review (whole TerminusDB and PostgreSQL parsing paths, negative tests); prepare the unit record, the register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, the reverse traceability index, the plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md with its disposition, and the requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS. After the decision: implement the chosen option, then PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request, full suite, verification, seal, merge. Iterations used 2 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
     "phase": "REM_0050_NCP_U04_IN_PROGRESS",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
@@ -18,7 +18,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0050 iteration 1 (RED, GREEN, consumer adaptations part 1) and the state sync"
+          "scope": "OCOR-DEV-REM-0050 iterations 1-2 (RED, GREEN, consumer adaptations, 0046 realignment, decision request) and the state syncs"
         }
       ]
     },
@@ -1750,7 +1750,7 @@
       }
     }
   },
-  "baseline_commit": "84fb7e7aae69c78d3f22df42225399cd70822209",
+  "baseline_commit": "7f6bcade94020fac00e2b404e6939950eb7963e8",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6872,6 +6872,32 @@
       "release_condition": "a PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS",
       "resolved_at": "2026-11-02T19:06:02.691617+00:00",
       "status": "DECIDED_BY_PO"
+    },
+    {
+      "blocked_scope": "the three cases of ocor-runtime/tests/tasks/test_ocor_dev_0058.py whose promotion command reaches C3 (test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt, test_live_c3_refusal_after_dispatch_is_indeterminate_never_success, test_live_c3_receipt_not_bound_to_command_is_indeterminate); therefore the green full suite, unit record, candidate, verification, seal and merge of OCOR-DEV-REM-0050; the later units of plan_order wait for NCP-U04 (one unit at a time)",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0050"
+      ],
+      "created_at": "2026-11-03T07:58:36.000806+00:00",
+      "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 1 and NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 6 Stop: a consumer test of the unit needs a production change outside the unit code_paths (memory/promotion.py, NCP-U07) and a test change beyond construction",
+      "decision_level": "NORMATIVE",
+      "does_not_block": [
+        "the realignment of test_ocor_dev_0046.py (RED 84fb7e7, GREEN 2b9e93b) and the mission thread adaptation (b0f106c)",
+        "the other adapted consumers, adapter hardening for the preventive review and the preparation of record, register, index and allowlist"
+      ],
+      "evidence": {
+        "branch": "governed/decision-request-ncp-u04-memory-promotion-gate-package",
+        "commit": "4313a8e88ecabc624e3285cea320ae29cee60dcf",
+        "path": "reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md",
+        "pr": 465,
+        "publication": "DRAFT_PR_NOT_TO_BE_MERGED; the file enters main with the NCP-U04 change set that changes the plan allowlist",
+        "sha256": "3ced4d4cc1c0da8376945ef8eda797f788a7ad3765ba373118b95ef2be966d73"
+      },
+      "finding": "C6MemoryPromotionConsumer (ocor-runtime/src/ocor_runtime/memory/promotion.py :440, :523, :551, :554) requires command.gate_package_digest == promotion_gate_digest(body), while the NCP-U04 C3 CommitAdmission (c3/admission.py :296-316) requires it to be the canonical digest of a C6-signed GatePackage coherent with the command (LLD v1.1 :97, ADD v1.3 :342); the two digests are of different objects and cannot coincide. At 8afc3ad, after the construction adaptation, test_ocor_dev_0058.py has 130 passed and 3 failed (GATE_PACKAGE_MISMATCH). NCR-C6-009 (NCP-U07) already records the direct c3.commit of the promotion",
+      "id": "NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE",
+      "recommendation": "option 1: governed C6 issuance of the C3 command inside NCP-U04 (memory/promotion.py dispatch only, new required C6 commit-issuing port; construction adaptations of 0058 and realignment with RED of lines 668-669); NCR-C6-009 stays OPEN in NCP-U07",
+      "release_condition": "a PO decision on NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE",
+      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
     }
   ],
   "checkpoint_consolidation": {
@@ -9151,7 +9177,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0050 (NCP-U04) on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 9b56f4dfaee2, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): realign test_ocor_dev_0046.py with RED on the base (case 1 of NORMATIVE-CONFORMANCE-PLAN point 5: store.get and the legacy SingleWriterViolation assertions contradict ADD v1.3 :276 and :342), adapt or realign the mission thread (tests/mission_thread/test_first_governed_slice.py) and test_ocor_dev_0058.py, rerun the whole consumer inventory with every dev service up; harden the touched adapters for the preventive review; unit record, register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and its allowlist entry, requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS, PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request; then full suite, verification, seal, merge. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "next_executable_action": "OCOR-DEV-REM-0050 (NCP-U04) waits for the PO decision on NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md on governed/decision-request-ncp-u04-memory-promotion-gate-package, commit 4313a8e, sha256 3ced4d4cc1c0, draft PR #465) only for the three cases of test_ocor_dev_0058.py that reach C3 and therefore the full suite, record, candidate, verification and merge. Meanwhile resume on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 8afc3ad66255, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki opa of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): rerun the whole consumer inventory with every dev service up; harden the touched C3 adapters for the preventive review (whole TerminusDB and PostgreSQL parsing paths, negative tests); prepare the unit record, the register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, the reverse traceability index, the plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md with its disposition, and the requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS. After the decision: implement the chosen option, then PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request, full suite, verification, seal, merge. Iterations used 2 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9406,10 +9432,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "bc0d3cca841b12f06d2cbc6e3b2f695877d22923",
-    "branch": "governed/state-sync-rem0049-repair1-integrated-20261103",
-    "change_set": "OCOR-DEV-REM-0049 (NCP-U03) repair cycle 1 integration (GO repair cycle 1, seal, exact-head CI PASS, merged PR #462)",
-    "phase": "REM_0049_NCP_U03_INTEGRATED_NCP_U04_NEXT"
+    "baseline_commit": "84fb7e7aae69c78d3f22df42225399cd70822209",
+    "branch": "governed/state-sync-rem0050-iter1-20261103",
+    "change_set": "state sync after OCOR-DEV-REM-0050 (NCP-U04) iteration 1: RED, GREEN, consumer construction adaptations part 1",
+    "phase": "REM_0050_NCP_U04_IN_PROGRESS"
   },
   "previous_candidate_ci": {
     "bad_checks": [
@@ -9535,11 +9561,11 @@
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0050": "NCP-U04 at 9b56f4dfaee2: RED 5f05830, GREEN 7d74dd4, consumer adaptations part 1; iteration 1 of 4 (stop at 8)"
+      "OCOR-DEV-REM-0050": "NCP-U04 at 8afc3ad66255: 0046 realigned, mission thread and 0058 adapted; 3 cases of 0058 wait for NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE; iteration 2 of 4 (stop at 8)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-03T07:08:55.900969+00:00",
+    "observed_at": "2026-11-03T07:58:36.000806+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U04",
@@ -30839,22 +30865,46 @@
       "commits": {
         "GREEN": "7d74dd4",
         "RED": "5f05830",
-        "consumer_adaptations_part_1": "9b56f4d"
+        "adaptation_0058_construction": "8afc3ad",
+        "adaptation_mission_thread": "b0f106c",
+        "consumer_adaptations_part_1": "9b56f4d",
+        "realignment_0046": "2b9e93b"
+      },
+      "consumer_0058": {
+        "commit": "8afc3ad",
+        "summary": "130 passed, 3 failed (GATE_PACKAGE_MISMATCH) pending NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE"
       },
       "estimate_iterations": 4,
-      "head": "9b56f4dfaee268a58597639841f1f98d8d1b44dc",
+      "head": "8afc3ad66255b321a2175769c345b46f6789a620",
       "iteration_stop": 8,
-      "iterations_used": 1,
+      "iterations_used": 2,
       "mutation_probe_ncr_c3_007": {
         "base_characterisation": "stale-epoch acknowledgement refused at the base (SINGLE_WRITER_VIOLATION, 0 DeliveryAttempt)",
         "mutation": "epoch check removed in acknowledge_outbox -> test_ncr_c3_007_conforms FAILED (DID NOT RAISE C3Error)",
         "replaces_red": "NORMATIVE-CONFORMANCE-PLAN point 4 (NCR-C3-007 option 1, with proof)"
       },
       "pending": [
-        "realign 0046 with RED; adapt or realign the mission thread and 0058; full consumer inventory with every dev service up",
-        "adapter hardening, unit record, register, reverse index, allowlist (+ NCP-U03-QUALIFYING-REQUALIFICATIONS.md), PRE-CAMPAIGN-GATE, preventive review",
+        "PO decision on NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE and its implementation",
+        "full consumer inventory with every dev service up; adapter hardening; unit record, register, reverse index, allowlist (+ NCP-U03-QUALIFYING-REQUALIFICATIONS.md and the new decision request file), PRE-CAMPAIGN-GATE, preventive review",
         "full suite, requalifications, candidate, verification, seal, merge"
       ],
+      "realignment_0046": {
+        "green": {
+          "commit": "2b9e93b",
+          "fingerprint": "5dcbb86e251648a052ba4a073ff113a5db565c23250de5121743e2f5e0181849",
+          "summary": "12 passed"
+        },
+        "kind": "REALIGN (case 1)",
+        "norm": [
+          "ADD v1.3 :276",
+          "ADD v1.3 :342"
+        ],
+        "red": {
+          "base": "84fb7e7",
+          "fingerprint": "17b25df83e17172a76e974d8d85591692fc3acad31551b676f7c0b7aee641b36",
+          "summary": "1 failed, 1 passed, 10 errors"
+        }
+      },
       "register_entries_planned": [
         "NCR-C3-001",
         "NCR-C3-002",
@@ -30864,7 +30914,7 @@
         "NCR-C3-007"
       ],
       "requalifications_note": "classification per NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) at the unit head: adapted tests of 0029/0030/0036/0039/0043 and the C3 unit of REM-0041 (and 0046, mission thread, 0058 once realigned or adapted) qualifying only for fully exercised bindable requirements, otherwise regression; regression-only for tasks whose latest record has a changed input; 0005/0050/0082 always regression-only",
-      "status": "IN_PROGRESS_GREEN_CONSUMER_ADAPTATIONS",
+      "status": "IN_PROGRESS_WAITING_PO_DECISION_FOR_0058",
       "tdd": {
         "GREEN": {
           "commit": "7d74dd4",
@@ -30877,7 +30927,7 @@
           "summary": "unit module: 3 failed, 76 errors for the divergence"
         }
       },
-      "updated_at": "2026-11-03T07:08:55.900969+00:00",
+      "updated_at": "2026-11-03T07:58:36.000806+00:00",
       "worktree": ".ocor/worktrees/rem-0050"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -32118,12 +32168,12 @@
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
     "loop_status": "CONTINUE",
-    "next_action": "Resume OCOR-DEV-REM-0050 (NCP-U04) on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 9b56f4dfaee2, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): realign test_ocor_dev_0046.py with RED on the base (case 1 of NORMATIVE-CONFORMANCE-PLAN point 5: store.get and the legacy SingleWriterViolation assertions contradict ADD v1.3 :276 and :342), adapt or realign the mission thread (tests/mission_thread/test_first_governed_slice.py) and test_ocor_dev_0058.py, rerun the whole consumer inventory with every dev service up; harden the touched adapters for the preventive review; unit record, register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and its allowlist entry, requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS, PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request; then full suite, verification, seal, merge. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "next_action": "OCOR-DEV-REM-0050 (NCP-U04) waits for the PO decision on NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md on governed/decision-request-ncp-u04-memory-promotion-gate-package, commit 4313a8e, sha256 3ced4d4cc1c0, draft PR #465) only for the three cases of test_ocor_dev_0058.py that reach C3 and therefore the full suite, record, candidate, verification and merge. Meanwhile resume on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 8afc3ad66255, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki opa of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): rerun the whole consumer inventory with every dev service up; harden the touched C3 adapters for the preventive review (whole TerminusDB and PostgreSQL parsing paths, negative tests); prepare the unit record, the register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, the reverse traceability index, the plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md with its disposition, and the requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS. After the decision: implement the chosen option, then PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request, full suite, verification, seal, merge. Iterations used 2 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
     "reason": "PO decision NCP-U03-QUALIFYING-REQUALIFICATIONS (2026-11-02) (decided on full delegation) received and registered; the residual work of OCOR-DEV-REM-0049 is executable again. Historical TERMINAL_BLOCKED preserved in historical_terminal_loop_disposition and in Git (b51c214)",
     "recorded_at": "2026-11-03T05:34:55.410309+00:00",
     "status": "SUPERSEDED_PO_DECISION_NCP_U03_QUALIFYING_REQUALIFICATIONS"
   },
-  "updated_at": "2026-11-03T07:08:55.900969+00:00",
+  "updated_at": "2026-11-03T07:58:36.000806+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
