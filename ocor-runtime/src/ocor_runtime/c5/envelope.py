@@ -511,6 +511,15 @@ class CanonicalIngestionEnvelope:
         return str(self._value["idempotency_key"])
 
     @property
+    def correlation_id(self) -> str:
+        return str(self._value["correlation_id"])
+
+    @property
+    def causation_id(self) -> str | None:
+        causation = self._value["causation_id"]
+        return None if causation is None else str(causation)
+
+    @property
     def governed_context_digest(self) -> str:
         return str(self._value["governed_context_digest"])
 

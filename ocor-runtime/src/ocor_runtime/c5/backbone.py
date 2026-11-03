@@ -54,7 +54,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..audit import AuditError, AuditEvent, AuditPort
-from .adapters.postgres import DeadLetter, PostgresC5Store
+from .adapters.postgres import DeadLetter, PostgresC5Store, QuarantineRecord
 from .envelope import (
     BackboneError,
     CanonicalIngestionEnvelope,
@@ -63,7 +63,7 @@ from .envelope import (
     SignedEnvelope,
 )
 from .adapters.kafka import JournalRecord, KafkaJournal, KafkaJournalError
-from .operations import AdmissionController, ResourceClass
+from .operations import AdmissionController, OperationsError, ResourceClass
 from .policy import C5Policy, permits
 from .replay import ReplayRequest, ReprocessRequest
 from .retry import FailureClass, RetryPolicy
@@ -246,8 +246,8 @@ class CanonicalEventBackbone:
             self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
                         reason_code="BACKPRESSURE_EXCEEDED", outcome="DENIED", correlation_id=correlation,
                         detail={"resource_class": registration.resource_class.value})
-            raise BackboneError("BACKPRESSURE_EXCEEDED", "the tenant quota of this resource class is exhausted",
-                                failure_class=FailureClass.TRANSIENT.value)
+            raise OperationsError("BACKPRESSURE_EXCEEDED", "the tenant quota of this resource class is exhausted",
+                                  failure_class=FailureClass.TRANSIENT.value)
         try:
             return self._write(signed, registration, principal)
         finally:
@@ -257,12 +257,12 @@ class CanonicalEventBackbone:
         envelope = signed.envelope
         letter = self._store.record_dead_letter(
             event_id=envelope.event_id, topic=self.topic, tenant_id=envelope.tenant_id, reason_code=reason_code,
-            envelope=envelope.to_mapping(), signature=signed.signature,
+            envelope=envelope.to_mapping(), signature=signed.signature, poison_threshold=self._poison_threshold,
         )
         self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
                     reason_code=reason_code, outcome="REJECTED", correlation_id=str(envelope["correlation_id"]),
-                    detail={"failure_class": FailureClass.PERMANENT.value, "attempt": letter.attempt})
-        if letter.attempt == self._poison_threshold:
+                    detail={"failure_class": letter.failure_class, "attempt": letter.attempts})
+        if letter.failure_class == FailureClass.POISON.value and not self.poison_held(envelope.event_id):
             self._store.quarantine(
                 event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POISON.value,
                 reason_code=reason_code, envelope=envelope.to_mapping(), signature=signed.signature,
@@ -341,6 +341,10 @@ class CanonicalEventBackbone:
         """Rebuild deduplication and revisions from every journal record (caller holds the state
         lock); an unreadable record fails closed, never falling back to empty state."""
         marks = self._journal.watermarks()
+        if not marks or set(marks) != set(self._journal.partitions()):
+            # an answer that names no partition, or partitions of another topic, is never read as
+            # an empty journal: fail closed (LLD v1.1 :165, deduplica durable)
+            raise KafkaJournalError(f"the journal offsets do not name the partitions of {self.topic!r}")
         records = self._journal.read({p: low for p, (low, _) in marks.items()}, {p: high for p, (_, high) in marks.items()})
         seen: set[tuple[str, str]] = set()
         revisions: dict[tuple[str, str, str, str], int] = {}
@@ -360,6 +364,15 @@ class CanonicalEventBackbone:
         self._seen = seen
         self._revisions = revisions
         self._recovered = True
+
+    def poison_records(self, event_id: str) -> list[QuarantineRecord]:
+        """The ``POISON`` quarantine records of one event, released or not."""
+        return [record for record in self._store.quarantined(self.topic)
+                if record.event_id == event_id and record.failure_class == FailureClass.POISON.value]
+
+    def poison_held(self, event_id: str) -> bool:
+        """An open (not released) ``POISON`` quarantine holds the event behind the operator gate."""
+        return any(not record.released for record in self.poison_records(event_id))
 
     def dead_letters(self) -> tuple[DeadLetter, ...]:
         return self._store.dead_letters(self.topic)
@@ -529,13 +542,52 @@ class CanonicalEventBackbone:
         if not isinstance(reason, str) or not reason.strip() or not permits(decision):
             self._audit(event_type="c5.quarantine.release", actor=request.requested_by, resource=quarantine_id,
                         reason_code="OPERATOR_GATE_CLOSED", outcome="DENIED", correlation_id=quarantine_id)
-            raise BackboneError("OPERATOR_GATE_CLOSED", "the release is not authorised",
-                                failure_class=FailureClass.POISON.value)
+            raise OperationsError("OPERATOR_GATE_CLOSED", "the release is not authorised",
+                                  failure_class=FailureClass.POISON.value)
         self._store.release(quarantine_id, released_by=request.requested_by, authority_ref=str(authority_ref),
                             reason=reason)
         self._audit(event_type="c5.quarantine.release", actor=request.requested_by, resource=quarantine_id,
                     reason_code="OPERATOR_RELEASE", outcome="PERMITTED", correlation_id=quarantine_id,
                     authority_ref=str(authority_ref))
+
+    def reprocess_dead_letter(self, letter: DeadLetter, *, reason: str, requested_by: str, authority_ref: str,
+                              transport_principal: str) -> PublishReceipt:
+        """``ReprocessAuthorized`` of a dead letter (ADD v1.3 :286, LLD v1.1 :161-165).
+
+        A ``POISON`` event stays behind the operator gate until an operator releases its
+        quarantine; the request is authorised by the policy port; the stored envelope and
+        signature then pass every admission check of a fresh publish, under the transport
+        principal of the channel, so an incompatible schema, a lost marking or a broken
+        signature is refused again, and an already durable event is a duplicate, never a
+        second canonical effect."""
+        if not isinstance(letter, DeadLetter):
+            raise TypeError("letter must be a DeadLetter")
+        actor = requested_by if isinstance(requested_by, str) else ""
+        resource = f"urn:ocor:c5:{self.topic}:dead-letter:{letter.dead_letter_id}"
+        poison = self.poison_records(letter.event_id)
+        held = any(not record.released for record in poison)
+        if held or (letter.failure_class == FailureClass.POISON.value and not poison):
+            self._audit(event_type="c5.reprocess", actor=actor, resource=resource, reason_code="OPERATOR_GATE_CLOSED",
+                        outcome="DENIED", correlation_id=letter.event_id)
+            raise OperationsError("OPERATOR_GATE_CLOSED", "the event is held behind the operator gate",
+                                  failure_class=FailureClass.POISON.value)
+        request = ReprocessRequest(quarantine_id=letter.dead_letter_id, subscription_id="", reason=reason,
+                                   requested_by=actor, authority_ref=authority_ref)
+        try:
+            decision = self._policy.authorize_replay(actor, request)
+        except Exception:  # noqa: BLE001 -- a failing policy point denies (fail closed)
+            decision = None
+        if not isinstance(reason, str) or not reason.strip() or not permits(decision):
+            self._audit(event_type="c5.reprocess", actor=actor, resource=resource, reason_code="REPLAY_DENIED",
+                        outcome="DENIED", correlation_id=letter.event_id)
+            raise OperationsError("REPLAY_DENIED", "the reprocess is not authorised",
+                                  failure_class=FailureClass.POLICY_DENIED.value)
+        self._audit(event_type="c5.reprocess", actor=actor, resource=resource, reason_code="REPROCESS_AUTHORISED",
+                    outcome="PERMITTED", correlation_id=letter.event_id, authority_ref=str(authority_ref),
+                    detail={"reason": reason, "event_id": letter.event_id})
+        envelope = CanonicalIngestionEnvelope.from_mapping(letter.envelope)
+        signature = letter.signature if letter.signature is not None else b""
+        return self.publish(SignedEnvelope(envelope, signature), transport_principal=transport_principal)
 
     # -- Replay ------------------------------------------------------------------------------
 

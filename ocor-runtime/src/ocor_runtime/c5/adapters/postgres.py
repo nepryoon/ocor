@@ -34,7 +34,7 @@ _DDL = """
 CREATE SCHEMA IF NOT EXISTS {s};
 CREATE TABLE IF NOT EXISTS {s}.c5_dead_letter (
   dead_letter_id TEXT PRIMARY KEY, event_id TEXT NOT NULL, topic TEXT NOT NULL, tenant_id TEXT NOT NULL,
-  failure_class TEXT NOT NULL CHECK (failure_class = 'PERMANENT'), reason_code TEXT NOT NULL,
+  failure_class TEXT NOT NULL CHECK (failure_class IN ('PERMANENT', 'POISON')), reason_code TEXT NOT NULL,
   envelope JSONB NOT NULL, signature BYTEA, attempt INTEGER NOT NULL CHECK (attempt >= 1),
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS c5_dead_letter_event ON {s}.c5_dead_letter (event_id);
@@ -68,15 +68,20 @@ def _unavailable(message: str) -> BackboneError:
 
 @dataclass(frozen=True, slots=True)
 class DeadLetter:
-    """An immutable dead letter (LLD v1.1 :161); ``envelope`` is deeply read-only."""
+    """An immutable dead letter (LLD v1.1 :161); ``envelope`` is deeply read-only.
+
+    ``attempts`` counts the failed admissions of the event; from the poison threshold on the
+    letter is classified ``POISON`` (LLD v1.1 :163). ``signature`` is the detached producer
+    signature, kept so that an authorised reprocess re-verifies it (ADD v1.3 :286)."""
 
     dead_letter_id: str
     event_id: str
     failure_class: str
     reason_code: str
     envelope: Mapping[str, Any]
-    attempt: int
+    attempts: int
     recorded_at: datetime
+    signature: bytes | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,7 +181,7 @@ class PostgresC5Store:
 
     def record_dead_letter(
         self, *, event_id: str, topic: str, tenant_id: str, reason_code: str, envelope: Mapping[str, Any],
-        signature: bytes | None,
+        signature: bytes | None, poison_threshold: int,
     ) -> DeadLetter:
         def work(connection: psycopg.Connection[dict[str, Any]]) -> DeadLetter:
             connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (self._schema + "/dl/" + event_id,))
@@ -184,17 +189,20 @@ class PostgresC5Store:
                 f"SELECT count(*) AS n FROM {self._schema}.c5_dead_letter WHERE event_id = %s", (event_id,)
             ).fetchone()
             attempt = int((row or {}).get("n", 0)) + 1
+            failure_class = "POISON" if attempt >= poison_threshold else "PERMANENT"
             dead_letter_id = str(uuid.uuid4())
             stored = connection.execute(
                 f"INSERT INTO {self._schema}.c5_dead_letter (dead_letter_id, event_id, topic, tenant_id, failure_class, "
-                "reason_code, envelope, signature, attempt) VALUES (%s, %s, %s, %s, 'PERMANENT', %s, %s, %s, %s) "
+                "reason_code, envelope, signature, attempt) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "RETURNING recorded_at",
-                (dead_letter_id, event_id, topic, tenant_id, reason_code, Jsonb(thaw(envelope)), signature, attempt),
+                (dead_letter_id, event_id, topic, tenant_id, failure_class, reason_code, Jsonb(thaw(envelope)), signature,
+                 attempt),
             ).fetchone()
             recorded_at = (stored or {}).get("recorded_at")
             if not isinstance(recorded_at, datetime):
                 raise _unavailable("the C5 store did not confirm the dead letter")
-            return DeadLetter(dead_letter_id, event_id, "PERMANENT", reason_code, _freeze(thaw(envelope)), attempt, recorded_at)
+            return DeadLetter(dead_letter_id, event_id, failure_class, reason_code, _freeze(thaw(envelope)), attempt,
+                              recorded_at, signature)
 
         return self._run(work)
 
@@ -207,14 +215,18 @@ class PostgresC5Store:
             result = []
             for row in rows:
                 envelope, attempt, recorded_at = row.get("envelope"), row.get("attempt"), row.get("recorded_at")
+                signature = row.get("signature")
                 if not isinstance(envelope, dict) or isinstance(attempt, bool) or not isinstance(attempt, int):
                     raise _unavailable("a stored dead letter is malformed")
+                if signature is not None and not isinstance(signature, bytes | memoryview):
+                    raise _unavailable("a stored dead letter signature is malformed")
                 if not isinstance(recorded_at, datetime):
                     raise _unavailable("a stored dead letter time is malformed")
                 result.append(
                     DeadLetter(
                         _text(row, "dead_letter_id"), _text(row, "event_id"), _text(row, "failure_class"),
                         _text(row, "reason_code"), _freeze(envelope), attempt, recorded_at,
+                        None if signature is None else bytes(signature),
                     )
                 )
             return tuple(result)

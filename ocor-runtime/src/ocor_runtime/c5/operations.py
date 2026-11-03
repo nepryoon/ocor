@@ -8,6 +8,12 @@ in-flight pool, so saturating one class never starves another class or another t
 An ``AUDIT`` publish is never refused for backpressure: it is admitted even above its quota
 and only counted. Admission runs after authentication, integrity, schema and policy
 checks, which therefore never get disabled under saturation (Register :406, NFR-079).
+
+``EventOperationsCoordinator`` is the operations surface of one backbone (ADD v1.3 :273 and
+:286): publish under backpressure, the durable dead letters, the ``POISON`` operator gate and
+the authorised reprocess of a dead letter (``ReprocessAuthorized``), which re-runs every
+admission check of a fresh publish and never publishes a canonical effect twice (LLD v1.1
+:161-165).
 """
 
 from __future__ import annotations
@@ -15,6 +21,20 @@ from __future__ import annotations
 import threading
 from collections.abc import Mapping
 from enum import Enum
+from typing import TYPE_CHECKING
+
+from .adapters.postgres import DeadLetter
+from .envelope import BackboneError, SignedEnvelope
+
+if TYPE_CHECKING:
+    from .backbone import CanonicalEventBackbone, PublishReceipt
+
+__all__ = ["AdmissionController", "DeadLetter", "EventOperationsCoordinator", "OperationsError", "ResourceClass"]
+
+
+class OperationsError(BackboneError):
+    """An operational refusal of C5 (backpressure, operator gate, replay authorisation),
+    distinct from an envelope ``Violation``."""
 
 
 class ResourceClass(str, Enum):
@@ -72,3 +92,53 @@ class AdmissionController:
     def in_flight(self, tenant: str, resource_class: ResourceClass) -> int:
         with self._lock:
             return self._in_flight.get((tenant, resource_class), 0)
+
+
+class EventOperationsCoordinator:
+    """The operations surface of one ``CanonicalEventBackbone`` for one producer channel.
+
+    ``transport_principal`` is the authenticated transport principal of the channel (ADD v1.3
+    :379); every publish and every reprocess goes through the backbone admission boundary
+    with it, so no check is ever bypassed."""
+
+    def __init__(self, backbone: CanonicalEventBackbone, *, transport_principal: str) -> None:
+        from .backbone import CanonicalEventBackbone
+
+        if not isinstance(backbone, CanonicalEventBackbone):
+            raise TypeError("backbone must be a CanonicalEventBackbone")
+        if not isinstance(transport_principal, str) or not transport_principal:
+            raise ValueError("an authenticated transport principal is required")
+        self._backbone = backbone
+        self._principal = transport_principal
+
+    def publish_with_backpressure(self, signed: SignedEnvelope, *, tenant: str) -> PublishReceipt:
+        """Publish under the quota of ``(tenant, ResourceClass)``; ``tenant`` must be the tenant
+        of the envelope: a discordant value is never corrected (ADD v1.3 :199)."""
+        if not isinstance(signed, SignedEnvelope) or tenant != signed.envelope.tenant_id:
+            raise OperationsError("GOVERNED_CONTEXT_MISMATCH", "the tenant does not match the envelope")
+        return self._backbone.publish(signed, transport_principal=self._principal)
+
+    @property
+    def dead_letters(self) -> tuple[DeadLetter, ...]:
+        return self._backbone.dead_letters()
+
+    def is_poisoned(self, event_id: str) -> bool:
+        """``True`` while a ``POISON`` quarantine of the event is not released by an operator."""
+        return self._backbone.poison_held(event_id)
+
+    def release_for_operator_replay(self, event_id: str, *, operator: str, authority_ref: str,
+                                    reason: str = "operator release after diagnosis") -> None:
+        """The operator gate (LLD v1.1 :163): release every open ``POISON`` quarantine of the event."""
+        held = [record for record in self._backbone.poison_records(event_id) if not record.released]
+        if not held:
+            raise OperationsError("NOT_POISONED", "the event is not held in the poison quarantine")
+        for record in held:
+            self._backbone.release_quarantine(record.quarantine_id, operator=operator, authority_ref=authority_ref,
+                                              reason=reason)
+
+    def replay(self, dead_letter: DeadLetter, *, reason: str, requested_by: str, authority_ref: str) -> PublishReceipt:
+        """Reprocess a dead letter (``ReprocessAuthorized``), preserving its event ID."""
+        return self._backbone.reprocess_dead_letter(
+            dead_letter, reason=reason, requested_by=requested_by, authority_ref=authority_ref,
+            transport_principal=self._principal,
+        )
