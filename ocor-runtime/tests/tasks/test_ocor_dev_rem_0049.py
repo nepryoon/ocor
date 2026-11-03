@@ -1556,6 +1556,144 @@ def test_repair_1_every_adapter_read_goes_through_the_one_read_seam(monkeypatch:
     assert any("c4-fact-id" in query for query in queries) and any("c4-watermark" in query for query in queries)
 
 
+WATERMARK_ANSWERS: dict[str, object] = {
+    "null": [{"data": {"c": {"value": None}}}],
+    "bool": [{"data": {"c": {"value": True}}}],
+    "int": [{"data": {"c": {"value": 42}}}],
+    "empty": [{"data": {"c": {"value": ""}}}],
+    "row-empty": [{}],
+    "row-null": [None],
+    "data-null": [{"data": None}],
+    "data-empty": [{"data": {}}],
+    "column-without-value": [{"data": {"c": {}}}],
+}
+
+
+@pytest.mark.parametrize("case", sorted(WATERMARK_ANSWERS) + sorted(TRANSPORT_FAILURES))
+def test_repair_1_watermark_rejects_malformed_answers(responder: TypeDBResponder, case: str) -> None:
+    """Repair cycle 1, preventive review P1; PRE-REVIEW-INPUT-ROBUSTNESS points 1-5; ADD v1.3
+    :174 and Contract :486-491: the watermark read back from the projection is a non-empty
+    string read without conversion (no ``str()`` of null, bool or number, no empty commit turned
+    into the no-watermark sentinel); any other answer, and any failure of the answer, is the
+    typed CONTROL_PLANE_UNAVAILABLE on ``current_watermark`` and on the sealed
+    ``WatermarkPort.current``."""
+    adapter = TypeDBProjectionAdapter()
+    ports = module("c2.ports")
+    if case in WATERMARK_ANSWERS:
+        responder.answers(WATERMARK_ANSWERS[case])
+    else:
+        responder.routes = dict(TRANSPORT_FAILURES[case])
+    for read in (adapter.current_watermark, lambda: adapter.current("p", "main")):
+        with pytest.raises(ports.C2Error) as caught:
+            read()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", case
+
+
+def test_repair_1_watermark_reads_a_well_formed_answer(responder: TypeDBResponder) -> None:
+    """Positive control of the watermark parsing path: a well-formed commit is read exactly, no
+    watermark is ``None`` (the sealed sentinel on ``current``), an unreachable TypeDB stays the
+    raw transport error the sealed OCOR-DEV-0037/0039 tests pin (NCR-C4-003, NCP-U05)."""
+    adapter = TypeDBProjectionAdapter()
+    responder.answers([{"data": {"c": {"value": "commit-7"}}}])
+    assert adapter.current_watermark() == "commit-7"
+    assert adapter.current("p", "main").canonical_commit == "commit-7"
+    responder.answers([])
+    assert adapter.current_watermark() is None
+    assert adapter.current("p", "main").canonical_commit == "urn:ocor:commit:none"
+
+
+_DISCLOSED = b"SECRET-BACKEND-BODY"
+_DATABASES_OK = (200, b'{"databases": [{"name": "ocor_default"}]}')
+
+WRITE_FAILURES: dict[str, dict[str, tuple[int, bytes] | bytes]] = {
+    "bad-status-line": {"signin": b"GARBAGE\r\n\r\n"},
+    "signin-refused": {"signin": (503, b"Service Unavailable " + _DISCLOSED)},
+    "signin-not-json": {"signin": (200, b"{bad!")},
+    "signin-not-object": {"signin": (200, b"[]")},
+    "signin-without-token": {"signin": (200, b"{}")},
+    "signin-token-int": {"signin": (200, b'{"token": 7}')},
+    "signin-token-empty": {"signin": (200, b'{"token": ""}')},
+    "signin-token-not-utf8": {"signin": (200, b'{"token": "\xff"}')},
+    "signin-token-not-header-safe": {"signin": (200, b'{"token": "t\\r\\nX-Injected: 1"}')},
+    "signin-token-not-ascii": {"signin": (200, '{"token": "t\u20ac"}'.encode("utf-8"))},
+    "open-refused": {"open": (503, b"{}")},
+    "open-not-json": {"open": (200, b"{bad!")},
+    "open-not-object": {"open": (200, b"null")},
+    "open-transaction-null": {"open": (200, b'{"transactionId": null}')},
+    "open-transaction-int": {"open": (200, b'{"transactionId": 5}')},
+    "open-transaction-not-path-safe": {"open": (200, b'{"transactionId": "../databases"}')},
+    "query-refused-text": {"query": (503, b"Service Unavailable " + _DISCLOSED)},
+    "query-not-json": {"query": (200, b"{bad!")},
+    "query-not-utf8": {"query": (200, b'{"answers": "\xff"}')},
+    "query-not-object": {"query": (200, b"null")},
+    "commit-refused": {"commit": (503, b"commit failed " + _DISCLOSED)},
+}
+
+DATABASE_FAILURES: dict[str, tuple[int, bytes] | bytes] = {
+    "refused": (503, b"no " + _DISCLOSED),
+    "not-json": (200, b"{bad!"),
+    "not-utf8": (200, b'{"databases": [{"name": "\xff"}]}'),
+    "null": (200, b"null"),
+    "databases-absent": (200, b"{}"),
+    "databases-not-a-list": (200, b'{"databases": {"name": "ocor_default"}}'),
+    "entry-null": (200, b'{"databases": [null]}'),
+    "entry-empty": (200, b'{"databases": [{}]}'),
+    "entry-name-int": (200, b'{"databases": [{"name": 123}]}'),
+    "entry-name-empty": (200, b'{"databases": [{"name": ""}]}'),
+}
+
+
+def _write_paths() -> list[tuple[str, Any]]:
+    adapter = TypeDBProjectionAdapter()
+    objects = module("c4.object_projection").TypeDBObjectProjection()
+    return [("adapter.reset", adapter.reset), ("adapter.initialize", adapter.initialize),
+            ("objects.reset", objects.reset), ("objects.initialize", objects.initialize)]
+
+
+def _assert_typed_write_failure(name: str, call: Any, case: str) -> None:
+    ports = module("c2.ports")
+    with pytest.raises((TypeDBAdapterError, ports.C2Error)) as caught:
+        call()
+    if name.startswith("adapter."):
+        assert isinstance(caught.value, TypeDBAdapterError), (case, name, repr(caught.value))
+    else:
+        assert isinstance(caught.value, ports.C2Error), (case, name, repr(caught.value))
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", (case, name)
+    assert _DISCLOSED.decode() not in str(caught.value), (case, name)
+
+
+@pytest.mark.parametrize("case", sorted(WRITE_FAILURES))
+def test_repair_1_write_path_rejects_malformed_answers(responder: TypeDBResponder, case: str) -> None:
+    """Repair cycle 1, preventive review P2; PRE-REVIEW-INPUT-ROBUSTNESS points 1-5: every
+    answer of the write, schema and database exchanges (signin, transaction open, query,
+    commit) is decoded as strict UTF-8 JSON and shape-checked without conversion -- a token is
+    header-safe visible ASCII, a transaction id a path-safe segment -- and any malformed answer
+    or protocol failure is the adapter's typed ``TypeDBAdapterError`` (``CONTROL_PLANE_UNAVAILABLE``
+    through C4 objects, ADD v1.3 :174), whose message never carries the backend body."""
+    for name, call in _write_paths():
+        responder.routes = {"databases": _DATABASES_OK, **WRITE_FAILURES[case]}
+        _assert_typed_write_failure(name, call, case)
+
+
+@pytest.mark.parametrize("case", sorted(DATABASE_FAILURES))
+def test_repair_1_database_listing_rejects_malformed_answers(responder: TypeDBResponder, case: str) -> None:
+    """Repair cycle 1, preventive review P2; PRE-REVIEW-INPUT-ROBUSTNESS points 1-5: the database
+    listing is an object with a list of entries, each with a non-empty string name; anything
+    else is a typed refusal of ``initialize`` before any schema is written."""
+    responder.routes = {"databases": DATABASE_FAILURES[case]}
+    _assert_typed_write_failure("adapter.initialize", TypeDBProjectionAdapter().initialize, case)
+
+
+def test_repair_1_write_path_accepts_well_formed_answers(responder: TypeDBResponder) -> None:
+    """Positive control of the write, schema and database parsing paths: well-formed answers
+    (with an empty commit and close body, as TypeDB sends) are accepted on every write path."""
+    for _, call in _write_paths():
+        responder.routes = {"databases": _DATABASES_OK, "commit": (200, b""), "close": (200, b"")}
+        call()
+    responder.routes = {"databases": (200, b'{"databases": []}'), "commit": (200, b"")}
+    TypeDBProjectionAdapter().initialize()
+
+
 def _audit_event(**changes: Any) -> Any:
     audit = module("audit")
     gcs = governed_context()
