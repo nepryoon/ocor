@@ -217,6 +217,14 @@ def _positive(field: str, value: object) -> int:
     return value
 
 
+def _stored_object(field: str, value: object) -> dict[str, Any]:
+    """A JSONB column the adapter wrote as an object; any other stored value (array,
+    scalar, null) fails closed instead of being coerced."""
+    if not isinstance(value, dict):
+        raise PostgresAdapterError("BACKEND_ERROR", f"stored {field} is not a JSON object")
+    return dict(value)
+
+
 class PostgresC3Adapter:
     """The only module in this component that imports ``psycopg``."""
 
@@ -377,7 +385,7 @@ class PostgresC3Adapter:
                     raise PostgresAdapterError(
                         "REVISION_CONFLICT", f"expected revision {expected_revision}, found {revision}"
                     )
-                state = dict(current["state"]) if current is not None else {}
+                state = _stored_object("state", current["state"]) if current is not None else {}
                 new_state = _merge_delta(state, canonical_delta)
                 check_state(state, new_state)
                 new_state_digest = canonical_digest(new_state)
@@ -502,7 +510,7 @@ class PostgresC3Adapter:
             return None
         return SnapshotRow(
             revision=int(row["revision"]),
-            state=dict(row["state"]),
+            state=_stored_object("state", row["state"]),
             state_digest=row["state_digest"],
             commit_id=row["commit_id"],
         )
@@ -600,7 +608,7 @@ class PostgresC3Adapter:
                 commit_id=row["commit_id"],
                 aggregate_ref=row["aggregate_ref"],
                 aggregate_revision=int(row["aggregate_revision"]),
-                payload=dict(row["payload"]),
+                payload=_stored_object("payload", row["payload"]),
                 payload_digest=row["payload_digest"],
                 branch=row["branch"],
                 occurred_at=row["occurred_at"],
@@ -738,7 +746,7 @@ class PostgresC3Adapter:
                     (limit,),
                 ).fetchall()
                 for row in orphaned_outbox:
-                    payload = dict(row["outbox_payload"])
+                    payload = _stored_object("outbox_payload", row["outbox_payload"])
                     if canonical_digest(payload) != row["outbox_payload_digest"]:
                         raise PostgresAdapterError(
                             "COMMIT_RECEIPT_MISMATCH", f"commit {row['commit_id']!r} outbox payload digest mismatch"

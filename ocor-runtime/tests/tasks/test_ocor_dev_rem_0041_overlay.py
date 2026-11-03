@@ -68,7 +68,7 @@ SEALED_SHA256 = {
     "src/ocor_runtime/c7/sealed_results.py": "ee45cd53f136c7f859a03c004d470be04367c0fab1ed0ffff86e64b2aedeba74",
     "src/ocor_runtime/c7/adapters/seaweedfs.py": "f81a4a0bc5b964be010c1d25f41d319443199eeeef8673b018bb7ece25f7c7dc",
     "src/ocor_runtime/c7/runtime.py": "618296ae3e490cb2170f1f330a7cc1e3a821795791203d5bfc88c194b32ce118",
-    "src/ocor_runtime/c3/adapters/terminusdb.py": "7cc187daf882cc9078b50f4fb6f69b4bc672663c1b0a4f59555659f8c263bea5",
+    "src/ocor_runtime/c3/adapters/terminusdb.py": "8ba485004ac1da772310ae0c4d08f97bedf4d50d8209fa0f97011af4fa95fee0",
     "src/ocor_runtime/c3/terminusdb_service.py": "a63a11994c8945b67138c91937ad0983b199c71ea34608be10fb7e1482d1f76e",
 }
 TERMINUSDB_URL = os.environ.get("OCOR_LIVE_TERMINUSDB_URL", "http://127.0.0.1:6363")

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import http.client
 import json
 import os
 import re
@@ -52,6 +53,8 @@ MAIN_BRANCH = "main"
 FENCE_BOUNDARY = "c3-canonical"
 MAX_CONDITIONAL_ATTEMPTS = 64
 DATABASE_NAME = re.compile(r"[a-z][a-z0-9_]{2,62}")
+API_ERROR_TYPE = re.compile(r"api:[A-Za-z]{1,64}")
+DATA_VERSION = re.compile(r"branch:[0-9a-z]{1,128}")
 RESERVED_DATABASES = frozenset({"ocor_default"})
 DOCUMENT_TYPES = (
     "C3Aggregate", "C3Commit", "C3SourceBinding", "C3Idempotency", "C3OutboxEntry", "C3DeliveryAttempt", "C3WriterFence"
@@ -218,6 +221,34 @@ def _text(document: Mapping[str, Any], field: str) -> str:
     return value
 
 
+def _integer(document: Mapping[str, Any], field: str, *, minimum: int) -> int:
+    value = document.get(field)
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not an integer >= {minimum}")
+    return value
+
+
+def _timestamp(document: Mapping[str, Any], field: str) -> datetime:
+    try:
+        return parse_utc_timestamp(_text(document, field))
+    except ValueError as exc:
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not a canonical UTC timestamp") from exc
+
+
+def _answer(status: int, body: object) -> str:
+    """A bounded description of a server answer for error messages: the HTTP status and,
+    when well formed, the TerminusDB error type; never the body itself."""
+    error = body.get("api:error") if isinstance(body, dict) else None
+    kind = error.get("@type") if isinstance(error, dict) else None
+    if isinstance(kind, str) and API_ERROR_TYPE.fullmatch(kind):
+        return f"HTTP {status} {kind}"
+    return f"HTTP {status}"
+
+
+def _reject_constant(name: str) -> None:
+    raise ValueError(f"non-standard JSON constant {name}")
+
+
 def _key(*parts: str) -> str:
     return hashlib.sha256("\x1f".join(parts).encode("utf-8")).hexdigest()
 
@@ -252,25 +283,28 @@ def _source_binding_document(commit_id: str, binding: Mapping[str, str]) -> dict
 def _outbox_document(commit: Mapping[str, Any]) -> dict[str, Any]:
     """The immutable outbox entry, re-derivable from the commit record it belongs to: the
     event payload was fixed in the commit and is verified against its digest."""
-    payload = _json_object(commit["outbox_payload_json"], "outbox_payload_json")
-    if canonical_digest(payload) != commit["outbox_payload_digest"]:
+    payload_json = _text(commit, "outbox_payload_json")
+    payload_digest = _text(commit, "outbox_payload_digest")
+    if canonical_digest(_json_object(payload_json, "outbox_payload_json")) != payload_digest:
         raise TerminusDBAdapterError("COMMIT_RECEIPT_MISMATCH", "commit outbox payload digest mismatch")
+    event_id = _text(commit, "outbox_event_id")
+    _timestamp(commit, "committed_at")
     return {
         "@type": "C3OutboxEntry",
-        "key": _key(commit["outbox_event_id"]),
-        "event_id": commit["outbox_event_id"],
-        "commit_id": commit["commit_id"],
-        "aggregate_ref": commit["aggregate_ref"],
-        "aggregate_revision": int(commit["to_revision"]),
-        "payload_json": commit["outbox_payload_json"],
-        "payload_digest": commit["outbox_payload_digest"],
-        "branch": commit["branch"],
-        "occurred_at": commit["committed_at"],
+        "key": _key(event_id),
+        "event_id": event_id,
+        "commit_id": _text(commit, "commit_id"),
+        "aggregate_ref": _text(commit, "aggregate_ref"),
+        "aggregate_revision": _integer(commit, "to_revision", minimum=1),
+        "payload_json": payload_json,
+        "payload_digest": payload_digest,
+        "branch": _text(commit, "branch"),
+        "occurred_at": _text(commit, "committed_at"),
     }
 
 
 def _idempotency_document(commit: Mapping[str, Any]) -> dict[str, Any]:
-    scope = (commit["tenant_id"], commit["aggregate_type"], commit["aggregate_ref"], commit["idempotency_key"])
+    scope = tuple(_text(commit, field) for field in ("tenant_id", "aggregate_type", "aggregate_ref", "idempotency_key"))
     return {
         "@type": "C3Idempotency",
         "key": _key(*scope),
@@ -278,20 +312,24 @@ def _idempotency_document(commit: Mapping[str, Any]) -> dict[str, Any]:
         "aggregate_type": scope[1],
         "aggregate_ref": scope[2],
         "idempotency_key": scope[3],
-        "command_digest": commit["command_digest"],
-        "commit_id": commit["commit_id"],
+        "command_digest": _text(commit, "command_digest"),
+        "commit_id": _text(commit, "commit_id"),
     }
 
 
 def _outcome(commit: Mapping[str, Any], *, replayed: bool) -> CommitOutcome:
+    from_revision = _integer(commit, "from_revision", minimum=0)
+    to_revision = _integer(commit, "to_revision", minimum=1)
+    if to_revision != from_revision + 1:
+        raise TerminusDBAdapterError("COMMIT_RECEIPT_MISMATCH", "stored commit revisions are not consecutive")
     return CommitOutcome(
-        commit_id=commit["commit_id"],
-        from_revision=int(commit["from_revision"]),
-        to_revision=int(commit["to_revision"]),
-        state_digest=commit["state_digest"],
-        outbox_event_id=commit["outbox_event_id"],
-        outbox_payload_digest=commit["outbox_payload_digest"],
-        committed_at=parse_utc_timestamp(commit["committed_at"]),
+        commit_id=_text(commit, "commit_id"),
+        from_revision=from_revision,
+        to_revision=to_revision,
+        state_digest=_text(commit, "state_digest"),
+        outbox_event_id=_text(commit, "outbox_event_id"),
+        outbox_payload_digest=_text(commit, "outbox_payload_digest"),
+        committed_at=_timestamp(commit, "committed_at"),
         replayed=replayed,
     )
 
@@ -375,31 +413,41 @@ class TerminusDBC3Adapter:
             request.add_header("Content-Type", "application/json")
         try:
             with urllib.request.urlopen(request, timeout=self._timeout) as response:
-                status, text = response.status, response.read().decode("utf-8")
-                version = response.headers.get("TerminusDB-Data-Version", "")
+                status, raw = response.status, response.read()
+                version = response.headers.get("TerminusDB-Data-Version") or ""
         except urllib.error.HTTPError as error:
-            status, text, version = error.code, error.read().decode("utf-8"), ""
-        except (urllib.error.URLError, OSError) as error:
-            raise TerminusDBUnavailable(f"{method} {path}: {error}") from error
+            try:
+                status, raw, version = error.code, error.read(), ""
+            except (http.client.HTTPException, OSError) as exc:
+                raise TerminusDBUnavailable(f"{method} {path}: {type(exc).__name__}") from exc
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
+            # The reason of an HTTP protocol error carries server bytes (for example a
+            # malformed status line): only its type is reported.
+            raise TerminusDBUnavailable(f"{method} {path}: {type(error).__name__}") from error
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            raise TerminusDBAdapterError("BACKEND_ERROR", "the server answer is not UTF-8") from None
         return status, self._parse(text), version
 
     @staticmethod
     def _parse(text: str) -> Any:
         """Strict JSON of a server answer. TerminusDB prefixes some not-found GETs with a
         status line before the JSON body (see deploy/bootstrap/fixtures/load_fixtures.py):
-        only a single prefix line before one JSON object is accepted; any other body is a
-        typed backend error that never echoes the body."""
+        only a single prefix line before one JSON object is accepted; any other body,
+        a non-standard constant (NaN, Infinity) or a nesting beyond the parser's depth
+        is a typed backend error that never echoes the body."""
         if not text.strip():
             return None
         try:
-            return json.loads(text)
-        except json.JSONDecodeError:
+            return json.loads(text, parse_constant=_reject_constant)
+        except (ValueError, RecursionError):
             start = text.find("{")
             if start <= 0 or "\n" in text[:start].strip():
                 raise TerminusDBAdapterError("BACKEND_ERROR", "the server answer is not JSON") from None
             try:
-                return json.loads(text[start:])
-            except json.JSONDecodeError:
+                return json.loads(text[start:], parse_constant=_reject_constant)
+            except (ValueError, RecursionError):
                 raise TerminusDBAdapterError("BACKEND_ERROR", "the server answer is not JSON") from None
 
     def _branch_path(self) -> str:
@@ -409,15 +457,15 @@ class TerminusDBC3Adapter:
         """The read path pinned to the commit named by a branch data version, so every
         read of one snapshot sees exactly the state the conditional write is checked
         against (a not-found answer carries no data version of its own)."""
-        prefix, _, commit = data_version.partition(":")
-        if prefix != "branch" or not commit:
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"unexpected data version {data_version!r}")
+        if DATA_VERSION.fullmatch(data_version) is None:
+            raise TerminusDBAdapterError("BACKEND_ERROR", "the branch data version is not branch:<commit>")
+        commit = data_version.partition(":")[2]
         return f"/api/document/{self._organization}/{self._database}/local/commit/{commit}"
 
     def _data_version(self) -> str:
         status, body, version = self._request("GET", f"{self._branch_path()}?type=C3WriterFence&as_list=true")
         if status != 200 or not version:
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"no branch data version: {status} {body}")
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"no branch data version: {_answer(status, body)}")
         return version
 
     def _get_document(self, doc_type: str, key: str, data_version: str | None = None) -> dict[str, Any] | None:
@@ -427,13 +475,17 @@ class TerminusDBC3Adapter:
         if status == 404 or (isinstance(body, dict) and body.get("api:status") == "api:not_found"):
             return None
         if status != 200 or not isinstance(body, dict):
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"GET {doc_type}: {status} {body}")
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"GET {doc_type}: {_answer(status, body)}")
+        if body.get("@type") != doc_type or _text(body, "key") != key:
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"GET {doc_type}: the server answered another document")
         return body
 
     def _list(self, doc_type: str, data_version: str) -> list[dict[str, Any]]:
         status, body, _ = self._request("GET", f"{self._commit_path(data_version)}?type={doc_type}&as_list=true")
         if status != 200 or not isinstance(body, list):
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"list {doc_type}: {status} {body}")
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"list {doc_type}: {_answer(status, body)}")
+        if not all(isinstance(item, dict) and item.get("@type") == doc_type for item in body):
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"list {doc_type}: an entry is not a {doc_type} document")
         return body
 
     def _snapshot(self, *refs: tuple[str, str]) -> tuple[list[dict[str, Any] | None], str]:
@@ -459,8 +511,8 @@ class TerminusDBC3Adapter:
             # refused this whole transaction, which is a failed precondition.
             return False
         if isinstance(error, dict) and error.get("@type") == "api:WOQLSchemaCheckFailure":
-            raise TerminusDBAdapterError("BATCH_REJECTED", f"the server refused the whole transaction: {body}")
-        raise TerminusDBAdapterError("BACKEND_ERROR", f"WOQL transaction: {status} {body}")
+            raise TerminusDBAdapterError("BATCH_REJECTED", f"the server refused the whole transaction: {_answer(status, body)}")
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"WOQL transaction: {_answer(status, body)}")
 
     # --- lifecycle -----------------------------------------------------------------
 
@@ -469,8 +521,10 @@ class TerminusDBC3Adapter:
         kept. A schema that differs from ``SCHEMA`` fails closed."""
         status, body, _ = self._request("GET", "/api/db")
         if status != 200 or not isinstance(body, list):
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot list databases: {status} {body}")
-        existing = {entry.get("path", "").split("/")[-1] for entry in body}
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot list databases: {_answer(status, body)}")
+        if not all(isinstance(entry, dict) and isinstance(entry.get("path"), str) for entry in body):
+            raise TerminusDBAdapterError("BACKEND_ERROR", "cannot list databases: an entry has no path")
+        existing = {entry["path"].split("/")[-1] for entry in body}
         if self._database not in existing:
             status, body, _ = self._request(
                 "POST",
@@ -478,12 +532,14 @@ class TerminusDBC3Adapter:
                 body={"label": self._database, "comment": "OCOR C3 VersionedAssertedState", "schema": True},
             )
             if status != 200:
-                raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot create {self._database}: {status} {body}")
+                raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot create {self._database}: {_answer(status, body)}")
         schema_path = f"/api/document/{self._organization}/{self._database}?graph_type=schema&as_list=true"
         status, body, _ = self._request("GET", schema_path)
         if status != 200 or not isinstance(body, list):
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot read the schema: {status} {body}")
-        present = {item["@id"]: item for item in body if isinstance(item, dict) and "@id" in item}
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot read the schema: {_answer(status, body)}")
+        if not all(isinstance(item, dict) for item in body):
+            raise TerminusDBAdapterError("BACKEND_ERROR", "cannot read the schema: an entry is not an object")
+        present = {item["@id"]: item for item in body if isinstance(item.get("@id"), str)}
         expected = {item["@id"]: item for item in SCHEMA if "@id" in item}
         if not present:
             query = urllib.parse.urlencode(
@@ -493,15 +549,18 @@ class TerminusDBC3Adapter:
                 "POST", f"/api/document/{self._organization}/{self._database}?{query}", body=list(SCHEMA)
             )
             if status != 200:
-                raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot write the schema: {status} {body}")
+                raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot write the schema: {_answer(status, body)}")
         elif present != expected:
-            divergent = sorted(name for name in set(present) | set(expected) if present.get(name) != expected.get(name))
-            raise TerminusDBAdapterError("SCHEMA_MISMATCH", f"C3 class definitions differ from SCHEMA: {divergent}")
+            divergent = sorted(name for name in set(expected) if present.get(name) != expected.get(name))
+            foreign = len(set(present) - set(expected))
+            raise TerminusDBAdapterError(
+                "SCHEMA_MISMATCH", f"C3 class definitions differ from SCHEMA: {divergent}, {foreign} foreign class(es)"
+            )
 
     def drop(self) -> None:
         status, body, _ = self._request("DELETE", f"/api/db/{self._organization}/{self._database}")
         if status not in (200, 404):
-            raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot delete {self._database}: {status} {body}")
+            raise TerminusDBAdapterError("BACKEND_ERROR", f"cannot delete {self._database}: {_answer(status, body)}")
 
     @property
     def writer_epoch(self) -> int | None:
@@ -512,7 +571,7 @@ class TerminusDBC3Adapter:
         key = _key(FENCE_BOUNDARY)
         for _ in range(MAX_CONDITIONAL_ATTEMPTS):
             (fence,), version = self._snapshot(("C3WriterFence", key))
-            epoch = (int(fence["writer_epoch"]) if fence is not None else 0) + 1
+            epoch = (_integer(fence, "writer_epoch", minimum=1) if fence is not None else 0) + 1
             document = {"@type": "C3WriterFence", "key": key, "boundary": FENCE_BOUNDARY, "writer_epoch": epoch, "writer_id": self._writer_id}
             if fence is None:
                 applied = self._transact([_absent("C3WriterFence", key)], [_insert(document)], f"C3 writer epoch {epoch}")
@@ -536,7 +595,7 @@ class TerminusDBC3Adapter:
     def _check_fence(self, fence: Mapping[str, Any] | None) -> int:
         if self._epoch is None:
             raise TerminusDBAdapterError("SINGLE_WRITER_VIOLATION", "the writer has not acquired an epoch")
-        stored = int(fence["writer_epoch"]) if fence is not None else 0
+        stored = _integer(fence, "writer_epoch", minimum=1) if fence is not None else 0
         if stored != self._epoch:
             raise TerminusDBAdapterError(
                 "SINGLE_WRITER_VIOLATION", f"stale writer epoch {self._epoch}, boundary epoch is {stored}"
@@ -586,21 +645,21 @@ class TerminusDBC3Adapter:
             )
             epoch = self._check_fence(fence)
             if binding is not None:
-                if binding["command_digest"] != command_digest:
+                if _text(binding, "command_digest") != command_digest:
                     raise TerminusDBAdapterError(
                         "IDEMPOTENCY_CONFLICT", "idempotency key or scope was rebound to different command content"
                     )
-                commit = self._get_document("C3Commit", _key(binding["commit_id"]), version)
+                commit = self._get_document("C3Commit", _key(_text(binding, "commit_id")), version)
                 if commit is None:
                     raise TerminusDBAdapterError("COMMIT_RECEIPT_MISMATCH", "idempotency binding without commit record")
                 return _outcome(commit, replayed=True)
 
-            revision = int(aggregate["revision"]) if aggregate is not None else 0
+            revision = _integer(aggregate, "revision", minimum=0) if aggregate is not None else 0
             if expected_revision != revision:
                 raise TerminusDBAdapterError(
                     "REVISION_CONFLICT", f"expected revision {expected_revision}, found {revision}"
                 )
-            state = _json_object(aggregate["state_json"], "state_json") if aggregate is not None else {}
+            state = _json_object(aggregate.get("state_json"), "state_json") if aggregate is not None else {}
             new_state = {**state, **dict(canonical_delta)}
             # Preconditions on the state read at this data version, invariants on the new
             # state; the transaction below commits only if that revision is still current.
@@ -675,10 +734,10 @@ class TerminusDBC3Adapter:
         if document is None:
             return None
         return SnapshotRow(
-            revision=int(document["revision"]),
-            state=_json_object(document["state_json"], "state_json"),
-            state_digest=document["state_digest"],
-            commit_id=document["commit_id"],
+            revision=_integer(document, "revision", minimum=0),
+            state=_json_object(document.get("state_json"), "state_json"),
+            state_digest=_text(document, "state_digest"),
+            commit_id=_text(document, "commit_id"),
         )
 
     def current_revision(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> int:
@@ -703,16 +762,15 @@ class TerminusDBC3Adapter:
         document = self._get_document("C3DeliveryAttempt", _key(event_id))
         if document is None:
             return ()
-        epoch = document.get("writer_epoch")
-        if isinstance(epoch, bool) or not isinstance(epoch, int):
-            raise TerminusDBAdapterError("BACKEND_ERROR", "stored writer_epoch is not an integer")
+        if _text(document, "event_id") != event_id or _text(document, "outcome") != "ACKNOWLEDGED":
+            raise TerminusDBAdapterError("BACKEND_ERROR", "stored delivery attempt is not the acknowledgement of this entry")
         return (
             DeliveryAttemptRow(
-                event_id=_text(document, "event_id"),
+                event_id=event_id,
                 attempt_no=1,
-                outcome=_text(document, "outcome"),
-                writer_epoch=epoch,
-                recorded_at=parse_utc_timestamp(_text(document, "acknowledged_at")),
+                outcome="ACKNOWLEDGED",
+                writer_epoch=_integer(document, "writer_epoch", minimum=1),
+                recorded_at=_timestamp(document, "acknowledged_at"),
             ),
         )
 
@@ -722,24 +780,25 @@ class TerminusDBC3Adapter:
         version = self._data_version()
         entries = self._list("C3OutboxEntry", version)
         attempts = self._list("C3DeliveryAttempt", version)
-        delivered = {attempt["event_id"] for attempt in attempts}
-        pending = sorted(
-            (entry for entry in entries if entry["branch"] == MAIN_BRANCH and entry["event_id"] not in delivered),
-            key=lambda entry: (entry["occurred_at"], entry["event_id"]),
-        )
-        return tuple(
+        delivered = {_text(attempt, "event_id") for attempt in attempts}
+        rows = [
             OutboxRow(
-                event_id=entry["event_id"],
-                commit_id=entry["commit_id"],
-                aggregate_ref=entry["aggregate_ref"],
-                aggregate_revision=int(entry["aggregate_revision"]),
-                payload=_json_object(entry["payload_json"], "payload_json"),
-                payload_digest=entry["payload_digest"],
-                branch=entry["branch"],
-                occurred_at=parse_utc_timestamp(entry["occurred_at"]),
+                event_id=_text(entry, "event_id"),
+                commit_id=_text(entry, "commit_id"),
+                aggregate_ref=_text(entry, "aggregate_ref"),
+                aggregate_revision=_integer(entry, "aggregate_revision", minimum=1),
+                payload=_json_object(entry.get("payload_json"), "payload_json"),
+                payload_digest=_text(entry, "payload_digest"),
+                branch=MAIN_BRANCH,
+                occurred_at=_timestamp(entry, "occurred_at"),
             )
-            for entry in pending[:limit]
+            for entry in entries
+            if _text(entry, "branch") == MAIN_BRANCH
+        ]
+        pending = sorted(
+            (row for row in rows if row.event_id not in delivered), key=lambda row: (row.occurred_at, row.event_id)
         )
+        return tuple(pending[:limit])
 
     def acknowledge_outbox(self, event_id: str, *, acknowledged_at: datetime) -> None:
         recorded_at = format_utc_timestamp(acknowledged_at)
@@ -750,7 +809,7 @@ class TerminusDBC3Adapter:
                 ("C3DeliveryAttempt", _key(event_id)),
             )
             epoch = self._check_fence(fence)
-            if entry is None or entry["branch"] != MAIN_BRANCH:
+            if entry is None or _text(entry, "branch") != MAIN_BRANCH:
                 raise TerminusDBAdapterError("OUTBOX_ENTRY_NOT_FOUND", f"no main outbox entry {event_id!r}")
             if attempt is not None:
                 return
@@ -785,15 +844,15 @@ class TerminusDBC3Adapter:
             commits = self._list("C3Commit", version)
             bindings = self._list("C3Idempotency", version)
             entries = self._list("C3OutboxEntry", version)
-            bound = {binding["commit_id"] for binding in bindings}
-            relayable = {entry["commit_id"] for entry in entries if entry["branch"] == MAIN_BRANCH}
+            bound = {_text(binding, "commit_id") for binding in bindings}
+            relayable = {_text(entry, "commit_id") for entry in entries if _text(entry, "branch") == MAIN_BRANCH}
             repairs: list[dict[str, Any]] = []
-            for commit in sorted(commits, key=lambda item: item["commit_id"]):
-                if commit["branch"] != MAIN_BRANCH:
+            for commit in sorted(commits, key=lambda item: _text(item, "commit_id")):
+                if _text(commit, "branch") != MAIN_BRANCH:
                     continue
-                if commit["commit_id"] not in bound and len(repairs) < limit:
+                if _text(commit, "commit_id") not in bound and len(repairs) < limit:
                     repairs.append(_idempotency_document(commit))
-                if commit["commit_id"] not in relayable and len(repairs) < limit:
+                if _text(commit, "commit_id") not in relayable and len(repairs) < limit:
                     repairs.append(_outbox_document(commit))
             if not repairs:
                 return 0
