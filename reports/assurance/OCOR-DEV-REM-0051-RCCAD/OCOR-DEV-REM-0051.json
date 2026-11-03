@@ -1,0 +1,1557 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a73.2: canonical-ingestion-envelope:1.2, 29 required fields, mandatory second payload validation; LLD v1.1 \u00a72.5: closed envelope; producer signs envelope and digest; FR-069: envelope with eventId, source, schema version, times, aggregate identity, classification and provenance; FR-068; FR-006",
+      "entry": "NCR-C5-001",
+      "norm_refs": [
+        {
+          "lines": "527-568",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "154",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "199",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "192",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "49",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-069",
+        "FR-068",
+        "FR-006"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_second_payload_validation_quarantines_failures",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_producer_signature_covers_envelope_and_digest",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_transport_principal_binding",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_envelope_realises_the_commit_context",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a72.5 failure taxonomy and replay rules; ADD v1.3 C5 operations Publish, Subscribe, Replay, Quarantine; ADD v1.3 \u00a73.8 Event Subscription Contract via port Subscribe; FR-074: distinguish transient, permanent, policy-denied and poison; FR-016 (MVP): subscription/change feed; FR-072 (MVP): replay preserving schema and provenance",
+      "entry": "NCR-C5-002",
+      "norm_refs": [
+        {
+          "lines": "158-165",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "286",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2573-2575",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "205",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "79",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "202",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-074",
+        "FR-016",
+        "FR-072"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_subscribe_surface_has_opaque_cursor",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a72.5: quotas per tenant and priority class; audit/security never dropped; LLD v1.1 \u00a72.5: PERMANENT -> immutable DLQ; LLD v1.1 \u00a75.1: ResourceClass CONTROL/INTERACTIVE/BATCH/AUDIT determines quota, priority and backpressure; NFR-079: backpressure and priority without disabling authentication, policy, audit",
+      "entry": "NCR-C5-003",
+      "norm_refs": [
+        {
+          "lines": "165",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "161",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "338",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "406",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-079"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_003_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_003_dead_letters_are_durable_and_immutable"
+      ]
+    }
+  ],
+  "ambiguities_resolved_fail_closed": [
+    "the reason codes of the second payload validation are not enumerated by the norm: invalid payload SCHEMA_VIOLATION, absent schema UNKNOWN_SCHEMA, discordant digest SCHEMA_DIGEST_MISMATCH, all PERMANENT with a dead letter; payload digest PAYLOAD_DIGEST_MISMATCH and signature SIGNATURE_INVALID",
+    "the producer signature covers the envelope without integrity.signature_ref, which is the content reference of the signature",
+    "a transport principal mismatch is quarantined POLICY_DENIED with an Audit Record; an exhausted retry budget is RETRY_BUDGET_EXHAUSTED without a dead letter (the event stays in the producer outbox); the release from the operator gate is authorised by the policy port as ReprocessAuthorized",
+    "marking_digest is the sha256 of the RFC 8785 bytes of the marking object without its own marking_digest member (ADD v1.3 :408-411 does not name the bytes; an object cannot cover its own digest); at the C5 admission boundary a mismatch is DENY, quarantined POLICY_DENIED with reason GOVERNED_CONTEXT_MISMATCH and an Audit Record (ADD v1.3 :199, :406, :411); in the C3 relay an unresolvable reference or a mismatching digest is MARKING_UNRESOLVED before any signature or publish",
+    "the relayed event context is the commit context with effective_principal_id set to the relay's authenticated transport principal, appended to actor_chain (ADD v1.3 :197, :844); governed_context_digest is the digest of that record and the relay reproduces it (ADD v1.3 :845); the commit context and its digest stay in the payload and every C4 projector verifies them",
+    "event_id and causation_id are RFC 9562 v5 UUIDs (fixed OCOR namespace) of the outbox event ID and of the action instance, because the envelope requires format uuid and C3 identifiers are URNs; the originals stay in idempotency_key, source.source_record_id and the payload",
+    "aggregate_type_id is urn:ocor:aggregate-type:<C3 aggregate type>, world_ref urn:ocor:world:<branch>, provenance_ref the GatePackage digest, CDC operation CREATE for revision 1 and UPDATE otherwise, before_digest null (not carried by the C3 event), after_digest the state digest; canonical-state-committed is ResourceClass CONTROL",
+    "a dead letter of the attempt that reaches the poison threshold (3) and of every later attempt is POISON and opens a POISON quarantine of the event unless one is open (LLD v1.1 :163); earlier attempts stay PERMANENT (LLD v1.1 :161)",
+    "ReprocessAuthorized of a dead letter (ADD v1.3 :286) is gated by an open POISON quarantine (OPERATOR_GATE_CLOSED), authorised by the replay decision of the policy port with a declared reason and authority (REPLAY_DENIED otherwise), audited, and re-admits the stored envelope and signature through every admission check under the transport principal of the producer channel; an already durable event is a duplicate (LLD v1.1 :165)",
+    "publish_with_backpressure requires the tenant argument to equal the envelope tenant_id (ADD v1.3 :199: a discordant body value is never corrected; GOVERNED_CONTEXT_MISMATCH)",
+    "journal recovery fails closed with the transient journal error when the offsets answer names no partition, or partitions other than those of the topic, instead of reading it as an empty journal (LLD v1.1 :165, durable deduplication)"
+  ],
+  "change_anchors": [
+    {
+      "change": "new: closed canonical-ingestion-envelope:1.2 (the JSON Schema of ADD v1.3 section 3.2 verbatim, 29 required fields) validated with Draft 2020-12 and strict uuid/date-time formats, deep-frozen; the inline marking resolved to classification_marking_ref with its digest verified; the GovernedContext record of the envelope and the reproduction of governed_context_digest",
+      "function": "ENVELOPE_SCHEMA, CanonicalIngestionEnvelope (from_mapping, signing_bytes, isolation_context, governed_context), BackboneError, EnvelopeViolation, payload_digest, marking_digest, urn_digest, envelope_digest",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:527-840, :402-411, :845; docs/OCOR_LLD_v1.1.md:154; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:199 (FR-069)",
+      "path": "ocor-runtime/src/ocor_runtime/c5/envelope.py"
+    },
+    {
+      "change": "new: the producer signs with Ed25519 the DSSE PAE of the RFC 8785 envelope bytes without integrity.signature_ref, after setting integrity.payload_digest; the keyring verifies payload digest and signature (PAYLOAD_DIGEST_MISMATCH, SIGNATURE_INVALID)",
+      "function": "ProducerSigner, SignedEnvelope, ProducerKeyring",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:154",
+      "path": "ocor-runtime/src/ocor_runtime/c5/envelope.py"
+    },
+    {
+      "change": "new: content-addressed payload schemas under (schema_id, schema_version), never replaced; event types bound to a schema pin and a ResourceClass; second payload validation (SCHEMA_VIOLATION, UNKNOWN_SCHEMA, SCHEMA_DIGEST_MISMATCH); registry digest bound into checkpoints",
+      "function": "SchemaRegistry (register_schema, register_event_type, validate_payload, digest), EventTypeRegistration",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:529; docs/OCOR_LLD_v1.1.md:165, :338",
+      "path": "ocor-runtime/src/ocor_runtime/c5/schema.py"
+    },
+    {
+      "change": "new: TRANSIENT, PERMANENT, POLICY_DENIED and POISON; bounded exponential backoff min(max, base*2^k*(1+jitter*u)) inside a retry budget",
+      "function": "FailureClass, RetryPolicy",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:156-163; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:205 (FR-074)",
+      "path": "ocor-runtime/src/ocor_runtime/c5/retry.py"
+    },
+    {
+      "change": "new: the C5 policy port; a failing or absent decision denies",
+      "function": "PolicyDecision, C5Policy (authorize_publish, authorize_delivery, authorize_replay), permits",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:162, :165; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380-381",
+      "path": "ocor-runtime/src/ocor_runtime/c5/policy.py"
+    },
+    {
+      "change": "new: replay with a declared ingest-time window, reason and authority; reprocess of a dead letter with reason and authority",
+      "function": "ReplayRequest, ReprocessRequest",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:165; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:286; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:202 (FR-072)",
+      "path": "ocor-runtime/src/ocor_runtime/c5/replay.py"
+    },
+    {
+      "change": "new: the Event Subscription Contract of ADD v1.3 section 3.8 verbatim; deliveries carry no partition, offset or broker identifier; opaque cursor",
+      "function": "SUBSCRIPTION_CONTRACT_SCHEMA, DeliveredEvent, SubscriptionBatch, DeliveryOutcome",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2573-2575, :2577-2700, :2728; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:79 (FR-016)",
+      "path": "ocor-runtime/src/ocor_runtime/c5/subscription.py"
+    },
+    {
+      "change": "new: in-process confluent-kafka journal (acks=all, idempotent producer, enable.metrics.push=false, no topic auto-creation) keyed by ordering_key; no docker exec and no Kafka CLI in the product path; broker failures TRANSIENT",
+      "function": "KafkaJournal, KafkaJournalError, JournalRecord",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360; NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 2 and 7",
+      "path": "ocor-runtime/src/ocor_runtime/c5/adapters/kafka.py"
+    },
+    {
+      "change": "new: append-only PostgreSQL DLQ, quarantine, operator releases, subscriptions and checkpoints, immutability enforced by triggers; dead letters POISON from the threshold on",
+      "function": "PostgresC5Store (c5_dead_letter, c5_quarantine, c5_quarantine_release, c5_subscription, c5_checkpoint), DeadLetter, QuarantineRecord",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:161, :163, :165",
+      "path": "ocor-runtime/src/ocor_runtime/c5/adapters/postgres.py"
+    },
+    {
+      "change": "rewritten: admission boundary in order (closed envelope, transport principal binding, producer signature, marking digest and GovernedContext record, second payload validation, policy, quota per tenant and ResourceClass, durable dedup and advancing revision, journal write with retry budget); Subscribe by subscription_id and opaque cursor with per-delivery re-verification and policy; immutable checkpoints; POISON partition quarantine behind the operator gate; authorised windowed replay that never appends; ReprocessAuthorized through the full admission",
+      "function": "CanonicalEventBackbone (publish, subscribe, poll, deliver, replay, release_quarantine, reprocess_dead_letter, dead_letters, poison_records, poison_held)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:286, :379, :402-411, :844-846; docs/OCOR_LLD_v1.1.md:154-165; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:205, :79, :202",
+      "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
+    },
+    {
+      "change": "quotas per tenant and ResourceClass (CONTROL, INTERACTIVE, BATCH, AUDIT; AUDIT never refused, control/audit not in the batch pool); operations surface for the C5 consumers (publish with backpressure bound to the envelope tenant, durable dead letters, POISON operator release, ReprocessAuthorized of a dead letter)",
+      "function": "ResourceClass, AdmissionController, EventOperationsCoordinator, OperationsError",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:165, :338; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:406 (NFR-079); ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:286",
+      "path": "ocor-runtime/src/ocor_runtime/c5/operations.py"
+    },
+    {
+      "change": "the committed payload carries the complete GovernedContext; content-addressed JSON Schema 2020-12 of canonical-state-committed",
+      "function": "canonical_event_payload (governed_context), CANONICAL_STATE_COMMITTED_SCHEMA",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:845, :529",
+      "path": "ocor-runtime/src/ocor_runtime/c3/events.py"
+    },
+    {
+      "change": "the relay builds and signs a CDC canonical-ingestion-envelope:1.2 (v5 UUID identities, outbox ID as idempotency key and source record, relay transport principal appended to the actor chain, inline marking resolved and verified or MARKING_UNRESOLVED, expected_revision) and publishes it with its transport principal; the event type is CONTROL",
+      "function": "canonical_event, OutboxRelayWorker(signer=, principal=, markings=), register_canonical_state_committed, event_uuid, relay_context",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:845-846, :197, :844, :408-411",
+      "path": "ocor-runtime/src/ocor_runtime/c3/relay.py"
+    },
+    {
+      "change": "consumes the 1.2 fields (event_type_id, aggregate.expected_revision, CDC transport) and verifies the envelope context against the commit context of the payload",
+      "function": "CanonicalStateProjector",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:845; docs/OCOR_LLD_v1.1.md:148",
+      "path": "ocor-runtime/src/ocor_runtime/c4/projector.py"
+    },
+    {
+      "change": "confluent-kafka 2.16.1 and dowhy 0.14 (runtime), hypothesis 6.170.14 (test extra): one additive change, 46 packages, no existing version or wheel hash changed",
+      "function": "dependencies, optional-dependencies.test",
+      "normative_element": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :275",
+      "path": "ocor-runtime/pyproject.toml, ocor-runtime/uv.lock"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c5/backbone.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0040.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0041.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c5/operations.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0041.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py"
+    ]
+  },
+  "consumers_inventory_note": "product consumers of C5: c3/relay.py and c4/projector.py; test consumers: test_ocor_dev_0040/0041/rem_0022/rem_0025/rem_0026/rem_0050/rem_0051; the mission thread, reports/tests and scripts do not import C5 (the plan builder and validator only name paths)",
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2 (NCP-U06 criterion), 5 (NCP-U06 row) and 7 (dependencies); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "dependencies": {
+    "added": [
+      "confluent-kafka 2.16.1 (runtime)",
+      "dowhy 0.14 (runtime)",
+      "hypothesis 6.170.14 (test extra)"
+    ],
+    "commit": "48eb6fe",
+    "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7",
+    "existing_versions_or_hashes_changed": 0,
+    "licence_assessment": "MIT, BSD, Apache-2.0, PSF (matplotlib), MIT-CMU (pillow), MIT-0 (cffi); MPL-2.0 for hypothesis and tqdm used unmodified; librdkafka BSD-2-Clause statically linking OpenSSL 3.5.8 (Apache-2.0), zstd, lz4 and zlib; libgfortran, libquadmath and libgomp under GPL with the GCC Runtime Library Exception or LGPL, dynamically linked and unmodified; no other GPL, AGPL, SSPL or BUSL",
+    "licences": [
+      {
+        "bundled_native_libraries": [],
+        "classifier": "MIT License",
+        "license_expression": null,
+        "license_field": null,
+        "package": "causal-learn",
+        "version": "0.1.4.8"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "MIT-0",
+        "license_field": null,
+        "package": "cffi",
+        "version": "2.1.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": null,
+        "license_field": "Apache-2.0",
+        "package": "clarabel",
+        "version": "0.11.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "BSD-3-Clause",
+        "package": "cloudpickle",
+        "version": "3.1.2"
+      },
+      {
+        "bundled_native_libraries": [
+          "librdkafka-0cb94173.so.1"
+        ],
+        "classifier": "Apache Software License",
+        "license_expression": null,
+        "license_field": null,
+        "package": "confluent-kafka",
+        "version": "2.16.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "contourpy",
+        "version": "1.4.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "Apache-2.0",
+        "license_field": null,
+        "package": "cvxpy",
+        "version": "1.9.3"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "Copyright (c) 2015, matplotlib project",
+        "package": "cycler",
+        "version": "0.12.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": null,
+        "license_field": "Apache-2.0",
+        "package": "cython",
+        "version": "3.3.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "MIT License",
+        "license_expression": null,
+        "license_field": "MIT",
+        "package": "dowhy",
+        "version": "0.14"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": null,
+        "license_field": "MIT",
+        "package": "fonttools",
+        "version": "4.68.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "MIT License",
+        "license_expression": "MIT",
+        "license_field": null,
+        "package": "formulaic",
+        "version": "1.2.2"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "MIT",
+        "license_field": null,
+        "package": "graphviz",
+        "version": "0.21"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "MIT",
+        "license_field": null,
+        "package": "highspy",
+        "version": "1.15.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "MPL-2.0",
+        "license_field": null,
+        "package": "hypothesis",
+        "version": "6.170.14"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": null,
+        "license_field": "MIT",
+        "package": "interface-meta",
+        "version": "2.0.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": null,
+        "package": "jinja2",
+        "version": "3.1.6"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "joblib",
+        "version": "1.6.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "=========================",
+        "package": "kiwisolver",
+        "version": "1.5.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-2-Clause AND Apache-2.0 WITH LLVM-exception",
+        "license_field": null,
+        "package": "llvmlite",
+        "version": "0.50.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "markupsafe",
+        "version": "3.0.4"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "Python Software Foundation License",
+        "license_expression": null,
+        "license_field": "License agreement for matplotlib versions 1.3.0 and later",
+        "package": "matplotlib",
+        "version": "3.11.2"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "MIT License",
+        "license_expression": null,
+        "license_field": "UNKNOWN",
+        "package": "momentchi2",
+        "version": "0.1.8"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "BSD",
+        "package": "mpmath",
+        "version": "1.3.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "MIT",
+        "license_field": null,
+        "package": "narwhals",
+        "version": "2.28.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "networkx",
+        "version": "3.7"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "BSD",
+        "package": "numba",
+        "version": "0.68.1"
+      },
+      {
+        "bundled_native_libraries": [
+          "libgfortran-040039e1-0352e75f.so.5.0.0",
+          "libquadmath-96973f99-934c22de.so.0.0.0",
+          "libscipy_openblas64_-32a4b2a6.so"
+        ],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+        "license_field": null,
+        "package": "numpy",
+        "version": "2.4.6"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "Apache-2.0",
+        "license_field": null,
+        "package": "osqp",
+        "version": "1.1.3"
+      },
+      {
+        "bundled_native_libraries": [
+          "_cyutility.cpython-312-x86_64-linux-gnu.so",
+          "_ujson.cpython-312-x86_64-linux-gnu.so",
+          "aggregations.cpython-312-x86_64-linux-gnu.so",
+          "algos.cpython-312-x86_64-linux-gnu.so",
+          "arrays.cpython-312-x86_64-linux-gnu.so",
+          "base.cpython-312-x86_64-linux-gnu.so",
+          "byteswap.cpython-312-x86_64-linux-gnu.so",
+          "ccalendar.cpython-312-x86_64-linux-gnu.so",
+          "conversion.cpython-312-x86_64-linux-gnu.so",
+          "dtypes.cpython-312-x86_64-linux-gnu.so",
+          "fields.cpython-312-x86_64-linux-gnu.so",
+          "groupby.cpython-312-x86_64-linux-gnu.so",
+          "hashing.cpython-312-x86_64-linux-gnu.so",
+          "hashtable.cpython-312-x86_64-linux-gnu.so",
+          "index.cpython-312-x86_64-linux-gnu.so",
+          "indexers.cpython-312-x86_64-linux-gnu.so",
+          "indexing.cpython-312-x86_64-linux-gnu.so",
+          "internals.cpython-312-x86_64-linux-gnu.so",
+          "interval.cpython-312-x86_64-linux-gnu.so",
+          "join.cpython-312-x86_64-linux-gnu.so",
+          "lib.cpython-312-x86_64-linux-gnu.so",
+          "missing.cpython-312-x86_64-linux-gnu.so",
+          "nattype.cpython-312-x86_64-linux-gnu.so",
+          "np_datetime.cpython-312-x86_64-linux-gnu.so",
+          "offsets.cpython-312-x86_64-linux-gnu.so",
+          "ops.cpython-312-x86_64-linux-gnu.so",
+          "ops_dispatch.cpython-312-x86_64-linux-gnu.so",
+          "pandas_datetime.cpython-312-x86_64-linux-gnu.so",
+          "pandas_parser.cpython-312-x86_64-linux-gnu.so",
+          "parsers.cpython-312-x86_64-linux-gnu.so",
+          "parsing.cpython-312-x86_64-linux-gnu.so",
+          "period.cpython-312-x86_64-linux-gnu.so",
+          "properties.cpython-312-x86_64-linux-gnu.so",
+          "reshape.cpython-312-x86_64-linux-gnu.so",
+          "sas.cpython-312-x86_64-linux-gnu.so",
+          "sparse.cpython-312-x86_64-linux-gnu.so",
+          "strptime.cpython-312-x86_64-linux-gnu.so",
+          "testing.cpython-312-x86_64-linux-gnu.so",
+          "timedeltas.cpython-312-x86_64-linux-gnu.so",
+          "timestamps.cpython-312-x86_64-linux-gnu.so",
+          "timezones.cpython-312-x86_64-linux-gnu.so",
+          "tslib.cpython-312-x86_64-linux-gnu.so",
+          "tzconversion.cpython-312-x86_64-linux-gnu.so",
+          "vectorized.cpython-312-x86_64-linux-gnu.so",
+          "writers.cpython-312-x86_64-linux-gnu.so"
+        ],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "pandas",
+        "version": "3.1.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "2-clause BSD",
+        "package": "patsy",
+        "version": "1.0.3"
+      },
+      {
+        "bundled_native_libraries": [
+          "libXau-154567c4.so.6.0.0",
+          "libavif-c6062d5f.so.16.4.2",
+          "libbrotlicommon-53534446.so.1.2.0",
+          "libbrotlidec-7e5462ba.so.1.2.0",
+          "libfreetype-57f805ba.so.6.20.6",
+          "libharfbuzz-fb49c9fc.so.0.61450.0",
+          "libjpeg-6dc8d115.so.62.4.0",
+          "liblcms2-88eaba2f.so.2.0.19",
+          "liblzma-de26b416.so.5.8.4",
+          "libopenjp2-e530e1bf.so.2.5.4",
+          "libpng16-1d1ba958.so.16.58.0",
+          "libsharpyuv-0066295b.so.0.1.2",
+          "libtiff-20b7e810.so.6.3.0",
+          "libwebp-51b0b3f7.so.7.2.0",
+          "libwebpdemux-9fe2abcc.so.2.0.17",
+          "libwebpmux-8fb1c9f6.so.3.1.2",
+          "libxcb-9065bb12.so.1.1.0",
+          "libzstd-40ad5e7e.so.1.5.7"
+        ],
+        "classifier": null,
+        "license_expression": "MIT-CMU",
+        "license_field": null,
+        "package": "pillow",
+        "version": "13.0.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "pycparser",
+        "version": "3.12"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "MIT",
+        "license_field": null,
+        "package": "pydot",
+        "version": "4.0.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "python-dateutil",
+        "version": "4.0.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": null,
+        "license_field": "Apache 2.0",
+        "package": "qdldl",
+        "version": "0.1.9.post1"
+      },
+      {
+        "bundled_native_libraries": [
+          "_libsvm.cpython-312-x86_64-linux-gnu.so",
+          "_libsvm_sparse.cpython-312-x86_64-linux-gnu.so",
+          "libgomp-e985bcbb.so.1.0.0"
+        ],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "scikit-learn",
+        "version": "1.9.1"
+      },
+      {
+        "bundled_native_libraries": [
+          "libgfortran-040039e1-0352e75f.so.5.0.0",
+          "libgfortran-040039e1.so.5.0.0",
+          "libquadmath-96973f99-934c22de.so.0.0.0",
+          "libquadmath-96973f99.so.0.0.0",
+          "libscipy_openblas-68440149.so",
+          "libsf_error_state.so"
+        ],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "Copyright (c) 2001-2002 Enthought, Inc. 2003-2024, SciPy Developers.",
+        "package": "scipy",
+        "version": "1.15.3"
+      },
+      {
+        "bundled_native_libraries": [
+          "libgfortran-83c28eba.so.5.0.0",
+          "libopenblas-r0-11edc3fa.3.15.so",
+          "libquadmath-2284e583.so.0.0.0"
+        ],
+        "classifier": "MIT License",
+        "license_expression": null,
+        "license_field": "MIT License",
+        "package": "scs",
+        "version": "3.3.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "Apache Software License",
+        "license_expression": null,
+        "license_field": "Apache 2.0",
+        "package": "sortedcontainers",
+        "version": "2.4.0"
+      },
+      {
+        "bundled_native_libraries": [
+          "libgfortran-83c28eba.so.5.0.0",
+          "libopenblas-r0-11edc3fa.3.15.so",
+          "libquadmath-2284e583.so.0.0.0"
+        ],
+        "classifier": null,
+        "license_expression": "Apache-2.0",
+        "license_field": null,
+        "package": "sparsediffpy",
+        "version": "0.6.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "statsmodels",
+        "version": "0.15.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": "BSD License",
+        "license_expression": null,
+        "license_field": "BSD",
+        "package": "sympy",
+        "version": "1.14.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-3-Clause",
+        "license_field": null,
+        "package": "threadpoolctl",
+        "version": "3.7.0"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": null,
+        "license_field": "MPL-2.0 AND MIT",
+        "package": "tqdm",
+        "version": "4.70.1"
+      },
+      {
+        "bundled_native_libraries": [],
+        "classifier": null,
+        "license_expression": "BSD-2-Clause",
+        "license_field": null,
+        "package": "wrapt",
+        "version": "2.5.2"
+      }
+    ],
+    "packages_added_including_transitive": 46,
+    "runtime_network": "confluent-kafka talks only to the configured brokers (enable.metrics.push=false, no telemetry); dowhy is not imported by this unit (NCP-U09)",
+    "vulnerability_scan": {
+      "known_vulnerabilities": 0,
+      "packages": 46,
+      "queried_at": "2026-11-03T18:30:29.313478Z",
+      "source": "https://api.osv.dev/v1/querybatch"
+    }
+  },
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "asserts": [
+          18,
+          18
+        ],
+        "functions": [
+          7,
+          7
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0040.py",
+        "raises": [
+          4,
+          4
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          16,
+          16
+        ],
+        "functions": [
+          8,
+          8
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0041.py",
+        "raises": [
+          8,
+          8
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          13,
+          13
+        ],
+        "functions": [
+          11,
+          11
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0022.py",
+        "raises": [
+          11,
+          11
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          24,
+          24
+        ],
+        "functions": [
+          9,
+          9
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
+        "raises": [
+          2,
+          2
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          50,
+          50
+        ],
+        "functions": [
+          17,
+          17
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+        "raises": [
+          6,
+          6
+        ],
+        "same_names": true
+      },
+      {
+        "functions": [
+          47,
+          47
+        ],
+        "note": "one assertion added in test_ncr_c3_003_conforms",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py",
+        "same_names": true
+      }
+    ],
+    "note": "parametrizations unchanged; differences only in the realigned assertions and raises listed in existing_tests_realigned_or_adapted; repeated on the candidate head",
+    "tool": "~/.ocor-codex kit tools/ast_compare.py against the unit base 1b0e966"
+  },
+  "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; the five consumer modules of the NCP-U06 row and REM-0050 (case 3 and case 1 for NCR-C5-001) only; test_ocor_dev_rem_0022/0025/0026.py and test_ocor_dev_rem_0050.py are inputs of no latest evidence record of a completed task (drift validator): they run in the consumer modules of the campaign",
+  "existing_tests_realigned_or_adapted": [
+    {
+      "current_assertion": "old backbone with docker exec/CLI instruments and the 1.0 envelope",
+      "function": "backbone fixture, envelope helper, test_a_real_kafka_unreachability_fails_closed (construction)",
+      "kind": "ADAPT_CONSTRUCTION (point 5, NCP-U06 row)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360; NORMATIVE-CONFORMANCE-PLAN point 2",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0040.py",
+      "prescribed": "the real backbone on the in-process client, the qualification broker and PostgreSQL (tests/tasks/c5_backbone_fixture.py), 1.2 drafts signed at publish; same fault types"
+    },
+    {
+      "current_assertion": "received.classification_marking_ref == sent.classification_marking_ref",
+      "function": "test_a_registered_schema_event_publishes_and_is_consumed_preserving_all_fields",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:531-840",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0040.py",
+      "prescribed": "the delivered envelope carries the inline classification_marking object of the 1.2 envelope"
+    },
+    {
+      "current_assertion": "MISSING_CONTEXT, one quarantine record",
+      "function": "test_missing_governed_context_is_quarantined_before_publication",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:379, :406",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0040.py",
+      "prescribed": "an incomplete envelope is REJECTED with SCHEMA_VIOLATION, not quarantined, never on the topic"
+    },
+    {
+      "current_assertion": "delivered[0].envelope.sequence == 3",
+      "function": "test_an_out_of_order_aggregate_effect_is_quarantined_and_never_published",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:531-840",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0040.py",
+      "prescribed": "delivered[0].envelope.aggregate['expected_revision'] == 3"
+    },
+    {
+      "current_assertion": "old backbone/operations with in-memory dead letters and docker exec instruments",
+      "function": "backbone and coordinator fixtures, envelope helper, dead letter and release constructions",
+      "kind": "ADAPT_CONSTRUCTION (point 5, NCP-U06 row)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360; NORMATIVE-CONFORMANCE-PLAN point 2",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0041.py",
+      "prescribed": "the real backbone and EventOperationsCoordinator on the in-process client, the qualification broker and PostgreSQL; same fault types"
+    },
+    {
+      "current_assertion": "MISSING_CONTEXT",
+      "function": "test_replay_of_lost_marking_is_blocked_exactly_like_a_fresh_publish",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:379, :406",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0041.py",
+      "prescribed": "SCHEMA_VIOLATION: an envelope without its marking is incomplete and REJECTED"
+    },
+    {
+      "current_assertion": "backbone lifecycle driven through docker exec of the product",
+      "function": "lifecycle parameter 'backbone' and its fixtures",
+      "kind": "ADAPT_CONSTRUCTION (point 5, NCP-U06 row)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360; NORMATIVE-CONFORMANCE-PLAN point 2",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0022.py",
+      "prescribed": "the lifecycle drives the broker qualification tool (tests/tasks/c5_kafka_qualification.py); assertions unchanged"
+    },
+    {
+      "current_assertion": "old backbone and 1.0 envelope",
+      "function": "backbone fixture, envelope helper, operator replay helper",
+      "kind": "ADAPT_CONSTRUCTION (point 5, NCP-U06 row)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
+      "prescribed": "the real backbone and coordinator, 1.2 drafts; isolation contexts unchanged"
+    },
+    {
+      "current_assertion": "MISSING_CONTEXT, quarantined, quarantine raw event id",
+      "function": "test_an_undeterminable_context_fails_closed_and_is_never_published",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:379, :406; docs/OCOR_LLD_v1.1.md:161",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py",
+      "prescribed": "SCHEMA_VIOLATION, PERMANENT, no quarantine record, never published"
+    },
+    {
+      "current_assertion": "docker exec instruments, offsets read from consume()",
+      "function": "backbone fixtures, restart helpers, fault instruments (journal append, admission counter, PostgreSQL attempt lock), offset observations",
+      "kind": "ADAPT_CONSTRUCTION (point 5, NCP-U06 row)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360, :2575; NORMATIVE-CONFORMANCE-PLAN point 2 and point 5 (partition and offset exposed by consume)",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+      "prescribed": "instruments over the in-process journal and the qualification tool (records() reads topic, partition and offset on the broker); same fault types"
+    },
+    {
+      "current_assertion": "e.sequence / e.aggregate_ref of the 1.0 envelope",
+      "function": "test_r2_stale_or_equal_sequence_after_restart_is_out_of_order, test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances, test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025, test_a_lost_acknowledgement_is_recovered_without_a_duplicate, test_k2_concurrent_sequences_never_regress_the_watermark",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:531-840",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+      "prescribed": "e.aggregate['expected_revision'] / e.aggregate['aggregate_id'] of the 1.2 envelope"
+    },
+    {
+      "current_assertion": "pytest.raises(KafkaBackboneError); outcomes BACKPRESSURE_EXCEEDED and UNKNOWN_SCHEMA",
+      "function": "test_an_unreadable_journal_fails_closed_and_publishes_nothing, test_a_lost_acknowledgement_is_recovered_without_a_duplicate, test_a_write_that_never_reached_the_broker_is_published_once_on_retry, test_the_in_flight_counter_returns_to_zero_after_publish_failures",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "docs/OCOR_LLD_v1.1.md:156-163, :165",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+      "prescribed": "typed failures of the taxonomy: BackboneError JOURNAL_UNREADABLE and RETRY_BUDGET_EXHAUSTED; the failure while holding a quota slot is the journal write after the schema check"
+    },
+    {
+      "current_assertion": "counter.get('tenant-a', 0) == 0",
+      "function": "test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes, test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish, test_the_in_flight_counter_returns_to_zero_after_publish_failures",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "docs/OCOR_LLD_v1.1.md:165, :338; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:406",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+      "prescribed": "counter.get((TENANT, ResourceClass.BATCH), 0) == 0: quotas per tenant and priority class"
+    },
+    {
+      "current_assertion": "old backbone, 1.0 envelopes, relay without signer/principal/markings",
+      "function": "kafka fixture, relay worker constructions, _committed_event, _outbox_envelope, tamper constructions, DIGEST_MARKING",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:408-411, :845",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py",
+      "prescribed": "the new backbone on the qualification broker and PostgreSQL with an explicit permit-all policy port and a signed audit log; relay signer, transport principal and marking resolver; 1.2 envelopes; DIGEST_MARKING is the digest of a resolvable marking object"
+    },
+    {
+      "current_assertion": "envelope.event_id == outbox_event_id; event_type 'canonical-state-committed'; sequence; payload without the GovernedContext",
+      "function": "test_ncr_c3_003_conforms, test_ncr_c3_003_relay_publishes_on_c5_and_c4_projects_in_order, test_ncr_c3_003_projector_verifies_order_schema_release_and_context, test_ncr_c3_003_publish_failure_records_no_delivery, test_relay_builds_the_event_of_a_complete_outbox_entry",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:531-840, :845",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py",
+      "prescribed": "outbox event ID in source.source_record_id (event_id is format uuid); event_type_id the canonical-state-committed URN; aggregate.expected_revision; the committed payload carries the complete GovernedContext (one assertion added)"
+    }
+  ],
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "open_decision_requests": [],
+  "open_points_for_review": [
+    "governed_context_digest reproduction at the C5 admission boundary: C5 admission verifies the marking digest and that the envelope fields form the GovernedContext record (isolation key constructible, ADD v1.3 :845), the producer signature covers the digest, the C3 relay (the trusted ingress of canonical events, ADD v1.3 :199, :844) reproduces it and every C4 projector re-verifies it; C5 does not recompute it at publish. Recomputing it at publish would make the isolation contexts of the sealed REM-0025/REM-0026 tests (fixed context labels with a random correlation_id per envelope, while the digest covers correlation_id) unconstructible, a change of test inputs beyond the adaptations NORMATIVE-CONFORMANCE-PLAN point 5 authorises: if required, it goes to a decision request (point 7 of the programme)"
+  ],
+  "plan_unit": "NCP-U06",
+  "product_orientation": [
+    "the C5 backbone talks to Kafka in process through confluent-kafka behind the Publish/Subscribe/Replay/Quarantine/ReprocessAuthorized port; the broker lifecycle (container, volumes, test topics) lives in the qualification tool tests/tasks/c5_kafka_qualification.py, outside the product path: no docker exec or Kafka CLI in the component (NORMATIVE-CONFORMANCE-PLAN point 2, ADD v1.3 :273, :360)",
+    "DLQ, quarantine, operator releases, subscriptions and checkpoints are durable append-only PostgreSQL tables behind PostgresC5Store, so the production deployment keeps them across restarts",
+    "the schema registry is a content-addressed C5 component with the registry digest bound into checkpoints; Apicurio Registry (ADD v1.3 :273 configuration item) is not provisioned by the development stack and can back the same registry interface without changing the backbone",
+    "the policy port (C5Policy) is the single decision point for publish, delivery and replay; production plugs the OPA-backed policy engine without changing C5",
+    "ResourceClass quotas (CONTROL, INTERACTIVE, BATCH, AUDIT) leave room for the MVP requirements FR-016 and FR-072 (subscription feed, replay) already exposed on the Subscribe and Replay surfaces"
+  ],
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/pyproject.toml",
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0002.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0002",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0003.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0003",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/pyproject.toml",
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0004.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0004",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock",
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0050.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0037.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0006",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0007.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0007",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0008.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0008",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0009.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0009",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0010.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0010",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0011.requalified-rem0047.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0011",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0012.requalified-rem0049.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0012",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0013.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0013",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0014.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0014",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0015.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0015",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0019",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0020.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0020",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0022.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0022",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0023.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0023",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction adapted (NCP-U06 row) and three assertions realigned (case 1)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c5/backbone.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0040.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0026.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-005"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests carry tenant, domain, compartments, classification and purpose through the C5 envelope and the subscription context only; propagation through query, projections, cache and audit is not exercised",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-068"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests publish STREAM envelopes only; the batch and CDC fixtures of the Register acceptance criterion are not exercised by the task's tests",
+            "register_method": "test",
+            "requirement_id": "FR-069"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "FR-070"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "ordering per key and idempotency-key deduplication are exercised; deduplication of delivery attempts and convergence of duplicated and reordered streams to the same state are not exercised in full (point 4, in doubt)",
+            "register_method": "fault test",
+            "requirement_id": "FR-071"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "only the permanent path (unknown schema, out of order) is exercised; transient, policy-denied and poison classification are not",
+            "register_method": "test",
+            "requirement_id": "FR-074"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no trigger, versioned condition or Automation Run is exercised",
+            "register_method": "test",
+            "requirement_id": "FR-084"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Export inspection e clean-environment reconstruction' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Export inspection e clean-environment reconstruction",
+            "requirement_id": "FR-170"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no contract suite over every public payload and export is exercised",
+            "register_method": "Test",
+            "requirement_id": "NFR-012"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no partition/reconnect test, sync lag or conflict state is exercised",
+            "register_method": "Network partition/merge test",
+            "requirement_id": "NFR-061"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0040",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0040.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction adapted (NCP-U06 row) and one assertion realigned (case 1)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c5/operations.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0041.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0026.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no projector, fact or watermark transaction is exercised by the task's tests",
+            "register_method": "fault-injection test",
+            "requirement_id": "FR-064"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no drift, gap or checksum detection and no projection rebuild is exercised",
+            "register_method": "recovery test",
+            "requirement_id": "FR-065"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "replay preserving the event ID and blocking an incompatible schema is exercised; the rebuild producing the expected checksum of the Register acceptance criterion is not (point 4, in doubt)",
+            "register_method": "recovery test",
+            "requirement_id": "FR-072"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark",
+            "requirement_id": "NFR-028"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "per-tenant backpressure with schema and marking checks still applied is exercised; admission control, budget, timeout, circuit breaker and priority under broker, projector, policy and adapter failure injection are not exercised in full",
+            "register_method": "Load test e failure injection",
+            "requirement_id": "NFR-079"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0041",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0041.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0050.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/pyproject.toml",
+          "ocor-runtime/uv.lock"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0071.requalified-rem0039.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 7 (uv.lock/pyproject.toml); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0071",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0050.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks at the code head (scripts/validate_evidence_input_drift.py): 19 tasks with uv.lock or ocor-runtime/pyproject.toml among the inputs of their latest record and tests unchanged (point 7, A1), 0040 and 0041 with adapted and realigned tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS point 3, point 4 in doubt), 0050 and 0082 for the allowlist (0005 is in both groups); the plan's with_supersession_candidates OCOR-DEV-REM-0018 and OCOR-DEV-REM-0022 are remediations, outside completed_evidence_tasks, so no drift is checked for them and their tests run in the consumer modules of the campaign",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0002",
+      "OCOR-DEV-0003",
+      "OCOR-DEV-0004",
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0006",
+      "OCOR-DEV-0007",
+      "OCOR-DEV-0008",
+      "OCOR-DEV-0009",
+      "OCOR-DEV-0010",
+      "OCOR-DEV-0011",
+      "OCOR-DEV-0012",
+      "OCOR-DEV-0013",
+      "OCOR-DEV-0014",
+      "OCOR-DEV-0015",
+      "OCOR-DEV-0019",
+      "OCOR-DEV-0020",
+      "OCOR-DEV-0022",
+      "OCOR-DEV-0023",
+      "OCOR-DEV-0040",
+      "OCOR-DEV-0041",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0071",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "Kafka/Strimzi, PostgreSQL (durable DLQ/quarantine) -- realised as an isolated, pinned single-node KRaft Kafka broker of the qualification tool and the PostgreSQL service of ocor-bootstrap; TerminusDB, TypeDB, OPA, OpenBao, Qdrant, SeaweedFS and Fuseki for the REM-0050 consumer module; producer signatures with locally generated Ed25519 keys",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C5-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_second_payload_validation_quarantines_failures ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_producer_signature_covers_envelope_and_digest ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_transport_principal_binding ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_envelope_realises_the_commit_context ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable"
+    },
+    {
+      "entry": "NCR-C5-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_subscribe_surface_has_opaque_cursor ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes"
+    },
+    {
+      "entry": "NCR-C5-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_003_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_003_dead_letters_are_durable_and_immutable"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C5-001",
+    "NCR-C5-002",
+    "NCR-C5-003"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0051 commits: the new C5 modules (envelope, schema, policy, retry, replay, subscription, adapters), the qualification tool, the shared test support module and the unit test disappear; c5/backbone.py, c5/operations.py, c3/events.py, c3/relay.py, c4/projector.py and the adapted or realigned tests return to the base; pyproject.toml and uv.lock return to the base (46 packages removed); the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0051",
+  "tdd": {
+    "admission_marking_check": {
+      "GREEN": {
+        "commit": "2000ee0",
+        "fingerprint": "c48302fb2378",
+        "summary": "0040, 0041, REM-0022, REM-0025, REM-0026, REM-0050, REM-0051 modules: 421 passed"
+      },
+      "RED": {
+        "commit": "5a1720c",
+        "fingerprint": "f84cd80f2edb",
+        "summary": "unit module: 1 failed (an envelope whose inline marking does not match its marking_digest was admitted), 15 passed"
+      }
+    },
+    "c3_c5_composition": {
+      "GREEN": {
+        "commits": [
+          "9f801de",
+          "019bd2b"
+        ],
+        "fingerprint": "649ea4f4f330",
+        "summary": "355 passed, identical before and after the adapters refactor"
+      },
+      "RED": {
+        "commit": "1eda7c3",
+        "fingerprint": "6f84034fa51f",
+        "summary": "REM-0050 and REM-0051 modules: 28 failed, 1 error, 1 passed (the unchanged import guard)"
+      }
+    },
+    "consumer_adaptations": {
+      "GREEN": {
+        "commit": "8d087a5",
+        "fingerprint": "3a37e707488b",
+        "summary": "0040, 0041, REM-0022, REM-0025, REM-0026, REM-0050, REM-0051 modules: 420 passed"
+      },
+      "RED": {
+        "commit": "da91548",
+        "fingerprint": "d41d6e4f2f15",
+        "summary": "4 modules fail at collection on the missing operations surface, REM-0022 22 passed; base RED in a scratch worktree at 1b0e966: the four realigned modules fail, REM-0022 passes"
+      },
+      "RED_recovery_check": {
+        "fingerprint": "143854db3848",
+        "summary": "1 failed with the journal-recovery partitions check removed"
+      }
+    },
+    "core": {
+      "GREEN": {
+        "commit": "69dba37",
+        "fingerprint": "e3efd37338e0",
+        "summary": "9 passed"
+      },
+      "RED": {
+        "commit": "99c1308",
+        "fingerprint": "3bb8299762c1",
+        "summary": "unit module on the isolated Kafka broker and real PostgreSQL: 9 failed for the divergence"
+      }
+    },
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML"
+  }
+}
