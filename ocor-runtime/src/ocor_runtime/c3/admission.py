@@ -503,13 +503,22 @@ def issue_governed_command(
     fence: MutationFencePort,
     issued_at: datetime,
     validity: timedelta,
+    authority_window: tuple[datetime, datetime] | None = None,
 ) -> GovernedCanonicalCommitCommand:
     """C6 side of a canonical commit: freezes the GatePackage of ``fields`` (every
     command field except ``gate_package_digest``), signs it with the Decision ``ACCEPT``
     and the Authority binding, publishes the three records to ``sink`` and returns the
-    command bound to the GatePackage digest."""
+    command bound to the GatePackage digest.
+
+    The Decision holds from ``issued_at`` for ``validity``; the Authority holds over
+    ``authority_window`` when C6 already verified one, otherwise like the Decision."""
     if not isinstance(validity, timedelta) or validity <= timedelta(0):
         raise ValueError("validity must be a positive timedelta")
+    not_before, authority_expiry = (
+        (issued_at, issued_at + validity) if authority_window is None else authority_window
+    )
+    if not not_before < authority_expiry:
+        raise ValueError("the Authority window must not be empty")
     if "gate_package_digest" in fields:
         raise ValueError("the GatePackage digest is computed, never supplied")
     context = fields["governed_context"]
@@ -548,8 +557,8 @@ def issue_governed_command(
                 "gate_package_digest": digest,
                 "tenant_id": context["tenant_id"],
                 "effective_principal_id": context["effective_principal_id"],
-                "not_before": format_utc_timestamp(issued_at),
-                "expires_at": format_utc_timestamp(issued_at + validity),
+                "not_before": format_utc_timestamp(not_before),
+                "expires_at": format_utc_timestamp(authority_expiry),
             },
         ),
     )

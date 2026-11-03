@@ -34,6 +34,7 @@ from ..c3.admission import (
     MutationFencePort,
     SignedGovernanceRecord,
     gate_package_payload,
+    issue_governed_command,
     sign_governance_record,
 )
 from ..c3.ports import CommitReceipt, GovernedCanonicalCommitCommand
@@ -118,6 +119,75 @@ class GovernanceRecordSink(Protocol):
     """Write side of the C6 governance record store that C3 admission reads."""
 
     def publish(self, record: SignedGovernanceRecord) -> None: ...
+
+
+@dataclass(slots=True)
+class GovernedCommandIssuer:
+    """C6 issuance of a canonical commit decided by a composed C6 consumer (memory
+    promotion, ``OCOR-DEV-0058``): freezes the GatePackage of the decided command,
+    signs the Decision ``ACCEPT`` and the Authority binding with the C6 key of the
+    trusted composition and publishes them where C3 admission reads them (ADD v1.3
+    :342). One command per action instance: a retry gets the same command, so C3
+    replays it (FR-008); a different command for the same action is refused."""
+
+    signing_key: Ed25519SigningKey
+    keyid: str
+    records: GovernanceRecordSink
+    fence: MutationFencePort
+    clock: TrustedClock
+    _issued: dict[str, GovernedCanonicalCommitCommand] = field(default_factory=dict, repr=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.signing_key, Ed25519SigningKey):
+            raise TypeError("signing_key must be the C6 Ed25519 signing key")
+        if not isinstance(self.records, GovernanceRecordSink):
+            raise TypeError("records must implement GovernanceRecordSink")
+        if not isinstance(self.fence, MutationFencePort):
+            raise TypeError("fence must implement MutationFencePort")
+        if not callable(getattr(self.clock, "now", None)):
+            raise TypeError("clock must implement TrustedClock")
+        if not isinstance(self.keyid, str) or not self.keyid:
+            raise ValueError("keyid is required")
+
+    def issue(
+        self,
+        fields: Mapping[str, Any],
+        *,
+        decision_expires_at: datetime,
+        authority_not_before: datetime,
+        authority_expires_at: datetime,
+    ) -> GovernedCanonicalCommitCommand:
+        values = {key: value for key, value in fields.items() if key != "gate_package_digest"}
+        action = values.get("action_instance_id")
+        if not isinstance(action, str) or not action:
+            raise ValueError("action_instance_id is required")
+        with self._lock:
+            issued = self._issued.get(action)
+            if issued is None:
+                # The Decision expires with the decision C6 took; the Authority keeps
+                # the window C6 verified.
+                now = self.clock.now()
+                issued = issue_governed_command(
+                    values,
+                    key=self.signing_key,
+                    keyid=self.keyid,
+                    sink=self.records,
+                    fence=self.fence,
+                    issued_at=now,
+                    validity=_require_aware(decision_expires_at, field="decision_expires_at") - now,
+                    authority_window=(
+                        _require_aware(authority_not_before, field="authority_not_before"),
+                        _require_aware(authority_expires_at, field="authority_expires_at"),
+                    ),
+                )
+                self._issued[action] = issued
+        requested = GovernedCanonicalCommitCommand.from_mapping(
+            {**values, "gate_package_digest": issued.gate_package_digest}
+        )
+        if requested != issued:
+            raise ValueError("another command was already issued for this action instance")
+        return issued
 
 
 @runtime_checkable
