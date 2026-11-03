@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "84fb7e7aae69c78d3f22df42225399cd70822209",
-  "baseline_commit": "84fb7e7aae69c78d3f22df42225399cd70822209",
-  "branch": "governed/state-sync-rem0050-iter1-20261103",
+  "base_sha": "7f6bcade94020fac00e2b404e6939950eb7963e8",
+  "baseline_commit": "7f6bcade94020fac00e2b404e6939950eb7963e8",
+  "branch": "governed/state-sync-rem0050-iter2-20261103",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission",
-    "head_sha": "9b56f4dfaee268a58597639841f1f98d8d1b44dc",
-    "note": "REM-0050 RED, GREEN and consumer adaptations part 1; work in progress, not a candidate, no evidence",
+    "head_sha": "8afc3ad66255b321a2175769c345b46f6789a620",
+    "note": "REM-0050 work in progress (iteration 2), not a candidate, no evidence",
     "paths": []
   },
   "changed_paths": [
@@ -33,36 +33,36 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py at 5f05830 (RED, real PostgreSQL, TerminusDB, Kafka, TypeDB)",
+      "command": "pytest test_ocor_dev_0046.py (realigned) at the base 84fb7e7 (RED, real PostgreSQL)",
       "exit_code": 1,
-      "summary": "3 failed, 76 errors; fingerprint b78ddcac3562"
+      "summary": "1 failed, 1 passed, 10 errors; fingerprint 17b25df83e17"
     },
     {
-      "command": "pytest ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py at 7d74dd4",
+      "command": "pytest test_ocor_dev_0046.py at 2b9e93b",
       "exit_code": 0,
-      "summary": "79 passed; fingerprint f16ef9dc0610"
+      "summary": "12 passed; fingerprint 5dcbb86e2516"
     },
     {
-      "command": "mutation probe NCR-C3-007 (epoch check removed in the TerminusDB acknowledge_outbox)",
+      "command": "pytest tests/mission_thread at b0f106c (real PostgreSQL, TypeDB, Fuseki, Kafka, Qdrant)",
+      "exit_code": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pytest test_ocor_dev_0058.py at 8afc3ad (real PostgreSQL, OpenBao, Qdrant, OPA)",
       "exit_code": 1,
-      "summary": "test_ncr_c3_007_conforms FAILED as required"
+      "summary": "130 passed, 3 failed GATE_PACKAGE_MISMATCH; decision request NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE"
     },
     {
-      "command": "pytest unit, 0029/0030/0036/0039/0043/REM-0041/REM-0041 overlay, 0013/0015/0016, tests/runtime at 9b56f4dfaee2",
+      "command": "ruff check on the three changed test modules",
       "exit_code": 0,
-      "summary": "268 passed"
-    },
-    {
-      "command": "ruff check . and mypy (strict) at 9b56f4dfaee2",
-      "exit_code": 0,
-      "summary": "clean; 122 source files"
+      "summary": "clean"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0050:implementation (NCP-U04, iteration 1 done; consumer adaptations in progress)",
+  "current_task": "OCOR-DEV-REM-0050:implementation (NCP-U04, iteration 2 done; 0058 waits for NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE)",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0050 (NCP-U04) on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 9b56f4dfaee2, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): realign test_ocor_dev_0046.py with RED on the base (case 1 of NORMATIVE-CONFORMANCE-PLAN point 5: store.get and the legacy SingleWriterViolation assertions contradict ADD v1.3 :276 and :342), adapt or realign the mission thread (tests/mission_thread/test_first_governed_slice.py) and test_ocor_dev_0058.py, rerun the whole consumer inventory with every dev service up; harden the touched adapters for the preventive review; unit record, register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and its allowlist entry, requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS, PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request; then full suite, verification, seal, merge. Iterations used 1 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-  "head_sha": "9b56f4dfaee268a58597639841f1f98d8d1b44dc",
+  "exact_next_action": "OCOR-DEV-REM-0050 (NCP-U04) waits for the PO decision on NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md on governed/decision-request-ncp-u04-memory-promotion-gate-package, commit 4313a8e, sha256 3ced4d4cc1c0, draft PR #465) only for the three cases of test_ocor_dev_0058.py that reach C3 and therefore the full suite, record, candidate, verification and merge. Meanwhile resume on governed/ocor-dev-rem-0050-ncp-u04-c3-commit-admission (.ocor/worktrees/rem-0050, head 8afc3ad66255, kit ~/.ocor-codex/rem-0050 with NOTES.md, dev.env, dsn, redgreen.sh; dev services postgresql terminusdb typedb seaweedfs fuseki opa of ocor-bootstrap up with that env, pytest from ocor-runtime with PYTHONPATH=..): rerun the whole consumer inventory with every dev service up; harden the touched C3 adapters for the preventive review (whole TerminusDB and PostgreSQL parsing paths, negative tests); prepare the unit record, the register NCR-C3-001/002/003/004/006/007 OPEN -> IN_REMEDIATION, the reverse traceability index, the plan allowlist with reports/development/decision_requests/NCP-U03-QUALIFYING-REQUALIFICATIONS.md byte-identical to e8be5646 and NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md with its disposition, and the requalification classification per NCP-UNBINDABLE-REQUALIFICATIONS. After the decision: implement the chosen option, then PRE-CAMPAIGN-GATE, backend-down run, PRE-CAMPAIGN-REVIEW request, full suite, verification, seal, merge. Iterations used 2 of estimate 4 (stop at 8). Then NCP-U06, U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "head_sha": "8afc3ad66255b321a2175769c345b46f6789a620",
   "head_sha_role": "REM-0050 work-in-progress head (not a candidate)",
   "independent_verification": {
     "head_sha": "7e253fd8574a8ea640cf965f5ade5ab68436a333",
@@ -250,11 +250,13 @@
     "checksum": "PASS 8/8",
     "evidence_input_drift": "drift expected on the unit branch for the tasks whose inputs NCP-U04 changes",
     "pre_campaign_gate": "NOT_EXECUTED (unit not at a candidate boundary)",
-    "unit_tests": "unit 79 passed; adapted modules 268 passed with 0013/0015/0016 and tests/runtime; 0046, mission thread and 0058 not yet adapted; full suite NOT_EXECUTED"
+    "unit_tests": "0046 12 passed; mission thread 5 passed; 0058 130 passed, 3 failed pending the decision; full suite NOT_EXECUTED"
   },
-  "next_task": "OCOR-DEV-REM-0050 iteration 2",
+  "next_task": "OCOR-DEV-REM-0050 iteration 3",
   "phase": "REM_0050_NCP_U04_IN_PROGRESS",
-  "po_decisions_pending": [],
+  "po_decisions_pending": [
+    "NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE"
+  ],
   "raw_evidence_location": "~/.ocor-codex/rem-0046 (RED log and fingerprint, helper scripts), outside Git",
   "requirement_ids": [
     "FR-006",
@@ -274,7 +276,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0050 iteration 1 (RED, GREEN, consumer adaptations part 1) and the state sync"
+        "scope": "OCOR-DEV-REM-0050 iterations 1-2 (RED, GREEN, consumer adaptations, 0046 realignment, decision request) and the state syncs"
       }
     ]
   },
@@ -306,6 +308,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-03T07:08:55.900969+00:00",
+  "updated_at": "2026-11-03T07:58:36.000806+00:00",
   "worktree": "rem-0049 and rem-0049-r1 worktrees removed after the merge (REPO-HYGIENE point 5); next unit: new worktree from origin/main"
 }
