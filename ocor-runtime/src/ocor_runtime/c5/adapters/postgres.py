@@ -24,7 +24,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from .envelope import BackboneError, _freeze, thaw
+from ..envelope import BackboneError, _freeze, thaw
 
 SCHEMA_NAME = re.compile(r"[a-z_][a-z0-9_]{0,48}")
 T = TypeVar("T")

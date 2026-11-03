@@ -1082,10 +1082,10 @@ def kafka(dsn: str) -> Iterator[Any]:
         _module("ocor_runtime.c3.relay").register_canonical_state_committed(registry)
         audit = PostgresAuditLog(dsn, schema=f"{schema}_audit", signer=AuditSigner(key=C5_AUDIT_KEY, keyid="c5-audit"))
         audit.initialize()
-        store = _module("ocor_runtime.c5.dlq").PostgresC5Store(dsn, schema=schema)
+        store = _module("ocor_runtime.c5.adapters.postgres").PostgresC5Store(dsn, schema=schema)
         store.initialize()
         backbone = _module("ocor_runtime.c5.backbone").CanonicalEventBackbone(
-            journal=_module("ocor_runtime.c5.kafka").KafkaJournal(broker.bootstrap_servers, topic),
+            journal=_module("ocor_runtime.c5.adapters.kafka").KafkaJournal(broker.bootstrap_servers, topic),
             registry=registry,
             keyring=_module("ocor_runtime.c5.envelope").ProducerKeyring({RELAY_PRINCIPAL: RELAY_KEY.public_key}),
             policy=PermitAll(),

@@ -54,7 +54,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..audit import AuditError, AuditEvent, AuditPort
-from .dlq import DeadLetter, PostgresC5Store
+from .adapters.postgres import DeadLetter, PostgresC5Store
 from .envelope import (
     BackboneError,
     CanonicalIngestionEnvelope,
@@ -62,7 +62,7 @@ from .envelope import (
     ProducerKeyring,
     SignedEnvelope,
 )
-from .kafka import JournalRecord, KafkaJournal, KafkaJournalError
+from .adapters.kafka import JournalRecord, KafkaJournal, KafkaJournalError
 from .operations import AdmissionController, ResourceClass
 from .policy import C5Policy, permits
 from .replay import ReplayRequest, ReprocessRequest

@@ -318,8 +318,8 @@ def build_rig(
     registry_module = _c5("schema")
     operations = _c5("operations")
     retry = _c5("retry")
-    kafka = _c5("kafka")
-    dlq = _c5("dlq")
+    kafka = _c5("adapters.kafka")
+    dlq = _c5("adapters.postgres")
     backbone_module = _c5("backbone")
 
     registry = registry_module.SchemaRegistry()
@@ -667,7 +667,7 @@ class FlakyJournal:
     appends raise the client's transient error before reaching the broker."""
 
     def __new__(cls, bootstrap_servers: str, topic: str) -> Any:
-        kafka = _c5("kafka")
+        kafka = _c5("adapters.kafka")
 
         class _Flaky(kafka.KafkaJournal):  # type: ignore[misc,name-defined]
             failures = 0
@@ -838,7 +838,7 @@ class HeldJournal:
     append waits until ``release`` is set, so admitted publishes stay in flight."""
 
     def __new__(cls, bootstrap_servers: str, topic: str) -> Any:
-        kafka = _c5("kafka")
+        kafka = _c5("adapters.kafka")
 
         class _Held(kafka.KafkaJournal):  # type: ignore[misc,name-defined]
             hold = threading.Event()
