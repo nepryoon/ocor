@@ -1239,3 +1239,194 @@ def test_ncr_c3_007_conforms(terminusdb_backend: Backend, terminusdb_password: s
     attempts = _terminusdb_documents(terminusdb_password, database, "C3DeliveryAttempt")
     assert [(item["event_id"], item["writer_epoch"]) for item in attempts] == [(receipt.outbox_event_id, current.writer_epoch)]
     assert [item.outcome for item in current.delivery_attempts(receipt.outbox_event_id)] == ["ACKNOWLEDGED"]
+
+
+# ---------------------------------------------------------------------------------------
+# Governed path for the consumer suites (construction adaptations of NCP-U04)
+# ---------------------------------------------------------------------------------------
+
+CONSUMER_KEYID = "urn:ocor:key:c6:consumer-suites"
+CONSUMER_KEY = Ed25519SigningKey.from_seed(hashlib.sha256(b"ocor-c6-consumer-suite-key").digest())
+
+
+class GovernedC3:
+    """The C6 side of the governed canonical commit for the C3 consumer suites: the
+    in-memory governance record store, the mutation fence and the C6 signer. A suite
+    builds its commands with ``command`` and its services with ``admission``; the
+    precondition and invariant IDs it declares are registered as bindings without a
+    state condition (the suites bind them only as identifiers)."""
+
+    def __init__(
+        self,
+        *,
+        release: str,
+        preconditions: tuple[str, ...] = (),
+        invariants: tuple[str, ...] = (),
+        stop_epoch: int = 0,
+        now: datetime | None = None,
+    ) -> None:
+        admission = _module("ocor_runtime.c3.admission")
+        self.records = admission.InMemoryGovernanceRecordStore()
+        self.fence = admission.InMemoryMutationFence(stop_epoch=stop_epoch, active_release_digest=release)
+        self.clock = InMemoryTrustedClock(now or datetime.now(UTC).replace(microsecond=0))
+        self.preconditions = tuple(preconditions)
+        self.invariants = tuple(invariants)
+        self._release = release
+
+    def command(self, fields: Mapping[str, Any]) -> GovernedCanonicalCommitCommand:
+        admission = _module("ocor_runtime.c3.admission")
+        values = dict(fields)
+        values.pop("gate_package_digest", None)
+        # A Decision and an Authority bind exactly one GatePackage: refs that the suites
+        # reuse across different commands are made unique per command content.
+        suffix = canonical_digest(
+            _thaw({key: value for key, value in values.items() if key not in ("decision_ref", "authority_ref")})
+        )[-16:]
+        values["decision_ref"] = f"{values['decision_ref']}:{suffix}"
+        values["authority_ref"] = f"{values['authority_ref']}:{suffix}"
+        now = self.clock.now()
+        for evidence_ref in values["evidence_refs"]:
+            self.records.add_evidence(
+                EvidenceRecord(
+                    evidence_id=evidence_ref,
+                    content_digest="urn:sha256:" + hashlib.sha256(evidence_ref.encode()).hexdigest(),
+                    source_ref="urn:ocor:source:consumer-suite",
+                    acquired_at=now - timedelta(minutes=1),
+                    acquirer_principal_id="urn:ocor:principal:consumer-suite",
+                    method_ref="urn:ocor:method:consumer-suite",
+                    chain_of_custody=("urn:ocor:custody:consumer-suite",),
+                    marking_ref=DIGEST_MARKING,
+                    retention_until=now + timedelta(days=365),
+                )
+            )
+        return admission.issue_governed_command(
+            values,
+            key=CONSUMER_KEY,
+            keyid=CONSUMER_KEYID,
+            sink=self.records,
+            fence=self.fence,
+            issued_at=now,
+            validity=timedelta(hours=12),
+        )
+
+    def governed_context(self, *, purpose: str) -> GovernedContext:
+        return GovernedContext.from_mapping({**_context(release=self._release).to_mapping(), "purpose": purpose})
+
+    def engine_path(self, *, aggregate_type: str, governed_context: GovernedContext) -> Any:
+        """The C6 ``CanonicalCommitPath`` of an engine suite, signing with the suite key;
+        every action commits with one registered Evidence and claim/source binding."""
+        evidence_ref = "urn:ocor:evidence:consumer-suite:engine"
+        binding = {
+            "claim_ref": "urn:ocor:claim:consumer-suite:engine",
+            "source_ref": "urn:ocor:source:consumer-suite:engine",
+            "evidence_ref": evidence_ref,
+        }
+        now = self.clock.now()
+        self.records.add_evidence(
+            EvidenceRecord(
+                evidence_id=evidence_ref,
+                content_digest="urn:sha256:" + hashlib.sha256(evidence_ref.encode()).hexdigest(),
+                source_ref=binding["source_ref"],
+                acquired_at=now - timedelta(minutes=1),
+                acquirer_principal_id="urn:ocor:principal:consumer-suite",
+                method_ref="urn:ocor:method:consumer-suite",
+                chain_of_custody=("urn:ocor:custody:consumer-suite",),
+                marking_ref=DIGEST_MARKING,
+                retention_until=now + timedelta(days=365),
+            )
+        )
+        return _module("ocor_runtime.c6.engine").CanonicalCommitPath(
+            signing_key=CONSUMER_KEY,
+            keyid=CONSUMER_KEYID,
+            records=self.records,
+            fence=self.fence,
+            clock=self.clock,
+            aggregate_type=aggregate_type,
+            governed_context=governed_context,
+            precondition_bindings=self.preconditions,
+            invariant_bindings=self.invariants,
+            evidence=lambda proposal: ((evidence_ref,), (binding,)),
+        )
+
+    def admission(self) -> Any:
+        module = _module("ocor_runtime.c3.admission")
+
+        def declared(state: Mapping[str, Any]) -> bool:
+            return True
+
+        return module.CommitAdmission(
+            records=self.records,
+            fence=self.fence,
+            trusted_keys={CONSUMER_KEYID: CONSUMER_KEY.public_key},
+            clock=self.clock,
+            preconditions={item: declared for item in self.preconditions},
+            invariants={item: declared for item in self.invariants},
+        )
+
+    def export(self) -> dict[str, Any]:
+        """Everything a child process of the same writer needs to admit the commands."""
+        return {
+            "release": self._release,
+            "stop_epoch": self.fence.current_stop_epoch(),
+            "now": format_utc_timestamp(self.clock.now()),
+            "preconditions": list(self.preconditions),
+            "invariants": list(self.invariants),
+            "records": [
+                {"payload_type": r.payload_type, "payload": _thaw(r.payload), "keyid": r.keyid, "signature": r.signature}
+                for r in [*self.records._gate_packages.values(), *self.records._decisions.values(),  # noqa: SLF001
+                          *self.records._authorities.values()]  # noqa: SLF001
+            ],
+            "evidence": [item.to_mapping() for item in self.records._evidence.values()],  # noqa: SLF001
+        }
+
+    @classmethod
+    def from_export(cls, data: Mapping[str, Any]) -> GovernedC3:
+        from ocor_runtime.kernel.canonical import parse_utc_timestamp
+
+        admission = _module("ocor_runtime.c3.admission")
+        value = cls(
+            release=data["release"],
+            preconditions=tuple(data["preconditions"]),
+            invariants=tuple(data["invariants"]),
+            stop_epoch=data["stop_epoch"],
+            now=parse_utc_timestamp(data["now"]),
+        )
+        for item in data["records"]:
+            value.records.publish(admission.SignedGovernanceRecord(**item))
+        for item in data["evidence"]:
+            value.records.add_evidence(
+                EvidenceRecord(
+                    evidence_id=item["evidence_id"],
+                    content_digest=item["content_digest"],
+                    source_ref=item["source_ref"],
+                    acquired_at=parse_utc_timestamp(item["acquired_at"]),
+                    acquirer_principal_id=item["acquirer_principal_id"],
+                    method_ref=item["method_ref"],
+                    chain_of_custody=tuple(item["chain_of_custody"]),
+                    marking_ref=item["marking_ref"],
+                    retention_until=parse_utc_timestamp(item["retention_until"]),
+                )
+            )
+        return value
+
+
+def test_governed_path_for_consumer_suites_is_admitted_and_exportable(dsn: str) -> None:
+    """The consumer-suite path is the governed path: C3 admits its commands, refuses the
+    same command once the Authority is revoked, and a child of the same writer admits the
+    exported records."""
+    governed = GovernedC3(release=RELEASE, preconditions=(PRECONDITION,), invariants=(INVARIANT,))
+    service = _module("ocor_runtime.c3.service").PostgresC3Service(dsn, admission=governed.admission())
+    service.initialize()
+    service.reset()
+    path = GovernedPath(RecordStore(), Fence(), InMemoryTrustedClock(NOW), aggregate_ref="urn:ocor:mission-object:rem0050:consumer")
+    fields = path.command("urn:sha256:" + "0" * 64).to_mapping()
+    command = governed.command(fields)
+    assert service.commit(command).to_revision == 1
+    child = GovernedC3.from_export(json.loads(json.dumps(governed.export())))
+    joined = _module("ocor_runtime.c3.service").PostgresC3Service(dsn, admission=child.admission(), writer_epoch=service.writer_epoch)
+    assert joined.commit(command).replayed is True
+    governed.records.revoke_authority(command.authority_ref)
+    with pytest.raises(C3Error) as caught:
+        service.commit(command)
+    assert caught.value.reason_code == "AUTHORITY_MISSING"
+    service.reset()

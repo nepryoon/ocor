@@ -526,6 +526,13 @@ class TerminusDBC3Adapter:
             return epoch
         raise TerminusDBAdapterError("WRITE_CONTENTION", "writer epoch not acquired within the attempt budget")
 
+    def join_writer(self, writer_epoch: int) -> None:
+        """Adopts an epoch held by the same logical writer; never advances the fence.
+        Every write still requires it to be the stored epoch in its own transaction."""
+        if isinstance(writer_epoch, bool) or not isinstance(writer_epoch, int) or writer_epoch <= 0:
+            raise TerminusDBAdapterError("COMMIT_CONTRACT_INVALID", "writer_epoch must be a positive integer")
+        self._epoch = writer_epoch
+
     def _check_fence(self, fence: Mapping[str, Any] | None) -> int:
         if self._epoch is None:
             raise TerminusDBAdapterError("SINGLE_WRITER_VIOLATION", "the writer has not acquired an epoch")

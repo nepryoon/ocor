@@ -53,11 +53,25 @@ def _translated(error: PostgresAdapterError) -> C3Error:
 class PostgresC3Service:
     """Real PostgreSQL-backed implementation of the sealed C3 ports."""
 
-    def __init__(self, dsn: str, *, admission: CommitAdmission, writer_id: str = "c3-canonical-writer") -> None:
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        admission: CommitAdmission,
+        writer_id: str = "c3-canonical-writer",
+        writer_epoch: int | None = None,
+    ) -> None:
+        """``writer_epoch`` joins a process to the logical writer that holds that epoch
+        (for example a worker process of the same writer); without it ``initialize``
+        acquires a new epoch. Either way every write re-checks the epoch in its own
+        transaction, so a stale or wrong epoch writes nothing."""
         if not isinstance(admission, CommitAdmission):
             raise TypeError("a CommitAdmission is required: C3 admits no command without the governed path")
         self._admission = admission
         self._adapter = PostgresC3Adapter(dsn, writer_id=writer_id)
+        self._joined = writer_epoch is not None
+        if writer_epoch is not None:
+            self._adapter.join_writer(writer_epoch)
 
     @property
     def writer_epoch(self) -> int | None:
@@ -66,12 +80,20 @@ class PostgresC3Service:
     def initialize(self) -> None:
         try:
             self._adapter.initialize()
-            self._adapter.acquire_writer()
+            if not self._joined:
+                self._adapter.acquire_writer()
         except PostgresAdapterError as error:
             raise _translated(error) from error
 
     def reset(self) -> None:
         self._adapter.reset()
+
+    def close(self) -> None:
+        """Ends the open relay claim, if any (see ``claim_batch``)."""
+        try:
+            self._adapter.close_claim()
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
 
     def commit(
         self, command: GovernedCanonicalCommitCommand, *, _crash_after: CrashStage | None = None

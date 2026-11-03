@@ -65,7 +65,7 @@ def canonical_event_payload(
     }
 
 
-DELIVERY_OUTCOMES = frozenset({"CLAIMED", "ACKNOWLEDGED", "FAILED"})
+DELIVERY_OUTCOMES = frozenset({"ACKNOWLEDGED", "FAILED"})
 
 
 @dataclass(frozen=True, slots=True)

@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c3.ports import (
     C3Error,
     CanonicalReadPort,
@@ -36,6 +37,13 @@ DIGEST_B = "urn:sha256:" + "b" * 64
 DIGEST_C = "urn:sha256:" + "c" * 64
 DIGEST_D = "urn:sha256:" + "d" * 64
 AGGREGATE_REF = "urn:ocor:mission-object:retained-c3:1"
+# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only governed commands (LLD v1.1 :97, ADD v1.3
+# :342); the suite's commands are frozen and signed on the C6 governed path.
+GOVERNED = governed_path.GovernedC3(
+    release=DIGEST_B,
+    preconditions=tuple(f"urn:ocor:precondition:revision-{n}" for n in range(64)),
+    invariants=("urn:ocor:invariant:atomic-outbox",),
+)
 
 
 @pytest.fixture(scope="session")
@@ -48,7 +56,7 @@ def postgres_dsn() -> str:
 
 @pytest.fixture
 def service(postgres_dsn: str) -> PostgresC3Service:
-    value = PostgresC3Service(postgres_dsn)
+    value = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     value.initialize()
     value.reset()
     return value
@@ -77,7 +85,7 @@ def make_command(
             "correlation_id": "018f2f95-01b2-7cc3-8d4e-123456789abc",
         }
     )
-    return GovernedCanonicalCommitCommand.from_mapping(
+    return GOVERNED.command(
         {
             "command_id": command_id,
             "action_instance_id": command_id.replace("command", "action"),
@@ -243,16 +251,22 @@ def test_real_process_crash_leaves_zero_partial_state_and_recovers_on_retry(
     script = (
         "import sys, json; "
         "sys.path.insert(0, sys.argv[3]); "
+        "sys.path.insert(0, sys.argv[4]); "
         "from ocor_runtime.c3.service import PostgresC3Service, CrashStage; "
         "from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand; "
-        "command = GovernedCanonicalCommitCommand.from_mapping(json.load(sys.stdin)); "
-        "PostgresC3Service(sys.argv[1]).commit(command, _crash_after=CrashStage(sys.argv[2]))"
+        "import test_ocor_dev_rem_0050 as governed_path; "
+        "body = json.load(sys.stdin); "
+        "command = GovernedCanonicalCommitCommand.from_mapping(body['command']); "
+        "admission = governed_path.GovernedC3.from_export(body['governed']).admission(); "
+        "PostgresC3Service(sys.argv[1], admission=admission, writer_epoch=int(sys.argv[5]))"
+        ".commit(command, _crash_after=CrashStage(sys.argv[2]))"
     )
     src_path = str(Path(__file__).resolve().parents[2] / "src")
 
     result = subprocess.run(
-        [sys.executable, "-c", script, postgres_dsn, CrashStage.AFTER_AGGREGATE_UPSERT.value, src_path],
-        input=json.dumps(command.to_mapping()),
+        [sys.executable, "-c", script, postgres_dsn, CrashStage.AFTER_AGGREGATE_UPSERT.value, src_path,
+         str(Path(__file__).resolve().parent), str(service.writer_epoch)],
+        input=json.dumps({"command": command.to_mapping(), "governed": GOVERNED.export()}),
         text=True,
         capture_output=True,
         timeout=10,

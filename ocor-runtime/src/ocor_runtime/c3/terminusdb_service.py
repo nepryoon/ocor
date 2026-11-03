@@ -83,6 +83,7 @@ class TerminusDBC3Service:
         admission: CommitAdmission,
         writer_id: str = "c3-canonical-writer",
         timeout: float = 30.0,
+        writer_epoch: int | None = None,
     ) -> None:
         if not isinstance(admission, CommitAdmission):
             raise TypeError("a CommitAdmission is required: C3 admits no command without the governed path")
@@ -90,6 +91,9 @@ class TerminusDBC3Service:
         self._adapter = TerminusDBC3Adapter(
             url=url, password=password, database=database, writer_id=writer_id, timeout=timeout
         )
+        self._joined = writer_epoch is not None
+        if writer_epoch is not None:
+            self._adapter.join_writer(writer_epoch)
 
     @property
     def writer_epoch(self) -> int | None:
@@ -97,7 +101,8 @@ class TerminusDBC3Service:
 
     def initialize(self) -> None:
         self._adapter.initialize()
-        self._adapter.acquire_writer()
+        if not self._joined:
+            self._adapter.acquire_writer()
 
     def drop(self) -> None:
         self._adapter.drop()

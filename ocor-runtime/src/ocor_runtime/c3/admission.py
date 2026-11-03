@@ -38,13 +38,14 @@ from __future__ import annotations
 
 import base64
 import binascii
+import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Protocol, runtime_checkable
 
 from ..c1.signing import dsse_pae, ed25519_verify
-from ..kernel.canonical import canonical_bytes, canonical_digest, parse_utc_timestamp
+from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp, parse_utc_timestamp
 from ..kernel.governance import EvidenceRecord, TrustedClock
 from .ports import C3Error, GovernedCanonicalCommitCommand, _freeze, _thaw
 
@@ -396,3 +397,162 @@ class CommitAdmission:
             return predicate(_freeze(dict(state))) is True
         except Exception:  # noqa: BLE001 -- a failing predicate is a failed binding, never a pass
             return False
+
+
+class InMemoryGovernanceRecordStore:
+    """Thread-safe in-process governance record store (read port and C6 sink), like
+    ``kernel.governance.InMemoryLeaseState``: for bounded runtime and fault tests and for
+    single-process composition. Records are verified by ``CommitAdmission`` on read, never
+    trusted because they are stored here."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._gate_packages: dict[str, SignedGovernanceRecord] = {}
+        self._decisions: dict[str, SignedGovernanceRecord] = {}
+        self._authorities: dict[str, SignedGovernanceRecord] = {}
+        self._revoked: set[str] = set()
+        self._evidence: dict[str, EvidenceRecord] = {}
+
+    def publish(self, record: SignedGovernanceRecord) -> None:
+        if not isinstance(record, SignedGovernanceRecord):
+            raise TypeError("a SignedGovernanceRecord is required")
+        kind = record.payload.get("record_type")
+        with self._lock:
+            if kind == "GatePackage":
+                self._gate_packages[record.digest] = record
+            elif kind == "Decision" and isinstance(record.payload.get("decision_ref"), str):
+                self._decisions[record.payload["decision_ref"]] = record
+            elif kind == "Authority" and isinstance(record.payload.get("authority_ref"), str):
+                self._authorities[record.payload["authority_ref"]] = record
+            else:
+                raise C3Error("COMMIT_CONTRACT_INVALID", f"unknown governance record type {kind!r}")
+
+    def add_evidence(self, record: EvidenceRecord) -> None:
+        if not isinstance(record, EvidenceRecord):
+            raise TypeError("an EvidenceRecord is required")
+        with self._lock:
+            self._evidence[record.evidence_id] = record
+
+    def revoke_authority(self, authority_ref: str) -> None:
+        with self._lock:
+            self._revoked.add(authority_ref)
+
+    def gate_package(self, gate_package_digest: str) -> SignedGovernanceRecord | None:
+        with self._lock:
+            return self._gate_packages.get(gate_package_digest)
+
+    def decision(self, decision_ref: str) -> SignedGovernanceRecord | None:
+        with self._lock:
+            return self._decisions.get(decision_ref)
+
+    def authority(self, authority_ref: str) -> SignedGovernanceRecord | None:
+        with self._lock:
+            return self._authorities.get(authority_ref)
+
+    def authority_revoked(self, authority_ref: str) -> bool:
+        with self._lock:
+            return authority_ref in self._revoked
+
+    def evidence(self, evidence_ref: str) -> EvidenceRecord | None:
+        with self._lock:
+            return self._evidence.get(evidence_ref)
+
+
+class InMemoryMutationFence:
+    """Controllable stop epoch, emergency stop and active release (C6 and C1 own them in
+    the product), like ``kernel.governance.InMemoryLeaseState``."""
+
+    def __init__(self, *, stop_epoch: int, active_release_digest: str) -> None:
+        if isinstance(stop_epoch, bool) or not isinstance(stop_epoch, int) or stop_epoch < 0:
+            raise ValueError("stop_epoch must be a non-negative integer")
+        if not isinstance(active_release_digest, str) or not active_release_digest.startswith("urn:sha256:"):
+            raise ValueError("active_release_digest must be a SHA-256 URN")
+        self._lock = threading.RLock()
+        self._stop_epoch = stop_epoch
+        self._stopped = False
+        self._release = active_release_digest
+
+    def current_stop_epoch(self) -> int:
+        with self._lock:
+            return self._stop_epoch
+
+    def emergency_stop_active(self) -> bool:
+        with self._lock:
+            return self._stopped
+
+    def active_release_digest(self) -> str:
+        with self._lock:
+            return self._release
+
+    def stop(self) -> None:
+        with self._lock:
+            self._stopped = True
+            self._stop_epoch += 1
+
+    def activate_release(self, digest: str) -> None:
+        with self._lock:
+            self._release = digest
+
+
+def issue_governed_command(
+    fields: Mapping[str, Any],
+    *,
+    key: Any,
+    keyid: str,
+    sink: Any,
+    fence: MutationFencePort,
+    issued_at: datetime,
+    validity: timedelta,
+) -> GovernedCanonicalCommitCommand:
+    """C6 side of a canonical commit: freezes the GatePackage of ``fields`` (every
+    command field except ``gate_package_digest``), signs it with the Decision ``ACCEPT``
+    and the Authority binding, publishes the three records to ``sink`` and returns the
+    command bound to the GatePackage digest."""
+    if not isinstance(validity, timedelta) or validity <= timedelta(0):
+        raise ValueError("validity must be a positive timedelta")
+    if "gate_package_digest" in fields:
+        raise ValueError("the GatePackage digest is computed, never supplied")
+    context = fields["governed_context"]
+    if not isinstance(context, Mapping):
+        context = context.to_mapping()
+    package = gate_package_payload(
+        fields,
+        ontology_release_digest=fence.active_release_digest(),
+        stop_epoch=fence.current_stop_epoch(),
+        frozen_at=format_utc_timestamp(issued_at),
+    )
+    digest = canonical_digest(package)
+    records = (
+        (GATE_PACKAGE_PAYLOAD_TYPE, package),
+        (
+            DECISION_PAYLOAD_TYPE,
+            {
+                "record_type": "Decision",
+                "producer": C6_PRODUCER,
+                "decision_ref": fields["decision_ref"],
+                "action_instance_id": fields["action_instance_id"],
+                "outcome": "ACCEPT",
+                "effect_class": "CANONICAL_COMMIT",
+                "gate_package_digest": digest,
+                "decided_at": format_utc_timestamp(issued_at),
+                "expires_at": format_utc_timestamp(issued_at + validity),
+            },
+        ),
+        (
+            AUTHORITY_PAYLOAD_TYPE,
+            {
+                "record_type": "Authority",
+                "producer": C6_PRODUCER,
+                "authority_ref": fields["authority_ref"],
+                "action_instance_id": fields["action_instance_id"],
+                "gate_package_digest": digest,
+                "tenant_id": context["tenant_id"],
+                "effective_principal_id": context["effective_principal_id"],
+                "not_before": format_utc_timestamp(issued_at),
+                "expires_at": format_utc_timestamp(issued_at + validity),
+            },
+        ),
+    )
+    for payload_type, payload in records:
+        sink.publish(sign_governance_record(payload_type, payload, key=key, keyid=keyid))
+    return GovernedCanonicalCommitCommand.from_mapping({**fields, "gate_package_digest": digest})

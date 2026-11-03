@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -99,14 +100,12 @@ CREATE TABLE IF NOT EXISTS c3_outbox (
 CREATE TABLE IF NOT EXISTS c3_delivery_attempt (
     event_id TEXT NOT NULL REFERENCES c3_outbox(event_id),
     attempt_no BIGINT NOT NULL CHECK (attempt_no > 0),
-    outcome TEXT NOT NULL CHECK (outcome IN ('CLAIMED', 'ACKNOWLEDGED', 'FAILED')),
+    outcome TEXT NOT NULL CHECK (outcome IN ('ACKNOWLEDGED', 'FAILED')),
     writer_epoch BIGINT,
-    claimed_until TIMESTAMPTZ,
     recorded_at TIMESTAMPTZ NOT NULL,
     detail TEXT NOT NULL,
     PRIMARY KEY (event_id, attempt_no),
-    CHECK (outcome <> 'ACKNOWLEDGED' OR writer_epoch IS NOT NULL),
-    CHECK (outcome <> 'CLAIMED' OR claimed_until IS NOT NULL)
+    CHECK (outcome <> 'ACKNOWLEDGED' OR writer_epoch IS NOT NULL)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS c3_delivery_acknowledged_once
     ON c3_delivery_attempt (event_id) WHERE outcome = 'ACKNOWLEDGED';
@@ -128,12 +127,13 @@ EXPECTED_COLUMNS: dict[str, frozenset[str]] = {
         {"event_id", "commit_id", "aggregate_ref", "aggregate_revision", "payload", "payload_digest", "branch", "occurred_at"}
     ),
     "c3_delivery_attempt": frozenset(
-        {"event_id", "attempt_no", "outcome", "writer_epoch", "claimed_until", "recorded_at", "detail"}
+        {"event_id", "attempt_no", "outcome", "writer_epoch", "recorded_at", "detail"}
     ),
 }
 
 TABLES = ("c3_delivery_attempt", "c3_outbox", "c3_idempotency", "c3_source_binding", "c3_commit", "c3_aggregate")
 FENCE_BOUNDARY = "c3-canonical"
+CLAIM_APPLICATION = "ocor-c3-relay-claim"
 
 
 class CrashStage(StrEnum):
@@ -228,6 +228,11 @@ class PostgresC3Adapter:
         self._dsn = dsn
         self._writer_id = writer_id
         self._epoch: int | None = None
+        # The open relay claim: the transaction that holds the claimed outbox rows with
+        # FOR UPDATE until each of them has a recorded delivery outcome.
+        self._claim: psycopg.Connection[Any] | None = None
+        self._claimed: set[str] = set()
+        self._claim_lock = threading.RLock()
 
     def initialize(self) -> None:
         """Creates the schema if absent; a pre-existing C3 table of another shape fails
@@ -249,7 +254,15 @@ class PostgresC3Adapter:
     def reset(self) -> None:
         """Empties canonical state, outbox and delivery records; the writer fence is the
         ownership boundary and is kept, so no fenced writer becomes current again."""
+        self.close_claim()
         with psycopg.connect(self._dsn) as connection:
+            # Relay claims of other instances hold row locks; emptying the store ends them
+            # (their entries are gone with it) instead of waiting for their idle timeout.
+            connection.execute(
+                """SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+                   WHERE application_name = %s AND datname = current_database() AND pid <> pg_backend_pid()""",
+                (CLAIM_APPLICATION,),
+            )
             connection.execute("TRUNCATE " + ", ".join(TABLES))
 
     @property
@@ -271,6 +284,10 @@ class PostgresC3Adapter:
             raise PostgresAdapterError("BACKEND_ERROR", "the writer fence returned no epoch")
         self._epoch = _positive("writer_epoch", row[0])
         return self._epoch
+
+    def join_writer(self, writer_epoch: int) -> None:
+        """Adopts an epoch held by the same logical writer; never advances the fence."""
+        self._epoch = _positive("writer_epoch", writer_epoch)
 
     def _hold_fence(self, connection: psycopg.Connection[Any]) -> int:
         """Inside a transaction: share-locks the fence row, so the epoch cannot advance
@@ -508,56 +525,75 @@ class PostgresC3Adapter:
             ).fetchall()
         return tuple(SourceBindingRow(row["claim_ref"], row["source_ref"], row["evidence_ref"]) for row in rows)
 
+    def close_claim(self) -> None:
+        """Ends the open relay claim: recorded outcomes are committed and the rows still
+        without an outcome are released, so they are relayed again with the same ID."""
+        with self._claim_lock:
+            claim, self._claim, self._claimed = self._claim, None, set()
+            if claim is None:
+                return
+            try:
+                if not claim.closed:
+                    claim.commit()
+            except psycopg.OperationalError:
+                # The server already ended the claim (idle timeout or termination): its
+                # uncommitted outcomes are void and its entries are relayed again with the
+                # same ID (at-least-once, LLD v1.1 §2.3).
+                claim.close()
+                return
+            except psycopg.Error as exc:
+                claim.close()
+                raise PostgresAdapterError("BACKEND_UNAVAILABLE", "the relay claim could not be closed") from exc
+            claim.close()
+
     def claim_outbox_batch(self, *, limit: int, claim_ttl: timedelta) -> tuple[OutboxRow, ...]:
         """Acquires undelivered ``main`` rows with ``FOR UPDATE SKIP LOCKED`` (LLD v1.1 §2.3):
-        a row another relay holds is skipped, never awaited nor shared. Each acquired row
-        gets a ``CLAIMED`` DeliveryAttempt with a lease, so a concurrent claim after this
-        transaction also skips it until the lease ends or a delivery outcome is recorded."""
+        a row another relay holds is skipped, never awaited nor shared. The rows stay
+        locked by this claim until each has a delivery outcome; a new claim first ends the
+        previous one, and the server ends a claim left idle for ``claim_ttl``, so a relay
+        that crashed or lost an acknowledgement never keeps an entry from being relayed."""
         _positive("limit", limit)
         if not isinstance(claim_ttl, timedelta) or claim_ttl < timedelta(0):
             raise PostgresAdapterError("COMMIT_CONTRACT_INVALID", "claim_ttl must be a non-negative timedelta")
-        now = datetime.now(UTC)
-        with psycopg.connect(self._dsn, row_factory=dict_row) as connection:
-            with connection.transaction():
-                rows = connection.execute(
+        idle_ms = max(1000, int(claim_ttl.total_seconds() * 1000))
+        with self._claim_lock:
+            self.close_claim()
+            claim = psycopg.connect(
+                self._dsn,
+                row_factory=dict_row,
+                application_name=CLAIM_APPLICATION,
+                options=f"-c idle_in_transaction_session_timeout={idle_ms}",
+            )
+            try:
+                rows = claim.execute(
                     """SELECT o.event_id, o.commit_id, o.aggregate_ref, o.aggregate_revision, o.payload,
                               o.payload_digest, o.branch, o.occurred_at
                        FROM c3_outbox o
                        WHERE o.branch = 'main'
                          AND NOT EXISTS (SELECT 1 FROM c3_delivery_attempt d
                                          WHERE d.event_id = o.event_id AND d.outcome = 'ACKNOWLEDGED')
-                         AND NOT EXISTS (SELECT 1 FROM c3_delivery_attempt d
-                                         WHERE d.event_id = o.event_id AND d.outcome = 'CLAIMED'
-                                           AND d.claimed_until > %s
-                                           AND d.attempt_no = (SELECT max(attempt_no) FROM c3_delivery_attempt x
-                                                               WHERE x.event_id = o.event_id))
                        ORDER BY o.occurred_at, o.event_id
                        LIMIT %s
-                       FOR UPDATE OF o SKIP LOCKED""",
-                    (now, limit),
+                       FOR UPDATE SKIP LOCKED""",
+                    (limit,),
                 ).fetchall()
-                # The candidate rows are now locked by this transaction; a fresh snapshot
-                # drops any that a concurrent relay claimed and committed meanwhile.
-                still_free = {
+                # The rows are locked now; a fresh snapshot drops any that a concurrent
+                # relay acknowledged and committed after this statement's snapshot.
+                acknowledged = {
                     item["event_id"]
-                    for item in connection.execute(
-                        """SELECT o.event_id FROM c3_outbox o
-                           WHERE o.event_id = ANY(%s)
-                             AND NOT EXISTS (SELECT 1 FROM c3_delivery_attempt d
-                                             WHERE d.event_id = o.event_id AND d.outcome = 'ACKNOWLEDGED')
-                             AND NOT EXISTS (SELECT 1 FROM c3_delivery_attempt d
-                                             WHERE d.event_id = o.event_id AND d.outcome = 'CLAIMED'
-                                               AND d.claimed_until > %s
-                                               AND d.attempt_no = (SELECT max(attempt_no) FROM c3_delivery_attempt x
-                                                                   WHERE x.event_id = o.event_id))""",
-                        ([row["event_id"] for row in rows], now),
+                    for item in claim.execute(
+                        "SELECT event_id FROM c3_delivery_attempt WHERE outcome='ACKNOWLEDGED' AND event_id = ANY(%s)",
+                        ([row["event_id"] for row in rows],),
                     ).fetchall()
                 }
-                rows = [row for row in rows if row["event_id"] in still_free]
-                for row in rows:
-                    self._record_attempt(
-                        connection, row["event_id"], "CLAIMED", None, now, claimed_until=now + claim_ttl, detail=self._writer_id
-                    )
+            except psycopg.Error as exc:
+                claim.close()
+                raise PostgresAdapterError("BACKEND_UNAVAILABLE", "the relay claim failed") from exc
+            rows = [row for row in rows if row["event_id"] not in acknowledged]
+            if rows:
+                self._claim, self._claimed = claim, {row["event_id"] for row in rows}
+            else:
+                claim.close()
         return tuple(
             OutboxRow(
                 event_id=row["event_id"],
@@ -580,15 +616,13 @@ class PostgresC3Adapter:
         writer_epoch: int | None,
         recorded_at: datetime,
         *,
-        claimed_until: datetime | None = None,
         detail: str,
     ) -> None:
         connection.execute(
-            """INSERT INTO c3_delivery_attempt
-                   (event_id, attempt_no, outcome, writer_epoch, claimed_until, recorded_at, detail)
-               SELECT %s, COALESCE(max(attempt_no), 0) + 1, %s, %s, %s, %s, %s
+            """INSERT INTO c3_delivery_attempt (event_id, attempt_no, outcome, writer_epoch, recorded_at, detail)
+               SELECT %s, COALESCE(max(attempt_no), 0) + 1, %s, %s, %s, %s
                FROM c3_delivery_attempt WHERE event_id = %s""",
-            (event_id, outcome, writer_epoch, claimed_until, recorded_at, detail, event_id),
+            (event_id, outcome, writer_epoch, recorded_at, detail, event_id),
         )
 
     def _outbox_lock(self, connection: psycopg.Connection[Any], event_id: str) -> None:
@@ -598,28 +632,49 @@ class PostgresC3Adapter:
         if row is None or row["branch"] != "main":
             raise PostgresAdapterError("OUTBOX_ENTRY_NOT_FOUND", f"no main outbox entry {event_id!r}")
 
-    def acknowledge_outbox(self, event_id: str, *, acknowledged_at: datetime) -> None:
-        """Records the delivery as a separate ``ACKNOWLEDGED`` DeliveryAttempt under the
-        current writer epoch (ADD v1.3 §2.3); the outbox entry is never rewritten. A
-        second acknowledgement of the same event is a no-op."""
+    def _record_outcome(self, event_id: str, outcome: str, recorded_at: datetime, *, detail: str, fenced: bool) -> None:
+        """Records an outcome in the claim that holds the row, or else in its own
+        transaction; ends the claim once every claimed row has an outcome."""
+        with self._claim_lock:
+            claim = self._claim if event_id in self._claimed else None
+            if claim is not None:
+                try:
+                    epoch = self._hold_fence(claim) if fenced else self._epoch
+                    done = claim.execute(
+                        "SELECT 1 FROM c3_delivery_attempt WHERE event_id=%s AND outcome='ACKNOWLEDGED'", (event_id,)
+                    ).fetchone()
+                    if done is None:
+                        self._record_attempt(claim, event_id, outcome, epoch, recorded_at, detail=detail)
+                except psycopg.OperationalError:
+                    # The server ended the claim: record the outcome in its own transaction.
+                    self._claim, self._claimed = None, set()
+                    claim.close()
+                else:
+                    self._claimed.discard(event_id)
+                    if not self._claimed:
+                        self.close_claim()
+                    return
         with psycopg.connect(self._dsn, row_factory=dict_row) as connection:
             with connection.transaction():
-                epoch = self._hold_fence(connection)
+                epoch = self._hold_fence(connection) if fenced else self._epoch
                 self._outbox_lock(connection, event_id)
                 done = connection.execute(
                     "SELECT 1 FROM c3_delivery_attempt WHERE event_id=%s AND outcome='ACKNOWLEDGED'", (event_id,)
                 ).fetchone()
                 if done is None:
-                    self._record_attempt(connection, event_id, "ACKNOWLEDGED", epoch, acknowledged_at, detail=self._writer_id)
+                    self._record_attempt(connection, event_id, outcome, epoch, recorded_at, detail=detail)
+
+    def acknowledge_outbox(self, event_id: str, *, acknowledged_at: datetime) -> None:
+        """Records the delivery as a separate ``ACKNOWLEDGED`` DeliveryAttempt under the
+        current writer epoch (ADD v1.3 §2.3); the outbox entry is never rewritten. A
+        second acknowledgement of the same event is a no-op."""
+        self._record_outcome(event_id, "ACKNOWLEDGED", acknowledged_at, detail=self._writer_id, fenced=True)
 
     def record_delivery_failure(self, event_id: str, *, failed_at: datetime, reason: str) -> None:
-        """Ends a claim with a ``FAILED`` DeliveryAttempt; the entry is relayed again."""
+        """Records a ``FAILED`` DeliveryAttempt; the entry is relayed again."""
         if not isinstance(reason, str) or not reason:
             raise PostgresAdapterError("COMMIT_CONTRACT_INVALID", "a failure reason is required")
-        with psycopg.connect(self._dsn, row_factory=dict_row) as connection:
-            with connection.transaction():
-                self._outbox_lock(connection, event_id)
-                self._record_attempt(connection, event_id, "FAILED", self._epoch, failed_at, detail=reason[:512])
+        self._record_outcome(event_id, "FAILED", failed_at, detail=reason[:512], fenced=False)
 
     def delivery_attempts(self, event_id: str) -> tuple[DeliveryAttemptRow, ...]:
         with psycopg.connect(self._dsn, row_factory=dict_row) as connection:

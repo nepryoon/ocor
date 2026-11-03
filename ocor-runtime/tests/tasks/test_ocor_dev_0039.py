@@ -14,6 +14,7 @@ import os
 import urllib.error
 
 import pytest
+import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2.ports import C2Error, ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand
 from ocor_runtime.c3.service import PostgresC3Service
@@ -26,6 +27,13 @@ DIGEST_B = "urn:sha256:" + "b" * 64
 DIGEST_C = "urn:sha256:" + "c" * 64
 DIGEST_D = "urn:sha256:" + "d" * 64
 AGGREGATE_REF = "urn:ocor:mission-object:drift-reconciliation:1"
+# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only governed commands (LLD v1.1 :97, ADD v1.3
+# :342); the suite's commands are frozen and signed on the C6 governed path.
+GOVERNED = governed_path.GovernedC3(
+    release=DIGEST_B,
+    preconditions=tuple(f"urn:ocor:precondition:revision-{n}" for n in range(64)),
+    invariants=("urn:ocor:invariant:atomic-outbox",),
+)
 
 
 @pytest.fixture(scope="session")
@@ -46,7 +54,7 @@ def typedb_reachable() -> None:
 
 @pytest.fixture
 def service(postgres_dsn: str) -> PostgresC3Service:
-    value = PostgresC3Service(postgres_dsn)
+    value = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     value.initialize()
     value.reset()
     return value
@@ -82,7 +90,7 @@ def make_command(
             "correlation_id": "018f2f95-01b2-7cc3-8d4e-123456789abc",
         }
     )
-    return GovernedCanonicalCommitCommand.from_mapping(
+    return GOVERNED.command(
         {
             "command_id": command_id,
             "action_instance_id": command_id.replace("command", "action"),

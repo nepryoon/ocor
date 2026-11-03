@@ -17,6 +17,7 @@ import time
 
 import psycopg
 import pytest
+import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c3.adapters.recovery_lock import PostgresAdvisoryLock
 from ocor_runtime.c3.ports import C3Error, GovernedCanonicalCommitCommand, OutboxEnvelope
 from ocor_runtime.c3.recovery import RECOVERY_LOCK_KEY, RecoveryReport, SingleWriterRecoveryCoordinator
@@ -28,6 +29,13 @@ DIGEST_B = "urn:sha256:" + "b" * 64
 DIGEST_C = "urn:sha256:" + "c" * 64
 DIGEST_D = "urn:sha256:" + "d" * 64
 AGGREGATE_REF = "urn:ocor:mission-object:single-writer-recovery:1"
+# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only governed commands (LLD v1.1 :97, ADD v1.3
+# :342); the suite's commands are frozen and signed on the C6 governed path.
+GOVERNED = governed_path.GovernedC3(
+    release=DIGEST_B,
+    preconditions=tuple(f"urn:ocor:precondition:revision-{n}" for n in range(64)),
+    invariants=("urn:ocor:invariant:atomic-outbox",),
+)
 
 
 @pytest.fixture(scope="session")
@@ -40,7 +48,7 @@ def postgres_dsn() -> str:
 
 @pytest.fixture
 def service(postgres_dsn: str) -> PostgresC3Service:
-    value = PostgresC3Service(postgres_dsn)
+    value = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     value.initialize()
     value.reset()
     return value
@@ -74,7 +82,7 @@ def make_command(
             "correlation_id": "018f2f95-01b2-7cc3-8d4e-123456789abc",
         }
     )
-    return GovernedCanonicalCommitCommand.from_mapping(
+    return GOVERNED.command(
         {
             "command_id": command_id,
             "action_instance_id": command_id.replace("command", "action"),
@@ -193,7 +201,7 @@ def test_concurrent_recovery_passes_never_double_repair(
         connection.execute("DELETE FROM c3_outbox WHERE commit_id = %s", (receipt.commit_id,))
 
     coordinator_a = SingleWriterRecoveryCoordinator(service, PostgresAdvisoryLock(postgres_dsn))
-    coordinator_b = SingleWriterRecoveryCoordinator(PostgresC3Service(postgres_dsn), PostgresAdvisoryLock(postgres_dsn))
+    coordinator_b = SingleWriterRecoveryCoordinator(PostgresC3Service(postgres_dsn, admission=GOVERNED.admission(), writer_epoch=service.writer_epoch), PostgresAdvisoryLock(postgres_dsn))
     reports: list[RecoveryReport] = []
     lock = threading.Lock()
 
@@ -271,7 +279,7 @@ def test_two_concurrent_relay_workers_never_both_claim_the_same_unacknowledged_e
     service.commit(command)
 
     coordinator_a = SingleWriterRecoveryCoordinator(service, PostgresAdvisoryLock(postgres_dsn))
-    coordinator_b = SingleWriterRecoveryCoordinator(PostgresC3Service(postgres_dsn), PostgresAdvisoryLock(postgres_dsn))
+    coordinator_b = SingleWriterRecoveryCoordinator(PostgresC3Service(postgres_dsn, admission=GOVERNED.admission(), writer_epoch=service.writer_epoch), PostgresAdvisoryLock(postgres_dsn))
     delivered_by: dict[str, list[OutboxEnvelope]] = {"a": [], "b": []}
 
     def run(name: str, coord: SingleWriterRecoveryCoordinator) -> None:
@@ -309,7 +317,7 @@ def test_a_fresh_coordinator_after_a_simulated_restart_converges_without_a_dupli
     assert first_report.repaired >= 1
 
     # a restarted process holds no in-memory state of its own; only Postgres does.
-    restarted_service = PostgresC3Service(postgres_dsn)
+    restarted_service = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission(), writer_epoch=service.writer_epoch)
     restarted_coordinator = SingleWriterRecoveryCoordinator(restarted_service, PostgresAdvisoryLock(postgres_dsn))
     second_report = restarted_coordinator.run_recovery_pass(limit=10)
 

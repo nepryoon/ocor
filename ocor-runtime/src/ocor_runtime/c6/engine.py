@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import threading
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from typing import Any, Protocol, cast, runtime_checkable
 
@@ -150,6 +150,71 @@ class CommittedOutboxEvent:
         return canonical_digest(dict(self.payload)) == self.payload_digest
 
 
+@dataclass(frozen=True, slots=True)
+class CanonicalDocument:
+    """The canonical state of one aggregate as read from C3."""
+
+    aggregate_id: str
+    document: Mapping[str, Any]
+    version: int
+
+
+class C3CanonicalOutboxView:
+    """The committed events of the engine's canonical commits, as the EMISSION-FENCE
+    reads its durable outbox (``get_event``, ``outbox``, ``mark_emitted``), and the C3
+    canonical state of their aggregates (``get``). The state is always read from C3; the
+    view only tracks which committed events have crossed the fence. It is the composition
+    of the current EMISSION-FENCE with C3 until NCR-C6-004/005 (NCP-U07)."""
+
+    def __init__(self, reader: Any, *, tenant_id: str, aggregate_type: str) -> None:
+        if not callable(getattr(reader, "read", None)):
+            raise TypeError("reader must implement the C3 CanonicalReadPort")
+        if not tenant_id or not aggregate_type:
+            raise ValueError("tenant_id and aggregate_type are required")
+        self._reader = reader
+        self._tenant_id = tenant_id
+        self._aggregate_type = aggregate_type
+        self._events: dict[str, CommittedOutboxEvent] = {}
+        self._lock = threading.RLock()
+
+    def get(self, aggregate_id: str) -> CanonicalDocument | None:
+        snapshot = self._reader.read(self._tenant_id, self._aggregate_type, aggregate_id)
+        if snapshot is None:
+            return None
+        return CanonicalDocument(aggregate_id, snapshot.state, snapshot.revision)
+
+    def record(self, event: CommittedOutboxEvent) -> CommittedOutboxEvent:
+        with self._lock:
+            existing = self._events.get(event.event_id)
+            if existing is not None:
+                return existing
+            self._events[event.event_id] = event
+            return event
+
+    def get_event(self, event_id: str) -> CommittedOutboxEvent | None:
+        with self._lock:
+            return self._events.get(event_id)
+
+    def outbox(self, *, include_emitted: bool = False) -> tuple[CommittedOutboxEvent, ...]:
+        with self._lock:
+            events = sorted(self._events.values(), key=lambda item: (item.aggregate_id, item.aggregate_version))
+            return tuple(item for item in events if include_emitted or item.emitted_at is None)
+
+    def mark_emitted(self, event_id: str, emitted_at: datetime) -> CommittedOutboxEvent:
+        _require_aware(emitted_at, field="emitted_at")
+        with self._lock:
+            event = self._events.get(event_id)
+            if event is None:
+                raise EmissionBlocked("event is not present in the durable outbox")
+            if event.emitted_at is None:
+                event = replace(event, emitted_at=emitted_at)
+                self._events[event_id] = event
+            return event
+
+
+Evidence = tuple[tuple[str, ...], tuple[Mapping[str, str], ...]]
+
+
 @dataclass
 class CanonicalCommitPath:
     """C6 side of the governed canonical commit: freezes the GatePackage and signs the
@@ -165,6 +230,7 @@ class CanonicalCommitPath:
     precondition_bindings: tuple[str, ...]
     invariant_bindings: tuple[str, ...]
     validity: timedelta = timedelta(hours=1)
+    evidence: Callable[[ActionProposal], Evidence] | None = None
     _issued: dict[str, GovernedCanonicalCommitCommand] = field(default_factory=dict, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -277,6 +343,7 @@ class GovernedActionEngine:
         commit_port: CanonicalCommitTarget,
         fence: EmissionFence,
         canonical_path: CanonicalCommitPath,
+        emission_outbox: C3CanonicalOutboxView | None = None,
     ) -> None:
         if not isinstance(commit_port, CanonicalCommitTarget):
             raise TypeError("commit_port must implement the C3 GovernedCommitPort and RevisionPort")
@@ -286,6 +353,7 @@ class GovernedActionEngine:
         self._commit_port = commit_port
         self._fence = fence
         self._path = canonical_path
+        self._outbox = emission_outbox
 
     def execute(
         self,
@@ -296,8 +364,8 @@ class GovernedActionEngine:
         decision: Decision | None,
         sink: EventSink | Callable[[Any], Any],
         at: datetime,
-        evidence_refs: Sequence[str],
-        claim_source_bindings: Sequence[Mapping[str, str]],
+        evidence_refs: Sequence[str] | None = None,
+        claim_source_bindings: Sequence[Mapping[str, str]] | None = None,
     ) -> ActionOutcome:
         instant = _require_aware(at, field="at")
 
@@ -333,6 +401,12 @@ class GovernedActionEngine:
 
         # Canonical commit (ACT-T29/T30): C6 sends the governed command to C3, which
         # admits it only on the signed governed path and commits state and outbox atomically.
+        if evidence_refs is None or claim_source_bindings is None:
+            if self._path.evidence is None:
+                raise GovernedActionError("EVIDENCE_MISSING", "a canonical commit requires its Evidence and claim/source bindings")
+            resolved_refs, resolved_bindings = self._path.evidence(proposal)
+            evidence_refs = resolved_refs if evidence_refs is None else evidence_refs
+            claim_source_bindings = resolved_bindings if claim_source_bindings is None else claim_source_bindings
         context = self._path.governed_context
         command = self._path.command(
             proposal,
@@ -359,6 +433,8 @@ class GovernedActionEngine:
             transaction_id=commit_receipt.commit_id,
             occurred_at=instant,
         )
+        if self._outbox is not None:
+            event = self._outbox.record(event)
 
         # EMISSION-FENCE (ACT-T12/ACT-T14): the final atomic gate
         # immediately before the simulated effect; blocks on
