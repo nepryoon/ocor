@@ -114,7 +114,8 @@ def test_exact_at_commit_never_masquerades_a_stale_projection_as_exact(adapter: 
 
     with pytest.raises(C2Error) as excinfo:
         adapter.read(request)
-    assert excinfo.value.reason_code == "CONSISTENCY_DOWNGRADE"
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"
 
 
 def test_at_least_commit_reports_projection_not_ready_before_the_commit_lands(
@@ -152,7 +153,11 @@ def test_result_not_found_is_reached_only_after_consistency_is_confirmed(adapter
 
     with pytest.raises(C2Error) as excinfo:
         adapter.read(request)
-    assert excinfo.value.reason_code == "RESULT_NOT_FOUND"
+    # NCP-U03 (NCR-C2-006): an absent result is indistinguishable from a denial (no existence
+    # disclosure through errors): POLICY_DENIED --
+    # ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:50,
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454
+    assert excinfo.value.reason_code == "POLICY_DENIED"
 
 
 def test_a_real_typedb_unreachability_fails_closed_never_serving_a_fabricated_response(

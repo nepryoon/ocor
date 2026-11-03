@@ -221,7 +221,9 @@ def test_serving_a_quarantined_projection_is_prohibited(
 
     with pytest.raises(C2Error) as excinfo:
         detector.read_if_healthy(AGGREGATE_REF, make_read_request(required_commit=receipt.commit_id))
-    assert excinfo.value.reason_code == "PROJECTION_QUARANTINED"
+    # NCP-U03 (NCR-C2-006): a quarantined projection is not ready to serve: PROJECTION_NOT_READY --
+    # docs/OCOR_LLD_v1.1.md:350, ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:460
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"
 
 
 def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(

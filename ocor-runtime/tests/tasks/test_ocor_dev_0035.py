@@ -27,7 +27,7 @@ from ocor_runtime.c2.ports import (
     Watermark,
     WatermarkPort,
 )
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition
+from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.kernel.governed_context import GovernedContext
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -113,7 +113,9 @@ def make_planner(*, typedb: TypeDBExactCommitAdapter, registered: bool) -> Consi
         registry=registry,
         marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]),
         marking_port=_NoResourcePort(),
-        clearance_by_marking_ref={},
+        # NCP-U03 (NCR-C2-003), construction only: the request's classification_marking_ref
+        # resolves -- ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401
+        clearance_by_marking_ref={DIGEST_A: MarkingSet({"classification": "SECRET"})},
     )
     return ConsistencyPlanner(
         policy=policy,
@@ -219,7 +221,9 @@ def test_an_unregistered_contract_never_reaches_the_watermark_check() -> None:
     with pytest.raises(C2Error) as excinfo:
         planner.plan(request)
 
-    assert excinfo.value.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+    # NCP-U03 (NCR-C2-006): a policy denial is POLICY_DENIED of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:454
+    assert excinfo.value.reason_code == "POLICY_DENIED"
 
 
 def test_a_denied_policy_never_leaks_the_real_watermark_in_its_result(typedb: TypeDBExactCommitAdapter) -> None:
@@ -232,7 +236,8 @@ def test_a_denied_policy_never_leaks_the_real_watermark_in_its_result(typedb: Ty
     try:
         result = planner.plan(request)
     except C2Error as error:
-        assert error.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+        # NCP-U03 (NCR-C2-006): POLICY_DENIED -- ocor-named-query-gateway.openapi.yaml:454
+        assert error.reason_code == "POLICY_DENIED"
     assert result is None
 
 
@@ -251,7 +256,9 @@ def test_a_real_watermark_backend_failure_propagates_and_never_defaults_to_best_
         registry={CONTRACT_ID: RegisteredNamedQuery(contract_id=CONTRACT_ID, versions=frozenset({"1.0.0"}), marking_scheme_id="classification")},
         marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]),
         marking_port=_NoResourcePort(),
-        clearance_by_marking_ref={},
+        # NCP-U03 (NCR-C2-003), construction only: the request's classification_marking_ref
+        # resolves -- ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401
+        clearance_by_marking_ref={DIGEST_A: MarkingSet({"classification": "SECRET"})},
     )
     planner = ConsistencyPlanner(
         policy=policy,

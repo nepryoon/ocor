@@ -769,17 +769,22 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-057",
         "NFR-024"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_001_conforms"
+      },
       "seed_ref": "C2-1",
       "severity": "HIGH",
       "severity_basis": "FR-057 and NFR-024 are P0 PoC",
       "statement": "AT_LEAST_COMMIT is evaluated by string equality between the watermark (or served watermark) and the required commit, with no branch/commit ordering and no bounded wait on wait_timeout_ms: a projection already beyond the required commit answers PROJECTION_NOT_READY instead of serving and declaring the later commit. wait_timeout_ms is validated (0..30000) but never used.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_note": "SUPPLEMENT point 4 (C2-1): FR-057 requires branch and commit ordering; OPEN, only a part that would change a contract or schema would be DECISION_REQUIRED (none identified: commit ordering needs no contract change)",
       "test_refs": [
         {
@@ -863,18 +868,23 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-006",
         "NFR-006"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_002_conforms"
+      },
       "seed_correction": "seed ADD anchors :380 and :1362 adjusted: the principal rule of ADD v1.3 \u00a73.3 is at :1361",
       "seed_ref": "C2-2",
       "severity": "HIGH",
       "severity_basis": "FR-006 and NFR-006 are P0 PoC",
       "statement": "The requester principal is read from the request body (governed_context.effective_principal_id, and actor_chain travels in the body as well) with no verified transport binding; the identity resolved by IdentityBackedAuthority is only compared with ABSTAIN and then discarded, so neither the policy decision nor the projection read receives it; the policy decision reads only contract id/version, resource_id and classification_marking_ref, so tenant, organisation, domain, compartments and purpose never influence the decision.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
@@ -924,17 +934,22 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-006",
         "NFR-006"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_003_conforms"
+      },
       "seed_ref": "C2-3",
       "severity": "HIGH",
       "severity_basis": "FR-006 and NFR-006 are P0 PoC (seed listed no requirement; FR-006 acceptance anchors it)",
       "statement": "When the request carries no resource_id parameter, RegistrationAndMarkingPolicy.decide returns PERMIT before resolving the classification_marking_ref, so an unresolvable marking reference is permitted; the norm requires DENY for an unresolvable *_marking_ref. A sealed test asserts the permissive behaviour.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
@@ -1008,18 +1023,26 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-046",
         "FR-055"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_004_catalog_is_built_from_an_admitted_c1_release"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_004_conforms"
+      },
       "seed_correction": "seed anchor ADD :1364 is the traceability line; the rule is at :1361; the seed code anchor typedb_adapter.py:254-259 is the copy of the request digests",
       "seed_ref": "C2-4",
       "severity": "HIGH",
       "severity_basis": "FR-046 and FR-055 are P0 PoC",
       "statement": "The gateway never compares contract_digest with the registered contract nor the request release with the active release: contract_digest is only format-checked, RELEASE_MISMATCH and CONTRACT_DIGEST_MISMATCH are never produced by C1 or C2, and the only release comparison (NamedQueryRequest.verify_served -> STALE_CONTEXT) runs after the read against a ServedContext whose release and policy digests the TypeDB adapter copies from the request, so it cannot fail.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -1062,18 +1085,26 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-056",
         "NFR-034",
         "FR-134"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_audit_unavailable_fails_closed"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_005_conforms"
+      },
       "seed_ref": "C2-5",
       "severity": "HIGH",
       "severity_basis": "FR-056, NFR-034 and FR-134 are P0 PoC",
       "statement": "Denied or rejected gateway requests are not audited: c2/ contains no audit call or audit port, so non-allow-listed queries are denied but not audited.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -1138,17 +1169,25 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "NFR-024",
         "NFR-006"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_backend_failure_is_a_typed_problem"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_006_conforms"
+      },
       "seed_ref": "C2-6",
       "severity": "HIGH",
       "severity_basis": "contract of LLD v1.1 \u00a70.2 (ocor-named-query-gateway.openapi.yaml); NFR-024 and NFR-006 are P0 PoC",
       "statement": "C2 has no Problem model: C2Error carries only reason_code and message (no type, title, status, correlation_id, served or deferred_element), so PROJECTION_NOT_READY and STALE_CONTEXT are raised without the mandatory served context. Nine reason codes emitted by C2 and its read adapters are outside the closed Problem enum (ARBITRARY_QUERY_FORBIDDEN, CONSISTENCY_DOWNGRADE, CONSISTENCY_INVALID, GOVERNED_CONTEXT_MISMATCH, IDENTITY_AMBIGUOUS, PROJECTION_QUARANTINED, PURPOSE_MISSING, QUERY_CONTRACT_INVALID, RESULT_NOT_FOUND); eleven of the thirteen enum codes are never emitted. Identity resolution runs before the allow-list check, so for an unregistered contract the error code differs according to whether the body principal resolves (IDENTITY_AMBIGUOUS vs ARBITRARY_QUERY_FORBIDDEN), instead of a DENY without lookup.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
@@ -1246,17 +1285,25 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-007",
         "NFR-024"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_cost_budget_is_enforced_before_the_read"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_007_conforms"
+      },
       "seed_ref": "C2-7",
       "severity": "HIGH",
       "severity_basis": "FR-007 and NFR-024 are P0 PoC; contract of LLD v1.1 \u00a70.2",
       "statement": "NamedQueryRequest lacks branch, logic_version, scenario_id and any cost budget; parameters are screened with a deny-list of six key names (any other key, e.g. 'cypher', passes) instead of the closed generated schema selected by contract_id and digest; ServedContext lacks result_marking_ref, provenance_ref and redaction_count; results are returned by the projection without a result marking join or post-filter.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -1323,17 +1370,22 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "NFR-022"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_008_conforms"
+      },
       "seed_correction": "severity raised from MEDIUM to HIGH: whichever form prevails, the code violates one contract of LLD v1.1 \u00a70.2",
       "seed_ref": "C2-8",
       "severity": "HIGH",
       "severity_basis": "contract of LLD v1.1 \u00a70.2 violated under either reading",
       "statement": "Digest format conflict between normative sources: the Named Query Gateway contract requires '^sha256:<hex>' for policy_bundle_digest, governed_context_digest, ontology_release_digest, contract_digest and SchemaPin.digest, while LLD v1.1 \u00a71.1 and the GovernedContext schema prescribe 'urn:sha256:<hex>' (and the same gateway contract uses urn:sha256 for classification_marking_ref and provenance_ref). The code follows urn:sha256 and rejects every contract-form digest. Both sources are contracts of LLD v1.1 \u00a70.2 / LLD text; the precedence of LLD v1.1 \u00a70.1 does not settle a conflict inside the materialised contract set.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "CONFLICT",
       "verification": {
@@ -1365,17 +1417,22 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-057"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_009_conforms"
+      },
       "seed_correction": "severity raised from LOW to HIGH: rejecting a contract-valid request has an observable effect and violates a contract of LLD v1.1 \u00a70.2",
       "seed_ref": "C2-9",
       "severity": "HIGH",
       "severity_basis": "contract of LLD v1.1 \u00a70.2 (ocor-named-query-gateway.openapi.yaml)",
       "statement": "ConsistencyRequirement rejects BEST_AVAILABLE with a required_commit (CONSISTENCY_INVALID, a code outside the Problem enum), while the gateway contract only requires required_commit for the strong modes and allows it otherwise, so a contract-valid request is rejected.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -1473,17 +1530,22 @@
       ],
       "plan_unit": "NCP-U03",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-055",
         "FR-007"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_011_conforms"
+      },
       "seed_ref": "OBS-C2-OPERATIONS",
       "severity": "HIGH",
       "severity_basis": "FR-055 and FR-007 are P0 PoC; contract of LLD v1.1 \u00a70.2",
       "statement": "From observation OBS-C2-OPERATIONS: none of the six operations of the Named Query Gateway contract (GetObject, QueryObjectSet, Search, Traverse, Explain, GetProvenance) is implemented or registered as a named query, and no ObjectSnapshot, GraphResponse or SearchResponse is produced; only generated TypeScript types exist. The only concrete named-query contract id in the runtime is the internal C4 drift-reconciliation read; EvidenceReadPort has no implementation; no composition root instantiates NamedQueryGateway outside the tests.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -1534,16 +1596,21 @@
       "related_seed_refs": [
         "C4-3"
       ],
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json",
+      "remediation_unit": "OCOR-DEV-REM-0049",
       "requirement_ids": [
         "FR-057"
       ],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py::test_ncr_c2_012_conforms"
+      },
       "seed_ref": "",
       "severity": "HIGH",
       "severity_basis": "FR-057 is P0 PoC; contract of LLD v1.1 \u00a70.2 (closed enum)",
       "statement": "Beyond the seed (from observation OBS-TESTS-PINNING-NON-NORMATIVE): an EXACT_AT_COMMIT request whose required commit has not landed is rejected with CONSISTENCY_DOWNGRADE, a code outside the Problem enum; BA-03 prescribes exact-at-commit or PROJECTION_NOT_READY, never downgrade. Several sealed tests pin CONSISTENCY_DOWNGRADE (the separate case of an unavailable emulation, UNSUPPORTED_CAPABILITY per ADD v1.3 \u00a73.3, has no implementation either).",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",

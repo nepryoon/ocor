@@ -97,7 +97,9 @@ def test_arbitrary_query_text_is_rejected(query_request: NamedQueryRequest, extr
     value[extra] = "SELECT *"
     with pytest.raises(C2Error) as exc_info:
         NamedQueryRequest.from_mapping(value)
-    assert exc_info.value.reason_code == "ARBITRARY_QUERY_FORBIDDEN"
+    # NCP-U03 (NCR-C2-006): closed request schema, SCHEMA_VIOLATION of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:459
+    assert exc_info.value.reason_code == "SCHEMA_VIOLATION"
 
 
 def test_empty_purpose_is_rejected_before_routing(query_request: NamedQueryRequest):
@@ -105,7 +107,9 @@ def test_empty_purpose_is_rejected_before_routing(query_request: NamedQueryReque
     value["governed_context"]["purpose"] = ""  # type: ignore[index]
     with pytest.raises(C2Error) as exc_info:
         NamedQueryRequest.from_mapping(value)
-    assert exc_info.value.reason_code == "PURPOSE_MISSING"
+    # NCP-U03 (NCR-C2-006): Query surface, absent GCS field -> DENY without lookup --
+    # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380
+    assert exc_info.value.reason_code == "POLICY_DENIED"
 
 
 def test_mismatched_gcs_digest_is_rejected(query_request: NamedQueryRequest):
@@ -113,7 +117,9 @@ def test_mismatched_gcs_digest_is_rejected(query_request: NamedQueryRequest):
     value["governed_context_digest"] = DIGEST_A
     with pytest.raises(C2Error) as exc_info:
         NamedQueryRequest.from_mapping(value)
-    assert exc_info.value.reason_code == "GOVERNED_CONTEXT_MISMATCH"
+    # NCP-U03 (NCR-C2-006): Query surface, GCS mismatch -> DENY without lookup --
+    # ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:380
+    assert exc_info.value.reason_code == "POLICY_DENIED"
 
 
 @pytest.mark.parametrize(
@@ -121,21 +127,26 @@ def test_mismatched_gcs_digest_is_rejected(query_request: NamedQueryRequest):
     [
         {"mode": "AT_LEAST_COMMIT"},
         {"mode": "EXACT_AT_COMMIT"},
-        {"mode": "BEST_AVAILABLE", "required_commit": "commit-42"},
+        # NCP-U03 (NCR-C2-009): BEST_AVAILABLE may declare required_commit (contract :126-141);
+        # the case keeps its shape with a contract-invalid empty required_commit (minLength 1, :133)
+        {"mode": "BEST_AVAILABLE", "required_commit": ""},
         {"mode": "AT_LEAST_COMMIT", "required_commit": "commit-42", "wait_timeout_ms": 30001},
     ],
 )
 def test_invalid_consistency_contract_is_rejected(value: dict[str, object]):
     with pytest.raises(C2Error) as exc_info:
         ConsistencyRequirement.from_mapping(value)
-    assert exc_info.value.reason_code == "CONSISTENCY_INVALID"
+    # NCP-U03 (NCR-C2-006): SCHEMA_VIOLATION of the closed Problem enum --
+    # ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:459
+    assert exc_info.value.reason_code == "SCHEMA_VIOLATION"
 
 
 def test_exact_consistency_cannot_silently_downgrade(context: GovernedContext):
     requirement = ConsistencyRequirement(ConsistencyMode.EXACT_AT_COMMIT, "commit-42", 0)
     with pytest.raises(C2Error) as exc_info:
         requirement.verify_served(served(context, commit="commit-41"))
-    assert exc_info.value.reason_code == "CONSISTENCY_DOWNGRADE"
+    # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
+    assert exc_info.value.reason_code == "PROJECTION_NOT_READY"
 
 
 def test_at_least_commit_requires_ready_watermark(context: GovernedContext):
