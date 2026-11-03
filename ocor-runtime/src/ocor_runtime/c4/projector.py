@@ -12,11 +12,13 @@ is never authoritative (ADD v1.3 §6.2 step 7).
 from __future__ import annotations
 
 import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from ..c5.backbone import CanonicalIngestionEnvelope
 from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
-from .typedb_adapter import TypeDBProjectionAdapter
+from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
 
 CANONICAL_EVENT_SCHEMA = "urn:ocor:schema:canonical-ingestion-envelope:1"
 CANONICAL_STATE_COMMITTED = "canonical-state-committed"
@@ -28,6 +30,25 @@ class ProjectorError(RuntimeError):
     def __init__(self, reason_code: str, message: str) -> None:
         self.reason_code = reason_code
         super().__init__(f"{reason_code}: {message}")
+
+
+def _revision(value: object, minimum: int) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        return None
+    return value
+
+
+@contextmanager
+def _projection(operation: str) -> Iterator[None]:
+    """Projection failures leave the projector only as ``ProjectorError``: an unreachable
+    TypeDB is ``BACKEND_UNAVAILABLE``, a refused query ``BACKEND_ERROR``; the server text
+    is never echoed."""
+    try:
+        yield
+    except TypeDBAdapterError as exc:
+        raise ProjectorError("BACKEND_ERROR", f"{operation}: TypeDB refused the operation") from exc
+    except OSError as exc:
+        raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
 
 
 class CanonicalStateProjector:
@@ -55,15 +76,21 @@ class CanonicalStateProjector:
         ):
             raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} is not a canonical-state-committed event")
         state = payload.get("state")
-        revision = payload.get("to_revision")
+        before = _revision(payload.get("from_revision"), 0)
+        revision = _revision(payload.get("to_revision"), 1)
+        try:
+            state_digest = canonical_digest(state) if isinstance(state, dict) else None
+        except (TypeError, ValueError) as exc:
+            raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} state is not I-JSON") from exc
         if (
-            not isinstance(state, dict)
-            or isinstance(revision, bool)
-            or not isinstance(revision, int)
+            state_digest is None
+            or before is None
+            or revision is None
+            or revision != before + 1
             or revision != envelope.sequence
             or payload.get("commit_id") != envelope.source_ref
             or payload.get("aggregate_ref") != envelope.aggregate_ref
-            or canonical_digest(state) != payload.get("state_digest")
+            or state_digest != payload.get("state_digest")
         ):
             raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} payload does not match its envelope")
         if payload.get("ontology_release_digest") != self._release:
@@ -75,7 +102,8 @@ class CanonicalStateProjector:
     def _applied_revision(self, aggregate_ref: str) -> int:
         """The revision of the last commit applied for the aggregate, read back from the
         projected fact, so a restarted projector keeps the order (0 when none)."""
-        found = self._projection._lookup_fact(aggregate_ref)  # noqa: SLF001 -- C4-internal read of its own fact
+        with _projection("lookup"):
+            found = self._projection._lookup_fact(aggregate_ref)  # noqa: SLF001 -- C4-internal read of its own fact
         if found is None:
             return 0
         try:
@@ -92,7 +120,9 @@ class CanonicalStateProjector:
         payload = self._verified(envelope)
         commit_id = payload["commit_id"]
         with self._lock:
-            if self._projection.position(BRANCH, commit_id) is not None:
+            with _projection("position"):
+                position = self._projection.position(BRANCH, commit_id)
+            if position is not None:
                 return False
             applied = self._applied_revision(envelope.aggregate_ref)
             if payload["from_revision"] != applied:
@@ -100,7 +130,8 @@ class CanonicalStateProjector:
                     "OUT_OF_ORDER", f"{envelope.event_id!r} revision {envelope.sequence} does not follow revision {applied}"
                 )
             fact = {"commit_id": commit_id, "revision": payload["to_revision"], "state": payload["state"]}
-            self._projection.apply_commit(
-                fact_id=envelope.aggregate_ref, commit_id=commit_id, payload=canonical_bytes(fact).decode("utf-8")
-            )
+            with _projection("apply"):
+                self._projection.apply_commit(
+                    fact_id=envelope.aggregate_ref, commit_id=commit_id, payload=canonical_bytes(fact).decode("utf-8")
+                )
             return True

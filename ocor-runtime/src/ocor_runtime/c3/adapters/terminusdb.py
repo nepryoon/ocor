@@ -235,6 +235,12 @@ def _timestamp(document: Mapping[str, Any], field: str) -> datetime:
         raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not a canonical UTC timestamp") from exc
 
 
+def _required_input(field: str, value: object) -> str:
+    if not isinstance(value, str) or not value:
+        raise TerminusDBAdapterError("COMMIT_CONTRACT_INVALID", f"{field} must be a non-empty string")
+    return value
+
+
 def _answer(status: int, body: object) -> str:
     """A bounded description of a server answer for error messages: the HTTP status and,
     when well formed, the TerminusDB error type; never the body itself."""
@@ -730,6 +736,8 @@ class TerminusDBC3Adapter:
     # --- reads -------------------------------------------------------------------------
 
     def read_snapshot(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> SnapshotRow | None:
+        for field, value in (("tenant_id", tenant_id), ("aggregate_type", aggregate_type), ("aggregate_ref", aggregate_ref)):
+            _required_input(field, value)
         document = self._get_document("C3Aggregate", _key(tenant_id, aggregate_type, aggregate_ref))
         if document is None:
             return None
@@ -747,6 +755,7 @@ class TerminusDBC3Adapter:
     # --- relay -------------------------------------------------------------------------
 
     def source_bindings(self, commit_id: str) -> tuple[SourceBindingRow, ...]:
+        _required_input("commit_id", commit_id)
         version = self._data_version()
         rows = [item for item in self._list("C3SourceBinding", version) if item.get("commit_id") == commit_id]
         return tuple(
@@ -759,6 +768,7 @@ class TerminusDBC3Adapter:
     def delivery_attempts(self, event_id: str) -> tuple[DeliveryAttemptRow, ...]:
         """The TerminusDB relay records one ``ACKNOWLEDGED`` DeliveryAttempt per entry,
         written only under the current writer epoch (NCR-C3-007)."""
+        _required_input("event_id", event_id)
         document = self._get_document("C3DeliveryAttempt", _key(event_id))
         if document is None:
             return ()
@@ -801,6 +811,9 @@ class TerminusDBC3Adapter:
         return tuple(pending[:limit])
 
     def acknowledge_outbox(self, event_id: str, *, acknowledged_at: datetime) -> None:
+        _required_input("event_id", event_id)
+        if not isinstance(acknowledged_at, datetime) or acknowledged_at.utcoffset() is None:
+            raise TerminusDBAdapterError("COMMIT_CONTRACT_INVALID", "acknowledged_at must be a timezone-aware datetime")
         recorded_at = format_utc_timestamp(acknowledged_at)
         for _ in range(MAX_CONDITIONAL_ATTEMPTS):
             (fence, entry, attempt), version = self._snapshot(

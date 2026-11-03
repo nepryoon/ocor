@@ -282,7 +282,11 @@ class CommitAdmission:
             signature = base64.b64decode(record.signature, validate=True)
         except (binascii.Error, ValueError) as exc:
             raise _deny(reason, f"{record_type} signature is not base64") from exc
-        if key is None or not ed25519_verify(key, record.signed_bytes(), signature):
+        try:
+            signed = record.signed_bytes()
+        except (TypeError, ValueError) as exc:
+            raise _deny(reason, f"{record_type} payload is not I-JSON") from exc
+        if key is None or not ed25519_verify(key, signed, signature):
             raise _deny(reason, f"{record_type} signature is not verified by a trusted key")
         payload = record.payload
         if set(payload) != fields:
@@ -304,6 +308,7 @@ class CommitAdmission:
         )
         if canonical_digest(_thaw(package)) != command.gate_package_digest:
             raise _deny("GATE_PACKAGE_MISMATCH", "the GatePackage does not hash to gate_package_digest")
+        _instant(package, "frozen_at", "GATE_PACKAGE_MISMATCH")
         expected = gate_package_payload(
             command.to_mapping(),
             ontology_release_digest=package["ontology_release_digest"],

@@ -2365,13 +2365,17 @@ TDB_SERVICE_OPERATIONS: dict[str, Callable[[Any], Any]] = {
 
 
 @pytest.mark.parametrize("operation", sorted(TDB_SERVICE_OPERATIONS))
-def test_terminusdb_service_translates_every_adapter_failure(tdb_responder: TerminusDBResponder, operation: str) -> None:
+def test_terminusdb_service_surfaces_every_adapter_failure_typed(tdb_responder: TerminusDBResponder, operation: str) -> None:
+    """The sealed TerminusDB service maps only the C3 contract outcomes to ``C3Error`` and
+    lets every other adapter failure propagate unchanged (``CONTRACT_REASONS``, OCOR-DEV-
+    REM-0041): on every port operation that failure is the typed adapter error with a
+    stable reason code, never a raw transport or parsing exception."""
     service = _module("ocor_runtime.c3.terminusdb_service").TerminusDBC3Service(
         url=tdb_responder.url, password="rem0050-responder-synthetic", database="rem0050_responder",
         admission=_admission(RecordStore(), Fence(), InMemoryTrustedClock(NOW)), timeout=5.0, writer_epoch=1,
     )
     tdb_responder.overrides = {"version": (500, {}, CANARY_BODY), "db": (500, {}, CANARY_BODY)}
-    with pytest.raises(C3Error) as caught:
+    with pytest.raises(_module(TDB).TerminusDBAdapterError) as caught:
         TDB_SERVICE_OPERATIONS[operation](service)
     assert caught.value.reason_code == "BACKEND_ERROR"
     assert CANARY not in str(caught.value)
@@ -2389,7 +2393,8 @@ def test_terminusdb_service_translates_every_adapter_failure(tdb_responder: Term
         ("bindings-commit-empty", lambda adapter: adapter.source_bindings("")),
         ("attempts-event-not-text", lambda adapter: adapter.delivery_attempts(None)),
     ],
-    ids=lambda value: value if isinstance(value, str) else "",
+    ids=["naive-instant", "instant-text", "event-empty", "event-not-text", "snapshot-ref-not-text",
+         "revision-tenant-empty", "bindings-commit-empty", "attempts-event-not-text"],
 )
 def test_terminusdb_adapter_rejects_invalid_inputs_before_the_backend(
     tdb_responder: TerminusDBResponder, case: str, call: Callable[[Any], Any]

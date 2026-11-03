@@ -19,7 +19,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol, runtime_checkable
 
-from ..c5.backbone import CanonicalIngestionEnvelope
+from ..c5.backbone import BackboneError, CanonicalIngestionEnvelope
 from .events import CANONICAL_STATE_COMMITTED, EVENT_VERSION
 from .ports import C3Error, OutboxEnvelope, _thaw
 
@@ -69,6 +69,15 @@ def canonical_event(entry: OutboxEnvelope) -> CanonicalIngestionEnvelope:
     boundary = payload.get("boundary")
     if not isinstance(boundary, dict):
         raise C3Error("COMMIT_RECEIPT_MISMATCH", f"outbox entry {entry.event_id!r} has no isolation boundary")
+    try:
+        return _envelope(entry, payload, boundary)
+    except BackboneError as error:
+        # A committed entry without its correlation, causation, marking or GCS digest is
+        # not the event C3 committed: it is refused, never published.
+        raise C3Error("COMMIT_RECEIPT_MISMATCH", f"outbox entry {entry.event_id!r} lacks its event context") from error
+
+
+def _envelope(entry: OutboxEnvelope, payload: dict[str, Any], boundary: dict[str, Any]) -> CanonicalIngestionEnvelope:
     return CanonicalIngestionEnvelope.from_mapping(
         {
             "event_id": entry.event_id,

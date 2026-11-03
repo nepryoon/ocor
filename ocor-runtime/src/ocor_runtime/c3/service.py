@@ -86,7 +86,10 @@ class PostgresC3Service:
             raise _translated(error) from error
 
     def reset(self) -> None:
-        self._adapter.reset()
+        try:
+            self._adapter.reset()
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
 
     def close(self) -> None:
         """Ends the open relay claim, if any (see ``claim_batch``)."""
@@ -148,7 +151,10 @@ class PostgresC3Service:
     def read(
         self, tenant_id: str, aggregate_type: str, aggregate_ref: str
     ) -> CanonicalSnapshot | None:
-        row = self._adapter.read_snapshot(tenant_id, aggregate_type, aggregate_ref)
+        try:
+            row = self._adapter.read_snapshot(tenant_id, aggregate_type, aggregate_ref)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
         if row is None:
             return None
         return CanonicalSnapshot(
@@ -162,13 +168,17 @@ class PostgresC3Service:
         )
 
     def current_revision(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> int:
-        return self._adapter.current_revision(tenant_id, aggregate_type, aggregate_ref)
+        try:
+            return self._adapter.current_revision(tenant_id, aggregate_type, aggregate_ref)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
 
     def source_bindings(self, commit_id: str) -> tuple[ClaimSourceBinding, ...]:
-        return tuple(
-            ClaimSourceBinding(item.claim_ref, item.source_ref, item.evidence_ref)
-            for item in self._adapter.source_bindings(commit_id)
-        )
+        try:
+            rows = self._adapter.source_bindings(commit_id)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
+        return tuple(ClaimSourceBinding(item.claim_ref, item.source_ref, item.evidence_ref) for item in rows)
 
     def claim_batch(self, *, limit: int, claim_ttl: timedelta = DEFAULT_CLAIM_TTL) -> tuple[OutboxEnvelope, ...]:
         try:
@@ -202,9 +212,12 @@ class PostgresC3Service:
             raise _translated(error) from error
 
     def delivery_attempts(self, event_id: str) -> tuple[DeliveryAttempt, ...]:
+        try:
+            rows = self._adapter.delivery_attempts(event_id)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
         return tuple(
-            DeliveryAttempt(row.event_id, row.attempt_no, row.outcome, row.writer_epoch, row.recorded_at)
-            for row in self._adapter.delivery_attempts(event_id)
+            DeliveryAttempt(row.event_id, row.attempt_no, row.outcome, row.writer_epoch, row.recorded_at) for row in rows
         )
 
     def reconcile(self, *, limit: int) -> int:
