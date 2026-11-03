@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import ast
 import base64
+import contextlib
 import hashlib
 import http.server
 import importlib
@@ -2023,3 +2024,676 @@ def test_promotion_issuance_fault_is_denied_before_c3(backends: Any, fault: str,
         assert x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) is None
         assert x.w.ledger.records() == before
         assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.denied"]
+
+
+# ---------------------------------------------------------------------------------------
+# Input robustness of the PostgreSQL C3 adapter and service, of the C8 PostgreSQL Run
+# Ledger, of the C4 projector, of the relay envelope, of the GatePackage instant and of
+# the TerminusDB acknowledgement (PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)). A local SQL
+# responder stands in for the driver connection, so every stored-row shape and driver
+# failure is reached without a backend; divergent pre-existing tables are created on the
+# real PostgreSQL in a scratch schema.
+# ---------------------------------------------------------------------------------------
+PG = "ocor_runtime.c3.adapters.postgres"
+LEDGER = "ocor_runtime.c8.adapters.postgres_ledger"
+PG_DIGEST = "urn:sha256:" + "5" * 64
+PG_COMMAND_DIGEST = "urn:sha256:" + "6" * 64
+PG_PAYLOAD = {"event": "x"}
+
+
+class _SQLRows:
+    def __init__(self, rows: list[object]) -> None:
+        self._rows = rows
+
+    def fetchone(self) -> object:
+        return self._rows[0] if self._rows else None
+
+    def fetchall(self) -> list[object]:
+        return list(self._rows)
+
+
+@dataclass
+class SQLResponder:
+    """Local stand-in of the PostgreSQL driver connection: each statement is answered
+    with the rows, or raises the driver exception, of the first matching fragment."""
+
+    answers: list[tuple[str, object]] = field(default_factory=list)
+    statements: list[str] = field(default_factory=list)
+
+    def connect(self, *args: object, **kwargs: object) -> _SQLConnection:
+        return _SQLConnection(self)
+
+
+class _SQLConnection:
+    def __init__(self, responder: SQLResponder) -> None:
+        self._responder = responder
+        self.closed = False
+
+    def __enter__(self) -> _SQLConnection:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.closed = True
+
+    def execute(self, query: str, params: object = ()) -> _SQLRows:
+        self._responder.statements.append(query)
+        for fragment, answer in self._responder.answers:
+            if fragment in query:
+                if isinstance(answer, BaseException):
+                    raise answer
+                assert isinstance(answer, list)
+                return _SQLRows(answer)
+        return _SQLRows([])
+
+    @contextlib.contextmanager
+    def transaction(self) -> Iterator[_SQLConnection]:
+        yield self
+
+    def commit(self) -> None:
+        return None
+
+    def close(self) -> None:
+        self.closed = True
+
+
+@pytest.fixture
+def sql_responder(monkeypatch: pytest.MonkeyPatch) -> SQLResponder:
+    responder = SQLResponder()
+    monkeypatch.setattr(psycopg, "connect", responder.connect)
+    return responder
+
+
+def _pg_aggregate(**values: object) -> dict[str, object]:
+    return {"revision": 1, "state": {"status": "ASSESSED"}, "state_digest": PG_DIGEST, "commit_id": PG_COMMIT, **values}
+
+
+def _pg_commit_row(**values: object) -> dict[str, object]:
+    return {
+        "commit_id": PG_COMMIT, "command_id": "urn:ocor:command:rem0050:stored-shape", "command_digest": PG_COMMAND_DIGEST,
+        "tenant_id": TENANT, "aggregate_type": AGGREGATE_TYPE, "aggregate_ref": PG_REF, "from_revision": 0, "to_revision": 1,
+        "state_digest": PG_DIGEST, "idempotency_key": "rem0050-stored-shape", "decision_ref": "urn:ocor:decision:x",
+        "authority_ref": "urn:ocor:authority:x", "evidence_refs": [], "governed_context_digest": PG_DIGEST,
+        "gate_package_digest": PG_DIGEST, "outbox_event_id": PG_EVENT, "outbox_payload": dict(PG_PAYLOAD),
+        "outbox_payload_digest": canonical_digest(PG_PAYLOAD), "branch": "main", "writer_epoch": 1, "committed_at": NOW,
+        **values,
+    }
+
+
+def _pg_outbox_row(**values: object) -> dict[str, object]:
+    return {
+        "event_id": PG_EVENT, "commit_id": PG_COMMIT, "aggregate_ref": PG_REF, "aggregate_revision": 1,
+        "payload": dict(PG_PAYLOAD), "payload_digest": PG_DIGEST, "branch": "main", "occurred_at": NOW, **values,
+    }
+
+
+def _pg_attempt_row(**values: object) -> dict[str, object]:
+    return {"event_id": PG_EVENT, "attempt_no": 1, "outcome": "ACKNOWLEDGED", "writer_epoch": 1, "recorded_at": NOW, **values}
+
+
+def _pg_columns(**overrides: frozenset[str]) -> list[object]:
+    expected = {**_module(PG).EXPECTED_COLUMNS, **overrides}
+    return [{"table_name": table, "column_name": column} for table, columns in expected.items() for column in sorted(columns)]
+
+
+FENCE_SQL = "FROM c3_writer_fence WHERE boundary"
+FENCE_ROW: tuple[str, object] = (FENCE_SQL, [{"writer_epoch": 1}])
+
+
+def _pg_commit(adapter: Any) -> Any:
+    adapter.join_writer(1)
+    return adapter.commit_transaction(
+        tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=PG_REF, idempotency_key="rem0050-stored-shape",
+        command_id="urn:ocor:command:rem0050:stored-shape", command_digest=PG_COMMAND_DIGEST, expected_revision=1,
+        canonical_delta={"status": "VERIFIED"}, decision_ref="urn:ocor:decision:x", authority_ref="urn:ocor:authority:x",
+        evidence_refs=(), claim_source_bindings=(), governed_context_digest=PG_DIGEST, gate_package_digest=PG_DIGEST,
+        branch="main", check_state=lambda current, new: None, event_payload=lambda *args: dict(PG_PAYLOAD),
+    )
+
+
+def _pg_joined(call: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    def run(adapter: Any) -> Any:
+        adapter.join_writer(1)
+        return call(adapter)
+
+    return run
+
+
+PG_OPERATIONS: dict[str, Callable[[Any], Any]] = {
+    "initialize": lambda adapter: adapter.initialize(),
+    "reset": lambda adapter: adapter.reset(),
+    "acquire": lambda adapter: adapter.acquire_writer(),
+    "snapshot": lambda adapter: adapter.read_snapshot(TENANT, AGGREGATE_TYPE, PG_REF),
+    "revision": lambda adapter: adapter.current_revision(TENANT, AGGREGATE_TYPE, PG_REF),
+    "bindings": lambda adapter: adapter.source_bindings(PG_COMMIT),
+    "commit": _pg_commit,
+    "claim": lambda adapter: adapter.claim_outbox_batch(limit=10, claim_ttl=timedelta(seconds=5)),
+    "attempts": lambda adapter: adapter.delivery_attempts(PG_EVENT),
+    "acknowledge": _pg_joined(lambda adapter: adapter.acknowledge_outbox(PG_EVENT, acknowledged_at=NOW)),
+    "failure": lambda adapter: adapter.record_delivery_failure(PG_EVENT, failed_at=NOW, reason="broker"),
+    "reconcile": _pg_joined(lambda adapter: adapter.reconcile(limit=5)),
+}
+NAIVE = datetime(2026, 11, 3, 9, 0, 0)
+SNAPSHOT_SQL = "SELECT revision, state, state_digest, commit_id FROM c3_aggregate"
+CURRENT_SQL = "SELECT revision, state FROM c3_aggregate"
+REPLAY_SQL = "FROM c3_idempotency i JOIN c3_commit"
+CLAIM_SQL = "FROM c3_outbox o"
+ACKED_SQL = "event_id = ANY"
+ATTEMPTS_SQL = "ORDER BY attempt_no"
+# (case, operation, answers, reason code)
+PG_MALFORMED: list[tuple[str, str, list[tuple[str, object]], str]] = [
+    *[
+        (f"{operation}-driver-unavailable", operation, [("", psycopg.OperationalError(CANARY))], "BACKEND_UNAVAILABLE")
+        for operation in PG_OPERATIONS
+    ],
+    *[
+        (f"{operation}-driver-error", operation, [("", psycopg.DatabaseError(CANARY))], "BACKEND_ERROR")
+        for operation in PG_OPERATIONS
+    ],
+    ("columns-table-not-text", "initialize", [("information_schema.columns", [{"table_name": 7, "column_name": "x"}])], "BACKEND_ERROR"),
+    ("columns-row-not-object", "initialize", [("information_schema.columns", [("c3_commit", "commit_id")])], "BACKEND_ERROR"),
+    ("columns-aggregate-divergent", "initialize", [("information_schema.columns", _pg_columns(c3_aggregate=frozenset({"tenant_id"})))], "SCHEMA_MISMATCH"),
+    ("columns-idempotency-divergent", "initialize", [("information_schema.columns", _pg_columns(c3_idempotency=frozenset({"commit_id"})))], "SCHEMA_MISMATCH"),
+    ("fence-epoch-missing", "acquire", [], "BACKEND_ERROR"),
+    ("fence-epoch-bool", "acquire", [("INSERT INTO c3_writer_fence", [{"writer_epoch": True}])], "BACKEND_ERROR"),
+    ("fence-epoch-text", "acquire", [("INSERT INTO c3_writer_fence", [{"writer_epoch": "1"}])], "BACKEND_ERROR"),
+    ("fence-row-not-object", "acquire", [("INSERT INTO c3_writer_fence", [[1]])], "BACKEND_ERROR"),
+    ("held-fence-epoch-bool", "commit", [(FENCE_SQL, [{"writer_epoch": True}])], "BACKEND_ERROR"),
+    ("held-fence-row-without-epoch", "commit", [(FENCE_SQL, [{"epoch": 1}])], "BACKEND_ERROR"),
+    ("snapshot-revision-bool", "snapshot", [(SNAPSHOT_SQL, [_pg_aggregate(revision=True)])], "BACKEND_ERROR"),
+    ("snapshot-revision-text", "snapshot", [(SNAPSHOT_SQL, [_pg_aggregate(revision="1")])], "BACKEND_ERROR"),
+    ("snapshot-revision-negative", "snapshot", [(SNAPSHOT_SQL, [_pg_aggregate(revision=-1)])], "BACKEND_ERROR"),
+    ("snapshot-digest-missing", "snapshot", [(SNAPSHOT_SQL, [_pg_aggregate(state_digest=None)])], "BACKEND_ERROR"),
+    ("snapshot-commit-empty", "snapshot", [(SNAPSHOT_SQL, [_pg_aggregate(commit_id="")])], "BACKEND_ERROR"),
+    ("snapshot-row-not-object", "snapshot", [(SNAPSHOT_SQL, [[1, {}, PG_DIGEST, PG_COMMIT]])], "BACKEND_ERROR"),
+    ("snapshot-row-without-state", "snapshot", [(SNAPSHOT_SQL, [{k: v for k, v in _pg_aggregate().items() if k != "state"}])], "BACKEND_ERROR"),
+    ("revision-bool", "revision", [("SELECT revision FROM c3_aggregate", [{"revision": True}])], "BACKEND_ERROR"),
+    ("revision-text", "revision", [("SELECT revision FROM c3_aggregate", [{"revision": "1"}])], "BACKEND_ERROR"),
+    ("binding-ref-not-text", "bindings", [("FROM c3_source_binding", [{"claim_ref": 7, "source_ref": "s", "evidence_ref": "e"}])], "BACKEND_ERROR"),
+    ("binding-row-without-source", "bindings", [("FROM c3_source_binding", [{"claim_ref": "c", "evidence_ref": "e"}])], "BACKEND_ERROR"),
+    ("current-revision-bool", "commit", [FENCE_ROW, (CURRENT_SQL, [{"revision": True, "state": {}}])], "BACKEND_ERROR"),
+    ("current-row-without-state", "commit", [FENCE_ROW, (CURRENT_SQL, [{"revision": 1}])], "BACKEND_ERROR"),
+    ("replay-revisions-not-consecutive", "commit", [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row(to_revision=3)])], "COMMIT_RECEIPT_MISMATCH"),
+    ("replay-revision-bool", "commit", [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row(from_revision=False, to_revision=True)])], "BACKEND_ERROR"),
+    ("replay-committed-at-naive", "commit", [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row(committed_at=NAIVE)])], "BACKEND_ERROR"),
+    ("replay-committed-at-text", "commit", [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row(committed_at="2026-11-03T09:00:00Z")])], "BACKEND_ERROR"),
+    ("replay-commit-id-missing", "commit", [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row(commit_id=None)])], "BACKEND_ERROR"),
+    ("replay-digest-not-text", "commit", [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row(command_digest=7)])], "BACKEND_ERROR"),
+    ("claim-event-id-not-text", "claim", [(CLAIM_SQL, [_pg_outbox_row(event_id=[])])], "BACKEND_ERROR"),
+    ("claim-revision-bool", "claim", [(CLAIM_SQL, [_pg_outbox_row(aggregate_revision=True)])], "BACKEND_ERROR"),
+    ("claim-revision-zero", "claim", [(CLAIM_SQL, [_pg_outbox_row(aggregate_revision=0)])], "BACKEND_ERROR"),
+    ("claim-occurred-at-naive", "claim", [(CLAIM_SQL, [_pg_outbox_row(occurred_at=NAIVE)])], "BACKEND_ERROR"),
+    ("claim-occurred-at-text", "claim", [(CLAIM_SQL, [_pg_outbox_row(occurred_at="now")])], "BACKEND_ERROR"),
+    ("claim-branch-not-text", "claim", [(CLAIM_SQL, [_pg_outbox_row(branch=7)])], "BACKEND_ERROR"),
+    ("claim-digest-missing", "claim", [(CLAIM_SQL, [_pg_outbox_row(payload_digest=None)])], "BACKEND_ERROR"),
+    ("claim-acknowledged-id-not-text", "claim", [(ACKED_SQL, [{"event_id": 7}]), (CLAIM_SQL, [_pg_outbox_row()])], "BACKEND_ERROR"),
+    ("attempt-number-bool", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(attempt_no=True)])], "BACKEND_ERROR"),
+    ("attempt-number-zero", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(attempt_no=0)])], "BACKEND_ERROR"),
+    ("attempt-other-outcome", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(outcome="LOST")])], "BACKEND_ERROR"),
+    ("attempt-other-event", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(event_id="urn:ocor:event:other")])], "BACKEND_ERROR"),
+    ("attempt-epoch-bool", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(writer_epoch=True)])], "BACKEND_ERROR"),
+    ("attempt-acknowledged-without-epoch", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(writer_epoch=None)])], "BACKEND_ERROR"),
+    ("attempt-recorded-at-naive", "attempts", [(ATTEMPTS_SQL, [_pg_attempt_row(recorded_at=NAIVE)])], "BACKEND_ERROR"),
+    ("ack-entry-branch-not-text", "acknowledge", [FENCE_ROW, ("SELECT branch FROM c3_outbox", [{"branch": 7}])], "BACKEND_ERROR"),
+    ("reconcile-tenant-missing", "reconcile", [FENCE_ROW, ("LEFT JOIN c3_idempotency", [_pg_commit_row(tenant_id=None)])], "BACKEND_ERROR"),
+    ("reconcile-to-revision-text", "reconcile", [FENCE_ROW, ("LEFT JOIN c3_outbox", [_pg_commit_row(to_revision="1")])], "BACKEND_ERROR"),
+    ("reconcile-committed-at-text", "reconcile", [FENCE_ROW, ("LEFT JOIN c3_outbox", [_pg_commit_row(committed_at="yesterday")])], "BACKEND_ERROR"),
+    ("reconcile-payload-digest-mismatch", "reconcile", [FENCE_ROW, ("LEFT JOIN c3_outbox", [_pg_commit_row(outbox_payload_digest=PG_DIGEST)])], "COMMIT_RECEIPT_MISMATCH"),
+]
+
+
+@pytest.mark.parametrize(("case", "operation", "answers", "reason"), PG_MALFORMED, ids=[item[0] for item in PG_MALFORMED])
+def test_postgres_adapter_rejects_malformed_rows_and_driver_failures(
+    sql_responder: SQLResponder, case: str, operation: str, answers: list[tuple[str, object]], reason: str
+) -> None:
+    """Every stored row of an unexpected shape and every driver failure is a typed adapter
+    error with a stable reason code; nothing is coerced and no driver text is echoed."""
+    sql_responder.answers = answers
+    with pytest.raises(_module(PG).PostgresAdapterError) as caught:
+        PG_OPERATIONS[operation](_module(PG).PostgresC3Adapter("postgresql://responder/ocor"))
+    assert caught.value.reason_code == reason, case
+    assert CANARY not in str(caught.value), case
+
+
+PG_INVALID_INPUTS: list[tuple[str, Callable[[Any], Any]]] = [
+    ("ack-naive-instant", _pg_joined(lambda adapter: adapter.acknowledge_outbox(PG_EVENT, acknowledged_at=NAIVE))),
+    ("ack-instant-text", _pg_joined(lambda adapter: adapter.acknowledge_outbox(PG_EVENT, acknowledged_at="now"))),
+    ("ack-event-empty", _pg_joined(lambda adapter: adapter.acknowledge_outbox("", acknowledged_at=NOW))),
+    ("failure-naive-instant", lambda adapter: adapter.record_delivery_failure(PG_EVENT, failed_at=NAIVE, reason="x")),
+    ("snapshot-tenant-not-text", lambda adapter: adapter.read_snapshot(7, AGGREGATE_TYPE, PG_REF)),
+    ("revision-ref-empty", lambda adapter: adapter.current_revision(TENANT, AGGREGATE_TYPE, "")),
+    ("bindings-commit-not-text", lambda adapter: adapter.source_bindings(None)),
+    ("attempts-event-empty", lambda adapter: adapter.delivery_attempts("")),
+    ("reconcile-limit-bool", _pg_joined(lambda adapter: adapter.reconcile(limit=True))),
+]
+
+
+@pytest.mark.parametrize(("case", "call"), PG_INVALID_INPUTS, ids=[item[0] for item in PG_INVALID_INPUTS])
+def test_postgres_adapter_rejects_invalid_inputs_before_the_backend(
+    sql_responder: SQLResponder, case: str, call: Callable[[Any], Any]
+) -> None:
+    with pytest.raises(_module(PG).PostgresAdapterError) as caught:
+        call(_module(PG).PostgresC3Adapter("postgresql://responder/ocor"))
+    assert caught.value.reason_code == "COMMIT_CONTRACT_INVALID", case
+    assert sql_responder.statements == [], case
+
+
+def test_postgres_adapter_reads_well_formed_rows(sql_responder: SQLResponder) -> None:
+    """Positive controls of the same parsing paths: well formed rows are read unchanged."""
+    adapter = _module(PG).PostgresC3Adapter("postgresql://responder/ocor")
+    sql_responder.answers = [("information_schema.columns", _pg_columns())]
+    adapter.initialize()
+    sql_responder.answers = [("INSERT INTO c3_writer_fence", [{"writer_epoch": 2}])]
+    assert adapter.acquire_writer() == 2
+    sql_responder.answers = [(SNAPSHOT_SQL, [_pg_aggregate()])]
+    snapshot = adapter.read_snapshot(TENANT, AGGREGATE_TYPE, PG_REF)
+    assert (snapshot.revision, snapshot.state, snapshot.state_digest, snapshot.commit_id) == (
+        1, {"status": "ASSESSED"}, PG_DIGEST, PG_COMMIT
+    )
+    sql_responder.answers = [("SELECT revision FROM c3_aggregate", [{"revision": 4}])]
+    assert adapter.current_revision(TENANT, AGGREGATE_TYPE, PG_REF) == 4
+    sql_responder.answers = [("FROM c3_source_binding", [{"claim_ref": "c", "source_ref": "s", "evidence_ref": "e"}])]
+    assert [(row.claim_ref, row.source_ref, row.evidence_ref) for row in adapter.source_bindings(PG_COMMIT)] == [("c", "s", "e")]
+    sql_responder.answers = [FENCE_ROW, (REPLAY_SQL, [_pg_commit_row()])]
+    outcome = _pg_commit(adapter)
+    assert (outcome.replayed, outcome.from_revision, outcome.to_revision, outcome.committed_at) == (True, 0, 1, NOW)
+    sql_responder.answers = [FENCE_ROW, (CURRENT_SQL, [{"revision": 1, "state": {"status": "ASSESSED"}}])]
+    outcome = _pg_commit(adapter)
+    assert (outcome.replayed, outcome.from_revision, outcome.to_revision) == (False, 1, 2)
+    sql_responder.answers = [(CLAIM_SQL, [_pg_outbox_row()])]
+    (row,) = adapter.claim_outbox_batch(limit=10, claim_ttl=timedelta(seconds=5))
+    assert (row.event_id, row.aggregate_revision, row.payload, row.branch, row.occurred_at) == (
+        PG_EVENT, 1, PG_PAYLOAD, "main", NOW
+    )
+    sql_responder.answers = [FENCE_ROW]
+    adapter.acknowledge_outbox(PG_EVENT, acknowledged_at=NOW)
+    sql_responder.answers = [(ATTEMPTS_SQL, [_pg_attempt_row(), _pg_attempt_row(attempt_no=2, outcome="FAILED", writer_epoch=None)])]
+    attempts = adapter.delivery_attempts(PG_EVENT)
+    assert [(item.attempt_no, item.outcome, item.writer_epoch) for item in attempts] == [(1, "ACKNOWLEDGED", 1), (2, "FAILED", None)]
+    sql_responder.answers = [("SELECT branch FROM c3_outbox", [{"branch": "main"}])]
+    adapter.record_delivery_failure(PG_EVENT, failed_at=NOW, reason="broker")
+    sql_responder.answers = [FENCE_ROW, ("LEFT JOIN c3_idempotency", [_pg_commit_row()]), ("LEFT JOIN c3_outbox", [_pg_commit_row()])]
+    assert adapter.reconcile(limit=5) == 2
+    adapter.reset()
+
+
+def test_postgres_adapter_initialize_does_not_mask_a_failed_schema_statement(sql_responder: SQLResponder) -> None:
+    sql_responder.answers = [("CREATE TABLE IF NOT EXISTS c3_writer_fence", psycopg.errors.InsufficientPrivilege(CANARY))]
+    with pytest.raises(_module(PG).PostgresAdapterError) as caught:
+        _module(PG).PostgresC3Adapter("postgresql://responder/ocor").initialize()
+    assert caught.value.reason_code == "BACKEND_ERROR"
+    assert CANARY not in str(caught.value)
+
+
+SERVICE_OPERATIONS: dict[str, Callable[[Any], Any]] = {
+    "initialize": lambda service: service.initialize(),
+    "reset": lambda service: service.reset(),
+    "read": lambda service: service.read(TENANT, AGGREGATE_TYPE, PG_REF),
+    "current_revision": lambda service: service.current_revision(TENANT, AGGREGATE_TYPE, PG_REF),
+    "source_bindings": lambda service: service.source_bindings(PG_COMMIT),
+    "claim_batch": lambda service: service.claim_batch(limit=10),
+    "acknowledge": lambda service: service.acknowledge(PG_EVENT, acknowledged_at=NOW),
+    "record_failure": lambda service: service.record_failure(PG_EVENT, failed_at=NOW, reason="broker"),
+    "delivery_attempts": lambda service: service.delivery_attempts(PG_EVENT),
+    "reconcile": lambda service: service.reconcile(limit=5),
+}
+
+
+@pytest.mark.parametrize("operation", sorted(SERVICE_OPERATIONS))
+def test_postgres_service_translates_every_adapter_failure(sql_responder: SQLResponder, operation: str) -> None:
+    """Every port operation of the PostgreSQL C3 service surfaces the sealed ``C3Error``,
+    never the adapter error nor a driver exception."""
+    service = _module("ocor_runtime.c3.service").PostgresC3Service(
+        "postgresql://responder/ocor", admission=_admission(RecordStore(), Fence(), InMemoryTrustedClock(NOW)), writer_epoch=1
+    )
+    sql_responder.answers = [("", psycopg.OperationalError(CANARY))]
+    with pytest.raises(C3Error) as caught:
+        SERVICE_OPERATIONS[operation](service)
+    assert caught.value.reason_code == "BACKEND_UNAVAILABLE"
+    assert CANARY not in str(caught.value)
+    sql_responder.answers = [(SNAPSHOT_SQL, [_pg_aggregate(state=["not-an-object"])])]
+    with pytest.raises(C3Error) as caught:
+        service.read(TENANT, AGGREGATE_TYPE, PG_REF)
+    assert caught.value.reason_code == "BACKEND_ERROR"
+
+
+TDB_SERVICE_OPERATIONS: dict[str, Callable[[Any], Any]] = {
+    "initialize": lambda service: service.initialize(),
+    "drop": lambda service: service.drop(),
+    "read": lambda service: service.read(TENANT, AGGREGATE_TYPE, RESPONDER_REF),
+    "current_revision": lambda service: service.current_revision(TENANT, AGGREGATE_TYPE, RESPONDER_REF),
+}
+
+
+@pytest.mark.parametrize("operation", sorted(TDB_SERVICE_OPERATIONS))
+def test_terminusdb_service_translates_every_adapter_failure(tdb_responder: TerminusDBResponder, operation: str) -> None:
+    service = _module("ocor_runtime.c3.terminusdb_service").TerminusDBC3Service(
+        url=tdb_responder.url, password="rem0050-responder-synthetic", database="rem0050_responder",
+        admission=_admission(RecordStore(), Fence(), InMemoryTrustedClock(NOW)), timeout=5.0, writer_epoch=1,
+    )
+    tdb_responder.overrides = {"version": (500, {}, CANARY_BODY), "db": (500, {}, CANARY_BODY)}
+    with pytest.raises(C3Error) as caught:
+        TDB_SERVICE_OPERATIONS[operation](service)
+    assert caught.value.reason_code == "BACKEND_ERROR"
+    assert CANARY not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    ("case", "call"),
+    [
+        ("naive-instant", lambda adapter: adapter.acknowledge_outbox(RESPONDER_EVENT, acknowledged_at=NAIVE)),
+        ("instant-text", lambda adapter: adapter.acknowledge_outbox(RESPONDER_EVENT, acknowledged_at="now")),
+        ("event-empty", lambda adapter: adapter.acknowledge_outbox("", acknowledged_at=NOW)),
+        ("event-not-text", lambda adapter: adapter.acknowledge_outbox(7, acknowledged_at=NOW)),
+        ("snapshot-ref-not-text", lambda adapter: adapter.read_snapshot(TENANT, AGGREGATE_TYPE, 7)),
+        ("revision-tenant-empty", lambda adapter: adapter.current_revision("", AGGREGATE_TYPE, RESPONDER_REF)),
+        ("bindings-commit-empty", lambda adapter: adapter.source_bindings("")),
+        ("attempts-event-not-text", lambda adapter: adapter.delivery_attempts(None)),
+    ],
+    ids=lambda value: value if isinstance(value, str) else "",
+)
+def test_terminusdb_adapter_rejects_invalid_inputs_before_the_backend(
+    tdb_responder: TerminusDBResponder, case: str, call: Callable[[Any], Any]
+) -> None:
+    adapter = _responder_adapter(tdb_responder)
+    adapter.join_writer(1)
+    tdb_responder.documents = {"C3WriterFence": _fence_document(), "C3OutboxEntry": _outbox_entry()}
+    with pytest.raises(_module(TDB).TerminusDBAdapterError) as caught:
+        call(adapter)
+    assert caught.value.reason_code == "COMMIT_CONTRACT_INVALID", case
+
+
+# --- C8 PostgreSQL Run Ledger ---------------------------------------------------------
+
+LEDGER_COLUMNS = ("entry_no", "idempotency_key", "task_id", "kind", "agent_id", "payload", "recorded_at")
+
+
+def _ledger_row(**values: object) -> dict[str, object]:
+    return {
+        "entry_no": 1, "idempotency_key": "rem0050-ledger", "task_id": "task-rem0050", "kind": "TASK_ASSIGNED",
+        "agent_id": "agent-1", "payload": {"capability": "act:do-thing"}, "recorded_at": NOW, **values,
+    }
+
+
+def _ledger_columns(columns: tuple[str, ...] = LEDGER_COLUMNS) -> list[object]:
+    return [{"column_name": column} for column in columns]
+
+
+def _ledger_append(ledger: Any) -> Any:
+    return ledger.append(
+        idempotency_key="rem0050-ledger", task_id="task-rem0050", kind="TASK_ASSIGNED", agent_id="agent-1",
+        payload={"capability": "act:do-thing"}, recorded_at=NOW,
+    )
+
+
+LEDGER_OPERATIONS: dict[str, Callable[[Any], Any]] = {
+    "initialize": lambda ledger: ledger.initialize(),
+    "append": _ledger_append,
+    "entries": lambda ledger: ledger.entries("task-rem0050"),
+}
+INSERT_SQL = "INSERT INTO c8_run_ledger"
+REREAD_SQL = "SELECT * FROM c8_run_ledger WHERE idempotency_key"
+ENTRIES_SQL = "ORDER BY entry_no"
+LEDGER_MALFORMED: list[tuple[str, str, list[tuple[str, object]], str]] = [
+    *[
+        (f"{operation}-driver-unavailable", operation, [("", psycopg.OperationalError(CANARY))], "BACKEND_UNAVAILABLE")
+        for operation in LEDGER_OPERATIONS
+    ],
+    *[
+        (f"{operation}-driver-error", operation, [("", psycopg.DatabaseError(CANARY))], "BACKEND_ERROR")
+        for operation in LEDGER_OPERATIONS
+    ],
+    ("schema-statement-fails", "initialize", [("CREATE TABLE IF NOT EXISTS c8_run_ledger", psycopg.errors.InsufficientPrivilege(CANARY))], "BACKEND_ERROR"),
+    ("columns-divergent", "initialize", [("information_schema.columns", _ledger_columns(LEDGER_COLUMNS[:-1]))], "SCHEMA_MISMATCH"),
+    ("columns-name-not-text", "initialize", [("information_schema.columns", [{"column_name": 7}])], "BACKEND_ERROR"),
+    ("entry-number-bool", "append", [(INSERT_SQL, [_ledger_row(entry_no=True)])], "BACKEND_ERROR"),
+    ("entry-number-zero", "append", [(INSERT_SQL, [_ledger_row(entry_no=0)])], "BACKEND_ERROR"),
+    ("entry-key-missing", "append", [(INSERT_SQL, [_ledger_row(idempotency_key=None)])], "BACKEND_ERROR"),
+    ("entry-task-not-text", "append", [(INSERT_SQL, [_ledger_row(task_id=123)])], "BACKEND_ERROR"),
+    ("entry-kind-unknown", "append", [(INSERT_SQL, [_ledger_row(kind="NOT_A_VALID_KIND")])], "BACKEND_ERROR"),
+    ("entry-agent-bool", "append", [(INSERT_SQL, [_ledger_row(agent_id=False)])], "BACKEND_ERROR"),
+    ("entry-payload-pairs", "append", [(INSERT_SQL, [_ledger_row(payload=[["coerced_from_array", 1]])])], "BACKEND_ERROR"),
+    ("entry-payload-text", "append", [(INSERT_SQL, [_ledger_row(payload="ab")])], "BACKEND_ERROR"),
+    ("entry-payload-null", "append", [(INSERT_SQL, [_ledger_row(payload=None)])], "BACKEND_ERROR"),
+    ("entry-recorded-at-text", "append", [(INSERT_SQL, [_ledger_row(recorded_at="not-a-datetime")])], "BACKEND_ERROR"),
+    ("entry-recorded-at-naive", "append", [(INSERT_SQL, [_ledger_row(recorded_at=NAIVE)])], "BACKEND_ERROR"),
+    ("entry-row-not-object", "append", [(INSERT_SQL, [[1, "rem0050-ledger"]])], "BACKEND_ERROR"),
+    ("entry-row-without-payload", "append", [(INSERT_SQL, [{k: v for k, v in _ledger_row().items() if k != "payload"}])], "BACKEND_ERROR"),
+    ("replayed-payload-pairs", "append", [(REREAD_SQL, [_ledger_row(payload=[["capability", "act:do-thing"]])])], "BACKEND_ERROR"),
+    ("replayed-other-content", "append", [(REREAD_SQL, [_ledger_row(agent_id="agent-2")])], "IDEMPOTENCY_CONFLICT"),
+    ("listed-payload-pairs", "entries", [(ENTRIES_SQL, [_ledger_row(), _ledger_row(entry_no=2, payload=[["a", 1]])])], "BACKEND_ERROR"),
+    ("listed-other-task", "entries", [(ENTRIES_SQL, [_ledger_row(task_id="task-other")])], "BACKEND_ERROR"),
+]
+
+
+@pytest.mark.parametrize(("case", "operation", "answers", "reason"), LEDGER_MALFORMED, ids=[item[0] for item in LEDGER_MALFORMED])
+def test_run_ledger_rejects_malformed_rows_and_driver_failures(
+    sql_responder: SQLResponder, case: str, operation: str, answers: list[tuple[str, object]], reason: str
+) -> None:
+    sql_responder.answers = answers
+    with pytest.raises(_module(LEDGER).RunLedgerError) as caught:
+        LEDGER_OPERATIONS[operation](_module(LEDGER).PostgresRunLedger("postgresql://responder/ocor"))
+    assert caught.value.reason_code == reason, case
+    assert CANARY not in str(caught.value), case
+    assert not any("pg_advisory_unlock" in statement for statement in sql_responder.statements), case
+
+
+@pytest.mark.parametrize("task_id", ["", 7, None])
+def test_run_ledger_rejects_an_invalid_task_before_the_backend(sql_responder: SQLResponder, task_id: object) -> None:
+    with pytest.raises(_module(LEDGER).RunLedgerError) as caught:
+        _module(LEDGER).PostgresRunLedger("postgresql://responder/ocor").entries(task_id)
+    assert caught.value.reason_code == "SCHEMA_VIOLATION"
+    assert sql_responder.statements == []
+
+
+def test_run_ledger_reads_well_formed_rows(sql_responder: SQLResponder) -> None:
+    ledger = _module(LEDGER).PostgresRunLedger("postgresql://responder/ocor")
+    sql_responder.answers = [("information_schema.columns", _ledger_columns())]
+    ledger.initialize()
+    sql_responder.answers = [(INSERT_SQL, [_ledger_row()])]
+    entry = _ledger_append(ledger)
+    assert (entry.entry_no, entry.kind, entry.payload, entry.recorded_at) == (1, "TASK_ASSIGNED", {"capability": "act:do-thing"}, NOW)
+    sql_responder.answers = [(REREAD_SQL, [_ledger_row()])]
+    assert _ledger_append(ledger) == entry
+    sql_responder.answers = [(ENTRIES_SQL, [_ledger_row(), _ledger_row(entry_no=2, kind="TASK_COMMITTED", idempotency_key="k2")])]
+    assert [item.entry_no for item in ledger.entries("task-rem0050")] == [1, 2]
+
+
+@contextlib.contextmanager
+def _scratch_schema(dsn: str) -> Iterator[str]:
+    """A scratch schema first on the search path of the returned DSN."""
+    schema = "rem0050_shape_" + uuid.uuid4().hex[:12]
+    with psycopg.connect(dsn) as connection:
+        connection.execute(f'CREATE SCHEMA "{schema}"')
+    try:
+        yield psycopg.conninfo.make_conninfo(dsn, options=f"-c search_path={schema}")
+    finally:
+        with psycopg.connect(dsn) as connection:
+            connection.execute(f'DROP SCHEMA "{schema}" CASCADE')
+
+
+@pytest.mark.parametrize(
+    ("table", "ddl"),
+    [
+        ("c3_aggregate", "CREATE TABLE c3_aggregate (tenant_id TEXT, aggregate_type TEXT, aggregate_ref TEXT, revision BIGINT)"),
+        ("c3_idempotency", "CREATE TABLE c3_idempotency (tenant_id TEXT, idempotency_key TEXT, commit_ref TEXT)"),
+    ],
+)
+def test_postgres_adapter_refuses_a_divergent_pre_existing_table(dsn: str, table: str, ddl: str) -> None:
+    """Real PostgreSQL: every C3 table of SCHEMA is checked, not only five of seven."""
+    with _scratch_schema(dsn) as scoped:
+        with psycopg.connect(scoped) as connection:
+            connection.execute(ddl)
+        with pytest.raises(_module(PG).PostgresAdapterError) as caught:
+            _module(PG).PostgresC3Adapter(scoped).initialize()
+        assert caught.value.reason_code == "SCHEMA_MISMATCH"
+        assert table in str(caught.value)
+
+
+def test_run_ledger_refuses_a_divergent_pre_existing_table_and_initializes_a_fresh_one(dsn: str) -> None:
+    """Real PostgreSQL: a pre-existing c8_run_ledger of another shape fails closed; in an
+    empty schema the ledger initializes and appends."""
+    ledger_module = _module(LEDGER)
+    with _scratch_schema(dsn) as scoped:
+        with psycopg.connect(scoped) as connection:
+            connection.execute("CREATE TABLE c8_run_ledger (entry_no BIGSERIAL PRIMARY KEY, task_id TEXT, payload JSONB)")
+        with pytest.raises(ledger_module.RunLedgerError) as caught:
+            ledger_module.PostgresRunLedger(scoped).initialize()
+        assert caught.value.reason_code == "SCHEMA_MISMATCH"
+    with _scratch_schema(dsn) as scoped:
+        ledger = ledger_module.PostgresRunLedger(scoped)
+        ledger.initialize()
+        ledger.initialize()
+        entry = _ledger_append(ledger)
+        assert (entry.entry_no, entry.payload) == (1, {"capability": "act:do-thing"})
+
+
+# --- C4 projector, relay envelope, GatePackage instant ---------------------------------
+
+PROJECTOR_GCS = "urn:sha256:" + "3" * 64
+MISSING = object()
+
+
+def _committed_event(*, sequence: int | None = None, **values: object) -> Any:
+    state = {"status": "ASSESSED"}
+    payload: dict[str, Any] = {
+        "event_type": "canonical-state-committed", "commit_id": PG_COMMIT, "aggregate_ref": PG_REF, "from_revision": 0,
+        "to_revision": 1, "state": state, "state_digest": canonical_digest(state), "ontology_release_digest": RELEASE,
+        "governed_context_digest": PROJECTOR_GCS, "branch": "main",
+    }
+    payload.update(values)
+    payload = {key: value for key, value in payload.items() if value is not MISSING}
+    return _module("ocor_runtime.c5.backbone").CanonicalIngestionEnvelope.from_mapping(
+        {
+            "event_id": PG_EVENT, "event_type": "canonical-state-committed", "event_version": "1",
+            "schema_ref": "urn:ocor:schema:canonical-ingestion-envelope:1", "producer_principal": "urn:ocor:component:c3",
+            "source_ref": PG_COMMIT, "aggregate_ref": PG_REF, "correlation_id": "018f2f95-01b2-7cc3-8d4e-1234567890ab",
+            "causation_id": "urn:ocor:action-instance:rem0050:x", "classification_marking_ref": DIGEST_MARKING,
+            "governed_context_digest": PROJECTOR_GCS, "idempotency_key": PG_EVENT,
+            "sequence": sequence if sequence is not None else payload.get("to_revision", 1), "payload": payload,
+        }
+    )
+
+
+def _projection_double(*, fact_revision: int | None = None, failure: BaseException | None = None, at: str = "") -> Any:
+    """A C4 projection whose reads and write are local: the stored fact, if any, has
+    ``fact_revision``; ``failure`` is raised by the operation named ``at``."""
+    base = _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter
+
+    class Projection(base):  # type: ignore[misc, valid-type]
+        applied: list[tuple[str, str, str]] = []
+
+        def _fail(self, operation: str) -> None:
+            if failure is not None and at == operation:
+                raise failure
+
+        def position(self, branch: str, commit: str) -> int | None:
+            self._fail("position")
+            return None
+
+        def _lookup_fact(self, fact_id: str) -> tuple[str, str] | None:
+            self._fail("lookup")
+            if fact_revision is None:
+                return None
+            return ("urn:ocor:commit:prior", json.dumps({"commit_id": "urn:ocor:commit:prior", "revision": fact_revision, "state": {}}))
+
+        def apply_commit(self, *, fact_id: str, commit_id: str, payload: str) -> None:
+            self._fail("apply")
+            self.applied.append((fact_id, commit_id, payload))
+
+    value = Projection()
+    value.applied = []
+    return value
+
+
+PROJECTOR_MALFORMED: list[tuple[str, Callable[[], Any], dict[str, Any], str]] = [
+    ("from-revision-missing", lambda: _committed_event(from_revision=MISSING), {}, "SCHEMA_VIOLATION"),
+    ("from-revision-false", lambda: _committed_event(from_revision=False), {}, "SCHEMA_VIOLATION"),
+    ("from-revision-true", lambda: _committed_event(from_revision=True, to_revision=2), {"fact_revision": 1}, "SCHEMA_VIOLATION"),
+    ("from-revision-text", lambda: _committed_event(from_revision="0"), {}, "SCHEMA_VIOLATION"),
+    ("from-revision-negative", lambda: _committed_event(from_revision=-1, to_revision=0, sequence=0), {}, "SCHEMA_VIOLATION"),
+    ("revision-jump", lambda: _committed_event(from_revision=0, to_revision=99), {}, "SCHEMA_VIOLATION"),
+    ("state-not-i-json", lambda: _committed_event(state={"x": float("nan")}), {}, "SCHEMA_VIOLATION"),
+    ("position-backend-error", lambda: _committed_event(), {"failure": _module("ocor_runtime.c4.typedb_adapter").TypeDBAdapterError(CANARY), "at": "position"}, "BACKEND_ERROR"),
+    ("position-unreachable", lambda: _committed_event(), {"failure": urllib.error.URLError(CANARY), "at": "position"}, "BACKEND_UNAVAILABLE"),
+    ("lookup-unreachable", lambda: _committed_event(), {"failure": OSError(CANARY), "at": "lookup"}, "BACKEND_UNAVAILABLE"),
+    ("apply-backend-error", lambda: _committed_event(), {"failure": _module("ocor_runtime.c4.typedb_adapter").TypeDBAdapterError(CANARY), "at": "apply"}, "BACKEND_ERROR"),
+]
+
+
+@pytest.mark.parametrize(("case", "event", "projection", "reason"), PROJECTOR_MALFORMED, ids=[item[0] for item in PROJECTOR_MALFORMED])
+def test_projector_rejects_malformed_events_and_projection_failures(
+    case: str, event: Callable[[], Any], projection: dict[str, Any], reason: str
+) -> None:
+    double = _projection_double(**projection)
+    projector = _module("ocor_runtime.c4.projector").CanonicalStateProjector(double, release_digest=RELEASE)
+    with pytest.raises(_module("ocor_runtime.c4.projector").ProjectorError) as caught:
+        projector.apply(event())
+    assert caught.value.reason_code == reason, case
+    assert CANARY not in str(caught.value), case
+    if case != "apply-backend-error":
+        assert double.applied == [], case
+
+
+def test_projector_applies_well_formed_events() -> None:
+    first = _projection_double()
+    projector = _module("ocor_runtime.c4.projector").CanonicalStateProjector(first, release_digest=RELEASE)
+    assert projector.apply(_committed_event()) is True
+    assert [(fact, commit) for fact, commit, _ in first.applied] == [(PG_REF, PG_COMMIT)]
+    following = _projection_double(fact_revision=1)
+    projector = _module("ocor_runtime.c4.projector").CanonicalStateProjector(following, release_digest=RELEASE)
+    assert projector.apply(_committed_event(from_revision=1, to_revision=2)) is True
+    assert json.loads(following.applied[0][2])["revision"] == 2
+
+
+def _outbox_envelope(**payload: object) -> Any:
+    body: dict[str, Any] = {
+        "event_type": "canonical-state-committed", "commit_id": PG_COMMIT, "aggregate_ref": PG_REF, "to_revision": 1,
+        "branch": "main", "boundary": {"classification_marking_ref": DIGEST_MARKING},
+        "correlation_id": "018f2f95-01b2-7cc3-8d4e-1234567890ab", "causation_id": "urn:ocor:action-instance:rem0050:x",
+        "governed_context_digest": PROJECTOR_GCS,
+    }
+    body.update(payload)
+    body = {key: value for key, value in body.items() if value is not MISSING}
+    return _module("ocor_runtime.c3.ports").OutboxEnvelope(
+        event_id=PG_EVENT, commit_id=PG_COMMIT, aggregate_ref=PG_REF, aggregate_revision=1, payload=body,
+        payload_digest=canonical_digest(body), branch="main", occurred_at=NOW,
+    )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"correlation_id": MISSING},
+        {"causation_id": ""},
+        {"governed_context_digest": 7},
+        {"boundary": {}},
+        {"boundary": {"classification_marking_ref": None}},
+    ],
+    ids=["correlation-missing", "causation-empty", "gcs-not-text", "marking-missing", "marking-null"],
+)
+def test_relay_refuses_an_outbox_entry_without_its_event_context(payload: dict[str, object]) -> None:
+    with pytest.raises(C3Error) as caught:
+        _module("ocor_runtime.c3.relay").canonical_event(_outbox_envelope(**payload))
+    assert caught.value.reason_code == "COMMIT_RECEIPT_MISMATCH"
+
+
+def test_relay_builds_the_event_of_a_complete_outbox_entry() -> None:
+    envelope = _module("ocor_runtime.c3.relay").canonical_event(_outbox_envelope())
+    assert (envelope.event_id, envelope.sequence, envelope.classification_marking_ref) == (PG_EVENT, 1, DIGEST_MARKING)
+
+
+@pytest.mark.parametrize("frozen_at", ["yesterday", "2026-11-03T09:00:00+01:00", 7, None])
+def test_admission_refuses_a_gate_package_frozen_at_that_is_not_a_utc_instant(frozen_at: object) -> None:
+    records, fence, clock = RecordStore(), Fence(), InMemoryTrustedClock(NOW)
+    path = GovernedPath(records, fence, clock, aggregate_ref=f"urn:ocor:mission-object:rem0050:{uuid.uuid4().hex[:8]}")
+    digest = path.freeze(gate_package=path.gate_package_payload(frozen_at=frozen_at))
+    with pytest.raises(C3Error) as caught:
+        _admission(records, fence, clock).admit(path.command(digest))
+    assert caught.value.reason_code == "GATE_PACKAGE_MISMATCH"
+
+
+def test_admission_admits_a_gate_package_frozen_at_a_utc_instant() -> None:
+    records, fence, clock = RecordStore(), Fence(), InMemoryTrustedClock(NOW)
+    path = GovernedPath(records, fence, clock, aggregate_ref=f"urn:ocor:mission-object:rem0050:{uuid.uuid4().hex[:8]}")
+    command = path.command(path.freeze())
+    assert _admission(records, fence, clock).admit(command).gate_package_digest == command.gate_package_digest
