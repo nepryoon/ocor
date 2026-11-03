@@ -14,14 +14,18 @@ new, minimal ``ocor_runtime.c6.engine.GovernedActionEngine``.
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from ocor_runtime.c3_store import AtomicOutboxStore, OutboxEvent
+import test_ocor_dev_rem_0050 as governed_path
+from ocor_runtime.c3.service import PostgresC3Service
+from ocor_runtime.c3_store import OutboxEvent
 from ocor_runtime.c6.engine import (
     ActionProposal,
     Approval,
+    C3CanonicalOutboxView,
     Decision,
     GovernedActionEngine,
     GovernedActionError,
@@ -32,6 +36,14 @@ from spikes.c6_fsm_fidelity.generator import generate_from_lld
 
 LLD_PATH = Path(__file__).resolve().parents[3] / "docs" / "OCOR_LLD_v1.1.md"
 NOW = datetime(2026, 9, 13, 12, 0, 0, tzinfo=UTC)
+# NCP-U04 (OCOR-DEV-REM-0050): the engine commits through C3 on the governed path
+# (LLD v1.1 :85-95, ADD v1.3 :342); the canonical state the suite observes is C3's.
+GOVERNED = governed_path.GovernedC3(
+    release=governed_path.RELEASE,
+    preconditions=("urn:ocor:precondition:governed-action",),
+    invariants=("urn:ocor:invariant:governed-action",),
+)
+CONTEXT = GOVERNED.governed_context(purpose="retained-governed-action-slice")
 
 
 class RecordingSink:
@@ -54,18 +66,32 @@ def authority() -> CapabilityAuthority:
 
 
 @pytest.fixture
-def store() -> AtomicOutboxStore:
-    return AtomicOutboxStore()
+def c3() -> PostgresC3Service:
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+    if not dsn:
+        pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory: the engine commits through the real C3")
+    value = PostgresC3Service(dsn, admission=GOVERNED.admission())
+    value.initialize()
+    value.reset()
+    return value
 
 
 @pytest.fixture
-def fence(store: AtomicOutboxStore) -> EmissionFence:
-    return EmissionFence(store=store)
+def store(c3: PostgresC3Service) -> C3CanonicalOutboxView:
+    return C3CanonicalOutboxView(c3, tenant_id=CONTEXT.tenant_id, aggregate_type="GovernedActionTarget")
 
 
 @pytest.fixture
-def engine(authority: CapabilityAuthority, store: AtomicOutboxStore, fence: EmissionFence) -> GovernedActionEngine:
-    return GovernedActionEngine(authority=authority, store=store, fence=fence)
+def fence(store: C3CanonicalOutboxView) -> EmissionFence:
+    return EmissionFence(store=store)  # type: ignore[arg-type]
+
+
+@pytest.fixture
+def engine(
+    authority: CapabilityAuthority, c3: PostgresC3Service, store: C3CanonicalOutboxView, fence: EmissionFence
+) -> GovernedActionEngine:
+    path = GOVERNED.engine_path(aggregate_type="GovernedActionTarget", governed_context=CONTEXT)
+    return GovernedActionEngine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
 
 
 def make_proposal(*, risk_bearing: bool = True) -> ActionProposal:

@@ -13,14 +13,17 @@ closed rather than silently defaulting to permit.
 
 from __future__ import annotations
 
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
-from ocor_runtime.c3_store import AtomicOutboxStore, OutboxEvent
-from ocor_runtime.c6.engine import ActionProposal, Decision, GovernedActionEngine
+from ocor_runtime.c3.service import PostgresC3Service
+from ocor_runtime.c3_store import OutboxEvent
+from ocor_runtime.c6.engine import ActionProposal, C3CanonicalOutboxView, Decision, GovernedActionEngine
 from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
@@ -37,6 +40,14 @@ NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 ACTION_ID = "urn:ocor:action:launch-1"
 SCOPE = "urn:ocor:target:site-1"
 PROPOSER = "urn:ocor:human:proposer"
+# NCP-U04 (OCOR-DEV-REM-0050): the engine commits through C3 on the governed path
+# (LLD v1.1 :85-95, ADD v1.3 :342).
+GOVERNED = governed_path.GovernedC3(
+    release=governed_path.RELEASE,
+    preconditions=("urn:ocor:precondition:governed-action",),
+    invariants=("urn:ocor:invariant:governed-action",),
+)
+CONTEXT = GOVERNED.governed_context(purpose="human-gate-integration")
 
 
 @pytest.fixture
@@ -271,9 +282,13 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
     Approval is the identical sealed type GovernedActionEngine.execute
     already accepts, with no adapter needed."""
     authority = CapabilityAuthority(issuer="ocor-c6-human-gate-integration")
-    store = AtomicOutboxStore()
-    fence = EmissionFence(store=store)
-    engine = GovernedActionEngine(authority=authority, store=store, fence=fence)
+    c3 = PostgresC3Service(os.environ["OCOR_LIVE_POSTGRES_DSN"], admission=GOVERNED.admission())
+    c3.initialize()
+    c3.reset()
+    store = C3CanonicalOutboxView(c3, tenant_id=CONTEXT.tenant_id, aggregate_type="GovernedActionTarget")
+    fence = EmissionFence(store=store)  # type: ignore[arg-type]
+    path = GOVERNED.engine_path(aggregate_type="GovernedActionTarget", governed_context=CONTEXT)
+    engine = GovernedActionEngine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
 
     proposal = ActionProposal(
         action_id=ACTION_ID,

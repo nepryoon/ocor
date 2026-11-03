@@ -46,6 +46,7 @@ from types import ModuleType
 from typing import Any
 
 import pytest
+import test_ocor_dev_rem_0050 as governed_path
 
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand
 from ocor_runtime.c3.terminusdb_service import TerminusDBC3Service
@@ -67,8 +68,8 @@ SEALED_SHA256 = {
     "src/ocor_runtime/c7/sealed_results.py": "ee45cd53f136c7f859a03c004d470be04367c0fab1ed0ffff86e64b2aedeba74",
     "src/ocor_runtime/c7/adapters/seaweedfs.py": "f81a4a0bc5b964be010c1d25f41d319443199eeeef8673b018bb7ece25f7c7dc",
     "src/ocor_runtime/c7/runtime.py": "618296ae3e490cb2170f1f330a7cc1e3a821795791203d5bfc88c194b32ce118",
-    "src/ocor_runtime/c3/adapters/terminusdb.py": "d36e5e2e868f4cadf6e58db6669b2d74c095e16e43a450afd64956ff80d919d1",
-    "src/ocor_runtime/c3/terminusdb_service.py": "984d29c4aecd224faeceaffdeb22290313de48f52869d113e20f34a663bec7b1",
+    "src/ocor_runtime/c3/adapters/terminusdb.py": "73bb90a0edccc934b63348f57831152a5b237b04c985b5c792bb94723053ee39",
+    "src/ocor_runtime/c3/terminusdb_service.py": "a63a11994c8945b67138c91937ad0983b199c71ea34608be10fb7e1482d1f76e",
 }
 TERMINUSDB_URL = os.environ.get("OCOR_LIVE_TERMINUSDB_URL", "http://127.0.0.1:6363")
 SEAWEEDFS_URL = os.environ.get("OCOR_LIVE_SEAWEEDFS_URL", "http://127.0.0.1:18333")
@@ -85,6 +86,13 @@ AGGREGATE_TYPE = "MissionObject"
 AGGREGATE_REF = "urn:ocor:mission-object:rem0041-overlay:1"
 DIGEST_A = "urn:sha256:" + "a" * 64
 DIGEST_B = "urn:sha256:" + "b" * 64
+# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only governed commands (LLD v1.1 :97, ADD v1.3
+# :342); the suite's commands are frozen and signed on the C6 governed path.
+GOVERNED = governed_path.GovernedC3(
+    release=DIGEST_B,
+    preconditions=tuple(f"urn:ocor:precondition:revision-{n}" for n in range(64)),
+    invariants=("urn:ocor:invariant:atomic-outbox",),
+)
 DIGEST_C = "urn:sha256:" + "c" * 64
 DIGEST_D = "urn:sha256:" + "d" * 64
 COMPARTMENTS = ("urn:ocor:compartment:alpha", "urn:ocor:compartment:bravo")
@@ -210,7 +218,7 @@ def database(password: str) -> Iterator[str]:
 @pytest.fixture
 def canonical(password: str, database: str) -> TerminusDBC3Service:
     """The sealed C3 TerminusDB service owns ``main`` of the disposable database."""
-    value = TerminusDBC3Service(url=TERMINUSDB_URL, password=password, database=database)
+    value = TerminusDBC3Service(url=TERMINUSDB_URL, password=password, database=database, admission=GOVERNED.admission())
     value.initialize()
     return value
 
@@ -282,7 +290,7 @@ def _command(*, expected_revision: int, delta: dict[str, object], key: str) -> G
         }
     )
     command_id = f"urn:ocor:command:rem0041-overlay:{key}"
-    return GovernedCanonicalCommitCommand.from_mapping(
+    return GOVERNED.command(
         {
             "command_id": command_id,
             "action_instance_id": command_id.replace("command", "action"),
@@ -948,7 +956,7 @@ def test_the_whole_lifecycle_never_writes_main(
     assert _documents(password, database, "C7OverlayDelta") == [] and _documents(password, database, "C7ScenarioRun") == []
     # The sealed C3 schema check of main still accepts the database: C7 added classes
     # to the scenario branches only.
-    TerminusDBC3Service(url=TERMINUSDB_URL, password=password, database=database).initialize()
+    TerminusDBC3Service(url=TERMINUSDB_URL, password=password, database=database, admission=GOVERNED.admission()).initialize()
 
 
 def test_deltas_are_appended_in_order_chained_and_read_at_each_revision(overlay: Any) -> None:

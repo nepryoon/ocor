@@ -18,7 +18,7 @@ from __future__ import annotations
 import hmac
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta
 from types import MappingProxyType
 from typing import Protocol
@@ -431,6 +431,21 @@ class PromotionControlStore(Protocol):
     def revoked(self, control_ref: str) -> bool: ...
 
 
+class PromotionCommandIssuer(Protocol):
+    """C6 issuance port of the canonical commit (``c6.engine.GovernedCommandIssuer``).
+
+    Freezes the C3 GatePackage of the command fields, signs the Decision
+    ``ACCEPT`` and the Authority with the C6 key of the trusted composition,
+    publishes them where C3 admission reads them and returns the command bound
+    to that GatePackage (ADD v1.3 :342, LLD v1.1 :97).
+    """
+
+    def issue(
+        self, fields: Mapping[str, object], *, decision_expires_at: datetime,
+        authority_not_before: datetime, authority_expires_at: datetime,
+    ) -> GovernedCanonicalCommitCommand: ...
+
+
 class PromotionCommitPolicy(Protocol):
     def authorize_commit(
         self, proposal: MemoryPromotionProposal, command: GovernedCanonicalCommitCommand,
@@ -462,8 +477,8 @@ class C6MemoryPromotionConsumer:
     def __init__(
         self, *, proposals: MemoryPromotionService, controls: PromotionControlStore,
         verifier: PromotionGateVerifier, human_gate: HumanGateCoordinator,
-        policy: PromotionCommitPolicy, c3: GovernedCommitPort, clock: TrustedClock,
-        audit: RetrievalAuditSink, commit_capability: str,
+        policy: PromotionCommitPolicy, c3: GovernedCommitPort, issuer: PromotionCommandIssuer,
+        clock: TrustedClock, audit: RetrievalAuditSink, commit_capability: str,
     ) -> None:
         # The canonical-commit capability is fixed by trusted composition; a
         # signed gate cannot authorize C3 under an unrelated capability.
@@ -472,6 +487,7 @@ class C6MemoryPromotionConsumer:
         self._capability = commit_capability
         self._proposals, self._controls, self._verifier = proposals, controls, verifier
         self._human_gate, self._policy, self._c3 = human_gate, policy, c3
+        self._issuer = issuer
         self._clock, self._audit = clock, audit
 
     def _record(self, action: str, binding: VerifiedGovernedContextBinding | None, **fields: object) -> None:
@@ -547,13 +563,26 @@ class C6MemoryPromotionConsumer:
             self._require_live(body, command, proposal, verified, authority, approval_policy, signatures)
             if self._clock.now() >= proposal.deadline:
                 raise _error("DEADLINE_EXCEEDED")
+            # C3 admits only a command bound to the GatePackage C6 froze for it, with
+            # the Decision and Authority C6 signed (ADD v1.3 :342). Every field of the
+            # verified gate command is kept; only gate_package_digest is C6's. The
+            # Decision expires with the gate Decision; the Authority keeps the verified
+            # Authority window.
+            issued = self._issuer.issue(
+                {k: v for k, v in raw_command.items() if k != "gate_package_digest"},
+                decision_expires_at=parse_utc_timestamp(str(self._gate_decision(body)["valid_until"])),
+                authority_not_before=authority.not_before, authority_expires_at=authority.expires_at,
+            )
+            if (not isinstance(issued, GovernedCanonicalCommitCommand)
+                    or replace(issued, gate_package_digest=command.gate_package_digest) != command):
+                raise _error("C6_COMMAND_BINDING_MISMATCH")
             dispatched = True
-            receipt = self._c3.commit(command)
+            receipt = self._c3.commit(issued)
             if not isinstance(receipt, CommitReceipt):
                 raise _error("C3_RECEIPT_INVALID")
-            receipt.verify(command)
+            receipt.verify(issued)
             self._record("commitMemoryPromotion.completed", verified,
-                         proposal_audit_ref=proposal_audit_ref, command_digest=command.command_digest,
+                         proposal_audit_ref=proposal_audit_ref, command_digest=issued.command_digest,
                          commit_id=receipt.commit_id, causation_id=proposal.operation_id)
             return receipt
         except Exception as exc:  # noqa: BLE001 -- control/store failures never become success
@@ -563,6 +592,13 @@ class C6MemoryPromotionConsumer:
                          verified, proposal_audit_ref=proposal_audit_ref, reason_code=error.reason_code,
                          detail_code=error.detail_code)
             raise error from exc
+
+    @staticmethod
+    def _gate_decision(body: Mapping[str, object]) -> Mapping[str, object]:
+        decision = body["decision"]
+        if not isinstance(decision, Mapping):
+            raise _error("C6_GATE_INVALID")
+        return decision
 
     def _controls_from_body(
         self, body: Mapping[str, object], command: GovernedCanonicalCommitCommand,

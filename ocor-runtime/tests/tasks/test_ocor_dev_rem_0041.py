@@ -36,6 +36,7 @@ from types import ModuleType
 from typing import Any, cast
 
 import pytest
+import test_ocor_dev_rem_0050 as governed_path
 
 from ocor_runtime.c2.ports import ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
 from ocor_runtime.c3.ports import (
@@ -68,6 +69,13 @@ DIGEST_B = "urn:sha256:" + "b" * 64
 DIGEST_C = "urn:sha256:" + "c" * 64
 DIGEST_D = "urn:sha256:" + "d" * 64
 SYNTHETIC_PASSWORD = "rem0041-offline-synthetic"  # never sent: the endpoint is closed
+# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only governed commands (LLD v1.1 :97, ADD v1.3
+# :342); the suite's commands are frozen and signed on the C6 governed path.
+GOVERNED = governed_path.GovernedC3(
+    release=DIGEST_B,
+    preconditions=tuple(f"urn:ocor:precondition:revision-{n}" for n in range(64)),
+    invariants=("urn:ocor:invariant:atomic-outbox",),
+)
 
 
 def _service_module() -> ModuleType:
@@ -177,7 +185,7 @@ def database(password: str) -> Iterator[str]:
 
 @pytest.fixture
 def service(password: str, database: str) -> Any:
-    value = _service_module().TerminusDBC3Service(url=URL, password=password, database=database)
+    value = _service_module().TerminusDBC3Service(url=URL, password=password, database=database, admission=GOVERNED.admission())
     value.initialize()
     return value
 
@@ -205,7 +213,7 @@ def make_command(
             "correlation_id": "018f2f95-01b2-7cc3-8d4e-1234567890ab",
         }
     )
-    return GovernedCanonicalCommitCommand.from_mapping(
+    return GOVERNED.command(
         {
             "command_id": command_id,
             "action_instance_id": command_id.replace("command", "action"),
@@ -250,15 +258,19 @@ def _commit_in_subprocess(password: str, database: str, stage: str, command: Gov
     requested stage, so no in-process cleanup can mask a partial write."""
     code = (
         "import json, sys; "
+        "sys.path.insert(0, sys.argv[6]); "
         f"from {SERVICE} import TerminusDBC3Service, TerminusDBCrashStage; "
         "from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand; "
+        "import test_ocor_dev_rem_0050 as governed_path; "
         "command = GovernedCanonicalCommitCommand.from_mapping(json.loads(sys.argv[4])); "
-        "service = TerminusDBC3Service(url=sys.argv[1], password=sys.argv[2], database=sys.argv[3]); "
+        "admission = governed_path.GovernedC3.from_export(json.loads(sys.argv[7])).admission(); "
+        "service = TerminusDBC3Service(url=sys.argv[1], password=sys.argv[2], database=sys.argv[3], admission=admission); "
         "service.initialize(); "
         "service.commit(command, _crash_after=TerminusDBCrashStage(sys.argv[5]))"
     )
     completed = subprocess.run(
-        [sys.executable, "-c", code, URL, password, database, json.dumps(command.to_mapping()), stage],
+        [sys.executable, "-c", code, URL, password, database, json.dumps(command.to_mapping()), stage,
+         str(Path(__file__).resolve().parent), json.dumps(GOVERNED.export())],
         capture_output=True,
         text=True,
         timeout=120,
@@ -334,13 +346,15 @@ def test_postgresql_is_never_an_implicit_fallback_of_the_terminusdb_service() ->
         assert not {name for name in names if "psycopg" in name or "postgres" in name}, path
     with pytest.raises(_adapter_module().TerminusDBUnavailable):
         _service_module().TerminusDBC3Service(
-            url="http://127.0.0.1:1", password=SYNTHETIC_PASSWORD, database="ocor_c3_rem0041_unreachable"
+            url="http://127.0.0.1:1", password=SYNTHETIC_PASSWORD, database="ocor_c3_rem0041_unreachable",
+            admission=GOVERNED.admission(),
         ).initialize()
 
 
 def test_service_satisfies_every_sealed_c3_port_without_changing_them() -> None:
     value = _service_module().TerminusDBC3Service(
-        url="http://127.0.0.1:1", password=SYNTHETIC_PASSWORD, database="ocor_c3_rem0041_ports"
+        url="http://127.0.0.1:1", password=SYNTHETIC_PASSWORD, database="ocor_c3_rem0041_ports",
+        admission=GOVERNED.admission(),
     )
     for port in (GovernedCommitPort, CanonicalReadPort, OutboxRelayPort, RevisionPort, RecoveryPort):
         assert isinstance(value, port), port
@@ -357,12 +371,13 @@ def test_configuration_is_fail_closed() -> None:
         {"url": URL, "password": SYNTHETIC_PASSWORD, "database": "bad/name"},
     ):
         with pytest.raises(ValueError):
-            module.TerminusDBC3Service(**kwargs)
+            module.TerminusDBC3Service(**kwargs, admission=GOVERNED.admission())
 
 
 def test_an_uninitialized_writer_cannot_commit() -> None:
     value = _service_module().TerminusDBC3Service(
-        url="http://127.0.0.1:1", password=SYNTHETIC_PASSWORD, database="ocor_c3_rem0041_noepoch"
+        url="http://127.0.0.1:1", password=SYNTHETIC_PASSWORD, database="ocor_c3_rem0041_noepoch",
+        admission=GOVERNED.admission(),
     )
     with pytest.raises(C3Error) as excinfo:
         value.commit(_first())
@@ -460,7 +475,7 @@ def test_crash_window_1_before_the_local_commit_leaves_nothing_and_the_retry_com
     assert _commit_in_subprocess(password, database, "BEFORE_LOCAL_COMMIT", _first()) == 86
     assert _documents(password, database, "C3Aggregate") == []
     assert _documents(password, database, "C3OutboxEntry") == []
-    service = _service_module().TerminusDBC3Service(url=URL, password=password, database=database)
+    service = _service_module().TerminusDBC3Service(url=URL, password=password, database=database, admission=GOVERNED.admission())
     service.initialize()
     receipt = service.commit(_first())
     assert receipt.replayed is False and receipt.to_revision == 1
@@ -471,7 +486,7 @@ def test_crash_window_2_after_commit_before_publish_republishes_the_same_event_i
     password: str, database: str
 ) -> None:
     assert _commit_in_subprocess(password, database, "AFTER_LOCAL_COMMIT", _first()) == 86
-    service = _service_module().TerminusDBC3Service(url=URL, password=password, database=database)
+    service = _service_module().TerminusDBC3Service(url=URL, password=password, database=database, admission=GOVERNED.admission())
     service.initialize()
     assert service.current_revision(TENANT, AGGREGATE_TYPE, AGGREGATE_REF) == 1
     claimed = service.claim_batch(limit=10)
@@ -558,7 +573,7 @@ def test_crash_window_5_checksum_divergence_is_quarantined_and_never_reverse_wri
 
 def test_a_stale_writer_is_fenced_and_writes_nothing(service: Any, password: str, database: str) -> None:
     service.commit(_first())
-    successor = _service_module().TerminusDBC3Service(url=URL, password=password, database=database)
+    successor = _service_module().TerminusDBC3Service(url=URL, password=password, database=database, admission=GOVERNED.admission())
     successor.initialize()
     assert successor.writer_epoch == service.writer_epoch + 1
     version = _data_version(password, database)
@@ -672,7 +687,7 @@ def test_concurrent_acknowledgements_record_one_delivery_attempt(service: Any, p
 
 def test_concurrent_writer_acquisitions_leave_exactly_one_writer(service: Any, password: str, database: str) -> None:
     contenders = [
-        _service_module().TerminusDBC3Service(url=URL, password=password, database=database) for _ in range(5)
+        _service_module().TerminusDBC3Service(url=URL, password=password, database=database, admission=GOVERNED.admission()) for _ in range(5)
     ]
     assert _race(5, lambda index: contenders[index].initialize()) == ["OK"] * 5
     epochs = sorted(contender.writer_epoch for contender in contenders)
