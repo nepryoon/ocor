@@ -32,3 +32,28 @@ da Anthropic e da Google.
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, slice legacy, guard, workflow o dipendenza è modificato. `E1=0`, `E2=0`, `Verified=0`, runtime
 `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Ciclo di riparazione 1
+
+Il record `OCOR-DEV-REM-0049.json` è stato sigillato sul branch dell'unità (`b3b175c`, verdetto
+`GO_FOR_EVIDENCE_SEAL` `OCOR-DEV-REM-0049-a40b82f86230-0`), ma la CI della PR #457 sull'HEAD esatto è fallita su
+`test_ocor_dev_rem_0010.py::test_typedb_apply_commit_escapes_injection`: il test backend-free di REM-0010 isola
+l'adapter TypeDB con `_read` e `_write`, e `apply_commit` non leggeva più tramite `_read`. Il record sigillato, le
+sue riqualifiche e la PR #457 restano invariati come storia.
+
+Il ciclo di riparazione 1 (branch `governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1`) ripristina un'unica
+primitiva di lettura stretta (RED `d920f91`, GREEN `fdfdc0a`) e corregge i finding bloccanti P1/P2 della revisione
+preventiva `OCOR-DEV-REM-0049-7dca6ab6517f-pre` (Antigravity, Google) sulla robustezza degli input dell'adapter
+(RED `84af426`, GREEN `cee5b0b`); il consultivo P3 è applicato riallineando il `remediation_record` delle undici
+voci `NCR-C2-*` a `repair-1.json`. Nessun test esistente cambia. PRE-CAMPAIGN-GATE all'head del codice `cee5b0b`:
+55/56 PASS, con il solo drift atteso su `0005`, `0037`, `0050` e `0082`. Campagna sullo stack reale allo stesso
+head: modulo dell'unità con REM-0010, registro, REM-0046 e validatore dell'evidenza 3 × 1208 passed, moduli dei
+consumer C2/C4 84 passed, regressione di `0005`/`0050`/`0082` 214 passed, portafoglio di `reports/tests` 1594
+passed; suite completa a due corsie (ammissione `TWO_LANE`) 3601 test, zero fallimenti e zero skip, unione
+esatta, 2429,5 s sul tetto di 5400 s, rete elettrica, nessun residuo sull'host.
+
+`repair-1.json` supersede il record sigillato dell'unità e riesegue all'head della riparazione ogni criterio di
+accettazione e ogni probe di risoluzione. Le riqualifiche `.requalified-rem0049-repair1` di `0037`, `0005`, `0050`
+e `0082` sono di sola regressione, nella classe non qualificante, e supersedono i rispettivi record
+`.requalified-rem0049` sigillati; le altre sei riqualifiche sigillate non derivano e restano. Drift 0 all'head
+dell'evidenza. Segue la verifica indipendente, da un fornitore diverso da Anthropic e da Google.
