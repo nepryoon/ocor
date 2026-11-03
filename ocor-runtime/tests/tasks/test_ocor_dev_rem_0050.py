@@ -66,6 +66,7 @@ import urllib.request
 import uuid
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
+from dataclasses import replace as dataclass_replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import ModuleType
@@ -1311,6 +1312,25 @@ class GovernedC3:
             validity=timedelta(hours=12),
         )
 
+    def add_evidence(self, evidence_refs: Any) -> None:
+        """Registers an Evidence record for each reference, as C3 admission requires, for
+        a suite whose commands C6 issues outside ``command``."""
+        now = self.clock.now()
+        for evidence_ref in evidence_refs:
+            self.records.add_evidence(
+                EvidenceRecord(
+                    evidence_id=evidence_ref,
+                    content_digest="urn:sha256:" + hashlib.sha256(evidence_ref.encode()).hexdigest(),
+                    source_ref="urn:ocor:source:consumer-suite",
+                    acquired_at=now - timedelta(minutes=1),
+                    acquirer_principal_id="urn:ocor:principal:consumer-suite",
+                    method_ref="urn:ocor:method:consumer-suite",
+                    chain_of_custody=("urn:ocor:custody:consumer-suite",),
+                    marking_ref=DIGEST_MARKING,
+                    retention_until=now + timedelta(days=365),
+                )
+            )
+
     def governed_context(self, *, purpose: str) -> GovernedContext:
         return GovernedContext.from_mapping({**_context(release=self._release).to_mapping(), "purpose": purpose})
 
@@ -1868,3 +1888,138 @@ def test_postgres_adapter_reads_stored_objects(dsn: str) -> None:
         adapter.close_claim()
     finally:
         adapter.reset()
+
+
+# ---------------------------------------------------------------------------------------
+# C6 issuance of the memory promotion commit (PO decision NCP-U04-MEMORY-PROMOTION-GATE-
+# PACKAGE, option 1): C6 freezes the C3 GatePackage of the decided command and signs its
+# Decision and Authority; C3 admission accepts only that command (ADD v1.3 :342, LLD v1.1
+# :97). The live consumer cases reuse the real backends and workflow of OCOR-DEV-0058.
+# ---------------------------------------------------------------------------------------
+live_backends = _module("test_ocor_dev_0052").live_backends
+backends = _module("test_ocor_dev_0052").backends
+ISSUANCE_WINDOWS = {
+    "decision_expires_at": NOW + timedelta(minutes=5),
+    "authority_not_before": NOW - timedelta(minutes=1),
+    "authority_expires_at": NOW + timedelta(minutes=10),
+}
+
+
+def _issuer(governed: GovernedC3) -> Any:
+    return _module("ocor_runtime.c6.engine").GovernedCommandIssuer(
+        signing_key=CONSUMER_KEY, keyid=CONSUMER_KEYID, records=governed.records, fence=governed.fence,
+        clock=governed.clock,
+    )
+
+
+def _decided_fields(governed: GovernedC3) -> dict[str, Any]:
+    """A decided command (its own gate digest included), with its Evidence registered."""
+    path = GovernedPath(RecordStore(), Fence(), InMemoryTrustedClock(NOW), aggregate_ref="urn:ocor:mission-object:rem0050:issuer")
+    fields = dict(path.command("urn:sha256:" + "0" * 64).to_mapping())
+    governed.add_evidence(fields["evidence_refs"])
+    return fields
+
+
+def test_c6_command_issuer_is_admitted_by_c3_with_the_decided_windows() -> None:
+    governed = GovernedC3(release=RELEASE, preconditions=(PRECONDITION,), invariants=(INVARIANT,), now=NOW)
+    issuer = _issuer(governed)
+    fields = _decided_fields(governed)
+    command = issuer.issue(fields, **ISSUANCE_WINDOWS)
+    # Every decided field is kept; only the GatePackage digest is C6's.
+    assert command.gate_package_digest != fields["gate_package_digest"]
+    assert dataclass_replace(command, gate_package_digest=fields["gate_package_digest"]) == (
+        GovernedCanonicalCommitCommand.from_mapping(fields)
+    )
+    admitted = governed.admission().admit(command)
+    assert admitted.gate_package_digest == command.gate_package_digest
+    decision = governed.records.decision(command.decision_ref)
+    authority = governed.records.authority(command.authority_ref)
+    assert decision is not None and authority is not None
+    assert decision.payload["expires_at"] == format_utc_timestamp(ISSUANCE_WINDOWS["decision_expires_at"])
+    assert decision.payload["decided_at"] == format_utc_timestamp(NOW)
+    assert (authority.payload["not_before"], authority.payload["expires_at"]) == (
+        format_utc_timestamp(ISSUANCE_WINDOWS["authority_not_before"]),
+        format_utc_timestamp(ISSUANCE_WINDOWS["authority_expires_at"]),
+    )
+    # A retry of the same decided command gets the same command (FR-008 replay).
+    records = len(governed.export()["records"])
+    assert issuer.issue(fields, **ISSUANCE_WINDOWS) is command
+    assert len(governed.export()["records"]) == records
+    # The Decision expires with the decision C6 took.
+    governed.clock.advance(timedelta(minutes=5))
+    with pytest.raises(C3Error) as caught:
+        governed.admission().admit(command)
+    assert caught.value.reason_code == "POLICY_DENIED"
+
+
+@pytest.mark.parametrize(
+    "fault", ["other-command", "no-action", "naive-instant", "decision-expired", "empty-authority-window"]
+)
+def test_c6_command_issuer_refuses_without_publishing(fault: str) -> None:
+    governed = GovernedC3(release=RELEASE, preconditions=(PRECONDITION,), invariants=(INVARIANT,), now=NOW)
+    issuer = _issuer(governed)
+    fields = _decided_fields(governed)
+    windows = dict(ISSUANCE_WINDOWS)
+    if fault == "other-command":
+        issuer.issue(fields, **windows)
+        fields = {**fields, "expected_revision": 1}
+    elif fault == "no-action":
+        fields.pop("action_instance_id")
+    elif fault == "naive-instant":
+        windows["decision_expires_at"] = windows["decision_expires_at"].replace(tzinfo=None)
+    elif fault == "decision-expired":
+        windows["decision_expires_at"] = NOW
+    else:
+        windows["authority_expires_at"] = windows["authority_not_before"]
+    records = len(governed.export()["records"])
+    with pytest.raises(ValueError):
+        issuer.issue(fields, **windows)
+    assert len(governed.export()["records"]) == records
+
+
+@pytest.mark.parametrize("fault", ["signing-key", "records", "fence", "clock", "keyid"])
+def test_c6_command_issuer_requires_its_trusted_composition(fault: str) -> None:
+    governed = GovernedC3(release=RELEASE, now=NOW)
+    values: dict[str, Any] = {
+        "signing_key": CONSUMER_KEY, "keyid": CONSUMER_KEYID, "records": governed.records, "fence": governed.fence,
+        "clock": governed.clock,
+    }
+    values[fault.replace("-", "_")] = "" if fault == "keyid" else object()
+    with pytest.raises(TypeError if fault != "keyid" else ValueError):
+        _module("ocor_runtime.c6.engine").GovernedCommandIssuer(**values)
+
+
+class _FaultyIssuer:
+    """The C6 issuance port failing or issuing another command than the decided one."""
+
+    def __init__(self, issuer: Any, fault: str) -> None:
+        self.issuer, self.fault = issuer, fault
+
+    def issue(self, fields: Mapping[str, Any], **windows: datetime) -> Any:
+        if self.fault == "unavailable":
+            raise RuntimeError("C6 governance record store unavailable")
+        return self.issuer.issue({**fields, "expected_revision": 1}, **windows)
+
+
+@pytest.mark.parametrize(
+    "fault,detail", [("unavailable", "C6_CONTROL_UNAVAILABLE"), ("other-command", "C6_COMMAND_BINDING_MISMATCH")]
+)
+def test_promotion_issuance_fault_is_denied_before_c3(backends: Any, fault: str, detail: str) -> None:
+    promotion = _module("test_ocor_dev_0058")
+    memory = _module("test_ocor_dev_0052")
+    consumer_type = _module("ocor_runtime.memory.promotion").C6MemoryPromotionConsumer
+    human_gate = _module("ocor_runtime.c6.human_gate").HumanGateCoordinator
+    with promotion.workflow(backends) as x:
+        x.controls.put(x.result.audit_ref, x.body)
+        consumer = consumer_type(
+            proposals=x.s, controls=x.controls, verifier=x.signer,
+            human_gate=human_gate(identities=x.registry, clock=x.w.clock), policy=x.policy, c3=x.c3,
+            issuer=_FaultyIssuer(x.issuer, fault), clock=x.w.clock, audit=x.audit, commit_capability="canonical.commit",
+        )
+        before = x.w.ledger.records()
+        with pytest.raises(memory.MemoryAdmissionError) as caught:
+            consumer.commit(x.result.audit_ref, binding=memory.binding(x.ctx))
+        assert caught.value.detail_code == detail
+        assert x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) is None
+        assert x.w.ledger.records() == before
+        assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.denied"]

@@ -368,7 +368,7 @@ def test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access(
     boundary: Any = Unreachable()
     consumer = C6MemoryPromotionConsumer(
         proposals=s, controls=boundary, verifier=boundary, human_gate=boundary,
-        policy=boundary, c3=boundary, clock=w.clock, audit=audit,
+        policy=boundary, c3=boundary, issuer=boundary, clock=w.clock, audit=audit,
         commit_capability="canonical.commit",
     )
     audit.fail = not audit_available
@@ -406,6 +406,8 @@ from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry  # noqa: E
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand  # noqa: E402
 from ocor_runtime.c3.service import PostgresC3Service  # noqa: E402
 import test_ocor_dev_rem_0050 as governed_path  # noqa: E402
+from ocor_runtime.c1.signing import ed25519_verify  # noqa: E402
+from ocor_runtime.c3.admission import C6_PRODUCER, gate_package_payload  # noqa: E402
 from ocor_runtime.c6.human_gate import HumanGateCoordinator  # noqa: E402
 from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest  # noqa: E402
 from ocor_runtime.memory.promotion import (  # noqa: E402
@@ -626,21 +628,29 @@ def workflow(backends: r.Backends, *, proposal_policy: OpaProposalPolicy | None 
             IdentityRecord("human-" + role.lower(), attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": role})
             for role in ("COMPLIANCE", "RISK_OWNER")
         )
-        # NCP-U04 (OCOR-DEV-REM-0050): C3 admits only commands whose GatePackage,
-        # Decision and Authority are C6-signed records (LLD v1.1 :97, ADD v1.3 :342).
-        governed = governed_path.GovernedC3(
-            release=ctx.ontology_release_digest, invariants=("urn:ocor:invariant:memory-non-authoritative",),
-        )
-        c3 = PostgresC3Service(backends.dsn, admission=governed.admission())
-        c3.initialize()
         s = service(w, audit, proposal_policy)
         req = request(w, governed_context=ctx.to_mapping(), governed_context_digest=ctx.digest(),
                       target_aggregate_ref="urn:ocor:situation:harbour:" + uuid.uuid4().hex)
         result = s.propose("c6-source", req, binding=r.binding(ctx))
+        # NCP-U04 (OCOR-DEV-REM-0050): C3 admits only commands whose GatePackage,
+        # Decision and Authority are C6-signed records (LLD v1.1 :97, ADD v1.3 :342),
+        # with registered preconditions, invariants and Evidence.
+        governed = governed_path.GovernedC3(
+            release=ctx.ontology_release_digest, preconditions=(result.proposal.digest,),
+            invariants=("urn:ocor:invariant:memory-non-authoritative",), now=w.clock.now(),
+        )
+        governed.add_evidence(result.proposal.evidence_refs)
+        c3 = PostgresC3Service(backends.dsn, admission=governed.admission())
+        c3.initialize()
+        # The C6 issuance port signs the GatePackage, Decision and Authority that
+        # C3 admission reads, with the C6 key of the trusted composition.
+        issuer = governed_path._module("ocor_runtime.c6.engine").GovernedCommandIssuer(
+            signing_key=governed_path.CONSUMER_KEY, keyid=governed_path.CONSUMER_KEYID,
+            records=governed.records, fence=governed.fence, clock=governed.clock)
         body = gate_body(result.proposal, result.audit_ref, ctx)
         consumer = C6MemoryPromotionConsumer(proposals=s, controls=controls, verifier=signer,
                                             human_gate=HumanGateCoordinator(identities=registry, clock=w.clock),
-                                            policy=policy, c3=c3, clock=w.clock, audit=audit,
+                                            policy=policy, c3=c3, issuer=issuer, clock=w.clock, audit=audit,
                                             commit_capability="canonical.commit")
         data = type("Workflow", (), {})()
         for name, value in locals().copy().items():
@@ -654,6 +664,11 @@ def workflow(backends: r.Backends, *, proposal_policy: OpaProposalPolicy | None 
                 # C3 uses its approved global schema; remove only this test's rows.
                 with psycopg.connect(backends.dsn) as conn:
                     ref = req["target_aggregate_ref"]
+                    # NCP-U04 tables referencing this test's commits and outbox rows.
+                    conn.execute("DELETE FROM c3_delivery_attempt WHERE event_id IN "
+                                 "(SELECT event_id FROM c3_outbox WHERE aggregate_ref=%s)", (ref,))
+                    conn.execute("DELETE FROM c3_source_binding WHERE commit_id IN "
+                                 "(SELECT commit_id FROM c3_commit WHERE aggregate_ref=%s)", (ref,))
                     conn.execute("DELETE FROM c3_outbox WHERE aggregate_ref=%s", (ref,))
                     for table in ("c3_idempotency", "c3_commit", "c3_aggregate"):
                         conn.execute(f"DELETE FROM {table} WHERE aggregate_ref=%s", (ref,))
@@ -665,8 +680,20 @@ def test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt(
         before = x.w.ledger.records()
         assert x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) is None
         receipt = x.consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
-        command = GovernedCanonicalCommitCommand.from_mapping(x.body["command"])
+        # NCP-U04 (OCOR-DEV-REM-0050): C3 commits the gate command bound to the GatePackage
+        # that C6 froze and signed for it, never to the promotion gate digest (ADD v1.3 :342).
+        command = GovernedCanonicalCommitCommand.from_mapping(
+            dict(x.body["command"], gate_package_digest=receipt.gate_package_digest))
         assert receipt.verify(command) == receipt
+        assert command.gate_package_digest != x.body["command"]["gate_package_digest"]
+        package = x.governed.records.gate_package(command.gate_package_digest)
+        assert package is not None and package.digest == command.gate_package_digest
+        assert package.keyid == governed_path.CONSUMER_KEYID and package.payload["producer"] == C6_PRODUCER
+        assert ed25519_verify(governed_path.CONSUMER_KEY.public_key, package.signed_bytes(),
+                              base64.b64decode(package.signature))
+        assert package.digest == canonical_digest(gate_package_payload(
+            command.to_mapping(), ontology_release_digest=x.ctx.ontology_release_digest,
+            stop_epoch=x.governed.fence.current_stop_epoch(), frozen_at=package.payload["frozen_at"]))
         state = x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"])
         assert state is not None and state.revision == 1
         assert dict(state.state) == command.canonical_delta
@@ -879,7 +906,7 @@ def test_live_c3_refusal_after_dispatch_is_indeterminate_never_success(backends:
         rival = dict(x.body["command"], command_id="urn:ocor:command:" + uuid.uuid4().hex,
                      idempotency_key="rival-" + uuid.uuid4().hex,
                      canonical_delta={"patrol_status": "rival"})
-        x.c3.commit(GovernedCanonicalCommitCommand.from_mapping(rival))
+        x.c3.commit(x.governed.command(rival))
         before = x.w.ledger.records()
         with pytest.raises(r.MemoryAdmissionError) as caught:
             x.consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
@@ -906,7 +933,8 @@ def test_live_c3_receipt_not_bound_to_command_is_indeterminate(backends: r.Backe
         consumer = C6MemoryPromotionConsumer(
             proposals=x.s, controls=x.controls, verifier=x.signer,
             human_gate=HumanGateCoordinator(identities=x.registry, clock=x.w.clock), policy=x.policy,
-            c3=ForgedReceiptC3(x.c3), clock=x.w.clock, audit=x.audit, commit_capability="canonical.commit")
+            c3=ForgedReceiptC3(x.c3), issuer=x.issuer, clock=x.w.clock, audit=x.audit,
+            commit_capability="canonical.commit")
         with pytest.raises(r.MemoryAdmissionError) as caught:
             consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
         assert (caught.value.reason_code, caught.value.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "COMMIT_OUTCOME_UNKNOWN")
