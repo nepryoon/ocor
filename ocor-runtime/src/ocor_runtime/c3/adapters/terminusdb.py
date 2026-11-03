@@ -40,7 +40,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -53,7 +53,9 @@ FENCE_BOUNDARY = "c3-canonical"
 MAX_CONDITIONAL_ATTEMPTS = 64
 DATABASE_NAME = re.compile(r"[a-z][a-z0-9_]{2,62}")
 RESERVED_DATABASES = frozenset({"ocor_default"})
-DOCUMENT_TYPES = ("C3Aggregate", "C3Commit", "C3Idempotency", "C3OutboxEntry", "C3DeliveryAttempt", "C3WriterFence")
+DOCUMENT_TYPES = (
+    "C3Aggregate", "C3Commit", "C3SourceBinding", "C3Idempotency", "C3OutboxEntry", "C3DeliveryAttempt", "C3WriterFence"
+)
 
 
 def _class(name: str, **fields: str) -> dict[str, Any]:
@@ -90,10 +92,18 @@ SCHEMA: tuple[dict[str, Any], ...] = (
         governed_context_digest="xsd:string",
         gate_package_digest="xsd:string",
         outbox_event_id="xsd:string",
+        outbox_payload_json="xsd:string",
         outbox_payload_digest="xsd:string",
         branch="xsd:string",
         committed_at="xsd:string",
         writer_epoch="xsd:integer",
+    ),
+    _class(
+        "C3SourceBinding",
+        commit_id="xsd:string",
+        claim_ref="xsd:string",
+        source_ref="xsd:string",
+        evidence_ref="xsd:string",
     ),
     _class(
         "C3Idempotency",
@@ -181,6 +191,33 @@ class OutboxRow:
     occurred_at: datetime
 
 
+@dataclass(frozen=True, slots=True, order=True)
+class SourceBindingRow:
+    claim_ref: str
+    source_ref: str
+    evidence_ref: str
+
+
+@dataclass(frozen=True, slots=True)
+class DeliveryAttemptRow:
+    event_id: str
+    attempt_no: int
+    outcome: str
+    writer_epoch: int | None
+    recorded_at: datetime
+
+
+StateCheck = Callable[[Mapping[str, Any], Mapping[str, Any]], None]
+EventPayload = Callable[[str, int, int, Mapping[str, Any], str], dict[str, Any]]
+
+
+def _text(document: Mapping[str, Any], field: str) -> str:
+    value = document.get(field)
+    if not isinstance(value, str) or not value:
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not a non-empty string")
+    return value
+
+
 def _key(*parts: str) -> str:
     return hashlib.sha256("\x1f".join(parts).encode("utf-8")).hexdigest()
 
@@ -189,12 +226,35 @@ def _canonical_json(value: Any) -> str:
     return canonical_bytes(value).decode("utf-8")
 
 
-def _outbox_payload(commit_id: str, aggregate_ref: str, to_revision: int, state_digest: str) -> dict[str, Any]:
-    return {"commit_id": commit_id, "aggregate_ref": aggregate_ref, "to_revision": to_revision, "state_digest": state_digest}
+def _json_object(text: object, field: str) -> dict[str, Any]:
+    if not isinstance(text, str):
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not a string")
+    try:
+        value = parse_i_json(text)
+    except (TypeError, ValueError) as exc:
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not canonical JSON") from exc
+    if not isinstance(value, dict):
+        raise TerminusDBAdapterError("BACKEND_ERROR", f"stored {field} is not an object")
+    return value
+
+
+def _source_binding_document(commit_id: str, binding: Mapping[str, str]) -> dict[str, Any]:
+    return {
+        "@type": "C3SourceBinding",
+        "key": _key(commit_id, binding["claim_ref"], binding["source_ref"], binding["evidence_ref"]),
+        "commit_id": commit_id,
+        "claim_ref": binding["claim_ref"],
+        "source_ref": binding["source_ref"],
+        "evidence_ref": binding["evidence_ref"],
+    }
 
 
 def _outbox_document(commit: Mapping[str, Any]) -> dict[str, Any]:
-    payload = _outbox_payload(commit["commit_id"], commit["aggregate_ref"], int(commit["to_revision"]), commit["state_digest"])
+    """The immutable outbox entry, re-derivable from the commit record it belongs to: the
+    event payload was fixed in the commit and is verified against its digest."""
+    payload = _json_object(commit["outbox_payload_json"], "outbox_payload_json")
+    if canonical_digest(payload) != commit["outbox_payload_digest"]:
+        raise TerminusDBAdapterError("COMMIT_RECEIPT_MISMATCH", "commit outbox payload digest mismatch")
     return {
         "@type": "C3OutboxEntry",
         "key": _key(commit["outbox_event_id"]),
@@ -202,7 +262,7 @@ def _outbox_document(commit: Mapping[str, Any]) -> dict[str, Any]:
         "commit_id": commit["commit_id"],
         "aggregate_ref": commit["aggregate_ref"],
         "aggregate_revision": int(commit["to_revision"]),
-        "payload_json": _canonical_json(payload),
+        "payload_json": commit["outbox_payload_json"],
         "payload_digest": commit["outbox_payload_digest"],
         "branch": commit["branch"],
         "occurred_at": commit["committed_at"],
@@ -325,15 +385,22 @@ class TerminusDBC3Adapter:
 
     @staticmethod
     def _parse(text: str) -> Any:
+        """Strict JSON of a server answer. TerminusDB prefixes some not-found GETs with a
+        status line before the JSON body (see deploy/bootstrap/fixtures/load_fixtures.py):
+        only a single prefix line before one JSON object is accepted; any other body is a
+        typed backend error that never echoes the body."""
         if not text.strip():
             return None
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            # TerminusDB answers some not-found GETs with a status line before the JSON
-            # body (see deploy/bootstrap/fixtures/load_fixtures.py); keep the JSON part.
             start = text.find("{")
-            return json.loads(text[start:]) if start >= 0 else {"raw": text}
+            if start <= 0 or "\n" in text[:start].strip():
+                raise TerminusDBAdapterError("BACKEND_ERROR", "the server answer is not JSON") from None
+            try:
+                return json.loads(text[start:])
+            except json.JSONDecodeError:
+                raise TerminusDBAdapterError("BACKEND_ERROR", "the server answer is not JSON") from None
 
     def _branch_path(self) -> str:
         return f"/api/document/{self._organization}/{self._database}/local/branch/{MAIN_BRANCH}"
@@ -490,9 +557,12 @@ class TerminusDBC3Adapter:
         decision_ref: str,
         authority_ref: str,
         evidence_refs: Sequence[str],
+        claim_source_bindings: Sequence[Mapping[str, str]],
         governed_context_digest: str,
         gate_package_digest: str,
         branch: str,
+        check_state: StateCheck,
+        event_payload: EventPayload,
         crash_after: TerminusDBCrashStage | None = None,
     ) -> CommitOutcome:
         if branch != MAIN_BRANCH:
@@ -523,15 +593,17 @@ class TerminusDBC3Adapter:
                 raise TerminusDBAdapterError(
                     "REVISION_CONFLICT", f"expected revision {expected_revision}, found {revision}"
                 )
-            state = parse_i_json(aggregate["state_json"]) if aggregate is not None else {}
+            state = _json_object(aggregate["state_json"], "state_json") if aggregate is not None else {}
             new_state = {**state, **dict(canonical_delta)}
+            # Preconditions on the state read at this data version, invariants on the new
+            # state; the transaction below commits only if that revision is still current.
+            check_state(state, new_state)
             new_state_digest = canonical_digest(new_state)
             to_revision = revision + 1
             commit_id = "urn:ocor:commit:sha256:" + hashlib.sha256(f"{command_digest}:{to_revision}".encode()).hexdigest()
             outbox_event_id = "urn:ocor:event:sha256:" + hashlib.sha256(f"{commit_id}:outbox".encode()).hexdigest()
-            outbox_payload_digest = canonical_digest(
-                _outbox_payload(commit_id, aggregate_ref, to_revision, new_state_digest)
-            )
+            outbox_payload = event_payload(commit_id, revision, to_revision, new_state, new_state_digest)
+            outbox_payload_digest = canonical_digest(outbox_payload)
             commit = {
                 "@type": "C3Commit",
                 "key": _key(commit_id),
@@ -551,6 +623,7 @@ class TerminusDBC3Adapter:
                 "governed_context_digest": governed_context_digest,
                 "gate_package_digest": gate_package_digest,
                 "outbox_event_id": outbox_event_id,
+                "outbox_payload_json": _canonical_json(outbox_payload),
                 "outbox_payload_digest": outbox_payload_digest,
                 "branch": branch,
                 "committed_at": format_utc_timestamp(datetime.now(UTC)),
@@ -575,6 +648,7 @@ class TerminusDBC3Adapter:
             writes = [
                 _insert(aggregate_document) if aggregate is None else _update(aggregate_document),
                 _insert(commit),
+                *(_insert(_source_binding_document(commit_id, binding)) for binding in claim_source_bindings),
                 _insert(_idempotency_document(commit)),
                 _insert(_outbox_document(commit)),
             ]
@@ -595,7 +669,7 @@ class TerminusDBC3Adapter:
             return None
         return SnapshotRow(
             revision=int(document["revision"]),
-            state=dict(parse_i_json(document["state_json"])),
+            state=_json_object(document["state_json"], "state_json"),
             state_digest=document["state_digest"],
             commit_id=document["commit_id"],
         )
@@ -605,6 +679,35 @@ class TerminusDBC3Adapter:
         return row.revision if row is not None else 0
 
     # --- relay -------------------------------------------------------------------------
+
+    def source_bindings(self, commit_id: str) -> tuple[SourceBindingRow, ...]:
+        version = self._data_version()
+        rows = [item for item in self._list("C3SourceBinding", version) if item.get("commit_id") == commit_id]
+        return tuple(
+            sorted(
+                SourceBindingRow(_text(item, "claim_ref"), _text(item, "source_ref"), _text(item, "evidence_ref"))
+                for item in rows
+            )
+        )
+
+    def delivery_attempts(self, event_id: str) -> tuple[DeliveryAttemptRow, ...]:
+        """The TerminusDB relay records one ``ACKNOWLEDGED`` DeliveryAttempt per entry,
+        written only under the current writer epoch (NCR-C3-007)."""
+        document = self._get_document("C3DeliveryAttempt", _key(event_id))
+        if document is None:
+            return ()
+        epoch = document.get("writer_epoch")
+        if isinstance(epoch, bool) or not isinstance(epoch, int):
+            raise TerminusDBAdapterError("BACKEND_ERROR", "stored writer_epoch is not an integer")
+        return (
+            DeliveryAttemptRow(
+                event_id=_text(document, "event_id"),
+                attempt_no=1,
+                outcome=_text(document, "outcome"),
+                writer_epoch=epoch,
+                recorded_at=parse_utc_timestamp(_text(document, "acknowledged_at")),
+            ),
+        )
 
     def claim_outbox_batch(self, *, limit: int) -> tuple[OutboxRow, ...]:
         if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
@@ -623,7 +726,7 @@ class TerminusDBC3Adapter:
                 commit_id=entry["commit_id"],
                 aggregate_ref=entry["aggregate_ref"],
                 aggregate_revision=int(entry["aggregate_revision"]),
-                payload=dict(parse_i_json(entry["payload_json"])),
+                payload=_json_object(entry["payload_json"], "payload_json"),
                 payload_digest=entry["payload_digest"],
                 branch=entry["branch"],
                 occurred_at=parse_utc_timestamp(entry["occurred_at"]),

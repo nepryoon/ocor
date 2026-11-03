@@ -1,52 +1,74 @@
-"""Retained C3 canonical commit slice.
+"""Retained C3 canonical commit slice on PostgreSQL.
 
-Implements the sealed C3 ports (OCOR-DEV-0013, ``ocor_runtime.c3.ports``,
-reused unmodified) as a thin orchestrator over ``PostgresC3Adapter``
-(``ocor_runtime.c3.adapters.postgres``): state, revision, evidence,
-idempotency and outbox commit atomically in one transaction, generalizing
-the real-concurrency properties already proven by the sealed C3 spikes
-(``spikes.c3_atomicity.oracle``, OCOR-DEV-0015; ``spikes.c3_backend``,
-OCOR-DEV-0016) into a production-shaped ``GovernedCommitPort``/
-``CanonicalReadPort``/``RevisionPort``/``RecoveryPort``/``OutboxRelayPort``
-implementation that speaks the sealed dataclasses directly, not ad-hoc
-dicts.
+Implements the sealed C3 ports (OCOR-DEV-0013, ``ocor_runtime.c3.ports``) as a thin
+orchestrator over ``PostgresC3Adapter`` (``ocor_runtime.c3.adapters.postgres``): state,
+revision, evidence, source bindings, idempotency and outbox commit atomically in one
+transaction. PostgreSQL is the atomicity verification adapter (LLD v1.1 §5.2) and is
+never an implicit fallback of the canonical TerminusDB store (DEC-201).
 
-This module never imports a direct backend client (AFF-002/AFF-006):
-every ``psycopg`` reference lives in the adapter it composes.
+OCOR-DEV-REM-0050 (NCP-U04): every commit first passes ``CommitAdmission`` (C6
+provenance, Decision, Authority, Evidence, GatePackage, stop epoch and active release;
+NCR-C3-001), and its preconditions and invariants are evaluated inside the transaction on
+the locked state. ``initialize`` acquires a new writer epoch: the most recently
+initialized service is the only writer of the ownership boundary and every earlier
+instance is fenced (``SINGLE_WRITER_VIOLATION``; ADD v1.3 §2.2 :271). The relay claims
+with ``SKIP LOCKED`` and records every delivery outcome as a separate DeliveryAttempt
+(NCR-C3-004, NCR-C3-006).
 
-``_crash_after`` on ``commit`` is a keyword-only, underscore-prefixed
-test-only fault-injection hook (mirrors ``spikes.c3_atomicity.oracle``'s
-``crash_stage`` parameter, an already-accepted pattern in this codebase)
-used exclusively by this task's own regression suite to prove real
-process-crash recovery; it is never exercised by any caller through the
-sealed ``GovernedCommitPort`` Protocol, which only declares ``commit(self,
-command)``.
+This module never imports a direct backend client (AFF-002/AFF-006).
+
+``_crash_after`` on ``commit`` is a keyword-only, underscore-prefixed test-only
+fault-injection hook used exclusively by the C3 regression suites to prove real
+process-crash recovery; the sealed ``GovernedCommitPort`` Protocol only declares
+``commit(self, command)``.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
+from collections.abc import Mapping
+from datetime import datetime, timedelta
+from typing import Any
 
 from .adapters.postgres import CrashStage, PostgresAdapterError, PostgresC3Adapter
+from .admission import CommitAdmission
+from .events import DeliveryAttempt, canonical_event_payload
 from .ports import (
     C3Error,
     CanonicalSnapshot,
+    ClaimSourceBinding,
     CommitReceipt,
     GovernedCanonicalCommitCommand,
     OutboxEnvelope,
 )
 
-__all__ = ["CrashStage", "PostgresC3Service"]
+__all__ = ["DEFAULT_CLAIM_TTL", "CrashStage", "PostgresC3Service"]
+
+DEFAULT_CLAIM_TTL = timedelta(seconds=30)
+
+
+def _translated(error: PostgresAdapterError) -> C3Error:
+    return C3Error(error.reason_code, str(error))
 
 
 class PostgresC3Service:
     """Real PostgreSQL-backed implementation of the sealed C3 ports."""
 
-    def __init__(self, dsn: str) -> None:
-        self._adapter = PostgresC3Adapter(dsn)
+    def __init__(self, dsn: str, *, admission: CommitAdmission, writer_id: str = "c3-canonical-writer") -> None:
+        if not isinstance(admission, CommitAdmission):
+            raise TypeError("a CommitAdmission is required: C3 admits no command without the governed path")
+        self._admission = admission
+        self._adapter = PostgresC3Adapter(dsn, writer_id=writer_id)
+
+    @property
+    def writer_epoch(self) -> int | None:
+        return self._adapter.writer_epoch
 
     def initialize(self) -> None:
-        self._adapter.initialize()
+        try:
+            self._adapter.initialize()
+            self._adapter.acquire_writer()
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
 
     def reset(self) -> None:
         self._adapter.reset()
@@ -54,7 +76,19 @@ class PostgresC3Service:
     def commit(
         self, command: GovernedCanonicalCommitCommand, *, _crash_after: CrashStage | None = None
     ) -> CommitReceipt:
+        admitted = self._admission.admit(command)
         tenant_id, aggregate_type, aggregate_ref, idempotency_key = command.idempotency_scope
+
+        def check_state(current: Mapping[str, Any], new: Mapping[str, Any]) -> None:
+            self._admission.check_state(admitted, current, new)
+
+        def event_payload(commit_id: str, from_revision: int, to_revision: int, state: Mapping[str, Any],
+                          state_digest: str) -> dict[str, Any]:
+            return canonical_event_payload(
+                command, commit_id=commit_id, from_revision=from_revision, to_revision=to_revision, state=state,
+                state_digest=state_digest,
+            )
+
         try:
             outcome = self._adapter.commit_transaction(
                 tenant_id=tenant_id,
@@ -68,13 +102,16 @@ class PostgresC3Service:
                 decision_ref=command.decision_ref,
                 authority_ref=command.authority_ref,
                 evidence_refs=command.evidence_refs,
+                claim_source_bindings=[item.to_mapping() for item in command.claim_source_bindings],
                 governed_context_digest=command.governed_context_digest,
                 gate_package_digest=command.gate_package_digest,
                 branch=command.branch,
+                check_state=check_state,
+                event_payload=event_payload,
                 crash_after=_crash_after,
             )
         except PostgresAdapterError as error:
-            raise C3Error(error.reason_code, str(error)) from error
+            raise _translated(error) from error
 
         return CommitReceipt.from_command(
             command,
@@ -105,8 +142,17 @@ class PostgresC3Service:
     def current_revision(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> int:
         return self._adapter.current_revision(tenant_id, aggregate_type, aggregate_ref)
 
-    def claim_batch(self, *, limit: int) -> tuple[OutboxEnvelope, ...]:
-        rows = self._adapter.claim_outbox_batch(limit=limit)
+    def source_bindings(self, commit_id: str) -> tuple[ClaimSourceBinding, ...]:
+        return tuple(
+            ClaimSourceBinding(item.claim_ref, item.source_ref, item.evidence_ref)
+            for item in self._adapter.source_bindings(commit_id)
+        )
+
+    def claim_batch(self, *, limit: int, claim_ttl: timedelta = DEFAULT_CLAIM_TTL) -> tuple[OutboxEnvelope, ...]:
+        try:
+            rows = self._adapter.claim_outbox_batch(limit=limit, claim_ttl=claim_ttl)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
         return tuple(
             OutboxEnvelope(
                 event_id=row.event_id,
@@ -122,7 +168,25 @@ class PostgresC3Service:
         )
 
     def acknowledge(self, event_id: str, *, acknowledged_at: datetime) -> None:
-        self._adapter.acknowledge_outbox(event_id, acknowledged_at=acknowledged_at)
+        try:
+            self._adapter.acknowledge_outbox(event_id, acknowledged_at=acknowledged_at)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
+
+    def record_failure(self, event_id: str, *, failed_at: datetime, reason: str) -> None:
+        try:
+            self._adapter.record_delivery_failure(event_id, failed_at=failed_at, reason=reason)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
+
+    def delivery_attempts(self, event_id: str) -> tuple[DeliveryAttempt, ...]:
+        return tuple(
+            DeliveryAttempt(row.event_id, row.attempt_no, row.outcome, row.writer_epoch, row.recorded_at)
+            for row in self._adapter.delivery_attempts(event_id)
+        )
 
     def reconcile(self, *, limit: int) -> int:
-        return self._adapter.reconcile(limit=limit)
+        try:
+            return self._adapter.reconcile(limit=limit)
+        except PostgresAdapterError as error:
+            raise _translated(error) from error
