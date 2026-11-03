@@ -405,6 +405,7 @@ import psycopg  # noqa: E402
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry  # noqa: E402
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand  # noqa: E402
 from ocor_runtime.c3.service import PostgresC3Service  # noqa: E402
+import test_ocor_dev_rem_0050 as governed_path  # noqa: E402
 from ocor_runtime.c6.human_gate import HumanGateCoordinator  # noqa: E402
 from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest  # noqa: E402
 from ocor_runtime.memory.promotion import (  # noqa: E402
@@ -625,7 +626,12 @@ def workflow(backends: r.Backends, *, proposal_policy: OpaProposalPolicy | None 
             IdentityRecord("human-" + role.lower(), attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": role})
             for role in ("COMPLIANCE", "RISK_OWNER")
         )
-        c3 = PostgresC3Service(backends.dsn)
+        # NCP-U04 (OCOR-DEV-REM-0050): C3 admits only commands whose GatePackage,
+        # Decision and Authority are C6-signed records (LLD v1.1 :97, ADD v1.3 :342).
+        governed = governed_path.GovernedC3(
+            release=ctx.ontology_release_digest, invariants=("urn:ocor:invariant:memory-non-authoritative",),
+        )
+        c3 = PostgresC3Service(backends.dsn, admission=governed.admission())
         c3.initialize()
         s = service(w, audit, proposal_policy)
         req = request(w, governed_context=ctx.to_mapping(), governed_context_digest=ctx.digest(),
