@@ -32,6 +32,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 from ..c1.signing import Ed25519SigningKey, dsse_pae, ed25519_verify
 from ..kernel.canonical import canonical_bytes
+from ..kernel.governed_context import GovernedContext, GovernedContextError
 
 ENVELOPE_SCHEMA_ID = "urn:ocor:schema:canonical-ingestion-envelope:1.2"
 SIGNATURE_PAYLOAD_TYPE = "application/vnd.ocor.canonical-ingestion-envelope+json"
@@ -423,6 +424,31 @@ def content_ref(data: bytes) -> str:
     return "urn:sha256:" + hashlib.sha256(data).hexdigest()
 
 
+def marking_digest(marking: Mapping[str, Any]) -> str:
+    """``sha256:`` digest of a ``marking`` object (ADD v1.3 :408-411): the RFC 8785 bytes of the
+    object without its own ``marking_digest`` member, which cannot cover itself. The object's
+    ``*_marking_ref`` projection is ``urn:`` + this digest."""
+    view = thaw(marking)
+    if not isinstance(view, dict):
+        raise EnvelopeViolation("SCHEMA_VIOLATION", "a marking is an object")
+    view.pop("marking_digest", None)
+    return "sha256:" + hashlib.sha256(canonical_bytes(view)).hexdigest()
+
+
+def urn_digest(digest: str) -> str:
+    """The internal ``urn:sha256:<hex>`` form of an envelope ``sha256:<hex>`` digest."""
+    if not isinstance(digest, str) or DIGEST.fullmatch(digest) is None:
+        raise EnvelopeViolation("SCHEMA_VIOLATION", "a digest is sha256:<64 lowercase hex>")
+    return "urn:" + digest
+
+
+def envelope_digest(digest: str) -> str:
+    """The envelope ``sha256:<hex>`` form of an internal ``urn:sha256:<hex>`` digest."""
+    if not isinstance(digest, str) or CONTENT_REF.fullmatch(digest) is None:
+        raise EnvelopeViolation("SCHEMA_VIOLATION", "a content digest is urn:sha256:<64 lowercase hex>")
+    return digest.removeprefix("urn:")
+
+
 def _validate(value: object) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise EnvelopeViolation("SCHEMA_VIOLATION", "the envelope is not an object")
@@ -523,6 +549,38 @@ class CanonicalIngestionEnvelope:
         aggregate = self._value["aggregate"]
         assert isinstance(aggregate, Mapping)
         return aggregate
+
+    def governed_context(self) -> GovernedContext:
+        """The ``GovernedContext`` the admitted envelope realises (ADD v1.3 :845): the eleven
+        fields read from the envelope, the marking projected to ``urn:`` + its digest and the
+        digests to their ``urn:sha256:`` form. Raises ``GOVERNED_CONTEXT_MISMATCH`` when the
+        marking digest does not match the marking object or the record does not reproduce
+        ``governed_context_digest`` (ADD v1.3 :411)."""
+        value = self._value
+        marking = value["classification_marking"]
+        if marking_digest(marking) != marking["marking_digest"]:
+            raise EnvelopeViolation("GOVERNED_CONTEXT_MISMATCH", "the marking digest does not match the marking")
+        try:
+            context = GovernedContext.from_mapping(
+                {
+                    "tenant_id": value["tenant_id"],
+                    "organization_id": value["organization_id"],
+                    "domain_id": value["domain_id"],
+                    "compartments": list(value["compartments"]),
+                    "classification_marking_ref": urn_digest(str(marking["marking_digest"])),
+                    "purpose": value["purpose"],
+                    "effective_principal_id": value["effective_principal_id"],
+                    "actor_chain": list(value["actor_chain"]),
+                    "ontology_release_digest": urn_digest(str(value["ontology_release_digest"])),
+                    "policy_bundle_digest": urn_digest(str(value["policy_bundle_digest"])),
+                    "correlation_id": value["correlation_id"],
+                }
+            )
+        except GovernedContextError as exc:
+            raise EnvelopeViolation("GOVERNED_CONTEXT_MISMATCH", "the envelope does not realise a GovernedContext") from exc
+        if context.digest() != urn_digest(self.governed_context_digest):
+            raise EnvelopeViolation("GOVERNED_CONTEXT_MISMATCH", "the envelope does not reproduce its GovernedContext digest")
+        return context
 
     def signing_bytes(self) -> bytes:
         """The bytes the producer signature covers: DSSE PAE of the envelope without

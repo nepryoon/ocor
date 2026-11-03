@@ -8,6 +8,12 @@ the correlation of the governed path: event ID (the outbox event ID), Decision,
 Authority and action instance, actor chain, correlation and causation (Register FR-075
 :207); the release and GovernedContext digest let every projector verify release and
 GCS (LLD v1.1 §2.4 :148).
+
+OCOR-DEV-REM-0051 (NCP-U06, NCR-C5-001): the payload also carries the complete
+``GovernedContext`` of the commit, so the relay can build a ``canonical-ingestion-envelope:1.2``
+that realises it integrally (ADD v1.3 :845) and every projector can verify the commit
+context digest. ``CANONICAL_STATE_COMMITTED_SCHEMA`` is the content-addressed JSON Schema
+2020-12 of the payload, against which C5 validates it a second time (ADD v1.3 :529).
 """
 
 from __future__ import annotations
@@ -21,6 +27,83 @@ from .ports import C3Error, GovernedCanonicalCommitCommand, _thaw
 
 CANONICAL_STATE_COMMITTED = "canonical-state-committed"
 EVENT_VERSION = "1"
+CANONICAL_STATE_COMMITTED_EVENT_TYPE = "urn:ocor:event-type:canonical-state-committed"
+CANONICAL_STATE_COMMITTED_SCHEMA_ID = "urn:ocor:schema:canonical-state-committed"
+CANONICAL_STATE_COMMITTED_SCHEMA_VERSION = "1.0.0"
+
+_TEXT: dict[str, Any] = {"type": "string", "minLength": 1}
+_DIGEST: dict[str, Any] = {"type": "string", "pattern": "^urn:sha256:[0-9a-f]{64}$"}
+_TEXT_SET: dict[str, Any] = {"type": "array", "minItems": 1, "uniqueItems": True, "items": _TEXT}
+_GOVERNED_CONTEXT: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "tenant_id", "organization_id", "domain_id", "compartments", "classification_marking_ref", "purpose",
+        "effective_principal_id", "actor_chain", "ontology_release_digest", "policy_bundle_digest", "correlation_id",
+    ],
+    "properties": {
+        "tenant_id": _TEXT,
+        "organization_id": _TEXT,
+        "domain_id": _TEXT,
+        "compartments": _TEXT_SET,
+        "classification_marking_ref": _DIGEST,
+        "purpose": _TEXT,
+        "effective_principal_id": _TEXT,
+        "actor_chain": _TEXT_SET,
+        "ontology_release_digest": _DIGEST,
+        "policy_bundle_digest": _DIGEST,
+        "correlation_id": _TEXT,
+    },
+}
+CANONICAL_STATE_COMMITTED_SCHEMA: dict[str, Any] = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": CANONICAL_STATE_COMMITTED_SCHEMA_ID,
+    "title": "OCOR C3 canonical-state-committed event payload",
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "event_type", "commit_id", "command_id", "action_instance_id", "tenant_id", "aggregate_type", "aggregate_ref",
+        "from_revision", "to_revision", "state", "state_digest", "decision_ref", "authority_ref", "evidence_refs",
+        "gate_package_digest", "governed_context_digest", "ontology_release_digest", "boundary", "actor_chain",
+        "correlation_id", "causation_id", "branch", "governed_context",
+    ],
+    "properties": {
+        "event_type": {"const": CANONICAL_STATE_COMMITTED},
+        "commit_id": _TEXT,
+        "command_id": _TEXT,
+        "action_instance_id": _TEXT,
+        "tenant_id": _TEXT,
+        "aggregate_type": _TEXT,
+        "aggregate_ref": _TEXT,
+        "from_revision": {"type": "integer", "minimum": 0},
+        "to_revision": {"type": "integer", "minimum": 1},
+        "state": {"type": "object"},
+        "state_digest": _DIGEST,
+        "decision_ref": _TEXT,
+        "authority_ref": _TEXT,
+        "evidence_refs": {"type": "array", "items": _TEXT},
+        "gate_package_digest": _DIGEST,
+        "governed_context_digest": _DIGEST,
+        "ontology_release_digest": _DIGEST,
+        "boundary": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["tenant_id", "domain_id", "compartments", "classification_marking_ref", "purpose"],
+            "properties": {
+                "tenant_id": _TEXT,
+                "domain_id": _TEXT,
+                "compartments": _TEXT_SET,
+                "classification_marking_ref": _DIGEST,
+                "purpose": _TEXT,
+            },
+        },
+        "actor_chain": _TEXT_SET,
+        "correlation_id": _TEXT,
+        "causation_id": _TEXT,
+        "branch": {"const": "main"},
+        "governed_context": _GOVERNED_CONTEXT,
+    },
+}
 
 
 def canonical_event_payload(
@@ -62,6 +145,7 @@ def canonical_event_payload(
         "correlation_id": context.correlation_id,
         "causation_id": command.action_instance_id,
         "branch": command.branch,
+        "governed_context": context.to_mapping(),
     }
 
 

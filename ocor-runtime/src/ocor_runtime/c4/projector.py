@@ -7,6 +7,13 @@ TypeDB transaction as the fact (LLD v1.1 §2.4 :148; ADD v1.3 §6.2 steps 4-5 :3
 Register FR-064 :188). Deduplication is on (target, branch, commit_id) and is durable: it
 reads the commit order the projection records with each applied commit. The projection
 is never authoritative (ADD v1.3 §6.2 step 7).
+
+OCOR-DEV-REM-0051 (NCP-U06, NCR-C5-001): the events arrive as admitted
+``canonical-ingestion-envelope:1.2`` (ADD v1.3 :531-840). The projector reads the
+aggregate identity and revision from ``aggregate``, the commit from the CDC transport
+``source_transaction_id``, and verifies that the envelope realises its GovernedContext
+(ADD v1.3 :845) as the commit context of the payload, with the relay's transport principal
+as effective principal appended to the commit actor chain (ADD v1.3 :197 and :844).
 """
 
 from __future__ import annotations
@@ -14,16 +21,20 @@ from __future__ import annotations
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 from typing import Any
 
-from ..c5.backbone import CanonicalIngestionEnvelope
+from ..c5.backbone import BackboneError, CanonicalIngestionEnvelope
+from ..c5.envelope import thaw
 from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
+from ..kernel.governed_context import GovernedContext, GovernedContextError
 from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
 
-CANONICAL_EVENT_SCHEMA = "urn:ocor:schema:canonical-ingestion-envelope:1"
 CANONICAL_STATE_COMMITTED = "canonical-state-committed"
-C3_PRODUCER = "urn:ocor:component:c3"
+CANONICAL_STATE_COMMITTED_EVENT_TYPE = "urn:ocor:event-type:canonical-state-committed"
+C3_SOURCE = "urn:ocor:source:c3-canonical-state"
 BRANCH = "main"
+WORLD = "urn:ocor:world:main"
 
 
 class ProjectorError(RuntimeError):
@@ -66,11 +77,11 @@ class CanonicalStateProjector:
     def _verified(self, envelope: CanonicalIngestionEnvelope) -> dict[str, Any]:
         if not isinstance(envelope, CanonicalIngestionEnvelope):
             raise ProjectorError("SCHEMA_VIOLATION", "a CanonicalIngestionEnvelope is required")
-        payload = dict(envelope.payload)
+        payload: dict[str, Any] = thaw(envelope.payload)
         if (
-            envelope.schema_ref != CANONICAL_EVENT_SCHEMA
-            or envelope.event_type != CANONICAL_STATE_COMMITTED
-            or envelope.producer_principal != C3_PRODUCER
+            envelope.event_type_id != CANONICAL_STATE_COMMITTED_EVENT_TYPE
+            or envelope["source"]["source_id"] != C3_SOURCE
+            or envelope["world_ref"] != WORLD
             or payload.get("event_type") != CANONICAL_STATE_COMMITTED
             or payload.get("branch") != BRANCH
         ):
@@ -87,17 +98,34 @@ class CanonicalStateProjector:
             or before is None
             or revision is None
             or revision != before + 1
-            or revision != envelope.sequence
-            or payload.get("commit_id") != envelope.source_ref
-            or payload.get("aggregate_ref") != envelope.aggregate_ref
+            or revision != envelope.aggregate.get("expected_revision")
+            or payload.get("commit_id") != envelope["transport"].get("source_transaction_id")
+            or payload.get("aggregate_ref") != envelope.aggregate["aggregate_id"]
             or state_digest != payload.get("state_digest")
         ):
             raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} payload does not match its envelope")
         if payload.get("ontology_release_digest") != self._release:
             raise ProjectorError("RELEASE_MISMATCH", f"{envelope.event_id!r} is not of the projected release")
-        if payload.get("governed_context_digest") != envelope.governed_context_digest:
-            raise ProjectorError("GOVERNED_CONTEXT_MISMATCH", f"{envelope.event_id!r} GCS digest differs from its payload")
+        if not self._context_verified(envelope, payload):
+            raise ProjectorError("GOVERNED_CONTEXT_MISMATCH", f"{envelope.event_id!r} GCS differs from its payload")
         return payload
+
+    @staticmethod
+    def _context_verified(envelope: CanonicalIngestionEnvelope, payload: dict[str, Any]) -> bool:
+        """The envelope realises its GovernedContext, which is the commit context of the payload
+        with the transport principal as effective principal appended to the commit actor chain."""
+        try:
+            commit = GovernedContext.from_mapping(payload.get("governed_context"))  # type: ignore[arg-type]
+            event = envelope.governed_context()
+        except (GovernedContextError, BackboneError):
+            return False
+        chain = commit.actor_chain
+        return (
+            commit.digest() == payload.get("governed_context_digest")
+            and event.actor_chain[: len(chain)] == chain
+            and event.actor_chain[-1] == event.effective_principal_id
+            and replace(commit, effective_principal_id=event.effective_principal_id, actor_chain=event.actor_chain) == event
+        )
 
     def _applied_revision(self, aggregate_ref: str) -> int:
         """The revision of the last commit applied for the aggregate, read back from the
@@ -124,14 +152,15 @@ class CanonicalStateProjector:
                 position = self._projection.position(BRANCH, commit_id)
             if position is not None:
                 return False
-            applied = self._applied_revision(envelope.aggregate_ref)
+            aggregate_ref = payload["aggregate_ref"]
+            applied = self._applied_revision(aggregate_ref)
             if payload["from_revision"] != applied:
                 raise ProjectorError(
-                    "OUT_OF_ORDER", f"{envelope.event_id!r} revision {envelope.sequence} does not follow revision {applied}"
+                    "OUT_OF_ORDER", f"{envelope.event_id!r} revision {payload['to_revision']} does not follow revision {applied}"
                 )
             fact = {"commit_id": commit_id, "revision": payload["to_revision"], "state": payload["state"]}
             with _projection("apply"):
                 self._projection.apply_commit(
-                    fact_id=envelope.aggregate_ref, commit_id=commit_id, payload=canonical_bytes(fact).decode("utf-8")
+                    fact_id=aggregate_ref, commit_id=commit_id, payload=canonical_bytes(fact).decode("utf-8")
                 )
             return True
