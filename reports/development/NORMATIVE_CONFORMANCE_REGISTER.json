@@ -1724,18 +1724,29 @@
       ],
       "plan_unit": "NCP-U04",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0050-RCCAD/OCOR-DEV-REM-0050.json",
+      "remediation_unit": "OCOR-DEV-REM-0050",
       "requirement_ids": [
         "FR-062",
         "FR-138"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_every_listed_fault_denies_without_mutation",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_precondition_is_evaluated_on_the_current_canonical_state",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_stale_writer_epoch_is_fenced",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_postgres_commit_records_the_writer_epoch"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_conforms"
+      },
       "seed_correction": "seed anchor ports.py:143-180 extended to :191; LLD anchor :97 confirmed",
       "seed_ref": "C3-1",
       "severity": "HIGH",
       "severity_basis": "FR-062 and FR-138 are P0 PoC",
       "statement": "The canonical commit command is validated only structurally (required fields, types, duplicate bindings, idempotency-key length, GCS digest, branch=main). C3 does not validate C6 provenance, the validity, expiry and GatePackage coherence of Decision and Authority, Evidence, or the stop epoch and active ontology release of the mutation fence; precondition_bindings and invariant_bindings are neither evaluated nor passed to either adapter (claim_source_bindings are not persisted either), and the PostgreSQL adapter has no writer_epoch fencing.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -1806,17 +1817,27 @@
       ],
       "plan_unit": "NCP-U04",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0050-RCCAD/OCOR-DEV-REM-0050.json",
+      "remediation_unit": "OCOR-DEV-REM-0050",
       "requirement_ids": [
         "FR-062",
         "FR-008"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c6_denial_reaches_no_canonical_commit",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c8_run_state_is_the_run_ledger_not_canonical_state"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_conforms"
+      },
       "seed_ref": "C3-2",
       "severity": "HIGH",
       "severity_basis": "FR-062 and FR-008 are P0 PoC",
       "statement": "C6 (GovernedActionEngine) and C8 (orchestrator) mutate canonical state through the in-memory legacy c3_store.AtomicOutboxStore, writing with writer_id=store.authoritative_writer, instead of issuing GovernedCanonicalCommitCommand to a C3 service on the real backends; C8 thereby writes canonical state, which only C6 may produce.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -1891,19 +1912,30 @@
       ],
       "plan_unit": "NCP-U04",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0050-RCCAD/OCOR-DEV-REM-0050.json",
+      "remediation_unit": "OCOR-DEV-REM-0050",
       "requirement_ids": [
         "FR-064",
         "FR-068",
         "FR-075"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_relay_publishes_on_c5_and_c4_projects_in_order",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_projector_verifies_order_schema_release_and_context",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_publish_failure_records_no_delivery",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_no_module_outside_c5_composes_the_backbone_only_through_c3_relay"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_conforms"
+      },
       "seed_correction": "seed anchors recovery.py:91 and c4/rebuild.py:125 replaced by the payload builders and claim_and_deliver; LLD :148 confirmed",
       "seed_ref": "C3-3",
       "severity": "HIGH",
       "severity_basis": "FR-064, FR-068 and FR-075 are P0 PoC",
       "statement": "The outbox -> C5 -> C4 chain is not composed: no module outside c5/ imports the event backbone, no relay publishes canonical-state-committed, and no projector consumes C3 events (the only relay consumer is the caller-supplied deliver callable of C3RecoveryCoordinator). The outbox payload carries only commit_id, aggregate_ref, to_revision and state_digest: no event type, tenant, aggregate_type, GovernedContext digest, release or correlation/causation.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -1952,14 +1984,22 @@
       ],
       "plan_unit": "NCP-U04",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0050-RCCAD/OCOR-DEV-REM-0050.json",
+      "remediation_unit": "OCOR-DEV-REM-0050",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_004_terminusdb_source_binding_is_in_the_commit"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_004_conforms"
+      },
       "seed_ref": "C3-4",
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a72.3 and ADD v1.3 \u00a72.3 not tied to a single P0 requirement",
       "statement": "The PostgreSQL adapter acknowledges by updating the outbox row (acknowledged_at) with no separate DeliveryAttempt record and no writer_epoch (the TerminusDB adapter records a C3DeliveryAttempt with writer_epoch); the canonical_source_binding table of the minimal schema exists in neither adapter.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -2062,14 +2102,23 @@
       ],
       "plan_unit": "NCP-U04",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0050-RCCAD/OCOR-DEV-REM-0050.json",
+      "remediation_unit": "OCOR-DEV-REM-0050",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_two_concurrent_relays_claim_disjoint_rows",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_postgres_claim_uses_skip_locked"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_conforms"
+      },
       "seed_ref": "",
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a72.3 (SUPPLEMENT point 4: prescribed for PostgreSQL)",
       "statement": "From supplement NCP-S04: the PostgreSQL outbox claim is a plain SELECT of unacknowledged rows with no row lock and no claim record, so two relays calling OutboxRelayPort.claim_batch read the same rows; the LLD prescribes that the relay acquires main rows with SKIP LOCKED. Only C3RecoveryCoordinator serialises claim-deliver-acknowledge, behind one global advisory lock.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_ref": "NCP-S04",
       "test_refs": [],
       "type": "DIVERGENT",
@@ -2114,14 +2163,20 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0050-RCCAD/OCOR-DEV-REM-0050.json",
+      "remediation_unit": "OCOR-DEV-REM-0050",
       "requirement_ids": [],
+      "resolution_proof": {
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_007_conforms",
+        "red_test_replaced_by": "mutation probe (NORMATIVE-CONFORMANCE-PLAN point 4): the characterisation test passes at the unit base; record field ncr_c3_007_mutation_probe"
+      },
       "seed_ref": "",
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a72.3 by analogy; not a P0 PoC requirement",
       "statement": "From supplement NCP-S04, TerminusDB part: the TerminusDB claim_outbox_batch computes pending entries from a read snapshot without writing any claim, so concurrent relays read the same entries. The norm prescribes SKIP LOCKED for PostgreSQL rows and does not specify the TerminusDB equivalent.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_ref": "NCP-S04",
       "test_refs": [],
       "type": "DIVERGENT",

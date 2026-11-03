@@ -1,0 +1,1337 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a71.5: before the transaction C3 validates closed record, digest, branch=main, C6 provenance, Decision, Authority, Evidence, revision and bindings; ADD v1.3 \u00a72.5 rule 10: C3 accepts AdmitClaim/CommitAggregate only with valid, unexpired Decision and Authority ref coherent with the frozen GatePackage; ADD v1.3 \u00a76.2 step 1: aggregate_version, idempotency_key, writer_epoch, Policy and Authority validated; ADD v1.3 \u00a76.2 mutation fence: canonical HEAD, aggregate version, active ontology release, writer epoch, idempotency key; FR-062: expected revision, aggregate version, idempotency key, preconditions and invariants validated before every canonical commit; FR-138 acceptance: every listed fault produces deny",
+      "entry": "NCR-C3-001",
+      "norm_refs": [
+        {
+          "lines": "97",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "342",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3430",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3443",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "186",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "310",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-062",
+        "FR-138"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_every_listed_fault_denies_without_mutation",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_precondition_is_evaluated_on_the_current_canonical_state",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_stale_writer_epoch_is_fenced",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_postgres_commit_records_the_writer_epoch"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a71.5: GovernedCanonicalCommitCommand is the only mutative command; ADD v1.3 \u00a72.5 rule 10: every canonical mutation is produced exclusively by C6 on the governed path; ADD v1.3 \u00a72.2 C3: VersionedAssertedState uses TerminusDB; one logical writer; writer_epoch fencing; FR-062; FR-008 acceptance: no ActionCommand without Decision; retry with the same key does not duplicate",
+      "entry": "NCR-C3-002",
+      "norm_refs": [
+        {
+          "lines": "85-95",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "342",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "271",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "186",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "59",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-062",
+        "FR-008"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c6_denial_reaches_no_canonical_commit",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c8_run_state_is_the_run_ledger_not_canonical_state"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a72.3: the worker reads committed outbox, publishes on the backbone and records a separate DeliveryAttempt; ADD v1.3 \u00a76.2 step 3: relay publishes canonical-state-committed at-least-once; LLD v1.1 \u00a72.3: relay publishes with stable event ID and marks delivered only after ACK; LLD v1.1 \u00a72.4: every projector consumes C3 events in order per aggregate and verifies schema/release/GCS; FR-064; FR-068: tenant, domain, compartment, classification and purpose propagate through events; FR-075: events correlated with eventId, decision/action/execution IDs, actor chain, causation/correlation",
+      "entry": "NCR-C3-003",
+      "norm_refs": [
+        {
+          "lines": "293",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3432",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "132",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "148",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "188",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "192",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "207",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-064",
+        "FR-068",
+        "FR-075"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_relay_publishes_on_c5_and_c4_projects_in_order",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_projector_verifies_order_schema_release_and_context",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_publish_failure_records_no_delivery",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_no_module_outside_c5_composes_the_backbone_only_through_c3_relay"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a72.3: a separate operational DeliveryAttempt; LLD v1.1 \u00a72.3 minimal logical schema including canonical_source_binding (commit FK, claim/source/evidence refs)",
+      "entry": "NCR-C3-004",
+      "norm_refs": [
+        {
+          "lines": "293",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "136-142",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_004_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_004_terminusdb_source_binding_is_in_the_commit"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a72.3: the relay acquires main rows with SKIP LOCKED",
+      "entry": "NCR-C3-006",
+      "norm_refs": [
+        {
+          "lines": "132",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_two_concurrent_relays_claim_disjoint_rows",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_postgres_claim_uses_skip_locked"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option 1, with proof): the TerminusDB relay confirms a delivery only under the current writer epoch (one logical writer per aggregate and branch); a relay holding a stale epoch cannot confirm a delivery; proven on the real backend by a characterisation test and by a mutation probe that makes the test fail when the epoch check is removed.",
+      "entry": "NCR-C3-007",
+      "norm_refs": [
+        {
+          "lines": "132",
+          "note": "LLD v1.1 \u00a72.3: SKIP LOCKED (PostgreSQL row semantics only)",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "271",
+          "note": "ADD v1.3 \u00a72.2 C3 on TerminusDB: one logical writer, writer_epoch fencing",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_007_conforms"
+      ]
+    }
+  ],
+  "ambiguities_resolved_fail_closed": [
+    "the closed error set (ADD v1.3 :2329-2352) has no Decision-specific code: a missing, unsigned, non-C6, non-ACCEPT, non-CANONICAL_COMMIT or expired Decision is POLICY_DENIED; a missing, unsigned, out-of-window or revoked Authority is AUTHORITY_MISSING; incoherence with the GatePackage is GATE_PACKAGE_MISMATCH",
+    "admission runs before the idempotent replay: a retry after Decision expiry is denied, never committed twice",
+    "unregistered Evidence is CONTRACT_REJECTED; an active stop or a changed stop epoch is EMERGENCY_STOP_ACTIVE; a release other than the active one is RELEASE_MISMATCH",
+    "an unknown or false precondition is PRECONDITION_FAILED and an unknown or false invariant is INVARIANT_VIOLATION, both evaluated inside the transaction on the locked state (ADD v1.3 :2569)",
+    "a pre-existing PostgreSQL C3 table of another shape is SCHEMA_MISMATCH, never altered",
+    "a relay claim lasts at most claim_ttl (server idle-in-transaction timeout, minimum 1 s) and a new claim ends the previous one",
+    "a TerminusDB protocol or shape error is BACKEND_UNAVAILABLE and its message carries only the status and the api:error type, never the body",
+    "in the memory promotion consumer an issued command that differs from the gate command in any field but gate_package_digest is refused C6_COMMAND_BINDING_MISMATCH before dispatch"
+  ],
+  "change_anchors": [
+    {
+      "change": "new: admission before the transaction - C6-signed GatePackage equal to the command's gate_package_digest, Decision ACCEPT/CANONICAL_COMMIT signed by C6 and unexpired, Authority signed and within its window and not revoked, coherence of both with the package, registered Evidence, stop epoch unchanged and not stopped, active ontology release; preconditions and invariants evaluated inside the transaction on the locked current and new state, unknown ones refused",
+      "function": "CommitAdmission (GovernedPathRecordPort, MutationFencePort, trusted Ed25519 keys, trusted clock, precondition and invariant registries)",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342, :3430, :3443, :2569; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:186, :310",
+      "path": "ocor-runtime/src/ocor_runtime/c3/admission.py"
+    },
+    {
+      "change": "new: governance records signed Ed25519 over the DSSE PAE of the RFC 8785 bytes; GatePackage frozen on the command fields, release and stop epoch; issue_governed_command takes an optional Authority window",
+      "function": "SignedGovernanceRecord, sign_governance_record, gate_package_payload, InMemoryGovernanceRecordStore, InMemoryMutationFence, issue_governed_command",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342; docs/OCOR_LLD_v1.1.md:97; reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md option 1",
+      "path": "ocor-runtime/src/ocor_runtime/c3/admission.py"
+    },
+    {
+      "change": "new: canonical-state-committed payload (boundary, actor chain, correlation, causation = action instance, release, GCS digest, state, Decision/Authority/Evidence/GatePackage refs); separate DeliveryAttempt ACKNOWLEDGED/FAILED",
+      "function": "canonical_event_payload, DeliveryAttempt, DELIVERY_OUTCOMES",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:293, :3432; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:192, :207",
+      "path": "ocor-runtime/src/ocor_runtime/c3/events.py"
+    },
+    {
+      "change": "new: relay claims committed outbox rows, publishes canonical-state-committed on the C5 backbone with the stable event id, acknowledges only after the publish ACK; a publish failure records a FAILED attempt and no delivery",
+      "function": "OutboxRelayWorker, canonical_event, CanonicalEventPublisher, RelaySource, RelayError",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:293, :3432; docs/OCOR_LLD_v1.1.md:132; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:188",
+      "path": "ocor-runtime/src/ocor_runtime/c3/relay.py"
+    },
+    {
+      "change": "new: C4 projector of C3 events in order per aggregate from the projected fact revision, schema/release/GCS checks, dedup on the commit position, fact and watermark in one TypeDB transaction",
+      "function": "CanonicalStateProjector",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:148; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:188",
+      "path": "ocor-runtime/src/ocor_runtime/c4/projector.py"
+    },
+    {
+      "change": "writer epoch fence held FOR SHARE in every write transaction, epoch recorded on the commit; canonical_source_binding rows (FK commit) in the commit transaction; the outbox is immutable (no acknowledged_at) and reconcile re-derives it from the stored payload; SCHEMA_MISMATCH on a pre-existing table of another shape",
+      "function": "SCHEMA (c3_writer_fence, c3_commit.writer_epoch and outbox_payload, c3_source_binding, c3_delivery_attempt), acquire_writer, join_writer, _hold_fence, commit, reconcile",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:271, :3443; docs/OCOR_LLD_v1.1.md:136-142",
+      "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+    },
+    {
+      "change": "relay claim = one transaction holding the rows FOR UPDATE SKIP LOCKED until each row has an outcome; separate c3_delivery_attempt (unique ACKNOWLEDGED per event) under the current writer epoch; idle_in_transaction_session_timeout = claim_ttl; reset ends foreign claim sessions",
+      "function": "claim_outbox_batch, close_claim, _record_attempt, _record_outcome, record_delivery_failure, delivery_attempts, reset",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:132, :136-142; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:293",
+      "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+    },
+    {
+      "change": "stored JSONB state and payload must be objects (input robustness)",
+      "function": "_positive, _stored_object",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:97 (closed record); PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)",
+      "path": "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py"
+    },
+    {
+      "change": "C3SourceBinding documents in the same TerminusDB commit, outbox payload stored in the commit; acknowledgement only under the current writer epoch (unchanged, NCR-C3-007)",
+      "function": "DOCUMENT_TYPES (C3SourceBinding), _source_binding_document, source_bindings, delivery_attempts, join_writer",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:136-142; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:271; NORMATIVE-CONFORMANCE-PLAN point 4 (NCR-C3-007 option 1)",
+      "path": "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py"
+    },
+    {
+      "change": "typed accessors for every stored field, document identity and list entry types checked, strict UTF-8 JSON without NaN or unbounded nesting, protocol errors BACKEND_UNAVAILABLE, error messages carry only the status and the api:error type",
+      "function": "_text, _integer, _timestamp, _answer, _reject_constant, _json_object, API_ERROR_TYPE, DATA_VERSION",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:97 (closed record); PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)",
+      "path": "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py"
+    },
+    {
+      "change": "every commit passes the CommitAdmission; the adapter receives writer epoch, source bindings, state checks and the event payload; processes of one logical writer join an existing epoch",
+      "function": "PostgresC3Service.__init__ (admission= required, writer_epoch=), commit, claim_batch, record_failure, source_bindings, delivery_attempts",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:85-97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:271, :342",
+      "path": "ocor-runtime/src/ocor_runtime/c3/service.py"
+    },
+    {
+      "change": "same admission and bindings on the TerminusDB service",
+      "function": "TerminusDBC3Service (admission= required), commit, claim_batch, record_failure, source_bindings, delivery_attempts",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/src/ocor_runtime/c3/terminusdb_service.py"
+    },
+    {
+      "change": "the engine freezes and signs GatePackage, Decision and Authority and commits through the C3 service; one issued command per action instance (FR-008 replay); the legacy AtomicOutboxStore is no longer used",
+      "function": "CanonicalCommitPath, CanonicalCommitTarget, GovernedActionEngine(commit_port=, canonical_path=, emission_outbox=)",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:85-95; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:59",
+      "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+    },
+    {
+      "change": "C6 issuance port on issue_governed_command with the trusted composition's C6 key, cache per action instance (decided request NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE, option 1)",
+      "function": "GovernedCommandIssuer, GovernanceRecordSink",
+      "normative_element": "reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md option 1; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+    },
+    {
+      "change": "legacy EMISSION-FENCE store API composed over C3 state and committed events, until NCP-U07",
+      "function": "C3CanonicalOutboxView, CommittedOutboxEvent, CanonicalDocument",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342; NORMATIVE-CONFORMANCE-PLAN unit order (C7 in NCP-U07)",
+      "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+    },
+    {
+      "change": "AgentRun state (assignment, commitment, handoff, dissent) in the Run Ledger, no canonical write by C8",
+      "function": "AgentRunOrchestrator(authority, ledger), RunLedgerPort",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:276, :342",
+      "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+    },
+    {
+      "change": "new: append-only PostgreSQL Run Ledger (trigger-enforced), idempotent append",
+      "function": "PostgresRunLedger, RunLedgerEntry, RunLedgerError",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:276",
+      "path": "ocor-runtime/src/ocor_runtime/c8/adapters/postgres_ledger.py"
+    },
+    {
+      "change": "every existing check unchanged, including the gate binding to promotion_gate_digest(body); just before dispatch C6 issues the C3 command on the gate command fields (all unchanged but gate_package_digest), the Decision expiring with the gate Decision, the Authority with the verified Authority window; an issued command differing from the gate command is refused C6_COMMAND_BINDING_MISMATCH before dispatch; the receipt is verified against the issued command",
+      "function": "C6MemoryPromotionConsumer (required issuer: PromotionCommandIssuer), _gate_decision",
+      "normative_element": "reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md option 1; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342; docs/OCOR_LLD_v1.1.md:97",
+      "path": "ocor-runtime/src/ocor_runtime/memory/promotion.py"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py": [],
+    "ocor-runtime/src/ocor_runtime/c3/adapters/terminusdb.py": [],
+    "ocor-runtime/src/ocor_runtime/c3/ports.py": [
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0013.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0015.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0016.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0029.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0036.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c3/recovery.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0036.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c3/service.py": [
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0029.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0036.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c3/terminusdb_service.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c6/engine.py": [
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0030.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0043.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c8/orchestrator.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+    ]
+  },
+  "consumers_inventory_note": "plan upper bound; the unit also adapts test_ocor_dev_0030/0043 (C6 engine), test_ocor_dev_0046 (C8) and test_ocor_dev_0058 (memory promotion); 0013/0015/0016 pass unchanged",
+  "decided_requests": [
+    {
+      "decided": "2026-11-03, decided on full delegation of the PO, model claude-opus-5-5, effort max",
+      "disposition_commit": "7d43b70",
+      "file": "reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md",
+      "file_sha256": "cda6b6f20504106b2ba8b1c5f08b225327fafdcb40931bbc0d253fae635f42ad",
+      "id": "NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE",
+      "implementation": [
+        "482286b",
+        "a06d0e4"
+      ],
+      "option": "1",
+      "request_commit": "4313a8e88ecabc624e3285cea320ae29cee60dcf",
+      "request_sha256": "3ced4d4cc1c0da8376945ef8eda797f788a7ad3765ba373118b95ef2be966d73"
+    }
+  ],
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 4 (NCR-C3-007 option 1, characterisation test plus mutation probe) and 5; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (2026-11-03, option 1, decided on full delegation of the PO)",
+  "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; AST comparison at the candidate head; test_ocor_dev_rem_0041.py and test_ocor_dev_rem_0041_overlay.py are inputs of no latest evidence record (drift validator): they run in the consumer modules of the campaign",
+  "existing_tests_realigned_or_adapted": [
+    {
+      "current_assertion": "PostgresC3Service(dsn); GovernedCanonicalCommitCommand.from_mapping",
+      "function": "service fixture, make_command, test_real_process_crash_leaves_zero_partial_state_and_recovers_on_retry (subprocess construction)",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0029.py",
+      "prescribed": "C3 built with the governed admission and commands frozen and signed on the C6 governed path (governed-path helper GovernedC3 of test_ocor_dev_rem_0050 (in-memory C6 record store and mutation fence, issue_governed_command)); the crash subprocess joins the writer epoch; assertions unchanged"
+    },
+    {
+      "current_assertion": "GovernedActionEngine(authority, store=AtomicOutboxStore(), fence)",
+      "function": "store, fence and engine fixtures (new c3 fixture)",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:85-95; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py",
+      "prescribed": "engine composed with the real PostgreSQL C3 (commit_port), the C6 canonical path and the C3 canonical outbox view; assertions unchanged"
+    },
+    {
+      "current_assertion": "PostgresC3Service(dsn); GovernedCanonicalCommitCommand.from_mapping",
+      "function": "service fixture, make_command, coordinator_b/restarted_service constructions of three tests",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:271, :342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0036.py",
+      "prescribed": "C3 with the governed admission; the second process joins the same writer epoch (one logical writer, ADD v1.3 :271); assertions unchanged"
+    },
+    {
+      "current_assertion": "PostgresC3Service(dsn); GovernedCanonicalCommitCommand.from_mapping",
+      "function": "service fixture, make_command",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "prescribed": "C3 with the governed admission, commands on the C6 governed path; assertions unchanged"
+    },
+    {
+      "current_assertion": "GovernedActionEngine(authority, store=AtomicOutboxStore(), fence)",
+      "function": "test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine (engine construction)",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:85-95; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0043.py",
+      "prescribed": "engine composed with the real PostgreSQL C3, the C6 canonical path and the C3 canonical outbox view; assertions unchanged"
+    },
+    {
+      "current_assertion": "store.get('urn:ocor:agentrun:assignment|commitment|dissent:...') is not None on the legacy AtomicOutboxStore",
+      "function": "test_the_full_assign_commit_dissent_lifecycle_writes_real_canonical_state; ledger/orchestrator fixtures",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:276",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py",
+      "prescribed": "the AgentRun lifecycle entries (TASK_ASSIGNED, TASK_COMMITTED, DISSENT_REGISTERED with reason) in the real PostgreSQL Run Ledger"
+    },
+    {
+      "current_assertion": "legacy SingleWriterViolation of the AtomicOutboxStore for a non-authoritative writer",
+      "function": "test_an_agent_cannot_write_canonical_state_directly_only_the_orchestrator_can",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342, :276",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py",
+      "prescribed": "an agent's self-signed canonical commit is refused GATE_PACKAGE_MISMATCH by the real C3 admission with no mutation, the C6-signed command is admitted, and the orchestrator takes only authority and ledger"
+    },
+    {
+      "current_assertion": "PostgresC3Service(dsn); C6MemoryPromotionConsumer(policy, c3, clock, audit, ...)",
+      "function": "workflow (C3 construction with the governed admission, C6 issuer, teardown of the NCP-U04 rows), test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access (369), test_live_c3_receipt_not_bound_to_command_is_indeterminate (906), test_live_c3_refusal_after_dispatch_is_indeterminate_never_success (rival commit 882 via the governed path)",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md option 1; docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "prescribed": "C3 with the governed admission (precondition = proposal digest, registered Evidence); consumer with the required C6 issuance port; rival command issued on the governed path; assertions unchanged"
+    },
+    {
+      "current_assertion": "the committed command equals the gate command, gate_package_digest = promotion_gate_digest(body)",
+      "function": "test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt (lines 668-669)",
+      "kind": "REALIGN (point 5 case 1)",
+      "norm": "reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md option 1; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0058.py",
+      "prescribed": "C3 commits the gate command bound to the GatePackage C6 froze and signed for it: a C6-signed record (C6 producer, consumer keyid, Ed25519 signature) whose digest is the GatePackage of the gate command, release and stop epoch"
+    },
+    {
+      "current_assertion": "C3 commands from_mapping; engine on the legacy store",
+      "function": "GOVERNED and governed_engine helpers; C3 and engine constructions of the mission thread tests",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:85-97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "prescribed": "C3 commands frozen and signed on the C6 governed path, the C6 engine composed with the real C3 and the C3 canonical outbox view; test functions, assertions and pytest.raises unchanged (AST comparison)"
+    },
+    {
+      "current_assertion": "TerminusDBC3Service(url, password, database)",
+      "function": "database fixture, make_command, _commit_in_subprocess, constructions of the fail-closed configuration, crash-window and concurrent acknowledgement tests",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py",
+      "prescribed": "TerminusDB C3 with the governed admission, commands on the C6 governed path; assertions unchanged"
+    },
+    {
+      "current_assertion": "pins d36e5e2e868f / 984d29c4aecd; TerminusDBC3Service without admission",
+      "function": "SEALED_SHA256 pins of c3/adapters/terminusdb.py and c3/terminusdb_service.py; database fixture, _command, test_the_whole_lifecycle_never_writes_main construction",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 2)",
+      "norm": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
+      "prescribed": "pins of the files at the unit head (8ba485004ac1 / a63a11994c89); governed admission; assertions unchanged"
+    }
+  ],
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "ncr_c3_007_mutation_probe": {
+    "base_characterisation": "~/.ocor-codex kit probe c3_007_base_characterisation.py at 84fb7e7: stale ack SINGLE_WRITER_VIOLATION",
+    "mutation": "epoch check removed in acknowledge_outbox -> test_ncr_c3_007_conforms FAILS (DID NOT RAISE C3Error)",
+    "note": "the characterisation test passes at the unit base (stale acknowledgement already SINGLE_WRITER_VIOLATION): per NORMATIVE-CONFORMANCE-PLAN point 4 the mutation probe replaces the RED",
+    "outcome": "PENDING_CAMPAIGN (rerun at the candidate code head)",
+    "reruns": [
+      "iteration 1 at 7d74dd4",
+      "iteration 3 at 46773b1"
+    ]
+  },
+  "no_new_dependency": "stdlib, psycopg and the existing c1.signing (Ed25519, DSSE PAE), kernel, C5 backbone and C4 TypeDB modules; uv.lock and pyproject.toml unchanged",
+  "open_decision_requests": [],
+  "plan_unit": "NCP-U04",
+  "product_orientation": [
+    "CommitAdmission is a port composition (governance record store, mutation fence, trusted keys and clock, precondition/invariant registries): production plugs the C6 record store and the C7 stop fence without changing C3",
+    "the C6 issuance port (GovernedCommandIssuer) is the one path that turns a C6 decision into a C3 command; the action engine and the memory promotion consumer share it",
+    "the relay publishes through the CanonicalEventPublisher protocol of the C5 backbone and the projector consumes canonical-state-committed, so further projectors attach to the same events",
+    "C8 run state lives in the PostgreSQL Run Ledger (append-only, trigger-enforced), separate from canonical state",
+    "C3CanonicalOutboxView keeps the current EMISSION-FENCE working over C3 until NCP-U07 replaces it"
+  ],
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "construction only (governed admission, commands on the C6 governed path)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c3/service.py",
+          "ocor-runtime/src/ocor_runtime/c3/adapters/postgres.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0029.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0029",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0029.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction only (engine on the real C3)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c6/engine.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0030",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction only (mission thread on the C6 governed path)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0031",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction only (governed admission, second process joining the writer epoch)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_0036.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests exercise C3 single-writer recovery and relay claims, not the best-available/at-least-commit/exact-at-commit consistency modes",
+            "register_method": "test di conformit\u00e0",
+            "requirement_id": "FR-057"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests exercise retry and revision on recovery, not the validation of preconditions and invariants before every commit (the suite registers its preconditions and invariants only to be admitted): exercised in part",
+            "register_method": "test",
+            "requirement_id": "FR-062"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no ambiguous external effect, EXECUTION_UNKNOWN or audited reconciliation is exercised",
+            "register_method": "Test di integrazione e fault injection",
+            "requirement_id": "FR-163"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no cross-SDK contract suite is exercised",
+            "register_method": "Test di contratto",
+            "requirement_id": "NFR-022"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no reproducible build or signature check is exercised",
+            "register_method": "Reproducible-build test e signature check",
+            "requirement_id": "NFR-051"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0036",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0036.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction only (governed admission)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_0039.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-019"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests exercise projection drift and rebuild, not 100% of the listed fault injections producing deny with no ActionCommand: exercised in part",
+            "register_method": "Safety/chaos test",
+            "requirement_id": "FR-138"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "no release activation across adapter, projector and store is exercised",
+            "register_method": "Chaos e conformance test",
+            "requirement_id": "FR-148"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "NFR-024"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0039",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_0043.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'dimostrazione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione",
+            "requirement_id": "BR-005"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'dimostrazione + ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione + ispezione",
+            "requirement_id": "BR-008"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'dimostrazione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione + test",
+            "requirement_id": "BR-010"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'dimostrazione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione + test",
+            "requirement_id": "BR-011"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione + test",
+            "requirement_id": "BR-014"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Scenario test e dimostrazione end-to-end' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Scenario test e dimostrazione end-to-end",
+            "requirement_id": "BR-015"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-002"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-003 (Human gate e dual control) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + dimostrazione",
+            "requirement_id": "FR-008"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-011"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-012 (Identity resolution fail-safe) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-012"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-031 (Pipeline mutativa governata) (point 1, second condition; point 4)",
+            "register_method": "Test end-to-end e failure injection",
+            "requirement_id": "FR-031"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test e dimostrazione",
+            "requirement_id": "FR-033"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-037 (Principals, confini e governance) (point 1, second condition; point 4)",
+            "register_method": "Test di autorizzazione",
+            "requirement_id": "FR-037"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'dimostrazione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione",
+            "requirement_id": "FR-054"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione trace' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione trace",
+            "requirement_id": "FR-075"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-076 (Distinzione ACK, Result e Outcome) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-076"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, dimostrazione",
+            "requirement_id": "FR-077"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-078 (Rivalidazione prima del comando) (point 1, second condition; point 4)",
+            "register_method": "race-condition test",
+            "requirement_id": "FR-078"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-079 (Calcolo del Human Gate) (point 1, second condition; point 4)",
+            "register_method": "policy test",
+            "requirement_id": "FR-079"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-082 (Mapping dell\u2019Action Adapter) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-082"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-096 (Separazione Intervention/Action) (point 1, second condition; point 4)",
+            "register_method": "type/conformance test",
+            "requirement_id": "FR-096"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-100 (Nessuna Decision automatica dal ranking) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-100"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-104 (Contenuto della DecisionProposal) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-104"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-105 (Rivalidazione dell\u2019ActionIntent) (point 1, second condition; point 4)",
+            "register_method": "race/staleness test",
+            "requirement_id": "FR-105"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-111 (Divieto di self-approval) (point 1, second condition; point 4)",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-111"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, dimostrazione",
+            "requirement_id": "FR-122"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-123 (Timeout del Human Gate) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "FR-123"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione, replay' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione, replay",
+            "requirement_id": "FR-124"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-130 (Policy Decision uniforme) (point 1, second condition; point 4)",
+            "register_method": "Conformance e test negativi",
+            "requirement_id": "FR-130"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Workflow test e audit inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Workflow test e audit inspection",
+            "requirement_id": "FR-132"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Workflow, negative test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Workflow, negative test e dimostrazione",
+            "requirement_id": "FR-136"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-137 (Dual control per azioni critiche) (point 1, second condition; point 4)",
+            "register_method": "Authorization/workflow test",
+            "requirement_id": "FR-137"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Pipeline test e repository audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Pipeline test e repository audit",
+            "requirement_id": "FR-144"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-147 (Controllo delle migrazioni distruttive) (point 1, second condition; point 4)",
+            "register_method": "Workflow, negative e recovery test",
+            "requirement_id": "FR-147"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-149 (Lineage claim-to-outcome) (point 1, second condition; point 4)",
+            "register_method": "Trace traversal e golden test",
+            "requirement_id": "FR-149"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Lifecycle test e ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Lifecycle test e ispezione",
+            "requirement_id": "FR-151"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-154 (Separazione branch/scenario) (point 1, second condition; point 4)",
+            "register_method": "Conformance e security test",
+            "requirement_id": "FR-154"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of FR-162 (Rivalidazione pre-dispatch) (point 1, second condition; point 4)",
+            "register_method": "Test di concorrenza e integrazione",
+            "requirement_id": "FR-162"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Demonstration, access-control test e trace inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Demonstration, access-control test e trace inspection",
+            "requirement_id": "FR-166"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Distributed trace, test e code/config inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Distributed trace, test e code/config inspection",
+            "requirement_id": "FR-172"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione",
+            "requirement_id": "NFR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of NFR-005 (Integrit\u00e0 dell\u2019approvazione) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "NFR-005"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of NFR-008 (Correlazione completa del mission thread) (point 1, second condition; point 4)",
+            "register_method": "test",
+            "requirement_id": "NFR-008"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'benchmark + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark + test",
+            "requirement_id": "NFR-009"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted test (construction of one test only (test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_action_engine)) does not exercise the full Register text of NFR-013 (Execution owner unico) (point 1, second condition; point 4)",
+            "register_method": "Test statico",
+            "requirement_id": "NFR-013"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, audit",
+            "requirement_id": "NFR-029"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Replay, benchmark numerico e security test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Replay, benchmark numerico e security test",
+            "requirement_id": "NFR-054"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test, benchmark e inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test, benchmark e inspection",
+            "requirement_id": "NFR-091"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Negative test, audit e signed result matrix' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Negative test, audit e signed result matrix",
+            "requirement_id": "NFR-092"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Ispezione, signature verification e clean-room demonstration' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Ispezione, signature verification e clean-room demonstration",
+            "requirement_id": "NFR-093"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0043",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0043.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "realigned (case 1): lifecycle on the Run Ledger, agent self-signed commit refused by C3",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione + test",
+            "requirement_id": "FR-001"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Ispezione",
+            "requirement_id": "FR-048"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned test refuses an agent's self-signed canonical commit without mutation; it does not exercise datastore credentials, non-allow-listed queries to TypeDB/TerminusDB/Jena or their audit: exercised in part",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-056"
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione trace' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione trace",
+            "requirement_id": "FR-107"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'dimostrazione, trace test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione, trace test",
+            "requirement_id": "FR-114"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test IAM e ispezione audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test IAM e ispezione audit",
+            "requirement_id": "FR-129"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0046",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction adapted (case 3) and lines 668-669 realigned (case 1): C6 issuance port",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/memory/promotion.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0058.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "FR-053"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 3",
+        "task_id": "OCOR-DEV-0058",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0058.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged; scripts/validate_ocor_development_plan.py (plan allowlist) changes",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged; scripts/validate_ocor_development_plan.py (plan allowlist) changes",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged; scripts/validate_ocor_development_plan.py (plan allowlist) changes",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks at the code head (scripts/validate_evidence_input_drift.py): 0029, 0030, 0031, 0036, 0039, 0043, 0046, 0058, each with realigned or adapted tests and no bindable requirement, so regression-only in the non-qualifying class (NCP-UNBINDABLE-REQUALIFICATIONS point 3, point 4 in doubt); 0005/0050/0082 regression-only because the plan allowlist changes; 0013/0015/0016 have no drifted input (c3/ports.py unchanged)",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0029",
+      "OCOR-DEV-0030",
+      "OCOR-DEV-0031",
+      "OCOR-DEV-0036",
+      "OCOR-DEV-0039",
+      "OCOR-DEV-0043",
+      "OCOR-DEV-0046",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0058",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "PostgreSQL and TerminusDB (C3 adapters), Kafka for the relay; TypeDB for the C4 projector; OPA, OpenBao, Qdrant, Fuseki and SeaweedFS for the 0058 and mission thread consumers; C6 governance records signed with locally generated Ed25519 keys",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C3-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_every_listed_fault_denies_without_mutation ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_precondition_is_evaluated_on_the_current_canonical_state ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_stale_writer_epoch_is_fenced ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_001_postgres_commit_records_the_writer_epoch"
+    },
+    {
+      "entry": "NCR-C3-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c6_denial_reaches_no_canonical_commit ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_002_c8_run_state_is_the_run_ledger_not_canonical_state"
+    },
+    {
+      "entry": "NCR-C3-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_relay_publishes_on_c5_and_c4_projects_in_order ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_projector_verifies_order_schema_release_and_context ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_publish_failure_records_no_delivery ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_003_no_module_outside_c5_composes_the_backbone_only_through_c3_relay"
+    },
+    {
+      "entry": "NCR-C3-004",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_004_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_004_terminusdb_source_binding_is_in_the_commit"
+    },
+    {
+      "entry": "NCR-C3-006",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_two_concurrent_relays_claim_disjoint_rows ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_006_postgres_claim_uses_skip_locked"
+    },
+    {
+      "entry": "NCR-C3-007",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py::test_ncr_c3_007_conforms"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C3-001",
+    "NCR-C3-002",
+    "NCR-C3-003",
+    "NCR-C3-004",
+    "NCR-C3-006",
+    "NCR-C3-007"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main; NCR-C6-009 stays OPEN (NCP-U07) and NCR-C3-005 stays DEFERRED_BY_PO",
+  "rollback_procedure": "revert the REM-0050 commits: c3/admission.py, events.py, relay.py, c4/projector.py, the C8 Run Ledger adapter and the unit test disappear; the C3 adapters and services, c6/engine.py, c8/orchestrator.py, memory/promotion.py and the realigned or adapted tests return to the base; the plan allowlist, the two decided request files, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0050",
+  "tdd": {
+    "GREEN": {
+      "commits": [
+        "7d74dd4",
+        "9b56f4d"
+      ],
+      "fingerprint": "f16ef9dc0610",
+      "summary": "unit module 79 passed; consumer constructions adapted (0029, 0030, 0036, 0039, 0043, REM-0041 and overlay): 268 passed with 0013/0015/0016 and tests/runtime"
+    },
+    "RED": {
+      "commit": "5f05830",
+      "fingerprint": "b78ddcac3562",
+      "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML",
+      "summary": "unit module on real PostgreSQL, TerminusDB, Kafka and TypeDB: 3 failed, 76 errors; 76 cases error at setup on the absent API (ModuleNotFoundError: ocor_runtime.c3.admission and the modules built on it), the 3 static cases fail on the divergent code (C6/C8 write through the legacy AtomicOutboxStore, no relay composes the C5 backbone, the PostgreSQL claim has no FOR UPDATE SKIP LOCKED)"
+    },
+    "decided_request_option_1": {
+      "GREEN": {
+        "commit": "a06d0e4",
+        "fingerprint": "9147229fdfb7",
+        "summary": "146 passed"
+      },
+      "RED": {
+        "commit": "482286b",
+        "fingerprint": "d6a392e29e17",
+        "summary": "87 failed, 59 passed (0058 and the issuance cases of the unit module)"
+      }
+    },
+    "input_robustness": {
+      "GREEN": {
+        "commit": "46773b1",
+        "fingerprint": "1cd7bde75a7c",
+        "summary": "85 passed"
+      },
+      "RED": {
+        "commit": "6a203cf",
+        "fingerprint": "7d4588a7463c",
+        "summary": "71 failed, 14 passed"
+      }
+    },
+    "latest_runs": {
+      "consumer_inventory": {
+        "commit": "a06d0e4",
+        "fingerprint": "60e2a6d1a924",
+        "summary": "16 modules with every dev service: 503 passed"
+      },
+      "unit_module": {
+        "commit": "a06d0e4",
+        "fingerprint": "fcde05bdff2e",
+        "summary": "178 passed"
+      }
+    },
+    "realignments": [
+      {
+        "GREEN": {
+          "commit": "2b9e93b",
+          "fingerprint": "5dcbb86e2516",
+          "summary": "12 passed"
+        },
+        "RED": {
+          "commit": "2b9e93b (realigned test on the base 84fb7e7, scratch worktree)",
+          "fingerprint": "17b25df83e17",
+          "summary": "1 failed, 1 passed, 10 errors"
+        },
+        "module": "test_ocor_dev_0046.py"
+      },
+      {
+        "GREEN": {
+          "commit": "b0f106c",
+          "summary": "5 passed on real PostgreSQL, TypeDB, Fuseki, Kafka and Qdrant; AST comparison: only constructions"
+        },
+        "module": "mission_thread/test_first_governed_slice.py"
+      }
+    ]
+  }
+}
