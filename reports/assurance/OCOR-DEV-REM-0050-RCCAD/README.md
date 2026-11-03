@@ -5,7 +5,7 @@ verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-
 `NCR-C3-003`, `NCR-C3-004`, `NCR-C3-006` e `NCR-C3-007` del registro. `NCR-C6-009` resta `OPEN` (NCP-U07) e
 `NCR-C3-005` resta `DEFERRED_BY_PO`.
 
-Stato: `CANDIDATE_IN_PROGRESS`. C3 ammette un commit canonico solo con GatePackage, Decision e Authority firmati
+Stato: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION`. C3 ammette un commit canonico solo con GatePackage, Decision e Authority firmati
 da C6, validi, non scaduti e coerenti con il GatePackage congelato, con Evidence registrata, stop epoch e release
 attiva verificati, precondizioni e invarianti valutate nella transazione sullo stato bloccato, e writer epoch
 fencing su entrambi gli adapter (PostgreSQL e TerminusDB). C6 produce i comandi sul percorso governato (motore
@@ -23,8 +23,15 @@ Il record `OCOR-DEV-REM-0050.json` contiene criteri, test, ancore, test rialline
 prodotto, ambiguità risolte in modo fail-closed e la classificazione delle riqualifiche secondo
 `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`: nessun requisito legabile, quindi riqualifiche di sola
 regressione per `0029`, `0030`, `0031`, `0036`, `0039`, `0043`, `0046`, `0058`, e per `0005`, `0050`, `0082`.
-Seguono PRE-CAMPAIGN-GATE, revisione preventiva, campagna con le riqualifiche e verifica indipendente, da un
-fornitore diverso da Anthropic.
+Revisione preventiva `OCOR-DEV-REM-0050-0add4925070f-pre` (Google): P1-P3 corretti (RED `1b2d5b6`, GREEN
+`f390d08`). PRE-CAMPAIGN-GATE all'head di codice `4b0e1db`: 58/63, con la sola deriva attesa degli 11 task e i
+quattro record legacy sigillati di `0029`, `0030`, `0036`, `0046` che falliscono identici su `main`. Campagna
+all'head di codice: tre esecuzioni del modulo d'unità (1367 casi ciascuna), moduli riqualificati (195), altri
+consumer C3 (143), regressione `0005`/`0050`/`0082` (214), portfolio `reports/tests` (1594), suite completa in due
+corsie 3941/3941 senza skip in 2554,7 s del tetto di 5400 s, con alimentazione di rete. Sonda di mutazione di
+`NCR-C3-007` all'head di codice: M0 passa, il mutante fallisce (ucciso). Undici riqualifiche `.requalified-rem0050`
+di sola regressione, nella classe non qualificante. Verifica indipendente richiesta a un fornitore diverso da
+Anthropic e Google.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, slice legacy, guard, workflow o dipendenza è modificato. `E1=0`, `E2=0`, `Verified=0`, runtime
