@@ -1,31 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "6940b83bd8b9dfaefa6c429261bf3214f2754b2c",
-    "branch": "governed/state-sync-rem0049-repair1-20261103",
+    "baseline_commit": "0c46a6a03dfb9737f20b5e2c825dd941027f1f82",
+    "branch": "governed/state-sync-rem0049-repair1-prereview-20261103",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0049 (NCP-U03) repair cycle 1 first part: RED/GREEN of the TypeDB read seam, allowlist, gate, preventive review requested",
-    "decisions": [
-      "NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
-      "NCP-U03-QUALIFYING-REQUALIFICATIONS (2026-11-02, option 1, decided on full delegation of the PO)",
-      "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)",
-      "CC-OCOR-DELIVERY-COMPLETION par. 5 point 7 and par. 8",
-      "PRE-CAMPAIGN-GATE (2026-10-26)",
-      "PRE-CAMPAIGN-REVIEW (2026-10-26) with PRE-CAMPAIGN-REVIEW-EXEMPTIONS (2026-10-27) and PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30)",
-      "REPO-HYGIENE (2026-11-02)",
-      "AGENT-WAIT-HYGIENE (2026-10-27)"
-    ],
+    "change_set": "state sync after OCOR-DEV-REM-0049 (NCP-U03) repair cycle 1 second part: preventive review dispositions (P1/P2 fixed, P3 advisory), gate at the final code head",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 56566564,
+      "MemAvailable": 56777124,
       "MemTotal": 64199664
     },
-    "next_action": "Resume OCOR-DEV-REM-0049 repair cycle 1 after the preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-7dca6ab6517f-pre.json: fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record why). Branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, code head 7dca6ab6517f, pushed). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049-r1/pregate.py, dev postgresql/typedb/fuseki up, then down -v), backend-free modules with backends down, build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py now admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037 (supersedes the sealed .requalified-rem0049 of 0037) and of 0005/0050/0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, sealed records untouched; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor the preventive reviewer's provider. Iterations used 5 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
-    "normative_interpretations": [
-      "The repair restores one read seam in the unit code (typedb_adapter.py, an anchor of the unit) without changing any existing test: the REM-0010 test isolates the adapter by replacing _read, so every adapter read must go through _read (fail-closed: the test must never reach a live backend).",
-      "Transport errors stay raw in _read because the sealed 0037/0039 tests require urllib.error.URLError from current_watermark on an unreachable TypeDB; read_rows keeps the typed CONTROL_PLANE_UNAVAILABLE translation the unit's contract tests require.",
-      "The sealed branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway @ b3b175c4bccf, its sealed records and PR #457 are preserved; repair records use new paths (repair-1, .requalified-rem0049-repair1) with explicit supersedes (REM-0038 precedent)."
-    ],
-    "phase": "REM_0049_REPAIR_1_AWAITING_PREVENTIVE_REVIEW",
+    "next_action": "OCOR-DEV-REM-0049 repair cycle 1, campaign part, on branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, final code head cee5b0b27b38, pushed; preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre done, no new preventive review per PRE-CAMPAIGN-REVIEW point 3). Build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record; carries the preventive review dispositions P1/P2/P3 and the RED/GREEN of both repair parts) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037, 0005, 0050, 0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, register remediation_record of NCR-C2-001..012 realigned to repair-1.json (P3), sealed records untouched; PRE-CAMPAIGN-GATE on the candidate head; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor Google. Iterations used 6 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
+    "phase": "REM_0049_REPAIR_1_READY_FOR_CAMPAIGN",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
       "implementers": [
@@ -33,7 +18,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "all of REM-0049 (iterations 1-4); repair cycle 1 first part (iteration 5) as the backup implementer of the loop"
+          "scope": "all of REM-0049 (iterations 1-4); repair cycle 1 first part (iteration 5) and preventive review fixes (iteration 6) as the backup implementer of the loop"
         }
       ],
       "preventive_reviewer": {
@@ -43,7 +28,7 @@
         "request_id": "OCOR-DEV-REM-0049-530fe1e687e2-pre",
         "reserve": false
       },
-      "verifier": "to be chosen by the loop for repair cycle 1: provider different from Anthropic and from the preventive reviewer of OCOR-DEV-REM-0049-7dca6ab6517f-pre"
+      "verifier": "to be chosen by the loop for repair cycle 1: provider different from Anthropic (implementer) and Google (preventive reviewer OCOR-DEV-REM-0049-7dca6ab6517f-pre)"
     },
     "unit": "OCOR-DEV-REM-0049"
   },
@@ -1773,7 +1758,7 @@
       }
     }
   },
-  "baseline_commit": "6940b83bd8b9dfaefa6c429261bf3214f2754b2c",
+  "baseline_commit": "0c46a6a03dfb9737f20b5e2c825dd941027f1f82",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -9204,7 +9189,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0049 repair cycle 1 after the preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-7dca6ab6517f-pre.json: fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record why). Branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, code head 7dca6ab6517f, pushed). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049-r1/pregate.py, dev postgresql/typedb/fuseki up, then down -v), backend-free modules with backends down, build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py now admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037 (supersedes the sealed .requalified-rem0049 of 0037) and of 0005/0050/0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, sealed records untouched; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor the preventive reviewer's provider. Iterations used 5 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
+  "next_executable_action": "OCOR-DEV-REM-0049 repair cycle 1, campaign part, on branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, final code head cee5b0b27b38, pushed; preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre done, no new preventive review per PRE-CAMPAIGN-REVIEW point 3). Build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record; carries the preventive review dispositions P1/P2/P3 and the RED/GREEN of both repair parts) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037, 0005, 0050, 0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, register remediation_record of NCR-C2-001..012 realigned to repair-1.json (P3), sealed records untouched; PRE-CAMPAIGN-GATE on the candidate head; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor Google. Iterations used 6 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9459,10 +9444,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "374046a22eb012f9cd22b6d166faf0eafc586a54",
-    "branch": "governed/state-sync-rem0049-ci-fail-20261102",
-    "change_set": "state sync after the OCOR-DEV-REM-0049 (NCP-U03) integration attempt: GO cycle 0, seal b3b175c4bccf, PR #457 exact-head CI FAIL (real), not integrated",
-    "phase": "REM_0049_NCP_U03_GO_SEALED_CI_FAIL_REPAIR_1_NEXT"
+    "baseline_commit": "6940b83bd8b9dfaefa6c429261bf3214f2754b2c",
+    "branch": "governed/state-sync-rem0049-repair1-20261103",
+    "change_set": "state sync after OCOR-DEV-REM-0049 (NCP-U03) repair cycle 1 first part: RED/GREEN of the TypeDB read seam, allowlist, gate, preventive review requested",
+    "phase": "REM_0049_REPAIR_1_AWAITING_PREVENTIVE_REVIEW"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -9558,11 +9543,11 @@
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0049": "NCP-U03 repair cycle 1: code head 7dca6ab6517f on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1, awaiting preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre; sealed branch b3b175c and PR #457 preserved"
+      "OCOR-DEV-REM-0049": "NCP-U03 repair cycle 1: final code head cee5b0b27b38 on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1, preventive review done, campaign next; sealed branch b3b175c and PR #457 preserved"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-02T23:33:20.950889+00:00",
+    "observed_at": "2026-11-03T01:00:50.888827+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U03",
@@ -30461,10 +30446,9 @@
         "sealed_head": "b3b175c4bccf580a8066859409ecdd804a72aca5"
       },
       "iteration_stop": 8,
-      "iterations_used": 5,
+      "iterations_used": 6,
       "pending": [
-        "preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre",
-        "PRE-CAMPAIGN-GATE on the final head, full suite, repair-1 candidate records, verification OCOR-DEV-REM-0049-<head12>-1",
+        "full suite on the final code head, repair-1 candidate records, PRE-CAMPAIGN-GATE on the candidate head, verification OCOR-DEV-REM-0049-<head12>-1",
         "seal, PR, required checks, merge, state sync"
       ],
       "pre_campaign_gate": {
@@ -30509,25 +30493,46 @@
       "repair_1": {
         "allowlist": "repair-1.json/.log and .requalified-rem0049-repair1 of 0037, 0005, 0050, 0082 added to scripts/validate_ocor_development_plan.py; self-hash line settled in reports/planning/OCOR_PLAN_RUN_STATE.json; plan validator PASS 37 + 2 NOT_EXECUTED",
         "backend_down_comparison": "Backend-down comparison (zero containers; runtime suite minus the docker/kind-driving modules 0006, 0049, 0051, REM-0018, REM-0022, REM-0038): sealed head 14 failed/1991 passed/224 skipped/793 errors, repair head 14/1992/224/793; per-case diff only the REM-0010 case (failed -> passed), the new seam case (passed) and test_ocor_dev_rem_0040::test_the_port_is_the_declared_seal_subset_of_scenario_overlay_store, which needs the ocor-bootstrap env file absent from the fresh repair worktree (environment, not code)",
+        "backend_down_comparison_final_head": "Backend-down comparison at cee5b0b (zero containers, same module set as before): 14 failed/2046 passed/224 skipped/793 errors vs 14/1992/224/793 at 7dca6ab; per-case diff only the 54 new cases, all passed; nothing else changed",
         "base_sealed_head": "b3b175c4bccf580a8066859409ecdd804a72aca5",
         "branch": "governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1",
         "cause": "PR #457 exact-head CI: backend-free REM-0010 test reached the live TypeDB because apply_commit read through read_rows instead of the patched _read",
-        "code_head": "7dca6ab6517f34b8cad9f96f142e025e346c1d82",
+        "code_head": "cee5b0b27b38e24b00d9afbeb1e9cab41e38e51f",
         "commits": {
           "allowlist": "7dca6ab",
           "fix": "fdfdc0a",
+          "preventive_review_fix": "cee5b0b",
+          "preventive_review_red_test": "84af426",
           "red_test": "d920f91"
         },
         "green": "GREEN at fdfdc0a/7dca6ab: 5 passed, fingerprint c775d787510f. Fix in ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py only: _read is the adapter's one strict read primitive (signin/open/query/close via _strict_request, answer list required, a malformed answer a TypeDBAdapterError, transport errors raw so 0037/0039 still see URLError from current_watermark), read_rows builds on _read and keeps its typed CONTROL_PLANE_UNAVAILABLE translation; apply_commit, _lookup_fact, position, _next_sequence and current_watermark read through _read. No existing test changed; one unit test added (d920f91)",
         "pre_campaign_gate_code_head": "PRE-CAMPAIGN-GATE at the code head 7dca6ab: 55/56 workflow-derived non-suite steps PASS (clean env, locked PATH, detached scratch worktree, dev PostgreSQL/TypeDB/Fuseki up then down -v); the one FAIL is the drift step on exactly the planned regression requalifications OCOR-DEV-0005, 0037, 0050, 0082 (0037: typedb_adapter.py; 0005/0050/0082: plan allowlist), as at every code head; unit and C2 consumer modules with REM-0010 206 passed on the real backends; supply-chain scanner 1.1.0 PASS",
+        "pre_campaign_gate_final_code_head": "PRE-CAMPAIGN-GATE at the final code head cee5b0b: 55/56 workflow-derived non-suite steps PASS (clean env, locked PATH, detached scratch worktree, dev PostgreSQL/TypeDB/Fuseki up then down -v); the one FAIL is the drift step on exactly the planned regression requalifications OCOR-DEV-0005, 0037, 0050, 0082, as at every code head; unit and C2 consumer modules with REM-0010 260 passed on the real backends; supply-chain scanner 1.1.0 PASS",
         "preventive_review": {
           "base_sha": "b3b175c4bccf580a8066859409ecdd804a72aca5",
           "basis": "PRE-CAMPAIGN-REVIEW-EXEMPTIONS point 1: a repair that runs a full suite (REM-0041 overlay repair 1 precedent)",
+          "completed_at": "2026-11-03T01:00:50.888827+00:00",
+          "dispositions": {
+            "P1": "FIXED: RED 84af426, GREEN cee5b0b - current_watermark reads through the strict row parser, the commit is a non-empty string without conversion, a malformed answer or any answer failure is the typed CONTROL_PLANE_UNAVAILABLE; only an unreachable TypeDB stays the raw URLError pinned by the sealed 0037/0039 tests (NCR-C4-003, NCP-U05)",
+            "P2": "FIXED: RED 84af426, GREEN cee5b0b - write/schema/database exchanges decode strict UTF-8 JSON objects, require a header-safe token, a path-safe transaction id and a list of named database entries, protocol failures become TypeDBAdapterError (CONTROL_PLANE_UNAVAILABLE through C4 objects), no backend body in error messages, the body of a failed query is not parsed; transaction closure on every error path stays NCR-C4-003 (NCP-U05)",
+            "P3": "ADVISORY, ACCEPTED: when the repair-1 unit record exists, remediation_record of NCR-C2-001..NCR-C2-012 (IN_REMEDIATION) is realigned to reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json in the same candidate change set; not before, because the file does not exist yet"
+          },
+          "findings_by_severity": {
+            "advisory": 1,
+            "blocking": 2
+          },
           "head_sha": "7dca6ab6517f34b8cad9f96f142e025e346c1d82",
+          "independence_limits": "none declared (not a reserve reviewer)",
+          "outcome_file_sha256": "9719e9ba24d61bc3baa313ae726aa47d256bec210a6a97e4d5f1561f9754597d",
           "request_id": "OCOR-DEV-REM-0049-7dca6ab6517f-pre",
           "requested_at": "2026-11-02T23:33:20.950889+00:00",
-          "status": "REQUESTED"
+          "reserve": false,
+          "reviewer": "Antigravity CLI / gemini-4-argon-high / Google",
+          "status": "DONE",
+          "verdict": "BLOCKING_FINDINGS"
         },
+        "preventive_review_green": "GREEN at cee5b0b: 128 passed, fingerprint 704715dff99c. Fix in ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py only (_rows strict row parser shared by read_rows and current_watermark; _request returns raw bytes and types protocol failures; _answer strict UTF-8 JSON object; _token_value/_transaction_value; strict database listing; no backend body in messages). Tests added only (test_ocor_dev_rem_0049.py: 54 cases incl. positive controls); no existing test changed; ruff 0.13.1 and mypy --strict PASS",
+        "preventive_review_red": "RED at 84af426 (code of 7dca6ab plus the new tests) with every backend down: 51 failed, 77 passed (REM-0010 module, REM-0049 repair_1/commit_ordering/object_projection cases, 0037 unreachability case); fingerprint 5470cbd5ee62 (sha256 of the sorted 'classname::name outcome' JUnit lines, script ~/.ocor-codex/rem-0049-r1/redgreen_p12.sh)",
         "red": "RED with every backend down (docker ps empty) at the sealed head b3b175c (code tree of 511091f) plus the new unit test of d920f91: test_ocor_dev_rem_0010.py::test_typedb_apply_commit_escapes_injection and test_ocor_dev_rem_0049.py::test_repair_1_every_adapter_read_goes_through_the_one_read_seam failed (C2Error CONTROL_PLANE_UNAVAILABLE from read_rows reaching 127.0.0.1), 3 passed; fingerprint c063d4e94323 (sha256 of the sorted 'classname::name outcome' JUnit lines, script ~/.ocor-codex/rem-0049-r1/redgreen.sh); REM-0010 module alone at b3b175c: 1 failed, 3 passed, fingerprint 855ab9496a00",
         "requalifications_planned": [
           "OCOR-DEV-0037",
@@ -30572,7 +30577,7 @@
           "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0049.json": "6dd65cd17076e46f358aee90008291c85dc1f032389936a1516d451a26618df9"
         }
       },
-      "status": "REPAIR_1_CODE_HEAD_AWAITING_PREVENTIVE_REVIEW",
+      "status": "REPAIR_1_FINAL_CODE_HEAD_READY_FOR_CAMPAIGN",
       "status_history": [
         {
           "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
@@ -30581,6 +30586,10 @@
         {
           "status": "GO_SEALED_ON_BRANCH_CI_FAIL_REAL_REPAIR_1",
           "until": "2026-11-02T23:33:20.950889+00:00"
+        },
+        {
+          "status": "REPAIR_1_CODE_HEAD_AWAITING_PREVENTIVE_REVIEW",
+          "until": "2026-11-03T01:00:50.888827+00:00"
         }
       ],
       "tdd": {
@@ -30604,7 +30613,7 @@
         },
         "disposition_2_applied": "Disposition applied on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway without changing the code head 511091f41409: the decided file verified at d5b9ace19d33 (sha256 ca21e0f2c4f54b12...); ten .requalified-rem0049 records built from the campaign outputs at 511091f41409 (~/.ocor-codex/rem-0049-tools/build_evidence.py, adapted from the REM-0048 builder for the serial phase B2, the SERIAL_FALLBACK admission recorded outside commands as full_suite_admission), all in the regression class; the seven realigned tasks carry realigned_tests with the entries of the unit record and the syntax-tree comparison (function names and counts unchanged, declared cases unchanged, no mark added, asserts/raises not fewer, parametrisations unchanged except the documented BEST_AVAILABLE case of 0012); 0017, 0034, 0035 and 0039 supersede their sealed records by path (B1); manifests prepended (G3 with its original key order); unit record completed (CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION) and README; candidate a40b82f86230. The decision request file is not in the unit change set: its allowlist entry would change scripts/validate_ocor_development_plan.py, an input of 0005/0050/0082, after the campaign; it enters main with the next change set that changes the plan allowlist (NCP-U04). PR #454 closed as resolved"
       },
-      "updated_at": "2026-11-02T23:33:20.950889+00:00",
+      "updated_at": "2026-11-03T01:00:50.888827+00:00",
       "worktree": ".ocor/worktrees/rem-0049"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -31845,12 +31854,12 @@
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
     "loop_status": "CONTINUE",
-    "next_action": "Resume OCOR-DEV-REM-0049 repair cycle 1 after the preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-7dca6ab6517f-pre.json: fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record why). Branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, code head 7dca6ab6517f, pushed). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049-r1/pregate.py, dev postgresql/typedb/fuseki up, then down -v), backend-free modules with backends down, build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py now admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037 (supersedes the sealed .requalified-rem0049 of 0037) and of 0005/0050/0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, sealed records untouched; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor the preventive reviewer's provider. Iterations used 5 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
+    "next_action": "OCOR-DEV-REM-0049 repair cycle 1, campaign part, on branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, final code head cee5b0b27b38, pushed; preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre done, no new preventive review per PRE-CAMPAIGN-REVIEW point 3). Build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record; carries the preventive review dispositions P1/P2/P3 and the RED/GREEN of both repair parts) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037, 0005, 0050, 0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, register remediation_record of NCR-C2-001..012 realigned to repair-1.json (P3), sealed records untouched; PRE-CAMPAIGN-GATE on the candidate head; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor Google. Iterations used 6 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
     "reason": "PO decision NCP-U03-QUALIFYING-REQUALIFICATIONS (2026-11-02) (decided on full delegation) received and registered; the residual work of OCOR-DEV-REM-0049 is executable again. Historical TERMINAL_BLOCKED preserved in historical_terminal_loop_disposition and in Git (b51c214)",
     "recorded_at": "2026-11-02T22:23:51.511274+00:00",
     "status": "SUPERSEDED_PO_DECISION_NCP_U03_QUALIFYING_REQUALIFICATIONS"
   },
-  "updated_at": "2026-11-02T23:33:20.950889+00:00",
+  "updated_at": "2026-11-03T01:00:50.888827+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",

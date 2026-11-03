@@ -4,14 +4,14 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "6940b83bd8b9dfaefa6c429261bf3214f2754b2c",
-  "baseline_commit": "6940b83bd8b9dfaefa6c429261bf3214f2754b2c",
-  "branch": "governed/state-sync-rem0049-repair1-20261103",
+  "base_sha": "0c46a6a03dfb9737f20b5e2c825dd941027f1f82",
+  "baseline_commit": "0c46a6a03dfb9737f20b5e2c825dd941027f1f82",
+  "branch": "governed/state-sync-rem0049-repair1-prereview-20261103",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1",
-    "code_commit": "7dca6ab6517f34b8cad9f96f142e025e346c1d82",
-    "head_sha": "7dca6ab6517f34b8cad9f96f142e025e346c1d82",
-    "note": "repair cycle 1 code head, no candidate records yet; sealed branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway @ b3b175c and PR #457 preserved",
+    "code_commit": "cee5b0b27b38e24b00d9afbeb1e9cab41e38e51f",
+    "head_sha": "cee5b0b27b38e24b00d9afbeb1e9cab41e38e51f",
+    "note": "repair cycle 1 final code head after the preventive review fixes, no candidate records yet; sealed branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway @ b3b175c and PR #457 preserved",
     "paths": [],
     "worktree": ".ocor/worktrees/rem-0049-r1"
   },
@@ -35,31 +35,31 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "~/.ocor-codex/rem-0049-r1/redgreen.sh at b3b175c + d920f91 test (backends down)",
+      "command": "~/.ocor-codex/rem-0049-r1/redgreen_p12.sh at 84af426 (backends down)",
       "exit_code": 1,
-      "summary": "RED as expected: RED with every backend down (docker ps empty) at the sealed head b3b175c (code tree of 511091f) plus the new unit test of d920f91: test_ocor_dev_rem_0010.py::test_typedb_apply_commit_escapes_injection and test_ocor_dev_rem_0049.py::test_repair_1_every_adapter_read_goes_through_the_one_read_seam failed (C2Error CONTROL_PLANE_UNAVAILABLE from read_rows reaching 127.0.0.1), 3 passed; fingerprint c063d4e94323 (sha256 of the sorted 'classname::name outcome' JUnit lines, script ~/.ocor-codex/rem-0049-r1/redgreen.sh); REM-0010 module alone at b3b175c: 1 failed, 3 passed, fingerprint 855ab9496a00"
+      "summary": "RED as expected: RED at 84af426 (code of 7dca6ab plus the new tests) with every backend down: 51 failed, 77 passed (REM-0010 module, REM-0049 repair_1/commit_ordering/object_projection cases, 0037 unreachability case); fingerprint 5470cbd5ee62 (sha256 of the sorted 'classname::name outcome' JUnit lines, script ~/.ocor-codex/rem-0049-r1/redgreen_p12.sh)"
     },
     {
-      "command": "~/.ocor-codex/rem-0049-r1/redgreen.sh at 7dca6ab (backends down)",
+      "command": "~/.ocor-codex/rem-0049-r1/redgreen_p12.sh at cee5b0b (backends down)",
       "exit_code": 0,
-      "summary": "GREEN 5 passed, fingerprint c775d787510f"
+      "summary": "GREEN at cee5b0b: 128 passed, fingerprint 704715dff99c. Fix in ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py only (_rows strict row parser shared by read_rows and current_watermark; _request returns raw bytes and types protocol failures; _answer strict UTF-8 JSON object; _token_value/_transaction_value; strict database listing; no backend body in messages). Tests added only (test_ocor_dev_rem_0049.py: 54 cases incl. positive controls); no existing test changed; ruff 0.13.1 and mypy --strict PASS"
     },
     {
-      "command": "~/.ocor-codex/rem-0049-r1/backend_down.sh sealed head vs repair head",
+      "command": "~/.ocor-codex/rem-0049-r1/backend_down.sh 7dca6ab vs cee5b0b",
       "exit_code": 1,
-      "summary": "Backend-down comparison (zero containers; runtime suite minus the docker/kind-driving modules 0006, 0049, 0051, REM-0018, REM-0022, REM-0038): sealed head 14 failed/1991 passed/224 skipped/793 errors, repair head 14/1992/224/793; per-case diff only the REM-0010 case (failed -> passed), the new seam case (passed) and test_ocor_dev_rem_0040::test_the_port_is_the_declared_seal_subset_of_scenario_overlay_store, which needs the ocor-bootstrap env file absent from the fresh repair worktree (environment, not code)"
+      "summary": "Backend-down comparison at cee5b0b (zero containers, same module set as before): 14 failed/2046 passed/224 skipped/793 errors vs 14/1992/224/793 at 7dca6ab; per-case diff only the 54 new cases, all passed; nothing else changed"
     },
     {
-      "command": "~/.ocor-codex/rem-0049-r1/pregate.py at 7dca6ab",
+      "command": "~/.ocor-codex/rem-0049-r1/pregate.py at cee5b0b",
       "exit_code": 1,
-      "summary": "PRE-CAMPAIGN-GATE at the code head 7dca6ab: 55/56 workflow-derived non-suite steps PASS (clean env, locked PATH, detached scratch worktree, dev PostgreSQL/TypeDB/Fuseki up then down -v); the one FAIL is the drift step on exactly the planned regression requalifications OCOR-DEV-0005, 0037, 0050, 0082 (0037: typedb_adapter.py; 0005/0050/0082: plan allowlist), as at every code head; unit and C2 consumer modules with REM-0010 206 passed on the real backends; supply-chain scanner 1.1.0 PASS"
+      "summary": "PRE-CAMPAIGN-GATE at the final code head cee5b0b: 55/56 workflow-derived non-suite steps PASS (clean env, locked PATH, detached scratch worktree, dev PostgreSQL/TypeDB/Fuseki up then down -v); the one FAIL is the drift step on exactly the planned regression requalifications OCOR-DEV-0005, 0037, 0050, 0082, as at every code head; unit and C2 consumer modules with REM-0010 260 passed on the real backends; supply-chain scanner 1.1.0 PASS"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0049:repair-1 (NCP-U03), code head 7dca6ab6517f, awaiting preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre",
+  "current_task": "OCOR-DEV-REM-0049:repair-1 (NCP-U03), final code head cee5b0b27b38, ready for the campaign",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0049 repair cycle 1 after the preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre (read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0049-7dca6ab6517f-pre.json: fix blocking findings with new commits or contest them with a reproducible proof; record advisory dispositions; SKIPPED -> proceed and record why). Branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, code head 7dca6ab6517f, pushed). Then PRE-CAMPAIGN-GATE on the final head (~/.ocor-codex/rem-0049-r1/pregate.py, dev postgresql/typedb/fuseki up, then down -v), backend-free modules with backends down, build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py now admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037 (supersedes the sealed .requalified-rem0049 of 0037) and of 0005/0050/0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, sealed records untouched; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor the preventive reviewer's provider. Iterations used 5 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
-  "head_sha": "6940b83bd8b9dfaefa6c429261bf3214f2754b2c",
+  "exact_next_action": "OCOR-DEV-REM-0049 repair cycle 1, campaign part, on branch governed/ocor-dev-rem-0049-ncp-u03-c2-gateway-repair-1 (worktree .ocor/worktrees/rem-0049-r1, final code head cee5b0b27b38, pushed; preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre done, no new preventive review per PRE-CAMPAIGN-REVIEW point 3). Build the TypeScript SDK in the worktree, qualifying local full suite from a clean shell with the locked PATH and power logging (stack absent at start; two-lane run_local_lane_campaign.py admissible: MemTotal 64199664 kB; otherwise serial and recorded; cap 5400 s; no tracked edits during the campaign); candidate records with distinct paths: reports/assurance/OCOR-DEV-REM-0049-RCCAD/repair-1.json/.log (supersedes the sealed unit record; carries the preventive review dispositions P1/P2/P3 and the RED/GREEN of both repair parts) and regression-only .requalified-rem0049-repair1 of OCOR-DEV-0037, 0005, 0050, 0082 (supersede their sealed .requalified-rem0049), surgical MANIFEST entries, register remediation_record of NCR-C2-001..012 realigned to repair-1.json (P3), sealed records untouched; PRE-CAMPAIGN-GATE on the candidate head; verify request OCOR-DEV-REM-0049-<head12>-1 (REMEDIATION, repair_cycle 1), verifier neither Anthropic nor Google. Iterations used 6 of estimate 4 (stop at 8). After the integration: NCP-U04 (carries NCP-U03-QUALIFYING-REQUALIFICATIONS.md and its allowlist entry), U06, U05, U07-U12. No new DEC; claims unchanged.",
+  "head_sha": "0c46a6a03dfb9737f20b5e2c825dd941027f1f82",
   "head_sha_role": "origin/main at the state sync (REM-0049 not integrated)",
   "independent_verification": {
     "head_sha": "a40b82f86230b5b44a2bda9c417282dad6779a09",
@@ -133,13 +133,14 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
-    "backend_down_comparison": "Backend-down comparison (zero containers; runtime suite minus the docker/kind-driving modules 0006, 0049, 0051, REM-0018, REM-0022, REM-0038): sealed head 14 failed/1991 passed/224 skipped/793 errors, repair head 14/1992/224/793; per-case diff only the REM-0010 case (failed -> passed), the new seam case (passed) and test_ocor_dev_rem_0040::test_the_port_is_the_declared_seal_subset_of_scenario_overlay_store, which needs the ocor-bootstrap env file absent from the fresh repair worktree (environment, not code)",
+    "backend_down_comparison": "Backend-down comparison at cee5b0b (zero containers, same module set as before): 14 failed/2046 passed/224 skipped/793 errors vs 14/1992/224/793 at 7dca6ab; per-case diff only the 54 new cases, all passed; nothing else changed",
     "checksum": "PASS 8/8",
-    "pre_campaign_gate": "PRE-CAMPAIGN-GATE at the code head 7dca6ab: 55/56 workflow-derived non-suite steps PASS (clean env, locked PATH, detached scratch worktree, dev PostgreSQL/TypeDB/Fuseki up then down -v); the one FAIL is the drift step on exactly the planned regression requalifications OCOR-DEV-0005, 0037, 0050, 0082 (0037: typedb_adapter.py; 0005/0050/0082: plan allowlist), as at every code head; unit and C2 consumer modules with REM-0010 206 passed on the real backends; supply-chain scanner 1.1.0 PASS",
-    "red_green": "RED with every backend down (docker ps empty) at the sealed head b3b175c (code tree of 511091f) plus the new unit test of d920f91: test_ocor_dev_rem_0010.py::test_typedb_apply_commit_escapes_injection and test_ocor_dev_rem_0049.py::test_repair_1_every_adapter_read_goes_through_the_one_read_seam failed (C2Error CONTROL_PLANE_UNAVAILABLE from read_rows reaching 127.0.0.1), 3 passed; fingerprint c063d4e94323 (sha256 of the sorted 'classname::name outcome' JUnit lines, script ~/.ocor-codex/rem-0049-r1/redgreen.sh); REM-0010 module alone at b3b175c: 1 failed, 3 passed, fingerprint 855ab9496a00; GREEN at fdfdc0a/7dca6ab: 5 passed, fingerprint c775d787510f. Fix in ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py only: _read is the adapter's one strict read primitive (signin/open/query/close via _strict_request, answer list required, a malformed answer a TypeDBAdapterError, transport errors raw so 0037/0039 still see URLError from current_watermark), read_rows builds on _read and keeps its typed CONTROL_PLANE_UNAVAILABLE translation; apply_commit, _lookup_fact, position, _next_sequence and current_watermark read through _read. No existing test changed; one unit test added (d920f91)"
+    "pre_campaign_gate": "PRE-CAMPAIGN-GATE at the final code head cee5b0b: 55/56 workflow-derived non-suite steps PASS (clean env, locked PATH, detached scratch worktree, dev PostgreSQL/TypeDB/Fuseki up then down -v); the one FAIL is the drift step on exactly the planned regression requalifications OCOR-DEV-0005, 0037, 0050, 0082, as at every code head; unit and C2 consumer modules with REM-0010 260 passed on the real backends; supply-chain scanner 1.1.0 PASS",
+    "preventive_review": "OCOR-DEV-REM-0049-7dca6ab6517f-pre: 2 blocking fixed (P1, P2), 1 advisory accepted (P3); outcome sha256 9719e9ba24d61bc3baa313ae726aa47d256bec210a6a97e4d5f1561f9754597d",
+    "red_green": "RED at 84af426 (code of 7dca6ab plus the new tests) with every backend down: 51 failed, 77 passed (REM-0010 module, REM-0049 repair_1/commit_ordering/object_projection cases, 0037 unreachability case); fingerprint 5470cbd5ee62 (sha256 of the sorted 'classname::name outcome' JUnit lines, script ~/.ocor-codex/rem-0049-r1/redgreen_p12.sh); GREEN at cee5b0b: 128 passed, fingerprint 704715dff99c. Fix in ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py only (_rows strict row parser shared by read_rows and current_watermark; _request returns raw bytes and types protocol failures; _answer strict UTF-8 JSON object; _token_value/_transaction_value; strict database listing; no backend body in messages). Tests added only (test_ocor_dev_rem_0049.py: 54 cases incl. positive controls); no existing test changed; ruff 0.13.1 and mypy --strict PASS"
   },
-  "next_task": "OCOR-DEV-REM-0049 repair cycle 1 after the preventive review OCOR-DEV-REM-0049-7dca6ab6517f-pre",
-  "phase": "REM_0049_REPAIR_1_AWAITING_PREVENTIVE_REVIEW",
+  "next_task": "OCOR-DEV-REM-0049 repair cycle 1 campaign, candidate records and verification request",
+  "phase": "REM_0049_REPAIR_1_READY_FOR_CAMPAIGN",
   "po_decisions_pending": [],
   "raw_evidence_location": "~/.ocor-codex/rem-0046 (RED log and fingerprint, helper scripts), outside Git",
   "requirement_ids": [
@@ -160,7 +161,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "all of REM-0049 (iterations 1-4); repair cycle 1 first part (iteration 5) as the backup implementer of the loop"
+        "scope": "all of REM-0049 (iterations 1-4); repair cycle 1 first part (iteration 5) and preventive review fixes (iteration 6) as the backup implementer of the loop"
       }
     ],
     "preventive_reviewer": {
@@ -170,7 +171,7 @@
       "request_id": "OCOR-DEV-REM-0049-530fe1e687e2-pre",
       "reserve": false
     },
-    "verifier": "to be chosen by the loop for repair cycle 1: provider different from Anthropic and from the preventive reviewer of OCOR-DEV-REM-0049-7dca6ab6517f-pre"
+    "verifier": "to be chosen by the loop for repair cycle 1: provider different from Anthropic (implementer) and Google (preventive reviewer OCOR-DEV-REM-0049-7dca6ab6517f-pre)"
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
@@ -200,6 +201,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-02T23:33:20.950889+00:00",
+  "updated_at": "2026-11-03T01:00:50.888827+00:00",
   "worktree": ".ocor/worktrees/rem-0049 at b3b175c4bccf (kept for the repair; the repair uses a new worktree)"
 }
