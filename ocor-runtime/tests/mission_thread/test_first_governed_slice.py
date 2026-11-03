@@ -38,11 +38,10 @@ from ocor_runtime.c1.compiler import RetainedCanonicalIrBuilder
 from ocor_runtime.c1.ports import CompilerRequest, SourceSyntax, SourceUnit
 from ocor_runtime.c2.ports import ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry, ResolutionStatus
-from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand
 from ocor_runtime.c3.service import PostgresC3Service
-from ocor_runtime.c3_store import AtomicOutboxStore
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.c6.engine import (
+    C3CanonicalOutboxView,
     ActionProposal,
     Approval,
     Decision,
@@ -63,6 +62,12 @@ from ocor_runtime.kernel.governed_context import GovernedContext
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
+# NCP-U04 (OCOR-DEV-REM-0050): the governed-path helper of the C3 consumer suites lives
+# in ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py; inserted explicitly for the
+# same collection-order reason.
+TASK_TESTS = Path(__file__).resolve().parents[1] / "tasks"
+if str(TASK_TESTS) not in sys.path:
+    sys.path.insert(0, str(TASK_TESTS))
 
 from spikes.causal_reproducibility.oracle import CausalQuery  # noqa: E402
 from spikes.causal_reproducibility.oracle import canonical_digest as causal_pin_digest  # noqa: E402
@@ -73,6 +78,7 @@ from spikes.jena_marking.adapter import JenaAdapterError, JenaMarkingProjectionA
 from spikes.kafka_delivery.oracle import KafkaCli  # noqa: E402
 from spikes.typedb_exact_commit.adapter import TypeDBAdapterError, TypeDBExactCommitAdapter  # noqa: E402
 from spikes.vector_partition.oracle import QdrantHarness  # noqa: E402
+import test_ocor_dev_rem_0050 as governed_path  # noqa: E402
 
 COMMIT = "0123456789abcdef0123456789abcdef01234567"
 DIGEST_A = "urn:sha256:" + "a" * 64
@@ -80,6 +86,23 @@ DIGEST_B = "urn:sha256:" + "b" * 64
 DIGEST_C = "urn:sha256:" + "c" * 64
 CLASSIFICATION_SCHEME = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET"))
 NOW = datetime(2026, 9, 13, 14, 0, 0, tzinfo=UTC)
+# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only commands frozen and signed on the C6
+# governed path, and the C6 engine commits through C3 (LLD v1.1 :85-97, ADD v1.3 :342).
+GOVERNED = governed_path.GovernedC3(
+    release=DIGEST_B,
+    preconditions=("urn:ocor:precondition:revision-0", "urn:ocor:precondition:governed-action"),
+    invariants=("urn:ocor:invariant:mission-thread", "urn:ocor:invariant:governed-action"),
+)
+
+
+def governed_engine(authority: CapabilityAuthority, c3: PostgresC3Service, context: GovernedContext) -> tuple[Any, Any]:
+    outbox_store = C3CanonicalOutboxView(c3, tenant_id=context.tenant_id, aggregate_type="MissionAction")
+    fence = EmissionFence(store=outbox_store)  # type: ignore[arg-type]
+    path = GOVERNED.engine_path(aggregate_type="MissionAction", governed_context=context)
+    engine = GovernedActionEngine(
+        authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=outbox_store
+    )
+    return outbox_store, engine
 
 
 @pytest.fixture(scope="session")
@@ -216,9 +239,9 @@ def run_mission_thread(
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
 
     # C3 -- real canonical commit against real PostgreSQL.
-    c3 = PostgresC3Service(postgres_dsn)
+    c3 = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     c3.initialize()
-    command = GovernedCanonicalCommitCommand.from_mapping(
+    command = GOVERNED.command(
         {
             "command_id": f"urn:ocor:command:mission-thread:{correlation_id}",
             "action_instance_id": f"urn:ocor:action:mission-thread:{correlation_id}",
@@ -241,7 +264,6 @@ def run_mission_thread(
             "idempotency_key": f"mission-thread-key-{correlation_id}",
             "governed_context": context.to_mapping(),
             "governed_context_digest": context.digest(),
-            "gate_package_digest": DIGEST_C,
             "branch": "main",
         }
     )
@@ -300,9 +322,7 @@ def run_mission_thread(
         issued_at=NOW,
         ttl=timedelta(hours=1),
     )
-    outbox_store = AtomicOutboxStore()
-    fence = EmissionFence(store=outbox_store)
-    engine = GovernedActionEngine(authority=authority, store=outbox_store, fence=fence)
+    outbox_store, engine = governed_engine(authority, c3, context)
     sink = _SimulatedEffectSink(kafka_record.canonical_digest)
 
     proposal = ActionProposal(
@@ -474,9 +494,10 @@ def test_action_denied_at_authority_halts_the_thread_before_any_effect(postgres_
         issued_at=NOW,
         ttl=timedelta(hours=1),
     )
-    outbox_store = AtomicOutboxStore()
-    fence = EmissionFence(store=outbox_store)
-    engine = GovernedActionEngine(authority=authority, store=outbox_store, fence=fence)
+    c3 = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
+    c3.initialize()
+    context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
+    outbox_store, engine = governed_engine(authority, c3, context)
     calls: list[Any] = []
     proposal = ActionProposal(
         action_id=f"urn:ocor:action:mission-thread:{correlation_id}",
@@ -511,9 +532,9 @@ def test_typedb_projection_read_enforces_exact_at_commit_consistency_with_the_re
     registry, effective_principal_id = resolve_operator_identity()
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
 
-    c3 = PostgresC3Service(postgres_dsn)
+    c3 = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     c3.initialize()
-    command = GovernedCanonicalCommitCommand.from_mapping(
+    command = GOVERNED.command(
         {
             "command_id": f"urn:ocor:command:mission-thread-consistency:{correlation_id}",
             "action_instance_id": f"urn:ocor:action:mission-thread-consistency:{correlation_id}",
@@ -536,7 +557,6 @@ def test_typedb_projection_read_enforces_exact_at_commit_consistency_with_the_re
             "idempotency_key": f"mission-thread-consistency-key-{correlation_id}",
             "governed_context": context.to_mapping(),
             "governed_context_digest": context.digest(),
-            "gate_package_digest": DIGEST_C,
             "branch": "main",
         }
     )
