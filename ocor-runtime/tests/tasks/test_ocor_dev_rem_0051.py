@@ -499,6 +499,164 @@ def test_ncr_c5_001_transport_principal_binding(env: tuple[Any, ...]) -> None:
                for record in rig.audit_records())
 
 
+# The C3 relay as a producer of the C5 admission boundary (ADD v1.3 :845: the admitted envelope
+# realises the GovernedContext integrally and its digest is verifiable; :408-411: a marking
+# reference resolves to the marking object whose digest it carries, otherwise DENY).
+
+RELAY_MARKING = {
+    "scheme_id": "urn:ocor:marking-scheme:poc",
+    "labels": ["RESTRICTED"],
+    "mandatory_markings": [],
+    "caveats": [],
+    "dissemination_controls": [],
+    "permitted_purposes": ["urn:ocor:purpose:mission-planning"],
+    "handling_instructions": [],
+}
+RELAY_MARKING_DIGEST = "sha256:" + hashlib.sha256(canonical_bytes(RELAY_MARKING)).hexdigest()
+
+
+def commit_context(*, marking_ref: str = "urn:" + RELAY_MARKING_DIGEST) -> Any:
+    from ocor_runtime.kernel.governed_context import GovernedContext
+
+    return GovernedContext.from_mapping(
+        {
+            "tenant_id": "urn:ocor:tenant:alpha",
+            "organization_id": "urn:ocor:organization:alpha",
+            "domain_id": "urn:ocor:domain:mission",
+            "compartments": ["urn:ocor:compartment:ops"],
+            "classification_marking_ref": marking_ref,
+            "purpose": "urn:ocor:purpose:mission-planning",
+            "effective_principal_id": "urn:ocor:principal:analyst-1",
+            "actor_chain": ["urn:ocor:principal:analyst-1", "urn:ocor:component:c6"],
+            "ontology_release_digest": "urn:sha256:" + "1" * 64,
+            "policy_bundle_digest": "urn:sha256:" + "2" * 64,
+            "correlation_id": str(uuid.uuid4()),
+        }
+    )
+
+
+def outbox_entry(*, revision: int = 1, context: Any = None) -> Any:
+    """A committed C3 outbox entry with the canonical-state-committed payload of OCOR-DEV-REM-0050."""
+    from ocor_runtime.c3.ports import OutboxEnvelope
+
+    context = context or commit_context()
+    state = {"status": "ASSESSED"}
+    state_digest = "urn:sha256:" + hashlib.sha256(canonical_bytes(state)).hexdigest()
+    commit_id = "urn:ocor:commit:sha256:" + uuid.uuid4().hex * 2
+    event_id = "urn:ocor:event:sha256:" + uuid.uuid4().hex * 2
+    aggregate_ref = f"urn:ocor:mission-object:{uuid.uuid4().hex}"
+    payload = {
+        "event_type": "canonical-state-committed", "commit_id": commit_id, "command_id": stable("command"),
+        "action_instance_id": stable("action-instance"), "tenant_id": context.tenant_id,
+        "aggregate_type": "MissionObject", "aggregate_ref": aggregate_ref, "from_revision": revision - 1,
+        "to_revision": revision, "state": state, "state_digest": state_digest, "decision_ref": stable("decision"),
+        "authority_ref": stable("authority"), "evidence_refs": [stable("evidence")],
+        "gate_package_digest": "urn:sha256:" + "9" * 64, "governed_context_digest": context.digest(),
+        "ontology_release_digest": context.ontology_release_digest,
+        "boundary": {
+            "tenant_id": context.tenant_id, "domain_id": context.domain_id, "compartments": list(context.compartments),
+            "classification_marking_ref": context.classification_marking_ref, "purpose": context.purpose,
+        },
+        "actor_chain": list(context.actor_chain), "correlation_id": context.correlation_id,
+        "causation_id": stable("action-instance"), "branch": "main", "governed_context": context.to_mapping(),
+    }
+    digest = "urn:sha256:" + hashlib.sha256(canonical_bytes(payload)).hexdigest()
+    return OutboxEnvelope(event_id, commit_id, aggregate_ref, revision, payload, digest, "main", datetime.now(UTC))
+
+
+@dataclass
+class MarkingTable:
+    """Explicit test port of the marking resolution (``GetProvenance`` in production)."""
+
+    markings: dict[str, Any]
+
+    def resolve(self, marking_ref: str) -> Any:
+        if marking_ref not in self.markings:
+            raise LookupError("unknown marking")
+        return self.markings[marking_ref]
+
+
+def resolvable() -> MarkingTable:
+    return MarkingTable({"urn:" + RELAY_MARKING_DIGEST: {**RELAY_MARKING, "marking_digest": RELAY_MARKING_DIGEST}})
+
+
+def relayed(entry: Any, markings: Any = None) -> Any:
+    return importlib.import_module("ocor_runtime.c3.relay").canonical_event(
+        entry, signer=_c5("envelope").ProducerSigner(PRODUCER, Ed25519SigningKey.from_seed(SEED)), principal=PRODUCER,
+        markings=markings or resolvable(), ingest_time=datetime.now(UTC),
+    )
+
+
+def test_ncr_c5_001_relay_envelope_realises_the_commit_context() -> None:
+    """ADD v1.3 :531-840, :845, :846 and :197/:844: the relayed envelope is a signed CDC
+    ``canonical-ingestion-envelope:1.2`` that realises the commit context, with the relay's
+    transport principal as effective principal; its payload passes the second validation."""
+    entry = outbox_entry(revision=2)
+    signed = relayed(entry)
+    _c5("envelope").ProducerKeyring({PRODUCER: Ed25519SigningKey.from_seed(SEED).public_key}).verify(signed)
+    value = signed.envelope.to_mapping()
+    payload = json.loads(canonical_bytes(entry.payload))
+    commit = payload["governed_context"]
+    realised = {
+        "tenant_id": value["tenant_id"], "organization_id": value["organization_id"], "domain_id": value["domain_id"],
+        "compartments": value["compartments"],
+        "classification_marking_ref": "urn:" + value["classification_marking"]["marking_digest"],
+        "purpose": value["purpose"], "effective_principal_id": value["effective_principal_id"],
+        "actor_chain": value["actor_chain"], "ontology_release_digest": "urn:" + value["ontology_release_digest"],
+        "policy_bundle_digest": "urn:" + value["policy_bundle_digest"], "correlation_id": value["correlation_id"],
+    }
+    assert realised == {**commit, "effective_principal_id": PRODUCER, "actor_chain": [*commit["actor_chain"], PRODUCER]}
+    assert "sha256:" + hashlib.sha256(canonical_bytes(realised)).hexdigest() == value["governed_context_digest"]
+    assert value["classification_marking"] == {**RELAY_MARKING, "marking_digest": RELAY_MARKING_DIGEST}
+    assert str(uuid.UUID(value["event_id"])) == value["event_id"] == relayed(entry).envelope.event_id
+    assert value["idempotency_key"] == value["source"]["source_record_id"] == entry.event_id
+    assert (value["ingest_mode"], value["semantic_class"]) == ("CDC", "CDC_CHANGE")
+    assert value["transport"]["source_transaction_id"] == entry.commit_id
+    assert value["transport"]["source_position"] == "2" and value["transport"]["operation"] == "UPDATE"
+    assert value["aggregate"]["aggregate_id"] == entry.aggregate_ref and value["aggregate"]["expected_revision"] == 2
+    assert value["payload"] == payload
+    assert value["effective_principal_id"] == PRODUCER != commit["effective_principal_id"]
+    registry = _c5("schema").SchemaRegistry()
+    importlib.import_module("ocor_runtime.c3.relay").register_canonical_state_committed(registry)
+    registration = registry.validate_payload(signed.envelope)
+    assert registration.resource_class == _c5("operations").ResourceClass.CONTROL
+    assert signed.envelope.governed_context().digest() == "urn:" + value["governed_context_digest"]
+
+
+@pytest.mark.parametrize(
+    "markings",
+    [
+        MarkingTable({}),
+        MarkingTable({"urn:" + RELAY_MARKING_DIGEST: {**RELAY_MARKING, "marking_digest": "sha256:" + "c" * 64}}),
+        MarkingTable({"urn:" + RELAY_MARKING_DIGEST: {**RELAY_MARKING, "labels": ["SECRET"],
+                                                      "marking_digest": RELAY_MARKING_DIGEST}}),
+        MarkingTable({"urn:" + RELAY_MARKING_DIGEST: ["not", "an", "object"]}),
+    ],
+    ids=["unresolvable", "digest-not-the-reference", "digest-not-the-object", "not-an-object"],
+)
+def test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference(markings: MarkingTable) -> None:
+    """ADD v1.3 :408-411: an unresolvable ``*_marking_ref``, or a ``marking_digest`` that does not
+    match the object, is ``DENY``; nothing is signed or published."""
+    from ocor_runtime.c3.ports import C3Error
+
+    with pytest.raises(C3Error) as caught:
+        relayed(outbox_entry(), markings)
+    assert caught.value.reason_code == "MARKING_UNRESOLVED"
+
+
+def test_ncr_c5_001_envelope_context_is_verifiable() -> None:
+    """ADD v1.3 :845 and :411: an envelope whose marking digest does not match the marking, or
+    whose fields do not reproduce ``governed_context_digest``, does not realise its context."""
+    value = relayed(outbox_entry()).envelope.to_mapping()
+    envelope = _c5("envelope")
+    tampered_marking = {**value, "classification_marking": {**value["classification_marking"], "labels": ["SECRET"]}}
+    tampered_purpose = {**value, "purpose": "urn:ocor:purpose:other"}
+    for candidate in (tampered_marking, tampered_purpose):
+        with pytest.raises(envelope.BackboneError) as caught:
+            envelope.CanonicalIngestionEnvelope.from_mapping(candidate).governed_context()
+        assert caught.value.reason_code == "GOVERNED_CONTEXT_MISMATCH"
+
+
 # --------------------------------------------------------------------------------------------
 # NCR-C5-002 -- failure taxonomy, Subscribe surface, authorised windowed replay
 # --------------------------------------------------------------------------------------------

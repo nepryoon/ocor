@@ -90,7 +90,18 @@ TERMINUSDB_URL = os.environ.get("OCOR_LIVE_TERMINUSDB_URL", "http://127.0.0.1:63
 NOW = datetime(2026, 11, 3, 9, 0, 0, tzinfo=UTC)
 TENANT = "urn:ocor:tenant:synthetic"
 AGGREGATE_TYPE = "MissionObject"
-DIGEST_MARKING = "urn:sha256:" + "a" * 64
+# ADD v1.3 :408-411: a ``*_marking_ref`` is ``urn:sha256:<marking_digest>`` of a resolvable
+# ``marking`` object; the digest covers the RFC 8785 bytes of the object without its own digest.
+MARKING = {
+    "scheme_id": "urn:ocor:marking-scheme:rem0050",
+    "labels": ["RESTRICTED"],
+    "mandatory_markings": [],
+    "caveats": [],
+    "dissemination_controls": [],
+    "permitted_purposes": ["rem0050-c3-admission"],
+    "handling_instructions": [],
+}
+DIGEST_MARKING = "urn:sha256:" + hashlib.sha256(canonical_bytes(MARKING)).hexdigest()
 RELEASE = "urn:sha256:" + "b" * 64
 OTHER_RELEASE = "urn:sha256:" + "e" * 64
 POLICY_BUNDLE = "urn:sha256:" + "c" * 64
@@ -943,6 +954,7 @@ EVENT_FIELDS = {
     "correlation_id",
     "causation_id",
     "branch",
+    "governed_context",
 }
 
 
@@ -969,22 +981,123 @@ def test_ncr_c3_003_conforms(backend: Backend) -> None:
         path.decision_ref, path.authority_ref, path.action_instance_id
     )
     assert payload["governed_context_digest"] == path.context.digest()
+    assert payload["governed_context"] == path.context.to_mapping()
     assert payload["ontology_release_digest"] == RELEASE
     assert payload["state"] == {"status": "ASSESSED"}
     assert payload["state_digest"] == canonical_digest({"status": "ASSESSED"})
     assert envelope.payload_digest == canonical_digest(payload)
 
 
+RELAY_PRINCIPAL = "urn:ocor:principal:c3-outbox-relay"
+RELAY_KEY = Ed25519SigningKey.from_seed(hashlib.sha256(b"rem0050-relay-key").digest())
+PROJECTOR_PRINCIPAL = "urn:ocor:principal:c4-projector"
+C5_AUDIT_KEY = Ed25519SigningKey.from_seed(hashlib.sha256(b"rem0050-c5-audit-key").digest())
+CANONICAL_EVENT_TYPE = "urn:ocor:event-type:canonical-state-committed"
+
+
+class Markings:
+    """Explicit test port of the marking resolution (``GetProvenance`` in production)."""
+
+    def resolve(self, marking_ref: str) -> dict[str, Any]:
+        if marking_ref != DIGEST_MARKING:
+            raise LookupError("unknown marking")
+        return {**MARKING, "marking_digest": DIGEST_MARKING.removeprefix("urn:")}
+
+
+class PermitAll:
+    """Explicit test port of the C5 policy port: every publish, delivery and replay permitted."""
+
+    def _permit(self) -> Any:
+        return _module("ocor_runtime.c5.policy").PolicyDecision(allowed=True, reason_code="PERMITTED")
+
+    def authorize_publish(self, principal: str, envelope: Any) -> Any:
+        return self._permit()
+
+    def authorize_delivery(self, principal: str, subscription_id: str, envelope: Any) -> Any:
+        return self._permit()
+
+    def authorize_replay(self, principal: str, request: Any) -> Any:
+        return self._permit()
+
+
+def _relay_signer() -> Any:
+    return _module("ocor_runtime.c5.envelope").ProducerSigner(RELAY_PRINCIPAL, RELAY_KEY)
+
+
+def _relay_worker(service: Any, publisher: Any, **values: Any) -> Any:
+    return _module("ocor_runtime.c3.relay").OutboxRelayWorker(
+        service, publisher, signer=_relay_signer(), principal=RELAY_PRINCIPAL, markings=Markings(), **values
+    )
+
+
+def _relayed_context_ref() -> str:
+    """The GovernedContext of the relayed events, built here from ADD v1.3 :197 and :844: the
+    commit context with the relay's transport principal appended as effective principal."""
+    context = _context()
+    return dataclass_replace(
+        context, effective_principal_id=RELAY_PRINCIPAL, actor_chain=(*context.actor_chain, RELAY_PRINCIPAL)
+    ).digest()
+
+
+@dataclass
+class C5Rig:
+    """The C5 backbone composed on the real broker of the qualification tool and PostgreSQL."""
+
+    backbone: Any
+
+    def publish(self, signed: Any, *, transport_principal: str) -> Any:
+        return self.backbone.publish(signed, transport_principal=transport_principal)
+
+    def consume(self, count: int) -> list[Any]:
+        """The first ``count`` relayed events, delivered through the port ``Subscribe``."""
+        pin = _module("ocor_runtime.c3.relay").PAYLOAD_SCHEMA_PIN
+        contract = {
+            "subscription_contract_id": "urn:ocor:subscription-contract:rem0050-projector",
+            "version": "1.0.0",
+            "contract_digest": "sha256:" + "f" * 64,
+            "governed_context_ref": _relayed_context_ref(),
+            "event_type_refs": [CANONICAL_EVENT_TYPE],
+            "delivery": {"semantics": "AT_LEAST_ONCE", "consumer_must_deduplicate": True, "dedup_key": "event_id"},
+            "ordering": {"guarantee": "PER_ORDERING_KEY", "ordering_key_field": "ordering_key"},
+            "filter": {"filter_contract_id": "urn:ocor:filter:canonical-state", "arbitrary_predicates_allowed": False},
+            "payload_schema": {"schema_id": pin["schema_id"], "version": pin["schema_version"], "digest": pin["schema_digest"]},
+            "marking_policy": {"propagate_marking": True, "redact_unauthorized": True, "declare_redactions": True},
+            "replay": {"replay_allowed": False, "cursor_opaque": True, "authorization_required": True},
+            "error_codes": ["POLICY_DENIED", "REPLAY_DENIED", "CURSOR_EXPIRED", "SCHEMA_VIOLATION"],
+        }
+        subscription = self.backbone.subscribe(contract, principal=PROJECTOR_PRINCIPAL)
+        return list(self.backbone.poll(subscription, cursor=None, max_records=count, timeout_s=20).events)
+
+
 @pytest.fixture
-def kafka() -> Iterator[Any]:
-    from ocor_runtime.c5.backbone import CanonicalEventBackbone
+def kafka(dsn: str) -> Iterator[Any]:
+    from c5_kafka_qualification import QualificationKafkaBroker
+    from ocor_runtime.audit import AuditSigner, PostgresAuditLog
 
     topic = f"ocor.rem0050.canonical.{uuid.uuid4().hex[:8]}"
-    backbone, _container, volume = CanonicalEventBackbone.provision(topic)
+    schema = f"ocor_rem0050_c5_{uuid.uuid4().hex[:8]}"
+    broker, _container, volume = QualificationKafkaBroker.provision(topic)
     try:
-        yield backbone
+        registry = _module("ocor_runtime.c5.schema").SchemaRegistry()
+        _module("ocor_runtime.c3.relay").register_canonical_state_committed(registry)
+        audit = PostgresAuditLog(dsn, schema=f"{schema}_audit", signer=AuditSigner(key=C5_AUDIT_KEY, keyid="c5-audit"))
+        audit.initialize()
+        store = _module("ocor_runtime.c5.dlq").PostgresC5Store(dsn, schema=schema)
+        store.initialize()
+        backbone = _module("ocor_runtime.c5.backbone").CanonicalEventBackbone(
+            journal=_module("ocor_runtime.c5.kafka").KafkaJournal(broker.bootstrap_servers, topic),
+            registry=registry,
+            keyring=_module("ocor_runtime.c5.envelope").ProducerKeyring({RELAY_PRINCIPAL: RELAY_KEY.public_key}),
+            policy=PermitAll(),
+            audit=audit,
+            store=store,
+        )
+        yield C5Rig(backbone)
     finally:
-        backbone.destroy(volume)
+        broker.destroy(volume)
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            connection.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+            connection.execute(f'DROP SCHEMA IF EXISTS "{schema}_audit" CASCADE')
 
 
 @pytest.fixture
@@ -1014,7 +1127,9 @@ def test_ncr_c3_003_relay_publishes_on_c5_and_c4_projects_in_order(
                           aggregate_ref=first.aggregate_ref, expected_revision=1, canonical_delta={"status": "VERIFIED"})
     r2 = postgres_backend.service.commit(second.command(second.freeze()))
 
-    worker = relay_module.OutboxRelayWorker(postgres_backend.service, kafka)
+    worker = relay_module.OutboxRelayWorker(
+        postgres_backend.service, kafka, signer=_relay_signer(), principal=RELAY_PRINCIPAL, markings=Markings()
+    )
     published = worker.relay_once(limit=10)
     assert published == (r1.outbox_event_id, r2.outbox_event_id)
     attempts = _sql(dsn, "SELECT event_id, outcome FROM c3_delivery_attempt WHERE outcome='ACKNOWLEDGED' ORDER BY event_id")
@@ -1022,9 +1137,9 @@ def test_ncr_c3_003_relay_publishes_on_c5_and_c4_projects_in_order(
     assert worker.relay_once(limit=10) == ()
 
     records = kafka.consume(2)
-    assert [record.envelope.event_id for record in records] == [r1.outbox_event_id, r2.outbox_event_id]
-    assert {record.envelope.event_type for record in records} == {"canonical-state-committed"}
-    assert [record.envelope.sequence for record in records] == [1, 2]
+    assert [record.envelope["source"]["source_record_id"] for record in records] == [r1.outbox_event_id, r2.outbox_event_id]
+    assert {record.envelope.event_type_id for record in records} == {CANONICAL_EVENT_TYPE}
+    assert [record.envelope.aggregate["expected_revision"] for record in records] == [1, 2]
 
     projector = projector_module.CanonicalStateProjector(projection, release_digest=RELEASE)
     assert projector.apply(records[0].envelope) is True
@@ -1045,8 +1160,13 @@ def test_ncr_c3_003_projector_verifies_order_schema_release_and_context(
     second = GovernedPath(postgres_backend.records, postgres_backend.fence, postgres_backend.clock,
                           aggregate_ref=first.aggregate_ref, expected_revision=1, canonical_delta={"status": "VERIFIED"})
     postgres_backend.service.commit(second.command(second.freeze()))
-    envelopes = [relay_module.canonical_event(item) for item in postgres_backend.service.claim_batch(limit=10)]
-    assert [item.sequence for item in envelopes] == [1, 2]
+    envelopes = [
+        relay_module.canonical_event(
+            item, signer=_relay_signer(), principal=RELAY_PRINCIPAL, markings=Markings(), ingest_time=NOW
+        ).envelope
+        for item in postgres_backend.service.claim_batch(limit=10)
+    ]
+    assert [item.aggregate["expected_revision"] for item in envelopes] == [1, 2]
     projector = projector_module.CanonicalStateProjector(projection, release_digest=RELEASE)
     error = projector_module.ProjectorError
 
@@ -1057,13 +1177,13 @@ def test_ncr_c3_003_projector_verifies_order_schema_release_and_context(
         projector_module.CanonicalStateProjector(projection, release_digest=OTHER_RELEASE).apply(envelopes[0])
     assert caught.value.reason_code == "RELEASE_MISMATCH"
     tampered = _module("ocor_runtime.c5.backbone").CanonicalIngestionEnvelope.from_mapping(
-        {**envelopes[0].to_mapping(), "governed_context_digest": "urn:sha256:" + "6" * 64}
+        {**envelopes[0].to_mapping(), "governed_context_digest": "sha256:" + "6" * 64}
     )
     with pytest.raises(error) as caught:
         projector.apply(tampered)
     assert caught.value.reason_code == "GOVERNED_CONTEXT_MISMATCH"
     unknown_schema = _module("ocor_runtime.c5.backbone").CanonicalIngestionEnvelope.from_mapping(
-        {**envelopes[0].to_mapping(), "event_type": "something-else"}
+        {**envelopes[0].to_mapping(), "event_type_id": "urn:ocor:event-type:something-else"}
     )
     with pytest.raises(error) as caught:
         projector.apply(unknown_schema)
@@ -1078,10 +1198,10 @@ def test_ncr_c3_003_publish_failure_records_no_delivery(postgres_backend: Backen
     receipt = postgres_backend.service.commit(path.command(path.freeze()))
 
     class Failing:
-        def publish(self, envelope: Any) -> None:
+        def publish(self, envelope: Any, *, transport_principal: str) -> None:
             raise RuntimeError("broker unavailable")
 
-    worker = relay_module.OutboxRelayWorker(postgres_backend.service, Failing(), claim_ttl=timedelta(0))
+    worker = _relay_worker(postgres_backend.service, Failing(), claim_ttl=timedelta(0))
     with pytest.raises(relay_module.RelayError):
         worker.relay_once(limit=10)
     assert _sql(dsn, "SELECT count(*) FROM c3_delivery_attempt WHERE event_id=%s AND outcome='ACKNOWLEDGED'",
@@ -1089,13 +1209,13 @@ def test_ncr_c3_003_publish_failure_records_no_delivery(postgres_backend: Backen
     captured: list[Any] = []
 
     class Capturing:
-        def publish(self, envelope: Any) -> None:
-            captured.append(envelope)
+        def publish(self, envelope: Any, *, transport_principal: str) -> None:
+            captured.append(envelope.envelope)
 
-    assert relay_module.OutboxRelayWorker(postgres_backend.service, Capturing()).relay_once(limit=10) == (
+    assert _relay_worker(postgres_backend.service, Capturing()).relay_once(limit=10) == (
         receipt.outbox_event_id,
     )
-    assert [item.event_id for item in captured] == [receipt.outbox_event_id]
+    assert [item["source"]["source_record_id"] for item in captured] == [receipt.outbox_event_id]
 
 
 def test_ncr_c3_003_no_module_outside_c5_composes_the_backbone_only_through_c3_relay() -> None:
@@ -2554,29 +2674,59 @@ def test_run_ledger_refuses_a_divergent_pre_existing_table_and_initializes_a_fre
 
 # --- C4 projector, relay envelope, GatePackage instant ---------------------------------
 
-PROJECTOR_GCS = "urn:sha256:" + "3" * 64
 MISSING = object()
+CDC_EVENT_ID = "6f1d2c3b-4a59-5e6f-8a7b-9c0d1e2f3a4b"
 
 
 def _committed_event(*, sequence: int | None = None, **values: object) -> Any:
+    """A relayed ``canonical-ingestion-envelope:1.2`` (ADD v1.3 :531-840) of one commit, built
+    here: the commit context in the payload, the relay's transport principal as effective
+    principal appended to the actor chain (ADD v1.3 :197, :844), the marking inline."""
     state = {"status": "ASSESSED"}
+    context = _context()
+    event_context = dataclass_replace(
+        context, effective_principal_id=RELAY_PRINCIPAL, actor_chain=(*context.actor_chain, RELAY_PRINCIPAL)
+    )
     payload: dict[str, Any] = {
         "event_type": "canonical-state-committed", "commit_id": PG_COMMIT, "aggregate_ref": PG_REF, "from_revision": 0,
         "to_revision": 1, "state": state, "state_digest": canonical_digest(state), "ontology_release_digest": RELEASE,
-        "governed_context_digest": PROJECTOR_GCS, "branch": "main",
+        "governed_context_digest": context.digest(), "branch": "main", "governed_context": context.to_mapping(),
     }
     payload.update(values)
     payload = {key: value for key, value in payload.items() if value is not MISSING}
-    return _module("ocor_runtime.c5.backbone").CanonicalIngestionEnvelope.from_mapping(
-        {
-            "event_id": PG_EVENT, "event_type": "canonical-state-committed", "event_version": "1",
-            "schema_ref": "urn:ocor:schema:canonical-ingestion-envelope:1", "producer_principal": "urn:ocor:component:c3",
-            "source_ref": PG_COMMIT, "aggregate_ref": PG_REF, "correlation_id": "018f2f95-01b2-7cc3-8d4e-1234567890ab",
-            "causation_id": "urn:ocor:action-instance:rem0050:x", "classification_marking_ref": DIGEST_MARKING,
-            "governed_context_digest": PROJECTOR_GCS, "idempotency_key": PG_EVENT,
-            "sequence": sequence if sequence is not None else payload.get("to_revision", 1), "payload": payload,
-        }
-    )
+    revision = sequence if sequence is not None else payload.get("to_revision", 1)
+    value = {
+        "envelope_version": "1.2", "event_id": CDC_EVENT_ID, "tenant_id": context.tenant_id,
+        "organization_id": context.organization_id, "domain_id": context.domain_id,
+        "compartments": list(context.compartments), "world_ref": "urn:ocor:world:main", "ingest_mode": "CDC",
+        "semantic_class": "CDC_CHANGE", "event_type_id": CANONICAL_EVENT_TYPE, "event_time": "2026-11-03T09:00:00Z",
+        "ingest_time": "2026-11-03T09:00:01Z", "ordering_key": PG_REF, "idempotency_key": PG_EVENT,
+        "purpose": context.purpose,
+        "source": {"source_id": "urn:ocor:source:c3-canonical-state", "source_record_id": PG_EVENT,
+                   "adapter_id": "urn:ocor:adapter:c3-outbox-relay", "adapter_version": "1.0.0"},
+        "aggregate": {"aggregate_type_id": "urn:ocor:aggregate-type:MissionObject", "aggregate_id": PG_REF,
+                      "expected_revision": revision},
+        "payload_schema": {"schema_id": "urn:ocor:schema:canonical-state-committed", "schema_version": "1.0.0",
+                           "schema_digest": "sha256:" + "0" * 64},
+        "payload": payload, "classification_marking": Markings().resolve(DIGEST_MARKING),
+        "provenance_ref": "urn:sha256:" + "9" * 64,
+        "integrity": {"payload_digest": "sha256:" + "0" * 64, "source_producer_principal_ref": RELAY_PRINCIPAL},
+        "effective_principal_id": RELAY_PRINCIPAL, "actor_chain": list(event_context.actor_chain),
+        "governed_context_digest": event_context.digest().removeprefix("urn:"),
+        "ontology_release_digest": RELEASE.removeprefix("urn:"), "policy_bundle_digest": POLICY_BUNDLE.removeprefix("urn:"),
+        "correlation_id": context.correlation_id, "causation_id": None,
+        "transport": {"mode": "CDC", "operation": "CREATE", "source_transaction_id": PG_COMMIT,
+                      "source_position": str(revision)},
+    }
+    envelope_type = _module("ocor_runtime.c5.backbone").CanonicalIngestionEnvelope
+    try:
+        return envelope_type.from_mapping(value)
+    except _module("ocor_runtime.c5.envelope").EnvelopeViolation:
+        # C5 admits only I-JSON payloads; the projector's own I-JSON check is reached only by
+        # an envelope whose payload is set around the C5 validation.
+        built = envelope_type.from_mapping({**value, "payload": {**payload, "state": {}}})
+        object.__setattr__(built, "_value", {**built.to_mapping(), "payload": payload})
+        return built
 
 
 def _projection_double(*, fact_revision: int | None = None, failure: BaseException | None = None, at: str = "") -> Any:
@@ -2651,11 +2801,19 @@ def test_projector_applies_well_formed_events() -> None:
 
 
 def _outbox_envelope(**payload: object) -> Any:
+    context = _context()
+    state = {"status": "ASSESSED"}
     body: dict[str, Any] = {
         "event_type": "canonical-state-committed", "commit_id": PG_COMMIT, "aggregate_ref": PG_REF, "to_revision": 1,
-        "branch": "main", "boundary": {"classification_marking_ref": DIGEST_MARKING},
+        "branch": "main",
+        "boundary": {"tenant_id": context.tenant_id, "domain_id": context.domain_id,
+                     "compartments": list(context.compartments), "classification_marking_ref": DIGEST_MARKING,
+                     "purpose": context.purpose},
         "correlation_id": "018f2f95-01b2-7cc3-8d4e-1234567890ab", "causation_id": "urn:ocor:action-instance:rem0050:x",
-        "governed_context_digest": PROJECTOR_GCS,
+        "governed_context_digest": context.digest(), "governed_context": context.to_mapping(),
+        "tenant_id": context.tenant_id, "actor_chain": list(context.actor_chain), "ontology_release_digest": RELEASE,
+        "from_revision": 0, "aggregate_type": AGGREGATE_TYPE, "state": state, "state_digest": canonical_digest(state),
+        "gate_package_digest": "urn:sha256:" + "9" * 64,
     }
     body.update(payload)
     body = {key: value for key, value in body.items() if value is not MISSING}
@@ -2678,13 +2836,22 @@ def _outbox_envelope(**payload: object) -> Any:
 )
 def test_relay_refuses_an_outbox_entry_without_its_event_context(payload: dict[str, object]) -> None:
     with pytest.raises(C3Error) as caught:
-        _module("ocor_runtime.c3.relay").canonical_event(_outbox_envelope(**payload))
+        _module("ocor_runtime.c3.relay").canonical_event(
+            _outbox_envelope(**payload), signer=_relay_signer(), principal=RELAY_PRINCIPAL, markings=Markings(),
+            ingest_time=NOW,
+        )
     assert caught.value.reason_code == "COMMIT_RECEIPT_MISMATCH"
 
 
 def test_relay_builds_the_event_of_a_complete_outbox_entry() -> None:
-    envelope = _module("ocor_runtime.c3.relay").canonical_event(_outbox_envelope())
-    assert (envelope.event_id, envelope.sequence, envelope.classification_marking_ref) == (PG_EVENT, 1, DIGEST_MARKING)
+    envelope = _module("ocor_runtime.c3.relay").canonical_event(
+        _outbox_envelope(), signer=_relay_signer(), principal=RELAY_PRINCIPAL, markings=Markings(), ingest_time=NOW
+    ).envelope
+    assert (
+        envelope["source"]["source_record_id"],
+        envelope.aggregate["expected_revision"],
+        "urn:" + envelope["classification_marking"]["marking_digest"],
+    ) == (PG_EVENT, 1, DIGEST_MARKING)
 
 
 @pytest.mark.parametrize("frozen_at", ["yesterday", "2026-11-03T09:00:00+01:00", 7, None])
