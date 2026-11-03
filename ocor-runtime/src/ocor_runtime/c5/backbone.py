@@ -8,18 +8,22 @@ The admission boundary of ingestion (ADD v1.3 :379) runs, in order, for every pu
 2. ``effective_principal_id`` equals the transport principal; an external mismatch is
    ``QUARANTINED{PRINCIPAL_BINDING_MISMATCH}`` with an Audit Record (ADD v1.3 :199, :379);
 3. the producer signature over envelope and payload digest verifies (LLD v1.1 :154);
-4. the payload is validated a second time against its content-addressed schema (ADD v1.3
-   :529); 3 and 4 failing are ``PERMANENT``: immutable dead letter, no automatic retry, audit
+4. the inline marking resolves to ``classification_marking_ref``: a ``marking_digest`` that
+   does not match the object is ``DENY``, quarantined as ``GOVERNED_CONTEXT_MISMATCH`` with an
+   Audit Record, and the envelope fields form the GovernedContext record (ADD v1.3 :402-411,
+   :845);
+5. the payload is validated a second time against its content-addressed schema (ADD v1.3
+   :529); 3 and 5 failing are ``PERMANENT``: immutable dead letter, no automatic retry, audit
    (LLD v1.1 :161);
-5. the policy port allows the publish; otherwise ``POLICY_DENIED``: audit and a
+6. the policy port allows the publish; otherwise ``POLICY_DENIED``: audit and a
    non-disclosing quarantine -- the caller learns only that the event was not admitted
    (LLD v1.1 :162);
-6. admission control per tenant and ``ResourceClass``; ``AUDIT`` is never dropped (LLD v1.1
-   :165, :338; Register :406 NFR-079: checks 1-5 always run before it);
-7. durable deduplication per ``(governed_context_digest, idempotency_key)`` and, when the
+7. admission control per tenant and ``ResourceClass``; ``AUDIT`` is never dropped (LLD v1.1
+   :165, :338; Register :406 NFR-079: checks 1-6 always run before it);
+8. durable deduplication per ``(governed_context_digest, idempotency_key)`` and, when the
    envelope declares ``aggregate.expected_revision``, a strictly advancing revision per
    aggregate of the same context (``OUT_OF_ORDER`` is ``PERMANENT``);
-8. the journal write, keyed by ``ordering_key``; a broker failure is ``TRANSIENT``: bounded
+9. the journal write, keyed by ``ordering_key``; a broker failure is ``TRANSIENT``: bounded
    exponential backoff with jitter inside the retry budget (LLD v1.1 :160). Before each
    retry the state is rebuilt from the journal, so a write whose acknowledgement was lost is
    never written twice.
@@ -226,6 +230,21 @@ class CanonicalEventBackbone:
                                 failure_class=FailureClass.POLICY_DENIED.value)
         try:
             self._keyring.verify(signed)
+        except EnvelopeViolation as violation:
+            self._dead_letter(signed, violation.reason_code, principal)
+            raise
+        try:
+            envelope.isolation_context()
+        except EnvelopeViolation:
+            self._store.quarantine(
+                event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POLICY_DENIED.value,
+                reason_code="GOVERNED_CONTEXT_MISMATCH", envelope=envelope.to_mapping(), signature=signed.signature,
+            )
+            self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                        reason_code="GOVERNED_CONTEXT_MISMATCH", outcome="DENIED", correlation_id=correlation)
+            raise BackboneError("GOVERNED_CONTEXT_MISMATCH", "the event was quarantined at the admission boundary",
+                                failure_class=FailureClass.POLICY_DENIED.value) from None
+        try:
             registration = self._registry.validate_payload(envelope)
         except EnvelopeViolation as violation:
             self._dead_letter(signed, violation.reason_code, principal)

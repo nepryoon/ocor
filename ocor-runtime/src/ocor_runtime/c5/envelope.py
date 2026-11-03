@@ -565,6 +565,16 @@ class CanonicalIngestionEnvelope:
         digests to their ``urn:sha256:`` form. Raises ``GOVERNED_CONTEXT_MISMATCH`` when the
         marking digest does not match the marking object or the record does not reproduce
         ``governed_context_digest`` (ADD v1.3 :411)."""
+        context = self.isolation_context()
+        if context.digest() != urn_digest(self.governed_context_digest):
+            raise EnvelopeViolation("GOVERNED_CONTEXT_MISMATCH", "the envelope does not reproduce its GovernedContext digest")
+        return context
+
+    def isolation_context(self) -> GovernedContext:
+        """The ``GovernedContext`` record of the envelope, with the inline marking resolved to
+        ``classification_marking_ref`` (ADD v1.3 :402-406), so the isolation key is constructible
+        (ADD v1.3 :845). Raises ``GOVERNED_CONTEXT_MISMATCH`` when the marking digest does not
+        match the marking object (ADD v1.3 :411) or the fields do not form a GovernedContext."""
         value = self._value
         marking = value["classification_marking"]
         if marking_digest(marking) != marking["marking_digest"]:
@@ -587,8 +597,6 @@ class CanonicalIngestionEnvelope:
             )
         except GovernedContextError as exc:
             raise EnvelopeViolation("GOVERNED_CONTEXT_MISMATCH", "the envelope does not realise a GovernedContext") from exc
-        if context.digest() != urn_digest(self.governed_context_digest):
-            raise EnvelopeViolation("GOVERNED_CONTEXT_MISMATCH", "the envelope does not reproduce its GovernedContext digest")
         return context
 
     def signing_bytes(self) -> bytes:
