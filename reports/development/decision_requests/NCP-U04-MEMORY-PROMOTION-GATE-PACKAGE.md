@@ -112,3 +112,16 @@ verifica sola; l'opzione 3 introduce un secondo percorso di admission da ritirar
 
 Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime conformance `NOT_ESTABLISHED`,
 PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-03
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `max`: `NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (2026-11-03)`, **opzione 1** (emissione del comando C3 sul percorso governato di C6, dentro NCP-U04). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `4313a8e88ecabc624e3285cea320ae29cee60dcf`, sha256 `3ced4d4cc1c0da8376945ef8eda797f788a7ad3765ba373118b95ef2be966d73` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE (2026-11-03) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `max` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza CRITICA). Il PO risolve la decision request `NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE` (branch `governed/decision-request-ncp-u04-memory-promotion-gate-package`, commit `4313a8e88ecabc624e3285cea320ae29cee60dcf`, file `reports/development/decision_requests/NCP-U04-MEMORY-PROMOTION-GATE-PACKAGE.md`, sha256 `3ced4d4cc1c0da8376945ef8eda797f788a7ad3765ba373118b95ef2be966d73`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort max») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
