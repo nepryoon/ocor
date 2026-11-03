@@ -14,7 +14,9 @@ The normative elements realised or verified are cited with file and line:
   by ``payload_schema``: failure, absent schema or discordant digest produce a ``Violation``
   and quarantine); ADD v1.3 :379 (ingestion: ``effective_principal_id`` comes from the
   transport, external mismatch -> ``QUARANTINED``, incomplete -> ``REJECTED``) and :199
-  (``QUARANTINED{reason=PRINCIPAL_BINDING_MISMATCH}`` with an Audit Record); LLD v1.1 :154
+  (``QUARANTINED{reason=PRINCIPAL_BINDING_MISMATCH}`` with an Audit Record); ADD v1.3 :402-411
+  (the inline marking is resolved at the C5 admission boundary; a ``marking_digest`` that does
+  not match the object is ``DENY``); LLD v1.1 :154
   (closed envelope; the producer signs envelope and digest); Register :199 (FR-069: batch,
   streaming and CDC fixtures produce a conformant envelope or a typed Violation), :192
   (FR-068) and :49 (FR-006).
@@ -123,7 +125,9 @@ def stable(kind: str) -> str:
 
 
 def marking() -> dict[str, Any]:
-    return {
+    """An inline marking object carrying its own digest (ADD v1.3 :408-411): the sha256 of the
+    RFC 8785 bytes of the object without ``marking_digest``."""
+    value: dict[str, Any] = {
         "scheme_id": "urn:ocor:marking-scheme:poc",
         "labels": ["RESTRICTED"],
         "mandatory_markings": [],
@@ -131,8 +135,9 @@ def marking() -> dict[str, Any]:
         "dissemination_controls": [],
         "permitted_purposes": ["urn:ocor:purpose:mission-planning"],
         "handling_instructions": [],
-        "marking_digest": "sha256:" + "c" * 64,
     }
+    value["marking_digest"] = "sha256:" + hashlib.sha256(canonical_bytes(value)).hexdigest()
+    return value
 
 
 def raw_envelope(
@@ -497,6 +502,31 @@ def test_ncr_c5_001_transport_principal_binding(env: tuple[Any, ...]) -> None:
     assert row["reason_code"] == "PRINCIPAL_BINDING_MISMATCH"
     assert any(record.record["reason_code"] == "PRINCIPAL_BINDING_MISMATCH" and record.record["outcome"] == "DENIED"
                for record in rig.audit_records())
+
+
+def test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking(env: tuple[Any, ...]) -> None:
+    """ADD v1.3 :402-411: at the C5 admission boundary of ingestion the inline marking is resolved
+    to ``classification_marking_ref``; a ``marking_digest`` that does not match the object is
+    ``DENY``, never a permissive posture; an external mismatch is quarantined with an Audit Record
+    (ADD v1.3 :406, :199 ``GOVERNED_CONTEXT_MISMATCH``). ADD v1.3 :845: the admitted envelope
+    realises the GovernedContext."""
+    rig = build_rig(*env)
+    envelope = _c5("envelope")
+    raw = raw_envelope(pin=rig.pin)
+    raw["classification_marking"] = {**raw["classification_marking"], "labels": ["SECRET"]}
+    signed = rig.signer.sign(raw)
+    code, failure_class, _ = reason_of(lambda: rig.backbone.publish(signed, transport_principal=PRODUCER))
+    assert (code, failure_class) == ("GOVERNED_CONTEXT_MISMATCH", "POLICY_DENIED")
+    assert rig.topic_records() == 0
+    [row] = [row for row in rig.rows("c5_quarantine") if row["event_id"] == signed.envelope.event_id]
+    assert row["reason_code"] == "GOVERNED_CONTEXT_MISMATCH"
+    assert any(record.record["reason_code"] == "GOVERNED_CONTEXT_MISMATCH" and record.record["outcome"] == "DENIED"
+               for record in rig.audit_records())
+    valid = rig.signed()
+    assert valid.envelope["classification_marking"]["marking_digest"] == envelope.marking_digest(
+        valid.envelope["classification_marking"])
+    rig.backbone.publish(valid, transport_principal=PRODUCER)
+    assert rig.topic_records() == 1
 
 
 # The C3 relay as a producer of the C5 admission boundary (ADD v1.3 :845: the admitted envelope
