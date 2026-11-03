@@ -193,6 +193,9 @@
     "a pre-existing PostgreSQL C3 table of another shape is SCHEMA_MISMATCH, never altered",
     "a relay claim lasts at most claim_ttl (server idle-in-transaction timeout, minimum 1 s) and a new claim ends the previous one",
     "a TerminusDB protocol or shape error is BACKEND_UNAVAILABLE and its message carries only the status and the api:error type, never the body",
+    "a PostgreSQL driver failure is BACKEND_UNAVAILABLE when the server is unreachable (OperationalError, InterfaceError) and BACKEND_ERROR otherwise, in C3 (PostgresAdapterError, C3Error through the service) and in the C8 Run Ledger (RunLedgerError); the server text is never in the message",
+    "a stored row of another shape (missing column, bool or text for an integer, naive instant, unknown kind or outcome, non-object JSONB) is BACKEND_ERROR, never converted; replayed commit revisions that are not consecutive are COMMIT_RECEIPT_MISMATCH",
+    "a C3 event without from_revision, with from_revision not a non-bool integer >= 0 or with to_revision != from_revision + 1 is SCHEMA_VIOLATION for the projector; an outbox entry without its event context is COMMIT_RECEIPT_MISMATCH for the relay",
     "in the memory promotion consumer an issued command that differs from the gate command in any field but gate_package_digest is refused C6_COMMAND_BINDING_MISMATCH before dispatch"
   ],
   "change_anchors": [
@@ -465,7 +468,7 @@
       "kind": "ADAPT_CONSTRUCTION (point 5 case 2)",
       "norm": "docs/OCOR_LLD_v1.1.md:97; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:342",
       "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
-      "prescribed": "pins of the files at the unit head (8ba485004ac1 / a63a11994c89); governed admission; assertions unchanged"
+      "prescribed": "pins of the files at the unit head (73bb90a0edcc / a63a11994c89); governed admission; assertions unchanged"
     }
   ],
   "implementers": [
@@ -476,7 +479,8 @@
         2,
         3,
         4,
-        5
+        5,
+        6
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -496,6 +500,37 @@
   "no_new_dependency": "stdlib, psycopg and the existing c1.signing (Ed25519, DSSE PAE), kernel, C5 backbone and C4 TypeDB modules; uv.lock and pyproject.toml unchanged",
   "open_decision_requests": [],
   "plan_unit": "NCP-U04",
+  "preventive_review": {
+    "code_commit_after_dispositions": "f390d08",
+    "decision": "PRE-CAMPAIGN-REVIEW (2026-10-26), PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30)",
+    "dispositions": [
+      {
+        "disposition": "FIXED (RED 1b2d5b6, GREEN f390d08): C8 PostgresRunLedger driver failures typed BACKEND_UNAVAILABLE/BACKEND_ERROR; initialize under a transaction-scoped advisory lock (no unlock on an aborted transaction) with the c8_run_ledger column check (SCHEMA_MISMATCH); stored entries checked without coercion, JSONB pairs refused; task_id validated; negative tests with a local SQL responder and on real PostgreSQL, positive controls",
+        "id": "P1"
+      },
+      {
+        "disposition": "FIXED (RED 1b2d5b6, GREEN f390d08): every PostgresC3Adapter operation translates driver failures; all seven tables in EXPECTED_COLUMNS; every stored scalar and instant checked by type without int()/str(); typed inputs; PostgresC3Service translates every adapter failure into C3Error; negative tests for each parsing path and driver failure, divergent c3_aggregate/c3_idempotency on real PostgreSQL, positive controls",
+        "id": "P2"
+      },
+      {
+        "disposition": "FIXED (RED 1b2d5b6, GREEN f390d08): projector from_revision/to_revision continuity, non-I-JSON state and TypeDB failures typed ProjectorError; canonical_event refuses an entry without its event context as COMMIT_RECEIPT_MISMATCH; GatePackage frozen_at checked as a UTC instant (GATE_PACKAGE_MISMATCH); TerminusDB acknowledgement and read inputs typed COMMIT_CONTRACT_INVALID; the TerminusDB service keeps its sealed CONTRACT_REASONS translation (OCOR-DEV-REM-0041), its other failures stay the typed TerminusDBAdapterError",
+        "id": "P3"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 0,
+      "blocking": 3
+    },
+    "independence_limits": "none declared: not an implementer of the task, not of the implementer's vendor",
+    "note": "consultative (PRE-CAMPAIGN-REVIEW point 4); finding text not copied into the repository",
+    "outcome_sha256": "ad9d7f4abd1eab83614b92745bdc48049aa449ecb9326873e8862f022637f1e9",
+    "request_id": "OCOR-DEV-REM-0050-0add4925070f-pre",
+    "reserve": false,
+    "reviewed_head": "0add4925070f2f8f7703e4e08760a7070e027532",
+    "reviewer": "Antigravity CLI / gemini-4-argon-high",
+    "vendor": "Google",
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "product_orientation": [
     "CommitAdmission is a port composition (governance record store, mutation fence, trusted keys and clock, precondition/invariant registries): production plugs the C6 record store and the C7 stop fence without changing C3",
     "the C6 issuance port (GovernedCommandIssuer) is the one path that turns a C6 decision into a C3 command; the action engine and the memory promotion consumer share it",
@@ -1301,14 +1336,21 @@
     },
     "latest_runs": {
       "consumer_inventory": {
-        "commit": "a06d0e4",
-        "fingerprint": "60e2a6d1a924",
-        "summary": "16 modules with every dev service: 503 passed"
+        "commit": "f390d08",
+        "fingerprint": "54d028e4b689",
+        "summary": "16 modules (unit module included) with every dev service: 678 passed"
+      }
+    },
+    "preventive_review_fixes": {
+      "GREEN": {
+        "commit": "f390d08",
+        "fingerprint": "c7f929fa7e7a",
+        "summary": "227 passed; the RED's TerminusDB service case corrected to the sealed CONTRACT_REASONS design (typed TerminusDBAdapterError)"
       },
-      "unit_module": {
-        "commit": "a06d0e4",
-        "fingerprint": "fcde05bdff2e",
-        "summary": "178 passed"
+      "RED": {
+        "commit": "1b2d5b6",
+        "fingerprint": "80ef33319515",
+        "summary": "152 failed, 75 passed (new robustness cases with the local SQL responder, the scratch-schema cases on real PostgreSQL and the existing TerminusDB responder cases)"
       }
     },
     "realignments": [
