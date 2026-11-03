@@ -33,6 +33,7 @@ from __future__ import annotations
 import hashlib
 import http.client
 import json
+import re
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
@@ -82,13 +83,29 @@ def _require_value(field: str, value: object) -> str:
 
 def _request(
     method: str, url: str, *, headers: dict[str, str] | None = None, body: bytes | None = None, timeout: float = 10.0
-) -> tuple[int, str]:
+) -> tuple[int, bytes]:
+    """One TypeDB HTTP exchange; the answer body stays raw, untrusted bytes. A protocol failure
+    (bad status line, truncated answer) is the adapter's typed error; a transport failure
+    (refused, unreachable) stays raw ``URLError``/``OSError``."""
     request = urllib.request.Request(url, method=method, data=body, headers=headers or {})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.status, response.read().decode("utf-8", errors="replace")
+            return response.status, response.read()
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.read().decode("utf-8", errors="replace")
+        return exc.code, exc.read()
+    except http.client.HTTPException as exc:
+        raise TypeDBAdapterError("TypeDB answered outside the HTTP protocol") from exc
+
+
+def _answer(body: bytes) -> Mapping[str, Any]:
+    """A TypeDB answer body is strict UTF-8 JSON holding an object; anything else fails here."""
+    try:
+        answer = json.loads(body.decode("utf-8"))
+    except ValueError as exc:
+        raise TypeDBAdapterError("the TypeDB answer is not UTF-8 JSON") from exc
+    if not isinstance(answer, Mapping):
+        raise TypeDBAdapterError("the TypeDB answer is not an object")
+    return answer
 
 
 def _token() -> str:
@@ -99,9 +116,8 @@ def _token() -> str:
         body=json.dumps({"username": "admin", "password": "password"}).encode("utf-8"),
     )
     if status != 200:
-        raise TypeDBAdapterError(f"cannot sign in to TypeDB: {status} {body}")
-    token: str = json.loads(body)["token"]
-    return token
+        raise TypeDBAdapterError(f"cannot sign in to TypeDB: HTTP {status}")
+    return _token_value(_field(_answer(body), "token"))
 
 
 def _transaction(kind: str, token: str) -> str:
@@ -112,28 +128,30 @@ def _transaction(kind: str, token: str) -> str:
         body=json.dumps({"databaseName": DATABASE, "transactionType": kind}).encode("utf-8"),
     )
     if status != 200:
-        raise TypeDBAdapterError(f"cannot open a TypeDB {kind} transaction: {status} {body}")
-    transaction_id: str = json.loads(body)["transactionId"]
-    return transaction_id
+        raise TypeDBAdapterError(f"cannot open a TypeDB {kind} transaction: HTTP {status}")
+    return _transaction_value(_field(_answer(body), "transactionId"))
 
 
-def _query(transaction_id: str, query: str, token: str) -> tuple[int, dict[str, Any]]:
+def _query(transaction_id: str, query: str, token: str) -> tuple[int, Mapping[str, Any]]:
+    """The status of a query and, when it succeeded, its answer object; the body of a failed
+    query is never parsed nor returned."""
     status, body = _request(
         "POST",
         f"{TYPEDB_URL}/v1/transactions/{transaction_id}/query",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         body=json.dumps({"query": query}).encode("utf-8"),
     )
-    parsed: dict[str, Any] = json.loads(body) if body else {}
-    return status, parsed
+    if status != 200:
+        return status, {}
+    return status, _answer(body)
 
 
 def _commit(transaction_id: str, token: str) -> None:
-    status, body = _request(
+    status, _ = _request(
         "POST", f"{TYPEDB_URL}/v1/transactions/{transaction_id}/commit", headers={"Authorization": f"Bearer {token}"}
     )
     if status != 200:
-        raise TypeDBAdapterError(f"failed to commit TypeDB transaction: {status} {body}")
+        raise TypeDBAdapterError(f"failed to commit TypeDB transaction: HTTP {status}")
 
 
 def _close(transaction_id: str, token: str) -> None:
@@ -149,20 +167,20 @@ def _write(*queries: str) -> None:
     token = _token()
     transaction_id = _transaction("write", token)
     for query in queries:
-        status, result = _query(transaction_id, query, token)
+        status, _ = _query(transaction_id, query, token)
         if status != 200:
             _close(transaction_id, token)
-            raise TypeDBAdapterError(f"write failed: {status} {result}")
+            raise TypeDBAdapterError(f"write failed: HTTP {status}")
     _commit(transaction_id, token)
 
 
 def _schema_write(query: str) -> None:
     token = _token()
     transaction_id = _transaction("schema", token)
-    status, result = _query(transaction_id, query, token)
+    status, _ = _query(transaction_id, query, token)
     if status != 200:
         _close(transaction_id, token)
-        raise TypeDBAdapterError(f"schema write failed: {status} {result}")
+        raise TypeDBAdapterError(f"schema write failed: HTTP {status}")
     _commit(transaction_id, token)
 
 
@@ -194,15 +212,33 @@ def _field(answer: object, name: str) -> str:
     return value
 
 
+# A session token travels in an HTTP header and a transaction id in the URL path: only values
+# that are safe there are accepted (visible ASCII; RFC 3986 unreserved characters).
+_TOKEN = re.compile(r"[!-~]+")
+_TRANSACTION_ID = re.compile(r"[A-Za-z0-9._~-]+")
+
+
+def _token_value(value: str) -> str:
+    if _TOKEN.fullmatch(value) is None:
+        raise TypeDBAdapterError("the TypeDB session token is not header-safe")
+    return value
+
+
+def _transaction_value(value: str) -> str:
+    if _TRANSACTION_ID.fullmatch(value) is None or value in {".", ".."}:
+        raise TypeDBAdapterError("the TypeDB transaction id is not a path segment")
+    return value
+
+
 def _read(query: str) -> list[Any]:
     """The adapter's one read primitive: a read transaction whose answer is untrusted. A
     transport failure stays raw (``URLError``/``OSError``); a non-200 status, a body that is
     not UTF-8 JSON or an answer without an answer list fails here, before any row is read."""
-    token = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/signin",
-                                   body={"username": "admin", "password": "password"}), "token")
-    transaction = _field(_strict_request("POST", f"{TYPEDB_URL}/v1/transactions/open", token=token,
-                                         body={"databaseName": DATABASE, "transactionType": "read"}),
-                         "transactionId")
+    token = _token_value(_field(_strict_request("POST", f"{TYPEDB_URL}/v1/signin",
+                                                body={"username": "admin", "password": "password"}), "token"))
+    transaction = _transaction_value(_field(_strict_request(
+        "POST", f"{TYPEDB_URL}/v1/transactions/open", token=token,
+        body={"databaseName": DATABASE, "transactionType": "read"}), "transactionId"))
     try:
         result = _strict_request("POST", f"{TYPEDB_URL}/v1/transactions/{transaction}/query", token=token,
                                  body={"query": query})
@@ -213,6 +249,24 @@ def _read(query: str) -> list[Any]:
     return list(result["answers"])
 
 
+def _rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]:
+    """The answer rows of a read query: for each row, the raw ``value`` of each named
+    variable -- never converted; a row of any other shape fails here."""
+    rows: list[dict[str, object]] = []
+    for answer in _read(query):
+        data = answer.get("data") if isinstance(answer, Mapping) else None
+        if not isinstance(data, Mapping):
+            raise TypeDBAdapterError("a TypeDB answer row has no data")
+        row: dict[str, object] = {}
+        for name in variables:
+            concept = data.get(name)
+            if not isinstance(concept, Mapping) or "value" not in concept:
+                raise TypeDBAdapterError(f"a TypeDB answer row has no value for {name}")
+            row[name] = concept["value"]
+        rows.append(row)
+    return rows
+
+
 def read_rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]:
     """Run a read query and return, for each answer row, the raw ``value`` of each named
     variable -- never converted. Every failure, of the transport or of the answer shape,
@@ -220,19 +274,7 @@ def read_rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]
     Gateway contract :486-491): no raw exception and no partial result leaves the adapter."""
 
     try:
-        rows: list[dict[str, object]] = []
-        for answer in _read(query):
-            data = answer.get("data") if isinstance(answer, Mapping) else None
-            if not isinstance(data, Mapping):
-                raise TypeDBAdapterError("a TypeDB answer row has no data")
-            row: dict[str, object] = {}
-            for name in variables:
-                concept = data.get(name)
-                if not isinstance(concept, Mapping) or "value" not in concept:
-                    raise TypeDBAdapterError(f"a TypeDB answer row has no value for {name}")
-                row[name] = concept["value"]
-            rows.append(row)
-        return rows
+        return _rows(query, variables)
     except C2Error:
         raise
     except _ANSWER_FAILURES as exc:
@@ -256,15 +298,18 @@ def _ensure_database() -> None:
     token = _token()
     status, body = _request("GET", f"{TYPEDB_URL}/v1/databases", headers={"Authorization": f"Bearer {token}"})
     if status != 200:
-        raise TypeDBAdapterError(f"cannot list TypeDB databases: {status} {body}")
-    existing = {entry["name"] for entry in json.loads(body).get("databases", [])}
+        raise TypeDBAdapterError(f"cannot list TypeDB databases: HTTP {status}")
+    databases = _answer(body).get("databases")
+    if not isinstance(databases, list):
+        raise TypeDBAdapterError("the TypeDB database listing has no database list")
+    existing = {_field(entry, "name") for entry in databases}
     if DATABASE in existing:
         return
-    status, body = _request(
+    status, _ = _request(
         "POST", f"{TYPEDB_URL}/v1/databases/{DATABASE}", headers={"Authorization": f"Bearer {token}"}
     )
     if status != 200:
-        raise TypeDBAdapterError(f"failed to create TypeDB database {DATABASE!r}: {status} {body}")
+        raise TypeDBAdapterError(f"failed to create TypeDB database {DATABASE!r}: HTTP {status}")
 
 
 class TypeDBProjectionAdapter:
@@ -328,10 +373,21 @@ class TypeDBProjectionAdapter:
         return _position_value(rows[0]["s"])
 
     def current_watermark(self) -> str | None:
-        rows = _read("match $w isa c4-watermark, has c4-commit-id $c;")
+        """The commit of the projection watermark, a non-empty string read without conversion,
+        or ``None`` when no commit has been applied. A malformed answer, or any failure of the
+        answer, is the typed ``CONTROL_PLANE_UNAVAILABLE``; only an unreachable TypeDB stays the
+        raw ``URLError`` the sealed OCOR-DEV-0037/0039 tests pin, until NCR-C4-003 (NCP-U05)."""
+        try:
+            rows = _rows("match $w isa c4-watermark, has c4-commit-id $c;", ("c",))
+        except urllib.error.HTTPError as exc:
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
+        except urllib.error.URLError:
+            raise
+        except _ANSWER_FAILURES as exc:
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
         if not rows:
             return None
-        return str(rows[0]["data"]["c"]["value"])
+        return _text_value(rows[0]["c"])
 
     def _lookup_fact(self, fact_id: str) -> tuple[str, str] | None:
         rows = read_rows(
