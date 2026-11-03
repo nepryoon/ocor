@@ -381,7 +381,11 @@ def subscription_contract(*, replay_allowed: bool = True, event_types: list[str]
         "delivery": {"semantics": "AT_LEAST_ONCE", "consumer_must_deduplicate": True, "dedup_key": "event_id"},
         "ordering": {"guarantee": "PER_ORDERING_KEY", "ordering_key_field": "ordering_key"},
         "filter": {"filter_contract_id": "urn:ocor:filter:all-mission-effects", "arbitrary_predicates_allowed": False},
-        "payload_schema": {},
+        "payload_schema": {
+            "schema_id": PAYLOAD_SCHEMA_ID,
+            "version": "1.0.0",
+            "digest": schema_digest(PAYLOAD_SCHEMA),
+        },
         "marking_policy": {"propagate_marking": True, "redact_unauthorized": True, "declare_redactions": True},
         "replay": {"replay_allowed": replay_allowed, "cursor_opaque": True, "authorization_required": True},
         "error_codes": ["POLICY_DENIED", "REPLAY_DENIED", "CURSOR_EXPIRED", "SCHEMA_VIOLATION"],
@@ -512,9 +516,9 @@ class FlakyJournal:
             appends = 0
 
             def append(self, *args: Any, **kwargs: Any) -> Any:
-                type(self).appends += 1
-                if type(self).failures > 0:
-                    type(self).failures -= 1
+                self.appends += 1
+                if self.failures > 0:
+                    self.failures -= 1
                     raise kafka.KafkaJournalError("injected: broker unavailable before the write")
                 return super().append(*args, **kwargs)
 
@@ -754,7 +758,7 @@ def test_ncr_c5_003_dead_letters_are_durable_and_immutable(env: tuple[Any, ...])
     with psycopg.connect(rig.dsn, autocommit=True) as connection:
         for statement in (
             f'UPDATE "{rig.schema}".c5_dead_letter SET reason_code = %s',  # noqa: S608
-            f'DELETE FROM "{rig.schema}".c5_dead_letter WHERE reason_code = %s',  # noqa: S608
+            f'DELETE FROM "{rig.schema}".c5_dead_letter WHERE reason_code <> %s',  # noqa: S608
         ):
             with pytest.raises(psycopg.errors.RaiseException):
                 connection.execute(statement, ("TAMPERED",))
