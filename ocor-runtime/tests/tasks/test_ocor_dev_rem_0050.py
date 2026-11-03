@@ -54,12 +54,14 @@ from __future__ import annotations
 import ast
 import base64
 import hashlib
+import http.server
 import importlib
 import json
 import os
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from collections.abc import Callable, Iterator, Mapping
@@ -1430,3 +1432,439 @@ def test_governed_path_for_consumer_suites_is_admitted_and_exportable(dsn: str) 
         service.commit(command)
     assert caught.value.reason_code == "AUTHORITY_MISSING"
     service.reset()
+
+
+# ---------------------------------------------------------------------------------------
+# Input robustness of the C3 TerminusDB adapter (PRE-REVIEW-INPUT-ROBUSTNESS): every
+# parsing path of a server answer. Positive paths run on the real TerminusDB above.
+# ---------------------------------------------------------------------------------------
+CANARY = "rem0050-canary-server-body-never-echoed"
+TDB = "ocor_runtime.c3.adapters.terminusdb"
+RESPONDER_REF = "urn:ocor:mission-object:rem0050:responder"
+RESPONDER_EVENT = "urn:ocor:event:rem0050:responder"
+RESPONDER_COMMIT = "urn:ocor:commit:rem0050:responder"
+RESPONDER_VERSION = "branch:" + "f" * 32
+Answer = tuple[int, dict[str, str], bytes] | bytes
+
+
+def _json_answer(body: object, status: int = 200, headers: Mapping[str, str] | None = None) -> Answer:
+    return status, dict(headers or {}), json.dumps(body).encode("utf-8")
+
+
+class TerminusDBResponder:
+    """A local HTTP responder standing in for TerminusDB on the failure paths only:
+    well-formed answers by default (the documents of ``documents``, the lists of
+    ``lists``), and per route a malformed, hostile or failing answer (status, headers and
+    body, or raw bytes on the socket)."""
+
+    def __init__(self) -> None:
+        self.documents: dict[str, object] = {}
+        self.lists: dict[str, object] = {}
+        self.overrides: dict[str, Answer] = {}
+        responder = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _answer(self) -> None:
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                self.close_connection = True
+                route, answer = responder.route(self.command, self.path)
+                answer = responder.overrides.get(route, answer)
+                if isinstance(answer, bytes):
+                    self.wfile.write(answer)
+                    return
+                status, headers, body = answer
+                self.send_response(status)
+                for name, value in {"Content-Type": "application/json", **headers}.items():
+                    self.send_header(name, value)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            do_GET = _answer
+            do_POST = _answer
+            do_DELETE = _answer
+
+            def log_message(self, format: str, *args: Any) -> None:
+                return None
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def route(self, method: str, raw_path: str) -> tuple[str, Answer]:
+        path, _, query = raw_path.partition("?")
+        params = urllib.parse.parse_qs(query)
+        if path.startswith("/api/woql/"):
+            return "woql", _json_answer({"bindings": [{}]})
+        if "graph_type" in params:
+            return "schema", _json_answer(list(_module(TDB).SCHEMA) if method == "GET" else {})
+        if path.startswith("/api/db"):
+            return "db", _json_answer([{"path": "admin/rem0050_responder"}] if method == "GET" else {})
+        if "/local/branch/" in path:
+            return "version", _json_answer([], headers={"TerminusDB-Data-Version": RESPONDER_VERSION})
+        if "/local/commit/" in path and "id" in params:
+            doc_type = params["id"][0].split("/", 1)[0]
+            document = self.documents.get(doc_type)
+            if document is None:
+                return "document", _json_answer({"api:status": "api:not_found"}, status=404)
+            return "document", _json_answer(document)
+        if "/local/commit/" in path and "type" in params:
+            return "list", _json_answer(self.lists.get(params["type"][0], []))
+        return "other", _json_answer({}, status=400)
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+@pytest.fixture
+def tdb_responder() -> Iterator[TerminusDBResponder]:
+    value = TerminusDBResponder()
+    try:
+        yield value
+    finally:
+        value.close()
+
+
+def _responder_adapter(responder: TerminusDBResponder) -> Any:
+    return _module(TDB).TerminusDBC3Adapter(
+        url=responder.url, password="rem0050-responder-synthetic", database="rem0050_responder", timeout=5.0
+    )
+
+
+def _fence_document(**values: object) -> dict[str, Any]:
+    key = _module(TDB)._key("c3-canonical")
+    return {"@type": "C3WriterFence", "key": key, "boundary": "c3-canonical", "writer_epoch": 1, "writer_id": "w", **values}
+
+
+def _aggregate_document(**values: object) -> dict[str, Any]:
+    state = {"status": "ASSESSED"}
+    return {
+        "@type": "C3Aggregate",
+        "key": _module(TDB)._key(TENANT, AGGREGATE_TYPE, RESPONDER_REF),
+        "tenant_id": TENANT,
+        "aggregate_type": AGGREGATE_TYPE,
+        "aggregate_ref": RESPONDER_REF,
+        "revision": 1,
+        "state_json": canonical_bytes(state).decode("utf-8"),
+        "state_digest": canonical_digest(state),
+        "commit_id": RESPONDER_COMMIT,
+        **values,
+    }
+
+
+def _outbox_entry(**values: object) -> dict[str, Any]:
+    payload = {"event": "canonical-state-committed"}
+    return {
+        "@type": "C3OutboxEntry",
+        "key": _module(TDB)._key(RESPONDER_EVENT),
+        "event_id": RESPONDER_EVENT,
+        "commit_id": RESPONDER_COMMIT,
+        "aggregate_ref": RESPONDER_REF,
+        "aggregate_revision": 1,
+        "payload_json": canonical_bytes(payload).decode("utf-8"),
+        "payload_digest": canonical_digest(payload),
+        "branch": "main",
+        "occurred_at": "2026-11-03T09:00:00Z",
+        **values,
+    }
+
+
+def _attempt_document(**values: object) -> dict[str, Any]:
+    return {
+        "@type": "C3DeliveryAttempt",
+        "key": _module(TDB)._key(RESPONDER_EVENT),
+        "event_id": RESPONDER_EVENT,
+        "outcome": "ACKNOWLEDGED",
+        "acknowledged_at": "2026-11-03T09:00:01Z",
+        "writer_epoch": 1,
+        **values,
+    }
+
+
+def _commit_document(**values: object) -> dict[str, Any]:
+    payload = {"event": "canonical-state-committed"}
+    return {
+        "@type": "C3Commit",
+        "key": _module(TDB)._key(RESPONDER_COMMIT),
+        "commit_id": RESPONDER_COMMIT,
+        "command_id": "urn:ocor:command:rem0050:responder",
+        "command_digest": "urn:sha256:" + "1" * 64,
+        "tenant_id": TENANT,
+        "aggregate_type": AGGREGATE_TYPE,
+        "aggregate_ref": RESPONDER_REF,
+        "from_revision": 0,
+        "to_revision": 1,
+        "state_digest": "urn:sha256:" + "2" * 64,
+        "idempotency_key": "rem0050-responder",
+        "outbox_event_id": RESPONDER_EVENT,
+        "outbox_payload_json": canonical_bytes(payload).decode("utf-8"),
+        "outbox_payload_digest": canonical_digest(payload),
+        "branch": "main",
+        "committed_at": "2026-11-03T09:00:00Z",
+        "writer_epoch": 1,
+        **values,
+    }
+
+
+def _binding_document(**values: object) -> dict[str, Any]:
+    return {
+        "@type": "C3Idempotency",
+        "key": _module(TDB)._key(TENANT, AGGREGATE_TYPE, RESPONDER_REF, "rem0050-responder"),
+        "tenant_id": TENANT,
+        "aggregate_type": AGGREGATE_TYPE,
+        "aggregate_ref": RESPONDER_REF,
+        "idempotency_key": "rem0050-responder",
+        "command_digest": "urn:sha256:" + "1" * 64,
+        "commit_id": RESPONDER_COMMIT,
+        **values,
+    }
+
+
+def _replay(adapter: Any) -> Any:
+    adapter.join_writer(1)
+    return adapter.commit_transaction(
+        tenant_id=TENANT,
+        aggregate_type=AGGREGATE_TYPE,
+        aggregate_ref=RESPONDER_REF,
+        idempotency_key="rem0050-responder",
+        command_id="urn:ocor:command:rem0050:responder",
+        command_digest="urn:sha256:" + "1" * 64,
+        expected_revision=0,
+        canonical_delta={"status": "ASSESSED"},
+        decision_ref="urn:ocor:decision:rem0050:responder",
+        authority_ref="urn:ocor:authority:rem0050:responder",
+        evidence_refs=(),
+        claim_source_bindings=(),
+        governed_context_digest="urn:sha256:" + "3" * 64,
+        gate_package_digest="urn:sha256:" + "4" * 64,
+        branch="main",
+        check_state=lambda current, new: None,
+        event_payload=lambda commit_id, before, after, state, digest: {"event": "canonical-state-committed"},
+    )
+
+
+def _joined(call: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    def run(adapter: Any) -> Any:
+        adapter.join_writer(1)
+        return call(adapter)
+
+    return run
+
+
+OPERATIONS: dict[str, Callable[[Any], Any]] = {
+    "snapshot": lambda adapter: adapter.read_snapshot(TENANT, AGGREGATE_TYPE, RESPONDER_REF),
+    "claim": lambda adapter: adapter.claim_outbox_batch(limit=10),
+    "attempts": lambda adapter: adapter.delivery_attempts(RESPONDER_EVENT),
+    "bindings": lambda adapter: adapter.source_bindings(RESPONDER_COMMIT),
+    "acquire": lambda adapter: adapter.acquire_writer(),
+    "initialize": lambda adapter: adapter.initialize(),
+    "drop": lambda adapter: adapter.drop(),
+    "replay": _replay,
+    "acknowledge": _joined(lambda adapter: adapter.acknowledge_outbox(RESPONDER_EVENT, acknowledged_at=NOW)),
+    "reconcile": _joined(lambda adapter: adapter.reconcile(limit=5)),
+}
+NESTED = ("[" * 100_000 + "]" * 100_000).encode("ascii")
+CANARY_BODY = json.dumps({"api:error": {"@type": "api:" + CANARY}, "api:message": CANARY}).encode("utf-8")
+# (case, operation, documents, lists, overrides, reason code)
+TDB_MALFORMED: list[tuple[str, str, dict[str, object], dict[str, object], dict[str, Answer], str]] = [
+    ("bad-status-line", "snapshot", {}, {}, {"version": f"GARBAGE {CANARY}\r\n\r\n".encode()}, "BACKEND_UNAVAILABLE"),
+    ("connection-closed", "snapshot", {}, {}, {"version": b""}, "BACKEND_UNAVAILABLE"),
+    ("not-utf8", "snapshot", {}, {}, {"version": (200, {}, b"\xff\xfe" + CANARY.encode())}, "BACKEND_ERROR"),
+    ("not-json", "snapshot", {}, {}, {"version": (200, {}, b"{" + CANARY.encode())}, "BACKEND_ERROR"),
+    ("two-prefix-lines", "snapshot", {}, {}, {"version": (200, {}, b"a\nb\n{}")}, "BACKEND_ERROR"),
+    ("nan-constant", "snapshot", {}, {}, {"version": (200, {"TerminusDB-Data-Version": RESPONDER_VERSION}, b"[NaN]")}, "BACKEND_ERROR"),
+    ("nesting-beyond-depth", "snapshot", {}, {}, {"version": (200, {}, NESTED)}, "BACKEND_ERROR"),
+    ("error-body-echo", "snapshot", {}, {}, {"version": (500, {}, CANARY_BODY)}, "BACKEND_ERROR"),
+    ("data-version-missing", "snapshot", {}, {}, {"version": (200, {}, b"[]")}, "BACKEND_ERROR"),
+    ("data-version-foreign", "snapshot", {}, {}, {"version": (200, {"TerminusDB-Data-Version": "commit:abc"}, b"[]")}, "BACKEND_ERROR"),
+    ("data-version-path", "snapshot", {}, {}, {"version": (200, {"TerminusDB-Data-Version": "branch:../x"}, b"[]")}, "BACKEND_ERROR"),
+    ("document-error-echo", "snapshot", {}, {}, {"document": (500, {}, CANARY_BODY)}, "BACKEND_ERROR"),
+    ("document-not-object", "snapshot", {}, {}, {"document": _json_answer([CANARY])}, "BACKEND_ERROR"),
+    ("document-other-type", "snapshot", {"C3Aggregate": _aggregate_document(**{"@type": "C3Commit"})}, {}, {}, "BACKEND_ERROR"),
+    ("document-other-key", "snapshot", {"C3Aggregate": _aggregate_document(key="0" * 64)}, {}, {}, "BACKEND_ERROR"),
+    ("revision-text", "snapshot", {"C3Aggregate": _aggregate_document(revision="1")}, {}, {}, "BACKEND_ERROR"),
+    ("revision-bool", "snapshot", {"C3Aggregate": _aggregate_document(revision=True)}, {}, {}, "BACKEND_ERROR"),
+    ("revision-negative", "snapshot", {"C3Aggregate": _aggregate_document(revision=-1)}, {}, {}, "BACKEND_ERROR"),
+    ("revision-missing", "snapshot", {"C3Aggregate": {k: v for k, v in _aggregate_document().items() if k != "revision"}}, {}, {}, "BACKEND_ERROR"),
+    ("state-not-json", "snapshot", {"C3Aggregate": _aggregate_document(state_json="{" + CANARY)}, {}, {}, "BACKEND_ERROR"),
+    ("state-not-object", "snapshot", {"C3Aggregate": _aggregate_document(state_json="[]")}, {}, {}, "BACKEND_ERROR"),
+    ("state-not-text", "snapshot", {"C3Aggregate": _aggregate_document(state_json=7)}, {}, {}, "BACKEND_ERROR"),
+    ("state-digest-missing", "snapshot", {"C3Aggregate": _aggregate_document(state_digest=None)}, {}, {}, "BACKEND_ERROR"),
+    ("commit-id-empty", "snapshot", {"C3Aggregate": _aggregate_document(commit_id="")}, {}, {}, "BACKEND_ERROR"),
+    ("list-error-echo", "claim", {}, {}, {"list": (500, {}, CANARY_BODY)}, "BACKEND_ERROR"),
+    ("list-not-array", "claim", {}, {}, {"list": _json_answer({"entries": CANARY})}, "BACKEND_ERROR"),
+    ("list-entry-not-object", "claim", {}, {"C3OutboxEntry": [CANARY]}, {}, "BACKEND_ERROR"),
+    ("list-entry-other-type", "claim", {}, {"C3OutboxEntry": [_outbox_entry(**{"@type": "C3Commit"})]}, {}, "BACKEND_ERROR"),
+    ("entry-branch-not-text", "claim", {}, {"C3OutboxEntry": [_outbox_entry(branch=7)]}, {}, "BACKEND_ERROR"),
+    ("entry-revision-zero", "claim", {}, {"C3OutboxEntry": [_outbox_entry(aggregate_revision=0)]}, {}, "BACKEND_ERROR"),
+    ("entry-occurred-at-offset", "claim", {}, {"C3OutboxEntry": [_outbox_entry(occurred_at="2026-11-03T09:00:00+01:00")]}, {}, "BACKEND_ERROR"),
+    ("entry-payload-missing", "claim", {}, {"C3OutboxEntry": [_outbox_entry(payload_json=None)]}, {}, "BACKEND_ERROR"),
+    ("entry-event-id-missing", "claim", {}, {"C3OutboxEntry": [_outbox_entry(event_id=None)]}, {}, "BACKEND_ERROR"),
+    ("attempt-event-id-not-text", "claim", {}, {"C3OutboxEntry": [_outbox_entry()], "C3DeliveryAttempt": [_attempt_document(event_id=[])]}, {}, "BACKEND_ERROR"),
+    ("attempt-other-event", "attempts", {"C3DeliveryAttempt": _attempt_document(event_id="urn:ocor:event:other")}, {}, {}, "BACKEND_ERROR"),
+    ("attempt-other-outcome", "attempts", {"C3DeliveryAttempt": _attempt_document(outcome="FAILED")}, {}, {}, "BACKEND_ERROR"),
+    ("attempt-epoch-bool", "attempts", {"C3DeliveryAttempt": _attempt_document(writer_epoch=True)}, {}, {}, "BACKEND_ERROR"),
+    ("attempt-epoch-zero", "attempts", {"C3DeliveryAttempt": _attempt_document(writer_epoch=0)}, {}, {}, "BACKEND_ERROR"),
+    ("attempt-timestamp-invalid", "attempts", {"C3DeliveryAttempt": _attempt_document(acknowledged_at="2026-13-03T09:00:00Z")}, {}, {}, "BACKEND_ERROR"),
+    ("binding-ref-not-text", "bindings", {}, {"C3SourceBinding": [{"@type": "C3SourceBinding", "commit_id": RESPONDER_COMMIT, "claim_ref": 7, "source_ref": "s", "evidence_ref": "e"}]}, {}, "BACKEND_ERROR"),
+    ("fence-epoch-text", "acquire", {"C3WriterFence": _fence_document(writer_epoch="1")}, {}, {}, "BACKEND_ERROR"),
+    ("fence-epoch-zero", "acquire", {"C3WriterFence": _fence_document(writer_epoch=0)}, {}, {}, "BACKEND_ERROR"),
+    ("fence-epoch-bool", "acknowledge", {"C3WriterFence": _fence_document(writer_epoch=True)}, {}, {}, "BACKEND_ERROR"),
+    ("woql-without-bindings", "acquire", {}, {}, {"woql": _json_answer({"bindings": CANARY})}, "BACKEND_ERROR"),
+    ("woql-error-echo", "acquire", {}, {}, {"woql": (400, {}, CANARY_BODY)}, "BACKEND_ERROR"),
+    ("woql-schema-refusal-echo", "acquire", {}, {}, {"woql": _json_answer({"api:error": {"@type": "api:WOQLSchemaCheckFailure"}, "api:message": CANARY}, status=400)}, "BATCH_REJECTED"),
+    ("replay-digest-not-text", "replay", {"C3WriterFence": _fence_document(), "C3Idempotency": _binding_document(command_digest=7)}, {}, {}, "BACKEND_ERROR"),
+    ("replay-commit-id-missing", "replay", {"C3WriterFence": _fence_document(), "C3Idempotency": _binding_document(commit_id=None)}, {}, {}, "BACKEND_ERROR"),
+    ("replay-revisions-not-consecutive", "replay", {"C3WriterFence": _fence_document(), "C3Idempotency": _binding_document(), "C3Commit": _commit_document(to_revision=3)}, {}, {}, "COMMIT_RECEIPT_MISMATCH"),
+    ("replay-committed-at-invalid", "replay", {"C3WriterFence": _fence_document(), "C3Idempotency": _binding_document(), "C3Commit": _commit_document(committed_at=CANARY)}, {}, {}, "BACKEND_ERROR"),
+    ("aggregate-revision-text", "replay", {"C3WriterFence": _fence_document(), "C3Aggregate": _aggregate_document(revision="0")}, {}, {}, "BACKEND_ERROR"),
+    ("ack-entry-branch-not-text", "acknowledge", {"C3WriterFence": _fence_document(), "C3OutboxEntry": _outbox_entry(branch=None)}, {}, {}, "BACKEND_ERROR"),
+    ("reconcile-commit-id-missing", "reconcile", {"C3WriterFence": _fence_document()}, {"C3Commit": [_commit_document(commit_id=None)]}, {}, "BACKEND_ERROR"),
+    ("reconcile-payload-digest-mismatch", "reconcile", {"C3WriterFence": _fence_document()}, {"C3Commit": [_commit_document(outbox_payload_digest="urn:sha256:" + "9" * 64)]}, {}, "COMMIT_RECEIPT_MISMATCH"),
+    ("reconcile-to-revision-text", "reconcile", {"C3WriterFence": _fence_document()}, {"C3Commit": [_commit_document(to_revision="1")]}, {}, "BACKEND_ERROR"),
+    ("reconcile-committed-at-invalid", "reconcile", {"C3WriterFence": _fence_document()}, {"C3Commit": [_commit_document(committed_at="yesterday")]}, {}, "BACKEND_ERROR"),
+    ("reconcile-binding-commit-not-text", "reconcile", {"C3WriterFence": _fence_document()}, {"C3Commit": [_commit_document()], "C3Idempotency": [_binding_document(commit_id=1)]}, {}, "BACKEND_ERROR"),
+    ("databases-error-echo", "initialize", {}, {}, {"db": (500, {}, CANARY_BODY)}, "BACKEND_ERROR"),
+    ("databases-entry-not-object", "initialize", {}, {}, {"db": _json_answer([CANARY])}, "BACKEND_ERROR"),
+    ("databases-path-not-text", "initialize", {}, {}, {"db": _json_answer([{"path": 7}])}, "BACKEND_ERROR"),
+    ("schema-entry-not-object", "initialize", {}, {}, {"schema": _json_answer([CANARY])}, "BACKEND_ERROR"),
+    ("schema-foreign-class", "initialize", {}, {}, {"schema": _json_answer([*_module(TDB).SCHEMA, {"@type": "Class", "@id": CANARY}])}, "SCHEMA_MISMATCH"),
+    ("drop-error-echo", "drop", {}, {}, {"db": (500, {}, CANARY_BODY)}, "BACKEND_ERROR"),
+]
+
+
+@pytest.mark.parametrize(
+    ("case", "operation", "documents", "lists", "overrides", "reason"), TDB_MALFORMED, ids=[item[0] for item in TDB_MALFORMED]
+)
+def test_terminusdb_adapter_rejects_malformed_or_hostile_answers(
+    tdb_responder: TerminusDBResponder,
+    case: str,
+    operation: str,
+    documents: dict[str, object],
+    lists: dict[str, object],
+    overrides: dict[str, Answer],
+    reason: str,
+) -> None:
+    """Every malformed, hostile or failing server answer is a typed adapter error with a
+    stable reason code whose message never echoes the server body."""
+    tdb_responder.documents, tdb_responder.lists, tdb_responder.overrides = documents, lists, overrides
+    with pytest.raises(_module(TDB).TerminusDBAdapterError) as caught:
+        OPERATIONS[operation](_responder_adapter(tdb_responder))
+    assert caught.value.reason_code == reason, case
+    assert CANARY not in str(caught.value), case
+
+
+def test_terminusdb_adapter_reads_well_formed_answers(tdb_responder: TerminusDBResponder) -> None:
+    """The responder's default answers are well formed, so each negative case above fails
+    for its own malformation only (positive controls of the same parsing paths)."""
+    adapter = _responder_adapter(tdb_responder)
+    assert adapter.read_snapshot(TENANT, AGGREGATE_TYPE, RESPONDER_REF) is None
+    tdb_responder.documents = {"C3Aggregate": _aggregate_document()}
+    snapshot = adapter.read_snapshot(TENANT, AGGREGATE_TYPE, RESPONDER_REF)
+    assert (snapshot.revision, snapshot.state, snapshot.commit_id) == (1, {"status": "ASSESSED"}, RESPONDER_COMMIT)
+    tdb_responder.lists = {"C3OutboxEntry": [_outbox_entry(), _outbox_entry(branch="scenario")]}
+    (row,) = adapter.claim_outbox_batch(limit=10)
+    assert (row.event_id, row.aggregate_revision, row.branch, row.occurred_at) == (
+        RESPONDER_EVENT, 1, "main", datetime(2026, 11, 3, 9, 0, 0, tzinfo=UTC)
+    )
+    tdb_responder.lists["C3DeliveryAttempt"] = [_attempt_document()]
+    assert adapter.claim_outbox_batch(limit=10) == ()
+    tdb_responder.documents = {"C3DeliveryAttempt": _attempt_document()}
+    (attempt,) = adapter.delivery_attempts(RESPONDER_EVENT)
+    assert (attempt.outcome, attempt.writer_epoch) == ("ACKNOWLEDGED", 1)
+    tdb_responder.lists = {
+        "C3SourceBinding": [{"@type": "C3SourceBinding", "commit_id": RESPONDER_COMMIT, "claim_ref": "c", "source_ref": "s", "evidence_ref": "e"}]
+    }
+    assert [(item.claim_ref, item.source_ref, item.evidence_ref) for item in adapter.source_bindings(RESPONDER_COMMIT)] == [("c", "s", "e")]
+    tdb_responder.documents = {"C3WriterFence": _fence_document()}
+    assert adapter.acquire_writer() == 2
+    tdb_responder.documents = {"C3WriterFence": _fence_document(), "C3Idempotency": _binding_document(), "C3Commit": _commit_document()}
+    outcome = _replay(adapter)
+    assert (outcome.replayed, outcome.from_revision, outcome.to_revision) == (True, 0, 1)
+    tdb_responder.documents = {"C3WriterFence": _fence_document()}
+    tdb_responder.lists = {"C3Commit": [_commit_document()]}
+    assert adapter.reconcile(limit=5) == 2
+    adapter.initialize()
+    adapter.drop()
+    tdb_responder.overrides = {"version": (200, {"TerminusDB-Data-Version": RESPONDER_VERSION}, b'HTTP/1.1 404\n{"api:status": "api:not_found"}')}
+    assert adapter.read_snapshot(TENANT, AGGREGATE_TYPE, RESPONDER_REF) is None
+
+
+PG_REF = "urn:ocor:mission-object:rem0050:stored-shape"
+PG_COMMIT = "urn:ocor:commit:rem0050:stored-shape"
+PG_EVENT = "urn:ocor:event:rem0050:stored-shape"
+
+
+def _pg_store_commit(dsn: str, *, state: str, payload: str, outbox: bool) -> None:
+    """Writes a stored aggregate and commit (and its outbox entry) whose JSONB values have
+    the given shape, directly with SQL: a corrupted store the adapter never writes."""
+    digest = "urn:sha256:" + "5" * 64
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            "INSERT INTO c3_aggregate VALUES (%s, %s, %s, 1, %s::jsonb, %s, %s)",
+            (TENANT, AGGREGATE_TYPE, PG_REF, state, digest, PG_COMMIT),
+        )
+        connection.execute(
+            """INSERT INTO c3_commit VALUES (%s, 'urn:ocor:command:rem0050:stored-shape', %s, %s, %s, %s, 0, 1, %s,
+               'rem0050-stored-shape', 'urn:ocor:decision:x', 'urn:ocor:authority:x', '[]'::jsonb, %s, %s, %s,
+               %s::jsonb, %s, 'main', 1, now())""",
+            (PG_COMMIT, digest, TENANT, AGGREGATE_TYPE, PG_REF, digest, digest, digest, PG_EVENT, payload, digest),
+        )
+        if outbox:
+            connection.execute(
+                "INSERT INTO c3_outbox VALUES (%s, %s, %s, 1, %s::jsonb, %s, 'main', now())",
+                (PG_EVENT, PG_COMMIT, PG_REF, payload, digest),
+            )
+
+
+@pytest.mark.parametrize("shape", ["[]", "[1, 2]", "7", '"text"', "null"])
+@pytest.mark.parametrize("path", ["snapshot", "commit", "claim", "reconcile"])
+def test_postgres_adapter_rejects_stored_json_that_is_not_an_object(dsn: str, shape: str, path: str) -> None:
+    """A stored JSONB state or payload that is not an object fails closed with a typed
+    adapter error on every read path, never coerced by ``dict()``."""
+    adapters = _module("ocor_runtime.c3.adapters.postgres")
+    adapter = adapters.PostgresC3Adapter(dsn)
+    adapter.initialize()
+    adapter.reset()
+    try:
+        state, payload = (shape, '{"event": "x"}') if path in {"snapshot", "commit"} else ('{"status": "x"}', shape)
+        _pg_store_commit(dsn, state=state, payload=payload, outbox=path != "reconcile")
+        adapter.acquire_writer()
+        operations: dict[str, Callable[[], Any]] = {
+            "snapshot": lambda: adapter.read_snapshot(TENANT, AGGREGATE_TYPE, PG_REF),
+            "commit": lambda: adapter.commit_transaction(
+                tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=PG_REF, idempotency_key="rem0050-next",
+                command_id="urn:ocor:command:rem0050:next", command_digest="urn:sha256:" + "6" * 64, expected_revision=1,
+                canonical_delta={"status": "ASSESSED"}, decision_ref="urn:ocor:decision:x", authority_ref="urn:ocor:authority:x",
+                evidence_refs=(), claim_source_bindings=(), governed_context_digest="urn:sha256:" + "7" * 64,
+                gate_package_digest="urn:sha256:" + "8" * 64, branch="main", check_state=lambda current, new: None,
+                event_payload=lambda commit_id, before, after, value, digest: {"event": "x"},
+            ),
+            "claim": lambda: adapter.claim_outbox_batch(limit=10, claim_ttl=timedelta(seconds=5)),
+            "reconcile": lambda: adapter.reconcile(limit=5),
+        }
+        with pytest.raises(adapters.PostgresAdapterError) as caught:
+            operations[path]()
+        assert caught.value.reason_code == "BACKEND_ERROR"
+        assert _sql(dsn, "SELECT count(*) FROM c3_commit")[0][0] == 1
+    finally:
+        adapter.reset()
+
+
+def test_postgres_adapter_reads_stored_objects(dsn: str) -> None:
+    """Positive control of the same paths: stored objects are read as before."""
+    adapters = _module("ocor_runtime.c3.adapters.postgres")
+    adapter = adapters.PostgresC3Adapter(dsn)
+    adapter.initialize()
+    adapter.reset()
+    try:
+        _pg_store_commit(dsn, state='{"status": "x"}', payload='{"event": "x"}', outbox=True)
+        adapter.acquire_writer()
+        assert adapter.read_snapshot(TENANT, AGGREGATE_TYPE, PG_REF).state == {"status": "x"}
+        (row,) = adapter.claim_outbox_batch(limit=10, claim_ttl=timedelta(seconds=5))
+        assert row.payload == {"event": "x"}
+        adapter.close_claim()
+    finally:
+        adapter.reset()
