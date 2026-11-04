@@ -11,7 +11,7 @@ import re
 import tempfile
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 NON_QUALIFYING = {"SKIPPED", "UNAVAILABLE", "NOT_EXECUTED", "XFAIL"}
@@ -195,18 +195,21 @@ def record_task_evidence(
     return evidence_path
 
 
-def validate_manifest(manifest_path: Path, *, task_id: str, non_skipped: bool) -> bool:
-    """Fail closed unless task evidence and every requirement result are reproducible."""
-    manifest = _load_json(manifest_path)
-    artifacts = manifest.get("artifacts")
-    if not isinstance(artifacts, list):
-        raise ManifestError("manifest artifacts must be an array")
-    evidence_entry = next((item for item in artifacts if item.get("task_id") == task_id), None)
-    raw_entry = next((item for item in artifacts if item.get("task_id") == f"{task_id}-RAW"), None)
-    if evidence_entry is None:
-        raise ManifestError(f"manifest has no evidence entry for {task_id}")
-    if raw_entry is None:
-        raise ManifestError(f"manifest has no raw evidence entry for {task_id}")
+REGRESSION_KIND = "regression"
+QUALIFYING_FIELDS = frozenset(
+    {
+        "task_id", "commit", "environment", "inputs", "commands",
+        "requirement_results", "raw_output_sha256", "result", "created_at",
+    }
+)
+# REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: a regression-only
+# requalification record binds no case to a requirement.
+REGRESSION_FIELDS = QUALIFYING_FIELDS - {"requirement_results"}
+
+
+def _resolve_pair(
+    manifest_path: Path, evidence_entry: Mapping[str, Any], raw_entry: Mapping[str, Any]
+) -> tuple[Path, Path, str]:
     evidence_path = manifest_path.parent / str(evidence_entry.get("path", ""))
     raw_path = manifest_path.parent / str(raw_entry.get("path", ""))
     if not raw_path.is_file():
@@ -218,13 +221,152 @@ def validate_manifest(manifest_path: Path, *, task_id: str, non_skipped: bool) -
     raw_digest = _digest(raw_path)
     if raw_entry.get("sha256") != raw_digest:
         raise ManifestError("raw evidence digest mismatch")
+    return evidence_path, raw_path, raw_digest
+
+
+def _validate_regression(
+    manifest: Mapping[str, Any],
+    record: Mapping[str, Any],
+    *,
+    task_id: str,
+    evidence_name: str,
+    raw_name: str,
+    raw_digest: str,
+    non_skipped: bool,
+) -> None:
+    """Checks of a regression-only requalification record that do not concern requirements
+    (NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04), option 1)."""
+    missing = sorted(REGRESSION_FIELDS - record.keys())
+    if missing:
+        raise ManifestError(f"evidence fields missing: {', '.join(missing)}")
+    if record["task_id"] != task_id or COMMIT.fullmatch(str(record["commit"])) is None:
+        raise ManifestError("task or commit identifier mismatch")
+    if record["raw_output_sha256"] != raw_digest:
+        raise ManifestError("record raw-output digest mismatch")
+    if record.get("qualifies_requirements") is not False:
+        raise ManifestError("regression requalification record: qualifies_requirements is not false")
+    ledger = manifest.get("requirement_results", [])
+    if not isinstance(ledger, list):
+        raise ManifestError("manifest requirement_results must be an array")
+    naming = [
+        row
+        for row in ledger
+        if isinstance(row, Mapping)
+        and (row.get("evidence_path") == evidence_name or row.get("raw_output_path") == raw_name)
+    ]
+    if "requirement_results" in record or naming:
+        raise ManifestError("regression requalification record binds a case to a requirement")
+    commands = record["commands"]
+    if (
+        not isinstance(commands, list)
+        or not commands
+        or not all(isinstance(item, Mapping) for item in commands)
+    ):
+        raise ManifestError("regression requalification record has no well-formed executed command")
+    statuses = {str(item.get("status", "")).upper() for item in commands}
+    if non_skipped and statuses & NON_QUALIFYING:
+        raise ManifestError(f"non-qualifying result present: {sorted(statuses & NON_QUALIFYING)}")
+    if statuses != {"PASS"} or record["result"] != "PASS":
+        raise ManifestError("mandatory evidence is not all PASS")
+
+
+def _superseded(
+    manifest_path: Path,
+    artifacts: Sequence[Any],
+    record: Mapping[str, Any],
+    *,
+    task_id: str,
+    seen: set[str],
+) -> tuple[Path, Path, str, dict[str, Any]]:
+    """Resolve the record a regression record supersedes: an evidence record of the same task
+    in the manifest directory, listed with its raw log, with the declared digest and identifier."""
+    supersedes = record.get("supersedes")
+    previous = record.get("previous_record")
+    if (
+        not isinstance(supersedes, str)
+        or not supersedes
+        or not isinstance(previous, Mapping)
+        or previous.get("record_id") != supersedes
+    ):
+        raise ManifestError("regression requalification record does not supersede a record")
+    record_path = previous.get("record_path")
+    location = PurePosixPath(record_path) if isinstance(record_path, str) else None
+    if (
+        location is None
+        or location.is_absolute()
+        or ".." in location.parts
+        or not location.name.endswith(".json")
+        or not location.parent.parts
+        or manifest_path.parent.resolve().parts[-len(location.parent.parts):] != location.parent.parts
+    ):
+        raise ManifestError("superseded record is not an evidence record of this manifest directory")
+    name = location.name
+    if name in seen:
+        raise ManifestError("supersedes chain is cyclic")
+    seen.add(name)
+    entries = [item for item in artifacts if isinstance(item, Mapping)]
+    evidence_entry = next(
+        (item for item in entries if item.get("task_id") == task_id and item.get("path") == name), None
+    )
+    if evidence_entry is None:
+        raise ManifestError(f"manifest has no evidence entry for superseded record {name}")
+    raw_entry = next(
+        (
+            item
+            for item in entries
+            if item.get("task_id") == f"{task_id}-RAW" and item.get("path") == name.removesuffix(".json") + ".log"
+        ),
+        None,
+    )
+    if raw_entry is None:
+        raise ManifestError(f"manifest has no raw evidence entry for superseded record {name}")
+    evidence_path, raw_path, raw_digest = _resolve_pair(manifest_path, evidence_entry, raw_entry)
+    if previous.get("record_sha256") != _digest(evidence_path):
+        raise ManifestError("superseded record digest mismatch")
+    superseded = _load_json(evidence_path)
+    if superseded.get("record_id") != supersedes:
+        raise ManifestError("superseded record identifier mismatch")
+    if superseded.get("task_id") != task_id:
+        raise ManifestError("superseded record belongs to another task")
+    return evidence_path, raw_path, raw_digest, superseded
+
+
+def validate_manifest(manifest_path: Path, *, task_id: str, non_skipped: bool) -> bool:
+    """Fail closed unless task evidence and every requirement result are reproducible.
+
+    A first artifact with ``requalification_kind: "regression"`` receives the checks that do not
+    concern requirements; the ``supersedes`` chain is then followed to the latest non-regression
+    record, which receives every qualifying check, ledger included
+    (NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04), option 1)."""
+    manifest = _load_json(manifest_path)
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise ManifestError("manifest artifacts must be an array")
+    evidence_entry = next((item for item in artifacts if item.get("task_id") == task_id), None)
+    raw_entry = next((item for item in artifacts if item.get("task_id") == f"{task_id}-RAW"), None)
+    if evidence_entry is None:
+        raise ManifestError(f"manifest has no evidence entry for {task_id}")
+    if raw_entry is None:
+        raise ManifestError(f"manifest has no raw evidence entry for {task_id}")
+    evidence_path, raw_path, raw_digest = _resolve_pair(manifest_path, evidence_entry, raw_entry)
 
     record = _load_json(evidence_path)
-    required = {
-        "task_id", "commit", "environment", "inputs", "commands",
-        "requirement_results", "raw_output_sha256", "result", "created_at",
-    }
-    missing = sorted(required - record.keys())
+    seen = {evidence_path.name}
+    while record.get("requalification_kind") == REGRESSION_KIND:
+        _validate_regression(
+            manifest,
+            record,
+            task_id=task_id,
+            evidence_name=evidence_path.name,
+            raw_name=raw_path.name,
+            raw_digest=raw_digest,
+            non_skipped=non_skipped,
+        )
+        evidence_path, raw_path, raw_digest, record = _superseded(
+            manifest_path, artifacts, record, task_id=task_id, seen=seen
+        )
+
+    missing = sorted(QUALIFYING_FIELDS - record.keys())
     if missing:
         raise ManifestError(f"evidence fields missing: {', '.join(missing)}")
     if record["task_id"] != task_id or COMMIT.fullmatch(str(record["commit"])) is None:
