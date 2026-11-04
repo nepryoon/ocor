@@ -2754,7 +2754,8 @@ def _projection_double(*, fact_revision: int | None = None, failure: BaseExcepti
             self._fail("apply")
             self.applied.append((fact_id, commit_id, payload))
 
-    value = Projection(release_digest=RELEASE, ledger=c4_projection_fixture.isolated_ledger())
+    value = Projection(release_digest=RELEASE, ledger=c4_projection_fixture.isolated_ledger(),
+                       quarantine=c4_projection_fixture.isolated_ledger())
     value.applied = []
     return value
 

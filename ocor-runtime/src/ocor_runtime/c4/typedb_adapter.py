@@ -52,6 +52,13 @@ from that history at Cn and dropped once the answer is read (``TypeDBCommitSandb
 emulation is unavailable -- no sandbox configured, every sandbox slot taken, the history up to Cn
 incomplete, or the backend refusing the sandbox -- the answer is ``UNSUPPORTED_CAPABILITY``, never
 the later commit (ADD v1.3 :1366; LLD v1.1 :369; FR-057, Register :179).
+
+OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-002): the projection cannot be built without the durable drift
+quarantine of ``ocor_runtime.c4.drift`` and enforces it on its own read path: a quarantined
+aggregate is ``PROJECTION_NOT_READY`` for every consistency mode, ``EXACT_AT_COMMIT`` included,
+with the served context of the last confirmed watermark; a quarantine that cannot be consulted is
+``CONTROL_PLANE_UNAVAILABLE`` (LLD v1.1 :148 and :346). ``reconciliation_digest`` and
+``projected_facts`` are the reads of the drift detector, never a serving path.
 """
 
 from __future__ import annotations
@@ -68,11 +75,13 @@ from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, TypeVar
 
 from ..c2.ports import C2Error, ConsistencyMode, NamedQueryRequest, NamedQueryResponse, ServedContext, Watermark
+from .drift import CheckpointStorePort, ProjectionQuarantinePort, QuarantineRecord
 from .watermark import ConfirmedWatermark, WatermarkLedgerError, WatermarkLedgerPort
 
+T = TypeVar("T")
 TYPEDB_URL = "http://127.0.0.1:8000"
 DATABASE = "ocor_default"
 BRANCH = "main"
@@ -562,6 +571,7 @@ class TypeDBProjectionAdapter:
         *,
         release_digest: str,
         ledger: WatermarkLedgerPort,
+        quarantine: ProjectionQuarantinePort,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         sandbox: TypeDBCommitSandbox | None | object = _DEFAULT_SANDBOX,
     ) -> None:
@@ -571,12 +581,15 @@ class TypeDBProjectionAdapter:
             raise TypeError("release_digest must be a SHA-256 URN")
         if not isinstance(ledger, WatermarkLedgerPort):
             raise TypeError("a WatermarkLedgerPort is required")
+        if not isinstance(quarantine, ProjectionQuarantinePort):
+            raise TypeError("a durable ProjectionQuarantinePort is required (LLD v1.1 :148)")
         if sandbox is _DEFAULT_SANDBOX:
             sandbox = TypeDBCommitSandbox()
         if sandbox is not None and not isinstance(sandbox, TypeDBCommitSandbox):
             raise TypeError("sandbox must be a TypeDBCommitSandbox or None")
         self._release = release_digest
         self._ledger = ledger
+        self._quarantine = quarantine
         self._clock = clock
         self._sandbox: TypeDBCommitSandbox | None = sandbox
 
@@ -584,6 +597,12 @@ class TypeDBProjectionAdapter:
     def release_digest(self) -> str:
         """The ontology release this projection declares (FR-148, Register :331)."""
         return self._release
+
+    @property
+    def checkpoint_store(self) -> CheckpointStorePort | None:
+        """The store of the signed checkpoints of this projection, outside the projection store:
+        the durable quarantine store when it keeps checkpoints too."""
+        return self._quarantine if isinstance(self._quarantine, CheckpointStorePort) else None
 
     @property
     def store_id(self) -> str:
@@ -604,6 +623,7 @@ class TypeDBProjectionAdapter:
             "match $r isa c4-fact-revision; delete $r;",
         )
         self.reset_ledger()
+        self._quarantine.clear_quarantine(self.store_id)
         for name in sandbox_database_names():
             _drop_database(name)
 
@@ -758,6 +778,72 @@ class TypeDBProjectionAdapter:
             policy_bundle_digest=request.governed_context.policy_bundle_digest)
         return C2Error("PROJECTION_NOT_READY", message, served=served)
 
+    # -- drift quarantine and reconciliation reads (NCR-C4-002, LLD v1.1 :148) ----------------
+
+    def quarantine_record(self, fact_id: str) -> QuarantineRecord | None:
+        """The durable quarantine of an aggregate, or ``None`` when it is not quarantined."""
+        return self._quarantine.active(self.store_id, _require_value("fact_id", fact_id))
+
+    def is_quarantined(self, fact_id: str) -> bool:
+        return self.quarantine_record(fact_id) is not None
+
+    def quarantine_fact(self, fact_id: str, *, canonical_commit: str, expected_digest: str,
+                        served_digest: str) -> QuarantineRecord:
+        return self._quarantine.quarantine(
+            self.store_id, _require_value("fact_id", fact_id),
+            canonical_commit=_require_value("canonical_commit", canonical_commit),
+            expected_digest=_require_value("expected_digest", expected_digest),
+            served_digest=_require_value("served_digest", served_digest), at=self._clock())
+
+    def release_fact(self, fact_id: str) -> None:
+        self._quarantine.release(self.store_id, _require_value("fact_id", fact_id))
+
+    def _reconciliation(self, read: Callable[[], T]) -> T:
+        try:
+            return read()
+        except C2Error:
+            raise
+        except _ANSWER_FAILURES as exc:
+            if _unreachable(exc):
+                raise TypeDBUnavailableError("the TypeDB projection is unreachable",
+                                             confirmed=self._confirmed()) from exc
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
+
+    def reconciliation_digest(self, fact_id: str) -> str | None:
+        """The digest of the payload the projection holds for an aggregate, whether or not it is
+        quarantined, or ``None`` when it holds none: the drift detector's comparison, never served."""
+        fact_id = _require_value("fact_id", fact_id)
+        _, found = self._reconciliation(lambda: self._served_fact(fact_id))
+        if found is None:
+            return None
+        return "urn:sha256:" + hashlib.sha256(found[1].encode("utf-8")).hexdigest()
+
+    def projected_facts(self) -> list[tuple[str, str, int, str]]:
+        """Every projected fact as ``(fact_id, commit_id, sequence, payload)`` in commit order: what
+        a checkpoint records. A fact whose commit is not ordered on the branch is refused."""
+        def read() -> list[tuple[str, str, int, str]]:
+            facts = _rows("match $f isa c4-fact, has c4-fact-id $fid, has c4-commit-id $c, has c4-payload $p;",
+                          ("fid", "c", "p"))
+            order = _rows("match $o isa c4-commit-order, has c4-commit-id $c, has c4-commit-seq $s;", ("c", "s"))
+            positions = {_text_value(row["c"]): _position_value(row["s"]) for row in order}
+            result = []
+            for row in facts:
+                commit = _text_value(row["c"])
+                if commit not in positions:
+                    raise TypeDBAdapterError("a projected fact has a commit that is not ordered on the branch")
+                result.append((_text_value(row["fid"]), commit, positions[commit], _text_value(row["p"])))
+            return sorted(result, key=lambda fact: fact[2])
+        return self._reconciliation(read)
+
+    def _enforce_quarantine(self, request: NamedQueryRequest, fact_id: str) -> None:
+        """LLD v1.1 :148: a quarantined aggregate is never served, whatever the consistency mode."""
+        try:
+            record = self._quarantine.active(self.store_id, fact_id)
+        except WatermarkLedgerError as exc:
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the C4 drift quarantine is unavailable") from exc
+        if record is not None:
+            raise self._not_ready(request, "the aggregate is quarantined pending reconciliation")
+
     def _lookup_fact(self, fact_id: str) -> tuple[str, str] | None:
         rows = read_rows(
             f"match $f isa c4-fact, has c4-fact-id {_literal(fact_id)}, "
@@ -818,6 +904,7 @@ class TypeDBProjectionAdapter:
         if request.branch != BRANCH or request.scenario_id is not None:
             # a branch or a scenario the projection does not serve is never answered from main
             raise C2Error("UNSUPPORTED_CAPABILITY", "the projection does not serve the requested branch or scenario")
+        self._enforce_quarantine(request, fact_id)
         try:
             watermark, found = self._served_fact(fact_id)
         except C2Error:

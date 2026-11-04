@@ -100,7 +100,7 @@ def clock() -> Clock:
 
 def _adapter(ledger: Any, clock: Clock, release: str = RELEASE) -> Any:
     return _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(
-        release_digest=release, ledger=ledger, clock=clock)
+        release_digest=release, ledger=ledger, quarantine=ledger, clock=clock)
 
 
 @pytest.fixture
@@ -431,7 +431,7 @@ def test_ncr_c4_004_emulation_unavailable_is_unsupported_capability_never_a_down
     by the later commit; a commit not landed yet stays PROJECTION_NOT_READY (LLD v1.1 :369)."""
     _three_commits(adapter)
     unavailable = _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(
-        release_digest=RELEASE, ledger=ledger, clock=clock, sandbox=None)
+        release_digest=RELEASE, ledger=ledger, quarantine=ledger, clock=clock, sandbox=None)
 
     with pytest.raises(C2Error) as caught:
         unavailable.read(_exact("commit-2"))
@@ -466,7 +466,7 @@ def test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_noth
     _three_commits(adapter)
     typedb_adapter = _module("ocor_runtime.c4.typedb_adapter")
     sandbox = typedb_adapter.TypeDBCommitSandbox(max_sandboxes=2)
-    bounded = typedb_adapter.TypeDBProjectionAdapter(release_digest=RELEASE, ledger=ledger, clock=clock,
+    bounded = typedb_adapter.TypeDBProjectionAdapter(release_digest=RELEASE, ledger=ledger, quarantine=ledger, clock=clock,
                                                      sandbox=sandbox)
 
     with sandbox.open("commit-1", 1) as first, sandbox.open("commit-2", 2) as second:
@@ -755,11 +755,22 @@ def test_ncr_c4_002_the_rebuild_source_is_the_canonical_terminusdb_store(adapter
 class _UnreadableQuarantine:
     """A quarantine store that cannot be read: the local failure handling of the read path."""
 
-    def __getattr__(self, name: str) -> Any:
-        def fail(*args: Any, **kwargs: Any) -> Any:
-            raise _module("ocor_runtime.c4.watermark").WatermarkLedgerError(
-                "CONTROL_PLANE_UNAVAILABLE", "quarantine store unreachable")
-        return fail
+    @staticmethod
+    def _fail() -> Any:
+        raise _module("ocor_runtime.c4.watermark").WatermarkLedgerError(
+            "CONTROL_PLANE_UNAVAILABLE", "quarantine store unreachable")
+
+    def quarantine(self, *args: Any, **kwargs: Any) -> Any:
+        return self._fail()
+
+    def release(self, *args: Any, **kwargs: Any) -> Any:
+        return self._fail()
+
+    def active(self, *args: Any, **kwargs: Any) -> Any:
+        return self._fail()
+
+    def clear_quarantine(self, *args: Any, **kwargs: Any) -> Any:
+        return self._fail()
 
 
 def test_ncr_c4_002_an_unreadable_quarantine_fails_closed(adapter: Any, ledger: Any, clock: Clock) -> None:

@@ -11,13 +11,14 @@ Every test drives real PostgreSQL and real TypeDB -- no mocks.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 
 import pytest
 import c4_projection_fixture
 import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2.ports import C2Error, ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand
-from ocor_runtime.c3.service import PostgresC3Service
+from ocor_runtime.c3.terminusdb_service import TerminusDBC3Service
 from ocor_runtime.c4.rebuild import DriftError, ProjectionDriftDetector
 from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
 from ocor_runtime.kernel.governed_context import GovernedContext
@@ -53,11 +54,11 @@ def typedb_reachable() -> None:
 
 
 @pytest.fixture
-def service(postgres_dsn: str) -> PostgresC3Service:
-    value = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
-    value.initialize()
-    value.reset()
-    return value
+def service(postgres_dsn: str) -> Iterator[TerminusDBC3Service]:
+    # NCP-U05 (NCR-C4-002): the drift detector rebuilds from the canonical TerminusDB store
+    # (docs/OCOR_LLD_v1.1.md:148), on a disposable database of the real TerminusDB
+    with c4_projection_fixture.canonical_store(admission=GOVERNED.admission()) as value:
+        yield value
 
 
 @pytest.fixture
@@ -68,7 +69,7 @@ def projection(typedb_reachable: None) -> TypeDBProjectionAdapter:
 
 
 @pytest.fixture
-def detector(service: PostgresC3Service, projection: TypeDBProjectionAdapter) -> ProjectionDriftDetector:
+def detector(service: TerminusDBC3Service, projection: TypeDBProjectionAdapter) -> ProjectionDriftDetector:
     return ProjectionDriftDetector(service, projection)
 
 
@@ -148,7 +149,7 @@ def make_read_request(*, required_commit: str) -> NamedQueryRequest:
 
 
 def test_rebuild_reproduces_the_canonical_digest_and_watermark(
-    detector: ProjectionDriftDetector, service: PostgresC3Service
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:1",
@@ -184,7 +185,7 @@ def test_rebuild_of_a_never_committed_aggregate_reports_canonical_not_found(
 
 
 def test_real_out_of_band_drift_is_quarantined_not_repaired(
-    detector: ProjectionDriftDetector, service: PostgresC3Service, projection: TypeDBProjectionAdapter
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service, projection: TypeDBProjectionAdapter
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:2",
@@ -213,7 +214,7 @@ def test_real_out_of_band_drift_is_quarantined_not_repaired(
 
 
 def test_serving_a_quarantined_projection_is_prohibited(
-    detector: ProjectionDriftDetector, service: PostgresC3Service, projection: TypeDBProjectionAdapter
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service, projection: TypeDBProjectionAdapter
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:3",
@@ -235,7 +236,7 @@ def test_serving_a_quarantined_projection_is_prohibited(
 
 
 def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
-    detector: ProjectionDriftDetector, service: PostgresC3Service, projection: TypeDBProjectionAdapter
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service, projection: TypeDBProjectionAdapter
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:4",
@@ -270,7 +271,7 @@ def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
 
 
 def test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error(
-    service: PostgresC3Service, monkeypatch: pytest.MonkeyPatch
+    service: TerminusDBC3Service, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:5",

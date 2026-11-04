@@ -9,6 +9,11 @@ the ledger never moves backwards (LLD v1.1 :355). A connection-level failure, or
 back that is not well formed (text non-empty, sequence a positive integer and never ``bool``,
 instants timezone-aware), is ``CONTROL_PLANE_UNAVAILABLE``: callers fail closed
 (PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)).
+
+OCOR-DEV-REM-0052 (NCR-C4-002): the same store keeps, outside the projection store, the durable
+drift quarantine (``ProjectionQuarantinePort``, table ``c4_quarantine``, one row per quarantined
+aggregate) and the signed projection checkpoints (``CheckpointStorePort``, table
+``c4_checkpoint``, append-only) of ``ocor_runtime.c4.drift`` (LLD v1.1 :148).
 """
 
 from __future__ import annotations
@@ -21,6 +26,7 @@ from typing import Any, TypeVar
 import psycopg
 from psycopg.rows import dict_row
 
+from ..drift import QuarantineRecord, SignedProjectionCheckpoint
 from ..watermark import ConfirmedWatermark, WatermarkLedgerError
 
 SCHEMA_NAME = re.compile(r"[a-z_][a-z0-9_]{0,48}")
@@ -36,6 +42,13 @@ CREATE TABLE IF NOT EXISTS {s}.c4_watermark_confirmed (
   sequence BIGINT NOT NULL CHECK (sequence >= 1), release_digest TEXT NOT NULL,
   confirmed_at TIMESTAMPTZ NOT NULL, PRIMARY KEY (store_id, branch, commit_id),
   UNIQUE (store_id, branch, sequence));
+CREATE TABLE IF NOT EXISTS {s}.c4_quarantine (
+  store_id TEXT NOT NULL, aggregate_ref TEXT NOT NULL, canonical_commit TEXT NOT NULL,
+  expected_digest TEXT NOT NULL, served_digest TEXT NOT NULL, quarantined_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (store_id, aggregate_ref));
+CREATE TABLE IF NOT EXISTS {s}.c4_checkpoint (
+  checkpoint_no BIGSERIAL PRIMARY KEY, store_id TEXT NOT NULL, key_id TEXT NOT NULL,
+  payload BYTEA NOT NULL, signature BYTEA NOT NULL, saved_at TIMESTAMPTZ NOT NULL);
 """
 _UNAVAILABLE = (psycopg.OperationalError, psycopg.InterfaceError)
 
@@ -86,8 +99,29 @@ def _confirmed(row: Mapping[str, Any]) -> ConfirmedWatermark:
     )
 
 
+def _quarantined(row: Mapping[str, Any]) -> QuarantineRecord:
+    return QuarantineRecord(
+        store_id=_text(row, "store_id"),
+        aggregate_ref=_text(row, "aggregate_ref"),
+        canonical_commit=_text(row, "canonical_commit"),
+        expected_digest=_text(row, "expected_digest"),
+        served_digest=_text(row, "served_digest"),
+        quarantined_at=_moment(row.get("quarantined_at"), "quarantined_at"),
+    )
+
+
+def _blob(row: Mapping[str, Any], column: str) -> bytes:
+    value = row.get(column)
+    if isinstance(value, memoryview):
+        value = value.tobytes()
+    if not isinstance(value, bytes) or not value:
+        raise _unavailable(f"a stored C4 checkpoint has a malformed {column}")
+    return value
+
+
 class PostgresWatermarkLedger:
-    """The durable C4 watermark ledger; ``schema`` isolates one deployment (or one test)."""
+    """The durable C4 watermark ledger, drift quarantine and checkpoint store; ``schema``
+    isolates one deployment (or one test)."""
 
     def __init__(self, dsn: str, *, schema: str = "ocor_c4", connect_timeout: int = 5) -> None:
         if not isinstance(dsn, str) or not dsn:
@@ -198,3 +232,74 @@ class PostgresWatermarkLedger:
             connection.execute(f"DELETE FROM {self._schema}.c4_watermark_confirmed WHERE store_id = %s", (store_id,))
 
         self._run(work)
+
+    # -- ProjectionQuarantinePort (NCR-C4-002) ---------------------------------------------
+
+    def quarantine(self, store_id: str, aggregate_ref: str, *, canonical_commit: str, expected_digest: str,
+                   served_digest: str, at: datetime) -> QuarantineRecord:
+        """Quarantines an aggregate; an aggregate already quarantined keeps its first record."""
+        values = (_required("store_id", store_id), _required("aggregate_ref", aggregate_ref),
+                  _required("canonical_commit", canonical_commit), _required("expected_digest", expected_digest),
+                  _required("served_digest", served_digest), _at(at))
+
+        def work(connection: psycopg.Connection[dict[str, Any]]) -> QuarantineRecord:
+            connection.execute(
+                f"INSERT INTO {self._schema}.c4_quarantine (store_id, aggregate_ref, canonical_commit, "
+                "expected_digest, served_digest, quarantined_at) VALUES (%s, %s, %s, %s, %s, %s) "
+                "ON CONFLICT DO NOTHING", values)
+            row = connection.execute(
+                f"SELECT * FROM {self._schema}.c4_quarantine WHERE store_id = %s AND aggregate_ref = %s",
+                values[:2]).fetchone()
+            if row is None:
+                raise _unavailable("the C4 quarantine did not return the record")
+            return _quarantined(row)
+
+        return self._run(work)
+
+    def release(self, store_id: str, aggregate_ref: str) -> None:
+        values = (_required("store_id", store_id), _required("aggregate_ref", aggregate_ref))
+        self._run(lambda connection: connection.execute(
+            f"DELETE FROM {self._schema}.c4_quarantine WHERE store_id = %s AND aggregate_ref = %s", values))
+
+    def active(self, store_id: str, aggregate_ref: str) -> QuarantineRecord | None:
+        values = (_required("store_id", store_id), _required("aggregate_ref", aggregate_ref))
+
+        def work(connection: psycopg.Connection[dict[str, Any]]) -> QuarantineRecord | None:
+            row = connection.execute(
+                f"SELECT * FROM {self._schema}.c4_quarantine WHERE store_id = %s AND aggregate_ref = %s",
+                values).fetchone()
+            return None if row is None else _quarantined(row)
+
+        return self._run(work)
+
+    def clear_quarantine(self, store_id: str) -> None:
+        """Removes the quarantine of a projection that is reset: its facts are gone."""
+        store_id = _required("store_id", store_id)
+        self._run(lambda connection: connection.execute(
+            f"DELETE FROM {self._schema}.c4_quarantine WHERE store_id = %s", (store_id,)))
+
+    # -- CheckpointStorePort (NCR-C4-002) ---------------------------------------------------
+
+    def save_checkpoint(self, store_id: str, checkpoint: SignedProjectionCheckpoint, *, at: datetime) -> None:
+        store_id = _required("store_id", store_id)
+        if not isinstance(checkpoint, SignedProjectionCheckpoint):
+            raise ValueError("a SignedProjectionCheckpoint is required")
+        values = (store_id, _required("key_id", checkpoint.key_id), checkpoint.payload, checkpoint.signature, _at(at))
+        self._run(lambda connection: connection.execute(
+            f"INSERT INTO {self._schema}.c4_checkpoint (store_id, key_id, payload, signature, saved_at) "
+            "VALUES (%s, %s, %s, %s, %s)", values))
+
+    def latest_checkpoint(self, store_id: str) -> SignedProjectionCheckpoint | None:
+        """The last checkpoint saved for the store; it is verified by its user, never here."""
+        store_id = _required("store_id", store_id)
+
+        def work(connection: psycopg.Connection[dict[str, Any]]) -> SignedProjectionCheckpoint | None:
+            row = connection.execute(
+                f"SELECT * FROM {self._schema}.c4_checkpoint WHERE store_id = %s ORDER BY checkpoint_no DESC LIMIT 1",
+                (store_id,)).fetchone()
+            if row is None:
+                return None
+            return SignedProjectionCheckpoint(payload=_blob(row, "payload"), key_id=_text(row, "key_id"),
+                                              signature=_blob(row, "signature"))
+
+        return self._run(work)
