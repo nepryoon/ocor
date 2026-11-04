@@ -1,7 +1,8 @@
 """OCOR-DEV-REM-0052 (NCP-U05): C4 projections conform to the closed normative elements.
 
 Unit of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), plan unit NCP-U05, register entries
-NCR-C4-001, NCR-C4-003 and NCR-C4-004 (this module; NCR-C4-002 follows in the same unit).
+NCR-C4-001, NCR-C4-002, NCR-C4-003 and NCR-C4-004 (the SHACL validation of NCR-C4-002 waits for
+the PO decision NCP-U05-FUSEKI-SHACL-SERVICE).
 
 * NCR-C4-001 -- LLD v1.1 :355 (C4/C5 per-aggregate ordering, monotonic watermark, durable
   deduplication), LLD v1.1 :148 (projector verifies schema/release/GCS, applies idempotently,
@@ -895,3 +896,441 @@ def test_ncr_c4_002_a_checkpoint_must_cover_the_whole_projection(canonical: Any,
     with pytest.raises(_module("ocor_runtime.c4.rebuild").DriftError) as caught:
         detector.checkpoint(aggregates=[_aggregate(DRIFT_REF)])
     assert caught.value.reason_code == "CHECKPOINT_INCOMPLETE"
+
+
+# -- NCR-C4-002 (Jena: watermark, canonical marking, typed errors) -------------------------------
+#
+# LLD v1.1 :148: Jena exposes RDF/JSON-LD with conservative marking, and every projector advances
+# its watermark only in the same transaction as the projection. ADD v1.3 §3.0.2 (:396-401): the
+# marking exists in one canonical form, the ``marking`` object of §3.2 ``$defs`` (:741-787),
+# governed by the ``MarkingSchemeDefinition`` of §3.1.1 (:429); a ``marking_digest`` that does not
+# match the object is DENY. ADD v1.3 §5.3 (:3256-3282): join, dominance and unknown/incomparable
+# behaviour per family. LLD v1.1 §1.3 (:67): a missing, incomparable or unresolvable marking is
+# ``MARKING_UNRESOLVED``. Register FR-068 (:192) and FR-131 (:298): boundaries and markings
+# propagate to projections and exports. The SHACL validation through the Fuseki SHACL service
+# waits for the PO decision NCP-U05-FUSEKI-SHACL-SERVICE and is not part of these cases.
+
+SCHEME_ID = "urn:ocor:marking-scheme:rem0052"
+LEVEL_PAIRS = (("UNCLASSIFIED", "ALPHA"), ("UNCLASSIFIED", "BRAVO"), ("ALPHA", "SECRET"), ("BRAVO", "SECRET"),
+               ("SECRET", "TOP_SECRET"))
+LEVELS = ("UNCLASSIFIED", "ALPHA", "BRAVO", "SECRET", "TOP_SECRET")
+
+
+def _order(pairs: tuple[tuple[str, str], ...], levels: tuple[str, ...]) -> list[list[str]]:
+    """The reflexive-transitive closure of ``pairs`` as the declared ``dominance_relation``."""
+    closure = {(level, level) for level in levels} | set(pairs)
+    while True:
+        extra = {(a, d) for a, b in closure for c, d in closure if b == c} - closure
+        if not extra:
+            return sorted([a, b] for a, b in closure)
+        closure |= extra
+
+
+def _family(name: str, vocabulary: list[str], kind: str = "RESTRICTION") -> dict[str, Any]:
+    join, meet = ("UNION", "INTERSECTION") if kind == "RESTRICTION" else ("INTERSECTION", "UNION")
+    return {"family": name, "vocabulary": vocabulary, "kind": kind, "join_operator": join, "meet_operator": meet,
+            "neutral_element": [] if kind == "RESTRICTION" else list(vocabulary)}
+
+
+def _scheme_ir(**changes: Any) -> dict[str, Any]:
+    """A ``MarkingSchemeDefinition`` of the C1 IR (ADD v1.3 :429; ``ocor_runtime.c1.oac``)."""
+    value: dict[str, Any] = {
+        "construct": "MarkingSchemeDefinition", "scheme_id": SCHEME_ID, "version": "1.0.0", "levels": list(LEVELS),
+        "top": "TOP_SECRET", "bottom": "UNCLASSIFIED", "dominance_relation": _order(LEVEL_PAIRS, LEVELS),
+        "family_definitions": [
+            _family("mandatory_markings", ["MM-ALPHA", "MM-BRAVO"]),
+            _family("caveats", ["CV-EYES-ONLY", "CV-ORCON"]),
+            _family("dissemination_controls", ["DC-NOEXPORT", "DC-RELIDO"]),
+            _family("permitted_purposes", ["audit", "logistics", "mission-planning"], kind="PERMISSION"),
+            _family("handling_instructions", ["HI-ENCRYPT-AT-REST", "HI-TWO-PERSON"]),
+        ],
+        "unknown_value_behavior": "DENY", "incomparable_behavior": "DENY",
+        "declassification_authority_ref": "urn:ocor:authority:declassification:rem0052",
+    }
+    value.update(changes)
+    return value
+
+
+def _scheme(**changes: Any) -> Any:
+    return _module("ocor_runtime.c4.marking").CanonicalMarkingScheme(_scheme_ir(**changes))
+
+
+def _marking(level: str, *, mandatory: tuple[str, ...] = (), caveats: tuple[str, ...] = (),
+             controls: tuple[str, ...] = (), purposes: tuple[str, ...] = ("logistics", "mission-planning"),
+             handling: tuple[str, ...] = (), **changes: Any) -> dict[str, Any]:
+    """A canonical ``marking`` object of ADD v1.3 §3.2 ``$defs`` with its own digest."""
+    value: dict[str, Any] = {
+        "scheme_id": SCHEME_ID, "labels": sorted({level, *mandatory, *caveats}),
+        "mandatory_markings": sorted(mandatory), "caveats": sorted(caveats),
+        "dissemination_controls": sorted(controls), "permitted_purposes": sorted(purposes),
+        "handling_instructions": sorted(handling),
+    }
+    value.update(changes)
+    value["marking_digest"] = _module("ocor_runtime.c5.envelope").marking_digest(value)
+    return value
+
+
+def _clearance(level: str = "SECRET", **families: Any) -> dict[str, Any]:
+    """The requester's accreditation, evaluated under the same scheme: a level, the restriction
+    families the requester holds and the purpose the request is made for."""
+    families.setdefault("purposes", ("mission-planning",))
+    families.setdefault("mandatory", ("MM-ALPHA", "MM-BRAVO"))
+    families.setdefault("caveats", ("CV-EYES-ONLY", "CV-ORCON"))
+    families.setdefault("controls", ("DC-NOEXPORT", "DC-RELIDO"))
+    families.setdefault("handling", ("HI-ENCRYPT-AT-REST", "HI-TWO-PERSON"))
+    return _marking(level, **families)
+
+
+def _ref(marking: dict[str, Any]) -> str:
+    return "urn:" + marking["marking_digest"]
+
+
+def _properties(label: str = "fixture") -> dict[str, str]:
+    return {"label": label, "provenanceRef": "urn:ocor:provenance:rem0052-1"}
+
+
+def _jena(ledger: Any, clock: Clock, *, release: str = RELEASE, scheme: Any = None) -> Any:
+    return _module("ocor_runtime.c4.jena_adapter").JenaSHACLProjectionAdapter(
+        marking_scheme=_scheme() if scheme is None else scheme, release_digest=release, ledger=ledger, clock=clock)
+
+
+@pytest.fixture
+def jena(ledger: Any, clock: Clock) -> Iterator[Any]:
+    value = _jena(ledger, clock)
+    try:
+        value.initialize()
+        value.reset()
+    except (_module("ocor_runtime.c4.jena_adapter").JenaAdapterError, OSError) as error:
+        pytest.fail(f"a real, live Fuseki instance is mandatory qualifying evidence: {error}")
+    try:
+        yield value
+    finally:
+        value.reset()
+
+
+def _sparql_update(update: str) -> None:
+    """An out-of-band write to the Fuseki dataset of the stack, outside the adapter."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    request = __import__("urllib.request").request.Request(
+        f"{jena_adapter.FUSEKI_URL}/{jena_adapter.DATASET}/update", method="POST", data=update.encode("utf-8"),
+        headers={"Content-Type": "application/sparql-update"})
+    with __import__("urllib.request").request.urlopen(request, timeout=10) as response:
+        assert response.status in (200, 204)
+
+
+R1 = "urn:ocor:resource:rem0052-jena:1"
+R2 = "urn:ocor:resource:rem0052-jena:2"
+R3 = "urn:ocor:resource:rem0052-jena:3"
+
+
+def test_ncr_c4_002_jena_conforms(jena: Any, ledger: Any) -> None:
+    """LLD v1.1 :148 and ADD v1.3 §3.0.2: each publication advances the Jena watermark to its
+    canonical commit in the same update as the triples and is confirmed in the durable ledger;
+    the marking persisted with the resource is the canonical object, evaluated with the
+    ``MarkingSchemeDefinition``; no legacy one-label-per-scheme engine is used."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    assert "ocor_runtime.c4_marking" not in {getattr(value, "__module__", None) for value in vars(jena_adapter).values()}
+    secret = _marking("SECRET", caveats=("CV-ORCON",))
+    assert jena.publish(R1, _properties("one"), marking=_marking("UNCLASSIFIED"), commit_id="commit-j1") is True
+    assert jena.publish(R2, _properties("two"), marking=secret, commit_id="commit-j2") is True
+
+    assert jena.current_watermark() == "commit-j2"
+    confirmed = ledger.latest(jena.store_id, "main")
+    assert (confirmed.commit_id, confirmed.sequence, confirmed.release_digest) == ("commit-j2", 2, RELEASE)
+    assert jena.watermark() == confirmed
+    rows = {row["resource"]: row for row in jena.list_authorized(_clearance("SECRET"))}
+    assert set(rows) == {R1, R2}
+    assert (rows[R2]["commitId"], rows[R2]["markingRef"]) == ("commit-j2", _ref(secret))
+    assert jena.list_authorized(_clearance("ALPHA")) == [rows[R1]]
+
+
+def test_ncr_c4_002_jena_replay_of_a_commit_is_idempotent(jena: Any, ledger: Any) -> None:
+    """LLD v1.1 :148 and Register FR-064 :188: a replayed commit writes nothing and never moves the
+    watermark, an earlier commit replayed after a later one included."""
+    jena.publish(R1, _properties("one"), marking=_marking("SECRET"), commit_id="commit-j1")
+    jena.publish(R2, _properties("two"), marking=_marking("SECRET"), commit_id="commit-j2")
+    assert jena.publish(R1, _properties("replayed"), marking=_marking("SECRET"), commit_id="commit-j1") is False
+    assert jena.current_watermark() == "commit-j2"
+    assert ledger.latest(jena.store_id, "main").commit_id == "commit-j2"
+    assert {row["label"] for row in jena.list_authorized(_clearance())} == {"one", "two"}
+    assert jena.raw_unfiltered_triple_count() == 2
+
+
+def test_ncr_c4_002_jena_a_refused_publication_moves_no_watermark(jena: Any, ledger: Any) -> None:
+    """LLD v1.1 :148 (the watermark advances only with the projection): a publication refused by
+    the shape, the provenance or the marking writes neither triples nor watermark, and the
+    watermark predicates are never accepted from the caller."""
+    jena.publish(R1, _properties("one"), marking=_marking("SECRET"), commit_id="commit-j1")
+    refused = [
+        ({"label": "x", "provenanceRef": "urn:ocor:provenance:1", "commitId": "commit-forged"}, _marking("SECRET")),
+        ({"label": "x", "provenanceRef": "urn:ocor:provenance:1", "classification": "SECRET"}, _marking("SECRET")),
+        ({"label": "x", "provenanceRef": "lossy"}, _marking("SECRET")),
+        (_properties("x"), _forged_digest(_marking("SECRET"))),
+    ]
+    for properties, marking in refused:
+        with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError):
+            jena.publish(R2, properties, marking=marking, commit_id="commit-j2")
+    assert jena.current_watermark() == "commit-j1"
+    assert ledger.latest(jena.store_id, "main").commit_id == "commit-j1"
+    assert jena.raw_unfiltered_triple_count() == 1
+
+
+def _forged_digest(marking: dict[str, Any]) -> dict[str, Any]:
+    return {**marking, "marking_digest": "sha256:" + "0" * 64}
+
+
+UNRESOLVED_MARKINGS: dict[str, Any] = {
+    "digest-mismatch": lambda: _forged_digest(_marking("SECRET")),
+    "unknown-level": lambda: _marking("COSMIC"),
+    "two-levels": lambda: _marking("SECRET", labels=["ALPHA", "SECRET"]),
+    "labels-not-partitioned": lambda: _marking("SECRET", caveats=("CV-ORCON",), labels=["SECRET"]),
+    "unknown-caveat": lambda: _marking("SECRET", caveats=("CV-UNKNOWN",)),
+    "unknown-control": lambda: _marking("SECRET", controls=("DC-UNKNOWN",)),
+    "unknown-purpose": lambda: _marking("SECRET", purposes=("marketing",)),
+    "no-purpose": lambda: _marking("SECRET", purposes=()),
+    "other-scheme": lambda: _marking("SECRET", scheme_id="urn:ocor:marking-scheme:other"),
+    "missing-field": lambda: {key: value for key, value in _marking("SECRET").items() if key != "caveats"},
+    "extra-field": lambda: _marking("SECRET", classification="SECRET"),
+    "not-an-object": lambda: "SECRET",
+}
+
+
+@pytest.mark.parametrize("case", sorted(UNRESOLVED_MARKINGS))
+def test_ncr_c4_002_an_unresolvable_marking_is_refused_before_any_write(jena: Any, case: str) -> None:
+    """ADD v1.3 §3.0.2 :401 and LLD v1.1 §1.3 :67: a marking that is not the canonical object of the
+    active scheme, carries an unknown value or a digest that does not match is MARKING_UNRESOLVED,
+    never a permissive posture; nothing is written."""
+    with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError) as caught:
+        jena.publish(R1, _properties(), marking=UNRESOLVED_MARKINGS[case](), commit_id="commit-j1")
+    assert caught.value.reason_code == "MARKING_UNRESOLVED"
+    assert (jena.current_watermark(), jena.raw_unfiltered_triple_count()) == (None, 0)
+
+
+@pytest.mark.parametrize("case", sorted(UNRESOLVED_MARKINGS))
+def test_ncr_c4_002_an_unresolvable_clearance_is_marking_unresolved(jena: Any, case: str) -> None:
+    """ADD v1.3 §5.3 :3280: without an active scheme, a known label or a complete context the
+    request is denied; no unknown value is discarded."""
+    jena.publish(R1, _properties(), marking=_marking("UNCLASSIFIED"), commit_id="commit-j1")
+    for read in (lambda c: jena.list_authorized(c), lambda c: jena.exists_authorized(R1, c),
+                 lambda c: jena.to_json_ld(R1, c), lambda c: jena.export([R1], c)):
+        with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError) as caught:
+            read(UNRESOLVED_MARKINGS[case]())
+        assert caught.value.reason_code == "MARKING_UNRESOLVED"
+
+
+DOMINANCE_CASES: dict[str, tuple[dict[str, Any], dict[str, Any], bool]] = {
+    "level-dominates": (_marking("ALPHA"), _clearance("SECRET"), True),
+    "level-below": (_marking("TOP_SECRET"), _clearance("SECRET"), False),
+    "level-incomparable": (_marking("BRAVO"), _clearance("ALPHA"), False),
+    "caveat-held": (_marking("ALPHA", caveats=("CV-ORCON",)), _clearance("SECRET"), True),
+    "caveat-not-held": (_marking("ALPHA", caveats=("CV-ORCON",)), _clearance("SECRET", caveats=("CV-EYES-ONLY",)), False),
+    "mandatory-not-held": (_marking("ALPHA", mandatory=("MM-BRAVO",)), _clearance("SECRET", mandatory=("MM-ALPHA",)),
+                           False),
+    "control-not-held": (_marking("ALPHA", controls=("DC-NOEXPORT",)), _clearance("SECRET", controls=()), False),
+    "handling-not-held": (_marking("ALPHA", handling=("HI-TWO-PERSON",)), _clearance("SECRET", handling=()), False),
+    "purpose-permitted": (_marking("ALPHA", purposes=("logistics", "mission-planning")),
+                          _clearance("SECRET", purposes=("logistics",)), True),
+    "purpose-not-permitted": (_marking("ALPHA", purposes=("logistics",)), _clearance("SECRET", purposes=("audit",)),
+                              False),
+}
+
+
+@pytest.mark.parametrize("case", sorted(DOMINANCE_CASES))
+def test_ncr_c4_002_a_read_requires_dominance_on_every_family(jena: Any, case: str) -> None:
+    """ADD v1.3 §5.3 :3271-3278: the clearance dominates the content on the level lattice and on
+    every family -- superset for the restriction families, subset of the permitted purposes --
+    and an incomparable level never dominates; a denied item is absent from list, existence and
+    export, and the count never diverges from the authorized list (FR-068 :192)."""
+    content, clearance, allowed = DOMINANCE_CASES[case]
+    jena.publish(R1, _properties(), marking=content, commit_id="commit-j1")
+    assert jena.exists_authorized(R1, clearance) is allowed
+    assert [row["resource"] for row in jena.list_authorized(clearance)] == ([R1] if allowed else [])
+    if allowed:
+        assert jena.to_json_ld(R1, clearance)
+    else:
+        with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError) as caught:
+            jena.to_json_ld(R1, clearance)
+        assert caught.value.reason_code == "MARKING_DENIED"
+
+
+def test_ncr_c4_002_the_export_carries_the_conservative_join_and_the_watermark(jena: Any) -> None:
+    """LLD v1.1 :148 (RDF/JSON-LD with conservative marking), ADD v1.3 §5.3 :3258-3266 and FR-131
+    :298: the export of several resources carries the join of their markings -- least upper bound
+    of the levels, union of the restriction families, intersection of the permitted purposes --
+    and the canonical commit of the watermark it was read at."""
+    first = _marking("UNCLASSIFIED", caveats=("CV-ORCON",), purposes=("logistics", "mission-planning"))
+    second = _marking("ALPHA", controls=("DC-NOEXPORT",), handling=("HI-ENCRYPT-AT-REST",),
+                      purposes=("mission-planning", "audit"))
+    jena.publish(R1, _properties("one"), marking=first, commit_id="commit-j1")
+    jena.publish(R2, _properties("two"), marking=second, commit_id="commit-j2")
+
+    exported = jena.export([R1, R2], _clearance("SECRET"))
+    assert exported.marking == _marking("ALPHA", caveats=("CV-ORCON",), controls=("DC-NOEXPORT",),
+                                        handling=("HI-ENCRYPT-AT-REST",), purposes=("mission-planning",))
+    assert (exported.canonical_commit, exported.release_digest) == ("commit-j2", RELEASE)
+    subjects = {node["@id"] for node in exported.document if "@id" in node}
+    assert {R1, R2} <= subjects
+    with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError) as caught:
+        jena.export([R1, R2], _clearance("UNCLASSIFIED"))
+    assert caught.value.reason_code == "MARKING_DENIED"
+
+
+def test_ncr_c4_002_the_join_is_conservative_and_fails_closed() -> None:
+    """ADD v1.3 §5.3 :3271-3280: the join never yields a marking less restrictive than an input;
+    incomparable levels are DENY unless the scheme declares MOST_RESTRICTIVE (then top); an empty
+    intersection of the permitted purposes is DENY."""
+    marking = _module("ocor_runtime.c4.marking")
+    scheme = _scheme()
+    inputs = [_marking("UNCLASSIFIED", mandatory=("MM-ALPHA",)), _marking("SECRET", caveats=("CV-ORCON",))]
+    joined = scheme.join(*inputs)
+    assert all(scheme.dominates(joined, value) for value in inputs)
+    assert joined == _marking("SECRET", mandatory=("MM-ALPHA",), caveats=("CV-ORCON",))
+    assert scheme.join(joined, joined) == joined
+    assert scheme.join(*reversed(inputs)) == joined
+    for incomparable in ([_marking("ALPHA"), _marking("BRAVO")],
+                         [_marking("ALPHA", purposes=("audit",)), _marking("ALPHA", purposes=("logistics",))]):
+        with pytest.raises(marking.MarkingUnresolved):
+            scheme.join(*incomparable)
+    assert _scheme(incomparable_behavior="MOST_RESTRICTIVE").join(_marking("ALPHA"), _marking("BRAVO")) == \
+        _marking("TOP_SECRET")
+
+
+def _without(name: str) -> list[dict[str, Any]]:
+    return [family for family in _scheme_ir()["family_definitions"] if family["family"] != name]
+
+
+INVALID_SCHEMES: dict[str, dict[str, Any]] = {
+    "permission-caveats": {"family_definitions": _without("caveats") + [
+        _family("caveats", ["CV-EYES-ONLY", "CV-ORCON"], kind="PERMISSION")]},
+    "restriction-purposes": {"family_definitions": _without("permitted_purposes") + [
+        _family("permitted_purposes", ["audit"], kind="RESTRICTION")]},
+    "four-families": {"family_definitions": _without("handling_instructions")},
+    "unknown-allowed": {"unknown_value_behavior": "ALLOW"},
+    "incomparable-allowed": {"incomparable_behavior": "PERMIT"},
+    "not-a-lattice": {"dominance_relation": _order((("UNCLASSIFIED", "ALPHA"), ("UNCLASSIFIED", "BRAVO"),
+                                                     ("ALPHA", "SECRET"), ("BRAVO", "SECRET"), ("ALPHA", "TOP_SECRET"),
+                                                     ("BRAVO", "TOP_SECRET")), LEVELS)},
+    "not-transitive": {"dominance_relation": sorted([[a, a] for a in LEVELS] + [list(p) for p in LEVEL_PAIRS])},
+    "wrong-top": {"top": "SECRET"},
+}
+
+
+@pytest.mark.parametrize("case", sorted(INVALID_SCHEMES))
+def test_ncr_c4_002_a_scheme_outside_the_supported_profile_is_refused(case: str) -> None:
+    """ADD v1.3 :429 and §5.3 :3268: a scheme with a PERMISSION restriction family, a missing
+    family, an implicit default or an order that is not a lattice is refused; no projection is
+    built on it."""
+    with pytest.raises(_module("ocor_runtime.c4.marking").MarkingSchemeError):
+        _scheme(**INVALID_SCHEMES[case])
+
+
+def test_ncr_c4_002_a_stored_marking_that_no_longer_matches_is_denied(jena: Any) -> None:
+    """ADD v1.3 §3.0.2 :401: a marking whose digest no longer matches the object -- a storage
+    corruption of the projection that lowers it -- is DENY: the resource is withheld from every
+    read, never served under the lowered marking."""
+    original = _marking("TOP_SECRET")
+    jena.publish(R1, _properties(), marking=original, commit_id="commit-j1")
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    lowered = json.dumps(original).replace("TOP_SECRET", "UNCLASSIFIED")
+    _sparql_update(f"{jena_adapter.PREFIX} DELETE {{ <{R1}> ocor:markingObject ?m }} INSERT {{ <{R1}> "
+                   f"ocor:markingObject {jena_adapter._literal(lowered)} }} WHERE {{ <{R1}> ocor:markingObject ?m }}")
+    assert jena.list_authorized(_clearance("SECRET")) == []
+    assert jena.exists_authorized(R1, _clearance("SECRET")) is False
+    with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+        jena.to_json_ld(R1, _clearance("SECRET"))
+    assert caught.value.reason_code == "MARKING_DENIED"
+
+
+def test_ncr_c4_002_a_watermark_that_disagrees_with_the_ledger_is_projection_not_ready(jena: Any) -> None:
+    """LLD v1.1 :148 and NFR-077 :403: the Jena watermark and the confirmed one of the ledger must
+    name the same commit; a projection that lost or bypassed it is an explicit
+    PROJECTION_NOT_READY, and no export is correlated with a watermark the ledger did not confirm."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    jena.publish(R1, _properties(), marking=_marking("UNCLASSIFIED"), commit_id="commit-j1")
+    _sparql_update(f"{jena_adapter.PREFIX} DELETE {{ ?s ocor:watermarkCommit ?c }} INSERT {{ ?s ocor:watermarkCommit "
+                   f"\"commit-forged\" }} WHERE {{ ?s ocor:watermarkCommit ?c }}")
+    for read in (jena.watermark, lambda: jena.export([R1], _clearance())):
+        with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+            read()
+        assert caught.value.reason_code == "PROJECTION_NOT_READY"
+
+
+def test_ncr_c4_002_jena_requires_the_declared_release_and_a_ledger(ledger: Any, clock: Clock) -> None:
+    """LLD v1.1 :148 and FR-148 :331: the Jena projection declares the release it projects and
+    confirms its watermark in a durable ledger; it cannot be built without either."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    for kwargs in ({"release_digest": "not-a-digest", "ledger": ledger}, {"release_digest": RELEASE, "ledger": object()}):
+        with pytest.raises(TypeError):
+            jena_adapter.JenaSHACLProjectionAdapter(marking_scheme=_scheme(), clock=clock, **kwargs)
+    with pytest.raises(TypeError):
+        jena_adapter.JenaSHACLProjectionAdapter(marking_scheme=_scheme_ir(), release_digest=RELEASE, ledger=ledger,
+                                                clock=clock)
+
+
+class FusekiResponder:
+    """A local HTTP responder standing in for Fuseki on the failure paths only."""
+
+    def __init__(self, route: tuple[int, bytes] | bytes) -> None:
+        responder = self
+        self.route = route
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _answer(self) -> None:
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                self.close_connection = True
+                if isinstance(responder.route, bytes):
+                    self.wfile.write(responder.route)
+                    return
+                status, body = responder.route
+                self.send_response(status)
+                self.send_header("Content-Type", "application/sparql-results+json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            do_POST = _answer
+            do_GET = _answer
+
+            def log_message(self, format: str, *args: Any) -> None:
+                return None
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+JENA_FAILURES: dict[str, tuple[tuple[int, bytes] | bytes | None, str]] = {
+    "refused-connection": (None, "PROJECTION_NOT_READY"),
+    "http-error": ((500, b"{}"), "CONTROL_PLANE_UNAVAILABLE"),
+    "connection-dropped": (b"", "CONTROL_PLANE_UNAVAILABLE"),
+    "bad-status-line": (b"GARBAGE\r\n\r\n", "CONTROL_PLANE_UNAVAILABLE"),
+    "not-json": ((200, b"<html/>"), "CONTROL_PLANE_UNAVAILABLE"),
+    "no-bindings": ((200, b'{"results": {}}'), "CONTROL_PLANE_UNAVAILABLE"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(JENA_FAILURES))
+def test_ncr_c4_002_a_jena_failure_is_a_typed_error(case: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Named Query Gateway contract :486-491 and LLD v1.1 :346: an unreachable Fuseki is the typed
+    PROJECTION_NOT_READY (PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5, NCP-U05
+    row), any other failure of the answer the typed CONTROL_PLANE_UNAVAILABLE -- never a raw
+    transport exception, never an empty answer read as no data."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    route, reason = JENA_FAILURES[case]
+    responder = None if route is None else FusekiResponder(route)
+    monkeypatch.setattr(jena_adapter, "FUSEKI_URL", "http://127.0.0.1:1" if responder is None else responder.url)
+    adapter = _jena(_module("c4_projection_fixture").isolated_ledger(), Clock(T0))
+    try:
+        for call in (adapter.current_watermark, lambda: adapter.list_authorized(_clearance()),
+                     lambda: adapter.publish(R1, _properties(), marking=_marking("SECRET"), commit_id="commit-j1")):
+            with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+                call()
+            assert caught.value.reason_code == reason, case
+    finally:
+        if responder is not None:
+            responder.close()

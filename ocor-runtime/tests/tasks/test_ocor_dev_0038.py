@@ -10,7 +10,6 @@ no mocks.
 
 from __future__ import annotations
 
-import urllib.error
 
 import pytest
 from ocor_runtime.c4.jena_adapter import JenaAdapterError, JenaSHACLProjectionAdapter
@@ -132,8 +131,9 @@ def test_a_real_fuseki_unreachability_fails_closed_never_writing_a_partial_publi
     monkeypatch.setattr("ocor_runtime.c4.jena_adapter.FUSEKI_URL", "http://127.0.0.1:1")
     adapter = JenaSHACLProjectionAdapter(MarkingEngine([CLASSIFICATION_SCHEME]))
 
-    # a genuine connection-refused failure is a raw urllib.error.URLError,
-    # not translated into JenaAdapterError -- _request only translates an
-    # HTTP-level error response, never a connection-level failure.
-    with pytest.raises(urllib.error.URLError):
+    # a genuine connection-refused failure is the typed fail-closed error of the
+    # contract with a reason code (OCOR-DEV-REM-0052, NCP-U05, NCR-C4-002: Named Query
+    # Gateway contract :486-491, LLD v1.1 :346), never a raw transport exception.
+    with pytest.raises(JenaAdapterError) as excinfo:
         adapter.publish("urn:ocor:resource:r1", valid_properties())
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"
