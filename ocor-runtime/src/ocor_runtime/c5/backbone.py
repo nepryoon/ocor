@@ -1,467 +1,657 @@
-"""C5 -- canonical event backbone.
+"""C5 -- canonical event backbone: ``Publish``, ``Subscribe``, ``Replay``, ``Quarantine``,
+``ReprocessAuthorized`` (ADD v1.3 :286).
 
-Implements the smallest contract-compliant slice of LLD v1.1 section
-2.5's closed ``CanonicalIngestionEnvelope`` over a real, live Kafka
-broker: schema-bound events preserve partition order (partitioned by
-``aggregate_ref``, Kafka's own key-based partitioner), correlation,
-causation, markings and idempotency. An envelope naming an
-unregistered schema, missing a required governed-context field, or
-landing out of sequence for its own aggregate is quarantined rather
-than published or consumed as if valid -- this task's own negative
-acceptance criterion, made structural.
+The admission boundary of ingestion (ADD v1.3 :379) runs, in order, for every publish:
 
-No CI workflow provisions a shared Kafka service (only OCOR-DEV-0031's
-own mission-thread test self-provisions one), so this backbone
-self-provisions its own real, isolated, single-node KRaft broker --
-the identical real broker configuration
-``spikes.kafka_delivery.oracle.KafkaCli.provision`` (OCOR-DEV-0019)
-already proved for real -- reimplemented here rather than importing
-the spike, since ``spikes/`` lies outside ocor-runtime's own pythonpath
-in production (the same precedent already established by
-OCOR-DEV-0037's TypeDB adapter).
+1. the envelope is a closed ``canonical-ingestion-envelope:1.2`` (``envelope``; incomplete ->
+   ``REJECTED``, ``SCHEMA_VIOLATION``);
+2. ``effective_principal_id`` equals the transport principal; an external mismatch is
+   ``QUARANTINED{PRINCIPAL_BINDING_MISMATCH}`` with an Audit Record (ADD v1.3 :199, :379);
+3. the producer signature over envelope and payload digest verifies (LLD v1.1 :154);
+4. the inline marking resolves to ``classification_marking_ref``: a ``marking_digest`` that
+   does not match the object is ``DENY``; the envelope fields form the GovernedContext record and
+   reproduce ``governed_context_digest`` (ADD v1.3 :402-411, :845); either failing is quarantined
+   as ``GOVERNED_CONTEXT_MISMATCH`` with an Audit Record, so an envelope is never deduplicated or
+   delivered under a context it does not realise;
+5. the payload is validated a second time against its content-addressed schema (ADD v1.3
+   :529); 3 and 5 failing are ``PERMANENT``: immutable dead letter, no automatic retry, audit
+   (LLD v1.1 :161);
+6. the policy port allows the publish; otherwise ``POLICY_DENIED``: audit and a
+   non-disclosing quarantine -- the caller learns only that the event was not admitted
+   (LLD v1.1 :162);
+7. admission control per tenant and ``ResourceClass``; ``AUDIT`` is never dropped (LLD v1.1
+   :165, :338; Register :406 NFR-079: checks 1-6 always run before it);
+8. durable deduplication per ``(governed_context_digest, idempotency_key)`` and, when the
+   envelope declares ``aggregate.expected_revision``, a strictly advancing revision per
+   aggregate of the same context (``OUT_OF_ORDER`` is ``PERMANENT``);
+9. the journal write, keyed by ``ordering_key``; a broker failure is ``TRANSIENT``: bounded
+   exponential backoff with jitter inside the retry budget (LLD v1.1 :160). Before each
+   retry the state is rebuilt from the journal, so a write whose acknowledgement was lost is
+   never written twice.
+
+The topic is the durable journal; the in-process deduplication and revision state is only a
+cache of it, rebuilt from the whole topic before the first publish of a process and after
+any write whose outcome is unknown. Publishes of different idempotency keys and aggregates
+run concurrently; the same key or aggregate is serialised.
+
+``Subscribe`` validates the Event Subscription Contract and delivers by ``subscription_id``
+and opaque cursor (ADD v1.3 :2575): deliveries carry no partition or offset, every record is
+re-verified (signature, schema and the GovernedContext digest), filtered to the contract's
+event types and governed context, and authorised per delivery by the policy port (ADD v1.3 :380-381). Each poll writes
+an immutable checkpoint binding topic, positions, schema registry digest, release and GCS
+(LLD v1.1 :165). An event that a consumer handler keeps failing is ``POISON``: its partition
+is quarantined for that subscription behind the operator gate (LLD v1.1 :163). ``Replay``
+declares an ingest-time window and a reason, is authorised and audited, re-delivers through
+the same per-delivery policy and never appends to the journal (LLD v1.1 :165, Register :202
+FR-072).
 """
 
 from __future__ import annotations
 
+import heapq
 import json
 import re
-import subprocess
 import threading
-import time
-import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Hashable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-BOOTSTRAP = "127.0.0.1:29092"
-KAFKA_IMAGE = "confluentinc/cp-kafka:7.6.0@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047"
-
-REGISTERED_SCHEMAS = frozenset({"urn:ocor:schema:canonical-ingestion-envelope:1"})
-
-REQUIRED_FIELDS = (
-    "event_id",
-    "event_type",
-    "event_version",
-    "schema_ref",
-    "producer_principal",
-    "source_ref",
-    "aggregate_ref",
-    "correlation_id",
-    "causation_id",
-    "classification_marking_ref",
-    "governed_context_digest",
-    "idempotency_key",
-    "sequence",
-    "payload",
+from ..audit import AuditError, AuditEvent, AuditPort
+from .adapters.postgres import DeadLetter, PostgresC5Store, QuarantineRecord
+from .envelope import (
+    BackboneError,
+    CanonicalIngestionEnvelope,
+    EnvelopeViolation,
+    ProducerKeyring,
+    SignedEnvelope,
 )
+from .adapters.kafka import JournalRecord, KafkaJournal, KafkaJournalError
+from .operations import AdmissionController, OperationsError, ResourceClass
+from .policy import C5Policy, permits
+from .replay import ReplayRequest, ReprocessRequest
+from .retry import FailureClass, RetryPolicy
+from .schema import EventTypeRegistration, SchemaRegistry
+from .subscription import DeliveredEvent, DeliveryOutcome, SubscriptionBatch, validate_contract
 
+SIGNATURE_HEADER = "ocor-c5-signature"
+VERSION_HEADER = "ocor-c5-envelope-version"
+C5_AUTHORITY = "urn:ocor:authority:c5-admission-boundary"
+POISON_THRESHOLD = 3
+REPLAY_WINDOW = re.compile(r"P([0-9]+)D")
 
-class BackboneError(RuntimeError):
-    def __init__(self, reason_code: str, message: str) -> None:
-        self.reason_code = reason_code
-        super().__init__(f"{reason_code}: {message}")
-
-
-class KafkaBackboneError(RuntimeError):
-    """A real Kafka CLI/backend failure, distinct from a governed
-    rejection (``BackboneError``)."""
-
-
-def _run(*args: str, input_text: str | None = None, timeout: int = 45) -> str:
-    result = subprocess.run(args, input=input_text, text=True, capture_output=True, timeout=timeout, check=False)
-    if result.returncode:
-        raise KafkaBackboneError(f"command failed ({result.returncode}): {' '.join(args)}: {result.stderr.strip()}")
-    return result.stdout
+__all__ = [
+    "BackboneError",
+    "CanonicalEventBackbone",
+    "CanonicalIngestionEnvelope",
+    "KafkaJournalError",
+    "PublishReceipt",
+    "SignedEnvelope",
+]
 
 
 @dataclass(frozen=True, slots=True)
-class CanonicalIngestionEnvelope:
-    """LLD v1.1 section 2.5's closed envelope, the smallest field set
-    this task's own acceptance criteria require: partition order
-    (``aggregate_ref``/``sequence``), correlation/causation, marking,
-    provenance (``source_ref``) and idempotency."""
-
+class PublishReceipt:
     event_id: str
-    event_type: str
-    event_version: str
-    schema_ref: str
-    producer_principal: str
-    source_ref: str
-    aggregate_ref: str
-    correlation_id: str
-    causation_id: str
-    classification_marking_ref: str
-    governed_context_digest: str
-    idempotency_key: str
-    sequence: int
-    payload: Mapping[str, Any]
-
-    def to_mapping(self) -> dict[str, Any]:
-        return {
-            "event_id": self.event_id,
-            "event_type": self.event_type,
-            "event_version": self.event_version,
-            "schema_ref": self.schema_ref,
-            "producer_principal": self.producer_principal,
-            "source_ref": self.source_ref,
-            "aggregate_ref": self.aggregate_ref,
-            "correlation_id": self.correlation_id,
-            "causation_id": self.causation_id,
-            "classification_marking_ref": self.classification_marking_ref,
-            "governed_context_digest": self.governed_context_digest,
-            "idempotency_key": self.idempotency_key,
-            "sequence": self.sequence,
-            "payload": dict(self.payload),
-        }
-
-    @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> CanonicalIngestionEnvelope:
-        missing = sorted(field for field in REQUIRED_FIELDS if field not in value)
-        if missing:
-            raise BackboneError("MISSING_CONTEXT", f"missing required field(s): {missing}")
-        for field in REQUIRED_FIELDS:
-            if field in ("sequence", "payload"):
-                continue
-            if not isinstance(value[field], str) or not value[field]:
-                raise BackboneError("MISSING_CONTEXT", f"{field} must be a non-empty string")
-        if isinstance(value["sequence"], bool) or not isinstance(value["sequence"], int) or value["sequence"] < 0:
-            raise BackboneError("MISSING_CONTEXT", "sequence must be a non-negative integer")
-        if not isinstance(value["payload"], Mapping):
-            raise BackboneError("MISSING_CONTEXT", "payload must be an object")
-        return cls(
-            event_id=value["event_id"],
-            event_type=value["event_type"],
-            event_version=value["event_version"],
-            schema_ref=value["schema_ref"],
-            producer_principal=value["producer_principal"],
-            source_ref=value["source_ref"],
-            aggregate_ref=value["aggregate_ref"],
-            correlation_id=value["correlation_id"],
-            causation_id=value["causation_id"],
-            classification_marking_ref=value["classification_marking_ref"],
-            governed_context_digest=value["governed_context_digest"],
-            idempotency_key=value["idempotency_key"],
-            sequence=value["sequence"],
-            payload=dict(value["payload"]),
-        )
+    duplicate: bool
 
 
-@dataclass(frozen=True, slots=True)
-class QuarantinedEnvelope:
-    reason_code: str
-    raw: Mapping[str, Any]
+class _KeyedLocks:
+    """One lock per key, acquired in a fixed order; entries vanish when unused."""
+
+    def __init__(self) -> None:
+        self._guard = threading.Lock()
+        self._locks: dict[Hashable, list[Any]] = {}
+
+    @contextmanager
+    def hold(self, keys: Sequence[Hashable]) -> Iterator[None]:
+        held: list[Hashable] = []
+        try:
+            for key in sorted(set(keys), key=repr):
+                with self._guard:
+                    entry = self._locks.setdefault(key, [threading.Lock(), 0])
+                    entry[1] += 1
+                held.append(key)
+                entry[0].acquire()
+            yield
+        finally:
+            for key in reversed(held):
+                with self._guard:
+                    entry = self._locks[key]
+                    if entry[0].locked():
+                        entry[0].release()
+                    entry[1] -= 1
+                    if entry[1] == 0:
+                        del self._locks[key]
 
 
-@dataclass(frozen=True, slots=True)
-class DeliveredRecord:
-    partition: int
-    offset: int
-    envelope: CanonicalIngestionEnvelope
+def _gcs_ref(contract_ref: str) -> str:
+    """``urn:sha256:<hex>`` of a contract and ``sha256:<hex>`` of an envelope name one digest."""
+    return contract_ref.removeprefix("urn:")
 
 
 class CanonicalEventBackbone:
-    """Publishes and consumes ``CanonicalIngestionEnvelope`` records
-    against a real Kafka topic, keyed by ``aggregate_ref`` so Kafka's
-    own partitioner preserves per-aggregate order. Quarantine records
-    every governed rejection without ever publishing it. Self-
-    provisions its own real, isolated, single-node KRaft broker, so it
-    never depends on a shared, externally-provisioned Kafka service.
+    """The C5 backbone of one journal topic."""
 
-    Dedup and the per-aggregate watermark are durable and atomic (LLD v1.1
-    section 6, "watermark monotono; deduplica durable"): the topic itself is
-    the durable journal, and the in-memory state is only a cache of it,
-    rebuilt from the whole topic before an instance's first publish (a
-    restart) and after any write whose outcome is unknown (a lost
-    acknowledgement). Check, write and update run under one lock, so
-    concurrent publishes through an instance never both pass the check. The
-    instance is the topic's single active producer: two live instances
-    publishing to one topic at the same time are not serialized with each
-    other."""
-
-    def __init__(self, topic: str, *, container: str) -> None:
-        self._topic = topic
-        self._container = container
-        # Dedup and ordering state is scoped by the envelope's isolation
-        # context (ADD v1.3 sections 1.4 and 3.2): one Governed Context can
-        # never drop or quarantine another context's event. The PoC envelope
-        # carries the context as ``governed_context_digest``, the digest of
-        # the whole GovernedContext (isolation tuple included).
-        self._last_sequence: dict[tuple[str, str], int] = {}
-        self._seen_idempotency_keys: set[tuple[str, str]] = set()
-        self._quarantine: list[QuarantinedEnvelope] = []
-        self._lock = threading.Lock()
-        # False until the state above has been rebuilt from the journal.
+    def __init__(
+        self,
+        *,
+        journal: KafkaJournal,
+        registry: SchemaRegistry,
+        keyring: ProducerKeyring,
+        policy: C5Policy,
+        audit: AuditPort,
+        store: PostgresC5Store,
+        retry: RetryPolicy | None = None,
+        quotas: Mapping[ResourceClass, int] | None = None,
+        poison_threshold: int = POISON_THRESHOLD,
+    ) -> None:
+        if not isinstance(journal, KafkaJournal):
+            raise TypeError("journal must be a KafkaJournal")
+        if not isinstance(registry, SchemaRegistry):
+            raise TypeError("registry must be a SchemaRegistry")
+        if not isinstance(keyring, ProducerKeyring):
+            raise TypeError("keyring must be a ProducerKeyring")
+        if not isinstance(policy, C5Policy):
+            raise TypeError("policy must implement the C5 policy port")
+        if not isinstance(audit, AuditPort):
+            raise TypeError("audit must implement AuditPort")
+        if not isinstance(store, PostgresC5Store):
+            raise TypeError("store must be a PostgresC5Store")
+        if isinstance(poison_threshold, bool) or not isinstance(poison_threshold, int) or not 1 <= poison_threshold <= 20:
+            raise ValueError("poison_threshold must be an integer in [1, 20]")
+        self._journal = journal
+        self._registry = registry
+        self._keyring = keyring
+        self._policy = policy
+        self._audit_port = audit
+        self._store = store
+        self._retry = retry if retry is not None else RetryPolicy()
+        if not isinstance(self._retry, RetryPolicy):
+            raise TypeError("retry must be a RetryPolicy")
+        self._admission = AdmissionController(quotas)
+        self._poison_threshold = poison_threshold
+        self._seen: set[tuple[str, str]] = set()
+        self._revisions: dict[tuple[str, str, str, str], int] = {}
         self._recovered = False
+        self._state_lock = threading.Lock()
+        self._keys = _KeyedLocks()
 
-    @classmethod
-    def provision(cls, topic: str) -> tuple[CanonicalEventBackbone, str, str]:
-        """Provisions a real, isolated, single-node KRaft broker (the
-        identical configuration OCOR-DEV-0019's spike already proved
-        for real) and its own topic. Returns the backbone plus the
-        container and volume names, so a caller can tear both down."""
-        suffix = uuid.uuid4().hex[:12]
-        container = f"ocor-c5-backbone-{suffix}"
-        volume = f"ocor-c5-backbone-data-{suffix}"
-        existing_volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
-        existing_containers = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
-        if volume in existing_volumes or {container, f"{container}-init"} & existing_containers:
-            raise KafkaBackboneError("refusing to reuse existing lifecycle resources")
-        completed = False
-        try:
-            _run("docker", "volume", "create", "--label", f"ocor.kafka.lifecycle.owner={container}", volume)
-            _run(
-                "docker", "run", "--rm", "--name", f"{container}-init",
-                "--label", f"ocor.kafka.lifecycle.owner={container}", "--user", "root", "--entrypoint", "chown",
-                "--volume", f"{volume}:/var/lib/kafka/data", KAFKA_IMAGE, "-R", "appuser:appuser",
-                "/var/lib/kafka/data",
-            )
-            _run(
-                "docker", "run", "--detach", "--label", f"ocor.kafka.lifecycle.owner={container}",
-                "--name", container, "--hostname", "kafka",
-                "--security-opt", "no-new-privileges:true",
-                "--volume", f"{volume}:/var/lib/kafka/data",
-                "--env", "CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk",
-                "--env", "KAFKA_NODE_ID=1",
-                "--env", "KAFKA_PROCESS_ROLES=broker,controller",
-                "--env", "KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:29093",
-                "--env", "KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093",
-                "--env", "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092",
-                "--env", "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT",
-                "--env", "KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
-                "--env", "KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT",
-                "--env", "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
-                "--env", "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1",
-                "--env", "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1",
-                "--env", "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0",
-                KAFKA_IMAGE,
-                timeout=60,
-            )
-            backbone = cls(topic, container=container)
-            deadline = time.monotonic() + 90
-            last_error: KafkaBackboneError | None = None
-            while time.monotonic() < deadline:
-                try:
-                    backbone._exec("kafka-broker-api-versions", "--bootstrap-server", BOOTSTRAP)
-                    backbone.initialize()
-                    completed = True
-                    return backbone, container, volume
-                except KafkaBackboneError as error:
-                    last_error = error
-                    time.sleep(1)
-            raise KafkaBackboneError(f"isolated Kafka did not become ready: {last_error}")
-        finally:
-            if not completed:
-                cls._cleanup_resources(container, volume)
-
-    def destroy(self, volume: str) -> None:
-        """Remove this run's resources; missing resources allow bounded retry."""
-        self._cleanup_resources(self._container, volume)
-
-    @staticmethod
-    def _cleanup_resources(container: str, volume: str) -> None:
-        """Verify ownership before mutation, remove anonymous mounts and fail closed.
-
-        The init command can time out after Docker has created it. Both generated
-        containers are inspected and removed by immutable ID. Named volumes are
-        never pruned; only the matching ownership-labelled data volume is removed.
-        """
-        prefix = "ocor-c5-backbone-"
-        suffix = container.removeprefix(prefix)
-        if not container.startswith(prefix) or re.fullmatch(r"[0-9a-f]{12}", suffix) is None:
-            raise KafkaBackboneError("refusing to destroy a non-owned container")
-        if volume != f"{prefix}data-{suffix}":
-            raise KafkaBackboneError("refusing to destroy a mismatched run volume")
-        label = "ocor.kafka.lifecycle.owner"
-        # Enumerate names rather than treating an inspect failure as 'absent'.
-        names = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
-        volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
-        entries = []
-        anonymous = set()
-        for name in (f"{container}-init", container):
-            if name in names:
-                entry = json.loads(_run("docker", "inspect", name))[0]
-                if (entry["Config"].get("Labels") or {}).get(label) != container:
-                    raise KafkaBackboneError("refusing to destroy a foreign container")
-                entries.append(entry)
-                for mount in entry["Mounts"]:
-                    if mount["Type"] == "volume" and mount["Name"] != volume:
-                        anonymous.add(mount["Name"])
-        if volume in volumes:
-            entry = json.loads(_run("docker", "volume", "inspect", volume))[0]
-            if (entry.get("Labels") or {}).get(label) != container:
-                raise KafkaBackboneError("refusing to destroy a foreign volume")
-        for entry in entries:
-            _run("docker", "rm", "--force", "--volumes", entry["Id"])
-        if volume in volumes:
-            _run("docker", "volume", "rm", volume)
-        remaining_containers = set(_run("docker", "container", "ls", "--all", "--format", "{{.Names}}").splitlines())
-        remaining_volumes = set(_run("docker", "volume", "ls", "--format", "{{.Name}}").splitlines())
-        if {container, f"{container}-init"} & remaining_containers or (anonymous | {volume}) & remaining_volumes:
-            raise KafkaBackboneError("owned resources remain after teardown")
-
-    def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
-        command = ["docker", "exec"]
-        if input_text is not None:
-            command.append("-i")
-        command.extend((self._container, *args))
-        return _run(*command, input_text=input_text, timeout=timeout)
-
-    def initialize(self) -> None:
-        self._exec(
-            "kafka-topics", "--bootstrap-server", BOOTSTRAP, "--create", "--topic", self._topic,
-            "--partitions", "3", "--replication-factor", "1",
-        )
-        # ``--create`` fails on an existing topic, so the journal is new and empty.
-        with self._lock:
-            self._last_sequence.clear()
-            self._seen_idempotency_keys.clear()
-            self._recovered = True
-
-    def _offsets(self, time_spec: str) -> dict[int, int]:
-        output = self._exec(
-            "kafka-get-offsets", "--bootstrap-server", BOOTSTRAP, "--topic", self._topic, "--time", time_spec
-        )
-        offsets: dict[int, int] = {}
-        for line in output.splitlines():
-            parts = line.split(":")
-            if len(parts) == 3 and parts[0] == self._topic:
-                offsets[int(parts[1])] = int(parts[2])
-        if not offsets:
-            raise KafkaBackboneError(f"journal topic {self._topic!r} reports no partitions")
-        return offsets
-
-    def _recover_from_journal(self) -> None:
-        """Rebuild dedup keys and per-aggregate watermarks from every record
-        on the topic; any unreadable record fails closed, never falling back
-        to empty state."""
-        earliest = self._offsets("-2")
-        latest = self._offsets("-1")
-        if earliest.keys() != latest.keys():
-            raise KafkaBackboneError(f"journal topic {self._topic!r} changed partitions during recovery")
-        count = sum(latest[partition] - earliest[partition] for partition in latest)
-        try:
-            records = self.consume(count) if count else ()
-        except (BackboneError, ValueError) as error:
-            raise KafkaBackboneError(f"journal topic {self._topic!r} holds an unreadable record: {error}") from error
-        seen: set[tuple[str, str]] = set()
-        last: dict[tuple[str, str], int] = {}
-        for record in records:
-            value = record.envelope
-            seen.add((value.governed_context_digest, value.idempotency_key))
-            key = (value.governed_context_digest, value.aggregate_ref)
-            last[key] = max(value.sequence, last.get(key, value.sequence))
-        self._seen_idempotency_keys = seen
-        self._last_sequence = last
-        self._recovered = True
+    def __repr__(self) -> str:
+        return f"CanonicalEventBackbone(topic={self._journal.topic!r})"
 
     @property
-    def quarantine(self) -> tuple[QuarantinedEnvelope, ...]:
-        return tuple(self._quarantine)
+    def topic(self) -> str:
+        return self._journal.topic
 
-    def publish_from_mapping(self, raw: Mapping[str, Any]) -> None:
+    # -- audit -------------------------------------------------------------------------------
+
+    def _audit(
+        self, *, event_type: str, actor: str, resource: str, reason_code: str, outcome: str, correlation_id: str,
+        authority_ref: str = C5_AUTHORITY, detail: Mapping[str, Any] | None = None,
+    ) -> None:
         try:
-            envelope = CanonicalIngestionEnvelope.from_mapping(raw)
-        except BackboneError as error:
-            self._quarantine.append(QuarantinedEnvelope(error.reason_code, dict(raw)))
+            self._audit_port.append(
+                AuditEvent(
+                    event_type=event_type,
+                    actor=actor or "urn:ocor:principal:unauthenticated",
+                    occurred_at=datetime.now(UTC),
+                    resource=resource,
+                    reason_code=reason_code,
+                    authority_ref=authority_ref,
+                    correlation_id=correlation_id,
+                    outcome=outcome,
+                    detail=dict(detail or {}),
+                )
+            )
+        except AuditError as exc:
+            raise BackboneError("CONTROL_PLANE_UNAVAILABLE", "the audit record could not be written",
+                                failure_class=FailureClass.TRANSIENT.value) from exc
+
+    def _event_resource(self, envelope: CanonicalIngestionEnvelope) -> str:
+        return f"urn:ocor:c5:{self._journal.topic}:event:{envelope.event_id}"
+
+    # -- Publish -----------------------------------------------------------------------------
+
+    def publish(self, signed: SignedEnvelope, *, transport_principal: str) -> PublishReceipt:
+        if not isinstance(signed, SignedEnvelope):
+            raise EnvelopeViolation("SCHEMA_VIOLATION", "a signed canonical-ingestion-envelope:1.2 is required")
+        envelope = signed.envelope
+        principal = transport_principal if isinstance(transport_principal, str) else ""
+        correlation = str(envelope["correlation_id"])
+        if not principal or principal != envelope.effective_principal_id:
+            self._store.quarantine(
+                event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POLICY_DENIED.value,
+                reason_code="PRINCIPAL_BINDING_MISMATCH", envelope=envelope.to_mapping(), signature=signed.signature,
+            )
+            self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                        reason_code="PRINCIPAL_BINDING_MISMATCH", outcome="DENIED", correlation_id=correlation)
+            raise BackboneError("PRINCIPAL_BINDING_MISMATCH", "the event was quarantined at the admission boundary",
+                                failure_class=FailureClass.POLICY_DENIED.value)
+        try:
+            self._keyring.verify(signed)
+        except EnvelopeViolation as violation:
+            self._dead_letter(signed, violation.reason_code, principal)
             raise
-        self.publish(envelope)
+        try:
+            envelope.governed_context()
+        except EnvelopeViolation:
+            self._store.quarantine(
+                event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POLICY_DENIED.value,
+                reason_code="GOVERNED_CONTEXT_MISMATCH", envelope=envelope.to_mapping(), signature=signed.signature,
+            )
+            self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                        reason_code="GOVERNED_CONTEXT_MISMATCH", outcome="DENIED", correlation_id=correlation)
+            raise BackboneError("GOVERNED_CONTEXT_MISMATCH", "the event was quarantined at the admission boundary",
+                                failure_class=FailureClass.POLICY_DENIED.value) from None
+        try:
+            registration = self._registry.validate_payload(envelope)
+        except EnvelopeViolation as violation:
+            self._dead_letter(signed, violation.reason_code, principal)
+            raise
+        try:
+            decision = self._policy.authorize_publish(principal, envelope)
+        except Exception:  # noqa: BLE001 -- a failing policy point denies (fail closed)
+            decision = None
+        if not permits(decision):
+            self._store.quarantine(
+                event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POLICY_DENIED.value,
+                reason_code="POLICY_DENIED", envelope=envelope.to_mapping(), signature=signed.signature,
+            )
+            self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                        reason_code="POLICY_DENIED", outcome="DENIED", correlation_id=correlation)
+            raise BackboneError("POLICY_DENIED", "the event was not admitted", failure_class=FailureClass.POLICY_DENIED.value)
+        if not self._admission.try_admit(envelope.tenant_id, registration.resource_class):
+            self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                        reason_code="BACKPRESSURE_EXCEEDED", outcome="DENIED", correlation_id=correlation,
+                        detail={"resource_class": registration.resource_class.value})
+            raise OperationsError("BACKPRESSURE_EXCEEDED", "the tenant quota of this resource class is exhausted",
+                                  failure_class=FailureClass.TRANSIENT.value)
+        try:
+            return self._write(signed, registration, principal)
+        finally:
+            self._admission.release(envelope.tenant_id, registration.resource_class)
 
-    def publish(self, envelope: CanonicalIngestionEnvelope) -> None:
-        if envelope.schema_ref not in REGISTERED_SCHEMAS:
-            self._quarantine.append(QuarantinedEnvelope("UNKNOWN_SCHEMA", envelope.to_mapping()))
-            raise BackboneError("UNKNOWN_SCHEMA", f"{envelope.schema_ref!r} is not a registered schema")
+    def _dead_letter(self, signed: SignedEnvelope, reason_code: str, principal: str) -> DeadLetter:
+        envelope = signed.envelope
+        letter = self._store.record_dead_letter(
+            event_id=envelope.event_id, topic=self.topic, tenant_id=envelope.tenant_id, reason_code=reason_code,
+            envelope=envelope.to_mapping(), signature=signed.signature, poison_threshold=self._poison_threshold,
+        )
+        self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                    reason_code=reason_code, outcome="REJECTED", correlation_id=str(envelope["correlation_id"]),
+                    detail={"failure_class": letter.failure_class, "attempt": letter.attempts})
+        if letter.failure_class == FailureClass.POISON.value and not self.poison_held(envelope.event_id):
+            self._store.quarantine(
+                event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POISON.value,
+                reason_code=reason_code, envelope=envelope.to_mapping(), signature=signed.signature,
+            )
+        return letter
 
+    def _write(self, signed: SignedEnvelope, registration: EventTypeRegistration, principal: str) -> PublishReceipt:
+        envelope = signed.envelope
         context = envelope.governed_context_digest
-        if not isinstance(context, str) or not context:
-            # an undeterminable isolation context never falls back to
-            # shared state: fail closed before any dedup or ordering lookup.
-            self._quarantine.append(QuarantinedEnvelope("MISSING_CONTEXT", envelope.to_mapping()))
-            raise BackboneError("MISSING_CONTEXT", "governed_context_digest must be a non-empty string")
+        dedup = (context, envelope.idempotency_key)
+        declared = envelope.aggregate.get("expected_revision")
+        revision = int(declared) if declared is not None else 0
+        aggregate = None
+        if declared is not None:
+            aggregate = (context, envelope.tenant_id, str(envelope.aggregate["aggregate_type_id"]),
+                         str(envelope.aggregate["aggregate_id"]))
+        keys: list[Hashable] = [("idempotency", *dedup)] + ([("aggregate", *aggregate)] if aggregate else [])
+        with self._keys.hold(keys):
+            with self._state_lock:
+                if not self._recovered:
+                    self._recover()
+                if dedup in self._seen:
+                    return PublishReceipt(envelope.event_id, duplicate=True)
+                last = self._revisions.get(aggregate) if aggregate else None
+            if aggregate is not None and last is not None and revision <= last:
+                self._dead_letter(signed, "OUT_OF_ORDER", principal)
+                raise EnvelopeViolation("OUT_OF_ORDER", f"revision {revision} does not advance past {last}")
+            duplicate = self._append_with_retry(signed, dedup, principal)
+            with self._state_lock:
+                self._seen.add(dedup)
+                if aggregate is not None:
+                    self._revisions[aggregate] = max(revision, self._revisions.get(aggregate, revision))
+            return PublishReceipt(envelope.event_id, duplicate=duplicate)
 
-        with self._lock:
-            if not self._recovered:
-                self._recover_from_journal()
-
-            if (context, envelope.idempotency_key) in self._seen_idempotency_keys:
-                # already durably published once in this context; a safe no-op
-                # replay, not a duplicate canonical effect and not a quarantine event.
-                return
-
-            last = self._last_sequence.get((context, envelope.aggregate_ref))
-            if last is not None and envelope.sequence <= last:
-                self._quarantine.append(QuarantinedEnvelope("OUT_OF_ORDER", envelope.to_mapping()))
-                raise BackboneError(
-                    "OUT_OF_ORDER",
-                    f"sequence {envelope.sequence} does not advance past {last} for {envelope.aggregate_ref!r}",
-                )
-
-            line = f"{envelope.aggregate_ref}|{json.dumps(envelope.to_mapping(), sort_keys=True, separators=(',', ':'))}"
+    def _append_with_retry(self, signed: SignedEnvelope, dedup: tuple[str, str], principal: str) -> bool:
+        envelope = signed.envelope
+        key = envelope.ordering_key.encode("utf-8")
+        value = envelope.canonical_bytes()
+        headers = [(SIGNATURE_HEADER, signed.signature), (VERSION_HEADER, b"1.2")]
+        timestamp_ms = int(envelope.ingest_time.timestamp() * 1000)
+        attempts = self._retry.max_attempts
+        for attempt in range(attempts):
             try:
-                self._exec(
-                    "kafka-console-producer",
-                    "--bootstrap-server",
-                    BOOTSTRAP,
-                    "--topic",
-                    self._topic,
-                    "--producer-property",
-                    "acks=all",
-                    "--producer-property",
-                    "enable.idempotence=true",
-                    "--property",
-                    "parse.key=true",
-                    "--property",
-                    "key.separator=|",
-                    input_text=line + "\n",
-                )
-            except KafkaBackboneError:
-                # the record may be durable even though the write failed (a lost
-                # acknowledgement): rebuild from the journal before the next publish.
-                self._recovered = False
-                raise
-            self._last_sequence[(context, envelope.aggregate_ref)] = envelope.sequence
-            self._seen_idempotency_keys.add((context, envelope.idempotency_key))
-
-    def consume(self, count: int) -> tuple[DeliveredRecord, ...]:
-        command = [
-            "docker",
-            "exec",
-            self._container,
-            "kafka-console-consumer",
-            "--bootstrap-server",
-            BOOTSTRAP,
-            "--topic",
-            self._topic,
-            "--from-beginning",
-            "--max-messages",
-            str(count),
-            "--timeout-ms",
-            "10000",
-            "--property",
-            "print.key=true",
-            "--property",
-            "print.partition=true",
-            "--property",
-            "print.offset=true",
-            "--property",
-            "key.separator=|",
-        ]
-        result = subprocess.run(command, text=True, capture_output=True, timeout=30, check=False)
-        records: list[DeliveredRecord] = []
-        for raw_line in result.stdout.splitlines():
-            if not raw_line.startswith("Partition:"):
+                self._journal.append(key=key, value=value, headers=headers, timestamp_ms=timestamp_ms)
+                return False
+            except KafkaJournalError:
+                with self._state_lock:
+                    self._recovered = False
+            if attempt + 1 == attempts:
+                break
+            self._retry.sleep(self._retry.delay(attempt))
+            try:
+                with self._state_lock:
+                    self._recover()
+                    if dedup in self._seen:
+                        return False  # the lost acknowledgement was a durable write: never twice
+            except KafkaJournalError:
                 continue
-            partition_part, offset_part, _key, payload = raw_line.split("|", 3)
-            value = json.loads(payload)
-            records.append(
-                DeliveredRecord(
-                    partition=int(partition_part.removeprefix("Partition:")),
-                    offset=int(offset_part.removeprefix("Offset:")),
-                    envelope=CanonicalIngestionEnvelope.from_mapping(value),
-                )
-            )
-        if len(records) != count:
-            raise KafkaBackboneError(
-                f"expected {count} records, received {len(records)}; consumer exit={result.returncode}: "
-                f"{result.stderr.strip()}"
-            )
-        return tuple(records)
+        self._audit(event_type="c5.publish", actor=principal, resource=self._event_resource(envelope),
+                    reason_code="RETRY_BUDGET_EXHAUSTED", outcome="FAILED", correlation_id=str(envelope["correlation_id"]),
+                    detail={"attempts": attempts})
+        raise BackboneError("RETRY_BUDGET_EXHAUSTED", f"the journal did not accept the event in {attempts} attempts",
+                            failure_class=FailureClass.TRANSIENT.value)
+
+    def _decode(self, record: JournalRecord) -> SignedEnvelope:
+        signature = record.header(SIGNATURE_HEADER)
+        if signature is None:
+            raise EnvelopeViolation("SIGNATURE_INVALID", "a journal record has no producer signature")
+        if record.value is None:
+            raise EnvelopeViolation("SCHEMA_VIOLATION", "a journal record has no body")
+        try:
+            value = json.loads(record.value)
+        except ValueError as exc:
+            raise EnvelopeViolation("SCHEMA_VIOLATION", "a journal record is not JSON") from exc
+        return SignedEnvelope(CanonicalIngestionEnvelope.from_mapping(value), signature)
+
+    def _recover(self) -> None:
+        """Rebuild deduplication and revisions from every journal record (caller holds the state
+        lock); an unreadable record fails closed, never falling back to empty state."""
+        marks = self._journal.watermarks()
+        if not marks or set(marks) != set(self._journal.partitions()):
+            # an answer that names no partition, or partitions of another topic, is never read as
+            # an empty journal: fail closed (LLD v1.1 :165, deduplica durable)
+            raise KafkaJournalError(f"the journal offsets do not name the partitions of {self.topic!r}")
+        records = self._journal.read({p: low for p, (low, _) in marks.items()}, {p: high for p, (_, high) in marks.items()})
+        seen: set[tuple[str, str]] = set()
+        revisions: dict[tuple[str, str, str, str], int] = {}
+        for record in records:
+            try:
+                envelope = self._decode(record).envelope
+                envelope.governed_context()
+            except EnvelopeViolation as exc:
+                raise BackboneError("JOURNAL_UNREADABLE", f"the journal holds an unreadable record: {exc.reason_code}",
+                                    failure_class=FailureClass.PERMANENT.value) from exc
+            context = envelope.governed_context_digest
+            seen.add((context, envelope.idempotency_key))
+            revision = envelope.aggregate.get("expected_revision")
+            if revision is not None:
+                key = (context, envelope.tenant_id, str(envelope.aggregate["aggregate_type_id"]),
+                       str(envelope.aggregate["aggregate_id"]))
+                revisions[key] = max(int(revision), revisions.get(key, int(revision)))
+        self._seen = seen
+        self._revisions = revisions
+        self._recovered = True
+
+    def poison_records(self, event_id: str) -> list[QuarantineRecord]:
+        """The ``POISON`` quarantine records of one event, released or not."""
+        return [record for record in self._store.quarantined(self.topic)
+                if record.event_id == event_id and record.failure_class == FailureClass.POISON.value]
+
+    def poison_held(self, event_id: str) -> bool:
+        """An open (not released) ``POISON`` quarantine holds the event behind the operator gate."""
+        return any(not record.released for record in self.poison_records(event_id))
+
+    def dead_letters(self) -> tuple[DeadLetter, ...]:
+        return self._store.dead_letters(self.topic)
+
+    # -- Subscribe ---------------------------------------------------------------------------
+
+    def subscribe(self, contract: Mapping[str, Any], *, principal: str) -> str:
+        validated = validate_contract(contract)
+        if not isinstance(principal, str) or not principal:
+            raise BackboneError("POLICY_DENIED", "an authenticated subscriber is required",
+                                failure_class=FailureClass.POLICY_DENIED.value)
+        return self._store.create_subscription(principal=principal, contract=validated, topic=self.topic)
+
+    def poll(self, subscription_id: str, *, cursor: str | None = None, max_records: int = 100,
+             timeout_s: float = 10.0) -> SubscriptionBatch:
+        events: list[DeliveredEvent] = []
+        outcome = self._advance(subscription_id, cursor, max_records, timeout_s, events.append)
+        return SubscriptionBatch(events=tuple(events), cursor=outcome.cursor)
+
+    def deliver(self, subscription_id: str, handler: Callable[[DeliveredEvent], object], *, cursor: str | None = None,
+                max_records: int = 100, timeout_s: float = 10.0) -> DeliveryOutcome:
+        if not callable(handler):
+            raise TypeError("handler must be callable")
+        return self._advance(subscription_id, cursor, max_records, timeout_s, handler)
+
+    def _subscription(self, subscription_id: str) -> tuple[str, dict[str, Any]]:
+        found = self._store.subscription(subscription_id) if isinstance(subscription_id, str) and subscription_id else None
+        if found is None or found[2] != self.topic:
+            raise BackboneError("SUBSCRIPTION_NOT_FOUND", "no such subscription", failure_class=FailureClass.PERMANENT.value)
+        return found[0], found[1]
+
+    def _advance(self, subscription_id: str, cursor: str | None, max_records: int, timeout_s: float,
+                 handler: Callable[[DeliveredEvent], object]) -> DeliveryOutcome:
+        if isinstance(max_records, bool) or not isinstance(max_records, int) or not 1 <= max_records <= 10_000:
+            raise ValueError("max_records must be an integer in [1, 10000]")
+        if isinstance(timeout_s, bool) or not isinstance(timeout_s, int | float) or not 0 < timeout_s <= 300:
+            raise ValueError("timeout_s must be in (0, 300]")
+        principal, contract = self._subscription(subscription_id)
+        marks = self._journal.watermarks()
+        end: Mapping[int, int] | None = None
+        window: tuple[datetime, datetime] | None = None
+        reason: str | None = None
+        release = ""
+        if cursor is None:
+            positions = {partition: low for partition, (low, _) in marks.items()}
+        else:
+            checkpoint = self._store.checkpoint(cursor) if isinstance(cursor, str) and cursor else None
+            if checkpoint is None or checkpoint.subscription_id != subscription_id or checkpoint.topic != self.topic:
+                raise BackboneError("CURSOR_EXPIRED", "the cursor is unknown or expired",
+                                    failure_class=FailureClass.PERMANENT.value)
+            positions = dict(checkpoint.positions)
+            end = checkpoint.end_positions
+            if checkpoint.window_start is not None and checkpoint.window_end is not None:
+                window = (checkpoint.window_start, checkpoint.window_end)
+            release = checkpoint.release_digest
+            reason = None if window is None else "replay"
+        for partition, (low, _) in marks.items():
+            if positions.setdefault(partition, low) < low:
+                raise BackboneError("CURSOR_EXPIRED", "the cursor is older than the journal retention",
+                                    failure_class=FailureClass.PERMANENT.value)
+        held = {
+            record.partition for record in self._store.quarantined(self.topic)
+            if record.subscription_id == subscription_id and record.failure_class == FailureClass.POISON.value
+            and not record.released and record.partition is not None
+        }
+        targets = {p: min(high, end.get(p, high)) if end is not None else high for p, (_, high) in marks.items()}
+        records = self._journal.read({p: positions[p] for p in targets if p not in held},
+                                     {p: targets[p] for p in targets if p not in held})
+        queues: dict[int, list[JournalRecord]] = {}
+        for record in records:
+            queues.setdefault(record.partition, []).append(record)
+        heap = [(queue[0].timestamp_ms, partition, 0) for partition, queue in queues.items()]
+        heapq.heapify(heap)
+        event_types = set(contract["event_type_refs"])
+        context = _gcs_ref(str(contract["governed_context_ref"]))
+        delivered: list[str] = []
+        quarantined: list[str] = []
+        while heap and len(delivered) + len(quarantined) < max_records:
+            _, partition, index = heapq.heappop(heap)
+            record = queues[partition][index]
+            positions[partition] = record.offset + 1
+            if index + 1 < len(queues[partition]):
+                heapq.heappush(heap, (queues[partition][index + 1].timestamp_ms, partition, index + 1))
+            try:
+                signed = self._decode(record)
+                self._keyring.verify(signed)
+                signed.envelope.governed_context()
+                self._registry.validate_payload(signed.envelope)
+            except EnvelopeViolation as violation:
+                self._poison(subscription_id, record, None, violation.reason_code, principal)
+                quarantined.append(f"urn:ocor:c5:unreadable:{partition}:{record.offset}")
+                heap = [item for item in heap if item[1] != partition]
+                heapq.heapify(heap)
+                continue
+            envelope = signed.envelope
+            if envelope.event_type_id not in event_types or envelope.governed_context_digest != context:
+                continue
+            if window is not None and not window[0] <= envelope.ingest_time < window[1]:
+                continue
+            try:
+                decision = self._policy.authorize_delivery(principal, subscription_id, envelope)
+            except Exception:  # noqa: BLE001 -- a failing policy point denies (fail closed)
+                decision = None
+            if not permits(decision):
+                self._audit(event_type="c5.deliver", actor=principal, resource=subscription_id,
+                            reason_code="POLICY_DENIED", outcome="DENIED", correlation_id=str(envelope["correlation_id"]),
+                            detail={"event_id": envelope.event_id})
+                continue
+            event = DeliveredEvent(subscription_id=subscription_id, envelope=envelope)
+            if self._handle(handler, event):
+                delivered.append(envelope.event_id)
+                release = envelope.ontology_release_digest
+                continue
+            self._poison(subscription_id, record, signed, "HANDLER_FAILED", principal)
+            quarantined.append(envelope.event_id)
+            heap = [item for item in heap if item[1] != partition]
+            heapq.heapify(heap)
+        new_cursor = self._store.save_checkpoint(
+            subscription_id=subscription_id, topic=self.topic, positions=positions, end_positions=end,
+            window_start=None if window is None else window[0], window_end=None if window is None else window[1],
+            replay_reason=reason, schema_registry_digest=self._registry.digest, release_digest=release,
+            governed_context_digest=context,
+        )
+        return DeliveryOutcome(cursor=new_cursor, delivered=tuple(delivered), quarantined=tuple(quarantined))
+
+    def _handle(self, handler: Callable[[DeliveredEvent], object], event: DeliveredEvent) -> bool:
+        for _ in range(self._poison_threshold):
+            try:
+                handler(event)
+                return True
+            except Exception:  # noqa: BLE001 -- a consumer failure is counted, then quarantined as POISON
+                continue
+        return False
+
+    def _poison(self, subscription_id: str, record: JournalRecord, signed: SignedEnvelope | None, reason_code: str,
+                principal: str) -> None:
+        envelope = None if signed is None else signed.envelope
+        event_id = envelope.event_id if envelope is not None else f"urn:ocor:c5:unreadable:{record.partition}:{record.offset}"
+        self._store.quarantine(
+            event_id=event_id, topic=self.topic, failure_class=FailureClass.POISON.value, reason_code=reason_code,
+            envelope=None if envelope is None else envelope.to_mapping(),
+            signature=None if signed is None else signed.signature,
+            subscription_id=subscription_id, partition=record.partition, offset=record.offset,
+        )
+        self._audit(event_type="c5.deliver", actor=principal, resource=subscription_id, reason_code=reason_code,
+                    outcome="FAILED", correlation_id=str(envelope["correlation_id"]) if envelope is not None else event_id,
+                    detail={"failure_class": FailureClass.POISON.value, "event_id": event_id})
+
+    # -- Quarantine / ReprocessAuthorized ----------------------------------------------------------
+
+    def quarantined(self) -> tuple[Any, ...]:
+        return self._store.quarantined(self.topic)
+
+    def release_quarantine(self, quarantine_id: str, *, operator: str, authority_ref: str,
+                           reason: str = "operator release after diagnosis") -> None:
+        """The operator gate (LLD v1.1 :163): only an authorised operator releases a quarantine."""
+        found = [record for record in self._store.quarantined(self.topic) if record.quarantine_id == quarantine_id]
+        if not found:
+            raise BackboneError("QUARANTINE_NOT_FOUND", "no such quarantine record", failure_class=FailureClass.PERMANENT.value)
+        request = ReprocessRequest(
+            quarantine_id=quarantine_id, subscription_id=found[0].subscription_id or "", reason=reason,
+            requested_by=operator if isinstance(operator, str) else "", authority_ref=authority_ref,
+        )
+        try:
+            decision = self._policy.authorize_replay(request.requested_by, request)
+        except Exception:  # noqa: BLE001 -- a failing policy point denies (fail closed)
+            decision = None
+        if not isinstance(reason, str) or not reason.strip() or not permits(decision):
+            self._audit(event_type="c5.quarantine.release", actor=request.requested_by, resource=quarantine_id,
+                        reason_code="OPERATOR_GATE_CLOSED", outcome="DENIED", correlation_id=quarantine_id)
+            raise OperationsError("OPERATOR_GATE_CLOSED", "the release is not authorised",
+                                  failure_class=FailureClass.POISON.value)
+        self._store.release(quarantine_id, released_by=request.requested_by, authority_ref=str(authority_ref),
+                            reason=reason)
+        self._audit(event_type="c5.quarantine.release", actor=request.requested_by, resource=quarantine_id,
+                    reason_code="OPERATOR_RELEASE", outcome="PERMITTED", correlation_id=quarantine_id,
+                    authority_ref=str(authority_ref))
+
+    def reprocess_dead_letter(self, letter: DeadLetter, *, reason: str, requested_by: str, authority_ref: str,
+                              transport_principal: str) -> PublishReceipt:
+        """``ReprocessAuthorized`` of a dead letter (ADD v1.3 :286, LLD v1.1 :161-165).
+
+        A ``POISON`` event stays behind the operator gate until an operator releases its
+        quarantine; the request is authorised by the policy port; the stored envelope and
+        signature then pass every admission check of a fresh publish, under the transport
+        principal of the channel, so an incompatible schema, a lost marking or a broken
+        signature is refused again, and an already durable event is a duplicate, never a
+        second canonical effect."""
+        if not isinstance(letter, DeadLetter):
+            raise TypeError("letter must be a DeadLetter")
+        actor = requested_by if isinstance(requested_by, str) else ""
+        resource = f"urn:ocor:c5:{self.topic}:dead-letter:{letter.dead_letter_id}"
+        poison = self.poison_records(letter.event_id)
+        held = any(not record.released for record in poison)
+        if held or (letter.failure_class == FailureClass.POISON.value and not poison):
+            self._audit(event_type="c5.reprocess", actor=actor, resource=resource, reason_code="OPERATOR_GATE_CLOSED",
+                        outcome="DENIED", correlation_id=letter.event_id)
+            raise OperationsError("OPERATOR_GATE_CLOSED", "the event is held behind the operator gate",
+                                  failure_class=FailureClass.POISON.value)
+        request = ReprocessRequest(quarantine_id=letter.dead_letter_id, subscription_id="", reason=reason,
+                                   requested_by=actor, authority_ref=authority_ref)
+        try:
+            decision = self._policy.authorize_replay(actor, request)
+        except Exception:  # noqa: BLE001 -- a failing policy point denies (fail closed)
+            decision = None
+        if not isinstance(reason, str) or not reason.strip() or not permits(decision):
+            self._audit(event_type="c5.reprocess", actor=actor, resource=resource, reason_code="REPLAY_DENIED",
+                        outcome="DENIED", correlation_id=letter.event_id)
+            raise OperationsError("REPLAY_DENIED", "the reprocess is not authorised",
+                                  failure_class=FailureClass.POLICY_DENIED.value)
+        self._audit(event_type="c5.reprocess", actor=actor, resource=resource, reason_code="REPROCESS_AUTHORISED",
+                    outcome="PERMITTED", correlation_id=letter.event_id, authority_ref=str(authority_ref),
+                    detail={"reason": reason, "event_id": letter.event_id})
+        envelope = CanonicalIngestionEnvelope.from_mapping(letter.envelope)
+        signature = letter.signature if letter.signature is not None else b""
+        return self.publish(SignedEnvelope(envelope, signature), transport_principal=transport_principal)
+
+    # -- Replay ------------------------------------------------------------------------------
+
+    def replay(self, request: ReplayRequest) -> str:
+        """Authorise a windowed replay of a subscription; return the cursor that delivers it."""
+        actor = request.requested_by if isinstance(request, ReplayRequest) and isinstance(request.requested_by, str) else ""
+        subject = request.subscription_id if isinstance(request, ReplayRequest) else ""
+
+        def deny(why: str) -> BackboneError:
+            self._audit(event_type="c5.replay", actor=actor, resource=str(subject) or "urn:ocor:c5:replay",
+                        reason_code="REPLAY_DENIED", outcome="DENIED", correlation_id=str(subject) or "urn:ocor:c5:replay",
+                        detail={"why": why})
+            return BackboneError("REPLAY_DENIED", "the replay is not authorised", failure_class=FailureClass.POLICY_DENIED.value)
+
+        if not isinstance(request, ReplayRequest) or not request.well_formed():
+            raise deny("the request does not declare a valid window, reason and authority")
+        _, contract = self._subscription(request.subscription_id)
+        terms = contract["replay"]
+        match = REPLAY_WINDOW.fullmatch(str(terms.get("max_replay_window", "")))
+        if terms.get("replay_allowed") is not True or match is None:
+            raise deny("the subscription contract does not allow replay")
+        if request.window_end - request.window_start > timedelta(days=int(match.group(1))):
+            raise deny("the window exceeds max_replay_window")
+        try:
+            decision = self._policy.authorize_replay(request.requested_by, request)
+        except Exception:  # noqa: BLE001 -- a failing policy point denies (fail closed)
+            decision = None
+        if not permits(decision):
+            raise deny("the policy does not authorise the replay")
+        start = self._journal.offsets_for_time(int(request.window_start.timestamp() * 1000))
+        end = self._journal.offsets_for_time(int(request.window_end.timestamp() * 1000))
+        cursor = self._store.save_checkpoint(
+            subscription_id=request.subscription_id, topic=self.topic, positions=start, end_positions=end,
+            window_start=request.window_start, window_end=request.window_end, replay_reason=request.reason,
+            schema_registry_digest=self._registry.digest, release_digest="",
+            governed_context_digest=_gcs_ref(str(contract["governed_context_ref"])),
+        )
+        self._audit(event_type="c5.replay", actor=request.requested_by, resource=request.subscription_id,
+                    reason_code="REPLAY_AUTHORISED", outcome="PERMITTED", correlation_id=request.subscription_id,
+                    authority_ref=request.authority_ref,
+                    detail={"reason": request.reason, "window_start": request.window_start.isoformat(),
+                            "window_end": request.window_end.isoformat()})
+        return cursor

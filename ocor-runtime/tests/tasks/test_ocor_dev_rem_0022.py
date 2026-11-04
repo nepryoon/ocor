@@ -13,8 +13,8 @@ import uuid
 from collections.abc import Iterator
 from typing import Any
 
+import c5_kafka_qualification as backbone  # the C5 broker lifecycle lives in the qualification tool (NCP-U06)
 import pytest
-from ocor_runtime.c5 import backbone
 
 from spikes.kafka_delivery import oracle
 
@@ -35,7 +35,7 @@ def exists(kind: str, name: str) -> bool:
 @pytest.fixture(params=["spike", "backbone"])
 def lifecycle(request: pytest.FixtureRequest) -> Iterator[dict[str, Any]]:
     module = oracle if request.param == "spike" else backbone
-    cls = oracle.KafkaCli if request.param == "spike" else backbone.CanonicalEventBackbone
+    cls = oracle.KafkaCli if request.param == "spike" else backbone.QualificationKafkaBroker
     prefix = "ocor-spike-0019-" if request.param == "spike" else "ocor-c5-backbone-"
     observed: dict[str, Any] = {"module": module, "cls": cls, "prefix": prefix, "mounts": {}, "containers": set()}
     original = module._run
@@ -119,7 +119,7 @@ def test_readiness_timeout_cleans_real_resources(lifecycle, monkeypatch):
     # are still invoked; none of their responses is replaced by a fake success.
     ticks = iter([0.0, 1.0, 100.0])
     monkeypatch.setattr(lifecycle["module"], "time", types.SimpleNamespace(monotonic=lambda: next(ticks), sleep=lambda _: None))
-    lifecycle["error"] = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    lifecycle["error"] = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     if lifecycle["module"] is oracle:
         original = oracle.KafkaCli.assert_real_broker
         def fail(self):
@@ -127,11 +127,11 @@ def test_readiness_timeout_cleans_real_resources(lifecycle, monkeypatch):
             raise oracle.KafkaSpikeError("injected local readiness failure")
         monkeypatch.setattr(oracle.KafkaCli, "assert_real_broker", fail)
     else:
-        original = backbone.CanonicalEventBackbone._exec
+        original = backbone.QualificationKafkaBroker._exec
         def fail(self, *args, **kwargs):
             original(self, *args, **kwargs)
-            raise backbone.KafkaBackboneError("injected local readiness failure")
-        monkeypatch.setattr(backbone.CanonicalEventBackbone, "_exec", fail)
+            raise backbone.KafkaBrokerError("injected local readiness failure")
+        monkeypatch.setattr(backbone.QualificationKafkaBroker, "_exec", fail)
     with pytest.raises(lifecycle["error"], match="did not become ready"):
         provision(lifecycle)
     assert_absent(lifecycle)
@@ -140,7 +140,7 @@ def test_readiness_timeout_cleans_real_resources(lifecycle, monkeypatch):
 def test_teardown_command_failure_is_reported_and_retry_cleans(lifecycle, monkeypatch):
     monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
     value, volume = provision(lifecycle)
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     def fail(*args, **kwargs):
         if args[:2] == ("docker", "rm"):
             raise error("injected removal failure")
@@ -157,7 +157,7 @@ def test_teardown_command_failure_is_reported_and_retry_cleans(lifecycle, monkey
 def test_mismatched_run_volume_and_foreign_labels_are_refused(lifecycle, monkeypatch):
     monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
     value, volume = provision(lifecycle)
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     foreign = lifecycle["prefix"] + "data-" + uuid.uuid4().hex[:12]
     docker("volume", "create", foreign)
     try:
@@ -210,7 +210,7 @@ def test_foreign_container_label_is_rejected_before_any_removal(lifecycle, monke
     lifecycle["record"](*command)
     monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
     value = lifecycle["cls"](name) if lifecycle["module"] is oracle else lifecycle["cls"]("unused", container=name)
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     with pytest.raises(error, match="refusing.*foreign container"):
         value.destroy(volume)
     assert exists("container", name) and exists("volume", volume)
@@ -218,7 +218,7 @@ def test_foreign_container_label_is_rejected_before_any_removal(lifecycle, monke
 
 def test_non_owned_container_name_is_refused(lifecycle):
     value = lifecycle["cls"]("foreign") if lifecycle["module"] is oracle else lifecycle["cls"]("unused", container="foreign")
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     with pytest.raises(error, match="refusing"):
         value.destroy("foreign")
 
@@ -228,7 +228,7 @@ def test_preexisting_volume_is_never_reused_or_deleted(lifecycle, monkeypatch):
     volume = lifecycle["prefix"] + "data-" + ident.hex[:12]
     docker("volume", "create", volume)
     monkeypatch.setattr(lifecycle["module"], "uuid", types.SimpleNamespace(uuid4=lambda: ident))
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     try:
         with pytest.raises(error, match="refusing.*existing lifecycle"):
             provision(lifecycle)
@@ -241,7 +241,7 @@ def test_preexisting_volume_is_never_reused_or_deleted(lifecycle, monkeypatch):
 def test_named_volume_removal_failure_can_be_retried(lifecycle, monkeypatch):
     monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
     value, volume = provision(lifecycle)
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     def fail(*args, **kwargs):
         if args[:3] == ("docker", "volume", "rm"):
             raise error("injected data-volume removal failure")
@@ -259,7 +259,7 @@ def test_named_volume_removal_failure_can_be_retried(lifecycle, monkeypatch):
 def test_residual_anonymous_mount_is_detected_even_after_command_success(lifecycle, monkeypatch):
     monkeypatch.setattr(lifecycle["module"], "_run", lifecycle["record"])
     value, volume = provision(lifecycle)
-    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBackboneError
+    error = oracle.KafkaSpikeError if lifecycle["module"] is oracle else backbone.KafkaBrokerError
     def omit_volumes(*args, **kwargs):
         if args[:2] == ("docker", "rm"):
             args = tuple(a for a in args if a != "--volumes")

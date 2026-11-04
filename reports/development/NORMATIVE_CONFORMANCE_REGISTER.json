@@ -2516,18 +2516,32 @@
       ],
       "plan_unit": "NCP-U06",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0051-RCCAD/OCOR-DEV-REM-0051.json",
+      "remediation_unit": "OCOR-DEV-REM-0051",
       "requirement_ids": [
         "FR-069",
         "FR-068",
         "FR-006"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_second_payload_validation_quarantines_failures",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_producer_signature_covers_envelope_and_digest",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_transport_principal_binding",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_envelope_realises_the_commit_context",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_conforms"
+      },
       "seed_ref": "C5-1",
       "severity": "HIGH",
       "severity_basis": "FR-069, FR-068 and FR-006 are P0 PoC",
       "statement": "The ingestion envelope accepted by C5 has 14 fields, of which only five (event_id, idempotency_key, correlation_id, governed_context_digest, payload) share a name with the 29 required by canonical-ingestion-envelope:1.2 (additionalProperties false); there is no second validation of the payload against payload_schema and no verification of the producer signature.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -2597,18 +2611,27 @@
       ],
       "plan_unit": "NCP-U06",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0051-RCCAD/OCOR-DEV-REM-0051.json",
+      "remediation_unit": "OCOR-DEV-REM-0051",
       "requirement_ids": [
         "FR-074",
         "FR-016",
         "FR-072"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_subscribe_surface_has_opaque_cursor",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_conforms"
+      },
       "seed_ref": "C5-2",
       "severity": "HIGH",
       "severity_basis": "FR-074 is P0 PoC",
       "statement": "The failure taxonomy has only PERMANENT and POISON: no TRANSIENT class with bounded exponential backoff and retry budget, no POLICY_DENIED class with audit and non-disclosing quarantine; replay takes only a free-text window_reason, with no declared window, no authorisation and no policy re-evaluation; there is no Subscribe surface (event-subscription-contract, opaque cursor) and consume() exposes Kafka partition and offset.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -2655,17 +2678,25 @@
       ],
       "plan_unit": "NCP-U06",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0051-RCCAD/OCOR-DEV-REM-0051.json",
+      "remediation_unit": "OCOR-DEV-REM-0051",
       "requirement_ids": [
         "NFR-079"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_003_dead_letters_are_durable_and_immutable"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_003_conforms"
+      },
       "seed_correction": "severity raised from MEDIUM to HIGH: NFR-079 is P0 PoC",
       "seed_ref": "C5-3",
       "severity": "HIGH",
       "severity_basis": "NFR-079 is P0 PoC",
       "statement": "Backpressure applies only a per-tenant in-flight quota: no priority classes and no exemption for audit and security events; DLQ and quarantine are in-memory lists (not durable); DeadLetter.envelope_raw holds a mutable mapping inside a frozen record.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {

@@ -27,19 +27,19 @@ lets both threads through deterministically.
 from __future__ import annotations
 
 import threading
+import time
 import uuid
 from collections.abc import Callable, Iterator
 from typing import Any
 
+import psycopg
 import pytest
-from ocor_runtime.c5.backbone import (
-    BOOTSTRAP,
-    BackboneError,
-    CanonicalEventBackbone,
-    CanonicalIngestionEnvelope,
-    KafkaBackboneError,
-)
-from ocor_runtime.c5.operations import EventOperationsCoordinator, OperationsError
+from c5_backbone_fixture import TENANT, C5Rig, Draft, draft, live_dsn, schema_name
+from c5_kafka_qualification import BOOTSTRAP, KafkaBrokerError, QualificationKafkaBroker
+from ocor_runtime.c5.adapters.kafka import KafkaJournal
+from ocor_runtime.c5.backbone import BackboneError, CanonicalIngestionEnvelope
+from ocor_runtime.c5.backbone import KafkaJournalError as KafkaBackboneError
+from ocor_runtime.c5.operations import EventOperationsCoordinator, OperationsError, ResourceClass
 
 CONTEXT_A = "urn:sha256:" + "a" * 64
 CONTEXT_B = "urn:sha256:" + "b" * 64
@@ -56,40 +56,30 @@ def envelope(
     event_id: str | None = None,
     context: str = CONTEXT_A,
     schema_ref: str = SCHEMA,
-) -> CanonicalIngestionEnvelope:
-    event_id = event_id or f"urn:ocor:event:{uuid.uuid4()}"
-    return CanonicalIngestionEnvelope(
-        event_id=event_id,
-        event_type="MissionEffectRecorded",
-        event_version="1.0.0",
-        schema_ref=schema_ref,
-        producer_principal="urn:ocor:principal:c6-engine",
-        source_ref="urn:ocor:source:rem-0026-fixture",
+) -> Draft:
+    return draft(
         aggregate_ref=aggregate_ref,
-        correlation_id=str(uuid.uuid4()),
-        causation_id=str(uuid.uuid4()),
-        classification_marking_ref="urn:sha256:" + "c" * 64,
-        governed_context_digest=context,
-        idempotency_key=idempotency_key or event_id,
         sequence=sequence,
+        event_id=event_id,
+        idempotency_key=idempotency_key,
+        schema_ref=schema_ref,
+        context=context,
+        causation_id=str(uuid.uuid4()),
         payload={"remediation": "rem-0026"},
     )
 
 
-def topic_record_count(backbone: CanonicalEventBackbone) -> int:
+def topic_record_count(backbone: C5Rig) -> int:
     """Exact number of records on the real topic (sum of partition end offsets)."""
-    output = backbone._exec(  # noqa: SLF001 -- read-only observation of the real broker
-        "kafka-get-offsets", "--bootstrap-server", BOOTSTRAP, "--topic", backbone._topic, "--time", "-1"  # noqa: SLF001
-    )
-    lines = [line for line in output.splitlines() if line.count(":") == 2]
-    assert lines, f"no partition offsets reported: {output!r}"
-    return sum(int(line.rsplit(":", 1)[1]) for line in lines)
+    offsets = backbone.broker.end_offsets(backbone.topic)  # read-only observation of the real broker
+    assert offsets, "no partition offsets reported"
+    return sum(offsets.values())
 
 
-def delivered(backbone: CanonicalEventBackbone) -> list[CanonicalIngestionEnvelope]:
+def delivered(backbone: C5Rig) -> list[CanonicalIngestionEnvelope]:
     count = topic_record_count(backbone)
-    records = backbone.consume(count) if count else ()
-    return [record.envelope for record in sorted(records, key=lambda r: (r.partition, r.offset))]
+    values = backbone.topic_envelopes() if count else []
+    return [CanonicalIngestionEnvelope.from_mapping(value) for value in values]  # partition, offset order
 
 
 def concurrently(*calls: Callable[[], None]) -> list[str | None]:
@@ -113,29 +103,45 @@ def concurrently(*calls: Callable[[], None]) -> list[str | None]:
     return outcomes
 
 
-class HeldWriteBackbone(CanonicalEventBackbone):
+class ModuleTopic(str):
+    """A test topic of the module broker with the PostgreSQL schema of its C5 stores."""
+
+    schema: str
+
+
+def journal_with(instrument: Any) -> type[KafkaJournal]:
+    """The real in-process journal with ``instrument.on_append`` around every real write."""
+
+    class InstrumentedJournal(KafkaJournal):
+        def append(self, **kwargs: Any) -> tuple[int, int]:
+            return instrument.on_append(lambda: KafkaJournal.append(self, **kwargs))
+
+    return InstrumentedJournal
+
+
+class HeldWriteBackbone(C5Rig):
     """Observation instrument over the real backbone: while armed, the first
     real Kafka write is held until a second write starts (possible only when
     check and write are not serialized) or ``HOLD_SECONDS`` elapse. It records
     how many publishes had arrived when the held write was released."""
 
-    def __init__(self, topic: str, *, container: str) -> None:
-        super().__init__(topic, container=container)
+    def __init__(self, topic: ModuleTopic, *, container: QualificationKafkaBroker) -> None:
         self.armed = False
         self.arrivals = 0
         self.writes_started = 0
         self.arrivals_at_release: list[int] = []
         self.first_write_entered = threading.Event()
         self._condition = threading.Condition()
+        super().__init__(container, topic, dsn=live_dsn(), schema=topic.schema, journal_type=journal_with(self))
 
-    def publish(self, envelope: CanonicalIngestionEnvelope) -> None:
+    def publish(self, value: Any) -> Any:
         with self._condition:
             self.arrivals += 1
             self._condition.notify_all()
-        super().publish(envelope)
+        return super().publish(value)
 
-    def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
-        if self.armed and args and args[0] == PRODUCER:
+    def on_append(self, write: Callable[[], tuple[int, int]]) -> tuple[int, int]:
+        if self.armed:
             with self._condition:
                 self.writes_started += 1
                 self._condition.notify_all()
@@ -143,30 +149,31 @@ class HeldWriteBackbone(CanonicalEventBackbone):
                     self.first_write_entered.set()
                     self._condition.wait_for(lambda: self.writes_started >= 2, timeout=HOLD_SECONDS)
                     self.arrivals_at_release.append(self.arrivals)
-        return super()._exec(*args, input_text=input_text, timeout=timeout)
+        return write()
 
 
-class FaultyWriteBackbone(CanonicalEventBackbone):
+class FaultyWriteBackbone(C5Rig):
     """Fault-injection instrument over the real backbone: the next real Kafka
     write fails either before reaching the broker or after the broker has
     durably accepted it (a lost acknowledgement)."""
 
-    def __init__(self, topic: str, *, container: str) -> None:
-        super().__init__(topic, container=container)
+    def __init__(self, topic: ModuleTopic, *, container: QualificationKafkaBroker, **kwargs: Any) -> None:
         self.fail_next: str | None = None
+        super().__init__(container, topic, dsn=live_dsn(), schema=topic.schema, journal_type=journal_with(self),
+                         **kwargs)
 
-    def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
-        if args and args[0] == PRODUCER and self.fail_next is not None:
+    def on_append(self, write: Callable[[], tuple[int, int]]) -> tuple[int, int]:
+        if self.fail_next is not None:
             mode, self.fail_next = self.fail_next, None
             if mode == "before":
                 raise KafkaBackboneError("injected: write never reached the broker")
-            super()._exec(*args, input_text=input_text, timeout=timeout)
+            write()
             raise KafkaBackboneError("injected: acknowledgement lost after a durable write")
-        return super()._exec(*args, input_text=input_text, timeout=timeout)
+        return write()
 
 
-class HeldReadCounter(dict[str, int]):
-    """Observation instrument for a coordinator's private counter: the first
+class HeldReadCounter(dict[Any, int]):
+    """Observation instrument for a private counter: the first
     read takes its value and is then held until a second read has also taken
     its value (possible only when read and write are not serialized) or
     ``HOLD_SECONDS`` elapse, so both readers may observe the same value.
@@ -179,7 +186,7 @@ class HeldReadCounter(dict[str, int]):
         self.written: list[int] = []
         self._condition = threading.Condition()
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: Any, default: Any = None) -> Any:
         value = super().get(key, default)
         with self._condition:
             self.reads += 1
@@ -188,7 +195,7 @@ class HeldReadCounter(dict[str, int]):
                 self._condition.wait_for(lambda: self.reads >= 2, timeout=HOLD_SECONDS)
         return value
 
-    def __setitem__(self, key: str, value: int) -> None:
+    def __setitem__(self, key: Any, value: int) -> None:
         super().__setitem__(key, value)
         self.written.append(value)
         self.max_written = max(self.max_written, value)
@@ -196,54 +203,101 @@ class HeldReadCounter(dict[str, int]):
 
 class HeldPublishBackbone(FaultyWriteBackbone):
     """Observation instrument: every admitted publish is held in flight until
-    ``expected`` callers have been resolved (admitted to the backbone or
-    refused by the coordinator), so a refused caller always decided while the
+    ``expected`` callers have been resolved (admitted to the journal write or
+    refused by the admission control), so a refused caller always decided while the
     admitted ones were still in flight. Inherits the write-fault injection."""
 
-    def __init__(self, topic: str, *, container: str, expected: int) -> None:
-        super().__init__(topic, container=container)
+    def __init__(self, topic: ModuleTopic, *, container: QualificationKafkaBroker, expected: int, quota: int) -> None:
         self.expected = expected
         self.resolved = 0
-        self._condition = threading.Condition()
+        self._held = threading.Condition()
+        super().__init__(topic, container=container, quotas={ResourceClass.BATCH: quota})
 
     def resolve(self) -> None:
-        with self._condition:
+        with self._held:
             self.resolved += 1
-            self._condition.notify_all()
+            self._held.notify_all()
 
-    def publish(self, envelope: CanonicalIngestionEnvelope) -> None:
+    def on_append(self, write: Callable[[], tuple[int, int]]) -> tuple[int, int]:
         self.resolve()
-        with self._condition:
-            self._condition.wait_for(lambda: self.resolved >= self.expected, timeout=30)
-        super().publish(envelope)
+        with self._held:
+            self._held.wait_for(lambda: self.resolved >= self.expected, timeout=30)
+        return super().on_append(write)
+
+
+class HeldAttemptLock:
+    """Observation instrument on the real PostgreSQL: the attempt counter of one event's dead
+    letters is read and written under a transaction advisory lock of the C5 store. The
+    instrument holds that lock until two publishes wait on it (possible only when both reached
+    the critical section together) or ``HOLD_SECONDS`` elapse, then releases it."""
+
+    def __init__(self, backbone: C5Rig, event_id: str) -> None:
+        self._dsn = backbone.dsn
+        self._key = f"{backbone.schema}/dl/{event_id}"
+        self.waiters_at_release = -1
+        self._thread: threading.Thread | None = None
+
+    def __enter__(self) -> HeldAttemptLock:
+        ready = threading.Event()
+
+        def hold() -> None:
+            with psycopg.connect(self._dsn, autocommit=True) as connection:
+                connection.execute("SELECT pg_advisory_lock(hashtextextended(%s, 0))", (self._key,))
+                ready.set()
+                deadline = time.monotonic() + HOLD_SECONDS
+                waiters = 0
+                while time.monotonic() < deadline:
+                    row = connection.execute(
+                        "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted"
+                    ).fetchone()
+                    waiters = int(row[0]) if row else 0
+                    if waiters >= 2:
+                        break
+                    time.sleep(0.05)
+                self.waiters_at_release = waiters
+                connection.execute("SELECT pg_advisory_unlock(hashtextextended(%s, 0))", (self._key,))
+
+        self._thread = threading.Thread(target=hold)
+        self._thread.start()
+        assert ready.wait(timeout=30), "the attempt lock was never taken"
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        assert self._thread is not None
+        self._thread.join(timeout=60)
 
 
 @pytest.fixture(scope="module")
-def broker() -> Iterator[str]:
+def broker() -> Iterator[QualificationKafkaBroker]:
     """One real, isolated, self-provisioned Kafka broker for the module; each test uses its own topic."""
     try:
-        value, container, volume = CanonicalEventBackbone.provision(f"ocor-rem0026-bootstrap-{uuid.uuid4().hex[:12]}")
-    except KafkaBackboneError as error:
+        value, container, volume = QualificationKafkaBroker.provision(f"ocor-rem0026-bootstrap-{uuid.uuid4().hex[:12]}")
+    except KafkaBrokerError as error:
         pytest.fail(f"a real, live, self-provisioned Kafka broker is mandatory qualifying evidence: {error}")
     try:
-        yield container
+        yield value
     finally:
         value.destroy(volume)
 
 
 @pytest.fixture
-def topic(broker: str) -> str:
-    name = f"ocor-rem0026-{uuid.uuid4().hex[:12]}"
-    CanonicalEventBackbone(name, container=broker).initialize()
-    return name
+def topic(broker: QualificationKafkaBroker) -> Iterator[ModuleTopic]:
+    name = ModuleTopic(broker.create_topic(f"ocor-rem0026-{uuid.uuid4().hex[:12]}"))
+    name.schema = schema_name("ocor_c5_rem0026")
+    try:
+        yield name
+    finally:
+        with psycopg.connect(live_dsn(), autocommit=True) as connection:
+            connection.execute(f'DROP SCHEMA IF EXISTS "{name.schema}" CASCADE')
+            connection.execute(f'DROP SCHEMA IF EXISTS "{name.schema}_audit" CASCADE')
 
 
-def restarted(topic: str, broker: str) -> CanonicalEventBackbone:
+def restarted(topic: ModuleTopic, broker: QualificationKafkaBroker) -> C5Rig:
     """A fresh backbone instance on the same broker and topic: process state is gone, the journal is not."""
-    return CanonicalEventBackbone(topic, container=broker)
+    return C5Rig(broker, topic, dsn=live_dsn(), schema=topic.schema)
 
 
-def assert_out_of_order(backbone: CanonicalEventBackbone, late: CanonicalIngestionEnvelope) -> None:
+def assert_out_of_order(backbone: C5Rig, late: Draft) -> None:
     with pytest.raises(BackboneError) as excinfo:
         backbone.publish(late)
     assert excinfo.value.reason_code == "OUT_OF_ORDER"
@@ -254,7 +308,7 @@ def assert_out_of_order(backbone: CanonicalEventBackbone, late: CanonicalIngesti
 # R1 -- durable dedup across a restart
 
 
-def test_r1_replayed_key_after_restart_is_a_safe_no_op(topic: str, broker: str) -> None:
+def test_r1_replayed_key_after_restart_is_a_safe_no_op(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     first = restarted(topic, broker)
     original = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:r1", idempotency_key="r1-key")
     first.publish(original)
@@ -266,7 +320,7 @@ def test_r1_replayed_key_after_restart_is_a_safe_no_op(topic: str, broker: str) 
     assert [e.event_id for e in delivered(second)] == [original.event_id]
 
 
-def test_r1_positive_first_publish_of_a_new_key_after_restart_is_written(topic: str, broker: str) -> None:
+def test_r1_positive_first_publish_of_a_new_key_after_restart_is_written(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     first = restarted(topic, broker)
     a = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:r1p", sequence=1, idempotency_key="r1p-a")
     first.publish(a)
@@ -283,7 +337,7 @@ def test_r1_positive_first_publish_of_a_new_key_after_restart_is_written(topic: 
 # R2 -- monotone per-aggregate watermark across a restart
 
 
-def test_r2_stale_or_equal_sequence_after_restart_is_out_of_order(topic: str, broker: str) -> None:
+def test_r2_stale_or_equal_sequence_after_restart_is_out_of_order(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     aggregate = "urn:ocor:mission-object:rem0026:r2"
     first = restarted(topic, broker)
     first.publish(envelope(aggregate_ref=aggregate, sequence=3))
@@ -294,10 +348,10 @@ def test_r2_stale_or_equal_sequence_after_restart_is_out_of_order(topic: str, br
     assert_out_of_order(second, envelope(aggregate_ref=aggregate, sequence=5))
 
     assert len(second.quarantine) == 2
-    assert [e.sequence for e in delivered(second)] == [3, 5]
+    assert [e.aggregate["expected_revision"] for e in delivered(second)] == [3, 5]
 
 
-def test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances(topic: str, broker: str) -> None:
+def test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     aggregate = "urn:ocor:mission-object:rem0026:r2p"
     first = restarted(topic, broker)
     first.publish(envelope(aggregate_ref=aggregate, sequence=5))
@@ -309,10 +363,10 @@ def test_r2_positive_advancing_sequence_after_restart_is_accepted_and_advances(t
     third = restarted(topic, broker)
     assert_out_of_order(third, envelope(aggregate_ref=aggregate, sequence=6))
     third.publish(envelope(aggregate_ref=aggregate, sequence=9))
-    assert [e.sequence for e in delivered(third)] == [5, 6, 9]
+    assert [e.aggregate["expected_revision"] for e in delivered(third)] == [5, 6, 9]
 
 
-def test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025(topic: str, broker: str) -> None:
+def test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     shared = "urn:ocor:mission-object:rem0026:shared"
     first = restarted(topic, broker)
     a = envelope(context=CONTEXT_A, aggregate_ref=shared, sequence=5, idempotency_key="shared-key")
@@ -327,51 +381,54 @@ def test_restart_recovery_keeps_the_isolation_scoping_of_rem_0025(topic: str, br
     assert_out_of_order(second, envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0026:other", sequence=4))
 
     assert len(second.quarantine) == 2
-    assert sorted(e.event_id for e in delivered(second) if e.aggregate_ref == shared) == sorted([a.event_id, b.event_id])
+    assert sorted(e.event_id for e in delivered(second) if e.aggregate["aggregate_id"] == shared) == sorted(
+        [a.event_id, b.event_id]
+    )
     assert topic_record_count(second) == 3
 
 
-def test_an_unreadable_journal_fails_closed_and_publishes_nothing(topic: str, broker: str) -> None:
+def test_an_unreadable_journal_fails_closed_and_publishes_nothing(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     first = restarted(topic, broker)
     first.publish(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:j1", sequence=1))
     # a record that is not a canonical envelope lands on the journal out of band
-    first._exec(  # noqa: SLF001 -- raw write to the real topic, bypassing the backbone on purpose
+    broker._exec(  # noqa: SLF001 -- raw write to the real topic through the qualification tool, bypassing the backbone
         PRODUCER, "--bootstrap-server", BOOTSTRAP, "--topic", topic,
         "--property", "parse.key=true", "--property", "key.separator=|", input_text="foreign|not-a-canonical-envelope\n",
     )
 
     second = restarted(topic, broker)
     for _ in range(2):  # an unrecoverable journal stays fail-closed: no fallback to empty state
-        with pytest.raises(KafkaBackboneError):
+        with pytest.raises(BackboneError, match="JOURNAL_UNREADABLE"):
             second.publish(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:j2", sequence=1))
 
     assert second.quarantine == ()
     assert topic_record_count(second) == 2
 
 
-def test_a_missing_journal_fails_closed(broker: str) -> None:
-    absent = CanonicalEventBackbone(f"ocor-rem0026-absent-{uuid.uuid4().hex[:12]}", container=broker)
+def test_a_missing_journal_fails_closed(broker: QualificationKafkaBroker) -> None:
+    absent = C5Rig(broker, f"ocor-rem0026-absent-{uuid.uuid4().hex[:12]}", dsn=live_dsn(),
+                   schema=schema_name("ocor_c5_rem0026"))
 
-    with pytest.raises(KafkaBackboneError):
-        absent.publish(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:absent", sequence=1))
+    try:
+        with pytest.raises(KafkaBackboneError):
+            absent.publish(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:absent", sequence=1))
 
-    assert absent.quarantine == ()
+        assert absent.quarantine == ()
+    finally:
+        absent.drop()
 
 
-class ForeignOffsetsBackbone(CanonicalEventBackbone):
+class ForeignOffsetsJournal(KafkaJournal):
     """Local failure-handling instrument (not qualifying for the broker itself):
     the real offsets query runs, but its answer is replaced by one that names
     no partition of this topic -- e.g. another topic's offsets."""
 
-    def _exec(self, *args: str, input_text: str | None = None, timeout: int = 45) -> str:
-        output = super()._exec(*args, input_text=input_text, timeout=timeout)
-        if args and args[0] == "kafka-get-offsets":
-            return "".join(f"ocor-rem0026-foreign-topic:{line.split(':', 1)[1]}\n" for line in output.splitlines() if ":" in line)
-        return output
+    def watermarks(self) -> dict[int, tuple[int, int]]:
+        return {partition + 1000: marks for partition, marks in super().watermarks().items()}
 
 
-def test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed(topic: str, broker: str) -> None:
-    backbone = ForeignOffsetsBackbone(topic, container=broker)
+def test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
+    backbone = C5Rig(broker, topic, dsn=live_dsn(), schema=topic.schema, journal_type=ForeignOffsetsJournal)
 
     with pytest.raises(KafkaBackboneError):
         backbone.publish(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:foreign", sequence=1))
@@ -383,29 +440,29 @@ def test_an_offsets_answer_naming_no_partition_of_the_topic_fails_closed(topic: 
 # Write failures: an unknown write outcome never yields a duplicate
 
 
-def test_a_lost_acknowledgement_is_recovered_without_a_duplicate(topic: str, broker: str) -> None:
+def test_a_lost_acknowledgement_is_recovered_without_a_duplicate(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     aggregate = "urn:ocor:mission-object:rem0026:ack"
     backbone = FaultyWriteBackbone(topic, container=broker)
     backbone.publish(envelope(aggregate_ref=aggregate, sequence=1))
     second = envelope(aggregate_ref=aggregate, sequence=2, idempotency_key="ack-key")
     backbone.fail_next = "after"
 
-    with pytest.raises(KafkaBackboneError):
+    with pytest.raises(BackboneError, match="RETRY_BUDGET_EXHAUSTED"):
         backbone.publish(second)
     backbone.publish(second)  # producer retry of the same envelope
 
     assert_out_of_order(backbone, envelope(aggregate_ref=aggregate, sequence=2))
-    assert [e.sequence for e in delivered(backbone)] == [1, 2]
+    assert [e.aggregate["expected_revision"] for e in delivered(backbone)] == [1, 2]
 
 
-def test_a_write_that_never_reached_the_broker_is_published_once_on_retry(topic: str, broker: str) -> None:
+def test_a_write_that_never_reached_the_broker_is_published_once_on_retry(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     aggregate = "urn:ocor:mission-object:rem0026:noack"
     backbone = FaultyWriteBackbone(topic, container=broker)
     backbone.publish(envelope(aggregate_ref=aggregate, sequence=1))
     second = envelope(aggregate_ref=aggregate, sequence=2, idempotency_key="noack-key")
     backbone.fail_next = "before"
 
-    with pytest.raises(KafkaBackboneError):
+    with pytest.raises(BackboneError, match="RETRY_BUDGET_EXHAUSTED"):
         backbone.publish(second)
     backbone.publish(second)
     backbone.publish(second)
@@ -418,7 +475,7 @@ def test_a_write_that_never_reached_the_broker_is_published_once_on_retry(topic:
 # K1/K2 -- dedup and watermark under concurrent publish
 
 
-def test_k1_concurrent_publish_of_the_same_envelope_writes_exactly_one_record(topic: str, broker: str) -> None:
+def test_k1_concurrent_publish_of_the_same_envelope_writes_exactly_one_record(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     backbone = HeldWriteBackbone(topic, container=broker)
     same = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:k1", idempotency_key="k1-key")
     backbone.armed = True
@@ -431,7 +488,7 @@ def test_k1_concurrent_publish_of_the_same_envelope_writes_exactly_one_record(to
     assert [e.event_id for e in delivered(backbone)] == [same.event_id]
 
 
-def test_k2_concurrent_sequences_never_regress_the_watermark(topic: str, broker: str) -> None:
+def test_k2_concurrent_sequences_never_regress_the_watermark(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     aggregate = "urn:ocor:mission-object:rem0026:k2"
     backbone = HeldWriteBackbone(topic, container=broker)
     backbone.publish(envelope(aggregate_ref=aggregate, sequence=3))
@@ -440,7 +497,7 @@ def test_k2_concurrent_sequences_never_regress_the_watermark(topic: str, broker:
     backbone.armed = True
     outcomes: dict[int, str | None] = {}
 
-    def attempt(value: CanonicalIngestionEnvelope) -> None:
+    def attempt(value: Draft) -> None:
         try:
             backbone.publish(value)
             outcomes[value.sequence] = None
@@ -459,13 +516,13 @@ def test_k2_concurrent_sequences_never_regress_the_watermark(topic: str, broker:
     assert backbone.arrivals_at_release == [3], "sequence 4 must have arrived while sequence 5 was being written"
     assert outcomes == {5: None, 4: "OUT_OF_ORDER"}
     assert [q.raw["event_id"] for q in backbone.quarantine] == [four.event_id]
-    assert [e.sequence for e in delivered(backbone)] == [3, 5]
+    assert [e.aggregate["expected_revision"] for e in delivered(backbone)] == [3, 5]
     # the recorded watermark is 5 in this instance and after a restart
     assert_out_of_order(backbone, envelope(aggregate_ref=aggregate, sequence=5))
     assert_out_of_order(restarted(topic, broker), envelope(aggregate_ref=aggregate, sequence=5))
 
 
-def test_concurrent_publishes_of_distinct_events_are_all_written(topic: str, broker: str) -> None:
+def test_concurrent_publishes_of_distinct_events_are_all_written(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     backbone = HeldWriteBackbone(topic, container=broker)
     values = [envelope(aggregate_ref=f"urn:ocor:mission-object:rem0026:k3-{n}") for n in range(3)]
     backbone.armed = True
@@ -481,24 +538,24 @@ def test_concurrent_publishes_of_distinct_events_are_all_written(topic: str, bro
 
 
 def coordinator_with_held_counter(
-    topic: str, broker: str, *, quota: int, callers: int
+    topic: ModuleTopic, broker: QualificationKafkaBroker, *, quota: int, callers: int
 ) -> tuple[EventOperationsCoordinator, HeldPublishBackbone, HeldReadCounter]:
-    backbone = HeldPublishBackbone(topic, container=broker, expected=callers)
-    coordinator = EventOperationsCoordinator(backbone, max_in_flight_per_tenant=quota)
+    backbone = HeldPublishBackbone(topic, container=broker, expected=callers, quota=quota)
+    coordinator = backbone.coordinator()
     counter = HeldReadCounter()
-    coordinator._in_flight_by_tenant = counter  # noqa: SLF001 -- observation instrument on the private counter
+    backbone.backbone._admission._in_flight = counter  # noqa: SLF001 -- observation instrument on the private counter
     return coordinator, backbone, counter
 
 
-def admit(coordinator: EventOperationsCoordinator, backbone: HeldPublishBackbone, value: CanonicalIngestionEnvelope) -> None:
+def admit(coordinator: EventOperationsCoordinator, backbone: HeldPublishBackbone, value: Draft) -> None:
     try:
-        coordinator.publish_with_backpressure(value, tenant="tenant-a")
+        coordinator.publish_with_backpressure(backbone.sign(value), tenant=TENANT)
     except OperationsError:
         backbone.resolve()
         raise
 
 
-def test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes(topic: str, broker: str) -> None:
+def test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     coordinator, backbone, counter = coordinator_with_held_counter(topic, broker, quota=1, callers=2)
     values = [envelope(aggregate_ref=f"urn:ocor:mission-object:rem0026:q1-{n}") for n in range(2)]
 
@@ -506,12 +563,12 @@ def test_q1_quota_one_admits_exactly_one_of_two_concurrent_publishes(topic: str,
 
     assert sorted(outcomes, key=str) == sorted([None, "BACKPRESSURE_EXCEEDED"], key=str)
     assert counter.max_written <= 1
-    assert counter.get("tenant-a", 0) == 0
+    assert counter.get((TENANT, ResourceClass.BATCH), 0) == 0
     assert min(counter.written) >= 0
     assert topic_record_count(backbone) == 1
 
 
-def test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish(topic: str, broker: str) -> None:
+def test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     coordinator, backbone, counter = coordinator_with_held_counter(topic, broker, quota=2, callers=3)
     values = [envelope(aggregate_ref=f"urn:ocor:mission-object:rem0026:q2-{n}") for n in range(3)]
 
@@ -520,44 +577,47 @@ def test_quota_admits_up_to_its_limit_and_refuses_the_next_concurrent_publish(to
     assert outcomes.count(None) == 2
     assert outcomes.count("BACKPRESSURE_EXCEEDED") == 1
     assert counter.max_written <= 2
-    assert counter.get("tenant-a", 0) == 0
+    assert counter.get((TENANT, ResourceClass.BATCH), 0) == 0
     assert topic_record_count(backbone) == 2
 
 
-def test_the_in_flight_counter_returns_to_zero_after_publish_failures(topic: str, broker: str) -> None:
+def test_the_in_flight_counter_returns_to_zero_after_publish_failures(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
     coordinator, backbone, counter = coordinator_with_held_counter(topic, broker, quota=1, callers=2)
-    unknown = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:qf-1", schema_ref="urn:ocor:schema:not-registered:1")
+    # the payload schema is validated before admission (Register :406), so the failure that a
+    # publish suffers while it holds its quota slot is the journal write of the admitted one
+    failing = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:qf-1")
+    backbone.fail_next = "before"
 
-    outcomes = concurrently(lambda: admit(coordinator, backbone, unknown), lambda: admit(coordinator, backbone, unknown))
-    assert sorted(outcomes, key=str) == sorted(["BACKPRESSURE_EXCEEDED", "UNKNOWN_SCHEMA"], key=str)
-    assert counter.get("tenant-a", 0) == 0
+    outcomes = concurrently(lambda: admit(coordinator, backbone, failing), lambda: admit(coordinator, backbone, failing))
+    assert sorted(outcomes, key=str) == sorted(["BACKPRESSURE_EXCEEDED", "RETRY_BUDGET_EXHAUSTED"], key=str)
+    assert counter.get((TENANT, ResourceClass.BATCH), 0) == 0
 
     backbone.expected = 0  # no further hold: sequential publishes from here
     backbone.fail_next = "before"
-    with pytest.raises(KafkaBackboneError):
+    with pytest.raises(BackboneError, match="RETRY_BUDGET_EXHAUSTED"):
         coordinator.publish_with_backpressure(
-            envelope(aggregate_ref="urn:ocor:mission-object:rem0026:qf-2"), tenant="tenant-a"
+            backbone.sign(envelope(aggregate_ref="urn:ocor:mission-object:rem0026:qf-2")), tenant=TENANT
         )
-    assert counter.get("tenant-a", 0) == 0
+    assert counter.get((TENANT, ResourceClass.BATCH), 0) == 0
 
     valid = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:qf-3")
-    coordinator.publish_with_backpressure(valid, tenant="tenant-a")  # the quota is not leaked
-    assert counter.get("tenant-a", 0) == 0
+    coordinator.publish_with_backpressure(backbone.sign(valid), tenant=TENANT)  # the quota is not leaked
+    assert counter.get((TENANT, ResourceClass.BATCH), 0) == 0
     assert min(counter.written) >= 0
     assert [e.event_id for e in delivered(backbone)] == [valid.event_id]
 
 
-def test_concurrent_failures_of_one_event_count_every_attempt(topic: str, broker: str) -> None:
-    backbone = CanonicalEventBackbone(topic, container=broker)
-    coordinator = EventOperationsCoordinator(backbone, max_in_flight_per_tenant=5)
-    attempts = HeldReadCounter()
-    coordinator._attempts_by_event_id = attempts  # noqa: SLF001 -- observation instrument on the private counter
+def test_concurrent_failures_of_one_event_count_every_attempt(topic: ModuleTopic, broker: QualificationKafkaBroker) -> None:
+    backbone = C5Rig(broker, topic, dsn=live_dsn(), schema=topic.schema, quotas={ResourceClass.BATCH: 5})
+    coordinator = backbone.coordinator()
     unknown = envelope(aggregate_ref="urn:ocor:mission-object:rem0026:qa", schema_ref="urn:ocor:schema:not-registered:1")
+    signed = backbone.sign(unknown)
 
-    outcomes = concurrently(
-        lambda: coordinator.publish_with_backpressure(unknown, tenant="tenant-a"),
-        lambda: coordinator.publish_with_backpressure(unknown, tenant="tenant-a"),
-    )
+    with HeldAttemptLock(backbone, unknown.event_id):  # observation instrument on the real attempt counter
+        outcomes = concurrently(
+            lambda: coordinator.publish_with_backpressure(signed, tenant=TENANT),
+            lambda: coordinator.publish_with_backpressure(signed, tenant=TENANT),
+        )
 
     assert outcomes == ["UNKNOWN_SCHEMA", "UNKNOWN_SCHEMA"]
     assert sorted(letter.attempts for letter in coordinator.dead_letters) == [1, 2]

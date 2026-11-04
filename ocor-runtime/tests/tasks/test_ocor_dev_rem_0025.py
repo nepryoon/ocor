@@ -33,13 +33,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
-from ocor_runtime.c5.backbone import (
-    BOOTSTRAP,
-    BackboneError,
-    CanonicalEventBackbone,
-    CanonicalIngestionEnvelope,
-    KafkaBackboneError,
-)
+from c5_backbone_fixture import AUTHORITY, OPERATOR, C5Rig, Draft, draft, live_dsn, schema_name, tenant
+from c5_kafka_qualification import KafkaBrokerError, QualificationKafkaBroker
+from ocor_runtime.c5.backbone import BackboneError, SignedEnvelope
 from ocor_runtime.c5.operations import DeadLetter, EventOperationsCoordinator
 
 CONTEXT_A = "urn:sha256:" + "a" * 64
@@ -54,58 +50,63 @@ def envelope(
     sequence: int = 1,
     idempotency_key: str | None = None,
     event_id: str | None = None,
-) -> CanonicalIngestionEnvelope:
-    event_id = event_id or f"urn:ocor:event:{uuid.uuid4()}"
-    return CanonicalIngestionEnvelope(
-        event_id=event_id,
-        event_type="MissionEffectRecorded",
-        event_version="1.0.0",
-        schema_ref=SCHEMA,
-        producer_principal="urn:ocor:principal:c6-engine",
-        source_ref="urn:ocor:source:rem-0025-fixture",
+) -> Draft:
+    return draft(
         aggregate_ref=aggregate_ref,
-        correlation_id=str(uuid.uuid4()),
-        causation_id=str(uuid.uuid4()),
-        classification_marking_ref="urn:sha256:" + "c" * 64,
-        governed_context_digest=context,
-        idempotency_key=idempotency_key or event_id,
         sequence=sequence,
+        event_id=event_id,
+        idempotency_key=idempotency_key,
+        schema_ref=SCHEMA,
+        context=context,
+        causation_id=str(uuid.uuid4()),
         payload={"context": str(context)[-1:]},
     )
 
 
-def topic_record_count(backbone: CanonicalEventBackbone) -> int:
+def topic_record_count(backbone: C5Rig) -> int:
     """Exact number of records on the real topic (sum of partition end offsets)."""
-    output = backbone._exec(  # noqa: SLF001 -- read-only observation of the real broker
-        "kafka-get-offsets", "--bootstrap-server", BOOTSTRAP, "--topic", backbone._topic, "--time", "-1"  # noqa: SLF001
-    )
-    lines = [line for line in output.splitlines() if line.count(":") == 2]
-    assert lines, f"no partition offsets reported: {output!r}"
-    return sum(int(line.rsplit(":", 1)[1]) for line in lines)
+    offsets = backbone.broker.end_offsets(backbone.topic)  # read-only observation of the real broker
+    assert offsets, "no partition offsets reported"
+    return sum(offsets.values())
 
 
-def delivered_event_ids(backbone: CanonicalEventBackbone) -> list[str]:
+def delivered_event_ids(backbone: C5Rig) -> list[str]:
     count = topic_record_count(backbone)
-    return [record.envelope.event_id for record in backbone.consume(count)] if count else []
+    return [value["event_id"] for value in backbone.topic_envelopes()] if count else []
 
 
 @pytest.fixture
-def backbone() -> Iterator[CanonicalEventBackbone]:
+def backbone() -> Iterator[C5Rig]:
     topic = f"ocor-rem0025-fixture-{uuid.uuid4().hex[:12]}"
     try:
-        value, _container, volume = CanonicalEventBackbone.provision(topic)
-    except KafkaBackboneError as error:
+        broker, _container, volume = QualificationKafkaBroker.provision(topic)
+    except KafkaBrokerError as error:
         pytest.fail(f"a real, live, self-provisioned Kafka broker is mandatory qualifying evidence: {error}")
+    value = None
     try:
+        value = C5Rig(broker, topic, dsn=live_dsn(), schema=schema_name("ocor_c5_rem0025"))
         yield value
     finally:
-        value.destroy(volume)
+        if value is not None:
+            value.drop()
+        broker.destroy(volume)
+
+
+def publish_as(coordinator: EventOperationsCoordinator, backbone: C5Rig, value: Draft, name: str) -> None:
+    """The coordinator publish of a draft of tenant ``name``."""
+    value.raw["tenant_id"] = tenant(name)
+    coordinator.publish_with_backpressure(backbone.sign(value), tenant=tenant(name))
+
+
+def operator_replay(coordinator: EventOperationsCoordinator, letter: DeadLetter) -> Any:
+    """``ReprocessAuthorized`` of a dead letter, requested by the operator with the replay authority."""
+    return coordinator.replay(letter, reason="operator-requested-retry", requested_by=OPERATOR, authority_ref=AUTHORITY)
 
 
 # P1 -- publish: dedup branch
 
 
-def test_p1_same_idempotency_key_in_two_contexts_publishes_both_events(backbone: CanonicalEventBackbone) -> None:
+def test_p1_same_idempotency_key_in_two_contexts_publishes_both_events(backbone: C5Rig) -> None:
     a = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a1", idempotency_key="shared-key-p1")
     b = envelope(context=CONTEXT_B, aggregate_ref="urn:ocor:mission-object:rem0025:b1", idempotency_key="shared-key-p1")
 
@@ -116,7 +117,7 @@ def test_p1_same_idempotency_key_in_two_contexts_publishes_both_events(backbone:
     assert sorted(delivered_event_ids(backbone)) == sorted([a.event_id, b.event_id])
 
 
-def test_same_idempotency_key_in_the_same_context_is_still_a_safe_no_op(backbone: CanonicalEventBackbone) -> None:
+def test_same_idempotency_key_in_the_same_context_is_still_a_safe_no_op(backbone: C5Rig) -> None:
     first = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a2", idempotency_key="same-key")
     replay = envelope(
         context=CONTEXT_A,
@@ -133,7 +134,7 @@ def test_same_idempotency_key_in_the_same_context_is_still_a_safe_no_op(backbone
 
 
 def test_each_context_keeps_its_own_replay_no_op_after_a_cross_context_key_reuse(
-    backbone: CanonicalEventBackbone,
+    backbone: C5Rig,
 ) -> None:
     a = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a3", idempotency_key="shared-key-3")
     b = envelope(context=CONTEXT_B, aggregate_ref="urn:ocor:mission-object:rem0025:b3", idempotency_key="shared-key-3")
@@ -148,7 +149,7 @@ def test_each_context_keeps_its_own_replay_no_op_after_a_cross_context_key_reuse
 # P3 -- publish: per-aggregate sequence branch
 
 
-def test_p3_same_aggregate_ref_in_two_contexts_is_ordered_per_context(backbone: CanonicalEventBackbone) -> None:
+def test_p3_same_aggregate_ref_in_two_contexts_is_ordered_per_context(backbone: C5Rig) -> None:
     shared = "urn:ocor:mission-object:rem0025:shared-aggregate"
     a5 = envelope(context=CONTEXT_A, aggregate_ref=shared, sequence=5)
     b1 = envelope(context=CONTEXT_B, aggregate_ref=shared, sequence=1)
@@ -161,7 +162,7 @@ def test_p3_same_aggregate_ref_in_two_contexts_is_ordered_per_context(backbone: 
 
 
 def test_out_of_order_within_one_context_is_still_quarantined_beside_another_context(
-    backbone: CanonicalEventBackbone,
+    backbone: C5Rig,
 ) -> None:
     shared = "urn:ocor:mission-object:rem0025:interleaved"
     a3 = envelope(context=CONTEXT_A, aggregate_ref=shared, sequence=3)
@@ -189,52 +190,54 @@ def test_out_of_order_within_one_context_is_still_quarantined_beside_another_con
 # P2 -- EventOperationsCoordinator: backpressure publish and DLQ replay
 
 
-def test_p2_operations_path_publishes_both_contexts_for_a_reused_key(backbone: CanonicalEventBackbone) -> None:
-    coordinator = EventOperationsCoordinator(backbone)
+def test_p2_operations_path_publishes_both_contexts_for_a_reused_key(backbone: C5Rig) -> None:
+    coordinator = backbone.coordinator()
     a = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a4", idempotency_key="shared-key-p2")
     b = envelope(context=CONTEXT_B, aggregate_ref="urn:ocor:mission-object:rem0025:b4", idempotency_key="shared-key-p2")
 
-    coordinator.publish_with_backpressure(a, tenant="tenant-a")
-    coordinator.publish_with_backpressure(b, tenant="tenant-b")
+    publish_as(coordinator, backbone, a, "tenant-a")
+    publish_as(coordinator, backbone, b, "tenant-b")
 
     assert coordinator.dead_letters == ()
     assert backbone.quarantine == ()
     assert sorted(delivered_event_ids(backbone)) == sorted([a.event_id, b.event_id])
 
 
-def _letter(value: CanonicalIngestionEnvelope) -> DeadLetter:
+def _letter(value: SignedEnvelope) -> DeadLetter:
     return DeadLetter(
-        event_id=value.event_id,
-        envelope_raw=value.to_mapping(),
-        reason_code="TRANSIENT_RETRY_SIMULATED",
+        dead_letter_id=str(uuid.uuid4()),
+        event_id=value.envelope.event_id,
         failure_class="PERMANENT",
-        recorded_at=datetime.now(UTC),
+        reason_code="TRANSIENT_RETRY_SIMULATED",
+        envelope=value.envelope.to_mapping(),
         attempts=1,
+        recorded_at=datetime.now(UTC),
+        signature=value.signature,
     )
 
 
-def test_dlq_replay_of_context_b_is_not_suppressed_by_context_a(backbone: CanonicalEventBackbone) -> None:
-    coordinator = EventOperationsCoordinator(backbone)
+def test_dlq_replay_of_context_b_is_not_suppressed_by_context_a(backbone: C5Rig) -> None:
+    coordinator = backbone.coordinator()
     a = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a5", idempotency_key="shared-key-dlq")
     b = envelope(context=CONTEXT_B, aggregate_ref="urn:ocor:mission-object:rem0025:b5", idempotency_key="shared-key-dlq")
-    coordinator.publish_with_backpressure(a, tenant="tenant-a")
+    publish_as(coordinator, backbone, a, "tenant-a")
 
-    receipt = coordinator.replay(_letter(b), window_reason="operator-requested-retry")
+    receipt = operator_replay(coordinator, _letter(backbone.sign(b)))
 
     assert receipt.event_id == b.event_id
     assert sorted(delivered_event_ids(backbone)) == sorted([a.event_id, b.event_id])
 
 
 def test_dlq_replay_of_an_already_durable_same_context_event_is_still_a_no_op(
-    backbone: CanonicalEventBackbone,
+    backbone: C5Rig,
 ) -> None:
-    coordinator = EventOperationsCoordinator(backbone)
+    coordinator = backbone.coordinator()
     a = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a6", idempotency_key="key-dlq-same")
     b = envelope(context=CONTEXT_B, aggregate_ref="urn:ocor:mission-object:rem0025:b6", idempotency_key="key-dlq-same")
-    coordinator.publish_with_backpressure(a, tenant="tenant-a")
-    coordinator.publish_with_backpressure(b, tenant="tenant-b")
+    publish_as(coordinator, backbone, a, "tenant-a")
+    publish_as(coordinator, backbone, b, "tenant-b")
 
-    receipt = coordinator.replay(_letter(b), window_reason="operator-requested-retry")
+    receipt = operator_replay(coordinator, _letter(backbone.sign(b)))
 
     assert receipt.event_id == b.event_id
     assert sorted(delivered_event_ids(backbone)) == sorted([a.event_id, b.event_id])
@@ -245,7 +248,7 @@ def test_dlq_replay_of_an_already_durable_same_context_event_is_still_a_no_op(
 
 @pytest.mark.parametrize("context", ["", None, 7], ids=["empty", "none", "non-string"])
 def test_an_undeterminable_context_fails_closed_and_is_never_published(
-    backbone: CanonicalEventBackbone, context: Any
+    backbone: C5Rig, context: Any
 ) -> None:
     valid = envelope(context=CONTEXT_A, aggregate_ref="urn:ocor:mission-object:rem0025:a7", idempotency_key="key-ctx")
     backbone.publish(valid)
@@ -254,7 +257,7 @@ def test_an_undeterminable_context_fails_closed_and_is_never_published(
     with pytest.raises(BackboneError) as excinfo:
         backbone.publish(missing)
 
-    assert excinfo.value.reason_code == "MISSING_CONTEXT"
-    assert [q.reason_code for q in backbone.quarantine] == ["MISSING_CONTEXT"]
-    assert backbone.quarantine[0].raw["event_id"] == missing.event_id
+    assert excinfo.value.reason_code == "SCHEMA_VIOLATION"
+    assert [q.reason_code for q in backbone.quarantine] == []
+    assert excinfo.value.failure_class == "PERMANENT"
     assert delivered_event_ids(backbone) == [valid.event_id]
