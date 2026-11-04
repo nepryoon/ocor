@@ -1,231 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "0f5eb853fa5ae43950676df565dc820ccd6a4bb2",
-    "branch": "governed/state-sync-rem0051-ci-fail-dr-20261104",
+    "baseline_commit": "6f86a5c9fbcad7f7c9740fe806f603447f8ccc7b",
+    "branch": "governed/state-sync-rem0051-r1-iter8-20261104",
     "campaign_background_processes_remaining": false,
-    "candidate": {
-      "aligned_head": "31913cd",
-      "branch": "governed/ocor-dev-rem-0051-ncp-u06-c5-backbone",
-      "changed_paths_by_alignment": [
-        "reports/development/EXECUTION_STATE.json",
-        "reports/development/ITERATION_LOG.md",
-        "reports/development/MODEL_HANDOFF.json"
-      ],
-      "ci": {
-        "bad_checks": [
-          "evidence",
-          "mandatory-gates"
-        ],
-        "checkruns_json_sha256": "b54535d4ebef4da42ab9f142ee5bdd1ec43554d32041544daefc142153442431",
-        "longest_jobs_seconds": {
-          "delivery-activation part 2/4": 1715,
-          "delivery-activation part 3/4": 2102,
-          "rccad-methodology part 3/4": 2147
-        },
-        "required_checks": [
-          "backend-compatibility-not-ba-evidence",
-          "contract",
-          "delivery-activation",
-          "evidence",
-          "fgm-contract-readiness-not-runtime-evidence",
-          "integration-postgresql",
-          "mandatory-gates",
-          "rccad-methodology",
-          "supply-chain",
-          "tooling-policy",
-          "type-and-lint-gate",
-          "unit",
-          "validation-closure"
-        ],
-        "required_results": {
-          "backend-compatibility-not-ba-evidence": "success",
-          "contract": "success",
-          "delivery-activation": "success",
-          "evidence": "failure",
-          "fgm-contract-readiness-not-runtime-evidence": "success",
-          "integration-postgresql": "success",
-          "mandatory-gates": "failure",
-          "rccad-methodology": "success",
-          "supply-chain": "success",
-          "tooling-policy": "success",
-          "type-and-lint-gate": "success",
-          "unit": "success",
-          "validation-closure": "success"
-        },
-        "reruns": 0,
-        "run_ids": [
-          "41785980494",
-          "41785980535",
-          "41785980584",
-          "41785980610",
-          "41785980622",
-          "41785980699",
-          "41785981337"
-        ],
-        "summary_en": "11/13 required checks success, 0 reruns",
-        "summary_it": "11/13 check obbligatori verdi, 0 rerun; job piu lunghi rccad-methodology part 3/4 2147 s, delivery-activation part 3/4 2102 s, delivery-activation part 2/4 1715 s"
-      },
-      "ci_failures": {
-        "real": {
-          "classification": "REAL (normative conflict between the REM-0046 regression class and a required CI validator); fixing it needs a validator change, which NCP-UNBINDABLE-REQUALIFICATIONS point 5 reserves to a decision request",
-          "command": "ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
-          "error": "FAIL: evidence fields missing: requirement_results",
-          "gap": "neither the implementer PRE-CAMPAIGN-GATE (71 steps) nor the verifier commands ran this workflow command; the gate kit is outside Git",
-          "job": "evidence (ocor-poc-ci.yml, step 'Reject missing, skipped or non-content-addressed evidence', lines 148-158), hence mandatory-gates",
-          "reproduction": "local, same head f3016143774d: same message, exit 1; validate_runtime_evidence.py --task for OCOR-DEV-0001..0006 PASS. Deterministic, not infrastructure.",
-          "root_cause": "validate_manifest (ocor-runtime/tools/evidence_manifest.py :198-254) takes the first G0 artifact of OCOR-DEV-0004 (:204), now the regression-only requalification OCOR-DEV-0004.requalified-rem0051.json (uv.lock/pyproject.toml drift of PO point 7), and requires requirement_results (:224-229), at least one case (:62-64), commands/cases cardinality (:234-236) and ledger rows naming it (:242-253); REM-0046-REGRESSION-REQUALIFICATION-RECORDS point 1 forbids exactly those in a regression record. The validator predates REM-0046; no unit since REM-0046 had requalified OCOR-DEV-0004. validate_runtime_evidence.py --task OCOR-DEV-0004 (check_regression_record) PASS."
-        }
-      },
-      "code_commit": "f2f40d030a3a6a867ee72c07284817dd37f3c02e",
-      "decision_request": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
-      "main_head_at_alignment": "0f5eb85",
-      "outcome": "CI_FAIL_REAL_NOT_INTEGRATED_DECISION_REQUEST",
-      "pre_campaign_gate": {
-        "head": "f3016143774d374e038fa517e1fa110e8255d75e",
-        "logs": "/home/luca/.ocor-codex/integrate-rem0051-20261104/gates/gates-f3016143774d (outside Git)",
-        "steps": "71/71 workflow-derived non-suite steps PASS (dev services up, then down -v)"
-      },
-      "pull_request": {
-        "head": "f3016143774d374e038fa517e1fa110e8255d75e",
-        "number": 480,
-        "state": "OPEN_NOT_MERGED"
-      },
-      "qualified_head": "18516d76f12c6414ca707f7683916815bedcf236",
-      "request_id": "OCOR-DEV-REM-0051-18516d76f12c-0",
-      "seal_hashes": {
-        "repair": [
-          "95ab2989bbb89980d23309d1c8a088560b2d24626c9de475e1c0836f2c0fb936",
-          "ea2d13d9189305770b979a32a7f22e7e61a2cbc5b9d63b7f1905eadb1bcc7871"
-        ],
-        "requalified": {
-          "reports/evidence/G0/OCOR-DEV-0002.requalified-rem0051.json": {
-            "candidate_json_sha256": "b9e4c49886320c5f81e69fce58d6c68263878baf1af6e6721c703f80ac4b4527",
-            "sealed_json_sha256": "ced99c1904253f6c87a09c4d896c1fc67f0cbd0a6e80ea0dea61cbcec9156cb1"
-          },
-          "reports/evidence/G0/OCOR-DEV-0003.requalified-rem0051.json": {
-            "candidate_json_sha256": "4fd170225b868cf4b7ad3f58c2e84c729b13b1eb3d0faa8ee84dd5692864ffee",
-            "sealed_json_sha256": "a9b65e8e568d28358807b756034b5ec9f0e475f8bf5256def5aecaea88db6fee"
-          },
-          "reports/evidence/G0/OCOR-DEV-0004.requalified-rem0051.json": {
-            "candidate_json_sha256": "b4889b064c0954e9ad781bbfb239f4491e3d2cca5ae96069d03f485e52c27b14",
-            "sealed_json_sha256": "53d4c1c00a6effa6e080ad9bf0781e85b87a1d5c99c927a3bf847ac3bbc9fd01"
-          },
-          "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0051.json": {
-            "candidate_json_sha256": "81585018cac6870356ed7ac3f51e684796a56025790e969cf14f1e5b7d6e298e",
-            "sealed_json_sha256": "38ce21cc01a51a78aa1b928932ca930aa8945e2407f4a2b769a156821c6a80c6"
-          },
-          "reports/evidence/G0/OCOR-DEV-0006.requalified-rem0051.json": {
-            "candidate_json_sha256": "8249c12cec9aa6c7b548f66e3421d49c3bc6a7083461a90f9f8e2d83f834fbc1",
-            "sealed_json_sha256": "739aa8f4667bf1aa6a9055b7ddc2014c87af91a475d93a6e9b161575ef899daa"
-          },
-          "reports/evidence/G1/OCOR-DEV-0007.requalified-rem0051.json": {
-            "candidate_json_sha256": "bfda43157b4ab2b0553cf2ebdba25e189e9c8abb5a0ea7a0063046f0ad64acb6",
-            "sealed_json_sha256": "5735a7c256a94a58ac498d8fd115d767304e13e33516f80d1fded6d982b5ee64"
-          },
-          "reports/evidence/G1/OCOR-DEV-0008.requalified-rem0051.json": {
-            "candidate_json_sha256": "b81bbb8926b2111fe39c7ce0c9265b8eef4425288ea1e72c609c7d2965b4fb5c",
-            "sealed_json_sha256": "bddd570d50fefc9e764ae34af77992d89bf83691d3bec83ede6790c942981b08"
-          },
-          "reports/evidence/G1/OCOR-DEV-0009.requalified-rem0051.json": {
-            "candidate_json_sha256": "e10569971be79f4ff841c6c557256214ca66b4cd226a5ff297a9e96ae8fbcf15",
-            "sealed_json_sha256": "b28e7556a46b7369389a1b37033d2c7d8bd939b1b7ecd5aa9354437c230e7516"
-          },
-          "reports/evidence/G1/OCOR-DEV-0010.requalified-rem0051.json": {
-            "candidate_json_sha256": "a647ae10af8ca6c568b5bbdecfc1b99033214c18d3f4a1faf7fb4c15b7640349",
-            "sealed_json_sha256": "9b5635750d02babfc51666950e5a7a8d794d30c0a26d6eb4fb0edf6392242ac8"
-          },
-          "reports/evidence/G1/OCOR-DEV-0011.requalified-rem0051.json": {
-            "candidate_json_sha256": "175cbb4e73d12adbafd2737f38cc1dd6b16d9241dfe46a8b2cd45b893f0e1bee",
-            "sealed_json_sha256": "0e35128d4e132a4aef311cbf8d86bc0d84b4a32af4dce2a44cd4da857ea3aa16"
-          },
-          "reports/evidence/G1/OCOR-DEV-0012.requalified-rem0051.json": {
-            "candidate_json_sha256": "f40e6a6c897edce8a2670427e00fc5e01e535e040a2f86399c597deab313b91c",
-            "sealed_json_sha256": "b35722fd2ea1acd819c3e9164c1c122202a345c745a22ba1a8f29bdc70f867d1"
-          },
-          "reports/evidence/G1/OCOR-DEV-0013.requalified-rem0051.json": {
-            "candidate_json_sha256": "189a17130f0f826381cfb3933784992fe626393a9c20ad81e19752b5b82f02b5",
-            "sealed_json_sha256": "a62a4cbe6542cf3c5bd648474d392e0376404231ff7a847c023605c10cf28a73"
-          },
-          "reports/evidence/G1/OCOR-DEV-0014.requalified-rem0051.json": {
-            "candidate_json_sha256": "1c9adb042a0ee8834fea0ddbd642b42f457867d2b4b0f985fc461bb452d16316",
-            "sealed_json_sha256": "8ca95f0dc49649af3d3e8fa44491d441a26ef9c60173e85a6db15c5a3d01c565"
-          },
-          "reports/evidence/G2/OCOR-DEV-0015.requalified-rem0051.json": {
-            "candidate_json_sha256": "c7387a88be2c51605200d974728ac3c809ef8f273260929181778add0df91b2e",
-            "sealed_json_sha256": "439772def678921def266100c0a62cfd3cfe591a218107a4f9105df94aa7db64"
-          },
-          "reports/evidence/G2/OCOR-DEV-0019.requalified-rem0051.json": {
-            "candidate_json_sha256": "8938adb96d5bb27f862158c625298566edea94a1aac9d105f77de6b7ea46c111",
-            "sealed_json_sha256": "11efb77430f629303b93fd0741b1520cef727ca850346bce99597c261878fe31"
-          },
-          "reports/evidence/G2/OCOR-DEV-0020.requalified-rem0051.json": {
-            "candidate_json_sha256": "aaaf108fe40a3549f8646489ed3bda07eb1957a0d35dfaa29293a675cc7b1546",
-            "sealed_json_sha256": "f40f629ea4a2c48407374720ba3028fb10633ca3750fc1100b2e1280c121e4c9"
-          },
-          "reports/evidence/G2/OCOR-DEV-0022.requalified-rem0051.json": {
-            "candidate_json_sha256": "1c5c902287c14f9c0f0f954534ba7e4b98a4fab3bb26aee678ec8070937e9118",
-            "sealed_json_sha256": "a801f0e3d91adf26736a1de3b46b0988763d608a5885fed544a188581a00c61a"
-          },
-          "reports/evidence/G2/OCOR-DEV-0023.requalified-rem0051.json": {
-            "candidate_json_sha256": "0f643fcb232afeb4e78e6a4171b9408deb2ea2b4b4e7906a41819f8d9a6a8a02",
-            "sealed_json_sha256": "00d6f7183512654c888420fe0b82865922d50b7e51a032c4ef78e0e4f5f644ad"
-          },
-          "reports/evidence/G2/OCOR-DEV-0071.requalified-rem0051.json": {
-            "candidate_json_sha256": "b6668e618885d9dab8ae0a4e1b05c08a15911f514ec4b25b4f1256c5628d5dce",
-            "sealed_json_sha256": "5d247512f5cabc743ad112c4314080e76318d4a2c0e607a6bc97df72fa351bf2"
-          },
-          "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051.json": {
-            "candidate_json_sha256": "26af3948d5ad3a0d97f7363db15521f6e05e239f85320a0e84e84dd775fe17f2",
-            "sealed_json_sha256": "5f6459177bdf59c87245303be682bd2fef78d6d570c28da02e8408b95dea7637"
-          },
-          "reports/evidence/G4/OCOR-DEV-0040.requalified-rem0051.json": {
-            "candidate_json_sha256": "628141f386d9f6b40b48d80f19a1fb00e760bc06d2b0fe2406e2416f038e59d7",
-            "sealed_json_sha256": "57f2a6dc7861fd2eb719b9aed992c9bd772672d264f4f6f41eab5122d2835d91"
-          },
-          "reports/evidence/G4/OCOR-DEV-0041.requalified-rem0051.json": {
-            "candidate_json_sha256": "d4c26c7a1dfe9542e50749a3fe5d84855a22a513fbe960d2ebaee7d06f1558ec",
-            "sealed_json_sha256": "95dd892ec7edd6da49b3c640b81dda425da98644f717215008cd4223880e50fa"
-          },
-          "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051.json": {
-            "candidate_json_sha256": "86cee9df2e2e3e2ac644349631a8dfe700761b65a0536152dff7c4ff5fe2cbe7",
-            "sealed_json_sha256": "c620e3487e15e8c74f2927f686fa426e833e3d77f835ce994061df10eb506f87"
-          }
-        }
-      },
-      "sealed_head": "f3016143774d374e038fa517e1fa110e8255d75e",
-      "verdict": "GO_FOR_EVIDENCE_SEAL",
-      "verdict_file_sha256": "05e67ffe28fceb135494fe6a5e4a5eab0b9df41e0816ce214a62e9975f92cba1"
-    },
-    "change_set": "state sync after the OCOR-DEV-REM-0051 (NCP-U06) integration attempt: GO cycle 0, seal f3016143774d, PR #480 exact-head CI FAIL (real), not integrated; decision request NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
-    "decisions": [
-      "NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
-      "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
-      "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 5",
-      "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02)",
-      "DELEGA-COMPLETA (2026-11-02)",
-      "CC-OCOR-DELIVERY-COMPLETION par. 5 points 7-8, par. 7 and par. 9",
-      "PRE-CAMPAIGN-GATE (2026-10-26)",
-      "REPO-HYGIENE (2026-11-02) point 4",
-      "LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
-      "AGENT-WAIT-HYGIENE (2026-10-27)"
-    ],
+    "change_set": "state sync after OCOR-DEV-REM-0051 (NCP-U06) iteration 8: NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION decided (option 1), repair cycle 1 RED/GREEN, PRE-CAMPAIGN-GATE, preventive review requested",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable_kB": 44516728,
-      "MemTotal_kB": 64199664,
-      "observed_at": "2026-11-04T07:09:43.027104+00:00",
-      "source": "/proc/meminfo (LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27) point 2)"
+      "MemAvailable": 46267876,
+      "MemTotal": 64199664
     },
-    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (draft PR #481, reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md on governed/decision-request-ncp-u06-0004-regression-manifest-validation, commit 0b41db1bcc9c, sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d): the merge of PR #480 and hence the integration of OCOR-DEV-REM-0051 (NCP-U06) depend on it; the next units of plan_order (NCP-U05, U07-U12) start only after NCP-U06 is integrated (one unit at a time); G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the repair change set, PR #481 closed as resolved), then repair cycle 1 of OCOR-DEV-REM-0051 (cycle 1 of 2) on a new branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 from the sealed head f3016143774d (keep governed/ocor-dev-rem-0051-ncp-u06-c5-backbone, its sealed records and PR #480 unchanged; PR #480 is closed as superseded or merged by ancestry): with option 1 RED (new reports/tests module, positive and negative cases for each branch: regression head checks, chain walk to the latest qualifying record, unchanged qualifying path) then GREEN in ocor-runtime/tools/evidence_manifest.py validate_manifest only, plan allowlist and reverse traceability index for the new test file, regression-only requalification OCOR-DEV-0004.requalified-rem0051-r1 superseding the sealed rem0051 record (evidence_manifest.py is an input of 0004), repair-1 unit record superseding the sealed one; with option 2 move the OCOR-DEV-0004.requalified-rem0051 artifact pair after the rem0039 pair in reports/evidence/G0/MANIFEST.json; with option 3 change ocor-poc-ci.yml lines 157-158 as described. Then the workflow command of the evidence job added to the PRE-CAMPAIGN-GATE kit, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW per its exemptions, campaign as required by the changed inputs, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic and Google, seal, PR, merge. Iterations used 7 of estimate 6 (stop at 12). No new DEC; claims unchanged.",
-    "normative_interpretations": [
-      "A real failure of a required check on the exact sealed head blocks the merge (par. 5 point 8): the GO verdict and the seal stay recorded on the unit branch, unmerged.",
-      "The failure is a conflict between the REM-0046 regression class (no requirement_results, no ledger row) and the required validator evidence_manifest.py validate of OCOR-DEV-0004; every fix changes a validator, a workflow or the convention of the MANIFEST order, so per NCP-UNBINDABLE-REQUALIFICATIONS point 5 and the fail-closed rule a normative decision request is opened instead of a repair.",
-      "The sealed branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone @ f3016143774d, its sealed records and PR #480 are preserved: not rewritten, not force-pushed. The repair will use new record paths with explicit supersedes.",
-      "Register unchanged: NCR-C5-001/002/003 stay IN_REMEDIATION until a sealed unit record is on main.",
-      "plan_order runs one unit at a time and NCP-U06 precedes NCP-U05: with the only in-progress unit waiting for the decision, no admitted work remains, so the loop closes TERMINAL_BLOCKED with the decision request id (DELEGA-COMPLETA point 7).",
-      "Lesson: the PRE-CAMPAIGN-GATE kit (outside Git) lacked the evidence-job command evidence_manifest.py validate --task OCOR-DEV-0004; it is added to the kit for the repair."
-    ],
-    "phase": "REM_0051_NCP_U06_GO_SEALED_CI_FAIL_TERMINAL_BLOCKED_ON_DECISION_REQUEST",
+    "next_action": "Resume OCOR-DEV-REM-0051 (NCP-U06) repair cycle 1 after the preventive review OCOR-DEV-REM-0051-4adab1de743d-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0051-4adab1de743d-pre.json (fix or contest every blocking finding, register advisory ones; SKIPPED: proceed). Branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, head 4adab1de743d, kit ~/.ocor-codex/rem-0051-r1 with redgreen.sh, pregate.py; dev env ~/.ocor-codex/rem-0051/dev.env). Then PRE-CAMPAIGN-GATE on the final head, campaign at the final code head (repair-1 unit module and test_ocor_dev_0004.py, regression of 0004/0005/0050/0082, reports portfolio, two-lane full suite; adapt ~/.ocor-codex/rem-0051-q), the regression-only requalifications OCOR-DEV-0004.requalified-rem0051-r1 (supersedes the sealed rem0051 record) and 0005/0050/0082 .requalified-rem0051-r1 (supersede their sealed rem0051 records), MANIFEST entries first, the repair-1 unit record reports/assurance/OCOR-DEV-REM-0051-RCCAD/repair-1.json (superseding the sealed unit record, NCP-U06 results carried over, decision option 1 implementation), candidate, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic (implementer) and the preventive reviewer; then seal, PR, required checks, merge (PR #480 is merged by ancestry or closed as superseded). Iterations used 8 of estimate 6 (stop at 12); repair cycle 1 of 2. Next units of plan_order after the integration: NCP-U05, U07-U12. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). No new DEC; claims unchanged.",
+    "phase": "REM_0051_NCP_U06_REPAIR_1_PREVENTIVE_REVIEW_REQUESTED",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
       "implementers": [
@@ -233,18 +18,17 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "all of REM-0051 (iterations 1-6); this integration attempt (iteration 7 of the estimate 6, stop at 12) as the backup implementer of the loop: alignment, sealing, PRE-CAMPAIGN-GATE, PR #480, exact-head CI diagnosis, decision request NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION, state sync"
+          "scope": "all of REM-0051 (iterations 1-7) and repair cycle 1 (iteration 8: decision registration, RED/GREEN, allowlist, reverse index, PRE-CAMPAIGN-GATE, preventive review request, state sync), as the backup implementer of the loop"
         }
       ],
       "preventive_reviewer": {
-        "agent": "Antigravity CLI",
-        "model": "gemini-4-argon-high",
-        "provider": "Google",
-        "request_id": "OCOR-DEV-REM-0051-bb94dafe92d2-pre",
-        "reserve": false
+        "previous": "OCOR-DEV-REM-0051-bb94dafe92d2-pre (Antigravity CLI / gemini-4-argon-high / Google)",
+        "request_id": "OCOR-DEV-REM-0051-4adab1de743d-pre",
+        "status": "REQUESTED"
       },
-      "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0051-18516d76f12c-0)"
-    }
+      "verifier": "repair cycle 1: provider other than Anthropic (implementer) and the preventive reviewer of the repair; previous effective verifier Cursor CLI / grok-4.7-high / xAI"
+    },
+    "unit": "OCOR-DEV-REM-0051"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1972,7 +1756,7 @@
       }
     }
   },
-  "baseline_commit": "0f5eb853fa5ae43950676df565dc820ccd6a4bb2",
+  "baseline_commit": "6f86a5c9fbcad7f7c9740fe806f603447f8ccc7b",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -7150,9 +6934,18 @@
       "blocked_tasks": [
         "OCOR-DEV-REM-0051"
       ],
+      "blocked_tasks_after_decision": [],
       "created_at": "2026-11-04T07:09:43.027104+00:00",
+      "decided_option": "option 1",
       "decision": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 5 (a decision request is required to modify a validator); CC-OCOR-DELIVERY-COMPLETION par. 5 point 8 (real failure of a required check on the exact head)",
       "decision_level": "NORMATIVE",
+      "disposition_record": {
+        "commit": "b22894ce4ffcb16d45af51ce4f582ef36fe4f073",
+        "path": "reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md",
+        "pr": 481,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "27906a1389499ed6edeaad3a6dc0db86e8d407dbdbf7818ddba41c06f8efd726"
+      },
       "does_not_block": [
         "the GO verdict OCOR-DEV-REM-0051-18516d76f12c-0 and the seal f3016143774d on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone (recorded, unmerged)",
         "the code of NCP-U06 (PRE-CAMPAIGN-GATE 71/71 at the seal head; implementer and verifier two-lane campaigns 4098/4098)"
@@ -7162,14 +6955,30 @@
         "commit": "0b41db1bcc9c8599ce37efd621764c16da8c1c3e",
         "path": "reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md",
         "pr": 481,
-        "publication": "PUSHED_BRANCH_DRAFT_PR_PENDING_PO_DISPOSITION_NO_ALLOWLIST_CHANGE",
+        "publication": "DRAFT_PR_CLOSED_RESOLVED_NOT_MERGED; disposition recorded on the branch; file enters main byte-identical with the REM-0051 repair-1 change set that changes the plan allowlist",
         "sha256": "fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d"
       },
       "finding": "The required evidence job runs ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json (ocor-poc-ci.yml :157-158); validate_manifest (ocor-runtime/tools/evidence_manifest.py :198-254) requires requirement_results and ledger rows on the first G0 artifact of OCOR-DEV-0004, which is now the regression-only requalification OCOR-DEV-0004.requalified-rem0051.json; REM-0046-REGRESSION-REQUALIFICATION-RECORDS point 1 forbids both in that record. PR #480 at f3016143774d: evidence and mandatory-gates FAIL ('evidence fields missing: requirement_results'), reproduced locally",
       "id": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
+      "implementation": {
+        "allowlist": "4adab1d",
+        "branch": "governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1",
+        "green": "3060dfa",
+        "red": "a32a6ce",
+        "summary": "option 1 implemented in ocor-runtime/tools/evidence_manifest.py validate_manifest; 88 cases in reports/tests/test_evidence_manifest_regression_class.py; the evidence-job command PASS on the repository G0 MANIFEST"
+      },
+      "po_decision": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04)",
+      "po_decision_note": "decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh",
+      "po_decision_ref": {
+        "commit": "b22894ce4ffcb16d45af51ce4f582ef36fe4f073",
+        "path": "reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md",
+        "request_sha256": "fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d",
+        "sha256": "27906a1389499ed6edeaad3a6dc0db86e8d407dbdbf7818ddba41c06f8efd726"
+      },
       "recommendation": "option 1: regression class in evidence_manifest.py validate (non-requirement checks on the regression head, unchanged qualifying checks including the ledger on the latest qualifying record of the supersedes chain)",
       "release_condition": "a PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
-      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+      "resolved_at": "2026-11-04T08:43:29.061406+00:00",
+      "status": "DECIDED_BY_PO"
     }
   ],
   "checkpoint_consolidation": {
@@ -7930,11 +7739,17 @@
     "status": "CLOSED_RESOLVED_BY_IMPLEMENTATION"
   },
   "historical_terminal_loop_disposition": {
-    "decision_request": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+    "decision_request": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
     "loop_status": "TERMINAL_BLOCKED",
-    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (draft PR #454, sha256 ca21e0f2c4f54b12...): the requalification records, hence the record completion, candidate, verification, seal and merge of OCOR-DEV-REM-0049 (NCP-U03), depend on it; the next units of plan_order (NCP-U04, U06, U05, U07-U12) start only after NCP-U03 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the unit change set, PR #454 closed as resolved), then continue OCOR-DEV-REM-0049 on governed/ocor-dev-rem-0049-ncp-u03-c2-gateway from 511091f41409 in .ocor/worktrees/rem-0049 (locked PATH ~/.ocor-codex/rem-0049/locked-path): with option 1 build the ten requalification records (0012/0017/0031/0034/0035/0037/0039 and 0005/0050/0082 in the regression class, superseding the latest record of each task, with the AST comparison of the realigned tests) from the campaign outputs in ~/.ocor-codex/rem-0049-q (builder adapted from ~/.ocor-codex/rem-0048-q-tools/build_evidence.py), complete the unit record, PRE-CAMPAIGN-GATE on the candidate head, push the candidate, REMEDIATION verification request declaring Claude Code (Anthropic) as the only implementer and Antigravity (Google) as preventive reviewer; with option 2 add the docstring to test_ocor_dev_0034.py, then PRE-CAMPAIGN-GATE and a new campaign before the records. Iterations used 2 of estimate 4 (stop at 8). No new DEC; claims unchanged.",
-    "reason": "all residual admitted work depends on the PO decision on NCP-U03-QUALIFYING-REQUALIFICATIONS (programme point 6 stop), or on the plan order, suspensions and blocks set by the PO",
-    "recorded_at": "2026-11-02T16:42:48.197441+00:00",
+    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (draft PR #481, reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md on governed/decision-request-ncp-u06-0004-regression-manifest-validation, commit 0b41db1bcc9c, sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d): the merge of PR #480 and hence the integration of OCOR-DEV-REM-0051 (NCP-U06) depend on it; the next units of plan_order (NCP-U05, U07-U12) start only after NCP-U06 is integrated (one unit at a time); G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the repair change set, PR #481 closed as resolved), then repair cycle 1 of OCOR-DEV-REM-0051 (cycle 1 of 2) on a new branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 from the sealed head f3016143774d (keep governed/ocor-dev-rem-0051-ncp-u06-c5-backbone, its sealed records and PR #480 unchanged; PR #480 is closed as superseded or merged by ancestry): with option 1 RED (new reports/tests module, positive and negative cases for each branch: regression head checks, chain walk to the latest qualifying record, unchanged qualifying path) then GREEN in ocor-runtime/tools/evidence_manifest.py validate_manifest only, plan allowlist and reverse traceability index for the new test file, regression-only requalification OCOR-DEV-0004.requalified-rem0051-r1 superseding the sealed rem0051 record (evidence_manifest.py is an input of 0004), repair-1 unit record superseding the sealed one; with option 2 move the OCOR-DEV-0004.requalified-rem0051 artifact pair after the rem0039 pair in reports/evidence/G0/MANIFEST.json; with option 3 change ocor-poc-ci.yml lines 157-158 as described. Then the workflow command of the evidence job added to the PRE-CAMPAIGN-GATE kit, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW per its exemptions, campaign as required by the changed inputs, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic and Google, seal, PR, merge. Iterations used 7 of estimate 6 (stop at 12). No new DEC; claims unchanged.",
+    "previous_historical": {
+      "decision_request": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+      "loop_status": "TERMINAL_BLOCKED",
+      "recorded_at": "2026-11-02T16:42:48.197441+00:00",
+      "status": "TERMINAL_BLOCKED"
+    },
+    "reason": "all residual admitted work depends on the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (validator change reserved by NCP-UNBINDABLE-REQUALIFICATIONS point 5), or on the plan order, suspensions and blocks set by the PO",
+    "recorded_at": "2026-11-04T07:09:43.027104+00:00",
     "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
     "status": "TERMINAL_BLOCKED"
   },
@@ -9462,7 +9277,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (draft PR #481, reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md on governed/decision-request-ncp-u06-0004-regression-manifest-validation, commit 0b41db1bcc9c, sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d): the merge of PR #480 and hence the integration of OCOR-DEV-REM-0051 (NCP-U06) depend on it; the next units of plan_order (NCP-U05, U07-U12) start only after NCP-U06 is integrated (one unit at a time); G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the repair change set, PR #481 closed as resolved), then repair cycle 1 of OCOR-DEV-REM-0051 (cycle 1 of 2) on a new branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 from the sealed head f3016143774d (keep governed/ocor-dev-rem-0051-ncp-u06-c5-backbone, its sealed records and PR #480 unchanged; PR #480 is closed as superseded or merged by ancestry): with option 1 RED (new reports/tests module, positive and negative cases for each branch: regression head checks, chain walk to the latest qualifying record, unchanged qualifying path) then GREEN in ocor-runtime/tools/evidence_manifest.py validate_manifest only, plan allowlist and reverse traceability index for the new test file, regression-only requalification OCOR-DEV-0004.requalified-rem0051-r1 superseding the sealed rem0051 record (evidence_manifest.py is an input of 0004), repair-1 unit record superseding the sealed one; with option 2 move the OCOR-DEV-0004.requalified-rem0051 artifact pair after the rem0039 pair in reports/evidence/G0/MANIFEST.json; with option 3 change ocor-poc-ci.yml lines 157-158 as described. Then the workflow command of the evidence job added to the PRE-CAMPAIGN-GATE kit, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW per its exemptions, campaign as required by the changed inputs, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic and Google, seal, PR, merge. Iterations used 7 of estimate 6 (stop at 12). No new DEC; claims unchanged.",
+  "next_executable_action": "Resume OCOR-DEV-REM-0051 (NCP-U06) repair cycle 1 after the preventive review OCOR-DEV-REM-0051-4adab1de743d-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0051-4adab1de743d-pre.json (fix or contest every blocking finding, register advisory ones; SKIPPED: proceed). Branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, head 4adab1de743d, kit ~/.ocor-codex/rem-0051-r1 with redgreen.sh, pregate.py; dev env ~/.ocor-codex/rem-0051/dev.env). Then PRE-CAMPAIGN-GATE on the final head, campaign at the final code head (repair-1 unit module and test_ocor_dev_0004.py, regression of 0004/0005/0050/0082, reports portfolio, two-lane full suite; adapt ~/.ocor-codex/rem-0051-q), the regression-only requalifications OCOR-DEV-0004.requalified-rem0051-r1 (supersedes the sealed rem0051 record) and 0005/0050/0082 .requalified-rem0051-r1 (supersede their sealed rem0051 records), MANIFEST entries first, the repair-1 unit record reports/assurance/OCOR-DEV-REM-0051-RCCAD/repair-1.json (superseding the sealed unit record, NCP-U06 results carried over, decision option 1 implementation), candidate, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic (implementer) and the preventive reviewer; then seal, PR, required checks, merge (PR #480 is merged by ancestry or closed as superseded). Iterations used 8 of estimate 6 (stop at 12); repair cycle 1 of 2. Next units of plan_order after the integration: NCP-U05, U07-U12. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9717,10 +9532,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "c590c480fddc69b1d5f41e8fb346d497aaf80e46",
-    "branch": "governed/state-sync-rem0051-iter6-20261104",
-    "change_set": "state sync after OCOR-DEV-REM-0051 (NCP-U06) iteration 6: campaign, 23 regression-only requalifications, candidate, verification requested",
-    "phase": "REM_0051_NCP_U06_AWAITING_INDEPENDENT_VERIFICATION"
+    "baseline_commit": "0f5eb853fa5ae43950676df565dc820ccd6a4bb2",
+    "branch": "governed/state-sync-rem0051-ci-fail-dr-20261104",
+    "change_set": "state sync after the OCOR-DEV-REM-0051 (NCP-U06) integration attempt: GO cycle 0, seal f3016143774d, PR #480 exact-head CI FAIL (real), not integrated; decision request NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
+    "phase": "REM_0051_NCP_U06_GO_SEALED_CI_FAIL_TERMINAL_BLOCKED_ON_DECISION_REQUEST"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -9809,16 +9624,18 @@
       "OCOR-DEV-REM-0043": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 10: resumed by NCP-U10, closed as superseded when NCP-U10 is integrated"
     },
     "completed_evidence_tasks_count": 75,
-    "executable_now": [],
-    "executable_now_note": "NCP-U06 not integrated: PR #480 failed a required check; repair blocked on the normative decision request NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION; later units wait (one unit at a time)",
+    "executable_now": [
+      "OCOR-DEV-REM-0051 (repair cycle 1, after the preventive review)"
+    ],
+    "executable_now_note": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION decided (option 1): the repair of NCP-U06 is executable again; later units wait (one unit at a time)",
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0051": "NCP-U06: GO OCOR-DEV-REM-0051-18516d76f12c-0 and seal f3016143774d on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone; PR #480 exact-head CI FAIL (evidence: ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json); waiting for the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION, then repair cycle 1"
+      "OCOR-DEV-REM-0051": "NCP-U06 repair cycle 1 on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 at 4adab1de743d: NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION option 1 implemented (regression class of evidence_manifest.py validate); preventive review OCOR-DEV-REM-0051-4adab1de743d-pre requested; iteration 8 (stop at 12)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-04T07:09:43.027104+00:00",
+    "observed_at": "2026-11-04T08:43:29.061406+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U06",
@@ -31957,12 +31774,12 @@
         "sealed_head": "f3016143774d374e038fa517e1fa110e8255d75e"
       },
       "iteration_stop": 12,
-      "iterations_used": 7,
+      "iterations_used": 8,
       "open_points": [],
       "pending": [
-        "PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
-        "repair cycle 1 per the chosen option",
-        "new verification, seal, PR, required checks, merge, state sync"
+        "preventive review OCOR-DEV-REM-0051-4adab1de743d-pre",
+        "PRE-CAMPAIGN-GATE on the final head, campaign, four regression-only requalifications, repair-1 unit record, candidate",
+        "REMEDIATION verification cycle 1, seal, PR, required checks, merge, state sync"
       ],
       "pre_campaign_gate": {
         "failed": [
@@ -32027,6 +31844,52 @@
         "NCR-C5-002",
         "NCR-C5-003"
       ],
+      "repair_1": {
+        "allowlist": {
+          "commit": "4adab1d",
+          "entries": 14
+        },
+        "authority": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04), option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh)",
+        "base": "f3016143774d374e038fa517e1fa110e8255d75e",
+        "branch": "governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1",
+        "files": [
+          "ocor-runtime/tools/evidence_manifest.py",
+          "reports/tests/test_evidence_manifest_regression_class.py",
+          "scripts/validate_ocor_development_plan.py",
+          "reports/planning/OCOR_PLAN_RUN_STATE.json",
+          "reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md",
+          "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json"
+        ],
+        "green": {
+          "commit": "3060dfa",
+          "fingerprint": "3a29e44d5c92b909c9f684b3eaacce290a7d474e4885f073cbb8911c5392e0fc",
+          "summary": "88 passed; test_ocor_dev_0004.py 10 passed; evidence-job command PASS"
+        },
+        "head": "4adab1de743da675f716fa5d8b4c892cd22f46a2",
+        "pre_campaign_gate": {
+          "head": "4adab1de743da675f716fa5d8b4c892cd22f46a2",
+          "logs": "/home/luca/.ocor-codex/rem-0051-r1/gate/gates-4adab1de743d (outside Git)",
+          "summary": "PRE-CAMPAIGN-GATE at 4adab1de743d 72/73 workflow-derived non-suite steps PASS (dev services up, then down -v); the only non-zero step is the evidence input drift, expected on the four planned regression-only requalifications 0004 (evidence_manifest.py), 0005, 0050, 0082 (scripts/validate_ocor_development_plan.py); the evidence-job command evidence_manifest.py validate --task OCOR-DEV-0004 is now a gate step and PASS"
+        },
+        "preventive_review": {
+          "request_id": "OCOR-DEV-REM-0051-4adab1de743d-pre",
+          "requested_at": "2026-11-04T08:43:29.061406+00:00",
+          "status": "REQUESTED"
+        },
+        "red": {
+          "commit": "a32a6ce",
+          "fingerprint": "57fe20512f38a680cfdf15b94036831c5ba9e6f6eefdecffdca059c7b74222ae",
+          "summary": "77 failed, 11 passed (88 cases)"
+        },
+        "requalifications_planned": {
+          "OCOR-DEV-0004": "regression-only .requalified-rem0051-r1 (evidence_manifest.py input), supersedes the sealed rem0051 record",
+          "OCOR-DEV-0005": "regression-only .requalified-rem0051-r1 (plan validator input)",
+          "OCOR-DEV-0050": "regression-only .requalified-rem0051-r1 (plan validator input)",
+          "OCOR-DEV-0082": "regression-only .requalified-rem0051-r1 (plan validator input)"
+        },
+        "unit_record_planned": "reports/assurance/OCOR-DEV-REM-0051-RCCAD/repair-1.json (supersedes the sealed OCOR-DEV-REM-0051.json)",
+        "worktree": ".ocor/worktrees/rem-0051-r1"
+      },
       "repair_cycles_used": 1,
       "requalifications": {
         "kind": "regression-only, non-qualifying class (NCP-UNBINDABLE-REQUALIFICATIONS point 3 for 0040/0041; NORMATIVE-CONFORMANCE-PLAN point 7 and NCP-U01-SUPERSESSION-REQUALIFICATIONS point 3 for the others)",
@@ -32118,11 +31981,15 @@
           "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051.json": "c620e3487e15e8c74f2927f686fa426e833e3d77f835ce994061df10eb506f87"
         }
       },
-      "status": "GO_SEALED_ON_BRANCH_CI_FAIL_REAL_DECISION_REQUEST_OPEN",
+      "status": "REPAIR_1_IN_PROGRESS_PREVENTIVE_REVIEW_REQUESTED",
       "status_history": [
         {
           "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
           "until": "2026-11-04T07:09:43.027104+00:00"
+        },
+        {
+          "status": "GO_SEALED_ON_BRANCH_CI_FAIL_REAL_DECISION_REQUEST_OPEN",
+          "until": "2026-11-04T08:43:29.061406+00:00"
         }
       ],
       "tdd": {
@@ -32186,7 +32053,7 @@
           "summary": "unit module: 76 failed, 81 passed"
         }
       },
-      "updated_at": "2026-11-04T07:09:43.027104+00:00",
+      "updated_at": "2026-11-04T08:43:29.061406+00:00",
       "worktree": ".ocor/worktrees/rem-0051"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -33426,15 +33293,13 @@
   },
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
-    "decision_request": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
-    "loop_status": "TERMINAL_BLOCKED",
-    "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (draft PR #481, reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md on governed/decision-request-ncp-u06-0004-regression-manifest-validation, commit 0b41db1bcc9c, sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d): the merge of PR #480 and hence the integration of OCOR-DEV-REM-0051 (NCP-U06) depend on it; the next units of plan_order (NCP-U05, U07-U12) start only after NCP-U06 is integrated (one unit at a time); G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the repair change set, PR #481 closed as resolved), then repair cycle 1 of OCOR-DEV-REM-0051 (cycle 1 of 2) on a new branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 from the sealed head f3016143774d (keep governed/ocor-dev-rem-0051-ncp-u06-c5-backbone, its sealed records and PR #480 unchanged; PR #480 is closed as superseded or merged by ancestry): with option 1 RED (new reports/tests module, positive and negative cases for each branch: regression head checks, chain walk to the latest qualifying record, unchanged qualifying path) then GREEN in ocor-runtime/tools/evidence_manifest.py validate_manifest only, plan allowlist and reverse traceability index for the new test file, regression-only requalification OCOR-DEV-0004.requalified-rem0051-r1 superseding the sealed rem0051 record (evidence_manifest.py is an input of 0004), repair-1 unit record superseding the sealed one; with option 2 move the OCOR-DEV-0004.requalified-rem0051 artifact pair after the rem0039 pair in reports/evidence/G0/MANIFEST.json; with option 3 change ocor-poc-ci.yml lines 157-158 as described. Then the workflow command of the evidence job added to the PRE-CAMPAIGN-GATE kit, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW per its exemptions, campaign as required by the changed inputs, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic and Google, seal, PR, merge. Iterations used 7 of estimate 6 (stop at 12). No new DEC; claims unchanged.",
-    "reason": "all residual admitted work depends on the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (validator change reserved by NCP-UNBINDABLE-REQUALIFICATIONS point 5), or on the plan order, suspensions and blocks set by the PO",
-    "recorded_at": "2026-11-04T07:09:43.027104+00:00",
-    "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "status": "TERMINAL_BLOCKED"
+    "loop_status": "CONTINUE",
+    "next_action": "Resume OCOR-DEV-REM-0051 (NCP-U06) repair cycle 1 after the preventive review OCOR-DEV-REM-0051-4adab1de743d-pre: read ~/.ocor-codex/prereviews/OCOR-DEV-REM-0051-4adab1de743d-pre.json (fix or contest every blocking finding, register advisory ones; SKIPPED: proceed). Branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, head 4adab1de743d, kit ~/.ocor-codex/rem-0051-r1 with redgreen.sh, pregate.py; dev env ~/.ocor-codex/rem-0051/dev.env). Then PRE-CAMPAIGN-GATE on the final head, campaign at the final code head (repair-1 unit module and test_ocor_dev_0004.py, regression of 0004/0005/0050/0082, reports portfolio, two-lane full suite; adapt ~/.ocor-codex/rem-0051-q), the regression-only requalifications OCOR-DEV-0004.requalified-rem0051-r1 (supersedes the sealed rem0051 record) and 0005/0050/0082 .requalified-rem0051-r1 (supersede their sealed rem0051 records), MANIFEST entries first, the repair-1 unit record reports/assurance/OCOR-DEV-REM-0051-RCCAD/repair-1.json (superseding the sealed unit record, NCP-U06 results carried over, decision option 1 implementation), candidate, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic (implementer) and the preventive reviewer; then seal, PR, required checks, merge (PR #480 is merged by ancestry or closed as superseded). Iterations used 8 of estimate 6 (stop at 12); repair cycle 1 of 2. Next units of plan_order after the integration: NCP-U05, U07-U12. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). No new DEC; claims unchanged.",
+    "reason": "PO decision NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04) (decided on full delegation) received and registered; the repair of OCOR-DEV-REM-0051 is executable again. Historical TERMINAL_BLOCKED preserved in historical_terminal_loop_disposition and in Git (c88f73c)",
+    "recorded_at": "2026-11-04T08:43:29.061406+00:00",
+    "status": "SUPERSEDED_PO_DECISION_NCP_U06_0004_REGRESSION_MANIFEST_VALIDATION"
   },
-  "updated_at": "2026-11-04T07:09:43.027104+00:00",
+  "updated_at": "2026-11-04T08:43:29.061406+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
