@@ -1,16 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "9c152f33fef579fab5f9b44d58300c2d0a9e70f8",
-    "branch": "governed/state-sync-rem0051-r2-iter10-20261104",
+    "baseline_commit": "6ef9f1d5654fe1f7ed04e5fcd413e132cc88e775",
+    "branch": "governed/state-sync-rem0051-r2-iter11-20261104",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0051 (NCP-U06) iteration 10: NO_GO OCOR-DEV-REM-0051-69bffc6b0f90-1 (VF-001) registered; repair cycle 2: RED, GREEN, PRE-CAMPAIGN-GATE, preventive review requested",
+    "change_set": "state sync after OCOR-DEV-REM-0051 (NCP-U06) iteration 11: preventive review OCOR-DEV-REM-0051-ce38113dd77c-pre NO_BLOCKING_FINDINGS; campaign PASS at ce38113dd77c; rebuilt candidate 0175e61ed3dc; verify request OCOR-DEV-REM-0051-0175e61ed3dc-2",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 49020456,
+      "MemAvailable": 59260552,
       "MemTotal": 64199668
     },
-    "next_action": "Read the preventive review outcome OCOR-DEV-REM-0051-ce38113dd77c-pre in the prereviews directory of the loop; fix or contest every blocking finding; then repair cycle 2 continues on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, kit ~/.ocor-codex/rem-0051-r2): PRE-CAMPAIGN-GATE on the final code head (dev services up with ~/.ocor-codex/rem-0051/dev.env), campaign adapted from ~/.ocor-codex/rem-0051-r1-q at the new code head, rebuild of the unsealed candidate records repair-1.json and the four .requalified-rem0051-r1 records of 0004/0005/0050/0082 (adapt ~/.ocor-codex/rem-0051-r1-tools/build_evidence.py, repair_cycle 2, record the NO_GO of OCOR-DEV-REM-0051-69bffc6b0f90-1 and the VF-001 disposition), candidate commit, PRE-CAMPAIGN-GATE on the candidate, verify request OCOR-DEV-REM-0051-<candidate[:12]>-2 (REMEDIATION, repair cycle 2, providers other than Anthropic and the preventive reviewer's). Iterations used 10 of estimate 6 (stop at 12); repair cycle 2 of 2 is the last one. Then NCP-U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-    "phase": "REM_0051_NCP_U06_REPAIR_2_AWAITING_PREVENTIVE_REVIEW",
+    "next_action": "After the verdict OCOR-DEV-REM-0051-0175e61ed3dc-2 in the verdicts directory of the loop: with GO_FOR_EVIDENCE_SEAL, integration of OCOR-DEV-REM-0051 from governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, candidate 0175e61ed3dc): seal of repair-1.json and the four .requalified-rem0051-r1 records (adapt ~/.ocor-codex/integrate-rem0051-20261104 to the repair-1 paths), PR from the repair branch, every required check on the exact head (the evidence job runs evidence_manifest.py validate --task OCOR-DEV-0004), merge --match-head-commit, PR #480 closed as superseded (or merged by ancestry), state sync. With NO_GO: repair cycle 2 of 2 was the last one, so an escalation record (par. 8) and a decision request on the remaining finding; the task is blocked. Iterations used 11 of estimate 6 (stop at 12). Then NCP-U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "phase": "REM_0051_NCP_U06_REPAIR_2_AWAITING_INDEPENDENT_VERIFICATION",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
       "implementers": [
@@ -18,23 +18,24 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "all of REM-0051 (iterations 1-7), repair cycle 1 (iterations 8-9) and repair cycle 2 (iteration 10: NO_GO registration, RED/GREEN, PRE-CAMPAIGN-GATE, preventive review request), as the backup implementer of the loop"
+          "scope": "all of REM-0051 (iterations 1-7), repair cycle 1 (iterations 8-9) and repair cycle 2 (iterations 10-11: NO_GO registration, RED/GREEN, gates, campaign, rebuilt candidates, verify request), as the backup implementer of the loop"
         }
       ],
       "preventive_reviewer": {
+        "outcome_sha256": "a565a6192dce0361cdc2ee62eefacf10b4e0394ab922efd5326b1d5882916a22",
         "request_id": "OCOR-DEV-REM-0051-ce38113dd77c-pre",
-        "selected_by": "the loop (PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30))",
-        "status": "REQUESTED"
-      },
-      "previous_verifier": {
-        "request_id": "OCOR-DEV-REM-0051-69bffc6b0f90-1",
-        "verdict": "NO_GO",
-        "verifier": "Cursor CLI / grok-4.7-high / xAI"
+        "reviewer": "Antigravity CLI / gemini-4-argon-high / Google",
+        "status": "NO_BLOCKING_FINDINGS"
       },
       "verifier_excluded_providers": [
         "Anthropic",
-        "the provider of the preventive reviewer of OCOR-DEV-REM-0051-ce38113dd77c-pre"
-      ]
+        "Google"
+      ],
+      "verifier_requested": {
+        "constraint": "provider neither Anthropic nor Google",
+        "request_id": "OCOR-DEV-REM-0051-0175e61ed3dc-2",
+        "selected_by": "the external loop"
+      }
     },
     "unit": "OCOR-DEV-REM-0051"
   },
@@ -1764,7 +1765,7 @@
       }
     }
   },
-  "baseline_commit": "9c152f33fef579fab5f9b44d58300c2d0a9e70f8",
+  "baseline_commit": "6ef9f1d5654fe1f7ed04e5fcd413e132cc88e775",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -9285,7 +9286,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Read the preventive review outcome OCOR-DEV-REM-0051-ce38113dd77c-pre in the prereviews directory of the loop; fix or contest every blocking finding; then repair cycle 2 continues on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, kit ~/.ocor-codex/rem-0051-r2): PRE-CAMPAIGN-GATE on the final code head (dev services up with ~/.ocor-codex/rem-0051/dev.env), campaign adapted from ~/.ocor-codex/rem-0051-r1-q at the new code head, rebuild of the unsealed candidate records repair-1.json and the four .requalified-rem0051-r1 records of 0004/0005/0050/0082 (adapt ~/.ocor-codex/rem-0051-r1-tools/build_evidence.py, repair_cycle 2, record the NO_GO of OCOR-DEV-REM-0051-69bffc6b0f90-1 and the VF-001 disposition), candidate commit, PRE-CAMPAIGN-GATE on the candidate, verify request OCOR-DEV-REM-0051-<candidate[:12]>-2 (REMEDIATION, repair cycle 2, providers other than Anthropic and the preventive reviewer's). Iterations used 10 of estimate 6 (stop at 12); repair cycle 2 of 2 is the last one. Then NCP-U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "next_executable_action": "After the verdict OCOR-DEV-REM-0051-0175e61ed3dc-2 in the verdicts directory of the loop: with GO_FOR_EVIDENCE_SEAL, integration of OCOR-DEV-REM-0051 from governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, candidate 0175e61ed3dc): seal of repair-1.json and the four .requalified-rem0051-r1 records (adapt ~/.ocor-codex/integrate-rem0051-20261104 to the repair-1 paths), PR from the repair branch, every required check on the exact head (the evidence job runs evidence_manifest.py validate --task OCOR-DEV-0004), merge --match-head-commit, PR #480 closed as superseded (or merged by ancestry), state sync. With NO_GO: repair cycle 2 of 2 was the last one, so an escalation record (par. 8) and a decision request on the remaining finding; the task is blocked. Iterations used 11 of estimate 6 (stop at 12). Then NCP-U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9540,10 +9541,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "ad0f8ba44ec588b503a055b2c786c8b14b72c821",
-    "branch": "governed/state-sync-rem0051-r1-iter9-20261104",
-    "change_set": "state sync after OCOR-DEV-REM-0051 (NCP-U06) iteration 9: repair-1 preventive review (no findings), campaign, four regression-only requalifications, repair-1 record, candidate, verification requested",
-    "phase": "REM_0051_NCP_U06_REPAIR_1_AWAITING_INDEPENDENT_VERIFICATION"
+    "baseline_commit": "9c152f33fef579fab5f9b44d58300c2d0a9e70f8",
+    "branch": "governed/state-sync-rem0051-r2-iter10-20261104",
+    "change_set": "state sync after OCOR-DEV-REM-0051 (NCP-U06) iteration 10: NO_GO OCOR-DEV-REM-0051-69bffc6b0f90-1 (VF-001) registered; repair cycle 2: RED, GREEN, PRE-CAMPAIGN-GATE, preventive review requested",
+    "phase": "REM_0051_NCP_U06_REPAIR_2_AWAITING_PREVENTIVE_REVIEW"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -9633,15 +9634,15 @@
     },
     "completed_evidence_tasks_count": 75,
     "executable_now": [],
-    "executable_now_note": "OCOR-DEV-REM-0051 awaits the preventive review OCOR-DEV-REM-0051-ce38113dd77c-pre; later units wait (one unit at a time)",
+    "executable_now_note": "OCOR-DEV-REM-0051 awaits the independent verification OCOR-DEV-REM-0051-0175e61ed3dc-2; later units wait (one unit at a time)",
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0051": "NCP-U06 repair cycle 2 code head ce38113dd77c on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1: awaiting preventive review OCOR-DEV-REM-0051-ce38113dd77c-pre; iteration 10 (stop at 12)"
+      "OCOR-DEV-REM-0051": "NCP-U06 repair cycle 2 candidate 0175e61ed3dc on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1: awaiting independent verification OCOR-DEV-REM-0051-0175e61ed3dc-2; iteration 11 (stop at 12)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-04T13:46:43.534216+00:00",
+    "observed_at": "2026-11-04T15:44:44.372515+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U06",
@@ -31573,7 +31574,7 @@
         "status": "PASS",
         "summary": "PASS at the code head f2f40d030a3a: bootstrap 15 containers, 11 typed services READY twice, reset idempotent; unit module test_ocor_dev_rem_0051.py with the register, REM-0046 and evidence-validator tests 3x252 cases passed; realigned/adapted modules of 0040/0041 15 passed; other C5 consumers REM-0022/0025/0026/0050 390 passed; regression of the 20 unchanged modules 568 passed; frozen environment of 0071 (uv lock --check, uv sync --frozen, uv pip check, manifest) PASS; reports portfolio 555 cases passed; two-lane full suite (memory admission TWO_LANE) 4098/4098, zero skips, merged JUnit equal to the collection, 2479.5 s of the 5400 s cap; mains power for the whole run; host stack absent after the lanes"
       },
-      "head": "ce38113dd77cdf6057f4cbabe3c1d87fe78356da",
+      "head": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
       "independent_verification": {
         "excluded_providers": [
           "Anthropic",
@@ -31780,11 +31781,10 @@
         "sealed_head": "f3016143774d374e038fa517e1fa110e8255d75e"
       },
       "iteration_stop": 12,
-      "iterations_used": 10,
+      "iterations_used": 11,
       "open_points": [],
       "pending": [
-        "preventive review OCOR-DEV-REM-0051-ce38113dd77c-pre",
-        "campaign, rebuilt records, candidate, verification (repair cycle 2)",
+        "independent verification OCOR-DEV-REM-0051-0175e61ed3dc-2",
         "seal, PR, required checks, merge, state sync"
       ],
       "pre_campaign_gate": {
@@ -31965,33 +31965,82 @@
         "authority": "VF-001 of the NO_GO verdict OCOR-DEV-REM-0051-69bffc6b0f90-1 (Cursor CLI / grok-4.7-high / xAI) within NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04), option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh)",
         "base": "69bffc6b0f9071be5f5d7b7c463f26feccb1c061",
         "branch": "governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (continued; the unsealed repair-1 candidate records of 69bffc6b0f90 are rebuilt at the repair-2 code head, none is sealed)",
+        "candidate": {
+          "code_commit": "ce38113dd77cdf6057f4cbabe3c1d87fe78356da",
+          "evidence_paths": [
+            "reports/assurance/OCOR-DEV-REM-0051-RCCAD/repair-1.json",
+            "reports/assurance/OCOR-DEV-REM-0051-RCCAD/repair-1.log",
+            "reports/evidence/G0/MANIFEST.json",
+            "reports/evidence/G0/OCOR-DEV-0004.requalified-rem0051-r1.json",
+            "reports/evidence/G0/OCOR-DEV-0004.requalified-rem0051-r1.log",
+            "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0051-r1.json",
+            "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0051-r1.log",
+            "reports/evidence/G2/MANIFEST.json",
+            "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051-r1.json",
+            "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051-r1.log",
+            "reports/evidence/G5/MANIFEST.json",
+            "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051-r1.json",
+            "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051-r1.log"
+          ],
+          "head": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+          "rebuilt_in_place": "repair-1.json/.log and the four .requalified-rem0051-r1 records/logs of OCOR-DEV-0004, OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0082 (unsealed candidates of 69bffc6, same paths, repair_cycle 2, rebuilt_unsealed_candidate block with the NO_GO); G0/G2/G5 manifest insertions redone from 4adab1d"
+        },
         "fail_closed_interpretation": "VF-001 required fix applied within option 1 of NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION: the regression checklist (qualifies_requirements exactly false included) applies to the first artifact only; a later regression hop is followed through its supersession link (digests of the pair, supersedes equal to previous_record.record_id, superseded record_id, same task, manifest directory, no cycle); the most restrictive reading is kept for a hop whose qualifies_requirements is present and not false (refused); the latest non-regression record receives every qualifying check unchanged",
         "files": [
           "ocor-runtime/tools/evidence_manifest.py",
           "reports/tests/test_evidence_manifest_regression_class.py"
         ],
+        "full_suite_campaign": {
+          "head": "ce38113dd77cdf6057f4cbabe3c1d87fe78356da",
+          "kit": "~/.ocor-codex/rem-0051-r2-q (run.sh, qualify_run.py); builder ~/.ocor-codex/rem-0051-r2-tools/build_evidence.py; VF-001 walk observation observe_walk.py",
+          "status": "PASS",
+          "summary": "PASS at the repair-2 code head ce38113dd77c: bootstrap 15 containers, 11 typed services READY twice, reset idempotent; repair module test_evidence_manifest_regression_class.py (110 cases) with the unit module and the register, REM-0046 and evidence-validator tests 3x1294 cases passed; regression of 0004/0005/0050/0082 224 passed; evidence-job command evidence_manifest.py validate --task OCOR-DEV-0004 PASS; reports portfolio 1594 passed; two-lane full suite (memory admission TWO_LANE) 4098/4098, zero skips, merged JUnit equal to the collection, 2541.3 s of the 5400 s cap, mains power throughout"
+        },
         "green": {
           "commit": "ce38113",
           "fingerprint": "f9a42a0189b3764f104782c33f3bd1d68046435b5d5b356d0a7c8c7341fc0386",
           "summary": "110 passed; evidence_manifest.py validate --task OCOR-DEV-0004 PASS"
         },
+        "independent_verification": {
+          "base_sha": "f3016143774d374e038fa517e1fa110e8255d75e",
+          "excluded_providers": [
+            "Anthropic",
+            "Google"
+          ],
+          "head_sha": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+          "repair_cycle": 2,
+          "request_id": "OCOR-DEV-REM-0051-0175e61ed3dc-2",
+          "requested_at": "2026-11-04T15:44:44.372515+00:00",
+          "review_type": "REMEDIATION",
+          "status": "REQUESTED"
+        },
         "kit": "~/.ocor-codex/rem-0051-r2 (redgreen.sh, pregate.py, state_sync_iter10.py)",
         "observation": "On the repository MANIFESTs the walk now ends on the latest non-regression record: OCOR-DEV-0004 PASS on OCOR-DEV-0004.requalified-rem0039.json; OCOR-DEV-0005 (requalified-rem0039, 33 commands, 1 case), OCOR-DEV-0050 (requalified-rem0037, 26 commands, 1 case) and OCOR-DEV-0082 (requalified-rem0039, 33 commands, 1 case) are refused there by the unchanged qualifying check 'executed command/result cardinality mismatch' (their ledgers also name several older records). Option 1 keeps those checks unchanged; no required workflow runs evidence_manifest.py validate for these three tasks (the evidence job runs it for OCOR-DEV-0004 only); validate_runtime_evidence.py --non-skipped passes for all four. Recorded as an observation, no checks relaxed",
         "planned": [
-          "campaign at the final code head",
-          "rebuild of repair-1.json and of the four .requalified-rem0051-r1 records (OCOR-DEV-0004, OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0082) with repair_cycle 2",
-          "candidate",
-          "verify request OCOR-DEV-REM-0051-<candidate[:12]>-2"
+          "verification OCOR-DEV-REM-0051-0175e61ed3dc-2",
+          "seal, PR, required checks, merge, state sync"
         ],
         "pre_campaign_gate": {
           "head": "ce38113dd77cdf6057f4cbabe3c1d87fe78356da",
           "logs": "/home/luca/.ocor-codex/rem-0051-r2/gate/gates-ce38113dd77c (outside Git)",
           "summary": "PRE-CAMPAIGN-GATE at ce38113dd77c 72/73 workflow-derived non-suite steps PASS (dev services up, then down -v); the only non-zero step is the evidence input drift, expected on OCOR-DEV-0004 (ocor-runtime/tools/evidence_manifest.py) until the rebuilt requalification; the evidence-job command evidence_manifest.py validate --task OCOR-DEV-0004 PASS"
         },
+        "pre_campaign_gate_candidate": {
+          "head": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+          "logs": "~/.ocor-codex/rem-0051-r2/gate/gates-0175e61ed3dc (outside Git)",
+          "summary": "PRE-CAMPAIGN-GATE at the candidate 0175e61ed3dc: 73/73 workflow-derived non-suite steps PASS (dev services up, then down -v), drift 0, evidence-job command PASS"
+        },
         "preventive_review": {
+          "findings_by_severity": {
+            "advisory": 0,
+            "blocking": 0
+          },
+          "outcome_created_at": "2026-11-04T15:39:45+01:00",
+          "outcome_sha256": "a565a6192dce0361cdc2ee62eefacf10b4e0394ab922efd5326b1d5882916a22",
           "request_id": "OCOR-DEV-REM-0051-ce38113dd77c-pre",
           "requested_at": "2026-11-04T13:46:43.534216+00:00",
-          "status": "REQUESTED"
+          "reviewer": "Antigravity CLI / gemini-4-argon-high / Google",
+          "status": "NO_BLOCKING_FINDINGS"
         },
         "red": {
           "commit": "0a02a44",
@@ -32091,7 +32140,7 @@
           "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051.json": "c620e3487e15e8c74f2927f686fa426e833e3d77f835ce994061df10eb506f87"
         }
       },
-      "status": "REPAIR_2_AWAITING_PREVENTIVE_REVIEW",
+      "status": "REPAIR_2_AWAITING_INDEPENDENT_VERIFICATION",
       "status_history": [
         {
           "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
@@ -32108,6 +32157,10 @@
         {
           "status": "REPAIR_1_CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
           "until": "2026-11-04T13:46:43.534216+00:00"
+        },
+        {
+          "status": "REPAIR_2_AWAITING_PREVENTIVE_REVIEW",
+          "until": "2026-11-04T15:44:44.372515+00:00"
         }
       ],
       "tdd": {
@@ -32171,7 +32224,7 @@
           "summary": "unit module: 76 failed, 81 passed"
         }
       },
-      "updated_at": "2026-11-04T13:46:43.534216+00:00",
+      "updated_at": "2026-11-04T15:44:44.372515+00:00",
       "worktree": ".ocor/worktrees/rem-0051"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -33412,12 +33465,12 @@
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
     "loop_status": "CONTINUE",
-    "next_action": "Read the preventive review outcome OCOR-DEV-REM-0051-ce38113dd77c-pre in the prereviews directory of the loop; fix or contest every blocking finding; then repair cycle 2 continues on governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, kit ~/.ocor-codex/rem-0051-r2): PRE-CAMPAIGN-GATE on the final code head (dev services up with ~/.ocor-codex/rem-0051/dev.env), campaign adapted from ~/.ocor-codex/rem-0051-r1-q at the new code head, rebuild of the unsealed candidate records repair-1.json and the four .requalified-rem0051-r1 records of 0004/0005/0050/0082 (adapt ~/.ocor-codex/rem-0051-r1-tools/build_evidence.py, repair_cycle 2, record the NO_GO of OCOR-DEV-REM-0051-69bffc6b0f90-1 and the VF-001 disposition), candidate commit, PRE-CAMPAIGN-GATE on the candidate, verify request OCOR-DEV-REM-0051-<candidate[:12]>-2 (REMEDIATION, repair cycle 2, providers other than Anthropic and the preventive reviewer's). Iterations used 10 of estimate 6 (stop at 12); repair cycle 2 of 2 is the last one. Then NCP-U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "next_action": "After the verdict OCOR-DEV-REM-0051-0175e61ed3dc-2 in the verdicts directory of the loop: with GO_FOR_EVIDENCE_SEAL, integration of OCOR-DEV-REM-0051 from governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 (.ocor/worktrees/rem-0051-r1, candidate 0175e61ed3dc): seal of repair-1.json and the four .requalified-rem0051-r1 records (adapt ~/.ocor-codex/integrate-rem0051-20261104 to the repair-1 paths), PR from the repair branch, every required check on the exact head (the evidence job runs evidence_manifest.py validate --task OCOR-DEV-0004), merge --match-head-commit, PR #480 closed as superseded (or merged by ancestry), state sync. With NO_GO: repair cycle 2 of 2 was the last one, so an escalation record (par. 8) and a decision request on the remaining finding; the task is blocked. Iterations used 11 of estimate 6 (stop at 12). Then NCP-U05, U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
     "reason": "PO decision NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04) (decided on full delegation) received and registered; the repair of OCOR-DEV-REM-0051 is executable again. Historical TERMINAL_BLOCKED preserved in historical_terminal_loop_disposition and in Git (c88f73c)",
     "recorded_at": "2026-11-04T08:43:29.061406+00:00",
     "status": "SUPERSEDED_PO_DECISION_NCP_U06_0004_REGRESSION_MANIFEST_VALIDATION"
   },
-  "updated_at": "2026-11-04T13:46:43.534216+00:00",
+  "updated_at": "2026-11-04T15:44:44.372515+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
@@ -33907,6 +33960,14 @@
       "task_id": "OCOR-DEV-REM-0051",
       "verdict_file_sha256": "b94fe5cc063283cec1b40cffc0720f5491c8ee9039f3e0c71529beb446de4d1a",
       "verdict_recorded_at": "2026-11-04T13:46:43.534216+00:00"
+    },
+    {
+      "head_sha": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+      "request_id": "OCOR-DEV-REM-0051-0175e61ed3dc-2",
+      "requested_at": "2026-11-04T15:44:44.372515+00:00",
+      "review_type": "REMEDIATION",
+      "status": "REQUESTED",
+      "task_id": "OCOR-DEV-REM-0051"
     }
   ]
 }
