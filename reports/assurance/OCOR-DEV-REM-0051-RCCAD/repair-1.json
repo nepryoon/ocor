@@ -1642,8 +1642,137 @@
     }
   ],
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "d895d862ea9eb9e34311605dbc170abf2c51b027",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json",
+        "reports/development/TERMINAL_BLOCKED_REPORT.json"
+      ],
+      "main_head": "133ab52932fa21ec90cb4b4010ec2b603061ab51",
+      "nonstate_git_tree_sha256": "7c58d1fa571eae3c890d6b2c5ca037358e6e9a384d563fee359947f05a725f4c",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the four state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "1d1c1f313f614d7923849c3456d1149c68d987bdc5e8160dddef39c3358737f8",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti gli 8 file normativi OK. inputs/ invariato nel diff f301614..HEAD."
+      },
+      {
+        "command": "sha256 of PATH tools after source env.sh compared with infra/toolchain.lock.json and infra/qualification_tools.lock.json; python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, ruff, tsc, uv, helm, kind, kubectl: digest uguale a environment.json e ai lock. environment.json sha256 9fa29cb177b3aea307aed35f757e54789e7f2b4d70f10da23a5b8b017efcc932. Preflight PASS. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Alimentazione MAINS (ADP0 online=1) all'inizio e alla fine della suite."
+      },
+      {
+        "command": "git diff --name-status f3016143774d374e038fa517e1fa110e8255d75e..HEAD",
+        "exit_code": 0,
+        "summary": "19 path: evidence_manifest.py, test_evidence_manifest_regression_class.py, decision request, allowlist del piano e self-hash, indice di tracciabilita inversa, repair-1 e quattro riqualifiche di regressione, inserimenti chirurgici nei MANIFEST G0/G2/G5. Diff vuoto su ocor-runtime/src, ocor-runtime/tests, pyproject.toml, uv.lock, registro di conformita, workflow e inputs. Record sigillati non modificati; i previous_record.record_sha256 coincidono con i file sigillati."
+      },
+      {
+        "command": "git show 0b41db1bcc9c8599ce37efd621764c16da8c1c3e:reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md | sha256sum",
+        "exit_code": 0,
+        "summary": "sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d, coincidente. Il file all'HEAD inizia con quei byte e aggiunge solo la disposition dell'opzione 1."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider reports/tests/test_evidence_manifest_regression_class.py",
+        "exit_code": 0,
+        "summary": "110 passed, 0 skipped, 0.50s, senza backend. Casi positivi e negativi sul primo artefatto, sulla catena supersedes, sull'hop legacy senza qualifies_requirements e sui controlli qualificanti invariati."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS: qualifying manifest and requirement ledger for OCOR-DEV-0004. E il comando del job evidence di ocor-poc-ci.yml, che invoca evidence_manifest.py solo per OCOR-DEV-0004."
+      },
+      {
+        "command": "evidence_manifest.py validate --non-skipped per OCOR-DEV-0005 (G0), OCOR-DEV-0050 (G5), OCOR-DEV-0082 (G2)",
+        "exit_code": 1,
+        "summary": "FAIL: executed command/result cardinality mismatch. Il walk attraversa gli hop di regressione e si ferma sul record non di regressione sigillato (0005 rem0039: 33 comandi e 1 caso; 0050 rem0037 kind=substantive: 26 e 1; 0082 rem0039: 33 e 1). Il controllo qualificante e invariato; la CI non lo esegue su questi task. Conforme all'opzione 1."
+      },
+      {
+        "command": "env -i ... bash --noprofile --norc; source env.sh; ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Prima del provisioning lo stack era assente (ALREADY_REMOVED, residui vuoti). Dopo i test live, teardown REMOVED con residui vuoti prima della campagna."
+      },
+      {
+        "command": "env -i ... bash --noprofile --norc; source env.sh; ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS in 54.542s. fuseki_max_heap_bytes=1073741824. Control-plane workload entry e control-plane SVID exit_code 0 (spiffe://ocor.test/ocor/control-plane). Archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA512 verificata. Servizi READY: terminusdb, typedb, fuseki, opa-keycloak, openbao, spiffe-spire, postgresql, kafka, qdrant, temporal, seaweedfs."
+      },
+      {
+        "command": "pytest -p no:cacheprovider reports/tests/test_evidence_manifest_regression_class.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py ocor-runtime/tests/tasks/test_ocor_dev_0004.py ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "429 passed, 932 subtests passed, 0 skipped, 19.22s. Shell pulita; esportati solo OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN (oltre OCOR_VERIFIER_WORKTREE di env.sh). Nessuno strumento dell'implementatore."
+      },
+      {
+        "command": "pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py (tre volte: task-rem0051-r2-run1..3)",
+        "exit_code": 0,
+        "summary": "157 passed, 0 skipped, per run (57.05s, 56.87s, 56.87s) sullo stesso HEAD, con PostgreSQL del bootstrap e broker Kafka pinned confluentinc/cp-kafka:7.6.0@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047. Codice C5 e test di unita byte-identici a f301614."
+      },
+      {
+        "command": "scripts/validate_language_policy.py; scripts/validate_ocor_change_scope.py --base origin/main --head HEAD; scripts/validate_evidence_input_drift.py --root .; scripts/validate_test_reverse_traceability.py; scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension; scripts/validate_rccad.py --base-ref origin/main; ruff check .; python -m mypy",
+        "exit_code": 0,
+        "summary": "Tutti PASS. Drift 0 su 241 input e 75 task. Piano: PASS, 37 PASS e 2 NOT_EXECUTED opzionali (markdownlint e mmdc assenti, fallback deterministici eseguiti, non contati come PASS). rccad PASS_LOCAL_PRECHECK. mypy: 131 file. ruff: all checks passed."
+      },
+      {
+        "command": "scripts/validate_runtime_evidence.py --non-skipped per OCOR-DEV-0004 (G0), OCOR-DEV-0005 (G0), OCOR-DEV-0050 (G5), OCOR-DEV-0082 (G2)",
+        "exit_code": 0,
+        "summary": "PASS per i quattro task. Record di regressione: qualifies_requirements false, nessun requirement_results, supersedes verso il record sigillato rem0051, comandi PASS, raw_output_sha256 coincidente. Claim E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO."
+      },
+      {
+        "command": "env -i ... bash --noprofile --norc; source env.sh; ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0051-0175e61ed3dc-2/campaign --expected-head 0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb --tool-bin <verifier bin> --tool-bin <locked qualification tools>",
+        "exit_code": 0,
+        "summary": "TWO_LANE PASS. 4098 raccolti, 4098 eseguiti, missing/unexpected/duplicated vuoti, errors 0, failures 0, skipped 0. Corsie 1169 e 2929. Durata 2446.931s; margine 2953.069s sotto il tetto 5400s e 1153.069s sotto la soglia di notifica 3600s; po_decision_required false. Head esatto. Teardown delle due corsie PASS. host_residue container, volumi, reti e root image vuoti. Power start e end MAINS. Nessun OOMKilled. L'evento unhealthy di ocor-ops (HTTP 503) e classificato EXPECTED_READINESS_GATE e non influisce sull'esito. Shell pulita, senza bootstrap.env e senza strumenti dell'implementatore."
+      }
+    ],
+    "findings": [],
+    "findings_disposition": "Nessun finding, nulla NOT_EXECUTED, al ciclo di riparazione 2 (ultimo ammesso). Il ciclo 1 (verdetto OCOR-DEV-REM-0051-69bffc6b0f90-1, NO_GO, VF-001 high) e stato corretto con RED 0a02a44 e GREEN ce38113 di evidence_manifest.py validate_manifest entro l opzione 1 di NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION. Revisione preventiva consultiva (Antigravity CLI / gemini-4-argon-high / Google, PRE-CAMPAIGN-REVIEW-ROTATION, OCOR-DEV-REM-0051-ce38113dd77c-pre, NO_BLOCKING_FINDINGS), esclusa dalla verifica finale e non letta dal verifier. Il verifier ha rieseguito da shell pulita: strumenti e lock PASS, inputs 8/8; diff f301614..HEAD limitato a evidence_manifest.py, test_evidence_manifest_regression_class.py, decision request, allowlist e self-hash del piano, indice di tracciabilita inversa, repair-1 e quattro riqualifiche di regressione con inserimenti chirurgici nei MANIFEST G0/G2/G5; nessun record sigillato modificato; sha256 della decision request al commit 0b41db1 coincidente; test di riparazione 110 passed senza backend; comando del job evidence (evidence_manifest.py validate --task OCOR-DEV-0004) PASS; FAIL di cardinalita di 0005/0050/0082 sul controllo qualificante invariato, conforme all opzione 1 e non eseguito dalla CI; bootstrap da shell pulita PASS; suite di riparazione, registro, REM-0046, validatore e regressione 0004/0005/0050/0082 429 passed e 932 subtest; unita REM-0051 157 passed per tre run; ruff, mypy, language, scope, drift 0, tracciabilita inversa, piano, rccad PASS; evidenza runtime delle quattro riqualifiche di sola regressione PASS.",
+    "head_sha": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "8b1b8a60df40578f1f08de00fa12fb74e7e2b349b2a4abb992c2b5471b800049",
+    "repair_cycle": 2,
+    "review_type": "REMEDIATION",
+    "sealed_requalification_records": {
+      "reports/evidence/G0/OCOR-DEV-0004.requalified-rem0051-r1.json": {
+        "candidate_json_sha256": "e8ff9ac1b139b827973902b611eb1f024788d4a50ed60dc65a93e757a722b1df",
+        "sealed_json_sha256": "55468414d917eed76d5e8ce1fb1e776a4083735c5fb8c0bf0f1d3d6329f86b31"
+      },
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0051-r1.json": {
+        "candidate_json_sha256": "792d3fbb86708af3154c6d47ef899ace936ffb88c3a41b2994cf42c0d7d9c374",
+        "sealed_json_sha256": "c22345b35d8996147899dd595f01d1d53e0043716f664bd8bb0671e01f87d6ad"
+      },
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051-r1.json": {
+        "candidate_json_sha256": "93263731a758bb6ed885f5ec5e05f526cb3c41f2b06e11116bb863c5044a39a9",
+        "sealed_json_sha256": "df09b07918b89f00c6a97c7c1da559f4b61438e57e79c7f1db92f1ad6c7d633e"
+      },
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051-r1.json": {
+        "candidate_json_sha256": "7521fd5f2fa559043575ce8a8b18401fa7984faeca5b2ef790c16f5328896438",
+        "sealed_json_sha256": "2b28198503e575ea80316c14604b2bd31e8365bdd7899e18765bf16ebc0bc65e"
+      }
+    },
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-04T18:01:15Z",
+    "verdict_file_sha256": "4c60a217b89acea9cba000ec856293d7fd63120c6acfdedc28cb6148fe27261e",
+    "verdict_head_sha": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
+    "verdict_request_id": "OCOR-DEV-REM-0051-0175e61ed3dc-2",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, grok-4.7-high (xAI). Implementatore dichiarato dalla richiesta e dal record: Claude Code, claude-opus-5-5 (Anthropic), iterazioni 1-11, unico implementatore che ha toccato il task. La riga di ruolo del loop nomina anche codex (OpenAI); richiesta, record e storia del task non attribuiscono a Codex alcuna modifica. Il verifier non e Anthropic ne OpenAI. Revisore preventivo: Antigravity CLI, gemini-4-argon-high (Google), NO_BLOCKING_FINDINGS, escluso dalla verifica; la revisione preventiva non e stata letta. Autore degli elenchi seed e supplemento: Anthropic; il verifier non e Anthropic. Campagne, teardown e bootstrap avviati da shell pulita (env -i, bash --noprofile --norc, source env.sh); bootstrap.env non caricato; per i test live esportati solo OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN; nessuno strumento dell'implementatore eseguito. environment.json sha256 9fa29cb177b3aea307aed35f757e54789e7f2b4d70f10da23a5b8b017efcc932. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Alimentazione MAINS all'inizio e alla fine della suite.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "sha256 of PATH tools after source env.sh compared with infra/toolchain.lock.json and infra/qualification_tools.lock.json; python scripts/preflight_environment.py --require-ready",
+      "exit_code": 0,
+      "summary": "docker, git, gh, node, ruff, tsc, uv, helm, kind, kubectl: digest uguale a environment.json e ai lock. environment.json sha256 9fa29cb177b3aea307aed35f757e54789e7f2b4d70f10da23a5b8b017efcc932. Preflight PASS. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Alimentazione MAINS (ADP0 online=1) all'inizio e alla fine della suite."
+    }
   },
   "inputs": {
     "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
@@ -3302,6 +3431,12 @@
   "result": "PASS",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatore di REM-0051: Claude Code / claude-opus-5-5 / Anthropic per tutta l unita e per i cicli di riparazione 1 e 2 (iterazioni 1-12, sigillo e integrazione, come implementatore di riserva del loop). Revisore preventivo consultivo: Antigravity CLI / gemini-4-argon-high / Google. Nessun implementatore ne il revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "implementers": [
       {
         "agent": "Claude Code",
@@ -3310,6 +3445,12 @@
         "scope": "all of REM-0051: unit iterations 1-7 and repair cycle 1 (iterations 8-9: decision registration, RED a32a6ce/GREEN 3060dfa of the regression class of evidence_manifest.py validate, allowlist and reverse index 4adab1d, PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request) and repair cycle 2 (iterations 10-11: NO_GO registration, RED 0a02a44/GREEN ce38113 for VF-001, PRE-CAMPAIGN-GATE, campaign, rebuild of the unsealed candidates, verification request), as reserve implementer of the loop rotation"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
     "preventive_reviewer": {
       "agent": "Antigravity CLI",
       "model": "gemini-4-argon-high",
@@ -3327,7 +3468,8 @@
       "constraint": "provider neither Anthropic nor Google (implementer and preventive reviewer)",
       "process": "external loop only, separate clean context"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback_procedure": "revert the REM-0051 commits: the new C5 modules (envelope, schema, policy, retry, replay, subscription, adapters), the qualification tool, the shared test support module and the unit test disappear; c5/backbone.py, c5/operations.py, c3/events.py, c3/relay.py, c4/projector.py and the adapted or realigned tests return to the base; pyproject.toml and uv.lock return to the base (46 packages removed); the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again",
   "rollback_procedure_verified": "Mechanical review: revert the repair-1 and repair-2 commits (evidence_manifest.py, the new test, the decided request, allowlist, plan self-hash, reverse index entry, records and manifest insertions); the sealed unit branch and its records stay as history. No contract, lock, schema or data migration involved.",
@@ -3486,7 +3628,7 @@
       "task_id": "OCOR-DEV-0071"
     }
   ],
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-REM-0051-f2f40d030a3a",
   "supersession_scope": "Repair cycles 1 and 2 of OCOR-DEV-REM-0051: same unit NCP-U06, same register entries NCR-C5-001/002/003, same acceptance criteria and resolution probes, re-run three times at the repair-2 code head; the repairs add only the regression class of evidence_manifest.py validate decided by the PO (NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION option 1), corrected in repair 2 for VF-001. The C5 code and every test of the unit are byte-identical to the sealed head. The sealed unit record stays unchanged as history; the unsealed repair-1 candidate of this path is rebuilt in place.",
   "task_id": "OCOR-DEV-REM-0051",
