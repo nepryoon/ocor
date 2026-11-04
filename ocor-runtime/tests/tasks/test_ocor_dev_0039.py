@@ -11,7 +11,6 @@ Every test drives real PostgreSQL and real TypeDB -- no mocks.
 from __future__ import annotations
 
 import os
-import urllib.error
 
 import pytest
 import test_ocor_dev_rem_0050 as governed_path
@@ -285,5 +284,9 @@ def test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error(
     detector = ProjectionDriftDetector(service, projection)
     monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", "http://127.0.0.1:1")
 
-    with pytest.raises(urllib.error.URLError):
+    # NCP-U05 (NCR-C4-003): a typed fail-closed error with the reason code PROJECTION_NOT_READY, never a
+    # raw transport error -- ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491,
+    # docs/OCOR_LLD_v1.1.md:346; PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5, NCP-U05 row
+    with pytest.raises(DriftError) as excinfo:
         detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"
