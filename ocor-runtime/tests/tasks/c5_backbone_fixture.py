@@ -8,10 +8,16 @@ injected fault stays the same.
 - ``draft`` builds the ``canonical-ingestion-envelope:1.2`` (ADD v1.3 :531-840) of an old
   fixture: ``aggregate_ref`` becomes ``ordering_key`` and ``aggregate.aggregate_id``, ``sequence``
   becomes ``aggregate.expected_revision``, ``schema_ref`` becomes the ``payload_schema`` pin
-  (an unregistered schema keeps its own id), ``governed_context_digest`` is written in its
-  ``sha256:`` form, and an old event id or idempotency key that is not of the 1.2 form maps
+  (an unregistered schema keeps its own id), and an old event id or idempotency key that is not of the 1.2 form maps
   deterministically to one (uuid5, ``idempotency/`` prefix). It is signed only when published,
   so an incomplete draft is refused at the admission boundary, never at construction.
+- An old fixture names its governed context by a digest label (``urn:sha256:<hex>``). In 1.2
+  ``governed_context_digest`` is the digest of the GovernedContext record the envelope fields
+  realise, ``correlation_id`` included, and the admission boundary reproduces it (ADD v1.3 :845):
+  a label stands for one GovernedContext, whose ``correlation_id`` derives from the label
+  (uuid5) unless the test fixes one, and the digest is computed from the fields when the draft
+  is signed. Any other value of an old fixture (empty, ``None``, not a string) is written in the
+  ``sha256:`` form if it is a string and as is otherwise, so the admission boundary judges it. A subscription of a label filters the digest it stands for.
 - ``C5Rig`` composes the real backbone of one topic (Kafka through the in-process client,
   PostgreSQL for DLQ, quarantine, checkpoints and audit) and the oracles of the tests, which do
   not use the module under test: the topic content, the physical partitions and the record
@@ -27,6 +33,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import socket
 import uuid
 from collections.abc import Mapping
@@ -48,6 +55,7 @@ from ocor_runtime.c5.policy import PolicyDecision
 from ocor_runtime.c5.retry import RetryPolicy
 from ocor_runtime.c5.schema import SchemaRegistry
 from ocor_runtime.kernel.canonical import canonical_bytes
+from ocor_runtime.kernel.governed_context import GovernedContext
 
 PRODUCER = "urn:ocor:principal:c6-engine"
 CONSUMER = "urn:ocor:principal:c4-projector"
@@ -92,10 +100,38 @@ def event_uuid(event_id: str) -> str:
         return str(uuid.uuid5(NAMESPACE, event_id))
 
 
-def context_digest(context: Any) -> Any:
-    """``urn:sha256:<hex>`` of an old fixture as the ``sha256:<hex>`` of the 1.2 envelope; any
-    other value is kept, so the admission boundary judges it."""
-    return context.removeprefix("urn:") if isinstance(context, str) else context
+CONTEXT_LABEL = re.compile(r"urn:sha256:[0-9a-f]{64}")
+
+
+def context_label(context: Any) -> str | None:
+    """The digest label by which an old fixture names a governed context, if it is one."""
+    return context if isinstance(context, str) and CONTEXT_LABEL.fullmatch(context) else None
+
+
+def label_correlation(label: str) -> str:
+    """The ``correlation_id`` of the GovernedContext a label stands for (stable, deterministic)."""
+    return str(uuid.uuid5(NAMESPACE, f"correlation/{label}"))
+
+
+def realised_context_digest(raw: Mapping[str, Any]) -> str:
+    """The ``sha256:`` digest of the GovernedContext record the fields of a 1.2 draft realise
+    (ADD v1.3 :845), computed with the sealed kernel record, not with the C5 module under test."""
+    context = GovernedContext.from_mapping(
+        {
+            "tenant_id": raw["tenant_id"],
+            "organization_id": raw["organization_id"],
+            "domain_id": raw["domain_id"],
+            "compartments": list(raw["compartments"]),
+            "classification_marking_ref": "urn:" + str(raw["classification_marking"]["marking_digest"]),
+            "purpose": raw["purpose"],
+            "effective_principal_id": raw["effective_principal_id"],
+            "actor_chain": list(raw["actor_chain"]),
+            "ontology_release_digest": "urn:" + str(raw["ontology_release_digest"]),
+            "policy_bundle_digest": "urn:" + str(raw["policy_bundle_digest"]),
+            "correlation_id": raw["correlation_id"],
+        }
+    )
+    return context.digest().removeprefix("urn:")
 
 
 def schema_pin(schema_ref: str = OLD_SCHEMA) -> dict[str, str]:
@@ -117,8 +153,19 @@ def schema_pin(schema_ref: str = OLD_SCHEMA) -> dict[str, str]:
 class Draft:
     """An unsigned ``canonical-ingestion-envelope:1.2`` of a test, signed when published."""
 
-    def __init__(self, raw: dict[str, Any]) -> None:
+    def __init__(self, raw: dict[str, Any], context: str | None = None) -> None:
         self.raw = raw
+        self.context = context
+
+    def realise_context(self) -> None:
+        """Write the digest of the GovernedContext the current fields realise, when the draft
+        names its context by a label; a draft without a complete context is left as is."""
+        if self.context is None:
+            return
+        try:
+            self.raw["governed_context_digest"] = realised_context_digest(self.raw)
+        except (KeyError, TypeError, ValueError):
+            return
 
     def __getitem__(self, name: str) -> Any:
         return self.raw[name]
@@ -170,12 +217,15 @@ def draft(
     principal: str = PRODUCER,
 ) -> Draft:
     identifier = event_uuid(event_id) if event_id else str(uuid.uuid4())
+    label = context_label(context)
+    if correlation_id is None:
+        correlation_id = label_correlation(label) if label is not None else str(uuid.uuid4())
     key = idempotency_key or identifier
     now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     aggregate: dict[str, Any] = {"aggregate_type_id": AGGREGATE_TYPE, "aggregate_id": aggregate_ref}
     if sequence is not None:
         aggregate["expected_revision"] = sequence
-    return Draft(
+    value = Draft(
         {
             "envelope_version": "1.2",
             "event_id": identifier,
@@ -206,14 +256,17 @@ def draft(
             "integrity": {"payload_digest": "sha256:" + "0" * 64, "source_producer_principal_ref": principal},
             "effective_principal_id": principal,
             "actor_chain": [principal],
-            "governed_context_digest": context_digest(context),
+            "governed_context_digest": context.removeprefix("urn:") if isinstance(context, str) else context,
             "ontology_release_digest": "sha256:" + "1" * 64,
             "policy_bundle_digest": "sha256:" + "2" * 64,
-            "correlation_id": correlation_id or str(uuid.uuid4()),
+            "correlation_id": correlation_id,
             "causation_id": causation_id,
             "transport": {"mode": "STREAM", "stream_id": "urn:ocor:stream:mission", "partition": 0, "offset": "0"},
-        }
+        },
+        label,
     )
+    value.realise_context()
+    return value
 
 
 @dataclass
@@ -273,6 +326,7 @@ class C5Rig:
         self.dsn = dsn
         self.schema = schema
         self.quotas = dict(quotas or {})
+        self.contexts: dict[str, set[str]] = {}
         self.policy = AllowingPolicy()
         self.registry = SchemaRegistry()
         pin = self.registry.register_schema(PAYLOAD_SCHEMA_ID, PAYLOAD_SCHEMA_VERSION, PAYLOAD_SCHEMA)
@@ -311,7 +365,12 @@ class C5Rig:
 
     def sign(self, value: Draft | Mapping[str, Any]) -> SignedEnvelope:
         """Sign a draft; an incomplete envelope is refused here, ``REJECTED`` (ADD v1.3 :379)."""
-        return self.signer.sign(value.raw if isinstance(value, Draft) else value)
+        if isinstance(value, Draft):
+            value.realise_context()
+            if value.context is not None:
+                self.contexts.setdefault(value.context, set()).add(str(value.raw["governed_context_digest"]))
+            return self.signer.sign(value.raw)
+        return self.signer.sign(value)
 
     def publish(self, value: Draft | Mapping[str, Any]) -> Any:
         return self.backbone.publish(self.sign(value), transport_principal=PRODUCER)
@@ -321,7 +380,18 @@ class C5Rig:
 
     # -- consumer side (the product Subscribe surface) --------------------------------------------
 
+    def context_ref(self, label: str) -> str:
+        """The ``urn:sha256:`` reference of the GovernedContext a label stands for: the digest the
+        drafts of that label signed by this rig carry (one only), else the digest of a default
+        draft of the label."""
+        digests = self.contexts.get(label) or {realised_context_digest(draft(aggregate_ref="ref", context=label).raw)}
+        if len(digests) != 1:
+            raise AssertionError(f"the drafts of context {label} realise {len(digests)} governed contexts")
+        return "urn:" + next(iter(digests))
+
     def subscription(self, *, context: str = "urn:sha256:" + "a" * 64) -> str:
+        if context_label(context) is not None:
+            context = self.context_ref(context)
         contract = {
             "subscription_contract_id": f"urn:ocor:subscription-contract:{uuid.uuid4().hex}",
             "version": "1.0.0",

@@ -7,7 +7,12 @@ consumer moves by ``subscription_id`` and opaque cursor). Every table is append-
 triggers reject ``UPDATE`` and ``DELETE`` and a statement trigger rejects ``TRUNCATE``, so a
 dead letter, a quarantine record, a release or a checkpoint never changes once written. A
 cursor is a random token naming a checkpoint row; it carries no position. A connection-level
-failure is ``CONTROL_PLANE_UNAVAILABLE`` (callers fail closed); rows read back are checked.
+failure is ``CONTROL_PLANE_UNAVAILABLE`` (callers fail closed); rows read back are checked
+without coercion (PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)): failure classes in their closed
+domain, counts, attempts and positions as non-negative integers (never ``bool``), times
+timezone-aware, flags strictly boolean, envelopes and position maps non-empty, a stored
+subscription contract re-validated, a replay window complete and ordered. A row that fails a
+check is ``CONTROL_PLANE_UNAVAILABLE``, never a partial record.
 """
 
 from __future__ import annotations
@@ -24,9 +29,13 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from ..envelope import BackboneError, _freeze, thaw
+from ..envelope import BackboneError, EnvelopeViolation, _freeze, thaw
+from ..subscription import validate_contract
 
 SCHEMA_NAME = re.compile(r"[a-z_][a-z0-9_]{0,48}")
+PARTITION_KEY = re.compile(r"(?:0|[1-9][0-9]{0,8})", re.ASCII)
+DEAD_LETTER_CLASSES = frozenset({"PERMANENT", "POISON"})
+QUARANTINE_CLASSES = frozenset({"POLICY_DENIED", "POISON"})
 T = TypeVar("T")
 TABLES = ("c5_dead_letter", "c5_quarantine", "c5_quarantine_release", "c5_subscription", "c5_checkpoint")
 
@@ -110,21 +119,41 @@ class Checkpoint:
     governed_context_digest: str
 
 
+def _count(value: object, what: str, *, minimum: int = 0) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        raise _unavailable(f"a stored C5 record has a malformed {what}")
+    return value
+
+
 def _positions(value: object) -> dict[int, int]:
-    if not isinstance(value, dict):
+    """A stored ``partition -> offset`` map: non-empty, canonical decimal keys, offsets >= 0."""
+    if not isinstance(value, dict) or not value:
         raise _unavailable("a stored checkpoint position map is malformed")
     result = {}
     for key, offset in value.items():
-        if not isinstance(key, str) or not key.isdigit() or isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+        if not isinstance(key, str) or PARTITION_KEY.fullmatch(key) is None:
             raise _unavailable("a stored checkpoint position is malformed")
-        result[int(key)] = offset
+        result[int(key)] = _count(offset, "checkpoint offset")
     return result
+
+
+def _moment(value: object, what: str) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+        raise _unavailable(f"a stored C5 record has a malformed {what}")
+    return value
 
 
 def _text(row: Mapping[str, Any], column: str) -> str:
     value = row.get(column)
     if not isinstance(value, str) or not value:
         raise _unavailable(f"a stored C5 record has a malformed {column}")
+    return value
+
+
+def _member(row: Mapping[str, Any], column: str, domain: frozenset[str]) -> str:
+    value = _text(row, column)
+    if value not in domain:
+        raise _unavailable(f"a stored C5 record has a {column} outside its domain")
     return value
 
 
@@ -188,7 +217,9 @@ class PostgresC5Store:
             row = connection.execute(
                 f"SELECT count(*) AS n FROM {self._schema}.c5_dead_letter WHERE event_id = %s", (event_id,)
             ).fetchone()
-            attempt = int((row or {}).get("n", 0)) + 1
+            if row is None:
+                raise _unavailable("the C5 store did not count the dead letters")
+            attempt = _count(row.get("n"), "dead letter count") + 1
             failure_class = "POISON" if attempt >= poison_threshold else "PERMANENT"
             dead_letter_id = str(uuid.uuid4())
             stored = connection.execute(
@@ -198,9 +229,9 @@ class PostgresC5Store:
                 (dead_letter_id, event_id, topic, tenant_id, failure_class, reason_code, Jsonb(thaw(envelope)), signature,
                  attempt),
             ).fetchone()
-            recorded_at = (stored or {}).get("recorded_at")
-            if not isinstance(recorded_at, datetime):
+            if stored is None:
                 raise _unavailable("the C5 store did not confirm the dead letter")
+            recorded_at = _moment(stored.get("recorded_at"), "dead letter time")
             return DeadLetter(dead_letter_id, event_id, failure_class, reason_code, _freeze(thaw(envelope)), attempt,
                               recorded_at, signature)
 
@@ -214,18 +245,17 @@ class PostgresC5Store:
             ).fetchall()
             result = []
             for row in rows:
-                envelope, attempt, recorded_at = row.get("envelope"), row.get("attempt"), row.get("recorded_at")
-                signature = row.get("signature")
-                if not isinstance(envelope, dict) or isinstance(attempt, bool) or not isinstance(attempt, int):
+                envelope, signature = row.get("envelope"), row.get("signature")
+                if not isinstance(envelope, dict) or not envelope:
                     raise _unavailable("a stored dead letter is malformed")
                 if signature is not None and not isinstance(signature, bytes | memoryview):
                     raise _unavailable("a stored dead letter signature is malformed")
-                if not isinstance(recorded_at, datetime):
-                    raise _unavailable("a stored dead letter time is malformed")
                 result.append(
                     DeadLetter(
-                        _text(row, "dead_letter_id"), _text(row, "event_id"), _text(row, "failure_class"),
-                        _text(row, "reason_code"), _freeze(envelope), attempt, recorded_at,
+                        _text(row, "dead_letter_id"), _text(row, "event_id"),
+                        _member(row, "failure_class", DEAD_LETTER_CLASSES), _text(row, "reason_code"),
+                        _freeze(envelope), _count(row.get("attempt"), "dead letter attempt", minimum=1),
+                        _moment(row.get("recorded_at"), "dead letter time"),
                         None if signature is None else bytes(signature),
                     )
                 )
@@ -265,16 +295,19 @@ class PostgresC5Store:
             result = []
             for row in rows:
                 partition, offset = row.get("journal_partition"), row.get("journal_offset")
-                for value in (partition, offset):
-                    if value is not None and (isinstance(value, bool) or not isinstance(value, int)):
-                        raise _unavailable("a stored quarantine position is malformed")
+                partition = None if partition is None else _count(partition, "quarantine partition")
+                offset = None if offset is None else _count(offset, "quarantine offset")
                 subscription = row.get("subscription_id")
-                if subscription is not None and not isinstance(subscription, str):
+                if subscription is not None and (not isinstance(subscription, str) or not subscription):
                     raise _unavailable("a stored quarantine subscription is malformed")
+                released = row.get("released")
+                if not isinstance(released, bool):
+                    raise _unavailable("a stored quarantine release flag is malformed")
                 result.append(
                     QuarantineRecord(
-                        _text(row, "quarantine_id"), _text(row, "event_id"), _text(row, "failure_class"),
-                        _text(row, "reason_code"), subscription, partition, offset, row.get("released") is True,
+                        _text(row, "quarantine_id"), _text(row, "event_id"),
+                        _member(row, "failure_class", QUARANTINE_CLASSES), _text(row, "reason_code"), subscription,
+                        partition, offset, released,
                     )
                 )
             return tuple(result)
@@ -322,7 +355,11 @@ class PostgresC5Store:
             contract = row.get("contract")
             if not isinstance(contract, dict):
                 raise _unavailable("a stored subscription contract is malformed")
-            return _text(row, "principal"), contract, _text(row, "topic")
+            try:
+                validated = validate_contract(contract)
+            except EnvelopeViolation as exc:
+                raise _unavailable("a stored subscription contract is not a valid Event Subscription Contract") from exc
+            return _text(row, "principal"), validated, _text(row, "topic")
 
         return self._run(work)
 
@@ -357,10 +394,13 @@ class PostgresC5Store:
             if row is None:
                 return None
             end = row.get("end_positions")
-            window = [row.get("window_start"), row.get("window_end")]
-            for moment in window:
-                if moment is not None and not isinstance(moment, datetime):
-                    raise _unavailable("a stored checkpoint window is malformed")
+            start_at, end_at = row.get("window_start"), row.get("window_end")
+            window: tuple[datetime | None, datetime | None] = (None, None)
+            if start_at is not None or end_at is not None:
+                # a replay window is complete and ordered, [start, end) (LLD v1.1 :165)
+                window = (_moment(start_at, "checkpoint window"), _moment(end_at, "checkpoint window"))
+                if not window[0] < window[1]:
+                    raise _unavailable("a stored checkpoint window is not ordered")
             release = row.get("release_digest")
             if not isinstance(release, str):
                 raise _unavailable("a stored checkpoint release is malformed")

@@ -12,6 +12,12 @@ The only network peers are the configured brokers: client telemetry push (KIP-71
 topic fails closed. A broker or transport failure is ``KafkaJournalError``, the ``TRANSIENT``
 class of LLD v1.1 :160; the caller owns the retry budget. Physical partitions and offsets
 stay inside C5: the Subscribe surface exposes only opaque cursors (ADD v1.3 :2575).
+
+Every answer of the client is checked for shape without coercion (PRE-REVIEW-INPUT-ROBUSTNESS
+(2026-10-29)): partitions, offsets and timestamps are non-negative integers (never ``bool``),
+watermarks are ordered pairs, every partition asked for is answered once; any anomaly is
+``KafkaJournalError``. An absent key, value or header value (a tombstone, a null header) stays
+absent, never empty bytes: the backbone judges such a record unreadable.
 """
 
 from __future__ import annotations
@@ -34,9 +40,9 @@ class KafkaJournalError(RuntimeError):
 class JournalRecord:
     partition: int
     offset: int
-    key: bytes
-    value: bytes
-    headers: tuple[tuple[str, bytes], ...]
+    key: bytes | None
+    value: bytes | None
+    headers: tuple[tuple[str, bytes | None], ...]
     timestamp_ms: int
 
     def header(self, name: str) -> bytes | None:
@@ -44,15 +50,20 @@ class JournalRecord:
         return values[0] if len(values) == 1 else None
 
 
-def _bytes(value: object) -> bytes:
-    if value is None:
-        return b""
-    if isinstance(value, bytes):
+def _position(value: object, what: str) -> int:
+    """A partition, offset or timestamp of the client: a non-negative ``int``, never ``bool``."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise KafkaJournalError(f"the journal answered a malformed {what}")
+    return value
+
+
+def _optional_bytes(value: object, what: str) -> bytes | None:
+    if value is None or isinstance(value, bytes):
         return value
-    raise KafkaJournalError("journal record field is not bytes")
+    raise KafkaJournalError(f"journal record {what} is not bytes")
 
 
-def _headers(value: object) -> tuple[tuple[str, bytes], ...]:
+def _headers(value: object) -> tuple[tuple[str, bytes | None], ...]:
     if value is None:
         return ()
     if not isinstance(value, list):
@@ -61,8 +72,23 @@ def _headers(value: object) -> tuple[tuple[str, bytes], ...]:
     for item in value:
         if not isinstance(item, tuple) or len(item) != 2 or not isinstance(item[0], str):
             raise KafkaJournalError("journal record header is malformed")
-        result.append((item[0], _bytes(item[1])))
+        result.append((item[0], _optional_bytes(item[1], "header value")))
     return tuple(result)
+
+
+def _timestamp(value: object) -> int:
+    """``message.timestamp()`` is ``(type, milliseconds)``."""
+    if not isinstance(value, tuple) or len(value) != 2:
+        raise KafkaJournalError("the journal answered a malformed record timestamp")
+    _position(value[0], "record timestamp type")
+    return _position(value[1], "record timestamp")
+
+
+def _bounds(value: object, what: str) -> dict[int, int]:
+    if not isinstance(value, Mapping):
+        raise KafkaJournalError(f"journal read {what} positions are malformed")
+    return {_position(partition, f"{what} partition"): _position(offset, f"{what} offset")
+            for partition, offset in value.items()}
 
 
 def _common(bootstrap_servers: str, timeout_s: float) -> dict[str, Any]:
@@ -135,10 +161,11 @@ class KafkaJournal:
             raise KafkaJournalError(f"journal metadata unavailable: {exc}") from exc
         finally:
             consumer.close()
-        topic = metadata.topics.get(self._topic)
-        if topic is None or topic.error is not None or not topic.partitions:
+        topics = getattr(metadata, "topics", None)
+        topic = topics.get(self._topic) if isinstance(topics, Mapping) else None
+        if topic is None or topic.error is not None or not isinstance(topic.partitions, Mapping) or not topic.partitions:
             raise KafkaJournalError(f"journal topic {self._topic!r} does not exist")
-        return tuple(sorted(topic.partitions))
+        return tuple(sorted(_position(partition, "partition") for partition in topic.partitions))
 
     def append(self, *, key: bytes, value: bytes, headers: Sequence[tuple[str, bytes]], timestamp_ms: int) -> tuple[int, int]:
         """Write one record and wait for the broker acknowledgement; return its position."""
@@ -167,7 +194,9 @@ class KafkaJournal:
             self._discard()
             raise KafkaJournalError(f"journal write refused: {outcome['error']}")
         message = outcome["message"]
-        return int(message.partition()), int(message.offset())
+        if message is None:
+            raise KafkaJournalError("journal write acknowledged without a record")
+        return _position(message.partition(), "partition"), _position(message.offset(), "offset")
 
     def _discard(self) -> None:
         """Drop a producer whose outcome is unknown, so nothing it still holds is sent later."""
@@ -183,17 +212,21 @@ class KafkaJournal:
         """``partition -> (low, high)`` of the journal."""
         partitions = self.partitions()
         consumer = self._consumer()
+        marks: dict[int, tuple[int, int]] = {}
         try:
-            return {
-                partition: tuple(  # type: ignore[misc]
-                    consumer.get_watermark_offsets(TopicPartition(self._topic, partition), timeout=self._timeout)
-                )
-                for partition in partitions
-            }
-        except (KafkaException, TypeError) as exc:
+            for partition in partitions:
+                answer = consumer.get_watermark_offsets(TopicPartition(self._topic, partition), timeout=self._timeout)
+                if not isinstance(answer, tuple | list) or len(answer) != 2:
+                    raise KafkaJournalError("the journal answered malformed offsets")
+                low, high = _position(answer[0], "low offset"), _position(answer[1], "high offset")
+                if low > high:
+                    raise KafkaJournalError("the journal answered inverted offsets")
+                marks[partition] = (low, high)
+        except KafkaException as exc:
             raise KafkaJournalError(f"journal offsets unavailable: {exc}") from exc
         finally:
             consumer.close()
+        return marks
 
     def offsets_for_time(self, timestamp_ms: int) -> dict[int, int]:
         """The first position at or after ``timestamp_ms`` per partition (the end if none)."""
@@ -207,16 +240,31 @@ class KafkaJournal:
             raise KafkaJournalError(f"journal time index unavailable: {exc}") from exc
         finally:
             consumer.close()
-        result = {}
+        if not isinstance(found, list):
+            raise KafkaJournalError("the journal time index answer is malformed")
+        result: dict[int, int] = {}
         for entry in found:
+            if entry is None:
+                raise KafkaJournalError("the journal time index answered a null entry")
             if entry.error is not None:
                 raise KafkaJournalError(f"journal time index unavailable: {entry.error}")
-            result[entry.partition] = entry.offset if entry.offset >= 0 else marks[entry.partition][1]
+            partition, offset = _position(entry.partition, "partition"), entry.offset
+            if partition not in marks or partition in result:
+                raise KafkaJournalError("the journal time index answered an unexpected partition")
+            if isinstance(offset, int) and not isinstance(offset, bool) and offset == -1:
+                result[partition] = marks[partition][1]  # no record at or after the time: the end
+            else:
+                result[partition] = _position(offset, "offset")
+        if set(result) != set(marks):
+            raise KafkaJournalError("the journal time index did not answer every partition")
         return result
 
     def read(self, start: Mapping[int, int], end: Mapping[int, int]) -> list[JournalRecord]:
         """Every record with ``start[p] <= offset < end[p]``, in order within each partition."""
-        wanted = {partition: (start[partition], end[partition]) for partition in end if start.get(partition, 0) < end[partition]}
+        low, high = _bounds(start, "start"), _bounds(end, "end")
+        if not set(high) <= set(low):
+            raise KafkaJournalError("journal read end positions name a partition without a start position")
+        wanted = {partition: (low[partition], high[partition]) for partition in high if low[partition] < high[partition]}
         if not wanted:
             return []
         consumer = self._consumer()
@@ -233,15 +281,14 @@ class KafkaJournal:
                         raise KafkaJournalError("journal read timed out")
                     continue
                 error = message.error()
-                partition, offset = message.partition(), message.offset()
-                if partition is None or offset is None:
-                    raise KafkaJournalError("journal read returned a record without a position")
-                if error is not None:
-                    if error.code() == KafkaError._PARTITION_EOF:
-                        if partition in wanted and offset >= wanted[partition][1]:
-                            done.add(partition)
-                        continue
+                if error is not None and error.code() != KafkaError._PARTITION_EOF:
                     raise KafkaJournalError(f"journal read failed: {error}")
+                partition = _position(message.partition(), "partition")
+                offset = _position(message.offset(), "offset")
+                if error is not None:  # the end of a partition
+                    if partition in wanted and offset >= wanted[partition][1]:
+                        done.add(partition)
+                    continue
                 if partition not in wanted or offset >= wanted[partition][1]:
                     done.add(partition)
                     continue
@@ -249,10 +296,10 @@ class KafkaJournal:
                     JournalRecord(
                         partition=partition,
                         offset=offset,
-                        key=_bytes(message.key()),
-                        value=_bytes(message.value()),
+                        key=_optional_bytes(message.key(), "key"),
+                        value=_optional_bytes(message.value(), "value"),
                         headers=_headers(message.headers()),
-                        timestamp_ms=int(message.timestamp()[1]),
+                        timestamp_ms=_timestamp(message.timestamp()),
                     )
                 )
                 if offset + 1 >= wanted[partition][1]:

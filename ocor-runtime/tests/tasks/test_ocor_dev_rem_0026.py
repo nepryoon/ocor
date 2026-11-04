@@ -64,7 +64,6 @@ def envelope(
         idempotency_key=idempotency_key,
         schema_ref=schema_ref,
         context=context,
-        correlation_id=str(uuid.uuid4()),
         causation_id=str(uuid.uuid4()),
         payload={"remediation": "rem-0026"},
     )

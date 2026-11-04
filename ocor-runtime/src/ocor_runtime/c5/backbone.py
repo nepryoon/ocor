@@ -9,9 +9,10 @@ The admission boundary of ingestion (ADD v1.3 :379) runs, in order, for every pu
    ``QUARANTINED{PRINCIPAL_BINDING_MISMATCH}`` with an Audit Record (ADD v1.3 :199, :379);
 3. the producer signature over envelope and payload digest verifies (LLD v1.1 :154);
 4. the inline marking resolves to ``classification_marking_ref``: a ``marking_digest`` that
-   does not match the object is ``DENY``, quarantined as ``GOVERNED_CONTEXT_MISMATCH`` with an
-   Audit Record, and the envelope fields form the GovernedContext record (ADD v1.3 :402-411,
-   :845);
+   does not match the object is ``DENY``; the envelope fields form the GovernedContext record and
+   reproduce ``governed_context_digest`` (ADD v1.3 :402-411, :845); either failing is quarantined
+   as ``GOVERNED_CONTEXT_MISMATCH`` with an Audit Record, so an envelope is never deduplicated or
+   delivered under a context it does not realise;
 5. the payload is validated a second time against its content-addressed schema (ADD v1.3
    :529); 3 and 5 failing are ``PERMANENT``: immutable dead letter, no automatic retry, audit
    (LLD v1.1 :161);
@@ -35,8 +36,8 @@ run concurrently; the same key or aggregate is serialised.
 
 ``Subscribe`` validates the Event Subscription Contract and delivers by ``subscription_id``
 and opaque cursor (ADD v1.3 :2575): deliveries carry no partition or offset, every record is
-re-verified (signature and schema), filtered to the contract's event types and governed
-context, and authorised per delivery by the policy port (ADD v1.3 :380-381). Each poll writes
+re-verified (signature, schema and the GovernedContext digest), filtered to the contract's
+event types and governed context, and authorised per delivery by the policy port (ADD v1.3 :380-381). Each poll writes
 an immutable checkpoint binding topic, positions, schema registry digest, release and GCS
 (LLD v1.1 :165). An event that a consumer handler keeps failing is ``POISON``: its partition
 is quarantined for that subscription behind the operator gate (LLD v1.1 :163). ``Replay``
@@ -234,7 +235,7 @@ class CanonicalEventBackbone:
             self._dead_letter(signed, violation.reason_code, principal)
             raise
         try:
-            envelope.isolation_context()
+            envelope.governed_context()
         except EnvelopeViolation:
             self._store.quarantine(
                 event_id=envelope.event_id, topic=self.topic, failure_class=FailureClass.POLICY_DENIED.value,
@@ -350,6 +351,8 @@ class CanonicalEventBackbone:
         signature = record.header(SIGNATURE_HEADER)
         if signature is None:
             raise EnvelopeViolation("SIGNATURE_INVALID", "a journal record has no producer signature")
+        if record.value is None:
+            raise EnvelopeViolation("SCHEMA_VIOLATION", "a journal record has no body")
         try:
             value = json.loads(record.value)
         except ValueError as exc:
@@ -370,6 +373,7 @@ class CanonicalEventBackbone:
         for record in records:
             try:
                 envelope = self._decode(record).envelope
+                envelope.governed_context()
             except EnvelopeViolation as exc:
                 raise BackboneError("JOURNAL_UNREADABLE", f"the journal holds an unreadable record: {exc.reason_code}",
                                     failure_class=FailureClass.PERMANENT.value) from exc
@@ -478,6 +482,7 @@ class CanonicalEventBackbone:
             try:
                 signed = self._decode(record)
                 self._keyring.verify(signed)
+                signed.envelope.governed_context()
                 self._registry.validate_payload(signed.envelope)
             except EnvelopeViolation as violation:
                 self._poison(subscription_id, record, None, violation.reason_code, principal)
