@@ -43,6 +43,15 @@ OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-001 and NCR-C4-003):
   :486-491); a projection that disagrees with the ledger answers the same explicit state;
 * every write or schema transaction is closed on every error path, a connection-level error
   and a failed commit included (decision request OCOR-DEV-0060-BA-RUNTIME-GAPS).
+
+OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-004): TypeDB keeps no history, so ``EXACT_AT_COMMIT(Cn)`` on a
+named logical query is emulated (ADD v1.3 :356, BA-03). Every applied commit also appends, in the
+same write transaction, the revision of its fact with its position on the branch; a read pinned
+to a commit the projection has moved beyond is served from a disposable sandbox database built
+from that history at Cn and dropped once the answer is read (``TypeDBCommitSandbox``). When the
+emulation is unavailable -- no sandbox configured, every sandbox slot taken, the history up to Cn
+incomplete, or the backend refusing the sandbox -- the answer is ``UNSUPPORTED_CAPABILITY``, never
+the later commit (ADD v1.3 :1366; LLD v1.1 :369; FR-057, Register :179).
 """
 
 from __future__ import annotations
@@ -54,12 +63,14 @@ import re
 import threading
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Mapping
+import uuid
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ..c2.ports import C2Error, NamedQueryRequest, NamedQueryResponse, ServedContext, Watermark
+from ..c2.ports import C2Error, ConsistencyMode, NamedQueryRequest, NamedQueryResponse, ServedContext, Watermark
 from .watermark import ConfirmedWatermark, WatermarkLedgerError, WatermarkLedgerPort
 
 TYPEDB_URL = "http://127.0.0.1:8000"
@@ -76,8 +87,13 @@ SCHEMA_QUERY = (
     "owns c4-payload @card(1..1); "
     "entity c4-watermark, owns c4-commit-id @card(1..1); "
     "attribute c4-commit-seq, value integer; "
-    "entity c4-commit-order, owns c4-commit-id @key, owns c4-commit-seq @card(1..1);"
+    "entity c4-commit-order, owns c4-commit-id @key, owns c4-commit-seq @card(1..1); "
+    "entity c4-fact-revision, owns c4-fact-id @card(1..1), owns c4-commit-id @card(1..1), "
+    "owns c4-commit-seq @card(1..1), owns c4-payload @card(1..1);"
 )
+# A sandbox database is named after the projection database, so it is recognised and never
+# confused with the projection itself.
+SANDBOX_PREFIX = f"{DATABASE}_sbx_"
 
 
 class TypeDBAdapterError(RuntimeError):
@@ -161,12 +177,12 @@ def _token() -> str:
     return _token_value(_field(_answer(body), "token"))
 
 
-def _transaction(kind: str, token: str) -> str:
+def _transaction(kind: str, token: str, database: str | None = None) -> str:
     status, body = _request(
         "POST",
         f"{TYPEDB_URL}/v1/transactions/open",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        body=json.dumps({"databaseName": DATABASE, "transactionType": kind}).encode("utf-8"),
+        body=json.dumps({"databaseName": database or DATABASE, "transactionType": kind}).encode("utf-8"),
     )
     if status != 200:
         raise TypeDBAdapterError(f"cannot open a TypeDB {kind} transaction: HTTP {status}")
@@ -210,12 +226,12 @@ def _abandon(transaction_id: str, token: str) -> None:
         return
 
 
-def _transact(kind: str, queries: tuple[str, ...]) -> None:
+def _transact(kind: str, queries: tuple[str, ...], database: str | None = None) -> None:
     """Runs every query in ONE real TypeDB transaction of ``kind``, committed together or not
     at all. On every error path -- a refused query, a connection-level error, a failed
     commit -- the transaction is closed before the failure leaves the adapter."""
     token = _token()
-    transaction_id = _transaction(kind, token)
+    transaction_id = _transaction(kind, token, database)
     try:
         for query in queries:
             status, _ = _query(transaction_id, query, token)
@@ -227,15 +243,15 @@ def _transact(kind: str, queries: tuple[str, ...]) -> None:
         raise
 
 
-def _write(*queries: str) -> None:
+def _write(*queries: str, database: str | None = None) -> None:
     """Runs every query inside ONE real TypeDB write transaction,
     committed together or not at all -- the primitive ``apply_commit``
     relies on to make fact-ingest and watermark-advance atomic."""
-    _transact("write", queries)
+    _transact("write", queries, database)
 
 
-def _schema_write(query: str) -> None:
-    _transact("schema", (query,))
+def _schema_write(query: str, database: str | None = None) -> None:
+    _transact("schema", (query,), database)
 
 
 # Every way a TypeDB answer can fail to be a well-formed result: transport (refused,
@@ -284,7 +300,7 @@ def _transaction_value(value: str) -> str:
     return value
 
 
-def _read(query: str) -> list[Any]:
+def _read(query: str, database: str | None = None) -> list[Any]:
     """The adapter's one read primitive: a read transaction whose answer is untrusted. A
     transport failure stays raw (``URLError``/``OSError``); a non-200 status, a body that is
     not UTF-8 JSON or an answer without an answer list fails here, before any row is read."""
@@ -292,7 +308,7 @@ def _read(query: str) -> list[Any]:
                                                 body={"username": "admin", "password": "password"}), "token"))
     transaction = _transaction_value(_field(_strict_request(
         "POST", f"{TYPEDB_URL}/v1/transactions/open", token=token,
-        body={"databaseName": DATABASE, "transactionType": "read"}), "transactionId"))
+        body={"databaseName": database or DATABASE, "transactionType": "read"}), "transactionId"))
     try:
         result = _strict_request("POST", f"{TYPEDB_URL}/v1/transactions/{transaction}/query", token=token,
                                  body={"query": query})
@@ -303,11 +319,13 @@ def _read(query: str) -> list[Any]:
     return list(result["answers"])
 
 
-def _rows(query: str, variables: tuple[str, ...]) -> list[dict[str, object]]:
+def _rows(query: str, variables: tuple[str, ...], database: str | None = None) -> list[dict[str, object]]:
     """The answer rows of a read query: for each row, the raw ``value`` of each named
     variable -- never converted; a row of any other shape fails here."""
     rows: list[dict[str, object]] = []
-    for answer in _read(query):
+    # the projection database is read through the one-argument call of the read seam
+    answers = _read(query) if database is None else _read(query, database)
+    for answer in answers:
         data = answer.get("data") if isinstance(answer, Mapping) else None
         if not isinstance(data, Mapping):
             raise TypeDBAdapterError("a TypeDB answer row has no data")
@@ -348,22 +366,163 @@ def _text_value(value: object) -> str:
     return value
 
 
-def _ensure_database() -> None:
-    token = _token()
+def _database_names(token: str) -> set[str]:
     status, body = _request("GET", f"{TYPEDB_URL}/v1/databases", headers={"Authorization": f"Bearer {token}"})
     if status != 200:
         raise TypeDBAdapterError(f"cannot list TypeDB databases: HTTP {status}")
     databases = _answer(body).get("databases")
     if not isinstance(databases, list):
         raise TypeDBAdapterError("the TypeDB database listing has no database list")
-    existing = {_field(entry, "name") for entry in databases}
-    if DATABASE in existing:
-        return
-    status, _ = _request(
-        "POST", f"{TYPEDB_URL}/v1/databases/{DATABASE}", headers={"Authorization": f"Bearer {token}"}
-    )
+    return {_field(entry, "name") for entry in databases}
+
+
+def _create_database(name: str, token: str) -> None:
+    status, _ = _request("POST", f"{TYPEDB_URL}/v1/databases/{name}", headers={"Authorization": f"Bearer {token}"})
     if status != 200:
-        raise TypeDBAdapterError(f"failed to create TypeDB database {DATABASE!r}: HTTP {status}")
+        raise TypeDBAdapterError(f"failed to create TypeDB database {name!r}: HTTP {status}")
+
+
+def _drop_database(name: str) -> None:
+    token = _token()
+    status, _ = _request("DELETE", f"{TYPEDB_URL}/v1/databases/{name}", headers={"Authorization": f"Bearer {token}"})
+    if status != 200 and name in _database_names(token):
+        raise TypeDBAdapterError(f"failed to drop TypeDB database {name!r}: HTTP {status}")
+
+
+def _ensure_database() -> None:
+    token = _token()
+    if DATABASE in _database_names(token):
+        return
+    _create_database(DATABASE, token)
+
+
+def sandbox_database_names() -> list[str]:
+    """The sandbox databases that exist on the TypeDB server, sorted."""
+    return sorted(name for name in _database_names(_token()) if name.startswith(SANDBOX_PREFIX))
+
+
+class SandboxUnavailableError(RuntimeError):
+    """The ``EXACT_AT_COMMIT(Cn)`` emulation is unavailable for this request: every sandbox slot
+    is taken, the projected history up to Cn is incomplete, or the backend refused to create or
+    populate the sandbox (ADD v1.3 :1366)."""
+
+    reason_code = "UNSUPPORTED_CAPABILITY"
+
+
+# Every way the backend can fail a step of the sandbox lifecycle.
+_LIFECYCLE_FAILURES = (TypeDBAdapterError, OSError, http.client.HTTPException)
+
+HISTORY_VARIABLES = ("f", "c", "s", "p")
+
+
+@dataclass(frozen=True, slots=True)
+class _Revision:
+    fact_id: str
+    commit_id: str
+    sequence: int
+    payload: str
+
+
+def _history(commit_id: str, sequence: int) -> list[_Revision]:
+    """The revisions applied on the branch up to position ``sequence`` (where ``commit_id`` must
+    sit), read from the projection as an untrusted answer: a malformed row, or a row beyond the
+    position asked, is the typed ``CONTROL_PLANE_UNAVAILABLE`` (contract :486-491). A history
+    with a gap, a repeated position or another commit at ``sequence`` cannot reproduce Cn: the
+    emulation is unavailable."""
+    rows = read_rows(
+        f"match $r isa c4-fact-revision, has c4-fact-id $f, has c4-commit-id $c, has c4-commit-seq $s, "
+        f"has c4-payload $p; $s <= {sequence};",
+        HISTORY_VARIABLES,
+    )
+    history: list[_Revision] = []
+    for row in rows:
+        revision = _Revision(fact_id=_text_value(row["f"]), commit_id=_text_value(row["c"]),
+                             sequence=_position_value(row["s"]), payload=_text_value(row["p"]))
+        if revision.sequence > sequence:
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection answered a revision beyond the commit")
+        history.append(revision)
+    history.sort(key=lambda revision: revision.sequence)
+    if [revision.sequence for revision in history] != list(range(1, sequence + 1)):
+        raise SandboxUnavailableError("the projected history up to the commit is incomplete")
+    if history[-1].commit_id != commit_id:
+        raise SandboxUnavailableError("the projected history does not place the commit at its position")
+    return history
+
+
+def _population(history: list[_Revision]) -> tuple[str, ...]:
+    """The write queries that make an empty sandbox the projection as it was at the last
+    revision of ``history``: the latest fact of each fact id, the watermark at that commit and
+    the order of the branch up to it."""
+    latest: dict[str, _Revision] = {}
+    for revision in history:
+        latest[revision.fact_id] = revision
+    statements = [
+        f"insert $f isa c4-fact, has c4-fact-id {_literal(revision.fact_id)}, "
+        f"has c4-commit-id {_literal(revision.commit_id)}, has c4-payload {_literal(revision.payload)};"
+        for revision in latest.values()
+    ]
+    statements.extend(
+        f"insert $o isa c4-commit-order, has c4-commit-id {_literal(revision.commit_id)}, "
+        f"has c4-commit-seq {revision.sequence};"
+        for revision in history
+    )
+    statements.append(f"insert $w isa c4-watermark, has c4-commit-id {_literal(history[-1].commit_id)};")
+    return tuple(statements)
+
+
+class TypeDBCommitSandbox:
+    """The ``EXACT_AT_COMMIT(Cn)`` emulation of BA-03 (ADD v1.3 :356): a disposable TypeDB
+    database holding the projection as it was at Cn, built from the projected history, served
+    once and dropped. At most ``max_sandboxes`` exist at a time for this process; beyond that,
+    or whenever a sandbox cannot be built, the emulation is unavailable
+    (``SandboxUnavailableError``). A created sandbox is dropped on every path; a drop that fails
+    is retried at the next opening, so no sandbox outlives the failure that left it."""
+
+    def __init__(self, *, max_sandboxes: int = 4) -> None:
+        if isinstance(max_sandboxes, bool) or not isinstance(max_sandboxes, int) or max_sandboxes < 1:
+            raise TypeError("max_sandboxes must be a positive integer")
+        self._slots = threading.BoundedSemaphore(max_sandboxes)
+        self._orphans: set[str] = set()
+        self._orphans_lock = threading.Lock()
+
+    def _drop(self, name: str) -> None:
+        try:
+            _drop_database(name)
+        except _LIFECYCLE_FAILURES:
+            with self._orphans_lock:
+                self._orphans.add(name)
+            return
+        with self._orphans_lock:
+            self._orphans.discard(name)
+
+    def _drop_orphans(self) -> None:
+        with self._orphans_lock:
+            orphans = sorted(self._orphans)
+        for name in orphans:
+            self._drop(name)
+
+    @contextmanager
+    def open(self, commit_id: str, sequence: int) -> Iterator[str]:
+        """Yields the name of a sandbox database at ``commit_id``, the commit at position
+        ``sequence`` of the branch; the sandbox is dropped when the block exits."""
+        if not self._slots.acquire(blocking=False):
+            raise SandboxUnavailableError("every sandbox slot is taken")
+        try:
+            self._drop_orphans()
+            history = _history(commit_id, sequence)
+            name = f"{SANDBOX_PREFIX}{uuid.uuid4().hex}"
+            try:
+                try:
+                    _create_database(name, _token())
+                    _schema_write(SCHEMA_QUERY, database=name)
+                    _write(*_population(history), database=name)
+                except _LIFECYCLE_FAILURES as exc:
+                    raise SandboxUnavailableError("the sandbox could not be built") from exc
+                yield name
+            finally:
+                self._drop(name)
+        finally:
+            self._slots.release()
 
 
 WATERMARK_QUERY = "match $w isa c4-watermark, has c4-commit-id $c;"
@@ -389,6 +548,9 @@ class _Disagreement(Exception):
     """The projection and the durable ledger name different watermarks."""
 
 
+_DEFAULT_SANDBOX = object()
+
+
 class TypeDBProjectionAdapter:
     """Retained C4 projection: real TypeDB-backed ``ProjectionReadPort``/
     ``WatermarkPort`` where every commit's fact and watermark advance
@@ -401,14 +563,22 @@ class TypeDBProjectionAdapter:
         release_digest: str,
         ledger: WatermarkLedgerPort,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        sandbox: TypeDBCommitSandbox | None | object = _DEFAULT_SANDBOX,
     ) -> None:
+        """``sandbox`` is the ``EXACT_AT_COMMIT(Cn)`` emulation (BA-03): a ``TypeDBCommitSandbox``
+        of default bound unless given; ``None`` declares the emulation unavailable."""
         if not isinstance(release_digest, str) or DIGEST.fullmatch(release_digest) is None:
             raise TypeError("release_digest must be a SHA-256 URN")
         if not isinstance(ledger, WatermarkLedgerPort):
             raise TypeError("a WatermarkLedgerPort is required")
+        if sandbox is _DEFAULT_SANDBOX:
+            sandbox = TypeDBCommitSandbox()
+        if sandbox is not None and not isinstance(sandbox, TypeDBCommitSandbox):
+            raise TypeError("sandbox must be a TypeDBCommitSandbox or None")
         self._release = release_digest
         self._ledger = ledger
         self._clock = clock
+        self._sandbox: TypeDBCommitSandbox | None = sandbox
 
     @property
     def release_digest(self) -> str:
@@ -431,8 +601,15 @@ class TypeDBProjectionAdapter:
             "match $f isa c4-fact; delete $f;",
             "match $w isa c4-watermark; delete $w;",
             "match $o isa c4-commit-order; delete $o;",
+            "match $r isa c4-fact-revision; delete $r;",
         )
         self.reset_ledger()
+        for name in sandbox_database_names():
+            _drop_database(name)
+
+    def sandbox_databases(self) -> list[str]:
+        """The sandbox databases of this projection that exist on the TypeDB server."""
+        return sandbox_database_names()
 
     def reset_ledger(self) -> None:
         """Empties the durable ledger of this store: a projection that is reset or rebuilt
@@ -485,6 +662,13 @@ class TypeDBProjectionAdapter:
                 f"insert $o isa c4-commit-order, has c4-commit-id {_literal(commit_id)}, "
                 f"has c4-commit-seq {sequence};"
             )
+            # the revision of the fact at this commit: the history a sandbox at an earlier
+            # commit is built from (BA-03, ADD v1.3 :356), appended in the same transaction
+            statements.append(
+                f"insert $r isa c4-fact-revision, has c4-fact-id {_literal(fact_id)}, "
+                f"has c4-commit-id {_literal(commit_id)}, has c4-commit-seq {sequence}, "
+                f"has c4-payload {_literal(payload)};"
+            )
             _write(*statements)
             self._confirm(commit_id, sequence)
             return True
@@ -512,9 +696,9 @@ class TypeDBProjectionAdapter:
         except WatermarkLedgerError:
             return None
 
-    def _watermark(self) -> str | None:
+    def _watermark(self, database: str | None = None) -> str | None:
         """The watermark as stored; an unreachable TypeDB stays the raw transport error here."""
-        rows = _rows(WATERMARK_QUERY, ("c",))
+        rows = _rows(WATERMARK_QUERY, ("c",), database)
         if not rows:
             return None
         if len(rows) > 1:
@@ -584,13 +768,48 @@ class TypeDBProjectionAdapter:
             return None
         return _text_value(rows[0]["c"]), _text_value(rows[0]["p"])
 
-    def _served_fact(self, fact_id: str) -> tuple[str | None, tuple[str, str] | None]:
+    def _served_fact(self, fact_id: str, database: str | None = None) -> tuple[str | None, tuple[str, str] | None]:
         """The watermark and the fact, read with the raw transport failure preserved."""
-        watermark = self._watermark()
+        watermark = self._watermark(database)
         rows = _rows(f"match $f isa c4-fact, has c4-fact-id {_literal(fact_id)}, "
-                     f"has c4-commit-id $c, has c4-payload $p;", ("c", "p"))
+                     f"has c4-commit-id $c, has c4-payload $p;", ("c", "p"), database)
         found = None if not rows else (_text_value(rows[0]["c"]), _text_value(rows[0]["p"]))
         return watermark, found
+
+    def _overtaken(self, request: NamedQueryRequest, watermark: str | None) -> int | None:
+        """The position of the commit an ``EXACT_AT_COMMIT`` request pins, when the projection
+        has already moved beyond it on the branch; ``None`` otherwise."""
+        consistency = request.consistency
+        required = consistency.required_commit
+        if consistency.mode is not ConsistencyMode.EXACT_AT_COMMIT or required is None or watermark is None:
+            return None
+        if required == watermark:
+            return None
+        required_position = self.position(BRANCH, required)
+        current_position = self.position(BRANCH, watermark)
+        if required_position is None or current_position is None or required_position >= current_position:
+            return None
+        return required_position
+
+    def _sandbox_fact(self, request: NamedQueryRequest, fact_id: str, sequence: int) -> tuple[str | None, tuple[str, str] | None]:
+        """The watermark and the fact of a sandbox at the pinned commit (BA-03, ADD v1.3 :356).
+        An unavailable emulation is ``UNSUPPORTED_CAPABILITY``, never the later commit
+        (ADD v1.3 :1366)."""
+        required = request.consistency.required_commit
+        assert required is not None  # an overtaken request pins a commit
+        if self._sandbox is None:
+            raise C2Error("UNSUPPORTED_CAPABILITY", "the EXACT_AT_COMMIT emulation is not available")
+        try:
+            with self._sandbox.open(required, sequence) as database:
+                try:
+                    return self._served_fact(fact_id, database)
+                except C2Error:
+                    raise
+                except _ANSWER_FAILURES as exc:
+                    raise C2Error("CONTROL_PLANE_UNAVAILABLE",
+                                  "the TypeDB sandbox did not return a well-formed answer") from exc
+        except SandboxUnavailableError as exc:
+            raise C2Error("UNSUPPORTED_CAPABILITY", "the EXACT_AT_COMMIT emulation is not available") from exc
 
     def read(self, request: NamedQueryRequest) -> NamedQueryResponse:
         fact_id = request.parameters.get("fact_id")
@@ -611,6 +830,10 @@ class TypeDBProjectionAdapter:
             state = self._state(watermark)
         except _Disagreement:
             raise self._not_ready(request, "the projection disagrees with its confirmed watermark") from None
+        sequence = self._overtaken(request, watermark)
+        if sequence is not None:
+            # EXACT_AT_COMMIT(Cn) behind the projection: answered from a sandbox at Cn
+            watermark, found = self._sandbox_fact(request, fact_id, sequence)
         # the served commit reflects the row actually read, never the
         # watermark by assumption -- verify_served (below) is what
         # independently proves the two agree before anything is

@@ -482,7 +482,7 @@ def test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_noth
     assert bounded.sandbox_databases() == []
 
 
-def test_ncr_c4_004_sandbox_creation_benchmark(adapter: Any, record_property: Any) -> None:
+def test_ncr_c4_004_sandbox_creation_benchmark(adapter: Any, record_testsuite_property: Any) -> None:
     """BA-03 (ADD v1.3 :356), benchmark of sandbox creation on the real TypeDB: a projection of
     ten commits over five facts; each EXACT_AT_COMMIT read at an earlier commit creates, serves
     and drops one sandbox. The timings are recorded in the JUnit report (no threshold is
@@ -496,7 +496,7 @@ def test_ncr_c4_004_sandbox_creation_benchmark(adapter: Any, record_property: An
         timings.append((time.perf_counter() - started) * 1000)
         assert (response.served.canonical_commit, response.result_digest) == ("commit-6", _digest_of("V6"))
     timings.sort()
-    record_property("ba03_sandbox_read_ms", json.dumps({
+    record_testsuite_property("ba03_sandbox_read_ms", json.dumps({
         "samples": len(timings), "min": round(timings[0], 1), "p50": round(timings[len(timings) // 2], 1),
         "max": round(timings[-1], 1), "commits": 10, "facts": 5, "served_commit": "commit-6"}, sort_keys=True))
     assert adapter.sandbox_databases() == []
