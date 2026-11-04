@@ -96,3 +96,16 @@ incoerente con la classe di regressione.
 
 Nessun nuovo `DEC-*`. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime conformance `NOT_ESTABLISHED`,
 PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-04
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04)`, **opzione 1** (classe di regressione in `evidence_manifest.py validate`). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `0b41db1bcc9c8599ce37efd621764c16da8c1c3e`, sha256 `fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION` (branch `governed/decision-request-ncp-u06-0004-regression-manifest-validation`, commit `0b41db1bcc9c8599ce37efd621764c16da8c1c3e`, file `reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md`, sha256 `fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
