@@ -583,3 +583,184 @@ def test_repository_g0_manifest_validates_ocor_dev_0004() -> None:
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
     assert (run.returncode, run.stdout) == (0, f"PASS: qualifying manifest and requirement ledger for {TASK}\n")
+
+
+# --- repair cycle 2: VF-001 of OCOR-DEV-REM-0051-69bffc6b0f90-1 ----------------------
+# The regression checklist, ``qualifies_requirements`` exactly ``false`` included, applies to
+# the first artifact only. A later ``regression`` hop is followed through its supersession link
+# (digests, identifier, same task, manifest directory, no cycle) even when, like the records
+# sealed before REM-0046, it has no ``qualifies_requirements`` field; a value that is present and
+# not ``false`` is still refused. The latest non-regression record receives every qualifying
+# check unchanged.
+
+LEGACY = "OCOR-DEV-0004.requalified-legacy.json"
+LEGACY_ID = "OCOR-DEV-0004-requalified-legacy"
+
+
+def legacy_shape(record: dict[str, Any]) -> None:
+    """A regression record sealed before REM-0046: no qualifies_requirements, own cases."""
+    record.pop("qualifies_requirements")
+    record["requirement_results"] = [
+        {
+            "case_id": "OCOR-DEV-0004-REQUALIFIED-LEGACY",
+            "command": "labels regression of the shared campaign, all PASS",
+            "requirement_id": "BR-003",
+            "result": {"failed": 0, "not_executed": 0, "passed": 13, "skipped": 0},
+            "status": "PASS",
+        }
+    ]
+
+
+@pytest.fixture
+def legacy(tmp_path: Path) -> Gate:
+    """head r1 (REM-0046 shape) -> legacy regression record -> latest qualifying record."""
+    gate = Gate(tmp_path)
+    add_qualifying(gate)
+    add_regression(gate, LEGACY, LEGACY_ID, QUALIFYING, QUALIFYING_ID)
+    gate.edit(LEGACY, legacy_shape)
+    add_regression(gate, REGRESSION_R1, REGRESSION_R1_ID, LEGACY, LEGACY_ID)
+    return gate
+
+
+def relink(gate: Gate, head: str, superseded: str) -> None:
+    gate.edit(head, lambda record: record["previous_record"].__setitem__("record_sha256", sha256(gate.dir / superseded)))
+
+
+def test_legacy_regression_hop_without_the_field_is_followed_to_the_qualifying_record(legacy: Gate) -> None:
+    assert "qualifies_requirements" not in legacy.record(LEGACY)
+    assert legacy.validate() is True
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda record: record.pop("requirement_results"),
+        lambda record: record["commands"].append({"command": "pytest -q", "status": "PASS"}),
+        lambda record: record.__setitem__("requirement_results", []),
+    ],
+    ids=["field-only", "more-commands-than-cases", "empty-cases"],
+)
+def test_legacy_regression_hop_shapes_are_followed(legacy: Gate, change: Callable[[dict[str, Any]], None]) -> None:
+    legacy.edit(LEGACY, change)
+    relink(legacy, REGRESSION_R1, LEGACY)
+    assert legacy.validate() is True
+
+
+def test_legacy_regression_hop_named_by_the_ledger_reaches_the_unchanged_qualifying_checks(legacy: Gate) -> None:
+    """The shape of the sealed OCOR-DEV-0005/0050/0082 chains: rows of older records stay in the ledger."""
+    row = dict(
+        legacy.manifest["requirement_results"][0],
+        case_id="OCOR-DEV-0004-REQUALIFIED-LEGACY",
+        evidence_path=LEGACY,
+        raw_output_path=raw_name(LEGACY),
+    )
+    legacy.manifest["requirement_results"].append(row)
+    legacy.save()
+    refused(legacy, "^requirement-result ledger cardinality mismatch$")
+
+
+@pytest.mark.parametrize("value", [True, "false", 0, None, []])
+def test_legacy_regression_hop_with_a_present_non_false_field_is_refused(legacy: Gate, value: Any) -> None:
+    legacy.edit(LEGACY, lambda record: record.__setitem__("qualifies_requirements", value))
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^regression requalification record: qualifies_requirements is not false$")
+
+
+def test_head_without_the_field_is_still_refused_when_the_hop_is_legacy(legacy: Gate) -> None:
+    legacy.edit(REGRESSION_R1, lambda record: record.pop("qualifies_requirements"))
+    refused(legacy, "^regression requalification record: qualifies_requirements is not false$")
+
+
+def test_legacy_regression_hop_supersession_is_checked(legacy: Gate) -> None:
+    legacy.edit(LEGACY, lambda record: record.__setitem__("supersedes", "OCOR-DEV-0004-requalified-other"))
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^regression requalification record does not supersede a record$")
+
+
+def test_legacy_regression_hop_declared_digest_is_checked(legacy: Gate) -> None:
+    legacy.edit(LEGACY, lambda record: record["previous_record"].__setitem__("record_sha256", "0" * 64))
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^superseded record digest mismatch$")
+
+
+def test_legacy_regression_hop_directory_is_checked(legacy: Gate) -> None:
+    legacy.edit(
+        LEGACY,
+        lambda record: record["previous_record"].__setitem__("record_path", "reports/evidence/G1/" + QUALIFYING),
+    )
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^superseded record is not an evidence record of this manifest directory$")
+
+
+def test_legacy_regression_hop_raw_digest_is_checked(legacy: Gate) -> None:
+    (legacy.dir / raw_name(LEGACY)).write_text("tampered\n", encoding="utf-8")
+    refused(legacy, "^raw evidence digest mismatch$")
+
+
+def test_legacy_regression_hop_of_another_task_is_refused(legacy: Gate) -> None:
+    legacy.edit(LEGACY, lambda record: record.__setitem__("task_id", "OCOR-DEV-0005"))
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^superseded record belongs to another task$")
+
+
+def test_legacy_regression_hop_cycle_is_refused(legacy: Gate) -> None:
+    def point_back(record: dict[str, Any]) -> None:
+        record["supersedes"] = REGRESSION_R1_ID
+        record["previous_record"].update(
+            record_id=REGRESSION_R1_ID,
+            record_path="/".join((*GATE_DIR, REGRESSION_R1)),
+            record_sha256=sha256(legacy.dir / REGRESSION_R1),
+        )
+
+    legacy.edit(LEGACY, point_back)
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^supersedes chain is cyclic$")
+
+
+def test_latest_qualifying_record_after_a_legacy_hop_gets_the_qualifying_checks(legacy: Gate) -> None:
+    legacy.edit(QUALIFYING, lambda record: record["commands"].append({"command": "pytest -q", "status": "PASS"}))
+    relink(legacy, LEGACY, QUALIFYING)
+    relink(legacy, REGRESSION_R1, LEGACY)
+    refused(legacy, "^executed command/result cardinality mismatch$")
+
+
+# --- the repository MANIFESTs: where the walk ends -----------------------------------
+
+
+@pytest.mark.parametrize(
+    ("gate", "task", "latest_non_regression"),
+    [
+        ("G0", "OCOR-DEV-0004", "OCOR-DEV-0004.requalified-rem0039.json"),
+        ("G0", "OCOR-DEV-0005", "OCOR-DEV-0005.requalified-rem0039.json"),
+        ("G5", "OCOR-DEV-0050", "OCOR-DEV-0050.requalified-rem0037.json"),
+        ("G2", "OCOR-DEV-0082", "OCOR-DEV-0082.requalified-rem0039.json"),
+    ],
+)
+def test_repository_walk_reaches_the_latest_non_regression_record(
+    monkeypatch: pytest.MonkeyPatch, gate: str, task: str, latest_non_regression: str
+) -> None:
+    """The walk passes every regression hop and stops on the first non-regression record, where
+    the unchanged qualifying checks run: OCOR-DEV-0004 passes on rem0039; the sealed multi-command
+    records of OCOR-DEV-0005, 0050 and 0082 are refused there by the unchanged cardinality check."""
+    import evidence_manifest
+
+    visited: list[str] = []
+    original = evidence_manifest._superseded
+
+    def recording(*args: Any, **kwargs: Any) -> tuple[Path, Path, str, dict[str, Any]]:
+        result = original(*args, **kwargs)
+        visited.append(result[0].name)
+        return result
+
+    monkeypatch.setattr(evidence_manifest, "_superseded", recording)
+    manifest = ROOT / "reports" / "evidence" / gate / "MANIFEST.json"
+    try:
+        outcome = str(validate_manifest(manifest, task_id=task, non_skipped=True))
+    except ManifestError as exc:
+        outcome = str(exc)
+    directory = manifest.parent
+    kinds = [json.loads((directory / name).read_text(encoding="utf-8")).get("requalification_kind") for name in visited]
+    assert visited and visited[-1] == latest_non_regression
+    assert kinds[:-1] == ["regression"] * (len(kinds) - 1) and kinds[-1] != "regression"
+    expected = "True" if task == "OCOR-DEV-0004" else "executed command/result cardinality mismatch"
+    assert outcome == expected
