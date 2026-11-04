@@ -335,8 +335,9 @@ def validate_manifest(manifest_path: Path, *, task_id: str, non_skipped: bool) -
     """Fail closed unless task evidence and every requirement result are reproducible.
 
     A first artifact with ``requalification_kind: "regression"`` receives the checks that do not
-    concern requirements; the ``supersedes`` chain is then followed to the latest non-regression
-    record, which receives every qualifying check, ledger included
+    concern requirements; the ``supersedes`` chain is then followed, through the supersession link
+    of each later regression hop, to the latest non-regression record, which receives every
+    qualifying check, ledger included
     (NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (2026-11-04), option 1)."""
     manifest = _load_json(manifest_path)
     artifacts = manifest.get("artifacts")
@@ -352,7 +353,7 @@ def validate_manifest(manifest_path: Path, *, task_id: str, non_skipped: bool) -
 
     record = _load_json(evidence_path)
     seen = {evidence_path.name}
-    while record.get("requalification_kind") == REGRESSION_KIND:
+    if record.get("requalification_kind") == REGRESSION_KIND:
         _validate_regression(
             manifest,
             record,
@@ -362,6 +363,14 @@ def validate_manifest(manifest_path: Path, *, task_id: str, non_skipped: bool) -
             raw_digest=raw_digest,
             non_skipped=non_skipped,
         )
+        evidence_path, raw_path, raw_digest, record = _superseded(
+            manifest_path, artifacts, record, task_id=task_id, seen=seen
+        )
+    # A later regression hop is followed through its supersession link only: the records sealed
+    # before REM-0046 have no qualifies_requirements field; a value that is present must be false.
+    while record.get("requalification_kind") == REGRESSION_KIND:
+        if "qualifies_requirements" in record and record["qualifies_requirements"] is not False:
+            raise ManifestError("regression requalification record: qualifies_requirements is not false")
         evidence_path, raw_path, raw_digest, record = _superseded(
             manifest_path, artifacts, record, task_id=task_id, seen=seen
         )
