@@ -39,7 +39,9 @@
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_envelope_realises_the_commit_context",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_governed_context_digest_the_envelope_does_not_reproduce",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_journal_records_are_reverified_against_their_governed_context"
       ]
     },
     {
@@ -80,7 +82,8 @@
       "tests": [
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_conforms",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_subscribe_surface_has_opaque_cursor",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_journal_records_with_malformed_bodies_fail_closed"
       ]
     },
     {
@@ -171,19 +174,19 @@
       "path": "ocor-runtime/src/ocor_runtime/c5/subscription.py"
     },
     {
-      "change": "new: in-process confluent-kafka journal (acks=all, idempotent producer, enable.metrics.push=false, no topic auto-creation) keyed by ordering_key; no docker exec and no Kafka CLI in the product path; broker failures TRANSIENT",
+      "change": "new: in-process confluent-kafka journal (acks=all, idempotent producer, enable.metrics.push=false, no topic auto-creation) keyed by ordering_key; no docker exec and no Kafka CLI in the product path; broker failures TRANSIENT; every client answer (metadata, acknowledgement, watermarks, time index, records) checked for shape without coercion, absent key/value/header values kept absent, every anomaly KafkaJournalError",
       "function": "KafkaJournal, KafkaJournalError, JournalRecord",
       "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:273, :360; NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 2 and 7",
       "path": "ocor-runtime/src/ocor_runtime/c5/adapters/kafka.py"
     },
     {
-      "change": "new: append-only PostgreSQL DLQ, quarantine, operator releases, subscriptions and checkpoints, immutability enforced by triggers; dead letters POISON from the threshold on",
+      "change": "new: append-only PostgreSQL DLQ, quarantine, operator releases, subscriptions and checkpoints, immutability enforced by triggers; dead letters POISON from the threshold on; rows read back checked without coercion (failure classes in domain, non-negative non-bool counts and positions, aware times, strict release flag, non-empty envelopes and position maps, stored contracts re-validated, replay windows complete and ordered), every anomaly CONTROL_PLANE_UNAVAILABLE",
       "function": "PostgresC5Store (c5_dead_letter, c5_quarantine, c5_quarantine_release, c5_subscription, c5_checkpoint), DeadLetter, QuarantineRecord",
       "normative_element": "docs/OCOR_LLD_v1.1.md:161, :163, :165",
       "path": "ocor-runtime/src/ocor_runtime/c5/adapters/postgres.py"
     },
     {
-      "change": "rewritten: admission boundary in order (closed envelope, transport principal binding, producer signature, marking digest and GovernedContext record, second payload validation, policy, quota per tenant and ResourceClass, durable dedup and advancing revision, journal write with retry budget); Subscribe by subscription_id and opaque cursor with per-delivery re-verification and policy; immutable checkpoints; POISON partition quarantine behind the operator gate; authorised windowed replay that never appends; ReprocessAuthorized through the full admission",
+      "change": "rewritten: admission boundary in order (closed envelope, transport principal binding, producer signature, marking digest and reproduction of governed_context_digest from the GovernedContext record, second payload validation, policy, quota per tenant and ResourceClass, durable dedup and advancing revision, journal write with retry budget); Subscribe by subscription_id and opaque cursor with per-delivery re-verification (signature, GovernedContext digest, schema) and policy; journal recovery fails closed on a record that does not reproduce its context; immutable checkpoints; POISON partition quarantine behind the operator gate; authorised windowed replay that never appends; ReprocessAuthorized through the full admission",
       "function": "CanonicalEventBackbone (publish, subscribe, poll, deliver, replay, release_quarantine, reprocess_dead_letter, dead_letters, poison_records, poison_held)",
       "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:286, :379, :402-411, :844-846; docs/OCOR_LLD_v1.1.md:154-165; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:205, :79, :202",
       "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
@@ -923,6 +926,14 @@
       "prescribed": "counter.get((TENANT, ResourceClass.BATCH), 0) == 0: quotas per tenant and priority class"
     },
     {
+      "current_assertion": "correlation_id=str(uuid.uuid4()) per envelope of a fixed context label",
+      "function": "envelope helper (no test function, assertion, raises or parametrization changed)",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:845, :199, :379",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0025.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0026.py",
+      "prescribed": "the correlation_id of the label's GovernedContext (the shared support module derives it from the label) and governed_context_digest computed from the envelope fields at signing, because the admission boundary reproduces the digest and correlation_id is a field of the GovernedContext record"
+    },
+    {
       "current_assertion": "old backbone, 1.0 envelopes, relay without signer/principal/markings",
       "function": "kafka fixture, relay worker constructions, _committed_event, _outbox_envelope, tamper constructions, DIGEST_MARKING",
       "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
@@ -946,7 +957,8 @@
         1,
         2,
         3,
-        4
+        4,
+        5
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -954,10 +966,42 @@
     }
   ],
   "open_decision_requests": [],
-  "open_points_for_review": [
-    "governed_context_digest reproduction at the C5 admission boundary: C5 admission verifies the marking digest and that the envelope fields form the GovernedContext record (isolation key constructible, ADD v1.3 :845), the producer signature covers the digest, the C3 relay (the trusted ingress of canonical events, ADD v1.3 :199, :844) reproduces it and every C4 projector re-verifies it; C5 does not recompute it at publish. Recomputing it at publish would make the isolation contexts of the sealed REM-0025/REM-0026 tests (fixed context labels with a random correlation_id per envelope, while the digest covers correlation_id) unconstructible, a change of test inputs beyond the adaptations NORMATIVE-CONFORMANCE-PLAN point 5 authorises: if required, it goes to a decision request (point 7 of the programme)"
-  ],
+  "open_points_for_review": [],
   "plan_unit": "NCP-U06",
+  "preventive_review": {
+    "dispositions": [
+      {
+        "disposition": "FIXED in 716e0c7 (RED 57f59ec): admission, journal recovery and delivery reproduce governed_context_digest from the GovernedContext record; the iteration 4 open point is closed by a construction adaptation (point 5 case 3) of the shared support module and of the REM-0025/REM-0026 envelope helpers, not by a change of assertions",
+        "id": "PR-001"
+      },
+      {
+        "disposition": "FIXED in 716e0c7 (RED 57f59ec): acknowledgement positions checked; absent key/value/header values kept absent instead of coerced to empty bytes (a tombstone or a null header is judged unreadable by the backbone, as before)",
+        "id": "PR-002"
+      },
+      {
+        "disposition": "FIXED in 716e0c7 (RED 57f59ec): read bounds, record positions and timestamps, watermarks and time-index answers checked; every anomaly KafkaJournalError",
+        "id": "PR-003"
+      },
+      {
+        "disposition": "FIXED in 716e0c7 (RED 57f59ec): every row read back checked; the typed error of the store stays CONTROL_PLANE_UNAVAILABLE (no new reason code)",
+        "id": "PR-004"
+      },
+      {
+        "disposition": "FIXED in 57f59ec: negative tests per parsing path of KafkaJournal and PostgresC5Store with local responders (malformed answer, null element, empty dict, wrong type, non-UTF-8 body, protocol error) and on the real broker and database",
+        "id": "PR-005"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 0,
+      "blocking": 5
+    },
+    "independence_limits": "none declared: provider different from the implementer (Anthropic); excluded from the final verification of this unit",
+    "outcome_sha256": "af4061a345127804456f389318ed09e2e54746b581cd8d4188da78ca7261df7f",
+    "request_id": "OCOR-DEV-REM-0051-bb94dafe92d2-pre",
+    "reviewer": "Antigravity CLI / gemini-4-argon-high / Google",
+    "reviewer_of_reserve": false,
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "product_orientation": [
     "the C5 backbone talks to Kafka in process through confluent-kafka behind the Publish/Subscribe/Replay/Quarantine/ReprocessAuthorized port; the broker lifecycle (container, volumes, test topics) lives in the qualification tool tests/tasks/c5_kafka_qualification.py, outside the product path: no docker exec or Kafka CLI in the component (NORMATIVE-CONFORMANCE-PLAN point 2, ADD v1.3 :273, :360)",
     "DLQ, quarantine, operator releases, subscriptions and checkpoints are durable append-only PostgreSQL tables behind PostgresC5Store, so the production deployment keeps them across restarts",
@@ -1473,12 +1517,12 @@
     {
       "entry": "NCR-C5-001",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_second_payload_validation_quarantines_failures ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_producer_signature_covers_envelope_and_digest ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_transport_principal_binding ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_envelope_realises_the_commit_context ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_second_payload_validation_quarantines_failures ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_producer_signature_covers_envelope_and_digest ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_transport_principal_binding ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_marking ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_envelope_realises_the_commit_context ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_relay_denies_a_marking_that_does_not_resolve_to_its_reference ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_envelope_context_is_verifiable ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_admission_denies_a_governed_context_digest_the_envelope_does_not_reproduce ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_001_journal_records_are_reverified_against_their_governed_context"
     },
     {
       "entry": "NCR-C5-002",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_subscribe_surface_has_opaque_cursor ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_subscribe_surface_has_opaque_cursor ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_replay_is_authorised_windowed_and_never_republishes ocor-runtime/tests/tasks/test_ocor_dev_rem_0051.py::test_ncr_c5_002_journal_records_with_malformed_bodies_fail_closed"
     },
     {
       "entry": "NCR-C5-003",
@@ -1552,6 +1596,18 @@
         "summary": "unit module on the isolated Kafka broker and real PostgreSQL: 9 failed for the divergence"
       }
     },
-    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML"
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML",
+    "preventive_review_repair": {
+      "GREEN": {
+        "commit": "716e0c7",
+        "fingerprint": "3af134ea0569",
+        "summary": "0040, 0041, REM-0022, REM-0025, REM-0026, REM-0050, REM-0051 modules: 562 passed"
+      },
+      "RED": {
+        "commit": "57f59ec",
+        "fingerprint": "2757e406eeeb",
+        "summary": "unit module: 76 failed (an envelope whose fields do not reproduce governed_context_digest admitted and a forged journal record delivered; raw TypeError/KeyError/ValueError or silent coercion on malformed Kafka client answers and PostgreSQL rows), 81 passed"
+      }
+    }
   }
 }
