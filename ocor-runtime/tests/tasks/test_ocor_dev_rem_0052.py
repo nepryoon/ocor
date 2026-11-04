@@ -1,7 +1,7 @@
 """OCOR-DEV-REM-0052 (NCP-U05): C4 projections conform to the closed normative elements.
 
 Unit of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), plan unit NCP-U05, register entries
-NCR-C4-001 and NCR-C4-003 (this module; NCR-C4-002 and NCR-C4-004 follow in the same unit).
+NCR-C4-001, NCR-C4-003 and NCR-C4-004 (this module; NCR-C4-002 follows in the same unit).
 
 * NCR-C4-001 -- LLD v1.1 :355 (C4/C5 per-aggregate ordering, monotonic watermark, durable
   deduplication), LLD v1.1 :148 (projector verifies schema/release/GCS, applies idempotently,
@@ -19,6 +19,12 @@ NCR-C4-001 and NCR-C4-003 (this module; NCR-C4-002 and NCR-C4-004 follow in the 
   and the served context of PROJECTION_NOT_READY is built from those values with the
   staleness measured from their instant (ADD v1.3 :1364 and :3406). A TypeDB transaction is
   closed on every error path, connection-level errors and a failed commit included.
+* NCR-C4-004 -- ADD v1.3 :356 (BA-03: a disposable sandbox serves EXACT_AT_COMMIT(Cn) on named
+  logical queries; benchmark of sandbox creation, resource exhaustion test and negative test
+  with the emulation unavailable), ADD v1.3 :1366 (emulation unavailable gives
+  UNSUPPORTED_CAPABILITY, never a silent downgrade to AT_LEAST_COMMIT), LLD v1.1 :369 (oracle
+  BA-03: TypeDB exact-at-commit or PROJECTION_NOT_READY, never a downgrade), Register FR-057
+  :179 (a projection beyond Cn serves at-least but not exact-at-commit(Cn)).
 
 Every positive path runs on the real TypeDB and the real PostgreSQL of the stack; the local
 HTTP responder stands in for TypeDB only on the failure paths of NCR-C4-003.
@@ -26,11 +32,13 @@ HTTP responder stands in for TypeDB only on the failure paths of NCR-C4-003.
 
 from __future__ import annotations
 
+import hashlib
 import http.server
 import importlib
 import json
 import os
 import threading
+import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -363,3 +371,253 @@ def test_ncr_c4_003_a_failed_read_transaction_is_closed(responder: TypeDBRespond
     with pytest.raises(C2Error):
         adapter_module.read_rows("match $w isa c4-watermark, has c4-commit-id $c;", ("c",))
     assert responder.calls[-1] == "close"
+
+
+# -- NCR-C4-004 ------------------------------------------------------------------------------
+
+
+def _digest_of(payload: str) -> str:
+    return "urn:sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _exact(commit: str, fact_id: str = "fact-1") -> NamedQueryRequest:
+    return _request(fact_id=fact_id, mode=ConsistencyMode.EXACT_AT_COMMIT, required_commit=commit)
+
+
+def _three_commits(adapter: Any) -> None:
+    for commit, payload in (("commit-1", "V1"), ("commit-2", "V2"), ("commit-3", "V3")):
+        adapter.apply_commit(fact_id="fact-1", commit_id=commit, payload=payload)
+
+
+def test_ncr_c4_004_conforms(adapter: Any) -> None:
+    """ADD v1.3 :356 (BA-03) and FR-057 (Register :179): an EXACT_AT_COMMIT(Cn) named logical
+    query for a commit the projection has moved beyond is served from a disposable sandbox at
+    Cn -- exactly Cn, never the later commit -- and the sandbox is gone once the answer is
+    served; the projection itself stays at its own watermark."""
+    _three_commits(adapter)
+
+    response = adapter.read(_exact("commit-2"))
+
+    assert (response.served.canonical_commit, response.served.projection_watermark) == ("commit-2", "commit-2")
+    assert response.result_digest == _digest_of("V2")
+    assert response.served.ontology_release_digest == RELEASE
+    assert adapter.read(_exact("commit-1")).result_digest == _digest_of("V1")
+    assert adapter.current_watermark() == "commit-3"
+    assert adapter.read(_exact("commit-3")).result_digest == _digest_of("V3")
+    assert adapter.sandbox_databases() == []
+
+
+def test_ncr_c4_004_the_sandbox_answers_as_the_projection_did_at_cn(adapter: Any) -> None:
+    """BA-03 (ADD v1.3 :356): the sandbox is the projection as it was at Cn -- a fact that did
+    not exist yet at Cn is not disclosed (an absent result is a denial, NFR-006 Register :50),
+    and the AT_LEAST_COMMIT(Cn) read keeps serving the later commit it declares (ADD v1.3 :1361)."""
+    adapter.apply_commit(fact_id="fact-1", commit_id="commit-1", payload="V1")
+    adapter.apply_commit(fact_id="fact-2", commit_id="commit-2", payload="W2")
+
+    with pytest.raises(C2Error) as caught:
+        adapter.read(_exact("commit-1", fact_id="fact-2"))
+    assert caught.value.reason_code == "POLICY_DENIED"
+    assert adapter.read(_exact("commit-2", fact_id="fact-2")).result_digest == _digest_of("W2")
+    later = adapter.read(_request(fact_id="fact-2", mode=ConsistencyMode.AT_LEAST_COMMIT, required_commit="commit-1"))
+    assert later.served.canonical_commit == "commit-2"
+    assert adapter.sandbox_databases() == []
+
+
+def test_ncr_c4_004_emulation_unavailable_is_unsupported_capability_never_a_downgrade(
+    ledger: Any, clock: Clock, adapter: Any
+) -> None:
+    """ADD v1.3 :1366: with the emulation unavailable (no sandbox configured) an EXACT_AT_COMMIT(Cn)
+    query for a commit the projection has moved beyond is UNSUPPORTED_CAPABILITY, never served
+    by the later commit; a commit not landed yet stays PROJECTION_NOT_READY (LLD v1.1 :369)."""
+    _three_commits(adapter)
+    unavailable = _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(
+        release_digest=RELEASE, ledger=ledger, clock=clock, sandbox=None)
+
+    with pytest.raises(C2Error) as caught:
+        unavailable.read(_exact("commit-2"))
+    assert caught.value.reason_code == "UNSUPPORTED_CAPABILITY"
+    with pytest.raises(C2Error) as not_landed:
+        unavailable.read(_exact("commit-4"))
+    assert not_landed.value.reason_code == "PROJECTION_NOT_READY"
+    assert unavailable.read(_exact("commit-3")).result_digest == _digest_of("V3")
+
+
+def test_ncr_c4_004_a_commit_without_its_projected_history_is_unsupported_capability(adapter: Any) -> None:
+    """ADD v1.3 :1366: a sandbox at Cn is built only from the complete history of the branch up to
+    Cn; when that history is incomplete (a commit projected before the history was kept) the
+    emulation is unavailable for Cn and the answer is UNSUPPORTED_CAPABILITY, nothing else."""
+    _three_commits(adapter)
+    typedb_adapter = _module("ocor_runtime.c4.typedb_adapter")
+    typedb_adapter._write('match $r isa c4-fact-revision, has c4-commit-id "commit-1"; delete $r;')
+
+    for commit in ("commit-1", "commit-2"):
+        with pytest.raises(C2Error) as caught:
+            adapter.read(_exact(commit))
+        assert caught.value.reason_code == "UNSUPPORTED_CAPABILITY"
+    assert adapter.sandbox_databases() == []
+
+
+def test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_nothing(
+    ledger: Any, clock: Clock, adapter: Any
+) -> None:
+    """BA-03 (ADD v1.3 :356), resource exhaustion test on the real TypeDB: while every sandbox
+    slot is held the emulation is unavailable (UNSUPPORTED_CAPABILITY, ADD v1.3 :1366); once the
+    slots are released the same query is served again and no sandbox database is left behind."""
+    _three_commits(adapter)
+    typedb_adapter = _module("ocor_runtime.c4.typedb_adapter")
+    sandbox = typedb_adapter.TypeDBCommitSandbox(max_sandboxes=2)
+    bounded = typedb_adapter.TypeDBProjectionAdapter(release_digest=RELEASE, ledger=ledger, clock=clock,
+                                                     sandbox=sandbox)
+
+    with sandbox.open("commit-1", 1) as first, sandbox.open("commit-2", 2) as second:
+        assert sorted(bounded.sandbox_databases()) == sorted([first, second])
+        with pytest.raises(typedb_adapter.SandboxUnavailableError):
+            with sandbox.open("commit-1", 1):
+                pytest.fail("a third sandbox was opened beyond the bound")
+        with pytest.raises(C2Error) as caught:
+            bounded.read(_exact("commit-2"))
+        assert caught.value.reason_code == "UNSUPPORTED_CAPABILITY"
+    assert bounded.sandbox_databases() == []
+    assert bounded.read(_exact("commit-2")).result_digest == _digest_of("V2")
+    assert bounded.sandbox_databases() == []
+
+
+def test_ncr_c4_004_sandbox_creation_benchmark(adapter: Any, record_property: Any) -> None:
+    """BA-03 (ADD v1.3 :356), benchmark of sandbox creation on the real TypeDB: a projection of
+    ten commits over five facts; each EXACT_AT_COMMIT read at an earlier commit creates, serves
+    and drops one sandbox. The timings are recorded in the JUnit report (no threshold is
+    normative); every read is exact and no sandbox is left behind."""
+    for index in range(1, 11):
+        adapter.apply_commit(fact_id=f"fact-{index % 5}", commit_id=f"commit-{index}", payload=f"V{index}")
+    timings: list[float] = []
+    for _ in range(10):
+        started = time.perf_counter()
+        response = adapter.read(_exact("commit-6", fact_id="fact-1"))
+        timings.append((time.perf_counter() - started) * 1000)
+        assert (response.served.canonical_commit, response.result_digest) == ("commit-6", _digest_of("V6"))
+    timings.sort()
+    record_property("ba03_sandbox_read_ms", json.dumps({
+        "samples": len(timings), "min": round(timings[0], 1), "p50": round(timings[len(timings) // 2], 1),
+        "max": round(timings[-1], 1), "commits": 10, "facts": 5, "served_commit": "commit-6"}, sort_keys=True))
+    assert adapter.sandbox_databases() == []
+
+
+class SandboxResponder:
+    """A local HTTP responder standing in for TypeDB on the failure paths of the sandbox only. It
+    records ``(method, path)`` of every request and answers the history of one commit."""
+
+    HISTORY = {"answers": [{"data": {"f": {"value": "fact-1"}, "c": {"value": "commit-1"}, "s": {"value": 1},
+                                     "p": {"value": "V1"}}}]}
+
+    def __init__(self) -> None:
+        self.routes: dict[tuple[str, str], tuple[int, bytes] | bytes] = {}
+        self.calls: list[tuple[str, str]] = []
+        self.query: object = self.HISTORY
+        responder = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _answer(self) -> None:
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                path = self.path.rstrip("/")
+                kind = next((name for name in ("signin", "open", "query", "close", "commit")
+                             if path.endswith(name)), "sandbox" if "_sbx_" in path else "other")
+                responder.calls.append((self.command, kind))
+                route = responder.routes.get((self.command, kind), responder.default(kind))
+                self.close_connection = True
+                if isinstance(route, bytes):
+                    self.wfile.write(route)
+                    return
+                status, body = route
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            do_POST = _answer
+            do_GET = _answer
+            do_DELETE = _answer
+
+            def log_message(self, format: str, *args: Any) -> None:
+                return None
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def default(self, kind: str) -> tuple[int, bytes]:
+        return {"signin": (200, b'{"token": "t"}'), "open": (200, b'{"transactionId": "tx"}'),
+                "query": (200, json.dumps(self.query).encode("utf-8"))}.get(kind, (200, b"{}"))
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+@pytest.fixture
+def sandbox_responder(monkeypatch: pytest.MonkeyPatch) -> Iterator[SandboxResponder]:
+    value = SandboxResponder()
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", value.url)
+    try:
+        yield value
+    finally:
+        value.close()
+
+
+SANDBOX_LIFECYCLE_FAILURES: dict[str, dict[tuple[str, str], tuple[int, bytes] | bytes]] = {
+    "create-refused": {("POST", "sandbox"): (500, b"{}")},
+    "create-connection-dropped": {("POST", "sandbox"): b""},
+    "create-bad-status-line": {("POST", "sandbox"): b"GARBAGE\r\n\r\n"},
+    "populate-commit-refused": {("POST", "commit"): (500, b"{}")},
+    "populate-connection-dropped": {("POST", "commit"): b""},
+}
+
+
+@pytest.mark.parametrize("case", sorted(SANDBOX_LIFECYCLE_FAILURES))
+def test_ncr_c4_004_a_sandbox_that_cannot_be_built_is_unavailable_and_dropped(
+    sandbox_responder: SandboxResponder, case: str
+) -> None:
+    """ADD v1.3 :1366: a sandbox the backend refuses to create or to populate makes the emulation
+    unavailable -- the typed ``SandboxUnavailableError`` -- and a created sandbox is dropped on
+    every error path, a connection-level error included; the slot is released."""
+    typedb_adapter = _module("ocor_runtime.c4.typedb_adapter")
+    sandbox = typedb_adapter.TypeDBCommitSandbox(max_sandboxes=1)
+    sandbox_responder.routes = dict(SANDBOX_LIFECYCLE_FAILURES[case])
+    for _ in range(2):  # the slot of the failed attempt is free again
+        with pytest.raises(typedb_adapter.SandboxUnavailableError):
+            with sandbox.open("commit-1", 1):
+                pytest.fail("a sandbox that cannot be built was served")
+    if case.startswith("populate"):
+        assert ("DELETE", "sandbox") in sandbox_responder.calls
+        assert sandbox_responder.calls[-1] == ("DELETE", "sandbox"), sandbox_responder.calls
+
+
+MALFORMED_HISTORY: dict[str, object] = {
+    "no-answer-list": {"answers": None},
+    "row-without-data": {"answers": [{}]},
+    "sequence-as-text": {"answers": [{"data": {"f": {"value": "fact-1"}, "c": {"value": "commit-1"},
+                                               "s": {"value": "1"}, "p": {"value": "V1"}}}]},
+    "sequence-as-bool": {"answers": [{"data": {"f": {"value": "fact-1"}, "c": {"value": "commit-1"},
+                                               "s": {"value": True}, "p": {"value": "V1"}}}]},
+    "empty-payload": {"answers": [{"data": {"f": {"value": "fact-1"}, "c": {"value": "commit-1"},
+                                            "s": {"value": 1}, "p": {"value": ""}}}]},
+    "sequence-beyond-cn": {"answers": [{"data": {"f": {"value": "fact-1"}, "c": {"value": "commit-1"},
+                                                 "s": {"value": 2}, "p": {"value": "V1"}}}]},
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_HISTORY))
+def test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox(
+    sandbox_responder: SandboxResponder, case: str
+) -> None:
+    """Contract :486-491: the projected history read to build a sandbox is an untrusted answer; a
+    malformed one is the typed CONTROL_PLANE_UNAVAILABLE, never converted, and no sandbox
+    database is created from it."""
+    typedb_adapter = _module("ocor_runtime.c4.typedb_adapter")
+    sandbox_responder.query = MALFORMED_HISTORY[case]
+    with pytest.raises(C2Error) as caught:
+        with typedb_adapter.TypeDBCommitSandbox().open("commit-1", 1):
+            pytest.fail("a sandbox was built from a malformed history")
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    assert ("POST", "sandbox") not in sandbox_responder.calls
