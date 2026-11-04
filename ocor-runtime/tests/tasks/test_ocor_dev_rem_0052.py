@@ -621,3 +621,266 @@ def test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox(
             pytest.fail("a sandbox was built from a malformed history")
     assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
     assert ("POST", "sandbox") not in sandbox_responder.calls
+
+
+# -- NCR-C4-002 (drift, quarantine, rebuild) ---------------------------------------------------
+#
+# LLD v1.1 :148: ``ProjectionDriftDetector`` rebuilds a sample from the canonical commit, compares
+# the semantic digest, quarantines the divergent projection and prevents EXACT_AT_COMMIT; rebuild
+# uses a signed checkpoint and a bounded replay; no projection is authoritative. Register FR-065
+# :189: drift, gap and checksum mismatch are detected and a projection is replayed or rebuilt from
+# commit or journal; a deleted projection is rebuilt. The canonical store is TerminusDB (ADD v1.3
+# Part I §2.2/§2.4, ``ocor_runtime.c3.terminusdb_service``); PostgreSQL C3 is the atomicity
+# verification adapter, never the rebuild source.
+
+TENANT = "urn:ocor:tenant:synthetic"
+AGGREGATE_TYPE = "MissionObject"
+DRIFT_REF = "urn:ocor:mission-object:rem0052-drift:1"
+OTHER_REF = "urn:ocor:mission-object:rem0052-drift:2"
+CHECKPOINT_SEED = bytes(range(32))
+CHECKPOINT_KEY_ID = "urn:ocor:key:c4-checkpoint:rem0052"
+
+
+def _terminus() -> Any:
+    return _module("test_ocor_dev_rem_0041")
+
+
+@pytest.fixture
+def canonical() -> Iterator[Any]:
+    """A real TerminusDB C3 canonical store on a disposable database, on the governed path."""
+    terminus = _terminus()
+    password = terminus._password()
+    name = f"ocor_c3_rem0052_{os.urandom(6).hex()}"
+    service = _module("ocor_runtime.c3.terminusdb_service").TerminusDBC3Service(
+        url=terminus.URL, password=password, database=name, admission=terminus.GOVERNED.admission())
+    try:
+        service.initialize()
+    except OSError as error:
+        pytest.fail(f"a real, live TerminusDB server is mandatory qualifying evidence: {error}")
+    try:
+        yield service
+    finally:
+        terminus._raw("DELETE", f"/api/db/admin/{name}", password)
+
+
+def _commit(canonical: Any, ref: str, revision: int, status: str) -> Any:
+    command = _terminus().make_command(
+        command_id=f"urn:ocor:command:rem0052:{ref.rsplit(':', 1)[-1]}:{revision}",
+        idempotency_key=f"rem0052-drift-{ref.rsplit(':', 1)[-1]}-{revision:04d}",
+        expected_revision=revision, canonical_delta={"status": status}, aggregate_ref=ref)
+    return canonical.commit(command)
+
+
+def _signing_key() -> Any:
+    return _module("ocor_runtime.c1.signing").Ed25519SigningKey.from_seed(CHECKPOINT_SEED)
+
+
+def _detector(canonical: Any, adapter: Any, *, replay_bound: int = 8, trusted: dict[str, bytes] | None = None) -> Any:
+    key = _signing_key()
+    return _module("ocor_runtime.c4.rebuild").ProjectionDriftDetector(
+        canonical, adapter, signer=key, key_id=CHECKPOINT_KEY_ID,
+        trusted_keys=trusted if trusted is not None else {CHECKPOINT_KEY_ID: key.public_key},
+        replay_bound=replay_bound)
+
+
+def _aggregate(ref: str) -> tuple[str, str, str]:
+    return (TENANT, AGGREGATE_TYPE, ref)
+
+
+def _tamper(adapter: Any, ref: str, commit: str) -> None:
+    _module("c4_projection_fixture").overwrite_fact(fact_id=ref, commit_id=commit, payload="tampered-digest")
+
+
+def test_ncr_c4_002_conforms(canonical: Any, adapter: Any, ledger: Any, clock: Clock) -> None:
+    """LLD v1.1 :148: a divergent projection is quarantined durably and the quarantine is enforced
+    on the read path of the projection itself -- every state-dependent read of the aggregate,
+    EXACT_AT_COMMIT included, is PROJECTION_NOT_READY with the served context of the last confirmed
+    watermark -- for a new adapter and a new detector as well (the quarantine is outside the
+    process and outside the projection store)."""
+    receipt = _commit(canonical, DRIFT_REF, 0, "ASSESSED")
+    assert _detector(canonical, adapter).rebuild(
+        tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF).drift_detected is False
+    _tamper(adapter, DRIFT_REF, receipt.commit_id)
+
+    report = _detector(canonical, adapter).rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE,
+                                                   aggregate_ref=DRIFT_REF)
+    assert (report.drift_detected, report.quarantined) == (True, True)
+
+    restarted = _adapter(ledger, clock)
+    assert _detector(canonical, restarted).is_quarantined(DRIFT_REF)
+    for request in (_exact(receipt.commit_id, fact_id=DRIFT_REF), _request(fact_id=DRIFT_REF)):
+        with pytest.raises(C2Error) as caught:
+            restarted.read(request)
+        assert caught.value.reason_code == "PROJECTION_NOT_READY"
+        assert caught.value.served is not None
+        assert caught.value.served.canonical_commit == receipt.commit_id
+    record = restarted.quarantine_record(DRIFT_REF)
+    assert (record.canonical_commit, record.served_digest) == (receipt.commit_id, _digest_of("tampered-digest"))
+
+
+def test_ncr_c4_002_a_quarantine_is_released_only_by_a_reconciling_rebuild(
+    canonical: Any, adapter: Any, ledger: Any, clock: Clock
+) -> None:
+    """LLD v1.1 :148 and FR-065 :189: the quarantine holds until a rebuild from the canonical commit
+    finds the projection reconciled; then the aggregate is served again, exactly at its commit."""
+    receipt = _commit(canonical, DRIFT_REF, 0, "ASSESSED")
+    detector = _detector(canonical, adapter)
+    detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF)
+    _tamper(adapter, DRIFT_REF, receipt.commit_id)
+    detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF)
+    _tamper(adapter, DRIFT_REF, receipt.commit_id)
+    assert detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE,
+                            aggregate_ref=DRIFT_REF).quarantined is True
+
+    snapshot = canonical.read(TENANT, AGGREGATE_TYPE, DRIFT_REF)
+    _module("c4_projection_fixture").overwrite_fact(fact_id=DRIFT_REF, commit_id=snapshot.commit_id,
+                                                    payload=snapshot.state_digest)
+    assert _detector(canonical, _adapter(ledger, clock)).rebuild(
+        tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF).quarantined is False
+    assert adapter.quarantine_record(DRIFT_REF) is None
+    response = adapter.read(_exact(receipt.commit_id, fact_id=DRIFT_REF))
+    assert response.served.canonical_commit == receipt.commit_id
+    assert response.result_digest == _digest_of(snapshot.state_digest)
+
+
+def test_ncr_c4_002_the_rebuild_source_is_the_canonical_terminusdb_store(adapter: Any, dsn: str) -> None:
+    """ADD v1.3 Part I §2.2/§2.4 and DEC-201: the drift detector rebuilds from the canonical
+    TerminusDB store; the PostgreSQL C3 service (atomicity verification adapter) is refused."""
+    postgres_c3 = _module("ocor_runtime.c3.service").PostgresC3Service(
+        dsn, admission=_terminus().GOVERNED.admission())
+    with pytest.raises(TypeError):
+        _module("ocor_runtime.c4.rebuild").ProjectionDriftDetector(postgres_c3, adapter)
+
+
+class _UnreadableQuarantine:
+    """A quarantine store that cannot be read: the local failure handling of the read path."""
+
+    def __getattr__(self, name: str) -> Any:
+        def fail(*args: Any, **kwargs: Any) -> Any:
+            raise _module("ocor_runtime.c4.watermark").WatermarkLedgerError(
+                "CONTROL_PLANE_UNAVAILABLE", "quarantine store unreachable")
+        return fail
+
+
+def test_ncr_c4_002_an_unreadable_quarantine_fails_closed(adapter: Any, ledger: Any, clock: Clock) -> None:
+    """LLD v1.1 :346 and contract :486-491: when the durable quarantine cannot be consulted the read
+    is the typed CONTROL_PLANE_UNAVAILABLE, never served as if the projection were healthy."""
+    adapter.apply_commit(fact_id="fact-1", commit_id="commit-1", payload="V1")
+    blind = _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(
+        release_digest=RELEASE, ledger=ledger, quarantine=_UnreadableQuarantine(), clock=clock)
+    for request in (_request(), _exact("commit-1")):
+        with pytest.raises(C2Error) as caught:
+            blind.read(request)
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c4_002_a_projection_requires_a_durable_quarantine(ledger: Any, clock: Clock) -> None:
+    """LLD v1.1 :148: the projection cannot be built without the quarantine it must enforce."""
+    with pytest.raises(TypeError):
+        _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(release_digest=RELEASE, ledger=ledger,
+                                                                          clock=clock)
+
+
+def _two_aggregates(canonical: Any, detector: Any) -> tuple[Any, Any]:
+    first = _commit(canonical, DRIFT_REF, 0, "ASSESSED")
+    second = _commit(canonical, OTHER_REF, 0, "ASSESSED")
+    for ref in (DRIFT_REF, OTHER_REF):
+        detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=ref)
+    return first, second
+
+
+def test_ncr_c4_002_a_deleted_projection_is_rebuilt_from_a_signed_checkpoint_and_a_bounded_replay(
+    canonical: Any, adapter: Any, record_testsuite_property: Any
+) -> None:
+    """LLD v1.1 :148 and FR-065 :189 (acceptance: a deleted projection is rebuilt): the checkpoint is
+    signed and kept outside the projection store; after the projection is deleted the rebuild
+    restores the checkpoint, replays from the canonical store the commits after it, and serves
+    every aggregate exactly at its canonical commit."""
+    detector = _detector(canonical, adapter)
+    _two_aggregates(canonical, detector)
+    checkpoint = detector.checkpoint(aggregates=[_aggregate(DRIFT_REF), _aggregate(OTHER_REF)])
+    assert checkpoint.key_id == CHECKPOINT_KEY_ID
+    later = _commit(canonical, DRIFT_REF, 1, "ENGAGED")
+
+    adapter.reset()
+    started = time.perf_counter()
+    report = _detector(canonical, adapter).rebuild_projection()
+    elapsed = time.perf_counter() - started
+    record_testsuite_property("ncr_c4_002_rebuild_seconds", f"{elapsed:.3f}")
+
+    assert (report.checkpoint_watermark, report.replayed) == (checkpoint.watermark, 1)
+    assert report.watermark == later.commit_id == adapter.current_watermark()
+    for ref in (DRIFT_REF, OTHER_REF):
+        snapshot = canonical.read(TENANT, AGGREGATE_TYPE, ref)
+        served = adapter.read(_exact(snapshot.commit_id, fact_id=ref))
+        assert served.result_digest == _digest_of(snapshot.state_digest)
+        assert adapter.quarantine_record(ref) is None
+
+
+def test_ncr_c4_002_a_replay_beyond_the_bound_fails_closed_before_any_write(canonical: Any, adapter: Any) -> None:
+    """LLD v1.1 :148 (bounded replay): a rebuild that would replay more commits than its bound is
+    refused before the projection is touched."""
+    detector = _detector(canonical, adapter, replay_bound=1)
+    _two_aggregates(canonical, detector)
+    detector.checkpoint(aggregates=[_aggregate(DRIFT_REF), _aggregate(OTHER_REF)])
+    _commit(canonical, DRIFT_REF, 1, "ENGAGED")
+    _commit(canonical, OTHER_REF, 1, "ENGAGED")
+    watermark = adapter.current_watermark()
+
+    with pytest.raises(_module("ocor_runtime.c4.rebuild").DriftError) as caught:
+        detector.rebuild_projection()
+    assert caught.value.reason_code == "REPLAY_BOUND_EXCEEDED"
+    assert adapter.current_watermark() == watermark
+
+
+@pytest.mark.parametrize("case", ["tampered-payload", "tampered-signature", "untrusted-key", "no-trust-root"])
+def test_ncr_c4_002_an_unverifiable_checkpoint_is_refused(canonical: Any, adapter: Any, case: str) -> None:
+    """LLD v1.1 :148: the rebuild uses only a checkpoint whose signature verifies under a trusted
+    key; anything else is CHECKPOINT_INVALID and the projection is not touched."""
+    detector = _detector(canonical, adapter)
+    _two_aggregates(canonical, detector)
+    checkpoint = detector.checkpoint(aggregates=[_aggregate(DRIFT_REF), _aggregate(OTHER_REF)])
+    drift = _module("ocor_runtime.c4.drift")
+    trusted: dict[str, bytes] = {CHECKPOINT_KEY_ID: _signing_key().public_key}
+    if case == "tampered-payload":
+        body = json.loads(checkpoint.payload)
+        body["entries"][0]["payload"] = "tampered-digest"
+        checkpoint = drift.SignedProjectionCheckpoint(
+            payload=json.dumps(body).encode("utf-8"), key_id=checkpoint.key_id, signature=checkpoint.signature)
+    elif case == "tampered-signature":
+        checkpoint = drift.SignedProjectionCheckpoint(
+            payload=checkpoint.payload, key_id=checkpoint.key_id, signature=bytes(64))
+    elif case == "untrusted-key":
+        other = _module("ocor_runtime.c1.signing").Ed25519SigningKey.from_seed(bytes(32))
+        trusted = {CHECKPOINT_KEY_ID: other.public_key}
+    else:
+        trusted = {}
+    watermark = adapter.current_watermark()
+
+    with pytest.raises(_module("ocor_runtime.c4.rebuild").DriftError) as caught:
+        _detector(canonical, adapter, trusted=trusted).rebuild_projection(checkpoint=checkpoint)
+    assert caught.value.reason_code == "CHECKPOINT_INVALID"
+    assert adapter.current_watermark() == watermark
+
+
+def test_ncr_c4_002_a_checkpoint_of_a_divergent_projection_is_refused(canonical: Any, adapter: Any) -> None:
+    """LLD v1.1 :148 (no projection is authoritative): a checkpoint is taken only of a projection
+    that reconciles with the canonical store; a divergent one is quarantined instead."""
+    detector = _detector(canonical, adapter)
+    first, _ = _two_aggregates(canonical, detector)
+    _tamper(adapter, DRIFT_REF, first.commit_id)
+
+    with pytest.raises(_module("ocor_runtime.c4.rebuild").DriftError) as caught:
+        detector.checkpoint(aggregates=[_aggregate(DRIFT_REF), _aggregate(OTHER_REF)])
+    assert caught.value.reason_code == "DRIFT_DETECTED"
+    assert adapter.quarantine_record(DRIFT_REF) is not None
+
+
+def test_ncr_c4_002_a_checkpoint_must_cover_the_whole_projection(canonical: Any, adapter: Any) -> None:
+    """LLD v1.1 :148 (rebuild uses the checkpoint): a checkpoint that omits a projected aggregate
+    could not rebuild it, so it is refused."""
+    detector = _detector(canonical, adapter)
+    _two_aggregates(canonical, detector)
+    with pytest.raises(_module("ocor_runtime.c4.rebuild").DriftError) as caught:
+        detector.checkpoint(aggregates=[_aggregate(DRIFT_REF)])
+    assert caught.value.reason_code == "CHECKPOINT_INCOMPLETE"
