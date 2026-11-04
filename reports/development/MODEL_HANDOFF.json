@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "3fcd9a155dcff5412596fb2884a85e71c202849b",
-  "baseline_commit": "3fcd9a155dcff5412596fb2884a85e71c202849b",
-  "branch": "governed/state-sync-rem0052-iter2-20261104",
+  "base_sha": "c392bb8e61ebf89018bac4bde6b4076f3105fc1a",
+  "baseline_commit": "c392bb8e61ebf89018bac4bde6b4076f3105fc1a",
+  "branch": "governed/state-sync-rem0052-iter3-20261104",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0052-ncp-u05-c4-projections",
-    "head_sha": "5af48a95c91b2783adfcde0a350380394cf49a56",
-    "note": "REM-0052 RED and GREEN of NCR-C4-001, NCR-C4-003 and NCR-C4-004; work in progress, not a candidate, no evidence",
+    "head_sha": "25471237957367fb8e317b867286378c96d3421e",
+    "note": "REM-0052 RED and GREEN of NCR-C4-001, NCR-C4-003, NCR-C4-004 and the NCR-C4-002 drift part; work in progress, not a candidate, no evidence",
     "paths": []
   },
   "changed_paths": [
@@ -33,26 +33,36 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest test_ocor_dev_rem_0052.py -k ncr_c4_004 at 49b7616 (RED)",
-      "exit_code": 1,
-      "summary": "17 failed; fingerprint be49557813df"
-    },
-    {
-      "command": "pytest unit + 0037 0038 0039 REM-0010 REM-0014 REM-0041 REM-0049 REM-0050 + mission_thread at 5af48a9",
+      "command": "POST http://127.0.0.1:3030/ocor/shacl?graph=default (stack Fuseki, --mem /ocor)",
       "exit_code": 0,
-      "summary": "636 passed; fingerprint 2a585d85c755"
+      "summary": "HTTP 405: no SHACL operation on the command-line dataset"
     },
     {
-      "command": "ruff check ., mypy (strict), validate_rccad.py, validate_language_policy.py at 5af48a9",
+      "command": "docker run ocor/jena-fuseki:6.2.0 --config=<assembler with fuseki:shacl> (probe container, removed); POST /ocor/shacl",
+      "exit_code": 0,
+      "summary": "HTTP 200 sh:ValidationReport, sh:conforms false, one MinCountConstraintComponent"
+    },
+    {
+      "command": "pytest test_ocor_dev_rem_0052.py -k ncr_c4_002 at 36cc66a (RED)",
+      "exit_code": 1,
+      "summary": "13 failed; fingerprint c63c33e3de35"
+    },
+    {
+      "command": "pytest unit + 0037 0038 0039 REM-0010 REM-0014 REM-0041 REM-0049 REM-0050 + mission_thread at 2547123",
+      "exit_code": 0,
+      "summary": "649 passed; fingerprint 316423f05014"
+    },
+    {
+      "command": "ruff check ., mypy (strict), validate_rccad.py --base-ref origin/main, validate_language_policy.py at 2547123",
       "exit_code": 0,
       "summary": "PASS"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0052:implementation (NCP-U05, iteration 2 done; NCR-C4-002 next)",
+  "current_task": "OCOR-DEV-REM-0052:implementation (NCP-U05, iteration 3 done; NCR-C4-002 Jena part next, SHACL part waits for NCP-U05-FUSEKI-SHACL-SERVICE)",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 5af48a95c91b, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env for the consumer modules; pytest from ocor-runtime): NCR-C4-002 with RED then GREEN (durable quarantine on PostgreSQL consulted on the read path and preventing EXACT_AT_COMMIT, rebuild from the canonical TerminusDB store with a signed checkpoint and bounded replay, Jena watermark correlated to the canonical commit, SHACL validation with the Fuseki SHACL service, canonical marking object of ADD v1.3 section 3.2 instead of the legacy c4_marking engine in the current component, typed Jena errors with the case-1 realignment of test_ocor_dev_0038.py lines 135-138); the open points of the record; full consumer inventory, requalification list from the drift, unit record, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index for the new test files (test_ocor_dev_rem_0052.py, c4_projection_fixture.py), plan allowlist, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW; then full suite, verification, seal, merge. Iterations used 2 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-  "head_sha": "5af48a95c91b2783adfcde0a350380394cf49a56",
+  "exact_next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 254712379573, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime): the Jena part of NCR-C4-002 with RED then GREEN (export watermark correlated to the canonical commit, canonical marking object of ADD v1.3 section 3.2 evaluated with the MarkingSchemeDefinition of section 3.1.1 instead of the legacy c4_marking engine in jena_adapter.py, conservative join, typed Jena errors with the case-1 realignment of test_ocor_dev_0038.py lines 135-138, construction adaptations of test_ocor_dev_0038.py and test_ocor_dev_rem_0010.py); the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491); then the open points of the record, consumer inventory, requalification list from the drift (0039 now has adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 3 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "head_sha": "25471237957367fb8e317b867286378c96d3421e",
   "head_sha_role": "REM-0052 work-in-progress head (not a candidate)",
   "independent_verification": {
     "head_sha": "0175e61ed3dcc03969ed5b5c9fa3e8a58ce5e4bb",
@@ -200,11 +210,13 @@
     "checksum": "PASS 8/8",
     "evidence_input_drift": "drift expected on the unit branch for the tasks whose inputs NCP-U05 changes (c4 modules and the adapted tests)",
     "pre_campaign_gate": "NOT_EXECUTED (unit not at a candidate boundary)",
-    "unit_tests": "unit module and consumers 636 passed; full suite NOT_EXECUTED"
+    "unit_tests": "unit module and consumers 649 passed; full suite NOT_EXECUTED"
   },
-  "next_task": "OCOR-DEV-REM-0052 iteration 3",
+  "next_task": "OCOR-DEV-REM-0052 iteration 4",
   "phase": "REM_0052_NCP_U05_IN_PROGRESS",
-  "po_decisions_pending": [],
+  "po_decisions_pending": [
+    "NCP-U05-FUSEKI-SHACL-SERVICE"
+  ],
   "raw_evidence_location": "~/.ocor-codex/rem-0046 (RED log and fingerprint, helper scripts), outside Git",
   "requirement_ids": [
     "FR-006",
@@ -224,7 +236,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0052 iterations 1 and 2 (RED and GREEN of NCR-C4-001, NCR-C4-003 and NCR-C4-004, consumer construction adaptations) and the state syncs, as the backup implementer of the loop"
+        "scope": "OCOR-DEV-REM-0052 iterations 1-3 (RED and GREEN of NCR-C4-001, NCR-C4-003, NCR-C4-004 and the drift part of NCR-C4-002, consumer construction adaptations), the decision request NCP-U05-FUSEKI-SHACL-SERVICE and the state syncs, as the backup implementer of the loop"
       }
     ]
   },
@@ -259,6 +271,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-04T21:42:04.151027+00:00",
+  "updated_at": "2026-11-04T22:54:46.584044+00:00",
   "worktree": ".ocor/worktrees/rem-0052"
 }
