@@ -88,7 +88,10 @@ PAYLOAD_SCHEMA = {
     "required": ["status"],
     "properties": {"status": {"enum": ["ASSESSED", "CONFIRMED"]}},
 }
-GCS = "sha256:" + "a" * 64
+# the correlation of the test context: ``correlation_id`` is a field of the GovernedContext
+# record (ADD v1.3 :845), so the envelopes of one context share it
+CORRELATION = "6f1c2d4e-8a3b-4c5d-9e6f-7a8b9c0d1e2f"
+# a well-formed digest that no envelope of these cases reproduces
 OTHER_GCS = "sha256:" + "b" * 64
 SIGNATURE_PAYLOAD_TYPE = "application/vnd.ocor.canonical-ingestion-envelope+json"
 SEED = hashlib.sha256(b"ocor-rem-0051-producer").digest()
@@ -147,13 +150,15 @@ def raw_envelope(
     payload: dict[str, Any] | None = None,
     ordering_key: str | None = None,
     tenant: str = "urn:ocor:tenant:alpha",
-    gcs: str = GCS,
+    gcs: str | None = None,
     principal: str = PRODUCER,
     expected_revision: int | None = None,
     ingest_time: datetime | None = None,
     pin: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """A complete ``canonical-ingestion-envelope:1.2`` (ADD v1.3 :531-840) before signing."""
+    """A complete ``canonical-ingestion-envelope:1.2`` (ADD v1.3 :531-840) before signing; its
+    ``governed_context_digest`` is the digest of the GovernedContext its fields realise, unless
+    ``gcs`` names another one."""
     event_id = str(uuid.uuid4())
     now = ingest_time or datetime.now(UTC)
     transport: dict[str, Any]
@@ -175,7 +180,7 @@ def raw_envelope(
     aggregate: dict[str, Any] = {"aggregate_type_id": "urn:ocor:aggregate-type:mission-object", "aggregate_id": "mo-1"}
     if expected_revision is not None:
         aggregate["expected_revision"] = expected_revision
-    return {
+    value: dict[str, Any] = {
         "envelope_version": "1.2",
         "event_id": event_id,
         "tenant_id": tenant,
@@ -205,13 +210,34 @@ def raw_envelope(
         "integrity": {"payload_digest": "sha256:" + "0" * 64, "source_producer_principal_ref": principal},
         "effective_principal_id": principal,
         "actor_chain": [principal],
-        "governed_context_digest": gcs,
+        "governed_context_digest": OTHER_GCS,
         "ontology_release_digest": "sha256:" + "1" * 64,
         "policy_bundle_digest": "sha256:" + "2" * 64,
-        "correlation_id": str(uuid.uuid4()),
+        "correlation_id": CORRELATION,
         "causation_id": None,
         "transport": transport,
     }
+    value["governed_context_digest"] = context_digest_of(value) if gcs is None else gcs
+    return value
+
+
+def context_digest_of(value: dict[str, Any]) -> str:
+    """The ``sha256:`` digest of the RFC 8785 bytes of the GovernedContext record that the fields
+    of an envelope realise (ADD v1.3 :845), computed here, not by the module under test: the
+    inline marking as ``urn:`` + its ``marking_digest``, the digests in their ``urn:sha256:`` form."""
+    realised = {
+        "tenant_id": value["tenant_id"], "organization_id": value["organization_id"], "domain_id": value["domain_id"],
+        "compartments": value["compartments"],
+        "classification_marking_ref": "urn:" + value["classification_marking"]["marking_digest"],
+        "purpose": value["purpose"], "effective_principal_id": value["effective_principal_id"],
+        "actor_chain": value["actor_chain"], "ontology_release_digest": "urn:" + value["ontology_release_digest"],
+        "policy_bundle_digest": "urn:" + value["policy_bundle_digest"], "correlation_id": value["correlation_id"],
+    }
+    return "sha256:" + hashlib.sha256(canonical_bytes(realised)).hexdigest()
+
+
+# the GovernedContext of the default test envelope: tenant alpha, producer principal
+GCS = context_digest_of(raw_envelope())
 
 
 @dataclass
@@ -381,7 +407,7 @@ def subscription_contract(*, replay_allowed: bool = True, event_types: list[str]
         "subscription_contract_id": stable("subscription-contract"),
         "version": "1.0.0",
         "contract_digest": "sha256:" + "f" * 64,
-        "governed_context_ref": "urn:sha256:" + "a" * 64,
+        "governed_context_ref": "urn:" + GCS,
         "event_type_refs": event_types or [EVENT_TYPE],
         "delivery": {"semantics": "AT_LEAST_ONCE", "consumer_must_deduplicate": True, "dedup_key": "event_id"},
         "ordering": {"guarantee": "PER_ORDERING_KEY", "ordering_key_field": "ordering_key"},
@@ -527,6 +553,71 @@ def test_ncr_c5_001_admission_denies_a_marking_digest_that_does_not_match_the_ma
         valid.envelope["classification_marking"])
     rig.backbone.publish(valid, transport_principal=PRODUCER)
     assert rig.topic_records() == 1
+
+
+def test_ncr_c5_001_admission_denies_a_governed_context_digest_the_envelope_does_not_reproduce(
+    env: tuple[Any, ...],
+) -> None:
+    """ADD v1.3 :845 (the admitted envelope realises the GovernedContext integrally and its digest
+    is verifiable), :199 and :379: an envelope whose fields do not reproduce
+    ``governed_context_digest`` -- another tenant claiming the context of tenant alpha, or a
+    digest of no context -- is ``QUARANTINED{GOVERNED_CONTEXT_MISMATCH}`` with an Audit Record,
+    never published, so it is never deduplicated or delivered under the context it claims."""
+    rig = build_rig(*env)
+    claimed = rig.signed(tenant="urn:ocor:tenant:bravo", gcs=GCS)
+    unrelated = rig.signed(gcs=OTHER_GCS)
+    for signed in (claimed, unrelated):
+        code, failure_class, _ = reason_of(lambda signed=signed: rig.backbone.publish(signed, transport_principal=PRODUCER))
+        assert (code, failure_class) == ("GOVERNED_CONTEXT_MISMATCH", "POLICY_DENIED")
+    assert rig.topic_records() == 0
+    rows = {row["event_id"]: (row["reason_code"], row["failure_class"]) for row in rig.rows("c5_quarantine")}
+    assert rows == {
+        claimed.envelope.event_id: ("GOVERNED_CONTEXT_MISMATCH", "POLICY_DENIED"),
+        unrelated.envelope.event_id: ("GOVERNED_CONTEXT_MISMATCH", "POLICY_DENIED"),
+    }
+    denials = [record for record in rig.audit_records()
+               if record.record["reason_code"] == "GOVERNED_CONTEXT_MISMATCH" and record.record["outcome"] == "DENIED"]
+    assert len(denials) == 2
+    valid = rig.signed(tenant="urn:ocor:tenant:bravo")
+    assert valid.envelope.governed_context_digest == context_digest_of(valid.envelope.to_mapping()) != GCS
+    rig.backbone.publish(valid, transport_principal=PRODUCER)
+    assert rig.topic_records() == 1
+
+
+def plant(rig: Rig, signed: Any) -> None:
+    """Write a signed envelope on the journal out of band, bypassing the admission boundary, with
+    the in-process client and the record layout of the backbone."""
+    backbone = _c5("backbone")
+    rig.journal.append(
+        key=signed.envelope.ordering_key.encode("utf-8"), value=signed.envelope.canonical_bytes(),
+        headers=[(backbone.SIGNATURE_HEADER, signed.signature), (backbone.VERSION_HEADER, b"1.2")],
+        timestamp_ms=int(signed.envelope.ingest_time.timestamp() * 1000),
+    )
+
+
+def test_ncr_c5_001_journal_records_are_reverified_against_their_governed_context(env: tuple[Any, ...]) -> None:
+    """ADD v1.3 :845 and :380-381 (delivery is authorised per governed context): a record that
+    reached the journal out of band with a valid producer signature, but whose fields do not
+    reproduce the ``governed_context_digest`` of the subscription it claims, is never delivered:
+    its partition is quarantined ``POISON`` with ``GOVERNED_CONTEXT_MISMATCH`` (LLD v1.1 :163);
+    a new process rebuilding deduplication from that journal fails closed (``JOURNAL_UNREADABLE``)."""
+    rig = build_rig(*env)
+    valid = rig.signed()
+    rig.backbone.publish(valid, transport_principal=PRODUCER)
+    forged = rig.signed(tenant="urn:ocor:tenant:bravo", gcs=GCS)
+    plant(rig, forged)
+    assert rig.topic_records() == 2
+
+    subscription = rig.backbone.subscribe(subscription_contract(), principal=CONSUMER)
+    batch = rig.backbone.poll(subscription, cursor=None, max_records=10, timeout_s=20)
+    assert [event.envelope.event_id for event in batch.events] == [valid.envelope.event_id]
+    poisoned = [row for row in rig.rows("c5_quarantine") if row["subscription_id"] == subscription]
+    assert [(row["reason_code"], row["failure_class"]) for row in poisoned] == [("GOVERNED_CONTEXT_MISMATCH", "POISON")]
+
+    restarted = build_rig(rig.broker, rig.topic, rig.dsn, rig.schema)
+    code, failure_class, _ = reason_of(lambda: restarted.backbone.publish(rig.signed(), transport_principal=PRODUCER))
+    assert (code, failure_class) == ("JOURNAL_UNREADABLE", "PERMANENT")
+    assert rig.topic_records() == 2
 
 
 # The C3 relay as a producer of the C5 admission boundary (ADD v1.3 :845: the admitted envelope
@@ -951,3 +1042,495 @@ def test_ncr_c5_003_dead_letters_are_durable_and_immutable(env: tuple[Any, ...])
             with pytest.raises(psycopg.errors.RaiseException):
                 connection.execute(statement, ("TAMPERED",))
     assert [row["reason_code"] for row in rig.rows("c5_dead_letter")] == ["SCHEMA_VIOLATION"]
+
+
+# --------------------------------------------------------------------------------------------
+# Input robustness of the C5 adapters (PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)): the shape of
+# every answer of the broker client and of the database is verified without coercion, every
+# anomaly is the typed error of the adapter, tampered data is refused. Local responders stand in
+# for the client and the connection; the external services are not changed.
+# --------------------------------------------------------------------------------------------
+
+
+class FakeKafkaError:
+    """A client error object of the shape the confluent-kafka client answers."""
+
+    def __init__(self, code: int) -> None:
+        self._code = code
+
+    def code(self) -> int:
+        return self._code
+
+    def __str__(self) -> str:
+        return f"fake-kafka-error-{self._code}"
+
+
+class FakeMessage:
+    def __init__(self, *, partition: Any = 0, offset: Any = 0, key: Any = b"k", value: Any = b"{}",
+                 headers: Any = None, timestamp: Any = (1, 1000), error: Any = None) -> None:
+        self._values = {"partition": partition, "offset": offset, "key": key, "value": value, "headers": headers,
+                        "timestamp": timestamp, "error": error}
+
+    def __getattr__(self, name: str) -> Any:
+        values = self.__dict__["_values"]
+        if name not in values:
+            raise AttributeError(name)
+        return lambda: values[name]
+
+
+RESPONDER_TOPIC = "ocor-rem0051-responder"
+
+
+def topic_metadata(partitions: Any = None, *, error: Any = None, topic: str = RESPONDER_TOPIC) -> Any:
+    from types import SimpleNamespace
+
+    return SimpleNamespace(topics={topic: SimpleNamespace(error=error, partitions={0: None} if partitions is None
+                                                          else partitions)})
+
+
+class FakeConsumer:
+    """Local responder of the consumer surface used by the journal."""
+
+    def __init__(self, *, metadata: Any = "default", watermarks: Any = (0, 1), times: Any = None,
+                 messages: tuple[Any, ...] = (), raises: BaseException | None = None) -> None:
+        self.metadata = topic_metadata() if metadata == "default" else metadata
+        self.watermarks = watermarks
+        self.times = times
+        self.messages = list(messages)
+        self.raises = raises
+
+    def list_topics(self, timeout: float) -> Any:
+        if self.raises is not None:
+            raise self.raises
+        return self.metadata
+
+    def get_watermark_offsets(self, partition: Any, timeout: float) -> Any:
+        return self.watermarks
+
+    def offsets_for_times(self, partitions: Any, timeout: float) -> Any:
+        return self.times
+
+    def assign(self, partitions: Any) -> None:
+        return None
+
+    def poll(self, timeout: float) -> Any:
+        return self.messages.pop(0) if self.messages else None
+
+    def close(self) -> None:
+        return None
+
+
+class FakeProducer:
+    """Local responder of the producer surface: the delivery callback answers ``message``."""
+
+    def __init__(self, message: Any, error: Any = None) -> None:
+        self.message = message
+        self.error = error
+        self.callback: Any = None
+
+    def produce(self, topic: str, **kwargs: Any) -> None:
+        self.callback = kwargs["on_delivery"]
+
+    def flush(self, timeout: float) -> int:
+        if self.callback is not None:
+            self.callback(self.error, self.message)
+            self.callback = None
+        return 0
+
+    def purge(self) -> None:
+        return None
+
+
+def responder_journal(consumer: FakeConsumer | None = None, producer: FakeProducer | None = None) -> Any:
+    kafka = _c5("adapters.kafka")
+    answers = consumer if consumer is not None else FakeConsumer()
+
+    class _Responder(kafka.KafkaJournal):  # type: ignore[misc,name-defined]
+        def _consumer(self) -> Any:
+            return answers
+
+        def _producer_instance(self) -> Any:
+            return producer
+
+    return _Responder("127.0.0.1:9", RESPONDER_TOPIC)
+
+
+def journal_error(call: Any) -> str:
+    """Run ``call``; it must raise the typed error of the journal adapter, nothing else."""
+    kafka = _c5("adapters.kafka")
+    with pytest.raises(kafka.KafkaJournalError) as excinfo:
+        call()
+    return str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        FakeConsumer(raises=__import__("confluent_kafka").KafkaException(FakeKafkaError(-195))),
+        FakeConsumer(metadata=None),
+        FakeConsumer(metadata=topic_metadata({})),
+        FakeConsumer(metadata=topic_metadata({True: None})),
+        FakeConsumer(metadata=topic_metadata({-1: None})),
+        FakeConsumer(metadata=topic_metadata({"0": None})),
+        FakeConsumer(metadata=topic_metadata(error=FakeKafkaError(3))),
+        FakeConsumer(metadata=topic_metadata(topic="another-topic")),
+        FakeConsumer(metadata=type("Metadata", (), {"topics": None})()),
+    ],
+    ids=["protocol-error", "null-metadata", "empty-partitions", "bool-partition", "negative-partition",
+         "string-partition", "topic-error", "topic-absent", "null-topics"],
+)
+def test_kafka_journal_partitions_refuse_malformed_metadata(consumer: FakeConsumer) -> None:
+    journal_error(responder_journal(consumer).partitions)
+
+
+def test_kafka_journal_partitions_accept_well_formed_metadata() -> None:
+    assert responder_journal(FakeConsumer(metadata=topic_metadata({1: None, 0: None}))).partitions() == (0, 1)
+
+
+@pytest.mark.parametrize(
+    ("message", "error"),
+    [
+        (FakeMessage(partition=None, offset=0), None),
+        (FakeMessage(partition=True, offset=0), None),
+        (FakeMessage(partition=0, offset=-1001), None),
+        (FakeMessage(partition=0, offset=None), None),
+        (FakeMessage(partition=0, offset="3"), None),
+        (FakeMessage(partition=0.0, offset=3), None),
+        (None, None),
+        (FakeMessage(partition=0, offset=3), FakeKafkaError(-185)),
+    ],
+    ids=["null-partition", "bool-partition", "invalid-offset", "null-offset", "string-offset", "float-partition",
+         "null-message", "delivery-error"],
+)
+def test_kafka_journal_append_refuses_a_malformed_acknowledgement(message: Any, error: Any) -> None:
+    journal = responder_journal(producer=FakeProducer(message, error))
+    journal_error(lambda: journal.append(key=b"k", value=b"{}", headers=[], timestamp_ms=1))
+
+
+def test_kafka_journal_append_returns_a_well_formed_position() -> None:
+    journal = responder_journal(producer=FakeProducer(FakeMessage(partition=2, offset=7)))
+    assert journal.append(key=b"k", value=b"{}", headers=[], timestamp_ms=1) == (2, 7)
+
+
+@pytest.mark.parametrize(
+    "marks",
+    [None, (0,), (0, 1, 2), (True, 1), (0, False), (-1, 1), (2, 1), ("0", "1"), [0, 1.0], {}],
+    ids=["null", "short", "long", "bool-low", "bool-high", "negative", "inverted", "strings", "float", "empty-dict"],
+)
+def test_kafka_journal_watermarks_refuse_malformed_offsets(marks: Any) -> None:
+    journal_error(responder_journal(FakeConsumer(watermarks=marks)).watermarks)
+
+
+def test_kafka_journal_watermarks_accept_well_formed_offsets() -> None:
+    assert responder_journal(FakeConsumer(watermarks=(0, 3))).watermarks() == {0: (0, 3)}
+
+
+def time_entry(partition: Any = 0, offset: Any = 1, error: Any = None) -> Any:
+    from types import SimpleNamespace
+
+    return SimpleNamespace(partition=partition, offset=offset, error=error)
+
+
+@pytest.mark.parametrize(
+    "times",
+    [
+        None,
+        [],
+        [time_entry(offset=None)],
+        [time_entry(offset=True)],
+        [time_entry(offset=-5)],
+        [time_entry(offset="1")],
+        [time_entry(partition=7, offset=-1)],
+        [time_entry(partition=True)],
+        [time_entry(), time_entry()],
+        [time_entry(error=FakeKafkaError(-185))],
+        [None],
+    ],
+    ids=["null", "empty", "null-offset", "bool-offset", "negative-offset", "string-offset", "unknown-partition",
+         "bool-partition", "duplicate-partition", "entry-error", "null-entry"],
+)
+def test_kafka_journal_offsets_for_time_refuse_malformed_answers(times: Any) -> None:
+    journal = responder_journal(FakeConsumer(watermarks=(0, 3), times=times))
+    journal_error(lambda: journal.offsets_for_time(1000))
+
+
+def test_kafka_journal_offsets_for_time_accept_well_formed_answers() -> None:
+    assert responder_journal(FakeConsumer(watermarks=(0, 3), times=[time_entry(offset=1)])).offsets_for_time(1) == {0: 1}
+    assert responder_journal(FakeConsumer(watermarks=(0, 3), times=[time_entry(offset=-1)])).offsets_for_time(1) == {0: 3}
+
+
+EOF = __import__("confluent_kafka").KafkaError._PARTITION_EOF  # noqa: SLF001 -- the client's end-of-partition code
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "messages"),
+    [
+        ({}, {0: 1}, ()),
+        ({0: -1}, {0: 1}, ()),
+        ({0: True}, {0: 1}, ()),
+        ({0: 0}, {0: "1"}, ()),
+        ({0: 0}, {0: 1}, (FakeMessage(timestamp=None),)),
+        ({0: 0}, {0: 1}, (FakeMessage(timestamp=(1,)),)),
+        ({0: 0}, {0: 1}, (FakeMessage(timestamp=(1, True)),)),
+        ({0: 0}, {0: 1}, (FakeMessage(timestamp=(1, -1)),)),
+        ({0: 0}, {0: 1}, (FakeMessage(timestamp=(1, 1.5)),)),
+        ({0: 0}, {0: 1}, (FakeMessage(partition=True),)),
+        ({0: 0}, {0: 1}, (FakeMessage(offset=-1),)),
+        ({0: 0}, {0: 1}, (FakeMessage(offset=None),)),
+        ({0: 0}, {0: 1}, (FakeMessage(key="text"),)),
+        ({0: 0}, {0: 1}, (FakeMessage(value="text"),)),
+        ({0: 0}, {0: 1}, (FakeMessage(headers={"ocor-c5-signature": b"x"}),)),
+        ({0: 0}, {0: 1}, (FakeMessage(headers=[("ocor-c5-signature", "text")]),)),
+        ({0: 0}, {0: 1}, (FakeMessage(headers=[("ocor-c5-signature", b"x", b"y")]),)),
+        ({0: 0}, {0: 1}, (FakeMessage(headers=[(None, b"x")]),)),
+        ({0: 0}, {0: 1}, (FakeMessage(error=FakeKafkaError(-191)),)),
+        ({0: 0}, {0: 1}, ()),
+    ],
+    ids=["start-missing", "start-negative", "start-bool", "end-string", "null-timestamp", "short-timestamp",
+         "bool-timestamp", "negative-timestamp", "float-timestamp", "bool-partition", "negative-offset",
+         "null-offset", "string-key", "string-value", "headers-not-a-list", "string-header-value",
+         "long-header", "null-header-name", "protocol-error", "timeout"],
+)
+def test_kafka_journal_read_refuses_malformed_records(start: Any, end: Any, messages: tuple[Any, ...]) -> None:
+    journal = responder_journal(FakeConsumer(messages=messages))
+    journal_error(lambda: journal.read(start, end))
+
+
+def test_kafka_journal_read_keeps_absent_fields_absent() -> None:
+    """A record without key, value or header value (a Kafka tombstone, a null header) is returned
+    as such, never coerced to empty bytes; the backbone judges it unreadable."""
+    message = FakeMessage(key=None, value=None, headers=[("ocor-c5-signature", None)])
+    [record] = responder_journal(FakeConsumer(messages=(message,))).read({0: 0}, {0: 1})
+    assert (record.key, record.value, record.headers, record.timestamp_ms) == (None, None, (("ocor-c5-signature", None),), 1000)
+    assert record.header("ocor-c5-signature") is None
+    [plain] = responder_journal(FakeConsumer(messages=(FakeMessage(),))).read({0: 0}, {0: 1})
+    assert (plain.partition, plain.offset, plain.key, plain.value, plain.headers) == (0, 0, b"k", b"{}", ())
+
+
+@pytest.mark.parametrize(
+    "body",
+    [b"\xff\xfe\x00not-utf-8", b"null", b"{}", b"[]", None],
+    ids=["non-utf-8", "json-null", "empty-object", "array", "tombstone"],
+)
+def test_ncr_c5_002_journal_records_with_malformed_bodies_fail_closed(env: tuple[Any, ...], body: bytes | None) -> None:
+    """LLD v1.1 :163 and :165: a journal record whose body is not a canonical envelope (not UTF-8,
+    JSON null, an empty object, an array, a tombstone) is never delivered -- its partition is
+    quarantined ``POISON`` for the subscription -- and a new process fails closed on it."""
+    rig = build_rig(*env)
+    signed = rig.signed()
+    backbone = _c5("backbone")
+    rig.journal.append(key=b"foreign", value=body, headers=[(backbone.SIGNATURE_HEADER, signed.signature)],
+                       timestamp_ms=int(datetime.now(UTC).timestamp() * 1000))
+    assert rig.topic_records() == 1
+    subscription = rig.backbone.subscribe(subscription_contract(), principal=CONSUMER)
+    batch = rig.backbone.poll(subscription, cursor=None, max_records=10, timeout_s=20)
+    assert batch.events == ()
+    poisoned = [row for row in rig.rows("c5_quarantine") if row["subscription_id"] == subscription]
+    assert [(row["reason_code"], row["failure_class"]) for row in poisoned] == [("SCHEMA_VIOLATION", "POISON")]
+    code, failure_class, _ = reason_of(lambda: rig.backbone.publish(signed, transport_principal=PRODUCER))
+    assert (code, failure_class) == ("JOURNAL_UNREADABLE", "PERMANENT")
+    assert rig.topic_records() == 1
+
+
+class RowResponder:
+    """Local responder of the PostgreSQL connection: each statement answers the next row list."""
+
+    def __init__(self, answers: list[list[Any]]) -> None:
+        self.answers = list(answers)
+        self.current: list[Any] = []
+
+    def execute(self, *args: Any, **kwargs: Any) -> RowResponder:
+        self.current = self.answers.pop(0) if self.answers else []
+        return self
+
+    def fetchall(self) -> list[Any]:
+        return list(self.current)
+
+    def fetchone(self) -> Any:
+        return self.current[0] if self.current else None
+
+
+def responder_store(*answers: list[Any]) -> Any:
+    dlq = _c5("adapters.postgres")
+
+    class _Responder(dlq.PostgresC5Store):  # type: ignore[misc,name-defined]
+        def _run(self, work: Any) -> Any:
+            return work(RowResponder(list(answers)))
+
+    return _Responder("postgresql://responder.invalid/ocor", schema="ocor_rem0051_responder")
+
+
+def store_error(call: Any) -> None:
+    """Run ``call``; it must raise the typed error of the store (``CONTROL_PLANE_UNAVAILABLE``)."""
+    code, failure_class, _ = reason_of(call)
+    assert (code, failure_class) == ("CONTROL_PLANE_UNAVAILABLE", "TRANSIENT")
+
+
+AWARE = datetime(2026, 11, 4, 1, 0, tzinfo=UTC)
+NAIVE = datetime(2026, 11, 4, 1, 0)
+DEAD_LETTER_ROW = {
+    "dead_letter_id": "dl-1", "event_id": "event-1", "failure_class": "PERMANENT", "reason_code": "SCHEMA_VIOLATION",
+    "envelope": {"event_id": "event-1"}, "signature": None, "attempt": 1, "recorded_at": AWARE,
+}
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("envelope", {}), ("envelope", None), ("envelope", []), ("envelope", "text"),
+        ("failure_class", "INVALID_CLASS"), ("failure_class", None), ("failure_class", "POLICY_DENIED"),
+        ("attempt", 0), ("attempt", -5), ("attempt", True), ("attempt", "1"), ("attempt", None),
+        ("recorded_at", NAIVE), ("recorded_at", None), ("recorded_at", "2026-11-04T01:00:00Z"),
+        ("signature", "text"), ("dead_letter_id", ""), ("event_id", 5), ("reason_code", None),
+    ],
+)
+def test_c5_store_dead_letters_refuse_malformed_rows(column: str, value: Any) -> None:
+    store_error(lambda: responder_store([{**DEAD_LETTER_ROW, column: value}]).dead_letters("topic"))
+
+
+def test_c5_store_dead_letters_accept_well_formed_rows() -> None:
+    [letter] = responder_store([DEAD_LETTER_ROW]).dead_letters("topic")
+    assert (letter.event_id, letter.failure_class, letter.attempts) == ("event-1", "PERMANENT", 1)
+
+
+@pytest.mark.parametrize(
+    "answers",
+    [
+        [[], [], [{"recorded_at": AWARE}]],
+        [[], [{"n": None}], [{"recorded_at": AWARE}]],
+        [[], [{"n": True}], [{"recorded_at": AWARE}]],
+        [[], [{"n": -1}], [{"recorded_at": AWARE}]],
+        [[], [{"n": "2"}], [{"recorded_at": AWARE}]],
+        [[], [{}], [{"recorded_at": AWARE}]],
+        [[], [{"n": 0}], []],
+        [[], [{"n": 0}], [{"recorded_at": NAIVE}]],
+    ],
+    ids=["no-count-row", "null-count", "bool-count", "negative-count", "string-count", "count-missing",
+         "insert-unconfirmed", "naive-time"],
+)
+def test_c5_store_record_dead_letter_refuses_malformed_answers(answers: list[list[Any]]) -> None:
+    store = responder_store(*answers)
+    store_error(lambda: store.record_dead_letter(event_id="event-1", topic="topic", tenant_id="tenant",
+                                                 reason_code="SCHEMA_VIOLATION", envelope={"event_id": "event-1"},
+                                                 signature=None, poison_threshold=3))
+
+
+def test_c5_store_record_dead_letter_accepts_well_formed_answers() -> None:
+    store = responder_store([], [{"n": 2}], [{"recorded_at": AWARE}])
+    letter = store.record_dead_letter(event_id="event-1", topic="topic", tenant_id="tenant", reason_code="SCHEMA_VIOLATION",
+                                      envelope={"event_id": "event-1"}, signature=None, poison_threshold=3)
+    assert (letter.attempts, letter.failure_class) == (3, "POISON")
+
+
+QUARANTINE_ROW = {
+    "quarantine_id": "q-1", "event_id": "event-1", "failure_class": "POISON", "reason_code": "HANDLER_FAILED",
+    "subscription_id": "urn:ocor:subscription:1", "journal_partition": 0, "journal_offset": 3, "released": False,
+}
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("released", None), ("released", 0), ("released", "yes"),
+        ("journal_partition", -1), ("journal_partition", True), ("journal_partition", "0"),
+        ("journal_offset", -1), ("journal_offset", 1.5),
+        ("failure_class", "PERMANENT"), ("failure_class", "INVALID_CLASS"),
+        ("subscription_id", 5), ("subscription_id", ""), ("quarantine_id", None),
+    ],
+)
+def test_c5_store_quarantined_refuses_malformed_rows(column: str, value: Any) -> None:
+    store_error(lambda: responder_store([{**QUARANTINE_ROW, column: value}]).quarantined("topic"))
+
+
+def test_c5_store_quarantined_accepts_well_formed_rows() -> None:
+    [record] = responder_store([{**QUARANTINE_ROW, "released": True}]).quarantined("topic")
+    assert (record.partition, record.offset, record.released) == (0, 3, True)
+    [open_record] = responder_store([{**QUARANTINE_ROW, "journal_partition": None, "journal_offset": None,
+                                      "subscription_id": None, "failure_class": "POLICY_DENIED"}]).quarantined("topic")
+    assert (open_record.partition, open_record.released) == (None, False)
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        {"principal": "p", "contract": {}, "topic": "topic"},
+        {"principal": "p", "contract": {"event_type_refs": []}, "topic": "topic"},
+        {"principal": "p", "contract": [], "topic": "topic"},
+        {"principal": "p", "contract": None, "topic": "topic"},
+        {"principal": "", "contract": "valid", "topic": "topic"},
+        {"principal": "p", "contract": "valid", "topic": None},
+    ],
+    ids=["empty-contract", "malformed-contract", "array-contract", "null-contract", "empty-principal", "null-topic"],
+)
+def test_c5_store_subscription_refuses_malformed_rows(row: dict[str, Any]) -> None:
+    if row["contract"] == "valid":
+        row = {**row, "contract": subscription_contract()}
+    store_error(lambda: responder_store([row]).subscription("urn:ocor:subscription:1"))
+
+
+def test_c5_store_subscription_accepts_a_well_formed_row() -> None:
+    contract = subscription_contract()
+    found = responder_store([{"principal": "p", "contract": contract, "topic": "topic"}]).subscription("s")
+    assert found == ("p", contract, "topic")
+
+
+CHECKPOINT_ROW = {
+    "cursor_id": "cursor-1", "subscription_id": "urn:ocor:subscription:1", "topic": "topic", "positions": {"0": 3},
+    "end_positions": None, "window_start": None, "window_end": None, "replay_reason": None,
+    "schema_registry_digest": "sha256:" + "1" * 64, "release_digest": "", "governed_context_digest": GCS,
+}
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"positions": {}}, {"positions": {"²": 0}}, {"positions": {"0": True}}, {"positions": {"0": -1}},
+        {"positions": {"-1": 0}}, {"positions": None}, {"positions": []}, {"positions": {"0": "3"}},
+        {"positions": {"00": 1, "0": 2}}, {"end_positions": {}}, {"end_positions": {"0": None}},
+        {"window_start": AWARE}, {"window_end": AWARE},
+        {"window_start": AWARE, "window_end": AWARE - timedelta(hours=1)},
+        {"window_start": AWARE, "window_end": AWARE},
+        {"window_start": NAIVE, "window_end": NAIVE + timedelta(hours=1)},
+        {"window_start": "2026-11-04", "window_end": AWARE},
+        {"release_digest": None}, {"governed_context_digest": ""},
+    ],
+    ids=["empty-positions", "superscript-partition", "bool-offset", "negative-offset", "negative-partition",
+         "null-positions", "array-positions", "string-offset", "duplicate-partition", "empty-end", "null-end-offset",
+         "start-without-end", "end-without-start", "inverted-window", "empty-window", "naive-window",
+         "string-window", "null-release", "empty-context"],
+)
+def test_c5_store_checkpoint_refuses_malformed_rows(changes: dict[str, Any]) -> None:
+    store_error(lambda: responder_store([{**CHECKPOINT_ROW, **changes}]).checkpoint("cursor-1"))
+
+
+def test_c5_store_checkpoint_accepts_well_formed_rows() -> None:
+    found = responder_store([{**CHECKPOINT_ROW, "end_positions": {"0": 5}, "window_start": AWARE,
+                              "window_end": AWARE + timedelta(hours=1)}]).checkpoint("cursor-1")
+    assert (dict(found.positions), dict(found.end_positions), found.window_end - found.window_start) == (
+        {0: 3}, {0: 5}, timedelta(hours=1))
+
+
+def test_c5_store_refuses_rows_tampered_on_the_real_database(env: tuple[Any, ...]) -> None:
+    """The same checks on the real driver path: rows written to PostgreSQL out of band with a
+    JSON ``null`` or empty envelope, an empty contract or an empty position map are refused."""
+    rig = build_rig(*env)
+    store = _c5("adapters.postgres").PostgresC5Store(rig.dsn, schema=rig.schema)
+    with psycopg.connect(rig.dsn, autocommit=True) as connection:
+        connection.execute(
+            f'INSERT INTO "{rig.schema}".c5_dead_letter (dead_letter_id, event_id, topic, tenant_id, failure_class, '  # noqa: S608
+            "reason_code, envelope, attempt) VALUES ('dl-null', 'e', %s, 't', 'PERMANENT', 'X', 'null'::jsonb, 1)",
+            (rig.topic,),
+        )
+    store_error(lambda: store.dead_letters(rig.topic))
+    with psycopg.connect(rig.dsn, autocommit=True) as connection:
+        connection.execute(
+            f'INSERT INTO "{rig.schema}".c5_subscription (subscription_id, principal, contract, topic) '  # noqa: S608
+            "VALUES ('urn:ocor:subscription:tampered', 'p', '{}'::jsonb, %s)", (rig.topic,),
+        )
+        connection.execute(
+            f'INSERT INTO "{rig.schema}".c5_checkpoint (cursor_id, subscription_id, topic, positions, '  # noqa: S608
+            "schema_registry_digest, release_digest, governed_context_digest) VALUES ('cursor-tampered', "
+            "'urn:ocor:subscription:tampered', %s, '{}'::jsonb, 'sha256:x', '', 'sha256:y')", (rig.topic,),
+        )
+    store_error(lambda: store.subscription("urn:ocor:subscription:tampered"))
+    store_error(lambda: store.checkpoint("cursor-tampered"))
