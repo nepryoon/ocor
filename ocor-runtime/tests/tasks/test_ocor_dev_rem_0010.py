@@ -18,10 +18,10 @@ TypeDB/Fuseki acceptance suites remain unaffected.
 from __future__ import annotations
 
 import pytest
+import c4_projection_fixture
 
 from ocor_runtime.c4 import jena_adapter, typedb_adapter
 from ocor_runtime.c4.jena_adapter import JenaAdapterError, JenaSHACLProjectionAdapter
-from ocor_runtime.c4.typedb_adapter import TypeDBProjectionAdapter
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition
 
 _INJECTION = 'x"; match $g isa c4-fact; delete $g; #'
@@ -39,7 +39,7 @@ def test_typedb_apply_commit_escapes_injection(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(typedb_adapter, "_read", lambda *_a, **_k: [])
     monkeypatch.setattr(typedb_adapter, "_write", lambda *queries: captured.extend(queries))
 
-    TypeDBProjectionAdapter().apply_commit(
+    c4_projection_fixture.isolated_projection().apply_commit(
         fact_id="urn:ocor:mission-object:1", commit_id="urn:sha256:" + "0" * 64, payload=_INJECTION
     )
 

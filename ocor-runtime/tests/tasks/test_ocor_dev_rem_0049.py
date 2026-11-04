@@ -43,6 +43,7 @@ from typing import Any
 
 import jsonschema
 import pytest
+import c4_projection_fixture
 import yaml
 
 from ocor_runtime.c4.jena_adapter import JenaSHACLProjectionAdapter
@@ -131,14 +132,14 @@ def _dsn() -> str:
 @pytest.fixture(scope="session")
 def typedb_reachable() -> None:
     try:
-        TypeDBProjectionAdapter().initialize()
+        c4_projection_fixture.projection().initialize()
     except (TypeDBAdapterError, OSError) as error:
         pytest.fail(f"a real, live TypeDB instance is mandatory qualifying evidence: {error}")
 
 
 @pytest.fixture
 def typedb(typedb_reachable: None) -> TypeDBProjectionAdapter:
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     value.reset()
     return value
 
@@ -1508,7 +1509,7 @@ def test_commit_ordering_rejects_malformed_answers(responder: TypeDBResponder, c
     """PRE-REVIEW-INPUT-ROBUSTNESS points 1, 2, 4; FR-057 (Register :179, branch/commit
     ordering): a commit position is a positive integer read without conversion (no bool, no
     float, no text); anything else, and any transport failure, is a typed refusal."""
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.isolated_projection()
     ports = module("c2.ports")
     if case in SEQUENCE_ANSWERS:
         responder.answers(SEQUENCE_ANSWERS[case])
@@ -1522,7 +1523,7 @@ def test_commit_ordering_rejects_malformed_answers(responder: TypeDBResponder, c
 
 def test_commit_ordering_reads_well_formed_positions(responder: TypeDBResponder) -> None:
     """Positive control of the parsing paths: well-formed positions are read exactly."""
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.isolated_projection()
     responder.answers([{"data": {"s": {"value": 3}}}])
     assert adapter.position("main", "commit-1") == 3
     responder.answers([{"data": {"s": {"value": 3}}}, {"data": {"s": {"value": 7}}}])
@@ -1547,7 +1548,7 @@ def test_repair_1_every_adapter_read_goes_through_the_one_read_seam(monkeypatch:
     monkeypatch.setattr(adapter_module, "TYPEDB_URL", "http://127.0.0.1:1")
     monkeypatch.setattr(adapter_module, "_read", answers)
     monkeypatch.setattr(adapter_module, "_write", lambda *statements: writes.extend(statements))
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.isolated_projection()
     assert adapter.position("main", "commit-9") is None
     assert adapter._next_sequence() == 5
     assert adapter.current_watermark() is None
@@ -1577,7 +1578,7 @@ def test_repair_1_watermark_rejects_malformed_answers(responder: TypeDBResponder
     into the no-watermark sentinel); any other answer, and any failure of the answer, is the
     typed CONTROL_PLANE_UNAVAILABLE on ``current_watermark`` and on the sealed
     ``WatermarkPort.current``."""
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.isolated_projection()
     ports = module("c2.ports")
     if case in WATERMARK_ANSWERS:
         responder.answers(WATERMARK_ANSWERS[case])
@@ -1593,7 +1594,7 @@ def test_repair_1_watermark_reads_a_well_formed_answer(responder: TypeDBResponde
     """Positive control of the watermark parsing path: a well-formed commit is read exactly, no
     watermark is ``None`` (the sealed sentinel on ``current``), an unreachable TypeDB stays the
     raw transport error the sealed OCOR-DEV-0037/0039 tests pin (NCR-C4-003, NCP-U05)."""
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.isolated_projection()
     responder.answers([{"data": {"c": {"value": "commit-7"}}}])
     assert adapter.current_watermark() == "commit-7"
     assert adapter.current("p", "main").canonical_commit == "commit-7"
@@ -1644,7 +1645,7 @@ DATABASE_FAILURES: dict[str, tuple[int, bytes] | bytes] = {
 
 
 def _write_paths() -> list[tuple[str, Any]]:
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.isolated_projection()
     objects = module("c4.object_projection").TypeDBObjectProjection()
     return [("adapter.reset", adapter.reset), ("adapter.initialize", adapter.initialize),
             ("objects.reset", objects.reset), ("objects.initialize", objects.initialize)]
@@ -1681,7 +1682,7 @@ def test_repair_1_database_listing_rejects_malformed_answers(responder: TypeDBRe
     listing is an object with a list of entries, each with a non-empty string name; anything
     else is a typed refusal of ``initialize`` before any schema is written."""
     responder.routes = {"databases": DATABASE_FAILURES[case]}
-    _assert_typed_write_failure("adapter.initialize", TypeDBProjectionAdapter().initialize, case)
+    _assert_typed_write_failure("adapter.initialize", c4_projection_fixture.isolated_projection().initialize, case)
 
 
 def test_repair_1_write_path_accepts_well_formed_answers(responder: TypeDBResponder) -> None:
@@ -1691,7 +1692,7 @@ def test_repair_1_write_path_accepts_well_formed_answers(responder: TypeDBRespon
         responder.routes = {"databases": _DATABASES_OK, "commit": (200, b""), "close": (200, b"")}
         call()
     responder.routes = {"databases": (200, b'{"databases": []}'), "commit": (200, b"")}
-    TypeDBProjectionAdapter().initialize()
+    c4_projection_fixture.isolated_projection().initialize()
 
 
 def _audit_event(**changes: Any) -> Any:

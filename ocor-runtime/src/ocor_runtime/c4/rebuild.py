@@ -45,10 +45,11 @@ class RebuildReport:
     quarantined: bool
 
 
-def _peek_request(aggregate_ref: str) -> NamedQueryRequest:
+def _peek_request(aggregate_ref: str, release_digest: str) -> NamedQueryRequest:
     """A synthetic, deterministic system request used only to drive the
     sealed ``ProjectionReadPort.read`` for a BEST_AVAILABLE peek --
-    never used to serve an end-user response."""
+    never used to serve an end-user response. It is bound to the release the
+    projection declares, which the projection serves (FR-148, Register :331)."""
     context = GovernedContext.from_mapping(
         {
             "tenant_id": "urn:ocor:tenant:system",
@@ -59,7 +60,7 @@ def _peek_request(aggregate_ref: str) -> NamedQueryRequest:
             "purpose": "c4-drift-reconciliation",
             "effective_principal_id": "urn:ocor:principal:c4-drift-detector",
             "actor_chain": ["urn:ocor:principal:c4-drift-detector"],
-            "ontology_release_digest": _SYSTEM_DIGEST,
+            "ontology_release_digest": release_digest,
             "policy_bundle_digest": _SYSTEM_DIGEST,
             "correlation_id": "018f2f95-01b2-7cc3-8d4e-000000000000",
         }
@@ -98,10 +99,14 @@ class ProjectionDriftDetector:
 
     def _peek_served_payload_digest(self, aggregate_ref: str) -> str | None:
         try:
-            response = self._projection.read(_peek_request(aggregate_ref))
+            response = self._projection.read(_peek_request(aggregate_ref, self._projection.release_digest))
         except C2Error as error:
             if error.reason_code == "POLICY_DENIED":
                 return None
+            if error.reason_code == "PROJECTION_NOT_READY":
+                # an unreachable projection is the typed fail-closed PROJECTION_NOT_READY
+                # (NCR-C4-003; contract :486-491; LLD v1.1 :346)
+                raise DriftError("PROJECTION_NOT_READY", str(error)) from error
             raise DriftError("BACKEND_ERROR", str(error)) from error
         return response.result_digest
 

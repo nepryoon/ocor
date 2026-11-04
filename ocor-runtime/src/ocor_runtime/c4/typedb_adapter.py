@@ -26,6 +26,23 @@ subtree of its own yet and this is the ONLY file this task adds, the
 HTTP client code lives here directly rather than in a separate
 sub-package, matching OCOR-DEV-0017's own spike file layout (a single
 file, no adapters/ split, since it is itself already the adapter).
+
+OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-001 and NCR-C4-003):
+
+* the adapter declares the ontology release it projects (FR-148, Register :331) and records
+  every applied commit in the durable watermark ledger of ``ocor_runtime.c4.watermark``,
+  outside the projection store; the watermark port and the served context report that
+  release, the branch the projection serves and the measured staleness (NFR-024 :180,
+  NFR-077 :403), never a placeholder nor a value copied from the request;
+* deduplication on (store, branch, commit_id) is durable and the watermark is monotonic: a
+  commit already ordered on the branch is never applied again (FR-064 :188; LLD v1.1 :355);
+* an unreachable TypeDB is the typed ``TypeDBUnavailableError`` (reason code
+  ``PROJECTION_NOT_READY``); a read answers ``PROJECTION_NOT_READY`` with the served context
+  of the last confirmed watermark and the staleness from its instant (PO decision
+  NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5; ADD v1.3 :1364 and :3406; contract
+  :486-491); a projection that disagrees with the ledger answers the same explicit state;
+* every write or schema transaction is closed on every error path, a connection-level error
+  and a failed commit included (decision request OCOR-DEV-0060-BA-RUNTIME-GAPS).
 """
 
 from __future__ import annotations
@@ -34,13 +51,16 @@ import hashlib
 import http.client
 import json
 import re
+import threading
 import urllib.error
 import urllib.request
-from collections.abc import Mapping
-from datetime import UTC, datetime
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..c2.ports import C2Error, NamedQueryRequest, NamedQueryResponse, ServedContext, Watermark
+from .watermark import ConfirmedWatermark, WatermarkLedgerError, WatermarkLedgerPort
 
 TYPEDB_URL = "http://127.0.0.1:8000"
 DATABASE = "ocor_default"
@@ -61,7 +81,28 @@ SCHEMA_QUERY = (
 
 
 class TypeDBAdapterError(RuntimeError):
-    pass
+    """A typed failure of the TypeDB projection: a refused or malformed exchange."""
+
+    reason_code = "CONTROL_PLANE_UNAVAILABLE"
+
+
+class TypeDBUnavailableError(TypeDBAdapterError):
+    """TypeDB cannot be reached: the projection is not ready (ADD v1.3 :3406). ``confirmed``
+    is the last watermark C4 confirmed durably, when the ledger could be read."""
+
+    reason_code = "PROJECTION_NOT_READY"
+
+    def __init__(self, message: str, *, confirmed: ConfirmedWatermark | None = None) -> None:
+        self.confirmed = confirmed
+        super().__init__(message)
+
+
+def _unreachable(exc: BaseException) -> bool:
+    """A transport failure before any answer (refused, unreachable, timed out), as opposed
+    to an answer outside the protocol or a refusal by status."""
+    if isinstance(exc, (urllib.error.HTTPError, http.client.HTTPException)):
+        return False
+    return isinstance(exc, OSError)
 
 
 def _literal(value: str) -> str:
@@ -160,28 +201,41 @@ def _close(transaction_id: str, token: str) -> None:
     )
 
 
+def _abandon(transaction_id: str, token: str) -> None:
+    """Closes a transaction that failed; a failure of the close itself never hides the
+    failure of the transaction."""
+    try:
+        _close(transaction_id, token)
+    except (TypeDBAdapterError, OSError, http.client.HTTPException):
+        return
+
+
+def _transact(kind: str, queries: tuple[str, ...]) -> None:
+    """Runs every query in ONE real TypeDB transaction of ``kind``, committed together or not
+    at all. On every error path -- a refused query, a connection-level error, a failed
+    commit -- the transaction is closed before the failure leaves the adapter."""
+    token = _token()
+    transaction_id = _transaction(kind, token)
+    try:
+        for query in queries:
+            status, _ = _query(transaction_id, query, token)
+            if status != 200:
+                raise TypeDBAdapterError(f"{kind} failed: HTTP {status}")
+        _commit(transaction_id, token)
+    except BaseException:
+        _abandon(transaction_id, token)
+        raise
+
+
 def _write(*queries: str) -> None:
     """Runs every query inside ONE real TypeDB write transaction,
     committed together or not at all -- the primitive ``apply_commit``
     relies on to make fact-ingest and watermark-advance atomic."""
-    token = _token()
-    transaction_id = _transaction("write", token)
-    for query in queries:
-        status, _ = _query(transaction_id, query, token)
-        if status != 200:
-            _close(transaction_id, token)
-            raise TypeDBAdapterError(f"write failed: HTTP {status}")
-    _commit(transaction_id, token)
+    _transact("write", queries)
 
 
 def _schema_write(query: str) -> None:
-    token = _token()
-    transaction_id = _transaction("schema", token)
-    status, _ = _query(transaction_id, query, token)
-    if status != 200:
-        _close(transaction_id, token)
-        raise TypeDBAdapterError(f"schema write failed: HTTP {status}")
-    _commit(transaction_id, token)
+    _transact("schema", (query,))
 
 
 # Every way a TypeDB answer can fail to be a well-formed result: transport (refused,
@@ -312,14 +366,65 @@ def _ensure_database() -> None:
         raise TypeDBAdapterError(f"failed to create TypeDB database {DATABASE!r}: HTTP {status}")
 
 
+WATERMARK_QUERY = "match $w isa c4-watermark, has c4-commit-id $c;"
+# One process applies one commit at a time: the watermark replacement below is a
+# compare-and-delete of the previous watermark, so the order of the branch stays total.
+_APPLY_LOCK = threading.Lock()
+DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
+
+
+def _milliseconds(now: datetime, since: datetime) -> int:
+    return max(0, int((now - since) / timedelta(milliseconds=1)))
+
+
+@dataclass(frozen=True, slots=True)
+class _State:
+    """What the projection serves for its branch, as C4 knows it durably."""
+
+    release_digest: str
+    staleness_ms: int
+
+
+class _Disagreement(Exception):
+    """The projection and the durable ledger name different watermarks."""
+
+
 class TypeDBProjectionAdapter:
     """Retained C4 projection: real TypeDB-backed ``ProjectionReadPort``/
     ``WatermarkPort`` where every commit's fact and watermark advance
-    together, atomically, in one real write transaction."""
+    together, atomically, in one real write transaction, and every applied
+    commit is confirmed in the durable watermark ledger (OCOR-DEV-REM-0052)."""
+
+    def __init__(
+        self,
+        *,
+        release_digest: str,
+        ledger: WatermarkLedgerPort,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    ) -> None:
+        if not isinstance(release_digest, str) or DIGEST.fullmatch(release_digest) is None:
+            raise TypeError("release_digest must be a SHA-256 URN")
+        if not isinstance(ledger, WatermarkLedgerPort):
+            raise TypeError("a WatermarkLedgerPort is required")
+        self._release = release_digest
+        self._ledger = ledger
+        self._clock = clock
+
+    @property
+    def release_digest(self) -> str:
+        """The ontology release this projection declares (FR-148, Register :331)."""
+        return self._release
+
+    @property
+    def store_id(self) -> str:
+        return f"urn:ocor:projection-store:typedb:{DATABASE}"
 
     def initialize(self) -> None:
         _ensure_database()
         _schema_write(SCHEMA_QUERY)
+        initialize = getattr(self._ledger, "initialize", None)
+        if callable(initialize):
+            initialize()
 
     def reset(self) -> None:
         _write(
@@ -327,35 +432,62 @@ class TypeDBProjectionAdapter:
             "match $w isa c4-watermark; delete $w;",
             "match $o isa c4-commit-order; delete $o;",
         )
+        self.reset_ledger()
 
-    def apply_commit(self, *, fact_id: str, commit_id: str, payload: str) -> None:
+    def reset_ledger(self) -> None:
+        """Empties the durable ledger of this store: a projection that is reset or rebuilt
+        from scratch restarts its order and its confirmations."""
+        self._ledger.clear(self.store_id)
+
+    def observe(self, commit_id: str) -> None:
+        """Records a commit delivered to the projector and not yet applied: from this
+        instant the projection lags behind the commits C4 has received (NFR-077 :403)."""
+        self._ledger.observe(self.store_id, BRANCH, _require_value("commit_id", commit_id), at=self._clock())
+
+    def _confirm(self, commit_id: str, sequence: int) -> None:
+        self._ledger.confirm(self.store_id, BRANCH, commit_id, sequence=sequence, release_digest=self._release,
+                             at=self._clock())
+
+    def apply_commit(self, *, fact_id: str, commit_id: str, payload: str) -> bool:
         """Ingests the fact and advances the watermark to ``commit_id``
         atomically: both statements commit together in one real
         transaction, or neither does. A prior fact with the same
-        ``fact_id`` (a fact update) is replaced; a prior watermark is
-        replaced with the new commit."""
+        ``fact_id`` (a fact update) is replaced; the prior watermark is
+        replaced with the new commit. A commit already ordered on the branch
+        is a duplicate: nothing is written and ``False`` is returned, so a
+        replay never moves the watermark backwards (FR-064, Register :188)."""
         fact_id = _require_value("fact_id", fact_id)
         commit_id = _require_value("commit_id", commit_id)
         payload = _require_value("payload", payload)
-        existing_fact = self._lookup_fact(fact_id)
-        statements: list[str] = []
-        if existing_fact is not None:
-            statements.append(f"match $f isa c4-fact, has c4-fact-id {_literal(fact_id)}; delete $f;")
-        statements.append(
-            f"insert $f isa c4-fact, has c4-fact-id {_literal(fact_id)}, "
-            f"has c4-commit-id {_literal(commit_id)}, has c4-payload {_literal(payload)};"
-        )
-        if self.current_watermark() is not None:
-            statements.append("match $w isa c4-watermark; delete $w;")
-        statements.append(f"insert $w isa c4-watermark, has c4-commit-id {_literal(commit_id)};")
-        if self.position(BRANCH, commit_id) is None:
+        with _APPLY_LOCK:
+            position = self.position(BRANCH, commit_id)
+            if position is not None:
+                # durable deduplication on (store, branch, commit_id); the confirmation of a
+                # commit applied before a failed confirmation is completed here
+                self._confirm(commit_id, position)
+                return False
+            existing_fact = self._lookup_fact(fact_id)
+            previous = self.current_watermark()
+            sequence = self._next_sequence()
+            statements: list[str] = []
+            if existing_fact is not None:
+                statements.append(f"match $f isa c4-fact, has c4-fact-id {_literal(fact_id)}; delete $f;")
+            statements.append(
+                f"insert $f isa c4-fact, has c4-fact-id {_literal(fact_id)}, "
+                f"has c4-commit-id {_literal(commit_id)}, has c4-payload {_literal(payload)};"
+            )
+            if previous is not None:
+                statements.append(f"match $w isa c4-watermark, has c4-commit-id {_literal(previous)}; delete $w;")
+            statements.append(f"insert $w isa c4-watermark, has c4-commit-id {_literal(commit_id)};")
             # canonical order of the branch, recorded in the same transaction as the
             # watermark advance (FR-057 "branch/commit ordering", Register :179).
             statements.append(
                 f"insert $o isa c4-commit-order, has c4-commit-id {_literal(commit_id)}, "
-                f"has c4-commit-seq {self._next_sequence()};"
+                f"has c4-commit-seq {sequence};"
             )
-        _write(*statements)
+            _write(*statements)
+            self._confirm(commit_id, sequence)
+            return True
 
     def _next_sequence(self) -> int:
         rows = read_rows("match $o isa c4-commit-order, has c4-commit-seq $s;", ("s",))
@@ -372,22 +504,75 @@ class TypeDBProjectionAdapter:
             return None
         return _position_value(rows[0]["s"])
 
-    def current_watermark(self) -> str | None:
-        """The commit of the projection watermark, a non-empty string read without conversion,
-        or ``None`` when no commit has been applied. A malformed answer, or any failure of the
-        answer, is the typed ``CONTROL_PLANE_UNAVAILABLE``; only an unreachable TypeDB stays the
-        raw ``URLError`` the sealed OCOR-DEV-0037/0039 tests pin, until NCR-C4-003 (NCP-U05)."""
+    def _confirmed(self) -> ConfirmedWatermark | None:
+        """The last confirmed watermark for the exception of an unreachable projection, or
+        ``None`` when the ledger cannot say."""
         try:
-            rows = _rows("match $w isa c4-watermark, has c4-commit-id $c;", ("c",))
-        except urllib.error.HTTPError as exc:
-            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
-        except urllib.error.URLError:
-            raise
-        except _ANSWER_FAILURES as exc:
-            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
+            return self._ledger.latest(self.store_id, BRANCH)
+        except WatermarkLedgerError:
+            return None
+
+    def _watermark(self) -> str | None:
+        """The watermark as stored; an unreachable TypeDB stays the raw transport error here."""
+        rows = _rows(WATERMARK_QUERY, ("c",))
         if not rows:
             return None
+        if len(rows) > 1:
+            raise TypeDBAdapterError("the TypeDB projection holds more than one watermark")
         return _text_value(rows[0]["c"])
+
+    def current_watermark(self) -> str | None:
+        """The commit of the projection watermark, a non-empty string read without conversion,
+        or ``None`` when no commit has been applied. An unreachable TypeDB is the typed
+        ``TypeDBUnavailableError`` (``PROJECTION_NOT_READY``, NCR-C4-003); a malformed answer, or
+        any other failure of the answer, is the typed ``CONTROL_PLANE_UNAVAILABLE``."""
+        try:
+            return self._watermark()
+        except C2Error:
+            raise
+        except _ANSWER_FAILURES as exc:
+            if _unreachable(exc):
+                raise TypeDBUnavailableError("the TypeDB projection is unreachable",
+                                             confirmed=self._confirmed()) from exc
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
+
+    def _state(self, watermark: str | None) -> _State:
+        """Release and staleness of what the projection serves. The projection and the
+        ledger must name the same watermark; staleness is zero while every commit C4 has
+        received is applied, otherwise the time since the earliest unapplied one. A ledger that
+        has confirmed nothing yet (a projection that predates it) is no disagreement: the
+        release is the declared one and the next applied commit is confirmed."""
+        try:
+            latest = self._ledger.latest(self.store_id, BRANCH)
+            if latest is not None and latest.commit_id != watermark:
+                # the projection lost or bypassed a confirmed watermark: an explicit state
+                raise _Disagreement
+            pending = self._ledger.pending_since(self.store_id, BRANCH)
+        except WatermarkLedgerError as exc:
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the C4 watermark ledger is unavailable") from exc
+        release = self._release if latest is None else latest.release_digest
+        staleness = 0 if pending is None else _milliseconds(self._clock(), pending)
+        return _State(release_digest=release, staleness_ms=staleness)
+
+    def _not_ready(self, request: NamedQueryRequest, message: str) -> C2Error:
+        """``PROJECTION_NOT_READY`` with the served context of the last confirmed watermark and
+        the staleness from its instant (PO decision NORMATIVE-CONFORMANCE-PLAN point 5)."""
+        try:
+            latest = self._ledger.latest(self.store_id, BRANCH)
+            pending = None if latest is not None else self._ledger.pending_since(self.store_id, BRANCH)
+        except WatermarkLedgerError:
+            return C2Error("CONTROL_PLANE_UNAVAILABLE", "the C4 watermark ledger is unavailable")
+        now = self._clock()
+        if latest is not None:
+            commit, release, staleness = latest.commit_id, latest.release_digest, _milliseconds(now, latest.confirmed_at)
+        else:
+            commit, release = NO_WATERMARK_SENTINEL, self._release
+            staleness = 0 if pending is None else _milliseconds(now, pending)
+        served = ServedContext(
+            branch=BRANCH, ontology_release_digest=release, canonical_commit=commit, projection_watermark=commit,
+            staleness_ms=staleness, governed_context_digest=request.governed_context_digest,
+            policy_bundle_digest=request.governed_context.policy_bundle_digest)
+        return C2Error("PROJECTION_NOT_READY", message, served=served)
 
     def _lookup_fact(self, fact_id: str) -> tuple[str, str] | None:
         rows = read_rows(
@@ -399,12 +584,33 @@ class TypeDBProjectionAdapter:
             return None
         return _text_value(rows[0]["c"]), _text_value(rows[0]["p"])
 
+    def _served_fact(self, fact_id: str) -> tuple[str | None, tuple[str, str] | None]:
+        """The watermark and the fact, read with the raw transport failure preserved."""
+        watermark = self._watermark()
+        rows = _rows(f"match $f isa c4-fact, has c4-fact-id {_literal(fact_id)}, "
+                     f"has c4-commit-id $c, has c4-payload $p;", ("c", "p"))
+        found = None if not rows else (_text_value(rows[0]["c"]), _text_value(rows[0]["p"]))
+        return watermark, found
+
     def read(self, request: NamedQueryRequest) -> NamedQueryResponse:
         fact_id = request.parameters.get("fact_id")
         if not isinstance(fact_id, str) or not fact_id:
             raise C2Error("SCHEMA_VIOLATION", "fact_id parameter is required")
-        watermark = self.current_watermark()
-        found = self._lookup_fact(fact_id)
+        if request.branch != BRANCH or request.scenario_id is not None:
+            # a branch or a scenario the projection does not serve is never answered from main
+            raise C2Error("UNSUPPORTED_CAPABILITY", "the projection does not serve the requested branch or scenario")
+        try:
+            watermark, found = self._served_fact(fact_id)
+        except C2Error:
+            raise
+        except _ANSWER_FAILURES as exc:
+            if _unreachable(exc):
+                raise self._not_ready(request, "the TypeDB projection is unreachable") from exc
+            raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the TypeDB projection did not return a well-formed answer") from exc
+        try:
+            state = self._state(watermark)
+        except _Disagreement:
+            raise self._not_ready(request, "the projection disagrees with its confirmed watermark") from None
         # the served commit reflects the row actually read, never the
         # watermark by assumption -- verify_served (below) is what
         # independently proves the two agree before anything is
@@ -412,13 +618,16 @@ class TypeDBProjectionAdapter:
         canonical_commit = found[0] if found is not None else (watermark or NO_WATERMARK_SENTINEL)
         served = ServedContext(
             branch=BRANCH,
-            ontology_release_digest=request.governed_context.ontology_release_digest,
+            ontology_release_digest=state.release_digest,
             canonical_commit=canonical_commit,
             projection_watermark=watermark or NO_WATERMARK_SENTINEL,
-            staleness_ms=0,
+            staleness_ms=state.staleness_ms,
             governed_context_digest=request.governed_context_digest,
             policy_bundle_digest=request.governed_context.policy_bundle_digest,
         )
+        if state.release_digest != self._release:
+            # adapter, projector and store must declare the same release (FR-148, Register :331)
+            raise C2Error("RELEASE_MISMATCH", "the projection store serves another release", served=served)
         request.verify_served(served, ordering=self)
         if found is None:
             # an absent result is indistinguishable from a denial: errors never disclose
@@ -434,15 +643,22 @@ class TypeDBProjectionAdapter:
         )
 
     def current(self, projection_id: str, branch: str) -> Watermark:
-        """The sealed ``WatermarkPort`` method -- unlike the spike's own
-        convenience ``watermark()`` (which took no arguments and never
-        actually satisfied the sealed Protocol's signature), this
-        retained adapter conforms to ``WatermarkPort`` directly."""
-        commit = self.current_watermark() or NO_WATERMARK_SENTINEL
+        """The sealed ``WatermarkPort`` method: the watermark of a branch the projection
+        serves, with the release it declares durably and ``observed_at`` the instant as of
+        which it is known current (``now - staleness``, NFR-024 :180). A branch it does not
+        serve is ``UNSUPPORTED_CAPABILITY``, never main's watermark under another name."""
+        if branch != BRANCH:
+            raise C2Error("UNSUPPORTED_CAPABILITY", "the projection does not serve the requested branch")
+        watermark = self.current_watermark()
+        try:
+            state = self._state(watermark)
+        except _Disagreement:
+            raise TypeDBUnavailableError("the projection disagrees with its confirmed watermark",
+                                         confirmed=self._confirmed()) from None
         return Watermark(
             projection_id=projection_id,
             branch=branch,
-            ontology_release_digest="urn:sha256:" + "0" * 64,
-            canonical_commit=commit,
-            observed_at=datetime.now(UTC),
+            ontology_release_digest=state.release_digest,
+            canonical_commit=watermark or NO_WATERMARK_SENTINEL,
+            observed_at=self._clock() - timedelta(milliseconds=state.staleness_ms),
         )

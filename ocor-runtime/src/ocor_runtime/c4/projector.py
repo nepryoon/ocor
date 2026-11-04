@@ -14,6 +14,12 @@ aggregate identity and revision from ``aggregate``, the commit from the CDC tran
 ``source_transaction_id``, and verifies that the envelope realises its GovernedContext
 (ADD v1.3 :845) as the commit context of the payload, with the relay's transport principal
 as effective principal appended to the commit actor chain (ADD v1.3 :197 and :844).
+
+OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-001): the projector and the projection it applies to
+declare the same release (FR-148, Register :331), or the projector is refused with
+``RELEASE_MISMATCH``; every verified commit that is not a duplicate is recorded as received
+before it is applied, so a projection that lags behind the delivered commits declares a
+measured staleness (NFR-077, :403).
 """
 
 from __future__ import annotations
@@ -29,6 +35,7 @@ from ..c5.envelope import thaw
 from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
 from ..kernel.governed_context import GovernedContext, GovernedContextError
 from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
+from .watermark import WatermarkLedgerError
 
 CANONICAL_STATE_COMMITTED = "canonical-state-committed"
 CANONICAL_STATE_COMMITTED_EVENT_TYPE = "urn:ocor:event-type:canonical-state-committed"
@@ -58,6 +65,8 @@ def _projection(operation: str) -> Iterator[None]:
         yield
     except TypeDBAdapterError as exc:
         raise ProjectorError("BACKEND_ERROR", f"{operation}: TypeDB refused the operation") from exc
+    except WatermarkLedgerError as exc:
+        raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: the C4 watermark ledger is unavailable") from exc
     except OSError as exc:
         raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
 
@@ -70,6 +79,8 @@ class CanonicalStateProjector:
             raise TypeError("a TypeDBProjectionAdapter is required")
         if not isinstance(release_digest, str) or not release_digest.startswith("urn:sha256:"):
             raise TypeError("release_digest must be a SHA-256 URN")
+        if release_digest != projection.release_digest:
+            raise ProjectorError("RELEASE_MISMATCH", "the projector and its projection declare different releases")
         self._projection = projection
         self._release = release_digest
         self._lock = threading.Lock()
@@ -152,6 +163,8 @@ class CanonicalStateProjector:
                 position = self._projection.position(BRANCH, commit_id)
             if position is not None:
                 return False
+            with _projection("observe"):
+                self._projection.observe(commit_id)
             aggregate_ref = payload["aggregate_ref"]
             applied = self._applied_revision(aggregate_ref)
             if payload["from_revision"] != applied:

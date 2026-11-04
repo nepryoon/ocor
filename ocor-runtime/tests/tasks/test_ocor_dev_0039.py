@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 
 import pytest
+import c4_projection_fixture
 import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2.ports import C2Error, ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand
@@ -46,7 +47,7 @@ def postgres_dsn() -> str:
 @pytest.fixture(scope="session")
 def typedb_reachable() -> None:
     try:
-        TypeDBProjectionAdapter().initialize()
+        c4_projection_fixture.projection().initialize()
     except (TypeDBAdapterError, OSError) as error:
         pytest.fail(f"a real, live TypeDB instance is mandatory qualifying evidence: {error}")
 
@@ -61,7 +62,7 @@ def service(postgres_dsn: str) -> PostgresC3Service:
 
 @pytest.fixture
 def projection(typedb_reachable: None) -> TypeDBProjectionAdapter:
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     value.reset()
     return value
 
@@ -201,7 +202,7 @@ def test_real_out_of_band_drift_is_quarantined_not_repaired(
     # through rebuild -- simulating storage corruption or a buggy
     # projector, the only way real drift can occur once C3's own commit
     # path is already proven atomic.
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
 
     second = detector.rebuild(
         tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF
@@ -222,7 +223,7 @@ def test_serving_a_quarantined_projection_is_prohibited(
     )
     receipt = service.commit(command)
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
     assert detector.is_quarantined(AGGREGATE_REF)
 
@@ -244,7 +245,7 @@ def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
     )
     receipt = service.commit(command)
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
     assert detector.is_quarantined(AGGREGATE_REF)
 
@@ -255,7 +256,7 @@ def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
     # payload for real.
     canonical = service.read("urn:ocor:tenant:synthetic", "MissionObject", AGGREGATE_REF)
     assert canonical is not None
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=canonical.commit_id, payload=canonical.state_digest)
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=canonical.commit_id, payload=canonical.state_digest)
 
     third = detector.rebuild(
         tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF
@@ -279,7 +280,7 @@ def test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error(
     )
     service.commit(command)
 
-    projection = TypeDBProjectionAdapter()
+    projection = c4_projection_fixture.projection()
     projection.reset()
     detector = ProjectionDriftDetector(service, projection)
     monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", "http://127.0.0.1:1")
