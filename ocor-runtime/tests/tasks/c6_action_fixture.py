@@ -17,6 +17,11 @@ delegation, action, GCS, GatePackage, stop epoch and fencing token) in the trans
 DeliveryAttempt (ADD v1.3 :2851-2854, :3194-3212; LLD v1.1 :69-81). ``ActionWorld.lease`` signs
 that lease with the capability authority of the suite, and ``ActionWorld.engine`` composes the
 fence with the dispatch ledger and the dispatch conditions of the suite.
+
+Since NCR-C6-007 the engine reconciles an ambiguous send through an ``OutcomeReconciler`` that
+appends every record to the signed audit port (Register FR-163); ``ActionWorld.engine`` composes
+one on the audit log of the suite, on the PostgreSQL of ``OCOR_LIVE_POSTGRES_DSN``, unless the
+suite passes its own.
 """
 
 from __future__ import annotations
@@ -137,6 +142,7 @@ class ActionWorld:
         self.ledger: Any = None
         self.conditions: Any = None
         self.emission_fence: Any = None
+        self.reconciler: Any = None
         self._path: Any = None
 
     def action_type(
@@ -314,6 +320,8 @@ class ActionWorld:
             self.emission_fence = dispatch.GovernedEmissionFence(
                 validator=self.validator, ledger=self.ledger, conditions=self.conditions, clock=self.clock
             )
+        if "reconciler" not in components:
+            components["reconciler"] = self.audited_reconciler()
         return engine.GovernedActionEngine(
             contract=self.contract,
             approvals=self.approval_gate,
@@ -322,6 +330,26 @@ class ActionWorld:
             emission_fence=self.emission_fence,
             **components,
         )
+
+    def audited_reconciler(self) -> Any:
+        """The C6 reconciler of the suite, appending to the audit log of the suite on PostgreSQL."""
+        if self.reconciler is None:
+            import os
+
+            from ocor_runtime import audit
+            from ocor_runtime.c6.safety import OutcomeReconciler
+
+            dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+            if not dsn:
+                raise RuntimeError("OCOR_LIVE_POSTGRES_DSN is mandatory: the reconciliation audit is on PostgreSQL")
+            log = audit.PostgresAuditLog(
+                dsn,
+                schema="ocor_audit_c6_action_world",
+                signer=audit.AuditSigner(key=seeded_key("c6-action-world-audit"), keyid="c6-action-world-audit"),
+            )
+            log.initialize()
+            self.reconciler = OutcomeReconciler(audit=log)
+        return self.reconciler
 
     def lease(self, proposal: Any, decision: Any = None, *, signer: str = LEASE_AUTHORITY, **fields: Any) -> Any:
         """The signed CapabilityLease of the next emission attempt of ``proposal``, issued now for

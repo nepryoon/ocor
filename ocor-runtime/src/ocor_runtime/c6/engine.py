@@ -54,6 +54,7 @@ from .dispatch import (
 )
 from .human_gate import Approval as Approval
 from .human_gate import ApprovalGate, ApprovalGateError, DecisionGate, gate_disposition
+from .safety import OutcomeReconciler, SafetyError
 
 
 class GovernedActionError(OCORError):
@@ -507,6 +508,11 @@ class GovernedActionEngine:
     same ApprovalSet and Decision re-verifies them without a new claim; a confirmed action is
     not sent again (every send crosses the EMISSION-FENCE, ADD v1.3 :2853) and the retry returns
     its confirmed outcome; any other Decision for an admitted action is refused.
+
+    A send without a response is ``EXECUTION_UNKNOWN`` (LLD v1.1 ``ACT-T18a``/``T18b``): the
+    reconciliation is opened on the audited ``OutcomeReconciler`` and the retry of that command
+    is suspended for good (``RETRY_SUSPENDED``); only positive Evidence resolves the outcome,
+    which is never inferred from the missing response (ADD v1.3 :2841, Register FR-163).
     """
 
     def __init__(
@@ -520,6 +526,7 @@ class GovernedActionEngine:
         commit_port: CanonicalCommitTarget,
         relay: EmissionFence,
         canonical_path: CanonicalCommitPath,
+        reconciler: OutcomeReconciler,
         emission_outbox: C3CanonicalOutboxView | None = None,
     ) -> None:
         if not isinstance(contract, ContractGate):
@@ -538,6 +545,8 @@ class GovernedActionEngine:
             raise TypeError("relay must be the C7 EmissionFence of the committed outbox")
         if not isinstance(canonical_path, CanonicalCommitPath):
             raise TypeError("canonical_path must be a CanonicalCommitPath")
+        if not isinstance(reconciler, OutcomeReconciler) or not reconciler.audited:
+            raise TypeError("reconciler must be an OutcomeReconciler appending to the audit port")
         self._contract = contract
         self._approvals = approvals
         self._decisions = decisions
@@ -547,9 +556,55 @@ class GovernedActionEngine:
         self._relay = relay
         self._path = canonical_path
         self._outbox = emission_outbox
+        self._reconciler = reconciler
         self._admitted: dict[str, _Admission] = {}
+        # command ids whose send was ambiguous: their retry stays suspended even when the
+        # reconciliation record could not be written
+        self._ambiguous: set[str] = set()
         self._confirmed: dict[str, ActionOutcome] = {}
         self._lock = threading.Lock()
+
+    def _require_not_reconciling(self, command_id: str) -> None:
+        """``ACT-T18a``/``T18b``: after an ambiguous send the retry is suspended; the command is
+        never sent again, whatever the reconciliation later finds (ACT-T20a-c)."""
+        record = self._reconciler.record(command_id)
+        with self._lock:
+            ambiguous = command_id in self._ambiguous
+        if record is not None:
+            raise GovernedActionError(
+                "RETRY_SUSPENDED",
+                f"the command {command_id!r} is under reconciliation and is not sent again",
+                cause_code=record.status.value,
+            )
+        if ambiguous:
+            raise GovernedActionError(
+                "RETRY_SUSPENDED",
+                f"the send of {command_id!r} was ambiguous and is not sent again",
+                cause_code="EXECUTION_UNKNOWN",
+            )
+
+    def _unknown(self, command_id: str, error: Exception, *, at: datetime) -> GovernedActionError | None:
+        """Open the reconciliation of an ambiguous send and note it on the send error, which the
+        caller receives unchanged. When the reconciliation cannot be recorded the call fails
+        closed as EXECUTION_UNKNOWN (the returned error); the retry stays suspended either way."""
+        with self._lock:
+            self._ambiguous.add(command_id)
+        try:
+            self._reconciler.mark_ambiguous(
+                command_id,
+                idempotent_effect_proven=False,
+                at=at,
+                note=f"send without a response: {type(error).__name__}",
+            )
+        except Exception as reconciliation_error:
+            cause = reconciliation_error.reason_code if isinstance(reconciliation_error, SafetyError) else None
+            return GovernedActionError(
+                "EXECUTION_UNKNOWN",
+                f"the send of {command_id!r} is ambiguous and its reconciliation could not be recorded",
+                cause_code=cause or "RECONCILIATION_UNAVAILABLE",
+            )
+        error.add_note(f"EXECUTION_UNKNOWN: reconciliation opened for {command_id}; the retry is suspended")
+        return None
 
     def _action_type(self, proposal: object) -> ActionType:
         # G-CONTRACT (ACT-T01): the signed, active ActionType gives the effect and risk class.
@@ -751,6 +806,7 @@ class GovernedActionEngine:
             evidence_refs = resolved_refs if evidence_refs is None else evidence_refs
             claim_source_bindings = resolved_bindings if claim_source_bindings is None else claim_source_bindings
         action_command = self._action_command(proposal, decision, admitted)
+        self._require_not_reconciling(action_command.command_id)
         command = self._path.command(
             proposal,
             admitted,
@@ -806,8 +862,18 @@ class GovernedActionEngine:
             event = self._outbox.record(event)
 
         # The committed outbox event crosses the C7 relay (registration, integrity and order)
-        # as the simulated effect; the canonical state is already committed.
-        receipt = self._relay.emit(cast(Any, event), sink, at=instant)
+        # as the simulated effect; the canonical state is already committed. A send without a
+        # response is ambiguous: EXECUTION_UNKNOWN through the audited reconciliation, never
+        # inferred and never retried blindly (LLD v1.1 :282-283, :307; ADD v1.3 :2841).
+        try:
+            receipt = self._relay.emit(cast(Any, event), sink, at=instant)
+        except EmissionBlocked:
+            raise
+        except Exception as error:
+            unrecorded = self._unknown(action_command.command_id, error, at=instant)
+            if unrecorded is not None:
+                raise unrecorded from error
+            raise
         outcome = ActionOutcome(action_id, receipt, receipt.sink_result, commit_receipt, attempt)
         with self._lock:
             self._confirmed.setdefault(action_id, outcome)
