@@ -1,0 +1,882 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a76: C4/C5 per-aggregate ordering, monotonic watermark, durable deduplication; LLD v1.1 \u00a72.4: projector verifies schema/release/GCS and applies idempotently; FR-064: deduplicate by store, branch and commitId; FR-148: activate a release only when adapter, projector and store declare the same release digest/watermark; NFR-024; NFR-077: branch, served commit, watermark, release and staleness per state-dependent response",
+      "entry": "NCR-C4-001",
+      "norm_refs": [
+        {
+          "lines": "355",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "148",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "188",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "331",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "180",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-064",
+        "FR-148",
+        "NFR-024",
+        "NFR-077"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_replay_of_every_commit_is_idempotent",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_the_watermark_and_the_served_release_are_the_declared_release",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_a_branch_the_projection_does_not_serve_is_never_answered_as_main",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_staleness_is_the_lag_behind_the_commits_c4_has_received",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_a_store_confirmed_under_another_release_is_release_mismatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_the_ledger_never_moves_backwards"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a72.4: Jena exposes RDF/JSON-LD and SHACL with conservative marking; drift detector quarantines and prevents EXACT_AT_COMMIT; rebuild uses a signed checkpoint; ADD v1.3 \u00a73.0.2: a single canonical marking form; FR-065: detect drift, gap and checksum mismatch; replay or rebuild; FR-068",
+      "entry": "NCR-C4-002",
+      "norm_refs": [
+        {
+          "lines": "148",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "396-401",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "189",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "192",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-065",
+        "FR-068",
+        "FR-131"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_quarantine_is_released_only_by_a_reconciling_rebuild",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_rebuild_source_is_the_canonical_terminusdb_store",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unreadable_quarantine_fails_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_projection_requires_a_durable_quarantine",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_deleted_projection_is_rebuilt_from_a_signed_checkpoint_and_a_bounded_replay",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_replay_beyond_the_bound_fails_closed_before_any_write",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unverifiable_checkpoint_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_checkpoint_of_a_divergent_projection_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_checkpoint_must_cover_the_whole_projection",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_replay_of_a_commit_is_idempotent",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_a_refused_publication_moves_no_watermark",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unresolvable_marking_is_refused_before_any_write",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unresolvable_clearance_is_marking_unresolved",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_read_requires_dominance_on_every_family",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_export_carries_the_conservative_join_and_the_watermark",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_join_is_conservative_and_fails_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_scheme_outside_the_supported_profile_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_stored_marking_that_no_longer_matches_is_denied",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_watermark_that_disagrees_with_the_ledger_is_projection_not_ready",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_requires_the_declared_release_and_a_ledger",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_jena_failure_is_a_typed_error",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_stack_fuseki_exposes_the_shacl_service",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_shapes_cover_every_requirement_of_section_3_6",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_conforming_provenance_document_is_published",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_replayed_provenance_commit_writes_nothing",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_document_outside_the_shapes_is_refused_by_the_shacl_service",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_malformed_provenance_publication_is_refused_before_any_write",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unavailable_shacl_service_refuses_the_publication",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_malformed_validation_report_is_never_read_as_conforming",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_well_formed_validation_report_is_read",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unreachable_fuseki_refuses_a_provenance_publication"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: Problem response: typed fail-closed error; LLD v1.1 \u00a75.3: unavailable dependencies block, observably and with reason code The transaction opened by _write, _schema_write or _read is closed on every error path, including connection-level errors and a failed commit (decision request OCOR-DEV-0060-BA-RUNTIME-GAPS).",
+      "entry": "NCR-C4-003",
+      "norm_refs": [
+        {
+          "lines": "486-491",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "346",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_a_failed_transaction_is_always_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_a_failed_read_transaction_is_closed"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 8 (gap BA-03): a disposable sandbox serves EXACT_AT_COMMIT(Cn) for named logical queries on TypeDB; when the emulation is unavailable the gateway returns UNSUPPORTED_CAPABILITY and never degrades to AT_LEAST_COMMIT; the sandbox creation benchmark, the resource exhaustion test and the negative test with the emulation unavailable run on the real backend.",
+      "entry": "NCR-C4-004",
+      "norm_refs": [
+        {
+          "lines": "356",
+          "note": "ADD v1.3 section 2.6, BA-03: disposable sandbox serving EXACT_AT_COMMIT(Cn) on named logical queries",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1366",
+          "note": "ADD v1.3 section 3.3: emulation unavailable gives UNSUPPORTED_CAPABILITY, never a silent downgrade to AT_LEAST_COMMIT",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "369",
+          "note": "LLD v1.1 section 7.1, oracle BA-03",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-057"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_the_sandbox_answers_as_the_projection_did_at_cn",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_emulation_unavailable_is_unsupported_capability_never_a_downgrade",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_commit_without_its_projected_history_is_unsupported_capability",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_nothing",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_sandbox_creation_benchmark",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_sandbox_that_cannot_be_built_is_unavailable_and_dropped",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox"
+      ]
+    }
+  ],
+  "ambiguities_resolved_fail_closed": [
+    "staleness semantics (OI-018 stays open in ADD v1.3 :3716): zero while every commit C4 has received is applied, otherwise the time since the earliest received unconfirmed commit; for an unreachable projection the time since the last confirmation (PO decision point 5, NCP-U05 row)",
+    "rebuild semantics recorded: the replay re-projects the latest canonical snapshot of each aggregate whose commit moved after the checkpoint (FR-065 replay or rebuild from commit), aggregates created after the checkpoint are added by the caller; the bound counts aggregates replayed",
+    "NCR-C4-002 Jena interpretations (fail-closed): a reader is authorized when its clearance, a canonical marking object of the same scheme, dominates the content on the level lattice and on every family per the dominance column of ADD v1.3 section 5.3 (superset for the restriction families, subset of the permitted purposes); incomparable levels in a join are DENY, or top only with MOST_RESTRICTIVE, even when the lattice has a least upper bound; labels must name exactly one level and mandatory_markings and caveats must partition the remaining labels",
+    "NCR-C4-002 SHACL: the shapes use the class and relation names of ADD v1.3 section 3.6 in urn:ocor:prov:; the properties that section 3.6 does not name (validFrom, systemFrom, markingRef, contentDigest, source, acquisition, chainOfCustody, stance, assessor, method, assessedSource, reliabilityScale, reliabilityValue, context, candidateMatch, scoreSemantics, modelVersion, adjudicator, evidenceSet, rationale, policyDecision, membershipDelta, acceptedByDecision, generatedByDecision) are the adapter's names for the fields of the section 3.6 table; sh:class does not read rdfs:subClassOf from the shapes graph, so shapes target the concrete subclasses and a membership names its deciding node in the same document (fail-closed: a membership whose decision is not a Merge/Split/IdentityResolution decision of the document is refused)"
+  ],
+  "change_anchors": [
+    {
+      "change": "new: the port of the durable C4 watermark ledger outside the projection store (observe, confirm, latest, staleness)",
+      "function": "WatermarkLedgerPort, ConfirmedWatermark, WatermarkLedgerError",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:355; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:403 (NFR-077); NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5, NCP-U05 row",
+      "path": "ocor-runtime/src/ocor_runtime/c4/watermark.py"
+    },
+    {
+      "change": "new: PostgreSQL ledger of observed and confirmed commits per store and branch under an advisory lock (WATERMARK_REGRESSION), durable quarantine and signed checkpoint store",
+      "function": "PostgresWatermarkLedger (c4_commit_observed, c4_watermark_confirmed, c4_quarantine, c4_checkpoint)",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:355, :148; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:188 (FR-064), :189 (FR-065)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/adapters/postgres.py"
+    },
+    {
+      "change": "apply_commit deduplicates by store, branch and commitId through the commit order, replaces the watermark by CAS in the projection transaction and confirms it in the ledger; read reports branch, served commit, watermark, release and the measured staleness, answers UNSUPPORTED_CAPABILITY for another branch or scenario, RELEASE_MISMATCH for a store of another release and PROJECTION_NOT_READY from the ledger when the projection is unreachable or disagrees; read consults the durable quarantine first; every transaction is closed on every error path",
+      "function": "TypeDBProjectionAdapter(release_digest, ledger, quarantine, sandbox, clock): observe, apply_commit, current, read, reset, quarantine_fact, release_fact, reconciliation_digest, projected_facts; TypeDBUnavailableError",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:355, :148, :346; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:188 (FR-064), :331 (FR-148), :180 (NFR-024), :403 (NFR-077); ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1364, :3406",
+      "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+    },
+    {
+      "change": "new: a disposable TypeDB sandbox database rebuilt from the fact revision history up to Cn serves EXACT_AT_COMMIT(Cn) for an overtaken commit; with the emulation unavailable (no history, exhausted sandboxes, build failure) the answer is UNSUPPORTED_CAPABILITY, never AT_LEAST_COMMIT; sandboxes are dropped in finally",
+      "function": "TypeDBCommitSandbox (open), SandboxUnavailableError, sandbox_database_names; c4-fact-revision",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:356, :1366; docs/OCOR_LLD_v1.1.md:369; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:179 (FR-057)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
+    },
+    {
+      "change": "new: durable quarantine port and Ed25519 DSSE-signed projection checkpoints (application/vnd.ocor.c4.projection-checkpoint+json)",
+      "function": "QuarantineRecord, ProjectionQuarantinePort, CheckpointEntry, CheckpointBody, SignedProjectionCheckpoint, CheckpointStorePort, sign_checkpoint, verify_checkpoint",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:148; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:189 (FR-065)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/drift.py"
+    },
+    {
+      "change": "rewritten: drift against the canonical TerminusDB store quarantines durably and prevents EXACT_AT_COMMIT; rebuild from a verified signed checkpoint with a bounded replay (CHECKPOINT_NOT_FOUND/INVALID, CHECKPOINT_INCOMPLETE, RELEASE_MISMATCH, REPLAY_BOUND_EXCEEDED before any write); the quarantine is released only by a reconciling comparison",
+      "function": "ProjectionDriftDetector(TerminusDBC3Service, projection, signer, key_id, trusted_keys, replay_bound, checkpoints, clock): checkpoint, rebuild_projection; ProjectionRebuildReport",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:148; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:189 (FR-065)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/rebuild.py"
+    },
+    {
+      "change": "new: the canonical marking object of ADD v1.3 section 3.2 $defs.marking evaluated with the C1 MarkingSchemeDefinition; unknown or incomparable markings DENY; conservative join",
+      "function": "CanonicalMarkingScheme (evaluate, dominates, authorized, join), EvaluatedMarking, MarkingUnresolved, MarkingSchemeError",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:396-401; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:192 (FR-068)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/marking.py"
+    },
+    {
+      "change": "the Jena projection publishes with the canonical commit and the canonical marking object in one update, confirms its watermark in the ledger and checks it against Fuseki; export carries the conservative marking join, the canonical commit and the release; a provenance publication is validated by the Fuseki SHACL service in a staging graph before it becomes visible; unreachable Fuseki PROJECTION_NOT_READY, other failures CONTROL_PLANE_UNAVAILABLE, MARKING_UNRESOLVED and MARKING_DENIED typed",
+      "function": "JenaSHACLProjectionAdapter(marking_scheme, release_digest, ledger, clock): publish, publish_provenance, watermark, current_watermark, export, to_json_ld, provenance_authorized, list_authorized, exists_authorized, reset; JenaExport",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:148; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:396-401, section 3.6; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:189 (FR-065), :192 (FR-068); NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1",
+      "path": "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py"
+    },
+    {
+      "change": "new: the SHACL shapes of the ADD v1.3 section 3.6 provenance classes and a fail-closed reader of the SHACL validation report",
+      "function": "SHAPES, PROVENANCE_CLASSES, read_report, ShaclViolation",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md section 3.6; docs/OCOR_LLD_v1.1.md:148",
+      "path": "ocor-runtime/src/ocor_runtime/c4/shacl.py"
+    },
+    {
+      "change": "the projector and its projection declare the same release (RELEASE_MISMATCH otherwise); every verified non-duplicate commit is observed before it is applied; a ledger failure is BACKEND_UNAVAILABLE",
+      "function": "CanonicalStateProjector, _projection",
+      "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:331 (FR-148), :403 (NFR-077)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/projector.py"
+    },
+    {
+      "change": "new: in-memory dataset ocor with exactly the endpoints sparql, query, update, data and shacl; the Compose Fuseki starts from it",
+      "function": "fuseki service (command --config, read-only mount)",
+      "normative_element": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1",
+      "path": "deploy/bootstrap/fuseki/config.ttl, deploy/bootstrap/compose.yaml"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0038.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c4/rebuild.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0037.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py"
+    ]
+  },
+  "consumers_inventory_findings": [
+    "the object projection c4/object_projection.py answers CONTROL_PLANE_UNAVAILABLE when TypeDB is unreachable (pinned by the NCP-U03 tests of REM-0049), while ADD v1.3 :3406 (Hub data: projection down gives PROJECTION_NOT_READY) and :1364 (the Problem carries the served context) prescribe PROJECTION_NOT_READY with the served context: the divergence is confirmed at the inventory; a new HIGH entry (NFR-077 and NFR-024 are P0 PoC) needs a plan_unit, and the plan authorizes no realignment of the REM-0049 tests in NCP-U05: question B of the decision request NCP-U05-ITERATION-LIMIT",
+    "the C2 six-operation path maps TypeDBUnavailableError and a JenaAdapterError PROJECTION_NOT_READY of the marking port to CONTROL_PLANE_UNAVAILABLE in the gateway catch-all instead of building PROJECTION_NOT_READY from the confirmed watermark (ADD v1.3 :3406): confirmed divergence of C2 (the gateway is not a code path of NCP-U05): question B of the decision request NCP-U05-ITERATION-LIMIT",
+    "the C2 consistency planner of the six object operations answers PROJECTION_NOT_READY for an overtaken EXACT_AT_COMMIT (pinned at planner level by test_ocor_dev_rem_0049.py:391); ADD v1.3 :356 and :1366 bind the sandbox to named logical queries: whether the six object operations are named logical queries of BA-03 is a normative question: question C of the decision request NCP-U05-ITERATION-LIMIT"
+  ],
+  "consumers_inventory_note": "product consumers of the changed C4 modules: c4/projector.py, c4/object_projection.py and c4/rebuild.py (typedb_adapter), c4/shacl.py (jena_adapter); C2 reaches C4 only through its ports (watermark, marking); test consumers: test_ocor_dev_0037/0038/0039/rem_0010/rem_0014/rem_0041/rem_0049/rem_0050/rem_0052 through tests/tasks/c4_projection_fixture.py; the mission thread does not import C4; scripts only name paths",
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 5 (NCP-U05 row) and 8 (gap BA-03); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (decided on full delegation of the PO); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "asserts": [
+          13,
+          14
+        ],
+        "changed_functions": [
+          "test_a_real_typedb_unreachability_fails_closed_never_serving_a_fabricated_response"
+        ],
+        "functions": [
+          8,
+          8
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py",
+        "raises": [
+          4,
+          4
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          15,
+          16
+        ],
+        "changed_functions": [
+          "test_a_real_fuseki_unreachability_fails_closed_never_writing_a_partial_publication"
+        ],
+        "functions": [
+          8,
+          8
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0038.py",
+        "raises": [
+          6,
+          6
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          18,
+          19
+        ],
+        "changed_functions": [
+          "test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error"
+        ],
+        "functions": [
+          6,
+          6
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+        "raises": [
+          3,
+          3
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          8,
+          8
+        ],
+        "changed_functions": [],
+        "functions": [
+          4,
+          4
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py",
+        "raises": [
+          2,
+          2
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          12,
+          12
+        ],
+        "changed_functions": [],
+        "functions": [
+          8,
+          8
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py",
+        "raises": [
+          3,
+          3
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          117,
+          117
+        ],
+        "changed_functions": [],
+        "functions": [
+          29,
+          29
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py",
+        "raises": [
+          11,
+          11
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          171,
+          171
+        ],
+        "changed_functions": [],
+        "functions": [
+          37,
+          37
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py",
+        "raises": [
+          23,
+          23
+        ],
+        "same_names": true
+      },
+      {
+        "asserts": [
+          162,
+          162
+        ],
+        "changed_functions": [],
+        "functions": [
+          47,
+          47
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py",
+        "raises": [
+          29,
+          29
+        ],
+        "same_names": true
+      }
+    ],
+    "note": "parametrizations unchanged; the only differences are the three realigned raises and their added reason-code assertion listed in existing_tests_realigned_or_adapted; to be repeated on the candidate head",
+    "tool": "~/.ocor-codex/rem-0051/tools/ast_compare.py against the unit base 7df90f5"
+  },
+  "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; test_ocor_dev_rem_0010/0014/0041/0049/0050.py are inputs of no latest evidence record of a completed task (drift validator): they run in the consumer modules of the campaign",
+  "existing_tests_realigned_or_adapted": [
+    {
+      "current_assertion": "with pytest.raises(urllib.error.URLError): adapter.current_watermark()",
+      "function": "test_a_real_typedb_unreachability_fails_closed_never_serving_a_fabricated_response",
+      "kind": "REALIGN (plan existing_tests_to_realign_or_adapt; PO choice of NORMATIVE-CONFORMANCE-PLAN point 5, NCP-U05 row)",
+      "lines": "158-165",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491; docs/OCOR_LLD_v1.1.md:346; ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1364, :3406",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py",
+      "prescribed": "pytest.raises(TypeDBAdapterError) with reason_code PROJECTION_NOT_READY",
+      "red": "0d22acc"
+    },
+    {
+      "current_assertion": "with pytest.raises(urllib.error.URLError)",
+      "function": "test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error",
+      "kind": "REALIGN (point 5 case 1, NCR-C4-003)",
+      "lines": "286-292",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491; docs/OCOR_LLD_v1.1.md:346",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "prescribed": "pytest.raises(DriftError) with reason_code PROJECTION_NOT_READY",
+      "red": "67da95d"
+    },
+    {
+      "current_assertion": "with pytest.raises(urllib.error.URLError)",
+      "function": "test_a_real_fuseki_unreachability_fails_closed_never_writing_a_partial_publication",
+      "kind": "REALIGN (point 5 case 1, NCR-C4-002 typed Jena errors)",
+      "lines": "135-138",
+      "norm": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491; docs/OCOR_LLD_v1.1.md:346, :148",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0038.py",
+      "prescribed": "pytest.raises(JenaAdapterError) with reason_code PROJECTION_NOT_READY",
+      "red": "a0f52ae"
+    },
+    {
+      "current_assertion": "TypeDBProjectionAdapter() without release, ledger or quarantine",
+      "function": "projection fixtures and constructions (no test function, assertion, raises or parametrization changed)",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:188 (FR-064), :331 (FR-148); docs/OCOR_LLD_v1.1.md:355",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py, ocor-runtime/tests/tasks/test_ocor_dev_0039.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0014.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0041.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py",
+      "prescribed": "the projection built by tests/tasks/c4_projection_fixture.py with the declared release, the real PostgreSQL ledger and the durable quarantine; drift preconditions of 0039 and REM-0041 tamper the store out of band (overwrite_fact) because replaying the same commit is a deduplicated no-op; test_ocor_dev_rem_0050.py:2757 double gets quarantine="
+    },
+    {
+      "current_assertion": "PostgresC3Service as rebuild source",
+      "function": "service fixture and annotations",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "docs/OCOR_LLD_v1.1.md:148; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:189 (FR-065)",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
+      "prescribed": "the canonical TerminusDB C3 store (c4_projection_fixture.canonical_store), the rebuild source of NCR-C4-002"
+    },
+    {
+      "current_assertion": "JenaSHACLProjectionAdapter with the legacy MarkingEngine/MarkingSet",
+      "function": "Jena fixtures, constructor, Unreachable double and annotations",
+      "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:396-401; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:192 (FR-068)",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_0038.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py, ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py",
+      "prescribed": "c4_projection_fixture.ClassificationJena: the canonical marking object of the classification level the modules use, the declared release and the ledger (UnusedLedger for the backend-free REM-0010 module)"
+    }
+  ],
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "open_decision_requests": [
+    "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
+    "NCP-U05-ITERATION-LIMIT"
+  ],
+  "open_points_for_review": [
+    "a ledger that has confirmed nothing (a projection that predates it) is not a disagreement; a confirmed watermark that the projection does not hold is PROJECTION_NOT_READY",
+    "BA-03 sandbox: a revision history exists only for commits applied from this unit on; for an earlier commit without its revision the emulation is unavailable (UNSUPPORTED_CAPABILITY); the benchmark measures about 0.55 s per sandboxed read for 10 commits over 5 facts on the local TypeDB, no threshold is normative",
+    "a projection reset also clears its quarantine (its facts are gone); the drift detector release happens only after a reconciling comparison",
+    "NCR-C4-002 Jena: the C2 marking port (c2/gateway.py RegistrationAndMarkingPolicy, MarkingAuthorizationPort) still passes a legacy MarkingSet clearance; the consumer tests compose it through c4_projection_fixture.ClassificationJena, which reads that clearance as the canonical clearance of its classification level. Migrating C2 to the canonical marking is NCR-C6-012 (NCP-U08), not NCP-U05",
+    "NCR-C4-002 Jena: a stored marking that no longer resolves or matches its markingRef withholds the resource (MARKING_DENIED on JSON-LD), so a content-side corruption never discloses existence; an unresolvable clearance is MARKING_UNRESOLVED",
+    "NCR-C4-002 SHACL: config.ttl declares exactly the five endpoints option 1 names (sparql, query, update, data, shacl); the --mem default also had the dataset-level endpoint, get (gsp-r) and patch, which no code or test uses (grep of ocor-runtime, scripts, spikes, deploy)",
+    "NCR-C4-002 SHACL: every IRI subject of a provenance document must be a node of a section 3.6 class (it carries the marking and the commit of the publication); untyped blank nodes are allowed; a published node replaces the previous triples of the same node",
+    "Local dev observation: the governed Compose starts Fuseki with the image default -Xmx4G inside a 2 GiB memory limit; the SHACL cases raise the allocation rate and an ad hoc dev run of 872 cases was OOM-killed once (exit 137). With the -Xmx1G of the CI resource profile (scripts/bootstrap_ci_environment.py ci_resources, used by CI and by the local lane campaign) nine repeated SHACL runs plateau at 1.1-1.2 GiB without OutOfMemoryError: allocation churn, not a leak; at 7d5c4c1 (--mem) the same ad hoc set peaked at 727 MiB. No tracked change; ad hoc dev runs use the same profile as an untracked override",
+    "reports/tests/test_fuseki_local_identity.py: 3 cases fail identically on main bfb2ca8 and on the unit head (historical acquisition pinned to an earlier lock); not in the CI steps, not caused by NCP-U05"
+  ],
+  "plan_unit": "NCP-U05",
+  "preventive_review": null,
+  "product_orientation": [
+    "the watermark ledger, the quarantine and the checkpoints are durable PostgreSQL tables behind ports, outside the projection stores, so a production deployment keeps them across restarts and a projection rebuild",
+    "the rebuild source is the canonical TerminusDB C3 store (TerminusDBC3Service), the production source of truth, not a test double",
+    "the SHACL validation uses the SHACL service of the pinned Fuseki of the stack (NCP-U05-FUSEKI-SHACL-SERVICE option 1): no new dependency and no in-process SHACL engine to replace later",
+    "the canonical marking evaluator reads the C1 IR MarkingSchemeDefinition, so production schemes plug in without changing C4; the C2 marking port stays on the legacy MarkingSet until NCR-C6-012 (NCP-U08)",
+    "the TypeDB sandbox is a disposable database of the same TypeDB, bounded in number (max_sandboxes), so the BA-03 emulation is a real adapter capability subject to conformance tests"
+  ],
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0051-r1.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction adapted (case 3) and one raises realigned (plan realignment, PO choice point 5)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0037.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0037.requalified-rem0049-repair1.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Continuit\u00e0 end-to-end"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0037",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0037.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction adapted (case 3) and one raises realigned (case 1)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0038.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0038.requalified.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Continuit\u00e0 end-to-end"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests publish and read RDF resources of the Jena projection only; the RDF 1.1/JSON-LD round-trip fixtures, SHACL validation of the declared profile, the RDFS/OWL/SPARQL capability declarations and the diagnostic/reject of unsupported semantics of the Register acceptance criterion are not exercised by the task's tests (point 1, second condition; point 4)",
+            "register_method": "Conformance e round-trip test",
+            "requirement_id": "FR-168",
+            "title": "Boundary W3C dichiarato"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0038",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0038.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction adapted (case 3) and one raises realigned (case 1)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c4/rebuild.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0039.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0039.requalified-rem0050.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Continuit\u00e0 end-to-end"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-019",
+            "title": "Coesistenza tramite adapter"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "only the drift and unreachability paths of the rebuild are exercised; the fault injections of POLICY_DENIED, STALE_CONTEXT, a failed control and the kill switch, with no ActionCommand or External Command, are not (point 1, second condition; point 4)",
+            "register_method": "Safety/chaos test",
+            "requirement_id": "FR-138",
+            "title": "Fail-closed mutativo"
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the release fence of the Gateway (activation only when adapter, projector and store declare the same release, injected partial upgrade without any ActionCommand) is not exercised by the task's tests (point 1, second condition; point 4)",
+            "register_method": "Chaos e conformance test",
+            "requirement_id": "FR-148",
+            "title": "Release fence"
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "NFR-024",
+            "title": "Disclosure della versione servita"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0039",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051-r1.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "deploy/bootstrap/compose.yaml"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0038.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0073",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "deploy/bootstrap/compose.yaml"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0074.requalified-rem0038.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0074",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "deploy/bootstrap/compose.yaml"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0038.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0075",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "deploy/bootstrap/compose.yaml"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0077.requalified-rem0038.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0077",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "deploy/bootstrap/compose.yaml"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0078.requalified-rem0038.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0078",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "deploy/bootstrap/compose.yaml"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0038.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0079",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051-r1.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks after the allowlist commit (scripts/validate_evidence_input_drift.py): 0037, 0038 and 0039 with realigned and adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4), 0073, 0074, 0075, 0077, 0078 and 0079 for deploy/bootstrap/compose.yaml with tests unchanged (NCP-U05-FUSEKI-SHACL-SERVICE option 1), 0005, 0050 and 0082 for the allowlist; REM-0010, REM-0014, REM-0041, REM-0049 and REM-0050 have adapted constructions only and are not completed tasks with drifted inputs",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0037",
+      "OCOR-DEV-0038",
+      "OCOR-DEV-0039",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0073",
+      "OCOR-DEV-0074",
+      "OCOR-DEV-0075",
+      "OCOR-DEV-0077",
+      "OCOR-DEV-0078",
+      "OCOR-DEV-0079",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "TypeDB, Jena, TerminusDB (rebuild source) -- realised as the TypeDB, TerminusDB, Fuseki (from deploy/bootstrap/fuseki/config.ttl with the SHACL service) and PostgreSQL services of ocor-bootstrap; checkpoint signatures with locally generated Ed25519 keys",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C4-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_replay_of_every_commit_is_idempotent ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_the_watermark_and_the_served_release_are_the_declared_release ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_a_branch_the_projection_does_not_serve_is_never_answered_as_main ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_staleness_is_the_lag_behind_the_commits_c4_has_received ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_a_store_confirmed_under_another_release_is_release_mismatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_the_ledger_never_moves_backwards"
+    },
+    {
+      "entry": "NCR-C4-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_quarantine_is_released_only_by_a_reconciling_rebuild ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_rebuild_source_is_the_canonical_terminusdb_store ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unreadable_quarantine_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_projection_requires_a_durable_quarantine ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_deleted_projection_is_rebuilt_from_a_signed_checkpoint_and_a_bounded_replay ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_replay_beyond_the_bound_fails_closed_before_any_write ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unverifiable_checkpoint_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_checkpoint_of_a_divergent_projection_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_checkpoint_must_cover_the_whole_projection ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_replay_of_a_commit_is_idempotent ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_a_refused_publication_moves_no_watermark ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unresolvable_marking_is_refused_before_any_write ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unresolvable_clearance_is_marking_unresolved ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_read_requires_dominance_on_every_family ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_export_carries_the_conservative_join_and_the_watermark ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_join_is_conservative_and_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_scheme_outside_the_supported_profile_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_stored_marking_that_no_longer_matches_is_denied ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_watermark_that_disagrees_with_the_ledger_is_projection_not_ready ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_requires_the_declared_release_and_a_ledger ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_jena_failure_is_a_typed_error ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_stack_fuseki_exposes_the_shacl_service ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_shapes_cover_every_requirement_of_section_3_6 ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_conforming_provenance_document_is_published ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_replayed_provenance_commit_writes_nothing ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_document_outside_the_shapes_is_refused_by_the_shacl_service ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_malformed_provenance_publication_is_refused_before_any_write ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unavailable_shacl_service_refuses_the_publication ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_malformed_validation_report_is_never_read_as_conforming ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_well_formed_validation_report_is_read ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unreachable_fuseki_refuses_a_provenance_publication"
+    },
+    {
+      "entry": "NCR-C4-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_a_failed_transaction_is_always_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_a_failed_read_transaction_is_closed"
+    },
+    {
+      "entry": "NCR-C4-004",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_the_sandbox_answers_as_the_projection_did_at_cn ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_emulation_unavailable_is_unsupported_capability_never_a_downgrade ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_commit_without_its_projected_history_is_unsupported_capability ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_nothing ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_sandbox_creation_benchmark ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_sandbox_that_cannot_be_built_is_unavailable_and_dropped ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C4-001",
+    "NCR-C4-002",
+    "NCR-C4-003",
+    "NCR-C4-004"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0052 commits: the new C4 modules (watermark, drift, marking, shacl, adapters), the Fuseki configuration, the shared C4 test support module and the unit test disappear; c4/typedb_adapter.py, c4/jena_adapter.py, c4/rebuild.py, c4/projector.py, deploy/bootstrap/compose.yaml and the realigned or adapted tests return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the ocor_c4 schema of a development PostgreSQL is dropped with the stack volumes",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0052",
+  "tdd": {
+    "GREEN": {
+      "commit": "fb9e20a",
+      "fingerprint": "4d4190eade5ea54fb133732ac2ab84f059de86f4bff764ae6826e1598961acbf",
+      "summary": "unit + consumers + mission thread: 619 passed on the real stack"
+    },
+    "GREEN_C4_002_drift": {
+      "commit": "2547123",
+      "fingerprint": "316423f050143b9890c5817f42af77702b588d10fa048e63af1fc6298776fcb5",
+      "summary": "unit + consumers + mission thread: 649 passed on the real stack"
+    },
+    "GREEN_C4_002_jena": {
+      "commit": "7d5c4c1",
+      "fingerprint": "a49c1cce22815c033efdc3f35db7a0b29bbe8829ba076f33d4d1f5e48a459f9c",
+      "summary": "unit + consumers + mission thread: 705 passed on the real stack"
+    },
+    "GREEN_C4_002_shacl": {
+      "commit": "437852a",
+      "fingerprint": "5b44e8b58704767d70b12ded59bc100a89458d82d8cd31536c0bfafbfa81cfaa",
+      "summary": "unit + consumers + 0018, 0006, REM-0038, REM-0040, REM-0041-overlay + mission thread with the Fuseki of config.ttl: 870 passed, 2 failed (live Temporal cases of REM-0038, Temporal not started; same at 7d5c4c1)"
+    },
+    "GREEN_C4_004": {
+      "commit": "5af48a9",
+      "fingerprint": "2a585d85c755bcf2384a36ac57ad785850fe4289c05b3caf913e409dd93378cf",
+      "summary": "unit + consumers + mission thread: 636 passed on the real stack"
+    },
+    "RED": {
+      "commit": "0d22acc",
+      "fingerprint": "49028688786656e322f60db5a9b1df7ed948bce6c7bf34d9de703f88c1310f79",
+      "summary": "unit module and 0037 realignment: 11 failed, 8 errors, 10 passed"
+    },
+    "RED_C4_002_drift": {
+      "commit": "36cc66a",
+      "fingerprint": "c63c33e3de35a0e595055b1a4066441a8f0909f11f2a940eb97319891dd8e4ad",
+      "summary": "NCR-C4-002 drift cases of the unit module on 5af48a9: 13 failed"
+    },
+    "RED_C4_002_jena": {
+      "commit": "a0f52ae",
+      "fingerprint": "d856bad6e0075d86dafe5234b2c04d69a46672f99f5274966cc45529af3b6770",
+      "summary": "NCR-C4-002 Jena cases of the unit module and the realigned 0038 case on 2547123: 17 failed, 39 errors, 7 passed (unchanged 0038 cases)"
+    },
+    "RED_C4_002_shacl": {
+      "commit": "7a39c51",
+      "fingerprint": "6c07e937a8e728b2303a46d468ff99483bc1ad2dbc2b9d6fad8deed9ffd5ddd7",
+      "summary": "NCR-C4-002 SHACL cases of the unit module on 7d5c4c1 with the --mem Fuseki of the stack: 68 failed"
+    },
+    "RED_C4_004": {
+      "commit": "49b7616",
+      "fingerprint": "be49557813dfc3ab66d8698a68bb873e148f4f353c622c79fa6a451f16f96112",
+      "summary": "NCR-C4-004 cases of the unit module on the iteration-1 GREEN code: 17 failed"
+    },
+    "RED_realignment_0039": {
+      "commit": "67da95d",
+      "fingerprint": "7b8e9ef22cf42ec4c1a3cb2c39d03d0787e29980c6169f59462c1f37486faf5f",
+      "summary": "0039 on the base code in a scratch worktree: 1 failed (raw URLError), 5 passed"
+    },
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML (~/.ocor-codex/rem-0052/redgreen.sh)"
+  }
+}
