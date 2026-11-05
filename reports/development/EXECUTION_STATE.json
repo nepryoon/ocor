@@ -1,15 +1,15 @@
 {
   "active_iteration": {
-    "baseline_commit": "c392bb8e61ebf89018bac4bde6b4076f3105fc1a",
-    "branch": "governed/state-sync-rem0052-iter3-20261104",
+    "baseline_commit": "f804438e7adc61b64b27a5abdcf538a50e053b24",
+    "branch": "governed/state-sync-rem0052-iter4-20261105",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 3: RED and GREEN of the NCR-C4-002 drift part; decision request NCP-U05-FUSEKI-SHACL-SERVICE",
+    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 4: RED and GREEN of the NCR-C4-002 Jena part",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 59303380,
+      "MemAvailable": 58007712,
       "MemTotal": 64199668
     },
-    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 254712379573, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime): the Jena part of NCR-C4-002 with RED then GREEN (export watermark correlated to the canonical commit, canonical marking object of ADD v1.3 section 3.2 evaluated with the MarkingSchemeDefinition of section 3.1.1 instead of the legacy c4_marking engine in jena_adapter.py, conservative join, typed Jena errors with the case-1 realignment of test_ocor_dev_0038.py lines 135-138, construction adaptations of test_ocor_dev_0038.py and test_ocor_dev_rem_0010.py); the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491); then the open points of the record, consumer inventory, requalification list from the drift (0039 now has adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 3 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 7d5c4c123272, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime). NCR-C4-001, -003, -004 and NCR-C4-002 drift and Jena parts are GREEN; the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491). Without that decision, the executable remainder of the unit is the packaging that does not depend on SHACL: open points of the record, consumer inventory (c2/gateway.py marking port still legacy MarkingSet, NCR-C6-012/NCP-U08), requalification list from the drift (0038, 0039 and REM-0049/REM-0010 adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record draft, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist; then after the decision the SHACL part, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 4 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
     "phase": "REM_0052_NCP_U05_IN_PROGRESS",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
@@ -18,7 +18,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0052 iterations 1-3 (RED and GREEN of NCR-C4-001, NCR-C4-003, NCR-C4-004 and the drift part of NCR-C4-002, consumer construction adaptations), the decision request NCP-U05-FUSEKI-SHACL-SERVICE and the state syncs, as the backup implementer of the loop"
+          "scope": "OCOR-DEV-REM-0052 iterations 1-4 (RED and GREEN of NCR-C4-001, NCR-C4-003, NCR-C4-004 and the drift and Jena parts of NCR-C4-002, consumer construction adaptations), the decision request NCP-U05-FUSEKI-SHACL-SERVICE and the state syncs, as the backup implementer of the loop"
         }
       ]
     },
@@ -1750,7 +1750,7 @@
       }
     }
   },
-  "baseline_commit": "c392bb8e61ebf89018bac4bde6b4076f3105fc1a",
+  "baseline_commit": "f804438e7adc61b64b27a5abdcf538a50e053b24",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -6989,8 +6989,8 @@
       "decision_level": "NORMATIVE",
       "does_not_block": [
         "the drift part of NCR-C4-002 (RED 36cc66a, GREEN 2547123)",
-        "the Jena watermark, canonical marking and typed errors of NCR-C4-002",
-        "NCR-C4-001, NCR-C4-003 and NCR-C4-004 (GREEN)"
+        "NCR-C4-001, NCR-C4-003 and NCR-C4-004 (GREEN)",
+        "the Jena watermark, canonical marking and typed errors of NCR-C4-002 (RED a0f52ae, GREEN 7d5c4c1)"
       ],
       "evidence": {
         "branch": "governed/decision-request-ncp-u05-fuseki-shacl-service",
@@ -9311,7 +9311,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 254712379573, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime): the Jena part of NCR-C4-002 with RED then GREEN (export watermark correlated to the canonical commit, canonical marking object of ADD v1.3 section 3.2 evaluated with the MarkingSchemeDefinition of section 3.1.1 instead of the legacy c4_marking engine in jena_adapter.py, conservative join, typed Jena errors with the case-1 realignment of test_ocor_dev_0038.py lines 135-138, construction adaptations of test_ocor_dev_0038.py and test_ocor_dev_rem_0010.py); the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491); then the open points of the record, consumer inventory, requalification list from the drift (0039 now has adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 3 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "next_executable_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 7d5c4c123272, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime). NCR-C4-001, -003, -004 and NCR-C4-002 drift and Jena parts are GREEN; the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491). Without that decision, the executable remainder of the unit is the packaging that does not depend on SHACL: open points of the record, consumer inventory (c2/gateway.py marking port still legacy MarkingSet, NCR-C6-012/NCP-U08), requalification list from the drift (0038, 0039 and REM-0049/REM-0010 adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record draft, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist; then after the decision the SHACL part, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 4 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9566,9 +9566,9 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "3fcd9a155dcff5412596fb2884a85e71c202849b",
-    "branch": "governed/state-sync-rem0052-iter2-20261104",
-    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 2: RED and GREEN of NCR-C4-004",
+    "baseline_commit": "c392bb8e61ebf89018bac4bde6b4076f3105fc1a",
+    "branch": "governed/state-sync-rem0052-iter3-20261104",
+    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 3: RED and GREEN of the NCR-C4-002 drift part; decision request NCP-U05-FUSEKI-SHACL-SERVICE",
     "phase": "REM_0052_NCP_U05_IN_PROGRESS"
   },
   "previous_candidate_ci": {
@@ -9678,11 +9678,11 @@
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0052": "NCP-U05 at 254712379573: GREEN fb9e20a (NCR-C4-001, NCR-C4-003), 5af48a9 (NCR-C4-004), RED 36cc66a and GREEN 2547123 (NCR-C4-002 drift part); SHACL part waits for NCP-U05-FUSEKI-SHACL-SERVICE; iteration 3 of 3 (stop at 6)"
+      "OCOR-DEV-REM-0052": "NCP-U05 at 7d5c4c123272: GREEN fb9e20a (NCR-C4-001, NCR-C4-003), 5af48a9 (NCR-C4-004), 2547123 (NCR-C4-002 drift), RED a0f52ae and GREEN 7d5c4c1 (NCR-C4-002 Jena); SHACL part waits for NCP-U05-FUSEKI-SHACL-SERVICE; iteration 4 of 3 (stop at 6)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-04T22:54:46.584044+00:00",
+    "observed_at": "2026-11-05T00:05:02.101396+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U05",
@@ -32402,16 +32402,18 @@
       "worktree": ".ocor/worktrees/rem-0051"
     },
     "REM_0052_NCP_U05_C4_PROJECTIONS": {
-      "adapted_tests": "construction-only (case 3 of point 5): 0037, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050 via tests/tasks/c4_projection_fixture.py; 0039 and REM-0041 drift preconditions tamper the store out of band; iteration 3: test_ocor_dev_0039.py service fixture on the canonical TerminusDB store (c4_projection_fixture.canonical_store) and its annotations, test_ocor_dev_rem_0050.py:2757 projection double with the durable quarantine; AST compare against 5af48a9 unchanged (functions, asserts, pytest.raises, parametrizations)",
+      "adapted_tests": "construction-only (case 3 of point 5): 0037, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050 via tests/tasks/c4_projection_fixture.py; 0039 and REM-0041 drift preconditions tamper the store out of band; iteration 3: test_ocor_dev_0039.py service fixture on the canonical TerminusDB store (c4_projection_fixture.canonical_store) and its annotations, test_ocor_dev_rem_0050.py:2757 projection double with the durable quarantine; AST compare against 5af48a9 unchanged (functions, asserts, pytest.raises, parametrizations); iteration 4: test_ocor_dev_0038.py fixtures, test_ocor_dev_rem_0010.py Jena constructor (UnusedLedger, backend-free), test_ocor_dev_rem_0049.py jena fixture, Unreachable double and annotations, through c4_projection_fixture.ClassificationJena; AST compare against 2547123: asserts and pytest.raises unchanged except the realigned 0038 case 1",
       "authority": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 1: plan unit NCP-U05, seventh of plan_order, programme unit under NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5",
       "base": "7df90f5cf1451032280a45a93097f14cd5de5b9e",
       "branch": "governed/ocor-dev-rem-0052-ncp-u05-c4-projections",
       "commits": {
         "GREEN": "fb9e20a",
         "GREEN_C4_002_drift": "2547123",
+        "GREEN_C4_002_jena": "7d5c4c1",
         "GREEN_C4_004": "5af48a9",
         "RED": "0d22acc",
         "RED_C4_002_drift": "36cc66a",
+        "RED_C4_002_jena": "a0f52ae",
         "RED_C4_004": "49b7616",
         "RED_realignment_0039": "67da95d"
       },
@@ -32419,12 +32421,13 @@
         "NCR-C4-001",
         "NCR-C4-003",
         "NCR-C4-004",
-        "NCR-C4-002 (drift, quarantine, signed checkpoint, bounded rebuild)"
+        "NCR-C4-002 (drift, quarantine, signed checkpoint, bounded rebuild)",
+        "NCR-C4-002 (Jena watermark, canonical marking object, conservative join, typed errors)"
       ],
       "estimate_iterations": 3,
-      "head": "25471237957367fb8e317b867286378c96d3421e",
+      "head": "7d5c4c123272bf26c21ead6dc21185b1218a958d",
       "iteration_stop": 6,
-      "iterations_used": 3,
+      "iterations_used": 4,
       "open_points_for_the_record": [
         "staleness semantics (OI-018 stays open in ADD v1.3 :3716): zero while every commit C4 has received is applied, otherwise the time since the earliest received unconfirmed commit; for an unreachable projection the time since the last confirmation (PO decision point 5, NCP-U05 row)",
         "a ledger that has confirmed nothing (a projection that predates it) is not a disagreement; a confirmed watermark that the projection does not hold is PROJECTION_NOT_READY",
@@ -32435,10 +32438,13 @@
         "BA-03 sandbox: a revision history exists only for commits applied from this unit on; for an earlier commit without its revision the emulation is unavailable (UNSUPPORTED_CAPABILITY); the benchmark measures about 0.55 s per sandboxed read for 10 commits over 5 facts on the local TypeDB, no threshold is normative",
         "NCR-C4-002 SHACL: the Fuseki dataset of the stack (CMD --mem /ocor) exposes no SHACL operation (HTTP 405); enabling it is outside the unit code_paths and needs unplanned requalifications: decision request NCP-U05-FUSEKI-SHACL-SERVICE",
         "rebuild semantics recorded: the replay re-projects the latest canonical snapshot of each aggregate whose commit moved after the checkpoint (FR-065 replay or rebuild from commit), aggregates created after the checkpoint are added by the caller; the bound counts aggregates replayed",
-        "a projection reset also clears its quarantine (its facts are gone); the drift detector release happens only after a reconciling comparison"
+        "a projection reset also clears its quarantine (its facts are gone); the drift detector release happens only after a reconciling comparison",
+        "NCR-C4-002 Jena: the C2 marking port (c2/gateway.py RegistrationAndMarkingPolicy, MarkingAuthorizationPort) still passes a legacy MarkingSet clearance; the consumer tests compose it through c4_projection_fixture.ClassificationJena, which reads that clearance as the canonical clearance of its classification level. Migrating C2 to the canonical marking is NCR-C6-012 (NCP-U08), not NCP-U05",
+        "NCR-C4-002 Jena interpretations (fail-closed): a reader is authorized when its clearance, a canonical marking object of the same scheme, dominates the content on the level lattice and on every family per the dominance column of ADD v1.3 section 5.3 (superset for the restriction families, subset of the permitted purposes); incomparable levels in a join are DENY, or top only with MOST_RESTRICTIVE, even when the lattice has a least upper bound; labels must name exactly one level and mandatory_markings and caveats must partition the remaining labels",
+        "NCR-C4-002 Jena: a stored marking that no longer resolves or matches its markingRef withholds the resource (MARKING_DENIED on JSON-LD), so a content-side corruption never discloses existence; an unresolvable clearance is MARKING_UNRESOLVED",
+        "the gateway catch-all maps a JenaAdapterError PROJECTION_NOT_READY of the marking port to CONTROL_PLANE_UNAVAILABLE (as for TypeDBUnavailableError, iteration 1 open point)"
       ],
       "pending": [
-        "NCR-C4-002 Jena part RED/GREEN (watermark, canonical marking, typed errors)",
         "NCR-C4-002 SHACL after the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE",
         "open points of the record",
         "consumer inventory, requalifications, unit record, register, reverse index, allowlist, PRE-CAMPAIGN-GATE, preventive review, full suite, candidate, verification, seal, merge"
@@ -32459,6 +32465,14 @@
           "lines": "286-292",
           "path": "ocor-runtime/tests/tasks/test_ocor_dev_0039.py",
           "red": "67da95d"
+        },
+        {
+          "authority": "case 1 of NORMATIVE-CONFORMANCE-PLAN point 5 (NCR-C4-002 typed Jena errors; handoff of iteration 3)",
+          "function": "test_a_real_fuseki_unreachability_fails_closed_never_writing_a_partial_publication",
+          "kind": "REALIGN",
+          "lines": "135-138",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_0038.py",
+          "red": "a0f52ae"
         }
       ],
       "register_entries_planned": [
@@ -32468,7 +32482,7 @@
         "NCR-C4-004"
       ],
       "requalifications_note": "list fixed from the drift at the candidate head; classification per NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) for the realigned or adapted tests of 0037, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050; 0005/0050/0082 always regression-only",
-      "status": "IN_PROGRESS_GREEN_C4_001_003_004_002_DRIFT",
+      "status": "IN_PROGRESS_GREEN_C4_001_003_004_002_DRIFT_JENA",
       "tdd": {
         "GREEN": {
           "commit": "fb9e20a",
@@ -32479,6 +32493,11 @@
           "commit": "2547123",
           "fingerprint": "316423f050143b9890c5817f42af77702b588d10fa048e63af1fc6298776fcb5",
           "summary": "unit + consumers + mission thread: 649 passed on the real stack"
+        },
+        "GREEN_C4_002_jena": {
+          "commit": "7d5c4c1",
+          "fingerprint": "a49c1cce22815c033efdc3f35db7a0b29bbe8829ba076f33d4d1f5e48a459f9c",
+          "summary": "unit + consumers + mission thread: 705 passed on the real stack"
         },
         "GREEN_C4_004": {
           "commit": "5af48a9",
@@ -32495,6 +32514,11 @@
           "fingerprint": "c63c33e3de35a0e595055b1a4066441a8f0909f11f2a940eb97319891dd8e4ad",
           "summary": "NCR-C4-002 drift cases of the unit module on 5af48a9: 13 failed"
         },
+        "RED_C4_002_jena": {
+          "commit": "a0f52ae",
+          "fingerprint": "d856bad6e0075d86dafe5234b2c04d69a46672f99f5274966cc45529af3b6770",
+          "summary": "NCR-C4-002 Jena cases of the unit module and the realigned 0038 case on 2547123: 17 failed, 39 errors, 7 passed (unchanged 0038 cases)"
+        },
         "RED_C4_004": {
           "commit": "49b7616",
           "fingerprint": "be49557813dfc3ab66d8698a68bb873e148f4f353c622c79fa6a451f16f96112",
@@ -32506,7 +32530,7 @@
           "summary": "0039 on the base code in a scratch worktree: 1 failed (raw URLError), 5 passed"
         }
       },
-      "updated_at": "2026-11-04T22:54:46.584044+00:00",
+      "updated_at": "2026-11-05T00:05:02.101396+00:00",
       "worktree": ".ocor/worktrees/rem-0052"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -33747,12 +33771,12 @@
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
     "loop_status": "CONTINUE",
-    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 254712379573, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime): the Jena part of NCR-C4-002 with RED then GREEN (export watermark correlated to the canonical commit, canonical marking object of ADD v1.3 section 3.2 evaluated with the MarkingSchemeDefinition of section 3.1.1 instead of the legacy c4_marking engine in jena_adapter.py, conservative join, typed Jena errors with the case-1 realignment of test_ocor_dev_0038.py lines 135-138, construction adaptations of test_ocor_dev_0038.py and test_ocor_dev_rem_0010.py); the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491); then the open points of the record, consumer inventory, requalification list from the drift (0039 now has adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 3 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 7d5c4c123272, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env; pytest from ocor-runtime). NCR-C4-001, -003, -004 and NCR-C4-002 drift and Jena parts are GREEN; the SHACL validation with the Fuseki SHACL service waits for the PO decision on NCP-U05-FUSEKI-SHACL-SERVICE (PR #491). Without that decision, the executable remainder of the unit is the packaging that does not depend on SHACL: open points of the record, consumer inventory (c2/gateway.py marking port still legacy MarkingSet, NCR-C6-012/NCP-U08), requalification list from the drift (0038, 0039 and REM-0049/REM-0010 adapted tests: classify per NCP-UNBINDABLE-REQUALIFICATIONS), unit record draft, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist; then after the decision the SHACL part, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 4 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1). Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
     "reason": "OCOR-DEV-REM-0051 (NCP-U06) integrated after repair cycle 2 (PR #487, merge c2064ce64d2f); NCP-U05 executable",
     "recorded_at": "2026-11-04T19:23:58.718991+00:00",
     "status": "CONTINUE_REM_0051_INTEGRATED"
   },
-  "updated_at": "2026-11-04T22:54:46.584044+00:00",
+  "updated_at": "2026-11-05T00:05:02.101396+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
