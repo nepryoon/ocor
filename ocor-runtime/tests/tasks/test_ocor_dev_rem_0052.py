@@ -1,8 +1,8 @@
 """OCOR-DEV-REM-0052 (NCP-U05): C4 projections conform to the closed normative elements.
 
 Unit of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), plan unit NCP-U05, register entries
-NCR-C4-001, NCR-C4-002, NCR-C4-003 and NCR-C4-004 (the SHACL validation of NCR-C4-002 waits for
-the PO decision NCP-U05-FUSEKI-SHACL-SERVICE).
+NCR-C4-001, NCR-C4-002, NCR-C4-003 and NCR-C4-004 (the SHACL validation of NCR-C4-002 follows
+the PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1).
 
 * NCR-C4-001 -- LLD v1.1 :355 (C4/C5 per-aggregate ordering, monotonic watermark, durable
   deduplication), LLD v1.1 :148 (projector verifies schema/release/GCS, applies idempotently,
@@ -908,7 +908,7 @@ def test_ncr_c4_002_a_checkpoint_must_cover_the_whole_projection(canonical: Any,
 # behaviour per family. LLD v1.1 §1.3 (:67): a missing, incomparable or unresolvable marking is
 # ``MARKING_UNRESOLVED``. Register FR-068 (:192) and FR-131 (:298): boundaries and markings
 # propagate to projections and exports. The SHACL validation through the Fuseki SHACL service
-# waits for the PO decision NCP-U05-FUSEKI-SHACL-SERVICE and is not part of these cases.
+# has its own section below.
 
 SCHEME_ID = "urn:ocor:marking-scheme:rem0052"
 LEVEL_PAIRS = (("UNCLASSIFIED", "ALPHA"), ("UNCLASSIFIED", "BRAVO"), ("ALPHA", "SECRET"), ("BRAVO", "SECRET"),
@@ -1334,3 +1334,376 @@ def test_ncr_c4_002_a_jena_failure_is_a_typed_error(case: str, monkeypatch: pyte
     finally:
         if responder is not None:
             responder.close()
+
+
+# -- NCR-C4-002 (Jena: SHACL validation through the Fuseki SHACL service) -------------------------
+#
+# PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1: the Fuseki of the stack is
+# started from the mounted ``deploy/bootstrap/fuseki/config.ttl`` (in-memory service ``ocor`` with
+# the endpoints sparql, query, update, data and shacl; image, Dockerfile and service lock
+# unchanged), and the Jena adapter validates the shapes of ADD v1.3 §3.6 :2059 with that endpoint
+# before a publication becomes visible. ADD v1.3 :357 (BA-04: SHACL validation of the §3.6
+# shapes), LLD v1.1 :148 (Jena exposes RDF/JSON-LD and SHACL with conservative marking) and :370
+# (oracle BA-04). A refused document is never visible, moves no watermark and leaves no staging
+# graph; a SHACL service that cannot answer refuses the publication (fail-closed).
+
+PROV = "urn:ocor:prov:"
+RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+XSD_DATETIME = "http://www.w3.org/2001/XMLSchema#dateTime"
+SH = "http://www.w3.org/ns/shacl#"
+N = "urn:ocor:node:rem0052-shacl:"
+
+
+def _n(name: str) -> str:
+    return N + name
+
+
+def _when(value: str) -> tuple[str, str]:
+    return (value, XSD_DATETIME)
+
+
+def _conforming() -> dict[str, dict[str, list[Any]]]:
+    """A provenance document that satisfies every shape of ADD v1.3 §3.6 :2059: node -> predicate
+    (local name in ``urn:ocor:prov:``) -> values; an IRI value is a ``str`` starting with ``urn:``,
+    a typed literal a ``(lexical, datatype)`` pair, any other ``str`` a plain literal."""
+    digest = "urn:sha256:" + "d" * 64
+    return {
+        _n("proposition"): {"type": [PROV + "Proposition"], "subject": [_n("vessel")], "predicate": ["locatedAt"],
+                            "value": ["harbour-1"]},
+        _n("claim"): {"type": [PROV + "Claim"], "claimProposition": [_n("proposition")],
+                      "assertedBy": [_n("source")], "validFrom": [_when("2026-11-05T00:00:00Z")],
+                      "systemFrom": [_when("2026-11-05T00:10:00Z")], "markingRef": [digest]},
+        _n("source"): {"type": [PROV + "Source"], "sourceIdentity": ["harbour-registry"]},
+        _n("acquisition"): {"type": [PROV + "AcquisitionActivity"], "method": ["feed"]},
+        _n("evidence"): {"type": [PROV + "Evidence"], "contentDigest": [digest], "source": [_n("source")],
+                         "acquisition": [_n("acquisition")], "chainOfCustody": ["custody-1"]},
+        _n("support"): {"type": [PROV + "EvidentialSupport"], "stance": ["SUPPORTS"], "assessor": [_n("analyst")],
+                        "method": ["manual-review"], "validFrom": [_when("2026-11-05T00:00:00Z")]},
+        _n("reliability"): {"type": [PROV + "SourceReliabilityAssessment"], "assessedSource": [_n("source")],
+                            "assessor": [_n("analyst")], "reliabilityScale": ["NATO-A-F"],
+                            "reliabilityValue": ["B"], "context": ["maritime"]},
+        _n("match"): {"type": [PROV + "CandidateMatch"], "scoreSemantics": ["probability"]},
+        _n("match-evidence"): {"type": [PROV + "MatchEvidence"], "contentDigest": [digest],
+                               "source": [_n("source")], "acquisition": [_n("acquisition")],
+                               "chainOfCustody": ["custody-2"], "candidateMatch": [_n("match")],
+                               "scoreSemantics": ["probability"], "modelVersion": ["matcher-1.0.0"]},
+        _n("merge"): {"type": [PROV + "MergeDecision"], "adjudicator": [_n("adjudicator")],
+                      "evidenceSet": [_n("evidence")], "rationale": ["same hull number"],
+                      "policyDecision": [_n("policy-decision")], "membershipDelta": [_n("membership")]},
+        _n("membership"): {"type": [PROV + "ClusterMembershipAssertion"], "generatedByDecision": [_n("merge")]},
+        _n("split"): {"type": [PROV + "SplitDecision"], "adjudicator": [_n("adjudicator")],
+                      "evidenceSet": [_n("evidence")], "rationale": ["distinct owners"],
+                      "policyDecision": [_n("policy-decision")], "membershipDelta": [_n("membership-2")],
+                      "reversesDecision": [_n("merge")]},
+        _n("membership-2"): {"type": [PROV + "ClusterMembershipAssertion"], "generatedByDecision": [_n("split")]},
+        _n("canonical"): {"type": [PROV + "CanonicalAssertion"], "acceptedFromClaim": [_n("claim")],
+                          "acceptedByDecision": [_n("adjudication")]},
+    }
+
+
+def _turtle(document: dict[str, dict[str, list[Any]]]) -> str:
+    lines = []
+    for node, properties in sorted(document.items()):
+        for name, values in sorted(properties.items()):
+            predicate = RDF_TYPE if name == "type" else PROV + name
+            for value in values:
+                if isinstance(value, tuple):
+                    rendered = f'"{value[0]}"^^<{value[1]}>'
+                elif value.startswith("urn:"):
+                    rendered = f"<{value}>"
+                else:
+                    rendered = json.dumps(value)
+                lines.append(f"<{node}> <{predicate}> {rendered} .")
+    return "\n".join(lines) + "\n"
+
+
+def _mutated(node: str, name: str, values: list[Any] | None) -> dict[str, dict[str, list[Any]]]:
+    document = _conforming()
+    if values is None:
+        del document[_n(node)][name]
+    else:
+        document[_n(node)][name] = values
+    return document
+
+
+# One case per requirement of ADD v1.3 :2059: the document, the focus node and the predicate the
+# violation must name (``None`` for a node-level constraint).
+SHACL_VIOLATIONS: dict[str, tuple[dict[str, dict[str, list[Any]]], str, str | None]] = {
+    "claim-without-proposition": (_mutated("claim", "claimProposition", None), "claim", "claimProposition"),
+    "claim-proposition-not-a-proposition": (_mutated("claim", "claimProposition", [_n("source")]), "claim",
+                                            "claimProposition"),
+    "claim-without-asserter": (_mutated("claim", "assertedBy", None), "claim", "assertedBy"),
+    "claim-without-valid-time": (_mutated("claim", "validFrom", None), "claim", "validFrom"),
+    "claim-valid-time-not-a-datetime": (_mutated("claim", "validFrom", ["yesterday"]), "claim", "validFrom"),
+    "claim-without-system-time": (_mutated("claim", "systemFrom", None), "claim", "systemFrom"),
+    "claim-without-marking": (_mutated("claim", "markingRef", None), "claim", "markingRef"),
+    "claim-marking-not-a-digest": (_mutated("claim", "markingRef", ["SECRET"]), "claim", "markingRef"),
+    "evidence-without-digest": (_mutated("evidence", "contentDigest", None), "evidence", "contentDigest"),
+    "evidence-digest-malformed": (_mutated("evidence", "contentDigest", ["md5:00"]), "evidence", "contentDigest"),
+    "evidence-without-source": (_mutated("evidence", "source", None), "evidence", "source"),
+    "evidence-without-acquisition": (_mutated("evidence", "acquisition", None), "evidence", "acquisition"),
+    "evidence-without-custody": (_mutated("evidence", "chainOfCustody", None), "evidence", "chainOfCustody"),
+    "support-without-stance": (_mutated("support", "stance", None), "support", "stance"),
+    "support-stance-outside-the-enumeration": (_mutated("support", "stance", ["MAYBE"]), "support", "stance"),
+    "support-with-two-stances": (_mutated("support", "stance", ["SUPPORTS", "REFUTES"]), "support", "stance"),
+    "support-without-assessor": (_mutated("support", "assessor", None), "support", "assessor"),
+    "support-without-method": (_mutated("support", "method", None), "support", "method"),
+    "support-without-validity": (_mutated("support", "validFrom", None), "support", "validFrom"),
+    "reliability-without-source": (_mutated("reliability", "assessedSource", None), "reliability", "assessedSource"),
+    "reliability-without-assessor": (_mutated("reliability", "assessor", None), "reliability", "assessor"),
+    "reliability-without-scale": (_mutated("reliability", "reliabilityScale", None), "reliability",
+                                  "reliabilityScale"),
+    "reliability-without-value": (_mutated("reliability", "reliabilityValue", None), "reliability",
+                                  "reliabilityValue"),
+    "reliability-without-context": (_mutated("reliability", "context", None), "reliability", "context"),
+    "match-evidence-without-match": (_mutated("match-evidence", "candidateMatch", None), "match-evidence",
+                                     "candidateMatch"),
+    "match-evidence-without-score-semantics": (_mutated("match-evidence", "scoreSemantics", None),
+                                               "match-evidence", "scoreSemantics"),
+    "match-evidence-without-model-version": (_mutated("match-evidence", "modelVersion", None), "match-evidence",
+                                             "modelVersion"),
+    "match-evidence-without-digest": (_mutated("match-evidence", "contentDigest", None), "match-evidence",
+                                      "contentDigest"),
+    "merge-without-adjudicator": (_mutated("merge", "adjudicator", None), "merge", "adjudicator"),
+    "merge-without-evidence-set": (_mutated("merge", "evidenceSet", None), "merge", "evidenceSet"),
+    "merge-without-rationale": (_mutated("merge", "rationale", None), "merge", "rationale"),
+    "merge-without-policy-decision": (_mutated("merge", "policyDecision", None), "merge", "policyDecision"),
+    "merge-without-membership-delta": (_mutated("merge", "membershipDelta", None), "merge", "membershipDelta"),
+    "split-without-adjudicator": (_mutated("split", "adjudicator", None), "split", "adjudicator"),
+    "split-without-membership-delta": (_mutated("split", "membershipDelta", None), "split", "membershipDelta"),
+    "split-without-reversed-decision": (_mutated("split", "reversesDecision", None), "split", "reversesDecision"),
+    "canonical-without-accepted-from-claim": (_mutated("canonical", "acceptedFromClaim", None), "canonical",
+                                              "acceptedFromClaim"),
+    "canonical-without-acceptance-decision": (_mutated("canonical", "acceptedByDecision", None), "canonical",
+                                              "acceptedByDecision"),
+    "canonical-that-is-also-the-claim": (_mutated("canonical", "type", [PROV + "CanonicalAssertion",
+                                                                       PROV + "Claim"]), "canonical", None),
+    "membership-without-decision": (_mutated("membership", "generatedByDecision", None), "membership",
+                                    "generatedByDecision"),
+    "membership-from-an-unadjudicated-candidate-match": (_mutated("membership", "generatedByDecision",
+                                                                  [_n("match")]), "membership",
+                                                         "generatedByDecision"),
+}
+
+
+def _staged_graphs() -> int:
+    """The named graphs of the dataset: a staged document must never outlive its validation."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    return len(jena_adapter._query("SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } }"))
+
+
+def test_ncr_c4_002_the_stack_fuseki_exposes_the_shacl_service() -> None:
+    """PO decision NCP-U05-FUSEKI-SHACL-SERVICE option 1: the ``fuseki`` service of the governed
+    Compose mounts ``deploy/bootstrap/fuseki/config.ttl`` read-only and starts from it; image and
+    build are unchanged; the configuration declares the in-memory ``ocor`` service with exactly the
+    endpoints sparql, query, update, data and shacl; the running Fuseki answers a SHACL validation
+    with a real ``sh:ValidationReport``."""
+    import yaml
+    from rdflib import Graph, Literal, Namespace, URIRef
+
+    root = _module("pathlib").Path(__file__).resolve().parents[3]
+    service = yaml.safe_load((root / "deploy/bootstrap/compose.yaml").read_text(encoding="utf-8"))["services"]["fuseki"]
+    assert service["image"] == "ocor/jena-fuseki:6.2.0" and service["build"] == {"context": "../../infra/fuseki"}
+    assert service["command"] == ["--config=/etc/ocor-fuseki/config.ttl"]
+    assert service["volumes"] == ["./fuseki/config.ttl:/etc/ocor-fuseki/config.ttl:ro"]
+    assert (root / "infra/fuseki/Dockerfile").read_text(encoding="utf-8").rstrip().endswith('CMD ["--mem", "/ocor"]')
+
+    fuseki = Namespace("http://jena.apache.org/fuseki#")
+    config = Graph().parse(root / "deploy/bootstrap/fuseki/config.ttl", format="turtle")
+    [service_node] = list(config.subjects(fuseki.name, Literal("ocor")))
+    endpoints = {(str(config.value(endpoint, fuseki.name)), str(config.value(endpoint, fuseki.operation)))
+                 for endpoint in config.objects(service_node, fuseki.endpoint)}
+    assert endpoints == {("sparql", str(fuseki.query)), ("query", str(fuseki.query)),
+                         ("update", str(fuseki.update)), ("data", str(fuseki["gsp-rw"])),
+                         ("shacl", str(fuseki.shacl))}
+    dataset = config.value(service_node, fuseki.dataset)
+    assert (dataset, URIRef(RDF_TYPE), URIRef("http://jena.hpl.hp.com/2005/11/Assembler#MemoryDataset")) in config
+
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    shape = (f"@prefix sh: <{SH}> . <urn:ocor:shape:probe> a sh:NodeShape ; sh:targetClass <{PROV}Claim> ; "
+             f"sh:property [ sh:path <{PROV}claimProposition> ; sh:minCount 1 ] .")
+    status, body = jena_adapter._request(
+        "POST", f"{jena_adapter.FUSEKI_URL}/{jena_adapter.DATASET}/shacl?graph=default",
+        headers={"Content-Type": "text/turtle", "Accept": "text/turtle"}, body=shape.encode("utf-8"))
+    assert status == 200, body
+    report = Graph().parse(data=body, format="turtle")
+    assert (None, URIRef(RDF_TYPE), URIRef(SH + "ValidationReport")) in report
+
+
+def test_ncr_c4_002_the_shapes_cover_every_requirement_of_section_3_6() -> None:
+    """ADD v1.3 :2059: the shapes the adapter sends to the SHACL service target every class the
+    requirement names, and the provenance classes the adapter accepts are exactly those of §3.6."""
+    from rdflib import Graph, URIRef
+
+    shacl = _module("ocor_runtime.c4.shacl")
+    shapes = Graph().parse(data=shacl.SHAPES, format="turtle")
+    targets = {str(value) for value in shapes.objects(None, URIRef(SH + "targetClass"))}
+    assert targets == {PROV + name for name in (
+        "Claim", "Evidence", "MatchEvidence", "EvidentialSupport", "SourceReliabilityAssessment", "MergeDecision",
+        "SplitDecision", "CanonicalAssertion", "ClusterMembershipAssertion")}
+    assert shacl.PROVENANCE_CLASSES == frozenset(PROV + name for name in (
+        "Proposition", "Assertion", "Claim", "CanonicalAssertion", "Evidence", "EvidentialSupport", "Source",
+        "SourceReliabilityAssessment", "CandidateMatch", "MatchEvidence", "IdentityResolutionDecision",
+        "MergeDecision", "SplitDecision", "ClusterMembershipAssertion", "AcquisitionActivity",
+        "TransformationActivity", "AdjudicationActivity"))
+
+
+@pytest.mark.parametrize("stance", ["SUPPORTS", "REFUTES", "NEUTRAL"])
+def test_ncr_c4_002_a_conforming_provenance_document_is_published(jena: Any, ledger: Any, stance: str) -> None:
+    """ADD v1.3 :357 and :2059 (positive branch of every shape, each stance of the enumeration): a
+    document that conforms is validated by the Fuseki SHACL service and then published with its
+    canonical commit, its canonical marking and the watermark in one update, confirmed in the
+    ledger; the staging graph is gone and the nodes are exported with their marking join."""
+    document = _mutated("support", "stance", [stance])
+    marking = _marking("ALPHA", caveats=("CV-ORCON",))
+    assert jena.publish_provenance(_turtle(document), marking=marking, commit_id="commit-p1") is True
+
+    assert jena.current_watermark() == "commit-p1"
+    assert ledger.latest(jena.store_id, "main").commit_id == "commit-p1"
+    assert _staged_graphs() == 0
+    nodes = {row["node"]: row for row in jena.provenance_authorized(_clearance("SECRET"))}
+    assert set(nodes) == {_n(name) for name in (
+        "proposition", "claim", "source", "acquisition", "evidence", "support", "reliability", "match",
+        "match-evidence", "merge", "membership", "split", "membership-2", "canonical")}
+    assert (nodes[_n("claim")]["commitId"], nodes[_n("claim")]["markingRef"]) == ("commit-p1", _ref(marking))
+    assert jena.provenance_authorized(_clearance("UNCLASSIFIED")) == []
+
+    exported = jena.export([_n("claim"), _n("support")], _clearance("SECRET"))
+    assert exported.marking == marking and exported.canonical_commit == "commit-p1"
+    stances = [node[PROV + "stance"] for node in exported.document if node.get("@id") == _n("support")]
+    assert stances == [[{"@value": stance}]]
+
+
+def test_ncr_c4_002_a_replayed_provenance_commit_writes_nothing(jena: Any, ledger: Any) -> None:
+    """Register FR-064 :188 and LLD v1.1 :148: a provenance commit already ordered is a duplicate;
+    nothing is staged, validated or written and the watermark does not move."""
+    assert jena.publish_provenance(_turtle(_conforming()), marking=_marking("ALPHA"), commit_id="commit-p1") is True
+    jena.publish(R1, _properties(), marking=_marking("ALPHA"), commit_id="commit-p2")
+    replayed = _mutated("claim", "markingRef", ["urn:sha256:" + "e" * 64])
+    assert jena.publish_provenance(_turtle(replayed), marking=_marking("ALPHA"), commit_id="commit-p1") is False
+    assert jena.current_watermark() == "commit-p2"
+    assert ledger.latest(jena.store_id, "main").commit_id == "commit-p2"
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    stored = jena_adapter._query(f"SELECT ?m WHERE {{ <{_n('claim')}> <{PROV}markingRef> ?m }}")
+    assert [row["m"]["value"] for row in stored] == ["urn:sha256:" + "d" * 64]
+
+
+@pytest.mark.parametrize("case", sorted(SHACL_VIOLATIONS))
+def test_ncr_c4_002_a_document_outside_the_shapes_is_refused_by_the_shacl_service(
+        jena: Any, ledger: Any, case: str) -> None:
+    """ADD v1.3 :2059 (negative branch of every requirement): the SHACL service of Fuseki reports
+    the violation; the adapter refuses with SHAPE_VIOLATION naming the focus node and the path,
+    nothing of the document becomes visible, the watermark does not move and the staging graph is
+    dropped."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    jena.publish(R1, _properties(), marking=_marking("ALPHA"), commit_id="commit-p0")
+    document, node, path = SHACL_VIOLATIONS[case]
+    with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+        jena.publish_provenance(_turtle(document), marking=_marking("ALPHA"), commit_id="commit-p1")
+    assert caught.value.reason_code == "SHAPE_VIOLATION", case
+    focus = {(violation.focus_node, violation.path) for violation in caught.value.violations}
+    assert (_n(node), None if path is None else PROV + path) in focus, caught.value.violations
+    assert jena.provenance_authorized(_clearance("TOP_SECRET")) == []
+    assert jena.current_watermark() == "commit-p0"
+    assert ledger.latest(jena.store_id, "main").commit_id == "commit-p0"
+    assert jena.position("main", "commit-p1") is None
+    assert _staged_graphs() == 0
+
+
+LOCAL_REFUSALS: dict[str, tuple[str, dict[str, Any], str]] = {
+    "not-turtle": ("<urn:a> <urn:b> .", {}, "SHAPE_VIOLATION"),
+    "empty": ("", {}, "SHAPE_VIOLATION"),
+    "no-provenance-node": (f"<{_n('x')}> <{PROV}label> \"x\" .\n", {}, "SHAPE_VIOLATION"),
+    "unknown-provenance-class": (f"<{_n('x')}> <{RDF_TYPE}> <{PROV}Rumour> .\n", {}, "SHAPE_VIOLATION"),
+    "blank-provenance-node": (f"_:x <{RDF_TYPE}> <{PROV}Source> .\n", {}, "SHAPE_VIOLATION"),
+    "adapter-predicate": (_turtle(_conforming()) + f"<{_n('claim')}> <urn:ocor:vocab:commitId> \"forged\" .\n", {},
+                          "UNAUTHORIZED_PREDICATE"),
+    "sparql-breaking-iri": (f"<urn:ocor:node:a\\u003Ex> <{RDF_TYPE}> <{PROV}Source> .\n", {}, "SHAPE_VIOLATION"),
+    "not-a-string": (b"bytes", {}, "SHAPE_VIOLATION"),
+    "unresolvable-marking": (_turtle(_conforming()), {"marking": "forged"}, "MARKING_UNRESOLVED"),
+    "malformed-commit": (_turtle(_conforming()), {"commit_id": ""}, "SHAPE_VIOLATION"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(LOCAL_REFUSALS))
+def test_ncr_c4_002_a_malformed_provenance_publication_is_refused_before_any_write(
+        jena: Any, ledger: Any, case: str) -> None:
+    """LLD v1.1 :148 and ADD v1.3 §3.0.2 :401: a document that is not RDF, names no §3.6 node, an
+    unknown provenance class, a node that cannot be addressed, a predicate reserved to the adapter,
+    or comes with an unresolvable marking or commit is refused before anything is staged."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    document, changes, reason = LOCAL_REFUSALS[case]
+    arguments: dict[str, Any] = {"marking": _marking("ALPHA"), "commit_id": "commit-p1"}
+    arguments.update({key: (_forged_digest(_marking("ALPHA")) if value == "forged" else value)
+                      for key, value in changes.items()})
+    with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+        jena.publish_provenance(document, **arguments)
+    assert caught.value.reason_code == reason, case
+    assert jena.current_watermark() is None and ledger.latest(jena.store_id, "main") is None
+    assert _staged_graphs() == 0
+
+
+def test_ncr_c4_002_an_unavailable_shacl_service_refuses_the_publication(
+        jena: Any, ledger: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail-closed (LLD v1.1 :346): when the SHACL service of the real Fuseki does not answer with
+    a report (here an endpoint the dataset does not declare), nothing is published, the staging
+    graph is dropped and the error is the typed CONTROL_PLANE_UNAVAILABLE."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    monkeypatch.setattr(jena_adapter, "SHACL_SERVICE", "absent-shacl")
+    with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+        jena.publish_provenance(_turtle(_conforming()), marking=_marking("ALPHA"), commit_id="commit-p1")
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    assert jena.current_watermark() is None and ledger.latest(jena.store_id, "main") is None
+    assert jena.provenance_authorized(_clearance("TOP_SECRET")) == []
+    assert _staged_graphs() == 0
+
+
+MALFORMED_REPORTS: dict[str, str] = {
+    "not-turtle": "<html/>",
+    "no-report": f"<urn:x> <{RDF_TYPE}> <urn:y> .",
+    "no-conforms": f"[] <{RDF_TYPE}> <{SH}ValidationReport> .",
+    "two-conforms": f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> true, false .",
+    "conforms-not-boolean": f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> \"yes\" .",
+    "two-reports": (f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> true . "
+                    f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> true ."),
+    "violation-without-result": f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> false .",
+    "conforming-with-a-violation": (
+        f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> true ; <{SH}result> [ <{RDF_TYPE}> "
+        f"<{SH}ValidationResult> ; <{SH}focusNode> <urn:x> ; <{SH}resultSeverity> <{SH}Violation> ] ."),
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_REPORTS))
+def test_ncr_c4_002_a_malformed_validation_report_is_never_read_as_conforming(case: str) -> None:
+    """Fail-closed: a validation answer that is not exactly one well-formed ``sh:ValidationReport``
+    with one boolean ``sh:conforms`` consistent with its results is CONTROL_PLANE_UNAVAILABLE --
+    never a conforming document. (Local failure handling of the report reader only.)"""
+    shacl = _module("ocor_runtime.c4.shacl")
+    with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError) as caught:
+        shacl.read_report(MALFORMED_REPORTS[case])
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c4_002_a_well_formed_validation_report_is_read() -> None:
+    """The positive branches of the report reader: a conforming report has no violation; a
+    non-conforming one lists each result with its focus node, path and constraint component."""
+    shacl = _module("ocor_runtime.c4.shacl")
+    assert shacl.read_report(f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> true .") == ()
+    [violation] = shacl.read_report(
+        f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> false ; <{SH}result> [ <{RDF_TYPE}> "
+        f"<{SH}ValidationResult> ; <{SH}focusNode> <urn:x> ; <{SH}resultPath> <urn:p> ; <{SH}resultSeverity> "
+        f"<{SH}Violation> ; <{SH}sourceConstraintComponent> <{SH}MinCountConstraintComponent> ] .")
+    assert (violation.focus_node, violation.path, violation.component) == (
+        "urn:x", "urn:p", SH + "MinCountConstraintComponent")
+
+
+def test_ncr_c4_002_an_unreachable_fuseki_refuses_a_provenance_publication(
+        ledger: Any, clock: Clock, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Named Query Gateway contract :486-491 and LLD v1.1 :346: an unreachable Fuseki is the typed
+    PROJECTION_NOT_READY for a provenance publication too, never a raw transport exception."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    monkeypatch.setattr(jena_adapter, "FUSEKI_URL", "http://127.0.0.1:1")
+    adapter = _jena(_module("c4_projection_fixture").isolated_ledger(), clock)
+    with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+        adapter.publish_provenance(_turtle(_conforming()), marking=_marking("ALPHA"), commit_id="commit-p1")
+    assert caught.value.reason_code == "PROJECTION_NOT_READY"
