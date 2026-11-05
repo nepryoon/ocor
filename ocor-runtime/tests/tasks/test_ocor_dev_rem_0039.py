@@ -50,6 +50,8 @@ from ocor_runtime.kernel.governance import (
     LeaseStateOutcome,
 )
 
+from c6_action_fixture import PlacedActionStates, satisfied
+
 RUNTIME_ROOT = Path(__file__).resolve().parents[2]
 ADAPTER = "ocor_runtime.c6.temporal_adapter"
 WORKFLOWS_PATH = RUNTIME_ROOT / "src/ocor_runtime/c6/temporal_workflows.py"
@@ -437,10 +439,12 @@ def test_live_scope_creation_never_reinitialises_and_attach_requires_a_running_s
 def test_live_effect_sink_durably_records_all_44_transitions_in_order(runtime: Any) -> None:
     module = _adapter()
     sink = module.TemporalEffectSink(runtime)
-    fsm = GovernedActionFSM()
+    states = PlacedActionStates()
+    fsm = GovernedActionFSM(states=states)
     correlation = _scope("fsm44")
     applied = []
     for index, transition in enumerate(TRANSITIONS):
+        states.place(correlation, transition.source)
         applied.append(
             fsm.apply(
                 transition.transition_id,
@@ -448,6 +452,7 @@ def test_live_effect_sink_durably_records_all_44_transitions_in_order(runtime: A
                 at=T0 + timedelta(milliseconds=index),
                 correlation_id=correlation,
                 context={"index": index, "action_id": correlation},
+                guard=satisfied(transition.transition_id, correlation, T0 + timedelta(milliseconds=index)),
             )
         )
     stored = sink.effects(correlation)
@@ -474,10 +479,18 @@ def test_live_cancellation_after_dispatch_is_never_presumed(runtime: Any) -> Non
     module = _adapter()
     sink = module.TemporalEffectSink(runtime)
     correlation = _scope("cancel")
-    fsm = GovernedActionFSM()
-    dispatched = fsm.apply("ACT-T14", sink=sink, at=T0, correlation_id=correlation)
+    states = PlacedActionStates()
+    fsm = GovernedActionFSM(states=states)
+    states.place(correlation, "COMMAND_READY")
+    dispatched = fsm.apply("ACT-T14", sink=sink, at=T0, correlation_id=correlation, guard=satisfied("ACT-T14", correlation, T0))
     runtime.cancel_workflow(sink.workflow_id(correlation))
-    unknown = fsm.apply("ACT-T18a", sink=sink, at=T0 + timedelta(seconds=1), correlation_id=correlation)
+    unknown = fsm.apply(
+        "ACT-T18a",
+        sink=sink,
+        at=T0 + timedelta(seconds=1),
+        correlation_id=correlation,
+        guard=satisfied("ACT-T18a", correlation, T0 + timedelta(seconds=1)),
+    )
     assert runtime.workflow_status(sink.workflow_id(correlation)) == "RUNNING"
     assert sink.effects(correlation) == [dispatched, unknown]
 

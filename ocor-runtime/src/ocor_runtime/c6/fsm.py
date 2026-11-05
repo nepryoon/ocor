@@ -20,18 +20,32 @@ extra, duplicate or semantically altered transition -- a wrong source,
 event/guard, durable effect or destination -- raises
 ``FSMTableIntegrityError`` before this module can even finish
 importing, failing both local startup and CI.
+
+OCOR-DEV-REM-0053 (NCP-U07, NCR-C6-003) makes the table an executable state machine: every
+transition has a source state and an event/guard (LLD v1.1 :260-305). ``apply`` reads the
+current state of the action instance from an ``ActionStatePort`` under its per-action
+transaction, refuses a transition whose source is not that state (``INVALID_SOURCE_STATE``),
+refuses a transition without a ``GuardEvaluation`` bound to the same transition and action
+(``GUARD_NOT_EVALUATED``, ``GUARD_MISMATCH``) or evaluated as unsatisfied
+(``GUARD_NOT_SATISFIED``), and lets a stop observed on the evaluation snapshot win over
+dispatch, retry and canonical commit (``STOP_PRECEDENCE``: ACT-T23 precedes T14, T19 and T29,
+LLD v1.1 :307, ADD v1.3 :2905). The effect is persisted before the state advances, both inside
+the same per-action transaction: a refused transition or a failed effect persistence leaves
+the state unchanged.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Iterable, Mapping
+import threading
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from ..c3_store import require_aware
 from ..errors import OCORError
@@ -48,8 +62,10 @@ class FSMTableIntegrityError(OCORError):
 
 class FSMTransitionError(OCORError):
     """An FSM operation was refused. ``reason_code`` identifies why
-    (UNKNOWN_TRANSITION), mirroring the reason-code pattern already
-    established by the other retained C1-C8 components this session."""
+    (UNKNOWN_TRANSITION, INVALID_SOURCE_STATE, GUARD_NOT_EVALUATED,
+    GUARD_MISMATCH, GUARD_NOT_SATISFIED or STOP_PRECEDENCE), mirroring the
+    reason-code pattern already established by the other retained C1-C8
+    components this session."""
 
     def __init__(self, reason_code: str, message: str) -> None:
         self.reason_code = reason_code
@@ -155,17 +171,111 @@ class EffectSink(Protocol):
     def persist_effect(self, record: PersistedEffect) -> None: ...
 
 
-class GovernedActionFSM:
-    """The complete, approved 44-transition C6 table, executable as a
-    generic lookup-and-persist runtime: applying a transition always
-    durably records its declared effect via an injected sink before
-    returning, whether or not any caller also implements that
-    transition's substantive domain semantics elsewhere (as
-    OCOR-DEV-0030's engine does for the four gates on the
-    representative path)."""
+INITIAL_STATE = "[*]"
+# LLD v1.1 :307: ACT-T23 precedes T14, T19 and T29.
+STOP_PRECEDED_TRANSITIONS = frozenset({"ACT-T14", "ACT-T19", "ACT-T29"})
+STOP_TRANSITIONS = frozenset({"ACT-T23a", "ACT-T23b"})
 
-    def __init__(self, transitions: tuple[Transition, ...] = TRANSITIONS) -> None:
+
+@dataclass(frozen=True, slots=True)
+class GuardEvaluation:
+    """The outcome of evaluating one transition's event/guard for one action instance on one
+    evaluation snapshot (LLD v1.1 :254-256 and :260-305). ``stop_requested`` is the cancel/stop
+    observed on the same snapshot: with it, ACT-T23 wins over T14, T19 and T29 (ADD v1.3 :2905).
+    The guard is evaluated by the component that owns it; the FSM only accepts an evaluation
+    bound to the transition, the action and an instant not after the transition."""
+
+    transition_id: str
+    correlation_id: str
+    satisfied: bool
+    snapshot_id: str
+    evaluated_at: datetime
+    stop_requested: bool = False
+
+    def __post_init__(self) -> None:
+        for name in ("transition_id", "correlation_id", "snapshot_id"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"a GuardEvaluation requires {name}")
+        if type(self.satisfied) is not bool or type(self.stop_requested) is not bool:
+            raise TypeError("satisfied and stop_requested must be booleans")
+        require_aware(self.evaluated_at, field="evaluated_at")
+
+
+class ActionStateTransaction(Protocol):
+    """The per-action transaction of an ``ActionStatePort``: the state read when it opened and
+    the only way to advance it."""
+
+    @property
+    def state(self) -> str | None: ...
+
+    def advance(self, destination: str) -> None: ...
+
+
+@runtime_checkable
+class ActionStatePort(Protocol):
+    """Current state of each action instance. ``transaction`` serialises the transitions of one
+    action instance: the state it exposes is current for the whole transaction, and ``advance``
+    is its only write. ``None`` is the initial pseudo-state ``[*]``."""
+
+    def current_state(self, correlation_id: str) -> str | None: ...
+
+    def transaction(self, correlation_id: str) -> AbstractContextManager[ActionStateTransaction]: ...
+
+
+class _InMemoryTransaction:
+    def __init__(self, store: InMemoryActionStateStore, correlation_id: str) -> None:
+        self._store = store
+        self._correlation_id = correlation_id
+        self._state = store.current_state(correlation_id)
+
+    @property
+    def state(self) -> str | None:
+        return self._state
+
+    def advance(self, destination: str) -> None:
+        if not isinstance(destination, str) or not destination or destination == INITIAL_STATE:
+            raise ValueError("destination must be a state of the approved table")
+        self._store._states[self._correlation_id] = destination
+        self._state = destination
+
+
+class InMemoryActionStateStore:
+    """Process-local ``ActionStatePort``: one lock per action instance, held for the whole
+    transaction, so two FSMs sharing the store never both apply a transition from the same
+    state."""
+
+    def __init__(self) -> None:
+        self._states: dict[str, str] = {}
+        self._locks: dict[str, threading.Lock] = {}
+        self._guard = threading.Lock()
+
+    def current_state(self, correlation_id: str) -> str | None:
+        return self._states.get(correlation_id)
+
+    @contextmanager
+    def transaction(self, correlation_id: str) -> Iterator[ActionStateTransaction]:
+        with self._guard:
+            lock = self._locks.setdefault(correlation_id, threading.Lock())
+        with lock:
+            yield _InMemoryTransaction(self, correlation_id)
+
+
+class GovernedActionFSM:
+    """The complete, approved 44-transition C6 table as an executable state
+    machine: applying a transition checks the current state of the action
+    instance against the transition's source, checks the evaluation of its
+    event/guard and the ACT-T23 precedence, then durably records its
+    declared effect via an injected sink and advances the state, in that
+    order and inside the per-action transaction of the state port."""
+
+    def __init__(self, transitions: tuple[Transition, ...] = TRANSITIONS, *, states: ActionStatePort | None = None) -> None:
         self._by_id = {item.transition_id: item for item in transitions}
+        if states is None:
+            states = InMemoryActionStateStore()
+        if not isinstance(states, ActionStatePort):
+            raise TypeError("states must implement ActionStatePort")
+        self._states = states
 
     @property
     def transitions(self) -> tuple[Transition, ...]:
@@ -177,6 +287,29 @@ class GovernedActionFSM:
         except KeyError:
             raise FSMTransitionError("UNKNOWN_TRANSITION", f"no such C6 transition: {transition_id!r}") from None
 
+    def current_state(self, correlation_id: str) -> str | None:
+        return self._states.current_state(correlation_id)
+
+    @staticmethod
+    def _check_guard(transition: Transition, guard: object, *, correlation_id: str, at: datetime) -> None:
+        if guard is None:
+            raise FSMTransitionError("GUARD_NOT_EVALUATED", f"{transition.transition_id} requires its event/guard evaluation")
+        if (
+            not isinstance(guard, GuardEvaluation)
+            or guard.transition_id != transition.transition_id
+            or guard.correlation_id != correlation_id
+            or guard.evaluated_at > at
+        ):
+            raise FSMTransitionError(
+                "GUARD_MISMATCH", f"the guard evaluation is not bound to {transition.transition_id} for this action"
+            )
+        if transition.transition_id in STOP_PRECEDED_TRANSITIONS and guard.stop_requested:
+            raise FSMTransitionError(
+                "STOP_PRECEDENCE", f"a stop on snapshot {guard.snapshot_id} precedes {transition.transition_id} (ACT-T23)"
+            )
+        if not guard.satisfied or (transition.transition_id in STOP_TRANSITIONS and not guard.stop_requested):
+            raise FSMTransitionError("GUARD_NOT_SATISFIED", f"the event/guard of {transition.transition_id} is not satisfied")
+
     def apply(
         self,
         transition_id: str,
@@ -185,6 +318,7 @@ class GovernedActionFSM:
         at: datetime,
         correlation_id: str,
         context: Mapping[str, Any] | None = None,
+        guard: GuardEvaluation | None = None,
     ) -> PersistedEffect:
         transition = self.transition(transition_id)
         record = PersistedEffect(
@@ -196,8 +330,17 @@ class GovernedActionFSM:
             correlation_id=correlation_id,
             context=context or {},
         )
-        if hasattr(sink, "persist_effect"):
-            sink.persist_effect(record)
-        else:
-            sink(record)
+        self._check_guard(transition, guard, correlation_id=correlation_id, at=at)
+        with self._states.transaction(correlation_id) as state:
+            expected = None if transition.source == INITIAL_STATE else transition.source
+            if state.state != expected:
+                raise FSMTransitionError(
+                    "INVALID_SOURCE_STATE",
+                    f"{transition.transition_id} starts from {transition.source}, the action is in {state.state or INITIAL_STATE}",
+                )
+            if hasattr(sink, "persist_effect"):
+                sink.persist_effect(record)
+            else:
+                sink(record)
+            state.advance(transition.destination)
         return record
