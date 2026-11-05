@@ -501,6 +501,46 @@ def test_two_engines_sharing_the_state_store_never_both_apply_from_the_same_stat
 
 
 
+GUARD_FIELDS: dict[str, Any] = {
+    "transition_id": "ACT-T01",
+    "correlation_id": "urn:ocor:action:guard-shape",
+    "satisfied": True,
+    "snapshot_id": "urn:ocor:snapshot:1",
+    "evaluated_at": NOW,
+    "stop_requested": False,
+}
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        (None, None),
+        ("transition_id", ""),
+        ("correlation_id", 7),
+        ("snapshot_id", None),
+        ("satisfied", 1),
+        ("stop_requested", "yes"),
+    ],
+)
+def test_a_malformed_guard_evaluation_is_the_typed_refusal(field: str | None, value: Any) -> None:
+    """Self-check (NCP-THROUGHPUT-RULES point 1): the evaluation is read without conversion and a
+    malformed one is the FSM's typed refusal, never a raw TypeError or ValueError."""
+    if field is None:
+        assert c6_fsm.GuardEvaluation(**GUARD_FIELDS).transition_id == "ACT-T01"
+        return
+    with pytest.raises(FSMTransitionError) as refused:
+        c6_fsm.GuardEvaluation(**{**GUARD_FIELDS, field: value})
+    assert _reason(refused) == "GUARD_NOT_EVALUATED"
+
+
+@pytest.mark.parametrize("value", ["2026-11-05T12:00:00Z", datetime(2026, 11, 5, 12, 0, 0)])
+def test_a_guard_evaluation_at_an_instant_that_is_not_aware_is_the_temporal_refusal(value: Any) -> None:
+    from ocor_runtime.errors import TemporalGuardViolation
+
+    with pytest.raises(TemporalGuardViolation):
+        c6_fsm.GuardEvaluation(**{**GUARD_FIELDS, "evaluated_at": value})
+
+
 # --- NCR-C6-006, NCR-C6-001, NCR-C6-008: records, G-APPROVAL and G-DECISION -------------------
 
 RECORD_NAMES = (
@@ -1028,6 +1068,69 @@ def test_a_record_with_a_malformed_field_is_refused(field: str | None, value: An
         assert dataclasses.replace(world.proposal).digest() == world.proposal.digest()
         return
     assert _record_reason(lambda: dataclasses.replace(world.proposal, **{field: value})) == "RECORD_INVALID"
+
+
+def _nested(depth: int) -> Any:
+    value: Any = "leaf"
+    for _ in range(depth):
+        value = [value]
+    return value
+
+
+def _cyclic() -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    value["self"] = value
+    return value
+
+
+@pytest.mark.parametrize("shape", ["bounded", "deep", "cyclic"])
+def test_parameters_nested_beyond_the_bound_or_cyclic_are_refused(shape: str) -> None:
+    """Self-check: the parameters are frozen within a bounded depth; deeper or cyclic structures
+    are RECORD_INVALID, never a raw RecursionError."""
+    world = GateWorld()
+    if shape == "bounded":
+        proposal = dataclasses.replace(world.proposal, parameters={"asset": _nested(8)})
+        assert proposal.digest() != world.proposal.digest()
+        return
+    parameters = {"asset": _nested(3000)} if shape == "deep" else _cyclic()
+    assert _record_reason(lambda: dataclasses.replace(world.proposal, parameters=parameters)) == "RECORD_INVALID"
+
+
+@pytest.mark.parametrize("refs", [("urn:ocor:evidence:fresh-3",), "abc", None, ("urn:ocor:evidence:fresh-3", 3)])
+def test_the_result_and_assessment_factories_parse_their_refs_as_the_records_do(refs: Any) -> None:
+    """Self-check: ExecutionResult.for_attempt and OutcomeAssessment.for_result read their refs
+    with the records' parser: a string is not split into characters and None is RECORD_INVALID."""
+    world = GateWorld()
+    records = world.records
+    chain = world.chain()
+    attempt, result = chain["DeliveryAttempt"], chain["ExecutionResult"]
+
+    def execution_result() -> Any:
+        return records.ExecutionResult.for_attempt(
+            result_id="urn:ocor:result:3",
+            attempt=attempt,
+            adapter_status="COMPLETED",
+            adapter_result_digest=_sha("adapter-result-3"),
+            evidence_refs=refs,
+            observed_at=attempt.attempted_at,
+        )
+
+    def assessment() -> Any:
+        return records.OutcomeAssessment.for_result(
+            assessment_id="urn:ocor:assessment:3",
+            result=result,
+            observation_refs=refs,
+            evidence_refs=("urn:ocor:evidence:observed-3",),
+            assessment="EFFECT_PARTIAL",
+            assessed_at=result.observed_at + timedelta(seconds=1),
+        )
+
+    if isinstance(refs, tuple) and all(isinstance(item, str) for item in refs):
+        assert execution_result().evidence_refs == refs
+        assert assessment().observation_refs == refs
+        return
+    assert _record_reason(execution_result) == "RECORD_INVALID"
+    assert _record_reason(assessment) == "RECORD_INVALID"
 
 
 def test_ncr_c6_001_conforms() -> None:
@@ -1662,6 +1765,53 @@ def test_an_admitted_action_is_not_retried_after_its_decision_expired() -> None:
     assert suite.denial(proposal, approval=approval_set, decision=decision) == ("DECISION_MISSING", "DECISION_EXPIRED")
 
 
+def test_the_catalog_and_the_proposal_builder_refuse_what_is_not_a_published_action_type() -> None:
+    """Self-check: retiring an unpublished ActionType is ACTION_TYPE_UNKNOWN and a proposal is
+    built only on an ActionType (SCHEMA_INVALID), never a raw KeyError or AttributeError."""
+    contract = _mod("contract")
+    catalog = contract.InMemoryActionTypeCatalog()
+    with pytest.raises(contract.ContractGateError) as unknown:
+        catalog.retire("urn:ocor:action-type:rem0053:never-published", key=_key("publisher"))
+    assert unknown.value.reason_code == "ACTION_TYPE_UNKNOWN"
+    with pytest.raises(contract.ContractGateError) as malformed:
+        contract.proposal_for(
+            None,
+            action_instance_id="urn:ocor:action:rem0053:no-type",
+            proposer_id=OPERATOR,
+            target_ref=TARGET,
+            parameters={},
+            governed_context_digest=_sha("context"),
+            expected_revision=0,
+            evidence_refs=("urn:ocor:evidence:e1",),
+            proposed_at=ENGINE_NOW,
+        )
+    assert malformed.value.reason_code == "SCHEMA_INVALID"
+
+
+AUTHORIZED_DECISION_FAULTS: dict[str, tuple[str, str | None]] = {
+    "package-not-a-gate-package": ("DECISION_MISSING", "GATE_PACKAGE_DIGEST_MISMATCH"),
+    "tampered-package-digest": ("DECISION_MISSING", "GATE_PACKAGE_DIGEST_MISMATCH"),
+    "decision-not-a-record": ("DECISION_MISSING", None),
+}
+
+
+@pytest.mark.parametrize("fault", sorted(AUTHORIZED_DECISION_FAULTS))
+def test_a_malformed_authorized_decision_is_refused_before_its_gate_package_is_traced(fault: str) -> None:
+    """Self-check (boundary digests): the GatePackage digest is recomputed before ACT-T26 records
+    it, and a malformed AuthorizedDecision is DECISION_MISSING, never a raw AttributeError."""
+    suite = EngineSuite()
+    proposal, approval_set, decision = _admitted(suite)
+    if fault == "package-not-a-gate-package":
+        decision = dataclasses.replace(decision, package=object())
+    elif fault == "tampered-package-digest":
+        decision = dataclasses.replace(decision, package_digest=_sha("another-gate-package"))
+    else:
+        decision = dataclasses.replace(decision, decision=None)
+    assert suite.denial(proposal, approval=approval_set, decision=decision) == AUTHORIZED_DECISION_FAULTS[fault]
+    assert suite.untouched()
+    assert "ACT-T26" not in suite.world.transitions(proposal.action_instance_id)
+
+
 # NCR-C6-004 -- ADD v1.3 :3194-3212 (the CapabilityLease is a closed record signed by the
 # capability authority, at most PT5S, single use per (action_instance_id, emission_attempt) and
 # not transferable; principal, delegation, GCS, GatePackage or stop epoch that differ, an invalid
@@ -2066,6 +2216,48 @@ def test_g_dispatch_invalidates_before_the_send(case: str) -> None:
     assert world.ledger.attempts(proposal.action_instance_id) == before
 
 
+def test_a_lease_that_is_not_i_json_is_lease_invalid_at_the_validator_and_the_engine() -> None:
+    """Self-check: a lease whose closed record cannot be canonicalised (a lone surrogate) is
+    LEASE_INVALID at the validator and AUTHORITY_DENIED at the engine, never a raw error."""
+    suite = EngineSuite()
+    proposal, approval_set, decision = _admitted(suite)
+    signed = suite.lease(proposal, decision)
+    broken = dataclasses.replace(signed, lease=dataclasses.replace(signed.lease, lease_id="urn:ocor:lease:\ud800"))
+    assert _fence_reason(lambda: suite.world.validator.verify(broken)) == "LEASE_INVALID"
+    assert suite.denial(proposal, approval=approval_set, decision=decision, lease=broken) == (
+        "AUTHORITY_DENIED",
+        "LEASE_INVALID",
+    )
+    assert suite.untouched()
+
+
+@pytest.mark.parametrize(
+    "fault", [None, "extra-key", "not-a-mapping", "lease-not-a-mapping", "empty-signature", "malformed-lease"]
+)
+def test_a_signed_lease_is_read_from_its_wire_mapping_only_in_its_closed_form(fault: str | None) -> None:
+    dispatch = _mod("dispatch")
+    suite = EngineSuite()
+    proposal, _, decision = _admitted(suite)
+    signed = suite.lease(proposal, decision)
+    wire: Any = signed.to_mapping()
+    if fault is None:
+        read = dispatch.lease_from_mapping(wire)
+        assert read == signed
+        assert suite.world.validator.verify(read) == signed.lease
+        return
+    if fault == "extra-key":
+        wire = {**wire, "note": "unexpected"}
+    elif fault == "not-a-mapping":
+        wire = [wire]
+    elif fault == "lease-not-a-mapping":
+        wire = {**wire, "lease": "lease"}
+    elif fault == "empty-signature":
+        wire = {**wire, "signature": ""}
+    else:
+        wire = {**wire, "lease": {**wire["lease"], "stop_epoch": True}}
+    assert _fence_reason(lambda: dispatch.lease_from_mapping(wire)) == "LEASE_INVALID"
+
+
 def test_ncr_c6_005_conforms() -> None:
     """ADD v1.3 :2851-2854, LLD v1.1 :256, :302: on the engine path the EMISSION-FENCE is
     evaluated, with its DeliveryAttempt recorded, before the canonical commit (ACT-T29); a drift
@@ -2177,6 +2369,87 @@ def test_the_engine_sends_nothing_to_c3_when_the_lease_or_the_fence_refuses(case
     assert reason == ENGINE_FENCE_CASES[case]
     assert suite.untouched()
     assert world.ledger.attempts(proposal.action_instance_id) == ()
+
+
+STOP_ANSWER_FAULTS = ("active-none", "active-integer", "epoch-text", "epoch-boolean", "epoch-negative", "foreign-epoch-boolean")
+
+
+@pytest.mark.parametrize("fault", (None, *STOP_ANSWER_FAULTS))
+def test_the_fence_takes_the_stop_answers_without_conversion(fault: str | None) -> None:
+    """Self-check: the emergency stop and the stop epoch are read without conversion (a stop
+    answering None never reads as inactive, a boolean or text epoch never as an integer);
+    anything else is FENCE_EVALUATION_FAILED before the lease is consumed."""
+    dispatch = _mod("dispatch")
+    suite = EngineSuite()
+    world = suite.world
+    real = suite.path.fence
+    epoch = real.current_stop_epoch()
+    assert epoch in (0, 1)
+
+    class Stop:
+        def emergency_stop_active(self) -> Any:
+            active = real.emergency_stop_active()
+            return {"active-none": None, "active-integer": int(active)}.get(fault or "", active)
+
+        def current_stop_epoch(self) -> Any:
+            return {"epoch-text": str(epoch), "epoch-boolean": bool(epoch), "epoch-negative": -1}.get(fault or "", epoch)
+
+    class ForeignConditions(dispatch.InMemoryDispatchConditions):
+        def current_stop_epoch(self) -> Any:
+            return bool(super().current_stop_epoch())
+
+    kind = ForeignConditions if fault == "foreign-epoch-boolean" else dispatch.InMemoryDispatchConditions
+    conditions = kind(stop=Stop())
+    world.emission_fence = dispatch.GovernedEmissionFence(
+        validator=world.validator, ledger=world.ledger, conditions=conditions, clock=world.clock
+    )
+    proposal, approval_set, decision = _admitted(suite)
+    lease = suite.lease(proposal, decision)
+    if fault is None:
+        assert _evaluate(suite, proposal, decision, approval_set, lease=lease).fence_outcome == "PASSED"
+        return
+    assert _fence_reason(lambda: _evaluate(suite, proposal, decision, approval_set, lease=lease)) == "FENCE_EVALUATION_FAILED"
+    assert world.ledger.consumed(lease.lease.lease_id) is None
+    assert world.ledger.attempts(proposal.action_instance_id) == ()
+
+
+class MistypedRevisionC3:
+    """The real C3 whose current revision is answered in another type."""
+
+    def __init__(self, c3: Any, answer: Callable[[int], Any]) -> None:
+        self._c3 = c3
+        self._answer = answer
+        self.commits = 0
+
+    def commit(self, command: Any) -> Any:
+        self.commits += 1
+        return self._c3.commit(command)
+
+    def current_revision(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> Any:
+        return self._answer(self._c3.current_revision(tenant_id, aggregate_type, aggregate_ref))
+
+
+@pytest.mark.parametrize("answer", ["text", "boolean", "float"])
+def test_a_c3_revision_answered_in_another_type_invalidates_before_the_send(answer: str) -> None:
+    """Self-check: G-FRESHNESS reads the C3 revision without conversion."""
+    from ocor_runtime.c7_emission import EmissionFence
+
+    suite = EngineSuite()
+    convert: Callable[[int], Any] = {"text": str, "boolean": bool, "float": float}[answer]
+    c3 = MistypedRevisionC3(suite.c3, convert)
+    engine = suite.world.engine(
+        commit_port=c3,
+        relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+        canonical_path=suite.path,
+        emission_outbox=suite.store,
+    )
+    proposal, approval_set, decision = _admitted(suite)
+    with pytest.raises(suite.engine_module.GovernedActionError) as refused:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=suite.sink, at=ENGINE_NOW)
+    assert (refused.value.reason_code, refused.value.cause_code) == ("INVALIDATED", "FENCE_EVALUATION_FAILED")
+    assert c3.commits == 0
+    assert suite.untouched()
 
 
 # --- NCR-C6-007: reconciliation on positive Evidence, never a blind retry ------------------
@@ -2535,6 +2808,150 @@ def test_an_unrecordable_ambiguous_send_fails_closed() -> None:
     assert (suspended.value.reason_code, suspended.value.cause_code) == ("RETRY_SUSPENDED", "EXECUTION_UNKNOWN")
     assert sink.calls == []
     assert ordered.calls == [("commit", 1)]
+
+
+class FailingCommitC3(OrderedC3):
+    """The real C3 whose commit leaves without a usable answer: a timeout after the request left,
+    or a receipt that is not bound to the command sent."""
+
+    def __init__(self, c3: Any, ledger: Any, *, fault: str) -> None:
+        super().__init__(c3, ledger)
+        self._fault = fault
+
+    def commit(self, command: Any) -> Any:
+        receipt = super().commit(command)
+        if self._fault == "timeout":
+            raise TimeoutError("no response from C3 before the deadline")
+        if self._fault == "no-receipt":
+            return {"commit_id": receipt.commit_id}
+        return dataclasses.replace(receipt, command_digest=_sha("another-command"))
+
+
+@pytest.mark.parametrize("fault", ["timeout", "no-receipt", "receipt-of-another-command"])
+def test_a_c3_commit_without_a_bound_receipt_on_execute_is_execution_unknown(fault: str) -> None:
+    """Self-check (boundary bindings, resources on error paths): on ``execute`` as on
+    ``commit_canonical`` the C3 receipt confirms the action only when it is bound to the command
+    sent; anything else opens the audited reconciliation and the retry is suspended."""
+    from ocor_runtime.c7_emission import EmissionFence
+
+    suite = EngineSuite()
+    audited = AuditedReconciliation()
+    c3 = FailingCommitC3(suite.c3, suite.world.ledger, fault=fault)
+    engine = suite.world.engine(
+        commit_port=c3,
+        relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+        canonical_path=suite.path,
+        emission_outbox=suite.store,
+        reconciler=audited.reconciler,
+    )
+    proposal, approval_set, decision = _admitted(suite)
+    raised = TimeoutError if fault == "timeout" else TypeError if fault == "no-receipt" else Exception
+    with pytest.raises(raised) as unknown:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=suite.sink, at=ENGINE_NOW)
+    assert "EXECUTION_UNKNOWN" in _notes(unknown.value)
+    (record,) = audited.reconciler.records
+    assert record.status.value == "EXECUTION_UNKNOWN"
+    assert suite.sink.calls == []
+    with pytest.raises(suite.engine_module.GovernedActionError) as suspended:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=suite.sink, at=ENGINE_NOW)
+    assert (suspended.value.reason_code, suspended.value.cause_code) == ("RETRY_SUSPENDED", "EXECUTION_UNKNOWN")
+    assert c3.calls == [("commit", 1)]
+    assert audited.chain() == 1
+
+
+def test_a_failure_of_the_evidence_resolution_before_the_send_is_the_typed_refusal() -> None:
+    """Self-check: on ``execute`` an error of a port before the send is INVALIDATED with
+    CONTROL_PLANE_UNAVAILABLE and nothing is sent, as on ``commit_canonical``."""
+    suite = EngineSuite()
+    proposal, approval_set, decision = _admitted(suite)
+
+    def unavailable(_: Any) -> Any:
+        raise ConnectionError("the evidence store is unreachable")
+
+    path = dataclasses.replace(suite.path, evidence=unavailable)
+    from ocor_runtime.c7_emission import EmissionFence
+
+    engine = suite.world.engine(
+        commit_port=suite.c3,
+        relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+        canonical_path=path,
+        emission_outbox=suite.store,
+    )
+    with pytest.raises(suite.engine_module.GovernedActionError) as refused:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=suite.sink, at=ENGINE_NOW)
+    assert (refused.value.reason_code, refused.value.cause_code) == ("INVALIDATED", "CONTROL_PLANE_UNAVAILABLE")
+    assert suite.untouched()
+
+
+@pytest.mark.parametrize("element", ["object", "none"])
+def test_a_malformed_element_of_the_read_back_chain_is_reconciliation_audit_invalid(element: str) -> None:
+    safety = _mod("safety")
+    audited = AuditedReconciliation()
+    audited.reconciler.mark_ambiguous("cmd-shape", idempotent_effect_proven=False, at=NOW)
+    chain = [*audited.log.records(), object() if element == "object" else None]
+    with pytest.raises(safety.SafetyError) as refused:
+        safety.OutcomeReconciler.restore(chain, audit=audited.log, public_keys=audited.public_keys)
+    assert refused.value.reason_code == "RECONCILIATION_AUDIT_INVALID"
+
+
+@pytest.mark.parametrize("command_id", [["cmd-a"], None, ""])
+def test_a_resolution_of_a_malformed_command_id_is_the_typed_refusal(command_id: Any) -> None:
+    safety = _mod("safety")
+    reconciler = safety.OutcomeReconciler()
+    with pytest.raises(safety.SafetyError) as refused:
+        reconciler.resolve_with_evidence(command_id, evidence=_evidence("cmd-a"), at=NOW)
+    assert refused.value.reason_code == "RECONCILIATION_RECORD_INVALID"
+
+
+RESTORED_RECORD_FAULTS = ("foreign-actor", "previous-status", "correlation", "outcome")
+
+
+@pytest.mark.parametrize("fault", (None, *RESTORED_RECORD_FAULTS))
+def test_a_reconciliation_record_not_written_by_the_reconciler_is_never_restored(fault: str | None) -> None:
+    """Self-check (tampered data): a signed record on the shared chain restores a reconciliation
+    only when it is the reconciler's own: its actor, the replayed previous status, the command as
+    correlation and a permitted outcome."""
+    safety = _mod("safety")
+    audited = AuditedReconciliation()
+    audited.reconciler.mark_ambiguous("cmd-own", idempotent_effect_proven=False, at=NOW)
+    values: dict[str, Any] = {
+        "event_type": safety.RECONCILIATION_EVENT,
+        "actor": safety.RECONCILIATION_ACTOR,
+        "occurred_at": NOW,
+        "resource": "cmd-foreign",
+        "reason_code": "EXECUTION_UNKNOWN",
+        "authority_ref": "urn:ocor:c6:reconciliation",
+        "correlation_id": "cmd-foreign",
+        "outcome": "PERMITTED",
+        "detail": {
+            "status": "EXECUTION_UNKNOWN",
+            "previous_status": None,
+            "idempotent_effect_proven": False,
+            "note": "ambiguous timeout",
+            "evidence_ref": None,
+            "evidence_digest": None,
+        },
+    }
+    if fault == "foreign-actor":
+        values["actor"] = "urn:ocor:component:other"
+    elif fault == "previous-status":
+        values["detail"] = {**values["detail"], "previous_status": "EXECUTION_CONFIRMED"}
+    elif fault == "correlation":
+        values["correlation_id"] = "cmd-other"
+    elif fault == "outcome":
+        values["outcome"] = "DENIED"
+    audited.log.append(audited.audit_module.AuditEvent(**values))
+    if fault is None:
+        restored = safety.OutcomeReconciler.restore(audited.log.records(), audit=audited.log, public_keys=audited.public_keys)
+        assert restored.status("cmd-foreign").value == "EXECUTION_UNKNOWN"
+        assert restored.status("cmd-own").value == "EXECUTION_UNKNOWN"
+        return
+    with pytest.raises(safety.SafetyError) as refused:
+        safety.OutcomeReconciler.restore(audited.log.records(), audit=audited.log, public_keys=audited.public_keys)
+    assert refused.value.reason_code == "RECONCILIATION_AUDIT_INVALID"
 
 
 # ---------------------------------------------------------------------------------------
@@ -3261,3 +3678,51 @@ def test_a_promotion_traverses_the_c6_states_in_canonical_order(backends: Any) -
         action_id = x.body["command"]["action_instance_id"]
         assert x.world.transitions(action_id) == list(CANONICAL_PATH[:-1])
         assert x.world.fsm.current_state(action_id) == "OUTCOME_PENDING"
+
+
+@pytest.mark.parametrize(
+    "context",
+    [
+        None,
+        {"destination": "EXECUTION_CONFIRMED"},
+        {"source": "PROPOSED"},
+        {"durable_effect": "forged"},
+        {"record": b"\xff"},
+        {"digest": 7},
+    ],
+)
+def test_the_audited_trace_refuses_a_context_that_overrides_the_transition_or_is_not_text(context: Any) -> None:
+    """Self-check (tampered data, shape): the signed trace record carries the transition's own
+    source, destination and durable effect; a context that would override them, or that is not
+    text, is refused and nothing is appended (the engine turns it into CONTROL_PLANE_UNAVAILABLE)."""
+    composition = _mod("composition")
+
+    class Appended:
+        def __init__(self) -> None:
+            self.events: list[Any] = []
+
+        def append(self, event: Any) -> Any:
+            self.events.append(event)
+            return None
+
+    audit = Appended()
+    trace = composition.AuditedTransitionTrace(audit)  # type: ignore[arg-type]
+    transition = BY_ID["ACT-T01"]
+    effect = c6_fsm.PersistedEffect(
+        transition_id=transition.transition_id,
+        source=transition.source,
+        destination=transition.destination,
+        durable_effect=transition.durable_effect,
+        occurred_at=NOW,
+        correlation_id="urn:ocor:action:trace-shape",
+        context={"record": "ActionProposal", "digest": _sha("proposal")} if context is None else context,
+    )
+    if context is None:
+        trace.persist_effect(effect)
+        (event,) = audit.events
+        assert event.detail["destination"] == transition.destination
+        assert event.detail["record"] == "ActionProposal"
+        return
+    with pytest.raises(ValueError):
+        trace.persist_effect(effect)
+    assert audit.events == []
