@@ -790,8 +790,169 @@
     "valid_attempt": "repetition 1 of the two-lane run"
   },
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "4c8f87c30b38bdcdefaaa4dce9b44777fe030008",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json",
+        "reports/development/TERMINAL_BLOCKED_REPORT.json"
+      ],
+      "main_head": "a2662b6aa6d7b731af1427e09aa92d7a2b263dd4",
+      "nonstate_git_tree_sha256": "2ee8fda2f3d60db9e509b85f202349cc548536a17009b0f938ea27ef03be64d5",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the four state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "5ed8fe1023bde3efe50920f28761fba6bdd9a54d",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "538e0bc727c7a8fa238a6afd1a4b83a2c3eafb81d84a83ba9401342987ed1182",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "tutti i file normativi OK"
+      },
+      {
+        "command": "sha256 host tools and helm/kind/kubectl against infra/toolchain.lock.json and environment.json",
+        "exit_code": 0,
+        "summary": "nessuna divergenza; environment.json sha256 444889343b681ca45cca053158f2addc44768971cb7b83d44f4eab783b6dae3f"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "status PASS, docker READY, porte libere"
+      },
+      {
+        "command": "env -i … bash --noprofile --norc; source env.sh; ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS in 52.65s; fuseki_max_heap_bytes=1073741824; SVID spiffe://ocor.test/ocor/control-plane presente; archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz con SHA512 del lock; nessun stack preesistente"
+      },
+      {
+        "command": "pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py",
+        "exit_code": 0,
+        "summary": "241 passed, 0 failed, 0 skipped, 0 errors, 86.01s; stack ocor-bootstrap reale"
+      },
+      {
+        "command": "pytest -p no:cacheprovider test_ocor_dev_0034.py test_ocor_dev_0037.py test_ocor_dev_0038.py test_ocor_dev_0039.py",
+        "exit_code": 0,
+        "summary": "36 passed, 0 skipped"
+      },
+      {
+        "command": "pytest -p no:cacheprovider consumers REM-0010/0014/0041/0049/0050, 0012, 0017, 0035, REM-0031, mission thread",
+        "exit_code": 0,
+        "summary": "683 passed, 0 skipped, 217.94s"
+      },
+      {
+        "command": "pytest -p no:cacheprovider test_ocor_dev_0005.py test_ocor_dev_0050.py test_ocor_dev_0079.py test_ocor_dev_0082.py",
+        "exit_code": 0,
+        "summary": "231 passed, 0 skipped, 4.95s"
+      },
+      {
+        "command": "deploy/bootstrap/services/typedb/qualify.py --execute --fault-recovery",
+        "exit_code": 0,
+        "summary": "PASS; immagine pinned typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f; health healthy dopo il recovery"
+      },
+      {
+        "command": "scripts/fault_inject_test_environment.py fuseki pause --bounded --execute --timeout 60",
+        "exit_code": 0,
+        "summary": "PASS; pause rilevata e unpause completato"
+      },
+      {
+        "command": "scripts/verify_external_services.py --execute --typed",
+        "exit_code": 0,
+        "summary": "PASS; servizi READY"
+      },
+      {
+        "command": "scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS; il predicato .ttl aggiunto è solo il percorso esatto deploy/bootstrap/fuseki/config.ttl"
+      },
+      {
+        "command": "scripts/validate_test_reverse_traceability.py",
+        "exit_code": 0,
+        "summary": "PASS, findings vuoti"
+      },
+      {
+        "command": "scripts/validate_evidence_input_drift.py --root .",
+        "exit_code": 0,
+        "summary": "PASS; drifted_inputs 0 su 241 input e 75 task"
+      },
+      {
+        "command": "scripts/validate_runtime_evidence.py --non-skipped per 0005, 0034, 0037, 0038, 0039, 0050, 0073, 0074, 0075, 0077, 0078, 0079, 0082",
+        "exit_code": 0,
+        "summary": "PASS per tutti i 13 task"
+      },
+      {
+        "command": "ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "PASS (37 PASS, 0 FAIL). Una prima esecuzione è uscita 1 solo per il log non tracciato reports/tests/ci_fuseki_build.log prodotto dal bootstrap del verifier; rimosso e rieseguito sul tree pulito. I due NOT_EXECUTED sono markdownlint e mmdc, strumenti opzionali con fallback deterministico eseguito dallo script"
+      },
+      {
+        "command": "scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "PASS_LOCAL_PRECHECK, findings vuoti"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "PASS"
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed"
+      },
+      {
+        "command": "pytest reports/tests/test_normative_conformance_register.py reports/tests/test_validate_language_policy.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py",
+        "exit_code": 0,
+        "summary": "100 passed, 960 subtests passed, 17.79s"
+      },
+      {
+        "command": "scripts/validate_ocor_change_scope.py --base 7df90f5cf1451032280a45a93097f14cd5de5b9e --head 5ed8fe1023bde3efe50920f28761fba6bdd9a54d",
+        "exit_code": 0,
+        "summary": "PASS: 66 path; superfici immutabili intatte"
+      },
+      {
+        "command": "env -i … ; scripts/reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "teardown PASS; 0 container rimasti; MemAvailable 52733864 kB"
+      },
+      {
+        "command": "env -i … ; scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0052-5ed8fe1023bd-0/campaign --expected-head 5ed8fe1023bde3efe50920f28761fba6bdd9a54d --tool-bin <verifier bin> --tool-bin <wt .ocor/tools/bin>",
+        "exit_code": 0,
+        "summary": "TWO_LANE PASS; 4339 test, 0 failure, 0 error, 0 skipped; unione esatta collected=executed=4339, missing/unexpected/duplicated vuoti; lane 1474+2865; durata 2630.841s, margine al tetto 5400s = 2769.159s, margine alla soglia di notifica 3600s = 969.159s; teardown PASS; residui host vuoti; alimentazione MAINS all'inizio (10:25:44Z) e alla fine (11:09:34Z)"
+      }
+    ],
+    "findings": [],
+    "findings_disposition": "Nessun finding, nulla NOT_EXECUTED, al ciclo 0. Revisione preventiva consultiva (Antigravity CLI / gemini-4-argon-high / Google, PRE-CAMPAIGN-REVIEW-ROTATION, OCOR-DEV-REM-0052-4ecec3344165-pre, NO_BLOCKING_FINDINGS, zero finding), esclusa dalla verifica finale e non letta dal verifier; autocontrollo di robustezza degli input di NCP-THROUGHPUT-RULES punto 1 con RED d5f88d6/3635c4b e GREEN b709e15 prima della richiesta. Il verifier ha rieseguito da shell pulita: strumenti e lock PASS, inputs 8/8; preflight PASS; bootstrap CI da shell pulita PASS con Fuseki a heap 1 GiB; modulo dell unita REM-0052 241 passed sullo stack ocor-bootstrap reale; 0034/0037/0038/0039 36 passed; consumer REM-0010/0014/0041/0049/0050, 0012, 0017, 0035, REM-0031 e mission thread 683 passed; 0005/0050/0079/0082 231 passed; qualifica TypeDB con fault recovery, pausa limitata di Fuseki e servizi tipizzati READY; language (predicato .ttl limitato a deploy/bootstrap/fuseki/config.ttl), tracciabilita inversa, drift 0 su 241 input e 75 task, evidenza runtime --non-skipped dei 13 task riqualificati, evidence_manifest validate di OCOR-DEV-0004, piano, rccad, mypy, ruff, scope (66 path) PASS; suite reports di registro, linguaggio, REM-0046 e validatore 100 passed e 960 subtest; campagna a due lane sull HEAD esatto 4339/4339, zero skip, 2630,8 s su 5400 s, alimentazione di rete.",
+    "head_sha": "5ed8fe1023bde3efe50920f28761fba6bdd9a54d",
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "438ee05cab274ad184c6e5aa6e6ed4ac8113d2f0f12d46e4da1f4d1d981122d0",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-05T11:10:54Z",
+    "verdict_file_sha256": "077016bba6370ed863c896938462f2928190b3c9e061944085b4d69e6fb214b4",
+    "verdict_head_sha": "5ed8fe1023bde3efe50920f28761fba6bdd9a54d",
+    "verdict_request_id": "OCOR-DEV-REM-0052-5ed8fe1023bd-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Processo e contesto separati. Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore di OCOR-DEV-REM-0052: Claude Code (Anthropic, claude-opus-5-5), unico autore del task. Revisore preventivo: Antigravity CLI (Google, gemini-4-argon-high). Il verifier non è dello stesso fornitore dell'implementatore, del revisore preventivo, né dell'autore Anthropic degli elenchi iniziale e integrativo del programma di conformità. environment.json sha256 444889343b681ca45cca053158f2addc44768971cb7b83d44f4eab783b6dae3f. Host: Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Alimentazione di rete (ADP0 online=1, batteria Not charging) all'inizio del bootstrap e all'inizio e alla fine della suite completa. Ogni bootstrap, teardown e campagna è partito da una shell pulita env -i HOME USER LOGNAME LANG=C.UTF-8 bash --noprofile --norc, poi source di env.sh. Variabili esportate: OCOR_VERIFIER_WORKTREE da env.sh; per i pytest sullo stack host anche OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN, ricavati dal file appena generato senza source di .ocor/bootstrap.env. Nessuno strumento dell'implementatore. Piano NCP al commit 4781e06 sha256 1b9b0885e19fdb139548a76c44782d8200e95f013c7ca280f245fc9799ac9590 verificato.",
+      "model": "grok-4.7-high",
+      "process": "cursor agent, contesto pulito, sessione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+      "exit_code": 0,
+      "summary": "status PASS, docker READY, porte libere"
+    }
   },
   "inputs": {
     "deploy/bootstrap/compose.yaml": "010705eaa3a87886a1aebaa5b0bd10480bcc3559b4f876284b141cd0ab8a2ebc",
@@ -890,6 +1051,12 @@
   "review_scope": "regression-only: proves the task's tests (for 0073-0078 their service qualification) pass at the REM-0052 code head after its input changes; not a re-assessment of its conformance",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatore di REM-0052: Claude Code / claude-opus-5-5 / Anthropic per tutta l unita (iterazioni 1-9; sigillo e integrazione all iterazione 10, come implementatore di riserva del loop). Revisore preventivo consultivo: Antigravity CLI / gemini-4-argon-high / Google. Nessun implementatore ne il revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "implementers": [
       {
         "agent": "Claude Code",
@@ -898,6 +1065,12 @@
         "scope": "all of REM-0052, iterations 1-9: RED/GREEN of NCR-C4-001/003 (RED 0d22acc, 67da95d, GREEN fb9e20a), NCR-C4-004 (RED 49b7616, GREEN 5af48a9), NCR-C4-002 drift (RED 36cc66a, GREEN 2547123), Jena (RED a0f52ae, GREEN 7d5c4c1) and SHACL (RED 7a39c51, GREEN 437852a), language gate (RED d7c21f1, GREEN a7e859f), NCR-C4-005 and NCR-C2-013 (RED 5a07eb0, GREEN 599e865), input-robustness self-check (RED d5f88d6, 3635c4b, GREEN b709e15), decision requests, PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
     "preventive_reviewer": {
       "agent": "Antigravity CLI",
       "model": "gemini-4-argon-high",
@@ -915,11 +1088,12 @@
       "constraint": "provider neither Anthropic nor Google (implementer and preventive reviewer)",
       "process": "external loop only, separate clean context"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback_procedure_verified": "Mechanical review: revert the REM-0052 commits; the OCOR-DEV-0074.requalified-rem0038.json record becomes the most recent again once this record is removed with the revert. No data migration, no sealed-history rewrite.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-0074-requalified-rem0038-36e61515552d",
   "supersession_scope": "Regression-only after the OCOR-DEV-REM-0052 change of deploy/bootstrap/compose.yaml (the Fuseki service started from the read-only mounted deploy/bootstrap/fuseki/config.ttl with its SHACL endpoint, NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1); NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 1 (plan_units.NCP-U05.requalifications), NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 and the rule of the unit classification (NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (deploy/bootstrap/compose.yaml among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS) place it in the non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30); the task has no test module of its own: its service is re-provisioned by the versioned CI bootstrap from the changed profile and re-checked by its own qualification and fault-injection labels and the typed verification, as its REM-0038 record did. Not a re-assessment of its conformance and never evidence of a requirement: the requirement evidence of the task stays that of the supersedes chain; the new C4 and C2 behaviour is qualified by the unit tests and the requirements by the G6 tasks.",
   "task_id": "OCOR-DEV-0074",
