@@ -100,3 +100,16 @@ con una voce di registro in più.
   di NCP-U10, e la nota di risoluzione di `NCR-C6-004`. Nessun limite, soglia, workflow, guard, contratto, schema,
   registro normativo o test esistente cambia. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime
   `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-05
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05)`, **opzione 2** (la parte C8 diventa una voce nuova del registro, `OPEN`, gravità `HIGH`, componente C8, `plan_unit` `NCP-U10`, con il criterio dell'opzione 1; `NCR-C6-004` è risolta da NCP-U07 sul percorso d'azione C6). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `a9f29ac66e2493a98e42ef31c03c5c085d359c06`, sha256 `efc501b415aee8d557dc62cf3a826998d9c2d8aa354f3c178ab539620ba32605` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U07-C8-TOOL-RUNTIME-LEASE` (branch `governed/decision-request-ncp-u07-c8-tool-runtime-lease`, commit `a9f29ac66e2493a98e42ef31c03c5c085d359c06`, file `reports/development/decision_requests/NCP-U07-C8-TOOL-RUNTIME-LEASE.md`, sha256 `efc501b415aee8d557dc62cf3a826998d9c2d8aa354f3c178ab539620ba32605`) adottando l'**opzione 2**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
