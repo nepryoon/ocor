@@ -12,6 +12,19 @@ NCR-C6-001 to NCR-C6-009 and NCR-C6-014.
   evaluated as satisfied for that action, and lets a stop observed on the evaluation snapshot
   win over dispatch, retry and canonical commit. A refused transition persists no effect and
   leaves the state unchanged.
+* NCR-C6-006 -- LLD v1.1 :171 (thirteen distinct immutable records, none an alias of another),
+  LLD v1.1 :320 (GatePackage content, immutable, digest recomputed by every consumer), ADD v1.3
+  :156 (OutcomeAssessment refers to the ExecutionResult without coinciding with it, admitted
+  by new Observation/Evidence), ADD v1.3 :384 (the command carries the GatePackage digest and
+  the governed_context digest), Register FR-008 :59, FR-031 :121, FR-033 :123 and FR-076 :208.
+* NCR-C6-001 -- ADD v1.3 :2849-2850 (G-APPROVAL: no approver equals the proposer, signatures
+  bound to proposal digest, revision, release and expiry; G-DECISION: signed, unexpired,
+  bounded to effect, target, parameters and validity window), LLD v1.1 :254, Register FR-003
+  :45, NFR-005 :46 (self-approval, expired approval, scope mismatch and replay rejected) and
+  FR-111 :259.
+* NCR-C6-008 -- ADD v1.3 :3298-3307 (approval obligation by risk class), :3334 (R3 ApprovalSet
+  expires ten minutes after the second signature, not renewable), :3338 (Domain Approver and
+  National Approver quorum), Register FR-079 :211 and FR-003 :45.
 
 Every case is in-process: the FSM is a pure component whose durable effect sink and state
 store are ports.
@@ -19,8 +32,14 @@ store are ports.
 
 from __future__ import annotations
 
+import dataclasses
+import hashlib
+import importlib
+import inspect
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from types import ModuleType
 from typing import Any
 
 import pytest
@@ -438,3 +457,777 @@ def test_two_engines_sharing_the_state_store_never_both_apply_from_the_same_stat
     assert [item.transition_id for item in sink.calls].count("ACT-T14") + [
         item.transition_id for item in sink.calls
     ].count("ACT-T29") == 1
+
+
+
+# --- NCR-C6-006, NCR-C6-001, NCR-C6-008: records, G-APPROVAL and G-DECISION -------------------
+
+RECORD_NAMES = (
+    "ActionProposal",
+    "PolicyAuthorityDecision",
+    "Approval",
+    "ApprovalSet",
+    "Decision",
+    "ActionIntent",
+    "GatePackage",
+    "ActionCommand",
+    "DeliveryAttempt",
+    "ExecutionResult",
+    "OutcomeAssessment",
+    "ConflictScope",
+    "IndeterminateEffectAdjudication",
+)
+GATE_PACKAGE_CONTENT = (
+    "proposal_digest",
+    "expected_revision",
+    "governed_context_digest",
+    "policy_bundle_digest",
+    "ontology_release_digest",
+    "authority_ref",
+    "approval_set_digest",
+    "adapter_binding_digest",
+    "projection_watermark",
+    "stop_epoch",
+    "valid_from",
+    "valid_until",
+    "conflict_scope_digest",
+    "risk_class",
+    "evidence_refs",
+    "alternative_refs",
+    "dissent_refs",
+    "expected_effects",
+    "compensation_ref",
+    "artifact_digest",
+    "canonical_commit_ref",
+)
+PROPOSER = "urn:ocor:human:proposer"
+DOMAIN = "urn:ocor:human:domain-approver"
+NATIONAL = "urn:ocor:human:national-approver"
+SECOND_DOMAIN = "urn:ocor:human:second-domain-approver"
+SUSPENDED = "urn:ocor:human:suspended-approver"
+AUTHORITY = "urn:ocor:authority:national-duty"
+OTHER_AUTHORITY = "urn:ocor:authority:other"
+ACTION = "urn:ocor:action:interagency-1"
+
+
+def _sha(label: str) -> str:
+    return "urn:sha256:" + hashlib.sha256(label.encode("utf-8")).hexdigest()
+
+
+RELEASE = _sha("release-1")
+
+
+def _mod(name: str) -> ModuleType:
+    return importlib.import_module(f"ocor_runtime.c6.{name}")
+
+
+def _key(label: str) -> Any:
+    from ocor_runtime.c1.signing import Ed25519SigningKey
+
+    return Ed25519SigningKey.from_seed(hashlib.sha256(label.encode("utf-8")).digest())
+
+
+class Releases:
+    def __init__(self) -> None:
+        self.digest = RELEASE
+
+    def active_release_digest(self) -> str:
+        return self.digest
+
+
+class GateWorld:
+    """A Human Gate, a Decision gate and the signers of one action instance."""
+
+    def __init__(self, *, risk: str = "R3_HIGH_IMPACT", now: datetime = NOW) -> None:
+        from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
+        from ocor_runtime.kernel.governance import InMemoryTrustedClock, RiskClass
+
+        self.records = _mod("records")
+        self.gate = _mod("human_gate")
+        self.clock = InMemoryTrustedClock(now)
+        roles = {
+            PROPOSER: ("DOMAIN_APPROVER", "ACTIVE"),
+            DOMAIN: ("DOMAIN_APPROVER", "ACTIVE"),
+            NATIONAL: ("NATIONAL_APPROVER", "ACTIVE"),
+            SECOND_DOMAIN: ("DOMAIN_APPROVER", "ACTIVE"),
+            SUSPENDED: ("NATIONAL_APPROVER", "SUSPENDED"),
+        }
+        self.identities = IdentityRegistry(
+            IdentityRecord(
+                canonical_id=principal,
+                attributes={"principal_kind": "HUMAN", "status": status, "roles": role},
+            )
+            for principal, (role, status) in roles.items()
+        )
+        self.approvers = self.gate.InMemorySignerKeyring()
+        for principal in roles:
+            self.approvers.register(principal, "k1", _key(principal).public_key)
+        self.authorities = self.gate.InMemorySignerKeyring()
+        for principal in (AUTHORITY, OTHER_AUTHORITY):
+            self.authorities.register(principal, "k1", _key(principal).public_key)
+        self.releases = Releases()
+        self.approval_gate = self.gate.ApprovalGate(
+            identities=self.identities,
+            approvers=self.approvers,
+            releases=self.releases,
+            clock=self.clock,
+            signing_key=_key("gate"),
+            gate_id="urn:ocor:component:c6:human-gate",
+            keyid="gate-k1",
+        )
+        self.decision_gate = self.gate.DecisionGate(
+            authorities=self.authorities, approval_gate=self.approval_gate, clock=self.clock
+        )
+        self.proposal = self.records.ActionProposal(
+            action_instance_id=ACTION,
+            proposer_id=PROPOSER,
+            action_type_ref="urn:ocor:action-type:interagency-tasking",
+            action_type_digest=_sha("action-type"),
+            effect_class="EXTERNAL_COMMAND",
+            risk_class=RiskClass[risk],
+            target_ref="urn:ocor:target:site-1",
+            parameters={"asset": "urn:ocor:asset:1", "priority": 2},
+            governed_context_digest=_sha("gcs"),
+            expected_revision=4,
+            evidence_refs=("urn:ocor:evidence:e1",),
+            proposed_at=now - timedelta(minutes=5),
+        )
+
+    def approve(
+        self,
+        principal: str,
+        role: str,
+        *,
+        signed_at: datetime | None = None,
+        expires_at: datetime | None = None,
+        proposal: Any = None,
+        release: str = RELEASE,
+        signer: str | None = None,
+        approval_id: str | None = None,
+    ) -> Any:
+        signed = signed_at or self.clock.now() - timedelta(minutes=1)
+        return self.gate.sign_approval(
+            _key(signer or principal),
+            keyid="k1",
+            approval_id=approval_id or f"urn:ocor:approval:{principal}:{signed.isoformat()}",
+            proposal=proposal or self.proposal,
+            release_digest=release,
+            approver_id=principal,
+            role=role,
+            signed_at=signed,
+            expires_at=expires_at or signed + timedelta(hours=1),
+        )
+
+    def quorum(self) -> tuple[Any, Any]:
+        return (self.approve(DOMAIN, "DOMAIN_APPROVER"), self.approve(NATIONAL, "NATIONAL_APPROVER"))
+
+    def approval_set(self, approvals: Any = None, *, set_id: str = "urn:ocor:approval-set:1") -> Any:
+        return self.approval_gate.assemble(
+            self.proposal, approvals if approvals is not None else self.quorum(), approval_set_id=set_id
+        )
+
+    def conflict_scope(self) -> Any:
+        return self.records.ConflictScope(
+            scope_id="urn:ocor:conflict-scope:1",
+            action_instance_id=ACTION,
+            target_refs=("urn:ocor:target:site-1",),
+            effect_class="EXTERNAL_COMMAND",
+            opened_at=self.clock.now(),
+        )
+
+    def package(self, approval_set: Any, **overrides: Any) -> Any:
+        now = self.clock.now()
+        values: dict[str, Any] = {
+            "action_instance_id": ACTION,
+            "proposal_digest": self.proposal.digest(),
+            "expected_revision": 4,
+            "canonical_commit_ref": "urn:ocor:commit:41",
+            "governed_context_digest": _sha("gcs"),
+            "policy_bundle_digest": _sha("policy"),
+            "ontology_release_digest": RELEASE,
+            "authority_ref": AUTHORITY,
+            "approval_set_digest": approval_set.digest(),
+            "adapter_binding_digest": _sha("adapter"),
+            "projection_watermark": "urn:ocor:watermark:77",
+            "stop_epoch": 3,
+            "valid_from": now - timedelta(minutes=2),
+            "valid_until": now + timedelta(minutes=30),
+            "conflict_scope_digest": self.conflict_scope().digest(),
+            "risk_class": self.proposal.risk_class,
+            "evidence_refs": ("urn:ocor:evidence:e1",),
+            "alternative_refs": ("urn:ocor:alternative:a1",),
+            "dissent_refs": (),
+            "expected_effects": ("urn:ocor:effect:tasking-issued",),
+            "compensation_ref": "urn:ocor:compensation:recall",
+            "artifact_digest": _sha("artifact"),
+            "frozen_at": now,
+        }
+        values.update(overrides)
+        return self.records.GatePackage(**values)
+
+    def decide(
+        self,
+        package_digest: str,
+        *,
+        authority: str = AUTHORITY,
+        signer: str | None = None,
+        outcome: str = "ACCEPT",
+        proposal: Any = None,
+        valid_from: datetime | None = None,
+        valid_until: datetime | None = None,
+        decision_id: str = "urn:ocor:decision:1",
+    ) -> Any:
+        now = self.clock.now()
+        return self.gate.sign_decision(
+            _key(signer or authority),
+            keyid="k1",
+            decision_id=decision_id,
+            authority_id=authority,
+            proposal=proposal or self.proposal,
+            gate_package_digest=package_digest,
+            outcome=outcome,
+            valid_from=valid_from or now - timedelta(minutes=1),
+            valid_until=valid_until or now + timedelta(minutes=5),
+            decided_at=now,
+        )
+
+    def admitted(self) -> tuple[Any, Any, Any]:
+        approval_set = self.approval_set()
+        package = self.package(approval_set)
+        decision = self.decide(package.digest())
+        admitted = self.decision_gate.admit(
+            decision, proposal=self.proposal, package=package, package_digest=package.digest(), approval_set=approval_set
+        )
+        return approval_set, package, admitted
+
+    def chain(self) -> dict[str, Any]:
+        """Every record of one action instance, from proposal to outcome assessment."""
+        records = self.records
+        approvals = self.quorum()
+        approval_set = self.approval_set(approvals)
+        package = self.package(approval_set)
+        decision = self.decide(package.digest())
+        self.decision_gate.admit(
+            decision, proposal=self.proposal, package=package, package_digest=package.digest(), approval_set=approval_set
+        )
+        now = self.clock.now()
+        intent = records.ActionIntent.from_decision(
+            intent_id="urn:ocor:intent:1", decision=decision, package=package, package_digest=package.digest(), created_at=now
+        )
+        command = records.ActionCommand.issue(
+            command_id="urn:ocor:command:1",
+            intent=intent,
+            package=package,
+            package_digest=package.digest(),
+            parameters={"asset": "urn:ocor:asset:1", "priority": 2},
+            idempotency_key="c6-action-1",
+            deadline=now + timedelta(minutes=1),
+        )
+        attempt = records.DeliveryAttempt.for_command(
+            attempt_id="urn:ocor:attempt:1",
+            command=command,
+            package=package,
+            package_digest=package.digest(),
+            emission_attempt=1,
+            lease_ref="urn:ocor:lease:1",
+            fence_outcome="PASSED",
+            attempted_at=now,
+        )
+        result = records.ExecutionResult.for_attempt(
+            result_id="urn:ocor:result:1",
+            attempt=attempt,
+            adapter_status="COMPLETED",
+            adapter_result_digest=_sha("adapter-result"),
+            evidence_refs=("urn:ocor:evidence:adapter-1",),
+            observed_at=now + timedelta(seconds=1),
+        )
+        assessment = records.OutcomeAssessment.for_result(
+            assessment_id="urn:ocor:assessment:1",
+            result=result,
+            observation_refs=("urn:ocor:observation:o1",),
+            evidence_refs=("urn:ocor:evidence:observed-1",),
+            assessment="EFFECT_ACHIEVED",
+            assessed_at=now + timedelta(seconds=2),
+        )
+        policy = records.PolicyAuthorityDecision(
+            action_instance_id=ACTION,
+            proposal_digest=self.proposal.digest(),
+            outcome="PERMIT",
+            reason_code="POLICY_PERMIT",
+            risk_class=self.proposal.risk_class,
+            policy_bundle_digest=_sha("policy"),
+            authority_ref=AUTHORITY,
+            evaluated_at=now,
+        )
+        scope = self.conflict_scope()
+        adjudication = records.IndeterminateEffectAdjudication(
+            adjudication_id="urn:ocor:adjudication:1",
+            conflict_scope_digest=scope.digest(),
+            command_digest=command.digest(),
+            outcome="EFFECT_APPLIED",
+            evidence_refs=("urn:ocor:evidence:adjudication-1",),
+            adjudicator_id=AUTHORITY,
+            adjudicated_at=now,
+            valid_until=now + timedelta(minutes=10),
+        )
+        return {
+            "ActionProposal": self.proposal,
+            "PolicyAuthorityDecision": policy,
+            "Approval": approvals[0],
+            "ApprovalSet": approval_set,
+            "Decision": decision,
+            "ActionIntent": intent,
+            "GatePackage": package,
+            "ActionCommand": command,
+            "DeliveryAttempt": attempt,
+            "ExecutionResult": result,
+            "OutcomeAssessment": assessment,
+            "ConflictScope": scope,
+            "IndeterminateEffectAdjudication": adjudication,
+        }
+
+
+def _gate_reason(call: Callable[[], Any]) -> str:
+    gate = _mod("human_gate")
+    with pytest.raises(gate.ApprovalGateError) as excinfo:
+        call()
+    return str(excinfo.value.reason_code)
+
+
+def _record_reason(call: Callable[[], Any]) -> str:
+    records = _mod("records")
+    with pytest.raises(records.C6RecordError) as excinfo:
+        call()
+    return str(excinfo.value.reason_code)
+
+
+def test_ncr_c6_006_conforms() -> None:
+    """LLD v1.1 :171 and :320, ADD v1.3 :156 and :384: thirteen distinct immutable records."""
+    records = _mod("records")
+    classes = [getattr(records, name) for name in RECORD_NAMES]
+    assert len(set(classes)) == 13
+    for cls in classes:
+        assert dataclasses.is_dataclass(cls)
+        assert cls.__dataclass_params__.frozen
+        assert not any(issubclass(cls, other) for other in classes if other is not cls)
+    chain = GateWorld().chain()
+    assert set(chain) == set(RECORD_NAMES)
+    for name, record in chain.items():
+        assert type(record).__name__ == name
+        assert record.to_mapping()["record_type"] == name
+        first = dataclasses.fields(record)[0].name
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            setattr(record, first, "changed")
+    assert len({record.digest() for record in chain.values()}) == 13
+    package = chain["GatePackage"]
+    assert set(GATE_PACKAGE_CONTENT) <= set(package.to_mapping())
+    command = chain["ActionCommand"]
+    assert command.gate_package_digest == package.digest()
+    assert command.governed_context_digest == package.governed_context_digest
+    tampered = dataclasses.replace(package, stop_epoch=package.stop_epoch + 1)
+    assert _record_reason(lambda: records.verify_gate_package(tampered, package.digest())) == (
+        "GATE_PACKAGE_DIGEST_MISMATCH"
+    )
+    assessment, result = chain["OutcomeAssessment"], chain["ExecutionResult"]
+    assert assessment.execution_result_digest == result.digest()
+    assert assessment.digest() != result.digest()
+    assert not set(assessment.evidence_refs) & set(result.evidence_refs)
+
+
+@pytest.mark.parametrize("consumer", ["ActionIntent", "ActionCommand", "DeliveryAttempt", "DecisionGate"])
+@pytest.mark.parametrize("tampered", [False, True])
+def test_every_consumer_recomputes_the_gate_package_digest(consumer: str, tampered: bool) -> None:
+    world = GateWorld()
+    records = world.records
+    chain = world.chain()
+    package, decision, intent, command = (
+        chain["GatePackage"],
+        chain["Decision"],
+        chain["ActionIntent"],
+        chain["ActionCommand"],
+    )
+    claimed = package.digest()
+    presented = dataclasses.replace(package, projection_watermark="urn:ocor:watermark:78") if tampered else package
+    now = world.clock.now()
+    calls: dict[str, Callable[[], Any]] = {
+        "ActionIntent": lambda: records.ActionIntent.from_decision(
+            intent_id="urn:ocor:intent:2", decision=decision, package=presented, package_digest=claimed, created_at=now
+        ),
+        "ActionCommand": lambda: records.ActionCommand.issue(
+            command_id="urn:ocor:command:2",
+            intent=intent,
+            package=presented,
+            package_digest=claimed,
+            parameters={"asset": "urn:ocor:asset:1", "priority": 2},
+            idempotency_key="c6-action-2",
+            deadline=now + timedelta(minutes=1),
+        ),
+        "DeliveryAttempt": lambda: records.DeliveryAttempt.for_command(
+            attempt_id="urn:ocor:attempt:2",
+            command=command,
+            package=presented,
+            package_digest=claimed,
+            emission_attempt=2,
+            lease_ref="urn:ocor:lease:2",
+            fence_outcome="PASSED",
+            attempted_at=now,
+        ),
+    }
+    if consumer == "DecisionGate":
+        fresh = GateWorld()
+        approval_set = fresh.approval_set()
+        good = fresh.package(approval_set)
+        shown = dataclasses.replace(good, projection_watermark="urn:ocor:watermark:78") if tampered else good
+        call = lambda: fresh.decision_gate.admit(  # noqa: E731
+            fresh.decide(good.digest()),
+            proposal=fresh.proposal,
+            package=shown,
+            package_digest=good.digest(),
+            approval_set=approval_set,
+        )
+        if tampered:
+            assert _gate_reason(call) == "GATE_PACKAGE_DIGEST_MISMATCH"
+        else:
+            assert call().gate_package_digest == good.digest()
+        return
+    if tampered:
+        assert _record_reason(calls[consumer]) == "GATE_PACKAGE_DIGEST_MISMATCH"
+    else:
+        assert calls[consumer]().gate_package_digest == claimed
+
+
+def test_a_command_carries_only_the_decided_parameters_within_the_package_window() -> None:
+    world = GateWorld()
+    records = world.records
+    chain = world.chain()
+    package, intent = chain["GatePackage"], chain["ActionIntent"]
+    now = world.clock.now()
+
+    def issue(parameters: dict[str, Any], deadline: datetime) -> Any:
+        return records.ActionCommand.issue(
+            command_id="urn:ocor:command:3",
+            intent=intent,
+            package=package,
+            package_digest=package.digest(),
+            parameters=parameters,
+            idempotency_key="c6-action-3",
+            deadline=deadline,
+        )
+
+    decided = {"asset": "urn:ocor:asset:1", "priority": 2}
+    assert issue(decided, now + timedelta(minutes=1)).parameters == decided
+    assert _record_reason(lambda: issue({"asset": "urn:ocor:asset:1", "priority": 3}, now)) == "RECORD_INVALID"
+    assert _record_reason(lambda: issue(decided, package.valid_until + timedelta(seconds=1))) == "RECORD_INVALID"
+
+
+def test_an_outcome_assessment_is_admitted_only_by_new_evidence() -> None:
+    world = GateWorld()
+    records = world.records
+    result = world.chain()["ExecutionResult"]
+
+    def assess(evidence: tuple[str, ...], at: datetime) -> Any:
+        return records.OutcomeAssessment.for_result(
+            assessment_id="urn:ocor:assessment:2",
+            result=result,
+            observation_refs=("urn:ocor:observation:o2",),
+            evidence_refs=evidence,
+            assessment="EFFECT_PARTIAL",
+            assessed_at=at,
+        )
+
+    later = result.observed_at + timedelta(seconds=1)
+    assert assess(("urn:ocor:evidence:observed-2",), later).execution_result_digest == result.digest()
+    assert _record_reason(lambda: assess(result.evidence_refs, later)) == "RECORD_INVALID"
+    assert _record_reason(lambda: assess(("urn:ocor:evidence:observed-2",), result.observed_at)) == "RECORD_INVALID"
+
+
+@pytest.mark.parametrize("fence_outcome", ["PASSED", "INVALIDATED"])
+def test_an_execution_result_requires_an_attempt_that_passed_the_fence(fence_outcome: str) -> None:
+    world = GateWorld()
+    records = world.records
+    chain = world.chain()
+    attempt = dataclasses.replace(chain["DeliveryAttempt"], fence_outcome=fence_outcome)
+
+    def result() -> Any:
+        return records.ExecutionResult.for_attempt(
+            result_id="urn:ocor:result:2",
+            attempt=attempt,
+            adapter_status="COMPLETED",
+            adapter_result_digest=_sha("adapter-result-2"),
+            evidence_refs=("urn:ocor:evidence:adapter-2",),
+            observed_at=attempt.attempted_at,
+        )
+
+    if fence_outcome == "PASSED":
+        assert result().attempt_digest == attempt.digest()
+    else:
+        assert _record_reason(result) == "RECORD_INVALID"
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        (None, None),
+        ("proposed_at", datetime(2026, 11, 5, 12, 0, 0)),
+        ("action_type_digest", "sha256:abc"),
+        ("evidence_refs", ()),
+        ("evidence_refs", "urn:ocor:evidence:e1"),
+        ("expected_revision", True),
+        ("expected_revision", -1),
+        ("risk_class", 9),
+        ("target_ref", " urn:ocor:target:site-1"),
+        ("parameters", {"asset": 1.5}),
+        ("parameters", {1: "x"}),
+    ],
+)
+def test_a_record_with_a_malformed_field_is_refused(field: str | None, value: Any) -> None:
+    world = GateWorld()
+    if field is None:
+        assert dataclasses.replace(world.proposal).digest() == world.proposal.digest()
+        return
+    assert _record_reason(lambda: dataclasses.replace(world.proposal, **{field: value})) == "RECORD_INVALID"
+
+
+def test_ncr_c6_001_conforms() -> None:
+    """ADD v1.3 :2849-2850, LLD v1.1 :254, FR-003, NFR-005, FR-111: G-APPROVAL and G-DECISION."""
+    world = GateWorld()
+    approval_set, package, decision = world.admitted()
+    assert approval_set.approver_ids == tuple(sorted((DOMAIN, NATIONAL)))
+    assert PROPOSER not in approval_set.approver_ids
+    assert decision.gate_package_digest == package.digest()
+
+    world = GateWorld()
+    self_approval = (world.approve(PROPOSER, "DOMAIN_APPROVER"), world.approve(NATIONAL, "NATIONAL_APPROVER"))
+    assert _gate_reason(lambda: world.approval_set(self_approval)) == "SELF_APPROVAL"
+    expired = (
+        world.approve(DOMAIN, "DOMAIN_APPROVER", signed_at=NOW - timedelta(hours=2), expires_at=NOW - timedelta(hours=1)),
+        world.approve(NATIONAL, "NATIONAL_APPROVER"),
+    )
+    assert _gate_reason(lambda: world.approval_set(expired)) == "APPROVAL_EXPIRED"
+    other = dataclasses.replace(world.proposal, target_ref="urn:ocor:target:site-2")
+    mismatch = (world.approve(DOMAIN, "DOMAIN_APPROVER", proposal=other), world.approve(NATIONAL, "NATIONAL_APPROVER"))
+    assert _gate_reason(lambda: world.approval_set(mismatch)) == "SCOPE_MISMATCH"
+    approvals = world.quorum()
+    world.approval_set(approvals)
+    assert _gate_reason(lambda: world.approval_set(approvals, set_id="urn:ocor:approval-set:2")) == "APPROVAL_REPLAYED"
+
+    world = GateWorld()
+    approval_set, package, decision = world.admitted()
+    assert _gate_reason(
+        lambda: world.decision_gate.admit(
+            decision, proposal=world.proposal, package=package, package_digest=package.digest(), approval_set=approval_set
+        )
+    ) == "DECISION_REPLAYED"
+    world = GateWorld()
+    approval_set = world.approval_set()
+    package = world.package(approval_set)
+    forged = world.decide(package.digest(), signer=OTHER_AUTHORITY)
+    assert _gate_reason(
+        lambda: world.decision_gate.admit(
+            forged, proposal=world.proposal, package=package, package_digest=package.digest(), approval_set=approval_set
+        )
+    ) == "DECISION_SIGNATURE_INVALID"
+
+
+APPROVAL_CASES: dict[str, Callable[[GateWorld], tuple[Any, ...]]] = {
+    "valid": lambda w: w.quorum(),
+    "forged-signature": lambda w: (w.approve(DOMAIN, "DOMAIN_APPROVER", signer=SECOND_DOMAIN), w.quorum()[1]),
+    "other-proposal": lambda w: (
+        w.approve(DOMAIN, "DOMAIN_APPROVER", proposal=dataclasses.replace(w.proposal, parameters={"asset": "x"})),
+        w.quorum()[1],
+    ),
+    "other-revision": lambda w: (
+        w.approve(DOMAIN, "DOMAIN_APPROVER", proposal=dataclasses.replace(w.proposal, expected_revision=5)),
+        w.quorum()[1],
+    ),
+    "other-release": lambda w: (w.approve(DOMAIN, "DOMAIN_APPROVER", release=_sha("release-0")), w.quorum()[1]),
+    "self-approval": lambda w: (w.approve(PROPOSER, "DOMAIN_APPROVER"), w.quorum()[1]),
+    "suspended-approver": lambda w: (w.quorum()[0], w.approve(SUSPENDED, "NATIONAL_APPROVER")),
+    "role-not-held": lambda w: (w.quorum()[0], w.approve(SECOND_DOMAIN, "NATIONAL_APPROVER")),
+    "expired": lambda w: (
+        w.approve(DOMAIN, "DOMAIN_APPROVER", signed_at=NOW - timedelta(hours=2), expires_at=NOW - timedelta(seconds=1)),
+        w.quorum()[1],
+    ),
+    "not-yet-signed": lambda w: (w.approve(DOMAIN, "DOMAIN_APPROVER", signed_at=NOW + timedelta(seconds=1)), w.quorum()[1]),
+    "one-approver": lambda w: (w.quorum()[0],),
+    "same-principal-twice": lambda w: (
+        w.approve(DOMAIN, "DOMAIN_APPROVER"),
+        w.approve(DOMAIN, "DOMAIN_APPROVER", signed_at=NOW - timedelta(seconds=30)),
+    ),
+    "two-domain-approvers": lambda w: (w.quorum()[0], w.approve(SECOND_DOMAIN, "DOMAIN_APPROVER")),
+}
+APPROVAL_REASONS = {
+    "forged-signature": "SIGNATURE_INVALID",
+    "other-proposal": "SCOPE_MISMATCH",
+    "other-revision": "SCOPE_MISMATCH",
+    "other-release": "SCOPE_MISMATCH",
+    "self-approval": "SELF_APPROVAL",
+    "suspended-approver": "APPROVER_NOT_AUTHORIZED",
+    "role-not-held": "APPROVER_NOT_AUTHORIZED",
+    "expired": "APPROVAL_EXPIRED",
+    "not-yet-signed": "APPROVAL_EXPIRED",
+    "one-approver": "QUORUM_NOT_MET",
+    "same-principal-twice": "QUORUM_NOT_MET",
+    "two-domain-approvers": "QUORUM_NOT_MET",
+}
+
+
+@pytest.mark.parametrize("case", sorted(APPROVAL_CASES))
+def test_g_approval_admits_only_the_signed_bound_quorum_of_distinct_humans(case: str) -> None:
+    world = GateWorld()
+    approvals = APPROVAL_CASES[case](world)
+    if case == "valid":
+        approval_set = world.approval_set(approvals)
+        assert approval_set.approval_digests == tuple(sorted(item.digest() for item in approvals))
+        assert world.approval_gate.verify_set(approval_set, world.proposal) == approval_set
+        return
+    assert _gate_reason(lambda: world.approval_set(approvals)) == APPROVAL_REASONS[case]
+
+
+def test_a_release_change_invalidates_the_approvals() -> None:
+    world = GateWorld()
+    approvals = world.quorum()
+    world.releases.digest = _sha("release-2")
+    assert _gate_reason(lambda: world.approval_set(approvals)) == "SCOPE_MISMATCH"
+
+
+DECISION_REASONS = {
+    "valid": None,
+    "forged-signature": "DECISION_SIGNATURE_INVALID",
+    "unknown-authority": "DECISION_SIGNATURE_INVALID",
+    "not-competent": "DECISION_NOT_COMPETENT",
+    "rejected": "DECISION_REJECTED",
+    "other-effect": "DECISION_SCOPE_MISMATCH",
+    "other-target": "DECISION_SCOPE_MISMATCH",
+    "other-parameters": "DECISION_SCOPE_MISMATCH",
+    "beyond-approval-set": "DECISION_SCOPE_MISMATCH",
+    "before-package-window": "DECISION_SCOPE_MISMATCH",
+    "expired": "DECISION_EXPIRED",
+    "not-yet-valid": "DECISION_EXPIRED",
+    "other-package": "DECISION_SCOPE_MISMATCH",
+    "unsigned-legacy": "DECISION_SIGNATURE_INVALID",
+}
+
+
+@pytest.mark.parametrize("case", sorted(DECISION_REASONS))
+def test_g_decision_admits_only_a_signed_unexpired_bounded_decision(case: str) -> None:
+    world = GateWorld()
+    approval_set = world.approval_set()
+    package = world.package(approval_set)
+    digest = package.digest()
+    now = world.clock.now()
+    proposal = world.proposal
+    builders: dict[str, Callable[[], Any]] = {
+        "valid": lambda: world.decide(digest),
+        "forged-signature": lambda: world.decide(digest, signer=OTHER_AUTHORITY),
+        "unknown-authority": lambda: world.decide(digest, authority="urn:ocor:authority:unknown"),
+        "not-competent": lambda: world.decide(digest, authority=OTHER_AUTHORITY),
+        "rejected": lambda: world.decide(digest, outcome="REJECT"),
+        "other-effect": lambda: world.decide(digest, proposal=dataclasses.replace(proposal, effect_class="CANONICAL_COMMIT")),
+        "other-target": lambda: world.decide(digest, proposal=dataclasses.replace(proposal, target_ref="urn:ocor:target:x")),
+        "other-parameters": lambda: world.decide(digest, proposal=dataclasses.replace(proposal, parameters={"asset": "x"})),
+        "beyond-approval-set": lambda: world.decide(digest, valid_until=approval_set.expires_at + timedelta(seconds=1)),
+        "before-package-window": lambda: world.decide(digest, valid_from=package.valid_from - timedelta(seconds=1)),
+        "expired": lambda: world.decide(digest, valid_from=now - timedelta(minutes=2), valid_until=now),
+        "not-yet-valid": lambda: world.decide(digest, valid_from=now + timedelta(seconds=1)),
+        "other-package": lambda: world.decide(_sha("other-package")),
+        "unsigned-legacy": lambda: _mod("engine").Decision(
+            action_id=ACTION, decided_by=AUTHORITY, accepted=True, rationale="legacy", decided_at=now
+        ),
+    }
+    decision = builders[case]()
+
+    def admit() -> Any:
+        return world.decision_gate.admit(
+            decision, proposal=proposal, package=package, package_digest=digest, approval_set=approval_set
+        )
+
+    if DECISION_REASONS[case] is None:
+        assert admit() == decision
+        return
+    assert _gate_reason(admit) == DECISION_REASONS[case]
+
+
+def test_an_approval_set_serves_one_decision_only() -> None:
+    world = GateWorld()
+    approval_set, package, _ = world.admitted()
+    second = world.decide(package.digest(), decision_id="urn:ocor:decision:2")
+    assert _gate_reason(
+        lambda: world.decision_gate.admit(
+            second, proposal=world.proposal, package=package, package_digest=package.digest(), approval_set=approval_set
+        )
+    ) == "APPROVAL_REPLAYED"
+
+
+def test_a_tampered_or_foreign_approval_set_is_refused() -> None:
+    world = GateWorld()
+    approval_set = world.approval_set()
+    forged = dataclasses.replace(approval_set, expires_at=approval_set.expires_at + timedelta(minutes=5))
+    assert _gate_reason(lambda: world.approval_gate.verify_set(forged, world.proposal)) == "APPROVAL_SET_INVALID"
+    other = dataclasses.replace(world.proposal, expected_revision=5)
+    assert _gate_reason(lambda: world.approval_gate.verify_set(approval_set, other)) == "APPROVAL_SET_INVALID"
+    assert world.approval_gate.verify_set(approval_set, world.proposal) == approval_set
+
+
+def test_ncr_c6_008_conforms() -> None:
+    """ADD v1.3 :3298-3307, :3334, :3338, FR-079, FR-003: risk-derived quorum and R3 expiry."""
+    gate = _mod("human_gate")
+    from ocor_runtime.kernel.governance import RiskClass
+
+    r3 = gate.approval_requirement(RiskClass.R3_HIGH_IMPACT)
+    assert r3.mutation_admitted and r3.quorum == 2
+    assert r3.required_roles == frozenset({"DOMAIN_APPROVER", "NATIONAL_APPROVER"})
+    assert r3.set_validity_after_last_signature == timedelta(minutes=10)
+    r2 = gate.approval_requirement(RiskClass.R2_CONTROLLED)
+    assert r2.mutation_admitted and r2.quorum == 1
+    for risk in (RiskClass.R0_INFORMATIONAL, RiskClass.R1_LOW):
+        assert not gate.approval_requirement(risk).mutation_admitted
+    assert set(inspect.signature(gate.ApprovalGate.assemble).parameters) == {"self", "proposal", "approvals", "approval_set_id"}
+
+    world = GateWorld()
+    first = world.approve(DOMAIN, "DOMAIN_APPROVER", signed_at=NOW - timedelta(minutes=8))
+    second = world.approve(NATIONAL, "NATIONAL_APPROVER", signed_at=NOW - timedelta(minutes=1))
+    approval_set = world.approval_set((first, second))
+    assert approval_set.completed_at == second.signed_at
+    assert approval_set.expires_at == second.signed_at + timedelta(minutes=10)
+    world.clock.advance(timedelta(minutes=8, seconds=59))
+    assert world.approval_gate.verify_set(approval_set, world.proposal) == approval_set
+    world.clock.advance(timedelta(seconds=1))
+    assert _gate_reason(lambda: world.approval_gate.verify_set(approval_set, world.proposal)) == "APPROVAL_EXPIRED"
+    assert _gate_reason(lambda: world.approval_set((first, second), set_id="urn:ocor:approval-set:renewed")) in {
+        "APPROVAL_EXPIRED",
+        "APPROVAL_REPLAYED",
+    }
+    assert _gate_reason(lambda: world.approval_set((first,), set_id="urn:ocor:approval-set:one")) == "QUORUM_NOT_MET"
+
+
+@pytest.mark.parametrize("risk", ["R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
+def test_the_approval_obligation_follows_the_risk_class(risk: str) -> None:
+    world = GateWorld(risk=risk)
+    if risk in {"R0_INFORMATIONAL", "R1_LOW"}:
+        assert _gate_reason(lambda: world.approval_set(world.quorum())) == "NO_MUTATION_ADMITTED"
+        return
+    if risk == "R2_CONTROLLED":
+        single = (world.approve(DOMAIN, "DOMAIN_APPROVER"),)
+        approval_set = world.approval_set(single)
+        assert approval_set.approver_ids == (DOMAIN,)
+        assert approval_set.expires_at == single[0].expires_at
+        world = GateWorld(risk=risk)
+        assert _gate_reason(lambda: world.approval_set((world.approve(PROPOSER, "DOMAIN_APPROVER"),))) == "SELF_APPROVAL"
+        return
+    assert _gate_reason(lambda: world.approval_set((world.approve(DOMAIN, "DOMAIN_APPROVER"),))) == "QUORUM_NOT_MET"
+    assert world.approval_set().risk_class.name == "R3_HIGH_IMPACT"
+
+
+@pytest.mark.parametrize("value", [None, True, 7, "R3_HIGH_IMPACT"])
+def test_without_a_valid_risk_classification_the_mutation_is_denied(value: Any) -> None:
+    gate = _mod("human_gate")
+    assert _gate_reason(lambda: gate.approval_requirement(value)) == "NO_MUTATION_ADMITTED"
+
+
+def test_an_r3_approval_set_ends_with_the_earliest_approval_expiry() -> None:
+    world = GateWorld()
+    first = world.approve(DOMAIN, "DOMAIN_APPROVER", expires_at=NOW + timedelta(minutes=2))
+    second = world.approve(NATIONAL, "NATIONAL_APPROVER")
+    approval_set = world.approval_set((first, second))
+    assert approval_set.expires_at == NOW + timedelta(minutes=2)
