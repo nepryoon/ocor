@@ -1249,7 +1249,9 @@ def test_an_r3_approval_set_ends_with_the_earliest_approval_expiry() -> None:
 # its reliability fields is not published). The engine composes G-CONTRACT, G-AUTHORITY, the
 # Human Gate (NCR-C6-001, NCR-C6-008) and G-DECISION before the canonical commit through C3.
 
-ENGINE_NOW = datetime(2026, 11, 5, 15, 0, 0, tzinfo=UTC)
+# Before the wall clock of the C3 admission (GovernedC3 signs with the current time): the
+# Decision C6 sends to C3 is never decided in its future.
+ENGINE_NOW = datetime(2026, 11, 4, 15, 0, 0, tzinfo=UTC)
 OPERATOR = "spiffe://ocor.test/workload/operator"
 TARGET = "urn:ocor:target:rem0053:site-1"
 
@@ -1589,8 +1591,7 @@ def test_the_engine_denies_at_every_gate_before_any_effect(case: str) -> None:
     assert suite.untouched()
     if case == "decision-rejected":
         with pytest.raises(suite.engine_module.GovernedActionError, match="risk ceiling exceeded"):
-            suite.execute(proposal, approval=approval_set, decision=world.decide(
-                proposal, world.approval_set(proposal), accepted=False, rationale="risk ceiling exceeded"))
+            suite.execute(proposal, approval=approval_set, decision=decision)
 
 
 def test_a_retry_of_an_admitted_action_replays_its_commit_without_reusing_the_approvals_elsewhere() -> None:

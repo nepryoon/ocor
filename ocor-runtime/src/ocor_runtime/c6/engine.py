@@ -1,19 +1,16 @@
-"""C6 — retained governed-action slice.
+"""C6 -- governed-action engine.
 
-The smallest contract-compliant slice of LLD v1.1 section 3's
-normative 44-transition C6 workflow (OCOR-DEV-0020's sealed
-``spikes.c6_fsm_fidelity.generator`` proves the full transition table's
-fidelity to the approved LLD; this task builds retained, executable
-code for the representative path a single risk-bearing action takes
-through it, not the full FSM): a proposed action must cross, in strict
-order, Authority (``G-AUTHORITY``, via the sealed
-``ocor_runtime.c6_capabilities.CapabilityAuthority``), Human Gate
-(``G-APPROVAL`` / "Human Gate richiesto", ``ACT-T06``/``ACT-T08``),
-Decision (``G-DECISION``, ``ACT-T10b``) and EMISSION-FENCE (via the
-sealed ``ocor_runtime.c7_emission.EmissionFence``, ``ACT-T12``/
-``ACT-T29``) before any simulated external effect is applied. Any gate
-failure denies the action before the durable canonical commit or the
-simulated effect ever happen.
+The representative path a single action takes through the normative 44-transition C6 workflow
+of LLD v1.1 section 3 (OCOR-DEV-0030, composed with the current C6 gates by OCOR-DEV-REM-0053):
+a proposed action crosses, in strict order, ``G-CONTRACT`` (the signed, active ActionType of
+the release, whose risk class is the action's, ADD v1.3 :2847, NCR-C6-002), ``G-AUTHORITY``
+(``ACT-T04``), the Human Gate disposition of ``CONTROL_CHECK`` (``ACT-T06``/``ACT-T07``: a
+canonical target never takes ``NOT_REQUIRED``, LLD v1.1 :268), ``G-APPROVAL`` (the ApprovalSet
+of signed Approvals the Human Gate assembled, ADD v1.3 :2849, NCR-C6-001/008), ``G-DECISION``
+(the Authority's signed Decision on the frozen GatePackage, ADD v1.3 :2850, ``ACT-T10b``), the
+canonical commit through C3 (``ACT-T29``/``ACT-T30``) and the EMISSION-FENCE before any
+simulated external effect. Any gate failure denies the action before the durable canonical
+commit or the simulated effect ever happen.
 """
 
 from __future__ import annotations
@@ -44,16 +41,21 @@ from ..errors import AuthorizationError, EmissionBlocked, OCORError
 from ..kernel.canonical import canonical_digest, format_utc_timestamp
 from ..kernel.governance import TrustedClock
 from ..kernel.governed_context import GovernedContext
+from . import records as c6_records
+from .contract import ActionType, ContractGate, ContractGateError
+from .human_gate import Approval as Approval
+from .human_gate import ApprovalGate, ApprovalGateError, DecisionGate, gate_disposition
 
 
 class GovernedActionError(OCORError):
-    """A governed action was denied at one of its four gates. ``reason_code``
-    identifies which gate (AUTHORITY_DENIED, APPROVAL_MISSING,
-    DECISION_MISSING or DECISION_REJECTED), mirroring the reason-code
-    pattern already established by the retained C3 adapter."""
+    """A governed action was denied at one of its gates. ``reason_code`` identifies the gate
+    (CONTRACT_INVALID, AUTHORITY_DENIED, NO_MUTATION_ADMITTED, APPROVAL_MISSING,
+    DECISION_MISSING, DECISION_REJECTED or EVIDENCE_MISSING); ``cause_code`` is the reason code
+    of the gate that refused, when it has one."""
 
-    def __init__(self, reason_code: str, message: str) -> None:
+    def __init__(self, reason_code: str, message: str, *, cause_code: str | None = None) -> None:
         self.reason_code = reason_code
+        self.cause_code = cause_code
         super().__init__(f"{reason_code}: {message}")
 
 
@@ -63,34 +65,16 @@ def _require_aware(instant: datetime, *, field: str) -> datetime:
     return instant
 
 
-@dataclass(frozen=True, slots=True)
-class ActionProposal:
-    action_id: str
-    subject: str
-    capability: str
-    resource: str
-    aggregate_id: str
-    risk_bearing: bool
-
-
-@dataclass(frozen=True, slots=True)
-class Approval:
-    """The Human Gate disposition (``ACT-T08``/``ACT-T09a``/``ACT-T09b``)."""
-
-    action_id: str
-    approver: str
-    approved: bool
-    approved_at: datetime
-
-    def __post_init__(self) -> None:
-        _require_aware(self.approved_at, field="approved_at")
-        if not self.approver:
-            raise ValueError("an Approval requires an approver")
+# The proposal of the action path is the C6 record (NCR-C6-002): ActionType, effect and risk
+# class, target and typed parameters; it declares no risk of its own choosing.
+ActionProposal = c6_records.ActionProposal
 
 
 @dataclass(frozen=True, slots=True)
 class Decision:
-    """The Decision gate disposition (``ACT-T10a``/``ACT-T10b``)."""
+    """The unsigned Decision disposition of OCOR-DEV-0030 (``ACT-T10a``/``ACT-T10b``). It is not
+    signed by an Authority nor bound to a GatePackage, so ``G-DECISION`` does not admit it
+    (ADD v1.3 :2850, NCR-C6-001): the engine admits only an ``AuthorizedDecision``."""
 
     action_id: str
     decided_by: str
@@ -112,6 +96,78 @@ class ActionOutcome:
     emission_receipt: EmissionReceipt
     simulated_effect: Any
     commit_receipt: CommitReceipt
+
+
+@dataclass(frozen=True, slots=True)
+class AuthorizedDecision:
+    """The Authority's signed Decision with the GatePackage it was taken on, as the Authority
+    hands it to the engine (ADD v1.3 :3318-3331: authorized Decision, then recheck and dispatch
+    only for the identical digest)."""
+
+    decision: c6_records.Decision
+    package: c6_records.GatePackage
+    package_digest: str
+
+
+def freeze_gate_package(
+    proposal: c6_records.ActionProposal,
+    approval_set: c6_records.ApprovalSet,
+    *,
+    action_type: ActionType,
+    authority_ref: str,
+    policy_bundle_digest: str,
+    ontology_release_digest: str,
+    stop_epoch: int,
+    canonical_commit_ref: str,
+    adapter_binding_digest: str,
+    projection_watermark: str,
+    valid_from: datetime,
+    valid_until: datetime,
+    conflict_scope_digest: str,
+    expected_effects: Sequence[str],
+    compensation_ref: str,
+    artifact_digest: str,
+    frozen_at: datetime,
+    alternative_refs: Sequence[str] = (),
+    dissent_refs: Sequence[str] = (),
+) -> c6_records.GatePackage:
+    """Freeze the GatePackage of LLD v1.1 :320 and ADD v1.3 :3334 for a proposal and the
+    ApprovalSet admitted for it. The risk class frozen is the signed ActionType's (NCR-C6-002)."""
+
+    if not isinstance(proposal, c6_records.ActionProposal) or not isinstance(approval_set, c6_records.ApprovalSet):
+        raise c6_records.C6RecordError("RECORD_INVALID", "a GatePackage freezes an ActionProposal and its ApprovalSet")
+    if not isinstance(action_type, ActionType) or action_type.digest() != proposal.action_type_digest:
+        raise c6_records.C6RecordError("RECORD_INVALID", "the proposal pins another ActionType")
+    if (
+        approval_set.action_instance_id != proposal.action_instance_id
+        or approval_set.proposal_digest != proposal.digest()
+    ):
+        raise c6_records.C6RecordError("RECORD_INVALID", "the ApprovalSet is bound to another proposal")
+    return c6_records.GatePackage(
+        action_instance_id=proposal.action_instance_id,
+        proposal_digest=proposal.digest(),
+        expected_revision=proposal.expected_revision,
+        canonical_commit_ref=canonical_commit_ref,
+        governed_context_digest=proposal.governed_context_digest,
+        policy_bundle_digest=policy_bundle_digest,
+        ontology_release_digest=ontology_release_digest,
+        authority_ref=authority_ref,
+        approval_set_digest=approval_set.digest(),
+        adapter_binding_digest=adapter_binding_digest,
+        projection_watermark=projection_watermark,
+        stop_epoch=stop_epoch,
+        valid_from=valid_from,
+        valid_until=valid_until,
+        conflict_scope_digest=conflict_scope_digest,
+        risk_class=action_type.risk_class,
+        evidence_refs=proposal.evidence_refs,
+        alternative_refs=tuple(alternative_refs),
+        dissent_refs=tuple(dissent_refs),
+        expected_effects=tuple(expected_effects),
+        compensation_ref=compensation_ref,
+        artifact_digest=artifact_digest,
+        frozen_at=frozen_at,
+    )
 
 
 @runtime_checkable
@@ -325,8 +381,8 @@ class CanonicalCommitPath:
 
     def command(
         self,
-        proposal: ActionProposal,
-        decision: Decision,
+        proposal: c6_records.ActionProposal,
+        decision: c6_records.Decision,
         *,
         expected_revision: int,
         canonical_delta: Mapping[str, Any],
@@ -334,17 +390,17 @@ class CanonicalCommitPath:
         claim_source_bindings: Sequence[Mapping[str, str]],
     ) -> GovernedCanonicalCommitCommand:
         with self._lock:
-            issued = self._issued.get(proposal.action_id)
+            issued = self._issued.get(proposal.action_instance_id)
             if issued is not None:
                 return issued
-            suffix = hashlib.sha256(proposal.action_id.encode("utf-8")).hexdigest()
+            suffix = hashlib.sha256(proposal.action_instance_id.encode("utf-8")).hexdigest()
             now = self.clock.now()
             context = self.governed_context
             fields: dict[str, Any] = {
                 "command_id": f"urn:ocor:command:{suffix}",
-                "action_instance_id": proposal.action_id,
+                "action_instance_id": proposal.action_instance_id,
                 "aggregate_type": self.aggregate_type,
-                "aggregate_ref": proposal.aggregate_id,
+                "aggregate_ref": proposal.target_ref,
                 "expected_revision": expected_revision,
                 "canonical_delta": dict(canonical_delta),
                 "decision_ref": f"urn:ocor:decision:{suffix}",
@@ -372,8 +428,8 @@ class CanonicalCommitPath:
                     "record_type": "Decision",
                     "producer": C6_PRODUCER,
                     "decision_ref": fields["decision_ref"],
-                    "action_instance_id": proposal.action_id,
-                    "outcome": "ACCEPT" if decision.accepted else "REJECT",
+                    "action_instance_id": proposal.action_instance_id,
+                    "outcome": decision.outcome,
                     "effect_class": "CANONICAL_COMMIT",
                     "gate_package_digest": gate_package_digest,
                     "decided_at": format_utc_timestamp(decision.decided_at),
@@ -386,7 +442,7 @@ class CanonicalCommitPath:
                     "record_type": "Authority",
                     "producer": C6_PRODUCER,
                     "authority_ref": fields["authority_ref"],
-                    "action_instance_id": proposal.action_id,
+                    "action_instance_id": proposal.action_instance_id,
                     "gate_package_digest": gate_package_digest,
                     "tenant_id": context.tenant_id,
                     "effective_principal_id": context.effective_principal_id,
@@ -395,79 +451,168 @@ class CanonicalCommitPath:
                 },
             )
             command = GovernedCanonicalCommitCommand.from_mapping({**fields, "gate_package_digest": gate_package_digest})
-            self._issued[proposal.action_id] = command
+            self._issued[proposal.action_instance_id] = command
             return command
 
 
+@dataclass(frozen=True, slots=True)
+class _Admission:
+    """The records an action instance was admitted with at G-APPROVAL and G-DECISION."""
+
+    proposal_digest: str
+    approval_set_digest: str
+    decision_digest: str
+    package_digest: str
+
+
 class GovernedActionEngine:
-    """Authority -> Human Gate -> Decision -> canonical commit through C3 ->
-    EMISSION-FENCE -> simulated effect, evaluated strictly in that order and
-    fail-closed at every gate. No simulated effect is ever applied unless all
-    four gates are satisfied and C3 admitted the commit.
+    """G-CONTRACT -> G-AUTHORITY -> Human Gate disposition -> G-APPROVAL -> G-DECISION ->
+    canonical commit through C3 -> EMISSION-FENCE -> simulated effect, evaluated strictly in that
+    order and fail-closed at every gate. No simulated effect is ever applied unless every gate
+    is satisfied and C3 admitted the commit.
+
+    The Approvals and the Decision of an action instance are single use (NFR-005): they are
+    claimed when the action is first admitted. A retry of the same action instance with the
+    same ApprovalSet and Decision re-verifies them without a new claim and replays the C3
+    commit (FR-008); any other Decision for an admitted action is refused.
     """
 
     def __init__(
         self,
         *,
+        contract: ContractGate,
+        approvals: ApprovalGate,
+        decisions: DecisionGate,
         authority: CapabilityAuthority,
         commit_port: CanonicalCommitTarget,
         fence: EmissionFence,
         canonical_path: CanonicalCommitPath,
         emission_outbox: C3CanonicalOutboxView | None = None,
     ) -> None:
+        if not isinstance(contract, ContractGate):
+            raise TypeError("contract must be the G-CONTRACT ContractGate")
+        if not isinstance(approvals, ApprovalGate):
+            raise TypeError("approvals must be the G-APPROVAL ApprovalGate")
+        if not isinstance(decisions, DecisionGate):
+            raise TypeError("decisions must be the G-DECISION DecisionGate")
         if not isinstance(commit_port, CanonicalCommitTarget):
             raise TypeError("commit_port must implement the C3 GovernedCommitPort and RevisionPort")
         if not isinstance(canonical_path, CanonicalCommitPath):
             raise TypeError("canonical_path must be a CanonicalCommitPath")
+        self._contract = contract
+        self._approvals = approvals
+        self._decisions = decisions
         self._authority = authority
         self._commit_port = commit_port
         self._fence = fence
         self._path = canonical_path
         self._outbox = emission_outbox
+        self._admitted: dict[str, _Admission] = {}
+        self._lock = threading.Lock()
+
+    def _action_type(self, proposal: object) -> ActionType:
+        # G-CONTRACT (ACT-T01): the signed, active ActionType gives the effect and risk class.
+        try:
+            action_type = self._contract.evaluate(proposal)
+        except ContractGateError as error:
+            raise GovernedActionError("CONTRACT_INVALID", str(error), cause_code=error.reason_code) from error
+        if not action_type.canonical_target:
+            raise GovernedActionError(
+                "CONTRACT_INVALID",
+                "the engine commits canonical state: the ActionType declares a non-canonical target",
+                cause_code="TARGET_NOT_CANONICAL",
+            )
+        return action_type
+
+    def _approval_set(self, proposal: c6_records.ActionProposal, approval: object) -> c6_records.ApprovalSet:
+        # G-APPROVAL (ACT-T08): the ApprovalSet of signed Approvals the Human Gate assembled.
+        if approval is None:
+            raise GovernedActionError("APPROVAL_MISSING", "a risk-bearing action requires its ApprovalSet")
+        try:
+            return self._approvals.verify_set(approval, proposal)
+        except ApprovalGateError as error:
+            raise GovernedActionError("APPROVAL_MISSING", str(error), cause_code=error.reason_code) from error
+
+    def _decision(
+        self,
+        proposal: c6_records.ActionProposal,
+        action_type: ActionType,
+        approval_set: c6_records.ApprovalSet,
+        decision: object,
+    ) -> c6_records.Decision:
+        # G-DECISION (ACT-T10b): the Authority's signed Decision on the frozen GatePackage.
+        if not isinstance(decision, AuthorizedDecision):
+            raise GovernedActionError("DECISION_MISSING", "a governed action requires the Authority's signed Decision")
+        if decision.package.risk_class is not action_type.risk_class:
+            raise GovernedActionError(
+                "DECISION_MISSING",
+                "the GatePackage freezes another risk class than the signed ActionType",
+                cause_code="GATE_PACKAGE_RISK_MISMATCH",
+            )
+        admission = _Admission(
+            proposal.digest(), approval_set.digest(), decision.decision.digest(), decision.package_digest
+        )
+        with self._lock:
+            prior = self._admitted.get(proposal.action_instance_id)
+        if prior is not None and prior != admission:
+            raise GovernedActionError(
+                "DECISION_MISSING",
+                "the action instance was already admitted with another Decision",
+                cause_code="IDEMPOTENCY_CONFLICT",
+            )
+        gate = self._decisions.admit if prior is None else self._decisions.reverify
+        try:
+            admitted = gate(
+                decision.decision,
+                proposal=proposal,
+                package=decision.package,
+                package_digest=decision.package_digest,
+                approval_set=approval_set,
+            )
+        except ApprovalGateError as error:
+            reason = "DECISION_REJECTED" if error.reason_code == "DECISION_REJECTED" else "DECISION_MISSING"
+            raise GovernedActionError(reason, str(error), cause_code=error.reason_code) from error
+        with self._lock:
+            self._admitted.setdefault(proposal.action_instance_id, admission)
+        return admitted
 
     def execute(
         self,
-        proposal: ActionProposal,
+        proposal: c6_records.ActionProposal,
         *,
         lease: CapabilityLease | str,
-        approval: Approval | None,
-        decision: Decision | None,
+        approval: c6_records.ApprovalSet | None,
+        decision: AuthorizedDecision | None,
         sink: EventSink | Callable[[Any], Any],
         at: datetime,
         evidence_refs: Sequence[str] | None = None,
         claim_source_bindings: Sequence[Mapping[str, str]] | None = None,
     ) -> ActionOutcome:
         instant = _require_aware(at, field="at")
+        action_type = self._action_type(proposal)
 
-        # G-AUTHORITY (ACT-T04): principal, capability and resource scope.
+        # G-AUTHORITY (ACT-T04): principal, capability of the ActionType and target scope.
         try:
             self._authority.authorize(
                 lease,
-                proposal.capability,
-                proposal.resource,
+                action_type.capability,
+                proposal.target_ref,
                 at=instant,
-                subject=proposal.subject,
+                subject=proposal.proposer_id,
                 consume=True,
             )
         except AuthorizationError as error:
             raise GovernedActionError("AUTHORITY_DENIED", str(error)) from error
 
-        # Human Gate (ACT-T06/ACT-T07/ACT-T08/ACT-T09a/ACT-T09b): only
-        # risk-bearing actions require a resolved approval; a
-        # non-risk-bearing action's gate disposition is NOT_REQUIRED.
-        if proposal.risk_bearing:
-            if approval is None or approval.action_id != proposal.action_id:
-                raise GovernedActionError(
-                    "APPROVAL_MISSING", "a risk-bearing action requires a resolved Human Gate approval"
-                )
-            if not approval.approved:
-                raise GovernedActionError("APPROVAL_MISSING", "Human Gate approval was not granted")
+        # CONTROL_CHECK (ACT-T06/ACT-T07): the obligation follows the ActionType's risk class and
+        # the canonical target never takes NOT_REQUIRED (LLD v1.1 :268, ADD v1.3 :3298-3303).
+        try:
+            gate_disposition(action_type.risk_class, canonical_target=True)
+        except ApprovalGateError as error:
+            raise GovernedActionError("NO_MUTATION_ADMITTED", str(error), cause_code=error.reason_code) from error
 
-        # G-DECISION (ACT-T10a/ACT-T10b): a signed Decision is always required.
-        if decision is None or decision.action_id != proposal.action_id:
-            raise GovernedActionError("DECISION_MISSING", "a governed action requires a signed Decision")
-        if not decision.accepted:
-            raise GovernedActionError("DECISION_REJECTED", decision.rationale)
+        approval_set = self._approval_set(proposal, approval)
+        admitted = self._decision(proposal, action_type, approval_set, decision)
 
         # Canonical commit (ACT-T29/T30): C6 sends the governed command to C3, which
         # admits it only on the signed governed path and commits state and outbox atomically.
@@ -478,26 +623,26 @@ class GovernedActionEngine:
             evidence_refs = resolved_refs if evidence_refs is None else evidence_refs
             claim_source_bindings = resolved_bindings if claim_source_bindings is None else claim_source_bindings
         context = self._path.governed_context
+        action_id = proposal.action_instance_id
         command = self._path.command(
             proposal,
-            decision,
+            admitted,
             expected_revision=self._commit_port.current_revision(
-                context.tenant_id, self._path.aggregate_type, proposal.aggregate_id
+                context.tenant_id, self._path.aggregate_type, proposal.target_ref
             ),
-            canonical_delta={"action_id": proposal.action_id, "status": "EXECUTED"},
+            canonical_delta={"action_id": action_id, "status": "EXECUTED"},
             evidence_refs=evidence_refs,
             claim_source_bindings=claim_source_bindings,
         )
         commit_receipt = self._commit_port.commit(command)
+        payload = {"action_id": action_id, "commit_id": commit_receipt.commit_id, "status": "EXECUTED"}
         event = CommittedOutboxEvent(
             event_id=commit_receipt.outbox_event_id,
-            aggregate_id=proposal.aggregate_id,
+            aggregate_id=proposal.target_ref,
             aggregate_version=commit_receipt.to_revision,
             event_type="governed-action-executed",
-            payload={"action_id": proposal.action_id, "commit_id": commit_receipt.commit_id, "status": "EXECUTED"},
-            payload_digest=canonical_digest(
-                {"action_id": proposal.action_id, "commit_id": commit_receipt.commit_id, "status": "EXECUTED"}
-            ),
+            payload=payload,
+            payload_digest=canonical_digest(payload),
             request_digest=commit_receipt.command_digest,
             idempotency_key=command.idempotency_key,
             transaction_id=commit_receipt.commit_id,
@@ -506,12 +651,7 @@ class GovernedActionEngine:
         if self._outbox is not None:
             event = self._outbox.record(event)
 
-        # EMISSION-FENCE (ACT-T12/ACT-T14): the final atomic gate
-        # immediately before the simulated effect; blocks on
-        # uncommitted/tampered/out-of-order events.
-        try:
-            receipt = self._fence.emit(cast(Any, event), sink, at=instant)
-        except EmissionBlocked:
-            raise
-
-        return ActionOutcome(proposal.action_id, receipt, receipt.sink_result, commit_receipt)
+        # EMISSION-FENCE (ACT-T12/ACT-T14): the final atomic gate immediately before the
+        # simulated effect; blocks on uncommitted/tampered/out-of-order events.
+        receipt = self._fence.emit(cast(Any, event), sink, at=instant)
+        return ActionOutcome(action_id, receipt, receipt.sink_result, commit_receipt)

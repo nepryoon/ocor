@@ -54,6 +54,7 @@ from __future__ import annotations
 import ast
 import base64
 import contextlib
+import functools
 import hashlib
 import http.server
 import importlib
@@ -76,6 +77,7 @@ from typing import Any
 import psycopg
 import pytest
 import c4_projection_fixture
+import c6_action_fixture
 
 from ocor_runtime.c1.signing import Ed25519SigningKey, dsse_pae
 from ocor_runtime.c3.ports import C3Error, GovernedCanonicalCommitCommand
@@ -825,6 +827,18 @@ def test_ncr_c3_002_conforms() -> None:
     assert "GovernedCanonicalCommitCommand" not in orchestrator.read_text(encoding="utf-8")
 
 
+ASSESS = "urn:ocor:action-type:rem0050:assess"
+
+
+@functools.cache
+def _engine_world() -> Any:
+    """The signed ActionType catalog, Human Gate and Authority of the engine cases, created on
+    first use; the assessment is an R2_CONTROLLED canonical mutation."""
+    world = c6_action_fixture.ActionWorld(now=NOW, release=RELEASE)
+    world.action_type(ASSESS, risk="R2_CONTROLLED", capability="act:assess")
+    return world
+
+
 def _engine_fixture(service: Any, records: RecordStore, fence: Fence, clock: InMemoryTrustedClock) -> tuple[Any, Any, Any]:
     from ocor_runtime.c6_capabilities import CapabilityAuthority
     from ocor_runtime.c7_emission import EmissionFence
@@ -842,10 +856,22 @@ def _engine_fixture(service: Any, records: RecordStore, fence: Fence, clock: InM
         precondition_bindings=(PRECONDITION,),
         invariant_bindings=(INVARIANT,),
     )
-    engine = engine_module.GovernedActionEngine(
-        authority=authority, commit_port=service, fence=EmissionFence(), canonical_path=path
-    )
+    # NCP-U07 (OCOR-DEV-REM-0053): the engine composes G-CONTRACT, the Human Gate and G-DECISION
+    # (NCR-C6-001, NCR-C6-002); _engine_world() signs the ActionType, the Approval and the Decision.
+    engine = _engine_world().engine(authority=authority, commit_port=service, fence=EmissionFence(), canonical_path=path)
     return engine_module, engine, authority
+
+
+def _assessment(action_id: str, aggregate: str) -> Any:
+    """The R2_CONTROLLED assessment of an aggregate, pinned to its signed ActionType."""
+    world = _engine_world()
+    return world.proposal(
+        world.catalog.action_type(ASSESS),
+        action_id=action_id,
+        proposer="analyst-1",
+        target=aggregate,
+        governed_context_digest=_context().digest(),
+    )
 
 
 def test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path(postgres_backend: Backend, dsn: str) -> None:
@@ -856,19 +882,16 @@ def test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path(postgres_back
     )
     suffix = uuid.uuid4().hex[:8]
     aggregate = f"urn:ocor:mission-object:rem0050:engine:{suffix}"
-    proposal = engine_module.ActionProposal(
-        action_id=f"urn:ocor:action:rem0050:{suffix}", subject="analyst-1", capability="act:assess",
-        resource=aggregate, aggregate_id=aggregate, risk_bearing=False,
-    )
+    proposal = _assessment(f"urn:ocor:action:rem0050:{suffix}", aggregate)
     evidence = GovernedPath(postgres_backend.records, postgres_backend.fence, postgres_backend.clock, aggregate_ref=aggregate)
-    decision = engine_module.Decision(action_id=proposal.action_id, decided_by="duty-officer", accepted=True,
-                                      rationale="assessed", decided_at=NOW)
+    approval = _engine_world().approval_set(proposal)
+    decision = _engine_world().decide(proposal, approval, rationale="assessed")
     delivered: list[Any] = []
 
     def run() -> Any:
         lease = authority.issue(subject="analyst-1", capabilities=["act:assess"], resources=[aggregate], issued_at=NOW,
                                 ttl=timedelta(hours=1))
-        return engine.execute(proposal, lease=lease, approval=None, decision=decision, sink=delivered.append, at=NOW,
+        return engine.execute(proposal, lease=lease, approval=approval, decision=decision, sink=delivered.append, at=NOW,
                               evidence_refs=(evidence.evidence_ref,), claim_source_bindings=(dict(evidence.binding),))
 
     first = run()
@@ -891,16 +914,13 @@ def test_ncr_c3_002_c6_denial_reaches_no_canonical_commit(postgres_backend: Back
         postgres_backend.service, postgres_backend.records, postgres_backend.fence, postgres_backend.clock
     )
     aggregate = f"urn:ocor:mission-object:rem0050:denied:{uuid.uuid4().hex[:8]}"
-    proposal = engine_module.ActionProposal(
-        action_id=f"urn:ocor:action:rem0050:{uuid.uuid4().hex[:8]}", subject="analyst-1", capability="act:assess",
-        resource=aggregate, aggregate_id=aggregate, risk_bearing=False,
-    )
+    proposal = _assessment(f"urn:ocor:action:rem0050:{uuid.uuid4().hex[:8]}", aggregate)
     lease = authority.issue(subject="analyst-1", capabilities=["act:assess"], resources=[aggregate], issued_at=NOW,
                             ttl=timedelta(hours=1))
-    rejected = engine_module.Decision(action_id=proposal.action_id, decided_by="duty-officer", accepted=False,
-                                      rationale="not supported", decided_at=NOW)
+    approval = _engine_world().approval_set(proposal)
+    rejected = _engine_world().decide(proposal, approval, accepted=False, rationale="not supported")
     with pytest.raises(engine_module.GovernedActionError) as caught:
-        engine.execute(proposal, lease=lease, approval=None, decision=rejected, sink=lambda event: None, at=NOW,
+        engine.execute(proposal, lease=lease, approval=approval, decision=rejected, sink=lambda event: None, at=NOW,
                        evidence_refs=("urn:ocor:evidence:none",), claim_source_bindings=())
     assert caught.value.reason_code == "DECISION_REJECTED"
     assert postgres_backend.revision(aggregate) == 0

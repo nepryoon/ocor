@@ -183,9 +183,14 @@ class _CanonicalRecord:
         return canonical_digest(self.to_mapping())
 
 
-class _SignedRecord(_CanonicalRecord):
+class SignedRecord(_CanonicalRecord):
+    """Canonical form of a record signed with Ed25519 over its DSSE pre-authentication encoding;
+    the signature itself is excluded from the signed bytes."""
+
     __slots__ = ()
     PAYLOAD_TYPE: ClassVar[str]
+    keyid: str
+    signature: str
 
     def unsigned_mapping(self) -> dict[str, Any]:
         body = self.to_mapping()
@@ -234,6 +239,18 @@ class ActionProposal(_CanonicalRecord):
     def parameters_digest(self) -> str:
         return canonical_digest(_thaw(self.parameters))
 
+    @property
+    def action_id(self) -> str:
+        """The action instance, under the name the engine's outcome and outbox events use."""
+
+        return self.action_instance_id
+
+    @property
+    def aggregate_id(self) -> str:
+        """The canonical aggregate a canonical action commits to: its target."""
+
+        return self.target_ref
+
 
 @dataclass(frozen=True, slots=True)
 class PolicyAuthorityDecision(_CanonicalRecord):
@@ -262,7 +279,7 @@ class PolicyAuthorityDecision(_CanonicalRecord):
 
 
 @dataclass(frozen=True, slots=True)
-class Approval(_SignedRecord):
+class Approval(SignedRecord):
     """One human approver's signed Approval, bound to the proposal digest, the revision, the
     ontology release and its own expiry (ADD v1.3 :2849)."""
 
@@ -292,7 +309,7 @@ class Approval(_SignedRecord):
 
 
 @dataclass(frozen=True, slots=True)
-class ApprovalSet(_SignedRecord):
+class ApprovalSet(SignedRecord):
     """The quorum of Approvals the Human Gate admitted for one proposal, signed by the gate.
     For ``R3_HIGH_IMPACT`` it expires ten minutes after the second signature (ADD v1.3 :3334)."""
 
@@ -327,7 +344,7 @@ class ApprovalSet(_SignedRecord):
 
 
 @dataclass(frozen=True, slots=True)
-class Decision(_SignedRecord):
+class Decision(SignedRecord):
     """The Authority's signed Decision, bounded to effect, target, parameters and validity
     window (ADD v1.3 :2850) and bound to the frozen GatePackage."""
 
@@ -338,6 +355,7 @@ class Decision(_SignedRecord):
     action_instance_id: str
     gate_package_digest: str
     outcome: str
+    rationale: str
     effect_class: str
     target_ref: str
     parameters_digest: str
@@ -349,7 +367,7 @@ class Decision(_SignedRecord):
     signature: str
 
     def __post_init__(self) -> None:
-        for name in ("decision_id", "action_instance_id", "effect_class", "target_ref", "authority_id", "keyid"):
+        for name in ("decision_id", "action_instance_id", "rationale", "effect_class", "target_ref", "authority_id", "keyid"):
             _text(name, getattr(self, name))
         _digest("gate_package_digest", self.gate_package_digest)
         _choice("outcome", self.outcome, DECISION_OUTCOMES)
@@ -742,3 +760,14 @@ C6_RECORD_TYPES: tuple[type[_CanonicalRecord], ...] = (
     ConflictScope,
     IndeterminateEffectAdjudication,
 )
+
+
+# Field validators and the signature placeholder shared with the other signed C6 records
+# (``ocor_runtime.c6.contract.ActionType``).
+PLACEHOLDER_SIGNATURE = base64.b64encode(bytes(64)).decode("ascii")
+text_field = _text
+digest_field = _digest
+count_field = _count
+choice_field = _choice
+risk_field = _risk
+signature_field = _signature

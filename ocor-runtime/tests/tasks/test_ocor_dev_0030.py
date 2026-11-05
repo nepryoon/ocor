@@ -22,14 +22,15 @@ import pytest
 import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c3.service import PostgresC3Service
 from ocor_runtime.c3_store import OutboxEvent
+from c6_action_fixture import ActionWorld
 from ocor_runtime.c6.engine import (
     ActionProposal,
-    Approval,
+    AuthorizedDecision,
     C3CanonicalOutboxView,
-    Decision,
     GovernedActionEngine,
     GovernedActionError,
 )
+from ocor_runtime.c6.records import ApprovalSet
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
 from spikes.c6_fsm_fidelity.generator import generate_from_lld
@@ -44,6 +45,13 @@ GOVERNED = governed_path.GovernedC3(
     invariants=("urn:ocor:invariant:governed-action",),
 )
 CONTEXT = GOVERNED.governed_context(purpose="retained-governed-action-slice")
+# NCP-U07 (OCOR-DEV-REM-0053): the engine admits only a proposal pinned to a signed, active
+# ActionType (NCR-C6-002, ADD v1.3 :2847), the ApprovalSet of the Human Gate and the Authority's
+# signed Decision on the frozen GatePackage (NCR-C6-001, ADD v1.3 :2849-2850). The launch is
+# R3_HIGH_IMPACT; the non-risk-bearing ActionType is R1_LOW, which admits no mutation.
+WORLD = ActionWorld(now=NOW, release=governed_path.RELEASE)
+LAUNCH = WORLD.action_type("urn:ocor:action-type:launch", risk="R3_HIGH_IMPACT", capability="act:launch")
+SITE_NOTE = WORLD.action_type("urn:ocor:action-type:site-note", risk="R1_LOW", capability="act:launch")
 
 
 class RecordingSink:
@@ -91,17 +99,20 @@ def engine(
     authority: CapabilityAuthority, c3: PostgresC3Service, store: C3CanonicalOutboxView, fence: EmissionFence
 ) -> GovernedActionEngine:
     path = GOVERNED.engine_path(aggregate_type="GovernedActionTarget", governed_context=CONTEXT)
-    return GovernedActionEngine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
+    WORLD.granted.clear()
+    engine: GovernedActionEngine = WORLD.engine(
+        authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store
+    )
+    return engine
 
 
 def make_proposal(*, risk_bearing: bool = True) -> ActionProposal:
-    return ActionProposal(
+    return WORLD.proposal(
+        LAUNCH if risk_bearing else SITE_NOTE,
         action_id="urn:ocor:action:launch-1",
-        subject="spiffe://ocor.test/workload/operator",
-        capability="act:launch",
-        resource="urn:ocor:target:site-1",
-        aggregate_id="urn:ocor:aggregate:site-1",
-        risk_bearing=risk_bearing,
+        proposer="spiffe://ocor.test/workload/operator",
+        target="urn:ocor:target:site-1",
+        governed_context_digest=CONTEXT.digest(),
     )
 
 
@@ -115,17 +126,26 @@ def grant_lease(authority: CapabilityAuthority, *, capability: str = "act:launch
     )
 
 
-def make_approval(action_id: str = "urn:ocor:action:launch-1", *, approved: bool = True) -> Approval:
-    return Approval(action_id=action_id, approver="urn:ocor:human:approver-1", approved=approved, approved_at=NOW)
+def make_approval(action_id: str = "urn:ocor:action:launch-1", *, approved: bool = True) -> ApprovalSet:
+    # The signed Approvals of the Domain and National Approver bound to proposal digest,
+    # revision, release and expiry, in the ApprovalSet of the Human Gate; a set the gate did not
+    # grant is not signed by it.
+    approval_set = WORLD.approval_set(make_proposal())
+    if not approved:
+        return WORLD.ungranted(approval_set)
+    WORLD.granted[action_id] = approval_set
+    return approval_set
 
 
-def make_decision(action_id: str = "urn:ocor:action:launch-1", *, accepted: bool = True) -> Decision:
-    return Decision(
-        action_id=action_id,
-        decided_by="urn:ocor:human:decider-1",
+def make_decision(action_id: str = "urn:ocor:action:launch-1", *, accepted: bool = True) -> AuthorizedDecision:
+    # The Authority's signed Decision on the GatePackage that freezes the granted ApprovalSet.
+    proposal = make_proposal()
+    approval_set = WORLD.granted.pop(action_id, None) or WORLD.approval_set(proposal)
+    return WORLD.decide(
+        proposal,
+        approval_set,
         accepted=accepted,
         rationale="within approved risk ceiling" if accepted else "risk ceiling exceeded",
-        decided_at=NOW,
     )
 
 

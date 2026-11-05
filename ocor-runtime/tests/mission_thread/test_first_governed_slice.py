@@ -42,10 +42,6 @@ from ocor_runtime.c3.service import PostgresC3Service
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.c6.engine import (
     C3CanonicalOutboxView,
-    ActionProposal,
-    Approval,
-    Decision,
-    GovernedActionEngine,
     GovernedActionError,
 )
 from ocor_runtime.c6_capabilities import CapabilityAuthority
@@ -79,6 +75,7 @@ from spikes.kafka_delivery.oracle import KafkaCli  # noqa: E402
 from spikes.typedb_exact_commit.adapter import TypeDBAdapterError, TypeDBExactCommitAdapter  # noqa: E402
 from spikes.vector_partition.oracle import QdrantHarness  # noqa: E402
 import test_ocor_dev_rem_0050 as governed_path  # noqa: E402
+from c6_action_fixture import ActionWorld  # noqa: E402
 
 COMMIT = "0123456789abcdef0123456789abcdef01234567"
 DIGEST_A = "urn:sha256:" + "a" * 64
@@ -95,11 +92,18 @@ GOVERNED = governed_path.GovernedC3(
 )
 
 
+# NCP-U07 (OCOR-DEV-REM-0053): the engine composes G-CONTRACT, the Human Gate and G-DECISION
+# (NCR-C6-001, NCR-C6-002). The mission action is an R3_HIGH_IMPACT ActionType of the release;
+# its Approvals and its Decision are signed by the Domain and National Approver and the Authority.
+ACTIONS = ActionWorld(now=NOW, release=DIGEST_B)
+MISSION_ACTION = ACTIONS.action_type("urn:ocor:action-type:mission", risk="R3_HIGH_IMPACT", capability="act:mission")
+
+
 def governed_engine(authority: CapabilityAuthority, c3: PostgresC3Service, context: GovernedContext) -> tuple[Any, Any]:
     outbox_store = C3CanonicalOutboxView(c3, tenant_id=context.tenant_id, aggregate_type="MissionAction")
     fence = EmissionFence(store=outbox_store)  # type: ignore[arg-type]
     path = GOVERNED.engine_path(aggregate_type="MissionAction", governed_context=context)
-    engine = GovernedActionEngine(
+    engine = ACTIONS.engine(
         authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=outbox_store
     )
     return outbox_store, engine
@@ -325,19 +329,19 @@ def run_mission_thread(
     outbox_store, engine = governed_engine(authority, c3, context)
     sink = _SimulatedEffectSink(kafka_record.canonical_digest)
 
-    proposal = ActionProposal(
+    proposal = ACTIONS.proposal(
+        MISSION_ACTION,
         action_id=f"urn:ocor:action:mission-thread:{correlation_id}",
-        subject=effective_principal_id,
-        capability="act:mission",
-        resource=mission_id,
-        aggregate_id=f"urn:ocor:mission-action:{correlation_id}",
-        risk_bearing=True,
+        proposer=effective_principal_id,
+        target=mission_id,
+        governed_context_digest=context.digest(),
     )
+    approval_set = ACTIONS.approval_set(proposal)
     action_outcome = engine.execute(
         proposal,
         lease=lease,
-        approval=Approval(proposal.action_id, "urn:ocor:human:approver-1", True, NOW),
-        decision=Decision(proposal.action_id, "urn:ocor:human:decider-1", True, "within approved risk ceiling", NOW),
+        approval=approval_set,
+        decision=ACTIONS.decide(proposal, approval_set, rationale="within approved risk ceiling"),
         sink=sink,
         at=NOW,
     )
@@ -499,21 +503,21 @@ def test_action_denied_at_authority_halts_the_thread_before_any_effect(postgres_
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
     outbox_store, engine = governed_engine(authority, c3, context)
     calls: list[Any] = []
-    proposal = ActionProposal(
+    proposal = ACTIONS.proposal(
+        MISSION_ACTION,
         action_id=f"urn:ocor:action:mission-thread:{correlation_id}",
-        subject=effective_principal_id,
-        capability="act:mission",
-        resource=mission_id,
-        aggregate_id=f"urn:ocor:mission-action:{correlation_id}",
-        risk_bearing=True,
+        proposer=effective_principal_id,
+        target=mission_id,
+        governed_context_digest=context.digest(),
     )
+    approval_set = ACTIONS.approval_set(proposal)
 
     with pytest.raises(GovernedActionError) as excinfo:
         engine.execute(
             proposal,
             lease=lease,
-            approval=Approval(proposal.action_id, "urn:ocor:human:approver-1", True, NOW),
-            decision=Decision(proposal.action_id, "urn:ocor:human:decider-1", True, "ok", NOW),
+            approval=approval_set,
+            decision=ACTIONS.decide(proposal, approval_set, rationale="ok"),
             sink=lambda event, *, idempotency_key: calls.append(event),
             at=NOW,
         )

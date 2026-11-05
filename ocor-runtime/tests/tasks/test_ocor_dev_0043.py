@@ -23,13 +23,8 @@ import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
 from ocor_runtime.c3.service import PostgresC3Service
 from ocor_runtime.c3_store import OutboxEvent
-from ocor_runtime.c6.engine import (
-    ActionProposal,
-    C3CanonicalOutboxView,
-    Decision,
-    GovernedActionEngine,
-    GovernedActionError,
-)
+from c6_action_fixture import ActionWorld
+from ocor_runtime.c6.engine import C3CanonicalOutboxView, GovernedActionError
 from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
@@ -294,15 +289,18 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
     store = C3CanonicalOutboxView(c3, tenant_id=CONTEXT.tenant_id, aggregate_type="GovernedActionTarget")
     fence = EmissionFence(store=store)  # type: ignore[arg-type]
     path = GOVERNED.engine_path(aggregate_type="GovernedActionTarget", governed_context=CONTEXT)
-    engine = GovernedActionEngine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
+    # NCP-U07 (OCOR-DEV-REM-0053): the engine composes G-CONTRACT, the Human Gate and
+    # G-DECISION (NCR-C6-001, NCR-C6-002); the action is pinned to its signed ActionType.
+    world = ActionWorld(now=NOW, release=governed_path.RELEASE)
+    engine = world.engine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
 
-    proposal = ActionProposal(
+    launch = world.action_type("urn:ocor:action-type:launch", risk="R3_HIGH_IMPACT", capability="act:launch")
+    proposal = world.proposal(
+        launch,
         action_id=ACTION_ID,
-        subject="spiffe://ocor.test/workload/operator",
-        capability="act:launch",
-        resource=SCOPE,
-        aggregate_id="urn:ocor:aggregate:site-1",
-        risk_bearing=True,
+        proposer="spiffe://ocor.test/workload/operator",
+        target=SCOPE,
+        governed_context_digest=CONTEXT.digest(),
     )
     lease = authority.issue(
         subject="spiffe://ocor.test/workload/operator",
@@ -315,7 +313,7 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
     approval = coordinator.validate(
         action_id=ACTION_ID, proposer_id=PROPOSER, policy=policy(), signatures=signatures, scope=SCOPE, at=NOW
     )
-    decision = Decision(action_id=ACTION_ID, decided_by="urn:ocor:human:decider-1", accepted=True, rationale="within ceiling", decided_at=NOW)
+    decision = world.decide(proposal, world.approval_set(proposal), rationale="within ceiling")
     sink = RecordingSink()
 
     # ADD v1.3 :2849-2850 and LLD v1.1 :254 (NCR-C6-001, realigned with RED): G-APPROVAL admits
