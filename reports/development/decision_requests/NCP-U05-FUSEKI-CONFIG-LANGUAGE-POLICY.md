@@ -83,3 +83,16 @@ percorso e non fa derivare alcun record.
 - Nessun test esistente, limite, soglia, workflow, guard, contratto, schema o registro normativo cambia con le
   opzioni 1 e 3; con l'opzione 2 cambia solo il testo della riga 10 della tabella della policy. Claim
   invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-05
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05)`, **opzione 1** (autorizzazione puntuale nel validatore). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `486d0603f02ea68db890d62225736bd7ff50fa6e`, sha256 `5afab32b9d908d3688c2e76df143532114333604d4d4c86461168be40f91d692` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY` (branch `governed/decision-request-ncp-u05-fuseki-config-language-policy`, commit `486d0603f02ea68db890d62225736bd7ff50fa6e`, file `reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md`, sha256 `5afab32b9d908d3688c2e76df143532114333604d4d4c86461168be40f91d692`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
