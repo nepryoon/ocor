@@ -369,7 +369,7 @@ def test_commit_invalid_binding_audits_denial_before_any_control_or_c3_access(
     consumer = C6MemoryPromotionConsumer(
         proposals=s, controls=boundary, verifier=boundary, human_gate=boundary,
         policy=boundary, c3=boundary, issuer=boundary, clock=w.clock, audit=audit,
-        commit_capability="canonical.commit",
+        commit_capability="canonical.commit", engine=boundary,
     )
     audit.fail = not audit_available
     before = w.ledger.records()
@@ -406,6 +406,7 @@ from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry  # noqa: E
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand  # noqa: E402
 from ocor_runtime.c3.service import PostgresC3Service  # noqa: E402
 import test_ocor_dev_rem_0050 as governed_path  # noqa: E402
+from c6_action_fixture import ActionWorld, promotion_action, promotion_engine  # noqa: E402
 from ocor_runtime.c1.signing import ed25519_verify  # noqa: E402
 from ocor_runtime.c3.admission import C6_PRODUCER, gate_package_payload  # noqa: E402
 from ocor_runtime.c6.human_gate import HumanGateCoordinator  # noqa: E402
@@ -445,6 +446,15 @@ class Controls:
             c.execute(f'CREATE TABLE "{schema}".c6_revoked (ref text PRIMARY KEY)')
             # Written by C6 delegation admission, never by memory or the caller.
             c.execute(f'CREATE TABLE "{schema}".c6_delegation (binding_ref text PRIMARY KEY, delegation_ref text NOT NULL)')
+        # NCR-C6-009 (OCOR-DEV-REM-0053): the signed C6 records of each promotion action
+        # (ActionProposal, ApprovalSet, Decision, CapabilityLease), held by the C6 authority.
+        self.actions: dict[str, Any] = {}
+
+    def put_action(self, ref: str, action: Any) -> None:
+        self.actions[ref] = action
+
+    def action(self, ref: str) -> Any:
+        return self.actions.get(ref)
 
     def admit_delegation(self, binding_ref: str, delegation_ref: str) -> None:
         with psycopg.connect(self.dsn, autocommit=True) as c:
@@ -648,10 +658,17 @@ def workflow(backends: r.Backends, *, proposal_policy: OpaProposalPolicy | None 
             signing_key=governed_path.CONSUMER_KEY, keyid=governed_path.CONSUMER_KEYID,
             records=governed.records, fence=governed.fence, clock=governed.clock)
         body = gate_body(result.proposal, result.audit_ref, ctx)
+        # NCR-C6-009 (OCOR-DEV-REM-0053): the promotion commits through the C6 engine path
+        # (ADD v1.3 :2789, LLD v1.1 :238), with the C6 records of the promotion action.
+        world = ActionWorld(now=w.clock.now(), release=ctx.ontology_release_digest)
+        engine = promotion_engine(world, governed=governed, c3=c3, context=ctx)
+        action = promotion_action(world, proposal_audit_ref=result.audit_ref, proposal=result.proposal,
+                                  command=body["command"])
+        controls.put_action(result.audit_ref, action)
         consumer = C6MemoryPromotionConsumer(proposals=s, controls=controls, verifier=signer,
                                             human_gate=HumanGateCoordinator(identities=registry, clock=w.clock),
                                             policy=policy, c3=c3, issuer=issuer, clock=w.clock, audit=audit,
-                                            commit_capability="canonical.commit")
+                                            commit_capability="canonical.commit", engine=engine)
         data = type("Workflow", (), {})()
         for name, value in locals().copy().items():
             setattr(data, name, value)
@@ -700,7 +717,10 @@ def test_live_c6_approval_decision_produces_only_c3_commit_and_verified_receipt(
         assert x.w.ledger.records() == before
         assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.completed"]
         again = x.consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
-        assert again.replayed is True and again.commit_id == receipt.commit_id
+        # LLD v1.1 :256 and ADD v1.3 :2853 (NCR-C6-009 with NCR-C6-005): every send crosses the
+        # EMISSION-FENCE, so a confirmed promotion is not sent again; its retry returns the
+        # confirmed receipt.
+        assert again == receipt
         assert x.c3.current_revision(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"]) == 1
 
 
@@ -897,6 +917,18 @@ def test_live_every_c6_gate_refusal_leaves_canonical_and_memory_unchanged(backen
         assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
 
 
+class RivalAfterFenceC3:
+    """Precondition at the port: a rival commit of the same aggregate lands after the
+    EMISSION-FENCE passed, immediately before C3 receives the promotion command."""
+
+    def __init__(self, c3: Any, rival: Any) -> None:
+        self.c3, self.rival = c3, rival
+
+    def commit(self, command: Any) -> Any:
+        self.c3.commit(self.rival)
+        return self.c3.commit(command)
+
+
 def test_live_c3_refusal_after_dispatch_is_indeterminate_never_success(backends: r.Backends) -> None:
     # The GovernedCommitPort contract does not promise that a C3 error means
     # "not committed": after dispatch the consumer reports an unknown outcome
@@ -906,10 +938,16 @@ def test_live_c3_refusal_after_dispatch_is_indeterminate_never_success(backends:
         rival = dict(x.body["command"], command_id="urn:ocor:command:" + uuid.uuid4().hex,
                      idempotency_key="rival-" + uuid.uuid4().hex,
                      canonical_delta={"patrol_status": "rival"})
-        x.c3.commit(x.governed.command(rival))
+        # NCR-C6-009 (OCOR-DEV-REM-0053): the EMISSION-FENCE refuses a stale revision before
+        # the send, so the rival commit lands after the fence, when C3 receives the command.
+        consumer = C6MemoryPromotionConsumer(
+            proposals=x.s, controls=x.controls, verifier=x.signer,
+            human_gate=HumanGateCoordinator(identities=x.registry, clock=x.w.clock), policy=x.policy,
+            c3=RivalAfterFenceC3(x.c3, x.governed.command(rival)), issuer=x.issuer, clock=x.w.clock,
+            audit=x.audit, commit_capability="canonical.commit", engine=x.engine)
         before = x.w.ledger.records()
         with pytest.raises(r.MemoryAdmissionError) as caught:
-            x.consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
+            consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
         assert (caught.value.reason_code, caught.value.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "COMMIT_OUTCOME_UNKNOWN")
         state = x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"])
         assert state is not None and state.revision == 1 and dict(state.state)["patrol_status"] == "rival"
@@ -934,7 +972,7 @@ def test_live_c3_receipt_not_bound_to_command_is_indeterminate(backends: r.Backe
             proposals=x.s, controls=x.controls, verifier=x.signer,
             human_gate=HumanGateCoordinator(identities=x.registry, clock=x.w.clock), policy=x.policy,
             c3=ForgedReceiptC3(x.c3), issuer=x.issuer, clock=x.w.clock, audit=x.audit,
-            commit_capability="canonical.commit")
+            commit_capability="canonical.commit", engine=x.engine)
         with pytest.raises(r.MemoryAdmissionError) as caught:
             consumer.commit(x.result.audit_ref, binding=r.binding(x.ctx))
         assert (caught.value.reason_code, caught.value.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "COMMIT_OUTCOME_UNKNOWN")

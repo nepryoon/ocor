@@ -22,6 +22,12 @@ Since NCR-C6-007 the engine reconciles an ambiguous send through an ``OutcomeRec
 appends every record to the signed audit port (Register FR-163); ``ActionWorld.engine`` composes
 one on the audit log of the suite, on the PostgreSQL of ``OCOR_LIVE_POSTGRES_DSN``, unless the
 suite passes its own.
+
+Since NCR-C6-009 a memory promotion commits through the same C6 path (ADD v1.3 :2789, LLD v1.1
+:238): ``promotion_engine`` composes the engine of a promotion suite on its C3, and
+``promotion_action`` builds the signed C6 records of one promotion (ActionProposal pinned to the
+promotion ActionType, ApprovalSet, Decision and CapabilityLease) that the C6 control authority
+holds for the recorded proposal.
 """
 
 from __future__ import annotations
@@ -380,3 +386,67 @@ class ActionWorld:
         return dispatch.sign_capability_lease(
             seeded_key(signer), issuer_id=issuer_id, keyid="k1", lease=CapabilityLease(**values)
         )
+
+
+# NCR-C6-009: the C6 records of a memory promotion, on the same path as every canonical mutation.
+
+PROMOTION_PARAMETERS = {"proposal_audit_ref": "string", "proposal_digest": "string"}
+
+
+def promotion_engine(world: ActionWorld, *, governed: Any, c3: Any, context: Any, aggregate_type: str = "Situation") -> Any:
+    """The engine of a promotion suite: the canonical path of ``context`` on the suite's C3."""
+    from ocor_runtime.c6 import engine
+    from ocor_runtime.c7_emission import EmissionFence
+
+    store = engine.C3CanonicalOutboxView(c3, tenant_id=context.tenant_id, aggregate_type=aggregate_type)
+    return world.engine(
+        commit_port=c3,
+        relay=EmissionFence(store=store),  # type: ignore[arg-type]
+        canonical_path=governed.engine_path(aggregate_type=aggregate_type, governed_context=context),
+        emission_outbox=store,
+    )
+
+
+def promotion_action(
+    world: ActionWorld,
+    *,
+    proposal_audit_ref: str,
+    proposal: Any,
+    command: Any,
+    risk: str = "R2_CONTROLLED",
+    capability: str = "canonical.commit",
+    accepted: bool = True,
+    lease_fields: dict[str, Any] | None = None,
+    **overrides: Any,
+) -> Any:
+    """The signed C6 records of the promotion of ``proposal`` by the gate ``command``: the
+    ActionProposal of the promotion ActionType (risk class and capability of the type), the
+    ApprovalSet of the Human Gate, the Authority's Decision on the frozen GatePackage and the
+    CapabilityLease of the emission attempt. R0 and R1 admit no Approval and no Decision."""
+    from ocor_runtime.memory.promotion import PromotionAction, promotion_parameters
+
+    reference = f"urn:ocor:action-type:memory-promotion:{risk.lower()}:{capability}"
+    action_type = world.catalog.action_type(reference) or world.action_type(
+        reference, risk=risk, capability=capability, parameters=dict(PROMOTION_PARAMETERS)
+    )
+    values: dict[str, Any] = {
+        "action_id": command["action_instance_id"],
+        "proposer": world.context.effective_principal_id,
+        "target": command["aggregate_ref"],
+        "governed_context_digest": command["governed_context_digest"],
+        "parameters": promotion_parameters(proposal_audit_ref, proposal),
+        "evidence_refs": tuple(command["evidence_refs"]),
+    }
+    values.update(overrides)
+    action_proposal = world.proposal(action_type, **values)
+    if risk in ("R0_INFORMATIONAL", "R1_LOW"):
+        return PromotionAction(proposal=action_proposal, approval=None, decision=None,
+                               lease=world.lease(action_proposal, None, **(lease_fields or {})))
+    approval_set = world.approval_set(action_proposal)
+    decision = world.decide(action_proposal, approval_set, accepted=accepted)
+    return PromotionAction(
+        proposal=action_proposal,
+        approval=approval_set,
+        decision=decision,
+        lease=world.lease(action_proposal, decision, **(lease_fields or {})),
+    )

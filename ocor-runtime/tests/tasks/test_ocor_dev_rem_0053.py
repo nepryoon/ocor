@@ -46,6 +46,16 @@ NCR-C6-001 to NCR-C6-009 and NCR-C6-014.
   retry) and FR-076 :208. A terminal reconciliation record is never overwritten; every record is
   appended to the single signed audit port before it takes effect and the state is restored
   from the verified chain.
+* NCR-C6-009 -- ADD v1.3 :2789 (every canonical mutation follows the same FSM, guards and Human
+  Gate; no second, ungoverned path to the canonical state), LLD v1.1 :238 (the mandatory promotion
+  path MemoryItem -> MemoryPromotionProposal -> C6 control/approval/decision ->
+  GovernedCanonicalCommitCommand -> C3), LLD v1.1 :302 (ACT-T29: EMISSION-FENCE before the send to
+  C3), ADD v1.3 :3302-3303 (R0_READ and R1_ANALYZE admit no mutation), Register FR-118 :267 (no
+  direct canonical promotion) and FR-053 :175 (no memory becomes canonical without a decision
+  record and provenance). The memory promotion consumer never calls C3 itself: its command is
+  sent by the engine after G-CONTRACT, G-AUTHORITY, the Human Gate, G-APPROVAL, G-DECISION and
+  the EMISSION-FENCE, with the signed C6 records of the promotion action bound to the recorded
+  proposal and to the gate command.
 
 The FSM and the gate cases are in-process: the FSM is a pure component whose durable effect sink
 and state store are ports. The engine cases commit through the real C3 on PostgreSQL
@@ -2510,3 +2520,246 @@ def test_an_unrecordable_ambiguous_send_fails_closed() -> None:
     assert (suspended.value.reason_code, suspended.value.cause_code) == ("RETRY_SUSPENDED", "EXECUTION_UNKNOWN")
     assert sink.calls == []
     assert ordered.calls == [("commit", 1)]
+
+
+# ---------------------------------------------------------------------------------------
+# NCR-C6-009: the memory promotion commits through the same C6 path
+# ---------------------------------------------------------------------------------------
+
+import test_ocor_dev_0052 as memory_world  # noqa: E402
+import test_ocor_dev_0058 as promotion  # noqa: E402
+
+# Imported fixtures provision the real pinned backends of the promotion suite; never skip.
+live_backends = memory_world.live_backends
+backends = memory_world.backends
+
+
+def _promotion_consumer(x: Any, **changes: Any) -> Any:
+    values: dict[str, Any] = {
+        "proposals": x.s,
+        "controls": x.controls,
+        "verifier": x.signer,
+        "human_gate": promotion.HumanGateCoordinator(identities=x.registry, clock=x.w.clock),
+        "policy": x.policy,
+        "c3": x.c3,
+        "issuer": x.issuer,
+        "clock": x.w.clock,
+        "audit": x.audit,
+        "commit_capability": "canonical.commit",
+        "engine": x.engine,
+    }
+    values.update(changes)
+    return promotion.C6MemoryPromotionConsumer(**values)
+
+
+def _promotion_action(x: Any, **changes: Any) -> Any:
+    from c6_action_fixture import promotion_action
+
+    values: dict[str, Any] = {
+        "proposal_audit_ref": x.result.audit_ref,
+        "proposal": x.result.proposal,
+        "command": x.body["command"],
+    }
+    values.update(changes)
+    return promotion_action(x.world, **values)
+
+
+def _promotion_refusal(x: Any, consumer: Any = None) -> Any:
+    with pytest.raises(memory_world.MemoryAdmissionError) as caught:
+        (consumer or x.consumer).commit(x.result.audit_ref, binding=memory_world.binding(x.ctx))
+    return caught.value
+
+
+def _canonical(x: Any) -> Any:
+    return x.c3.read(x.ctx.tenant_id, "Situation", x.req["target_aggregate_ref"])
+
+
+def test_ncr_c6_009_conforms(backends: Any) -> None:
+    """ADD v1.3 :2789, LLD v1.1 :238 and :302, ADD v1.3 :3302-3303, Register FR-118 :267 and
+    FR-053 :175: the promotion is sent to C3 by the engine, once, after the EMISSION-FENCE has
+    consumed its lease with the DeliveryAttempt; R0 and R1 admit no promotion."""
+    with promotion.workflow(backends) as x:
+        ordered = OrderedC3(x.c3, x.world.ledger)
+        consumer = _promotion_consumer(x, c3=ordered)
+        x.controls.put(x.result.audit_ref, x.body)
+        receipt = consumer.commit(x.result.audit_ref, binding=memory_world.binding(x.ctx))
+        action_id = x.body["command"]["action_instance_id"]
+        assert ordered.calls == [("commit", 1)]
+        (attempt,) = x.world.ledger.attempts(action_id)
+        assert attempt.gate_package_digest == x.action.decision.package_digest
+        assert x.world.ledger.consumed(x.action.lease.lease.lease_id) is not None
+        assert receipt.idempotency_key == x.body["command"]["idempotency_key"]
+        state = _canonical(x)
+        assert state is not None and state.revision == 1
+        assert "_c3.commit(" not in inspect.getsource(promotion.C6MemoryPromotionConsumer)
+
+    for risk in ("R0_INFORMATIONAL", "R1_LOW"):
+        with promotion.workflow(backends) as x:
+            x.body["risk_class"] = int(_mod("records").RiskClass[risk])
+            x.controls.put(x.result.audit_ref, x.body)
+            x.controls.put_action(x.result.audit_ref, _promotion_action(x, risk=risk))
+            ordered = OrderedC3(x.c3, x.world.ledger)
+            error = _promotion_refusal(x, _promotion_consumer(x, c3=ordered))
+            assert error.detail_code == "NO_MUTATION_ADMITTED"
+            assert ordered.calls == [] and _canonical(x) is None
+            assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+def test_a_promotion_without_its_c6_action_records_is_refused_before_c3(backends: Any) -> None:
+    with promotion.workflow(backends) as x:
+        x.controls.put(x.result.audit_ref, x.body)
+        x.controls.actions.clear()
+        error = _promotion_refusal(x)
+        assert (error.reason_code, error.detail_code) == ("POLICY_DENIED", "C6_ACTION_MISSING")
+        assert _canonical(x) is None
+        assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+PROMOTION_BINDING_FAULTS = {
+    "action-instance": "C6_ACTION_BINDING_MISMATCH",
+    "target": "C6_ACTION_BINDING_MISMATCH",
+    "proposal-ref": "C6_ACTION_BINDING_MISMATCH",
+    "proposal-digest": "C6_ACTION_BINDING_MISMATCH",
+    "evidence": "C6_ACTION_BINDING_MISMATCH",
+    "expected-revision": "C6_ACTION_BINDING_MISMATCH",
+    "risk": "C6_RISK_MISMATCH",
+    "capability": "C6_CAPABILITY_MISMATCH",
+}
+
+
+@pytest.mark.parametrize("fault", list(PROMOTION_BINDING_FAULTS))
+def test_promotion_action_records_not_bound_to_the_proposal_and_gate_are_refused(backends: Any, fault: str) -> None:
+    """LLD v1.1 :238: the C6 records decide this promotion, of this proposal, by this gate."""
+    with promotion.workflow(backends) as x:
+        command = dict(x.body["command"])
+        changes: dict[str, Any] = {}
+        if fault == "action-instance":
+            changes["command"] = dict(command, action_instance_id="urn:ocor:action:promotion:foreign")
+        elif fault == "target":
+            changes["command"] = dict(command, aggregate_ref="urn:ocor:situation:foreign")
+        elif fault == "proposal-ref":
+            changes["proposal_audit_ref"] = memory_world.d("foreign-proposal")
+        elif fault == "proposal-digest":
+            changes["proposal"] = dataclasses.replace(x.result.proposal, operation_id="foreign-operation")
+        elif fault == "evidence":
+            changes["evidence_refs"] = ("urn:ocor:evidence:foreign",)
+        elif fault == "expected-revision":
+            changes["expected_revision"] = 1
+        elif fault == "risk":
+            changes["risk"] = "R3_HIGH_IMPACT"
+        elif fault == "capability":
+            changes["capability"] = "memory.read"
+        x.controls.put(x.result.audit_ref, x.body)
+        x.controls.put_action(x.result.audit_ref, _promotion_action(x, **changes))
+        ordered = OrderedC3(x.c3, x.world.ledger)
+        error = _promotion_refusal(x, _promotion_consumer(x, c3=ordered))
+        assert (error.reason_code, error.detail_code) == ("POLICY_DENIED", PROMOTION_BINDING_FAULTS[fault])
+        assert ordered.calls == [] and _canonical(x) is None
+        assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+PROMOTION_GATE_FAULTS = {
+    "approval-missing": "APPROVAL_MISSING",
+    "approval-ungranted": "APPROVAL_MISSING",
+    "decision-missing": "DECISION_MISSING",
+    "decision-rejected": "DECISION_REJECTED",
+    "lease-expired": "AUTHORITY_DENIED",
+    "lease-unsigned": "AUTHORITY_DENIED",
+    "action-type-retired": "CONTRACT_INVALID",
+    "stale-revision": "INVALIDATED",
+    "stop-epoch": "INVALIDATED",
+}
+
+
+@pytest.mark.parametrize("fault", list(PROMOTION_GATE_FAULTS))
+def test_the_promotion_is_denied_at_every_c6_gate_before_c3(backends: Any, fault: str) -> None:
+    """ADD v1.3 :2789 and :2847-2854: the promotion crosses G-CONTRACT, G-AUTHORITY, G-APPROVAL,
+    G-DECISION and the EMISSION-FENCE of every canonical mutation; a refusal sends nothing."""
+    with promotion.workflow(backends) as x:
+        action = x.action
+        if fault == "approval-missing":
+            action = dataclasses.replace(action, approval=None)
+        elif fault == "approval-ungranted":
+            action = dataclasses.replace(action, approval=x.world.ungranted(action.approval))
+        elif fault == "decision-missing":
+            action = dataclasses.replace(action, decision=None)
+        elif fault == "decision-rejected":
+            action = _promotion_action(x, accepted=False)
+        elif fault == "lease-expired":
+            now = x.world.clock.now()
+            action = _promotion_action(x, lease_fields={"issued_at": now - timedelta(seconds=10),
+                                                        "expires_at": now - timedelta(seconds=5)})
+        elif fault == "lease-unsigned":
+            action = _promotion_action(x, lease_fields={"signer": "urn:ocor:human:domain-approver"})
+        elif fault == "action-type-retired":
+            from c6_action_fixture import PUBLISHER, seeded_key
+
+            x.world.catalog.retire(action.proposal.action_type_ref, key=seeded_key(PUBLISHER))
+        elif fault == "stale-revision":
+            rival = dict(x.body["command"], command_id="urn:ocor:command:" + uuid.uuid4().hex,
+                         idempotency_key="rival-" + uuid.uuid4().hex, canonical_delta={"patrol_status": "rival"})
+            x.c3.commit(x.governed.command(rival))
+        elif fault == "stop-epoch":
+            x.governed.fence.stop()
+        x.controls.put(x.result.audit_ref, x.body)
+        x.controls.put_action(x.result.audit_ref, action)
+        ordered = OrderedC3(x.c3, x.world.ledger)
+        before = _canonical(x)
+        error = _promotion_refusal(x, _promotion_consumer(x, c3=ordered))
+        assert (error.reason_code, error.detail_code) == ("POLICY_DENIED", PROMOTION_GATE_FAULTS[fault])
+        assert ordered.calls == []
+        assert _canonical(x) == before
+        assert x.world.ledger.attempts(x.body["command"]["action_instance_id"]) == ()
+        assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+def test_a_confirmed_promotion_is_never_sent_again(backends: Any) -> None:
+    """ADD v1.3 :2853: every send crosses the EMISSION-FENCE; a confirmed action is not sent
+    again and its retry returns the confirmed receipt."""
+    with promotion.workflow(backends) as x:
+        ordered = OrderedC3(x.c3, x.world.ledger)
+        consumer = _promotion_consumer(x, c3=ordered)
+        x.controls.put(x.result.audit_ref, x.body)
+        first = consumer.commit(x.result.audit_ref, binding=memory_world.binding(x.ctx))
+        again = consumer.commit(x.result.audit_ref, binding=memory_world.binding(x.ctx))
+        assert again == first
+        assert ordered.calls == [("commit", 1)]
+        assert len(x.world.ledger.attempts(x.body["command"]["action_instance_id"])) == 1
+
+
+class UnansweredC3:
+    """The send leaves for C3 and no response comes back."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def commit(self, command: Any) -> Any:
+        self.calls += 1
+        raise TimeoutError("no response from C3 before the deadline")
+
+
+def test_an_unanswered_promotion_send_is_execution_unknown_and_never_sent_again(backends: Any) -> None:
+    """LLD v1.1 :282-283 and :307, ADD v1.3 :2841, FR-163: after the fence a send without a
+    response is EXECUTION_UNKNOWN through the audited reconciliation; the retry is suspended."""
+    with promotion.workflow(backends) as x:
+        unanswered = UnansweredC3()
+        x.controls.put(x.result.audit_ref, x.body)
+        error = _promotion_refusal(x, _promotion_consumer(x, c3=unanswered))
+        assert (error.reason_code, error.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "COMMIT_OUTCOME_UNKNOWN")
+        assert x.audit.actions()[-2:] == ["commitMemoryPromotion.intent", "commitMemoryPromotion.indeterminate"]
+        record = x.world.reconciler.record(x.body["command"]["command_id"])
+        assert record is not None and record.status is _mod("safety").OutcomeStatus.UNKNOWN
+        retry = _promotion_refusal(x, _promotion_consumer(x, c3=x.c3))
+        assert (retry.reason_code, retry.detail_code) == ("POLICY_DENIED", "RETRY_SUSPENDED")
+        assert unanswered.calls == 1 and _canonical(x) is None
+        assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+def test_a_consumer_without_the_c6_engine_never_reaches_c3(backends: Any) -> None:
+    with promotion.workflow(backends) as x:
+        ordered = OrderedC3(x.c3, x.world.ledger)
+        x.controls.put(x.result.audit_ref, x.body)
+        error = _promotion_refusal(x, _promotion_consumer(x, c3=ordered, engine=object()))
+        assert (error.reason_code, error.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "C6_CONTROL_UNAVAILABLE")
+        assert ordered.calls == [] and _canonical(x) is None
+        assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
