@@ -1898,3 +1898,564 @@ def test_ncr_c2_013_any_other_port_failure_stays_control_plane_unavailable(
     reply = fixture.invoke("GetObject", rem.get_object_body())
     assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE")
     assert "served" not in reply.body
+
+
+# --------------------------------------------------------------------------- #
+# Input robustness of the adapters touched by the unit (PO decision NCP-THROUGHPUT-RULES
+# (2026-11-05) point 1, the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29), the
+# boundary bindings and the closure of every resource on every error path). Every answer or
+# stored datum read from outside the process is checked for type and shape without conversion,
+# every failure leaves the adapter as its typed error, never as a raw exception, and a tampered
+# datum is refused. The local responders stand in for a backend on the failure paths only.
+# --------------------------------------------------------------------------- #
+DEEP_JSON = b"[" * 100_000
+UNREACHABLE_POSTGRES = "postgresql://ocor@127.0.0.1:1/ocor"
+
+
+@pytest.mark.parametrize("endpoint", ["signin", "open", "query"])
+def test_ncr_c4_003_a_deeply_nested_answer_is_the_typed_error(responder: TypeDBResponder, endpoint: str) -> None:
+    """Named Query Gateway contract :486-491: an answer nested beyond what the decoder can read
+    is a malformed answer -- the typed CONTROL_PLANE_UNAVAILABLE of the read and the adapter's
+    typed error of a write -- never a raw RecursionError."""
+    adapter_module = _module("ocor_runtime.c4.typedb_adapter")
+    responder.routes = {endpoint: (200, DEEP_JSON)}
+    with pytest.raises(C2Error) as caught:
+        adapter_module.read_rows("match $w isa c4-watermark, has c4-commit-id $c;", ("c",))
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    if endpoint != "query":
+        with pytest.raises(adapter_module.TypeDBAdapterError):
+            adapter_module._write("match $f isa c4-fact; delete $f;")
+
+
+def test_ncr_c4_003_a_deeply_nested_database_listing_is_the_typed_error(responder: TypeDBResponder) -> None:
+    adapter_module = _module("ocor_runtime.c4.typedb_adapter")
+    responder.routes = {"databases": (200, DEEP_JSON)}
+    with pytest.raises(adapter_module.TypeDBAdapterError):
+        adapter_module.sandbox_database_names()
+
+
+def test_ncr_c4_003_typedb_unreachable_at_the_write_is_projection_not_ready(
+        adapter: Any, ledger: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """ADD v1.3 :3406 and the PO decision NORMATIVE-CONFORMANCE-PLAN point 5 (NCP-U05 row): TypeDB
+    lost between the reads of ``apply_commit`` and its write transaction is the typed
+    TypeDBUnavailableError carrying the last confirmed watermark, never a raw URLError; the
+    ledger confirms nothing."""
+    import urllib.error
+
+    adapter_module = _module("ocor_runtime.c4.typedb_adapter")
+    assert adapter.apply_commit(fact_id="fact-1", commit_id="commit-1", payload="p1") is True
+
+    def unreachable(*queries: str, database: str | None = None) -> None:
+        raise urllib.error.URLError(ConnectionRefusedError(111, "refused"))
+
+    monkeypatch.setattr(adapter_module, "_write", unreachable)
+    with pytest.raises(adapter_module.TypeDBUnavailableError) as caught:
+        adapter.apply_commit(fact_id="fact-1", commit_id="commit-2", payload="p2")
+    assert caught.value.reason_code == "PROJECTION_NOT_READY"
+    assert caught.value.confirmed is not None and caught.value.confirmed.commit_id == "commit-1"
+    assert ledger.latest(adapter.store_id, "main").commit_id == "commit-1"
+
+
+def test_ncr_c4_003_typedb_unreachable_at_initialize_and_reset_is_projection_not_ready(
+        ledger: Any, clock: Clock, monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter_module = _module("ocor_runtime.c4.typedb_adapter")
+    monkeypatch.setattr(adapter_module, "TYPEDB_URL", UNREACHABLE_TYPEDB)
+    adapter = _adapter(ledger, clock)
+    for call in (adapter.initialize, adapter.reset):
+        with pytest.raises(adapter_module.TypeDBUnavailableError) as caught:
+            call()
+        assert caught.value.reason_code == "PROJECTION_NOT_READY"
+
+
+def _ledger_row(ledger: Any, table: str, row: dict[str, Any]) -> None:
+    """An out-of-band write to the ledger schema of the module, outside the adapter."""
+    import psycopg
+    from psycopg import sql
+
+    columns = sql.SQL(", ").join(sql.Identifier(name) for name in row)
+    values = sql.SQL(", ").join(sql.Placeholder() for _ in row)
+    with psycopg.connect(os.environ["OCOR_LIVE_POSTGRES_DSN"]) as connection:
+        connection.execute(sql.SQL("INSERT INTO {}.{} ({}) VALUES ({})").format(
+            sql.Identifier(ledger._schema), sql.Identifier(table), columns, values), tuple(row.values()))
+
+
+@pytest.mark.parametrize("release", ["x", "sha256:" + "b" * 64, "urn:sha256:" + "B" * 64])
+def test_ncr_c4_001_a_stored_watermark_of_a_malformed_release_fails_closed(ledger: Any, release: str) -> None:
+    """FR-148 (Register :331): the release a stored confirmation declares is a SHA-256 URN; a
+    tampered one is the typed CONTROL_PLANE_UNAVAILABLE of the ledger, never served."""
+    store = f"urn:ocor:projection-store:typedb:rem0052-tamper-{os.urandom(4).hex()}"
+    _ledger_row(ledger, "c4_watermark_confirmed", {
+        "store_id": store, "branch": "main", "commit_id": "commit-1", "sequence": 1, "release_digest": release,
+        "confirmed_at": T0})
+    watermark = _module("ocor_runtime.c4.watermark")
+    try:
+        with pytest.raises(watermark.WatermarkLedgerError) as caught:
+            ledger.latest(store, "main")
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    finally:
+        ledger.clear(store)
+
+
+@pytest.mark.parametrize("column", ["expected_digest", "served_digest"])
+def test_ncr_c4_002_a_stored_quarantine_of_a_malformed_digest_fails_closed(ledger: Any, column: str) -> None:
+    store = f"urn:ocor:projection-store:typedb:rem0052-tamper-{os.urandom(4).hex()}"
+    row = {"store_id": store, "aggregate_ref": DRIFT_REF, "canonical_commit": "commit-1", "expected_digest": DIGEST_A,
+           "served_digest": DIGEST_C, "quarantined_at": T0}
+    row[column] = "not-a-digest"
+    _ledger_row(ledger, "c4_quarantine", row)
+    watermark = _module("ocor_runtime.c4.watermark")
+    try:
+        with pytest.raises(watermark.WatermarkLedgerError) as caught:
+            ledger.active(store, DRIFT_REF)
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    finally:
+        ledger.clear_quarantine(store)
+
+
+def test_ncr_c4_001_an_unreachable_ledger_is_the_typed_error() -> None:
+    watermark = _module("ocor_runtime.c4.watermark")
+    down = _module("ocor_runtime.c4.adapters.postgres").PostgresWatermarkLedger(UNREACHABLE_POSTGRES,
+                                                                              schema="ocor_c4_rem0052")
+    for call in (lambda: down.latest("urn:ocor:projection-store:typedb:x", "main"),
+                 lambda: down.active("urn:ocor:projection-store:typedb:x", DRIFT_REF),
+                 lambda: down.latest_checkpoint("urn:ocor:projection-store:typedb:x")):
+        with pytest.raises(watermark.WatermarkLedgerError) as caught:
+            call()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+        assert "127.0.0.1" not in str(caught.value)
+
+
+def _object_row(**changes: Any) -> dict[str, Any]:
+    document = {"values": {"name": "alpha"}, "link_ids": [], "provenance_ids": [], "text": "alpha",
+                "valid_from": "2026-11-04T12:00:00Z", "system_from": "2026-11-04T12:00:00Z"}
+    row = {"i": "urn:ocor:vessel:1", "t": "urn:ocor:type:vessel", "c": "commit-1", "m": DIGEST_A,
+           "d": json.dumps(document, sort_keys=True)}
+    row.update(changes)
+    return {"data": {name: {"value": value} for name, value in row.items()}}
+
+
+def _object_answer(*rows: dict[str, Any]) -> tuple[int, bytes]:
+    return 200, json.dumps({"answers": list(rows)}).encode("utf-8")
+
+
+MALFORMED_OBJECT_DOCUMENTS: dict[str, str] = {
+    "value-nan": ('{"link_ids":[],"provenance_ids":[],"system_from":"2026-11-04T12:00:00Z","text":"",'
+                  '"valid_from":"2026-11-04T12:00:00Z","values":{"x":NaN}}'),
+    "value-infinity": ('{"link_ids":[],"provenance_ids":[],"system_from":"2026-11-04T12:00:00Z","text":"",'
+                       '"valid_from":"2026-11-04T12:00:00Z","values":{"x":Infinity}}'),
+    "duplicate-key": ('{"link_ids":[],"provenance_ids":[],"system_from":"2026-11-04T12:00:00Z","text":"a",'
+                      '"text":"b","valid_from":"2026-11-04T12:00:00Z","values":{}}'),
+    "deeply-nested": "[" * 100_000,
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_OBJECT_DOCUMENTS))
+def test_ncr_c4_005_a_stored_document_that_is_not_i_json_is_refused(responder: TypeDBResponder, case: str) -> None:
+    """A stored snapshot document is I-JSON (RFC 7493: no duplicate key, no non-finite number) of
+    bounded depth; anything else is the typed CONTROL_PLANE_UNAVAILABLE of the whole read
+    (ADD v1.3 :174), never a coerced object nor a raw exception."""
+    responder.routes = {"query": _object_answer(_object_row(d=MALFORMED_OBJECT_DOCUMENTS[case]))}
+    projection = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    for read in (lambda: projection.get(("urn:ocor:vessel:1",)), lambda: projection.page(limit=2, after=None)):
+        with pytest.raises(C2Error) as caught:
+            read()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", case
+
+
+def test_ncr_c4_005_a_well_formed_object_answer_is_read(responder: TypeDBResponder) -> None:
+    """Positive control of the responder rows above: a well-formed row is read as it is stored."""
+    responder.routes = {"query": _object_answer(_object_row())}
+    projection = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    [item] = projection.get(("urn:ocor:vessel:1",))
+    assert (item.resource_id, item.commit_id, item.values) == ("urn:ocor:vessel:1", "commit-1", {"name": "alpha"})
+
+
+def test_ncr_c4_005_a_lookup_by_identity_returns_only_the_identity_asked(responder: TypeDBResponder) -> None:
+    """An answer row of another identity is never returned for the identity asked."""
+    responder.routes = {"query": _object_answer(_object_row(i="urn:ocor:vessel:2"))}
+    projection = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    assert projection.get(("urn:ocor:vessel:1",)) == ()
+
+
+def test_ncr_c4_005_an_unreachable_typedb_at_projection_is_projection_not_ready(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """ADD v1.3 :3406: the write path of the object projection reads TypeDB through the raw read too,
+    so an unreachable TypeDB is PROJECTION_NOT_READY there as well."""
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", UNREACHABLE_TYPEDB)
+    projection = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    marking = _module("ocor_runtime.c4_marking").MarkingSet({"classification": "SECRET"})
+    with pytest.raises(C2Error) as caught:
+        projection.project(object_id="urn:ocor:vessel:1", resource_type_id="urn:ocor:type:vessel",
+                           commit_id="commit-1", marking=marking, values={"name": "alpha"})
+    assert caught.value.reason_code == "PROJECTION_NOT_READY"
+
+
+JENA_ANSWER_FAILURES: dict[str, bytes] = {
+    "not-utf-8": b'{"results": {"bindings": [{"c": {"value": "commit-\xff"}}]}}',
+    "deeply-nested": DEEP_JSON,
+    "value-not-text": b'{"results": {"bindings": [{"c": {"value": 7}}]}}',
+}
+
+
+@pytest.mark.parametrize("case", sorted(JENA_ANSWER_FAILURES))
+def test_ncr_c4_002_a_malformed_jena_answer_is_the_typed_error(case: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Named Query Gateway contract :486-491: a SPARQL answer that is not strict UTF-8 JSON of
+    bounded depth with text values is the typed CONTROL_PLANE_UNAVAILABLE -- never a value
+    rewritten with replacement characters, never a raw exception."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    responder = FusekiResponder((200, JENA_ANSWER_FAILURES[case]))
+    monkeypatch.setattr(jena_adapter, "FUSEKI_URL", responder.url)
+    try:
+        adapter = _jena(_module("c4_projection_fixture").isolated_ledger(), Clock(T0))
+        with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+            adapter.current_watermark()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE", case
+    finally:
+        responder.close()
+
+
+@pytest.mark.parametrize("value", ["²", "١", "-1", "1.0", "", "0x1"])
+def test_ncr_c4_002_a_malformed_jena_commit_position_is_the_typed_error(
+        value: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A commit position is ASCII decimal digits as stored: a Unicode digit, a sign, a fraction or
+    an empty value is the typed CONTROL_PLANE_UNAVAILABLE, never converted to another position."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    body = json.dumps({"results": {"bindings": [{"s": {"value": value}}]}}).encode("utf-8")
+    responder = FusekiResponder((200, body))
+    monkeypatch.setattr(jena_adapter, "FUSEKI_URL", responder.url)
+    try:
+        adapter = _jena(_module("c4_projection_fixture").isolated_ledger(), Clock(T0))
+        with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+            adapter.position("main", "commit-j1")
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    finally:
+        responder.close()
+
+
+def test_ncr_c4_002_a_resource_holding_two_markings_is_withheld(jena: Any) -> None:
+    """ADD v1.3 §3.0.2 :401: a resource the adapter published with exactly one marking that is
+    found holding a second one -- a tampered projection -- is DENY and withheld, never served
+    under the less restrictive marking."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    jena.publish(R1, _properties(), marking=_marking("TOP_SECRET"), commit_id="commit-j1")
+    lowered = _marking("UNCLASSIFIED")
+    stored = json.dumps(lowered, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    _sparql_update(f"{jena_adapter.PREFIX} INSERT DATA {{ <{R1}> ocor:markingRef {jena_adapter._literal(_ref(lowered))} ; "
+                   f"ocor:markingObject {jena_adapter._literal(stored)} }}")
+    assert jena.list_authorized(_clearance("SECRET")) == []
+    assert jena.exists_authorized(R1, _clearance("TOP_SECRET")) is False
+
+
+def test_ncr_c4_002_a_deeply_nested_stored_marking_is_withheld(jena: Any) -> None:
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    jena.publish(R1, _properties(), marking=_marking("UNCLASSIFIED"), commit_id="commit-j1")
+    _sparql_update(f"{jena_adapter.PREFIX} DELETE {{ <{R1}> ocor:markingObject ?m }} INSERT {{ <{R1}> "
+                   f"ocor:markingObject {jena_adapter._literal('[' * 100_000)} }} WHERE {{ <{R1}> ocor:markingObject ?m }}")
+    assert jena.list_authorized(_clearance("TOP_SECRET")) == []
+
+
+def test_ncr_c4_002_a_construct_answer_that_is_not_turtle_is_the_typed_error(
+        jena: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The RDF answer of a CONSTRUCT is parsed fail-closed: a body that is not Turtle is the typed
+    CONTROL_PLANE_UNAVAILABLE of the serialization and of the export, never a raw parser error."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    jena.publish(R1, _properties(), marking=_marking("UNCLASSIFIED"), commit_id="commit-j1")
+    monkeypatch.setattr(jena_adapter, "_construct", lambda query: "<urn:x> <urn:y> \"unterminated .")
+    for read in (lambda: jena.to_json_ld(R1, _clearance()), lambda: jena.export([R1], _clearance())):
+        with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+            read()
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c4_002_a_failed_staging_cleanup_never_hides_the_refusal(
+        jena: Any, ledger: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A document the SHACL service refuses stays refused with SHAPE_VIOLATION and its violations
+    even when dropping the staging graph fails afterwards; nothing becomes visible."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    update = jena_adapter._update
+
+    def failing_drop(sparql_update: str) -> None:
+        if sparql_update.startswith("DROP SILENT GRAPH"):
+            raise jena_adapter.JenaAdapterError("PROJECTION_NOT_READY", "the Jena projection is unreachable")
+        update(sparql_update)
+
+    monkeypatch.setattr(jena_adapter, "_update", failing_drop)
+    document = _turtle(_mutated("claim", "claimProposition", None))
+    with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+        jena.publish_provenance(document, marking=_marking("ALPHA"), commit_id="commit-p1")
+    assert caught.value.reason_code == "SHAPE_VIOLATION"
+    assert caught.value.violations
+    assert jena.current_watermark() is None and ledger.latest(jena.store_id, "main") is None
+
+
+def test_ncr_c4_002_an_export_of_a_store_confirmed_under_another_release_is_release_mismatch(
+        jena: Any, ledger: Any, clock: Clock) -> None:
+    """FR-148 (Register :331), as for the TypeDB projection: an export names the release of the
+    confirmed watermark only when it is the release the adapter declares; a store confirmed under
+    another release is RELEASE_MISMATCH, never exported under the stale release."""
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    _jena(ledger, clock, release=OTHER_RELEASE).publish(R1, _properties(), marking=_marking("UNCLASSIFIED"),
+                                                         commit_id="commit-j1")
+    for read in (jena.watermark, lambda: jena.export([R1], _clearance())):
+        with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+            read()
+        assert caught.value.reason_code == "RELEASE_MISMATCH"
+
+
+def test_ncr_c4_002_a_validation_result_without_its_severity_is_never_read_as_conforming() -> None:
+    """SHACL 1.0 §3.6.2: every validation result has exactly one sh:resultSeverity; a result
+    without one is a malformed report (CONTROL_PLANE_UNAVAILABLE), never skipped."""
+    shacl = _module("ocor_runtime.c4.shacl")
+    for conforms in ("true", "false"):
+        report = (f"[] <{RDF_TYPE}> <{SH}ValidationReport> ; <{SH}conforms> {conforms} ; <{SH}result> [ <{RDF_TYPE}> "
+                  f"<{SH}ValidationResult> ; <{SH}focusNode> <urn:x> ] .")
+        with pytest.raises(_module("ocor_runtime.c4.jena_adapter").JenaAdapterError) as caught:
+            shacl.read_report(report)
+        assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c4_002_a_marking_that_cannot_be_canonicalized_is_unresolved(jena: Any) -> None:
+    """ADD v1.3 §3.0.2 :401: a marking whose members cannot be canonicalized (a lone surrogate) is
+    unresolved: MARKING_UNRESOLVED at the scheme and at every adapter entry, never a raw error."""
+    marking_module = _module("ocor_runtime.c4.marking")
+    jena_adapter = _module("ocor_runtime.c4.jena_adapter")
+    value = {"scheme_id": SCHEME_ID, "labels": ["ALPHA", "\ud800"], "mandatory_markings": [], "caveats": ["\ud800"],
+             "dissemination_controls": [], "permitted_purposes": ["logistics"], "handling_instructions": [],
+             "marking_digest": "sha256:" + "0" * 64}
+    with pytest.raises(marking_module.MarkingUnresolved):
+        _scheme().evaluate(value)
+    for call in (lambda: jena.publish(R1, _properties(), marking=value, commit_id="commit-j1"),
+                 lambda: jena.list_authorized(value)):
+        with pytest.raises(jena_adapter.JenaAdapterError) as caught:
+            call()
+        assert caught.value.reason_code == "MARKING_UNRESOLVED"
+
+
+@pytest.mark.parametrize("definition", [[], "scheme", None, 7])
+def test_ncr_c4_002_a_scheme_definition_that_is_not_an_object_is_refused(definition: Any) -> None:
+    marking_module = _module("ocor_runtime.c4.marking")
+    with pytest.raises(marking_module.MarkingSchemeError):
+        marking_module.CanonicalMarkingScheme(definition)
+
+
+def _checkpoint_mapping(**changes: Any) -> dict[str, Any]:
+    drift = _module("ocor_runtime.c4.drift")
+    entry = drift.CheckpointEntry(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF,
+                                  commit_id="commit-1", sequence=1, payload="p1")
+    body = drift.CheckpointBody(store_id="urn:ocor:projection-store:typedb:ocor_default", branch="main",
+                                release_digest=RELEASE, watermark="commit-1", sequence=1,
+                                created_at="2026-11-04T12:00:00Z", entries=(entry,)).to_mapping()
+    body.update(changes)
+    return body
+
+
+def _signed(payload: bytes) -> Any:
+    drift = _module("ocor_runtime.c4.drift")
+    dsse = _module("ocor_runtime.c4.drift").dsse_pae
+    key = _signing_key()
+    return drift.SignedProjectionCheckpoint(payload=payload, key_id=CHECKPOINT_KEY_ID,
+                                            signature=key.sign(dsse(drift.CHECKPOINT_PAYLOAD_TYPE, payload)))
+
+
+def _canonical_payload(**changes: Any) -> bytes:
+    return bytes(_module("ocor_runtime.kernel.canonical").canonical_bytes(_checkpoint_mapping(**changes)))
+
+
+SIGNED_MALFORMED_CHECKPOINTS: dict[str, Any] = {
+    "non-finite-number": lambda: _canonical_payload().replace(b'"sequence":1,"store_id"', b'"sequence":NaN,"store_id"'),
+    "deeply-nested": lambda: DEEP_JSON,
+    "not-utf-8": lambda: b'{"branch":"\xff"}',
+    "created-at-not-a-timestamp": lambda: _canonical_payload(created_at="yesterday"),
+    "created-at-with-an-offset": lambda: _canonical_payload(created_at="2026-11-04T12:00:00+01:00"),
+    "sequence-bool": lambda: _canonical_payload(sequence=True),
+    "release-not-a-digest": lambda: _canonical_payload(release_digest="x"),
+    "no-entries": lambda: _canonical_payload(entries=[]),
+    "watermark-not-the-last-entry": lambda: _canonical_payload(watermark="commit-0"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(SIGNED_MALFORMED_CHECKPOINTS))
+def test_ncr_c4_002_a_signed_but_malformed_checkpoint_is_refused(case: str) -> None:
+    """LLD v1.1 :148: a checkpoint is trusted only as a canonical, well-formed body under a trusted
+    signature; a body that is signed but malformed -- a non-finite number, a depth the decoder
+    cannot read, non UTF-8, an instant that is not RFC 3339 UTC, a bool sequence, a release that is
+    not a SHA-256 URN, no entries, a watermark that is not the last entry -- is CheckpointError,
+    never a raw exception."""
+    drift = _module("ocor_runtime.c4.drift")
+    with pytest.raises(drift.CheckpointError):
+        drift.verify_checkpoint(_signed(SIGNED_MALFORMED_CHECKPOINTS[case]()),
+                                {CHECKPOINT_KEY_ID: _signing_key().public_key})
+
+
+def test_ncr_c4_002_a_signed_well_formed_checkpoint_is_read() -> None:
+    """Positive control of the signed bodies above."""
+    drift = _module("ocor_runtime.c4.drift")
+    body = drift.verify_checkpoint(_signed(_canonical_payload()), {CHECKPOINT_KEY_ID: _signing_key().public_key})
+    assert (body.watermark, body.sequence, body.created_at) == ("commit-1", 1, "2026-11-04T12:00:00Z")
+
+
+def test_ncr_c4_002_an_unreachable_canonical_store_is_canonical_unavailable(adapter: Any) -> None:
+    """FR-065 (Register :189): the rebuild source cannot be read -- TerminusDB unreachable -- is the
+    typed DriftError CANONICAL_UNAVAILABLE of every operation, never a raw adapter error."""
+    terminus = _terminus()
+    down = _module("ocor_runtime.c3.terminusdb_service").TerminusDBC3Service(
+        url="http://127.0.0.1:1", password="unused", database="ocor_c3_rem0052_absent",
+        admission=terminus.GOVERNED.admission(), timeout=2.0)
+    detector = _detector(down, adapter)
+    rebuild = _module("ocor_runtime.c4.rebuild")
+    with pytest.raises(rebuild.DriftError) as caught:
+        detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF)
+    assert caught.value.reason_code == "CANONICAL_UNAVAILABLE"
+    assert "127.0.0.1" not in str(caught.value)
+
+
+def test_ncr_c4_002_a_ledger_lost_during_a_rebuild_is_the_typed_error(
+        canonical: Any, adapter: Any, ledger: Any, clock: Clock) -> None:
+    """A failure of the durable ledger while the rebuild writes is the typed DriftError
+    CONTROL_PLANE_UNAVAILABLE, as for every other ledger operation of the detector."""
+    rebuild = _module("ocor_runtime.c4.rebuild")
+    _commit(canonical, DRIFT_REF, 0, "ACTIVE")
+    down = _module("ocor_runtime.c4.adapters.postgres").PostgresWatermarkLedger(UNREACHABLE_POSTGRES,
+                                                                              schema="ocor_c4_rem0052")
+    lost = _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(
+        release_digest=RELEASE, ledger=down, quarantine=ledger, clock=clock)
+    with pytest.raises(rebuild.DriftError) as caught:
+        _detector(canonical, lost).rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF)
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c4_002_a_ledger_lost_during_a_checkpoint_rebuild_is_the_typed_error(
+        canonical: Any, adapter: Any, ledger: Any, clock: Clock) -> None:
+    rebuild = _module("ocor_runtime.c4.rebuild")
+    _commit(canonical, DRIFT_REF, 0, "ACTIVE")
+    detector = _detector(canonical, adapter)
+    detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=DRIFT_REF)
+    signed = detector.checkpoint(aggregates=[_aggregate(DRIFT_REF)])
+    down = _module("ocor_runtime.c4.adapters.postgres").PostgresWatermarkLedger(UNREACHABLE_POSTGRES,
+                                                                              schema="ocor_c4_rem0052")
+    lost = _module("ocor_runtime.c4.typedb_adapter").TypeDBProjectionAdapter(
+        release_digest=RELEASE, ledger=down, quarantine=ledger, clock=clock)
+    with pytest.raises(rebuild.DriftError) as caught:
+        _detector(canonical, lost).rebuild_projection(checkpoint=signed)
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c4_002_a_checkpoint_of_another_store_or_release_is_refused(canonical: Any, adapter: Any) -> None:
+    """The store, branch and release of a verified checkpoint are compared with the projection's,
+    never taken from the checkpoint: another store is CHECKPOINT_INVALID, another release
+    RELEASE_MISMATCH, both before any write."""
+    rebuild = _module("ocor_runtime.c4.rebuild")
+    drift = _module("ocor_runtime.c4.drift")
+    detector = _detector(canonical, adapter)
+    cases = {"CHECKPOINT_INVALID": _canonical_payload(store_id="urn:ocor:projection-store:typedb:other"),
+             "RELEASE_MISMATCH": _canonical_payload(release_digest=OTHER_RELEASE)}
+    for reason, payload in cases.items():
+        signed = drift.SignedProjectionCheckpoint(payload=payload, key_id=CHECKPOINT_KEY_ID,
+                                                  signature=_signed(payload).signature)
+        with pytest.raises(rebuild.DriftError) as caught:
+            detector.rebuild_projection(checkpoint=signed)
+        assert caught.value.reason_code == reason
+
+
+def _rem_0050() -> Any:
+    return importlib.import_module("test_ocor_dev_rem_0050")
+
+
+def test_ncr_c4_001_a_typed_projection_failure_leaves_the_projector_typed() -> None:
+    """LLD v1.1 :148: a failure of the projection leaves the projector only as ProjectorError -- a
+    typed C2Error of a read as BACKEND_ERROR, an unreachable TypeDB at the write as
+    BACKEND_UNAVAILABLE -- never as the raw error of the projection port."""
+    rem = _rem_0050()
+    projector = _module("ocor_runtime.c4.projector")
+    typedb_adapter = _module("ocor_runtime.c4.typedb_adapter")
+    cases = [
+        ({"failure": C2Error("CONTROL_PLANE_UNAVAILABLE", "malformed"), "at": "position"}, "BACKEND_ERROR"),
+        ({"failure": C2Error("CONTROL_PLANE_UNAVAILABLE", "malformed"), "at": "lookup"}, "BACKEND_ERROR"),
+        ({"failure": typedb_adapter.TypeDBUnavailableError("unreachable"), "at": "apply"}, "BACKEND_UNAVAILABLE"),
+    ]
+    for failure, reason in cases:
+        double = rem._projection_double(**failure)
+        with pytest.raises(projector.ProjectorError) as caught:
+            projector.CanonicalStateProjector(double, release_digest=RELEASE).apply(rem._committed_event())
+        assert caught.value.reason_code == reason, failure
+
+
+def test_ncr_c4_001_an_event_without_a_commit_is_refused_before_any_write() -> None:
+    """FR-064 (Register :188): the projector deduplicates by commitId, so an event whose payload and
+    transport both lack a commit is SCHEMA_VIOLATION before anything is observed or written."""
+    rem = _rem_0050()
+    projector = _module("ocor_runtime.c4.projector")
+    event = rem._committed_event(commit_id=rem.MISSING)
+    value = event.to_mapping()
+    value["transport"] = {key: item for key, item in value["transport"].items() if key != "source_transaction_id"}
+    object.__setattr__(event, "_value", value)
+    double = rem._projection_double()
+    with pytest.raises(projector.ProjectorError) as caught:
+        projector.CanonicalStateProjector(double, release_digest=RELEASE).apply(event)
+    assert caught.value.reason_code == "SCHEMA_VIOLATION"
+    assert double.applied == []
+
+
+class _WatermarkFailure:
+    """The real TypeDB projection as projection and watermark port, whose watermark answers as
+    given once the object projection is down (the first ``current`` of the request admission
+    still reads TypeDB)."""
+
+    def __init__(self, real: Any, answer: Any) -> None:
+        self._real = real
+        self._answer = answer
+        self.calls = 0
+
+    def read(self, request: Any) -> Any:
+        return self._real.read(request)
+
+    def current(self, projection_id: str, branch: str) -> Any:
+        self.calls += 1
+        if self.calls == 1:
+            return self._real.current(projection_id, branch)
+        return self._answer()
+
+
+def _confirmed(**changes: Any) -> Any:
+    watermark = _module("ocor_runtime.c4.watermark")
+    value = {"store_id": "urn:ocor:projection-store:typedb:ocor_default", "branch": "main", "commit_id": "commit-2",
+             "sequence": 2, "release_digest": RELEASE, "confirmed_at": T0}
+    value.update(changes)
+    return watermark.ConfirmedWatermark(**value)
+
+
+def _raise(error: BaseException) -> Any:
+    def answer() -> Any:
+        raise error
+    return answer
+
+
+def test_ncr_c2_013_a_watermark_that_cannot_form_a_served_context_stays_control_plane_unavailable(
+        gateway_backends: tuple[Any, Any, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """ADD v1.3 :174 and :1364: PROJECTION_NOT_READY is built only from a confirmed watermark of
+    the requested branch that forms a served context; a watermark port that fails outside its
+    contract, a confirmed watermark of another branch or of a release that is not a SHA-256 URN,
+    or an observed watermark of another branch is the typed fail-closed CONTROL_PLANE_UNAVAILABLE
+    without a served context."""
+    rem = _rem_0049()
+    typedb, jena, log = gateway_backends
+    unavailable = _module("ocor_runtime.c4.typedb_adapter").TypeDBUnavailableError
+    ports = _module("ocor_runtime.c2.ports")
+    answers = {
+        "port-failure": _raise(RuntimeError("the watermark port failed outside its contract")),
+        "confirmed-other-branch": _raise(unavailable("down", confirmed=_confirmed(branch="feature"))),
+        "confirmed-release-not-a-digest": _raise(unavailable("down", confirmed=_confirmed(release_digest="x"))),
+        "confirmed-naive-instant": _raise(unavailable("down", confirmed=_confirmed(confirmed_at=T0.replace(tzinfo=None)))),
+        "observed-other-branch": lambda: ports.Watermark(
+            projection_id=PROJECTION, branch="feature", ontology_release_digest=RELEASE, canonical_commit="commit-2",
+            observed_at=T0),
+    }
+    real = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    for case, answer in answers.items():
+        projection = _WatermarkFailure(typedb, answer)
+        fixture = rem.Gateway(typedb, jena, log, projection=projection, objects=_DownObjects(real, monkeypatch))
+        rem.load_fleet(fixture, typedb)
+        projection.calls = 0
+        reply = fixture.invoke("GetObject", rem.get_object_body())
+        assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE"), (case, reply.body)
+        assert "served" not in reply.body, case
