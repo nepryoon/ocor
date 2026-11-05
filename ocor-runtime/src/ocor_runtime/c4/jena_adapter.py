@@ -116,17 +116,24 @@ def _unreachable(exc: BaseException) -> bool:
 def _request(
     method: str, url: str, *, headers: dict[str, str] | None = None, body: bytes | None = None, timeout: float = 10.0
 ) -> tuple[int, str]:
+    """One Fuseki exchange; the answer body is strict UTF-8, never rewritten with replacement
+    characters: a body that is not is the typed CONTROL_PLANE_UNAVAILABLE."""
     request = urllib.request.Request(url, method=method, data=body, headers=headers or {})
     try:
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
-                return response.status, response.read().decode("utf-8", errors="replace")
+                status, raw = response.status, response.read()
         except urllib.error.HTTPError as exc:
-            return exc.code, exc.read().decode("utf-8", errors="replace")
+            with exc:
+                status, raw = exc.code, exc.read()
     except _ANSWER_FAILURES as exc:
         if _unreachable(exc):
             raise JenaAdapterError("PROJECTION_NOT_READY", "the Jena projection is unreachable") from exc
         raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", "the Jena projection did not answer") from exc
+    try:
+        return status, raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", "the Jena answer is not UTF-8") from exc
 
 
 def _update(sparql_update: str) -> None:
@@ -153,7 +160,7 @@ def _query(sparql_query: str) -> list[dict[str, Any]]:
         bindings = json.loads(body)["results"]["bindings"]
         if not isinstance(bindings, list) or any(not isinstance(row, dict) for row in bindings):
             raise TypeError("bindings is not a list of rows")
-    except (ValueError, KeyError, TypeError) as exc:
+    except (ValueError, KeyError, TypeError, RecursionError) as exc:
         raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", "the SPARQL answer is malformed") from exc
     return bindings
 
@@ -204,6 +211,29 @@ def _construct(sparql_construct: str) -> str:
     if status != 200:
         raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", f"SPARQL construct failed: {status}")
     return body
+
+
+_POSITION = re.compile(r"[0-9]+")
+
+
+def _repeated(rows: list[dict[str, Any]], name: str) -> set[str]:
+    """The subjects answered more than once: the adapter writes exactly one marking (and one value
+    of each property) per subject, so a repeated subject is a tampered projection, withheld (DENY)."""
+    seen: set[str] = set()
+    repeated: set[str] = set()
+    for row in rows:
+        subject = _value(row, name)
+        (repeated if subject in seen else seen).add(subject)
+    return repeated
+
+
+def _parse_turtle(graph: Graph, turtle: str) -> None:
+    """Parses the Turtle answer of a CONSTRUCT fail-closed: a body the parser refuses is the typed
+    CONTROL_PLANE_UNAVAILABLE, never a raw parser error."""
+    try:
+        graph.parse(data=turtle, format="turtle")
+    except Exception as exc:  # rdflib raises parser-specific exceptions of many types
+        raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", "the Jena RDF answer is malformed") from exc
 
 
 def _literal(value: str) -> str:
@@ -464,9 +494,19 @@ class JenaSHACLProjectionAdapter:
                     f"[] a ocor:CommitOrder ; ocor:orderCommitId {_literal(commit_id)} ; ocor:orderSeq {sequence} . }}"
                 )
                 staged = False
-            finally:
+            except JenaAdapterError as refusal:
+                if staged:
+                    # a failed cleanup never hides the refusal: it is chained to it and the
+                    # staging graph, never read, is dropped by the next reset
+                    try:
+                        _update(f"DROP SILENT GRAPH <{staging}>")
+                    except JenaAdapterError as cleanup:
+                        raise refusal from cleanup
+                raise
+            except BaseException:
                 if staged:
                     _update(f"DROP SILENT GRAPH <{staging}>")
+                raise
             self._confirm(commit_id, sequence)
             return True
 
@@ -478,7 +518,8 @@ class JenaSHACLProjectionAdapter:
 
     @staticmethod
     def _position(value: str) -> int:
-        if not value.isdigit():
+        # ASCII decimal digits only: str.isdigit() also accepts Unicode digits int() reads or refuses
+        if _POSITION.fullmatch(value) is None:
             raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", "the Jena commit order is malformed")
         return int(value)
 
@@ -514,6 +555,9 @@ class JenaSHACLProjectionAdapter:
         if (None if confirmed is None else confirmed.commit_id) != stored:
             raise JenaAdapterError("PROJECTION_NOT_READY",
                                    "the Jena watermark disagrees with the confirmed watermark of the ledger")
+        if confirmed is not None and confirmed.release_digest != self._release:
+            # adapter and store must declare the same release (FR-148, Register :331)
+            raise JenaAdapterError("RELEASE_MISMATCH", "the Jena projection store serves another release")
         return confirmed
 
     def _rows(self) -> list[_Row]:
@@ -525,10 +569,13 @@ class JenaSHACLProjectionAdapter:
             f"ocor:commitId ?commitId ; ocor:markingRef ?markingRef ; ocor:markingObject ?markingObject . }}"
         )
         result: list[_Row] = []
+        repeated = _repeated(rows, "resource")
         for row in rows:
+            if _value(row, "resource") in repeated:
+                continue
             try:
                 evaluated = self._scheme.evaluate(json.loads(_value(row, "markingObject")))
-            except (MarkingUnresolved, ValueError):
+            except (MarkingUnresolved, ValueError, RecursionError):
                 continue
             if evaluated.marking_ref != _value(row, "markingRef"):
                 continue
@@ -545,10 +592,13 @@ class JenaSHACLProjectionAdapter:
             f"FILTER NOT EXISTS {{ ?node a ocor:Resource }} }}"
         )
         result: list[_Node] = []
+        repeated = _repeated(rows, "node")
         for row in rows:
+            if _value(row, "node") in repeated:
+                continue
             try:
                 evaluated = self._scheme.evaluate(json.loads(_value(row, "markingObject")))
-            except (MarkingUnresolved, ValueError):
+            except (MarkingUnresolved, ValueError, RecursionError):
                 continue
             if evaluated.marking_ref != _value(row, "markingRef"):
                 continue
@@ -579,8 +629,8 @@ class JenaSHACLProjectionAdapter:
     def _document(self, resource_ids: Sequence[str]) -> list[dict[str, Any]]:
         graph = Graph()
         for resource_id in resource_ids:
-            turtle = _construct(f"{PREFIX} CONSTRUCT {{ <{resource_id}> ?p ?o }} WHERE {{ <{resource_id}> ?p ?o }}")
-            graph.parse(data=turtle, format="turtle")
+            _parse_turtle(graph, _construct(
+                f"{PREFIX} CONSTRUCT {{ <{resource_id}> ?p ?o }} WHERE {{ <{resource_id}> ?p ?o }}"))
         document = json.loads(graph.serialize(format="json-ld"))
         if not isinstance(document, list):
             raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", "the JSON-LD serialization is malformed")
@@ -595,7 +645,7 @@ class JenaSHACLProjectionAdapter:
             raise JenaAdapterError("MARKING_DENIED", "resource is not authorized for the requester's clearance")
         turtle = _construct(f"{PREFIX} CONSTRUCT {{ <{resource_id}> ?p ?o }} WHERE {{ <{resource_id}> ?p ?o }}")
         graph = Graph()
-        graph.parse(data=turtle, format="turtle")
+        _parse_turtle(graph, turtle)
         result: dict[str, Any] | list[Any] = json.loads(graph.serialize(format="json-ld"))
         return result
 

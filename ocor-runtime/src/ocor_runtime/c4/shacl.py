@@ -154,6 +154,8 @@ def read_report(report: str) -> tuple[ShaclViolation, ...]:
     violations = []
     for result in graph.objects(node, SH.result):
         severity = _single(graph, result, SH.resultSeverity)
+        if severity is None:  # SHACL 1.0 §3.6.2: exactly one sh:resultSeverity per result
+            raise _malformed("a validation result has no severity")
         if severity != SH.Violation:
             continue
         focus = _single(graph, result, SH.focusNode)

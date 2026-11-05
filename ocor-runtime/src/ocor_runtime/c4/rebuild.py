@@ -34,12 +34,14 @@ import hashlib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import TypeVar
 
 from ..c1.signing import Ed25519SigningKey
 from ..c2.ports import C2Error, NamedQueryRequest, NamedQueryResponse
+from ..c3.adapters.terminusdb import TerminusDBAdapterError
 from ..c3.ports import C3Error, CanonicalSnapshot
 from ..c3.terminusdb_service import TerminusDBC3Service
-from ..c4.typedb_adapter import BRANCH, TypeDBProjectionAdapter, TypeDBUnavailableError
+from ..c4.typedb_adapter import BRANCH, TypeDBAdapterError, TypeDBProjectionAdapter, TypeDBUnavailableError
 from ..kernel.canonical import format_utc_timestamp
 from .drift import (
     CheckpointBody,
@@ -53,6 +55,7 @@ from .drift import (
 from .watermark import WatermarkLedgerError
 
 DEFAULT_REPLAY_BOUND = 256
+T = TypeVar("T")
 
 
 class DriftError(RuntimeError):
@@ -133,8 +136,9 @@ class ProjectionDriftDetector:
     def _canonical(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> CanonicalSnapshot:
         try:
             canonical = self._source.read(tenant_id, aggregate_type, aggregate_ref)
-        except (C3Error, OSError) as error:
-            raise DriftError("CANONICAL_UNAVAILABLE", f"the canonical store cannot be read: {error}") from error
+        except (C3Error, OSError, TerminusDBAdapterError) as error:
+            # an unreachable or failing TerminusDB too; the backend text is never echoed
+            raise DriftError("CANONICAL_UNAVAILABLE", "the canonical store cannot be read") from error
         if canonical is None:
             raise DriftError("CANONICAL_NOT_FOUND", f"no canonical commit exists for {aggregate_ref!r}")
         return canonical
@@ -162,6 +166,23 @@ class ProjectionDriftDetector:
         except WatermarkLedgerError as error:
             raise DriftError("CONTROL_PLANE_UNAVAILABLE", str(error)) from error
 
+    @staticmethod
+    def _write(work: Callable[[], T]) -> T:
+        """A write of the rebuild into the projection and its ledger: every failure leaves the
+        detector typed, as its reads do -- the ledger CONTROL_PLANE_UNAVAILABLE, an unreachable
+        TypeDB PROJECTION_NOT_READY, any other failure of the projection BACKEND_ERROR."""
+        try:
+            return work()
+        except WatermarkLedgerError as error:
+            raise DriftError("CONTROL_PLANE_UNAVAILABLE", "the C4 watermark ledger is unavailable") from error
+        except TypeDBUnavailableError as error:
+            raise DriftError("PROJECTION_NOT_READY", "the TypeDB projection is unreachable") from error
+        except (TypeDBAdapterError, C2Error, OSError) as error:
+            raise DriftError("BACKEND_ERROR", "the TypeDB projection refused the rebuild") from error
+
+    def _apply(self, fact_id: str, commit_id: str, payload: str) -> bool:
+        return self._write(lambda: self._projection.apply_commit(fact_id=fact_id, commit_id=commit_id, payload=payload))
+
     def _reconcile(self, aggregate_ref: str, canonical: CanonicalSnapshot) -> bool:
         """Compares the projection with the canonical commit; ``True`` when it reconciles. A
         divergent aggregate is quarantined; a missing one is projected from the canonical commit."""
@@ -169,8 +190,7 @@ class ProjectionDriftDetector:
         if held is not None and held != _digest_of(canonical.state_digest):
             self._quarantine(aggregate_ref, canonical, held)
             return False
-        self._projection.apply_commit(fact_id=aggregate_ref, commit_id=canonical.commit_id,
-                                      payload=canonical.state_digest)
+        self._apply(aggregate_ref, canonical.commit_id, canonical.state_digest)
         self._release(aggregate_ref)
         return True
 
@@ -271,20 +291,16 @@ class ProjectionDriftDetector:
             raise DriftError("REPLAY_BOUND_EXCEEDED",
                              f"{len(replays)} aggregates to replay exceed the bound of {self._bound}")
 
-        self._projection.reset()
-        for entry in body.entries:
-            self._projection.apply_commit(fact_id=entry.aggregate_ref, commit_id=entry.commit_id, payload=entry.payload)
-        for canonical in replays:
-            self._projection.apply_commit(fact_id=canonical.aggregate_ref, commit_id=canonical.commit_id,
-                                          payload=canonical.state_digest)
+        self._write(self._projection.reset)
+        applies = [(entry.aggregate_ref, entry.commit_id, entry.payload) for entry in body.entries]
+        applies += [(item.aggregate_ref, item.commit_id, item.state_digest) for item in replays]
+        for fact_id, commit_id, payload in applies:
+            self._apply(fact_id, commit_id, payload)
         quarantined = []
         keys = [(entry.tenant_id, entry.aggregate_type, entry.aggregate_ref) for entry in body.entries] + extra
         for tenant, kind, ref in keys:
             if not self._reconcile(ref, self._canonical(tenant, kind, ref)):
                 quarantined.append(ref)
-        try:
-            watermark = self._projection.current_watermark()
-        except TypeDBUnavailableError as error:
-            raise DriftError("PROJECTION_NOT_READY", str(error)) from error
+        watermark = self._write(self._projection.current_watermark)
         return ProjectionRebuildReport(checkpoint_watermark=body.watermark, replayed=len(replays),
                                        watermark=watermark, quarantined=tuple(sorted(quarantined)))

@@ -63,6 +63,7 @@ with the served context of the last confirmed watermark; a quarantine that canno
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import http.client
 import json
@@ -158,7 +159,8 @@ def _request(
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return response.status, response.read()
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.read()
+        with exc:
+            return exc.code, exc.read()
     except http.client.HTTPException as exc:
         raise TypeDBAdapterError("TypeDB answered outside the HTTP protocol") from exc
 
@@ -167,7 +169,7 @@ def _answer(body: bytes) -> Mapping[str, Any]:
     """A TypeDB answer body is strict UTF-8 JSON holding an object; anything else fails here."""
     try:
         answer = json.loads(body.decode("utf-8"))
-    except ValueError as exc:
+    except (ValueError, RecursionError) as exc:  # a depth the decoder cannot read is malformed too
         raise TypeDBAdapterError("the TypeDB answer is not UTF-8 JSON") from exc
     if not isinstance(answer, Mapping):
         raise TypeDBAdapterError("the TypeDB answer is not an object")
@@ -264,8 +266,9 @@ def _schema_write(query: str, database: str | None = None) -> None:
 
 
 # Every way a TypeDB answer can fail to be a well-formed result: transport (refused,
-# protocol, HTTP status), decoding (non UTF-8, non JSON) and shape.
-_ANSWER_FAILURES = (TypeDBAdapterError, OSError, http.client.HTTPException, ValueError, KeyError, TypeError)
+# protocol, HTTP status), decoding (non UTF-8, non JSON, nested beyond the decoder) and shape.
+_ANSWER_FAILURES = (TypeDBAdapterError, OSError, http.client.HTTPException, ValueError, KeyError, TypeError,
+                    RecursionError)
 
 
 def _strict_request(method: str, url: str, *, token: str | None = None, body: object = None) -> object:
@@ -608,24 +611,38 @@ class TypeDBProjectionAdapter:
     def store_id(self) -> str:
         return f"urn:ocor:projection-store:typedb:{DATABASE}"
 
+    def _unavailable_typed(self, work: Callable[[], T]) -> T:
+        """A write of the projection whose unreachable TypeDB is the typed TypeDBUnavailableError
+        with the last confirmed watermark (ADD v1.3 :3406), never a raw transport error; a
+        malformed answer is the adapter's typed error."""
+        try:
+            return work()
+        except (TypeDBAdapterError, C2Error):
+            raise
+        except _ANSWER_FAILURES as exc:
+            if _unreachable(exc):
+                raise TypeDBUnavailableError("the TypeDB projection is unreachable",
+                                             confirmed=self._confirmed()) from exc
+            raise TypeDBAdapterError("the TypeDB projection did not return a well-formed answer") from exc
+
     def initialize(self) -> None:
-        _ensure_database()
-        _schema_write(SCHEMA_QUERY)
+        self._unavailable_typed(_ensure_database)
+        self._unavailable_typed(lambda: _schema_write(SCHEMA_QUERY))
         initialize = getattr(self._ledger, "initialize", None)
         if callable(initialize):
             initialize()
 
     def reset(self) -> None:
-        _write(
+        self._unavailable_typed(lambda: _write(
             "match $f isa c4-fact; delete $f;",
             "match $w isa c4-watermark; delete $w;",
             "match $o isa c4-commit-order; delete $o;",
             "match $r isa c4-fact-revision; delete $r;",
-        )
+        ))
         self.reset_ledger()
         self._quarantine.clear_quarantine(self.store_id)
-        for name in sandbox_database_names():
-            _drop_database(name)
+        for name in self._unavailable_typed(sandbox_database_names):
+            self._unavailable_typed(functools.partial(_drop_database, name))
 
     def sandbox_databases(self) -> list[str]:
         """The sandbox databases of this projection that exist on the TypeDB server."""
@@ -689,7 +706,7 @@ class TypeDBProjectionAdapter:
                 f"has c4-commit-id {_literal(commit_id)}, has c4-commit-seq {sequence}, "
                 f"has c4-payload {_literal(payload)};"
             )
-            _write(*statements)
+            self._unavailable_typed(lambda: _write(*statements))
             self._confirm(commit_id, sequence)
             return True
 

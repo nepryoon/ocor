@@ -30,11 +30,12 @@ from contextlib import contextmanager
 from dataclasses import replace
 from typing import Any
 
+from ..c2.ports import C2Error
 from ..c5.backbone import BackboneError, CanonicalIngestionEnvelope
 from ..c5.envelope import thaw
 from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
 from ..kernel.governed_context import GovernedContext, GovernedContextError
-from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
+from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter, TypeDBUnavailableError, _unreachable
 from .watermark import WatermarkLedgerError
 
 CANONICAL_STATE_COMMITTED = "canonical-state-committed"
@@ -63,7 +64,13 @@ def _projection(operation: str) -> Iterator[None]:
     is never echoed."""
     try:
         yield
+    except TypeDBUnavailableError as exc:
+        raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
     except TypeDBAdapterError as exc:
+        raise ProjectorError("BACKEND_ERROR", f"{operation}: TypeDB refused the operation") from exc
+    except C2Error as exc:  # the typed fail-closed answer of a projection read
+        if exc.__cause__ is not None and _unreachable(exc.__cause__):
+            raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
         raise ProjectorError("BACKEND_ERROR", f"{operation}: TypeDB refused the operation") from exc
     except WatermarkLedgerError as exc:
         raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: the C4 watermark ledger is unavailable") from exc
@@ -97,6 +104,10 @@ class CanonicalStateProjector:
             or payload.get("branch") != BRANCH
         ):
             raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} is not a canonical-state-committed event")
+        commit_id = payload.get("commit_id")
+        if not isinstance(commit_id, str) or not commit_id:
+            # the projector deduplicates by commitId (FR-064, Register :188): no commit, no projection
+            raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} names no commit")
         state = payload.get("state")
         before = _revision(payload.get("from_revision"), 0)
         revision = _revision(payload.get("to_revision"), 1)
@@ -147,7 +158,7 @@ class CanonicalStateProjector:
             return 0
         try:
             fact = parse_i_json(found[1])
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, RecursionError) as exc:
             raise ProjectorError("PROJECTION_DRIFT", f"projected fact of {aggregate_ref!r} is not canonical JSON") from exc
         revision = fact.get("revision") if isinstance(fact, dict) else None
         if isinstance(revision, bool) or not isinstance(revision, int) or revision <= 0:

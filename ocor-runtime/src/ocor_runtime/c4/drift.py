@@ -27,7 +27,7 @@ from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
 from ..c1.signing import Ed25519SigningKey, dsse_pae, ed25519_verify
-from ..kernel.canonical import canonical_bytes
+from ..kernel.canonical import UTC_TIMESTAMP, canonical_bytes, parse_i_json, parse_utc_timestamp
 
 CHECKPOINT_FORMAT = "ocor.c4.projection-checkpoint/1"
 CHECKPOINT_PAYLOAD_TYPE = "application/vnd.ocor.c4.projection-checkpoint+json"
@@ -111,7 +111,7 @@ class SignedProjectionCheckpoint:
         """The watermark the payload declares, for reporting only: never trusted unverified."""
         try:
             body = json.loads(self.payload.decode("utf-8"))
-        except ValueError:
+        except (ValueError, RecursionError):
             return None
         value = body.get("watermark") if isinstance(body, dict) else None
         return value if isinstance(value, str) else None
@@ -142,6 +142,17 @@ def _position(value: object, what: str) -> int:
     return value
 
 
+def _instant(value: object) -> str:
+    """The creation instant in the canonical RFC 3339 UTC form the checkpoint is signed with."""
+    if not isinstance(value, str) or UTC_TIMESTAMP.fullmatch(value) is None:
+        raise CheckpointError("the checkpoint has a malformed created_at")
+    try:
+        parse_utc_timestamp(value)
+    except ValueError as exc:
+        raise CheckpointError("the checkpoint has a malformed created_at") from exc
+    return value
+
+
 def _entry(value: object) -> CheckpointEntry:
     if not isinstance(value, Mapping) or set(value) != {"tenant_id", "aggregate_type", "aggregate_ref", "commit_id",
                                                          "sequence", "payload"}:
@@ -165,10 +176,13 @@ def verify_checkpoint(checkpoint: object, trusted_keys: Mapping[str, bytes]) -> 
     if not ed25519_verify(public_key, dsse_pae(CHECKPOINT_PAYLOAD_TYPE, checkpoint.payload), checkpoint.signature):
         raise CheckpointError("the checkpoint signature does not verify")
     try:
-        body = json.loads(checkpoint.payload.decode("utf-8"))
-    except ValueError as exc:
-        raise CheckpointError("the checkpoint payload is not UTF-8 JSON") from exc
-    if not isinstance(body, dict) or canonical_bytes(body) != checkpoint.payload:
+        # I-JSON (no duplicate key, no non-finite number) of a depth the decoder can read, whose
+        # canonical bytes are exactly the signed ones
+        body = parse_i_json(checkpoint.payload.decode("utf-8"))
+        canonical = isinstance(body, dict) and canonical_bytes(body) == checkpoint.payload
+    except (ValueError, RecursionError) as exc:
+        raise CheckpointError("the checkpoint payload is not canonical UTF-8 I-JSON") from exc
+    if not canonical:
         raise CheckpointError("the checkpoint payload is not a canonical object")
     if set(body) != {"checkpoint_format", "store_id", "branch", "release_digest", "watermark", "sequence",
                      "created_at", "entries"} or body["checkpoint_format"] != CHECKPOINT_FORMAT:
@@ -185,7 +199,7 @@ def verify_checkpoint(checkpoint: object, trusted_keys: Mapping[str, bytes]) -> 
     result = CheckpointBody(
         store_id=_text(body["store_id"], "store_id"), branch=_text(body["branch"], "branch"), release_digest=release,
         watermark=_text(body["watermark"], "watermark"), sequence=_position(body["sequence"], "sequence"),
-        created_at=_text(body["created_at"], "created_at"), entries=parsed)
+        created_at=_instant(body["created_at"]), entries=parsed)
     last = max(parsed, key=lambda entry: entry.sequence)
     if (last.commit_id, last.sequence) != (result.watermark, result.sequence):
         raise CheckpointError("the checkpoint watermark is not the last of its entries")

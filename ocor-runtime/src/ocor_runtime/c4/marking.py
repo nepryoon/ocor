@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..c5.envelope import EnvelopeViolation, marking_digest
+from ..errors import CanonicalizationError
 
 RESTRICTION_FAMILIES = ("mandatory_markings", "caveats", "dissemination_controls", "handling_instructions")
 PERMISSION_FAMILY = "permitted_purposes"
@@ -82,7 +83,7 @@ class CanonicalMarkingScheme:
 
     def __init__(self, definition: Mapping[str, Any]) -> None:
         if not isinstance(definition, Mapping):
-            raise TypeError("a MarkingSchemeDefinition of the C1 IR is required")
+            raise MarkingSchemeError("a MarkingSchemeDefinition of the C1 IR is required")
         fields = set(definition) - {"construct"}
         if fields != SCHEME_FIELDS or definition.get("construct", "MarkingSchemeDefinition") != "MarkingSchemeDefinition":
             raise MarkingSchemeError("the MarkingSchemeDefinition is not the closed construct of ADD v1.3 :429")
@@ -182,7 +183,7 @@ class CanonicalMarkingScheme:
             values[name] = frozenset(items)
         try:
             digest = marking_digest(marking)
-        except EnvelopeViolation as exc:
+        except (EnvelopeViolation, CanonicalizationError) as exc:  # e.g. a lone surrogate is not I-JSON
             raise MarkingUnresolved("the marking cannot be digested") from exc
         if marking["marking_digest"] != digest:
             raise MarkingUnresolved("marking_digest does not match the object")

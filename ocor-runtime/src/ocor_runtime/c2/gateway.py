@@ -66,7 +66,7 @@ from .ports import (
     TransportBoundQuery,
     WatermarkPort,
 )
-from .problem import PROBLEM_REASON_CODES, SERVED_REQUIRED
+from .problem import PROBLEM_REASON_CODES
 
 PERMIT = "PERMIT"
 DENY = "DENY"
@@ -373,7 +373,7 @@ class NamedQueryGateway:
             request = self._admit(bound, holder)
             return work(request)
         except C2Error as error:
-            if error.reason_code in SERVED_REQUIRED and error.served is None:
+            if error.reason_code == "PROJECTION_NOT_READY" and error.served is None:
                 # a projection port that is down has no request: the Gateway builds the served
                 # context of the confirmed watermark (ADD v1.3 :1364, :3406; NCR-C2-013)
                 self._refuse(bound, holder, operation, self._projection_down(holder, error.detail), error)

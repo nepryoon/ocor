@@ -29,9 +29,9 @@ from typing import Any, TypeVar
 from ..c2.gateway import ProjectedObject
 from ..c2.ports import C2Error
 from ..c4_marking import MarkingSet
-from ..kernel.canonical import DIGEST, UTC_TIMESTAMP, canonical_digest, format_utc_timestamp, parse_utc_timestamp
-from .typedb_adapter import (_ANSWER_FAILURES, _literal, _require_value, _rows, _schema_write, _unreachable, _write,
-                            read_rows)
+from ..kernel.canonical import (DIGEST, UTC_TIMESTAMP, canonical_digest, format_utc_timestamp, parse_i_json,
+                                parse_utc_timestamp)
+from .typedb_adapter import _ANSWER_FAILURES, _literal, _require_value, _rows, _schema_write, _unreachable, _write
 
 OBJECT_SCHEMA = (
     "define "
@@ -97,7 +97,7 @@ def _object(row: Mapping[str, object]) -> ProjectedObject:
         raise _Malformed("marking reference")
     if not isinstance(document_text, str):
         raise _Malformed("document")
-    document = json.loads(document_text)
+    document = parse_i_json(document_text)  # RFC 7493: no duplicate key, no non-finite number
     if not isinstance(document, dict) or set(document) != DOCUMENT_FIELDS:
         raise _Malformed("document fields")
     values, text = document["values"], document["text"]
@@ -164,7 +164,7 @@ class TypeDBObjectProjection:
             "system_from": now,
         }, sort_keys=True, separators=(",", ":"))
         statements = []
-        if read_rows(f"match $o isa c4-object, has c4-object-id {_literal(object_id)};", ()):
+        if _typed(lambda: _rows(f"match $o isa c4-object, has c4-object-id {_literal(object_id)};", ())):
             statements.append(f"match $o isa c4-object, has c4-object-id {_literal(object_id)}; delete $o;")
         statements.append(
             f"insert $o isa c4-object, has c4-object-id {_literal(object_id)}, "
@@ -181,7 +181,7 @@ class TypeDBObjectProjection:
         rows = _typed(lambda: _rows(query, COLUMNS))
         try:
             result = [_object(row) for row in rows]
-        except (_Malformed, ValueError) as exc:
+        except (_Malformed, ValueError, RecursionError) as exc:
             raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the object projection returned a malformed row") from exc
         return sorted(result, key=lambda item: item.resource_id)
 
@@ -191,7 +191,8 @@ class TypeDBObjectProjection:
         wanted = set(resource_ids)
         if len(wanted) == 1:
             (only,) = wanted
-            return tuple(self._select(f" $i == {_literal(only)};"))
+            # the answer is untrusted: a row of another identity is never returned for this one
+            return tuple(item for item in self._select(f" $i == {_literal(only)};") if item.resource_id == only)
         return tuple(item for item in self._select() if item.resource_id in wanted)
 
     def page(self, *, limit: int, after: str | None) -> tuple[ProjectedObject, ...]:

@@ -6,7 +6,7 @@ watermark the projection reached, once per ``(store, branch, commit)`` and once 
 ``(store, branch, sequence)``). Every write of a ``(store, branch)`` runs under one
 transaction-scoped advisory lock, so a confirmation is checked against the latest one and
 the ledger never moves backwards (LLD v1.1 :355). A connection-level failure, or a row read
-back that is not well formed (text non-empty, sequence a positive integer and never ``bool``,
+back that is not well formed (text non-empty, digests SHA-256 URNs, sequence a positive integer and never ``bool``,
 instants timezone-aware), is ``CONTROL_PLANE_UNAVAILABLE``: callers fail closed
 (PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29)).
 
@@ -26,6 +26,7 @@ from typing import Any, TypeVar
 import psycopg
 from psycopg.rows import dict_row
 
+from ...kernel.canonical import DIGEST
 from ..drift import QuarantineRecord, SignedProjectionCheckpoint
 from ..watermark import ConfirmedWatermark, WatermarkLedgerError
 
@@ -64,6 +65,14 @@ def _text(row: Mapping[str, Any], column: str) -> str:
     return value
 
 
+def _digest(row: Mapping[str, Any], column: str) -> str:
+    """A stored digest is a SHA-256 URN as written (ADD v1.3 :398): a tampered one fails closed."""
+    value = _text(row, column)
+    if DIGEST.fullmatch(value) is None:
+        raise _unavailable(f"a stored C4 ledger row has a malformed {column}")
+    return value
+
+
 def _moment(value: object, what: str) -> datetime:
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
         raise _unavailable(f"a stored C4 ledger row has a malformed {what}")
@@ -94,7 +103,7 @@ def _confirmed(row: Mapping[str, Any]) -> ConfirmedWatermark:
         branch=_text(row, "branch"),
         commit_id=_text(row, "commit_id"),
         sequence=_sequence(row.get("sequence")),
-        release_digest=_text(row, "release_digest"),
+        release_digest=_digest(row, "release_digest"),
         confirmed_at=_moment(row.get("confirmed_at"), "confirmed_at"),
     )
 
@@ -104,8 +113,8 @@ def _quarantined(row: Mapping[str, Any]) -> QuarantineRecord:
         store_id=_text(row, "store_id"),
         aggregate_ref=_text(row, "aggregate_ref"),
         canonical_commit=_text(row, "canonical_commit"),
-        expected_digest=_text(row, "expected_digest"),
-        served_digest=_text(row, "served_digest"),
+        expected_digest=_digest(row, "expected_digest"),
+        served_digest=_digest(row, "served_digest"),
         quarantined_at=_moment(row.get("quarantined_at"), "quarantined_at"),
     )
 
