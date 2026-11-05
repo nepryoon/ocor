@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "9ba774b4b03f6d67d49feb5400950ff44119ce65",
-  "baseline_commit": "9ba774b4b03f6d67d49feb5400950ff44119ce65",
-  "branch": "governed/state-sync-rem0053-iter5-20261105",
+  "base_sha": "89294fd6d4ad3447438446e81a4fda4ce152dd17",
+  "baseline_commit": "89294fd6d4ad3447438446e81a4fda4ce152dd17",
+  "branch": "governed/state-sync-rem0053-iter6-20261105",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0053-ncp-u07-c6-action-path",
-    "head_sha": "24fd631c003c058bdcfca2a8b3d19eadd7a7d701",
-    "note": "REM-0053 GREEN of NCR-C6-001, 002, 003, 005, 006, 007 and 008, NCR-C6-004 on the engine path; work in progress, not a candidate, no evidence",
+    "head_sha": "93c49b6676d551541e8174865706ea7e9483cb0c",
+    "note": "REM-0053 GREEN of NCR-C6-001, 002, 003, 005, 006, 007, 008 and 009, NCR-C6-004 on the engine path; work in progress, not a candidate, no evidence",
     "paths": []
   },
   "changed_paths": [
@@ -33,31 +33,36 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "pytest unit module and 0044 at 32b0262 (RED)",
+      "command": "pytest unit module and 0058 at 3c0fb95 (RED)",
       "exit_code": 1,
-      "summary": "40 failed, 300 passed; fingerprint cb8277d97fa1"
+      "summary": "96 failed, 370 passed; fingerprint e30d23a2b74f"
     },
     {
-      "command": "pytest unit 0030 0042 0043 0044 0047 0058 rem_0024 rem_0027 rem_0028 rem_0031 rem_0039 rem_0050 mission_thread at 24fd631 (real backends of ocor-bootstrap)",
+      "command": "pytest 0058 positive case with only the realigned assertion at 24fd631 (realignment RED)",
+      "exit_code": 1,
+      "summary": "1 failed (replayed=True receipt); fingerprint 13972ab8a42c"
+    },
+    {
+      "command": "pytest unit 0030 0042 0043 0044 0047 0052 0057 0058 rem_0024 rem_0027 rem_0028 rem_0031 rem_0039 rem_0050 mission_thread at 93c49b6 (real backends of ocor-bootstrap)",
       "exit_code": 0,
-      "summary": "1121 passed, 31 skipped (REM-0031 Keycloak/mTLS); fingerprint 06eebf48b23a"
+      "summary": "1263 passed, 31 skipped (REM-0031 Keycloak/mTLS); fingerprint 09b47e2fe646"
     },
     {
-      "command": "ruff check, mypy (strict, 140 files), validate_rccad.py, validate_language_policy.py at 24fd631",
+      "command": "ruff check, mypy (strict, 140 files), validate_rccad.py, validate_language_policy.py at 93c49b6",
       "exit_code": 0,
       "summary": "PASS"
     },
     {
-      "command": "ast_compare.py 27c53a2 test_ocor_dev_0044.py",
+      "command": "ast_compare.py 24fd631 test_ocor_dev_0058.py test_ocor_dev_rem_0050.py",
       "exit_code": 0,
-      "summary": "25 -> 25 test functions, same names, no changed asserts, raises or parametrizations"
+      "summary": "0058: 24 -> 24 test functions, same names, only the realigned function changes asserts; REM-0050: 47 -> 47, no changed asserts, raises or parametrizations"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0053:implementation (NCP-U07, iteration 5 done; NCR-C6-009 and 014 next; NCP-U07-C8-TOOL-RUNTIME-LEASE open)",
+  "current_task": "OCOR-DEV-REM-0053:implementation (NCP-U07, iteration 6 done; NCR-C6-014 next; NCP-U07-C8-TOOL-RUNTIME-LEASE open)",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0053 (NCP-U07) on governed/ocor-dev-rem-0053-ncp-u07-c6-action-path (.ocor/worktrees/rem-0053, head 24fd631c003c, kit ~/.ocor-codex/rem-0053 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, ast_compare.py; dev services of ocor-bootstrap up with that env as needed: postgresql, temporal-postgresql, temporal, opa, typedb, fuseki, qdrant, kafka, terminusdb, then keycloak, openbao, spire; pytest from ocor-runtime): NCR-C6-009 (memory/promotion.py C6MemoryPromotionConsumer commits through the same C6 path as the engine: FSM, G-CONTRACT with the risk class of the signed ActionType, ApprovalGate/DecisionGate, the signed lease and the EMISSION-FENCE before the C3 commit, R0/R1 refused; consumer test_ocor_dev_0058.py adapted only as NORMATIVE-CONFORMANCE-PLAN point 5 allows, decision request otherwise) and NCR-C6-014 (composition root of engine, FSM, Human Gate, dispatch ledger and conditions, audited reconciler, stop and break-glass), each RED then GREEN; apply the PO decision on NCP-U07-C8-TOOL-RUNTIME-LEASE (draft PR #507) when it arrives; then the consumer inventory, the requalifications from the drift (NCP-U01-SUPERSESSION-REQUALIFICATIONS points 3-4, NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register entries OPEN -> IN_REMEDIATION, reverse traceability index for test_ocor_dev_rem_0053.py and c6_action_fixture.py, plan allowlist (also c6/records.py, c6/contract.py, c6/dispatch.py and reports/development/decision_requests/NCP-U07-C8-TOOL-RUNTIME-LEASE.md), input-robustness self-check of NCP-THROUGHPUT-RULES point 1, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iteration 5 of estimate 6 (stop at 18) used (NCP-THROUGHPUT-RULES point 2; earlier stop after two consecutive iterations without progress). Then NCP-U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-  "head_sha": "24fd631c003c058bdcfca2a8b3d19eadd7a7d701",
+  "exact_next_action": "Resume OCOR-DEV-REM-0053 (NCP-U07) on governed/ocor-dev-rem-0053-ncp-u07-c6-action-path (.ocor/worktrees/rem-0053, head 93c49b6676d5, kit ~/.ocor-codex/rem-0053 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, ast_compare.py; dev services of ocor-bootstrap up with that env as needed: postgresql, temporal-postgresql, temporal, opa, typedb, fuseki, qdrant, kafka, terminusdb, openbao, then keycloak, spire; pytest from ocor-runtime): NCR-C6-014 (composition root under ocor-runtime/src of the engine with the FSM driven on execute and commit_canonical, Human Gate, dispatch ledger and conditions, audited reconciler, emergency stop and break-glass, so a runtime trace traverses the C6 states in canonical order, LLD v1.1 :169-171, ADD v1.3 :3318-3331, FR-008, FR-077), RED then GREEN; apply the PO decision on NCP-U07-C8-TOOL-RUNTIME-LEASE (draft PR #507) when it arrives; then the consumer inventory, the requalifications from the drift (NCP-U01-SUPERSESSION-REQUALIFICATIONS points 3-4, NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register entries OPEN -> IN_REMEDIATION, reverse traceability index for test_ocor_dev_rem_0053.py and c6_action_fixture.py, plan allowlist (also c6/records.py, c6/contract.py, c6/dispatch.py and reports/development/decision_requests/NCP-U07-C8-TOOL-RUNTIME-LEASE.md), input-robustness self-check of NCP-THROUGHPUT-RULES point 1, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iteration 6 of estimate 6 (stop at 18) used (NCP-THROUGHPUT-RULES point 2; earlier stop after two consecutive iterations without progress). Then NCP-U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "head_sha": "93c49b6676d551541e8174865706ea7e9483cb0c",
   "head_sha_role": "REM-0053 work-in-progress head (not a candidate)",
   "independent_verification": {
     "head_sha": "5ed8fe1023bde3efe50920f28761fba6bdd9a54d",
@@ -253,11 +258,11 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "drift expected on the unit branch for the tasks whose inputs NCP-U07 changes (c6/fsm.py, c6/engine.py, c6/human_gate.py, c6/safety.py, c6/records.py, c6/contract.py, c6/dispatch.py and the adapted or realigned tests of 0030, 0042, 0043, 0044, REM-0039, REM-0050 and the mission thread)",
+    "evidence_input_drift": "drift expected on the unit branch for the tasks whose inputs NCP-U07 changes (c6/fsm.py, c6/engine.py, c6/human_gate.py, c6/safety.py, c6/records.py, c6/contract.py, c6/dispatch.py, memory/promotion.py and the adapted or realigned tests of 0030, 0042, 0043, 0044, 0058, REM-0039, REM-0050 and the mission thread)",
     "pre_campaign_gate": "NOT_EXECUTED for the unit (not at a candidate boundary)",
-    "unit_tests": "unit module, 0030, 0042, 0043, 0044, 0047, 0058, REM-0024, REM-0027, REM-0028, REM-0031, REM-0039, REM-0050, mission thread: 1121 passed, 31 skipped (REM-0031 Keycloak/mTLS); full suite NOT_EXECUTED"
+    "unit_tests": "unit module, 0030, 0042, 0043, 0044, 0047, 0052, 0057, 0058, REM-0024, REM-0027, REM-0028, REM-0031, REM-0039, REM-0050, mission thread: 1263 passed, 31 skipped (REM-0031 Keycloak/mTLS); full suite NOT_EXECUTED"
   },
-  "next_task": "OCOR-DEV-REM-0053 iteration 6",
+  "next_task": "OCOR-DEV-REM-0053 iteration 7",
   "phase": "REM_0053_NCP_U07_IN_PROGRESS",
   "po_decisions_pending": [
     "NCP-U07-C8-TOOL-RUNTIME-LEASE"
@@ -281,7 +286,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0053 iterations 1-5 (NCR-C6-003; NCR-C6-006, 001 and 008; NCR-C6-002 with the engine composition; NCR-C6-004 and 005 on the engine path; NCR-C6-007 and the decision request on the C8 part of NCR-C6-004) and this state sync, as the backup implementer of the loop"
+        "scope": "OCOR-DEV-REM-0053 iterations 1-6 (NCR-C6-003; NCR-C6-006, 001 and 008; NCR-C6-002 with the engine composition; NCR-C6-004 and 005 on the engine path; NCR-C6-007 and the decision request on the C8 part of NCR-C6-004; NCR-C6-009) and this state sync, as the backup implementer of the loop"
       }
     ]
   },
@@ -317,6 +322,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-05T17:23:15.930733+00:00",
+  "updated_at": "2026-11-05T18:41:56.011546+00:00",
   "worktree": ".ocor/worktrees/rem-0053"
 }
