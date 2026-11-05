@@ -22,7 +22,6 @@ import c4_projection_fixture
 
 from ocor_runtime.c4 import jena_adapter, typedb_adapter
 from ocor_runtime.c4.jena_adapter import JenaAdapterError, JenaSHACLProjectionAdapter
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition
 
 _INJECTION = 'x"; match $g isa c4-fact; delete $g; #'
 
@@ -63,16 +62,19 @@ def test_jena_publish_rejects_malformed_resource_id_before_backend(
 ) -> None:
     calls: list[str] = []
     monkeypatch.setattr(jena_adapter, "_update", lambda update: calls.append(update))
-    adapter = JenaSHACLProjectionAdapter(MarkingEngine([MarkingSchemeDefinition("classification", ["public"])]))
+    adapter = JenaSHACLProjectionAdapter(marking_scheme=c4_projection_fixture.classification_scheme(),
+                                         release_digest=c4_projection_fixture.RELEASE,
+                                         ledger=c4_projection_fixture.UnusedLedger())
 
     with pytest.raises(JenaAdapterError) as exc:
         adapter.publish(
             _INJECTION,
             {
                 "label": "l",
-                "classification": "public",
                 "provenanceRef": "urn:ocor:provenance:1",
             },
+            marking=c4_projection_fixture.classification_marking("UNCLASSIFIED"),
+            commit_id="urn:ocor:commit:rem0010",
         )
     assert exc.value.reason_code == "RESOURCE_ID_INVALID"
     assert calls == []  # nothing was ever sent to the backend

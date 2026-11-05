@@ -11,11 +11,11 @@ no mocks.
 from __future__ import annotations
 
 
+import c4_projection_fixture
 import pytest
-from ocor_runtime.c4.jena_adapter import JenaAdapterError, JenaSHACLProjectionAdapter
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
-
-CLASSIFICATION_SCHEME = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))
+from c4_projection_fixture import ClassificationJena
+from ocor_runtime.c4.jena_adapter import JenaAdapterError
+from ocor_runtime.c4_marking import MarkingSet
 
 
 def clearance(level: str) -> MarkingSet:
@@ -33,20 +33,20 @@ def valid_properties(*, label: str = "fixture", classification: str = "SECRET") 
 @pytest.fixture(scope="session")
 def fuseki_reachable() -> None:
     try:
-        probe = JenaSHACLProjectionAdapter(MarkingEngine([CLASSIFICATION_SCHEME]))
+        probe = c4_projection_fixture.ClassificationJena()
         probe.reset()
     except (JenaAdapterError, OSError) as error:
         pytest.fail(f"a real, live Fuseki instance is mandatory qualifying evidence: {error}")
 
 
 @pytest.fixture
-def adapter(fuseki_reachable: None) -> JenaSHACLProjectionAdapter:
-    value = JenaSHACLProjectionAdapter(MarkingEngine([CLASSIFICATION_SCHEME]))
+def adapter(fuseki_reachable: None) -> ClassificationJena:
+    value = c4_projection_fixture.ClassificationJena()
     value.reset()
     return value
 
 
-def test_a_valid_publication_is_readable_and_serializes_to_real_json_ld(adapter: JenaSHACLProjectionAdapter) -> None:
+def test_a_valid_publication_is_readable_and_serializes_to_real_json_ld(adapter: ClassificationJena) -> None:
     adapter.publish("urn:ocor:resource:r1", valid_properties())
 
     assert adapter.exists_authorized("urn:ocor:resource:r1", clearance("SECRET"))
@@ -57,7 +57,7 @@ def test_a_valid_publication_is_readable_and_serializes_to_real_json_ld(adapter:
     assert entry["@id"] == "urn:ocor:resource:r1"
 
 
-def test_an_unauthorized_predicate_blocks_publication_entirely(adapter: JenaSHACLProjectionAdapter) -> None:
+def test_an_unauthorized_predicate_blocks_publication_entirely(adapter: ClassificationJena) -> None:
     properties = valid_properties()
     properties["arbitraryPredicate"] = "not in the closed vocabulary"
 
@@ -67,7 +67,7 @@ def test_an_unauthorized_predicate_blocks_publication_entirely(adapter: JenaSHAC
     assert adapter.list_authorized(clearance("TOP_SECRET")) == []
 
 
-def test_a_missing_required_property_blocks_publication_entirely(adapter: JenaSHACLProjectionAdapter) -> None:
+def test_a_missing_required_property_blocks_publication_entirely(adapter: ClassificationJena) -> None:
     properties = valid_properties()
     del properties["provenanceRef"]
 
@@ -77,7 +77,7 @@ def test_a_missing_required_property_blocks_publication_entirely(adapter: JenaSH
     assert adapter.list_authorized(clearance("TOP_SECRET")) == []
 
 
-def test_lossy_or_empty_provenance_blocks_publication_entirely(adapter: JenaSHACLProjectionAdapter) -> None:
+def test_lossy_or_empty_provenance_blocks_publication_entirely(adapter: ClassificationJena) -> None:
     lossy = valid_properties()
     lossy["provenanceRef"] = ""
     with pytest.raises(JenaAdapterError) as excinfo:
@@ -93,7 +93,7 @@ def test_lossy_or_empty_provenance_blocks_publication_entirely(adapter: JenaSHAC
     assert adapter.list_authorized(clearance("TOP_SECRET")) == []
 
 
-def test_list_authorized_filters_by_the_real_marking_join(adapter: JenaSHACLProjectionAdapter) -> None:
+def test_list_authorized_filters_by_the_real_marking_join(adapter: ClassificationJena) -> None:
     adapter.publish("urn:ocor:resource:u1", valid_properties(label="public", classification="UNCLASSIFIED"))
     adapter.publish("urn:ocor:resource:s1", valid_properties(label="secret", classification="SECRET"))
     adapter.publish("urn:ocor:resource:t1", valid_properties(label="top secret", classification="TOP_SECRET"))
@@ -104,7 +104,7 @@ def test_list_authorized_filters_by_the_real_marking_join(adapter: JenaSHACLProj
 
 
 def test_count_never_diverges_from_the_authorized_list_and_raw_count_would_leak(
-    adapter: JenaSHACLProjectionAdapter,
+    adapter: ClassificationJena,
 ) -> None:
     adapter.publish("urn:ocor:resource:u1", valid_properties(classification="UNCLASSIFIED"))
     adapter.publish("urn:ocor:resource:s1", valid_properties(classification="SECRET"))
@@ -117,7 +117,7 @@ def test_count_never_diverges_from_the_authorized_list_and_raw_count_would_leak(
     assert low_clearance_count != raw
 
 
-def test_json_ld_serialization_is_denied_for_an_unauthorized_clearance(adapter: JenaSHACLProjectionAdapter) -> None:
+def test_json_ld_serialization_is_denied_for_an_unauthorized_clearance(adapter: ClassificationJena) -> None:
     adapter.publish("urn:ocor:resource:t1", valid_properties(classification="TOP_SECRET"))
 
     with pytest.raises(JenaAdapterError) as excinfo:
@@ -129,7 +129,7 @@ def test_a_real_fuseki_unreachability_fails_closed_never_writing_a_partial_publi
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("ocor_runtime.c4.jena_adapter.FUSEKI_URL", "http://127.0.0.1:1")
-    adapter = JenaSHACLProjectionAdapter(MarkingEngine([CLASSIFICATION_SCHEME]))
+    adapter = c4_projection_fixture.ClassificationJena()
 
     # a genuine connection-refused failure is the typed fail-closed error of the
     # contract with a reason code (OCOR-DEV-REM-0052, NCP-U05, NCR-C4-002: Named Query

@@ -46,7 +46,8 @@ import pytest
 import c4_projection_fixture
 import yaml
 
-from ocor_runtime.c4.jena_adapter import JenaSHACLProjectionAdapter
+from c4_projection_fixture import ClassificationJena
+from ocor_runtime.c4.jena_adapter import JenaAdapterError
 from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.kernel.canonical import canonical_digest
@@ -145,11 +146,11 @@ def typedb(typedb_reachable: None) -> TypeDBProjectionAdapter:
 
 
 @pytest.fixture
-def jena() -> JenaSHACLProjectionAdapter:
-    value = JenaSHACLProjectionAdapter(MarkingEngine([SCHEME]))
+def jena() -> ClassificationJena:
+    value = ClassificationJena()
     try:
         value.reset()
-    except OSError as error:
+    except (JenaAdapterError, OSError) as error:
         pytest.fail(f"a real, live Fuseki instance is mandatory qualifying evidence: {error}")
     return value
 
@@ -277,7 +278,7 @@ class ContextPolicy:
 class Gateway:
     """The C2 gateway composed with real TypeDB, Fuseki and PostgreSQL audit."""
 
-    def __init__(self, typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any,
+    def __init__(self, typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any,
                  *, clearance_level: str = "SECRET", marking_ref: str = internal("a"),
                  identity_lookups: list[str] | None = None, cost_budget: Any = None,
                  projection: Any = None, context_policy: Any = None, objects: Any = None) -> None:
@@ -419,7 +420,7 @@ def test_ncr_c2_001_conforms(typedb: TypeDBProjectionAdapter) -> None:
 # --------------------------------------------------------------------------- #
 # NCR-C2-002 -- transport-bound principal and full policy context
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_002_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_002_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """ADD v1.3 :380 (Query: no Principal in the body, TRANSPORT origin, DENY without lookup);
     LLD v1.1 :41 (principal and actor_chain derived from the authenticated identity);
@@ -458,7 +459,7 @@ def test_ncr_c2_002_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
 # --------------------------------------------------------------------------- #
 # NCR-C2-003 -- unresolvable marking reference
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_003_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_003_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """ADD v1.3 :401: an unresolvable *_marking_ref produces DENY, never a permissive posture;
     ADD v1.3 :398 (every *_marking_ref is the digest of a marking object)."""
@@ -480,7 +481,7 @@ def test_ncr_c2_003_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
 # --------------------------------------------------------------------------- #
 # NCR-C2-004 -- contract digest and active release
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_004_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_004_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """ADD v1.3 :1361: the Gateway rejects non-matching digest or release; Contract :452-466
     (CONTRACT_DIGEST_MISMATCH, RELEASE_MISMATCH); FR-046 (Register :142); FR-055 (Register :177).
@@ -515,7 +516,7 @@ def test_ncr_c2_004_catalog_is_built_from_an_admitted_c1_release() -> None:
 # --------------------------------------------------------------------------- #
 # NCR-C2-005 -- denial audit through the single audit port
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_005_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_005_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any, audit_keys: AuditKeys) -> None:
     """FR-056 (Register :178): non allow-listed queries are denied and audited; NFR-034
     (Register :257); FR-134 (Register :302: actor, time, resource, reason, authority,
@@ -564,7 +565,7 @@ def audit_keys_public(keys: AuditKeys) -> bytes:
 
 
 def test_ncr_c2_005_audit_unavailable_fails_closed(typedb: TypeDBProjectionAdapter,
-                                                   jena: JenaSHACLProjectionAdapter, audit_keys: AuditKeys) -> None:
+                                                   jena: ClassificationJena, audit_keys: AuditKeys) -> None:
     """A denial that cannot be durably audited is never answered as a plain denial without
     record: the gateway answers CONTROL_PLANE_UNAVAILABLE (ADD v1.3 :174, :3143)."""
     audit = module("audit")
@@ -597,7 +598,7 @@ def _c2error_codes() -> set[str]:
     return codes
 
 
-def test_ncr_c2_006_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_006_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """Contract :435-485 (closed Problem: reason_code enum, served for STALE_CONTEXT,
     PROJECTION_NOT_READY and RELEASE_MISMATCH, deferred_element for CAPABILITY_DEFERRED);
@@ -653,11 +654,11 @@ def test_ncr_c2_006_backend_failure_is_a_typed_problem(typedb: TypeDBProjectionA
     """A marking backend failure is a typed fail-closed Problem (Contract :486-491;
     LLD v1.1 :346), CONTROL_PLANE_UNAVAILABLE (ADD v1.3 :174, :3141), never a raw OSError
     and never PERMIT."""
-    class Unreachable(JenaSHACLProjectionAdapter):
+    class Unreachable(ClassificationJena):
         def exists_authorized(self, resource_id: str, clearance: MarkingSet) -> bool:
             raise ConnectionRefusedError("marking backend unreachable")
 
-    fixture = Gateway(typedb, Unreachable(MarkingEngine([SCHEME])), audit_log)
+    fixture = Gateway(typedb, Unreachable(), audit_log)
     load_fleet(fixture, typedb)
     reply = fixture.invoke("GetObject", get_object_body())
     assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE")
@@ -667,7 +668,7 @@ def test_ncr_c2_006_backend_failure_is_a_typed_problem(typedb: TypeDBProjectionA
 # --------------------------------------------------------------------------- #
 # NCR-C2-007 -- closed request, closed parameters, cost budget, served disclosure
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_007_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_007_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """Contract :142-195 (QueryContext with branch, logic_version, scenario_id; parameters are the
     closed generated schema selected by contract_id and digest); Contract :254-273 (ServedContext
@@ -701,7 +702,7 @@ def test_ncr_c2_007_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLPro
 
 
 def test_ncr_c2_007_cost_budget_is_enforced_before_the_read(typedb: TypeDBProjectionAdapter,
-                                                            jena: JenaSHACLProjectionAdapter, audit_log: Any
+                                                            jena: ClassificationJena, audit_log: Any
                                                             ) -> None:
     """LLD v1.1 :120 (stima cost budget at step 2, before the query)."""
     gateway = module("c2.gateway")
@@ -717,7 +718,7 @@ def test_ncr_c2_007_cost_budget_is_enforced_before_the_read(typedb: TypeDBProjec
 # --------------------------------------------------------------------------- #
 # NCR-C2-008 -- wire digest form (PO option 2)
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_008_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_008_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C2-008 option 2: the five digests stay in the
     contract form sha256:<hex> on the wire (Contract :118, :170-192), are converted bijectively
@@ -773,7 +774,7 @@ def test_ncr_c2_009_conforms() -> None:
 # --------------------------------------------------------------------------- #
 # NCR-C2-011 -- the six operations
 # --------------------------------------------------------------------------- #
-def test_ncr_c2_011_conforms(typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter,
+def test_ncr_c2_011_conforms(typedb: TypeDBProjectionAdapter, jena: ClassificationJena,
                              audit_log: Any) -> None:
     """Contract :8-98 (GetObject, QueryObjectSet, Search, Traverse, Explain, GetProvenance);
     ADD v1.3 :283; FR-055 (Register :177: every contract invocable without backend language);
@@ -997,7 +998,7 @@ HIDDEN = "urn:ocor:vessel:e-secret-behind-top-secret"
 SCENARIO = "018f2f95-01b2-7cc3-8d4e-000000000099"
 
 
-def project(fixture: Gateway, jena: JenaSHACLProjectionAdapter, object_id: str, level: str, *,
+def project(fixture: Gateway, jena: ClassificationJena, object_id: str, level: str, *,
             links: tuple[str, ...] = (), provenance: tuple[str, ...] = ("source-1",)) -> None:
     """Projects one object; only SECRET objects are published to the marking join, so a
     TOP_SECRET object is withheld from a SECRET clearance (OCOR-DEV-0018)."""
@@ -1018,7 +1019,7 @@ def node_ids(body: Mapping[str, Any]) -> set[str]:
 
 
 def test_ncr_c2_011_paging_applies_the_marking_join_before_the_page(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """LLD v1.1 :121-122 (marking join and post-filter on what is returned), :126 (deny and
     miss reveal no count or rank); NFR-006 (Register :50: no unauthorised content or
     existence); Contract :380-409 (pages of ObjectSnapshot and SearchHit with next_page_token):
@@ -1058,7 +1059,7 @@ def test_ncr_c2_011_paging_applies_the_marking_join_before_the_page(
 
 
 def test_ncr_c2_011_walks_never_expand_a_withheld_node(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """LLD v1.1 :121-122; NFR-006 (Register :50); FR-006 (Register :49: a principal sees
     only authorised elements): Explain and Traverse follow links only from authorised
     nodes, so an object reachable only through a withheld node is never returned and the
@@ -1096,7 +1097,7 @@ def test_ncr_c2_011_walks_never_expand_a_withheld_node(
 
 
 def test_ncr_c2_011_provenance_of_a_withheld_target_is_denied(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """NFR-006 (Register :50), LLD v1.1 :121-123 (policy-safe provenance), Contract :244-253:
     GetProvenance of a target the clearance does not authorise -- or of a mistyped target --
     is POLICY_DENIED in every direction, exactly as an absent target, and never discloses
@@ -1119,7 +1120,7 @@ def test_ncr_c2_011_provenance_of_a_withheld_target_is_denied(
 
 
 def test_ncr_c2_007_the_requested_branch_is_served_or_refused(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """Contract :142-184 (QueryContext branch, logic_version, scenario_id); LLD v1.1 :124 and
     :126 (served branch; main and scenario are always declared); NFR-024 (Register :180);
     FR-057 (Register :179, branch/commit ordering): the request carries branch, logic version
@@ -1158,7 +1159,7 @@ def test_ncr_c2_007_the_requested_branch_is_served_or_refused(
 
 
 def test_ncr_c2_011_evidence_read_is_admitted_like_the_operations(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """LLD v1.1 :113 (EvidenceReadPort) and :117-120 (principal, allow-list, release, policy
     before any read); FR-006 (Register :49: the same full policy context on every surface);
     FR-134 (Register :302) and ADD v1.3 :3143 (every denial audited): an evidence read is
@@ -1236,7 +1237,7 @@ class ForgedDecisionPolicy(ContextPolicy):
 @pytest.mark.parametrize("forge", ["not-a-decision", "expired", "bundle", "principal", "action", "resource",
                                    "purpose", "context"])
 def test_ncr_c2_002_a_permit_that_does_not_bind_the_request_is_not_a_permit(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any, forge: str) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any, forge: str) -> None:
     """ADD v1.3 :3141 (a policy decision outside its validity or not evaluable: no read,
     CONTROL_PLANE_UNAVAILABLE), :3143 and FR-134 (Register :302, audited); FR-006 (Register
     :49): the decision is verified against the very request -- principal, action, resource,
@@ -1257,7 +1258,7 @@ def test_ncr_c2_002_a_permit_that_does_not_bind_the_request_is_not_a_permit(
 
 
 def test_ncr_c2_002_an_expired_transport_identity_is_an_audited_authentication_refusal(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """ADD v1.3 :380 and :1361 (the principal is the verified transport identity); Contract
     :455 (AUTHORITY_MISSING, 401) and ADD v1.3 :174 (CONTROL_PLANE_UNAVAILABLE only for an
     unavailable control); FR-134 (Register :302) and ADD v1.3 :3143: an expired transport
@@ -1451,7 +1452,7 @@ def test_object_projection_accepts_a_well_formed_row(responder: TypeDBResponder)
 
 
 def test_a_tampered_projected_object_is_a_typed_problem_end_to_end(
-        typedb: TypeDBProjectionAdapter, jena: JenaSHACLProjectionAdapter, audit_log: Any) -> None:
+        typedb: TypeDBProjectionAdapter, jena: ClassificationJena, audit_log: Any) -> None:
     """On the real TypeDB: an object whose stored marking reference was tampered with is
     refused with a typed Problem (Contract :486-491), not returned and not leaked in an error;
     a gateway answer that would not conform to the contract never leaves the transport."""
