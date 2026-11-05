@@ -19,6 +19,16 @@ A canonical mutation decided by a composed C6 consumer -- the memory promotion o
 (NCR-C6-009) -- takes the same path through ``commit_canonical``: the same gates, the same
 EMISSION-FENCE and the same reconciliation, with the C3 command C6 issues for it (ADD v1.3 :2789:
 no second, ungoverned path to the canonical state).
+
+Every step drives the 44-transition FSM of the action instance (NCR-C6-014, LLD v1.1 :169-171,
+ADD v1.3 :3318-3331): ``ACT-T01`` after G-CONTRACT, ``ACT-T04`` and the control check,
+``ACT-T06``, ``ACT-T08``, ``ACT-T26``, ``ACT-T10b``, ``ACT-T11``, ``ACT-T12`` at the
+EMISSION-FENCE, ``ACT-T29`` with the send to C3, ``ACT-T30`` with the commit receipt and its
+``ExecutionResult``, ``ACT-T27`` and ``ACT-T22`` with the ``OutcomeAssessment``; a denial at the
+control check is ``ACT-T05``, a rejected Decision ``ACT-T10a``, a material drift at the
+pre-dispatch check ``ACT-T13`` and a stop ``ACT-T23a``. Each transition persists its record on
+the trace before the state advances, so the trace holds every mandatory record in canonical
+order (Register FR-008, FR-077).
 """
 
 from __future__ import annotations
@@ -59,6 +69,7 @@ from .dispatch import (
 )
 from .human_gate import Approval as Approval
 from .human_gate import ApprovalGate, ApprovalGateError, DecisionGate, gate_disposition
+from .fsm import INITIAL_STATE, FSMTransitionError, GovernedActionFSM, GuardEvaluation, PersistedEffect
 from .safety import OutcomeReconciler, SafetyError
 
 
@@ -128,6 +139,7 @@ class ActionOutcome:
     simulated_effect: Any
     commit_receipt: CommitReceipt
     delivery_attempt: c6_records.DeliveryAttempt
+    execution_result: c6_records.ExecutionResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -494,6 +506,38 @@ class CanonicalCommitPath:
             return command
 
 
+# The states of the canonical path of a canonical target, in order (LLD v1.1 :260-305).
+CANONICAL_STATES = (
+    "PROPOSAL_RECORDED",
+    "CONTROL_CHECK",
+    "APPROVAL_PENDING",
+    "APPROVAL_RESOLVED",
+    "DECISION_PENDING",
+    "INTENT_RECORDED",
+    "PRE_DISPATCH_CHECK",
+    "COMMAND_READY",
+    "CANONICAL_COMMIT_PENDING",
+    "EXECUTION_CONFIRMED",
+    "OUTCOME_PENDING",
+    "OUTCOME_ASSESSED",
+)
+# A retry of the same action instance resumes after the admission steps it already passed;
+# the fence, the send, the confirmation and the assessment are never skipped.
+RESUMABLE_TRANSITIONS = frozenset({"ACT-T01", "ACT-T04", "ACT-T06", "ACT-T08", "ACT-T26", "ACT-T10b", "ACT-T11"})
+# Fence refusals that are a material drift of the decided action (ACT-T13) or a stop (ACT-T23a);
+# any other refusal is a condition of the emission attempt and leaves PRE_DISPATCH_CHECK.
+DRIFT_CAUSES = frozenset({"GATE_PACKAGE_WINDOW_CLOSED", "COMMAND_DEADLINE_EXPIRED"})
+STOP_CAUSES = frozenset({"EMERGENCY_STOP_ACTIVE"})
+
+
+def _sha256(data: bytes) -> str:
+    return "urn:sha256:" + hashlib.sha256(data).hexdigest()
+
+
+class TransitionTrace(Protocol):
+    def persist_effect(self, record: PersistedEffect) -> None: ...
+
+
 @dataclass(frozen=True, slots=True)
 class _Admission:
     """The records an action instance was admitted with at G-APPROVAL and G-DECISION."""
@@ -539,6 +583,8 @@ class GovernedActionEngine:
         relay: EmissionFence,
         canonical_path: CanonicalCommitPath,
         reconciler: OutcomeReconciler,
+        fsm: GovernedActionFSM,
+        trace: TransitionTrace,
         emission_outbox: C3CanonicalOutboxView | None = None,
     ) -> None:
         if not isinstance(contract, ContractGate):
@@ -559,6 +605,10 @@ class GovernedActionEngine:
             raise TypeError("canonical_path must be a CanonicalCommitPath")
         if not isinstance(reconciler, OutcomeReconciler) or not reconciler.audited:
             raise TypeError("reconciler must be an OutcomeReconciler appending to the audit port")
+        if not isinstance(fsm, GovernedActionFSM):
+            raise TypeError("fsm must be the GovernedActionFSM of the action instances")
+        if not callable(getattr(trace, "persist_effect", None)):
+            raise TypeError("trace must persist the effect of every transition")
         self._contract = contract
         self._approvals = approvals
         self._decisions = decisions
@@ -575,7 +625,141 @@ class GovernedActionEngine:
         self._ambiguous: set[str] = set()
         self._confirmed: dict[str, ActionOutcome] = {}
         self._committed: dict[str, CommitReceipt] = {}
+        self._results: dict[str, c6_records.ExecutionResult] = {}
+        self._fsm = fsm
+        self._trace = trace
         self._lock = threading.Lock()
+
+    def _now(self) -> datetime:
+        return _require_aware(self._emission_fence.validator.clock.now(), field="trusted now")
+
+    def _apply(self, action_id: str, transition_id: str, record: str, digest: str, **detail: str) -> PersistedEffect:
+        """Apply one transition of the action instance with the evaluation of its event/guard
+        by this engine, persisting its record on the trace before the state advances."""
+        at = self._now()
+        guard = GuardEvaluation(
+            transition_id=transition_id,
+            correlation_id=action_id,
+            satisfied=True,
+            snapshot_id=digest,
+            evaluated_at=at,
+            stop_requested=transition_id in ("ACT-T23a", "ACT-T23b"),
+        )
+        return self._fsm.apply(
+            transition_id,
+            sink=self._trace,
+            at=at,
+            correlation_id=action_id,
+            context={"record": record, "digest": digest, **detail},
+            guard=guard,
+        )
+
+    def _step(self, action_id: str, transition_id: str, record: str, digest: str) -> None:
+        """Advance the action instance along the canonical path. A retry resumes after the
+        admission steps already passed; any other current state refuses the step."""
+        transition = self._fsm.transition(transition_id)
+        source = None if transition.source == INITIAL_STATE else transition.source
+        current = self._fsm.current_state(action_id)
+        if current != source:
+            if (
+                transition_id in RESUMABLE_TRANSITIONS
+                and current in CANONICAL_STATES
+                and CANONICAL_STATES.index(current) >= CANONICAL_STATES.index(transition.destination)
+            ):
+                return
+            raise GovernedActionError(
+                "INVALID_SOURCE_STATE",
+                f"the action {action_id!r} is {current or INITIAL_STATE}, not {transition.source}: {transition_id} is refused",
+                cause_code=current or INITIAL_STATE,
+            )
+        try:
+            self._apply(action_id, transition_id, record, digest)
+        except FSMTransitionError as error:
+            raise GovernedActionError(
+                "INVALID_SOURCE_STATE", str(error), cause_code=self._fsm.current_state(action_id) or INITIAL_STATE
+            ) from error
+        except Exception as error:
+            raise GovernedActionError(
+                "INVALIDATED",
+                f"the trace of {transition_id} could not be persisted; the action does not advance",
+                cause_code="CONTROL_PLANE_UNAVAILABLE",
+            ) from error
+
+    def _close(self, action_id: str, transition_id: str, record: str, digest: str, error: GovernedActionError) -> None:
+        """End the action instance with a terminal transition when its source is the current
+        state; ``error`` is raised by the caller either way."""
+        transition = self._fsm.transition(transition_id)
+        if self._fsm.current_state(action_id) != transition.source:
+            return
+        try:
+            self._apply(action_id, transition_id, record, digest, reason_code=error.cause_code or error.reason_code)
+        except Exception as trace_error:
+            error.add_note(f"{transition_id} not recorded: {type(trace_error).__name__}; the state is unchanged")
+
+    def _confirm(self, action_id: str, result: c6_records.ExecutionResult) -> None:
+        """``ACT-T30`` and ``ACT-T27``: the commit receipt confirms the action and opens its
+        assessment window. Completed by a retry of a confirmed action when the trace failed."""
+        for transition_id in ("ACT-T30", "ACT-T27"):
+            transition = self._fsm.transition(transition_id)
+            if self._fsm.current_state(action_id) == transition.source:
+                self._apply(action_id, transition_id, "ExecutionResult", result.digest())
+
+    def _execution_result(
+        self, action_id: str, attempt: c6_records.DeliveryAttempt, receipt: CommitReceipt
+    ) -> c6_records.ExecutionResult:
+        result = c6_records.ExecutionResult.for_attempt(
+            result_id=f"urn:ocor:execution-result:{hashlib.sha256(action_id.encode('utf-8')).hexdigest()}",
+            attempt=attempt,
+            adapter_status="COMPLETED",
+            adapter_result_digest=canonical_digest(
+                {
+                    "command_digest": receipt.command_digest,
+                    "commit_id": receipt.commit_id,
+                    "state_digest": receipt.state_digest,
+                    "to_revision": receipt.to_revision,
+                }
+            ),
+            evidence_refs=(canonical_commit_ref(receipt.aggregate_ref, receipt.to_revision),),
+            observed_at=max(self._now(), attempt.attempted_at),
+        )
+        with self._lock:
+            return self._results.setdefault(action_id, result)
+
+    def execution_result(self, action_instance_id: str) -> c6_records.ExecutionResult | None:
+        with self._lock:
+            return self._results.get(action_instance_id)
+
+    def assess_outcome(
+        self,
+        action_instance_id: str,
+        *,
+        assessment_id: str,
+        observation_refs: Sequence[str],
+        evidence_refs: Sequence[str],
+        assessment: str,
+    ) -> c6_records.OutcomeAssessment:
+        """``ACT-T22``: the OutcomeAssessment of a confirmed action, separate from its
+        ExecutionResult and admitted only by new correlated Observation/Evidence (ADD v1.3 :156)."""
+        result = self.execution_result(action_instance_id)
+        if result is None:
+            raise GovernedActionError(
+                "OUTCOME_NOT_ASSESSABLE",
+                f"the action {action_instance_id!r} has no confirmed ExecutionResult",
+                cause_code="EXECUTION_NOT_CONFIRMED",
+            )
+        try:
+            record = c6_records.OutcomeAssessment.for_result(
+                assessment_id=assessment_id,
+                result=result,
+                observation_refs=observation_refs,
+                evidence_refs=evidence_refs,
+                assessment=assessment,
+                assessed_at=self._now(),
+            )
+        except c6_records.C6RecordError as error:
+            raise GovernedActionError("OUTCOME_NOT_ASSESSABLE", str(error), cause_code=error.reason_code) from error
+        self._step(action_instance_id, "ACT-T22", "OutcomeAssessment", record.digest())
+        return record
 
     def _require_not_reconciling(self, command_id: str) -> None:
         """``ACT-T18a``/``T18b``: after an ambiguous send the retry is suspended; the command is
@@ -734,19 +918,44 @@ class GovernedActionEngine:
         self, proposal: c6_records.ActionProposal, lease: object, approval: object, decision: object
     ) -> tuple[ActionType, SignedCapabilityLease, str, c6_records.ApprovalSet, c6_records.Decision, AuthorizedDecision]:
         action_type = self._action_type(proposal)
-        signed_lease, delegation = self._authority(proposal, action_type, lease)
-
-        # CONTROL_CHECK (ACT-T06/ACT-T07): the obligation follows the ActionType's risk class and
-        # the canonical target never takes NOT_REQUIRED (LLD v1.1 :268, ADD v1.3 :3298-3303).
+        action_id = proposal.action_instance_id
+        self._step(action_id, "ACT-T01", "ActionProposal", proposal.digest())
+        lease_digest = _sha256(lease.signed_bytes()) if isinstance(lease, SignedCapabilityLease) else proposal.digest()
+        self._step(action_id, "ACT-T04", "CapabilityLease", lease_digest)
         try:
-            gate_disposition(action_type.risk_class, canonical_target=True)
-        except ApprovalGateError as error:
-            raise GovernedActionError("NO_MUTATION_ADMITTED", str(error), cause_code=error.reason_code) from error
+            signed_lease, delegation = self._authority(proposal, action_type, lease)
+            # CONTROL_CHECK (ACT-T06/ACT-T07): the obligation follows the ActionType's risk class
+            # and the canonical target never takes NOT_REQUIRED (LLD v1.1 :268, ADD v1.3 :3298-3303).
+            try:
+                disposition = gate_disposition(action_type.risk_class, canonical_target=True)
+            except ApprovalGateError as error:
+                raise GovernedActionError("NO_MUTATION_ADMITTED", str(error), cause_code=error.reason_code) from error
+        except GovernedActionError as denied:
+            # ACT-T05: a deny at the control check is fail-closed and final.
+            self._close(action_id, "ACT-T05", "ActionProposal", proposal.digest(), denied)
+            raise
+        self._step(
+            action_id,
+            "ACT-T06",
+            "GateDisposition",
+            canonical_digest(
+                {"action_type_digest": action_type.digest(), "disposition": disposition, "risk_class": action_type.risk_class.name}
+            ),
+        )
 
         approval_set = self._approval_set(proposal, approval)
-        admitted = self._decision(proposal, action_type, approval_set, decision)
+        self._step(action_id, "ACT-T08", "ApprovalSet", approval_set.digest())
+        if isinstance(decision, AuthorizedDecision):
+            self._step(action_id, "ACT-T26", "GatePackage", decision.package_digest)
+        try:
+            admitted = self._decision(proposal, action_type, approval_set, decision)
+        except GovernedActionError as refused:
+            if refused.reason_code == "DECISION_REJECTED" and isinstance(decision, AuthorizedDecision):
+                self._close(action_id, "ACT-T10a", "Decision", decision.decision.digest(), refused)
+            raise
         if not isinstance(decision, AuthorizedDecision):
             raise GovernedActionError("DECISION_MISSING", "a governed action requires the Authority's signed Decision")
+        self._step(action_id, "ACT-T10b", "Decision", admitted.digest())
         return action_type, signed_lease, delegation, approval_set, admitted, decision
 
     def _action_command(
@@ -837,10 +1046,14 @@ class GovernedActionEngine:
         admitted: c6_records.Decision,
         approval_set: c6_records.ApprovalSet,
     ) -> c6_records.DeliveryAttempt:
-        # EMISSION-FENCE (ACT-T29): G-FRESHNESS and G-DISPATCH with the lease consumption and the
-        # DeliveryAttempt in one transaction, immediately before the send to C3.
+        # EMISSION-FENCE (ACT-T12, ACT-T29): G-FRESHNESS and G-DISPATCH with the lease consumption
+        # and the DeliveryAttempt in one transaction, immediately before the send to C3. A material
+        # drift invalidates the action (ACT-T13) and a stop cancels it (ACT-T23a); any other refusal
+        # is a condition of this emission attempt and leaves PRE_DISPATCH_CHECK.
+        action_id = proposal.action_instance_id
+        self._step(action_id, "ACT-T11", "ActionIntent", action_command.intent_digest)
         try:
-            return self._emission_fence.evaluate(
+            attempt = self._emission_fence.evaluate(
                 package=decision.package,
                 package_digest=decision.package_digest,
                 command=action_command,
@@ -851,7 +1064,15 @@ class GovernedActionEngine:
                 observe=lambda: self._current(proposal, admitted, approval_set),
             )
         except DispatchError as error:
-            raise GovernedActionError("INVALIDATED", str(error), cause_code=error.reason_code) from error
+            refused = GovernedActionError("INVALIDATED", str(error), cause_code=error.reason_code)
+            if error.reason_code in STOP_CAUSES:
+                self._close(action_id, "ACT-T23a", "ActionIntent", action_command.intent_digest, refused)
+            elif error.reason_code.startswith("STALE_") or error.reason_code in DRIFT_CAUSES:
+                self._close(action_id, "ACT-T13", "ActionIntent", action_command.intent_digest, refused)
+            raise refused from error
+        self._step(action_id, "ACT-T12", "ActionCommand", action_command.digest())
+        self._step(action_id, "ACT-T29", "DeliveryAttempt", attempt.digest())
+        return attempt
 
     def commit_canonical(
         self,
@@ -880,7 +1101,10 @@ class GovernedActionEngine:
             )
             with self._lock:
                 confirmed = self._committed.get(proposal.action_instance_id)
+                confirmed_result = self._results.get(proposal.action_instance_id)
             if confirmed is not None:
+                if confirmed_result is not None:
+                    self._confirm(proposal.action_instance_id, confirmed_result)
                 return confirmed
             try:
                 command = issue()
@@ -901,7 +1125,9 @@ class GovernedActionEngine:
             )
             self._require_not_reconciling(action_command.command_id)
             self._require_bound(command, action_command, authorized)
-            self._fence(proposal, authorized, action_command, signed_lease, action_type, delegation, admitted, approval_set)
+            attempt = self._fence(
+                proposal, authorized, action_command, signed_lease, action_type, delegation, admitted, approval_set
+            )
             at = _require_aware(self._emission_fence.validator.clock.now(), field="trusted now")
         except GovernedActionError:
             raise
@@ -924,7 +1150,11 @@ class GovernedActionEngine:
                 raise unrecorded from error
             raise
         with self._lock:
-            return self._committed.setdefault(proposal.action_instance_id, receipt)
+            receipt = self._committed.setdefault(proposal.action_instance_id, receipt)
+        # The commit is confirmed by C3 whatever the trace does: a trace error after the send
+        # reaches the caller unchanged and the retry completes the trace with the same receipt.
+        self._confirm(proposal.action_instance_id, self._execution_result(proposal.action_instance_id, attempt, receipt))
+        return receipt
 
     def execute(
         self,
@@ -947,6 +1177,8 @@ class GovernedActionEngine:
             confirmed = self._confirmed.get(action_id)
         if confirmed is not None:
             # A confirmed action instance is not sent again: the retry gets its outcome.
+            if confirmed.execution_result is not None:
+                self._confirm(action_id, confirmed.execution_result)
             return confirmed
 
         if evidence_refs is None or claim_source_bindings is None:
@@ -973,6 +1205,10 @@ class GovernedActionEngine:
         # Canonical commit (ACT-T30): C3 admits the command only on the signed governed path and
         # commits state and outbox atomically.
         commit_receipt = self._commit_port.commit(command)
+        result = self._execution_result(action_id, attempt, commit_receipt)
+        transition = self._fsm.transition("ACT-T30")
+        if self._fsm.current_state(action_id) == transition.source:
+            self._apply(action_id, "ACT-T30", "ExecutionResult", result.digest())
         payload = {"action_id": action_id, "commit_id": commit_receipt.commit_id, "status": "EXECUTED"}
         event = CommittedOutboxEvent(
             event_id=commit_receipt.outbox_event_id,
@@ -1002,7 +1238,8 @@ class GovernedActionEngine:
             if unrecorded is not None:
                 raise unrecorded from error
             raise
-        outcome = ActionOutcome(action_id, receipt, receipt.sink_result, commit_receipt, attempt)
+        outcome = ActionOutcome(action_id, receipt, receipt.sink_result, commit_receipt, attempt, result)
         with self._lock:
-            self._confirmed.setdefault(action_id, outcome)
+            outcome = self._confirmed.setdefault(action_id, outcome)
+        self._confirm(action_id, result)
         return outcome
