@@ -6451,6 +6451,110 @@
         "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c2/gateway.py').read(); print('C2-13 gateway translates TypeDBUnavailableError:', 'TypeDBUnavailableError' in s)\"",
         "outcome": "prints 'C2-13 gateway translates TypeDBUnavailableError: False'; lines 379-380 build CONTROL_PLANE_UNAVAILABLE for any other exception. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "107",
+          "note": "C8 imports the legacy c6_capabilities CapabilityAuthority and CapabilityLease",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "303",
+          "note": "bind_stop_controller on the legacy authority",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "309",
+          "note": "unaudited OutcomeReconciler built by default",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "324-337",
+          "note": "authorize_effect: the effect channel re-authorises the legacy lease",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "356-358",
+          "note": "invoke consumes the legacy lease at authorisation (consume=True)",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "432-438",
+          "note": "_authorize_tool re-authorises the legacy lease at every dispatch",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-008",
+      "norm_refs": [
+        {
+          "lines": "3220",
+          "note": "ADD v1.3 section 5.2 rule 5: a revocation invalidates new calls and capability leases not yet consumed",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3360",
+          "note": "ADD v1.3: every mutative call presents a capability lease with the current stop_epoch and a TTL of at most 5 seconds",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3856",
+          "note": "ADD v1.3 Part II section 2.12: tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "404",
+          "note": "FR-162: pre-dispatch revalidation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "271",
+          "note": "NFR-036: kill switch fail-safe, no new tool call after the effective revocation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "407",
+          "note": "FR-163: an ambiguous external outcome is not retried automatically",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U07-C8-TOOL-RUNTIME-LEASE.md",
+        "sha256": "030eed900065590befbe2c96b557082757a1733f08531a81116acf5a28d0b33a"
+      },
+      "provenance": "C8 tool runtime part of NCR-C6-004, registered by PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05), option 2",
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-162",
+        "NFR-036",
+        "FR-163"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "P0 PoC requirements FR-162, NFR-036 and FR-163 (Register v1.1 lines 404, 271 and 407): the tool runtime authorises with the legacy lease instead of re-evaluating live capability, Delegation, policy and stop epoch",
+      "statement": "The C8 tool runtime still authorises every tool call and every effect with the legacy c6_capabilities CapabilityAuthority and its CapabilityLease (capability tool:<name> over a whole expression, caller-chosen TTL, no action_instance_id, gate_package_digest or governed_context_digest), consumed at authorisation and re-authorised at each dispatch, instead of re-evaluating live capability, Delegation, policy and stop epoch at every dispatch; it builds by default an OutcomeReconciler that writes no audit record, so an EXECUTION_UNKNOWN tool outcome is not recorded on the signed audit port.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c8/tool_runtime.py').read(); print('C8-8 tool runtime imports the legacy lease:', 'from ..c6_capabilities import CapabilityAuthority, CapabilityLease' in s, '| unaudited default reconciler:', 'OutcomeReconciler() if reconciler is None' in s)\"",
+        "outcome": "prints 'C8-8 tool runtime imports the legacy lease: True | unaudited default reconciler: True'; line 358 consumes the legacy lease at authorisation (consume=True) and lines 432-438 re-authorise it on the legacy authority at every dispatch. CONFIRMED at 6e116249ae0a9e313b795ecdd9ac18be3b9020f9."
+      }
     }
   ],
   "g6_g7_proposals": {
@@ -20545,6 +20649,41 @@
             "NFR-036",
             "FR-128"
           ]
+        },
+        {
+          "criterion": "Per PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05) option 2: the C8 tool runtime no longer uses ocor_runtime.c6_capabilities (neither CapabilityAuthority nor its CapabilityLease) and at every dispatch re-evaluates live capability, Delegation, policy and stop epoch (ADD v1.3 lines 3220 and 3856); the runtime builds no unaudited OutcomeReconciler by default and records every EXECUTION_UNKNOWN outcome on the reconciler that writes to the signed audit port (Register FR-163)",
+          "entry": "NCR-C8-008",
+          "norm_refs": [
+            {
+              "lines": "3220",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3360",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3856",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "404",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "271",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "407",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-162",
+            "NFR-036",
+            "FR-163"
+          ]
         }
       ],
       "closed_scope_note": "only the entries in resolves; entries of other units, DECISION_REQUIRED entries and the legacy slice are out of scope",
@@ -20759,6 +20898,13 @@
           "fails_on_current_code_because": "7 failed, 4 passed: the seven revocation cases fail with 'DID NOT RAISE ToolRuntimeError' (e.g. test_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool). CONFIRMED on the current main head (runtime identical to main f5433029b97b); the defect is not refuted.",
           "reproduction": "git show 81a8b76:ocor-runtime/tests/tasks/test_ocor_dev_rem_0043.py > /tmp/rem0043red/test_ocor_dev_rem_0043.py && cd /tmp/rem0043red && PYTHONPATH=<repo>/ocor-runtime/src <repo>/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q test_ocor_dev_rem_0043.py (RED test file sha256 791a22289f69cf71819599f390ff66e3431be5c3417b71f342d553ba5a1998cd, run outside the repository against the runtime of main f5433029b97b)",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c8_007_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C8-008",
+          "fails_on_current_code_because": "prints 'C8-8 tool runtime imports the legacy lease: True | unaudited default reconciler: True'; line 358 consumes the legacy lease at authorisation (consume=True) and lines 432-438 re-authorise it on the legacy authority at every dispatch. CONFIRMED at 6e116249ae0a9e313b795ecdd9ac18be3b9020f9.",
+          "reproduction": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c8/tool_runtime.py').read(); print('C8-8 tool runtime imports the legacy lease:', 'from ..c6_capabilities import CapabilityAuthority, CapabilityLease' in s, '| unaudited default reconciler:', 'OutcomeReconciler() if reconciler is None' in s)\"",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c8_008_conforms"
         }
       ],
       "requalifications": {
@@ -20792,7 +20938,8 @@
         "NCR-C8-003",
         "NCR-C8-004",
         "NCR-C8-005",
-        "NCR-C8-007"
+        "NCR-C8-007",
+        "NCR-C8-008"
       ],
       "scope": "C8 Governed Agent Kernel: AgentRun/Task/Assignment/Commitment/Handoff/Dissent/DecisionProposal/ToolInvocation records in C8 state (not canonical aggregates), kernel-attested HandoffEnvelope with sender bound to the transport Principal, roles and task lifecycle with cycle/depth/timeout/termination, dissent severity and blocking, contract-bound tool registry (mcp-tool-contract:1.2) with schema, taint and egress checks and the contract error codes, live policy/autonomy-tier/instruction-eligibility/capability/delegation re-evaluation at every dispatch (with the OCOR-DEV-REM-0043 correction), multidimensional budget, a current kernel with no fail-open default",
       "status": "PROPOSED"
