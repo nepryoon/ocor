@@ -14,6 +14,11 @@ v1.3 :2851-2854 and :3194-3212, NCR-C6-004/005) immediately before the send to C
 the canonical commit through C3 (``ACT-T30``) and the C7 relay of the committed outbox event as
 the simulated effect. Any gate failure denies the action before the durable canonical commit or
 the simulated effect ever happen.
+
+A canonical mutation decided by a composed C6 consumer -- the memory promotion of LLD v1.1 :238
+(NCR-C6-009) -- takes the same path through ``commit_canonical``: the same gates, the same
+EMISSION-FENCE and the same reconciliation, with the C3 command C6 issues for it (ADD v1.3 :2789:
+no second, ungoverned path to the canonical state).
 """
 
 from __future__ import annotations
@@ -271,6 +276,13 @@ class GovernedCommandIssuer:
         if requested != issued:
             raise ValueError("another command was already issued for this action instance")
         return issued
+
+
+@runtime_checkable
+class CanonicalCommitSender(Protocol):
+    """The C3 ``GovernedCommitPort`` a composed C6 consumer sends its decided command through."""
+
+    def commit(self, command: GovernedCanonicalCommitCommand) -> CommitReceipt: ...
 
 
 @runtime_checkable
@@ -562,6 +574,7 @@ class GovernedActionEngine:
         # reconciliation record could not be written
         self._ambiguous: set[str] = set()
         self._confirmed: dict[str, ActionOutcome] = {}
+        self._committed: dict[str, CommitReceipt] = {}
         self._lock = threading.Lock()
 
     def _require_not_reconciling(self, command_id: str) -> None:
@@ -717,11 +730,38 @@ class GovernedActionEngine:
             self._admitted.setdefault(proposal.action_instance_id, admission)
         return admitted
 
+    def _admit(
+        self, proposal: c6_records.ActionProposal, lease: object, approval: object, decision: object
+    ) -> tuple[ActionType, SignedCapabilityLease, str, c6_records.ApprovalSet, c6_records.Decision, AuthorizedDecision]:
+        action_type = self._action_type(proposal)
+        signed_lease, delegation = self._authority(proposal, action_type, lease)
+
+        # CONTROL_CHECK (ACT-T06/ACT-T07): the obligation follows the ActionType's risk class and
+        # the canonical target never takes NOT_REQUIRED (LLD v1.1 :268, ADD v1.3 :3298-3303).
+        try:
+            gate_disposition(action_type.risk_class, canonical_target=True)
+        except ApprovalGateError as error:
+            raise GovernedActionError("NO_MUTATION_ADMITTED", str(error), cause_code=error.reason_code) from error
+
+        approval_set = self._approval_set(proposal, approval)
+        admitted = self._decision(proposal, action_type, approval_set, decision)
+        if not isinstance(decision, AuthorizedDecision):
+            raise GovernedActionError("DECISION_MISSING", "a governed action requires the Authority's signed Decision")
+        return action_type, signed_lease, delegation, approval_set, admitted, decision
+
     def _action_command(
-        self, proposal: c6_records.ActionProposal, decision: AuthorizedDecision, admitted: c6_records.Decision
+        self,
+        proposal: c6_records.ActionProposal,
+        decision: AuthorizedDecision,
+        admitted: c6_records.Decision,
+        *,
+        command_id: str | None = None,
+        idempotency_key: str | None = None,
     ) -> c6_records.ActionCommand:
         # ACT-T11/T12: the ActionIntent of the accepted Decision and its ActionCommand, which
-        # carries the GatePackage digest and the GovernedContext digest (ADD v1.3 :384).
+        # carries the GatePackage digest and the GovernedContext digest (ADD v1.3 :384). A
+        # composed consumer's ActionCommand takes the identity and idempotency key of the C3
+        # command C6 issued for it.
         suffix = hashlib.sha256(proposal.action_instance_id.encode("utf-8")).hexdigest()
         now = self._emission_fence.validator.clock.now()
         try:
@@ -733,12 +773,12 @@ class GovernedActionEngine:
                 created_at=now,
             )
             return c6_records.ActionCommand.issue(
-                command_id=f"urn:ocor:command:{suffix}",
+                command_id=command_id or f"urn:ocor:command:{suffix}",
                 intent=intent,
                 package=decision.package,
                 package_digest=decision.package_digest,
                 parameters=dict(proposal.parameters),
-                idempotency_key=f"c6-action-{suffix}",
+                idempotency_key=idempotency_key or f"c6-action-{suffix}",
                 deadline=min(admitted.valid_until, decision.package.valid_until),
             )
         except c6_records.C6RecordError as error:
@@ -765,6 +805,127 @@ class GovernedActionEngine:
             projection_watermark=projection_watermark(revision),
         )
 
+    def _require_bound(
+        self,
+        command: GovernedCanonicalCommitCommand,
+        action_command: c6_records.ActionCommand,
+        decision: AuthorizedDecision,
+    ) -> None:
+        # The C3 command is the decided ActionCommand: action instance, canonical aggregate,
+        # idempotency key, GovernedContext and the revision the GatePackage froze.
+        if (
+            command.action_instance_id != action_command.action_instance_id
+            or command.aggregate_type != self._path.aggregate_type
+            or command.aggregate_ref != action_command.target_ref
+            or command.command_id != action_command.command_id
+            or command.idempotency_key != action_command.idempotency_key
+            or command.governed_context_digest != action_command.governed_context_digest
+            or command.expected_revision != decision.package.expected_revision
+        ):
+            raise GovernedActionError(
+                "INVALIDATED", "the C3 command is not the decided ActionCommand", cause_code="COMMAND_DIGEST_MISMATCH"
+            )
+
+    def _fence(
+        self,
+        proposal: c6_records.ActionProposal,
+        decision: AuthorizedDecision,
+        action_command: c6_records.ActionCommand,
+        lease: SignedCapabilityLease,
+        action_type: ActionType,
+        delegation: str,
+        admitted: c6_records.Decision,
+        approval_set: c6_records.ApprovalSet,
+    ) -> c6_records.DeliveryAttempt:
+        # EMISSION-FENCE (ACT-T29): G-FRESHNESS and G-DISPATCH with the lease consumption and the
+        # DeliveryAttempt in one transaction, immediately before the send to C3.
+        try:
+            return self._emission_fence.evaluate(
+                package=decision.package,
+                package_digest=decision.package_digest,
+                command=action_command,
+                lease=lease,
+                capability_id=action_type.capability,
+                effective_principal_id=self._path.governed_context.effective_principal_id,
+                delegation_ref=delegation,
+                observe=lambda: self._current(proposal, admitted, approval_set),
+            )
+        except DispatchError as error:
+            raise GovernedActionError("INVALIDATED", str(error), cause_code=error.reason_code) from error
+
+    def commit_canonical(
+        self,
+        proposal: c6_records.ActionProposal,
+        *,
+        lease: SignedCapabilityLease,
+        approval: c6_records.ApprovalSet | None,
+        decision: AuthorizedDecision | None,
+        issue: Callable[[], GovernedCanonicalCommitCommand],
+        commit_port: CanonicalCommitSender | None = None,
+    ) -> CommitReceipt:
+        """The canonical mutation a composed C6 consumer decided (the memory promotion of LLD v1.1
+        :238, NCR-C6-009), on the path of every action (ADD v1.3 :2789): G-CONTRACT, G-AUTHORITY,
+        the Human Gate disposition (R0 and R1 admit no mutation, ADD v1.3 :3302-3303),
+        G-APPROVAL, G-DECISION, the ActionCommand of the C3 command C6 issues for it (``issue``),
+        the EMISSION-FENCE and the send to C3 through ``commit_port`` (the consumer's C3
+        GovernedCommitPort; the engine's by default). Every refusal before the send is a
+        ``GovernedActionError`` and nothing is sent. A confirmed action is not sent again: its
+        retry returns the confirmed receipt. A send without a receipt bound to the command is
+        ``EXECUTION_UNKNOWN`` through the audited reconciliation and its retry is suspended
+        (LLD v1.1 :282-283, :307); the send error reaches the caller unchanged."""
+
+        try:
+            action_type, signed_lease, delegation, approval_set, admitted, authorized = self._admit(
+                proposal, lease, approval, decision
+            )
+            with self._lock:
+                confirmed = self._committed.get(proposal.action_instance_id)
+            if confirmed is not None:
+                return confirmed
+            try:
+                command = issue()
+            except Exception as error:
+                raise GovernedActionError(
+                    "INVALIDATED", "C6 could not issue the C3 command", cause_code="CONTROL_PLANE_UNAVAILABLE"
+                ) from error
+            if not isinstance(command, GovernedCanonicalCommitCommand):
+                raise GovernedActionError(
+                    "INVALIDATED", "C6 issued no C3 command", cause_code="COMMAND_DIGEST_MISMATCH"
+                )
+            action_command = self._action_command(
+                proposal,
+                authorized,
+                admitted,
+                command_id=command.command_id,
+                idempotency_key=command.idempotency_key,
+            )
+            self._require_not_reconciling(action_command.command_id)
+            self._require_bound(command, action_command, authorized)
+            self._fence(proposal, authorized, action_command, signed_lease, action_type, delegation, admitted, approval_set)
+            at = _require_aware(self._emission_fence.validator.clock.now(), field="trusted now")
+        except GovernedActionError:
+            raise
+        except Exception as error:
+            raise GovernedActionError(
+                "INVALIDATED", "the action path could not be evaluated", cause_code="CONTROL_PLANE_UNAVAILABLE"
+            ) from error
+
+        # Canonical commit (ACT-T30): the receipt confirms the action only when it is bound to the
+        # command sent; anything else after the send is an ambiguous outcome, never inferred.
+        port = self._commit_port if commit_port is None else commit_port
+        try:
+            receipt = port.commit(command)
+            if not isinstance(receipt, CommitReceipt):
+                raise TypeError("C3 returned no CommitReceipt")
+            receipt.verify(command)
+        except Exception as error:
+            unrecorded = self._unknown(action_command.command_id, error, at=at)
+            if unrecorded is not None:
+                raise unrecorded from error
+            raise
+        with self._lock:
+            return self._committed.setdefault(proposal.action_instance_id, receipt)
+
     def execute(
         self,
         proposal: c6_records.ActionProposal,
@@ -778,20 +939,9 @@ class GovernedActionEngine:
         claim_source_bindings: Sequence[Mapping[str, str]] | None = None,
     ) -> ActionOutcome:
         instant = _require_aware(at, field="at")
-        action_type = self._action_type(proposal)
-        signed_lease, delegation = self._authority(proposal, action_type, lease)
-
-        # CONTROL_CHECK (ACT-T06/ACT-T07): the obligation follows the ActionType's risk class and
-        # the canonical target never takes NOT_REQUIRED (LLD v1.1 :268, ADD v1.3 :3298-3303).
-        try:
-            gate_disposition(action_type.risk_class, canonical_target=True)
-        except ApprovalGateError as error:
-            raise GovernedActionError("NO_MUTATION_ADMITTED", str(error), cause_code=error.reason_code) from error
-
-        approval_set = self._approval_set(proposal, approval)
-        admitted = self._decision(proposal, action_type, approval_set, decision)
-        if not isinstance(decision, AuthorizedDecision):
-            raise GovernedActionError("DECISION_MISSING", "a governed action requires the Authority's signed Decision")
+        action_type, signed_lease, delegation, approval_set, admitted, decision = self._admit(
+            proposal, lease, approval, decision
+        )
         action_id = proposal.action_instance_id
         with self._lock:
             confirmed = self._confirmed.get(action_id)
@@ -815,32 +965,10 @@ class GovernedActionEngine:
             evidence_refs=evidence_refs,
             claim_source_bindings=claim_source_bindings,
         )
-        if (
-            command.action_instance_id != action_command.action_instance_id
-            or command.aggregate_ref != action_command.target_ref
-            or command.idempotency_key != action_command.idempotency_key
-            or command.governed_context_digest != action_command.governed_context_digest
-            or command.expected_revision != decision.package.expected_revision
-        ):
-            raise GovernedActionError(
-                "INVALIDATED", "the C3 command is not the decided ActionCommand", cause_code="COMMAND_DIGEST_MISMATCH"
-            )
-
-        # EMISSION-FENCE (ACT-T29): G-FRESHNESS and G-DISPATCH with the lease consumption and the
-        # DeliveryAttempt in one transaction, immediately before the send to C3.
-        try:
-            attempt = self._emission_fence.evaluate(
-                package=decision.package,
-                package_digest=decision.package_digest,
-                command=action_command,
-                lease=signed_lease,
-                capability_id=action_type.capability,
-                effective_principal_id=self._path.governed_context.effective_principal_id,
-                delegation_ref=delegation,
-                observe=lambda: self._current(proposal, admitted, approval_set),
-            )
-        except DispatchError as error:
-            raise GovernedActionError("INVALIDATED", str(error), cause_code=error.reason_code) from error
+        self._require_bound(command, action_command, decision)
+        attempt = self._fence(
+            proposal, decision, action_command, signed_lease, action_type, delegation, admitted, approval_set
+        )
 
         # Canonical commit (ACT-T30): C3 admits the command only on the signed governed path and
         # commits state and outbox atomically.

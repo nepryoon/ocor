@@ -2155,6 +2155,7 @@ def test_promotion_issuance_fault_is_denied_before_c3(backends: Any, fault: str,
             proposals=x.s, controls=x.controls, verifier=x.signer,
             human_gate=human_gate(identities=x.registry, clock=x.w.clock), policy=x.policy, c3=x.c3,
             issuer=_FaultyIssuer(x.issuer, fault), clock=x.w.clock, audit=x.audit, commit_capability="canonical.commit",
+            engine=x.engine,
         )
         before = x.w.ledger.records()
         with pytest.raises(memory.MemoryAdmissionError) as caught:

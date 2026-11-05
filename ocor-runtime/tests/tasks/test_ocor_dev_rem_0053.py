@@ -2061,8 +2061,13 @@ def test_ncr_c6_005_conforms() -> None:
     evaluated, with its DeliveryAttempt recorded, before the canonical commit (ACT-T29); a drift
     of the canonical state between Decision and send gives INVALIDATED and no commit."""
     engine_module = _mod("engine")
-    source = inspect.getsource(engine_module.GovernedActionEngine.execute)
-    assert source.index("emission_fence.evaluate") < source.index("_commit_port.commit")
+    engine_class = engine_module.GovernedActionEngine
+    assert "self._emission_fence.evaluate(" in inspect.getsource(engine_class._fence)
+    source = inspect.getsource(engine_class.execute)
+    assert source.index("self._fence(") < source.index("_commit_port.commit")
+    # NCR-C6-009: the canonical mutation of a composed consumer crosses the same fence.
+    source = inspect.getsource(engine_class.commit_canonical)
+    assert source.index("self._fence(") < source.index("port.commit(")
 
     suite = EngineSuite()
     world = suite.world
