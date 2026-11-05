@@ -1622,8 +1622,11 @@ def test_the_engine_denies_at_every_gate_before_any_effect(case: str) -> None:
     assert reason == ENGINE_DENIALS[case]
     assert suite.untouched()
     if case == "decision-rejected":
-        with pytest.raises(suite.engine_module.GovernedActionError, match="risk ceiling exceeded"):
+        # NCR-C6-014: the rejected Decision ends the action instance (ACT-T10a); it is never resumed.
+        assert world.transitions(proposal.action_instance_id)[-1] == "ACT-T10a"
+        with pytest.raises(suite.engine_module.GovernedActionError) as again:
             suite.execute(proposal, approval=approval_set, decision=decision)
+        assert (again.value.reason_code, again.value.cause_code) == ("INVALID_SOURCE_STATE", "DECISION_REJECTED")
 
 
 def test_a_retry_of_an_admitted_action_replays_its_commit_without_reusing_the_approvals_elsewhere() -> None:
