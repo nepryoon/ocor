@@ -2,7 +2,8 @@
 
 Unit of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), plan unit NCP-U05, register entries
 NCR-C4-001, NCR-C4-002, NCR-C4-003 and NCR-C4-004 (the SHACL validation of NCR-C4-002 follows
-the PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1).
+the PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1), and NCR-C4-005 and
+NCR-C2-013 (PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1).
 
 * NCR-C4-001 -- LLD v1.1 :355 (C4/C5 per-aggregate ordering, monotonic watermark, durable
   deduplication), LLD v1.1 :148 (projector verifies schema/release/GCS, applies idempotently,
@@ -27,6 +28,13 @@ the PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1).
   BA-03: TypeDB exact-at-commit or PROJECTION_NOT_READY, never a downgrade), Register FR-057
   :179 (a projection beyond Cn serves at-least but not exact-at-commit(Cn)).
 
+* NCR-C4-005 and NCR-C2-013 -- ADD v1.3 :3406 (projection down: PROJECTION_NOT_READY) and
+  :1364 (a Problem with PROJECTION_NOT_READY carries the served branch, commit, watermark and
+  staleness), NFR-024 :180, NFR-077 :403: an unreachable object projection answers
+  PROJECTION_NOT_READY, and the Gateway builds it with the served context of the confirmed
+  watermark, for the TypeDBUnavailableError of the watermark port too; a malformed answer stays
+  CONTROL_PLANE_UNAVAILABLE.
+
 Every positive path runs on the real TypeDB and the real PostgreSQL of the stack; the local
 HTTP responder stands in for TypeDB only on the failure paths of NCR-C4-003.
 """
@@ -38,10 +46,12 @@ import http.server
 import importlib
 import json
 import os
+import tempfile
 import threading
 import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -1707,3 +1717,184 @@ def test_ncr_c4_002_an_unreachable_fuseki_refuses_a_provenance_publication(
     with pytest.raises(jena_adapter.JenaAdapterError) as caught:
         adapter.publish_provenance(_turtle(_conforming()), marking=_marking("ALPHA"), commit_id="commit-p1")
     assert caught.value.reason_code == "PROJECTION_NOT_READY"
+
+
+# --------------------------------------------------------------------------- #
+# NCR-C4-005 and NCR-C2-013 -- projection down is PROJECTION_NOT_READY with the served context
+# (PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1)
+# --------------------------------------------------------------------------- #
+UNREACHABLE_TYPEDB = "http://127.0.0.1:1"
+GATEWAY_OPERATIONS = ("GetObject", "QueryObjectSet", "Search", "Traverse", "Explain", "GetProvenance")
+
+
+def _rem_0049() -> Any:
+    """The C2 gateway composition of OCOR-DEV-REM-0049 (real TypeDB, Fuseki and PostgreSQL audit)."""
+    return importlib.import_module("test_ocor_dev_rem_0049")
+
+
+def _operation_bodies(rem: Any) -> dict[str, dict[str, Any]]:
+    ref = {"resource_type_id": "urn:ocor:type:vessel", "resource_id": rem.V1}
+    return {
+        "GetObject": rem.get_object_body(),
+        "QueryObjectSet": {"context": rem.wire_context(), "object_set_contract": rem.contract_call(), "page_size": 10},
+        "Search": {"context": rem.wire_context(), "search_contract": rem.contract_call(), "text": "alpha",
+                   "page_size": 10},
+        "Traverse": {"context": rem.wire_context(), "start": [ref], "traversal_contract": rem.contract_call()},
+        "Explain": {"context": rem.wire_context(), "target": ref, "explanation_contract": rem.contract_call()},
+        "GetProvenance": {"context": rem.wire_context(), "target": ref, "direction": "UPSTREAM", "max_depth": 3},
+    }
+
+
+@pytest.fixture
+def gateway_backends() -> Iterator[tuple[Any, Any, Any]]:
+    """The real TypeDB projection on the shared ledger, the real Fuseki marking join and a
+    signed PostgreSQL audit log in a schema of its own, as composed by OCOR-DEV-REM-0049."""
+    rem = _rem_0049()
+    fixture = _module("c4_projection_fixture")
+    typedb = fixture.projection()
+    typedb.initialize()
+    typedb.reset()
+    jena = fixture.ClassificationJena()
+    jena.reset()
+    audit = _module("ocor_runtime.audit")
+    signing = _module("ocor_runtime.c1.signing")
+    with tempfile.TemporaryDirectory() as workdir:
+        keys = rem.AuditKeys(Path(workdir))
+        log = audit.PostgresAuditLog(
+            os.environ.get("OCOR_LIVE_POSTGRES_DSN") or rem._dsn(), schema=f"ocor_audit_rem0052_{os.urandom(6).hex()}",
+            signer=audit.AuditSigner(key=signing.Ed25519SigningKey.from_seed(keys.seed),
+                                     keyid="urn:ocor:key:c2-audit-test"))
+        log.initialize()
+        try:
+            yield typedb, jena, log
+        finally:
+            log.drop()
+
+
+class _DownObjects:
+    """The real ``TypeDBObjectProjection`` read while TypeDB is unreachable for the object
+    projection only: the watermark port of the gateway still reaches TypeDB."""
+
+    def __init__(self, real: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._real = real
+        self._monkeypatch = monkeypatch
+
+    def _down(self, read: Any) -> Any:
+        with self._monkeypatch.context() as patch:
+            patch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", UNREACHABLE_TYPEDB)
+            return read()
+
+    def get(self, resource_ids: tuple[str, ...]) -> Any:
+        return self._down(lambda: self._real.get(resource_ids))
+
+    def page(self, *, limit: int, after: str | None) -> Any:
+        return self._down(lambda: self._real.page(limit=limit, after=after))
+
+    def search(self, text: str, *, limit: int, after: str | None) -> Any:
+        return self._down(lambda: self._real.search(text, limit=limit, after=after))
+
+
+def _assert_not_ready(reply: Any, operation: str, commit: str) -> None:
+    assert (reply.status, reply.body["reason_code"]) == (503, "PROJECTION_NOT_READY"), (operation, reply.body)
+    served = reply.body["served"]
+    assert (served["branch"], served["served_commit"], served["watermark"]) == ("main", commit, commit), operation
+    assert isinstance(served["staleness_ms"], int) and served["staleness_ms"] >= 0, operation
+    assert "object" not in reply.body and "objects" not in reply.body, operation
+
+
+def test_ncr_c4_005_conforms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ADD v1.3 :3406 (projection down: PROJECTION_NOT_READY) and :1364 (the Problem carries the
+    served context, built by the Gateway): an unreachable TypeDB is PROJECTION_NOT_READY on each
+    read shape of the object projection, never CONTROL_PLANE_UNAVAILABLE."""
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", UNREACHABLE_TYPEDB)
+    projection = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    for read in (lambda: projection.get(("urn:ocor:vessel:1",)), lambda: projection.page(limit=2, after=None),
+                 lambda: projection.search("alpha", limit=2, after=None)):
+        with pytest.raises(C2Error) as caught:
+            read()
+        assert caught.value.reason_code == "PROJECTION_NOT_READY"
+
+
+OBJECT_ANSWER_FAILURES: dict[str, dict[str, tuple[int, bytes] | bytes]] = {
+    "query-refused": {"query": (500, b"{}")},
+    "query-not-json": {"query": (200, b"{not json")},
+    "query-connection-dropped": {"query": b""},
+    "query-bad-status-line": {"query": b"GARBAGE\r\n\r\n"},
+}
+
+
+@pytest.mark.parametrize("case", sorted(OBJECT_ANSWER_FAILURES))
+def test_ncr_c4_005_a_malformed_object_answer_stays_control_plane_unavailable(
+        responder: TypeDBResponder, case: str) -> None:
+    """The negative branch: only an unreachable TypeDB is the projection down; a refused, malformed
+    or dropped answer stays the typed CONTROL_PLANE_UNAVAILABLE (ADD v1.3 :174)."""
+    responder.routes = dict(OBJECT_ANSWER_FAILURES[case])
+    projection = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    with pytest.raises(C2Error) as caught:
+        projection.get(("urn:ocor:vessel:1",))
+    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+
+
+def test_ncr_c2_013_conforms(gateway_backends: tuple[Any, Any, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """ADD v1.3 :1364 and :3406, NFR-024 (Register :180), NFR-077 (Register :403): with TypeDB
+    unreachable the watermark port raises the typed TypeDBUnavailableError with the watermark C4
+    confirmed durably; each of the six operations answers PROJECTION_NOT_READY with the served
+    branch, commit, watermark and staleness of that confirmed watermark, and the denial is audited
+    with that reason code."""
+    rem = _rem_0049()
+    typedb, jena, log = gateway_backends
+    fixture = rem.Gateway(typedb, jena, log)
+    rem.load_fleet(fixture, typedb)
+    bodies = _operation_bodies(rem)
+    assert set(bodies) == set(GATEWAY_OPERATIONS)
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", UNREACHABLE_TYPEDB)
+    for operation, body in bodies.items():
+        _assert_not_ready(fixture.invoke(operation, body), operation, "commit-2")
+    records = log.records()
+    assert [record.record["reason_code"] for record in records] == ["PROJECTION_NOT_READY"] * len(bodies)
+
+
+def test_ncr_c2_013_an_unreachable_object_projection_serves_the_confirmed_watermark(
+        gateway_backends: tuple[Any, Any, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """The object projection down while the watermark port answers: the Gateway builds
+    PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364)."""
+    rem = _rem_0049()
+    typedb, jena, log = gateway_backends
+    real = _module("ocor_runtime.c4.object_projection").TypeDBObjectProjection()
+    fixture = rem.Gateway(typedb, jena, log, objects=_DownObjects(real, monkeypatch))
+    rem.load_fleet(fixture, typedb)
+    for operation, body in _operation_bodies(rem).items():
+        _assert_not_ready(fixture.invoke(operation, body), operation, "commit-2")
+
+
+def test_ncr_c2_013_without_a_confirmed_watermark_the_served_commit_is_the_sentinel(
+        gateway_backends: tuple[Any, Any, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """A ledger that has confirmed nothing: PROJECTION_NOT_READY still carries a served context,
+    with the no-watermark sentinel and the active release, never a fabricated commit."""
+    rem = _rem_0049()
+    _, jena, log = gateway_backends
+    empty = _module("c4_projection_fixture").isolated_projection()
+    empty.reset()
+    fixture = rem.Gateway(empty, jena, log)
+    monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", UNREACHABLE_TYPEDB)
+    reply = fixture.invoke("GetObject", rem.get_object_body())
+    _assert_not_ready(reply, "GetObject", "urn:ocor:commit:none")
+    assert reply.body["served"]["ontology_release"] == rem.wire("b")
+
+
+def test_ncr_c2_013_any_other_port_failure_stays_control_plane_unavailable(
+        gateway_backends: tuple[Any, Any, Any]) -> None:
+    """The negative branch: a port failure that is not the projection down stays the typed
+    fail-closed CONTROL_PLANE_UNAVAILABLE, without a served context (ADD v1.3 :174)."""
+    rem = _rem_0049()
+    typedb, jena, log = gateway_backends
+
+    class Broken:
+        def get(self, resource_ids: tuple[str, ...]) -> Any:
+            raise RuntimeError("the object port failed outside its contract")
+
+    fixture = rem.Gateway(typedb, jena, log, objects=Broken())
+    rem.load_fleet(fixture, typedb)
+    reply = fixture.invoke("GetObject", rem.get_object_body())
+    assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE")
+    assert "served" not in reply.body

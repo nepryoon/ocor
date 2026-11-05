@@ -1423,7 +1423,7 @@ def test_object_projection_unreachable_is_typed(monkeypatch: pytest.MonkeyPatch)
     ports = module("c2.ports")
     with pytest.raises(ports.C2Error) as caught:
         module("c4.object_projection").TypeDBObjectProjection().get((V1,))
-    assert caught.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+    assert caught.value.reason_code == "PROJECTION_NOT_READY"
 
 
 @pytest.mark.parametrize("case", sorted(MALFORMED_OBJECT_ANSWERS))
