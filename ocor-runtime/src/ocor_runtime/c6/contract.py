@@ -155,7 +155,9 @@ class InMemoryActionTypeCatalog:
 
     def retire(self, action_type_ref: str, *, key: Ed25519SigningKey) -> ActionType:
         with self._lock:
-            current = self._types[action_type_ref]
+            current = self._types.get(action_type_ref) if isinstance(action_type_ref, str) else None
+            if current is None:
+                raise ContractGateError("ACTION_TYPE_UNKNOWN", "no ActionType is published under this reference")
             retired = signed_with(key, replace(current, status="RETIRED", signature=records.PLACEHOLDER_SIGNATURE))
             self._types[action_type_ref] = retired
             return retired
@@ -225,6 +227,8 @@ def proposal_for(
 ) -> records.ActionProposal:
     """An ActionProposal pinned to an ActionType: the effect and risk class are the type's."""
 
+    if not isinstance(action_type, ActionType):
+        raise ContractGateError("SCHEMA_INVALID", "a proposal is built on a signed ActionType")
     return records.ActionProposal(
         action_instance_id=action_instance_id,
         proposer_id=proposer_id,

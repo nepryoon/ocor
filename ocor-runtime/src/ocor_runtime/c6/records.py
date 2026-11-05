@@ -37,6 +37,7 @@ from ..kernel.governance import RiskClass
 
 _DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
 _MAX_TEXT = 1024
+_MAX_DEPTH = 32
 
 APPROVAL_PAYLOAD_TYPE = "application/vnd.ocor.c6.approval+json"
 APPROVAL_SET_PAYLOAD_TYPE = "application/vnd.ocor.c6.approval-set+json"
@@ -125,13 +126,15 @@ def _signature(name: str, value: object) -> str:
     return value
 
 
-def _freeze(name: str, value: object) -> Any:
+def _freeze(name: str, value: object, depth: int = 0) -> Any:
+    if depth > _MAX_DEPTH:
+        raise _invalid(f"{name} must not nest deeper than {_MAX_DEPTH} levels")
     if isinstance(value, Mapping):
         if any(not isinstance(key, str) for key in value):
             raise _invalid(f"{name} keys must be strings")
-        return MappingProxyType({key: _freeze(name, child) for key, child in value.items()})
+        return MappingProxyType({key: _freeze(name, child, depth + 1) for key, child in value.items()})
     if isinstance(value, (list, tuple)):
-        return tuple(_freeze(name, child) for child in value)
+        return tuple(_freeze(name, child, depth + 1) for child in value)
     if value is None or isinstance(value, (str, bool, int)):
         return value
     raise _invalid(f"{name} must be a JSON object of strings, integers, booleans and null")
@@ -660,7 +663,7 @@ class ExecutionResult(_CanonicalRecord):
             attempt_digest=attempt.digest(),
             adapter_status=adapter_status,
             adapter_result_digest=adapter_result_digest,
-            evidence_refs=tuple(evidence_refs),
+            evidence_refs=_refs("evidence_refs", evidence_refs, required=True),
             observed_at=observed_at,
         )
 
@@ -708,7 +711,7 @@ class OutcomeAssessment(_CanonicalRecord):
         return cls(
             assessment_id=assessment_id,
             execution_result_digest=result.digest(),
-            observation_refs=tuple(observation_refs),
+            observation_refs=_refs("observation_refs", observation_refs, required=True),
             evidence_refs=new_evidence,
             assessment=assessment,
             assessed_at=assessed_at,

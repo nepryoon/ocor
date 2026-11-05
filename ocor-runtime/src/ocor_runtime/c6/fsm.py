@@ -196,9 +196,9 @@ class GuardEvaluation:
         for name in ("transition_id", "correlation_id", "snapshot_id"):
             value = getattr(self, name)
             if not isinstance(value, str) or not value:
-                raise ValueError(f"a GuardEvaluation requires {name}")
+                raise FSMTransitionError("GUARD_NOT_EVALUATED", f"a GuardEvaluation requires {name}")
         if type(self.satisfied) is not bool or type(self.stop_requested) is not bool:
-            raise TypeError("satisfied and stop_requested must be booleans")
+            raise FSMTransitionError("GUARD_NOT_EVALUATED", "satisfied and stop_requested must be booleans")
         require_aware(self.evaluated_at, field="evaluated_at")
 
 

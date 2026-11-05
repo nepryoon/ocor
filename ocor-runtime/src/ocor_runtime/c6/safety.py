@@ -783,6 +783,8 @@ class OutcomeReconciler:
         """``ACT-T20a``/``T20b``/``T21d``/``T21e``: positive Evidence of the same command resolves
         an ambiguous outcome to confirmed/failed (compensated/compensation failed)."""
         instant = require_aware(at, field="at")
+        if not isinstance(command_id, str) or not command_id:
+            raise SafetyError("RECONCILIATION_RECORD_INVALID", "command_id must be a non-empty string")
         with self._lock:
             previous = self._require_record(command_id)
             if previous.status not in _RESOLVABLE_STATUSES:
@@ -852,17 +854,27 @@ class OutcomeReconciler:
         checked without conversion and replayed through the same transitions. Anything else is
         ``RECONCILIATION_AUDIT_INVALID``."""
         chain = list(records)
+        if any(not isinstance(sealed, SealedAuditRecord) or not isinstance(sealed.record, Mapping) for sealed in chain):
+            raise SafetyError("RECONCILIATION_AUDIT_INVALID", "the audit chain holds an element that is not a sealed record")
         try:
             verify_audit_chain(chain, public_keys)
         except AuditError as error:
             raise SafetyError("RECONCILIATION_AUDIT_INVALID", f"the audit chain does not verify: {error.reason_code}") from error
+        except Exception as error:
+            raise SafetyError(
+                "RECONCILIATION_AUDIT_INVALID", f"the audit chain does not verify: {type(error).__name__}"
+            ) from error
         restored = cls(audit=audit, actor=actor)
         with restored._lock:
             for sealed in chain:
                 if sealed.record.get("event_type") != RECONCILIATION_EVENT:
                     continue
-                record = _restored_record(sealed)
+                record = _restored_record(sealed, actor=actor)
                 previous = restored._records.get(record.command_id)
+                if sealed.record["detail"]["previous_status"] != (None if previous is None else previous.status.value):
+                    raise SafetyError(
+                        "RECONCILIATION_AUDIT_INVALID", f"record {sealed.sequence} does not follow the replayed status"
+                    )
                 if record.status not in _RECONCILIATION_TRANSITIONS.get(None if previous is None else previous.status, frozenset()):
                     raise SafetyError(
                         "RECONCILIATION_AUDIT_INVALID", f"record {sealed.sequence} is not a reconciliation transition"
@@ -871,15 +883,24 @@ class OutcomeReconciler:
         return restored
 
 
-def _restored_record(sealed: SealedAuditRecord) -> ReconciliationRecord:
+def _restored_record(sealed: SealedAuditRecord, *, actor: str) -> ReconciliationRecord:
     def invalid(message: str) -> SafetyError:
         return SafetyError("RECONCILIATION_AUDIT_INVALID", f"record {sealed.sequence}: {message}")
 
     stored = sealed.record
+    if stored.get("actor") != actor:
+        raise invalid("the reconciliation record was not written by the reconciler")
     detail = stored.get("detail")
     if not isinstance(detail, Mapping) or set(detail) != _DETAIL_FIELDS:
         raise invalid("the reconciliation detail does not have its fields")
     status_value, command_id = detail["status"], stored.get("resource")
+    if stored.get("correlation_id") != command_id or stored.get("outcome") != "PERMITTED":
+        raise invalid("the correlation or the outcome is not that of a reconciliation record")
+    previous_value = detail["previous_status"]
+    if previous_value is not None and (
+        not isinstance(previous_value, str) or previous_value not in {item.value for item in OutcomeStatus}
+    ):
+        raise invalid("the previous status is outside the closed set")
     if not isinstance(status_value, str) or status_value not in {item.value for item in OutcomeStatus}:
         raise invalid("the status is outside the closed set")
     if stored.get("reason_code") != status_value or not isinstance(command_id, str) or not command_id:

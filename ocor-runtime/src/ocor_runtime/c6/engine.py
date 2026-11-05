@@ -153,6 +153,18 @@ class AuthorizedDecision:
     package_digest: str
 
 
+def _verified_package(decision: AuthorizedDecision) -> str:
+    """The GatePackage digest recomputed at the engine boundary, before ACT-T26 records it, with
+    the Decision a signed C6 record; anything else is DECISION_MISSING."""
+
+    if not isinstance(decision.decision, c6_records.Decision):
+        raise GovernedActionError("DECISION_MISSING", "a governed action requires the Authority's signed Decision")
+    try:
+        return c6_records.verify_gate_package(decision.package, decision.package_digest)
+    except c6_records.C6RecordError as error:
+        raise GovernedActionError("DECISION_MISSING", str(error), cause_code="GATE_PACKAGE_DIGEST_MISMATCH") from error
+
+
 def freeze_gate_package(
     proposal: c6_records.ActionProposal,
     approval_set: c6_records.ApprovalSet,
@@ -803,6 +815,17 @@ class GovernedActionEngine:
         error.add_note(f"EXECUTION_UNKNOWN: reconciliation opened for {command_id}; the retry is suspended")
         return None
 
+    @staticmethod
+    def _lease_digest(proposal: c6_records.ActionProposal, lease: object) -> str:
+        # The record ACT-T04 persists: the digest of the signed lease, or of the proposal when no
+        # canonical signed lease is presented (G-AUTHORITY then denies it as LEASE_INVALID).
+        if isinstance(lease, SignedCapabilityLease):
+            try:
+                return _sha256(lease.signed_bytes())
+            except Exception:
+                return proposal.digest()
+        return proposal.digest()
+
     def _action_type(self, proposal: object) -> ActionType:
         # G-CONTRACT (ACT-T01): the signed, active ActionType gives the effect and risk class.
         try:
@@ -881,6 +904,7 @@ class GovernedActionEngine:
         # G-DECISION (ACT-T10b): the Authority's signed Decision on the frozen GatePackage.
         if not isinstance(decision, AuthorizedDecision):
             raise GovernedActionError("DECISION_MISSING", "a governed action requires the Authority's signed Decision")
+        _verified_package(decision)
         if decision.package.risk_class is not action_type.risk_class:
             raise GovernedActionError(
                 "DECISION_MISSING",
@@ -920,7 +944,7 @@ class GovernedActionEngine:
         action_type = self._action_type(proposal)
         action_id = proposal.action_instance_id
         self._step(action_id, "ACT-T01", "ActionProposal", proposal.digest())
-        lease_digest = _sha256(lease.signed_bytes()) if isinstance(lease, SignedCapabilityLease) else proposal.digest()
+        lease_digest = self._lease_digest(proposal, lease)
         self._step(action_id, "ACT-T04", "CapabilityLease", lease_digest)
         try:
             signed_lease, delegation = self._authority(proposal, action_type, lease)
@@ -946,7 +970,7 @@ class GovernedActionEngine:
         approval_set = self._approval_set(proposal, approval)
         self._step(action_id, "ACT-T08", "ApprovalSet", approval_set.digest())
         if isinstance(decision, AuthorizedDecision):
-            self._step(action_id, "ACT-T26", "GatePackage", decision.package_digest)
+            self._step(action_id, "ACT-T26", "GatePackage", _verified_package(decision))
         try:
             admitted = self._decision(proposal, action_type, approval_set, decision)
         except GovernedActionError as refused:
@@ -999,9 +1023,9 @@ class GovernedActionEngine:
         # G-FRESHNESS reads the current values from C3, the GovernedContext, the active release
         # and the Human Gate, inside the fence's transaction.
         context = self._path.governed_context
-        revision = int(
-            self._commit_port.current_revision(context.tenant_id, self._path.aggregate_type, proposal.target_ref)
-        )
+        revision = self._commit_port.current_revision(context.tenant_id, self._path.aggregate_type, proposal.target_ref)
+        if type(revision) is not int or revision < 0:
+            raise TypeError("C3 answers the current revision as a non-negative integer")
         return CurrentValues(
             expected_revision=revision,
             canonical_commit_ref=canonical_commit_ref(proposal.target_ref, revision),
@@ -1169,42 +1193,63 @@ class GovernedActionEngine:
         claim_source_bindings: Sequence[Mapping[str, str]] | None = None,
     ) -> ActionOutcome:
         instant = _require_aware(at, field="at")
-        action_type, signed_lease, delegation, approval_set, admitted, decision = self._admit(
-            proposal, lease, approval, decision
-        )
         action_id = proposal.action_instance_id
-        with self._lock:
-            confirmed = self._confirmed.get(action_id)
-        if confirmed is not None:
-            # A confirmed action instance is not sent again: the retry gets its outcome.
-            if confirmed.execution_result is not None:
-                self._confirm(action_id, confirmed.execution_result)
-            return confirmed
+        try:
+            action_type, signed_lease, delegation, approval_set, admitted, decision = self._admit(
+                proposal, lease, approval, decision
+            )
+            with self._lock:
+                confirmed = self._confirmed.get(action_id)
+            if confirmed is not None:
+                # A confirmed action instance is not sent again: the retry gets its outcome.
+                if confirmed.execution_result is not None:
+                    self._confirm(action_id, confirmed.execution_result)
+                return confirmed
 
-        if evidence_refs is None or claim_source_bindings is None:
-            if self._path.evidence is None:
-                raise GovernedActionError("EVIDENCE_MISSING", "a canonical commit requires its Evidence and claim/source bindings")
-            resolved_refs, resolved_bindings = self._path.evidence(proposal)
-            evidence_refs = resolved_refs if evidence_refs is None else evidence_refs
-            claim_source_bindings = resolved_bindings if claim_source_bindings is None else claim_source_bindings
-        action_command = self._action_command(proposal, decision, admitted)
-        self._require_not_reconciling(action_command.command_id)
-        command = self._path.command(
-            proposal,
-            admitted,
-            expected_revision=decision.package.expected_revision,
-            canonical_delta={"action_id": action_id, "status": "EXECUTED"},
-            evidence_refs=evidence_refs,
-            claim_source_bindings=claim_source_bindings,
-        )
-        self._require_bound(command, action_command, decision)
-        attempt = self._fence(
-            proposal, decision, action_command, signed_lease, action_type, delegation, admitted, approval_set
-        )
+            if evidence_refs is None or claim_source_bindings is None:
+                if self._path.evidence is None:
+                    raise GovernedActionError(
+                        "EVIDENCE_MISSING", "a canonical commit requires its Evidence and claim/source bindings"
+                    )
+                resolved_refs, resolved_bindings = self._path.evidence(proposal)
+                evidence_refs = resolved_refs if evidence_refs is None else evidence_refs
+                claim_source_bindings = resolved_bindings if claim_source_bindings is None else claim_source_bindings
+            action_command = self._action_command(proposal, decision, admitted)
+            self._require_not_reconciling(action_command.command_id)
+            command = self._path.command(
+                proposal,
+                admitted,
+                expected_revision=decision.package.expected_revision,
+                canonical_delta={"action_id": action_id, "status": "EXECUTED"},
+                evidence_refs=evidence_refs,
+                claim_source_bindings=claim_source_bindings,
+            )
+            self._require_bound(command, action_command, decision)
+            attempt = self._fence(
+                proposal, decision, action_command, signed_lease, action_type, delegation, admitted, approval_set
+            )
+        except GovernedActionError:
+            raise
+        except Exception as error:
+            # Every refusal before the send is a GovernedActionError and nothing is sent, as on
+            # commit_canonical.
+            raise GovernedActionError(
+                "INVALIDATED", "the action path could not be evaluated", cause_code="CONTROL_PLANE_UNAVAILABLE"
+            ) from error
 
         # Canonical commit (ACT-T30): C3 admits the command only on the signed governed path and
-        # commits state and outbox atomically.
-        commit_receipt = self._commit_port.commit(command)
+        # commits state and outbox atomically; the receipt confirms the action only when it is
+        # bound to the command sent, anything else after the send is an ambiguous outcome.
+        try:
+            commit_receipt = self._commit_port.commit(command)
+            if not isinstance(commit_receipt, CommitReceipt):
+                raise TypeError("C3 returned no CommitReceipt")
+            commit_receipt.verify(command)
+        except Exception as error:
+            unrecorded = self._unknown(action_command.command_id, error, at=instant)
+            if unrecorded is not None:
+                raise unrecorded from error
+            raise
         result = self._execution_result(action_id, attempt, commit_receipt)
         transition = self._fsm.transition("ACT-T30")
         if self._fsm.current_state(action_id) == transition.source:

@@ -79,6 +79,13 @@ def _require_aware(instant: object, *, field: str) -> datetime:
     return instant
 
 
+def _stop_epoch(value: object) -> int:
+    # The stop epoch is read without conversion: a boolean, text or negative answer is no epoch.
+    if type(value) is not int or value < 0:
+        raise TypeError("the stop epoch is answered as a non-negative integer")
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class SignedCapabilityLease:
     """The closed CapabilityLease record with the Ed25519 signature of the capability authority
@@ -247,7 +254,11 @@ class LeaseValidator:
             raw = base64.b64decode(signed.signature, validate=True)
         except (binascii.Error, ValueError) as error:
             raise DispatchError("LEASE_INVALID", "the lease signature is malformed") from error
-        if not ed25519_verify(public_key, lease_signed_bytes(closed), raw):
+        try:
+            verified = ed25519_verify(public_key, lease_signed_bytes(closed), raw)
+        except Exception as error:
+            raise DispatchError("LEASE_INVALID", "the lease is not a canonical signed record") from error
+        if not verified:
             raise DispatchError("LEASE_INVALID", "the lease signature is not valid")
         return closed
 
@@ -309,11 +320,14 @@ class InMemoryDispatchConditions:
 
     def emergency_stop_active(self) -> bool:
         self._read()
-        return bool(self._stop.emergency_stop_active())
+        active = self._stop.emergency_stop_active()
+        if type(active) is not bool:
+            raise TypeError("the emergency stop is answered as a boolean")
+        return active
 
     def current_stop_epoch(self) -> int:
         self._read()
-        return int(self._stop.current_stop_epoch())
+        return _stop_epoch(self._stop.current_stop_epoch())
 
     def audit_append_available(self) -> bool:
         self._read()
@@ -390,7 +404,11 @@ class _DispatchTransaction:
             return LeaseStateDecision(LeaseStateOutcome.EXPIRED, now)
         if lease_id in ledger._revoked:
             return LeaseStateDecision(LeaseStateOutcome.REVOKED, now)
-        if stop_epoch != ledger._stop_epoch_reader():
+        try:
+            current_epoch = _stop_epoch(ledger._stop_epoch_reader())
+        except Exception:
+            return LeaseStateDecision(LeaseStateOutcome.CONTROL_PLANE_UNAVAILABLE, None)
+        if stop_epoch != current_epoch:
             return LeaseStateDecision(LeaseStateOutcome.STOP_EPOCH_MISMATCH, now)
         if action_instance_id != self.action_instance_id or fencing_token != self.fencing_token:
             return LeaseStateDecision(LeaseStateOutcome.FENCING_TOKEN_STALE, now)
@@ -594,7 +612,9 @@ class GovernedEmissionFence:
             if not isinstance(current, CurrentValues):
                 raise TypeError("the observation is not a CurrentValues")
             stop_active = conditions.emergency_stop_active()
-            stop_epoch = conditions.current_stop_epoch()
+            if type(stop_active) is not bool:
+                raise TypeError("the emergency stop is answered as a boolean")
+            stop_epoch = _stop_epoch(conditions.current_stop_epoch())
             audit = conditions.audit_append_available()
             closed = conditions.circuit_closed(package.adapter_binding_digest)
             conformant = conditions.adapter_conformant(package.adapter_binding_digest)

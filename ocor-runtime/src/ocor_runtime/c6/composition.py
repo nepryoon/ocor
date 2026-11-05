@@ -47,6 +47,7 @@ from .safety import BreakGlassAlertSink, BreakGlassController, EmergencyStopCont
 TRANSITION_EVENT = "C6_ACTION_TRANSITION"
 BREAK_GLASS_EVENT = "C6_BREAK_GLASS"
 C6_ACTOR = "urn:ocor:component:c6"
+_TRANSITION_FIELDS = frozenset({"source", "destination", "durable_effect"})
 
 
 class EmergencyStopFence:
@@ -87,7 +88,11 @@ class AuditedTransitionTrace:
     def persist_effect(self, record: PersistedEffect) -> None:
         if not isinstance(record, PersistedEffect):
             raise TypeError("the trace persists PersistedEffect records only")
-        context = {key: str(value) for key, value in record.context.items()}
+        context = dict(record.context)
+        if any(not isinstance(key, str) or not isinstance(value, str) for key, value in context.items()):
+            raise ValueError("the trace context is text")
+        if not _TRANSITION_FIELDS.isdisjoint(context):
+            raise ValueError("the trace context never overrides the source, destination or durable effect")
         self._audit.append(
             AuditEvent(
                 event_type=TRANSITION_EVENT,
