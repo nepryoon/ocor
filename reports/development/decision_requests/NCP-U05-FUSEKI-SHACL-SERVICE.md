@@ -78,3 +78,16 @@ con il numero minimo di riqualifiche, tutte di sola regressione.
 - Nessun test, limite, soglia, gate, workflow, guard, contratto, schema o registro normativo cambia con una
   qualsiasi delle opzioni 1 e 2. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
   PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-05
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05)`, **opzione 1** (configurazione Fuseki montata dallo stack). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `11c19d1ee4508c7be3ce1a949157c45856ed4494`, sha256 `48ece35469cb56177faee15d2efce2b8b9c45c20c115b428355bf6c0a1e7a537` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U05-FUSEKI-SHACL-SERVICE` (branch `governed/decision-request-ncp-u05-fuseki-shacl-service`, commit `11c19d1ee4508c7be3ce1a949157c45856ed4494`, file `reports/development/decision_requests/NCP-U05-FUSEKI-SHACL-SERVICE.md`, sha256 `48ece35469cb56177faee15d2efce2b8b9c45c20c115b428355bf6c0a1e7a537`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
