@@ -5,7 +5,7 @@ verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-
 `NCR-C4-003`, `NCR-C4-004`, `NCR-C4-005` e `NCR-C2-013` del registro (le ultime due registrate dall'opzione B1 di
 `NCP-U05-ITERATION-LIMIT (2026-11-05)`).
 
-Stato: `CANDIDATE_IN_PROGRESS`. La proiezione TypeDB dichiara la release che proietta, deduplica per store, branch
+Stato: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION`. La proiezione TypeDB dichiara la release che proietta, deduplica per store, branch
 e `commitId`, sostituisce il watermark nella transazione di proiezione e lo conferma in un ledger durevole su
 PostgreSQL fuori dallo store; ogni risposta riporta branch, commit servito, watermark, release e staleness misurata,
 e una proiezione irraggiungibile risponde `PROJECTION_NOT_READY` dal ledger. Ogni transazione TypeDB si chiude su
@@ -32,9 +32,20 @@ dell'albero sintattico, scelte di prodotto, ambiguità risolte in modo fail-clos
 dell'inventario dei consumer e la classificazione delle riqualifiche: tutte di sola regressione (`0037`, `0038`,
 `0039` senza requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`; `0034` per
 `ocor-runtime/src/ocor_runtime/c2/gateway.py`; `0073`, `0074`, `0075`, `0077`, `0078`, `0079` per
-`deploy/bootstrap/compose.yaml`; `0005`, `0050`, `0082`). Seguono PRE-CAMPAIGN-GATE, revisione preventiva,
-campagna con le riqualifiche e verifica indipendente, da un fornitore diverso da Anthropic, entro le iterazioni
-concesse dall'opzione A1 di `NCP-U05-ITERATION-LIMIT`.
+`deploy/bootstrap/compose.yaml`; `0005`, `0050`, `0082`). L'autocontrollo di robustezza degli input di `NCP-THROUGHPUT-RULES (2026-11-05)` punto 1
+(tabella per adapter nel record; RED `d5f88d6`, `3635c4b`, GREEN `b709e15`) precede la revisione preventiva
+`OCOR-DEV-REM-0052-4ecec3344165-pre` (Google): `NO_BLOCKING_FINDINGS`, nessun finding, sull'head di codice `4ecec33`.
+PRE-CAMPAIGN-GATE all'head di codice: 46/47, con la sola deriva attesa dei 13 task. Campagna all'head di codice:
+qualificazioni dei servizi e fault injection sullo stack dal profilo modificato, moduli a seam sullo stack appena
+resettato (197), suite di contratto dei servizi (50), tre esecuzioni del modulo d'unità con i test della policy dei
+linguaggi, del registro, di REM-0046 e del validatore (341 casi ciascuna), moduli riqualificati `0034`/`0037`/`0038`/`0039`
+(36), altri consumer (683, casi live di REM-0031 inclusi), regressione `0005`/`0050`/`0079`/`0082` (231),
+portfolio `reports/tests` (555), suite completa in due corsie 4339/4339 senza skip in 2619,9 s del tetto di 5400 s,
+con alimentazione di rete. Il primo tentativo della suite in due corsie è diagnostico (`QUALIFICATION-CAMPAIGN-INFRA-RERUN`): corsa
+dell'osservatore dello smontaggio del nodo kind (`OWNED_DESTROY_EVENT_MISSING`) dopo la sua rimozione voluta
+da parte del test, nessuna asserzione fallita; i suoi conteggi non entrano nei totali. Tredici riqualifiche
+`.requalified-rem0052` di sola regressione, nella classe non qualificante. Verifica indipendente richiesta a un
+fornitore diverso da Anthropic e Google.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, slice legacy, guard o workflow è modificato; il documento `OCOR_LANGUAGE_POLICY.md` resta invariato. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
