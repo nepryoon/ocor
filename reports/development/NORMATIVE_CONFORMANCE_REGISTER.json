@@ -6302,6 +6302,137 @@
         "command": "python3 -c \"import json,re; rows=json.load(open('reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json'))['rows']; print(sum(1 for r in rows if not re.fullmatch(r'P[0-3]', str(r.get('priority','')).strip())))\"",
         "outcome": "prints 115: 115 of the 285 matrix rows have a priority outside P0-P3; the FR-022 row has priority 'DEC-060' and release 'Context Pack \u00a76.2; `FR-039' (matrix .md line 46), while the Register v1.1 line 112 gives P0. CONFIRMED at 12f6088592ce98393b8df119deeb28f626ef46a8 (state sync after the OCOR-DEV-REM-0045 integration, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 12)."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+          "lines": "97-103",
+          "note": "_typed maps every failure of the exchange, an unreachable TypeDB included, to CONTROL_PLANE_UNAVAILABLE",
+          "path": "ocor-runtime/src/ocor_runtime/c4/object_projection.py"
+        }
+      ],
+      "component": "C4",
+      "depends_on": [],
+      "id": "NCR-C4-005",
+      "norm_refs": [
+        {
+          "lines": "1364",
+          "note": "ADD v1.3 section 3.3: a Problem with PROJECTION_NOT_READY carries the served branch, commit, watermark and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3406",
+          "note": "ADD v1.3 failure modes, hub data: projection down gives PROJECTION_NOT_READY",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "note": "NFR-024: every state-dependent response reports branch, served commit, watermark, release and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "note": "NFR-077: branch divergence and projection lag give an explicit state",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
+      "provenance": "consumer inventory of OCOR-DEV-REM-0052 (NCP-U05), registered by PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1",
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "P0 PoC requirements NFR-024 and NFR-077 (Register v1.1 lines 180 and 403): a version-sensitive error without its served context",
+      "statement": "With TypeDB unreachable the object projection read by the six C2 operations answers CONTROL_PLANE_UNAVAILABLE instead of PROJECTION_NOT_READY (projection down); a test of OCOR-DEV-REM-0049 pins the old outcome.",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+          "lines": "1421-1425",
+          "note": "test_object_projection_unreachable_is_typed asserts CONTROL_PLANE_UNAVAILABLE (line 1425)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python -c \"import ocor_runtime.c4.typedb_adapter as t; t.TYPEDB_URL='http://127.0.0.1:1'; from ocor_runtime.c4.object_projection import TypeDBObjectProjection; from ocor_runtime.c2.ports import C2Error\ntry: TypeDBObjectProjection().get(('urn:ocor:vessel:1',))\nexcept C2Error as e: print('C4-5 unreachable object projection reason:', e.reason_code)\"",
+        "outcome": "prints 'C4-5 unreachable object projection reason: CONTROL_PLANE_UNAVAILABLE'. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+          "lines": "379-380",
+          "note": "_guarded: every exception outside C2Error and SecurityControlError becomes CONTROL_PLANE_UNAVAILABLE",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-013",
+      "norm_refs": [
+        {
+          "lines": "1364",
+          "note": "ADD v1.3 section 3.3: a Problem with PROJECTION_NOT_READY carries the served branch, commit, watermark and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3406",
+          "note": "ADD v1.3 failure modes, hub data: projection down gives PROJECTION_NOT_READY",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "note": "NFR-024: every state-dependent response reports branch, served commit, watermark, release and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "note": "NFR-077: branch divergence and projection lag give an explicit state",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
+      "provenance": "consumer inventory of OCOR-DEV-REM-0052 (NCP-U05), registered by PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1",
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "P0 PoC requirements NFR-024 and NFR-077 (Register v1.1 lines 180 and 403): a version-sensitive error without its served context",
+      "statement": "The catch-all of the Gateway turns the typed TypeDBUnavailableError of the watermark port (reason PROJECTION_NOT_READY, with the watermark confirmed in the durable ledger) into CONTROL_PLANE_UNAVAILABLE without a served context, instead of building PROJECTION_NOT_READY with the served context of the confirmed watermark.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c2/gateway.py').read(); print('C2-13 gateway translates TypeDBUnavailableError:', 'TypeDBUnavailableError' in s)\"",
+        "outcome": "prints 'C2-13 gateway translates TypeDBUnavailableError: False'; lines 379-380 build CONTROL_PLANE_UNAVAILABLE for any other exception. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4."
+      }
     }
   ],
   "g6_g7_proposals": {
@@ -18507,11 +18638,65 @@
           "requirement_ids": [
             "FR-057"
           ]
+        },
+        {
+          "criterion": "Per PO decision NCP-U05-ITERATION-LIMIT (2026-11-05) option B1: the object projection unreachable answers PROJECTION_NOT_READY; the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364, :3406); malformed answers stay CONTROL_PLANE_UNAVAILABLE, as the failure of the marking backend.",
+          "entry": "NCR-C4-005",
+          "norm_refs": [
+            {
+              "lines": "1364",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3406",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "180",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "403",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "NFR-024",
+            "NFR-077"
+          ]
+        },
+        {
+          "criterion": "Per PO decision NCP-U05-ITERATION-LIMIT (2026-11-05) option B1: the object projection unreachable answers PROJECTION_NOT_READY; the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364, :3406); malformed answers stay CONTROL_PLANE_UNAVAILABLE, as the failure of the marking backend.",
+          "entry": "NCR-C2-013",
+          "norm_refs": [
+            {
+              "lines": "1364",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3406",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "180",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "403",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "NFR-024",
+            "NFR-077"
+          ]
         }
       ],
       "closed_scope_note": "only the entries in resolves; entries of other units, DECISION_REQUIRED entries and the legacy slice are out of scope",
       "code_paths": [
+        "ocor-runtime/src/ocor_runtime/c2/gateway.py",
         "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py",
+        "ocor-runtime/src/ocor_runtime/c4/object_projection.py",
         "ocor-runtime/src/ocor_runtime/c4/rebuild.py",
         "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
       ],
@@ -18599,6 +18784,20 @@
           "fails_on_current_code_because": "the verification outcome of the entry",
           "reproduction": "grep -rn 'UNSUPPORTED_CAPABILITY' --include=*.py ocor-runtime/src/ocor_runtime/c2 ocor-runtime/src/ocor_runtime/c4 ; sed -n '241,251p' ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c4_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C4-005",
+          "fails_on_current_code_because": "prints 'C4-5 unreachable object projection reason: CONTROL_PLANE_UNAVAILABLE'. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4.",
+          "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python -c \"import ocor_runtime.c4.typedb_adapter as t; t.TYPEDB_URL='http://127.0.0.1:1'; from ocor_runtime.c4.object_projection import TypeDBObjectProjection; from ocor_runtime.c2.ports import C2Error\ntry: TypeDBObjectProjection().get(('urn:ocor:vessel:1',))\nexcept C2Error as e: print('C4-5 unreachable object projection reason:', e.reason_code)\"",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C2-013",
+          "fails_on_current_code_because": "prints 'C2-13 gateway translates TypeDBUnavailableError: False'; lines 379-380 build CONTROL_PLANE_UNAVAILABLE for any other exception. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4.",
+          "reproduction": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c2/gateway.py').read(); print('C2-13 gateway translates TypeDBUnavailableError:', 'TypeDBUnavailableError' in s)\"",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_conforms"
         }
       ],
       "requalifications": {
@@ -18635,7 +18834,9 @@
         "NCR-C4-001",
         "NCR-C4-002",
         "NCR-C4-003",
-        "NCR-C4-004"
+        "NCR-C4-004",
+        "NCR-C4-005",
+        "NCR-C2-013"
       ],
       "scope": "C4 projections: monotonic per-branch watermark with durable deduplication, real served release/staleness, durable drift quarantine enforced on the read path, rebuild from the canonical store with signed checkpoint, Jena watermark/SHACL/canonical marking, typed adapter errors",
       "status": "PROPOSED"
