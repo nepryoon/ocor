@@ -56,6 +56,13 @@ NCR-C6-001 to NCR-C6-009 and NCR-C6-014.
   sent by the engine after G-CONTRACT, G-AUTHORITY, the Human Gate, G-APPROVAL, G-DECISION and
   the EMISSION-FENCE, with the signed C6 records of the promotion action bound to the recorded
   proposal and to the gate command.
+* NCR-C6-014 -- LLD v1.1 :169-171 (the C6 packages and the distinct records composing the action
+  path), ADD v1.3 :3318-3331 (risk, policy, authority, Human Gate, ApprovalSet, Decision, recheck
+  and dispatch in sequence), Register FR-008 :59 (the trace holds every state in canonical order)
+  and FR-077 :209 (every mandatory record in a valid order). A composition root under
+  ocor-runtime/src builds the engine, the FSM with its audited trace, the Human Gate, the dispatch
+  ledger and conditions, the audited reconciler, the emergency stop and the break-glass; the engine
+  drives the FSM at every step, so a runtime action traverses the C6 states in canonical order.
 
 The FSM and the gate cases are in-process: the FSM is a pure component whose durable effect sink
 and state store are ports. The engine cases commit through the real C3 on PostgreSQL
@@ -2768,3 +2775,486 @@ def test_a_consumer_without_the_c6_engine_never_reaches_c3(backends: Any) -> Non
         assert (error.reason_code, error.detail_code) == ("CONTROL_PLANE_UNAVAILABLE", "C6_CONTROL_UNAVAILABLE")
         assert ordered.calls == [] and _canonical(x) is None
         assert x.audit.actions()[-1] == "commitMemoryPromotion.denied"
+
+
+# ---------------------------------------------------------------------------------------
+# NCR-C6-014: the composition root of the C6 action path
+# ---------------------------------------------------------------------------------------
+
+COMPOSITION_SCHEMA = "ocor_audit_rem0053_composition"
+COMPOSITION_AUDIT_KEYID = "rem0053-composition-audit"
+OFFICER = "urn:ocor:human:security-duty-officer"
+OWNER = "urn:ocor:human:maritime-domain-owner"
+REQUESTER = "urn:ocor:human:break-glass-requester"
+# FR-008 :59: the record each transition of the canonical path persists, in canonical order.
+CANONICAL_RECORDS = (
+    "ActionProposal",
+    "CapabilityLease",
+    "GateDisposition",
+    "ApprovalSet",
+    "GatePackage",
+    "Decision",
+    "ActionIntent",
+    "ActionCommand",
+    "DeliveryAttempt",
+    "ExecutionResult",
+    "ExecutionResult",
+    "OutcomeAssessment",
+)
+
+
+class FlakyAudit:
+    """The audit port of the suite with a switch that makes every append fail."""
+
+    def __init__(self, log: Any) -> None:
+        self.log = log
+        self.failing = False
+
+    def append(self, event: Any) -> Any:
+        if self.failing:
+            from ocor_runtime.audit import AuditUnavailable
+
+            raise AuditUnavailable("AUDIT_UNAVAILABLE", "the audit store is unreachable")
+        return self.log.append(event)
+
+
+class CompositionSuite:
+    """The C6 action path as the composition root builds it: the engine, the FSM with its
+    audited trace, the Human Gate, the dispatch ledger and conditions, the audited reconciler,
+    the emergency stop and the break-glass, on the real C3 and the signed audit chain on
+    PostgreSQL. The C3 admission and the canonical path fence on the composed emergency stop."""
+
+    def __init__(self) -> None:
+        import os
+
+        import test_ocor_dev_rem_0050 as governed_path
+        from c6_action_fixture import DOMAIN as FIXTURE_DOMAIN
+        from c6_action_fixture import NATIONAL as FIXTURE_NATIONAL
+        from c6_action_fixture import ActionWorld, seeded_key
+        from ocor_runtime import audit
+        from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
+        from ocor_runtime.c3.service import PostgresC3Service
+        from ocor_runtime.c6 import dispatch
+        from ocor_runtime.c7_emission import EmissionFence
+
+        dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+        if not dsn:
+            pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory: the composed path commits through the real C3")
+        self.composition = _mod("composition")
+        self.engine_module = _mod("engine")
+        self.audit_module = audit
+        self.signer = audit.AuditSigner(key=_key(COMPOSITION_AUDIT_KEYID), keyid=COMPOSITION_AUDIT_KEYID)
+        self.log = audit.PostgresAuditLog(dsn, schema=COMPOSITION_SCHEMA, signer=self.signer)
+        self.log.drop()
+        self.log.initialize()
+        self.audit = FlakyAudit(self.log)
+        self.world = ActionWorld(now=ENGINE_NOW, release=governed_path.RELEASE)
+        self.identities = IdentityRegistry(
+            IdentityRecord(
+                canonical_id=principal,
+                attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": role},
+            )
+            for principal, role in (
+                (FIXTURE_DOMAIN, "DOMAIN_APPROVER"),
+                (FIXTURE_NATIONAL, "NATIONAL_APPROVER"),
+                (OFFICER, "SECURITY_DUTY_OFFICER"),
+                (OWNER, "DOMAIN_OWNER:maritime"),
+                (REQUESTER, "OPERATOR"),
+            )
+        )
+        self.delegations = dispatch.InMemoryDelegationRegistry()
+        self.alerts: list[Any] = []
+        self.root = self.composition.C6ActionPathRoot(
+            clock=self.world.clock,
+            releases=self.world.release,
+            identities=self.identities,
+            catalog=self.world.catalog,
+            publishers=self.world.publishers,
+            approvers=self.world.approvers,
+            authorities=self.world.authorities,
+            lease_issuers=self.world.lease_issuers,
+            delegations=self.delegations,
+            audit=self.audit,
+            alerts=self,
+            gate_signing_key=seeded_key("c6-human-gate"),
+            gate_id="urn:ocor:component:c6:human-gate",
+            gate_keyid="gate-k1",
+        )
+        governed = governed_path.GovernedC3(
+            release=governed_path.RELEASE,
+            preconditions=("urn:ocor:precondition:governed-action",),
+            invariants=("urn:ocor:invariant:governed-action",),
+        )
+        # C3 admits the command on the composed stop epoch and emergency stop.
+        governed.fence = self.root.mutation_fence
+        self.governed = governed
+        self.context = governed.governed_context(purpose="rem0053-composition")
+        self.delegations.register(self.context.effective_principal_id, self.world.delegation_ref)
+        self.c3 = PostgresC3Service(dsn, admission=governed.admission())
+        self.c3.initialize()
+        self.c3.reset()
+        self.store = self.engine_module.C3CanonicalOutboxView(
+            self.c3, tenant_id=self.context.tenant_id, aggregate_type="GovernedActionTarget"
+        )
+        self.path = governed.engine_path(aggregate_type="GovernedActionTarget", governed_context=self.context)
+        self.engine = self.root.engine(
+            commit_port=self.c3,
+            relay=EmissionFence(store=self.store),  # type: ignore[arg-type]
+            canonical_path=self.path,
+            emission_outbox=self.store,
+        )
+        # The world signs the leases and the Decisions on the composed ledger and stop epoch.
+        self.world.dispatch_module = dispatch
+        self.world.context = self.context
+        self.world.conditions = self.root.conditions
+        self.world.ledger = self.root.ledger
+        self.action_type = self.world.action_type(
+            "urn:ocor:action-type:rem0053:composed", risk="R3_HIGH_IMPACT", capability="act:launch"
+        )
+        self.sink = EffectSink()
+
+    def alert(self, event: Any) -> None:
+        self.alerts.append(dict(event))
+
+    def proposal(self, target: str = TARGET) -> Any:
+        return self.world.proposal(
+            self.action_type,
+            action_id=f"urn:ocor:action:rem0053:composed:{uuid.uuid4()}",
+            proposer=OPERATOR,
+            target=target,
+            governed_context_digest=self.context.digest(),
+        )
+
+    def decided(self, proposal: Any, *, accepted: bool = True) -> tuple[Any, Any]:
+        approval_set = self.world.approval_set(proposal)
+        return approval_set, self.world.decide(proposal, approval_set, accepted=accepted)
+
+    def execute(self, proposal: Any, *, approval: Any, decision: Any, lease: Any = None) -> Any:
+        return self.engine.execute(
+            proposal,
+            lease=lease if lease is not None else self.world.lease(proposal, decision),
+            approval=approval,
+            decision=decision,
+            sink=self.sink,
+            at=ENGINE_NOW,
+        )
+
+    def refusal(self, proposal: Any, *, approval: Any, decision: Any, lease: Any = None) -> tuple[str, str | None]:
+        with pytest.raises(self.engine_module.GovernedActionError) as excinfo:
+            self.execute(proposal, approval=approval, decision=decision, lease=lease)
+        return excinfo.value.reason_code, excinfo.value.cause_code
+
+    def events(self, event_type: str) -> list[dict[str, Any]]:
+        return [dict(item.record) for item in self.log.records() if item.record["event_type"] == event_type]
+
+    def trace(self, proposal: Any) -> list[dict[str, Any]]:
+        return [
+            item
+            for item in self.events(self.composition.TRANSITION_EVENT)
+            if item["correlation_id"] == proposal.action_instance_id
+        ]
+
+    def transitions(self, proposal: Any) -> list[str]:
+        return [item["reason_code"] for item in self.trace(proposal)]
+
+    def chain(self) -> int:
+        return int(self.audit_module.verify_audit_chain(self.log.records(), {COMPOSITION_AUDIT_KEYID: self.signer.public_key}))
+
+    def untouched(self, target: str = TARGET) -> bool:
+        return self.sink.calls == [] and self.store.get(target) is None
+
+
+def _assess(suite: CompositionSuite, proposal: Any) -> Any:
+    suite.world.clock.advance(timedelta(seconds=1))
+    return suite.engine.assess_outcome(
+        proposal.action_instance_id,
+        assessment_id=f"urn:ocor:outcome-assessment:{uuid.uuid4()}",
+        observation_refs=("urn:ocor:observation:rem0053:site-1",),
+        evidence_refs=("urn:ocor:evidence:rem0053:site-1-observed",),
+        assessment="EFFECT_ACHIEVED",
+    )
+
+
+def test_ncr_c6_014_conforms() -> None:
+    """LLD v1.1 :169-171, ADD v1.3 :3318-3331, Register FR-008 :59 and FR-077 :209: a composition
+    root under ocor-runtime/src builds the C6 action path, and a runtime action traverses the C6
+    states in canonical order with every mandatory record on the signed audit trace."""
+    composition = _mod("composition")
+    engine_module = _mod("engine")
+    assert {"fsm", "trace"} <= set(inspect.signature(engine_module.GovernedActionEngine).parameters)
+    source = inspect.getsource(composition)
+    for constructor in (
+        "GovernedActionEngine(",
+        "GovernedActionFSM(",
+        "ContractGate(",
+        "ApprovalGate(",
+        "DecisionGate(",
+        "LeaseValidator(",
+        "GovernedEmissionFence(",
+        "EmergencyStopController(",
+        "OutcomeReconciler(",
+        "BreakGlassController(",
+    ):
+        assert constructor in source, constructor
+
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    outcome = suite.execute(proposal, approval=approval_set, decision=decision)
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:-1])
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "OUTCOME_PENDING"
+    assessment = _assess(suite, proposal)
+    assert suite.transitions(proposal) == list(CANONICAL_PATH)
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "OUTCOME_ASSESSED"
+
+    trace = suite.trace(proposal)
+    assert trace[0]["detail"]["source"] == "[*]"
+    for previous, following in zip(trace, trace[1:], strict=False):
+        assert previous["detail"]["destination"] == following["detail"]["source"]
+    assert [item["detail"]["record"] for item in trace] == list(CANONICAL_RECORDS)
+    digests = {item["reason_code"]: item["detail"]["digest"] for item in trace}
+    result = outcome.execution_result
+    assert result.command_digest == outcome.delivery_attempt.command_digest
+    assert assessment.execution_result_digest == result.digest()
+    assert digests["ACT-T01"] == proposal.digest()
+    assert digests["ACT-T08"] == approval_set.digest()
+    assert digests["ACT-T26"] == decision.package_digest
+    assert digests["ACT-T10b"] == decision.decision.digest()
+    assert digests["ACT-T29"] == outcome.delivery_attempt.digest()
+    assert digests["ACT-T30"] == result.digest()
+    assert digests["ACT-T22"] == assessment.digest()
+    assert suite.chain() == len(suite.log.records())
+    assert len(suite.sink.calls) == 1
+
+
+def test_the_engine_is_never_composed_without_its_fsm_and_trace() -> None:
+    engine_module = _mod("engine")
+    parameters = inspect.signature(engine_module.GovernedActionEngine).parameters
+    for name in ("fsm", "trace"):
+        assert parameters[name].default is inspect.Parameter.empty
+    suite = CompositionSuite()
+    components: dict[str, Any] = {
+        "contract": suite.root.contract,
+        "approvals": suite.root.approval_gate,
+        "decisions": suite.root.decision_gate,
+        "delegations": suite.delegations,
+        "emission_fence": suite.root.emission_fence,
+        "commit_port": suite.c3,
+        "relay": suite.engine._relay,  # noqa: SLF001
+        "canonical_path": suite.path,
+        "reconciler": suite.root.reconciler,
+        "fsm": suite.root.fsm,
+        "trace": suite.root.trace,
+    }
+    for name, value in (("fsm", object()), ("trace", object())):
+        with pytest.raises(TypeError):
+            engine_module.GovernedActionEngine(**{**components, name: value})
+
+
+def test_the_root_composes_only_a_canonical_path_fenced_on_its_emergency_stop() -> None:
+    import test_ocor_dev_rem_0050 as governed_path
+
+    suite = CompositionSuite()
+    other = governed_path.GovernedC3(
+        release=governed_path.RELEASE,
+        preconditions=("urn:ocor:precondition:governed-action",),
+        invariants=("urn:ocor:invariant:governed-action",),
+    )
+    path = other.engine_path(aggregate_type="GovernedActionTarget", governed_context=suite.context)
+    with pytest.raises(ValueError, match="emergency stop"):
+        suite.root.engine(commit_port=suite.c3, relay=suite.engine._relay, canonical_path=path)  # noqa: SLF001
+
+
+def test_the_composed_emergency_stop_cancels_the_action_before_the_send() -> None:
+    """ADD v1.3 :2905 and LLD v1.1 :307 (ACT-T23 precedence), Register NFR-036: after the stop no
+    command leaves C6, the action is CANCELLED and C3 refuses on the same stop epoch."""
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    lease = suite.world.lease(proposal, decision)
+    suite.root.stop.activate(reason="containment drill", at=ENGINE_NOW)
+    assert suite.root.mutation_fence.emergency_stop_active() is True
+    assert suite.governed.fence is suite.root.mutation_fence
+    assert suite.refusal(proposal, approval=approval_set, decision=decision, lease=lease) == (
+        "INVALIDATED",
+        "EMERGENCY_STOP_ACTIVE",
+    )
+    assert suite.transitions(proposal) == [*CANONICAL_PATH[:7], "ACT-T23a"]
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "CANCELLED"
+    assert suite.untouched()
+    assert suite.root.ledger.consumed(lease.lease.lease_id) is None
+
+
+def test_the_composed_break_glass_never_overrides_the_composed_stop_and_is_audited() -> None:
+    suite = CompositionSuite()
+    grant = suite.root.break_glass.grant(
+        grant_id=f"urn:ocor:break-glass:{uuid.uuid4()}",
+        requester=REQUESTER,
+        reason="incident containment",
+        incident_ref="urn:ocor:incident:rem0053",
+        scope="urn:ocor:scope:maritime",
+        domain="maritime",
+        capabilities=frozenset({"act:launch"}),
+        approvers=(OFFICER, OWNER),
+        ttl=timedelta(minutes=10),
+    )
+    suite.root.stop.activate(reason="containment drill", at=ENGINE_NOW)
+    with pytest.raises(_mod("safety").SafetyError) as refused:
+        suite.root.break_glass.authorize(grant, capability="act:launch", review_ref="urn:ocor:review:rem0053")
+    assert refused.value.reason_code == "BREAK_GLASS_STOP_ACTIVE"
+    events = [item["reason_code"] for item in suite.events(suite.composition.BREAK_GLASS_EVENT)]
+    assert events == ["BREAK_GLASS_GRANTED", "BREAK_GLASS_USE_DENIED"]
+    assert [item["event"] for item in suite.alerts] == ["BREAK_GLASS_GRANTED"]
+    assert suite.chain() == len(suite.log.records())
+
+
+def test_a_denied_authority_ends_the_action_denied_and_it_is_never_resumed() -> None:
+    """LLD v1.1 ACT-T05: deny at the control check is fail-closed and final."""
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    foreign = suite.world.lease(proposal, decision, capability_id="act:other")
+    assert suite.refusal(proposal, approval=approval_set, decision=decision, lease=foreign) == (
+        "AUTHORITY_DENIED",
+        "LEASE_CONTEXT_MISMATCH",
+    )
+    assert suite.transitions(proposal) == ["ACT-T01", "ACT-T04", "ACT-T05"]
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "DENIED"
+    reason, cause = suite.refusal(proposal, approval=approval_set, decision=decision)
+    assert (reason, cause) == ("INVALID_SOURCE_STATE", "DENIED")
+    assert suite.transitions(proposal) == ["ACT-T01", "ACT-T04", "ACT-T05"]
+    assert suite.untouched()
+
+
+def test_a_non_risk_bearing_action_is_denied_at_the_control_check() -> None:
+    suite = CompositionSuite()
+    low = suite.world.action_type("urn:ocor:action-type:rem0053:composed-low", risk="R1_LOW", capability="act:launch")
+    proposal = suite.world.proposal(
+        low,
+        action_id=f"urn:ocor:action:rem0053:composed:{uuid.uuid4()}",
+        proposer=OPERATOR,
+        target=TARGET,
+        governed_context_digest=suite.context.digest(),
+    )
+    assert suite.refusal(proposal, approval=None, decision=None)[0] == "NO_MUTATION_ADMITTED"
+    assert suite.transitions(proposal) == ["ACT-T01", "ACT-T04", "ACT-T05"]
+    assert suite.untouched()
+
+
+def test_a_missing_approval_leaves_the_action_pending_and_the_approval_resumes_it() -> None:
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    assert suite.refusal(proposal, approval=None, decision=decision)[0] == "APPROVAL_MISSING"
+    assert suite.transitions(proposal) == ["ACT-T01", "ACT-T04", "ACT-T06"]
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "APPROVAL_PENDING"
+    suite.execute(proposal, approval=approval_set, decision=decision)
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:-1])
+
+
+def test_a_rejected_decision_ends_the_action_decision_rejected() -> None:
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal, accepted=False)
+    assert suite.refusal(proposal, approval=approval_set, decision=decision)[0] == "DECISION_REJECTED"
+    assert suite.transitions(proposal) == [*CANONICAL_PATH[:5], "ACT-T10a"]
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "DECISION_REJECTED"
+    assert suite.untouched()
+
+
+def test_material_drift_invalidates_the_action_before_the_send() -> None:
+    """LLD v1.1 ACT-T13: drift at the pre-dispatch check invalidates; no command is sent."""
+    suite = CompositionSuite()
+    first = suite.proposal()
+    second = suite.proposal()
+    first_set, first_decision = suite.decided(first)
+    second_set, second_decision = suite.decided(second)
+    suite.execute(first, approval=first_set, decision=first_decision)
+    reason, cause = suite.refusal(second, approval=second_set, decision=second_decision)
+    assert reason == "INVALIDATED" and cause is not None and cause.startswith("STALE_")
+    assert suite.transitions(second) == [*CANONICAL_PATH[:7], "ACT-T13"]
+    assert suite.root.fsm.current_state(second.action_instance_id) == "INVALIDATED"
+    assert len(suite.sink.calls) == 1
+
+
+def test_a_transient_dispatch_condition_keeps_the_action_at_the_pre_dispatch_check() -> None:
+    """A closed circuit is a condition of the emission attempt, not a drift of the decided
+    action: the attempt is refused, nothing is sent and a later attempt with a new lease
+    completes the canonical path without repeating a transition."""
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    suite.root.conditions.open_circuits.add(suite.engine_module.C3_ADAPTER_BINDING_DIGEST)
+    assert suite.refusal(proposal, approval=approval_set, decision=decision) == ("INVALIDATED", "CIRCUIT_OPEN")
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:7])
+    assert suite.root.fsm.current_state(proposal.action_instance_id) == "PRE_DISPATCH_CHECK"
+    assert suite.untouched()
+    suite.root.conditions.open_circuits.clear()
+    suite.execute(proposal, approval=approval_set, decision=decision)
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:-1])
+
+
+def test_a_confirmed_action_is_not_traced_again() -> None:
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    first = suite.execute(proposal, approval=approval_set, decision=decision)
+    again = suite.execute(proposal, approval=approval_set, decision=decision)
+    assert again == first
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:-1])
+    _assess(suite, proposal)
+    with pytest.raises(suite.engine_module.GovernedActionError) as twice:
+        _assess(suite, proposal)
+    assert (twice.value.reason_code, twice.value.cause_code) == ("INVALID_SOURCE_STATE", "OUTCOME_ASSESSED")
+    assert suite.transitions(proposal) == list(CANONICAL_PATH)
+
+
+def test_an_outcome_is_assessed_only_for_a_confirmed_action_with_new_evidence() -> None:
+    """ADD v1.3 :156: the OutcomeAssessment refers to the ExecutionResult and is admitted only by
+    new Observation/Evidence."""
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    with pytest.raises(suite.engine_module.GovernedActionError) as unconfirmed:
+        _assess(suite, proposal)
+    assert unconfirmed.value.reason_code == "OUTCOME_NOT_ASSESSABLE"
+    approval_set, decision = suite.decided(proposal)
+    outcome = suite.execute(proposal, approval=approval_set, decision=decision)
+    suite.world.clock.advance(timedelta(seconds=1))
+    with pytest.raises(suite.engine_module.GovernedActionError) as reused:
+        suite.engine.assess_outcome(
+            proposal.action_instance_id,
+            assessment_id=f"urn:ocor:outcome-assessment:{uuid.uuid4()}",
+            observation_refs=("urn:ocor:observation:rem0053:site-1",),
+            evidence_refs=outcome.execution_result.evidence_refs,
+            assessment="EFFECT_ACHIEVED",
+        )
+    assert reused.value.reason_code == "OUTCOME_NOT_ASSESSABLE"
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:-1])
+
+
+def test_an_unavailable_trace_stops_the_action_before_any_effect() -> None:
+    """The effect of a transition is persisted before the state advances (LLD v1.1 :254): without
+    the audit trace nothing advances and nothing is sent; the retry resumes the path."""
+    suite = CompositionSuite()
+    proposal = suite.proposal()
+    approval_set, decision = suite.decided(proposal)
+    suite.audit.failing = True
+    assert suite.refusal(proposal, approval=approval_set, decision=decision) == (
+        "INVALIDATED",
+        "CONTROL_PLANE_UNAVAILABLE",
+    )
+    assert suite.root.fsm.current_state(proposal.action_instance_id) is None
+    assert suite.untouched()
+    suite.audit.failing = False
+    suite.execute(proposal, approval=approval_set, decision=decision)
+    assert suite.transitions(proposal) == list(CANONICAL_PATH[:-1])
+
+
+def test_a_promotion_traverses_the_c6_states_in_canonical_order(backends: Any) -> None:
+    """ADD v1.3 :2789: the memory promotion follows the same FSM as every canonical mutation."""
+    with promotion.workflow(backends) as x:
+        x.controls.put(x.result.audit_ref, x.body)
+        _promotion_consumer(x).commit(x.result.audit_ref, binding=memory_world.binding(x.ctx))
+        action_id = x.body["command"]["action_instance_id"]
+        assert x.world.transitions(action_id) == list(CANONICAL_PATH[:-1])
+        assert x.world.fsm.current_state(action_id) == "OUTCOME_PENDING"

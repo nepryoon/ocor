@@ -35,6 +35,7 @@ from __future__ import annotations
 import base64
 import dataclasses
 import hashlib
+import threading
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
@@ -90,6 +91,18 @@ class _Release:
 
     def active_release_digest(self) -> str:
         return self.digest
+
+
+class RecordingTrace:
+    """The durable effect sink of a suite's FSM: every persisted transition, in order."""
+
+    def __init__(self) -> None:
+        self.effects: list[Any] = []
+        self._lock = threading.Lock()
+
+    def persist_effect(self, record: Any) -> None:
+        with self._lock:
+            self.effects.append(record)
 
 
 class ActionWorld:
@@ -149,6 +162,8 @@ class ActionWorld:
         self.conditions: Any = None
         self.emission_fence: Any = None
         self.reconciler: Any = None
+        self.fsm: Any = None
+        self.trace: RecordingTrace | None = None
         self._path: Any = None
 
     def action_type(
@@ -328,6 +343,14 @@ class ActionWorld:
             )
         if "reconciler" not in components:
             components["reconciler"] = self.audited_reconciler()
+        # NCR-C6-014: every engine drives its own FSM and records its durable effects in order.
+        if "fsm" not in components:
+            from ocor_runtime.c6.fsm import GovernedActionFSM
+
+            self.fsm = GovernedActionFSM()
+            self.trace = RecordingTrace()
+            components["fsm"] = self.fsm
+            components["trace"] = self.trace
         return engine.GovernedActionEngine(
             contract=self.contract,
             approvals=self.approval_gate,
@@ -336,6 +359,12 @@ class ActionWorld:
             emission_fence=self.emission_fence,
             **components,
         )
+
+    def transitions(self, correlation_id: str) -> list[str]:
+        """The transitions the last engine persisted for ``correlation_id``, in order."""
+        if self.trace is None:
+            return []
+        return [item.transition_id for item in self.trace.effects if item.correlation_id == correlation_id]
 
     def audited_reconciler(self) -> Any:
         """The C6 reconciler of the suite, appending to the audit log of the suite on PostgreSQL."""
