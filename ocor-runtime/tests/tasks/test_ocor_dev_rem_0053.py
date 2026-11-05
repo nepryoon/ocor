@@ -39,10 +39,18 @@ NCR-C6-001 to NCR-C6-009 and NCR-C6-014.
   transaction; drift gives INVALIDATED, an evaluation error never degrades to a retry), LLD
   v1.1 :256 and :302 (ACT-T29: EMISSION-FENCE before the send to C3), Register FR-078 :210 and
   FR-162 :404.
+* NCR-C6-007 -- LLD v1.1 :282-287 (ACT-T18a/T18b, ACT-T20a-c: an ambiguous timeout gives
+  EXECUTION_UNKNOWN, resolved only by positive Evidence of effect or of no effect), LLD v1.1 :307
+  (a post-dispatch timeout suspends the retry), ADD v1.3 :2841 (the outcome is never inferred
+  from the absence of a response), Register FR-163 :407 (audited reconciliation, no automatic
+  retry) and FR-076 :208. A terminal reconciliation record is never overwritten; every record is
+  appended to the single signed audit port before it takes effect and the state is restored
+  from the verified chain.
 
 The FSM and the gate cases are in-process: the FSM is a pure component whose durable effect sink
 and state store are ports. The engine cases commit through the real C3 on PostgreSQL
-(``OCOR_LIVE_POSTGRES_DSN``), like the engine suites of OCOR-DEV-0030 and REM-0050.
+(``OCOR_LIVE_POSTGRES_DSN``), like the engine suites of OCOR-DEV-0030 and REM-0050; the audited
+reconciliation appends to the audit log on the same PostgreSQL.
 """
 
 from __future__ import annotations
@@ -2144,3 +2152,361 @@ def test_the_engine_sends_nothing_to_c3_when_the_lease_or_the_fence_refuses(case
     assert reason == ENGINE_FENCE_CASES[case]
     assert suite.untouched()
     assert world.ledger.attempts(proposal.action_instance_id) == ()
+
+
+# --- NCR-C6-007: reconciliation on positive Evidence, never a blind retry ------------------
+
+AUDIT_KEYID = "rem0053-reconciliation-audit"
+RECONCILIATION_SCHEMA = "ocor_audit_rem0053_reconciliation"
+TERMINAL_STATUSES = (
+    "EXECUTION_CONFIRMED",
+    "EXECUTION_FAILED",
+    "COMPENSATED",
+    "COMPENSATION_FAILED",
+    "EXECUTION_INDETERMINATE",
+    "COMPENSATION_INDETERMINATE",
+)
+
+
+def _evidence(command_id: str, finding: str = "EFFECT_OBSERVED", **overrides: Any) -> Any:
+    """Positive Evidence of effect (or of no effect) observed for ``command_id``."""
+    values: dict[str, Any] = {
+        "evidence_ref": f"urn:ocor:evidence:{uuid.uuid4()}",
+        "command_id": command_id,
+        "finding": finding,
+        "observed_at": NOW,
+        "content_digest": _sha(f"evidence:{command_id}:{finding}"),
+    }
+    values.update(overrides)
+    return _mod("safety").ReconciliationEvidence(**values)
+
+
+def _reach(reconciler: Any, command_id: str, status: str) -> None:
+    """Drive ``command_id`` to ``status`` through the reconciliation transitions only."""
+    compensation = status.startswith("COMPENSATION") or status == "COMPENSATED"
+    if compensation:
+        reconciler.mark_compensation_ambiguous(command_id, idempotent_effect_proven=False, at=NOW)
+    else:
+        reconciler.mark_ambiguous(command_id, idempotent_effect_proven=False, at=NOW)
+    if status.endswith("INDETERMINATE"):
+        reconciler.escalate_if_deadline_passed(command_id, at=NOW + timedelta(hours=2), deadline=NOW + timedelta(hours=1))
+    elif status in ("EXECUTION_CONFIRMED", "COMPENSATED"):
+        reconciler.resolve_with_evidence(command_id, evidence=_evidence(command_id), at=NOW)
+    else:
+        reconciler.resolve_with_evidence(command_id, evidence=_evidence(command_id, "NO_EFFECT_OBSERVED"), at=NOW)
+    assert reconciler.status(command_id).value == status
+
+
+class AuditedReconciliation:
+    """The C6 reconciler appending to the single audit port on the real PostgreSQL."""
+
+    def __init__(self, *, dsn: str | None = None) -> None:
+        import os
+
+        from ocor_runtime import audit
+
+        live = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+        if not live:
+            pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory: the reconciliation audit is on PostgreSQL")
+        self.audit_module = audit
+        self.signer = audit.AuditSigner(key=_key(AUDIT_KEYID), keyid=AUDIT_KEYID)
+        self.log = audit.PostgresAuditLog(dsn or live, schema=RECONCILIATION_SCHEMA, signer=self.signer)
+        if dsn is None:
+            self.log.drop()
+            self.log.initialize()
+        self.reconciler = _mod("safety").OutcomeReconciler(audit=self.log)
+
+    @property
+    def public_keys(self) -> dict[str, bytes]:
+        return {AUDIT_KEYID: self.signer.public_key}
+
+    def chain(self) -> int:
+        return int(self.audit_module.verify_audit_chain(self.log.records(), self.public_keys))
+
+
+class TimingOutSink(EffectSink):
+    """A send whose outcome is ambiguous: the request left, no response came back."""
+
+    def emit(self, event: Any, *, idempotency_key: str) -> dict[str, Any]:
+        self.calls.append(event)
+        raise TimeoutError("no response from the effect adapter before the deadline")
+
+
+def _reconciled_engine(suite: EngineSuite, audited: AuditedReconciliation) -> tuple[Any, OrderedC3]:
+    from ocor_runtime.c7_emission import EmissionFence
+
+    ordered = OrderedC3(suite.c3, suite.world.ledger)
+    engine = suite.world.engine(
+        commit_port=ordered,
+        relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+        canonical_path=suite.path,
+        emission_outbox=suite.store,
+        reconciler=audited.reconciler,
+    )
+    return engine, ordered
+
+
+def _ambiguous_send(
+    suite: EngineSuite, engine: Any, sink: EffectSink, raised: type[BaseException] = TimeoutError
+) -> tuple[Any, Any, Any, Any]:
+    proposal, approval_set, decision = _admitted(suite)
+    with pytest.raises(raised) as unknown:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=sink, at=ENGINE_NOW)
+    return proposal, approval_set, decision, unknown.value
+
+
+def _notes(error: BaseException) -> str:
+    return "\n".join(getattr(error, "__notes__", ()))
+
+
+def test_ncr_c6_007_conforms() -> None:
+    """LLD v1.1 :282-287 and :307, ADD v1.3 :2841, Register FR-163 :407 and FR-076 :208: a
+    terminal outcome is never overwritten, an ambiguous outcome is resolved only by positive
+    Evidence, and on the engine path a timed-out send opens an audited reconciliation and
+    suspends the retry: the effect is never sent again."""
+    safety = _mod("safety")
+    reconciler = safety.OutcomeReconciler()
+    reconciler.mark_ambiguous("cmd-c6-007", idempotent_effect_proven=False, at=NOW)
+    reconciler.resolve_with_evidence("cmd-c6-007", evidence=_evidence("cmd-c6-007"), at=NOW)
+    with pytest.raises(safety.SafetyError) as overwritten:
+        reconciler.mark_ambiguous("cmd-c6-007", idempotent_effect_proven=False, at=NOW + timedelta(seconds=1))
+    assert overwritten.value.reason_code == "INVALID_RECONCILIATION_TRANSITION"
+    assert reconciler.status("cmd-c6-007") is safety.OutcomeStatus.CONFIRMED
+    assert "effect_confirmed" not in inspect.signature(safety.OutcomeReconciler.resolve_with_evidence).parameters
+    assert ".drain(" not in inspect.getsource(_mod("engine"))
+
+    suite = EngineSuite()
+    audited = AuditedReconciliation()
+    engine, ordered = _reconciled_engine(suite, audited)
+    sink = TimingOutSink()
+    proposal, approval_set, decision, unknown = _ambiguous_send(suite, engine, sink)
+    (record,) = audited.reconciler.records
+    assert f"EXECUTION_UNKNOWN: reconciliation opened for {record.command_id}" in _notes(unknown)
+    assert record.status is safety.OutcomeStatus.UNKNOWN
+    assert record.idempotent_effect_proven is False
+
+    with pytest.raises(suite.engine_module.GovernedActionError) as suspended:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=sink, at=ENGINE_NOW)
+    assert (suspended.value.reason_code, suspended.value.cause_code) == ("RETRY_SUSPENDED", "EXECUTION_UNKNOWN")
+    assert len(sink.calls) == 1
+    assert ordered.calls == [("commit", 1)]
+    assert audited.chain() == 1
+
+
+@pytest.mark.parametrize("status", TERMINAL_STATUSES)
+@pytest.mark.parametrize("operation", ["mark_ambiguous", "mark_compensation_ambiguous"])
+def test_a_terminal_outcome_is_never_overwritten(status: str, operation: str) -> None:
+    safety = _mod("safety")
+    reconciler = safety.OutcomeReconciler()
+    _reach(reconciler, "cmd-terminal", status)
+    before = reconciler.records
+
+    with pytest.raises(safety.SafetyError) as refused:
+        getattr(reconciler, operation)("cmd-terminal", idempotent_effect_proven=True, at=NOW + timedelta(hours=3))
+
+    assert refused.value.reason_code == "INVALID_RECONCILIATION_TRANSITION"
+    assert reconciler.records == before
+    assert reconciler.status("cmd-terminal").value == status
+
+
+@pytest.mark.parametrize("operation", ["mark_ambiguous", "mark_compensation_ambiguous"])
+def test_an_open_reconciliation_is_not_reopened(operation: str) -> None:
+    safety = _mod("safety")
+    reconciler = safety.OutcomeReconciler()
+    reconciler.mark_ambiguous("cmd-open", idempotent_effect_proven=False, at=NOW)
+    before = reconciler.records
+
+    with pytest.raises(safety.SafetyError) as refused:
+        getattr(reconciler, operation)("cmd-open", idempotent_effect_proven=True, at=NOW + timedelta(seconds=1))
+
+    assert refused.value.reason_code == "INVALID_RECONCILIATION_TRANSITION"
+    assert reconciler.records == before
+    with pytest.raises(safety.SafetyError, match="AUTO_RETRY_BLOCKED_AMBIGUOUS_NON_IDEMPOTENT"):
+        reconciler.require_may_auto_retry("cmd-open")
+
+
+EVIDENCE_CASES: dict[str, str] = {
+    "boolean": "EVIDENCE_REQUIRED",
+    "none": "EVIDENCE_REQUIRED",
+    "mapping": "EVIDENCE_REQUIRED",
+    "other-command": "EVIDENCE_MISMATCH",
+    "observed-after-resolution": "EVIDENCE_INVALID",
+    "unknown-finding": "EVIDENCE_INVALID",
+    "malformed-digest": "EVIDENCE_INVALID",
+    "empty-reference": "EVIDENCE_INVALID",
+    "naive-time": "EVIDENCE_INVALID",
+    "non-string-reference": "EVIDENCE_INVALID",
+}
+
+
+@pytest.mark.parametrize("case", sorted(EVIDENCE_CASES))
+def test_an_ambiguous_outcome_is_resolved_only_by_positive_evidence_of_its_command(case: str) -> None:
+    safety = _mod("safety")
+    reconciler = safety.OutcomeReconciler()
+    reconciler.mark_ambiguous("cmd-evidence", idempotent_effect_proven=False, at=NOW)
+    before = reconciler.records
+
+    with pytest.raises(safety.SafetyError) as refused:
+        if case == "boolean":
+            evidence: Any = True
+        elif case == "none":
+            evidence = None
+        elif case == "mapping":
+            evidence = {"command_id": "cmd-evidence", "finding": "EFFECT_OBSERVED"}
+        elif case == "other-command":
+            evidence = _evidence("cmd-other")
+        elif case == "observed-after-resolution":
+            evidence = _evidence("cmd-evidence", observed_at=NOW + timedelta(minutes=1))
+        elif case == "unknown-finding":
+            evidence = _evidence("cmd-evidence", "PROBABLY_EFFECTED")
+        elif case == "malformed-digest":
+            evidence = _evidence("cmd-evidence", content_digest="sha256:abc")
+        elif case == "empty-reference":
+            evidence = _evidence("cmd-evidence", evidence_ref="")
+        elif case == "naive-time":
+            evidence = _evidence("cmd-evidence", observed_at=NOW.replace(tzinfo=None))
+        else:
+            evidence = _evidence("cmd-evidence", evidence_ref=42)
+        reconciler.resolve_with_evidence("cmd-evidence", evidence=evidence, at=NOW)
+
+    assert refused.value.reason_code == EVIDENCE_CASES[case]
+    assert reconciler.records == before
+    assert reconciler.status("cmd-evidence") is safety.OutcomeStatus.UNKNOWN
+
+
+@pytest.mark.parametrize(
+    ("finding", "status"),
+    [("EFFECT_OBSERVED", "EXECUTION_CONFIRMED"), ("NO_EFFECT_OBSERVED", "EXECUTION_FAILED")],
+)
+def test_the_resolution_records_the_evidence_it_rests_on(finding: str, status: str) -> None:
+    safety = _mod("safety")
+    reconciler = safety.OutcomeReconciler()
+    reconciler.mark_ambiguous("cmd-resolved", idempotent_effect_proven=False, at=NOW)
+    evidence = _evidence("cmd-resolved", finding)
+
+    record = reconciler.resolve_with_evidence("cmd-resolved", evidence=evidence, at=NOW + timedelta(seconds=1))
+
+    assert record.status.value == status
+    assert record.evidence_ref == evidence.evidence_ref
+    assert record.evidence_digest == evidence.content_digest
+
+
+def test_every_reconciliation_record_is_appended_to_the_signed_audit_chain_and_restored() -> None:
+    safety = _mod("safety")
+    audited = AuditedReconciliation()
+    reconciler = audited.reconciler
+    reconciler.mark_ambiguous("cmd-a", idempotent_effect_proven=False, at=NOW)
+    evidence = _evidence("cmd-a")
+    reconciler.resolve_with_evidence("cmd-a", evidence=evidence, at=NOW + timedelta(seconds=1))
+    reconciler.mark_compensation_ambiguous("cmd-b", idempotent_effect_proven=True, at=NOW)
+    reconciler.escalate_if_deadline_passed("cmd-b", at=NOW + timedelta(hours=2), deadline=NOW + timedelta(hours=1))
+
+    assert audited.chain() == 4
+    stored = audited.log.records()
+    assert [item.record["event_type"] for item in stored] == ["C6_RECONCILIATION"] * 4
+    assert [item.record["resource"] for item in stored] == ["cmd-a", "cmd-a", "cmd-b", "cmd-b"]
+    assert [item.record["reason_code"] for item in stored] == [
+        "EXECUTION_UNKNOWN",
+        "EXECUTION_CONFIRMED",
+        "COMPENSATION_UNKNOWN",
+        "COMPENSATION_INDETERMINATE",
+    ]
+    assert stored[1].record["authority_ref"] == evidence.evidence_ref
+
+    restored = safety.OutcomeReconciler.restore(stored, audit=audited.log, public_keys=audited.public_keys)
+    assert restored.records == reconciler.records
+    with pytest.raises(safety.SafetyError, match="INVALID_RECONCILIATION_TRANSITION"):
+        restored.mark_ambiguous("cmd-a", idempotent_effect_proven=False, at=NOW + timedelta(hours=3))
+
+    tampered = list(stored)
+    tampered[1] = dataclasses.replace(stored[1], record={**stored[1].record, "reason_code": "EXECUTION_FAILED"})
+    with pytest.raises(safety.SafetyError) as refused:
+        safety.OutcomeReconciler.restore(tampered, audit=audited.log, public_keys=audited.public_keys)
+    assert refused.value.reason_code == "RECONCILIATION_AUDIT_INVALID"
+    with pytest.raises(safety.SafetyError) as unknown_key:
+        safety.OutcomeReconciler.restore(stored, audit=audited.log, public_keys={"other": audited.signer.public_key})
+    assert unknown_key.value.reason_code == "RECONCILIATION_AUDIT_INVALID"
+
+
+def test_an_unavailable_audit_changes_no_reconciliation_state() -> None:
+    safety = _mod("safety")
+    unreachable = AuditedReconciliation(dsn="postgresql://ocor:unused@127.0.0.1:1/ocor?connect_timeout=1")
+    reconciler = unreachable.reconciler
+
+    with pytest.raises(safety.SafetyError) as refused:
+        reconciler.mark_ambiguous("cmd-unaudited", idempotent_effect_proven=False, at=NOW)
+
+    assert refused.value.reason_code == "RECONCILIATION_UNAVAILABLE"
+    assert reconciler.records == ()
+    with pytest.raises(safety.SafetyError, match="UNKNOWN_COMMAND"):
+        reconciler.status("cmd-unaudited")
+
+
+@pytest.mark.parametrize("reconciler", ["missing", "unaudited", "foreign"])
+def test_the_engine_reconciles_only_through_an_audited_reconciler(reconciler: str) -> None:
+    from ocor_runtime.c7_emission import EmissionFence
+
+    suite = EngineSuite()
+    components: dict[str, Any] = {
+        "commit_port": suite.c3,
+        "relay": EmissionFence(store=suite.store),
+        "canonical_path": suite.path,
+        "emission_outbox": suite.store,
+    }
+    if reconciler == "unaudited":
+        components["reconciler"] = _mod("safety").OutcomeReconciler()
+    elif reconciler == "foreign":
+        components["reconciler"] = object()
+    else:
+        components["reconciler"] = None
+    with pytest.raises(TypeError, match="reconciler must be an OutcomeReconciler appending to the audit port"):
+        suite.world.engine(**components)
+
+
+@pytest.mark.parametrize(
+    ("finding", "status"),
+    [("EFFECT_OBSERVED", "EXECUTION_CONFIRMED"), ("NO_EFFECT_OBSERVED", "EXECUTION_FAILED")],
+)
+def test_an_ambiguous_send_resolved_by_evidence_is_never_sent_again(finding: str, status: str) -> None:
+    suite = EngineSuite()
+    audited = AuditedReconciliation()
+    engine, ordered = _reconciled_engine(suite, audited)
+    sink = TimingOutSink()
+    proposal, approval_set, decision, unknown = _ambiguous_send(suite, engine, sink)
+    (record,) = audited.reconciler.records
+    assert "EXECUTION_UNKNOWN" in _notes(unknown)
+
+    audited.reconciler.resolve_with_evidence(
+        record.command_id, evidence=_evidence(record.command_id, finding, observed_at=ENGINE_NOW), at=ENGINE_NOW
+    )
+    with pytest.raises(suite.engine_module.GovernedActionError) as suspended:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=EffectSink(), at=ENGINE_NOW)
+
+    assert (suspended.value.reason_code, suspended.value.cause_code) == ("RETRY_SUSPENDED", status)
+    assert len(sink.calls) == 1
+    assert ordered.calls == [("commit", 1)]
+    assert audited.chain() == 2
+
+
+def test_an_unrecordable_ambiguous_send_fails_closed() -> None:
+    suite = EngineSuite()
+    audited = AuditedReconciliation()
+    engine, ordered = _reconciled_engine(suite, audited)
+    audited.log.drop()  # the audit store loses its log: the reconciliation cannot be recorded
+
+    proposal, approval_set, decision, unknown = _ambiguous_send(
+        suite, engine, TimingOutSink(), suite.engine_module.GovernedActionError
+    )
+
+    assert (unknown.reason_code, unknown.cause_code) == ("EXECUTION_UNKNOWN", "RECONCILIATION_UNAVAILABLE")
+    assert audited.reconciler.records == ()
+    sink = EffectSink()
+    with pytest.raises(suite.engine_module.GovernedActionError) as suspended:
+        engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set, decision=decision,
+                       sink=sink, at=ENGINE_NOW)
+    assert (suspended.value.reason_code, suspended.value.cause_code) == ("RETRY_SUSPENDED", "EXECUTION_UNKNOWN")
+    assert sink.calls == []
+    assert ordered.calls == [("commit", 1)]
