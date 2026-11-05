@@ -12,7 +12,10 @@ Rows read back are untrusted: each column and the snapshot document are checked 
 type, shape and integrity without conversion -- type URN and identifier bounds of the
 contract ``ResourceRef``, ``urn:sha256`` marking reference (ADD v1.3 :398), canonical RFC
 3339 UTC times -- and any failure of the transport or of a row is the typed fail-closed
-``CONTROL_PLANE_UNAVAILABLE`` of the whole read, never a coerced or partial answer.
+``CONTROL_PLANE_UNAVAILABLE`` of the whole read, never a coerced or partial answer. An
+unreachable TypeDB is the projection down, ``PROJECTION_NOT_READY`` (ADD v1.3 :3406): the port
+has no request, so the Gateway builds the served context of the confirmed watermark that the
+Problem carries (ADD v1.3 :1364; NCR-C4-005, PO decision NCP-U05-ITERATION-LIMIT option B1).
 """
 
 from __future__ import annotations
@@ -27,7 +30,8 @@ from ..c2.gateway import ProjectedObject
 from ..c2.ports import C2Error
 from ..c4_marking import MarkingSet
 from ..kernel.canonical import DIGEST, UTC_TIMESTAMP, canonical_digest, format_utc_timestamp, parse_utc_timestamp
-from .typedb_adapter import _ANSWER_FAILURES, _literal, _require_value, _schema_write, _write, read_rows
+from .typedb_adapter import (_ANSWER_FAILURES, _literal, _require_value, _rows, _schema_write, _unreachable, _write,
+                            read_rows)
 
 OBJECT_SCHEMA = (
     "define "
@@ -50,6 +54,20 @@ T = TypeVar("T")
 
 class _Malformed(ValueError):
     """A row read back from the projection is not a well-formed object snapshot."""
+
+
+class ObjectProjectionNotReady(C2Error):
+    """The object projection is down (ADD v1.3 :3406): ``PROJECTION_NOT_READY`` without a served
+    context, which only the Gateway can build from the confirmed watermark (ADD v1.3 :1364). It
+    never reaches the wire as it is: the Gateway replaces it before any Problem is written."""
+
+    def __init__(self, message: str) -> None:
+        # C2Error requires the served context for PROJECTION_NOT_READY; this port has no request
+        self.reason_code = "PROJECTION_NOT_READY"
+        self.detail = message
+        self.served = None
+        self.deferred_element = None
+        ValueError.__init__(self, f"PROJECTION_NOT_READY: {message}")
 
 
 def _identifier(value: object) -> str:
@@ -94,12 +112,15 @@ def _object(row: Mapping[str, object]) -> ProjectedObject:
 
 
 def _typed(work: Callable[[], T]) -> T:
-    """Translate every failure of the TypeDB exchange into the typed fail-closed answer."""
+    """Translate every failure of the TypeDB exchange into the typed fail-closed answer: an
+    unreachable TypeDB is the projection down, any other failure CONTROL_PLANE_UNAVAILABLE."""
     try:
         return work()
     except C2Error:
         raise
     except _ANSWER_FAILURES as exc:
+        if _unreachable(exc):
+            raise ObjectProjectionNotReady("the object projection is unreachable") from exc
         raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the object projection is unavailable or malformed") from exc
 
 
@@ -154,11 +175,10 @@ class TypeDBObjectProjection:
 
     def _select(self, condition: str = "") -> list[ProjectedObject]:
         self.read_count += 1
-        rows = read_rows(
-            f"match $o isa c4-object, has c4-object-id $i, has c4-object-type $t, has c4-object-commit $c, "
-            f"has c4-object-marking $m, has c4-object-document $d;{condition}",
-            COLUMNS,
-        )
+        query = (f"match $o isa c4-object, has c4-object-id $i, has c4-object-type $t, has c4-object-commit $c, "
+                 f"has c4-object-marking $m, has c4-object-document $d;{condition}")
+        # the raw read, so that an unreachable TypeDB stays distinguishable from a malformed answer
+        rows = _typed(lambda: _rows(query, COLUMNS))
         try:
             result = [_object(row) for row in rows]
         except (_Malformed, ValueError) as exc:

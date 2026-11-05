@@ -48,6 +48,8 @@ import jsonschema
 
 from ..audit import AuditError, AuditEvent, AuditPort
 from ..c2_identity import IdentityRegistry, ResolutionStatus
+from ..c4.typedb_adapter import TypeDBUnavailableError
+from ..c4.watermark import ConfirmedWatermark
 from ..c4_marking import MarkingEngine, MarkingSet
 from ..kernel.canonical import canonical_digest
 from ..security.ports import PolicyDecisionPort as ContextPolicyPort
@@ -64,13 +66,14 @@ from .ports import (
     TransportBoundQuery,
     WatermarkPort,
 )
-from .problem import PROBLEM_REASON_CODES
+from .problem import PROBLEM_REASON_CODES, SERVED_REQUIRED
 
 PERMIT = "PERMIT"
 DENY = "DENY"
 PROJECTION_ID = "urn:ocor:projection:c4-typedb"
 # Branches the C4 projections serve (the canonical projection of ``main``).
 SERVED_BRANCHES = frozenset({"main"})
+NO_WATERMARK = "urn:ocor:commit:none"
 # Refusals of the transport identity itself (security.ports.AuthenticatedPrincipal and
 # PolicyRequest bindings): the request has no valid authority, which is AUTHORITY_MISSING
 # (contract :455), not an outage. Every other security-control failure -- an unavailable
@@ -370,14 +373,69 @@ class NamedQueryGateway:
             request = self._admit(bound, holder)
             return work(request)
         except C2Error as error:
+            if error.reason_code in SERVED_REQUIRED and error.served is None:
+                # a projection port that is down has no request: the Gateway builds the served
+                # context of the confirmed watermark (ADD v1.3 :1364, :3406; NCR-C2-013)
+                self._refuse(bound, holder, operation, self._projection_down(holder, error.detail), error)
             self._refuse(bound, holder, operation, error, error)
         except SecurityControlError as exc:
             refusal = C2Error("AUTHORITY_MISSING" if exc.reason_code in AUTHENTICATION_REFUSALS
                               else "CONTROL_PLANE_UNAVAILABLE", "the governance controls refused the request")
             self._refuse(bound, holder, operation, refusal, exc)
+        except TypeDBUnavailableError as exc:  # the watermark port: the projection is down (ADD v1.3 :3406)
+            self._refuse(bound, holder, operation, self._not_ready(holder, str(exc), exc.confirmed), exc)
         except Exception as exc:  # a port failed outside its typed contract: fail closed (ADD v1.3 :174)
             self._refuse(bound, holder, operation,
                          C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable"), exc)
+
+    def _projection_down(self, holder: list[NamedQueryRequest], message: str) -> C2Error:
+        """``PROJECTION_NOT_READY`` of a projection port that is down, with the served context of
+        the watermark the watermark port reports as confirmed; a watermark port that cannot say is
+        the typed fail-closed ``CONTROL_PLANE_UNAVAILABLE``."""
+        if not holder or self._watermarks is None:
+            return C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable")
+        request = holder[0]
+        try:
+            observed = self._watermarks.current(PROJECTION_ID, request.branch)
+        except TypeDBUnavailableError as exc:
+            return self._not_ready(holder, message, exc.confirmed)
+        except Exception:  # the watermark port failed outside its typed contract (ADD v1.3 :174)
+            return C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable")
+        try:
+            if observed.branch != request.branch:
+                raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the watermark names another branch")
+            served = dataclasses.replace(served_from_watermark(observed, request),
+                                         ontology_release_digest=self._catalog.ontology_release_digest)
+        except (C2Error, AttributeError, TypeError, ValueError):
+            return C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable")
+        return C2Error("PROJECTION_NOT_READY", message, served=served)
+
+    def _not_ready(self, holder: list[NamedQueryRequest], message: str,
+                   confirmed: ConfirmedWatermark | None) -> C2Error:
+        """``PROJECTION_NOT_READY`` with the served context of the last watermark C4 confirmed
+        durably and the staleness from its instant (ADD v1.3 :1364); without a confirmed watermark
+        the served commit is the no-watermark sentinel and the release the active one, never a
+        fabricated commit. A confirmed watermark of another branch, or one that does not form a
+        served context, is the typed fail-closed ``CONTROL_PLANE_UNAVAILABLE``."""
+        if not holder:
+            return C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable")
+        request = holder[0]
+        try:
+            if confirmed is None:
+                commit, release, staleness = NO_WATERMARK, self._catalog.ontology_release_digest, 0
+            else:
+                if confirmed.branch != request.branch:
+                    raise C2Error("CONTROL_PLANE_UNAVAILABLE", "the confirmed watermark names another branch")
+                commit, release = confirmed.commit_id, confirmed.release_digest
+                staleness = max(0, int((self._clock() - confirmed.confirmed_at).total_seconds() * 1000))
+            served = ServedContext(
+                branch=request.branch, ontology_release_digest=release, canonical_commit=commit,
+                projection_watermark=commit, staleness_ms=staleness,
+                governed_context_digest=request.governed_context_digest,
+                policy_bundle_digest=request.governed_context.policy_bundle_digest)
+        except (C2Error, AttributeError, TypeError, ValueError, OverflowError):
+            return C2Error("CONTROL_PLANE_UNAVAILABLE", "a governance control or projection is unavailable")
+        return C2Error("PROJECTION_NOT_READY", message, served=served)
 
     def _refuse(self, bound: TransportBoundQuery, holder: list[NamedQueryRequest], operation: str,
                 error: C2Error, cause: BaseException) -> NoReturn:
@@ -442,7 +500,7 @@ class NamedQueryGateway:
         served_branch = context.branch in self._branches and context.scenario_id is None
         watermark = None if self._watermarks is None or not served_branch else self._watermarks.current(
             PROJECTION_ID, context.branch)
-        commit = "urn:ocor:commit:none" if watermark is None else watermark.canonical_commit
+        commit = NO_WATERMARK if watermark is None else watermark.canonical_commit
         return ServedContext(
             branch=context.branch, ontology_release_digest=self._catalog.ontology_release_digest,
             canonical_commit=commit, projection_watermark=commit, staleness_ms=0,
