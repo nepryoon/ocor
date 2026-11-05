@@ -1,0 +1,19 @@
+# Fuseki configuration of the development and CI stack (deploy/bootstrap/compose.yaml).
+# PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1: the in-memory dataset
+# "ocor" with the endpoints sparql, query, update, data and shacl.
+PREFIX fuseki: <http://jena.apache.org/fuseki#>
+PREFIX ja:     <http://jena.hpl.hp.com/2005/11/Assembler#>
+PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+[] rdf:type fuseki:Server .
+
+<#ocor> rdf:type fuseki:Service ;
+    fuseki:name "ocor" ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ;  fuseki:name "sparql" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:query ;  fuseki:name "query" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:update ; fuseki:name "update" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:gsp-rw ; fuseki:name "data" ] ;
+    fuseki:endpoint [ fuseki:operation fuseki:shacl ;  fuseki:name "shacl" ] ;
+    fuseki:dataset <#dataset> .
+
+<#dataset> rdf:type ja:MemoryDataset .

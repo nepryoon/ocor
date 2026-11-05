@@ -4,9 +4,10 @@ Completes the smallest contract-compliant, retained (non-spike)
 extension of ``spikes.jena_marking.adapter`` (OCOR-DEV-0018) against a
 real, live Fuseki instance: a real ``publish`` operation that produces
 RDF/JSON-LD output, enforced by an explicit closed shape (a
-required-property and closed-predicate check, expressed directly; the
-SHACL validation through the Fuseki SHACL service waits for the PO
-decision NCP-U05-FUSEKI-SHACL-SERVICE).
+required-property and closed-predicate check, expressed directly), and a
+``publish_provenance`` operation whose documents are validated against the
+shapes of ADD v1.3 §3.6 by the SHACL service of Fuseki before they become
+visible.
 
 Two negative acceptance criteria are enforced BEFORE any triple is
 ever written: an unauthorized (non-allow-listed) predicate blocks
@@ -30,6 +31,15 @@ OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-002):
   read requires the clearance to dominate the content on every family,
   and an export carries the conservative join of what it discloses with
   the watermark it was read at (FR-068 :192, FR-131 :298);
+* a provenance document (ADD v1.3 §3.6, :357 BA-04) is staged in a named
+  graph that no read sees, validated by the Fuseki SHACL service against
+  ``ocor_runtime.c4.shacl.SHAPES`` (PO decision NCP-U05-FUSEKI-SHACL-SERVICE
+  (2026-11-05), option 1: ``deploy/bootstrap/fuseki/config.ttl``), and only a
+  conforming document is moved into the projection, with its commit, its
+  canonical marking and the watermark, in one update request; a violation is
+  ``SHAPE_VIOLATION`` with the violations of the report, a service that does
+  not answer with a report refuses the publication, and the staging graph
+  never outlives the validation;
 * an unreachable Fuseki is the typed ``PROJECTION_NOT_READY`` and any
   other failure of the answer the typed ``CONTROL_PLANE_UNAVAILABLE``
   (Named Query Gateway contract :486-491, LLD v1.1 :346), never a raw
@@ -45,6 +55,7 @@ import http.client
 import json
 import re
 import threading
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -53,13 +64,17 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from rdflib import Graph
+from rdflib import BNode, Graph, URIRef
+from rdflib.namespace import RDF
 
+from . import shacl
 from .marking import CanonicalMarkingScheme, EvaluatedMarking, MarkingUnresolved
 from .watermark import ConfirmedWatermark, WatermarkLedgerError, WatermarkLedgerPort
 
 FUSEKI_URL = "http://127.0.0.1:3030"
 DATASET = "ocor"
+SHACL_SERVICE = "shacl"
+STAGING = "urn:ocor:projection-staging:jena:"
 VOCAB = "urn:ocor:vocab:"
 PREFIX = f"PREFIX ocor: <{VOCAB}>"
 BRANCH = "main"
@@ -78,8 +93,10 @@ _PUBLISH_LOCK = threading.Lock()
 
 
 class JenaAdapterError(RuntimeError):
-    def __init__(self, reason_code: str, message: str) -> None:
+    def __init__(self, reason_code: str, message: str,
+                 violations: tuple[shacl.ShaclViolation, ...] = ()) -> None:
         self.reason_code = reason_code
+        self.violations = violations
         super().__init__(f"{reason_code}: {message}")
 
 
@@ -151,6 +168,32 @@ def _value(row: Mapping[str, Any], name: str) -> str:
     return value
 
 
+def _stage(graph: str, document: Graph) -> None:
+    """Writes ``document`` into the named graph ``graph`` (Graph Store Protocol); the reads of the
+    projection query the default graph only, so a staged document is never visible."""
+    status, _ = _request(
+        "PUT",
+        f"{FUSEKI_URL}/{DATASET}/data?{urllib.parse.urlencode({'graph': graph})}",
+        headers={"Content-Type": "application/n-triples"},
+        body=document.serialize(format="nt", encoding="utf-8"),
+    )
+    if status not in (200, 201, 204):
+        raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", f"staging the document failed: {status}")
+
+
+def _validate(graph: str) -> tuple[shacl.ShaclViolation, ...]:
+    """The violations the Fuseki SHACL service reports for the named graph ``graph``."""
+    status, body = _request(
+        "POST",
+        f"{FUSEKI_URL}/{DATASET}/{SHACL_SERVICE}?{urllib.parse.urlencode({'graph': graph})}",
+        headers={"Content-Type": "text/turtle", "Accept": "text/turtle"},
+        body=shacl.SHAPES.encode("utf-8"),
+    )
+    if status != 200:
+        raise JenaAdapterError("CONTROL_PLANE_UNAVAILABLE", f"the SHACL validation did not answer: {status}")
+    return shacl.read_report(body)
+
+
 def _construct(sparql_construct: str) -> str:
     encoded = urllib.parse.urlencode({"query": sparql_construct})
     status, body = _request(
@@ -186,6 +229,41 @@ def _require_iri(resource_id: str) -> str:
     return resource_id
 
 
+def _provenance_document(document: object) -> tuple[Graph, list[str]]:
+    """Parses a provenance document and returns it with its §3.6 nodes. Every IRI subject is a
+    node typed with a class of ADD v1.3 §3.6, addressable as an IRI, so that it carries the
+    marking and the commit of the publication; no predicate of the adapter's own vocabulary is
+    accepted from the caller."""
+    if not isinstance(document, str):
+        raise JenaAdapterError("SHAPE_VIOLATION", "a provenance document is a Turtle string")
+    graph = Graph()
+    try:
+        graph.parse(data=document, format="turtle")
+    except Exception as exc:  # rdflib raises several unrelated types for a malformed document
+        raise JenaAdapterError("SHAPE_VIOLATION", "the provenance document is not Turtle") from exc
+    if any(str(predicate).startswith(VOCAB) for predicate in graph.predicates()):
+        raise JenaAdapterError("UNAUTHORIZED_PREDICATE", f"the predicates of {VOCAB} are written by the adapter only")
+    nodes: list[str] = []
+    for subject in set(graph.subjects()):
+        types = {str(value) for value in graph.objects(subject, RDF.type)}
+        prov = {value for value in types if value.startswith(shacl.PROV_NS)}
+        if prov - shacl.PROVENANCE_CLASSES:
+            raise JenaAdapterError("SHAPE_VIOLATION", f"unknown provenance class(es): {sorted(prov)}")
+        if isinstance(subject, BNode):
+            if prov:
+                raise JenaAdapterError("SHAPE_VIOLATION", "a provenance node is an IRI, never a blank node")
+            continue
+        if not isinstance(subject, URIRef) or not prov:
+            raise JenaAdapterError("SHAPE_VIOLATION", "every IRI subject is a node of a §3.6 class")
+        try:
+            nodes.append(_require_iri(str(subject)))
+        except JenaAdapterError as exc:
+            raise JenaAdapterError("SHAPE_VIOLATION", str(exc)) from exc
+    if not nodes:
+        raise JenaAdapterError("SHAPE_VIOLATION", "the document names no node of a §3.6 class")
+    return graph, sorted(nodes)
+
+
 def _require_commit(commit_id: object) -> str:
     if not isinstance(commit_id, str) or not commit_id or any(ord(char) < 0x20 for char in commit_id):
         raise JenaAdapterError("SHAPE_VIOLATION", "commit_id must be a non-empty string")
@@ -201,6 +279,19 @@ class JenaExport:
     marking: Mapping[str, Any]
     canonical_commit: str
     release_digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class _Node:
+    """A published node of the provenance metamodel with the commit and the marking it was
+    published with."""
+
+    resource: str
+    commit_id: str
+    marking: EvaluatedMarking
+
+    def public(self) -> dict[str, str]:
+        return {"node": self.resource, "commitId": self.commit_id, "markingRef": self.marking.marking_ref}
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,7 +345,7 @@ class JenaSHACLProjectionAdapter:
             initialize()
 
     def reset(self) -> None:
-        _update("DELETE WHERE { ?s ?p ?o }")
+        _update("DELETE WHERE { ?s ?p ?o } ; DROP SILENT NAMED")
         self._ledger.clear(self.store_id)
 
     def _clearance(self, clearance: object) -> EvaluatedMarking:
@@ -298,11 +389,7 @@ class JenaSHACLProjectionAdapter:
             raise JenaAdapterError(
                 "PROVENANCE_INVALID", "provenanceRef must be a real, non-empty urn:ocor:provenance: reference"
             )
-        try:
-            evaluated = self._scheme.evaluate(marking)
-        except MarkingUnresolved as exc:
-            raise JenaAdapterError("MARKING_UNRESOLVED", str(exc)) from exc
-        stored = json.dumps(dict(marking), sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        evaluated, stored = self._marking(marking)
 
         with _PUBLISH_LOCK:
             position = self.position(BRANCH, commit_id)
@@ -325,6 +412,61 @@ class JenaSHACLProjectionAdapter:
                 f"{store} ocor:watermarkCommit {_literal(commit_id)} . "
                 f"[] a ocor:CommitOrder ; ocor:orderCommitId {_literal(commit_id)} ; ocor:orderSeq {sequence} . }}"
             )
+            self._confirm(commit_id, sequence)
+            return True
+
+    def _marking(self, marking: object) -> tuple[EvaluatedMarking, str]:
+        """The evaluated canonical marking and the object stored with what it marks."""
+        if not isinstance(marking, Mapping):
+            raise JenaAdapterError("MARKING_UNRESOLVED", "the marking is not a canonical marking object")
+        try:
+            evaluated = self._scheme.evaluate(marking)
+        except MarkingUnresolved as exc:
+            raise JenaAdapterError("MARKING_UNRESOLVED", str(exc)) from exc
+        return evaluated, json.dumps(dict(marking), sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+    def publish_provenance(self, document: str, *, marking: Mapping[str, Any], commit_id: str) -> bool:
+        """Publishes a provenance document (Turtle) of ADD v1.3 §3.6 only once the Fuseki SHACL
+        service has found it conforming to ``shacl.SHAPES``. Local refusals come before anything
+        is written; the document is then staged in a named graph no read sees, validated, and
+        moved into the projection with the commit and the marking of every node, the commit
+        order and the watermark in one update request, whose watermark is confirmed in the
+        ledger. A commit already ordered is a duplicate: nothing is staged and ``False`` is
+        returned."""
+        graph, nodes = _provenance_document(document)
+        commit_id = _require_commit(commit_id)
+        evaluated, stored = self._marking(marking)
+
+        with _PUBLISH_LOCK:
+            position = self.position(BRANCH, commit_id)
+            if position is not None:
+                self._confirm(commit_id, position)
+                return False
+            sequence = self._next_sequence()
+            staging = f"{STAGING}{uuid.uuid4()}"
+            staged = True
+            try:
+                _stage(staging, graph)
+                violations = _validate(staging)
+                if violations:
+                    raise JenaAdapterError("SHAPE_VIOLATION", "the document violates the shapes of ADD v1.3 §3.6: "
+                                           + "; ".join(f"{item.focus_node} {item.path}" for item in violations),
+                                           violations)
+                store = f"<{self.store_id}>"
+                metadata = " ".join(
+                    f"<{node}> ocor:commitId {_literal(commit_id)} ; ocor:markingRef "
+                    f"{_literal(evaluated.marking_ref)} ; ocor:markingObject {_literal(stored)} ." for node in nodes)
+                _update(
+                    "".join(f"{PREFIX} DELETE WHERE {{ <{node}> ?p ?o }} ; " for node in nodes)
+                    + f"{PREFIX} DELETE WHERE {{ {store} ocor:watermarkCommit ?c }} ; "
+                    f"ADD <{staging}> TO DEFAULT ; DROP GRAPH <{staging}> ; "
+                    f"{PREFIX} INSERT DATA {{ {metadata} {store} ocor:watermarkCommit {_literal(commit_id)} . "
+                    f"[] a ocor:CommitOrder ; ocor:orderCommitId {_literal(commit_id)} ; ocor:orderSeq {sequence} . }}"
+                )
+                staged = False
+            finally:
+                if staged:
+                    _update(f"DROP SILENT GRAPH <{staging}>")
             self._confirm(commit_id, sequence)
             return True
 
@@ -395,9 +537,38 @@ class JenaSHACLProjectionAdapter:
                                marking=evaluated))
         return sorted(result, key=lambda item: item.resource)
 
+    def _nodes(self) -> list[_Node]:
+        """Every published provenance node whose stored marking still resolves (as ``_rows``)."""
+        rows = _query(
+            f"{PREFIX} SELECT ?node ?commitId ?markingRef ?markingObject WHERE {{ ?node ocor:commitId ?commitId ; "
+            f"ocor:markingRef ?markingRef ; ocor:markingObject ?markingObject . "
+            f"FILTER NOT EXISTS {{ ?node a ocor:Resource }} }}"
+        )
+        result: list[_Node] = []
+        for row in rows:
+            try:
+                evaluated = self._scheme.evaluate(json.loads(_value(row, "markingObject")))
+            except (MarkingUnresolved, ValueError):
+                continue
+            if evaluated.marking_ref != _value(row, "markingRef"):
+                continue
+            result.append(_Node(resource=_value(row, "node"), commit_id=_value(row, "commitId"), marking=evaluated))
+        return sorted(result, key=lambda item: item.resource)
+
     def _authorized(self, clearance: object) -> list[_Row]:
         granted = self._clearance(clearance)
         return [row for row in self._rows() if self._scheme.authorized(row.marking, granted)]
+
+    def _readable(self, clearance: object) -> dict[str, _Row | _Node]:
+        """Every resource and provenance node the clearance is authorized to read, by IRI."""
+        granted = self._clearance(clearance)
+        items: list[_Row | _Node] = [*self._rows(), *self._nodes()]
+        return {item.resource: item for item in items if self._scheme.authorized(item.marking, granted)}
+
+    def provenance_authorized(self, clearance: Mapping[str, Any]) -> list[dict[str, str]]:
+        """The published provenance nodes the clearance is authorized to read."""
+        granted = self._clearance(clearance)
+        return [node.public() for node in self._nodes() if self._scheme.authorized(node.marking, granted)]
 
     def list_authorized(self, clearance: Mapping[str, Any]) -> list[dict[str, str]]:
         return [row.public() for row in self._authorized(clearance)]
@@ -420,7 +591,7 @@ class JenaSHACLProjectionAdapter:
         resource the clearance does not authorize (``MARKING_DENIED``), structurally identical to
         the marking-safe read path (``_authorized`` is the same filtered source)."""
         _require_iri(resource_id)
-        if not any(row.resource == resource_id for row in self._authorized(clearance)):
+        if resource_id not in self._readable(clearance):
             raise JenaAdapterError("MARKING_DENIED", "resource is not authorized for the requester's clearance")
         turtle = _construct(f"{PREFIX} CONSTRUCT {{ <{resource_id}> ?p ?o }} WHERE {{ <{resource_id}> ?p ?o }}")
         graph = Graph()
@@ -435,7 +606,7 @@ class JenaSHACLProjectionAdapter:
         if isinstance(resource_ids, str) or not resource_ids:
             raise JenaAdapterError("SHAPE_VIOLATION", "an export names one or more resources")
         wanted = [_require_iri(resource_id) for resource_id in resource_ids]
-        authorized = {row.resource: row for row in self._authorized(clearance)}
+        authorized = self._readable(clearance)
         if any(resource_id not in authorized for resource_id in wanted):
             raise JenaAdapterError("MARKING_DENIED", "a resource is not authorized for the requester's clearance")
         confirmed = self.watermark()

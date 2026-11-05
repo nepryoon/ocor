@@ -39,6 +39,11 @@ services:
     <<: *policy
     image: ocor/jena-fuseki:6.2.0
     build: {context: ../../infra/fuseki}
+    # PO decision NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05), option 1: the in-memory "ocor"
+    # service with the endpoints sparql, query, update, data and shacl.
+    command: ["--config=/etc/ocor-fuseki/config.ttl"]
+    volumes:
+      - "./fuseki/config.ttl:/etc/ocor-fuseki/config.ttl:ro"
     ports: ["127.0.0.1:3030:3030"]
     tmpfs: ["/var/lib/fuseki:size=512m,mode=0700,uid=10001,gid=0"]
     healthcheck:
