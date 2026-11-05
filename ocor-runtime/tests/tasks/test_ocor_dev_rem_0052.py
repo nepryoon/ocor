@@ -2459,3 +2459,16 @@ def test_ncr_c2_013_a_watermark_that_cannot_form_a_served_context_stays_control_
         reply = fixture.invoke("GetObject", rem.get_object_body())
         assert (reply.status, reply.body["reason_code"]) == (503, "CONTROL_PLANE_UNAVAILABLE"), (case, reply.body)
         assert "served" not in reply.body, case
+
+
+def test_ncr_c4_001_a_deeply_nested_projected_fact_is_projection_drift() -> None:
+    """The projected fact the projector reads back to keep the order is untrusted: one nested
+    beyond what the decoder can read is PROJECTION_DRIFT, never a raw RecursionError."""
+    rem = _rem_0050()
+    projector = _module("ocor_runtime.c4.projector")
+    double = rem._projection_double()
+    double._lookup_fact = lambda fact_id: ("urn:ocor:commit:prior", "[" * 100_000)
+    with pytest.raises(projector.ProjectorError) as caught:
+        projector.CanonicalStateProjector(double, release_digest=RELEASE).apply(rem._committed_event())
+    assert caught.value.reason_code == "PROJECTION_DRIFT"
+    assert double.applied == []
