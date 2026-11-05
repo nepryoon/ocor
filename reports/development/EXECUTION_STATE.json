@@ -1,16 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "b3da83f3207d5f10eb10c8bf285d007abaa56adb",
-    "branch": "governed/state-sync-rem0052-iter6-20261105",
+    "baseline_commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+    "branch": "governed/state-sync-rem0052-iter7-20261105",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 6: packaging, decision request NCP-U05-ITERATION-LIMIT, TERMINAL_BLOCKED",
+    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 7: dispositions of NCP-U05-ITERATION-LIMIT and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY implemented on the unit branch, NCP-THROUGHPUT-RULES registered",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 59262664,
+      "MemAvailable": 55451448,
       "MemTotal": 64199668
     },
-    "next_action": "TERMINAL_BLOCKED on the decision requests NCP-U05-ITERATION-LIMIT (PR #496) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494). After the decisions, resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 3cf255bc4c77, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter6/): register the decisions; with NCP-U05-ITERATION-LIMIT A1/A2 continue within the granted iterations (A3: suspend the unit, start NCP-U07); with B1 add the two new HIGH entries to the register and to plan_units.NCP-U05 (resolves, criteria, red tests, code_paths c4/object_projection.py and c2/gateway.py), RED/GREEN with the authorized realignment of test_ocor_dev_rem_0049.py:1425 and the regression-only requalification of OCOR-DEV-0034 (c2/gateway.py input); with C1 record the interpretation in the record; with NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1 the exact-path .ttl authorization in scripts/validate_language_policy.py and its cases in reports/tests/test_validate_language_policy.py with RED/GREEN; then rebuild the record draft (iter6/build_record_draft.py), PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite with the requalifications, verification, seal, merge. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-    "phase": "REM_0052_NCP_U05_STOP_TERMINAL_BLOCKED_ON_DECISION_REQUESTS",
+    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05), iteration 8 of the six granted by NCP-U05-ITERATION-LIMIT option A1 (8 of 12; the unit started before NCP-THROUGHPUT-RULES (2026-11-05), so its limits stay those already decided), on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 6cac33c7732a, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter7/): the self-check of NCP-THROUGHPUT-RULES point 1 (the five points of PRE-REVIEW-INPUT-ROBUSTNESS plus boundary digests and resource closure on every error path) for every adapter and parsing path touched by the unit (c4/typedb_adapter.py, c4/jena_adapter.py, c4/shacl.py, c4/rebuild.py, c4/drift.py, c4/marking.py, c4/adapters/postgres.py, c4/projector.py, c4/object_projection.py, c2/gateway.py), RED/GREEN for every gap, the table in the record; then PRE-CAMPAIGN-GATE (adapt ~/.ocor-codex/rem-0052/pregate_ss7.py to the unit head), the local pre-push checks (supply-chain scanner, compose-config, validation-closure guards), PRE-CAMPAIGN-REVIEW; then the full suite with the 13 regression-only requalifications (0005, 0034, 0037, 0038, 0039, 0050, 0073, 0074, 0075, 0077, 0078, 0079, 0082), candidate, verification by a provider different from Anthropic, seal, merge, state sync. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "phase": "REM_0052_NCP_U05_IN_PROGRESS",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
       "implementers": [
@@ -18,7 +18,7 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0052 iterations 1-6 (RED and GREEN of NCR-C4-001..004, consumer construction adaptations, packaging), the decision requests NCP-U05-FUSEKI-SHACL-SERVICE, NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY and NCP-U05-ITERATION-LIMIT and the state syncs, as the backup implementer of the loop"
+          "scope": "OCOR-DEV-REM-0052 iterations 1-7 (RED and GREEN of NCR-C4-001..005 and NCR-C2-013, the language gate of NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1, consumer construction adaptations and realignments, packaging), the decision requests of the unit, their dispositions and the state syncs, as the backup implementer of the loop"
         }
       ]
     },
@@ -1750,7 +1750,7 @@
       }
     }
   },
-  "baseline_commit": "b3da83f3207d5f10eb10c8bf285d007abaa56adb",
+  "baseline_commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -7045,8 +7045,16 @@
       ],
       "blocked_tasks_after_decision": [],
       "created_at": "2026-11-05T01:13:40.105075+00:00",
+      "decided_option": "option 1",
       "decision": "NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 6 Stop; NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) point 2 (implementation beyond the chosen option); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) point 5 (a decision request is required to modify a validator)",
       "decision_level": "NORMATIVE",
+      "disposition_record": {
+        "commit": "3cab808c46dd0a2510f9913f4d12f83a9a87d90f",
+        "path": "reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md",
+        "pr": 494,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "6d67b0dd22726353d4c893763dd580fea2169c5bd7144baf8a236494d55146a1"
+      },
       "does_not_block": [
         "the SHACL part of NCR-C4-002 (RED 7a39c51, GREEN 437852a)",
         "the packaging of the unit that does not need the gate (inventory, requalification list, record draft, register, reverse index, allowlist)"
@@ -7056,15 +7064,37 @@
         "commit": "486d0603f02ea68db890d62225736bd7ff50fa6e",
         "path": "reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md",
         "pr": 494,
-        "publication": "DRAFT_PR_OPEN; the file enters main with the NCP-U05 change set that changes the plan allowlist",
+        "publication": "DRAFT_PR_CLOSED_RESOLVED_NOT_MERGED; disposition recorded on the branch; the decided file enters main byte-identical with the NCP-U05 change set (allowlisted path)",
         "sha256": "5afab32b9d908d3688c2e76df143532114333604d4d4c86461168be40f91d692"
       },
       "finding": "scripts/validate_language_policy.py :71 authorizes .ttl only in is_declarative_contract_location (:31-39: ocor-runtime/schemas, ocor-runtime/docs/governance_dossier/contracts, reports/contracts); the gate runs in ocor-rccad.yml :293-294 and ocor-delivery-activation.yml :285-286 and FAILS on deploy/bootstrap/fuseki/config.ttl; OCOR_LANGUAGE_POLICY.md row 14 authorizes RDF 1.1 Turtle for RDF graphs with no location limit; no latest record of a completed task has the validator, its test or the policy document among its inputs",
       "id": "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
+      "implementation": {
+        "branch": "governed/ocor-dev-rem-0052-ncp-u05-c4-projections",
+        "green": "a7e859f",
+        "recorded_at": "2026-11-05T04:51:09.216070+00:00",
+        "red": "d7c21f1",
+        "status": "IMPLEMENTED_ON_THE_UNIT_BRANCH"
+      },
       "implementer": "Claude Code (Anthropic), backup implementer of the loop",
+      "po_decision": "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05)",
+      "po_decision_note": "decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh",
+      "po_decision_ref": {
+        "commit": "3cab808c46dd0a2510f9913f4d12f83a9a87d90f",
+        "path": "reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md",
+        "request_sha256": "5afab32b9d908d3688c2e76df143532114333604d4d4c86461168be40f91d692",
+        "sha256": "6d67b0dd22726353d4c893763dd580fea2169c5bd7144baf8a236494d55146a1"
+      },
       "recommendation": "option 1: exact-path authorization of deploy/bootstrap/fuseki/config.ttl in the .ttl rules of scripts/validate_language_policy.py, positive and negative cases added to reports/tests/test_validate_language_policy.py with RED/GREEN, policy document unchanged; no record drifts",
       "release_condition": "a PO decision on NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
-      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+      "resolved_at": "2026-11-05T04:51:09.216070+00:00",
+      "status": "DECIDED_BY_PO",
+      "status_history": [
+        {
+          "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED",
+          "until": "2026-11-05T04:51:09.216070+00:00"
+        }
+      ]
     },
     {
       "blocked_scope": "the continuation of OCOR-DEV-REM-0052 beyond its sixth iteration (NORMATIVE-CONFORMANCE-PLAN point 1, twice the estimate of 3) and the two new divergences of its consumer inventory; the later units of plan_order wait for NCP-U05 (one unit at a time)",
@@ -7073,8 +7103,16 @@
       ],
       "blocked_tasks_after_decision": [],
       "created_at": "2026-11-05T02:45:24.475154+00:00",
+      "decided_option": "A1, B1, C1",
       "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 1 (an unit beyond twice its estimate stops with a normative decision request); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5 (new divergences are added as OPEN; other register changes need a PO decision)",
       "decision_level": "NORMATIVE",
+      "disposition_record": {
+        "commit": "375486f51d265c189c01c1f3bf4f887b37570247",
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "pr": 496,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
       "does_not_block": [
         "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY, which stays open and independent"
       ],
@@ -7083,12 +7121,30 @@
         "commit": "0cca1d20f4ae48f902e896db37be08c83c031162",
         "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
         "pr": 496,
-        "publication": "DRAFT_PR_OPEN; the file enters main with the NCP-U05 change set (allowlisted path)",
+        "publication": "DRAFT_PR_CLOSED_RESOLVED_NOT_MERGED; disposition recorded on the branch; the decided file enters main byte-identical with the NCP-U05 change set (allowlisted path)",
         "sha256": "261b3461e6ae0da4b7cad28be30b22ac620b7fa4eefb988b2a831c8e3a5e3beb"
       },
       "finding": "iteration 6 ended without a candidate: all four entries GREEN, packaging done at 3cf255b; the candidate needs NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY; the consumer inventory found two HIGH divergences outside the NCP-U05 code_paths (c4/object_projection.py, c2/gateway.py) and one BA-03 scope question",
       "id": "NCP-U05-ITERATION-LIMIT",
+      "implementation": {
+        "allowlist": "f65868f",
+        "branch": "governed/ocor-dev-rem-0052-ncp-u05-c4-projections",
+        "green": "599e865",
+        "record": "6cac33c",
+        "recorded_at": "2026-11-05T04:51:09.216070+00:00",
+        "red": "5a07eb0",
+        "register": "c77c1a5",
+        "status": "IMPLEMENTED_ON_THE_UNIT_BRANCH"
+      },
       "implementer": "Claude Code (Anthropic), backup implementer of the loop",
+      "po_decision": "NCP-U05-ITERATION-LIMIT (2026-11-05)",
+      "po_decision_note": "decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh",
+      "po_decision_ref": {
+        "commit": "375486f51d265c189c01c1f3bf4f887b37570247",
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "request_sha256": "261b3461e6ae0da4b7cad28be30b22ac620b7fa4eefb988b2a831c8e3a5e3beb",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
       "questions": {
         "A": "additional iterations",
         "B": "the two new divergences of the consumer inventory",
@@ -7096,7 +7152,14 @@
       },
       "recommendation": "A1 (up to six iterations beyond the sixth, fixed limit), B1 (two new HIGH entries resolved by NCP-U05 with the realignment of test_ocor_dev_rem_0049.py:1425 and the regression-only requalification of OCOR-DEV-0034), C1 (the six object operations are not named logical queries; the interpretation is recorded)",
       "release_condition": "a PO decision on NCP-U05-ITERATION-LIMIT",
-      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED"
+      "resolved_at": "2026-11-05T04:51:09.216070+00:00",
+      "status": "DECIDED_BY_PO",
+      "status_history": [
+        {
+          "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED",
+          "until": "2026-11-05T04:51:09.216070+00:00"
+        }
+      ]
     }
   ],
   "checkpoint_consolidation": {
@@ -7854,26 +7917,39 @@
     "status": "CLOSED_RESOLVED_BY_IMPLEMENTATION"
   },
   "historical_terminal_loop_disposition": {
-    "loop_status": "CONTINUE",
-    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 437852abdc37, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env and the Fuseki resource override of the CI profile, see NOTES.md; pytest from ocor-runtime). All four entries NCR-C4-001..004 are GREEN, the SHACL part included. The candidate waits for the PO decision on NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494): with option 1, the exact-path .ttl authorization in scripts/validate_language_policy.py and its positive and negative cases in reports/tests/test_validate_language_policy.py with RED/GREEN. Executable meanwhile: the packaging (open points of the record, consumer inventory, requalification list from the drift with the regression-only 0073, 0074, 0075, 0077, 0078, 0079 of the compose change and the NCP-UNBINDABLE classification of 0037, 0038, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050, unit record draft, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist including reports/development/decision_requests/NCP-U05-FUSEKI-SHACL-SERVICE.md and reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md); then PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 5 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1): if the unit is not at its candidate boundary at the end of iteration 6, open the iteration-limit decision request. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "decision_request": "NCP-U05-ITERATION-LIMIT",
+    "decision_requests": [
+      "NCP-U05-ITERATION-LIMIT",
+      "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY"
+    ],
+    "loop_status": "TERMINAL_BLOCKED",
+    "next_action": "TERMINAL_BLOCKED on the decision requests NCP-U05-ITERATION-LIMIT (PR #496) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494). After the decisions, resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 3cf255bc4c77, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter6/): register the decisions; with NCP-U05-ITERATION-LIMIT A1/A2 continue within the granted iterations (A3: suspend the unit, start NCP-U07); with B1 add the two new HIGH entries to the register and to plan_units.NCP-U05 (resolves, criteria, red tests, code_paths c4/object_projection.py and c2/gateway.py), RED/GREEN with the authorized realignment of test_ocor_dev_rem_0049.py:1425 and the regression-only requalification of OCOR-DEV-0034 (c2/gateway.py input); with C1 record the interpretation in the record; with NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1 the exact-path .ttl authorization in scripts/validate_language_policy.py and its cases in reports/tests/test_validate_language_policy.py with RED/GREEN; then rebuild the record draft (iter6/build_record_draft.py), PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite with the requalifications, verification, seal, merge. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
     "previous_historical": {
-      "decision_request": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
-      "loop_status": "TERMINAL_BLOCKED",
-      "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (draft PR #481, reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md on governed/decision-request-ncp-u06-0004-regression-manifest-validation, commit 0b41db1bcc9c, sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d): the merge of PR #480 and hence the integration of OCOR-DEV-REM-0051 (NCP-U06) depend on it; the next units of plan_order (NCP-U05, U07-U12) start only after NCP-U06 is integrated (one unit at a time); G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the repair change set, PR #481 closed as resolved), then repair cycle 1 of OCOR-DEV-REM-0051 (cycle 1 of 2) on a new branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 from the sealed head f3016143774d (keep governed/ocor-dev-rem-0051-ncp-u06-c5-backbone, its sealed records and PR #480 unchanged; PR #480 is closed as superseded or merged by ancestry): with option 1 RED (new reports/tests module, positive and negative cases for each branch: regression head checks, chain walk to the latest qualifying record, unchanged qualifying path) then GREEN in ocor-runtime/tools/evidence_manifest.py validate_manifest only, plan allowlist and reverse traceability index for the new test file, regression-only requalification OCOR-DEV-0004.requalified-rem0051-r1 superseding the sealed rem0051 record (evidence_manifest.py is an input of 0004), repair-1 unit record superseding the sealed one; with option 2 move the OCOR-DEV-0004.requalified-rem0051 artifact pair after the rem0039 pair in reports/evidence/G0/MANIFEST.json; with option 3 change ocor-poc-ci.yml lines 157-158 as described. Then the workflow command of the evidence job added to the PRE-CAMPAIGN-GATE kit, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW per its exemptions, campaign as required by the changed inputs, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic and Google, seal, PR, merge. Iterations used 7 of estimate 6 (stop at 12). No new DEC; claims unchanged.",
+      "loop_status": "CONTINUE",
+      "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 437852abdc37, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path; dev services postgresql, typedb, terminusdb, fuseki plus seaweedfs, opa, openbao, qdrant of ocor-bootstrap up with that env and the Fuseki resource override of the CI profile, see NOTES.md; pytest from ocor-runtime). All four entries NCR-C4-001..004 are GREEN, the SHACL part included. The candidate waits for the PO decision on NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494): with option 1, the exact-path .ttl authorization in scripts/validate_language_policy.py and its positive and negative cases in reports/tests/test_validate_language_policy.py with RED/GREEN. Executable meanwhile: the packaging (open points of the record, consumer inventory, requalification list from the drift with the regression-only 0073, 0074, 0075, 0077, 0078, 0079 of the compose change and the NCP-UNBINDABLE classification of 0037, 0038, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050, unit record draft, register NCR-C4-001..004 OPEN -> IN_REMEDIATION, reverse traceability index, plan allowlist including reports/development/decision_requests/NCP-U05-FUSEKI-SHACL-SERVICE.md and reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md); then PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iterations used 5 of estimate 3 (stop at 6, NORMATIVE-CONFORMANCE-PLAN point 1): if the unit is not at its candidate boundary at the end of iteration 6, open the iteration-limit decision request. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
       "previous_historical": {
-        "decision_request": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+        "decision_request": "NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION",
         "loop_status": "TERMINAL_BLOCKED",
-        "recorded_at": "2026-11-02T16:42:48.197441+00:00",
+        "next_action": "TERMINAL_BLOCKED: no admitted work remains before the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (draft PR #481, reports/development/decision_requests/NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION.md on governed/decision-request-ncp-u06-0004-regression-manifest-validation, commit 0b41db1bcc9c, sha256 fa6c4af1c69f36100fbf1e54cd3ff55224d956297214c5f709bec9ccc781c07d): the merge of PR #480 and hence the integration of OCOR-DEV-REM-0051 (NCP-U06) depend on it; the next units of plan_order (NCP-U05, U07-U12) start only after NCP-U06 is integrated (one unit at a time); G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 suspended (resumed by NCP-U10). After the decision: register the disposition with a tracked state update (decision request file with the disposition on its branch and in the repair change set, PR #481 closed as resolved), then repair cycle 1 of OCOR-DEV-REM-0051 (cycle 1 of 2) on a new branch governed/ocor-dev-rem-0051-ncp-u06-c5-backbone-repair-1 from the sealed head f3016143774d (keep governed/ocor-dev-rem-0051-ncp-u06-c5-backbone, its sealed records and PR #480 unchanged; PR #480 is closed as superseded or merged by ancestry): with option 1 RED (new reports/tests module, positive and negative cases for each branch: regression head checks, chain walk to the latest qualifying record, unchanged qualifying path) then GREEN in ocor-runtime/tools/evidence_manifest.py validate_manifest only, plan allowlist and reverse traceability index for the new test file, regression-only requalification OCOR-DEV-0004.requalified-rem0051-r1 superseding the sealed rem0051 record (evidence_manifest.py is an input of 0004), repair-1 unit record superseding the sealed one; with option 2 move the OCOR-DEV-0004.requalified-rem0051 artifact pair after the rem0039 pair in reports/evidence/G0/MANIFEST.json; with option 3 change ocor-poc-ci.yml lines 157-158 as described. Then the workflow command of the evidence job added to the PRE-CAMPAIGN-GATE kit, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW per its exemptions, campaign as required by the changed inputs, REMEDIATION verification OCOR-DEV-REM-0051-<head12>-1 to a provider other than Anthropic and Google, seal, PR, merge. Iterations used 7 of estimate 6 (stop at 12). No new DEC; claims unchanged.",
+        "previous_historical": {
+          "decision_request": "NCP-U03-QUALIFYING-REQUALIFICATIONS",
+          "loop_status": "TERMINAL_BLOCKED",
+          "recorded_at": "2026-11-02T16:42:48.197441+00:00",
+          "status": "TERMINAL_BLOCKED"
+        },
+        "reason": "all residual admitted work depends on the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (validator change reserved by NCP-UNBINDABLE-REQUALIFICATIONS point 5), or on the plan order, suspensions and blocks set by the PO",
+        "recorded_at": "2026-11-04T07:09:43.027104+00:00",
+        "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
         "status": "TERMINAL_BLOCKED"
       },
-      "reason": "all residual admitted work depends on the PO decision on NCP-U06-0004-REGRESSION-MANIFEST-VALIDATION (validator change reserved by NCP-UNBINDABLE-REQUALIFICATIONS point 5), or on the plan order, suspensions and blocks set by the PO",
-      "recorded_at": "2026-11-04T07:09:43.027104+00:00",
-      "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-      "status": "TERMINAL_BLOCKED"
+      "reason": "OCOR-DEV-REM-0051 (NCP-U06) integrated after repair cycle 2 (PR #487, merge c2064ce64d2f); NCP-U05 executable",
+      "recorded_at": "2026-11-04T19:23:58.718991+00:00",
+      "status": "CONTINUE_REM_0051_INTEGRATED"
     },
-    "reason": "OCOR-DEV-REM-0051 (NCP-U06) integrated after repair cycle 2 (PR #487, merge c2064ce64d2f); NCP-U05 executable",
-    "recorded_at": "2026-11-04T19:23:58.718991+00:00",
-    "status": "CONTINUE_REM_0051_INTEGRATED"
+    "reason": "all residual admitted work depends on the PO decisions on NCP-U05-ITERATION-LIMIT (iteration limit of NORMATIVE-CONFORMANCE-PLAN point 1, register changes) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (validator change), or on the plan order, suspensions and blocks set by the PO",
+    "recorded_at": "2026-11-05T02:45:24.475154+00:00",
+    "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
+    "status": "TERMINAL_BLOCKED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -9409,7 +9485,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "TERMINAL_BLOCKED on the decision requests NCP-U05-ITERATION-LIMIT (PR #496) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494). After the decisions, resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 3cf255bc4c77, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter6/): register the decisions; with NCP-U05-ITERATION-LIMIT A1/A2 continue within the granted iterations (A3: suspend the unit, start NCP-U07); with B1 add the two new HIGH entries to the register and to plan_units.NCP-U05 (resolves, criteria, red tests, code_paths c4/object_projection.py and c2/gateway.py), RED/GREEN with the authorized realignment of test_ocor_dev_rem_0049.py:1425 and the regression-only requalification of OCOR-DEV-0034 (c2/gateway.py input); with C1 record the interpretation in the record; with NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1 the exact-path .ttl authorization in scripts/validate_language_policy.py and its cases in reports/tests/test_validate_language_policy.py with RED/GREEN; then rebuild the record draft (iter6/build_record_draft.py), PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite with the requalifications, verification, seal, merge. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "next_executable_action": "Resume OCOR-DEV-REM-0052 (NCP-U05), iteration 8 of the six granted by NCP-U05-ITERATION-LIMIT option A1 (8 of 12; the unit started before NCP-THROUGHPUT-RULES (2026-11-05), so its limits stay those already decided), on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 6cac33c7732a, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter7/): the self-check of NCP-THROUGHPUT-RULES point 1 (the five points of PRE-REVIEW-INPUT-ROBUSTNESS plus boundary digests and resource closure on every error path) for every adapter and parsing path touched by the unit (c4/typedb_adapter.py, c4/jena_adapter.py, c4/shacl.py, c4/rebuild.py, c4/drift.py, c4/marking.py, c4/adapters/postgres.py, c4/projector.py, c4/object_projection.py, c2/gateway.py), RED/GREEN for every gap, the table in the record; then PRE-CAMPAIGN-GATE (adapt ~/.ocor-codex/rem-0052/pregate_ss7.py to the unit head), the local pre-push checks (supply-chain scanner, compose-config, validation-closure guards), PRE-CAMPAIGN-REVIEW; then the full suite with the 13 regression-only requalifications (0005, 0034, 0037, 0038, 0039, 0050, 0073, 0074, 0075, 0077, 0078, 0079, 0082), candidate, verification by a provider different from Anthropic, seal, merge, state sync. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -9451,6 +9527,12 @@
     "vf002_remediation": "OCOR-DEV-REM-0021 (merged, PR #200)"
   },
   "po_normative_decisions_registered": {
+    "NCP-THROUGHPUT-RULES (2026-11-05)": {
+      "decision_level": "NORMATIVE",
+      "registered_at": "2026-11-05T04:51:09.216070+00:00",
+      "summary": "normative PO decision with explicit instruction (2026-11-05): 1. before every preventive review of a unit (and every new one in a repair cycle) the implementer applies to every adapter and parsing path touched the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) plus two (every digest, signature or binding the contract requires at a component boundary is recomputed and verified at the boundary, never taken from the caller; every transaction, connection or resource is closed on every error path), fixes every gap with RED/GREEN and reports a per-adapter table in the unit record and the state sync; the preventive review stays identical and independent; 2. for every unit that starts after the decision the stop with a decision request is at three times estimate_iterations instead of twice (units in progress keep the limits already decided), or earlier when two consecutive iterations of the unit produce no progress; every state sync states 'iterazione N di stima E (stop a 3E)'. Tests, gates, thresholds, timeouts, preventive review, independent verification, claims and the repair-cycle limit unchanged; no new DEC",
+      "taken_by": "Product Owner, explicit instruction"
+    },
     "NCP-U01-RETAINED-C1-BUILDERS (2026-11-01)": {
       "decision_level": "NORMATIVE",
       "disposition_of": {
@@ -9507,6 +9589,23 @@
       "summary": "option 1, decided on full delegation of the PO (DELEGA-COMPLETA (2026-11-02), model claude-opus-5-5, effort xhigh): the requalifications of OCOR-DEV-0012, 0017, 0031, 0034, 0035, 0037 and 0039 in NCP-U03 are regression-only in the non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS (requalification_kind regression, qualifies_requirements false, no case bound to a requirement, supersedes the latest record of the task), like those of 0005, 0050 and 0082; each record lists the realigned or adapted tests of the task with the syntax-tree comparison; no docstring added, no test changed beyond the realignments already made; the code head 511091f stays the campaign head; requirement evidence of the seven tasks stays that of the supersedes chain, the new behaviour is qualified by the unit tests and the requirements by the G6 tasks; valid for NCP-U03 only, NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 stays in force for the other units",
       "unchanged": "no new DEC; ADD, LLD, contracts, schemas, normative registers and claims unchanged"
     },
+    "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05)": {
+      "decision_level": "NORMATIVE",
+      "disposition_of": {
+        "branch": "governed/decision-request-ncp-u05-fuseki-config-language-policy",
+        "commit": "3cab808c46dd0a2510f9913f4d12f83a9a87d90f",
+        "decision_request": "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
+        "path": "reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md",
+        "pr": 494,
+        "publication": "DRAFT_PR_CLOSED_RESOLVED_NOT_MERGED; the decided file enters main with the NCP-U05 change set (allowlisted path)",
+        "request_commit": "486d0603f02ea68db890d62225736bd7ff50fa6e",
+        "request_sha256": "5afab32b9d908d3688c2e76df143532114333604d4d4c86461168be40f91d692",
+        "sha256": "6d67b0dd22726353d4c893763dd580fea2169c5bd7144baf8a236494d55146a1"
+      },
+      "registered_at": "2026-11-05T04:51:09.216070+00:00",
+      "summary": "option 1: exact-path authorization of deploy/bootstrap/fuseki/config.ttl in the .ttl rules of scripts/validate_language_policy.py (one predicate added, no new area), config.ttl among POSITIVE_CASES and deploy/bootstrap/fuseki/other.ttl, deploy/bootstrap/config.ttl among NEGATIVE_CASES of reports/tests/test_validate_language_policy.py with RED/GREEN; OCOR_LANGUAGE_POLICY.md unchanged; no record drifts",
+      "taken_by": "Product Owner, on full delegation (DELEGA-COMPLETA (2026-11-02)): decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh"
+    },
     "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05)": {
       "decision_level": "NORMATIVE",
       "disposition_of": {
@@ -9522,6 +9621,23 @@
       },
       "registered_at": "2026-11-05T01:13:40.105075+00:00",
       "summary": "option 1: Fuseki configuration mounted by the stack (deploy/bootstrap/fuseki/config.ttl, in-memory ocor service with sparql, query, update, data and shacl; fuseki service of deploy/bootstrap/compose.yaml with the read-only mount and --config); image, Dockerfile, services lock and identity check unchanged; the Jena adapter validates the ADD v1.3 :2059 shapes with that endpoint before a publication becomes visible; regression-only requalifications of 0073, 0074, 0075, 0077, 0078, 0079",
+      "taken_by": "Product Owner, on full delegation (DELEGA-COMPLETA (2026-11-02)): decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh"
+    },
+    "NCP-U05-ITERATION-LIMIT (2026-11-05)": {
+      "decision_level": "NORMATIVE",
+      "disposition_of": {
+        "branch": "governed/decision-request-ncp-u05-iteration-limit",
+        "commit": "375486f51d265c189c01c1f3bf4f887b37570247",
+        "decision_request": "NCP-U05-ITERATION-LIMIT",
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "pr": 496,
+        "publication": "DRAFT_PR_CLOSED_RESOLVED_NOT_MERGED; the decided file enters main with the NCP-U05 change set (allowlisted path)",
+        "request_commit": "0cca1d20f4ae48f902e896db37be08c83c031162",
+        "request_sha256": "261b3461e6ae0da4b7cad28be30b22ac620b7fa4eefb988b2a831c8e3a5e3beb",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
+      "registered_at": "2026-11-05T04:51:09.216070+00:00",
+      "summary": "A1: up to six iterations after the sixth for OCOR-DEV-REM-0052 (four for the cycle without repairs, two for the repair cycles after a NO_GO verification), then a normative decision request without asking for more; B1: two new OPEN HIGH entries NCR-C4-005 (C4, c4/object_projection.py) and NCR-C2-013 (C2, c2/gateway.py) with plan_unit NCP-U05, NFR-024/NFR-077, ADD v1.3 lines 1364 and 3406, blocks as NCR-C4-003; the unreachable object projection answers PROJECTION_NOT_READY and the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark; realignment of test_ocor_dev_rem_0049.py line 1425 authorized; regression-only requalification of OCOR-DEV-0034; C1: the six object operations are not named logical queries of BA-03, interpretation recorded, no code or test change",
       "taken_by": "Product Owner, on full delegation (DELEGA-COMPLETA (2026-11-02)): decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh"
     },
     "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)": {
@@ -9681,10 +9797,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "bfb2ca8c4227fc08cac75dfa59c1387471082e22",
-    "branch": "governed/state-sync-rem0052-iter5-20261105",
-    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 5: disposition of NCP-U05-FUSEKI-SHACL-SERVICE, RED and GREEN of the NCR-C4-002 SHACL part, decision request NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
-    "phase": "REM_0052_NCP_U05_IN_PROGRESS"
+    "baseline_commit": "b3da83f3207d5f10eb10c8bf285d007abaa56adb",
+    "branch": "governed/state-sync-rem0052-iter6-20261105",
+    "change_set": "state sync after OCOR-DEV-REM-0052 (NCP-U05) iteration 6: packaging, decision request NCP-U05-ITERATION-LIMIT, TERMINAL_BLOCKED",
+    "phase": "REM_0052_NCP_U05_STOP_TERMINAL_BLOCKED_ON_DECISION_REQUESTS"
   },
   "previous_candidate_ci": {
     "bad_checks": [
@@ -9786,16 +9902,18 @@
       "OCOR-DEV-REM-0043": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 10: resumed by NCP-U10, closed as superseded when NCP-U10 is integrated"
     },
     "completed_evidence_tasks_count": 75,
-    "executable_now": [],
-    "executable_now_note": "NCP-U05 stopped at its iteration limit; continuation and candidate blocked on NCP-U05-ITERATION-LIMIT and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY; later units wait (one unit at a time)",
+    "executable_now": [
+      "OCOR-DEV-REM-0052"
+    ],
+    "executable_now_note": "NCP-U05 executable again after the PO decisions NCP-U05-ITERATION-LIMIT and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (decided on full delegation); later units wait (one unit at a time)",
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0052": "NCP-U05 at 3cf255bc4c77: all four entries GREEN, packaging 218ff46/3cf255b; stop at iteration 6 of 3; waits for NCP-U05-ITERATION-LIMIT (PR #496) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494)"
+      "OCOR-DEV-REM-0052": "NCP-U05 at 6cac33c7732a: all six entries GREEN (NCR-C4-001..005, NCR-C2-013), language gate GREEN, record draft 6cac33c; iteration 7 of 12 (NCP-U05-ITERATION-LIMIT option A1); next: self-check, PRE-CAMPAIGN-GATE, preventive review"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-05T02:45:24.475154+00:00",
+    "observed_at": "2026-11-05T04:51:09.216070+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U05",
@@ -32521,31 +32639,50 @@
       "branch": "governed/ocor-dev-rem-0052-ncp-u05-c4-projections",
       "code_paths_extension": {
         "authority": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh)",
+        "b1_authority": "NCP-U05-ITERATION-LIMIT (2026-11-05) option B1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh)",
+        "language_gate_authority": "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh)",
         "paths": [
           "deploy/bootstrap/fuseki/config.ttl",
-          "deploy/bootstrap/compose.yaml"
+          "deploy/bootstrap/compose.yaml",
+          "scripts/validate_language_policy.py",
+          "reports/tests/test_validate_language_policy.py"
         ],
-        "pending": "scripts/validate_language_policy.py and reports/tests/test_validate_language_policy.py only if NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1 or 2 is chosen"
+        "plan_code_paths_added_by_b1": [
+          "ocor-runtime/src/ocor_runtime/c4/object_projection.py",
+          "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        ]
       },
       "commits": {
         "ALLOWLIST": "218ff46",
+        "ALLOWLIST_0034": "f65868f",
         "CLOSURE_DRAFT": "3cf255b",
         "GREEN": "fb9e20a",
         "GREEN_C4_002_drift": "2547123",
         "GREEN_C4_002_jena": "7d5c4c1",
         "GREEN_C4_002_shacl": "437852a",
         "GREEN_C4_004": "5af48a9",
+        "GREEN_C4_005_C2_013": "599e865",
+        "GREEN_LANGUAGE_GATE": "a7e859f",
+        "RECORD_DRAFT_ITER7": "6cac33c",
         "RED": "0d22acc",
         "RED_C4_002_drift": "36cc66a",
         "RED_C4_002_jena": "a0f52ae",
         "RED_C4_002_shacl": "7a39c51",
         "RED_C4_004": "49b7616",
-        "RED_realignment_0039": "67da95d"
+        "RED_C4_005_C2_013": "5a07eb0",
+        "RED_LANGUAGE_GATE": "d7c21f1",
+        "RED_realignment_0039": "67da95d",
+        "REGISTER_B1": "c77c1a5"
       },
       "consumers_inventory_findings": [
-        "c4/object_projection.py :97-103 answers CONTROL_PLANE_UNAVAILABLE for an unreachable TypeDB (pinned by test_ocor_dev_rem_0049.py:1421-1425) against ADD v1.3 :3406 and :1364: new HIGH divergence (NFR-024, NFR-077), question B of NCP-U05-ITERATION-LIMIT",
-        "c2/gateway.py :379-380 catch-all maps TypeDBUnavailableError (PROJECTION_NOT_READY with the confirmed watermark) to CONTROL_PLANE_UNAVAILABLE against ADD v1.3 :3406 and :1364: new HIGH divergence, question B of NCP-U05-ITERATION-LIMIT; c2/gateway.py is an input of the latest OCOR-DEV-0034 record",
-        "whether the six C2 object operations are named logical queries of BA-03 (ADD v1.3 :356, :1366; LLD v1.1 :369; planner pinned by test_ocor_dev_rem_0049.py:391-393): question C of NCP-U05-ITERATION-LIMIT"
+        "c4/object_projection.py :97-103 (unreachable TypeDB -> CONTROL_PLANE_UNAVAILABLE): registered as NCR-C4-005 and resolved on the unit branch (option B1)",
+        "c2/gateway.py :379-380 (catch-all on TypeDBUnavailableError): registered as NCR-C2-013 and resolved on the unit branch (option B1)",
+        "BA-03 scope of the six object operations: interpretation C1 recorded in the unit record; no code or test change"
+      ],
+      "decided_requests": [
+        "NCP-U05-FUSEKI-SHACL-SERVICE",
+        "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
+        "NCP-U05-ITERATION-LIMIT"
       ],
       "entries_green": [
         "NCR-C4-001",
@@ -32553,13 +32690,21 @@
         "NCR-C4-004",
         "NCR-C4-002 (drift, quarantine, signed checkpoint, bounded rebuild)",
         "NCR-C4-002 (Jena watermark, canonical marking object, conservative join, typed errors)",
-        "NCR-C4-002 (SHACL validation of the ADD v1.3 section 3.6 shapes with the Fuseki SHACL service, NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1)"
+        "NCR-C4-002 (SHACL validation of the ADD v1.3 section 3.6 shapes with the Fuseki SHACL service, NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1)",
+        "NCR-C4-005 (unreachable object projection PROJECTION_NOT_READY, NCP-U05-ITERATION-LIMIT option B1)",
+        "NCR-C2-013 (Gateway PROJECTION_NOT_READY with the served context of the confirmed watermark, option B1)"
       ],
       "estimate_iterations": 3,
-      "head": "3cf255bc4c77a41caf67a13bdc29edbb8a8a19c0",
-      "iteration_limit_decision_request": "NCP-U05-ITERATION-LIMIT",
+      "head": "6cac33c7732abf03742847763c73a7559facb88d",
+      "iteration_limit": {
+        "decision": "NCP-U05-ITERATION-LIMIT (2026-11-05) option A1",
+        "granted_after_the_sixth": 6,
+        "note": "the unit started before NCP-THROUGHPUT-RULES (2026-11-05): its point 2 (3E) does not apply; the limits already decided stay",
+        "stop_after_iteration": 12,
+        "used_of_the_granted": 1
+      },
       "iteration_stop": 6,
-      "iterations_used": 6,
+      "iterations_used": 7,
       "open_points_for_the_record": [
         "staleness semantics (OI-018 stays open in ADD v1.3 :3716): zero while every commit C4 has received is applied, otherwise the time since the earliest received unconfirmed commit; for an unreachable projection the time since the last confirmation (PO decision point 5, NCP-U05 row)",
         "a ledger that has confirmed nothing (a projection that predates it) is not a disagreement; a confirmed watermark that the projection does not hold is PROJECTION_NOT_READY",
@@ -32583,17 +32728,19 @@
       ],
       "packaging": {
         "allowlist": "218ff46",
-        "ast_comparison": "against 7df90f5: only the three realigned raises of 0037, 0038, 0039 (each with one reason-code assertion added) differ; functions and names unchanged in 0037, 0038, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050",
+        "allowlist_iter7": "f65868f (OCOR-DEV-0034 regression-only requalification, plan validator self-hash line only)",
+        "ast_comparison": "against 7df90f5: only the three realigned raises of 0037, 0038, 0039 (each with one reason-code assertion added) and the realigned reason-code assertion of test_ocor_dev_rem_0049.py (option B1) differ; functions and names unchanged",
         "closure": "3cf255b",
         "decided_request_on_branch": "reports/development/decision_requests/NCP-U05-FUSEKI-SHACL-SERVICE.md (sha256 a33f9134894f0558b8bad17c017710edb303cbe901820e905d1563812b88ba00, byte-identical to fa22c3b)",
         "readme": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/README.md",
         "record_draft": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+        "record_draft_iter7": "6cac33c (record and README rebuilt after the decisions; register NCR-C4-005 and NCR-C2-013 OPEN -> IN_REMEDIATION)",
         "register": "NCR-C4-001..004 OPEN -> IN_REMEDIATION with resolution_proof (red_test test_ncr_c4_00N_conforms, additional_tests)",
         "reverse_index": "entry of ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py (named_in_test FR-057, FR-064, FR-065, FR-068, FR-131, FR-148, NFR-006, NFR-024, NFR-077)"
       },
       "pending": [
-        "the PO decisions on NCP-U05-ITERATION-LIMIT and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY and their implementation",
-        "PRE-CAMPAIGN-GATE, preventive review, full suite with the 12 requalifications, candidate, verification, seal, merge"
+        "self-check of NCP-THROUGHPUT-RULES (2026-11-05) point 1 with RED/GREEN for every gap and the table in the record",
+        "PRE-CAMPAIGN-GATE, preventive review, full suite with the 13 requalifications, candidate, verification, seal, merge"
       ],
       "realigned_tests": [
         {
@@ -32619,20 +32766,31 @@
           "lines": "135-138",
           "path": "ocor-runtime/tests/tasks/test_ocor_dev_0038.py",
           "red": "a0f52ae"
+        },
+        {
+          "authority": "case 1 of NORMATIVE-CONFORMANCE-PLAN point 5, authorized by NCP-U05-ITERATION-LIMIT (2026-11-05) option B1 (NCR-C4-005)",
+          "function": "test_object_projection_unreachable_is_typed",
+          "kind": "REALIGN",
+          "lines": "1421-1425",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py",
+          "red": "5a07eb0"
         }
       ],
       "register_entries_planned": [
         "NCR-C4-001",
         "NCR-C4-002",
         "NCR-C4-003",
-        "NCR-C4-004"
+        "NCR-C4-004",
+        "NCR-C4-005",
+        "NCR-C2-013"
       ],
       "requalifications_note": "list fixed from the drift at the candidate head; classification per NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) for the realigned or adapted tests of 0037, 0039, REM-0010, REM-0014, REM-0041, REM-0049, REM-0050; 0005/0050/0082 always regression-only; NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1: regression-only requalifications of OCOR-DEV-0073, 0074, 0075, 0077, 0078 and 0079 (deploy/bootstrap/compose.yaml among the inputs of their latest records), tests unchanged",
       "requalifications_planned": {
-        "note": "drift after the allowlist commit equals the 12 planned tasks; 0037/0038/0039 not bindable (BR-003 test/dimostrazione MIXED; FR-168, FR-138, FR-148 AUTOMATED_TEST but not exercised in full; FR-019 test + ispezione MIXED; NFR-024 test, ispezione MIXED)",
+        "note": "drift after the allowlist commits equals the 13 planned tasks; 0034 for c2/gateway.py (option B1) with tests unchanged; 0037/0038/0039 not bindable (BR-003 MIXED; FR-168, FR-138, FR-148 AUTOMATED_TEST but not exercised in full; FR-019 and NFR-024 MIXED)",
         "qualifying": [],
         "regression_only": [
           "OCOR-DEV-0005",
+          "OCOR-DEV-0034",
           "OCOR-DEV-0037",
           "OCOR-DEV-0038",
           "OCOR-DEV-0039",
@@ -32646,7 +32804,7 @@
           "OCOR-DEV-0082"
         ]
       },
-      "status": "STOP_AT_ITERATION_LIMIT_DECISION_PENDING",
+      "status": "IN_PROGRESS_GREEN_ALL_ENTRIES_DECISIONS_IMPLEMENTED",
       "tdd": {
         "GREEN": {
           "commit": "fb9e20a",
@@ -32673,6 +32831,21 @@
           "fingerprint": "2a585d85c755bcf2384a36ac57ad785850fe4289c05b3caf913e409dd93378cf",
           "summary": "unit + consumers + mission thread: 636 passed on the real stack"
         },
+        "GREEN_C4_005_C2_013": {
+          "commit": "599e865",
+          "fingerprint": "532a9348c60d82d17a977f0c37be8553e3f89a99aad56d4bf9e49c56619f8e26",
+          "summary": "unit module + test_ocor_dev_rem_0049 + 0034, 0035, 0037, 0038, 0039, REM-0010, REM-0014, REM-0041, REM-0050 on the real stack: 799 passed"
+        },
+        "GREEN_C4_005_C2_013_consumers": {
+          "commit": "599e865",
+          "fingerprint": "42d8babd28d2c8297f01880237a0d512feab42da2778f1e61c8ff3d6166ea1db",
+          "summary": "0012, 0017, REM-0031 and the mission thread: 73 passed, 31 skipped (the live REM-0031 cases: Keycloak realm not initialized in the development stack; NOT_EXECUTED here, run by the campaign)"
+        },
+        "GREEN_language_gate": {
+          "commit": "a7e859f",
+          "fingerprint": "1957e2e593e31537ea4d4326cbbef277efed441fb7af34778bdb200d7bea802f",
+          "summary": "5 passed, 11 subtests passed; scripts/validate_language_policy.py PASS on the tracked tree"
+        },
         "RED": {
           "commit": "0d22acc",
           "fingerprint": "49028688786656e322f60db5a9b1df7ed948bce6c7bf34d9de703f88c1310f79",
@@ -32698,13 +32871,23 @@
           "fingerprint": "be49557813dfc3ab66d8698a68bb873e148f4f353c622c79fa6a451f16f96112",
           "summary": "NCR-C4-004 cases of the unit module on the iteration-1 GREEN code: 17 failed"
         },
+        "RED_C4_005_C2_013": {
+          "commit": "5a07eb0",
+          "fingerprint": "57717254169212927ce8389f2e00e3611ed45033062cd2aa9e69d97601263a6f",
+          "summary": "NCR-C4-005 and NCR-C2-013 cases of the unit module and the realigned REM-0049 case (tests of 5a07eb0) on the code of a7e859f, unchanged in c77c1a5, on the real stack: 5 failed, 5 passed (the negative branches)"
+        },
+        "RED_language_gate": {
+          "commit": "d7c21f1",
+          "fingerprint": "4043b5bbb4ad89533b86939b95b9b07177e3fe88cf8a50196f802d74f8c20a19",
+          "summary": "reports/tests/test_validate_language_policy.py with deploy/bootstrap/fuseki/config.ttl in POSITIVE_CASES and two other .ttl paths in NEGATIVE_CASES on 3cf255b: 3 failed, 2 passed (NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1)"
+        },
         "RED_realignment_0039": {
           "commit": "67da95d",
           "fingerprint": "7b8e9ef22cf42ec4c1a3cb2c39d03d0787e29980c6169f59462c1f37486faf5f",
           "summary": "0039 on the base code in a scratch worktree: 1 failed (raw URLError), 5 passed"
         }
       },
-      "updated_at": "2026-11-05T02:45:24.475154+00:00",
+      "updated_at": "2026-11-05T04:51:09.216070+00:00",
       "worktree": ".ocor/worktrees/rem-0052"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -33944,19 +34127,13 @@
   },
   "status": "IN_PROGRESS",
   "terminal_loop_disposition": {
-    "decision_request": "NCP-U05-ITERATION-LIMIT",
-    "decision_requests": [
-      "NCP-U05-ITERATION-LIMIT",
-      "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY"
-    ],
-    "loop_status": "TERMINAL_BLOCKED",
-    "next_action": "TERMINAL_BLOCKED on the decision requests NCP-U05-ITERATION-LIMIT (PR #496) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (PR #494). After the decisions, resume OCOR-DEV-REM-0052 (NCP-U05) on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 3cf255bc4c77, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter6/): register the decisions; with NCP-U05-ITERATION-LIMIT A1/A2 continue within the granted iterations (A3: suspend the unit, start NCP-U07); with B1 add the two new HIGH entries to the register and to plan_units.NCP-U05 (resolves, criteria, red tests, code_paths c4/object_projection.py and c2/gateway.py), RED/GREEN with the authorized realignment of test_ocor_dev_rem_0049.py:1425 and the regression-only requalification of OCOR-DEV-0034 (c2/gateway.py input); with C1 record the interpretation in the record; with NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1 the exact-path .ttl authorization in scripts/validate_language_policy.py and its cases in reports/tests/test_validate_language_policy.py with RED/GREEN; then rebuild the record draft (iter6/build_record_draft.py), PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite with the requalifications, verification, seal, merge. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-    "reason": "all residual admitted work depends on the PO decisions on NCP-U05-ITERATION-LIMIT (iteration limit of NORMATIVE-CONFORMANCE-PLAN point 1, register changes) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (validator change), or on the plan order, suspensions and blocks set by the PO",
-    "recorded_at": "2026-11-05T02:45:24.475154+00:00",
-    "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "status": "TERMINAL_BLOCKED"
+    "loop_status": "CONTINUE",
+    "next_action": "Resume OCOR-DEV-REM-0052 (NCP-U05), iteration 8 of the six granted by NCP-U05-ITERATION-LIMIT option A1 (8 of 12; the unit started before NCP-THROUGHPUT-RULES (2026-11-05), so its limits stay those already decided), on governed/ocor-dev-rem-0052-ncp-u05-c4-projections (.ocor/worktrees/rem-0052, head 6cac33c7732a, kit ~/.ocor-codex/rem-0052 with NOTES.md, dev.env, dsn, redgreen.sh, locked-path, iter7/): the self-check of NCP-THROUGHPUT-RULES point 1 (the five points of PRE-REVIEW-INPUT-ROBUSTNESS plus boundary digests and resource closure on every error path) for every adapter and parsing path touched by the unit (c4/typedb_adapter.py, c4/jena_adapter.py, c4/shacl.py, c4/rebuild.py, c4/drift.py, c4/marking.py, c4/adapters/postgres.py, c4/projector.py, c4/object_projection.py, c2/gateway.py), RED/GREEN for every gap, the table in the record; then PRE-CAMPAIGN-GATE (adapt ~/.ocor-codex/rem-0052/pregate_ss7.py to the unit head), the local pre-push checks (supply-chain scanner, compose-config, validation-closure guards), PRE-CAMPAIGN-REVIEW; then the full suite with the 13 regression-only requalifications (0005, 0034, 0037, 0038, 0039, 0050, 0073, 0074, 0075, 0077, 0078, 0079, 0082), candidate, verification by a provider different from Anthropic, seal, merge, state sync. Then NCP-U07, U08, U09, U10, U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "reason": "PO decisions NCP-U05-ITERATION-LIMIT (2026-11-05) and NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05) (decided on full delegation) received, registered and implemented; OCOR-DEV-REM-0052 is executable again. Historical TERMINAL_BLOCKED disposition preserved in historical_terminal_loop_disposition and in Git.",
+    "recorded_at": "2026-11-05T04:51:09.216070+00:00",
+    "status": "SUPERSEDED_PO_DECISIONS_NCP_U05_ITERATION_LIMIT_AND_FUSEKI_CONFIG_LANGUAGE_POLICY"
   },
-  "updated_at": "2026-11-05T02:45:24.475154+00:00",
+  "updated_at": "2026-11-05T04:51:09.216070+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
