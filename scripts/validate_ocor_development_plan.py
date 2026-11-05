@@ -1220,7 +1220,8 @@ def main() -> int:
         # unit record, the decision requests of the unit that enter main with it, and the regression-only
         # requalifications of 0037, 0038 and 0039 (realigned and adapted tests, no bindable requirement:
         # NCP-UNBINDABLE-REQUALIFICATIONS), of 0073, 0074, 0075, 0077, 0078 and 0079 (compose.yaml
-        # input) and of 0005, 0050 and 0082 forced by this allowlist.
+        # input) and of 0005, 0050 and 0082 forced by this allowlist; with NCP-U05-ITERATION-LIMIT
+        # (2026-11-05) option B1, the regression-only requalification of 0034 (c2/gateway.py input).
         "deploy/bootstrap/fuseki/config.ttl",
         "ocor-runtime/src/ocor_runtime/c4/adapters/__init__.py",
         "ocor-runtime/src/ocor_runtime/c4/adapters/postgres.py",
@@ -1238,6 +1239,8 @@ def main() -> int:
         "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.log",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0052.json",
         "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0052.log",
+        "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0052.json",
+        "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0052.log",
         "reports/evidence/G4/OCOR-DEV-0037.requalified-rem0052.json",
         "reports/evidence/G4/OCOR-DEV-0037.requalified-rem0052.log",
         "reports/evidence/G4/OCOR-DEV-0038.requalified-rem0052.json",
