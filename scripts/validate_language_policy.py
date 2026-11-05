@@ -68,7 +68,10 @@ AUTHORIZATIONS: dict[str, tuple[Callable[[str], bool], ...]] = {
         is_openapi_contract,
     ),
     ".proto": (is_declarative_contract_location,),
-    ".ttl": (is_declarative_contract_location,),
+    ".ttl": (
+        is_declarative_contract_location,
+        lambda p: p == "deploy/bootstrap/fuseki/config.ttl",
+    ),
     # Alternative implementation languages authorized nowhere in the project.
     ".js": (),
     ".jsx": (),
