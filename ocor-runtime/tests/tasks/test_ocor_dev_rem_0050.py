@@ -75,6 +75,7 @@ from typing import Any
 
 import psycopg
 import pytest
+import c4_projection_fixture
 
 from ocor_runtime.c1.signing import Ed25519SigningKey, dsse_pae
 from ocor_runtime.c3.ports import C3Error, GovernedCanonicalCommitCommand
@@ -1102,9 +1103,7 @@ def kafka(dsn: str) -> Iterator[Any]:
 
 @pytest.fixture
 def projection() -> Iterator[Any]:
-    from ocor_runtime.c4.typedb_adapter import TypeDBProjectionAdapter
-
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     value.initialize()
     value.reset()
     try:
@@ -2755,7 +2754,8 @@ def _projection_double(*, fact_revision: int | None = None, failure: BaseExcepti
             self._fail("apply")
             self.applied.append((fact_id, commit_id, payload))
 
-    value = Projection()
+    value = Projection(release_digest=RELEASE, ledger=c4_projection_fixture.isolated_ledger(),
+                       quarantine=c4_projection_fixture.isolated_ledger())
     value.applied = []
     return value
 

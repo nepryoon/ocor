@@ -10,9 +10,8 @@ no mocks.
 
 from __future__ import annotations
 
-import urllib.error
-
 import pytest
+import c4_projection_fixture
 from ocor_runtime.c2.ports import (
     C2Error,
     ConsistencyMode,
@@ -32,14 +31,14 @@ DIGEST_C = "urn:sha256:" + "c" * 64
 @pytest.fixture(scope="session")
 def typedb_reachable() -> None:
     try:
-        TypeDBProjectionAdapter().initialize()
+        c4_projection_fixture.projection().initialize()
     except (TypeDBAdapterError, OSError) as error:
         pytest.fail(f"a real, live TypeDB instance is mandatory qualifying evidence: {error}")
 
 
 @pytest.fixture
 def adapter(typedb_reachable: None) -> TypeDBProjectionAdapter:
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     value.reset()
     return value
 
@@ -164,7 +163,11 @@ def test_a_real_typedb_unreachability_fails_closed_never_serving_a_fabricated_re
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", "http://127.0.0.1:1")
-    adapter = TypeDBProjectionAdapter()
+    adapter = c4_projection_fixture.projection()
 
-    with pytest.raises(urllib.error.URLError):
+    # NCP-U05 (NCR-C4-003): the adapter's typed error with reason code PROJECTION_NOT_READY, never a
+    # raw transport error -- ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491,
+    # docs/OCOR_LLD_v1.1.md:346; PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5, NCP-U05 row
+    with pytest.raises(TypeDBAdapterError) as excinfo:
         adapter.current_watermark()
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"

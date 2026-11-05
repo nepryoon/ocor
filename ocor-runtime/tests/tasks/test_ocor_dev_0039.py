@@ -11,13 +11,14 @@ Every test drives real PostgreSQL and real TypeDB -- no mocks.
 from __future__ import annotations
 
 import os
-import urllib.error
+from collections.abc import Iterator
 
 import pytest
+import c4_projection_fixture
 import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2.ports import C2Error, ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
 from ocor_runtime.c3.ports import GovernedCanonicalCommitCommand
-from ocor_runtime.c3.service import PostgresC3Service
+from ocor_runtime.c3.terminusdb_service import TerminusDBC3Service
 from ocor_runtime.c4.rebuild import DriftError, ProjectionDriftDetector
 from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
 from ocor_runtime.kernel.governed_context import GovernedContext
@@ -47,28 +48,28 @@ def postgres_dsn() -> str:
 @pytest.fixture(scope="session")
 def typedb_reachable() -> None:
     try:
-        TypeDBProjectionAdapter().initialize()
+        c4_projection_fixture.projection().initialize()
     except (TypeDBAdapterError, OSError) as error:
         pytest.fail(f"a real, live TypeDB instance is mandatory qualifying evidence: {error}")
 
 
 @pytest.fixture
-def service(postgres_dsn: str) -> PostgresC3Service:
-    value = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
-    value.initialize()
-    value.reset()
-    return value
+def service(postgres_dsn: str) -> Iterator[TerminusDBC3Service]:
+    # NCP-U05 (NCR-C4-002): the drift detector rebuilds from the canonical TerminusDB store
+    # (docs/OCOR_LLD_v1.1.md:148), on a disposable database of the real TerminusDB
+    with c4_projection_fixture.canonical_store(admission=GOVERNED.admission()) as value:
+        yield value
 
 
 @pytest.fixture
 def projection(typedb_reachable: None) -> TypeDBProjectionAdapter:
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     value.reset()
     return value
 
 
 @pytest.fixture
-def detector(service: PostgresC3Service, projection: TypeDBProjectionAdapter) -> ProjectionDriftDetector:
+def detector(service: TerminusDBC3Service, projection: TypeDBProjectionAdapter) -> ProjectionDriftDetector:
     return ProjectionDriftDetector(service, projection)
 
 
@@ -148,7 +149,7 @@ def make_read_request(*, required_commit: str) -> NamedQueryRequest:
 
 
 def test_rebuild_reproduces_the_canonical_digest_and_watermark(
-    detector: ProjectionDriftDetector, service: PostgresC3Service
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:1",
@@ -184,7 +185,7 @@ def test_rebuild_of_a_never_committed_aggregate_reports_canonical_not_found(
 
 
 def test_real_out_of_band_drift_is_quarantined_not_repaired(
-    detector: ProjectionDriftDetector, service: PostgresC3Service, projection: TypeDBProjectionAdapter
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service, projection: TypeDBProjectionAdapter
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:2",
@@ -202,7 +203,7 @@ def test_real_out_of_band_drift_is_quarantined_not_repaired(
     # through rebuild -- simulating storage corruption or a buggy
     # projector, the only way real drift can occur once C3's own commit
     # path is already proven atomic.
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
 
     second = detector.rebuild(
         tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF
@@ -213,7 +214,7 @@ def test_real_out_of_band_drift_is_quarantined_not_repaired(
 
 
 def test_serving_a_quarantined_projection_is_prohibited(
-    detector: ProjectionDriftDetector, service: PostgresC3Service, projection: TypeDBProjectionAdapter
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service, projection: TypeDBProjectionAdapter
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:3",
@@ -223,7 +224,7 @@ def test_serving_a_quarantined_projection_is_prohibited(
     )
     receipt = service.commit(command)
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
     assert detector.is_quarantined(AGGREGATE_REF)
 
@@ -235,7 +236,7 @@ def test_serving_a_quarantined_projection_is_prohibited(
 
 
 def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
-    detector: ProjectionDriftDetector, service: PostgresC3Service, projection: TypeDBProjectionAdapter
+    detector: ProjectionDriftDetector, service: TerminusDBC3Service, projection: TypeDBProjectionAdapter
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:4",
@@ -245,7 +246,7 @@ def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
     )
     receipt = service.commit(command)
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
     detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
     assert detector.is_quarantined(AGGREGATE_REF)
 
@@ -256,7 +257,7 @@ def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
     # payload for real.
     canonical = service.read("urn:ocor:tenant:synthetic", "MissionObject", AGGREGATE_REF)
     assert canonical is not None
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=canonical.commit_id, payload=canonical.state_digest)
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=canonical.commit_id, payload=canonical.state_digest)
 
     third = detector.rebuild(
         tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF
@@ -270,7 +271,7 @@ def test_a_successful_rebuild_after_correcting_the_tamper_clears_quarantine(
 
 
 def test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error(
-    service: PostgresC3Service, monkeypatch: pytest.MonkeyPatch
+    service: TerminusDBC3Service, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     command = make_command(
         command_id="urn:ocor:command:drift:5",
@@ -280,10 +281,14 @@ def test_a_real_typedb_unreachability_during_peek_fails_closed_as_a_drift_error(
     )
     service.commit(command)
 
-    projection = TypeDBProjectionAdapter()
+    projection = c4_projection_fixture.projection()
     projection.reset()
     detector = ProjectionDriftDetector(service, projection)
     monkeypatch.setattr("ocor_runtime.c4.typedb_adapter.TYPEDB_URL", "http://127.0.0.1:1")
 
-    with pytest.raises(urllib.error.URLError):
+    # NCP-U05 (NCR-C4-003): a typed fail-closed error with the reason code PROJECTION_NOT_READY, never a
+    # raw transport error -- ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml:486-491,
+    # docs/OCOR_LLD_v1.1.md:346; PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5, NCP-U05 row
+    with pytest.raises(DriftError) as excinfo:
         detector.rebuild(tenant_id="urn:ocor:tenant:synthetic", aggregate_type="MissionObject", aggregate_ref=AGGREGATE_REF)
+    assert excinfo.value.reason_code == "PROJECTION_NOT_READY"

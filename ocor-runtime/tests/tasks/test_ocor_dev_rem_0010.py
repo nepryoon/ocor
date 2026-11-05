@@ -18,11 +18,10 @@ TypeDB/Fuseki acceptance suites remain unaffected.
 from __future__ import annotations
 
 import pytest
+import c4_projection_fixture
 
 from ocor_runtime.c4 import jena_adapter, typedb_adapter
 from ocor_runtime.c4.jena_adapter import JenaAdapterError, JenaSHACLProjectionAdapter
-from ocor_runtime.c4.typedb_adapter import TypeDBProjectionAdapter
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition
 
 _INJECTION = 'x"; match $g isa c4-fact; delete $g; #'
 
@@ -39,7 +38,7 @@ def test_typedb_apply_commit_escapes_injection(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(typedb_adapter, "_read", lambda *_a, **_k: [])
     monkeypatch.setattr(typedb_adapter, "_write", lambda *queries: captured.extend(queries))
 
-    TypeDBProjectionAdapter().apply_commit(
+    c4_projection_fixture.isolated_projection().apply_commit(
         fact_id="urn:ocor:mission-object:1", commit_id="urn:sha256:" + "0" * 64, payload=_INJECTION
     )
 
@@ -63,16 +62,19 @@ def test_jena_publish_rejects_malformed_resource_id_before_backend(
 ) -> None:
     calls: list[str] = []
     monkeypatch.setattr(jena_adapter, "_update", lambda update: calls.append(update))
-    adapter = JenaSHACLProjectionAdapter(MarkingEngine([MarkingSchemeDefinition("classification", ["public"])]))
+    adapter = JenaSHACLProjectionAdapter(marking_scheme=c4_projection_fixture.classification_scheme(),
+                                         release_digest=c4_projection_fixture.RELEASE,
+                                         ledger=c4_projection_fixture.UnusedLedger())
 
     with pytest.raises(JenaAdapterError) as exc:
         adapter.publish(
             _INJECTION,
             {
                 "label": "l",
-                "classification": "public",
                 "provenanceRef": "urn:ocor:provenance:1",
             },
+            marking=c4_projection_fixture.classification_marking("UNCLASSIFIED"),
+            commit_id="urn:ocor:commit:rem0010",
         )
     assert exc.value.reason_code == "RESOURCE_ID_INVALID"
     assert calls == []  # nothing was ever sent to the backend

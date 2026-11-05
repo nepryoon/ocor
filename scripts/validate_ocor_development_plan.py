@@ -1212,6 +1212,57 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0051-r1.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051-r1.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0051-r1.log",
+        # OCOR-DEV-REM-0052 (NCP-U05 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): the C4 projections
+        # (durable watermark ledger, quarantine and signed checkpoints on PostgreSQL, drift detector and
+        # bounded rebuild from the canonical TerminusDB store, canonical marking evaluator, SHACL shapes of
+        # ADD v1.3 section 3.6), the Fuseki configuration with the SHACL service
+        # (NCP-U05-FUSEKI-SHACL-SERVICE, option 1), the shared C4 test support module, the RED test, the
+        # unit record, the decision requests of the unit that enter main with it, and the regression-only
+        # requalifications of 0037, 0038 and 0039 (realigned and adapted tests, no bindable requirement:
+        # NCP-UNBINDABLE-REQUALIFICATIONS), of 0073, 0074, 0075, 0077, 0078 and 0079 (compose.yaml
+        # input) and of 0005, 0050 and 0082 forced by this allowlist; with NCP-U05-ITERATION-LIMIT
+        # (2026-11-05) option B1, the regression-only requalification of 0034 (c2/gateway.py input).
+        "deploy/bootstrap/fuseki/config.ttl",
+        "ocor-runtime/src/ocor_runtime/c4/adapters/__init__.py",
+        "ocor-runtime/src/ocor_runtime/c4/adapters/postgres.py",
+        "ocor-runtime/src/ocor_runtime/c4/drift.py",
+        "ocor-runtime/src/ocor_runtime/c4/marking.py",
+        "ocor-runtime/src/ocor_runtime/c4/shacl.py",
+        "ocor-runtime/src/ocor_runtime/c4/watermark.py",
+        "ocor-runtime/tests/tasks/c4_projection_fixture.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py",
+        "reports/development/decision_requests/NCP-U05-FUSEKI-SHACL-SERVICE.md",
+        "reports/development/decision_requests/NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY.md",
+        "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "reports/assurance/OCOR-DEV-REM-0052-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+        "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0052.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0052.log",
+        "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0052.json",
+        "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0052.log",
+        "reports/evidence/G4/OCOR-DEV-0037.requalified-rem0052.json",
+        "reports/evidence/G4/OCOR-DEV-0037.requalified-rem0052.log",
+        "reports/evidence/G4/OCOR-DEV-0038.requalified-rem0052.json",
+        "reports/evidence/G4/OCOR-DEV-0038.requalified-rem0052.log",
+        "reports/evidence/G4/OCOR-DEV-0039.requalified-rem0052.json",
+        "reports/evidence/G4/OCOR-DEV-0039.requalified-rem0052.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0052.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0074.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0074.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0077.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0077.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0078.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0078.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0052.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0052.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0052.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

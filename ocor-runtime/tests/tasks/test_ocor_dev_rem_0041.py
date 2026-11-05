@@ -36,6 +36,7 @@ from types import ModuleType
 from typing import Any, cast
 
 import pytest
+import c4_projection_fixture
 import test_ocor_dev_rem_0050 as governed_path
 
 from ocor_runtime.c2.ports import ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
@@ -309,7 +310,7 @@ def _projection_request(required_commit: str) -> NamedQueryRequest:
 
 @pytest.fixture
 def projection() -> TypeDBProjectionAdapter:
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     try:
         value.initialize()
     except (TypeDBAdapterError, OSError) as error:
@@ -558,13 +559,13 @@ def test_crash_window_5_checksum_divergence_is_quarantined_and_never_reverse_wri
     assert clean.drift_detected is False and clean.canonical_commit == receipt.commit_id
     version = _data_version(password, database)
 
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=receipt.commit_id, payload="tampered-digest")
     drifted = detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=AGGREGATE_REF)
     assert drifted.drift_detected is True and drifted.quarantined is True
     assert _data_version(password, database) == version  # never a reverse write into C3
 
     canonical = service.read(TENANT, AGGREGATE_TYPE, AGGREGATE_REF)
-    projection.apply_commit(fact_id=AGGREGATE_REF, commit_id=canonical.commit_id, payload=canonical.state_digest)
+    c4_projection_fixture.overwrite_fact(fact_id=AGGREGATE_REF, commit_id=canonical.commit_id, payload=canonical.state_digest)
     repaired = detector.rebuild(tenant_id=TENANT, aggregate_type=AGGREGATE_TYPE, aggregate_ref=AGGREGATE_REF)
     assert repaired.drift_detected is False and not detector.is_quarantined(AGGREGATE_REF)
     served = detector.read_if_healthy(AGGREGATE_REF, _projection_request(receipt.commit_id))

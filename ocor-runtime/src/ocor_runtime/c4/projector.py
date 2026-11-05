@@ -14,6 +14,12 @@ aggregate identity and revision from ``aggregate``, the commit from the CDC tran
 ``source_transaction_id``, and verifies that the envelope realises its GovernedContext
 (ADD v1.3 :845) as the commit context of the payload, with the relay's transport principal
 as effective principal appended to the commit actor chain (ADD v1.3 :197 and :844).
+
+OCOR-DEV-REM-0052 (NCP-U05, NCR-C4-001): the projector and the projection it applies to
+declare the same release (FR-148, Register :331), or the projector is refused with
+``RELEASE_MISMATCH``; every verified commit that is not a duplicate is recorded as received
+before it is applied, so a projection that lags behind the delivered commits declares a
+measured staleness (NFR-077, :403).
 """
 
 from __future__ import annotations
@@ -24,11 +30,13 @@ from contextlib import contextmanager
 from dataclasses import replace
 from typing import Any
 
+from ..c2.ports import C2Error
 from ..c5.backbone import BackboneError, CanonicalIngestionEnvelope
 from ..c5.envelope import thaw
 from ..kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
 from ..kernel.governed_context import GovernedContext, GovernedContextError
-from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
+from .typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter, TypeDBUnavailableError, _unreachable
+from .watermark import WatermarkLedgerError
 
 CANONICAL_STATE_COMMITTED = "canonical-state-committed"
 CANONICAL_STATE_COMMITTED_EVENT_TYPE = "urn:ocor:event-type:canonical-state-committed"
@@ -56,8 +64,16 @@ def _projection(operation: str) -> Iterator[None]:
     is never echoed."""
     try:
         yield
+    except TypeDBUnavailableError as exc:
+        raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
     except TypeDBAdapterError as exc:
         raise ProjectorError("BACKEND_ERROR", f"{operation}: TypeDB refused the operation") from exc
+    except C2Error as exc:  # the typed fail-closed answer of a projection read
+        if exc.__cause__ is not None and _unreachable(exc.__cause__):
+            raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
+        raise ProjectorError("BACKEND_ERROR", f"{operation}: TypeDB refused the operation") from exc
+    except WatermarkLedgerError as exc:
+        raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: the C4 watermark ledger is unavailable") from exc
     except OSError as exc:
         raise ProjectorError("BACKEND_UNAVAILABLE", f"{operation}: TypeDB is unavailable") from exc
 
@@ -70,6 +86,8 @@ class CanonicalStateProjector:
             raise TypeError("a TypeDBProjectionAdapter is required")
         if not isinstance(release_digest, str) or not release_digest.startswith("urn:sha256:"):
             raise TypeError("release_digest must be a SHA-256 URN")
+        if release_digest != projection.release_digest:
+            raise ProjectorError("RELEASE_MISMATCH", "the projector and its projection declare different releases")
         self._projection = projection
         self._release = release_digest
         self._lock = threading.Lock()
@@ -86,6 +104,10 @@ class CanonicalStateProjector:
             or payload.get("branch") != BRANCH
         ):
             raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} is not a canonical-state-committed event")
+        commit_id = payload.get("commit_id")
+        if not isinstance(commit_id, str) or not commit_id:
+            # the projector deduplicates by commitId (FR-064, Register :188): no commit, no projection
+            raise ProjectorError("SCHEMA_VIOLATION", f"{envelope.event_id!r} names no commit")
         state = payload.get("state")
         before = _revision(payload.get("from_revision"), 0)
         revision = _revision(payload.get("to_revision"), 1)
@@ -136,7 +158,7 @@ class CanonicalStateProjector:
             return 0
         try:
             fact = parse_i_json(found[1])
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, RecursionError) as exc:
             raise ProjectorError("PROJECTION_DRIFT", f"projected fact of {aggregate_ref!r} is not canonical JSON") from exc
         revision = fact.get("revision") if isinstance(fact, dict) else None
         if isinstance(revision, bool) or not isinstance(revision, int) or revision <= 0:
@@ -152,6 +174,8 @@ class CanonicalStateProjector:
                 position = self._projection.position(BRANCH, commit_id)
             if position is not None:
                 return False
+            with _projection("observe"):
+                self._projection.observe(commit_id)
             aggregate_ref = payload["aggregate_ref"]
             applied = self._applied_revision(aggregate_ref)
             if payload["from_revision"] != applied:

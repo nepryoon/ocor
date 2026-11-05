@@ -22,6 +22,7 @@ Every test drives a real, live TypeDB instance — no mocks — and proves:
 from __future__ import annotations
 
 import pytest
+import c4_projection_fixture
 
 from ocor_runtime.c2.ports import C2Error
 from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
@@ -35,14 +36,14 @@ _INJECTION = 'x"; $evil isa c4-fact, has c4-fact-id "injected-fact", has c4-comm
 @pytest.fixture(scope="session")
 def typedb_reachable() -> None:
     try:
-        TypeDBProjectionAdapter().initialize()
+        c4_projection_fixture.projection().initialize()
     except (TypeDBAdapterError, OSError) as error:
         pytest.fail(f"a real, live TypeDB instance is mandatory qualifying evidence: {error}")
 
 
 @pytest.fixture
 def adapter(typedb_reachable: None) -> TypeDBProjectionAdapter:
-    value = TypeDBProjectionAdapter()
+    value = c4_projection_fixture.projection()
     value.reset()
     return value
 

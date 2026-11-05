@@ -2250,19 +2250,32 @@
       ],
       "plan_unit": "NCP-U05",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
       "requirement_ids": [
         "FR-064",
         "FR-148",
         "NFR-024",
         "NFR-077"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_replay_of_every_commit_is_idempotent",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_the_watermark_and_the_served_release_are_the_declared_release",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_a_branch_the_projection_does_not_serve_is_never_answered_as_main",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_staleness_is_the_lag_behind_the_commits_c4_has_received",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_a_store_confirmed_under_another_release_is_release_mismatch",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_the_ledger_never_moves_backwards"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_001_conforms"
+      },
       "seed_ref": "C4-1",
       "severity": "HIGH",
       "severity_basis": "FR-064, FR-148, NFR-024 and NFR-077 are P0 PoC",
       "statement": "The TypeDB projection keeps one global watermark entity, replaced on every apply_commit without a monotonicity check or deduplication by (store, branch, commit_id), so an older commit moves the watermark backwards and a replay re-applies; WatermarkPort.current() returns a placeholder release (urn:sha256:0...0) and a caller-supplied branch; the served context copies release and policy digests from the request with staleness_ms=0 (so the STALE_CONTEXT check of NCR-C2-004 cannot fail).",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -2331,18 +2344,57 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
       "requirement_ids": [
         "FR-065",
         "FR-068",
         "FR-131"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_quarantine_is_released_only_by_a_reconciling_rebuild",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_rebuild_source_is_the_canonical_terminusdb_store",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unreadable_quarantine_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_projection_requires_a_durable_quarantine",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_deleted_projection_is_rebuilt_from_a_signed_checkpoint_and_a_bounded_replay",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_replay_beyond_the_bound_fails_closed_before_any_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unverifiable_checkpoint_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_checkpoint_of_a_divergent_projection_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_checkpoint_must_cover_the_whole_projection",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_conforms",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_replay_of_a_commit_is_idempotent",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_a_refused_publication_moves_no_watermark",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unresolvable_marking_is_refused_before_any_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unresolvable_clearance_is_marking_unresolved",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_read_requires_dominance_on_every_family",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_export_carries_the_conservative_join_and_the_watermark",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_join_is_conservative_and_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_scheme_outside_the_supported_profile_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_stored_marking_that_no_longer_matches_is_denied",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_watermark_that_disagrees_with_the_ledger_is_projection_not_ready",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_jena_requires_the_declared_release_and_a_ledger",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_jena_failure_is_a_typed_error",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_stack_fuseki_exposes_the_shacl_service",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_the_shapes_cover_every_requirement_of_section_3_6",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_conforming_provenance_document_is_published",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_replayed_provenance_commit_writes_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_document_outside_the_shapes_is_refused_by_the_shacl_service",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_malformed_provenance_publication_is_refused_before_any_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unavailable_shacl_service_refuses_the_publication",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_malformed_validation_report_is_never_read_as_conforming",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_a_well_formed_validation_report_is_read",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_an_unreachable_fuseki_refuses_a_provenance_publication"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_002_conforms"
+      },
       "seed_ref": "C4-2",
       "severity": "MEDIUM",
       "severity_basis": "closed elements of LLD v1.1 \u00a72.4 and ADD v1.3 \u00a73.0.2; FR-065 is MVP; no P0 PoC acceptance criterion shown violated",
       "statement": "Projection drift handling is local: ProjectionDriftDetector keeps quarantine in an in-memory set per instance, reconciles against PostgresC3Service rather than the canonical TerminusDB store, uses no signed checkpoint, and its quarantine is not consulted by the gateway (read_if_healthy has no caller). The Jena adapter has no watermark, replaces SHACL validation with a hand-written required/closed predicate check, and evaluates marking with the legacy c4_marking engine (one label per scheme) instead of the canonical marking object.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -2385,15 +2437,24 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_a_failed_transaction_is_always_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_a_failed_read_transaction_is_closed"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_003_conforms"
+      },
       "seed_note": "the CONSISTENCY_DOWNGRADE part is bound to NCR-C2-012 (same code path in c2/ports.py:135-143)",
       "seed_ref": "C4-3",
       "severity": "MEDIUM",
       "severity_basis": "typed error model of a \u00a70.2 contract is NCR-C2-006 (HIGH); this entry is the adapter translation",
       "statement": "An unreachable TypeDB surfaces as a raw urllib URLError (only HTTPError is translated), not as a typed fail-closed error of the contract; a sealed test pins the raw exception. (The CONSISTENCY_DOWNGRADE part of the seed hypothesis is entry NCR-C2-012.)",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "a325fc28c234e69ea9ec23d9edc763dc5309cdc0",
@@ -2448,16 +2509,30 @@
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
       "provenance": "gap BA-03 of decision request OCOR-DEV-0060-BA-RUNTIME-GAPS, registered by PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
       "requirement_ids": [
         "FR-057"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_the_sandbox_answers_as_the_projection_did_at_cn",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_emulation_unavailable_is_unsupported_capability_never_a_downgrade",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_commit_without_its_projected_history_is_unsupported_capability",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_sandbox_creation_benchmark",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_sandbox_that_cannot_be_built_is_unavailable_and_dropped",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_conforms"
+      },
       "seed_ref": "",
       "severity": "HIGH",
       "severity_basis": "BA-03 is to be qualified by OCOR-DEV-0060 and FR-057 is P0 PoC: the strongest consistency mode is not served on named logical queries",
       "statement": "No disposable sandbox serves EXACT_AT_COMMIT(Cn) for named logical queries: the TypeDB adapter serves only the currently projected commit, and no module under c2/ or c4/ returns UNSUPPORTED_CAPABILITY when the emulation is unavailable.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -6226,6 +6301,155 @@
       "verification": {
         "command": "python3 -c \"import json,re; rows=json.load(open('reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json'))['rows']; print(sum(1 for r in rows if not re.fullmatch(r'P[0-3]', str(r.get('priority','')).strip())))\"",
         "outcome": "prints 115: 115 of the 285 matrix rows have a priority outside P0-P3; the FR-022 row has priority 'DEC-060' and release 'Context Pack \u00a76.2; `FR-039' (matrix .md line 46), while the Register v1.1 line 112 gives P0. CONFIRMED at 12f6088592ce98393b8df119deeb28f626ef46a8 (state sync after the OCOR-DEV-REM-0045 integration, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 12)."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+          "lines": "97-103",
+          "note": "_typed maps every failure of the exchange, an unreachable TypeDB included, to CONTROL_PLANE_UNAVAILABLE",
+          "path": "ocor-runtime/src/ocor_runtime/c4/object_projection.py"
+        }
+      ],
+      "component": "C4",
+      "depends_on": [],
+      "id": "NCR-C4-005",
+      "norm_refs": [
+        {
+          "lines": "1364",
+          "note": "ADD v1.3 section 3.3: a Problem with PROJECTION_NOT_READY carries the served branch, commit, watermark and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3406",
+          "note": "ADD v1.3 failure modes, hub data: projection down gives PROJECTION_NOT_READY",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "note": "NFR-024: every state-dependent response reports branch, served commit, watermark, release and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "note": "NFR-077: branch divergence and projection lag give an explicit state",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
+      "provenance": "consumer inventory of OCOR-DEV-REM-0052 (NCP-U05), registered by PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-077"
+      ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_a_malformed_object_answer_stays_control_plane_unavailable"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_conforms"
+      },
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "P0 PoC requirements NFR-024 and NFR-077 (Register v1.1 lines 180 and 403): a version-sensitive error without its served context",
+      "statement": "With TypeDB unreachable the object projection read by the six C2 operations answers CONTROL_PLANE_UNAVAILABLE instead of PROJECTION_NOT_READY (projection down); a test of OCOR-DEV-REM-0049 pins the old outcome.",
+      "status": "IN_REMEDIATION",
+      "test_refs": [
+        {
+          "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+          "lines": "1421-1425",
+          "note": "test_object_projection_unreachable_is_typed asserts CONTROL_PLANE_UNAVAILABLE (line 1425)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python -c \"import ocor_runtime.c4.typedb_adapter as t; t.TYPEDB_URL='http://127.0.0.1:1'; from ocor_runtime.c4.object_projection import TypeDBObjectProjection; from ocor_runtime.c2.ports import C2Error\ntry: TypeDBObjectProjection().get(('urn:ocor:vessel:1',))\nexcept C2Error as e: print('C4-5 unreachable object projection reason:', e.reason_code)\"",
+        "outcome": "prints 'C4-5 unreachable object projection reason: CONTROL_PLANE_UNAVAILABLE'. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
+          "lines": "379-380",
+          "note": "_guarded: every exception outside C2Error and SecurityControlError becomes CONTROL_PLANE_UNAVAILABLE",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-013",
+      "norm_refs": [
+        {
+          "lines": "1364",
+          "note": "ADD v1.3 section 3.3: a Problem with PROJECTION_NOT_READY carries the served branch, commit, watermark and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3406",
+          "note": "ADD v1.3 failure modes, hub data: projection down gives PROJECTION_NOT_READY",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "note": "NFR-024: every state-dependent response reports branch, served commit, watermark, release and staleness",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "note": "NFR-077: branch divergence and projection lag give an explicit state",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U05",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md",
+        "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
+      },
+      "provenance": "consumer inventory of OCOR-DEV-REM-0052 (NCP-U05), registered by PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-077"
+      ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_an_unreachable_object_projection_serves_the_confirmed_watermark",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_without_a_confirmed_watermark_the_served_commit_is_the_sentinel",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_any_other_port_failure_stays_control_plane_unavailable"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_conforms"
+      },
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "P0 PoC requirements NFR-024 and NFR-077 (Register v1.1 lines 180 and 403): a version-sensitive error without its served context",
+      "statement": "The catch-all of the Gateway turns the typed TypeDBUnavailableError of the watermark port (reason PROJECTION_NOT_READY, with the watermark confirmed in the durable ledger) into CONTROL_PLANE_UNAVAILABLE without a served context, instead of building PROJECTION_NOT_READY with the served context of the confirmed watermark.",
+      "status": "IN_REMEDIATION",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c2/gateway.py').read(); print('C2-13 gateway translates TypeDBUnavailableError:', 'TypeDBUnavailableError' in s)\"",
+        "outcome": "prints 'C2-13 gateway translates TypeDBUnavailableError: False'; lines 379-380 build CONTROL_PLANE_UNAVAILABLE for any other exception. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4."
       }
     }
   ],
@@ -18432,11 +18656,65 @@
           "requirement_ids": [
             "FR-057"
           ]
+        },
+        {
+          "criterion": "Per PO decision NCP-U05-ITERATION-LIMIT (2026-11-05) option B1: the object projection unreachable answers PROJECTION_NOT_READY; the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364, :3406); malformed answers stay CONTROL_PLANE_UNAVAILABLE, as the failure of the marking backend.",
+          "entry": "NCR-C4-005",
+          "norm_refs": [
+            {
+              "lines": "1364",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3406",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "180",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "403",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "NFR-024",
+            "NFR-077"
+          ]
+        },
+        {
+          "criterion": "Per PO decision NCP-U05-ITERATION-LIMIT (2026-11-05) option B1: the object projection unreachable answers PROJECTION_NOT_READY; the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364, :3406); malformed answers stay CONTROL_PLANE_UNAVAILABLE, as the failure of the marking backend.",
+          "entry": "NCR-C2-013",
+          "norm_refs": [
+            {
+              "lines": "1364",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3406",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "180",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "403",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "NFR-024",
+            "NFR-077"
+          ]
         }
       ],
       "closed_scope_note": "only the entries in resolves; entries of other units, DECISION_REQUIRED entries and the legacy slice are out of scope",
       "code_paths": [
+        "ocor-runtime/src/ocor_runtime/c2/gateway.py",
         "ocor-runtime/src/ocor_runtime/c4/jena_adapter.py",
+        "ocor-runtime/src/ocor_runtime/c4/object_projection.py",
         "ocor-runtime/src/ocor_runtime/c4/rebuild.py",
         "ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py"
       ],
@@ -18524,6 +18802,20 @@
           "fails_on_current_code_because": "the verification outcome of the entry",
           "reproduction": "grep -rn 'UNSUPPORTED_CAPABILITY' --include=*.py ocor-runtime/src/ocor_runtime/c2 ocor-runtime/src/ocor_runtime/c4 ; sed -n '241,251p' ocor-runtime/src/ocor_runtime/c4/typedb_adapter.py",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c4_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C4-005",
+          "fails_on_current_code_because": "prints 'C4-5 unreachable object projection reason: CONTROL_PLANE_UNAVAILABLE'. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4.",
+          "reproduction": "PYTHONPATH=ocor-runtime/src ocor-runtime/.venv/bin/python -c \"import ocor_runtime.c4.typedb_adapter as t; t.TYPEDB_URL='http://127.0.0.1:1'; from ocor_runtime.c4.object_projection import TypeDBObjectProjection; from ocor_runtime.c2.ports import C2Error\ntry: TypeDBObjectProjection().get(('urn:ocor:vessel:1',))\nexcept C2Error as e: print('C4-5 unreachable object projection reason:', e.reason_code)\"",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C2-013",
+          "fails_on_current_code_because": "prints 'C2-13 gateway translates TypeDBUnavailableError: False'; lines 379-380 build CONTROL_PLANE_UNAVAILABLE for any other exception. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4.",
+          "reproduction": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c2/gateway.py').read(); print('C2-13 gateway translates TypeDBUnavailableError:', 'TypeDBUnavailableError' in s)\"",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_conforms"
         }
       ],
       "requalifications": {
@@ -18560,7 +18852,9 @@
         "NCR-C4-001",
         "NCR-C4-002",
         "NCR-C4-003",
-        "NCR-C4-004"
+        "NCR-C4-004",
+        "NCR-C4-005",
+        "NCR-C2-013"
       ],
       "scope": "C4 projections: monotonic per-branch watermark with durable deduplication, real served release/staleness, durable drift quarantine enforced on the read path, rebuild from the canonical store with signed checkpoint, Jena watermark/SHACL/canonical marking, typed adapter errors",
       "status": "PROPOSED"

@@ -37,6 +37,7 @@ POSITIVE_CASES = (
     "ocor-runtime/sdk/typescript/src/index.ts",
     "docs/development_methodology/OCOR_LANGUAGE_POLICY.md",
     "reports/development/EXECUTION_STATE.json",
+    "deploy/bootstrap/fuseki/config.ttl",
 )
 
 NEGATIVE_CASES = (
@@ -49,6 +50,8 @@ NEGATIVE_CASES = (
     "src/random.proto",
     "tools/Dockerfile",
     "ocor-runtime/src/ocor_runtime/native_kernel.rs",
+    "deploy/bootstrap/fuseki/other.ttl",
+    "deploy/bootstrap/config.ttl",
 )
 
 
