@@ -164,6 +164,70 @@
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_sandbox_that_cannot_be_built_is_unavailable_and_dropped",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox"
       ]
+    },
+    {
+      "criterion": "Per PO decision NCP-U05-ITERATION-LIMIT (2026-11-05) option B1: the object projection unreachable answers PROJECTION_NOT_READY; the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364, :3406); malformed answers stay CONTROL_PLANE_UNAVAILABLE, as the failure of the marking backend.",
+      "entry": "NCR-C4-005",
+      "norm_refs": [
+        {
+          "lines": "1364",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3406",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-077"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_a_malformed_object_answer_stays_control_plane_unavailable"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NCP-U05-ITERATION-LIMIT (2026-11-05) option B1: the object projection unreachable answers PROJECTION_NOT_READY; the Gateway builds PROJECTION_NOT_READY with the served context of the confirmed watermark (ADD v1.3 :1364, :3406); malformed answers stay CONTROL_PLANE_UNAVAILABLE, as the failure of the marking backend.",
+      "entry": "NCR-C2-013",
+      "norm_refs": [
+        {
+          "lines": "1364",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3406",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "180",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "403",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-024",
+        "NFR-077"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_an_unreachable_object_projection_serves_the_confirmed_watermark",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_without_a_confirmed_watermark_the_served_commit_is_the_sentinel",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_any_other_port_failure_stays_control_plane_unavailable"
+      ]
     }
   ],
   "ambiguities_resolved_fail_closed": [
@@ -234,6 +298,24 @@
       "path": "ocor-runtime/src/ocor_runtime/c4/projector.py"
     },
     {
+      "change": "the three read shapes read TypeDB through the raw read: an unreachable TypeDB is PROJECTION_NOT_READY (ObjectProjectionNotReady, a C2Error whose served context only the Gateway can build), a refused, malformed or dropped answer stays CONTROL_PLANE_UNAVAILABLE",
+      "function": "ObjectProjectionNotReady, _typed, TypeDBObjectProjection._select",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3406, :1364; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:180 (NFR-024), :403 (NFR-077); NCP-U05-ITERATION-LIMIT (2026-11-05) option B1 (NCR-C4-005)",
+      "path": "ocor-runtime/src/ocor_runtime/c4/object_projection.py"
+    },
+    {
+      "change": "the TypeDBUnavailableError of the watermark port and a projection port that is down give PROJECTION_NOT_READY with the served branch, commit, watermark and staleness of the confirmed watermark (the no-watermark sentinel and the active release without one); a confirmed watermark of another branch or one that does not form a served context, a watermark port that cannot say and every other port failure stay CONTROL_PLANE_UNAVAILABLE; the denial is audited with the reason code returned",
+      "function": "NamedQueryGateway._guarded, _projection_down, _not_ready; NO_WATERMARK",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1364, :3406, :174; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md:180 (NFR-024), :403 (NFR-077); NCP-U05-ITERATION-LIMIT (2026-11-05) option B1 (NCR-C2-013)",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "one exact-path predicate for deploy/bootstrap/fuseki/config.ttl added to the .ttl tuple, no new area; config.ttl among the positive cases, deploy/bootstrap/fuseki/other.ttl and deploy/bootstrap/config.ttl among the negative ones; OCOR_LANGUAGE_POLICY.md unchanged",
+      "function": "AUTHORIZATIONS['.ttl']; POSITIVE_CASES, NEGATIVE_CASES",
+      "normative_element": "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05) option 1; DEC-212 policy table row 14 (RDF 1.1 Turtle)",
+      "path": "scripts/validate_language_policy.py, reports/tests/test_validate_language_policy.py"
+    },
+    {
       "change": "new: in-memory dataset ocor with exactly the endpoints sparql, query, update, data and shacl; the Compose Fuseki starts from it",
       "function": "fuseki service (command --config, read-only mount)",
       "normative_element": "NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1",
@@ -266,12 +348,17 @@
     ]
   },
   "consumers_inventory_findings": [
-    "the object projection c4/object_projection.py answers CONTROL_PLANE_UNAVAILABLE when TypeDB is unreachable (pinned by the NCP-U03 tests of REM-0049), while ADD v1.3 :3406 (Hub data: projection down gives PROJECTION_NOT_READY) and :1364 (the Problem carries the served context) prescribe PROJECTION_NOT_READY with the served context: the divergence is confirmed at the inventory; a new HIGH entry (NFR-077 and NFR-024 are P0 PoC) needs a plan_unit, and the plan authorizes no realignment of the REM-0049 tests in NCP-U05: question B of the decision request NCP-U05-ITERATION-LIMIT",
-    "the C2 six-operation path maps TypeDBUnavailableError and a JenaAdapterError PROJECTION_NOT_READY of the marking port to CONTROL_PLANE_UNAVAILABLE in the gateway catch-all instead of building PROJECTION_NOT_READY from the confirmed watermark (ADD v1.3 :3406): confirmed divergence of C2 (the gateway is not a code path of NCP-U05): question B of the decision request NCP-U05-ITERATION-LIMIT",
-    "the C2 consistency planner of the six object operations answers PROJECTION_NOT_READY for an overtaken EXACT_AT_COMMIT (pinned at planner level by test_ocor_dev_rem_0049.py:391); ADD v1.3 :356 and :1366 bind the sandbox to named logical queries: whether the six object operations are named logical queries of BA-03 is a normative question: question C of the decision request NCP-U05-ITERATION-LIMIT"
+    "the object projection c4/object_projection.py answered CONTROL_PLANE_UNAVAILABLE when TypeDB is unreachable (pinned by test_ocor_dev_rem_0049.py:1425) against ADD v1.3 :3406 and :1364: registered as NCR-C4-005 (OPEN, HIGH, plan_unit NCP-U05) and resolved by this unit, with the authorized realignment of line 1425, by NCP-U05-ITERATION-LIMIT (2026-11-05) option B1",
+    "the Gateway catch-all mapped the TypeDBUnavailableError of the watermark port to CONTROL_PLANE_UNAVAILABLE without a served context against ADD v1.3 :1364 and :3406: registered as NCR-C2-013 (OPEN, HIGH, plan_unit NCP-U05) and resolved by this unit by NCP-U05-ITERATION-LIMIT option B1; a failure of the marking backend, a JenaAdapterError of the marking port included, stays CONTROL_PLANE_UNAVAILABLE (ADD v1.3 :174, test_ncr_c2_006_backend_failure_is_a_typed_problem), as option B1 prescribes",
+    "interpretation recorded by NCP-U05-ITERATION-LIMIT (2026-11-05) option C1: the six object operations of C2 are not named logical queries of BA-03; the sandbox of NCR-C4-004 serves the named logical queries of the TypeDB projection port, and for the six object operations the planner keeps answering PROJECTION_NOT_READY to an overtaken EXACT_AT_COMMIT(Cn) (one of the two outcomes of the oracle of LLD v1.1 :369), never a downgrade; no code or test changes"
   ],
-  "consumers_inventory_note": "product consumers of the changed C4 modules: c4/projector.py, c4/object_projection.py and c4/rebuild.py (typedb_adapter), c4/shacl.py (jena_adapter); C2 reaches C4 only through its ports (watermark, marking); test consumers: test_ocor_dev_0037/0038/0039/rem_0010/rem_0014/rem_0041/rem_0049/rem_0050/rem_0052 through tests/tasks/c4_projection_fixture.py; the mission thread does not import C4; scripts only name paths",
-  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 5 (NCP-U05 row) and 8 (gap BA-03); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1 (decided on full delegation of the PO); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "consumers_inventory_note": "product consumers of the changed C4 modules: c4/projector.py, c4/object_projection.py and c4/rebuild.py (typedb_adapter), c4/shacl.py (jena_adapter); C2 reaches C4 through its ports (watermark, marking, objects) and, with option B1, c2/gateway.py imports TypeDBUnavailableError and ConfirmedWatermark of C4; consumers of c2/gateway.py: c2/transport.py, c4/object_projection.py and the test modules 0012, 0017, 0034, 0035, REM-0031, REM-0049, REM-0052 and the mission thread; test consumers: test_ocor_dev_0037/0038/0039/rem_0010/rem_0014/rem_0041/rem_0049/rem_0050/rem_0052 through tests/tasks/c4_projection_fixture.py; the mission thread does not import C4; scripts only name paths",
+  "decided_requests": [
+    "NCP-U05-FUSEKI-SHACL-SERVICE",
+    "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
+    "NCP-U05-ITERATION-LIMIT"
+  ],
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 5 (NCP-U05 row) and 8 (gap BA-03); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U05-FUSEKI-SHACL-SERVICE (2026-11-05) option 1, NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY (2026-11-05) option 1 and NCP-U05-ITERATION-LIMIT (2026-11-05) options A1, B1 and C1 (decided on full delegation of the PO); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
   "existing_tests_ast_comparison": {
     "modules": [
       {
@@ -387,7 +474,9 @@
           171,
           171
         ],
-        "changed_functions": [],
+        "changed_functions": [
+          "test_object_projection_unreachable_is_typed"
+        ],
         "functions": [
           37,
           37
@@ -417,7 +506,7 @@
         "same_names": true
       }
     ],
-    "note": "parametrizations unchanged; the only differences are the three realigned raises and their added reason-code assertion listed in existing_tests_realigned_or_adapted; to be repeated on the candidate head",
+    "note": "parametrizations unchanged; the only differences are the three realigned raises with their added reason-code assertion and the realigned reason-code assertion of test_ocor_dev_rem_0049.py (NCP-U05-ITERATION-LIMIT option B1) listed in existing_tests_realigned_or_adapted; to be repeated on the candidate head",
     "tool": "~/.ocor-codex/rem-0051/tools/ast_compare.py against the unit base 7df90f5"
   },
   "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; test_ocor_dev_rem_0010/0014/0041/0049/0050.py are inputs of no latest evidence record of a completed task (drift validator): they run in the consumer modules of the campaign",
@@ -453,6 +542,16 @@
       "red": "a0f52ae"
     },
     {
+      "current_assertion": "assert caught.value.reason_code == 'CONTROL_PLANE_UNAVAILABLE' (line 1425)",
+      "function": "test_object_projection_unreachable_is_typed",
+      "kind": "REALIGN (point 5 case 1, NCR-C4-005, authorized by NCP-U05-ITERATION-LIMIT (2026-11-05) option B1)",
+      "lines": "1421-1425",
+      "norm": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3406, :1364",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py",
+      "prescribed": "assert caught.value.reason_code == 'PROJECTION_NOT_READY'; the malformed-answer cases (lines 1406-1418) unchanged",
+      "red": "5a07eb0"
+    },
+    {
       "current_assertion": "TypeDBProjectionAdapter() without release, ledger or quarantine",
       "function": "projection fixtures and constructions (no test function, assertion, raises or parametrization changed)",
       "kind": "ADAPT_CONSTRUCTION (point 5 case 3)",
@@ -486,17 +585,16 @@
         3,
         4,
         5,
-        6
+        6,
+        7
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
       "role": "implementer of reserve of the loop"
     }
   ],
-  "open_decision_requests": [
-    "NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY",
-    "NCP-U05-ITERATION-LIMIT"
-  ],
+  "iteration_limit": "NCP-U05-ITERATION-LIMIT (2026-11-05) option A1: up to six iterations after the sixth (four for the cycle without repairs, two for the repair cycles after a NO_GO verification); iteration 7 is the first of them",
+  "open_decision_requests": [],
   "open_points_for_review": [
     "a ledger that has confirmed nothing (a projection that predates it) is not a disagreement; a confirmed watermark that the projection does not hold is PROJECTION_NOT_READY",
     "BA-03 sandbox: a revision history exists only for commits applied from this unit on; for an earlier commit without its revision the emulation is unavailable (UNSUPPORTED_CAPABILITY); the benchmark measures about 0.55 s per sandboxed read for 10 commits over 5 facts on the local TypeDB, no threshold is normative",
@@ -532,6 +630,21 @@
         "requirements": [],
         "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
         "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0049.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U05-ITERATION-LIMIT (2026-11-05) option B1 (ocor-runtime/src/ocor_runtime/c2/gateway.py among the inputs); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0034",
         "tests_realigned_or_adapted": null
       },
       {
@@ -770,10 +883,11 @@
         "tests_realigned_or_adapted": null
       }
     ],
-    "note": "drifted tasks after the allowlist commit (scripts/validate_evidence_input_drift.py): 0037, 0038 and 0039 with realigned and adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4), 0073, 0074, 0075, 0077, 0078 and 0079 for deploy/bootstrap/compose.yaml with tests unchanged (NCP-U05-FUSEKI-SHACL-SERVICE option 1), 0005, 0050 and 0082 for the allowlist; REM-0010, REM-0014, REM-0041, REM-0049 and REM-0050 have adapted constructions only and are not completed tasks with drifted inputs",
+    "note": "drifted tasks after the allowlist commits (scripts/validate_evidence_input_drift.py): 0034 for ocor-runtime/src/ocor_runtime/c2/gateway.py with tests unchanged (NCP-U05-ITERATION-LIMIT option B1), 0037, 0038 and 0039 with realigned and adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4), 0073, 0074, 0075, 0077, 0078 and 0079 for deploy/bootstrap/compose.yaml with tests unchanged (NCP-U05-FUSEKI-SHACL-SERVICE option 1), 0005, 0050 and 0082 for the allowlist; REM-0010, REM-0014, REM-0041, REM-0049 and REM-0050 have adapted constructions (and, for REM-0049, the realignment authorized by option B1) and are not completed tasks with drifted inputs; no latest record has object_projection.py, test_ocor_dev_rem_0049.py, the language gate or its test among its inputs",
     "qualifying": [],
     "regression_only": [
       "OCOR-DEV-0005",
+      "OCOR-DEV-0034",
       "OCOR-DEV-0037",
       "OCOR-DEV-0038",
       "OCOR-DEV-0039",
@@ -808,16 +922,28 @@
       "entry": "NCR-C4-004",
       "outcome": "PENDING_CAMPAIGN",
       "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_the_sandbox_answers_as_the_projection_did_at_cn ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_emulation_unavailable_is_unsupported_capability_never_a_downgrade ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_commit_without_its_projected_history_is_unsupported_capability ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_resource_exhaustion_is_unsupported_capability_and_leaks_nothing ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_sandbox_creation_benchmark ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_sandbox_that_cannot_be_built_is_unavailable_and_dropped ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_004_a_malformed_history_answer_is_refused_before_any_sandbox"
+    },
+    {
+      "entry": "NCR-C4-005",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_a_malformed_object_answer_stays_control_plane_unavailable"
+    },
+    {
+      "entry": "NCR-C2-013",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_an_unreachable_object_projection_serves_the_confirmed_watermark ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_without_a_confirmed_watermark_the_served_commit_is_the_sentinel ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_any_other_port_failure_stays_control_plane_unavailable"
     }
   ],
   "resolved_register_entries": [
     "NCR-C4-001",
     "NCR-C4-002",
     "NCR-C4-003",
-    "NCR-C4-004"
+    "NCR-C4-004",
+    "NCR-C4-005",
+    "NCR-C2-013"
   ],
   "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
-  "rollback_procedure": "revert the REM-0052 commits: the new C4 modules (watermark, drift, marking, shacl, adapters), the Fuseki configuration, the shared C4 test support module and the unit test disappear; c4/typedb_adapter.py, c4/jena_adapter.py, c4/rebuild.py, c4/projector.py, deploy/bootstrap/compose.yaml and the realigned or adapted tests return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the ocor_c4 schema of a development PostgreSQL is dropped with the stack volumes",
+  "rollback_procedure": "revert the REM-0052 commits: the new C4 modules (watermark, drift, marking, shacl, adapters), the Fuseki configuration, the shared C4 test support module and the unit test disappear; c4/typedb_adapter.py, c4/jena_adapter.py, c4/rebuild.py, c4/projector.py, c4/object_projection.py, c2/gateway.py, deploy/bootstrap/compose.yaml, scripts/validate_language_policy.py and the realigned or adapted tests return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the ocor_c4 schema of a development PostgreSQL is dropped with the stack volumes",
   "schema_version": "1.0",
   "status": "CANDIDATE_IN_PROGRESS",
   "task_id": "OCOR-DEV-REM-0052",
@@ -847,6 +973,21 @@
       "fingerprint": "2a585d85c755bcf2384a36ac57ad785850fe4289c05b3caf913e409dd93378cf",
       "summary": "unit + consumers + mission thread: 636 passed on the real stack"
     },
+    "GREEN_C4_005_C2_013": {
+      "commit": "599e865",
+      "fingerprint": "532a9348c60d82d17a977f0c37be8553e3f89a99aad56d4bf9e49c56619f8e26",
+      "summary": "unit module + test_ocor_dev_rem_0049 + 0034, 0035, 0037, 0038, 0039, REM-0010, REM-0014, REM-0041, REM-0050 on the real stack: 799 passed"
+    },
+    "GREEN_C4_005_C2_013_consumers": {
+      "commit": "599e865",
+      "fingerprint": "42d8babd28d2c8297f01880237a0d512feab42da2778f1e61c8ff3d6166ea1db",
+      "summary": "0012, 0017, REM-0031 and the mission thread: 73 passed, 31 skipped (the live REM-0031 cases: Keycloak realm not initialized in the development stack; NOT_EXECUTED here, run by the campaign)"
+    },
+    "GREEN_language_gate": {
+      "commit": "a7e859f",
+      "fingerprint": "1957e2e593e31537ea4d4326cbbef277efed441fb7af34778bdb200d7bea802f",
+      "summary": "5 passed, 11 subtests passed; scripts/validate_language_policy.py PASS on the tracked tree"
+    },
     "RED": {
       "commit": "0d22acc",
       "fingerprint": "49028688786656e322f60db5a9b1df7ed948bce6c7bf34d9de703f88c1310f79",
@@ -871,6 +1012,16 @@
       "commit": "49b7616",
       "fingerprint": "be49557813dfc3ab66d8698a68bb873e148f4f353c622c79fa6a451f16f96112",
       "summary": "NCR-C4-004 cases of the unit module on the iteration-1 GREEN code: 17 failed"
+    },
+    "RED_C4_005_C2_013": {
+      "commit": "5a07eb0",
+      "fingerprint": "57717254169212927ce8389f2e00e3611ed45033062cd2aa9e69d97601263a6f",
+      "summary": "NCR-C4-005 and NCR-C2-013 cases of the unit module and the realigned REM-0049 case (tests of 5a07eb0) on the code of a7e859f, unchanged in c77c1a5, on the real stack: 5 failed, 5 passed (the negative branches)"
+    },
+    "RED_language_gate": {
+      "commit": "d7c21f1",
+      "fingerprint": "4043b5bbb4ad89533b86939b95b9b07177e3fe88cf8a50196f802d74f8c20a19",
+      "summary": "reports/tests/test_validate_language_policy.py with deploy/bootstrap/fuseki/config.ttl in POSITIVE_CASES and two other .ttl paths in NEGATIVE_CASES on 3cf255b: 3 failed, 2 passed (NCP-U05-FUSEKI-CONFIG-LANGUAGE-POLICY option 1)"
     },
     "RED_realignment_0039": {
       "commit": "67da95d",

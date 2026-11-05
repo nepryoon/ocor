@@ -6347,17 +6347,25 @@
         "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
       },
       "provenance": "consumer inventory of OCOR-DEV-REM-0052 (NCP-U05), registered by PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1",
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
       "requirement_ids": [
         "NFR-024",
         "NFR-077"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_a_malformed_object_answer_stays_control_plane_unavailable"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c4_005_conforms"
+      },
       "seed_ref": null,
       "severity": "HIGH",
       "severity_basis": "P0 PoC requirements NFR-024 and NFR-077 (Register v1.1 lines 180 and 403): a version-sensitive error without its served context",
       "statement": "With TypeDB unreachable the object projection read by the six C2 operations answers CONTROL_PLANE_UNAVAILABLE instead of PROJECTION_NOT_READY (projection down); a test of OCOR-DEV-REM-0049 pins the old outcome.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "a45834659767b3f2abea041342e4f1c6c59d50e4",
@@ -6416,17 +6424,27 @@
         "sha256": "bb56aeda77b8dfbbd29aaaea4924fb35bdcceba066848c8b3c936cb680c763d9"
       },
       "provenance": "consumer inventory of OCOR-DEV-REM-0052 (NCP-U05), registered by PO decision NCP-U05-ITERATION-LIMIT (2026-11-05), option B1",
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0052-RCCAD/OCOR-DEV-REM-0052.json",
+      "remediation_unit": "OCOR-DEV-REM-0052",
       "requirement_ids": [
         "NFR-024",
         "NFR-077"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_an_unreachable_object_projection_serves_the_confirmed_watermark",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_without_a_confirmed_watermark_the_served_commit_is_the_sentinel",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_any_other_port_failure_stays_control_plane_unavailable"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py::test_ncr_c2_013_conforms"
+      },
       "seed_ref": null,
       "severity": "HIGH",
       "severity_basis": "P0 PoC requirements NFR-024 and NFR-077 (Register v1.1 lines 180 and 403): a version-sensitive error without its served context",
       "statement": "The catch-all of the Gateway turns the typed TypeDBUnavailableError of the watermark port (reason PROJECTION_NOT_READY, with the watermark confirmed in the durable ledger) into CONTROL_PLANE_UNAVAILABLE without a served context, instead of building PROJECTION_NOT_READY with the served context of the confirmed watermark.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
