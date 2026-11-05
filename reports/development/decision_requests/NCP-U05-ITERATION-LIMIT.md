@@ -127,3 +127,16 @@ nominate») e l'oracolo di LLD v1.1 riga 369, senza allargare l'emulazione a per
   e `code_paths` di NCP-U05 nel registro e l'asserzione autorizzata di `test_ocor_dev_rem_0049.py`. Nessun limite,
   soglia, workflow, guard, contratto, schema o registro normativo cambia. Claim invariati: `E1=0`, `E2=0`,
   `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-05
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U05-ITERATION-LIMIT (2026-11-05)`, **opzioni A1, B1 e C1** (fino a sei iterazioni oltre la sesta; due voci nuove risolte da NCP-U05; le sei operazioni sugli oggetti non sono query logiche nominate). Vale come decisione del PO a ogni effetto, di livello normativo. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `0cca1d20f4ae48f902e896db37be08c83c031162`, sha256 `261b3461e6ae0da4b7cad28be30b22ac620b7fa4eefb988b2a831c8e3a5e3beb` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U05-ITERATION-LIMIT (2026-11-05) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U05-ITERATION-LIMIT` (branch `governed/decision-request-ncp-u05-iteration-limit`, commit `0cca1d20f4ae48f902e896db37be08c83c031162`, file `reports/development/decision_requests/NCP-U05-ITERATION-LIMIT.md`, sha256 `261b3461e6ae0da4b7cad28be30b22ac620b7fa4eefb988b2a831c8e3a5e3beb`) adottando per il quesito A l'**opzione A1**; per il quesito B l'**opzione B1**; per il quesito C l'**opzione C1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
