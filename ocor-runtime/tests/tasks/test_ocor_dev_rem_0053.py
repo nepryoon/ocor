@@ -29,6 +29,16 @@ NCR-C6-001 to NCR-C6-009 and NCR-C6-014.
   risk classification the mutative request is denied), LLD v1.1 :268 (ACT-T07: NOT_REQUIRED only
   for a gate not required on a non-canonical target), Register FR-079 :211, NFR-029 :212 and
   FR-080 :213. The engine composes G-CONTRACT, G-AUTHORITY, G-APPROVAL and G-DECISION.
+* NCR-C6-004 -- ADD v1.3 :3194-3212 (CapabilityLease: signed by the capability authority, at
+  most PT5S, single use per action instance and emission attempt, bound to principal,
+  delegation, action, GCS, GatePackage and stop epoch), LLD v1.1 :25 and :69-81
+  (``LeaseValidator.consume`` in the DeliveryAttempt transaction, reason codes, no permissive
+  fallback), capability-lease.schema.json, Register FR-162 :404 and NFR-047.
+* NCR-C6-005 -- ADD v1.3 :2851-2854 (G-FRESHNESS, G-DISPATCH and the EMISSION-FENCE evaluated
+  atomically immediately before every send, with the DeliveryAttempt in the same local
+  transaction; drift gives INVALIDATED, an evaluation error never degrades to a retry), LLD
+  v1.1 :256 and :302 (ACT-T29: EMISSION-FENCE before the send to C3), Register FR-078 :210 and
+  FR-162 :404.
 
 The FSM and the gate cases are in-process: the FSM is a pure component whose durable effect sink
 and state store are ports. The engine cases commit through the real C3 on PostgreSQL
@@ -1274,7 +1284,6 @@ class EngineSuite:
         import test_ocor_dev_rem_0050 as governed_path
         from c6_action_fixture import ActionWorld
         from ocor_runtime.c3.service import PostgresC3Service
-        from ocor_runtime.c6_capabilities import CapabilityAuthority
         from ocor_runtime.c7_emission import EmissionFence
 
         dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
@@ -1294,13 +1303,12 @@ class EngineSuite:
             self.c3, tenant_id=self.context.tenant_id, aggregate_type="GovernedActionTarget"
         )
         self.world = ActionWorld(now=ENGINE_NOW, release=governed_path.RELEASE)
-        self.authority = CapabilityAuthority(issuer="ocor-rem0053-authority")
-        path = governed.engine_path(aggregate_type="GovernedActionTarget", governed_context=self.context)
+        self.governed = governed
+        self.path = governed.engine_path(aggregate_type="GovernedActionTarget", governed_context=self.context)
         self.engine = self.world.engine(
-            authority=self.authority,
             commit_port=self.c3,
-            fence=EmissionFence(store=self.store),  # type: ignore[arg-type]
-            canonical_path=path,
+            relay=EmissionFence(store=self.store),  # type: ignore[arg-type]
+            canonical_path=self.path,
             emission_outbox=self.store,
         )
         self.types = {
@@ -1319,15 +1327,14 @@ class EngineSuite:
             **overrides,
         )
 
-    def lease(self, capability: str = "act:launch") -> Any:
-        return self.authority.issue(
-            subject=OPERATOR, capabilities=[capability], resources=[TARGET], issued_at=ENGINE_NOW, ttl=timedelta(hours=1)
-        )
+    def lease(self, proposal: Any, decision: Any = None, **overrides: Any) -> Any:
+        """The signed CapabilityLease of one emission attempt (NCR-C6-004), at most PT5S."""
+        return self.world.lease(proposal, decision, **overrides)
 
     def execute(self, proposal: Any, *, approval: Any, decision: Any, lease: Any = None) -> Any:
         return self.engine.execute(
             proposal,
-            lease=lease if lease is not None else self.lease(),
+            lease=lease if lease is not None else self.lease(proposal, decision),
             approval=approval,
             decision=decision,
             sink=self.sink,
@@ -1519,7 +1526,7 @@ ENGINE_DENIALS: dict[str, tuple[str, str | None]] = {
     "unpublished-type": ("CONTRACT_INVALID", "ACTION_TYPE_UNKNOWN"),
     "non-canonical-type": ("CONTRACT_INVALID", "TARGET_NOT_CANONICAL"),
     "r0-on-canonical": ("NO_MUTATION_ADMITTED", "NO_MUTATION_ADMITTED"),
-    "authority": ("AUTHORITY_DENIED", None),
+    "authority": ("AUTHORITY_DENIED", "LEASE_CONTEXT_MISMATCH"),
     "approval-missing": ("APPROVAL_MISSING", None),
     "approval-ungranted": ("APPROVAL_MISSING", "APPROVAL_SET_INVALID"),
     "approval-of-other-proposal": ("APPROVAL_MISSING", "APPROVAL_SET_INVALID"),
@@ -1555,7 +1562,7 @@ def test_the_engine_denies_at_every_gate_before_any_effect(case: str) -> None:
     elif case == "r0-on-canonical":
         proposal = suite.proposal("R0_INFORMATIONAL")
     elif case == "authority":
-        lease = suite.lease("act:read-only")
+        lease = suite.lease(proposal, decision, capability_id="act:read-only")
     elif case == "approval-missing":
         approval_set = None
     elif case == "approval-ungranted":
@@ -1604,8 +1611,11 @@ def test_a_retry_of_an_admitted_action_replays_its_commit_without_reusing_the_ap
     decision = world.decide(proposal, approval_set)
     first = suite.execute(proposal, approval=approval_set, decision=decision)
     second = suite.execute(proposal, approval=approval_set, decision=decision)
+    # NCR-C6-005: a confirmed action instance is not dispatched again (ADD v1.3 :2852, every send
+    # crosses the EMISSION-FENCE): the retry returns the confirmed outcome with no new attempt.
+    assert second == first
     assert second.commit_receipt.commit_id == first.commit_receipt.commit_id
-    assert second.commit_receipt.replayed is True
+    assert len(suite.world.ledger.attempts(proposal.action_instance_id)) == 1
     assert suite.c3.current_revision(suite.context.tenant_id, "GovernedActionTarget", TARGET) == 1
     other = dataclasses.replace(proposal, action_instance_id=f"urn:ocor:action:rem0053:{uuid.uuid4()}")
     assert suite.denial(other, approval=approval_set, decision=decision)[0] == "APPROVAL_MISSING"
@@ -1622,3 +1632,515 @@ def test_an_admitted_action_is_not_retried_after_its_decision_expired() -> None:
     suite.execute(proposal, approval=approval_set, decision=decision)
     world.clock.advance(timedelta(minutes=5))
     assert suite.denial(proposal, approval=approval_set, decision=decision) == ("DECISION_MISSING", "DECISION_EXPIRED")
+
+
+# NCR-C6-004 -- ADD v1.3 :3194-3212 (the CapabilityLease is a closed record signed by the
+# capability authority, at most PT5S, single use per (action_instance_id, emission_attempt) and
+# not transferable; principal, delegation, GCS, GatePackage or stop epoch that differ, an invalid
+# signature or revocation, or expires_at <= now give no emission), LLD v1.1 :69-81
+# (LeaseValidator.consume in the local transaction of the DeliveryAttempt: signature, schema,
+# window and revocation; bindings; lock on the fencing counter; not yet consumed; consumption
+# and DeliveryAttempt inserted together or rolled back; reason codes; no permissive fallback),
+# LLD v1.1 :25 and capability-lease.schema.json (closed record), Register FR-162 :404 and
+# NFR-047. NCR-C6-005 -- ADD v1.3 :2851-2854 and LLD v1.1 :256, :302 (EMISSION-FENCE =
+# G-FRESHNESS and G-DISPATCH, atomically immediately before every send, the canonical commit
+# included, with the DeliveryAttempt; any drift gives INVALIDATED before the send), Register
+# FR-078 :210 and FR-162 :404.
+
+LEASE_REASONS = frozenset(
+    {
+        "LEASE_INVALID",
+        "LEASE_EXPIRED",
+        "LEASE_REVOKED",
+        "LEASE_CONTEXT_MISMATCH",
+        "STOP_EPOCH_MISMATCH",
+        "FENCING_TOKEN_STALE",
+        "LEASE_ALREADY_CONSUMED",
+    }
+)
+
+
+class OrderedC3:
+    """The real C3 with the order of the calls the engine makes, and the fence's attempts at
+    the moment of each commit."""
+
+    def __init__(self, c3: Any, ledger: Any) -> None:
+        self._c3 = c3
+        self._ledger = ledger
+        self.calls: list[tuple[str, int]] = []
+
+    def commit(self, command: Any) -> Any:
+        self.calls.append(("commit", len(self._ledger.attempts(command.action_instance_id))))
+        return self._c3.commit(command)
+
+    def current_revision(self, tenant_id: str, aggregate_type: str, aggregate_ref: str) -> int:
+        return int(self._c3.current_revision(tenant_id, aggregate_type, aggregate_ref))
+
+
+def _admitted(suite: EngineSuite, risk: str = "R3_HIGH_IMPACT") -> tuple[Any, Any, Any]:
+    proposal = suite.proposal(risk)
+    approval_set = suite.world.approval_set(proposal)
+    return proposal, approval_set, suite.world.decide(proposal, approval_set)
+
+
+def _command(suite: EngineSuite, proposal: Any, decision: Any, **overrides: Any) -> Any:
+    records = _mod("records")
+    intent = records.ActionIntent.from_decision(
+        intent_id=f"urn:ocor:intent:{uuid.uuid4()}",
+        decision=decision.decision,
+        package=decision.package,
+        package_digest=decision.package_digest,
+        created_at=ENGINE_NOW,
+    )
+    command = records.ActionCommand.issue(
+        command_id=f"urn:ocor:command:{uuid.uuid4()}",
+        intent=intent,
+        package=decision.package,
+        package_digest=decision.package_digest,
+        parameters=dict(proposal.parameters),
+        idempotency_key=f"c6-action-{hashlib.sha256(proposal.action_instance_id.encode()).hexdigest()}",
+        deadline=decision.decision.valid_until,
+    )
+    return dataclasses.replace(command, **overrides) if overrides else command
+
+
+def _current(suite: EngineSuite, decision: Any, approval_set: Any, **drift: Any) -> Any:
+    dispatch = _mod("dispatch")
+    engine_module = suite.engine_module
+    values = {
+        "expected_revision": 0,
+        "canonical_commit_ref": engine_module.canonical_commit_ref(TARGET, 0),
+        "governed_context_digest": suite.context.digest(),
+        "policy_bundle_digest": suite.context.policy_bundle_digest,
+        "ontology_release_digest": suite.governed.fence.active_release_digest(),
+        "authority_ref": decision.decision.authority_id,
+        "approval_set_digest": approval_set.digest(),
+        "adapter_binding_digest": engine_module.C3_ADAPTER_BINDING_DIGEST,
+        "projection_watermark": engine_module.projection_watermark(0),
+    }
+    values.update(drift)
+    return dispatch.CurrentValues(**values)
+
+
+def _evaluate(suite: EngineSuite, proposal: Any, decision: Any, approval_set: Any, *, lease: Any = None,
+              command: Any = None, observe: Callable[[], Any] | None = None) -> Any:
+    world = suite.world
+    return world.emission_fence.evaluate(
+        package=decision.package,
+        package_digest=decision.package_digest,
+        command=command if command is not None else _command(suite, proposal, decision),
+        lease=lease if lease is not None else suite.lease(proposal, decision),
+        capability_id="act:launch",
+        effective_principal_id=suite.context.effective_principal_id,
+        delegation_ref=world.delegation_ref,
+        observe=observe if observe is not None else (lambda: _current(suite, decision, approval_set)),
+    )
+
+
+def _fence_reason(call: Callable[[], Any]) -> str:
+    dispatch = _mod("dispatch")
+    with pytest.raises(dispatch.DispatchError) as excinfo:
+        call()
+    return str(excinfo.value.reason_code)
+
+
+def test_ncr_c6_004_conforms() -> None:
+    """ADD v1.3 :3194-3212, LLD v1.1 :69-81: the engine composes the signed normative
+    CapabilityLease and consumes it in the DeliveryAttempt transaction at emission, not at
+    authorisation; the legacy lease is not on the action path."""
+    engine_module = _mod("engine")
+    dispatch = _mod("dispatch")
+    from ocor_runtime.kernel import governance
+
+    source = inspect.getsource(engine_module)
+    assert "c6_capabilities" not in source
+    assert "CapabilityAuthority" not in source
+    assert not hasattr(engine_module, "CapabilityLease") or engine_module.CapabilityLease is governance.CapabilityLease
+    assert dispatch.SignedCapabilityLease.__dataclass_fields__["lease"].type in ("CapabilityLease", governance.CapabilityLease)
+    assert dispatch.MAX_LEASE_TTL == timedelta(seconds=5)
+    assert "authority" not in inspect.signature(engine_module.GovernedActionEngine).parameters
+
+    suite = EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = _admitted(suite)
+    lease = suite.lease(proposal, decision)
+    assert lease.lease.expires_at - lease.lease.issued_at <= timedelta(seconds=5)
+    assert lease.lease.gate_package_digest == decision.package_digest
+    assert lease.lease.governed_context_digest == suite.context.digest()
+
+    # A denial at G-DECISION happens before the fence: the lease is not consumed there.
+    rejected = world.decide(proposal, approval_set, accepted=False, rationale="not now")
+    assert suite.denial(proposal, approval=approval_set, decision=rejected, lease=lease)[0] == "DECISION_REJECTED"
+    assert world.ledger.consumed(lease.lease.lease_id) is None
+    assert world.ledger.attempts(proposal.action_instance_id) == ()
+
+    # Consumed once, at emission, with the DeliveryAttempt of the first emission attempt.
+    proposal, approval_set, decision = _admitted(suite)
+    lease = suite.lease(proposal, decision)
+    outcome = suite.execute(proposal, approval=approval_set, decision=decision, lease=lease)
+    assert outcome.commit_receipt.to_revision == 1
+    (attempt,) = world.ledger.attempts(proposal.action_instance_id)
+    assert attempt.fence_outcome == "PASSED"
+    assert attempt.emission_attempt == 1
+    assert attempt.lease_ref == lease.lease.lease_id
+    assert attempt.gate_package_digest == decision.package_digest
+    assert outcome.delivery_attempt == attempt
+    assert world.ledger.consumed(lease.lease.lease_id) == (proposal.action_instance_id, 1)
+    # Single use: the consumed lease cannot serve another emission attempt.
+    other, other_set, other_decision = _admitted(suite)
+    reused = suite.denial(other, approval=other_set, decision=other_decision, lease=lease)
+    assert reused[0] in {"AUTHORITY_DENIED", "INVALIDATED"}
+    assert suite.sink.calls != [] and len(suite.sink.calls) == 1
+
+
+def test_a_lease_longer_than_pt5s_is_never_issued() -> None:
+    dispatch = _mod("dispatch")
+    from c6_action_fixture import ActionWorld, seeded_key
+    from ocor_runtime.kernel.governance import GovernanceFault
+
+    world = ActionWorld(now=ENGINE_NOW, release=RELEASE)
+    with pytest.raises(ValueError):
+        dispatch.CapabilityLeaseIssuer(
+            signing_key=seeded_key("lease-issuer"), issuer_id="urn:ocor:authority:capability", keyid="k1",
+            clock=world.clock, ttl=timedelta(seconds=6),
+        )
+    issuer = dispatch.CapabilityLeaseIssuer(
+        signing_key=seeded_key("lease-issuer"), issuer_id="urn:ocor:authority:capability", keyid="k1", clock=world.clock
+    )
+    lease = issuer.issue(
+        capability_id="act:launch", effective_principal_id="urn:ocor:principal:p", delegation_ref=_sha("delegation"),
+        action_instance_id=ACTION, governed_context_digest=_sha("gcs"), gate_package_digest=_sha("package"),
+        stop_epoch=0, fencing_token=1,
+    )
+    assert lease.lease.expires_at - lease.lease.issued_at == timedelta(seconds=5)
+    with pytest.raises(GovernanceFault) as excinfo:
+        dataclasses.replace(lease.lease, expires_at=lease.lease.issued_at + timedelta(hours=1))
+    assert excinfo.value.reason_code == "LEASE_INVALID"
+
+
+LEASE_CASES: dict[str, str | None] = {
+    "valid": None,
+    "forged-signature": "LEASE_INVALID",
+    "unknown-issuer": "LEASE_INVALID",
+    "tampered-record": "LEASE_INVALID",
+    "expired": "LEASE_EXPIRED",
+    "revoked": "LEASE_REVOKED",
+    "other-principal": "LEASE_CONTEXT_MISMATCH",
+    "other-delegation": "LEASE_CONTEXT_MISMATCH",
+    "other-action": "LEASE_CONTEXT_MISMATCH",
+    "other-gcs": "LEASE_CONTEXT_MISMATCH",
+    "other-gate-package": "LEASE_CONTEXT_MISMATCH",
+    "other-capability": "LEASE_CONTEXT_MISMATCH",
+    "other-stop-epoch": "STOP_EPOCH_MISMATCH",
+    "stale-fencing-token": "FENCING_TOKEN_STALE",
+    "already-consumed": "LEASE_ALREADY_CONSUMED",
+}
+
+
+@pytest.mark.parametrize("case", sorted(LEASE_CASES))
+def test_lease_validator_consumes_only_the_signed_bound_current_lease(case: str) -> None:
+    """LLD v1.1 :69-81: each reason code, and on any refusal neither the consumption nor the
+    DeliveryAttempt is inserted."""
+    dispatch = _mod("dispatch")
+    suite = EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = _admitted(suite)
+    action = proposal.action_instance_id
+    builders: dict[str, Callable[[], Any]] = {
+        "valid": lambda: suite.lease(proposal, decision),
+        "forged-signature": lambda: suite.lease(proposal, decision, signer="rogue"),
+        "unknown-issuer": lambda: suite.lease(proposal, decision, issuer_id="urn:ocor:authority:unknown"),
+        "tampered-record": lambda: dataclasses.replace(
+            suite.lease(proposal, decision),
+            lease=dataclasses.replace(suite.lease(proposal, decision).lease, fencing_token=1, lease_id="tampered"),
+        ),
+        "expired": lambda: suite.lease(proposal, decision),
+        "revoked": lambda: suite.lease(proposal, decision),
+        "other-principal": lambda: suite.lease(proposal, decision, effective_principal_id="urn:ocor:principal:other"),
+        "other-delegation": lambda: suite.lease(proposal, decision, delegation_ref=_sha("other-delegation")),
+        "other-action": lambda: suite.lease(proposal, decision, action_instance_id="urn:ocor:action:other"),
+        "other-gcs": lambda: suite.lease(proposal, decision, governed_context_digest=_sha("other-gcs")),
+        "other-gate-package": lambda: suite.lease(proposal, decision, gate_package_digest=_sha("other-package")),
+        "other-capability": lambda: suite.lease(proposal, decision, capability_id="act:other"),
+        "other-stop-epoch": lambda: suite.lease(proposal, decision, stop_epoch=7),
+        "stale-fencing-token": lambda: suite.lease(proposal, decision),
+        "already-consumed": lambda: suite.lease(proposal, decision),
+    }
+    lease = builders[case]()
+    if case == "expired":
+        world.clock.advance(timedelta(seconds=5))
+    elif case == "revoked":
+        world.ledger.revoke(lease.lease.lease_id)
+    elif case == "stale-fencing-token":
+        world.ledger.advance_fencing_token(action)
+    elif case == "already-consumed":
+        attempt = _evaluate(suite, proposal, decision, approval_set, lease=lease)
+        assert attempt.emission_attempt == 1
+    expected = LEASE_CASES[case]
+    before = world.ledger.attempts(action)
+    if expected is None:
+        attempt = _evaluate(suite, proposal, decision, approval_set, lease=lease)
+        assert attempt.fence_outcome == "PASSED"
+        assert world.ledger.attempts(action) == (attempt,)
+        assert world.ledger.consumed(lease.lease.lease_id) == (action, 1)
+        return
+    assert expected in LEASE_REASONS
+    assert _fence_reason(lambda: _evaluate(suite, proposal, decision, approval_set, lease=lease)) == expected
+    assert world.ledger.attempts(action) == before
+    if case != "already-consumed":
+        assert world.ledger.consumed(lease.lease.lease_id) is None
+    assert isinstance(world.validator, dispatch.LeaseValidator)
+
+
+def test_the_lease_signature_is_verified_at_the_boundary_never_taken_from_the_caller() -> None:
+    dispatch = _mod("dispatch")
+    params = inspect.signature(dispatch.LeaseValidator.consume).parameters
+    assert "signature_verified" not in params
+    assert "revoked" not in params
+    suite = EngineSuite()
+    proposal, approval_set, decision = _admitted(suite)
+    forged = suite.lease(proposal, decision, signer="rogue")
+    with pytest.raises(dispatch.DispatchError) as excinfo:
+        suite.world.validator.verify(forged)
+    assert excinfo.value.reason_code == "LEASE_INVALID"
+    with pytest.raises(dispatch.DispatchError):
+        suite.world.validator.verify({"lease_id": "x"})
+
+
+def test_the_consumption_is_rolled_back_when_the_delivery_attempt_is_not_recorded() -> None:
+    """LLD v1.1 :79: consumption and DeliveryAttempt are inserted together or rolled back."""
+    dispatch = _mod("dispatch")
+    suite = EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = _admitted(suite)
+    lease = suite.lease(proposal, decision)
+    world.ledger.fail_next_record = True
+    with pytest.raises(dispatch.DispatchError) as excinfo:
+        _evaluate(suite, proposal, decision, approval_set, lease=lease)
+    assert excinfo.value.reason_code == "FENCE_EVALUATION_FAILED"
+    assert world.ledger.consumed(lease.lease.lease_id) is None
+    assert world.ledger.attempts(proposal.action_instance_id) == ()
+    attempt = _evaluate(suite, proposal, decision, approval_set, lease=lease)
+    assert attempt.fence_outcome == "PASSED"
+
+
+FRESHNESS_DRIFTS: dict[str, tuple[str, Any]] = {
+    "revision": ("expected_revision", 1),
+    "canonical-commit": ("canonical_commit_ref", "urn:ocor:commit:other:0"),
+    "governed-context": ("governed_context_digest", _sha("other-gcs")),
+    "policy": ("policy_bundle_digest", _sha("other-policy")),
+    "release": ("ontology_release_digest", _sha("release-2")),
+    "authority": ("authority_ref", "urn:ocor:authority:other"),
+    "approval-set": ("approval_set_digest", _sha("other-approval-set")),
+    "adapter-binding": ("adapter_binding_digest", _sha("other-adapter")),
+    "watermark": ("projection_watermark", "urn:ocor:watermark:9"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(FRESHNESS_DRIFTS))
+def test_g_freshness_invalidates_on_every_drift_before_the_send(case: str) -> None:
+    """ADD v1.3 :2851: every frozen value coincides with the current one; drift gives
+    INVALIDATED with no consumption and no DeliveryAttempt."""
+    suite = EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = _admitted(suite)
+    field, value = FRESHNESS_DRIFTS[case]
+    lease = suite.lease(proposal, decision)
+    reason = _fence_reason(
+        lambda: _evaluate(suite, proposal, decision, approval_set, lease=lease,
+                          observe=lambda: _current(suite, decision, approval_set, **{field: value}))
+    )
+    assert reason == "STALE_" + field.upper()
+    assert world.ledger.consumed(lease.lease.lease_id) is None
+    assert world.ledger.attempts(proposal.action_instance_id) == ()
+    # The same lease passes on the current values: nothing was consumed by the refusal.
+    assert _evaluate(suite, proposal, decision, approval_set, lease=lease).fence_outcome == "PASSED"
+
+
+DISPATCH_CASES: dict[str, str] = {
+    "emergency-stop": "EMERGENCY_STOP_ACTIVE",
+    "stop-epoch-moved": "STOP_EPOCH_MISMATCH",
+    "audit-unavailable": "AUDIT_UNAVAILABLE",
+    "circuit-open": "CIRCUIT_OPEN",
+    "adapter-not-conformant": "ADAPTER_NOT_CONFORMANT",
+    "conflicting-effect": "CONFLICT_SCOPE_UNRESOLVED",
+    "package-window-closed": "GATE_PACKAGE_WINDOW_CLOSED",
+    "deadline-expired": "COMMAND_DEADLINE_EXPIRED",
+    "command-of-other-package": "COMMAND_DIGEST_MISMATCH",
+    "command-of-other-context": "COMMAND_DIGEST_MISMATCH",
+    "idempotency-key-changed": "IDEMPOTENCY_KEY_INVALID",
+    "tampered-package": "GATE_PACKAGE_DIGEST_MISMATCH",
+    "observation-error": "FENCE_EVALUATION_FAILED",
+    "conditions-error": "FENCE_EVALUATION_FAILED",
+}
+
+
+@pytest.mark.parametrize("case", sorted(DISPATCH_CASES))
+def test_g_dispatch_invalidates_before_the_send(case: str) -> None:
+    """ADD v1.3 :2852-2854: stop, stop epoch, audit, circuit breaker, adapter, conflict scope,
+    window, deadline, idempotency key and command digest; an evaluation error never degrades
+    to a retry."""
+    suite = EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = _admitted(suite)
+    command = None
+    observe = None
+    lease = suite.lease(proposal, decision)
+    if case == "emergency-stop":
+        suite.governed.fence.stop()
+    elif case == "stop-epoch-moved":
+        # The package frozen at another stop epoch than the current one, with no stop active.
+        approval_set = world.approval_set(proposal)
+        decision = world.decide(proposal, approval_set, stop_epoch=1)
+        lease = suite.lease(proposal, decision)
+    elif case == "audit-unavailable":
+        world.conditions.audit_available = False
+    elif case == "circuit-open":
+        world.conditions.open_circuits.add(decision.package.adapter_binding_digest)
+    elif case == "adapter-not-conformant":
+        world.conditions.nonconformant.add(decision.package.adapter_binding_digest)
+    elif case == "conflicting-effect":
+        world.conditions.unresolved.add(decision.package.conflict_scope_digest)
+    elif case == "package-window-closed":
+        command = _command(suite, proposal, decision)
+        world.clock.advance(timedelta(minutes=31))
+        lease = suite.lease(proposal, decision)
+    elif case == "deadline-expired":
+        command = _command(suite, proposal, decision, deadline=ENGINE_NOW + timedelta(seconds=1))
+        world.clock.advance(timedelta(seconds=2))
+        lease = suite.lease(proposal, decision)
+    elif case == "command-of-other-package":
+        command = _command(suite, proposal, decision, gate_package_digest=_sha("other-package"))
+    elif case == "command-of-other-context":
+        command = _command(suite, proposal, decision, governed_context_digest=_sha("other-gcs"))
+    elif case == "idempotency-key-changed":
+        _evaluate(suite, proposal, decision, approval_set)
+        command = _command(suite, proposal, decision, idempotency_key="c6-action-other")
+        lease = suite.lease(proposal, decision)
+    elif case == "tampered-package":
+        tampered = dataclasses.replace(decision, package=dataclasses.replace(decision.package, expected_revision=5))
+        command = _command(suite, proposal, decision)
+        reason = _fence_reason(lambda: _evaluate(suite, proposal, tampered, approval_set, lease=lease, command=command))
+        assert reason == DISPATCH_CASES[case]
+        assert world.ledger.consumed(lease.lease.lease_id) is None
+        return
+    elif case == "observation-error":
+        def observe() -> Any:
+            raise ConnectionError("C3 revision unavailable")
+    elif case == "conditions-error":
+        world.conditions.raise_on_read = True
+    before = world.ledger.attempts(proposal.action_instance_id)
+    reason = _fence_reason(
+        lambda: _evaluate(suite, proposal, decision, approval_set, lease=lease, command=command, observe=observe)
+    )
+    assert reason == DISPATCH_CASES[case]
+    assert world.ledger.consumed(lease.lease.lease_id) is None
+    assert world.ledger.attempts(proposal.action_instance_id) == before
+
+
+def test_ncr_c6_005_conforms() -> None:
+    """ADD v1.3 :2851-2854, LLD v1.1 :256, :302: on the engine path the EMISSION-FENCE is
+    evaluated, with its DeliveryAttempt recorded, before the canonical commit (ACT-T29); a drift
+    of the canonical state between Decision and send gives INVALIDATED and no commit."""
+    engine_module = _mod("engine")
+    source = inspect.getsource(engine_module.GovernedActionEngine.execute)
+    assert source.index("emission_fence.evaluate") < source.index("_commit_port.commit")
+
+    suite = EngineSuite()
+    world = suite.world
+    ordered = OrderedC3(suite.c3, world.ledger)
+    from ocor_runtime.c7_emission import EmissionFence
+
+    engine = world.engine(
+        commit_port=ordered, relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+        canonical_path=suite.path, emission_outbox=suite.store,
+    )
+    proposal, approval_set, decision = _admitted(suite)
+    outcome = engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set,
+                             decision=decision, sink=suite.sink, at=ENGINE_NOW)
+    assert ordered.calls == [("commit", 1)]
+    assert outcome.delivery_attempt.fence_outcome == "PASSED"
+
+    # Another action commits on the same target after this Decision: the frozen revision is
+    # stale at the send, so the fence invalidates and C3 receives nothing.
+    stale, stale_set, stale_decision = _admitted(suite)
+    with pytest.raises(engine_module.GovernedActionError) as excinfo:
+        engine.execute(stale, lease=suite.lease(stale, stale_decision), approval=stale_set,
+                       decision=stale_decision, sink=suite.sink, at=ENGINE_NOW)
+    assert (excinfo.value.reason_code, excinfo.value.cause_code) == ("INVALIDATED", "STALE_EXPECTED_REVISION")
+    assert ordered.calls == [("commit", 1)]
+    assert world.ledger.attempts(stale.action_instance_id) == ()
+    assert len(suite.sink.calls) == 1
+
+
+ENGINE_FENCE_CASES: dict[str, tuple[str, str]] = {
+    "emergency-stop": ("INVALIDATED", "EMERGENCY_STOP_ACTIVE"),
+    "stop-epoch-moved": ("INVALIDATED", "STOP_EPOCH_MISMATCH"),
+    "audit-unavailable": ("INVALIDATED", "AUDIT_UNAVAILABLE"),
+    "circuit-open": ("INVALIDATED", "CIRCUIT_OPEN"),
+    "conflicting-effect": ("INVALIDATED", "CONFLICT_SCOPE_UNRESOLVED"),
+    "lease-of-other-package": ("INVALIDATED", "LEASE_CONTEXT_MISMATCH"),
+    "stale-fencing-token": ("INVALIDATED", "FENCING_TOKEN_STALE"),
+    "lease-forged": ("AUTHORITY_DENIED", "LEASE_INVALID"),
+    "lease-other-capability": ("AUTHORITY_DENIED", "LEASE_CONTEXT_MISMATCH"),
+    "lease-other-principal": ("AUTHORITY_DENIED", "LEASE_CONTEXT_MISMATCH"),
+    "lease-unverified-delegation": ("AUTHORITY_DENIED", "LEASE_CONTEXT_MISMATCH"),
+    "lease-other-action": ("AUTHORITY_DENIED", "LEASE_CONTEXT_MISMATCH"),
+    "lease-expired": ("AUTHORITY_DENIED", "LEASE_EXPIRED"),
+    "proposal-of-other-context": ("AUTHORITY_DENIED", "GOVERNED_CONTEXT_MISMATCH"),
+    "legacy-lease": ("AUTHORITY_DENIED", "LEASE_INVALID"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(ENGINE_FENCE_CASES))
+def test_the_engine_sends_nothing_to_c3_when_the_lease_or_the_fence_refuses(case: str) -> None:
+    from ocor_runtime.c6_capabilities import CapabilityAuthority
+
+    suite = EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = _admitted(suite)
+    lease = None
+    if case == "emergency-stop":
+        suite.governed.fence.stop()
+    elif case == "stop-epoch-moved":
+        approval_set = world.approval_set(proposal)
+        decision = world.decide(proposal, approval_set, stop_epoch=1)
+    elif case == "audit-unavailable":
+        world.conditions.audit_available = False
+    elif case == "circuit-open":
+        world.conditions.open_circuits.add(decision.package.adapter_binding_digest)
+    elif case == "conflicting-effect":
+        world.conditions.unresolved.add(decision.package.conflict_scope_digest)
+    elif case == "lease-of-other-package":
+        lease = suite.lease(proposal, decision, gate_package_digest=_sha("other-package"))
+    elif case == "stale-fencing-token":
+        lease = suite.lease(proposal, decision)
+        world.ledger.advance_fencing_token(proposal.action_instance_id)
+    elif case == "lease-forged":
+        lease = suite.lease(proposal, decision, signer="rogue")
+    elif case == "lease-other-capability":
+        lease = suite.lease(proposal, decision, capability_id="act:read-only")
+    elif case == "lease-other-principal":
+        lease = suite.lease(proposal, decision, effective_principal_id="urn:ocor:principal:other")
+    elif case == "lease-unverified-delegation":
+        lease = suite.lease(proposal, decision, delegation_ref=_sha("unverified-delegation"))
+    elif case == "lease-other-action":
+        lease = suite.lease(proposal, decision, action_instance_id="urn:ocor:action:other")
+    elif case == "lease-expired":
+        lease = suite.lease(proposal, decision)
+        world.clock.advance(timedelta(seconds=5))
+    elif case == "proposal-of-other-context":
+        proposal = world.proposal(suite.types["R3_HIGH_IMPACT"], action_id=f"urn:ocor:action:rem0053:{uuid.uuid4()}",
+                                  proposer=OPERATOR, target=TARGET, governed_context_digest=_sha("other-gcs"))
+        approval_set = world.approval_set(proposal)
+        decision = world.decide(proposal, approval_set)
+        lease = suite.lease(proposal, decision)
+    elif case == "legacy-lease":
+        lease = CapabilityAuthority(issuer="legacy").issue(
+            subject=OPERATOR, capabilities=["act:launch"], resources=[TARGET], issued_at=ENGINE_NOW,
+            ttl=timedelta(hours=1),
+        )
+    reason = suite.denial(proposal, approval=approval_set, decision=decision, lease=lease)
+    assert reason == ENGINE_FENCE_CASES[case]
+    assert suite.untouched()
+    assert world.ledger.attempts(proposal.action_instance_id) == ()

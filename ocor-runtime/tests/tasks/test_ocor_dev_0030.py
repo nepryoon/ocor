@@ -15,7 +15,7 @@ new, minimal ``ocor_runtime.c6.engine.GovernedActionEngine``.
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -100,9 +100,7 @@ def engine(
 ) -> GovernedActionEngine:
     path = GOVERNED.engine_path(aggregate_type="GovernedActionTarget", governed_context=CONTEXT)
     WORLD.granted.clear()
-    engine: GovernedActionEngine = WORLD.engine(
-        authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store
-    )
+    engine: GovernedActionEngine = WORLD.engine(commit_port=c3, relay=fence, canonical_path=path, emission_outbox=store)
     return engine
 
 
@@ -116,14 +114,11 @@ def make_proposal(*, risk_bearing: bool = True) -> ActionProposal:
     )
 
 
-def grant_lease(authority: CapabilityAuthority, *, capability: str = "act:launch", resource: str = "urn:ocor:target:site-1"):
-    return authority.issue(
-        subject="spiffe://ocor.test/workload/operator",
-        capabilities=[capability],
-        resources=[resource],
-        issued_at=NOW,
-        ttl=timedelta(hours=1),
-    )
+def grant_lease(decision: AuthorizedDecision | None = None, *, capability: str = "act:launch"):
+    # The normative CapabilityLease of the emission attempt (NCR-C6-004, ADD v1.3 :3194-3212):
+    # signed by the capability authority, at most PT5S, bound to the action instance, the
+    # GatePackage of the Decision, the GovernedContext, the stop epoch and the fencing token.
+    return WORLD.lease(make_proposal(), decision, capability_id=capability)
 
 
 def make_approval(action_id: str = "urn:ocor:action:launch-1", *, approved: bool = True) -> ApprovalSet:
@@ -151,14 +146,16 @@ def make_decision(action_id: str = "urn:ocor:action:launch-1", *, accepted: bool
 
 def test_happy_path_crosses_all_four_gates_before_the_simulated_effect(engine, authority, store):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    approval = make_approval()
+    decision = make_decision()
+    lease = grant_lease(decision)
     sink = RecordingSink()
 
     outcome = engine.execute(
         proposal,
         lease=lease,
-        approval=make_approval(),
-        decision=make_decision(),
+        approval=approval,
+        decision=decision,
         sink=sink,
         at=NOW,
     )
@@ -173,7 +170,7 @@ def test_happy_path_crosses_all_four_gates_before_the_simulated_effect(engine, a
 def test_missing_authority_denies_before_any_other_gate(engine, authority, store):
     proposal = make_proposal()
     # A lease that grants a DIFFERENT capability -- authority must deny.
-    lease = grant_lease(authority, capability="act:read-only")
+    lease = grant_lease(capability="act:read-only")
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -188,7 +185,7 @@ def test_missing_authority_denies_before_any_other_gate(engine, authority, store
 
 def test_risk_bearing_action_without_approval_is_denied(engine, authority, store):
     proposal = make_proposal(risk_bearing=True)
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -201,7 +198,7 @@ def test_risk_bearing_action_without_approval_is_denied(engine, authority, store
 
 def test_risk_bearing_action_with_rejected_approval_is_denied(engine, authority, store):
     proposal = make_proposal(risk_bearing=True)
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -220,7 +217,7 @@ def test_risk_bearing_action_with_rejected_approval_is_denied(engine, authority,
 
 def test_missing_decision_is_denied(engine, authority):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -232,7 +229,7 @@ def test_missing_decision_is_denied(engine, authority):
 
 def test_rejected_decision_is_denied_with_rationale_preserved(engine, authority):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -252,7 +249,7 @@ def test_rejected_decision_is_denied_with_rationale_preserved(engine, authority)
 
 def test_non_risk_bearing_action_does_not_require_a_human_gate_approval(engine, authority, store):
     proposal = make_proposal(risk_bearing=False)
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     # ADD v1.3 :2847 and :3298-3302, LLD v1.1 :268 (NCR-C6-002, realigned with RED): the risk class
@@ -267,14 +264,16 @@ def test_non_risk_bearing_action_does_not_require_a_human_gate_approval(engine, 
 
 def test_a_failing_sink_leaves_no_emission_receipt_and_a_retry_succeeds(engine, authority, store, fence):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    approval = make_approval()
+    decision = make_decision()
+    lease = grant_lease(decision)
 
     with pytest.raises(ConnectionError):
         engine.execute(
             proposal,
             lease=lease,
-            approval=make_approval(),
-            decision=make_decision(),
+            approval=approval,
+            decision=decision,
             sink=FailingSink(),
             at=NOW,
         )

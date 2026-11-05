@@ -10,6 +10,13 @@ Since NCR-C6-001, NCR-C6-002 and NCR-C6-008 the engine admits only a proposal pi
 active ActionType (ADD v1.3 :2847), the ApprovalSet of the Human Gate and the Authority's signed
 Decision on the frozen GatePackage (ADD v1.3 :2849-2850). ``ActionWorld`` builds them for the
 engine suites.
+
+Since NCR-C6-004 and NCR-C6-005 every send of the engine crosses the EMISSION-FENCE, which
+consumes the signed CapabilityLease of the emission attempt (at most PT5S, bound to principal,
+delegation, action, GCS, GatePackage, stop epoch and fencing token) in the transaction of the
+DeliveryAttempt (ADD v1.3 :2851-2854, :3194-3212; LLD v1.1 :69-81). ``ActionWorld.lease`` signs
+that lease with the capability authority of the suite, and ``ActionWorld.engine`` composes the
+fence with the dispatch ledger and the dispatch conditions of the suite.
 """
 
 from __future__ import annotations
@@ -54,6 +61,7 @@ def satisfied(transition_id: str, correlation_id: str, at: datetime) -> GuardEva
 
 PUBLISHER = "urn:ocor:principal:c1-release-publisher"
 AUTHORITY = "urn:ocor:authority:national-duty"
+LEASE_AUTHORITY = "urn:ocor:authority:c6-capability"
 DOMAIN = "urn:ocor:human:domain-approver"
 NATIONAL = "urn:ocor:human:national-approver"
 MARKING = "urn:sha256:" + hashlib.sha256(b"marking:unclassified").hexdigest()
@@ -116,6 +124,20 @@ class ActionWorld:
             authorities=self.authorities, approval_gate=self.approval_gate, clock=self.clock
         )
         self.granted: dict[str, Any] = {}
+        # NCR-C6-004/005: the capability authority signs the leases; the engine's EMISSION-FENCE
+        # verifies them with its keyring and consumes them in the dispatch ledger (composed by
+        # ``engine``).
+        self.lease_issuers = human_gate.InMemorySignerKeyring()
+        self.lease_issuers.register(LEASE_AUTHORITY, "k1", seeded_key(LEASE_AUTHORITY).public_key)
+        self.delegation_ref = "urn:sha256:" + hashlib.sha256(b"delegation:c6-engine-suite").hexdigest()
+        self.dispatch_module: Any = None
+        self.validator: Any = None
+        self.delegations: Any = None
+        self.context: Any = None
+        self.ledger: Any = None
+        self.conditions: Any = None
+        self.emission_fence: Any = None
+        self._path: Any = None
 
     def action_type(
         self,
@@ -221,23 +243,34 @@ class ActionWorld:
         *,
         accepted: bool = True,
         rationale: str = "within the approved risk ceiling",
-        stop_epoch: int = 0,
+        stop_epoch: int | None = None,
     ) -> Any:
         from ocor_runtime.c6 import engine
 
         now = self.clock.now()
         action_type = self.catalog.action_type(proposal.action_type_ref)
+        # The values the EMISSION-FENCE compares at the send (G-FRESHNESS): the policy bundle of
+        # the engine's GovernedContext, the C3 commit and watermark of the expected revision and
+        # the C3 governed-commit adapter.
+        policy = (
+            self.context.policy_bundle_digest
+            if self.context is not None
+            else "urn:sha256:" + hashlib.sha256(b"policy-bundle").hexdigest()
+        )
+        if stop_epoch is None:
+            # The stop epoch current when the package is frozen (G-DISPATCH compares it).
+            stop_epoch = self.conditions.current_stop_epoch() if self.conditions is not None else 0
         package = engine.freeze_gate_package(
             proposal,
             approval_set,
             action_type=action_type,
             authority_ref=AUTHORITY,
-            policy_bundle_digest="urn:sha256:" + hashlib.sha256(b"policy-bundle").hexdigest(),
+            policy_bundle_digest=policy,
             ontology_release_digest=self.release.digest,
             stop_epoch=stop_epoch,
-            canonical_commit_ref=f"urn:ocor:commit:{proposal.target_ref}:{proposal.expected_revision}",
-            adapter_binding_digest="urn:sha256:" + hashlib.sha256(b"c3-governed-commit").hexdigest(),
-            projection_watermark=f"urn:ocor:watermark:{proposal.expected_revision}",
+            canonical_commit_ref=engine.canonical_commit_ref(proposal.target_ref, proposal.expected_revision),
+            adapter_binding_digest=engine.C3_ADAPTER_BINDING_DIGEST,
+            projection_watermark=engine.projection_watermark(proposal.expected_revision),
             valid_from=now - timedelta(minutes=2),
             valid_until=now + timedelta(minutes=30),
             conflict_scope_digest="urn:sha256:" + hashlib.sha256(proposal.target_ref.encode("utf-8")).hexdigest(),
@@ -264,6 +297,58 @@ class ActionWorld:
     def engine(self, **components: Any) -> Any:
         from ocor_runtime.c6 import engine
 
+        from ocor_runtime.c6 import dispatch
+
+        path = components["canonical_path"]
+        if self.dispatch_module is None:
+            self.dispatch_module = dispatch
+            self.validator = dispatch.LeaseValidator(issuers=self.lease_issuers, clock=self.clock)
+            self.delegations = dispatch.InMemoryDelegationRegistry()
+        if path is not self._path:
+            # One dispatch ledger and fence per canonical path (C3 and its mutation fence).
+            self._path = path
+            self.context = path.governed_context
+            self.delegations.register(self.context.effective_principal_id, self.delegation_ref)
+            self.conditions = dispatch.InMemoryDispatchConditions(stop=path.fence)
+            self.ledger = dispatch.InMemoryDispatchLedger()
+            self.emission_fence = dispatch.GovernedEmissionFence(
+                validator=self.validator, ledger=self.ledger, conditions=self.conditions, clock=self.clock
+            )
         return engine.GovernedActionEngine(
-            contract=self.contract, approvals=self.approval_gate, decisions=self.decision_gate, **components
+            contract=self.contract,
+            approvals=self.approval_gate,
+            decisions=self.decision_gate,
+            delegations=self.delegations,
+            emission_fence=self.emission_fence,
+            **components,
+        )
+
+    def lease(self, proposal: Any, decision: Any = None, *, signer: str = LEASE_AUTHORITY, **fields: Any) -> Any:
+        """The signed CapabilityLease of the next emission attempt of ``proposal``, issued now for
+        at most PT5S by the capability authority and bound to the GatePackage of ``decision``."""
+        from ocor_runtime.kernel.governance import CapabilityLease
+
+        dispatch = self.dispatch_module
+        issuer_id = fields.pop("issuer_id", LEASE_AUTHORITY)
+        now = self.clock.now()
+        action_type = self.catalog.action_type(proposal.action_type_ref)
+        package_digest = getattr(decision, "package_digest", None) or (
+            "urn:sha256:" + hashlib.sha256(b"no-gate-package").hexdigest()
+        )
+        values: dict[str, Any] = {
+            "lease_id": f"urn:ocor:lease:{uuid.uuid4()}",
+            "capability_id": action_type.capability if action_type is not None else "act:unknown",
+            "effective_principal_id": self.context.effective_principal_id,
+            "delegation_ref": self.delegation_ref,
+            "action_instance_id": proposal.action_instance_id,
+            "governed_context_digest": proposal.governed_context_digest,
+            "gate_package_digest": package_digest,
+            "stop_epoch": self.conditions.current_stop_epoch(),
+            "fencing_token": self.ledger.fencing_token(proposal.action_instance_id),
+            "issued_at": now,
+            "expires_at": now + dispatch.MAX_LEASE_TTL,
+        }
+        values.update(fields)
+        return dispatch.sign_capability_lease(
+            seeded_key(signer), issuer_id=issuer_id, keyid="k1", lease=CapabilityLease(**values)
         )

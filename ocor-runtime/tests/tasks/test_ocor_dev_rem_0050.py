@@ -840,11 +840,9 @@ def _engine_world() -> Any:
 
 
 def _engine_fixture(service: Any, records: RecordStore, fence: Fence, clock: InMemoryTrustedClock) -> tuple[Any, Any, Any]:
-    from ocor_runtime.c6_capabilities import CapabilityAuthority
     from ocor_runtime.c7_emission import EmissionFence
 
     engine_module = _module("ocor_runtime.c6.engine")
-    authority = CapabilityAuthority(issuer="ocor-c6-rem0050-authority")
     path = engine_module.CanonicalCommitPath(
         signing_key=C6_KEY,
         keyid=C6_KEYID,
@@ -858,8 +856,10 @@ def _engine_fixture(service: Any, records: RecordStore, fence: Fence, clock: InM
     )
     # NCP-U07 (OCOR-DEV-REM-0053): the engine composes G-CONTRACT, the Human Gate and G-DECISION
     # (NCR-C6-001, NCR-C6-002); _engine_world() signs the ActionType, the Approval and the Decision.
-    engine = _engine_world().engine(authority=authority, commit_port=service, fence=EmissionFence(), canonical_path=path)
-    return engine_module, engine, authority
+    world = _engine_world()
+    engine = world.engine(commit_port=service, relay=EmissionFence(), canonical_path=path)
+    # NCR-C6-004: the signed CapabilityLease of each emission attempt, at most PT5S.
+    return engine_module, engine, world
 
 
 def _assessment(action_id: str, aggregate: str) -> Any:
@@ -889,8 +889,7 @@ def test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path(postgres_back
     delivered: list[Any] = []
 
     def run() -> Any:
-        lease = authority.issue(subject="analyst-1", capabilities=["act:assess"], resources=[aggregate], issued_at=NOW,
-                                ttl=timedelta(hours=1))
+        lease = authority.lease(proposal, decision)
         return engine.execute(proposal, lease=lease, approval=approval, decision=decision, sink=delivered.append, at=NOW,
                               evidence_refs=(evidence.evidence_ref,), claim_source_bindings=(dict(evidence.binding),))
 
@@ -905,7 +904,9 @@ def test_ncr_c3_002_c6_engine_commits_through_the_c3_governed_path(postgres_back
     assert postgres_backend.records.gate_package(gate_package_digest) is not None
     second = run()
     assert second.commit_receipt.commit_id == first.commit_receipt.commit_id
-    assert second.commit_receipt.replayed is True
+    # ADD v1.3 :2853 (NCR-C6-005, realigned with RED): every send crosses the EMISSION-FENCE, so a
+    # confirmed action instance is not sent to C3 again; the retry returns its confirmed outcome.
+    assert second == first
     assert postgres_backend.revision(aggregate) == 1
 
 
@@ -915,8 +916,7 @@ def test_ncr_c3_002_c6_denial_reaches_no_canonical_commit(postgres_backend: Back
     )
     aggregate = f"urn:ocor:mission-object:rem0050:denied:{uuid.uuid4().hex[:8]}"
     proposal = _assessment(f"urn:ocor:action:rem0050:{uuid.uuid4().hex[:8]}", aggregate)
-    lease = authority.issue(subject="analyst-1", capabilities=["act:assess"], resources=[aggregate], issued_at=NOW,
-                            ttl=timedelta(hours=1))
+    lease = authority.lease(proposal)
     approval = _engine_world().approval_set(proposal)
     rejected = _engine_world().decide(proposal, approval, accepted=False, rationale="not supported")
     with pytest.raises(engine_module.GovernedActionError) as caught:

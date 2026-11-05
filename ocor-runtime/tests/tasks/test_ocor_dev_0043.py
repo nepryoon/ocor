@@ -26,7 +26,6 @@ from ocor_runtime.c3_store import OutboxEvent
 from c6_action_fixture import ActionWorld
 from ocor_runtime.c6.engine import C3CanonicalOutboxView, GovernedActionError
 from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
-from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
 from ocor_runtime.kernel.governance import InMemoryTrustedClock
 from ocor_runtime.security.ports import ControlName, SecurityControlError
@@ -282,7 +281,6 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
     """Integration-level proof: HumanGateCoordinator's own output
     Approval is the identical sealed type GovernedActionEngine.execute
     already accepts, with no adapter needed."""
-    authority = CapabilityAuthority(issuer="ocor-c6-human-gate-integration")
     c3 = PostgresC3Service(os.environ["OCOR_LIVE_POSTGRES_DSN"], admission=GOVERNED.admission())
     c3.initialize()
     c3.reset()
@@ -292,7 +290,7 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
     # NCP-U07 (OCOR-DEV-REM-0053): the engine composes G-CONTRACT, the Human Gate and
     # G-DECISION (NCR-C6-001, NCR-C6-002); the action is pinned to its signed ActionType.
     world = ActionWorld(now=NOW, release=governed_path.RELEASE)
-    engine = world.engine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
+    engine = world.engine(commit_port=c3, relay=fence, canonical_path=path, emission_outbox=store)
 
     launch = world.action_type("urn:ocor:action-type:launch", risk="R3_HIGH_IMPACT", capability="act:launch")
     proposal = world.proposal(
@@ -302,13 +300,8 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
         target=SCOPE,
         governed_context_digest=CONTEXT.digest(),
     )
-    lease = authority.issue(
-        subject="spiffe://ocor.test/workload/operator",
-        capabilities=["act:launch"],
-        resources=[SCOPE],
-        issued_at=NOW,
-        ttl=timedelta(hours=1),
-    )
+    # NCR-C6-004: the signed CapabilityLease of the emission attempt, at most PT5S.
+    lease = world.lease(proposal)
     signatures = [sig("urn:ocor:human:risk-owner", "RISK_OWNER"), sig("urn:ocor:human:compliance", "COMPLIANCE")]
     approval = coordinator.validate(
         action_id=ACTION_ID, proposer_id=PROPOSER, policy=policy(), signatures=signatures, scope=SCOPE, at=NOW

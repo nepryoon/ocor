@@ -29,7 +29,7 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -103,9 +103,9 @@ def governed_engine(authority: CapabilityAuthority, c3: PostgresC3Service, conte
     outbox_store = C3CanonicalOutboxView(c3, tenant_id=context.tenant_id, aggregate_type="MissionAction")
     fence = EmissionFence(store=outbox_store)  # type: ignore[arg-type]
     path = GOVERNED.engine_path(aggregate_type="MissionAction", governed_context=context)
-    engine = ACTIONS.engine(
-        authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=outbox_store
-    )
+    # NCR-C6-004/005 (OCOR-DEV-REM-0053): the engine's EMISSION-FENCE consumes the signed
+    # CapabilityLease of the emission attempt; the C7 fence relays the committed event.
+    engine = ACTIONS.engine(commit_port=c3, relay=fence, canonical_path=path, emission_outbox=outbox_store)
     return outbox_store, engine
 
 
@@ -319,13 +319,6 @@ def run_mission_thread(
     # C6 -- the governed-action slice (OCOR-DEV-0030): Authority -> Human
     # Gate -> Decision -> EMISSION-FENCE -> simulated effect.
     authority = CapabilityAuthority(issuer="ocor-mission-thread-authority")
-    lease = authority.issue(
-        subject=effective_principal_id,
-        capabilities=["act:mission"],
-        resources=[mission_id],
-        issued_at=NOW,
-        ttl=timedelta(hours=1),
-    )
     outbox_store, engine = governed_engine(authority, c3, context)
     sink = _SimulatedEffectSink(kafka_record.canonical_digest)
 
@@ -337,11 +330,13 @@ def run_mission_thread(
         governed_context_digest=context.digest(),
     )
     approval_set = ACTIONS.approval_set(proposal)
+    decision = ACTIONS.decide(proposal, approval_set, rationale="within approved risk ceiling")
+    lease = ACTIONS.lease(proposal, decision)
     action_outcome = engine.execute(
         proposal,
         lease=lease,
         approval=approval_set,
-        decision=ACTIONS.decide(proposal, approval_set, rationale="within approved risk ceiling"),
+        decision=decision,
         sink=sink,
         at=NOW,
     )
@@ -489,15 +484,6 @@ def test_action_denied_at_authority_halts_the_thread_before_any_effect(postgres_
     mission_id = f"urn:ocor:resource:mission-{correlation_id}"
     registry, effective_principal_id = resolve_operator_identity()
     authority = CapabilityAuthority(issuer="ocor-mission-thread-authority")
-    # A lease granting the WRONG capability -- Authority must deny before
-    # any canonical commit, projection, event or causal step is ever reached.
-    lease = authority.issue(
-        subject=effective_principal_id,
-        capabilities=["act:read-only"],
-        resources=[mission_id],
-        issued_at=NOW,
-        ttl=timedelta(hours=1),
-    )
     c3 = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     c3.initialize()
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
@@ -510,6 +496,9 @@ def test_action_denied_at_authority_halts_the_thread_before_any_effect(postgres_
         target=mission_id,
         governed_context_digest=context.digest(),
     )
+    # A lease granting the WRONG capability -- Authority must deny before
+    # any canonical commit, projection, event or causal step is ever reached.
+    lease = ACTIONS.lease(proposal, capability_id="act:read-only")
     approval_set = ACTIONS.approval_set(proposal)
 
     with pytest.raises(GovernedActionError) as excinfo:
