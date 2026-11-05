@@ -235,12 +235,14 @@ def test_non_risk_bearing_action_does_not_require_a_human_gate_approval(engine, 
     lease = grant_lease(authority)
     sink = RecordingSink()
 
-    outcome = engine.execute(
-        proposal, lease=lease, approval=None, decision=make_decision(), sink=sink, at=NOW
-    )
+    # ADD v1.3 :2847 and :3298-3302, LLD v1.1 :268 (NCR-C6-002, realigned with RED): the risk class
+    # is the signed ActionType's; R1 admits no mutation and a canonical target never takes the
+    # NOT_REQUIRED disposition, so the request is denied without execution.
+    with pytest.raises(GovernedActionError) as excinfo:
+        engine.execute(proposal, lease=lease, approval=None, decision=make_decision(), sink=sink, at=NOW)
 
-    assert outcome.simulated_effect is not None
-    assert len(sink.calls) == 1
+    assert excinfo.value.reason_code == "NO_MUTATION_ADMITTED"
+    assert sink.calls == []
 
 
 def test_a_failing_sink_leaves_no_emission_receipt_and_a_retry_succeeds(engine, authority, store, fence):

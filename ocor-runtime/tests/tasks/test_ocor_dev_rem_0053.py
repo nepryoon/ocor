@@ -25,9 +25,14 @@ NCR-C6-001 to NCR-C6-009 and NCR-C6-014.
 * NCR-C6-008 -- ADD v1.3 :3298-3307 (approval obligation by risk class), :3334 (R3 ApprovalSet
   expires ten minutes after the second signature, not renewable), :3338 (Domain Approver and
   National Approver quorum), Register FR-079 :211 and FR-003 :45.
+* NCR-C6-002 -- ADD v1.3 :2847 (G-CONTRACT: signed, active ActionType), :3298 (without a valid
+  risk classification the mutative request is denied), LLD v1.1 :268 (ACT-T07: NOT_REQUIRED only
+  for a gate not required on a non-canonical target), Register FR-079 :211, NFR-029 :212 and
+  FR-080 :213. The engine composes G-CONTRACT, G-AUTHORITY, G-APPROVAL and G-DECISION.
 
-Every case is in-process: the FSM is a pure component whose durable effect sink and state
-store are ports.
+The FSM and the gate cases are in-process: the FSM is a pure component whose durable effect sink
+and state store are ports. The engine cases commit through the real C3 on PostgreSQL
+(``OCOR_LIVE_POSTGRES_DSN``), like the engine suites of OCOR-DEV-0030 and REM-0050.
 """
 
 from __future__ import annotations
@@ -37,6 +42,7 @@ import hashlib
 import importlib
 import inspect
 import threading
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from types import ModuleType
@@ -686,6 +692,7 @@ class GateWorld:
             proposal=proposal or self.proposal,
             gate_package_digest=package_digest,
             outcome=outcome,
+            rationale="within the approved ceiling" if outcome == "ACCEPT" else "outside the approved ceiling",
             valid_from=valid_from or now - timedelta(minutes=1),
             valid_until=valid_until or now + timedelta(minutes=5),
             decided_at=now,
@@ -1231,3 +1238,386 @@ def test_an_r3_approval_set_ends_with_the_earliest_approval_expiry() -> None:
     second = world.approve(NATIONAL, "NATIONAL_APPROVER")
     approval_set = world.approval_set((first, second))
     assert approval_set.expires_at == NOW + timedelta(minutes=2)
+
+
+# NCR-C6-002 -- ADD v1.3 :2847 (G-CONTRACT: signed, active ActionType declaring effect_class
+# and risk_class, typed parameters, reliability fields, marking and provenance), ADD v1.3 :3298
+# (without a valid risk classification the mutative request is denied), LLD v1.1 :268 (ACT-T07:
+# NOT_REQUIRED only when the gate is not required and the target is not canonical), Register
+# FR-079 :211 (approval obligation computed from the risk class and the effect type), NFR-029
+# :212 (zero executions without the required Approval) and FR-080 :213 (an ActionType without
+# its reliability fields is not published). The engine composes G-CONTRACT, G-AUTHORITY, the
+# Human Gate (NCR-C6-001, NCR-C6-008) and G-DECISION before the canonical commit through C3.
+
+ENGINE_NOW = datetime(2026, 11, 5, 15, 0, 0, tzinfo=UTC)
+OPERATOR = "spiffe://ocor.test/workload/operator"
+TARGET = "urn:ocor:target:rem0053:site-1"
+
+
+class EffectSink:
+    def __init__(self) -> None:
+        self.calls: list[Any] = []
+
+    def emit(self, event: Any, *, idempotency_key: str) -> dict[str, Any]:
+        self.calls.append(event)
+        return {"simulated": True, "action_id": event.payload["action_id"]}
+
+
+class EngineSuite:
+    """The engine on the real C3 (PostgreSQL), with the signed ActionTypes of the release."""
+
+    def __init__(self) -> None:
+        import os
+
+        import test_ocor_dev_rem_0050 as governed_path
+        from c6_action_fixture import ActionWorld
+        from ocor_runtime.c3.service import PostgresC3Service
+        from ocor_runtime.c6_capabilities import CapabilityAuthority
+        from ocor_runtime.c7_emission import EmissionFence
+
+        dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+        if not dsn:
+            pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory: the engine commits through the real C3")
+        self.engine_module = _mod("engine")
+        governed = governed_path.GovernedC3(
+            release=governed_path.RELEASE,
+            preconditions=("urn:ocor:precondition:governed-action",),
+            invariants=("urn:ocor:invariant:governed-action",),
+        )
+        self.context = governed.governed_context(purpose="rem0053-engine")
+        self.c3 = PostgresC3Service(dsn, admission=governed.admission())
+        self.c3.initialize()
+        self.c3.reset()
+        self.store = self.engine_module.C3CanonicalOutboxView(
+            self.c3, tenant_id=self.context.tenant_id, aggregate_type="GovernedActionTarget"
+        )
+        self.world = ActionWorld(now=ENGINE_NOW, release=governed_path.RELEASE)
+        self.authority = CapabilityAuthority(issuer="ocor-rem0053-authority")
+        path = governed.engine_path(aggregate_type="GovernedActionTarget", governed_context=self.context)
+        self.engine = self.world.engine(
+            authority=self.authority,
+            commit_port=self.c3,
+            fence=EmissionFence(store=self.store),  # type: ignore[arg-type]
+            canonical_path=path,
+            emission_outbox=self.store,
+        )
+        self.types = {
+            risk: self.world.action_type(f"urn:ocor:action-type:rem0053:{risk.lower()}", risk=risk, capability="act:launch")
+            for risk in ("R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT")
+        }
+        self.sink = EffectSink()
+
+    def proposal(self, risk: str = "R3_HIGH_IMPACT", **overrides: Any) -> Any:
+        return self.world.proposal(
+            self.types[risk],
+            action_id=f"urn:ocor:action:rem0053:{uuid.uuid4()}",
+            proposer=OPERATOR,
+            target=TARGET,
+            governed_context_digest=self.context.digest(),
+            **overrides,
+        )
+
+    def lease(self, capability: str = "act:launch") -> Any:
+        return self.authority.issue(
+            subject=OPERATOR, capabilities=[capability], resources=[TARGET], issued_at=ENGINE_NOW, ttl=timedelta(hours=1)
+        )
+
+    def execute(self, proposal: Any, *, approval: Any, decision: Any, lease: Any = None) -> Any:
+        return self.engine.execute(
+            proposal,
+            lease=lease if lease is not None else self.lease(),
+            approval=approval,
+            decision=decision,
+            sink=self.sink,
+            at=ENGINE_NOW,
+        )
+
+    def denial(self, proposal: Any, *, approval: Any, decision: Any, lease: Any = None) -> tuple[str, str | None]:
+        with pytest.raises(self.engine_module.GovernedActionError) as excinfo:
+            self.execute(proposal, approval=approval, decision=decision, lease=lease)
+        return excinfo.value.reason_code, excinfo.value.cause_code
+
+    def untouched(self) -> bool:
+        return self.sink.calls == [] and self.store.get(TARGET) is None
+
+
+def test_ncr_c6_002_conforms() -> None:
+    """ADD v1.3 :2847, :3298, LLD v1.1 :268, FR-079, NFR-029, FR-080: the risk class is the signed
+    ActionType's and a canonical target never takes NOT_REQUIRED."""
+    records = _mod("records")
+    gate = _mod("human_gate")
+    engine_module = _mod("engine")
+    from ocor_runtime.kernel.governance import RiskClass
+
+    assert engine_module.ActionProposal is records.ActionProposal
+    assert "risk_bearing" not in {item.name for item in dataclasses.fields(records.ActionProposal)}
+    assert {"contract", "approvals", "decisions"} <= set(inspect.signature(engine_module.GovernedActionEngine).parameters)
+
+    # ACT-T07: NOT_REQUIRED only for a gate not required on a non-canonical target.
+    assert gate.gate_disposition(RiskClass.R1_LOW, canonical_target=False) == "NOT_REQUIRED"
+    assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_LOW, canonical_target=True)) == "NO_MUTATION_ADMITTED"
+    assert gate.gate_disposition(RiskClass.R2_CONTROLLED, canonical_target=True) == "REQUIRED"
+
+    suite = EngineSuite()
+    # A non-risk-bearing ActionType on the canonical target: denied without execution.
+    low = suite.proposal("R1_LOW")
+    assert suite.denial(low, approval=None, decision=None) == ("NO_MUTATION_ADMITTED", "NO_MUTATION_ADMITTED")
+    assert suite.untouched()
+    # The proposer cannot lower the risk class of its signed ActionType.
+    lowered = suite.proposal("R3_HIGH_IMPACT", risk_class=RiskClass.R1_LOW)
+    assert suite.denial(lowered, approval=None, decision=None) == ("CONTRACT_INVALID", "ACTION_TYPE_MISMATCH")
+    # A risk-bearing action without its Approval is denied (NFR-029).
+    controlled = suite.proposal("R2_CONTROLLED")
+    approval_set = suite.world.approval_set(controlled)
+    decision = suite.world.decide(controlled, approval_set)
+    assert suite.denial(controlled, approval=None, decision=decision)[0] == "APPROVAL_MISSING"
+    assert suite.untouched()
+    outcome = suite.execute(controlled, approval=approval_set, decision=decision)
+    assert outcome.simulated_effect == {"simulated": True, "action_id": controlled.action_instance_id}
+    assert len(suite.sink.calls) == 1
+
+
+CONTRACT_CASES: dict[str, str | None] = {
+    "valid": None,
+    "unknown-type": "ACTION_TYPE_UNKNOWN",
+    "forged-signature": "ACTION_TYPE_SIGNATURE_INVALID",
+    "retired": "ACTION_TYPE_INACTIVE",
+    "other-release": "ACTION_TYPE_INACTIVE",
+    "other-type-digest": "ACTION_TYPE_MISMATCH",
+    "other-effect": "ACTION_TYPE_MISMATCH",
+    "other-risk": "ACTION_TYPE_MISMATCH",
+    "missing-parameter": "PARAMETERS_INVALID",
+    "extra-parameter": "PARAMETERS_INVALID",
+    "untyped-parameter": "PARAMETERS_INVALID",
+    "boolean-as-integer": "PARAMETERS_INVALID",
+    "not-a-proposal": "SCHEMA_INVALID",
+}
+
+
+@pytest.mark.parametrize("case", sorted(CONTRACT_CASES))
+def test_g_contract_admits_only_the_signed_active_action_type(case: str) -> None:
+    from c6_action_fixture import PUBLISHER, ActionWorld, seeded_key
+    from ocor_runtime.kernel.governance import RiskClass
+
+    contract = _mod("contract")
+    world = ActionWorld(now=ENGINE_NOW, release=RELEASE)
+    schema = {"asset": "string", "priority": "integer", "urgent": "boolean"}
+    tasking = world.action_type("urn:ocor:action-type:tasking", risk="R2_CONTROLLED", capability="act:task", parameters=schema)
+
+    def proposal(action_type: Any = tasking, **overrides: Any) -> Any:
+        return world.proposal(
+            action_type,
+            action_id=ACTION,
+            proposer=PROPOSER,
+            target="urn:ocor:target:site-1",
+            governed_context_digest=_sha("gcs"),
+            parameters=overrides.pop("parameters", {"asset": "urn:ocor:asset:1", "priority": 2, "urgent": False}),
+            **overrides,
+        )
+
+    def ghost() -> Any:
+        return proposal(world.action_type("urn:ocor:action-type:ghost", risk="R2_CONTROLLED", capability="x", publish=False))
+
+    def forged() -> Any:
+        return proposal(world.action_type("urn:ocor:action-type:forged", risk="R2_CONTROLLED", capability="x", signer="rogue"))
+
+    def retired() -> Any:
+        world.catalog.retire(tasking.action_type_ref, key=seeded_key(PUBLISHER))
+        return proposal()
+
+    def other_release() -> Any:
+        stale = proposal()
+        world.release.digest = _sha("release-2")
+        return stale
+
+    builders: dict[str, Callable[[], Any]] = {
+        "valid": proposal,
+        "unknown-type": ghost,
+        "forged-signature": forged,
+        "retired": retired,
+        "other-release": other_release,
+        "other-type-digest": lambda: proposal(action_type_digest=_sha("other-type")),
+        "other-effect": lambda: proposal(effect_class="EXTERNAL_COMMAND"),
+        "other-risk": lambda: proposal(risk_class=RiskClass.R3_HIGH_IMPACT),
+        "missing-parameter": lambda: proposal(parameters={"asset": "urn:ocor:asset:1", "priority": 2}),
+        "extra-parameter": lambda: proposal(
+            parameters={"asset": "urn:ocor:asset:1", "priority": 2, "urgent": False, "x": "y"}
+        ),
+        "untyped-parameter": lambda: proposal(parameters={"asset": 7, "priority": 2, "urgent": False}),
+        "boolean-as-integer": lambda: proposal(parameters={"asset": "urn:ocor:asset:1", "priority": True, "urgent": False}),
+        "not-a-proposal": lambda: {"action_type_ref": tasking.action_type_ref},
+    }
+    candidate = builders[case]()
+    if CONTRACT_CASES[case] is None:
+        assert world.contract.evaluate(candidate) == tasking
+        assert world.contract.evaluate(candidate).risk_class is RiskClass.R2_CONTROLLED
+        return
+    with pytest.raises(contract.ContractGateError) as excinfo:
+        world.contract.evaluate(candidate)
+    assert excinfo.value.reason_code == CONTRACT_CASES[case]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        (None, None),
+        ("timeout_seconds", 0),
+        ("max_attempts", 0),
+        ("idempotency_scope", ""),
+        ("compensable", "yes"),
+        ("irreversibility_class", "UNKNOWN"),
+        ("marking_ref", "unclassified"),
+        ("provenance_ref", " "),
+        ("risk_class", 9),
+        ("parameters", {"asset": "float"}),
+        ("canonical_target", 1),
+        ("irreversible-r2", None),
+    ],
+)
+def test_an_action_type_without_its_reliability_fields_is_not_published(field: str | None, value: Any) -> None:
+    """FR-080: timeout, retry, idempotency, compensability and irreversibility are declared;
+    ADD v1.3 :3303: an irreversible ActionType is R3_HIGH_IMPACT."""
+    from c6_action_fixture import ActionWorld
+
+    world = ActionWorld(now=ENGINE_NOW, release=RELEASE)
+    if field is None:
+        published = world.action_type("urn:ocor:action-type:complete", risk="R2_CONTROLLED", capability="act:x")
+        assert world.catalog.action_type("urn:ocor:action-type:complete") == published
+        return
+    overrides: dict[str, Any] = (
+        {"irreversibility_class": "IRREVERSIBLE", "compensable": False} if field == "irreversible-r2" else {field: value}
+    )
+    assert _record_reason(
+        lambda: world.action_type("urn:ocor:action-type:incomplete", risk="R2_CONTROLLED", capability="act:x", **overrides)
+    ) == "RECORD_INVALID"
+    assert world.catalog.action_type("urn:ocor:action-type:incomplete") is None
+
+
+@pytest.mark.parametrize("risk", ["R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
+@pytest.mark.parametrize("canonical_target", [True, False])
+def test_the_gate_disposition_follows_the_risk_class_and_the_target(risk: str, canonical_target: bool) -> None:
+    gate = _mod("human_gate")
+    from ocor_runtime.kernel.governance import RiskClass
+
+    if risk in {"R2_CONTROLLED", "R3_HIGH_IMPACT"}:
+        assert gate.gate_disposition(RiskClass[risk], canonical_target=canonical_target) == "REQUIRED"
+    elif canonical_target:
+        assert _gate_reason(lambda: gate.gate_disposition(RiskClass[risk], canonical_target=True)) == "NO_MUTATION_ADMITTED"
+    else:
+        assert gate.gate_disposition(RiskClass[risk], canonical_target=False) == "NOT_REQUIRED"
+
+
+@pytest.mark.parametrize("value", [None, True, 7, "R2_CONTROLLED"])
+def test_a_disposition_without_a_valid_risk_classification_is_denied(value: Any) -> None:
+    gate = _mod("human_gate")
+    assert _gate_reason(lambda: gate.gate_disposition(value, canonical_target=False)) == "NO_MUTATION_ADMITTED"
+
+
+ENGINE_DENIALS: dict[str, tuple[str, str | None]] = {
+    "unpublished-type": ("CONTRACT_INVALID", "ACTION_TYPE_UNKNOWN"),
+    "non-canonical-type": ("CONTRACT_INVALID", "TARGET_NOT_CANONICAL"),
+    "r0-on-canonical": ("NO_MUTATION_ADMITTED", "NO_MUTATION_ADMITTED"),
+    "authority": ("AUTHORITY_DENIED", None),
+    "approval-missing": ("APPROVAL_MISSING", None),
+    "approval-ungranted": ("APPROVAL_MISSING", "APPROVAL_SET_INVALID"),
+    "approval-of-other-proposal": ("APPROVAL_MISSING", "APPROVAL_SET_INVALID"),
+    "legacy-unsigned-approval": ("APPROVAL_MISSING", "APPROVAL_SET_INVALID"),
+    "decision-missing": ("DECISION_MISSING", None),
+    "legacy-unsigned-decision": ("DECISION_MISSING", None),
+    "decision-rejected": ("DECISION_REJECTED", "DECISION_REJECTED"),
+    "decision-on-other-approval-set": ("DECISION_MISSING", "APPROVAL_SET_INVALID"),
+    "package-with-lower-risk": ("DECISION_MISSING", "GATE_PACKAGE_RISK_MISMATCH"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(ENGINE_DENIALS))
+def test_the_engine_denies_at_every_gate_before_any_effect(case: str) -> None:
+    from ocor_runtime.kernel.governance import RiskClass
+
+    suite = EngineSuite()
+    world = suite.world
+    proposal = suite.proposal()
+    approval_set = world.approval_set(proposal)
+    decision = world.decide(proposal, approval_set)
+    lease = None
+    if case == "unpublished-type":
+        ghost = world.action_type("urn:ocor:action-type:rem0053:ghost", risk="R3_HIGH_IMPACT", capability="act:launch",
+                                  publish=False)
+        proposal = world.proposal(ghost, action_id=proposal.action_instance_id, proposer=OPERATOR, target=TARGET,
+                                  governed_context_digest=suite.context.digest())
+    elif case == "non-canonical-type":
+        note = world.action_type("urn:ocor:action-type:rem0053:note", risk="R2_CONTROLLED", capability="act:launch",
+                                 canonical_target=False)
+        proposal = world.proposal(note, action_id=proposal.action_instance_id, proposer=OPERATOR, target=TARGET,
+                                  governed_context_digest=suite.context.digest())
+    elif case == "r0-on-canonical":
+        proposal = suite.proposal("R0_INFORMATIONAL")
+    elif case == "authority":
+        lease = suite.lease("act:read-only")
+    elif case == "approval-missing":
+        approval_set = None
+    elif case == "approval-ungranted":
+        approval_set = world.ungranted(approval_set)
+    elif case == "approval-of-other-proposal":
+        approval_set = world.approval_set(suite.proposal())
+    elif case == "legacy-unsigned-approval":
+        approval_set = suite.engine_module.Approval(
+            action_id=proposal.action_instance_id, approver="urn:ocor:human:approver-1", approved=True, approved_at=ENGINE_NOW
+        )
+    elif case == "decision-missing":
+        decision = None
+    elif case == "legacy-unsigned-decision":
+        decision = suite.engine_module.Decision(
+            action_id=proposal.action_instance_id, decided_by=AUTHORITY, accepted=True, rationale="legacy",
+            decided_at=ENGINE_NOW,
+        )
+    elif case == "decision-rejected":
+        decision = world.decide(proposal, approval_set, accepted=False, rationale="risk ceiling exceeded")
+    elif case == "decision-on-other-approval-set":
+        decision = world.decide(proposal, world.approval_set(proposal))
+    elif case == "package-with-lower-risk":
+        package = dataclasses.replace(decision.package, risk_class=RiskClass.R2_CONTROLLED)
+        signed = world.gate_module.sign_decision(
+            _key(AUTHORITY), keyid="k1", decision_id=f"urn:ocor:decision:{uuid.uuid4()}", authority_id=AUTHORITY,
+            proposal=proposal, gate_package_digest=package.digest(), outcome="ACCEPT", rationale="lowered",
+            valid_from=ENGINE_NOW - timedelta(minutes=1), valid_until=ENGINE_NOW + timedelta(minutes=5),
+            decided_at=ENGINE_NOW,
+        )
+        decision = suite.engine_module.AuthorizedDecision(decision=signed, package=package, package_digest=package.digest())
+    reason = suite.denial(proposal, approval=approval_set, decision=decision, lease=lease)
+    assert reason == ENGINE_DENIALS[case]
+    assert suite.untouched()
+    if case == "decision-rejected":
+        with pytest.raises(suite.engine_module.GovernedActionError, match="risk ceiling exceeded"):
+            suite.execute(proposal, approval=approval_set, decision=world.decide(
+                proposal, world.approval_set(proposal), accepted=False, rationale="risk ceiling exceeded"))
+
+
+def test_a_retry_of_an_admitted_action_replays_its_commit_without_reusing_the_approvals_elsewhere() -> None:
+    """FR-008: a retry of the same action instance replays the C3 commit; NFR-005: its ApprovalSet
+    and Decision never admit another action instance."""
+    suite = EngineSuite()
+    world = suite.world
+    proposal = suite.proposal()
+    approval_set = world.approval_set(proposal)
+    decision = world.decide(proposal, approval_set)
+    first = suite.execute(proposal, approval=approval_set, decision=decision)
+    second = suite.execute(proposal, approval=approval_set, decision=decision)
+    assert second.commit_receipt.commit_id == first.commit_receipt.commit_id
+    assert second.commit_receipt.replayed is True
+    assert suite.c3.current_revision(suite.context.tenant_id, "GovernedActionTarget", TARGET) == 1
+    other = dataclasses.replace(proposal, action_instance_id=f"urn:ocor:action:rem0053:{uuid.uuid4()}")
+    assert suite.denial(other, approval=approval_set, decision=decision)[0] == "APPROVAL_MISSING"
+    late = world.decide(proposal, approval_set)
+    assert suite.denial(proposal, approval=approval_set, decision=late) == ("DECISION_MISSING", "IDEMPOTENCY_CONFLICT")
+
+
+def test_an_admitted_action_is_not_retried_after_its_decision_expired() -> None:
+    suite = EngineSuite()
+    world = suite.world
+    proposal = suite.proposal()
+    approval_set = world.approval_set(proposal)
+    decision = world.decide(proposal, approval_set)
+    suite.execute(proposal, approval=approval_set, decision=decision)
+    world.clock.advance(timedelta(minutes=5))
+    assert suite.denial(proposal, approval=approval_set, decision=decision) == ("DECISION_MISSING", "DECISION_EXPIRED")

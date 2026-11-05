@@ -23,7 +23,13 @@ import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
 from ocor_runtime.c3.service import PostgresC3Service
 from ocor_runtime.c3_store import OutboxEvent
-from ocor_runtime.c6.engine import ActionProposal, C3CanonicalOutboxView, Decision, GovernedActionEngine
+from ocor_runtime.c6.engine import (
+    ActionProposal,
+    C3CanonicalOutboxView,
+    Decision,
+    GovernedActionEngine,
+    GovernedActionError,
+)
 from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
@@ -312,7 +318,12 @@ def test_a_resolved_human_gate_approval_wires_directly_into_the_real_governed_ac
     decision = Decision(action_id=ACTION_ID, decided_by="urn:ocor:human:decider-1", accepted=True, rationale="within ceiling", decided_at=NOW)
     sink = RecordingSink()
 
-    outcome = engine.execute(proposal, lease=lease, approval=approval, decision=decision, sink=sink, at=NOW)
+    # ADD v1.3 :2849-2850 and LLD v1.1 :254 (NCR-C6-001, realigned with RED): G-APPROVAL admits
+    # only the ApprovalSet of signed Approvals bound to proposal digest, revision, release and
+    # expiry; the unsigned Approval of HumanGateCoordinator is not one, so the engine denies the
+    # action before any effect.
+    with pytest.raises(GovernedActionError) as excinfo:
+        engine.execute(proposal, lease=lease, approval=approval, decision=decision, sink=sink, at=NOW)
 
-    assert outcome.simulated_effect == {"simulated": True, "action_id": ACTION_ID}
-    assert len(sink.calls) == 1
+    assert excinfo.value.reason_code == "APPROVAL_MISSING"
+    assert len(sink.calls) == 0
