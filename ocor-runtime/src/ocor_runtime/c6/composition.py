@@ -24,6 +24,7 @@ The engine is composed only on a canonical path fenced on the composed emergency
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import datetime
 
 from ..audit import AuditEvent, AuditPort
@@ -42,7 +43,14 @@ from .dispatch import (
 from .engine import C3CanonicalOutboxView, CanonicalCommitPath, CanonicalCommitTarget, GovernedActionEngine
 from .fsm import ActionStatePort, GovernedActionFSM, InMemoryActionStateStore, PersistedEffect
 from .human_gate import ActiveReleasePort, ApprovalGate, DecisionGate, SignerKeyring
-from .safety import BreakGlassAlertSink, BreakGlassController, EmergencyStopController, OutcomeReconciler, StopStatus
+from .safety import (
+    BreakGlassAlertSink,
+    BreakGlassController,
+    EmergencyStopController,
+    OutcomeReconciler,
+    StopEpochPort,
+    StopEpochReader,
+)
 
 TRANSITION_EVENT = "C6_ACTION_TRANSITION"
 BREAK_GLASS_EVENT = "C6_BREAK_GLASS"
@@ -51,23 +59,27 @@ _TRANSITION_FIELDS = frozenset({"source", "destination", "durable_effect"})
 
 
 class EmergencyStopFence:
-    """The ``MutationFencePort`` of the composed path: the stop epoch and the emergency stop of the
-    C6 ``EmergencyStopController`` (a stop that is not ``NORMAL`` blocks every mutation) and the
-    active release of C1."""
+    """The ``MutationFencePort`` of the composed path: the signed stop epoch and the emergency stop
+    read through the durable ``StopEpochPort`` (a stop that is not ``NORMAL`` blocks every
+    mutation; OCOR-DEV-REM-0054, NCR-C6-010, ADD v1.3 :2852 and :3360) and the active release of
+    C1. Given the Emergency Control Plane, the fence reads through the controller's reader, never
+    an attribute of the controller."""
 
-    def __init__(self, *, stop: EmergencyStopController, releases: ActiveReleasePort) -> None:
-        if not isinstance(stop, EmergencyStopController):
-            raise TypeError("stop must be the EmergencyStopController")
+    def __init__(self, *, stop: EmergencyStopController | StopEpochReader, releases: ActiveReleasePort) -> None:
+        if isinstance(stop, EmergencyStopController):
+            stop = stop.reader
+        if not isinstance(stop, StopEpochReader):
+            raise TypeError("stop must be a StopEpochReader of the signed stop epoch")
         if not callable(getattr(releases, "active_release_digest", None)):
             raise TypeError("releases must implement ActiveReleasePort")
         self._stop = stop
         self._releases = releases
 
     def current_stop_epoch(self) -> int:
-        return self._stop.epoch
+        return self._stop.current_stop_epoch()
 
     def emergency_stop_active(self) -> bool:
-        return self._stop.status is not StopStatus.NORMAL
+        return self._stop.emergency_stop_active()
 
     def active_release_digest(self) -> str:
         return self._releases.active_release_digest()
@@ -151,6 +163,22 @@ def _aware(value: str) -> datetime:
     return instant
 
 
+@dataclass(frozen=True, slots=True)
+class SafetyAuthorities:
+    """The Emergency Control Plane and the break-glass authority of the composed path
+    (OCOR-DEV-REM-0054, NCR-C6-010): the durable port of the signed stop epoch, the keyring that
+    pins their public keys and their signing keys."""
+
+    stop_epochs: StopEpochPort
+    keyring: SignerKeyring
+    control_plane_key: Ed25519SigningKey
+    control_plane_id: str
+    control_plane_keyid: str
+    break_glass_key: Ed25519SigningKey
+    break_glass_id: str
+    break_glass_keyid: str
+
+
 class C6ActionPathRoot:
     """Builds the C6 action path once and composes the engine on it."""
 
@@ -171,6 +199,7 @@ class C6ActionPathRoot:
         gate_signing_key: Ed25519SigningKey,
         gate_id: str,
         gate_keyid: str,
+        safety: SafetyAuthorities,
         states: ActionStatePort | None = None,
         ledger: InMemoryDispatchLedger | None = None,
     ) -> None:
@@ -193,10 +222,26 @@ class C6ActionPathRoot:
         )
         self.decision_gate = DecisionGate(authorities=authorities, approval_gate=self.approval_gate, clock=clock)
         # Safety: one emergency stop for dispatch, canonical path and C3, and the break-glass.
-        self.stop = EmergencyStopController()
-        self.mutation_fence = EmergencyStopFence(stop=self.stop, releases=releases)
+        if not isinstance(safety, SafetyAuthorities):
+            raise TypeError("safety must be the SafetyAuthorities of the composed path")
+        self.stop = EmergencyStopController(
+            epochs=safety.stop_epochs,
+            identities=identities,
+            signing_key=safety.control_plane_key,
+            issuer_id=safety.control_plane_id,
+            keyid=safety.control_plane_keyid,
+            keyring=safety.keyring,
+        )
+        self.mutation_fence = EmergencyStopFence(stop=self.stop.reader, releases=releases)
         self.break_glass = BreakGlassController(
-            identities=identities, stop=self.stop, clock=clock, audit=AuditedBreakGlassSink(audit), alerts=alerts
+            identities=identities,
+            stop=self.stop.reader,
+            clock=clock,
+            audit=AuditedBreakGlassSink(audit),
+            alerts=alerts,
+            signing_key=safety.break_glass_key,
+            issuer_id=safety.break_glass_id,
+            keyid=safety.break_glass_keyid,
         )
         # Dispatch: the signed lease, the ledger, the conditions and the EMISSION-FENCE.
         self.validator = LeaseValidator(issuers=lease_issuers, clock=clock)
@@ -245,4 +290,5 @@ __all__ = [
     "AuditedTransitionTrace",
     "C6ActionPathRoot",
     "EmergencyStopFence",
+    "SafetyAuthorities",
 ]

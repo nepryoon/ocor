@@ -3206,6 +3206,7 @@ COMPOSITION_AUDIT_KEYID = "rem0053-composition-audit"
 OFFICER = "urn:ocor:human:security-duty-officer"
 OWNER = "urn:ocor:human:maritime-domain-owner"
 REQUESTER = "urn:ocor:human:break-glass-requester"
+from c6_safety_fixture import INCIDENT, SAFETY_OFFICER  # noqa: E402
 # FR-008 :59: the record each transition of the canonical path persists, in canonical order.
 CANONICAL_RECORDS = (
     "ActionProposal",
@@ -3247,6 +3248,7 @@ class CompositionSuite:
     def __init__(self) -> None:
         import os
 
+        import c6_safety_fixture as safety_fixture
         import test_ocor_dev_rem_0050 as governed_path
         from c6_action_fixture import DOMAIN as FIXTURE_DOMAIN
         from c6_action_fixture import NATIONAL as FIXTURE_NATIONAL
@@ -3280,6 +3282,7 @@ class CompositionSuite:
                 (OFFICER, "SECURITY_DUTY_OFFICER"),
                 (OWNER, "DOMAIN_OWNER:maritime"),
                 (REQUESTER, "OPERATOR"),
+                (SAFETY_OFFICER, "SAFETY_OFFICER"),
             )
         )
         self.delegations = dispatch.InMemoryDelegationRegistry()
@@ -3299,6 +3302,16 @@ class CompositionSuite:
             gate_signing_key=seeded_key("c6-human-gate"),
             gate_id="urn:ocor:component:c6:human-gate",
             gate_keyid="gate-k1",
+            safety=self.composition.SafetyAuthorities(
+                stop_epochs=safety_fixture.InMemoryStopEpochStore(),
+                keyring=safety_fixture.keyring(),
+                control_plane_key=safety_fixture.CONTROL_PLANE_KEY,
+                control_plane_id=safety_fixture.CONTROL_PLANE,
+                control_plane_keyid=safety_fixture.CONTROL_PLANE_KEYID,
+                break_glass_key=safety_fixture.BREAK_GLASS_KEY,
+                break_glass_id=safety_fixture.BREAK_GLASS_AUTHORITY,
+                break_glass_keyid=safety_fixture.BREAK_GLASS_KEYID,
+            ),
         )
         governed = governed_path.GovernedC3(
             release=governed_path.RELEASE,
@@ -3492,7 +3505,7 @@ def test_the_composed_emergency_stop_cancels_the_action_before_the_send() -> Non
     proposal = suite.proposal()
     approval_set, decision = suite.decided(proposal)
     lease = suite.world.lease(proposal, decision)
-    suite.root.stop.activate(reason="containment drill", at=ENGINE_NOW)
+    suite.root.stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="containment drill", at=ENGINE_NOW)
     assert suite.root.mutation_fence.emergency_stop_active() is True
     assert suite.governed.fence is suite.root.mutation_fence
     assert suite.refusal(proposal, approval=approval_set, decision=decision, lease=lease) == (
@@ -3510,7 +3523,7 @@ def test_the_composed_break_glass_never_overrides_the_composed_stop_and_is_audit
     grant = suite.root.break_glass.grant(
         grant_id=f"urn:ocor:break-glass:{uuid.uuid4()}",
         requester=REQUESTER,
-        reason="incident containment",
+        reason="incident-containment",
         incident_ref="urn:ocor:incident:rem0053",
         scope="urn:ocor:scope:maritime",
         domain="maritime",
@@ -3518,7 +3531,7 @@ def test_the_composed_break_glass_never_overrides_the_composed_stop_and_is_audit
         approvers=(OFFICER, OWNER),
         ttl=timedelta(minutes=10),
     )
-    suite.root.stop.activate(reason="containment drill", at=ENGINE_NOW)
+    suite.root.stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="containment drill", at=ENGINE_NOW)
     with pytest.raises(_mod("safety").SafetyError) as refused:
         suite.root.break_glass.authorize(grant, capability="act:launch", review_ref="urn:ocor:review:rem0053")
     assert refused.value.reason_code == "BREAK_GLASS_STOP_ACTIVE"

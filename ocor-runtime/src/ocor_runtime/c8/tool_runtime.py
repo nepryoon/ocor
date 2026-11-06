@@ -103,7 +103,7 @@ from typing import Any, Callable, Mapping
 
 from ..c3_store import require_aware
 from ..c4_marking import MarkingEngine, MarkingSet
-from ..c6.safety import EmergencyStopController, OutcomeReconciler, ReconciliationRecord, SafetyError
+from ..c6.safety import EmergencyStopController, OutcomeReconciler, ReconciliationRecord, SafetyError, StopEpochReader
 from ..c6_capabilities import CapabilityAuthority, CapabilityLease, StopEpochDenied
 from ..c8_agent import StrictSandbox, TokenBudget
 from ..errors import AuthorizationError, OCORError
@@ -241,7 +241,7 @@ _COOPERATIVE_GRACE_SECONDS = 0.25
 
 @dataclass(frozen=True, slots=True)
 class _DispatchedCall:
-    stop: EmergencyStopController
+    stop: StopEpochReader
     fenced_epoch: int
     cancelled: threading.Event
 
@@ -251,7 +251,7 @@ _DISPATCHED_CALL: contextvars.ContextVar[_DispatchedCall | None] = contextvars.C
 )
 
 
-def _stop_accepted(stop: EmergencyStopController, fenced_epoch: int) -> bool:
+def _stop_accepted(stop: StopEpochReader, fenced_epoch: int) -> bool:
     try:
         stop.guard_dispatch(fenced_epoch=fenced_epoch)
     except SafetyError:
@@ -294,12 +294,18 @@ class ToolCallRuntime:
         sandbox: StrictSandbox,
         authority: CapabilityAuthority,
         marking_engine: MarkingEngine,
-        stop: EmergencyStopController,
+        stop: EmergencyStopController | StopEpochReader,
         tool_call_deadline: timedelta = DEFAULT_TOOL_CALL_DEADLINE,
         reconciler: OutcomeReconciler | None = None,
     ) -> None:
         if not isinstance(tool_call_deadline, timedelta) or not timedelta(0) < tool_call_deadline <= CONTAINMENT_TARGET:
             raise ValueError(f"tool_call_deadline must be positive and at most {CONTAINMENT_TARGET}")
+        # OCOR-DEV-REM-0054 (NCR-C6-010): the signed stop epoch is read through its durable port,
+        # never from the process that activates the stop.
+        if isinstance(stop, EmergencyStopController):
+            stop = stop.reader
+        if not isinstance(stop, StopEpochReader):
+            raise TypeError("stop must be a StopEpochReader of the signed stop epoch")
         authority.bind_stop_controller(stop)
         self._sandbox = sandbox
         self._authority = authority
