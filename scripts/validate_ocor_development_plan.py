@@ -1306,7 +1306,8 @@ def main() -> int:
         # decision request of the unit that enters main with it (NCP-U08-RISK-CLASS-NAME-ADAPTATION,
         # option 1), and the requalifications of 0009, 0014, 0030, 0034, 0035, 0044, 0047 and 0048 (changed
         # inputs, realigned or adapted tests, NCP-UNBINDABLE-REQUALIFICATIONS) and of 0005, 0050 and 0082
-        # forced by this allowlist.
+        # forced by this allowlist; repair cycle 1: the requalification of REM-0053 required by
+        # NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1.
         "ocor-runtime/src/ocor_runtime/c4/marking_resolution.py",
         "ocor-runtime/src/ocor_runtime/c6/adapters/__init__.py",
         "ocor-runtime/src/ocor_runtime/c6/adapters/postgres_stop.py",
@@ -1342,6 +1343,8 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0054.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0054.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
