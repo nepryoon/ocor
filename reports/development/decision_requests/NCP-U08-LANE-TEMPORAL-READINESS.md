@@ -103,3 +103,16 @@ limitata che non cambia l'esito richiesto dal controllo, così le unità success
 - Nessuna modifica a `inputs/`, ADD, LLD, contratti, schemi, registri normativi, test, validatori, workflow o
   limiti; nessun nuovo `DEC-*`. `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production
   `NO-GO` invariati.
+
+## Disposition del Product Owner — 2026-11-06
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U08-LANE-TEMPORAL-READINESS (2026-11-06)`, quesito A **opzione A1** (suite completa seriale con `scripts/run_qualifying_campaign.py --execute` sullo stack `ocor-bootstrap` dell'host, provisionato da `scripts/bootstrap_ci_environment.py --execute` da credenziali nuove, allo stesso commit di codice `f22de614311f` e con le etichette già verdi della campagna, che restano valide; i due tentativi a due corsie registrati nel record come tentativi diagnostici, senza conteggi; nessuno script, test, limite o soglia cambia), quesito B **opzione B1** (remediation governata della prontezza di Temporal con il primo `OCOR-DEV-REM-*` libero, dopo l'integrazione di `OCOR-DEV-REM-0054` e prima di NCP-U09). Vale come decisione del PO a ogni effetto. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `de3f9bc2c9b38392ff664d13865f938352b042af`, sha256 `19d1cb837ed4e8089a086e46dc99087c0aba4949a5c97d79282922f71c4addd6` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U08-LANE-TEMPORAL-READINESS (2026-11-06) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U08-LANE-TEMPORAL-READINESS` (branch `governed/decision-request-ncp-u08-lane-temporal-readiness`, commit `de3f9bc2c9b38392ff664d13865f938352b042af`, file `reports/development/decision_requests/NCP-U08-LANE-TEMPORAL-READINESS.md`, sha256 `19d1cb837ed4e8089a086e46dc99087c0aba4949a5c97d79282922f71c4addd6`) adottando per il quesito A l'**opzione A1**; per il quesito B l'**opzione B1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
