@@ -76,3 +76,16 @@ rischia una seconda richiesta per lo stesso motivo; l'opzione 3 lascia aperte qu
 - Nessun test, limite di tempo, soglia, workflow, guard, contratto, schema o registro normativo cambia; il numero
   massimo di cicli di riparazione resta 2. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime
   `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-06
+
+Decisione normativa del PO, con istruzione esplicita: `NCP-U08-ITERATION-LIMIT (2026-11-06)`, **opzione 1** come raccomandata e descritta in questo file, senza condizioni aggiuntive (fino a quattro iterazioni oltre la nona, dalla decima alla tredicesima: due per il ciclo di riparazione 1 fino al merge, due per il ciclo di riparazione 2 se una verifica `NO_GO` lo richiede; restano lo stop anticipato per due iterazioni consecutive senza avanzamento e il massimo di due cicli di riparazione). Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `d9dd757941ac1ece5eb1536d1a4301647ffd468f`, sha256 `158aa698a4af9916bb0f4ebe2adb1f0e61363b5041b19dd565d1af2451bec9ca` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U08-ITERATION-LIMIT (2026-11-06) — decisione normativa del PO
+
+Decisione **di livello normativo**, presa dal PO con istruzione esplicita il 2026-11-06. Il PO risolve la decision request `NCP-U08-ITERATION-LIMIT` (branch `governed/decision-request-ncp-u08-iteration-limit`, commit `d9dd757941ac1ece5eb1536d1a4301647ffd468f`, file `reports/development/decision_requests/NCP-U08-ITERATION-LIMIT.md`, sha256 `158aa698a4af9916bb0f4ebe2adb1f0e61363b5041b19dd565d1af2451bec9ca`, draft PR #526) con l'**opzione 1**, come raccomandata e descritta in quel file, senza condizioni aggiuntive.
+
+1. Per `OCOR-DEV-REM-0054` (NCP-U08) sono autorizzate fino a quattro iterazioni oltre la nona (dalla decima alla tredicesima), solo per il residuo descritto nel contesto della decision request: due per il ciclo di riparazione 1 fino al merge, due per il ciclo di riparazione 2 se una verifica `NO_GO` lo richiede.
+2. Restano lo stop anticipato per due iterazioni consecutive senza avanzamento (punto 2 di `NCP-THROUGHPUT-RULES (2026-11-05)`) e il massimo di due cicli di riparazione. Se le quattro iterazioni finiscono senza merge, l'unità si ferma e apre una decision request di livello normativo con lo stato del lavoro.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione) e nell'`ITERATION_LOG.md`, secondo la prassi e l'allowlist vigenti; chiudi la draft PR come risolta, come per le decisioni precedenti dell'unità. Negli state sync indica «iterazione N di stima 3, estensione fino alla tredicesima».
+4. Nessun nuovo `DEC-*`. Nessun test, limite di tempo, soglia, workflow, guard, contratto, schema o registro normativo cambia. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
