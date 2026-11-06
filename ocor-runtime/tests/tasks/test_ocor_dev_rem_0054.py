@@ -1,0 +1,627 @@
+"""OCOR-DEV-REM-0054 (NCP-U08): C6 safety and policy conform to the closed normative elements.
+
+Unit of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), plan unit NCP-U08, register entries
+NCR-C6-010 to NCR-C6-013.
+
+* NCR-C6-010 -- ADD v1.3 :3343 (the emergency stop is activated immediately by an authorised
+  Safety Officer, one activator, no quorum; the reset needs two approvers), ADD v1.3 :3347 (the
+  break-glass is an exceptional signed Delegation with a minimal scope, a mandatory purpose, named
+  capabilities, TTL at most 15 minutes and no renewal), ADD v1.3 :3351 (the Emergency Control
+  Plane is outside the agents and the activation increments a signed ``stop_epoch``), ADD v1.3
+  :3360 (every mutative call presents the current ``stop_epoch``; the reset needs dual control and
+  generates a new epoch), LLD v1.1 :324 (typed reason, incident, minimal scope, short TTL, two
+  distinct humans, synchronous audit), LLD v1.1 :328 (the stop increments ``stop_epoch``
+  atomically; the reset needs dual control, the verification of incident and recovery and a new
+  epoch, and never re-enables earlier leases), Register FR-139 :311 (break-glass prerequisites),
+  NFR-047 :312 (the stop prevents new commands in the local boundary) and NFR-081 :413 (no single
+  principal enables a high-impact action; break-glass limited, expiring and audited). Additional
+  criterion of NORMATIVE-CONFORMANCE-PLAN point 2 for NCP-U08: the signed ``stop_epoch`` is
+  durable and is read through a port by G-DISPATCH and by the C8 tool runtime; it is not an
+  attribute of the process that activates the stop.
+
+The durable stop-epoch store is the real PostgreSQL of the stack (``OCOR_LIVE_POSTGRES_DSN``);
+the other cases use the in-memory implementation of the same port.
+"""
+
+from __future__ import annotations
+
+import base64
+import dataclasses
+import importlib
+import inspect
+import os
+import threading
+import uuid
+from datetime import UTC, datetime, timedelta
+from types import ModuleType
+from typing import Any
+
+import pytest
+
+NOW = datetime(2026, 11, 6, 9, 0, 0, tzinfo=UTC)
+HUMAN_A = "urn:ocor:human:a"
+HUMAN_B = "urn:ocor:human:b"
+HUMAN_C = "urn:ocor:human:c"
+SDO = "urn:ocor:human:security-duty-officer"
+OWNER = "urn:ocor:human:maritime-owner"
+REQUESTER = "urn:ocor:human:requester"
+DOMAIN = "maritime"
+
+
+def _mod(name: str) -> ModuleType:
+    return importlib.import_module(f"ocor_runtime.{name}")
+
+
+def _fx() -> ModuleType:
+    return importlib.import_module("c6_safety_fixture")
+
+
+def _safety() -> ModuleType:
+    return _mod("c6.safety")
+
+
+def _reason(excinfo: pytest.ExceptionInfo[BaseException]) -> str:
+    return str(getattr(excinfo.value, "reason_code", type(excinfo.value).__name__))
+
+
+def _registry(**roles: str) -> Any:
+    identity = _mod("c2_identity")
+    people = {HUMAN_A: "", HUMAN_B: "", HUMAN_C: "", SDO: "SECURITY_DUTY_OFFICER", OWNER: f"DOMAIN_OWNER:{DOMAIN}", REQUESTER: ""}
+    people.update(roles)
+    return identity.IdentityRegistry(
+        identity.IdentityRecord(canonical_id=cid, attributes={"principal_kind": "HUMAN", "status": "ACTIVE", "roles": value})
+        for cid, value in people.items()
+    )
+
+
+def _stopped(stop: Any) -> Any:
+    _fx().activate(stop, reason="incident-42", at=NOW)
+    return stop.finish_draining(at=NOW)
+
+
+def _dsn() -> str:
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+    if not dsn:
+        pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory qualifying evidence (durable stop-epoch store on PostgreSQL)")
+    return dsn
+
+
+@pytest.fixture
+def postgres_epochs() -> Any:
+    adapters = importlib.import_module("ocor_runtime.c6.adapters.postgres_stop")
+    store = adapters.PostgresStopEpochStore(_dsn(), schema=f"ocor_rem0054_{uuid.uuid4().hex[:12]}")
+    store.initialize()
+    try:
+        yield store
+    finally:
+        store.drop()
+
+
+# --- NCR-C6-010: activation by an authorised Safety Officer (ADD v1.3 :3343) ---------------------
+
+
+def test_ncr_c6_010_conforms() -> None:
+    """The register's RED probe: activation takes the activator and the incident, the reset takes
+    the recovery verification, the epoch is signed and the break-glass grant is signed."""
+    safety = _safety()
+    stop = _fx().stop_controller(_registry())
+    event = _fx().activate(stop, reason="incident-42", at=NOW)
+    assert event.activated_by == _fx().SAFETY_OFFICER
+    signed = stop.reader.current_signed()
+    assert isinstance(signed, safety.SignedStopEpoch)
+    assert signed.record.epoch == event.epoch == 1
+    assert {field.name for field in dataclasses.fields(safety.BreakGlassGrant)} >= {"issuer_id", "keyid", "signature"}
+    assert "recovery" in inspect.signature(safety.EmergencyStopController.request_reset).parameters
+
+
+def test_ncr_c6_010_an_authorised_safety_officer_activates_alone_and_immediately() -> None:
+    safety = _safety()
+    stop = _fx().stop_controller(_registry())
+    event = _fx().activate(stop, reason="incident-42", at=NOW)
+    assert stop.status is safety.StopStatus.STOPPING
+    assert (event.epoch, event.status, event.activated_by, event.incident_ref) == (
+        1, safety.StopStatus.STOPPING, _fx().SAFETY_OFFICER, _fx().INCIDENT
+    )
+
+
+@pytest.mark.parametrize(
+    "officer",
+    [
+        {"roles": ""},
+        {"roles": "SECURITY_DUTY_OFFICER"},
+        {"status": "SUSPENDED"},
+        {"kind": "WORKLOAD"},
+    ],
+    ids=["no-role", "other-role", "inactive", "workload"],
+)
+def test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused(officer: dict[str, str]) -> None:
+    fx = _fx()
+    safety = _safety()
+    record = fx.safety_officer_record(**officer)
+    stop = safety.EmergencyStopController(
+        epochs=safety.InMemoryStopEpochStore(),
+        identities=fx.WithSafetyOfficer(_registry(), officer=record),
+        signing_key=fx.CONTROL_PLANE_KEY,
+        issuer_id=fx.CONTROL_PLANE,
+        keyid=fx.CONTROL_PLANE_KEYID,
+        keyring=fx.keyring(),
+    )
+    with pytest.raises(safety.SafetyError) as excinfo:
+        fx.activate(stop, reason="incident-42", at=NOW)
+    assert _reason(excinfo) == "STOP_ACTIVATOR_UNAUTHORIZED"
+    assert stop.status is safety.StopStatus.NORMAL
+    assert stop.epoch == 0
+
+
+@pytest.mark.parametrize("activator", ["", "urn:ocor:human:unknown", HUMAN_A], ids=["empty", "unresolved", "plain-human"])
+def test_ncr_c6_010_an_unresolved_or_unauthorised_activator_is_refused(activator: str) -> None:
+    safety = _safety()
+    stop = _fx().stop_controller(_registry())
+    with pytest.raises(safety.SafetyError) as excinfo:
+        stop.activate(activator=activator, reason="incident-42", incident_ref=_fx().INCIDENT, at=NOW)
+    assert _reason(excinfo) == "STOP_ACTIVATOR_UNAUTHORIZED"
+    assert stop.epoch == 0
+
+
+@pytest.mark.parametrize("incident_ref", ["", None, 42], ids=["empty", "none", "int"])
+def test_ncr_c6_010_the_activation_names_its_incident(incident_ref: object) -> None:
+    stop = _fx().stop_controller(_registry())
+    with pytest.raises((ValueError, TypeError)):
+        stop.activate(activator=_fx().SAFETY_OFFICER, reason="incident-42", incident_ref=incident_ref, at=NOW)
+    assert stop.epoch == 0
+
+
+# --- NCR-C6-010: the signed stop_epoch (ADD v1.3 :3351) --------------------------------------------
+
+
+def test_ncr_c6_010_every_transition_publishes_a_signed_stop_epoch_record() -> None:
+    fx = _fx()
+    safety = _safety()
+    stop = fx.stop_controller(_registry())
+    _stopped(stop)
+    stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=_registry(), requester=HUMAN_C, recovery=fx.recovery((HUMAN_A, HUMAN_B)))
+    stop.confirm_reset(at=NOW)
+    history = stop.reader.signed_history()
+    assert [(item.record.epoch, item.record.status.value) for item in history] == [
+        (0, "NORMAL"), (1, "STOPPING"), (1, "STOPPED"), (1, "RESET_PENDING"), (2, "NORMAL")
+    ]
+    assert [item.record.sequence for item in history] == [0, 1, 2, 3, 4]
+    for item in history:
+        assert (item.issuer_id, item.keyid) == (fx.CONTROL_PLANE, fx.CONTROL_PLANE_KEYID)
+        assert safety.verify_stop_epoch(item, keyring=fx.keyring(), issuer_id=fx.CONTROL_PLANE) == item.record
+    assert history[1].record.actor == fx.SAFETY_OFFICER
+    assert history[1].record.incident_ref == fx.INCIDENT
+
+
+@pytest.mark.parametrize("field", ["epoch", "status", "actor", "incident_ref", "sequence", "at"])
+def test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies(field: str) -> None:
+    fx = _fx()
+    safety = _safety()
+    stop = fx.stop_controller(_registry())
+    fx.activate(stop, reason="incident-42", at=NOW)
+    signed = stop.reader.current_signed()
+    changes: dict[str, Any] = {
+        "epoch": 7, "status": safety.StopStatus.NORMAL, "actor": HUMAN_A, "incident_ref": "urn:ocor:incident:other",
+        "sequence": 9, "at": NOW + timedelta(seconds=1),
+    }
+    forged = dataclasses.replace(signed, record=dataclasses.replace(signed.record, **{field: changes[field]}))
+    with pytest.raises(safety.SafetyError) as excinfo:
+        safety.verify_stop_epoch(forged, keyring=fx.keyring(), issuer_id=fx.CONTROL_PLANE)
+    assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+
+
+def test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies() -> None:
+    fx = _fx()
+    safety = _safety()
+    stop = fx.stop_controller(_registry())
+    signed = stop.reader.current_signed()
+    other = safety.sign_stop_epoch(fx.signing_key("not the control plane"), issuer_id=fx.CONTROL_PLANE, keyid=fx.CONTROL_PLANE_KEYID, record=signed.record)
+    for candidate, issuer in ((other, fx.CONTROL_PLANE), (signed, fx.BREAK_GLASS_AUTHORITY)):
+        with pytest.raises(safety.SafetyError) as excinfo:
+            safety.verify_stop_epoch(candidate, keyring=fx.keyring(), issuer_id=issuer)
+        assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+    garbled = dataclasses.replace(signed, signature="not base64 !")
+    with pytest.raises(safety.SafetyError) as excinfo:
+        safety.verify_stop_epoch(garbled, keyring=fx.keyring(), issuer_id=fx.CONTROL_PLANE)
+    assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+
+
+class _TamperingStore:
+    """A stop-epoch port whose latest record is replaced by a forged one."""
+
+    def __init__(self, inner: Any, forged: Any) -> None:
+        self._inner = inner
+        self._forged = forged
+
+    def latest(self) -> Any:
+        return self._forged
+
+    def history(self) -> Any:
+        return (*self._inner.history()[:-1], self._forged)
+
+    def append(self, signed: Any, *, expected_sequence: int) -> bool:
+        return bool(self._inner.append(signed, expected_sequence=expected_sequence))
+
+
+def test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed() -> None:
+    fx = _fx()
+    safety = _safety()
+    epochs = safety.InMemoryStopEpochStore()
+    stop = fx.stop_controller(_registry(), epochs=epochs)
+    signed = stop.reader.current_signed()
+    forged = dataclasses.replace(signed, record=dataclasses.replace(signed.record, epoch=5))
+    reader = fx.stop_reader(_TamperingStore(epochs, forged))
+    for read in (lambda: reader.epoch, lambda: reader.current_stop_epoch(), lambda: reader.emergency_stop_active()):
+        with pytest.raises(safety.SafetyError) as excinfo:
+            read()
+        assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+    with pytest.raises(safety.SafetyError) as excinfo:
+        reader.guard_dispatch(fenced_epoch=5)
+    assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+    dispatch = _mod("c6.dispatch")
+    conditions = dispatch.InMemoryDispatchConditions(stop=reader)
+    with pytest.raises(safety.SafetyError):
+        conditions.current_stop_epoch()
+
+
+def test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal() -> None:
+    fx = _fx()
+    safety = _safety()
+
+    class _Empty:
+        def latest(self) -> Any:
+            return None
+
+        def history(self) -> tuple[Any, ...]:
+            return ()
+
+        def append(self, signed: Any, *, expected_sequence: int) -> bool:
+            return False
+
+    class _Wrong(_Empty):
+        def latest(self) -> Any:
+            return {"epoch": 0, "status": "NORMAL"}
+
+    for store in (_Empty(), _Wrong()):
+        reader = fx.stop_reader(store)
+        with pytest.raises(safety.SafetyError) as excinfo:
+            reader.emergency_stop_active()
+        assert _reason(excinfo) in {"STOP_EPOCH_UNAVAILABLE", "STOP_EPOCH_SIGNATURE_INVALID"}
+
+
+# --- NCR-C6-010: durable and read through a port, not a process attribute (PO criterion point 2) ---
+
+
+def test_ncr_c6_010_a_reader_on_the_same_port_sees_the_stop_of_another_controller() -> None:
+    fx = _fx()
+    safety = _safety()
+    epochs = safety.InMemoryStopEpochStore()
+    controller = fx.stop_controller(_registry(), epochs=epochs)
+    reader = fx.stop_reader(epochs)
+    assert (reader.epoch, reader.emergency_stop_active()) == (0, False)
+    fx.activate(controller, reason="incident-42", at=NOW)
+    assert (reader.epoch, reader.current_stop_epoch(), reader.emergency_stop_active()) == (1, 1, True)
+    with pytest.raises(safety.SafetyError) as excinfo:
+        reader.guard_dispatch(fenced_epoch=1)
+    assert _reason(excinfo) == "SYSTEM_NOT_NORMAL"
+    successor = fx.stop_controller(_registry(), epochs=epochs)
+    assert (successor.status, successor.epoch) == (safety.StopStatus.STOPPING, 1)
+
+
+def test_ncr_c6_010_the_postgres_store_keeps_the_signed_epoch_across_processes(postgres_epochs: Any) -> None:
+    fx = _fx()
+    safety = _safety()
+    adapters = importlib.import_module("ocor_runtime.c6.adapters.postgres_stop")
+    controller = fx.stop_controller(_registry(), epochs=postgres_epochs)
+    fx.activate(controller, reason="incident-42", at=NOW)
+    del controller
+    # A new process: a new store object on the same schema and a new reader, nothing shared.
+    reopened = adapters.PostgresStopEpochStore(_dsn(), schema=postgres_epochs.schema)
+    reader = fx.stop_reader(reopened)
+    assert (reader.epoch, reader.emergency_stop_active()) == (1, True)
+    record = reader.current_signed().record
+    assert (record.sequence, record.status, record.actor) == (1, safety.StopStatus.STOPPING, fx.SAFETY_OFFICER)
+    successor = fx.stop_controller(_registry(), epochs=reopened)
+    successor.finish_draining(at=NOW)
+    assert fx.stop_reader(postgres_epochs).status is safety.StopStatus.STOPPED
+
+
+def test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set(postgres_epochs: Any) -> None:
+    fx = _fx()
+    adapters = importlib.import_module("ocor_runtime.c6.adapters.postgres_stop")
+    controller = fx.stop_controller(_registry(), epochs=postgres_epochs)
+    genesis = controller.reader.current_signed()
+    assert postgres_epochs.append(genesis, expected_sequence=-1) is False
+    assert postgres_epochs.append(genesis, expected_sequence=0) is False
+    assert isinstance(adapters.PostgresStopEpochStore, type)
+    psycopg = importlib.import_module("psycopg")
+    for statement in (
+        f"UPDATE {postgres_epochs.schema}.stop_epoch SET epoch = 9 WHERE sequence = 0",
+        f"DELETE FROM {postgres_epochs.schema}.stop_epoch",
+        f"TRUNCATE {postgres_epochs.schema}.stop_epoch",
+    ):
+        with pytest.raises(psycopg.Error), psycopg.connect(_dsn()) as connection:
+            connection.execute(statement)
+    assert [item.record.sequence for item in postgres_epochs.history()] == [0]
+    assert fx.stop_reader(postgres_epochs).current_signed() == genesis
+
+
+def test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once(postgres_epochs: Any) -> None:
+    fx = _fx()
+    safety = _safety()
+    controllers = [fx.stop_controller(_registry(), epochs=postgres_epochs) for _ in range(4)]
+    outcomes: list[str] = []
+    barrier = threading.Barrier(len(controllers))
+
+    def run(controller: Any) -> None:
+        barrier.wait()
+        try:
+            fx.activate(controller, reason="incident-42", at=NOW)
+            outcomes.append("ACTIVATED")
+        except safety.SafetyError as error:
+            outcomes.append(error.reason_code)
+
+    threads = [threading.Thread(target=run, args=(controller,)) for controller in controllers]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=60)
+    assert sorted(outcomes) == ["ACTIVATED"] + ["INVALID_STOP_TRANSITION"] * 3
+    assert [item.record.epoch for item in postgres_epochs.history()] == [0, 1]
+
+
+def test_ncr_c6_010_g_dispatch_reads_the_stop_through_the_port() -> None:
+    fx = _fx()
+    safety = _safety()
+    composition = _mod("c6.composition")
+    epochs = safety.InMemoryStopEpochStore()
+    controller = fx.stop_controller(_registry(), epochs=epochs)
+
+    class _Releases:
+        def active_release_digest(self) -> str:
+            return "urn:sha256:" + "1" * 64
+
+    fence = composition.EmergencyStopFence(stop=fx.stop_reader(epochs), releases=_Releases())
+    dispatch = _mod("c6.dispatch")
+    conditions = dispatch.InMemoryDispatchConditions(stop=fence)
+    assert (conditions.current_stop_epoch(), conditions.emergency_stop_active()) == (0, False)
+    fx.activate(controller, reason="incident-42", at=NOW)
+    assert (conditions.current_stop_epoch(), conditions.emergency_stop_active()) == (1, True)
+
+
+def test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port() -> None:
+    fx = _fx()
+    safety = _safety()
+    marking = _mod("c4_marking")
+    capabilities = _mod("c6_capabilities")
+    tool_runtime = _mod("c8.tool_runtime")
+    agent = _mod("c8_agent")
+    kernel = _mod("kernel.governed_context")
+    epochs = safety.InMemoryStopEpochStore()
+    controller = fx.stop_controller(_registry(), epochs=epochs)
+    effects: list[str] = []
+    sandbox = agent.StrictSandbox()
+
+    def restart_service(name: str) -> str:
+        effects.append(name)
+        return name
+
+    sandbox.register_tool("restart_service", restart_service)
+    authority = capabilities.CapabilityAuthority(issuer="ocor-rem0054-tool-authority")
+    engine = marking.MarkingEngine([marking.MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET"))])
+    runtime = tool_runtime.ToolCallRuntime(sandbox=sandbox, authority=authority, marking_engine=engine, stop=fx.stop_reader(epochs))
+    lease = authority.issue(subject="agent-1", capabilities=["tool:restart_service"], resources=["restart_service"], issued_at=NOW, ttl=timedelta(hours=1))
+    context = kernel.GovernedContext(
+        tenant_id="t1", organization_id="o1", domain_id="d1", compartments=("default",),
+        classification_marking_ref="urn:sha256:" + "a" * 64, purpose="incident-response", effective_principal_id="agent-1",
+        actor_chain=("agent-1",), ontology_release_digest="urn:sha256:" + "b" * 64, policy_bundle_digest="urn:sha256:" + "c" * 64,
+        correlation_id="urn:ocor:correlation:rem0054",
+    )
+
+    def invoke(name: str) -> Any:
+        return runtime.invoke(
+            "restart_service", "restart_service(name)", bindings={"name": name}, lease=lease, context=context,
+            content_marking=marking.MarkingSet({"classification": "SECRET"}), clearance=marking.MarkingSet({"classification": "SECRET"}),
+            budget=agent.TokenBudget(100), estimated_tokens=1, stop_epoch=0, at=NOW,
+        )
+
+    invoke("before")
+    fx.activate(controller, reason="incident-42", at=NOW)
+    with pytest.raises(tool_runtime.ToolRuntimeError) as excinfo:
+        invoke("after")
+    assert excinfo.value.reason_code == "STOP_BOUND_DENIED"
+    assert effects == ["before"]
+
+
+# --- NCR-C6-010: reset with dual control and incident/recovery verification (LLD v1.1 :328) ------
+
+
+def test_ncr_c6_010_a_reset_with_verified_recovery_issues_a_new_signed_epoch() -> None:
+    fx = _fx()
+    safety = _safety()
+    stop = fx.stop_controller(_registry())
+    _stopped(stop)
+    pending = stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=_registry(), requester=HUMAN_C, recovery=fx.recovery((HUMAN_A, HUMAN_B)))
+    assert pending.status is safety.StopStatus.RESET_PENDING
+    record = stop.reader.current_signed().record
+    assert (record.status, record.incident_ref, record.recovery_evidence, record.approvers) == (
+        safety.StopStatus.RESET_PENDING, fx.INCIDENT, fx.RECOVERY_EVIDENCE, (HUMAN_A, HUMAN_B)
+    )
+    event = stop.confirm_reset(at=NOW)
+    assert (event.epoch, stop.status) == (2, safety.StopStatus.NORMAL)
+    with pytest.raises(safety.SafetyError) as excinfo:
+        stop.guard_dispatch(fenced_epoch=1)
+    assert _reason(excinfo) == "STOP_EPOCH_STALE"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"incident_ref": "urn:ocor:incident:other"},
+        {"verified_by": HUMAN_C},
+        {"verified_by": "urn:ocor:human:unknown"},
+    ],
+    ids=["other-incident", "verifier-not-an-approver", "unresolved-verifier"],
+)
+def test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused(change: dict[str, str]) -> None:
+    fx = _fx()
+    safety = _safety()
+    stop = fx.stop_controller(_registry())
+    _stopped(stop)
+    verification = dataclasses.replace(fx.recovery((HUMAN_A, HUMAN_B)), **change)
+    with pytest.raises(safety.SafetyError) as excinfo:
+        stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=_registry(), requester=HUMAN_C, recovery=verification)
+    assert _reason(excinfo) == "RESET_RECOVERY_NOT_VERIFIED"
+    assert stop.status is safety.StopStatus.STOPPED
+
+
+@pytest.mark.parametrize("evidence", ["", "sha256:" + "0" * 64, "urn:sha256:" + "0" * 63, "urn:sha256:" + "G" * 64, None])
+def test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence(evidence: object) -> None:
+    fx = _fx()
+    with pytest.raises((ValueError, TypeError)):
+        fx.recovery((HUMAN_A, HUMAN_B), evidence=evidence)
+
+
+def test_ncr_c6_010_a_reset_without_recovery_verification_is_refused() -> None:
+    fx = _fx()
+    stop = fx.stop_controller(_registry())
+    _stopped(stop)
+    with pytest.raises(TypeError):
+        stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=_registry(), requester=HUMAN_C)
+    with pytest.raises(_safety().SafetyError) as excinfo:
+        stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=_registry(), requester=HUMAN_C, recovery=None)
+    assert _reason(excinfo) == "RESET_RECOVERY_NOT_VERIFIED"
+
+
+# --- NCR-C6-010: break-glass is a signed Delegation with a typed reason (ADD v1.3 :3347, LLD :324) -
+
+
+class _Sink:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    def record(self, event: Any) -> None:
+        self.events.append(dict(event))
+
+    def alert(self, event: Any) -> None:
+        self.events.append(dict(event))
+
+
+def _break_glass() -> tuple[Any, Any]:
+    fx = _fx()
+    governance = _mod("kernel.governance")
+    stop = fx.stop_controller(_registry())
+    sink = _Sink()
+    controller = fx.break_glass_controller(
+        identities=_registry(), stop=stop, clock=governance.InMemoryTrustedClock(NOW), audit=sink, alerts=_Sink()
+    )
+    return controller, sink
+
+
+def _grant(controller: Any, **overrides: Any) -> Any:
+    arguments: dict[str, Any] = {
+        "grant_id": f"urn:ocor:break-glass:{uuid.uuid4()}",
+        "requester": REQUESTER,
+        "reason": "production-incident",
+        "incident_ref": "urn:ocor:incident:42",
+        "scope": "urn:ocor:target:site-1",
+        "domain": DOMAIN,
+        "capabilities": frozenset({"restart_service"}),
+        "approvers": (SDO, OWNER),
+        "ttl": timedelta(minutes=10),
+    }
+    arguments.update(overrides)
+    return controller.grant(**arguments)
+
+
+def test_ncr_c6_010_a_break_glass_grant_is_a_delegation_signed_by_the_break_glass_authority() -> None:
+    fx = _fx()
+    safety = _safety()
+    controller, _ = _break_glass()
+    grant = _grant(controller)
+    assert (grant.issuer_id, grant.keyid) == (fx.BREAK_GLASS_AUTHORITY, fx.BREAK_GLASS_KEYID)
+    assert base64.b64decode(grant.signature, validate=True)
+    assert safety.verify_break_glass_grant(grant, keyring=fx.keyring(), issuer_id=fx.BREAK_GLASS_AUTHORITY) is None
+    use = controller.authorize(grant, capability="restart_service", review_ref="urn:ocor:review:1")
+    assert use.grant_id == grant.grant_id
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"reason": "other-incident"},
+        {"incident_ref": "urn:ocor:incident:other"},
+        {"scope": "urn:ocor:target:everything"},
+        {"capabilities": frozenset({"restart_service", "read_diagnostics"})},
+        {"ttl": timedelta(minutes=15)},
+        {"approvers": (OWNER, "urn:ocor:human:z")},
+        {"granted_at": NOW + timedelta(minutes=1)},
+        {"issuer_id": "urn:ocor:other-authority"},
+    ],
+    ids=["reason", "incident", "scope", "capabilities", "ttl", "approvers", "granted_at", "issuer"],
+)
+def test_ncr_c6_010_the_break_glass_signature_covers_every_field(change: dict[str, Any]) -> None:
+    fx = _fx()
+    safety = _safety()
+    controller, _ = _break_glass()
+    altered = dataclasses.replace(_grant(controller), **change)
+    with pytest.raises(safety.SafetyError) as excinfo:
+        safety.verify_break_glass_grant(altered, keyring=fx.keyring(), issuer_id=fx.BREAK_GLASS_AUTHORITY)
+    assert _reason(excinfo) == "BREAK_GLASS_SIGNATURE_INVALID"
+
+
+def test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies() -> None:
+    fx = _fx()
+    safety = _safety()
+    controller, _ = _break_glass()
+    grant = _grant(controller)
+    for forged in (
+        dataclasses.replace(grant, signature=""),
+        dataclasses.replace(grant, signature="%%%"),
+        dataclasses.replace(grant, keyid="unknown-key"),
+        safety.sign_break_glass_grant(fx.signing_key("forger"), issuer_id=fx.BREAK_GLASS_AUTHORITY, keyid=fx.BREAK_GLASS_KEYID, grant=grant),
+    ):
+        with pytest.raises(safety.SafetyError) as excinfo:
+            safety.verify_break_glass_grant(forged, keyring=fx.keyring(), issuer_id=fx.BREAK_GLASS_AUTHORITY)
+        assert _reason(excinfo) == "BREAK_GLASS_SIGNATURE_INVALID"
+
+
+@pytest.mark.parametrize(
+    "reason",
+    ["incident containment", "Production-Incident", "-incident", "incident-", "incident--42", "x" * 65, "incident\n42"],
+    ids=["free-text", "upper", "leading-dash", "trailing-dash", "double-dash", "too-long", "newline"],
+)
+def test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text(reason: str) -> None:
+    safety = _safety()
+    controller, sink = _break_glass()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        _grant(controller, reason=reason)
+    assert _reason(excinfo) == "BREAK_GLASS_REASON_UNTYPED"
+    assert [event["event"] for event in sink.events] == ["BREAK_GLASS_GRANT_DENIED"]
+    assert sink.events[0]["reason_code"] == "BREAK_GLASS_REASON_UNTYPED"
+
+
+def test_ncr_c6_010_the_break_glass_controller_requires_its_signing_authority() -> None:
+    safety = _safety()
+    governance = _mod("kernel.governance")
+    stop = _fx().stop_controller(_registry())
+    with pytest.raises(TypeError):
+        safety.BreakGlassController(
+            identities=_registry(), stop=stop, clock=governance.InMemoryTrustedClock(NOW), audit=_Sink(), alerts=_Sink()
+        )
+
+
+def test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port() -> None:
+    fx = _fx()
+    safety = _safety()
+    governance = _mod("kernel.governance")
+    epochs = safety.InMemoryStopEpochStore()
+    activator = fx.stop_controller(_registry(), epochs=epochs)
+    controller = fx.break_glass_controller(
+        identities=_registry(), stop=fx.stop_reader(epochs), clock=governance.InMemoryTrustedClock(NOW), audit=_Sink(), alerts=_Sink()
+    )
+    grant = _grant(controller)
+    fx.activate(activator, reason="incident-42", at=NOW)
+    with pytest.raises(safety.SafetyError) as excinfo:
+        controller.authorize(grant, capability="restart_service", review_ref="urn:ocor:review:1")
+    assert _reason(excinfo) == "BREAK_GLASS_STOP_ACTIVE"
