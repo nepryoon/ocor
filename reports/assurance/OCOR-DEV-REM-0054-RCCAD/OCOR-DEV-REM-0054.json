@@ -1,0 +1,1566 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a75.4: stop activated by an authorised Safety Officer; reset with two approvers; ADD v1.3 \u00a75.5: break-glass is a signed exceptional Delegation with mandatory purpose; ADD v1.3 \u00a75.5: activation increments a signed stop_epoch; LLD v1.1 \u00a74.2: typed reason, incident, minimal scope, short TTL; LLD v1.1 \u00a74.3: reset requires dual control and incident/recovery verification; FR-139 (P0 MVP): break-glass prerequisites; NFR-047 (P0 MVP)",
+      "entry": "NCR-C6-010",
+      "norm_refs": [
+        {
+          "lines": "3343",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3347",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3351",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "324",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "328",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "311",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "312",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-139",
+        "NFR-047",
+        "NFR-081"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_authorised_safety_officer_activates_alone_and_immediately",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unresolved_or_unauthorised_activator_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_activation_names_its_incident",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_every_transition_publishes_a_signed_stop_epoch_record",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_on_the_same_port_sees_the_stop_of_another_controller",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_keeps_the_signed_epoch_across_processes",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_g_dispatch_reads_the_stop_through_the_port",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_verified_recovery_issues_a_new_signed_epoch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_recovery_verification_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_is_a_delegation_signed_by_the_break_glass_authority",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_signature_covers_every_field",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_controller_requires_its_signing_authority",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a75.1: decisions Permit, Deny, PermitWithConstraints, RequireApproval, Obligate; FR-130: apply Permit, Deny, PermitWithConstraints, RequireApproval or Obligate",
+      "entry": "NCR-C6-011",
+      "norm_refs": [
+        {
+          "lines": "3141",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "295",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-130"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_the_signed_policy_produces_each_qualified_effect",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_permit_without_qualification_stays_permit_and_a_deny_drops_it",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualification"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a71.3: missing, incomparable or unresolvable marking produces MARKING_UNRESOLVED; FR-131: conservative propagation of mandatory controls; FR-006",
+      "entry": "NCR-C6-012",
+      "norm_refs": [
+        {
+          "lines": "67",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "298",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "49",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-131",
+        "FR-006"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_a_missing_unknown_or_incomparable_marking_is_unresolved",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_a_marking_that_is_not_a_marking_set_is_unresolved",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_a_complete_marking_is_authorized_only_when_the_clearance_dominates_it",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_join_is_the_conservative_least_upper_bound_of_complete_markings",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_join_never_defaults_an_unresolved_marking_to_the_bottom",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_join_of_no_marking_is_unresolved",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_engine_needs_distinct_validated_lattices",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_runs_a_call_whose_complete_marking_the_clearance_dominates",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any_effect",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_denies_a_clearance_that_does_not_dominate",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_refuses_the_legacy_engine",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c2_policy_permits_with_a_complete_clearance_and_asks_the_port_with_it",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c2_policy_denies_an_unresolved_clearance_without_asking_the_port",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c2_policy_refuses_the_legacy_engine",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c6_action_path_never_reaches_the_legacy_marking_default"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a75.4 risk classes and gates; ADD v1.3 \u00a73.7 Action Type Contract risk_class enum; LLD v1.1 \u00a74.1 classes; LLD v1.1 \u00a70.1 precedence; conflict is LLD_CONFORMANCE_FAILURE",
+      "entry": "NCR-C6-013",
+      "norm_refs": [
+        {
+          "lines": "3300-3305",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2193",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "313-318",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-079"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_the_classes_are_the_add_names_in_impact_order_without_aliases",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_the_policy_input_carries_the_add_names",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_a_signed_action_type_carries_the_add_risk_class_on_the_wire",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_the_gates_are_those_of_add_v1_3"
+      ]
+    }
+  ],
+  "ambiguities_resolved_fail_closed": [
+    "NCR-C6-010: the typed break-glass reason is the reason code grammar of a lower-case hyphen-separated token of at most 64 characters, the mandatory purpose of ADD v1.3 :3347; LLD v1.1 :324 names no vocabulary, so no closed list is invented",
+    "NCR-C6-010: the activator of the stop is an active HUMAN principal of the registry holding SAFETY_OFFICER (ADD v1.3 :3343 'Safety Officer autorizzato'); the reset recovery verification is made by one of the two reset approvers and carries a urn:sha256 evidence of the recovery",
+    "NCR-C6-010: the composition root takes the durable StopEpochPort from the caller (SafetyAuthorities); PostgresStopEpochStore is the production adapter, the in-memory store the process-local one",
+    "NCR-C6-011: the C2 gateway and the identity provisioning deny PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL and OBLIGATE (no constraint, approval or obligation is enforced there today); PolicyDecision.admit is the application rule for consumers that honour them",
+    "NCR-C6-012: an incomparable pair of labels between content and clearance is MARKING_UNRESOLVED (LLD v1.1 :67 names incomparable marking), a comparable but lower clearance is MARKING_DENIED; both refuse the call before any effect",
+    "NCR-C6-012: C2 maps an unresolved clearance to DENY, the decision of ADD v1.3 :401 for an unresolvable marking, and keeps the anti-disclosure posture of its port (no distinct reason in the return value)",
+    "NCR-C6-012: the C6 action path never evaluates marking through the legacy relay (c6/engine.py passes no marking to EmissionFence.emit; a relay with the legacy engine refuses every emission); c7_emission.py is legacy slice and unchanged"
+  ],
+  "change_anchors": [
+    {
+      "change": "the stop is activated only by an active HUMAN principal holding SAFETY_OFFICER for a named incident (STOP_ACTIVATOR_UNAUTHORIZED); every transition publishes an Ed25519-signed stop_epoch record on the durable StopEpochPort with compare-and-set on the sequence, and every read verifies it (STOP_EPOCH_SIGNATURE_INVALID, STOP_EPOCH_UNAVAILABLE on an empty or unreadable port); the reset needs two distinct approvers and a RecoveryVerification of the incident by one of them with a urn:sha256 evidence (RESET_RECOVERY_NOT_VERIFIED); a break-glass grant is a Delegation signed by the break-glass authority over every field with a typed reason (BREAK_GLASS_SIGNATURE_INVALID, BREAK_GLASS_REASON_UNTYPED) and never overrides a stop read through the port",
+      "function": "StopEpochRecord, SignedStopEpoch, sign_stop_epoch, verify_stop_epoch, StopEpochPort, InMemoryStopEpochStore, StopEpochReader, RecoveryVerification, EmergencyStopController(epochs, identities, signing_key, issuer_id, keyid, keyring) (activate, request_reset), BreakGlassGrant (issuer_id, keyid, signature), sign_break_glass_grant, verify_break_glass_grant, BreakGlassController",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3343, :3347, :3351; docs/OCOR_LLD_v1.1.md:324, :328; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-139, NFR-047, NFR-081",
+      "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+    },
+    {
+      "change": "new: the production adapter of the StopEpochPort on PostgreSQL, append-only (triggers refuse update and delete), compare-and-set on the sequence under an advisory lock, schema as a parameter; the signed records survive the process",
+      "function": "PostgresStopEpochStore (latest, history, append)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3351; NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 2 (durable signed stop_epoch read through a port)",
+      "path": "ocor-runtime/src/ocor_runtime/c6/adapters/postgres_stop.py"
+    },
+    {
+      "change": "new: the C6 adapters package",
+      "function": "package marker",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3351",
+      "path": "ocor-runtime/src/ocor_runtime/c6/adapters/__init__.py"
+    },
+    {
+      "change": "the composition root takes the durable StopEpochPort, the identities and the signing authorities from the caller and composes one stop controller and its reader; the emission fence reads the stop through the StopEpochReader",
+      "function": "SafetyAuthorities, EmergencyStopFence, C6ActionPathRoot(safety=)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3351; docs/OCOR_LLD_v1.1.md:169-171",
+      "path": "ocor-runtime/src/ocor_runtime/c6/composition.py"
+    },
+    {
+      "change": "the C8 tool runtime reads the stop through the StopEpochReader (a controller gives its reader) and evaluates marking only with the ResolvedMarkingEngine: an unresolved marking is MARKING_UNRESOLVED and a clearance that does not dominate is MARKING_DENIED, both before any effect; the legacy MarkingEngine is refused (TypeError)",
+      "function": "ToolCallRuntime(stop=, marking_engine=)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3351; docs/OCOR_LLD_v1.1.md:67; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-131",
+      "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+    },
+    {
+      "change": "new: marking evaluation over the validated lattices of the active schemes: a marking that misses a scheme, names an unknown scheme or label, or is not a MarkingSet is unresolved (c4.marking.MarkingUnresolved); an unordered pair is unresolved; the join is the conservative least upper bound and the join of no marking is unresolved; the legacy c4_marking.MarkingEngine is unchanged",
+      "function": "ResolvedMarkingEngine (resolve, dominates, authorized, join)",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:67; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-131, FR-006",
+      "path": "ocor-runtime/src/ocor_runtime/c4/marking_resolution.py"
+    },
+    {
+      "change": "the C2 policy takes only the ResolvedMarkingEngine (TypeError for the legacy engine); an unresolved clearance is DENY without asking the marking port",
+      "function": "RegistrationAndMarkingPolicy, compose_named_query_gateway",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401; docs/OCOR_LLD_v1.1.md:67",
+      "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+    },
+    {
+      "change": "when the signed bundle defines constraints, approval_requirements or obligations, a second query of the package document with the same input and fresh provenance qualifies the permit: allow must be true, each qualifier an array of distinct non-empty strings and at most one non-empty, else POLICY_DECISION_INVALID; the C2 gateway and provisioning still deny every effect but PERMIT",
+      "function": "OpaPolicyDecisionProvider._qualify, _rule_head_name",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3141; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-130",
+      "path": "ocor-runtime/src/ocor_runtime/security/control_plane.py"
+    },
+    {
+      "change": "new: the application rule of the five effects: DENY refuses (POLICY_DENIED), PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL and OBLIGATE admit only a consumer that honours every qualification (POLICY_CONSTRAINT_NOT_ENFORCED, APPROVAL_REQUIRED, POLICY_OBLIGATION_NOT_FULFILLED), a PERMIT with obligations is invalid",
+      "function": "PolicyDecision.admit(enforced_constraints, granted_approvals, fulfilled_obligations)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3141; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-130",
+      "path": "ocor-runtime/src/ocor_runtime/security/ports.py"
+    },
+    {
+      "change": "the classes carry the ADD v1.3 names R0_READ, R1_ANALYZE, R2_CONTROLLED, R3_HIGH_IMPACT with the same ordinals and no alias, on the wire and in the policy input",
+      "function": "RiskClass, OperationClass",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2193, :3300-3305; docs/OCOR_LLD_v1.1.md:16-18, :313-318",
+      "path": "ocor-runtime/src/ocor_runtime/kernel/governance.py"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c2/gateway.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0035.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c4_marking.py": [
+      "ocor-runtime/src/c4_marking.py",
+      "ocor-runtime/tests/acceptance_ev/test_ev_011_019_store_marking.py",
+      "ocor-runtime/tests/acceptance_ev/test_ev_029_035_fence_agent_e2e.py",
+      "ocor-runtime/tests/backend_assumptions/test_ba06_marking_lattice.py",
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/runtime/test_c7_emission_hardening.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0018.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0024.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0035.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0038.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0051.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0052.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0010.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c6/safety.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0044.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/kernel/governance.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0009.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0043.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0044.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0050.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0051.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0052.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0031.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0039.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/security/control_plane.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0031.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/security/ports.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0014.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0021.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0024.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0043.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0031.py"
+    ]
+  },
+  "consumers_inventory_findings": [
+    "c4_marking.py (legacy MarkingEngine) is unchanged: its consumers listed by the plan (acceptance_ev EV-011..019 and EV-029..035, BA-06, the mission thread, runtime c7 emission hardening, 0018, 0024, 0038, 0050, 0051, 0052, REM-0010, the ocor-runtime/src/c4_marking.py shim) keep running on it; only the current C2 gateway and C8 tool runtime moved to the ResolvedMarkingEngine, and their consumers 0034, 0035, 0047, REM-0027 and REM-0049 are adapted (case 3); c7_emission.py and the ocor_runtime package export of MarkingEngine belong to the legacy slice (NORMATIVE-CONFORMANCE-PLAN point 6)",
+    "kernel/governance.py: the eleven consumers of the plan read RiskClass and OperationClass; only 0048, REM-0053, 0030 and the C6 action fixture name the legacy members and are adapted by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1; 0009, 0043, 0044, 0050, 0051, 0052, REM-0024, REM-0028, REM-0031 and REM-0039 do not name them and are unchanged (0009 is requalified for the changed input)",
+    "security/ports.py: PolicyDecision.admit is new and additive; 0014, 0021, 0024, 0043, 0048 and REM-0031 are unchanged (0014 is requalified for the changed input); the memory modules use their own MemoryPolicyDecision and do not consume PolicyDecision.effect",
+    "security/control_plane.py: the qualification query is issued only when the signed bundle defines a qualifier; the policies of 0048 and REM-0031 define none, so their decisions are unchanged; c2/gateway.py and c2/provisioning.py deny every effect but PERMIT (open point of NCR-C6-011)",
+    "c6/safety.py: the consumers 0044, 0047, REM-0024, REM-0027 and REM-0028 are adapted (case 3); the legacy c6_capabilities.py consumes the stop through its StopEpochAuthority protocol and is unchanged; the plan candidate REM-0028 (reports/evidence/G4/OCOR-DEV-REM-0028.json) is not a completed evidence task, so the drift validator selects no record of it and it runs in the consumer modules of the campaign",
+    "c8/tool_runtime.py and c2/gateway.py consumers 0034, 0035, 0047 and REM-0027 adapted (case 3); the lease of the C8 tool runtime stays NCR-C8-008 of NCP-U10 (NCP-U07-C8-TOOL-RUNTIME-LEASE option 2)"
+  ],
+  "consumers_inventory_note": "product consumers of the changed modules: c6/composition.py composes safety; c8/tool_runtime.py consumes safety and the resolving marking engine; c2/gateway.py consumes the resolving marking engine and PolicyDecision; c2/provisioning.py consumes PolicyDecision; the legacy slice c6_capabilities.py, c7_emission.py and c4_marking.py is unchanged; scripts only name paths",
+  "decided_requests": [
+    "NCP-U08-RISK-CLASS-NAME-ADAPTATION"
+  ],
+  "decided_requests_dispositions": {
+    "NCP-U08-RISK-CLASS-NAME-ADAPTATION": {
+      "disposition_commit": "f32f394",
+      "note": "decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh",
+      "option": "1",
+      "po_decision": "NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06)"
+    }
+  },
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2 and 5 (NCP-U08 row, with the additional criterion of point 2: durable signed stop_epoch read through a port); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (decided on full delegation of the PO); NCP-THROUGHPUT-RULES (2026-11-05); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "changed_functions": [],
+        "functions": [
+          9,
+          9
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          14,
+          14
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          8,
+          8
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0035.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          25,
+          25
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0044.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          11,
+          11
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_repair5_capability_must_fit_grant_ceilings",
+          "test_repair5_chain_cannot_amplify_or_exceed_its_limits",
+          "test_repair6_act_principal_grant_is_fully_verified"
+        ],
+        "functions": [
+          108,
+          108
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          55,
+          55
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          39,
+          39
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          20,
+          20
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          37,
+          37
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_ncr_c6_002_conforms",
+          "test_the_approval_obligation_follows_the_risk_class",
+          "test_the_gate_disposition_follows_the_risk_class_and_the_target"
+        ],
+        "functions": [
+          91,
+          91
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py",
+        "same_names": true
+      }
+    ],
+    "note": "numbers and names of test functions and parametrizations unchanged in every module; the only functions with changed asserts or parametrizations are those of test_ocor_dev_0048.py and test_ocor_dev_rem_0053.py whose trees are equal after the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1 (the two negative-case strings of 0048 kept); every other change is a construction or precondition adaptation of NORMATIVE-CONFORMANCE-PLAN point 5 case 3; to be repeated on the candidate head",
+    "rename_comparison": "iteration 3 against 060e1f5 (after the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1): ocor-runtime/tests/tasks/test_ocor_dev_0048.py: substitutions in tree 12; tree equal before mapping False; tree equal after bijective mapping True; legacy string constants kept [(2394, 'R0_INFORMATIONAL'), (2484, 'R1_LOW')] | ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py: substitutions in tree 18; tree equal before mapping False; tree equal after bijective mapping True; legacy string constants kept [] | ocor-runtime/tests/tasks/test_ocor_dev_0030.py: substitutions in tree 1; tree equal before mapping False; tree equal after bijective mapping True; legacy string constants kept [] | ocor-runtime/tests/tasks/c6_action_fixture.py: substitutions in tree 2; tree equal before mapping False; tree equal after bijective mapping True; legacy string constants kept [] | RESULT ONLY_IDENTIFIER_SUBSTITUTIONS",
+    "tool": "~/.ocor-codex/rem-0054/ast_compare.py against the unit base 78ba179 (test functions, asserts, pytest.raises, decorators) and ~/.ocor-codex/rem-0054/iter3/ast_rename_compare.py (bijective identifier mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION)"
+  },
+  "existing_tests_note": "no assertion is realigned; every adapted construction or precondition keeps the asserts, raises and parametrizations of its test (case 3); the ADAPTED rows of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1 substitute the legacy risk and operation class identifiers one to one; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; test_ocor_dev_rem_0024.py, test_ocor_dev_rem_0027.py, test_ocor_dev_rem_0028.py, test_ocor_dev_rem_0049.py and test_ocor_dev_rem_0053.py are inputs of no latest evidence record of a completed task (drift validator): they run in the consumer modules of the campaign",
+  "existing_tests_realigned_or_adapted": {
+    "adapted": [
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-010)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PRECONDITION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0044.py",
+        "prescribed": "stop built on the signed durable StopEpochPort, activation by the Safety Officer for an incident (ADD v1.3 :3343, :3351), reset with the RecoveryVerification (LLD v1.1 :328), break-glass controller with its signing authority (ADD v1.3 :3347); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "EmergencyStopController() -> stop_controller(); activate(...) with activator and incident_ref; request_reset(...) with recovery; BreakGlassController(...) -> break_glass_controller(...)"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-010); NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-012)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PRECONDITION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "prescribed": "stop built on the signed durable StopEpochPort, activation by the Safety Officer for an incident (ADD v1.3 :3343, :3351), reset with the RecoveryVerification (LLD v1.1 :328), break-glass controller with its signing authority (ADD v1.3 :3347); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "stop fixture -> stop_controller(); activate(...) with activator and incident_ref; marking_engine fixture builds ResolvedMarkingEngine"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-010)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PRECONDITION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0024.py",
+        "prescribed": "stop built on the signed durable StopEpochPort, activation by the Safety Officer for an incident (ADD v1.3 :3343, :3351), reset with the RecoveryVerification (LLD v1.1 :328), break-glass controller with its signing authority (ADD v1.3 :3347); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "stop fixture -> stop_controller(); activate(...) with activator and incident_ref; BreakGlassController(...) -> break_glass_controller(...)"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-010); NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-012)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PRECONDITION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "stop built on the signed durable StopEpochPort, activation by the Safety Officer for an incident (ADD v1.3 :3343, :3351), reset with the RecoveryVerification (LLD v1.1 :328), break-glass controller with its signing authority (ADD v1.3 :3347); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "harness stop -> stop_controller(); activate(...) with activator and incident_ref; request_reset(...) with recovery; harness marking -> ResolvedMarkingEngine"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-010)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PRECONDITION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0028.py",
+        "prescribed": "stop built on the signed durable StopEpochPort, activation by the Safety Officer for an incident (ADD v1.3 :3343, :3351), reset with the RecoveryVerification (LLD v1.1 :328), break-glass controller with its signing authority (ADD v1.3 :3347); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "EmergencyStopController() -> stop_controller(); activate(...) with activator and incident_ref; request_reset(...) with recovery"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-010)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PRECONDITION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py",
+        "prescribed": "stop built on the signed durable StopEpochPort, activation by the Safety Officer for an incident (ADD v1.3 :3343, :3351), reset with the RecoveryVerification (LLD v1.1 :328), break-glass controller with its signing authority (ADD v1.3 :3347); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "CompositionSuite: Safety Officer identity and SafetyAuthorities; the two composed activations with activator and incident_ref; the composed grant reason incident-containment"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-012)",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py",
+        "prescribed": "the gateway policy or the tool runtime built on ResolvedMarkingEngine (LLD v1.1 :67); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "MarkingEngine([CLASSIFICATION_SCHEME]) -> ResolvedMarkingEngine([CLASSIFICATION_SCHEME]) at the three gateway-policy constructions; the Jena spike adapter keeps the legacy engine"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-012)",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0035.py",
+        "prescribed": "the gateway policy or the tool runtime built on ResolvedMarkingEngine (LLD v1.1 :67); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "MarkingEngine([CLASSIFICATION_SCHEME]) -> ResolvedMarkingEngine([CLASSIFICATION_SCHEME]) at the three gateway-policy constructions"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (NCR-C6-012)",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0049.py",
+        "prescribed": "the gateway policy or the tool runtime built on ResolvedMarkingEngine (LLD v1.1 :67); asserts, raises and parametrizations unchanged",
+        "red": null,
+        "what": "gateway harness engine -> ResolvedMarkingEngine"
+      }
+    ],
+    "adapted_by_decision": [
+      {
+        "authority": "NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh); NCR-C6-013",
+        "current_value": [
+          "risk_class=RiskClass.R0_INFORMATIONAL,",
+          "\"risk_ceiling\": RiskClass.R0_INFORMATIONAL,",
+          "(replace(_CAPABILITY, effect_class=OperationClass.R2_MUTATE), \"DELEGATION_CEILING_EXCEEDED\"),",
+          "effect_ceiling=OperationClass.R1_DERIVE,",
+          "risk_ceiling=RiskClass.R1_LOW,",
+          "for within in (_CAPABILITY, replace(_CAPABILITY, effect_class=OperationClass.R1_DERIVE,",
+          "risk_class=RiskClass.R1_LOW)):",
+          "\"effect_ceiling\": OperationClass.R1_DERIVE, \"risk_ceiling\": RiskClass.R1_LOW,",
+          "({}, {\"effect_ceiling\": OperationClass.R2_MUTATE}, \"DELEGATION_AMPLIFICATION\"),",
+          "({\"effect_ceiling\": OperationClass.R0_READ, \"risk_ceiling\": RiskClass.R0_INFORMATIONAL,",
+          "\"_capability\": OperationClass.R1_DERIVE}, \"DELEGATION_CEILING_EXCEEDED\"),"
+        ],
+        "kind": "ADAPTED",
+        "lines": [
+          1338,
+          1385,
+          2461,
+          2472,
+          2473,
+          2476,
+          2477,
+          2568,
+          2607,
+          3025,
+          3026
+        ],
+        "normative_anchor": "ADD v1.3 :2193, :3300-3305; LLD v1.1 :16-18",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+        "prescribed_value": [
+          "risk_class=RiskClass.R0_READ,",
+          "\"risk_ceiling\": RiskClass.R0_READ,",
+          "(replace(_CAPABILITY, effect_class=OperationClass.R2_CONTROLLED), \"DELEGATION_CEILING_EXCEEDED\"),",
+          "effect_ceiling=OperationClass.R1_ANALYZE,",
+          "risk_ceiling=RiskClass.R1_ANALYZE,",
+          "for within in (_CAPABILITY, replace(_CAPABILITY, effect_class=OperationClass.R1_ANALYZE,",
+          "risk_class=RiskClass.R1_ANALYZE)):",
+          "\"effect_ceiling\": OperationClass.R1_ANALYZE, \"risk_ceiling\": RiskClass.R1_ANALYZE,",
+          "({}, {\"effect_ceiling\": OperationClass.R2_CONTROLLED}, \"DELEGATION_AMPLIFICATION\"),",
+          "({\"effect_ceiling\": OperationClass.R0_READ, \"risk_ceiling\": RiskClass.R0_READ,",
+          "\"_capability\": OperationClass.R1_ANALYZE}, \"DELEGATION_CEILING_EXCEEDED\"),"
+        ],
+        "substitution": "bijective identifier substitution R0_INFORMATIONAL -> R0_READ, R1_LOW -> R1_ANALYZE, R1_DERIVE -> R1_ANALYZE, R2_MUTATE -> R2_CONTROLLED; same ordinal, case and expectation"
+      },
+      {
+        "authority": "NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh); NCR-C6-013",
+        "current_value": [
+          "for risk in (RiskClass.R0_INFORMATIONAL, RiskClass.R1_LOW):",
+          "@pytest.mark.parametrize(\"risk\", [\"R0_INFORMATIONAL\", \"R1_LOW\", \"R2_CONTROLLED\", \"R3_HIGH_IMPACT\"])",
+          "if risk in {\"R0_INFORMATIONAL\", \"R1_LOW\"}:",
+          "for risk in (\"R0_INFORMATIONAL\", \"R1_LOW\", \"R2_CONTROLLED\", \"R3_HIGH_IMPACT\")",
+          "assert gate.gate_disposition(RiskClass.R1_LOW, canonical_target=False) == \"NOT_REQUIRED\"",
+          "assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_LOW, canonical_target=True)) == \"NO_MUTATION_ADMITTED\"",
+          "low = suite.proposal(\"R1_LOW\")",
+          "lowered = suite.proposal(\"R3_HIGH_IMPACT\", risk_class=RiskClass.R1_LOW)",
+          "@pytest.mark.parametrize(\"risk\", [\"R0_INFORMATIONAL\", \"R1_LOW\", \"R2_CONTROLLED\", \"R3_HIGH_IMPACT\"])",
+          "proposal = suite.proposal(\"R0_INFORMATIONAL\")",
+          "for risk in (\"R0_INFORMATIONAL\", \"R1_LOW\"):",
+          "low = suite.world.action_type(\"urn:ocor:action-type:rem0053:composed-low\", risk=\"R1_LOW\", capability=\"act:launch\")"
+        ],
+        "kind": "ADAPTED",
+        "lines": [
+          1328,
+          1349,
+          1352,
+          1444,
+          1494,
+          1495,
+          1500,
+          1504,
+          1633,
+          1691,
+          3028,
+          3564
+        ],
+        "normative_anchor": "ADD v1.3 :2193, :3300-3305; LLD v1.1 :16-18",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py",
+        "prescribed_value": [
+          "for risk in (RiskClass.R0_READ, RiskClass.R1_ANALYZE):",
+          "@pytest.mark.parametrize(\"risk\", [\"R0_READ\", \"R1_ANALYZE\", \"R2_CONTROLLED\", \"R3_HIGH_IMPACT\"])",
+          "if risk in {\"R0_READ\", \"R1_ANALYZE\"}:",
+          "for risk in (\"R0_READ\", \"R1_ANALYZE\", \"R2_CONTROLLED\", \"R3_HIGH_IMPACT\")",
+          "assert gate.gate_disposition(RiskClass.R1_ANALYZE, canonical_target=False) == \"NOT_REQUIRED\"",
+          "assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_ANALYZE, canonical_target=True)) == \"NO_MUTATION_ADMITTED\"",
+          "low = suite.proposal(\"R1_ANALYZE\")",
+          "lowered = suite.proposal(\"R3_HIGH_IMPACT\", risk_class=RiskClass.R1_ANALYZE)",
+          "@pytest.mark.parametrize(\"risk\", [\"R0_READ\", \"R1_ANALYZE\", \"R2_CONTROLLED\", \"R3_HIGH_IMPACT\"])",
+          "proposal = suite.proposal(\"R0_READ\")",
+          "for risk in (\"R0_READ\", \"R1_ANALYZE\"):",
+          "low = suite.world.action_type(\"urn:ocor:action-type:rem0053:composed-low\", risk=\"R1_ANALYZE\", capability=\"act:launch\")"
+        ],
+        "substitution": "bijective identifier substitution R0_INFORMATIONAL -> R0_READ, R1_LOW -> R1_ANALYZE, R1_DERIVE -> R1_ANALYZE, R2_MUTATE -> R2_CONTROLLED; same ordinal, case and expectation"
+      },
+      {
+        "authority": "NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh); NCR-C6-013",
+        "current_value": [
+          "# R3_HIGH_IMPACT; the non-risk-bearing ActionType is R1_LOW, which admits no mutation.",
+          "SITE_NOTE = WORLD.action_type(\"urn:ocor:action-type:site-note\", risk=\"R1_LOW\", capability=\"act:launch\")"
+        ],
+        "kind": "ADAPTED",
+        "lines": [
+          51,
+          54
+        ],
+        "normative_anchor": "ADD v1.3 :2193, :3300-3305; LLD v1.1 :16-18",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py",
+        "prescribed_value": [
+          "# R3_HIGH_IMPACT; the non-risk-bearing ActionType is R1_ANALYZE, which admits no mutation.",
+          "SITE_NOTE = WORLD.action_type(\"urn:ocor:action-type:site-note\", risk=\"R1_ANALYZE\", capability=\"act:launch\")"
+        ],
+        "substitution": "bijective identifier substitution R0_INFORMATIONAL -> R0_READ, R1_LOW -> R1_ANALYZE, R1_DERIVE -> R1_ANALYZE, R2_MUTATE -> R2_CONTROLLED; same ordinal, case and expectation"
+      },
+      {
+        "authority": "NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh); NCR-C6-013",
+        "current_value": [
+          "if risk in (\"R0_INFORMATIONAL\", \"R1_LOW\"):"
+        ],
+        "kind": "ADAPTED",
+        "lines": [
+          471
+        ],
+        "normative_anchor": "ADD v1.3 :2193, :3300-3305; LLD v1.1 :16-18",
+        "path": "ocor-runtime/tests/tasks/c6_action_fixture.py",
+        "prescribed_value": [
+          "if risk in (\"R0_READ\", \"R1_ANALYZE\"):"
+        ],
+        "substitution": "bijective identifier substitution R0_INFORMATIONAL -> R0_READ, R1_LOW -> R1_ANALYZE, R1_DERIVE -> R1_ANALYZE, R2_MUTATE -> R2_CONTROLLED; same ordinal, case and expectation"
+      }
+    ],
+    "realigned": []
+  },
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "input_robustness_self_check": null,
+  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 4 of estimate 3",
+  "open_decision_requests": [],
+  "open_points_for_review": [
+    "the C2 gateway and the identity provisioning deny PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL and OBLIGATE because no constraint, approval or obligation is enforced there today; a consumer that honours them is out of the NCP-U08 scope",
+    "the legacy c4_marking.MarkingEngine, c7_emission.py and c6_capabilities.py stay for their consumers; their retirement belongs to the legacy retirement decision request of NORMATIVE-CONFORMANCE-PLAN point 6",
+    "the C8 tool runtime lease is NCR-C8-008 of NCP-U10 (NCP-U07-C8-TOOL-RUNTIME-LEASE option 2), not this unit",
+    "NCR-C6-013 lists FR-079 in the register; the unit module does not declare FR-079 because its tests exercise only the ADD v1.3 risk-class names and the gate of each class, not the whole Register text of FR-079 :211 (Approval obligation from risk class, policy, authority, domain and effect type): a requirement exercised only in part is never declared (NCP-UNBINDABLE-REQUALIFICATIONS point 4, fail-closed); FR-079 stays to its G6 task"
+  ],
+  "plan_unit": "NCP-U08",
+  "preventive_review": null,
+  "product_orientation": [
+    "the stop_epoch is a signed record on a durable port with a PostgreSQL adapter, read and verified by every consumer (G-DISPATCH, C8 tool runtime, break-glass), so the deployed stop and the tested stop are the same object and survive the process",
+    "the stop-epoch and break-glass signing keys come from the caller (SafetyAuthorities), so production key management plugs in without changing C6",
+    "the policy decision point reads the qualifiers from the signed OPA bundle and PolicyDecision.admit is the single application rule for consumers",
+    "marking is evaluated over the validated lattices of the active schemes; the legacy engine stays only for the legacy slice"
+  ],
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0053.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged; a code input of the task changed",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/kernel/governance.py"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0009.requalified-rem0051.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1 for every unit: tests unchanged, regression-only even where the plan says with supersession); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0009",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged; a code input of the task changed",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/security/ports.py"
+        ],
+        "latest_record": "reports/evidence/G1/OCOR-DEV-0014.requalified-rem0051.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1 for every unit: tests unchanged, regression-only even where the plan says with supersession); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0014",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "one ActionType risk string and one comment substituted by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1 (R1_LOW -> R1_ANALYZE), asserts unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+        ],
+        "latest_record": "reports/evidence/G3/OCOR-DEV-0030.requalified-rem0053.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0030",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0030.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "MarkingEngine -> ResolvedMarkingEngine at the gateway-policy constructions (case 3, NCR-C6-012), asserts unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c2/gateway.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0052.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of FR-007 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-007",
+            "title": "Il sistema DEVE restituire per ogni risultato identit\u00e0, relazioni, validit\u00e0 temporale, claims, evidenze, provenance, stato di verit\u00e0, incertezza e spiegazione filtrata dalle policy."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of FR-025 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test end-to-end",
+            "requirement_id": "FR-025",
+            "title": "Il sistema DEVE assegnare Stable Resource ID alle definizioni e instance ID applicativi alle istanze, mantenendo Primary Key, Title Key, Source Identity, Canonical Entity, alias e mapping backend come concetti distinti."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test e dimostrazione",
+            "requirement_id": "FR-027",
+            "title": "Il sistema DEVE rappresentare Object Set, Query, Saved View, Derived/Computed Property, Function, Constraint, Invariant, Inference Rule, Derived Assertion, Proof Graph e Truth Maintenance con semantica distinta."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of FR-030 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di replay",
+            "requirement_id": "FR-030",
+            "title": "Il sistema DEVE supportare Source Identity, Candidate Match, Resolution Assertion, Canonical Entity, merge, split e adjudication preservandone evidenza e storia."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of FR-055 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-055",
+            "title": "Il sistema DEVE esporre contratti tipizzati per `GetObject`, `QueryObjectSet`, `Search`, `Traverse`, `Explain` e `GetProvenance`."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-034 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "penetration test",
+            "requirement_id": "NFR-034",
+            "title": "Query o comandi arbitrari ai backend DEVONO essere negati e auditati."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-037 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "resilience test",
+            "requirement_id": "NFR-037",
+            "title": "In caso di indisponibilit\u00e0 di identity, policy, audit o version fence, le capability mutative DEVONO fallire chiuse."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-040 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Conformance, penetration e inference-leakage test",
+            "requirement_id": "NFR-040",
+            "title": "Il sistema DEVE instradare il 100% dei contract esposti attraverso l\u2019enforcement centrale e prevenire leakage via query, aggregazioni, traversal, vector search ed explain."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-053 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Automated canary/shadow test",
+            "requirement_id": "NFR-053",
+            "title": "Prima dello switch, canary e shadow query DEVONO mostrare zero divergenze P0 e tutti gli adapter DEVONO essere allineati alla release fence."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Scenario test e audit inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Scenario test e audit inspection",
+            "requirement_id": "NFR-055",
+            "title": "Merge, split e adjudication DEVONO essere bitemporali, reversibili e auditati e DEVONO ricalcolare link e inferenze dipendenti."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-060 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Deployment e network-isolation test",
+            "requirement_id": "NFR-060",
+            "title": "Core, identity, policy, key/secret, model serving, registry, observability e update path DEVONO offrire un profilo on-prem/private sovereign cloud e air-gap-capable."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-068 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Drift/chaos test",
+            "requirement_id": "NFR-068",
+            "title": "Il sistema DEVE rilevare config/schema/release drift e bloccare command mutativi quando adapter e Gateway non concordano sulla release."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Benchmark",
+            "requirement_id": "NFR-071",
+            "title": "Per il query pack P0 su dataset, graph topology, result cardinality, concurrency, hardware e cache state dichiarati, il sistema DOVREBBE raggiungere `p95<50 ms` end-to-end; non \u00e8 un massimo assoluto."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione + test",
+            "requirement_id": "FR-017",
+            "title": "Ogni adapter di compatibilit\u00e0 Palantir DEVE classificare ciascun endpoint supportato come `exact`, `emulated`, `translated` o `unsupported`."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of FR-150 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Data-quality e identity-resolution test",
+            "requirement_id": "FR-150",
+            "title": "Ogni Constraint/quality evaluation DEVE produrre Validation Result con input, versione, severity, owner e remediation; Candidate Match non entra nel canonical cluster senza Resolution Assertion accettata."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted constructions only give the gateway the resolving engine it requires; the full Register text of NFR-014 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di replay",
+            "requirement_id": "NFR-014",
+            "title": "Merge/split di identit\u00e0 e ritiro di inferenze DEVONO essere reversibili, ricostruibili e auditabili senza cancellare le evidenze storiche."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0034",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0034.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "MarkingEngine -> ResolvedMarkingEngine at the three gateway-policy constructions (case 3, NCR-C6-012), asserts unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_0035.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0035.requalified-rem0049.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0035",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0035.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "stop built on the signed StopEpochPort, activation by the Safety Officer for an incident, reset with the RecoveryVerification, signed break-glass controller (case 3, NCR-C6-010), asserts unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c6/safety.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0044.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0053.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of FR-032 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di integrazione",
+            "requirement_id": "FR-032",
+            "title": "Il sistema DEVE rappresentare Transaction, Transaction Record, Workflow, Lifecycle, State Machine, Saga, Compensation, Transactional Outbox e Delivery Attempt."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of FR-080 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "compiler test",
+            "requirement_id": "FR-080",
+            "title": "Ogni Action Type DEVE dichiarare idempotency scope, timeout, retry policy, compensabilit\u00e0, compensation e irreversibility class."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of FR-083 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-083",
+            "title": "Il sistema DEVE rappresentare almeno pending, dispatched, acknowledged, confirmed, failed, compensating, compensated e unknown."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of FR-108 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "compiler/conformance test",
+            "requirement_id": "FR-108",
+            "title": "Ogni Tool Contract DEVE dichiarare input/output, effect class, risk class, preconditions, policy, approval, idempotency, timeout, compensation, provenance ed evidence requirements."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Coverage test e audit inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Coverage test e audit inspection",
+            "requirement_id": "FR-134",
+            "title": "Il sistema DEVE registrare accessi privilegiati, Policy Decision, Delegation, query sensibili, adjudication, release, modelli, Recommendation, Approval, Decision, Action, Execution, export, declassification, break-glass e amministrazione."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of FR-139 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Workflow e security test",
+            "requirement_id": "FR-139",
+            "title": "Il break-glass DEVE richiedere identit\u00e0 forte, motivo, scope minimo, TTL, Approval indipendente, alert, audit immutabile e post-review e NON DEVE disabilitare audit, identity, idempotenza o fencing."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Migration test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Migration test e dimostrazione",
+            "requirement_id": "FR-146",
+            "title": "Ogni migration DEVE dichiarare source/target, precondizioni, trasformazione, postcondizioni, impatto, dry-run, validation e recovery/compensation."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of FR-158 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Offline action/merge test",
+            "requirement_id": "FR-158",
+            "title": "Un\u2019Action offline pu\u00f2 essere ammessa solo con asset ownership esclusiva, fencing token, TTL, pre-Delegation, Authority e compensation validi e DEVE essere rivalidata e riconciliata al reconnect."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Safety/chaos benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Safety/chaos benchmark",
+            "requirement_id": "NFR-047",
+            "title": "L\u2019emergency stop DEVE impedire nuovi command e revocare le capability nel boundary locale entro 10 secondi dall\u2019attivazione."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted tests build the stop and break-glass controllers the code requires and keep their assertions; they do not exercise the new activation, signature and recovery rules, which the unit tests qualify; the full Register text of NFR-081 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Authorization e negative test",
+            "requirement_id": "NFR-081",
+            "title": "Il sistema DEVE imporre separazione dei compiti e dual control alle operazioni amministrative classificate ad alto impatto."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0044",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0044.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "stop fixture on the signed StopEpochPort with the Safety Officer activation and ResolvedMarkingEngine fixture (case 3, NCR-C6-010 and NCR-C6-012), asserts unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0027.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione",
+            "requirement_id": "BR-012",
+            "title": "Il sistema DEVE applicare exit criteria distinti per PoC, MVP e Production."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-004",
+            "title": "Il sistema DEVE autenticare ogni agente con identit\u00e0 distinta e valutare capability, delega, scopo, budget, autonomia e kill switch prima di ogni operazione sensibile."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-016 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-016",
+            "title": "Il sistema DEVE esporre API, SDK, subscription/change feed e tool contract derivati dalla Canonical IR."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-052 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test",
+            "requirement_id": "FR-052",
+            "title": "Il sistema DOVREBBE offrire un Language Server e integrazioni IDE coerenti con parser, type checker e diagnostica della CLI."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-106 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test identity",
+            "requirement_id": "FR-106",
+            "title": "Il sistema DEVE assegnare a ogni Agent Type e Agent instance Stable Resource ID, owner, trust/autonomy tier, lifecycle e workload identity."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-109 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "portability test",
+            "requirement_id": "FR-109",
+            "title": "Tool Binding DEVE associare contract vendor-neutral, adapter o deployment, environment, scope e versione senza modificare l\u2019interfaccia applicativa."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-120 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-120",
+            "title": "Il sistema DEVE definire e far rispettare quote per tool, passi, token/costo, wall time, compute e risk exposure a livello agent, run, team e tenant."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark, analisi' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark, analisi",
+            "requirement_id": "FR-125",
+            "title": "La evaluation suite DEVE misurare task success, evidence fidelity, policy compliance, tool correctness, abstention/escalation quality e outcome contribution."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-126 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-126",
+            "title": "Un agente NON DEVE modificare autonomamente trust tier, autonomy tier, capability, budget o evaluation record."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-127 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "adversarial/security test",
+            "requirement_id": "FR-127",
+            "title": "Il sistema DEVE applicare schema validation, content provenance o taint, allow-list, parameter constraints, sandbox ed egress policy prima e dopo ogni tool call."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-165 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Contract e authorization test",
+            "requirement_id": "FR-165",
+            "title": "Il sistema DEVE trasformare ogni modifica proposta da una UI in una patch o Change Proposal revisionabile senza scrivere direttamente artefatti generati o datastore."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of FR-169 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Generation e contract test",
+            "requirement_id": "FR-169",
+            "title": "Il sistema DEVE generare API, eventi e tool da contratti versionati OpenAPI, Protobuf/gRPC, AsyncAPI e MCP."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark",
+            "requirement_id": "NFR-035",
+            "title": "Revoca o kill switch DEVE impedire nuove tool call entro il budget di propagazione approvato."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark",
+            "requirement_id": "NFR-036",
+            "title": "Kill switch e cancel DEVONO essere fail-safe, auditati e verificati sotto carico."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of NFR-077 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di integrazione e failure injection",
+            "requirement_id": "NFR-077",
+            "title": "Il sistema DEVE riportare per ogni risposta state-dependent branch, commit canonico servito, watermark, release ontologica e staleness secondo la semantica dichiarata del consistency token."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test i18n e accessibility audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test i18n e accessibility audit",
+            "requirement_id": "NFR-083",
+            "title": "Il sistema DEVE mantenere identificatori semantici indipendenti dalla lingua e rendere localizzabili e accessibili le interfacce umane."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted fixtures only build the stop and the resolving engine the tool runtime requires; the full Register text of NFR-085 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Round-trip, conformance e security test",
+            "requirement_id": "NFR-085",
+            "title": "Il sistema DEVE verificare integrit\u00e0, equivalenza semantica e rispetto delle policy nell'export e nel reimport."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0047",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "eleven lines substituted by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1 (RiskClass and OperationClass legacy names -> ADD v1.3 names), trees equal after the mapping, the two negative-case strings kept",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/security/control_plane.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0048.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0048.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione",
+            "requirement_id": "BR-007",
+            "title": "Ogni capacit\u00e0 DEVE essere classificata Core, Optional o Future e collegata a mission thread, dipendenze ed evidenze."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione + test",
+            "requirement_id": "BR-013",
+            "title": "Il sistema DEVE mantenere per ogni release un profilo di capacit\u00e0 chiuso, versionato e verificabile."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Gate audit e checklist firmata' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Gate audit e checklist firmata",
+            "requirement_id": "BR-016",
+            "title": "Il programma DEVE autorizzare il passaggio al MVP soltanto dopo il superamento di tutti i P0 PoC e la chiusura o accettazione governata dei gap critici."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione + test",
+            "requirement_id": "FR-020",
+            "title": "Il sistema di governance DEVE mantenere una riga atomica per ogni capability della baseline con fonte, disposizione, priorit\u00e0, requisito, componente, criterio, metodo, evidenza e release."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of FR-021 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-021",
+            "title": "Il sistema di governance DEVE generare il perimetro, il profilo verificato e le esclusioni di ogni dichiarazione di parit\u00e0 o superiorit\u00e0."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of FR-067 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-067",
+            "title": "Ogni merge verso lo stato canonico DEVE passare da change proposal, validazione, policy, review e writer governato."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of FR-103 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-103",
+            "title": "Le run asincrone DEVONO supportare queued, running, paused, cancelled, completed, failed ed expired, con progress, timeout e partial-result policy."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of FR-110 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "policy test",
+            "requirement_id": "FR-110",
+            "title": "Il sistema DEVE modellare e applicare almeno gli autonomy tier observe, analyze, simulate, propose ed execute-approved."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of FR-117 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test negativo",
+            "requirement_id": "FR-117",
+            "title": "Un Message NON DEVE diventare Canonical Assertion n\u00e9 concedere Authority senza un processo esplicito."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of FR-128 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-128",
+            "title": "Il sistema DEVE verificare actor chain, purpose ed effective authority a ogni hop per bloccare confused-deputy e delegation laundering."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'CI test e ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "CI test e ispezione",
+            "requirement_id": "FR-143",
+            "title": "Ogni resource OaC DEVE avere owner, steward, reviewer, status, classificazione e review date; kernel e policy cross-domain richiedono owner nazionale e reviewer indipendente."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Mapping review, migration test e reconciliation' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Mapping review, migration test e reconciliation",
+            "requirement_id": "FR-153",
+            "title": "Ogni migrazione da/verso Palantir DEVE usare export/API pubbliche autorizzate e produrre mapping, disposition `exact/emulated/materialized/unsupported`, loss report, reconciliation e evidence."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Air-gap deployment drill' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Air-gap deployment drill",
+            "requirement_id": "FR-160",
+            "title": "Il bundle offline DEVE includere release OaC, immagini, manifest, policy, model manifest, migration, conformance test, SBOM, provenance, signature e revocation information verificabili localmente."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of NFR-010 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "NFR-010",
+            "title": "Il sistema DEVE consentire lo stato `Parity verified` soltanto quando la capability dispone di requisito confermato, criterio di accettazione, metodo di verifica, evidenza superata e riferimento alla baseline."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of NFR-019 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test negativo",
+            "requirement_id": "NFR-019",
+            "title": "Una capability classificata `unsupported` NON DEVE raggiungere una release salvo eccezione identificata, approvata, motivata e tracciata."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of NFR-026 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "NFR-026",
+            "title": "La conformance suite DEVE includere test di non-interferenza fra tenant e compartimenti."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of NFR-031 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "NFR-031",
+            "title": "Gli stati di astensione NON DEVONO essere convertiti in raccomandazioni prescrittive senza eccezione umana esplicita e separata."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Dimostrazione e audit' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Dimostrazione e audit",
+            "requirement_id": "NFR-049",
+            "title": "Ogni release candidata Production DEVE superare almeno un tabletop e un containment/recovery drill; tutti i finding High devono essere chiusi prima del go-live."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Compatibility suite e ispezione release' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Compatibility suite e ispezione release",
+            "requirement_id": "NFR-052",
+            "title": "API, SDK e contract DEVONO supportare almeno release corrente e precedente; deprecazione ordinaria \u22652 cicli o \u2265180 giorni, salvo security exception con migration/communication plan."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Conformance round-trip e independent restore' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Conformance round-trip e independent restore",
+            "requirement_id": "NFR-056",
+            "title": "Il round-trip import/export del portable profile DEVE preservare semantica, identit\u00e0, temporalit\u00e0, provenance e policy senza perdita P0."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Isolation test e artifact inspection' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Isolation test e artifact inspection",
+            "requirement_id": "NFR-063",
+            "title": "Build, test, acceptance e Production DEVONO usare identit\u00e0, secret, dataset, policy e namespace distinti; lo stesso artifact digest \u00e8 promosso senza rebuild."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of NFR-064 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Chaos/failover test",
+            "requirement_id": "NFR-064",
+            "title": "Ogni servizio DEVE dichiarare statefulness, authority, fault domain, redundancy, failover, rebuild source e degraded behavior; le garanzie DEVONO basarsi solo su feature/versioni verificate."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'License/capability inspection e benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "License/capability inspection e benchmark",
+            "requirement_id": "NFR-073",
+            "title": "Ogni dependency DEVE dichiarare versione, licenza, edizione, capability richiesta, disponibilit\u00e0 verificata, eccezione e exit plan; nessun claim HA/backup/failover pu\u00f2 dipendere da feature non verificata."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the adapted lines only rename the risk and operation classes of capability and delegation ceilings; the security behaviour asserted is unchanged; the full Register text of NFR-074 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Network-isolation e end-to-end test",
+            "requirement_id": "NFR-074",
+            "title": "Il runtime air-gap DEVE completare boot, authentication, policy evaluation, model inference, mission thread e audit con egress nullo."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'SCA, licence scan e ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "SCA, licence scan e ispezione",
+            "requirement_id": "NFR-086",
+            "title": "Il sistema DEVE produrre per ogni release SBOM, inventario licenze, provenance, attribuzioni, vulnerability status ed exception register."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Analisi, tabletop e dimostrazione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Analisi, tabletop e dimostrazione",
+            "requirement_id": "NFR-087",
+            "title": "Il sistema DEVE mantenere per ogni dipendenza critica owner, health indicators, version policy, remediation target, export path e runbook di sostituzione."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Audit della capability matrix' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Audit della capability matrix",
+            "requirement_id": "NFR-089",
+            "title": "Il sistema DEVE vincolare ogni affermazione di parit\u00e0 a una baseline datata, un capability profile, un requisito, un test, un'evidenza, una release e limitazioni esplicite."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0048",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0048.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0053.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0053.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks after the allowlist commit (scripts/validate_evidence_input_drift.py): 0030, 0034, 0035, 0044, 0047 and 0048 with adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4: BR-003 and the other MIXED or non-test methods fail the first condition, the AUTOMATED_TEST requirements are not exercised in full by the adapted lines); 0009 and 0014 with a changed code input and unchanged tests (NCP-U01-SUPERSESSION-REQUALIFICATIONS point 3); 0005, 0050 and 0082 for the allowlist; REM-0024, REM-0027, REM-0028, REM-0049 and REM-0053 have adapted tests and are not completed tasks",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0009",
+      "OCOR-DEV-0014",
+      "OCOR-DEV-0030",
+      "OCOR-DEV-0034",
+      "OCOR-DEV-0035",
+      "OCOR-DEV-0044",
+      "OCOR-DEV-0047",
+      "OCOR-DEV-0048",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "OPA, Keycloak, OpenBao -- realised as the OPA, Keycloak, OpenBao and SPIRE (mTLS to OPA) services of the full CI stack provisioned by scripts/bootstrap_ci_environment.py, with PostgreSQL for the durable stop-epoch store and the consumer modules (Temporal, TypeDB, TerminusDB, Fuseki, Qdrant, Kafka for the requalified and consumer modules); stop-epoch and break-glass signatures with locally generated Ed25519 keys",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C6-010",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_authorised_safety_officer_activates_alone_and_immediately ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unresolved_or_unauthorised_activator_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_activation_names_its_incident ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_every_transition_publishes_a_signed_stop_epoch_record ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_on_the_same_port_sees_the_stop_of_another_controller ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_keeps_the_signed_epoch_across_processes ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_g_dispatch_reads_the_stop_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_verified_recovery_issues_a_new_signed_epoch ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_recovery_verification_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_is_a_delegation_signed_by_the_break_glass_authority ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_signature_covers_every_field ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_controller_requires_its_signing_authority ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port"
+    },
+    {
+      "entry": "NCR-C6-011",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_the_signed_policy_produces_each_qualified_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_permit_without_qualification_stays_permit_and_a_deny_drops_it ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualification"
+    },
+    {
+      "entry": "NCR-C6-012",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_a_missing_unknown_or_incomparable_marking_is_unresolved ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_a_marking_that_is_not_a_marking_set_is_unresolved ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_a_complete_marking_is_authorized_only_when_the_clearance_dominates_it ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_join_is_the_conservative_least_upper_bound_of_complete_markings ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_join_never_defaults_an_unresolved_marking_to_the_bottom ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_join_of_no_marking_is_unresolved ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_engine_needs_distinct_validated_lattices ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_runs_a_call_whose_complete_marking_the_clearance_dominates ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_denies_a_clearance_that_does_not_dominate ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c8_tool_runtime_refuses_the_legacy_engine ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c2_policy_permits_with_a_complete_clearance_and_asks_the_port_with_it ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c2_policy_denies_an_unresolved_clearance_without_asking_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c2_policy_refuses_the_legacy_engine ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_012_the_c6_action_path_never_reaches_the_legacy_marking_default"
+    },
+    {
+      "entry": "NCR-C6-013",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_the_classes_are_the_add_names_in_impact_order_without_aliases ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_the_policy_input_carries_the_add_names ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_a_signed_action_type_carries_the_add_risk_class_on_the_wire ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_013_the_gates_are_those_of_add_v1_3"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C6-010",
+    "NCR-C6-011",
+    "NCR-C6-012",
+    "NCR-C6-013"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0054 commits: c4/marking_resolution.py, c6/adapters (PostgresStopEpochStore), the shared C6 safety test support module and the unit test disappear; c6/safety.py, c6/composition.py, c2/gateway.py, c8/tool_runtime.py, kernel/governance.py, security/control_plane.py, security/ports.py and the adapted tests return to the base; the plan allowlist, the register entries, the decided request file and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the stop-epoch schema of a development PostgreSQL is dropped with the stack volumes",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0054",
+  "tdd": {
+    "GREEN_C6_010": {
+      "commit": "0cd12df",
+      "fingerprint": "5c0b5cdf4b956dd473e1810f19b1a84db0b833b71a5fcd0745b2ba547b1de99e",
+      "summary": "unit + C6/C8 consumers + mission thread on the dev services: 1391 passed, 31 skipped (REM-0031 Keycloak/mTLS)"
+    },
+    "GREEN_C6_011": {
+      "commit": "3a90e68",
+      "fingerprint": "608dc9190e10529468f590963430b1e31f66350a8b6f63430f215a645ce3e788",
+      "summary": "unit + 23 consumer modules + mission thread on the full CI stack: 1755 passed, 0 skipped, 7 NCR-C6-013 cases failing pending the decision"
+    },
+    "GREEN_C6_012": {
+      "commit": "060e1f5",
+      "fingerprint": "bae3818120e0bbec99a914f42a7bfd5436a25c3cebda0c8532058b21c3b205d0",
+      "summary": "unit + 33 consumer modules + mission thread on the full CI stack: 2278 passed, 0 skipped, 7 NCR-C6-013 cases failing as expected (pending NCP-U08-RISK-CLASS-NAME-ADAPTATION)"
+    },
+    "GREEN_C6_013": {
+      "commit": "a1f2750",
+      "fingerprint": "bc3f1c1211dd99f1a1f2f9c16eef0edcd411258a91bfa967de05f432b5fb4204",
+      "summary": "unit + 35 consumer modules (0048 included) + mission thread on the full CI stack: 2375 passed, 0 skipped, 0 failed"
+    },
+    "RED_C6_010": {
+      "commit": "0eee9ff",
+      "fingerprint": "6281c8e0c6fc7c039da7c28b48a77a4f384846b7d39bcba53ff61a4414e459e5",
+      "summary": "unit module on the base code: 54 failed, 3 errors"
+    },
+    "RED_C6_011": {
+      "commit": "341acf4",
+      "fingerprint": "32acd401c28e1c303f66d948091f4e92304207b57ab4e9c84dc427568429667b",
+      "summary": "unit module on the full CI stack: 12 NCR-C6-011 and 7 NCR-C6-013 failed, 60 passed"
+    },
+    "RED_C6_012": {
+      "commit": "7aa8342",
+      "fingerprint": "186de4782e28cb37992c464097cfe2fca9dd1889ef39f0e18a2d12e52057160a",
+      "summary": "selection 'ncr_c6_012 or c8_tool_runtime_reads' at the RED commit: 40 failed, 1 passed (C6 action-path characterisation)"
+    },
+    "RED_C6_013": {
+      "commit": "28e9c48",
+      "fingerprint": "6ff2d8524f6702192a6e641965e20f0332e3e9cf6884d5e7e526242ae045348f",
+      "summary": "unit module at 0cd12df: 7 failed, 59 passed"
+    },
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML (~/.ocor-codex/rem-0054/redgreen.sh, redgreen_ci.sh)"
+  }
+}
