@@ -373,7 +373,7 @@ class StopEpochReader:
         self._epochs = epochs
         self._keyring = keyring
         self._issuer_id = _text("issuer_id", issuer_id)
-        self._verified: dict[tuple[str, str, bytes], StopEpochRecord] = {}
+        self._verified: dict[tuple[str, str, bytes, bytes | None], StopEpochRecord] = {}
         self._cache_lock = threading.Lock()
 
     @property
@@ -384,11 +384,14 @@ class StopEpochReader:
         if not isinstance(signed, SignedStopEpoch):
             raise SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "the port answered something other than a signed stop epoch")
         try:
-            key = (signed.keyid, signed.signature, signed.signed_bytes())
+            # The cache is bound to the key the keyring holds now: a key it no longer holds never
+            # keeps a record verified.
+            public_key = self._keyring.public_key(self._issuer_id, signed.keyid)
+            key = (signed.keyid, signed.signature, signed.signed_bytes(), public_key)
         except Exception as error:
             raise SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "the stop epoch is malformed") from error
         with self._cache_lock:
-            cached = self._verified.get(key)
+            cached = self._verified.get(key) if isinstance(public_key, bytes) else None
         if cached is not None:
             return cached
         record = verify_stop_epoch(signed, keyring=self._keyring, issuer_id=self._issuer_id)
@@ -417,6 +420,8 @@ class StopEpochReader:
     def signed_history(self) -> tuple[SignedStopEpoch, ...]:
         try:
             history = self._epochs.history()
+        except SafetyError:
+            raise
         except Exception as error:
             raise SafetyError("STOP_EPOCH_UNAVAILABLE", "the stop epoch port cannot be read") from error
         if not isinstance(history, tuple) or not history:
@@ -449,7 +454,7 @@ class StopEpochReader:
         record = self.current()
         if record.status is not StopStatus.NORMAL:
             raise SafetyError("SYSTEM_NOT_NORMAL", f"emergency stop is {record.status.value}, dispatch is blocked")
-        if fenced_epoch != record.epoch or type(fenced_epoch) is not int:
+        if type(fenced_epoch) is not int or fenced_epoch != record.epoch:
             raise SafetyError("STOP_EPOCH_STALE", f"command fenced to epoch {fenced_epoch!r}, current epoch is {record.epoch}")
 
 
@@ -601,17 +606,29 @@ class EmergencyStopController:
         from .human_gate import _active_human_roles
 
         instant = datetime.now(UTC)
+        dual_control = SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset requires two distinct human approvers, independent of the requester")
+        # Read without conversion: a tuple of two principal identifiers and a principal identifier.
+        if (
+            not isinstance(approvers, tuple)
+            or any(not isinstance(item, str) or not item for item in approvers)
+            or not isinstance(requester, str)
+        ):
+            raise dual_control
         distinct = set(approvers)
         if len(approvers) != 2 or len(distinct) != 2 or not requester or requester in distinct:
-            raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset requires two distinct human approvers, independent of the requester")
+            raise dual_control
         with self._lock:
             current = self._reader.current()
             if current.status is not StopStatus.STOPPED:
                 raise SafetyError("INVALID_STOP_TRANSITION", f"cannot request reset from {current.status.value}")
             # Fresh authority reads immediately before the state transition.
             # Request, signature and grant cannot set registry attributes.
-            for principal in distinct:
-                if _active_human_roles(identities.get(principal)) is None:
+            for principal in sorted(distinct):
+                try:
+                    roles = _active_human_roles(identities.get(principal))
+                except Exception as error:
+                    raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "a reset approver cannot be read from the registry") from error
+                if roles is None:
                     raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset approver is not a resolved active human with valid attributes")
             # LLD v1.1 :328: the reset verifies the incident and the recovery.
             if (
@@ -671,6 +688,16 @@ class BreakGlassGrant:
 
     def __post_init__(self) -> None:
         require_aware(self.granted_at, field="granted_at")
+        # Read without conversion: text is a string, the capabilities a set of names (a string is
+        # never split into characters), the approvers a tuple and the TTL a duration.
+        for name in ("grant_id", "requester", "reason", "incident_ref", "scope", "domain", "issuer_id", "keyid", "signature"):
+            _text(name, getattr(self, name), empty=True)
+        if not isinstance(self.capabilities, (set, frozenset)):
+            raise ValueError("the capabilities of a BreakGlassGrant are a set of names")
+        if not isinstance(self.approvers, tuple) or any(not isinstance(item, str) for item in self.approvers):
+            raise ValueError("the approvers of a BreakGlassGrant are a tuple of principal identifiers")
+        if not isinstance(self.ttl, timedelta):
+            raise ValueError("the ttl of a BreakGlassGrant is a duration")
         object.__setattr__(self, "capabilities", frozenset(self.capabilities))
         if not self.grant_id:
             raise ValueError("a BreakGlassGrant requires a grant_id")
@@ -955,9 +982,26 @@ class BreakGlassController:
         ttl: timedelta,
     ) -> BreakGlassGrant:
         instant = self._now()
-        request = {"grant_id": grant_id, "requester": requester, "approvers": list(approvers), "domain": domain}
+        request = {
+            "grant_id": grant_id,
+            "requester": requester,
+            "approvers": list(approvers) if isinstance(approvers, tuple) else approvers,
+            "domain": domain,
+        }
         with self._lock:
             try:
+                # Read without conversion: a string is never split into capabilities or approvers.
+                if (
+                    any(not isinstance(value, str) for value in (grant_id, incident_ref, scope, domain))
+                    or not isinstance(capabilities, (set, frozenset))
+                    or any(not isinstance(name, str) or not name for name in capabilities)
+                    or not isinstance(approvers, tuple)
+                    or any(not isinstance(approver, str) or not approver for approver in approvers)
+                ):
+                    raise SafetyError(
+                        "BREAK_GLASS_GRANT_INVALID",
+                        "grant id, incident, scope and domain are strings, capabilities a set of names, approvers a tuple of principals",
+                    )
                 if not (grant_id and reason and incident_ref and scope and domain and capabilities):
                     raise SafetyError(
                         "BREAK_GLASS_GRANT_INVALID",
@@ -968,7 +1012,7 @@ class BreakGlassController:
                 forbidden = sorted(set(capabilities) & FORBIDDEN_BREAK_GLASS_CAPABILITIES)
                 if forbidden:
                     raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never grant {forbidden}")
-                self._validate_principals(requester, tuple(approvers), domain)
+                self._validate_principals(requester, approvers, domain)
                 # LLD v1.1 :324 typed reason, the purpose of ADD v1.3 :3347: a reason code, never free text.
                 if (
                     not isinstance(reason, str)
@@ -1013,6 +1057,8 @@ class BreakGlassController:
         return issued
 
     def _require_issued(self, grant: BreakGlassGrant) -> None:
+        if not isinstance(grant, BreakGlassGrant):
+            raise SafetyError("BREAK_GLASS_GRANT_NOT_ISSUED", "only a grant issued by this controller is honoured")
         if self._issued.get(grant.grant_id) != grant:
             raise SafetyError("BREAK_GLASS_GRANT_NOT_ISSUED", f"grant {grant.grant_id!r} was not issued by this controller or was altered")
         if grant.keyid != self._keyid or not _grant_signature_holds(grant, self._issuer_id, self._key.public_key):
@@ -1043,18 +1089,21 @@ class BreakGlassController:
                     raise SafetyError("BREAK_GLASS_EXPIRED", f"grant {grant.grant_id!r} expired at {grant.expires_at.isoformat()}")
                 if instant < grant.granted_at:
                     raise SafetyError("BREAK_GLASS_NOT_YET_VALID", f"grant {grant.grant_id!r} is valid from {grant.granted_at.isoformat()}")
+                if not isinstance(capability, str) or not capability:
+                    raise SafetyError("BREAK_GLASS_CAPABILITY_NOT_GRANTED", "a break-glass use names one capability")
                 if capability in FORBIDDEN_BREAK_GLASS_CAPABILITIES:
                     raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never authorize {capability!r}")
                 if capability not in grant.capabilities:
                     raise SafetyError("BREAK_GLASS_CAPABILITY_NOT_GRANTED", f"{capability!r} is not a capability named in grant {grant.grant_id!r}")
                 if self._stop.status is not StopStatus.NORMAL:
                     raise SafetyError("BREAK_GLASS_STOP_ACTIVE", "break-glass can never override an active emergency stop")
-                if not review_ref:
+                if not isinstance(review_ref, str) or not review_ref:
                     raise SafetyError("BREAK_GLASS_REVIEW_REQUIRED", "every break-glass use requires a mandatory review reference")
                 self._validate_principals(grant.requester, grant.approvers, grant.domain)
             except SafetyError as error:
                 raise self._refuse(
-                    "BREAK_GLASS_USE_DENIED", None, instant, error, grant_id=grant.grant_id, capability=capability, review_ref=review_ref
+                    "BREAK_GLASS_USE_DENIED", None, instant, error,
+                    grant_id=grant.grant_id if isinstance(grant, BreakGlassGrant) else None, capability=capability, review_ref=review_ref,
                 ) from error
             authorized = _event("BREAK_GLASS_USE_AUTHORIZED", grant, instant, capability=capability, review_ref=review_ref)
             self._append(authorized)

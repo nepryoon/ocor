@@ -262,7 +262,11 @@ class PolicyDecision:
         _aware("valid_until", self.valid_until)
         if self.evaluated_at >= self.valid_until:
             raise SecurityControlError("POLICY_DECISION_EXPIRED", "policy validity window is empty")
-        obligations = tuple(self.obligations)
+        # Read without conversion (OCOR-DEV-REM-0054): the qualifiers are a tuple of names, never a
+        # string split into characters or an unordered collection.
+        if not isinstance(self.obligations, tuple):
+            raise SecurityControlError("POLICY_DECISION_INVALID", "obligations are a tuple of names")
+        obligations = self.obligations
         if any(not isinstance(item, str) or not item for item in obligations):
             raise SecurityControlError("POLICY_DECISION_INVALID", "obligations are malformed")
         if len(obligations) != len(set(obligations)):
