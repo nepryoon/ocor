@@ -49,21 +49,30 @@ Three real safety mechanisms, each producing immutable evidence:
   is the task's own core negative claim made executable: an ambiguous
   outcome whose effect is not proven idempotent can never be
   auto-retried, no matter how long it has been ambiguous.
+  OCOR-DEV-REM-0053 (NCR-C6-007; LLD v1.1 :282-293 and :307, ADD v1.3
+  :2841, Register FR-163): a record is opened once and changes only
+  from an ambiguous state, so a terminal outcome is never overwritten;
+  resolution takes positive ``ReconciliationEvidence`` of the same
+  command, never a flag; with the single ``AuditPort`` every record is
+  appended to the signed, hash-linked chain before it takes effect and
+  ``restore`` rebuilds the state from the verified chain.
 """
 
 from __future__ import annotations
 
 import re
 import threading
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Protocol
+from typing import Any, Protocol
 
+from ..audit import AuditError, AuditEvent, AuditPort, SealedAuditRecord, verify_audit_chain
 from ..c2_identity import IdentityRecord, IdentityRegistry
 from ..c3_store import require_aware
 from ..errors import OCORError
+from ..kernel.canonical import parse_utc_timestamp
 from ..kernel.governance import TrustedClock
 
 MAX_BREAK_GLASS_TTL = timedelta(minutes=15)
@@ -568,6 +577,57 @@ _AMBIGUOUS_STATUSES = frozenset(
     }
 )
 _RESOLVABLE_STATUSES = frozenset({OutcomeStatus.UNKNOWN, OutcomeStatus.COMPENSATION_UNKNOWN})
+# The reconciliation transitions (LLD v1.1 :282-293, :296-297): a record is opened once, by an
+# ambiguous timeout, and moves only from an ambiguous state; every other state is terminal.
+_RECONCILIATION_TRANSITIONS: Mapping[OutcomeStatus | None, frozenset[OutcomeStatus]] = {
+    None: frozenset({OutcomeStatus.UNKNOWN, OutcomeStatus.COMPENSATION_UNKNOWN}),
+    OutcomeStatus.UNKNOWN: frozenset({OutcomeStatus.CONFIRMED, OutcomeStatus.FAILED, OutcomeStatus.INDETERMINATE}),
+    OutcomeStatus.COMPENSATION_UNKNOWN: frozenset(
+        {OutcomeStatus.COMPENSATED, OutcomeStatus.COMPENSATION_FAILED, OutcomeStatus.COMPENSATION_INDETERMINATE}
+    ),
+}
+_RESOLUTIONS: Mapping[tuple[OutcomeStatus, str], OutcomeStatus] = {
+    (OutcomeStatus.UNKNOWN, "EFFECT_OBSERVED"): OutcomeStatus.CONFIRMED,
+    (OutcomeStatus.UNKNOWN, "NO_EFFECT_OBSERVED"): OutcomeStatus.FAILED,
+    (OutcomeStatus.COMPENSATION_UNKNOWN, "EFFECT_OBSERVED"): OutcomeStatus.COMPENSATED,
+    (OutcomeStatus.COMPENSATION_UNKNOWN, "NO_EFFECT_OBSERVED"): OutcomeStatus.COMPENSATION_FAILED,
+}
+EVIDENCE_FINDINGS = frozenset({"EFFECT_OBSERVED", "NO_EFFECT_OBSERVED"})
+RECONCILIATION_EVENT = "C6_RECONCILIATION"
+RECONCILIATION_ACTOR = "urn:ocor:c6:outcome-reconciler"
+_NO_EVIDENCE_AUTHORITY = "urn:ocor:c6:reconciliation"
+_SHA256_URN = re.compile(r"urn:sha256:[0-9a-f]{64}")
+_DETAIL_FIELDS = frozenset({"status", "previous_status", "idempotent_effect_proven", "note", "evidence_ref", "evidence_digest"})
+
+
+def _evidence_text(name: str, value: object) -> str:
+    if not isinstance(value, str) or not value:
+        raise SafetyError("EVIDENCE_INVALID", f"evidence {name} must be a non-empty string")
+    return value
+
+
+@dataclass(frozen=True, slots=True)
+class ReconciliationEvidence:
+    """Positive Evidence observed for one command: of its effect (``EFFECT_OBSERVED``) or of
+    no effect/failure (``NO_EFFECT_OBSERVED``), LLD v1.1 :285-286 and :291-292. The only
+    input that resolves an ambiguous outcome: the absence of a response is never Evidence
+    (ADD v1.3 :2841)."""
+
+    evidence_ref: str
+    command_id: str
+    finding: str
+    observed_at: datetime
+    content_digest: str
+
+    def __post_init__(self) -> None:
+        _evidence_text("evidence_ref", self.evidence_ref)
+        _evidence_text("command_id", self.command_id)
+        if not isinstance(self.finding, str) or self.finding not in EVIDENCE_FINDINGS:
+            raise SafetyError("EVIDENCE_INVALID", "the evidence finding is outside the closed set")
+        if not isinstance(self.observed_at, datetime) or self.observed_at.tzinfo is None or self.observed_at.utcoffset() is None:
+            raise SafetyError("EVIDENCE_INVALID", "the evidence observation time must be timezone-aware")
+        if not isinstance(self.content_digest, str) or _SHA256_URN.fullmatch(self.content_digest) is None:
+            raise SafetyError("EVIDENCE_INVALID", "the evidence content digest is not a SHA-256 URN")
 
 
 @dataclass(frozen=True, slots=True)
@@ -577,34 +637,128 @@ class ReconciliationRecord:
     idempotent_effect_proven: bool
     recorded_at: datetime
     note: str
+    evidence_ref: str | None = None
+    evidence_digest: str | None = None
 
 
 class OutcomeReconciler:
-    def __init__(self) -> None:
+    """The reconciliation of ambiguous outcomes (LLD v1.1 ``ACT-T18a``/``T18b``/``T20a``-``c``,
+    ``T21c``-``T21e``, ``T24``, ``T25``; Register FR-163 :407).
+
+    A record is opened once, by an ambiguous timeout, and changes only from an ambiguous state:
+    a terminal outcome is never overwritten and an open reconciliation is never reopened
+    (``INVALID_RECONCILIATION_TRANSITION``). Resolution takes positive ``ReconciliationEvidence``
+    of the same command, never a flag. With an ``AuditPort`` every record is appended to the
+    single signed, hash-linked audit chain before it takes effect -- an append that fails leaves
+    the state unchanged (``RECONCILIATION_UNAVAILABLE``) -- and ``restore`` rebuilds the state
+    from the verified chain."""
+
+    def __init__(self, *, audit: AuditPort | None = None, actor: str = RECONCILIATION_ACTOR) -> None:
+        if audit is not None and not isinstance(audit, AuditPort):
+            raise TypeError("audit must implement the AuditPort")
+        if not isinstance(actor, str) or not actor:
+            raise TypeError("actor must be a non-empty string")
+        self._audit = audit
+        self._actor = actor
         self._records: dict[str, ReconciliationRecord] = {}
+        self._lock = threading.RLock()
+
+    @property
+    def audited(self) -> bool:
+        """Whether every record is appended to the audit port before it takes effect."""
+        return self._audit is not None
 
     @property
     def records(self) -> tuple[ReconciliationRecord, ...]:
-        return tuple(self._records.values())
+        with self._lock:
+            return tuple(self._records.values())
 
     def status(self, command_id: str) -> OutcomeStatus:
         return self._require_record(command_id).status
 
+    def record(self, command_id: str) -> ReconciliationRecord | None:
+        """The current reconciliation record of ``command_id``, if one was opened."""
+        with self._lock:
+            return self._records.get(command_id)
+
     def _require_record(self, command_id: str) -> ReconciliationRecord:
-        record = self._records.get(command_id)
+        with self._lock:
+            record = self._records.get(command_id)
         if record is None:
             raise SafetyError("UNKNOWN_COMMAND", f"no reconciliation record for {command_id!r}")
         return record
 
+    def _commit(self, record: ReconciliationRecord, previous: ReconciliationRecord | None) -> ReconciliationRecord:
+        """Append ``record`` to the audit chain, then make it current (caller holds the lock)."""
+        if record.status not in _RECONCILIATION_TRANSITIONS.get(None if previous is None else previous.status, frozenset()):
+            source = "no record" if previous is None else previous.status.value
+            raise SafetyError(
+                "INVALID_RECONCILIATION_TRANSITION",
+                f"{record.command_id!r}: {source} -> {record.status.value} is not a reconciliation transition",
+            )
+        if self._audit is not None:
+            detail: dict[str, Any] = {
+                "status": record.status.value,
+                "previous_status": None if previous is None else previous.status.value,
+                "idempotent_effect_proven": record.idempotent_effect_proven,
+                "note": record.note,
+                "evidence_ref": record.evidence_ref,
+                "evidence_digest": record.evidence_digest,
+            }
+            try:
+                self._audit.append(
+                    AuditEvent(
+                        event_type=RECONCILIATION_EVENT,
+                        actor=self._actor,
+                        occurred_at=record.recorded_at,
+                        resource=record.command_id,
+                        reason_code=record.status.value,
+                        authority_ref=record.evidence_ref or _NO_EVIDENCE_AUTHORITY,
+                        correlation_id=record.command_id,
+                        outcome="PERMITTED",
+                        detail=detail,
+                    )
+                )
+            except AuditError as error:
+                raise SafetyError(
+                    "RECONCILIATION_UNAVAILABLE",
+                    f"the reconciliation record of {record.command_id!r} could not be audited: {error.reason_code}",
+                ) from error
+            except Exception as error:
+                raise SafetyError(
+                    "RECONCILIATION_UNAVAILABLE",
+                    f"the reconciliation record of {record.command_id!r} could not be audited: {type(error).__name__}",
+                ) from error
+        self._records[record.command_id] = record
+        return record
+
+    def _open(
+        self, command_id: str, status: OutcomeStatus, *, idempotent_effect_proven: bool, at: datetime, note: str
+    ) -> ReconciliationRecord:
+        instant = require_aware(at, field="at")
+        if not isinstance(command_id, str) or not command_id:
+            raise SafetyError("RECONCILIATION_RECORD_INVALID", "command_id must be a non-empty string")
+        if not isinstance(idempotent_effect_proven, bool):
+            raise SafetyError("RECONCILIATION_RECORD_INVALID", "idempotent_effect_proven must be a boolean")
+        if not isinstance(note, str):
+            raise SafetyError("RECONCILIATION_RECORD_INVALID", "note must be a string")
+        record = ReconciliationRecord(
+            command_id=command_id,
+            status=status,
+            idempotent_effect_proven=idempotent_effect_proven,
+            recorded_at=instant,
+            note=note,
+        )
+        with self._lock:
+            return self._commit(record, self._records.get(command_id))
+
     def mark_ambiguous(
         self, command_id: str, *, idempotent_effect_proven: bool, at: datetime, note: str = "ambiguous timeout"
     ) -> ReconciliationRecord:
-        instant = require_aware(at, field="at")
-        record = ReconciliationRecord(
-            command_id=command_id, status=OutcomeStatus.UNKNOWN, idempotent_effect_proven=idempotent_effect_proven, recorded_at=instant, note=note
+        """``ACT-T18a``/``T18b``: an ambiguous timeout gives ``EXECUTION_UNKNOWN``."""
+        return self._open(
+            command_id, OutcomeStatus.UNKNOWN, idempotent_effect_proven=idempotent_effect_proven, at=at, note=note
         )
-        self._records[command_id] = record
-        return record
 
     def mark_compensation_ambiguous(
         self,
@@ -614,57 +768,70 @@ class OutcomeReconciler:
         at: datetime,
         note: str = "compensation ambiguous timeout",
     ) -> ReconciliationRecord:
-        instant = require_aware(at, field="at")
-        record = ReconciliationRecord(
-            command_id=command_id,
-            status=OutcomeStatus.COMPENSATION_UNKNOWN,
+        """``ACT-T21c``: an ambiguous compensation timeout gives ``COMPENSATION_UNKNOWN``."""
+        return self._open(
+            command_id,
+            OutcomeStatus.COMPENSATION_UNKNOWN,
             idempotent_effect_proven=idempotent_effect_proven,
-            recorded_at=instant,
+            at=at,
             note=note,
         )
-        self._records[command_id] = record
-        return record
 
-    def resolve_with_evidence(self, command_id: str, *, effect_confirmed: bool, at: datetime) -> ReconciliationRecord:
+    def resolve_with_evidence(
+        self, command_id: str, *, evidence: ReconciliationEvidence, at: datetime
+    ) -> ReconciliationRecord:
+        """``ACT-T20a``/``T20b``/``T21d``/``T21e``: positive Evidence of the same command resolves
+        an ambiguous outcome to confirmed/failed (compensated/compensation failed)."""
         instant = require_aware(at, field="at")
-        previous = self._require_record(command_id)
-        if previous.status not in _RESOLVABLE_STATUSES:
-            raise SafetyError("INVALID_RECONCILIATION_TRANSITION", f"cannot resolve from {previous.status.value}")
-        if previous.status is OutcomeStatus.UNKNOWN:
-            new_status = OutcomeStatus.CONFIRMED if effect_confirmed else OutcomeStatus.FAILED
-        else:
-            new_status = OutcomeStatus.COMPENSATED if effect_confirmed else OutcomeStatus.COMPENSATION_FAILED
-        record = ReconciliationRecord(
-            command_id=command_id,
-            status=new_status,
-            idempotent_effect_proven=previous.idempotent_effect_proven,
-            recorded_at=instant,
-            note="resolved by Evidence",
-        )
-        self._records[command_id] = record
-        return record
+        if not isinstance(command_id, str) or not command_id:
+            raise SafetyError("RECONCILIATION_RECORD_INVALID", "command_id must be a non-empty string")
+        with self._lock:
+            previous = self._require_record(command_id)
+            if previous.status not in _RESOLVABLE_STATUSES:
+                raise SafetyError("INVALID_RECONCILIATION_TRANSITION", f"cannot resolve from {previous.status.value}")
+            if not isinstance(evidence, ReconciliationEvidence):
+                raise SafetyError("EVIDENCE_REQUIRED", "only positive Evidence of the command resolves an ambiguous outcome")
+            if evidence.command_id != command_id:
+                raise SafetyError("EVIDENCE_MISMATCH", f"the evidence is about {evidence.command_id!r}, not {command_id!r}")
+            if evidence.observed_at > instant:
+                raise SafetyError("EVIDENCE_INVALID", "the evidence was observed after the resolution time")
+            record = ReconciliationRecord(
+                command_id=command_id,
+                status=_RESOLUTIONS[(previous.status, evidence.finding)],
+                idempotent_effect_proven=previous.idempotent_effect_proven,
+                recorded_at=instant,
+                note="resolved by Evidence",
+                evidence_ref=evidence.evidence_ref,
+                evidence_digest=evidence.content_digest,
+            )
+            return self._commit(record, previous)
 
     def escalate_if_deadline_passed(self, command_id: str, *, at: datetime, deadline: datetime) -> ReconciliationRecord:
+        """``ACT-T20c``/``T24``/``T25``: before the deadline nothing is inferred; after it the
+        outcome is escalated to adjudication, never resolved."""
         instant = require_aware(at, field="at")
         require_aware(deadline, field="deadline")
-        previous = self._require_record(command_id)
-        if previous.status not in _RESOLVABLE_STATUSES:
-            raise SafetyError("INVALID_RECONCILIATION_TRANSITION", f"cannot escalate from {previous.status.value}")
-        if instant < deadline:
-            return previous
-        new_status = OutcomeStatus.INDETERMINATE if previous.status is OutcomeStatus.UNKNOWN else OutcomeStatus.COMPENSATION_INDETERMINATE
-        record = ReconciliationRecord(
-            command_id=command_id,
-            status=new_status,
-            idempotent_effect_proven=previous.idempotent_effect_proven,
-            recorded_at=instant,
-            note="reconciliation deadline passed; adjudication opened",
-        )
-        self._records[command_id] = record
-        return record
+        with self._lock:
+            previous = self._require_record(command_id)
+            if previous.status not in _RESOLVABLE_STATUSES:
+                raise SafetyError("INVALID_RECONCILIATION_TRANSITION", f"cannot escalate from {previous.status.value}")
+            if instant < deadline:
+                return previous
+            new_status = (
+                OutcomeStatus.INDETERMINATE if previous.status is OutcomeStatus.UNKNOWN else OutcomeStatus.COMPENSATION_INDETERMINATE
+            )
+            record = ReconciliationRecord(
+                command_id=command_id,
+                status=new_status,
+                idempotent_effect_proven=previous.idempotent_effect_proven,
+                recorded_at=instant,
+                note="reconciliation deadline passed; adjudication opened",
+            )
+            return self._commit(record, previous)
 
     def require_may_auto_retry(self, command_id: str) -> None:
-        record = self._records.get(command_id)
+        with self._lock:
+            record = self._records.get(command_id)
         if record is None:
             return
         if record.status in _AMBIGUOUS_STATUSES and not record.idempotent_effect_proven:
@@ -672,3 +839,97 @@ class OutcomeReconciler:
                 "AUTO_RETRY_BLOCKED_AMBIGUOUS_NON_IDEMPOTENT",
                 f"{command_id!r} has an ambiguous, non-idempotent-proven outcome and cannot be auto-retried",
             )
+
+    @classmethod
+    def restore(
+        cls,
+        records: Iterable[SealedAuditRecord],
+        *,
+        audit: AuditPort,
+        public_keys: Mapping[str, bytes],
+        actor: str = RECONCILIATION_ACTOR,
+    ) -> OutcomeReconciler:
+        """Rebuild the reconciliation state from the audit chain read back from storage: the
+        chain is verified from genesis (links and signatures), every reconciliation record is
+        checked without conversion and replayed through the same transitions. Anything else is
+        ``RECONCILIATION_AUDIT_INVALID``."""
+        chain = list(records)
+        if any(not isinstance(sealed, SealedAuditRecord) or not isinstance(sealed.record, Mapping) for sealed in chain):
+            raise SafetyError("RECONCILIATION_AUDIT_INVALID", "the audit chain holds an element that is not a sealed record")
+        try:
+            verify_audit_chain(chain, public_keys)
+        except AuditError as error:
+            raise SafetyError("RECONCILIATION_AUDIT_INVALID", f"the audit chain does not verify: {error.reason_code}") from error
+        except Exception as error:
+            raise SafetyError(
+                "RECONCILIATION_AUDIT_INVALID", f"the audit chain does not verify: {type(error).__name__}"
+            ) from error
+        restored = cls(audit=audit, actor=actor)
+        with restored._lock:
+            for sealed in chain:
+                if sealed.record.get("event_type") != RECONCILIATION_EVENT:
+                    continue
+                record = _restored_record(sealed, actor=actor)
+                previous = restored._records.get(record.command_id)
+                if sealed.record["detail"]["previous_status"] != (None if previous is None else previous.status.value):
+                    raise SafetyError(
+                        "RECONCILIATION_AUDIT_INVALID", f"record {sealed.sequence} does not follow the replayed status"
+                    )
+                if record.status not in _RECONCILIATION_TRANSITIONS.get(None if previous is None else previous.status, frozenset()):
+                    raise SafetyError(
+                        "RECONCILIATION_AUDIT_INVALID", f"record {sealed.sequence} is not a reconciliation transition"
+                    )
+                restored._records[record.command_id] = record
+        return restored
+
+
+def _restored_record(sealed: SealedAuditRecord, *, actor: str) -> ReconciliationRecord:
+    def invalid(message: str) -> SafetyError:
+        return SafetyError("RECONCILIATION_AUDIT_INVALID", f"record {sealed.sequence}: {message}")
+
+    stored = sealed.record
+    if stored.get("actor") != actor:
+        raise invalid("the reconciliation record was not written by the reconciler")
+    detail = stored.get("detail")
+    if not isinstance(detail, Mapping) or set(detail) != _DETAIL_FIELDS:
+        raise invalid("the reconciliation detail does not have its fields")
+    status_value, command_id = detail["status"], stored.get("resource")
+    if stored.get("correlation_id") != command_id or stored.get("outcome") != "PERMITTED":
+        raise invalid("the correlation or the outcome is not that of a reconciliation record")
+    previous_value = detail["previous_status"]
+    if previous_value is not None and (
+        not isinstance(previous_value, str) or previous_value not in {item.value for item in OutcomeStatus}
+    ):
+        raise invalid("the previous status is outside the closed set")
+    if not isinstance(status_value, str) or status_value not in {item.value for item in OutcomeStatus}:
+        raise invalid("the status is outside the closed set")
+    if stored.get("reason_code") != status_value or not isinstance(command_id, str) or not command_id:
+        raise invalid("the status or the command does not match the record")
+    if not isinstance(detail["idempotent_effect_proven"], bool) or not isinstance(detail["note"], str):
+        raise invalid("the idempotency proof or the note is malformed")
+    status = OutcomeStatus(status_value)
+    evidence_ref, evidence_digest = detail["evidence_ref"], detail["evidence_digest"]
+    resolved = status in {OutcomeStatus.CONFIRMED, OutcomeStatus.FAILED, OutcomeStatus.COMPENSATED, OutcomeStatus.COMPENSATION_FAILED}
+    if resolved:
+        if not isinstance(evidence_ref, str) or not evidence_ref or stored.get("authority_ref") != evidence_ref:
+            raise invalid("a resolution without its Evidence reference")
+        if not isinstance(evidence_digest, str) or _SHA256_URN.fullmatch(evidence_digest) is None:
+            raise invalid("a resolution without its Evidence digest")
+    elif evidence_ref is not None or evidence_digest is not None:
+        raise invalid("Evidence on a record that is not a resolution")
+    occurred_at = stored.get("occurred_at")
+    if not isinstance(occurred_at, str):
+        raise invalid("the record time is malformed")
+    try:
+        recorded_at = parse_utc_timestamp(occurred_at)
+    except Exception as error:
+        raise invalid("the record time is malformed") from error
+    return ReconciliationRecord(
+        command_id=command_id,
+        status=status,
+        idempotent_effect_proven=detail["idempotent_effect_proven"],
+        recorded_at=recorded_at,
+        note=detail["note"],
+        evidence_ref=evidence_ref,
+        evidence_digest=evidence_digest,
+    )

@@ -1263,6 +1263,42 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0052.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0052.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0052.log",
+        # OCOR-DEV-REM-0053 (NCP-U07 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): the C6 action path
+        # (the thirteen canonical C6 records with the frozen GatePackage, G-CONTRACT on the signed active
+        # ActionType, the signed CapabilityLease with the LeaseValidator, the dispatch ledger and the
+        # EMISSION-FENCE, the composition root), the shared C6 test support module, the RED test, the unit
+        # record, the decision request of the unit that enters main with it
+        # (NCP-U07-C8-TOOL-RUNTIME-LEASE, option 2), and the requalifications of 0030, 0031, 0042, 0043,
+        # 0044 and 0058 (realigned and adapted tests, NCP-UNBINDABLE-REQUALIFICATIONS) and of 0005, 0050
+        # and 0082 forced by this allowlist.
+        "ocor-runtime/src/ocor_runtime/c6/composition.py",
+        "ocor-runtime/src/ocor_runtime/c6/contract.py",
+        "ocor-runtime/src/ocor_runtime/c6/dispatch.py",
+        "ocor-runtime/src/ocor_runtime/c6/records.py",
+        "ocor-runtime/tests/tasks/c6_action_fixture.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py",
+        "reports/development/decision_requests/NCP-U07-C8-TOOL-RUNTIME-LEASE.md",
+        "reports/assurance/OCOR-DEV-REM-0053-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+        "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0053.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0053.log",
+        "reports/evidence/G3/OCOR-DEV-0030.requalified-rem0053.json",
+        "reports/evidence/G3/OCOR-DEV-0030.requalified-rem0053.log",
+        "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0053.json",
+        "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0053.log",
+        "reports/evidence/G4/OCOR-DEV-0042.requalified-rem0053.json",
+        "reports/evidence/G4/OCOR-DEV-0042.requalified-rem0053.log",
+        "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0053.json",
+        "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0053.log",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0053.json",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0053.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0053.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0053.log",
+        "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0053.json",
+        "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0053.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0053.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0053.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

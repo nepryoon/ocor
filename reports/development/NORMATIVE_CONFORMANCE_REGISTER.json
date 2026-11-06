@@ -2833,18 +2833,30 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-003",
         "NFR-005",
         "FR-111"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_g_approval_admits_only_the_signed_bound_quorum_of_distinct_humans",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_release_change_invalidates_the_approvals",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_g_decision_admits_only_a_signed_unexpired_bounded_decision",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_approval_set_serves_one_decision_only",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_tampered_or_foreign_approval_set_is_refused"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_001_conforms"
+      },
       "seed_ref": "C6-1",
       "severity": "HIGH",
       "severity_basis": "FR-003, NFR-005 and FR-111 are P0 PoC",
       "statement": "On the action path Approval and Decision are free values with no signature, no binding to proposal digest, revision, release or validity window, and no expiry (Approval: action_id, approver, approved, approved_at; Decision: action_id, decided_by, accepted, rationale, decided_at); the engine never compares the approver with the proposer, so a self-approval is accepted, and it does not use HumanGateCoordinator, which does exclude the proposer. A sealed test builds the Approval by hand.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -2918,18 +2930,34 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-079",
         "NFR-029",
         "FR-080"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_g_contract_admits_only_the_signed_active_action_type",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_action_type_without_its_reliability_fields_is_not_published",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_gate_disposition_follows_the_risk_class_and_the_target",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_disposition_without_a_valid_risk_classification_is_denied",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_engine_denies_at_every_gate_before_any_effect",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_retry_of_an_admitted_action_replays_its_commit_without_reusing_the_approvals_elsewhere",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_admitted_action_is_not_retried_after_its_decision_expired",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_catalog_and_the_proposal_builder_refuse_what_is_not_a_published_action_type",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_malformed_authorized_decision_is_refused_before_its_gate_package_is_traced"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_002_conforms"
+      },
       "seed_ref": "C6-2",
       "severity": "HIGH",
       "severity_basis": "FR-079 and NFR-029 are P0 PoC",
       "statement": "The risk class is declared by the proposer (ActionProposal.risk_bearing: bool) instead of coming from the signed ActionType; with risk_bearing=False the Human Gate is skipped and the aggregate is written, although the target is canonical; there is no G-CONTRACT and no denial for a missing or invalid risk classification. A sealed test asserts that a non-risk-bearing action executes without approval.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -3000,17 +3028,35 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-077",
         "FR-008"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_transition_without_a_guard_evaluation_is_refused_before_any_effect",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_guard_evaluation_not_bound_to_the_transition_and_action_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_every_transition_from_its_source_state_reaches_its_destination",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_every_transition_from_a_state_other_than_its_source_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_cancel_or_stop_transition_requires_the_stop_on_the_snapshot",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_without_a_stop_on_the_snapshot_the_emission_proceeds",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_trace_of_a_completed_action_is_in_canonical_order",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_failed_effect_persistence_leaves_the_state_unchanged_and_a_retry_recovers",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_two_engines_sharing_the_state_store_never_both_apply_from_the_same_state",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_malformed_guard_evaluation_is_the_typed_refusal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_guard_evaluation_at_an_instant_that_is_not_aware_is_the_temporal_refusal"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_003_conforms"
+      },
       "seed_ref": "C6-3",
       "severity": "HIGH",
       "severity_basis": "FR-077 and FR-008 are P0 PoC; BA-05 (LLD v1.1 :369) requires guards and precedence",
       "statement": "GovernedActionFSM.apply (and its durable Temporal form ActionEffectsWorkflow.persist_effect) checks neither the current state nor the guard: any of the 44 transitions is persisted on request, so for example ACT-T30 (CANONICAL_COMMIT_PENDING -> EXECUTION_CONFIRMED) is recorded for an action with no prior state; the ACT-T23 precedence over ACT-T14/T19/T29 is not implemented. The 0042 tests apply each transition in isolation and have no guard-negative or invalid-source case; a REM-0039 test applies ACT-T14 on a fresh action.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -3103,17 +3149,32 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-162",
         "NFR-047"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_lease_longer_than_pt5s_is_never_issued",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_lease_validator_consumes_only_the_signed_bound_current_lease",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_lease_signature_is_verified_at_the_boundary_never_taken_from_the_caller",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_consumption_is_rolled_back_when_the_delivery_attempt_is_not_recorded",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_g_freshness_invalidates_on_every_drift_before_the_send",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_g_dispatch_invalidates_before_the_send",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_lease_that_is_not_i_json_is_lease_invalid_at_the_validator_and_the_engine",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_signed_lease_is_read_from_its_wire_mapping_only_in_its_closed_form"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry); the C8 tool runtime mention of the statement (c8/tool_runtime.py on the legacy c6_capabilities lease) is resolved by NCP-U10 through NCR-C8-008 (PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05), option 2), not by this unit",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_004_conforms"
+      },
       "seed_ref": "C6-4",
       "severity": "HIGH",
       "severity_basis": "violates the Capability Lease contract of LLD v1.1 \u00a70.2; FR-162 is P0 PoC",
       "statement": "The normative CapabilityLease (closed record bound to effective principal, delegation, action instance, GovernedContext digest, GatePackage digest, stop epoch and fencing token, at most PT5S, single use per emission attempt) and its LeaseConsumptionLedger exist in kernel/governance.py but are used only by the Temporal lease-state adapter; the engine, the C8 tool runtime and the legacy fence use the legacy c6_capabilities lease (subject, capabilities, resources, caller-chosen TTL, no GCS/GatePackage/fencing binding), and the engine consumes it at authorisation, before the commit, not at emission. A sealed test issues a one-hour lease on the action path.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -3183,17 +3244,27 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-078",
         "FR-162"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_engine_sends_nothing_to_c3_when_the_lease_or_the_fence_refuses",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_fence_takes_the_stop_answers_without_conversion",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_c3_revision_answered_in_another_type_invalidates_before_the_send"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_005_conforms"
+      },
       "seed_ref": "C6-5",
       "severity": "HIGH",
       "severity_basis": "FR-078 and FR-162 are P0 PoC",
       "statement": "On the engine path the canonical commit happens before the fence, and the fence is the legacy c7_emission.EmissionFence called with no lease, marking or clearance, so it checks only registration, integrity and per-aggregate order: G-FRESHNESS (revision, commit, GCS, policy, authority, approval set, release, adapter, watermark, ConflictScope) and G-DISPATCH (stop epoch, lease, fencing token, audit, circuit breaker, idempotency key, deadline, command digest) are not evaluated, and no DeliveryAttempt is recorded in the same transaction.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -3261,20 +3332,34 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-008",
         "FR-031",
         "FR-033",
         "FR-076"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_every_consumer_recomputes_the_gate_package_digest",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_command_carries_only_the_decided_parameters_within_the_package_window",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_outcome_assessment_is_admitted_only_by_new_evidence",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_execution_result_requires_an_attempt_that_passed_the_fence",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_record_with_a_malformed_field_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_parameters_nested_beyond_the_bound_or_cyclic_are_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_result_and_assessment_factories_parse_their_refs_as_the_records_do"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_006_conforms"
+      },
       "seed_correction": "list extended from seven to ten records after re-verification",
       "seed_ref": "C6-6",
       "severity": "HIGH",
       "severity_basis": "FR-008, FR-031, FR-033 and FR-076 are P0 PoC",
       "statement": "Ten of the thirteen distinct immutable C6 records of LLD v1.1 \u00a72.6 have no implementation in ocor_runtime: PolicyAuthorityDecision, ApprovalSet, ActionIntent, GatePackage, ActionCommand, DeliveryAttempt, ExecutionResult, OutcomeAssessment, ConflictScope and IndeterminateEffectAdjudication (only ActionProposal, Approval and Decision exist, in reduced form; C3 has a store-level C3DeliveryAttempt document, not the C6 record).",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -3336,17 +3421,38 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-163",
         "FR-076"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_terminal_outcome_is_never_overwritten",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_open_reconciliation_is_not_reopened",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_ambiguous_outcome_is_resolved_only_by_positive_evidence_of_its_command",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_resolution_records_the_evidence_it_rests_on",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_every_reconciliation_record_is_appended_to_the_signed_audit_chain_and_restored",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_unavailable_audit_changes_no_reconciliation_state",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_engine_reconciles_only_through_an_audited_reconciler",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_ambiguous_send_resolved_by_evidence_is_never_sent_again",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_unrecordable_ambiguous_send_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_c3_commit_without_a_bound_receipt_on_execute_is_execution_unknown",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_failure_of_the_evidence_resolution_before_the_send_is_the_typed_refusal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_malformed_element_of_the_read_back_chain_is_reconciliation_audit_invalid",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_resolution_of_a_malformed_command_id_is_the_typed_refusal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_reconciliation_record_not_written_by_the_reconciler_is_never_restored"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_007_conforms"
+      },
       "seed_ref": "C6-7",
       "severity": "HIGH",
       "severity_basis": "FR-163 and FR-076 are P0 PoC",
       "statement": "Ambiguous-outcome handling: OutcomeReconciler.mark_ambiguous unconditionally replaces any record, so a terminal EXECUTION_CONFIRMED becomes EXECUTION_UNKNOWN; resolve_with_evidence takes a boolean effect_confirmed and no Evidence reference; reconciliation state is in memory; and on the engine path the legacy fence drain re-emits every pending outbox event after a failed or timed-out send without passing through reconciliation, i.e. a blind retry.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -3407,18 +3513,28 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-079",
         "FR-003"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_approval_obligation_follows_the_risk_class",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_without_a_valid_risk_classification_the_mutation_is_denied",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_r3_approval_set_ends_with_the_earliest_approval_expiry"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_008_conforms"
+      },
       "seed_correction": "severity raised from MEDIUM to HIGH: FR-079 and FR-003 are P0 PoC",
       "seed_ref": "C6-8",
       "severity": "HIGH",
       "severity_basis": "FR-079 and FR-003 are P0 PoC",
       "statement": "The ApprovalPolicy (required roles, minimum signatories, TTL) is supplied by the caller instead of being derived from the risk class and operation, so an R3_HIGH_IMPACT action can be approved by one signatory or without Domain and National Approver roles; the TTL is checked per signature from its own signing time, not as ApprovalSet expiry ten minutes after the second signature.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -3479,17 +3595,30 @@
       ],
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-118",
         "FR-053"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_promotion_without_its_c6_action_records_is_refused_before_c3",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_promotion_action_records_not_bound_to_the_proposal_and_gate_are_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_promotion_is_denied_at_every_c6_gate_before_c3",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_confirmed_promotion_is_never_sent_again",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_unanswered_promotion_send_is_execution_unknown_and_never_sent_again",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_consumer_without_the_c6_engine_never_reaches_c3"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_009_conforms"
+      },
       "seed_ref": "C6-9",
       "severity": "MEDIUM",
       "severity_basis": "closed elements of ADD v1.3 \u00a74.1 and LLD v1.1 \u00a73.2; the promotion does pass C6 control, approval and decision, so no P0 PoC acceptance criterion (FR-118 'no direct canonical promotion') is shown violated",
       "statement": "Memory promotion to canonical state (C6MemoryPromotionConsumer.commit) calls c3.commit directly after its own control checks, without the C6 FSM, the normative capability lease or the EMISSION-FENCE of ACT-T29, and accepts any risk class 0-3, including R0 and R1, which admit no mutation.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -3823,17 +3952,39 @@
       "observation_ref": "OBS-C6-COMPOSITION",
       "plan_unit": "NCP-U07",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+      "remediation_unit": "OCOR-DEV-REM-0053",
       "requirement_ids": [
         "FR-008",
         "FR-077"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_engine_is_never_composed_without_its_fsm_and_trace",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_root_composes_only_a_canonical_path_fenced_on_its_emergency_stop",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_composed_emergency_stop_cancels_the_action_before_the_send",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_composed_break_glass_never_overrides_the_composed_stop_and_is_audited",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_denied_authority_ends_the_action_denied_and_it_is_never_resumed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_non_risk_bearing_action_is_denied_at_the_control_check",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_missing_approval_leaves_the_action_pending_and_the_approval_resumes_it",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_rejected_decision_ends_the_action_decision_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_material_drift_invalidates_the_action_before_the_send",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_transient_dispatch_condition_keeps_the_action_at_the_pre_dispatch_check",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_confirmed_action_is_not_traced_again",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_outcome_is_assessed_only_for_a_confirmed_action_with_new_evidence",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_an_unavailable_trace_stops_the_action_before_any_effect",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_a_promotion_traverses_the_c6_states_in_canonical_order",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_the_audited_trace_refuses_a_context_that_overrides_the_transition_or_is_not_text"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py::test_ncr_c6_014_conforms"
+      },
       "seed_ref": null,
       "severity": "HIGH",
       "severity_basis": "FR-008 and FR-077 are P0 PoC",
       "statement": "From observation OBS-C6-COMPOSITION: no composition root under ocor-runtime/src, scripts or deploy instantiates GovernedActionEngine, GovernedActionFSM, HumanGateCoordinator, EmergencyStopController or BreakGlassController (only OutcomeReconciler, inside the C8 tool runtime); Human Gate, safety, the normative lease and the FSM exist as separate pieces that are not composed into the action path, so no runtime trace traverses the C6 states in order.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -6450,6 +6601,110 @@
       "verification": {
         "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c2/gateway.py').read(); print('C2-13 gateway translates TypeDBUnavailableError:', 'TypeDBUnavailableError' in s)\"",
         "outcome": "prints 'C2-13 gateway translates TypeDBUnavailableError: False'; lines 379-380 build CONTROL_PLANE_UNAVAILABLE for any other exception. CONFIRMED at a45834659767b3f2abea041342e4f1c6c59d50e4."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064"
+      ],
+      "code_refs": [
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "107",
+          "note": "C8 imports the legacy c6_capabilities CapabilityAuthority and CapabilityLease",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "303",
+          "note": "bind_stop_controller on the legacy authority",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "309",
+          "note": "unaudited OutcomeReconciler built by default",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "324-337",
+          "note": "authorize_effect: the effect channel re-authorises the legacy lease",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "356-358",
+          "note": "invoke consumes the legacy lease at authorisation (consume=True)",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        },
+        {
+          "commit": "6e116249ae0a9e313b795ecdd9ac18be3b9020f9",
+          "lines": "432-438",
+          "note": "_authorize_tool re-authorises the legacy lease at every dispatch",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-008",
+      "norm_refs": [
+        {
+          "lines": "3220",
+          "note": "ADD v1.3 section 5.2 rule 5: a revocation invalidates new calls and capability leases not yet consumed",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3360",
+          "note": "ADD v1.3: every mutative call presents a capability lease with the current stop_epoch and a TTL of at most 5 seconds",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3856",
+          "note": "ADD v1.3 Part II section 2.12: tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "404",
+          "note": "FR-162: pre-dispatch revalidation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "271",
+          "note": "NFR-036: kill switch fail-safe, no new tool call after the effective revocation",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "407",
+          "note": "FR-163: an ambiguous external outcome is not retried automatically",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U10",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U07-C8-TOOL-RUNTIME-LEASE.md",
+        "sha256": "030eed900065590befbe2c96b557082757a1733f08531a81116acf5a28d0b33a"
+      },
+      "provenance": "C8 tool runtime part of NCR-C6-004, registered by PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05), option 2",
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-162",
+        "NFR-036",
+        "FR-163"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "P0 PoC requirements FR-162, NFR-036 and FR-163 (Register v1.1 lines 404, 271 and 407): the tool runtime authorises with the legacy lease instead of re-evaluating live capability, Delegation, policy and stop epoch",
+      "statement": "The C8 tool runtime still authorises every tool call and every effect with the legacy c6_capabilities CapabilityAuthority and its CapabilityLease (capability tool:<name> over a whole expression, caller-chosen TTL, no action_instance_id, gate_package_digest or governed_context_digest), consumed at authorisation and re-authorised at each dispatch, instead of re-evaluating live capability, Delegation, policy and stop epoch at every dispatch; it builds by default an OutcomeReconciler that writes no audit record, so an EXECUTION_UNKNOWN tool outcome is not recorded on the signed audit port.",
+      "status": "OPEN",
+      "test_refs": [],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c8/tool_runtime.py').read(); print('C8-8 tool runtime imports the legacy lease:', 'from ..c6_capabilities import CapabilityAuthority, CapabilityLease' in s, '| unaudited default reconciler:', 'OutcomeReconciler() if reconciler is None' in s)\"",
+        "outcome": "prints 'C8-8 tool runtime imports the legacy lease: True | unaudited default reconciler: True'; line 358 consumes the legacy lease at authorisation (consume=True) and lines 432-438 re-authorise it on the legacy authority at every dispatch. CONFIRMED at 6e116249ae0a9e313b795ecdd9ac18be3b9020f9."
       }
     }
   ],
@@ -20545,6 +20800,41 @@
             "NFR-036",
             "FR-128"
           ]
+        },
+        {
+          "criterion": "Per PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05) option 2: the C8 tool runtime no longer uses ocor_runtime.c6_capabilities (neither CapabilityAuthority nor its CapabilityLease) and at every dispatch re-evaluates live capability, Delegation, policy and stop epoch (ADD v1.3 lines 3220 and 3856); the runtime builds no unaudited OutcomeReconciler by default and records every EXECUTION_UNKNOWN outcome on the reconciler that writes to the signed audit port (Register FR-163)",
+          "entry": "NCR-C8-008",
+          "norm_refs": [
+            {
+              "lines": "3220",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3360",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3856",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "404",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "271",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "407",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-162",
+            "NFR-036",
+            "FR-163"
+          ]
         }
       ],
       "closed_scope_note": "only the entries in resolves; entries of other units, DECISION_REQUIRED entries and the legacy slice are out of scope",
@@ -20759,6 +21049,13 @@
           "fails_on_current_code_because": "7 failed, 4 passed: the seven revocation cases fail with 'DID NOT RAISE ToolRuntimeError' (e.g. test_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool). CONFIRMED on the current main head (runtime identical to main f5433029b97b); the defect is not refuted.",
           "reproduction": "git show 81a8b76:ocor-runtime/tests/tasks/test_ocor_dev_rem_0043.py > /tmp/rem0043red/test_ocor_dev_rem_0043.py && cd /tmp/rem0043red && PYTHONPATH=<repo>/ocor-runtime/src <repo>/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q test_ocor_dev_rem_0043.py (RED test file sha256 791a22289f69cf71819599f390ff66e3431be5c3417b71f342d553ba5a1998cd, run outside the repository against the runtime of main f5433029b97b)",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c8_007_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C8-008",
+          "fails_on_current_code_because": "prints 'C8-8 tool runtime imports the legacy lease: True | unaudited default reconciler: True'; line 358 consumes the legacy lease at authorisation (consume=True) and lines 432-438 re-authorise it on the legacy authority at every dispatch. CONFIRMED at 6e116249ae0a9e313b795ecdd9ac18be3b9020f9.",
+          "reproduction": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c8/tool_runtime.py').read(); print('C8-8 tool runtime imports the legacy lease:', 'from ..c6_capabilities import CapabilityAuthority, CapabilityLease' in s, '| unaudited default reconciler:', 'OutcomeReconciler() if reconciler is None' in s)\"",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_<NNNN>.py::test_ncr_c8_008_conforms"
         }
       ],
       "requalifications": {
@@ -20792,7 +21089,8 @@
         "NCR-C8-003",
         "NCR-C8-004",
         "NCR-C8-005",
-        "NCR-C8-007"
+        "NCR-C8-007",
+        "NCR-C8-008"
       ],
       "scope": "C8 Governed Agent Kernel: AgentRun/Task/Assignment/Commitment/Handoff/Dissent/DecisionProposal/ToolInvocation records in C8 state (not canonical aggregates), kernel-attested HandoffEnvelope with sender bound to the transport Principal, roles and task lifecycle with cycle/depth/timeout/termination, dissent severity and blocking, contract-bound tool registry (mcp-tool-contract:1.2) with schema, taint and egress checks and the contract error codes, live policy/autonomy-tier/instruction-eligibility/capability/delegation re-evaluation at every dispatch (with the OCOR-DEV-REM-0043 correction), multidimensional budget, a current kernel with no fail-open default",
       "status": "PROPOSED"

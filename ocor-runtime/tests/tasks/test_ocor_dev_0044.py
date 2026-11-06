@@ -14,9 +14,11 @@ slices).
 
 from __future__ import annotations
 
+import hashlib
 import threading
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
@@ -368,6 +370,20 @@ def test_a_use_without_a_review_reference_is_refused(controller: BreakGlassContr
 # --- OutcomeReconciler --------------------------------------------------------
 
 
+def _evidence(command_id: str, *, effect: bool = True) -> Any:
+    """Positive Evidence of effect, or of no effect, observed for ``command_id``: the only
+    input that resolves an ambiguous outcome (NCR-C6-007, LLD v1.1 :285-286)."""
+    from ocor_runtime.c6 import safety
+
+    return safety.ReconciliationEvidence(
+        evidence_ref=f"urn:ocor:evidence:{command_id}",
+        command_id=command_id,
+        finding="EFFECT_OBSERVED" if effect else "NO_EFFECT_OBSERVED",
+        observed_at=NOW,
+        content_digest="urn:sha256:" + hashlib.sha256(command_id.encode("utf-8")).hexdigest(),
+    )
+
+
 def test_an_ambiguous_non_idempotent_effect_cannot_auto_retry() -> None:
     reconciler = OutcomeReconciler()
     reconciler.mark_ambiguous("cmd-1", idempotent_effect_proven=False, at=NOW)
@@ -393,7 +409,7 @@ def test_evidence_of_effect_resolves_an_ambiguous_execution_to_confirmed() -> No
     reconciler = OutcomeReconciler()
     reconciler.mark_ambiguous("cmd-3", idempotent_effect_proven=False, at=NOW)
 
-    record = reconciler.resolve_with_evidence("cmd-3", effect_confirmed=True, at=NOW)
+    record = reconciler.resolve_with_evidence("cmd-3", evidence=_evidence("cmd-3"), at=NOW)
 
     assert record.status.value == "EXECUTION_CONFIRMED"
     reconciler.require_may_auto_retry("cmd-3")  # no longer ambiguous, retry gate lifted
@@ -403,7 +419,7 @@ def test_evidence_of_no_effect_resolves_an_ambiguous_execution_to_failed() -> No
     reconciler = OutcomeReconciler()
     reconciler.mark_ambiguous("cmd-4", idempotent_effect_proven=False, at=NOW)
 
-    record = reconciler.resolve_with_evidence("cmd-4", effect_confirmed=False, at=NOW)
+    record = reconciler.resolve_with_evidence("cmd-4", evidence=_evidence("cmd-4", effect=False), at=NOW)
 
     assert record.status.value == "EXECUTION_FAILED"
 
@@ -412,11 +428,11 @@ def test_evidence_resolves_an_ambiguous_compensation_to_compensated_or_compensat
     reconciler = OutcomeReconciler()
     reconciler.mark_compensation_ambiguous("cmd-5", idempotent_effect_proven=False, at=NOW)
 
-    success = reconciler.resolve_with_evidence("cmd-5", effect_confirmed=True, at=NOW)
+    success = reconciler.resolve_with_evidence("cmd-5", evidence=_evidence("cmd-5"), at=NOW)
     assert success.status.value == "COMPENSATED"
 
     reconciler.mark_compensation_ambiguous("cmd-6", idempotent_effect_proven=False, at=NOW)
-    failure = reconciler.resolve_with_evidence("cmd-6", effect_confirmed=False, at=NOW)
+    failure = reconciler.resolve_with_evidence("cmd-6", evidence=_evidence("cmd-6", effect=False), at=NOW)
     assert failure.status.value == "COMPENSATION_FAILED"
 
 
@@ -450,16 +466,16 @@ def test_a_command_with_no_reconciliation_record_cannot_be_queried_or_resolved()
     with pytest.raises(SafetyError, match="UNKNOWN_COMMAND"):
         reconciler.status("never-seen")
     with pytest.raises(SafetyError, match="UNKNOWN_COMMAND"):
-        reconciler.resolve_with_evidence("never-seen", effect_confirmed=True, at=NOW)
+        reconciler.resolve_with_evidence("never-seen", evidence=_evidence("never-seen"), at=NOW)
 
 
 def test_an_already_resolved_command_cannot_be_resolved_again() -> None:
     reconciler = OutcomeReconciler()
     reconciler.mark_ambiguous("cmd-9", idempotent_effect_proven=False, at=NOW)
-    reconciler.resolve_with_evidence("cmd-9", effect_confirmed=True, at=NOW)
+    reconciler.resolve_with_evidence("cmd-9", evidence=_evidence("cmd-9"), at=NOW)
 
     with pytest.raises(SafetyError, match="INVALID_RECONCILIATION_TRANSITION"):
-        reconciler.resolve_with_evidence("cmd-9", effect_confirmed=True, at=NOW)
+        reconciler.resolve_with_evidence("cmd-9", evidence=_evidence("cmd-9"), at=NOW)
 
 
 # --- Integration: stop precedence combined with reconciliation ---------------

@@ -4,8 +4,10 @@ The memory port creates a content-free, immutable proposal in the protected
 audit store. It has no canonical writer, security writer or memory writer.
 A proposal is never an Approval, Decision, Authority or canonical assertion.
 Only a separately wired C6 consumer may turn a reviewed proposal into a
-GovernedCanonicalCommitCommand. Consumption revalidates the exact source,
-GCS, live retrieval/promotion policy, stop epoch and deadline.
+GovernedCanonicalCommitCommand, and it sends that command only through the C6
+action path of every canonical mutation (ADD v1.3 :2789, LLD v1.1 :238,
+NCR-C6-009). Consumption revalidates the exact source, GCS, live
+retrieval/promotion policy, stop epoch and deadline.
 
 Ports are trusted composition dependencies, never caller-supplied members.
 Audit/receipt persistence is an authority boundary: digests detect accidental
@@ -17,7 +19,7 @@ from __future__ import annotations
 
 import hmac
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta
 from types import MappingProxyType
@@ -379,12 +381,15 @@ class MemoryPromotionService:
 # issued by a separate C6 authority, it never issues them from memory.
 
 from ..c3.ports import CommitReceipt, GovernedCanonicalCommitCommand, GovernedCommitPort  # noqa: E402
+from ..c6.dispatch import SignedCapabilityLease  # noqa: E402
+from ..c6.engine import AuthorizedDecision, GovernedActionEngine, GovernedActionError  # noqa: E402
 from ..c6.human_gate import (  # noqa: E402
     ApprovalPolicy,
     GateSignature,
     HumanGateCoordinator,
     HumanGateError,
 )
+from ..c6.records import ActionProposal, ApprovalSet  # noqa: E402
 from ..kernel.canonical import canonical_bytes, parse_i_json  # noqa: E402
 from ..kernel.governance import (  # noqa: E402
     Authority,
@@ -410,6 +415,24 @@ class SignedPromotionGate:
     signature: str
 
 
+@dataclass(frozen=True, slots=True)
+class PromotionAction:
+    """The signed C6 records of one promotion action (NCR-C6-009): the ActionProposal pinned to
+    the signed promotion ActionType, the ApprovalSet of the Human Gate, the Authority's Decision
+    on the frozen GatePackage and the CapabilityLease of the emission attempt. C6 holds them for
+    the recorded proposal; the engine verifies each one at its gate (ADD v1.3 :2847-2854)."""
+
+    proposal: ActionProposal
+    approval: ApprovalSet | None
+    decision: AuthorizedDecision | None
+    lease: SignedCapabilityLease
+
+
+def promotion_parameters(proposal_audit_ref: str, proposal: MemoryPromotionProposal) -> dict[str, str]:
+    """The typed parameters of the promotion ActionProposal: the recorded proposal it decides."""
+    return {"proposal_audit_ref": proposal_audit_ref, "proposal_digest": proposal.digest}
+
+
 class PromotionGateVerifier(Protocol):
     def verify(self, payload: bytes, signature: str) -> bool: ...
 
@@ -429,6 +452,10 @@ class PromotionControlStore(Protocol):
     def verified_delegation(self, binding_ref: str) -> str | None: ...
 
     def revoked(self, control_ref: str) -> bool: ...
+
+    def action(self, proposal_audit_ref: str) -> PromotionAction | None:
+        """The signed C6 records of the promotion action of the recorded proposal, or None."""
+        ...
 
 
 class PromotionCommandIssuer(Protocol):
@@ -452,6 +479,10 @@ class PromotionCommitPolicy(Protocol):
     ) -> MemoryPolicyDecision: ...
 
 
+class _SentWithoutOutcome(Exception):
+    """The command left for C3 and no receipt bound to it came back."""
+
+
 def promotion_gate_digest(body: Mapping[str, object]) -> str:
     """Digest the entire frozen gate, omitting only its two self-references."""
     command, decision = body["command"], body["decision"]
@@ -472,6 +503,14 @@ class C6MemoryPromotionConsumer:
     and signatures come exclusively from the separately trusted C6 authority.
     Its signature binds every command field and approval to the exact proposal.
     No C3 call occurs for a missing, rejected, stale, revoked or altered gate.
+
+    The consumer never sends to C3 itself (NCR-C6-009): the C6 engine sends the
+    command through ``c3`` on the path of every canonical mutation (ADD v1.3
+    :2789), with the signed C6 records of the promotion action bound to the
+    proposal and to the gate command: G-CONTRACT (the risk class is the signed
+    ActionType's; R0 and R1 admit no mutation, ADD v1.3 :3302-3303),
+    G-AUTHORITY, the Human Gate, G-APPROVAL, G-DECISION and the EMISSION-FENCE
+    before the send (LLD v1.1 :302).
     """
 
     def __init__(
@@ -479,6 +518,7 @@ class C6MemoryPromotionConsumer:
         verifier: PromotionGateVerifier, human_gate: HumanGateCoordinator,
         policy: PromotionCommitPolicy, c3: GovernedCommitPort, issuer: PromotionCommandIssuer,
         clock: TrustedClock, audit: RetrievalAuditSink, commit_capability: str,
+        engine: GovernedActionEngine,
     ) -> None:
         # The canonical-commit capability is fixed by trusted composition; a
         # signed gate cannot authorize C3 under an unrelated capability.
@@ -487,7 +527,7 @@ class C6MemoryPromotionConsumer:
         self._capability = commit_capability
         self._proposals, self._controls, self._verifier = proposals, controls, verifier
         self._human_gate, self._policy, self._c3 = human_gate, policy, c3
-        self._issuer = issuer
+        self._issuer, self._engine = issuer, engine
         self._clock, self._audit = clock, audit
 
     def _record(self, action: str, binding: VerifiedGovernedContextBinding | None, **fields: object) -> None:
@@ -548,6 +588,7 @@ class C6MemoryPromotionConsumer:
                                and b.evidence_ref in proposal.evidence_refs for b in command.claim_source_bindings)):
                 raise _error("C6_COMMAND_BINDING_MISMATCH")
             authority, approval_policy, signatures = self._controls_from_body(body, command, proposal, verified)
+            action = self._action(proposal_audit_ref, body, command, proposal)
             # Audit intent before dispatch; an unavailable audit cannot cause C3
             # to advance. Revalidation below covers changes during the audit I/O.
             self._record("commitMemoryPromotion.intent", verified,
@@ -563,35 +604,91 @@ class C6MemoryPromotionConsumer:
             self._require_live(body, command, proposal, verified, authority, approval_policy, signatures)
             if self._clock.now() >= proposal.deadline:
                 raise _error("DEADLINE_EXCEEDED")
-            # C3 admits only a command bound to the GatePackage C6 froze for it, with
-            # the Decision and Authority C6 signed (ADD v1.3 :342). Every field of the
-            # verified gate command is kept; only gate_package_digest is C6's. The
-            # Decision expires with the gate Decision; the Authority keeps the verified
-            # Authority window.
-            issued = self._issuer.issue(
-                {k: v for k, v in raw_command.items() if k != "gate_package_digest"},
-                decision_expires_at=parse_utc_timestamp(str(self._gate_decision(body)["valid_until"])),
-                authority_not_before=authority.not_before, authority_expires_at=authority.expires_at,
-            )
-            if (not isinstance(issued, GovernedCanonicalCommitCommand)
-                    or replace(issued, gate_package_digest=command.gate_package_digest) != command):
-                raise _error("C6_COMMAND_BINDING_MISMATCH")
-            dispatched = True
-            receipt = self._c3.commit(issued)
-            if not isinstance(receipt, CommitReceipt):
-                raise _error("C3_RECEIPT_INVALID")
-            receipt.verify(issued)
+            engine = self._engine
+            if not isinstance(engine, GovernedActionEngine):
+                raise _error("C6_CONTROL_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
+            decision_expires_at = parse_utc_timestamp(str(self._gate_decision(body)["valid_until"]))
+
+            def issue() -> GovernedCanonicalCommitCommand:
+                # C3 admits only a command bound to the GatePackage C6 froze for it, with
+                # the Decision and Authority C6 signed (ADD v1.3 :342). Every field of the
+                # verified gate command is kept; only gate_package_digest is C6's. The
+                # Decision expires with the gate Decision; the Authority keeps the verified
+                # Authority window.
+                issued = self._issuer.issue(
+                    {k: v for k, v in raw_command.items() if k != "gate_package_digest"},
+                    decision_expires_at=decision_expires_at,
+                    authority_not_before=authority.not_before, authority_expires_at=authority.expires_at,
+                )
+                if (not isinstance(issued, GovernedCanonicalCommitCommand)
+                        or replace(issued, gate_package_digest=command.gate_package_digest) != command):
+                    raise _error("C6_COMMAND_BINDING_MISMATCH")
+                return issued
+
+            receipt, dispatched = self._send(engine, action, issue)
             self._record("commitMemoryPromotion.completed", verified,
-                         proposal_audit_ref=proposal_audit_ref, command_digest=issued.command_digest,
+                         proposal_audit_ref=proposal_audit_ref, command_digest=receipt.command_digest,
                          commit_id=receipt.commit_id, causation_id=proposal.operation_id)
             return receipt
         except Exception as exc:  # noqa: BLE001 -- control/store failures never become success
+            dispatched = dispatched or isinstance(exc, _SentWithoutOutcome)
             detail = "COMMIT_OUTCOME_UNKNOWN" if dispatched else "C6_CONTROL_UNAVAILABLE"
             error = exc if isinstance(exc, MemoryAdmissionError) else _error(detail, "CONTROL_PLANE_UNAVAILABLE")
             self._record("commitMemoryPromotion.indeterminate" if dispatched else "commitMemoryPromotion.denied",
                          verified, proposal_audit_ref=proposal_audit_ref, reason_code=error.reason_code,
                          detail_code=error.detail_code)
             raise error from exc
+
+    def _send(
+        self, engine: GovernedActionEngine, action: PromotionAction,
+        issue: Callable[[], GovernedCanonicalCommitCommand],
+    ) -> tuple[CommitReceipt, bool]:
+        """The send of the C6 engine (NCR-C6-009). A refusal of a C6 gate before the send is a
+        denial; any other failure, or an EXECUTION_UNKNOWN, happened after the send and is an
+        unknown outcome for reconciliation, never success and never a definite denial."""
+        try:
+            receipt = engine.commit_canonical(
+                action.proposal, lease=action.lease, approval=action.approval, decision=action.decision,
+                issue=issue, commit_port=self._c3,
+            )
+        except GovernedActionError as error:
+            if error.reason_code == "EXECUTION_UNKNOWN":
+                raise _SentWithoutOutcome() from error
+            if isinstance(error.__cause__, MemoryAdmissionError):
+                raise error.__cause__ from error
+            if error.cause_code == "CONTROL_PLANE_UNAVAILABLE":
+                raise _error("C6_CONTROL_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from error
+            raise _error(error.reason_code if _CODE.fullmatch(error.reason_code) else "C6_CONTROL_DENIED") from error
+        except Exception as error:
+            raise _SentWithoutOutcome() from error
+        if not isinstance(receipt, CommitReceipt):
+            raise _SentWithoutOutcome()
+        return receipt, True
+
+    def _action(
+        self, proposal_audit_ref: str, body: Mapping[str, object], command: GovernedCanonicalCommitCommand,
+        proposal: MemoryPromotionProposal,
+    ) -> PromotionAction:
+        """The signed C6 records of this promotion, bound to the recorded proposal and to the
+        gate command; their signatures and gates are verified by the engine."""
+        action = self._controls.action(proposal_audit_ref)
+        if not isinstance(action, PromotionAction) or not isinstance(action.proposal, ActionProposal):
+            raise _error("C6_ACTION_MISSING")
+        record = action.proposal
+        if (record.action_instance_id != command.action_instance_id
+                or record.target_ref != command.aggregate_ref
+                or record.governed_context_digest != command.governed_context_digest
+                or record.expected_revision != command.expected_revision
+                or dict(record.parameters) != promotion_parameters(proposal_audit_ref, proposal)
+                or not set(proposal.evidence_refs) <= set(record.evidence_refs) <= set(command.evidence_refs)):
+            raise _error("C6_ACTION_BINDING_MISMATCH")
+        # The risk class is the signed ActionType's (ADD v1.3 :2847); the gate cannot choose it.
+        if body["risk_class"] != int(record.risk_class):
+            raise _error("C6_RISK_MISMATCH")
+        lease = action.lease
+        if isinstance(lease, SignedCapabilityLease) and lease.lease.capability_id != self._capability:
+            raise _error("C6_CAPABILITY_MISMATCH")
+        return action
 
     @staticmethod
     def _gate_decision(body: Mapping[str, object]) -> Mapping[str, object]:

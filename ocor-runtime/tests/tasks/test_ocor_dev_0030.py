@@ -15,21 +15,22 @@ new, minimal ``ocor_runtime.c6.engine.GovernedActionEngine``.
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 import test_ocor_dev_rem_0050 as governed_path
 from ocor_runtime.c3.service import PostgresC3Service
 from ocor_runtime.c3_store import OutboxEvent
+from c6_action_fixture import ActionWorld
 from ocor_runtime.c6.engine import (
     ActionProposal,
-    Approval,
+    AuthorizedDecision,
     C3CanonicalOutboxView,
-    Decision,
     GovernedActionEngine,
     GovernedActionError,
 )
+from ocor_runtime.c6.records import ApprovalSet
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c7_emission import EmissionFence
 from spikes.c6_fsm_fidelity.generator import generate_from_lld
@@ -44,6 +45,13 @@ GOVERNED = governed_path.GovernedC3(
     invariants=("urn:ocor:invariant:governed-action",),
 )
 CONTEXT = GOVERNED.governed_context(purpose="retained-governed-action-slice")
+# NCP-U07 (OCOR-DEV-REM-0053): the engine admits only a proposal pinned to a signed, active
+# ActionType (NCR-C6-002, ADD v1.3 :2847), the ApprovalSet of the Human Gate and the Authority's
+# signed Decision on the frozen GatePackage (NCR-C6-001, ADD v1.3 :2849-2850). The launch is
+# R3_HIGH_IMPACT; the non-risk-bearing ActionType is R1_LOW, which admits no mutation.
+WORLD = ActionWorld(now=NOW, release=governed_path.RELEASE)
+LAUNCH = WORLD.action_type("urn:ocor:action-type:launch", risk="R3_HIGH_IMPACT", capability="act:launch")
+SITE_NOTE = WORLD.action_type("urn:ocor:action-type:site-note", risk="R1_LOW", capability="act:launch")
 
 
 class RecordingSink:
@@ -91,54 +99,63 @@ def engine(
     authority: CapabilityAuthority, c3: PostgresC3Service, store: C3CanonicalOutboxView, fence: EmissionFence
 ) -> GovernedActionEngine:
     path = GOVERNED.engine_path(aggregate_type="GovernedActionTarget", governed_context=CONTEXT)
-    return GovernedActionEngine(authority=authority, commit_port=c3, fence=fence, canonical_path=path, emission_outbox=store)
+    WORLD.granted.clear()
+    engine: GovernedActionEngine = WORLD.engine(commit_port=c3, relay=fence, canonical_path=path, emission_outbox=store)
+    return engine
 
 
 def make_proposal(*, risk_bearing: bool = True) -> ActionProposal:
-    return ActionProposal(
+    return WORLD.proposal(
+        LAUNCH if risk_bearing else SITE_NOTE,
         action_id="urn:ocor:action:launch-1",
-        subject="spiffe://ocor.test/workload/operator",
-        capability="act:launch",
-        resource="urn:ocor:target:site-1",
-        aggregate_id="urn:ocor:aggregate:site-1",
-        risk_bearing=risk_bearing,
+        proposer="spiffe://ocor.test/workload/operator",
+        target="urn:ocor:target:site-1",
+        governed_context_digest=CONTEXT.digest(),
     )
 
 
-def grant_lease(authority: CapabilityAuthority, *, capability: str = "act:launch", resource: str = "urn:ocor:target:site-1"):
-    return authority.issue(
-        subject="spiffe://ocor.test/workload/operator",
-        capabilities=[capability],
-        resources=[resource],
-        issued_at=NOW,
-        ttl=timedelta(hours=1),
-    )
+def grant_lease(decision: AuthorizedDecision | None = None, *, capability: str = "act:launch"):
+    # The normative CapabilityLease of the emission attempt (NCR-C6-004, ADD v1.3 :3194-3212):
+    # signed by the capability authority, at most PT5S, bound to the action instance, the
+    # GatePackage of the Decision, the GovernedContext, the stop epoch and the fencing token.
+    return WORLD.lease(make_proposal(), decision, capability_id=capability)
 
 
-def make_approval(action_id: str = "urn:ocor:action:launch-1", *, approved: bool = True) -> Approval:
-    return Approval(action_id=action_id, approver="urn:ocor:human:approver-1", approved=approved, approved_at=NOW)
+def make_approval(action_id: str = "urn:ocor:action:launch-1", *, approved: bool = True) -> ApprovalSet:
+    # The signed Approvals of the Domain and National Approver bound to proposal digest,
+    # revision, release and expiry, in the ApprovalSet of the Human Gate; a set the gate did not
+    # grant is not signed by it.
+    approval_set = WORLD.approval_set(make_proposal())
+    if not approved:
+        return WORLD.ungranted(approval_set)
+    WORLD.granted[action_id] = approval_set
+    return approval_set
 
 
-def make_decision(action_id: str = "urn:ocor:action:launch-1", *, accepted: bool = True) -> Decision:
-    return Decision(
-        action_id=action_id,
-        decided_by="urn:ocor:human:decider-1",
+def make_decision(action_id: str = "urn:ocor:action:launch-1", *, accepted: bool = True) -> AuthorizedDecision:
+    # The Authority's signed Decision on the GatePackage that freezes the granted ApprovalSet.
+    proposal = make_proposal()
+    approval_set = WORLD.granted.pop(action_id, None) or WORLD.approval_set(proposal)
+    return WORLD.decide(
+        proposal,
+        approval_set,
         accepted=accepted,
         rationale="within approved risk ceiling" if accepted else "risk ceiling exceeded",
-        decided_at=NOW,
     )
 
 
 def test_happy_path_crosses_all_four_gates_before_the_simulated_effect(engine, authority, store):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    approval = make_approval()
+    decision = make_decision()
+    lease = grant_lease(decision)
     sink = RecordingSink()
 
     outcome = engine.execute(
         proposal,
         lease=lease,
-        approval=make_approval(),
-        decision=make_decision(),
+        approval=approval,
+        decision=decision,
         sink=sink,
         at=NOW,
     )
@@ -153,7 +170,7 @@ def test_happy_path_crosses_all_four_gates_before_the_simulated_effect(engine, a
 def test_missing_authority_denies_before_any_other_gate(engine, authority, store):
     proposal = make_proposal()
     # A lease that grants a DIFFERENT capability -- authority must deny.
-    lease = grant_lease(authority, capability="act:read-only")
+    lease = grant_lease(capability="act:read-only")
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -168,7 +185,7 @@ def test_missing_authority_denies_before_any_other_gate(engine, authority, store
 
 def test_risk_bearing_action_without_approval_is_denied(engine, authority, store):
     proposal = make_proposal(risk_bearing=True)
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -181,7 +198,7 @@ def test_risk_bearing_action_without_approval_is_denied(engine, authority, store
 
 def test_risk_bearing_action_with_rejected_approval_is_denied(engine, authority, store):
     proposal = make_proposal(risk_bearing=True)
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -200,7 +217,7 @@ def test_risk_bearing_action_with_rejected_approval_is_denied(engine, authority,
 
 def test_missing_decision_is_denied(engine, authority):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -212,7 +229,7 @@ def test_missing_decision_is_denied(engine, authority):
 
 def test_rejected_decision_is_denied_with_rationale_preserved(engine, authority):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
     with pytest.raises(GovernedActionError) as excinfo:
@@ -232,27 +249,31 @@ def test_rejected_decision_is_denied_with_rationale_preserved(engine, authority)
 
 def test_non_risk_bearing_action_does_not_require_a_human_gate_approval(engine, authority, store):
     proposal = make_proposal(risk_bearing=False)
-    lease = grant_lease(authority)
+    lease = grant_lease()
     sink = RecordingSink()
 
-    outcome = engine.execute(
-        proposal, lease=lease, approval=None, decision=make_decision(), sink=sink, at=NOW
-    )
+    # ADD v1.3 :2847 and :3298-3302, LLD v1.1 :268 (NCR-C6-002, realigned with RED): the risk class
+    # is the signed ActionType's; R1 admits no mutation and a canonical target never takes the
+    # NOT_REQUIRED disposition, so the request is denied without execution.
+    with pytest.raises(GovernedActionError) as excinfo:
+        engine.execute(proposal, lease=lease, approval=None, decision=make_decision(), sink=sink, at=NOW)
 
-    assert outcome.simulated_effect is not None
-    assert len(sink.calls) == 1
+    assert excinfo.value.reason_code == "NO_MUTATION_ADMITTED"
+    assert sink.calls == []
 
 
 def test_a_failing_sink_leaves_no_emission_receipt_and_a_retry_succeeds(engine, authority, store, fence):
     proposal = make_proposal()
-    lease = grant_lease(authority)
+    approval = make_approval()
+    decision = make_decision()
+    lease = grant_lease(decision)
 
     with pytest.raises(ConnectionError):
         engine.execute(
             proposal,
             lease=lease,
-            approval=make_approval(),
-            decision=make_decision(),
+            approval=approval,
+            decision=decision,
             sink=FailingSink(),
             at=NOW,
         )

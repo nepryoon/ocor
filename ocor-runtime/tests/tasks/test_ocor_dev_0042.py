@@ -38,6 +38,8 @@ from ocor_runtime.c6.fsm import (
 )
 from ocor_runtime.errors import TemporalGuardViolation
 
+from c6_action_fixture import PlacedActionStates, satisfied
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
@@ -115,7 +117,9 @@ def test_applying_a_known_transition_durably_persists_its_declared_effect() -> N
     fsm = GovernedActionFSM()
     sink = RecordingSink()
 
-    record = fsm.apply("ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:1")
+    record = fsm.apply(
+        "ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:1", guard=satisfied("ACT-T01", "urn:ocor:correlation:1", NOW)
+    )
 
     assert sink.calls == [record]
     assert record.transition_id == "ACT-T01"
@@ -129,11 +133,20 @@ def test_applying_every_one_of_the_44_transitions_persists_exactly_one_effect_ea
     """Integration-level proof across the whole table, not just one
     representative transition: every declared effect is reachable and
     persisted, none silently dropped."""
-    fsm = GovernedActionFSM()
+    states = PlacedActionStates()
+    fsm = GovernedActionFSM(states=states)
     sink = RecordingSink()
 
     for transition in TRANSITIONS:
-        fsm.apply(transition.transition_id, sink=sink, at=NOW, correlation_id=f"urn:ocor:correlation:{transition.transition_id}")
+        correlation = f"urn:ocor:correlation:{transition.transition_id}"
+        states.place(correlation, transition.source)
+        fsm.apply(
+            transition.transition_id,
+            sink=sink,
+            at=NOW,
+            correlation_id=correlation,
+            guard=satisfied(transition.transition_id, correlation, NOW),
+        )
 
     assert len(sink.calls) == 44
     assert {record.transition_id for record in sink.calls} == {item.transition_id for item in TRANSITIONS}
@@ -162,10 +175,14 @@ def test_a_naive_timestamp_is_refused_before_any_sink_call() -> None:
 
 
 def test_a_plain_callable_sink_is_accepted_identically_to_a_protocol_object() -> None:
-    fsm = GovernedActionFSM()
+    states = PlacedActionStates()
+    fsm = GovernedActionFSM(states=states)
     calls: list[PersistedEffect] = []
+    states.place("urn:ocor:correlation:2", "PROPOSAL_RECORDED")
 
-    record = fsm.apply("ACT-T02", sink=calls.append, at=NOW, correlation_id="urn:ocor:correlation:2")
+    record = fsm.apply(
+        "ACT-T02", sink=calls.append, at=NOW, correlation_id="urn:ocor:correlation:2", guard=satisfied("ACT-T02", "urn:ocor:correlation:2", NOW)
+    )
 
     assert calls == [record]
 
@@ -192,10 +209,14 @@ def test_a_failing_sink_propagates_and_a_retry_against_the_same_fsm_recovers() -
     sink = _FailingThenRecordingSink()
 
     with pytest.raises(RuntimeError, match="simulated downstream persistence outage"):
-        fsm.apply("ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:retry")
+        fsm.apply(
+            "ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:retry", guard=satisfied("ACT-T01", "urn:ocor:correlation:retry", NOW)
+        )
     assert sink.calls == []
 
-    record = fsm.apply("ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:retry")
+    record = fsm.apply(
+        "ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:retry", guard=satisfied("ACT-T01", "urn:ocor:correlation:retry", NOW)
+    )
     assert sink.calls == [record]
 
 
@@ -204,7 +225,14 @@ def test_context_is_captured_and_immutable_once_persisted() -> None:
     sink = RecordingSink()
     mutable_context: dict[str, Any] = {"aggregate_id": "urn:ocor:aggregate:1"}
 
-    record = fsm.apply("ACT-T01", sink=sink, at=NOW, correlation_id="urn:ocor:correlation:ctx", context=mutable_context)
+    record = fsm.apply(
+        "ACT-T01",
+        sink=sink,
+        at=NOW,
+        correlation_id="urn:ocor:correlation:ctx",
+        context=mutable_context,
+        guard=satisfied("ACT-T01", "urn:ocor:correlation:ctx", NOW),
+    )
     mutable_context["aggregate_id"] = "tampered-after-the-fact"
 
     assert record.context["aggregate_id"] == "urn:ocor:aggregate:1"
