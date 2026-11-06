@@ -898,6 +898,376 @@ def test_ncr_c6_010_something_other_than_a_grant_is_never_issued(grant: object) 
     with pytest.raises(safety.SafetyError) as excinfo:
         controller.revoke(grant)
     assert _reason(excinfo) == "BREAK_GLASS_GRANT_NOT_ISSUED"
+# Preventive review OCOR-DEV-REM-0054-05049b13ee05-pre: a stop epoch read back from a store is
+# rebuilt only from text, integers and lists of the declared shape; the PostgreSQL adapter turns
+# every malformed row into STOP_EPOCH_SIGNATURE_INVALID and every driver failure into
+# STOP_EPOCH_UNAVAILABLE, closing its connection on each path.
+
+
+def _stored_mapping() -> dict[str, Any]:
+    fx = _fx()
+    stop = fx.stop_controller(_registry())
+    _stopped(stop)
+    stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=_registry(), requester=HUMAN_C, recovery=fx.recovery((HUMAN_A, HUMAN_B)))
+    signed = stop.reader.current_signed()
+    assert signed.record.recovery_evidence == fx.RECOVERY_EVIDENCE
+    return dict(signed.to_mapping())
+
+
+@pytest.mark.parametrize("evidence", [None, False, 0, [], {}, b""], ids=["none", "false", "zero", "list", "dict", "bytes"])
+def test_ncr_c6_010_a_stop_epoch_record_whose_recovery_evidence_is_not_text_is_never_built(evidence: object) -> None:
+    safety = _safety()
+    document = _stored_mapping()
+    record = safety.StopEpochRecord.from_mapping(document["record"])
+    with pytest.raises(ValueError):
+        dataclasses.replace(record, recovery_evidence=evidence)
+    with pytest.raises(ValueError):
+        safety.StopEpochRecord.from_mapping({**document["record"], "recovery_evidence": evidence})
+    with pytest.raises(ValueError):
+        safety.SignedStopEpoch.from_mapping({**document, "record": {**document["record"], "recovery_evidence": evidence}})
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"sequence": True},
+        {"sequence": "4"},
+        {"epoch": 1.0},
+        {"status": "stopped"},
+        {"status": None},
+        {"actor": None},
+        {"reason": 7},
+        {"incident_ref": None},
+        {"at": "2026-11-06 09:00:00"},
+        {"at": 0},
+        {"approvers": "ab"},
+        {"approvers": [HUMAN_A, 42]},
+        {"recovery_evidence": "urn:sha256:not-a-digest"},
+        {"extra": "field"},
+    ],
+    ids=["sequence-bool", "sequence-str", "epoch-float", "status-unknown", "status-none", "actor-none", "reason-int",
+         "incident-none", "at-not-canonical", "at-int", "approvers-str", "approver-int", "evidence-not-digest", "extra-field"],
+)
+def test_ncr_c6_010_a_stored_stop_epoch_record_of_the_wrong_shape_is_refused(change: dict[str, Any]) -> None:
+    safety = _safety()
+    record = _stored_mapping()["record"]
+    safety.StopEpochRecord.from_mapping(record)
+    with pytest.raises(ValueError):
+        safety.StopEpochRecord.from_mapping({**record, **change})
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"record": None},
+        {"record": "{}"},
+        {"issuer_id": 42},
+        {"issuer_id": ""},
+        {"keyid": None},
+        {"signature": b"c2ln"},
+        {"signature": ""},
+        {"extra": "field"},
+    ],
+    ids=["record-none", "record-str", "issuer-int", "issuer-empty", "keyid-none", "signature-bytes", "signature-empty", "extra-field"],
+)
+def test_ncr_c6_010_a_stored_signed_stop_epoch_of_the_wrong_shape_is_refused(change: dict[str, Any]) -> None:
+    safety = _safety()
+    document = _stored_mapping()
+    safety.SignedStopEpoch.from_mapping(document)
+    with pytest.raises(ValueError):
+        safety.SignedStopEpoch.from_mapping({**document, **change})
+    missing = dict(document)
+    missing.pop("keyid")
+    with pytest.raises(ValueError):
+        safety.SignedStopEpoch.from_mapping(missing)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"record": None}, {"record": {"sequence": 0}}, {"issuer_id": 42}, {"keyid": None}, {"signature": b"c2ln"}],
+    ids=["record-none", "record-mapping", "issuer-int", "keyid-none", "signature-bytes"],
+)
+def test_ncr_c6_010_a_signed_stop_epoch_of_the_wrong_shape_is_never_built(change: dict[str, Any]) -> None:
+    signed = _fx().stop_controller(_registry()).reader.current_signed()
+    with pytest.raises(ValueError):
+        dataclasses.replace(signed, **change)
+
+
+def _postgres_adapter() -> ModuleType:
+    return importlib.import_module("ocor_runtime.c6.adapters.postgres_stop")
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"dsn": ""},
+        {"dsn": None},
+        {"dsn": b"postgresql://localhost"},
+        {"schema": "Upper"},
+        {"schema": "x; DROP SCHEMA public"},
+        {"schema": None},
+        {"connect_timeout": 0},
+        {"connect_timeout": True},
+        {"connect_timeout": 5.0},
+        {"connect_timeout": "5"},
+    ],
+    ids=["dsn-empty", "dsn-none", "dsn-bytes", "schema-upper", "schema-injection", "schema-none", "timeout-zero",
+         "timeout-bool", "timeout-float", "timeout-str"],
+)
+def test_ncr_c6_010_the_postgres_store_refuses_malformed_settings(arguments: dict[str, Any]) -> None:
+    adapters = _postgres_adapter()
+    settings: dict[str, Any] = {"dsn": "postgresql://localhost/ocor", "schema": "ocor_c6_stop", "connect_timeout": 5}
+    adapters.PostgresStopEpochStore(**settings)
+    settings.update(arguments)
+    with pytest.raises(ValueError):
+        adapters.PostgresStopEpochStore(**settings)
+
+
+def _row_cases() -> list[tuple[str, Any]]:
+    document = _stored_mapping()
+    sequence, epoch = document["record"]["sequence"], document["record"]["epoch"]
+    malformed = {**document, "record": {**document["record"], "recovery_evidence": None}}
+    return [
+        ("not-a-mapping", [sequence, epoch, document]),
+        ("none", None),
+        ("signed-missing", {"sequence": sequence, "epoch": epoch}),
+        ("signed-not-a-mapping", {"sequence": sequence, "epoch": epoch, "signed": "{}"}),
+        ("signed-malformed", {"sequence": sequence, "epoch": epoch, "signed": malformed}),
+        ("sequence-bool", {"sequence": True, "epoch": epoch, "signed": document}),
+        ("epoch-str", {"sequence": sequence, "epoch": str(epoch), "signed": document}),
+        ("sequence-mismatch", {"sequence": sequence + 1, "epoch": epoch, "signed": document}),
+        ("epoch-mismatch", {"sequence": sequence, "epoch": epoch + 1, "signed": document}),
+    ]
+
+
+def test_ncr_c6_010_a_malformed_stored_row_is_an_invalid_stop_epoch_never_an_empty_store() -> None:
+    adapters = _postgres_adapter()
+    safety = _safety()
+    document = _stored_mapping()
+    good = {"sequence": document["record"]["sequence"], "epoch": document["record"]["epoch"], "signed": document}
+    assert adapters._signed(good) == safety.SignedStopEpoch.from_mapping(document)
+    for case, row in _row_cases():
+        with pytest.raises(safety.SafetyError) as excinfo:
+            adapters._signed(row)
+        assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID", case
+    with pytest.raises(safety.SafetyError) as excinfo:
+        adapters._row(("latest", 3))
+    assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+
+
+class _FakeCursor:
+    def __init__(self, result: Any) -> None:
+        self._result = result
+
+    def fetchone(self) -> Any:
+        return self._result
+
+    def fetchall(self) -> Any:
+        return self._result
+
+
+class _FakeConnection:
+    """A psycopg connection stand-in: it returns the rows of the test, or raises the error of the
+    test, and records whether its transaction and the connection were closed."""
+
+    def __init__(self, result: Any = None, *, error: BaseException | None = None) -> None:
+        self.result = result
+        self.error = error
+        self.closed = False
+        self.transaction_closed = False
+
+    def __enter__(self) -> _FakeConnection:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.closed = True
+
+    def transaction(self) -> Any:
+        connection = self
+
+        class _Transaction:
+            def __enter__(self) -> None:
+                return None
+
+            def __exit__(self, *exc: object) -> None:
+                connection.transaction_closed = True
+
+        return _Transaction()
+
+    def execute(self, query: str, params: Any = None) -> _FakeCursor:
+        if self.error is not None:
+            raise self.error
+        if "pg_advisory_xact_lock" in query:
+            return _FakeCursor(None)
+        return _FakeCursor(self.result)
+
+
+def test_ncr_c6_010_the_postgres_store_turns_a_driver_failure_into_unavailable_and_closes_the_connection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapters = _postgres_adapter()
+    safety = _safety()
+    psycopg = adapters.psycopg
+    signed = _fx().stop_controller(_registry()).reader.current_signed()
+    store = adapters.PostgresStopEpochStore("postgresql://localhost/ocor", schema="ocor_rem0054_fake")
+
+    def refuse(*args: Any, **kwargs: Any) -> Any:
+        raise psycopg.OperationalError("connection refused")
+
+    monkeypatch.setattr(psycopg, "connect", refuse)
+    for operation in (store.latest, store.history, store.initialize, lambda: store.append(signed, expected_sequence=-1)):
+        with pytest.raises(adapters.StopEpochStoreError) as excinfo:
+            operation()
+        assert _reason(excinfo) == "STOP_EPOCH_UNAVAILABLE"
+    for error in (psycopg.errors.DataError("bad data"), psycopg.InterfaceError("closed"), psycopg.errors.RaiseException("append-only")):
+        connection = _FakeConnection(error=error)
+        monkeypatch.setattr(psycopg, "connect", lambda *args, _c=connection, **kwargs: _c)
+        for operation in (store.latest, store.history, lambda: store.append(signed, expected_sequence=-1)):
+            with pytest.raises(safety.SafetyError) as excinfo:
+                operation()
+            assert _reason(excinfo) == "STOP_EPOCH_UNAVAILABLE"
+        assert connection.closed and connection.transaction_closed
+
+
+def test_ncr_c6_010_the_postgres_store_refuses_a_malformed_read_and_closes_the_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapters = _postgres_adapter()
+    safety = _safety()
+    psycopg = adapters.psycopg
+    store = adapters.PostgresStopEpochStore("postgresql://localhost/ocor", schema="ocor_rem0054_fake")
+    signed = _fx().stop_controller(_registry()).reader.current_signed()
+    cases: list[tuple[str, Any, Any]] = [(f"latest-{case}", store.latest, row) for case, row in _row_cases() if row is not None]
+    cases += [(f"history-{case}", store.history, [row]) for case, row in _row_cases()]
+    cases += [
+        ("history-not-a-list", store.history, ({"sequence": 0},)),
+        ("append-not-a-mapping", lambda: store.append(signed, expected_sequence=-1), ("latest", None)),
+        ("append-latest-bool", lambda: store.append(signed, expected_sequence=-1), {"latest": False}),
+        ("append-latest-str", lambda: store.append(signed, expected_sequence=-1), {"latest": "-1"}),
+    ]
+    for case, operation, result in cases:
+        connection = _FakeConnection(result)
+        monkeypatch.setattr(psycopg, "connect", lambda *args, _c=connection, **kwargs: _c)
+        with pytest.raises(safety.SafetyError) as excinfo:
+            operation()
+        assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID", case
+        assert connection.closed and connection.transaction_closed, case
+    empty = _FakeConnection(None)
+    monkeypatch.setattr(psycopg, "connect", lambda *args, **kwargs: empty)
+    assert store.latest() is None
+    with pytest.raises(TypeError):
+        store.append(signed.to_mapping(), expected_sequence=-1)
+    with pytest.raises(TypeError):
+        store.append(signed, expected_sequence=True)
+
+
+# Preventive review OCOR-DEV-REM-0054-05049b13ee05-pre: a requester or a registry record of the
+# wrong shape, and a registry that cannot be read, are typed refusals of the stop and of the
+# break-glass, the latter always audited.
+
+
+@pytest.mark.parametrize(
+    "requester",
+    [["unhashable"], {"k": "v"}, 42, None, b"urn:ocor:human:requester", (REQUESTER,)],
+    ids=["list", "dict", "int", "none", "bytes", "tuple"],
+)
+def test_ncr_c6_010_a_break_glass_requester_that_is_not_a_principal_identifier_is_refused_and_audited(requester: object) -> None:
+    safety = _safety()
+    controller, sink = _break_glass()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        _grant(controller, requester=requester)
+    assert _reason(excinfo) == "BREAK_GLASS_GRANT_INVALID"
+    assert [event["event"] for event in sink.events] == ["BREAK_GLASS_GRANT_DENIED"]
+    assert sink.events[0]["reason_code"] == "BREAK_GLASS_GRANT_INVALID"
+
+
+class _UnreadableDirectory:
+    def get(self, canonical_id: str) -> Any:
+        raise RuntimeError("identity registry unreachable")
+
+
+class _MalformedDirectory:
+    """A directory whose records are not registry records, or whose attributes are not a mapping."""
+
+    def __init__(self, record: Any) -> None:
+        self._record = record
+
+    def get(self, canonical_id: str) -> Any:
+        return self._record
+
+
+def _broken_directories() -> list[Any]:
+    attributes = {"principal_kind": "HUMAN", "status": "ACTIVE", "roles": "SAFETY_OFFICER"}
+
+    class _NotAMapping:
+        canonical_id = "urn:ocor:human:x"
+        attributes = ("principal_kind", "HUMAN")
+
+    record = _mod("c2_identity").IdentityRecord(canonical_id="urn:ocor:human:x", attributes=attributes)
+    hollow = object.__new__(type(record))
+    object.__setattr__(hollow, "canonical_id", "urn:ocor:human:x")
+    object.__setattr__(hollow, "aliases", frozenset())
+    object.__setattr__(hollow, "attributes", ["principal_kind", "HUMAN"])
+    return [
+        _UnreadableDirectory(),
+        _MalformedDirectory(attributes),
+        _MalformedDirectory(_NotAMapping()),
+        _MalformedDirectory(hollow),
+        _MalformedDirectory("urn:ocor:human:x"),
+    ]
+
+
+@pytest.mark.parametrize("index", range(5), ids=["unreadable", "mapping", "not-a-record", "attributes-list", "str"])
+def test_ncr_c6_010_a_stop_activator_the_registry_cannot_read_is_unauthorized(index: int) -> None:
+    fx = _fx()
+    safety = _safety()
+    directory = _broken_directories()[index]
+    stop = safety.EmergencyStopController(
+        epochs=safety.InMemoryStopEpochStore(), identities=directory, signing_key=fx.CONTROL_PLANE_KEY,
+        issuer_id=fx.CONTROL_PLANE, keyid=fx.CONTROL_PLANE_KEYID, keyring=fx.keyring(),
+    )
+    with pytest.raises(safety.SafetyError) as excinfo:
+        stop.activate(activator=fx.SAFETY_OFFICER, reason="incident-42", incident_ref=fx.INCIDENT, at=NOW)
+    assert _reason(excinfo) == "STOP_ACTIVATOR_UNAUTHORIZED"
+    assert stop.status is safety.StopStatus.NORMAL
+
+
+class _Switchable:
+    """The registry of the test until ``broken`` replaces it."""
+
+    def __init__(self, inner: Any) -> None:
+        self.inner = inner
+        self.broken: Any = None
+
+    def get(self, canonical_id: str) -> Any:
+        return (self.inner if self.broken is None else self.broken).get(canonical_id)
+
+
+@pytest.mark.parametrize("index", range(5), ids=["unreadable", "mapping", "not-a-record", "attributes-list", "str"])
+def test_ncr_c6_010_a_break_glass_principal_the_registry_cannot_read_is_refused_and_audited(index: int) -> None:
+    fx = _fx()
+    safety = _safety()
+    governance = _mod("kernel.governance")
+    directory = _Switchable(_registry())
+    sink = _Sink()
+    controller = fx.break_glass_controller(
+        identities=directory, stop=fx.stop_controller(_registry()), clock=governance.InMemoryTrustedClock(NOW), audit=sink,
+        alerts=_Sink(),
+    )
+    grant = _grant(controller)
+    directory.broken = _broken_directories()[index]
+    sink.events.clear()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        controller.authorize(grant, capability="restart_service", review_ref="urn:ocor:review:1")
+    assert _reason(excinfo) == "BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID"
+    assert [(event["event"], event["reason_code"]) for event in sink.events] == [
+        ("BREAK_GLASS_USE_DENIED", "BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID")
+    ]
+    sink.events.clear()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        _grant(controller)
+    assert _reason(excinfo) == "BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID"
+    assert [(event["event"], event["reason_code"]) for event in sink.events] == [
+        ("BREAK_GLASS_GRANT_DENIED", "BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID")
+    ]
 
 
 # --- NCR-C6-013: ADD v1.3 risk-class names and gates (ADD :3298-3305, :2193; LLD :16-18) --------
@@ -1140,6 +1510,51 @@ def test_ncr_c6_011_a_consumer_states_what_it_honours_as_a_set_of_names(honoured
     with pytest.raises(TypeError):
         obligated.admit(**honoured)
     obligated.admit(fulfilled_obligations=frozenset({"audit:access"}))
+@pytest.mark.parametrize(
+    "forge,reason",
+    [
+        (lambda status, body: (503, body), "POLICY_UNAVAILABLE"),
+        (lambda status, body: (200, b"\xff\xfe"), "POLICY_DECISION_INVALID"),
+        (lambda status, body: (200, b"not json"), "POLICY_DECISION_INVALID"),
+        (lambda status, body: (200, b"[]"), "POLICY_DECISION_INVALID"),
+        (lambda status, body: (200, b'{"result": ["allow"]}'), "POLICY_DECISION_INVALID"),
+        (lambda status, body: (200, _rewrite(body, allow=False)), "POLICY_DECISION_INVALID"),
+        (lambda status, body: (200, _rewrite(body, allow=None)), "POLICY_DECISION_INVALID"),
+    ],
+    ids=["http-503", "not-utf8", "not-json", "not-an-object", "result-not-an-object", "allow-false", "allow-missing"],
+)
+def test_ncr_c6_011_a_qualification_response_of_the_wrong_shape_is_not_a_decision(
+    principal: Any, mtls: dict[str, object], monkeypatch: pytest.MonkeyPatch, forge: Any, reason: str
+) -> None:
+    """Preventive review OCOR-DEV-REM-0054-05049b13ee05-pre (advisory): the protocol paths of the
+    qualification read of the signed package. Only that response is replaced; OPA answers every
+    other request."""
+    control_plane = _mod("security.control_plane")
+    ports = _mod("security.ports")
+    real = control_plane._request
+    forged: list[str] = []
+
+    def request(method: str, url: str, **kwargs: Any) -> tuple[int, bytes]:
+        status, body = real(method, url, **kwargs)
+        if url.endswith(f"{control_plane.OpaPolicyDecisionProvider._PACKAGE_PATH}?explain=full"):
+            forged.append(url)
+            return forge(status, body)  # type: ignore[no-any-return]
+        return status, body
+
+    monkeypatch.setattr(control_plane, "_request", request)
+    with pytest.raises(ports.SecurityControlError) as excinfo:
+        _decide(mtls, principal, 'obligations contains "audit:access" if input.action == "read"')
+    assert _reason(excinfo) == reason
+    assert len(forged) == 1
+
+
+def _rewrite(body: bytes, *, allow: object) -> bytes:
+    response = importlib.import_module("json").loads(body.decode())
+    if allow is None:
+        response["result"].pop("allow", None)
+    else:
+        response["result"]["allow"] = allow
+    return importlib.import_module("json").dumps(response).encode()
 
 
 # --- NCR-C6-012: MARKING_UNRESOLVED in the current components (LLD v1.1 :67; FR-131 :298; FR-006 :49)
