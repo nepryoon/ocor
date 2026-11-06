@@ -25,7 +25,9 @@ precondizioni del caso 3 e righe `ADAPTED` della decisione) con il confronto del
 `78ba179`, scelte di prodotto, ambiguità risolte in modo fail-closed, punti aperti, gli esiti dell'inventario dei
 consumer e la classificazione delle riqualifiche: tutte di sola regressione (`0030`, `0034`, `0035`, `0044`,
 `0047`, `0048` senza requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`; `0009`, `0014`
-con test invariati; `0005`, `0050`, `0082` per l'allowlist del piano). Restano da eseguire: autocontrollo di
+con test invariati; `0005`, `0050`, `0082` per l'allowlist del piano; `REM-0053`, unità non completata, perché lo
+richiede `NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06)` opzione 1, aggiunta nel ciclo di riparazione 1 dopo
+il finding VF-001 della verifica `OCOR-DEV-REM-0054-84443cf94590-0`). Restano da eseguire: autocontrollo di
 `NCP-THROUGHPUT-RULES (2026-11-05)` punto 1, PRE-CAMPAIGN-GATE, revisione preventiva, campagna, riqualifiche
 `.requalified-rem0054` e verifica indipendente da un fornitore diverso da Anthropic e dal revisore preventivo.
 

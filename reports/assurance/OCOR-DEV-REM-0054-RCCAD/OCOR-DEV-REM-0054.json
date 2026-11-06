@@ -686,7 +686,10 @@
         3,
         4,
         5,
-        6
+        6,
+        7,
+        8,
+        9
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -1106,8 +1109,10 @@
       }
     ]
   },
-  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 6 of estimate 3",
-  "open_decision_requests": [],
+  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 9 of estimate 3 (stop at 9): repair cycle 1 prepared and the decision request NCP-U08-ITERATION-LIMIT opened for the iterations after the ninth",
+  "open_decision_requests": [
+    "NCP-U08-ITERATION-LIMIT"
+  ],
   "open_points_for_review": [
     "the C2 gateway and the identity provisioning deny PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL and OBLIGATE because no constraint, approval or obligation is enforced there today; a consumer that honours them is out of the NCP-U08 scope",
     "the legacy c4_marking.MarkingEngine, c7_emission.py and c6_capabilities.py stay for their consumers; their retirement belongs to the legacy retirement decision request of NORMATIVE-CONFORMANCE-PLAN point 6",
@@ -1168,6 +1173,17 @@
     "the stop-epoch and break-glass signing keys come from the caller (SafetyAuthorities), so production key management plugs in without changing C6",
     "the policy decision point reads the qualifiers from the signed OPA bundle and PolicyDecision.admit is the single application rule for consumers",
     "marking is evaluated over the validated lattices of the active schemes; the legacy engine stays only for the legacy slice"
+  ],
+  "repair_cycles": [
+    {
+      "cycle": 1,
+      "disposition": "FIXED: the candidate evidence of cycle 0 reverted (145dc23), the plan allowlist extended with the REM-0053 requalification paths (4b0d8cc), OCOR-DEV-REM-0053 added to requalifications_planned with the per-requirement classification and the note corrected; the campaign is rerun at the new code head and the REM-0053 regression-only requalification supersedes its sealed record without modifying it",
+      "finding": "VF-001 (high, blocking)",
+      "finding_text_copied": false,
+      "verdict": "NO_GO",
+      "verdict_head": "84443cf9459091d4c32c3c8ebca5c44228f8f258",
+      "verdict_request_id": "OCOR-DEV-REM-0054-84443cf94590-0"
+    }
   ],
   "requalifications_planned": {
     "classification": [
@@ -1953,9 +1969,174 @@
         "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
         "task_id": "OCOR-DEV-0082",
         "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "construction and precondition adaptations of the CompositionSuite and of the composed stop and break-glass (Safety Officer identity and SafetyAuthorities, activation by the activator for a named incident, signed break-glass controller; NORMATIVE-CONFORMANCE-PLAN point 5 case 3, NCR-C6-010) and the identifier substitutions of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1 in constructions, parametrizations and asserts (test_ocor_dev_rem_0053.py) and at c6_action_fixture.py line 471; every assert, pytest.raises and parametrize identical after the bijective mapping",
+        "completed_evidence_task": false,
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c6/composition.py",
+          "ocor-runtime/src/ocor_runtime/c6/safety.py",
+          "ocor-runtime/tests/tasks/c6_action_fixture.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0030.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0044.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py",
+          "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
+          "reports/planning/OCOR_PLAN_RUN_STATE.json",
+          "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
+        "latest_record_id": "OCOR-DEV-REM-0053-90028ba369a5",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requalification_record": "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.json",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-003 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-003",
+            "title": "Il sistema DEVE impedire la transizione da proposta a decisione o azione interagenzia ad alto impatto senza due approvazioni umane indipendenti, policy favorevole e authority valida."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + dimostrazione",
+            "requirement_id": "FR-008",
+            "title": "Il sistema DEVE eseguire la risposta simulata attraverso la sequenza Proposal, Policy/Authority, Approval, Decision, ActionIntent, ActionCommand, simulated adapter, ExecutionResult e OutcomeAssessment."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-031 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test end-to-end e failure injection",
+            "requirement_id": "FR-031",
+            "title": "Il sistema DEVE modellare separatamente Event, Action Type, Action Submission, Action Parameter, Action Rule, Submission Criteria, Precondition, Edit Specification, Change Set, Decision, ActionIntent, ActionCommand, External Command e Side Effect."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test e dimostrazione",
+            "requirement_id": "FR-033",
+            "title": "Il sistema DEVE separare Recommendation, Decision, Approval, Human Gate, Execution, Result e Outcome e correlarli mediante Execution Record, Audit Record e Distributed Trace."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "FR-053",
+            "title": "Il sistema DEVE distinguere Observation, Claim, Assertion, Derived Assertion e Canonical Assertion e applicare un workflow di ammissione configurabile."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-076 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-076",
+            "title": "ACK di trasporto, receipt dell\u2019adapter, Execution Result e Outcome NON DEVONO essere semanticamente equivalenti."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, dimostrazione",
+            "requirement_id": "FR-077",
+            "title": "Il sistema DEVE applicare la sequenza canonica di Action definita nel Context Pack senza bypass per UI, API, automazioni o agenti."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-078 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "race-condition test",
+            "requirement_id": "FR-078",
+            "title": "L\u2019Action Engine DEVE rivalidare Policy, Authority, Approval, precondizioni, invarianti e versione corrente prima di emettere ActionCommand."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-079 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "policy test",
+            "requirement_id": "FR-079",
+            "title": "Il sistema DEVE calcolare l\u2019obbligo di Approval da risk class, policy, authority, domain e tipo di effetto."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-080 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "compiler test",
+            "requirement_id": "FR-080",
+            "title": "Ogni Action Type DEVE dichiarare idempotency scope, timeout, retry policy, compensabilit\u00e0, compensation e irreversibility class."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-111 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-111",
+            "title": "Un agente NON DEVE approvare la propria proposta n\u00e9 acquisire capability di approvazione tramite delega non umana nel profilo PoC."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-118 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "schema, lifecycle, replay, fault-injection e security test",
+            "requirement_id": "FR-118",
+            "title": "Ogni Governed Memory Item DEVE essere una versione immutabile e tipizzata come WORKING, EPISODIC, SEMANTIC, PROCEDURAL, PREFERENCE, REFLECTION, DISSENT o TEAM_SHARED; DEVE dichiarare owner, scope RUN/TASK/AGENT/TEAM/PROJECT/DOMAIN/FEDERATED, tenant/domain/compartment, source ed evidence/provenance, created/valid time, marking, purpose, confidence/uncertainty, taint, instruction eligibility, TTL/retention/legal hold, content e representation digest. Il PoC DEVE supportare persistenza cross-run, consolidamento, correzione, supersession, revoca, expiry, forgetting, deletion saga e promotion proposal; la memoria resta non canonica e non conferisce Authority."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-162 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di concorrenza e integrazione",
+            "requirement_id": "FR-162",
+            "title": "Il sistema DEVE rivalidare Decision, ActionIntent e ActionCommand contro lo stato canonico corrente e la version fence prima del dispatch."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of FR-163 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di integrazione e fault injection",
+            "requirement_id": "FR-163",
+            "title": "Il sistema NON DEVE ritentare automaticamente un effetto esterno ambiguo se l'operazione non \u00e8 provatamente idempotente."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "OCOR-DEV-REM-0053 is not a backlog task: its requirements are the norm anchors of its acceptance criteria (requirement_ids of acceptance_criteria_results) and its sealed record binds no case to a requirement (unit_cases_note); the adapted lines only build the stop and break-glass controllers the code requires (NCR-C6-010) and rename the risk classes by the bijective mapping of NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1, with the asserted behaviour unchanged; the full Register text of NFR-005 is not exercised by the adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "NFR-005",
+            "title": "Il sistema DEVE impedire self-approval, bypass del gate e riuso di un\u2019approvazione fuori dall\u2019ambito autorizzato."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, audit",
+            "requirement_id": "NFR-029",
+            "title": "Per i gate P0 sono ammesse zero esecuzioni prive dell\u2019Approval richiesto."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Safety/chaos benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Safety/chaos benchmark",
+            "requirement_id": "NFR-047",
+            "title": "L\u2019emergency stop DEVE impedire nuovi command e revocare le capability nel boundary locale entro 10 secondi dall\u2019attivazione."
+          }
+        ],
+        "rule": "NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (the requalifications of OCOR-DEV-0048 and of OCOR-DEV-REM-0053 follow NCP-UNBINDABLE-REQUALIFICATIONS); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4; REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "selection_note": "not in completed_evidence_tasks, so scripts/validate_evidence_input_drift.py selects no record of it; the record superseded is its sealed unit record (the only and most recent record of the task), and the requalification enters reports/evidence/G4, the gate of the C6 tasks, with a surgical MANIFEST insertion, as the requalifications of REM-0022, REM-0023 and REM-0036 by REM-0018",
+        "task_id": "OCOR-DEV-REM-0053",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py, ocor-runtime/tests/tasks/c6_action_fixture.py"
       }
     ],
-    "note": "drifted tasks after the allowlist commit (scripts/validate_evidence_input_drift.py): 0030, 0034, 0035, 0044, 0047 and 0048 with adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4: BR-003 and the other MIXED or non-test methods fail the first condition, the AUTOMATED_TEST requirements are not exercised in full by the adapted lines); 0009 and 0014 with a changed code input and unchanged tests (NCP-U01-SUPERSESSION-REQUALIFICATIONS point 3); 0005, 0050 and 0082 for the allowlist; REM-0024, REM-0027, REM-0028, REM-0049 and REM-0053 have adapted tests and are not completed tasks",
+    "note": "drifted tasks after the allowlist commit (scripts/validate_evidence_input_drift.py): 0030, 0034, 0035, 0044, 0047 and 0048 with adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4: BR-003 and the other MIXED or non-test methods fail the first condition, the AUTOMATED_TEST requirements are not exercised in full by the adapted lines); 0009 and 0014 with a changed code input and unchanged tests (NCP-U01-SUPERSESSION-REQUALIFICATIONS point 3); 0005, 0050 and 0082 for the allowlist; REM-0053 has adapted tests and is not a completed task, and its regression-only requalification is required by NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06) option 1 (added in repair cycle 1 after VF-001 of OCOR-DEV-REM-0054-84443cf94590-0); REM-0024, REM-0027, REM-0028 and REM-0049 have adapted tests and are not completed tasks, and no decision or rule requires their requalification (they run in the consumer modules of the campaign)",
     "qualifying": [],
     "regression_only": [
       "OCOR-DEV-0005",
@@ -1968,7 +2149,8 @@
       "OCOR-DEV-0047",
       "OCOR-DEV-0048",
       "OCOR-DEV-0050",
-      "OCOR-DEV-0082"
+      "OCOR-DEV-0082",
+      "OCOR-DEV-REM-0053"
     ]
   },
   "required_backend": "OPA, Keycloak, OpenBao -- realised as the OPA, Keycloak, OpenBao and SPIRE (mTLS to OPA) services of the full CI stack provisioned by scripts/bootstrap_ci_environment.py, with PostgreSQL for the durable stop-epoch store and the consumer modules (Temporal, TypeDB, TerminusDB, Fuseki, Qdrant, Kafka for the requalified and consumer modules); stop-epoch and break-glass signatures with locally generated Ed25519 keys",
