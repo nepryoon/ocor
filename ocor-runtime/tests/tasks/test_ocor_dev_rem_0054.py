@@ -36,6 +36,15 @@ NCR-C6-010 to NCR-C6-013.
   qualification, and a consumer admits a decision only when it enforces every constraint, holds every
   required approval and fulfils every obligation.
 
+* NCR-C6-012 -- LLD v1.1 :67 (§1.3: a missing, incomparable or unresolvable marking produces
+  ``MARKING_UNRESOLVED``; the join is the conservative least upper bound), Register FR-131 :298
+  (conservative propagation of mandatory controls) and FR-006 :49 (uniform compartmentation). The
+  C2 gateway and the C8 tool runtime evaluate marking with a resolving engine over the validated
+  lattices: every scheme of the active set must be present with a known label, an incomparable pair
+  is unresolved, never the legacy bottom default or an ignored scheme; C2 denies an unresolved
+  clearance (ADD v1.3 :401) and C8 refuses the call with ``MARKING_UNRESOLVED`` before any effect.
+  The legacy ``c4_marking.MarkingEngine`` is unchanged (programme point 6) and refused by both.
+
 The durable stop-epoch store is the real PostgreSQL of the stack (``OCOR_LIVE_POSTGRES_DSN``);
 the other cases use the in-memory implementation of the same port. The policy cases evaluate signed
 bundles on the real OPA over mTLS (SPIFFE/SPIRE) for a real Keycloak principal, with the fixtures
@@ -428,7 +437,8 @@ def test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port() -> Non
 
     sandbox.register_tool("restart_service", restart_service)
     authority = capabilities.CapabilityAuthority(issuer="ocor-rem0054-tool-authority")
-    engine = marking.MarkingEngine([marking.MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET"))])
+    engine = _mod("c4.marking_resolution").ResolvedMarkingEngine(
+        [marking.MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET"))])
     runtime = tool_runtime.ToolCallRuntime(sandbox=sandbox, authority=authority, marking_engine=engine, stop=fx.stop_reader(epochs))
     lease = authority.issue(subject="agent-1", capabilities=["tool:restart_service"], resources=["restart_service"], issued_at=NOW, ttl=timedelta(hours=1))
     context = kernel.GovernedContext(
@@ -837,3 +847,283 @@ def test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualif
     obligated.admit(fulfilled_obligations=frozenset({"audit:access"}))
     # An unqualified permit admits nothing more than it says: honouring extras changes nothing.
     permitted.admit(enforced_constraints=frozenset({"mask:pii"}))
+
+
+# --- NCR-C6-012: MARKING_UNRESOLVED in the current components (LLD v1.1 :67; FR-131 :298; FR-006 :49)
+
+FULL = {"classification": "SECRET", "compartment": "ALPHA"}
+CLEARED = {"classification": "TOP_SECRET", "compartment": "ALL"}
+UNRESOLVED_MARKINGS = [
+    pytest.param({"classification": "SECRET"}, CLEARED, id="content-misses-a-scheme"),
+    pytest.param(FULL, {"classification": "TOP_SECRET"}, id="clearance-misses-a-scheme"),
+    pytest.param({}, CLEARED, id="content-names-no-scheme"),
+    pytest.param({**FULL, "caveat": "NOFORN"}, CLEARED, id="content-names-an-unknown-scheme"),
+    pytest.param({**FULL, "classification": "COSMIC"}, CLEARED, id="content-names-an-unknown-label"),
+    pytest.param(FULL, {**CLEARED, "compartment": 1}, id="clearance-label-is-not-a-string"),
+    pytest.param(FULL, {"classification": "TOP_SECRET", "compartment": "BRAVO"}, id="incomparable-compartments"),
+]
+
+
+def _lattices() -> tuple[Any, Any]:
+    legacy = _mod("c4_marking")
+    classification = legacy.MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))
+    compartment = legacy.MarkingSchemeDefinition(
+        "compartment", labels=("NONE", "ALPHA", "BRAVO", "ALL"),
+        relations=[("NONE", "ALPHA"), ("NONE", "BRAVO"), ("ALPHA", "ALL"), ("BRAVO", "ALL")],
+    )
+    return classification, compartment
+
+
+def _resolving() -> Any:
+    return _mod("c4.marking_resolution").ResolvedMarkingEngine(_lattices())
+
+
+def _marks(values: dict[str, Any]) -> Any:
+    return _mod("c4_marking").MarkingSet(values)
+
+
+def _legacy_engine() -> Any:
+    legacy = _mod("c4_marking")
+    return legacy.MarkingEngine(_lattices())
+
+
+def test_ncr_c6_012_conforms() -> None:
+    """The register's RED probe: the C2 gateway and the C8 tool runtime no longer evaluate marking
+    with the legacy ``MarkingEngine``, whose join defaults a missing scheme to the bottom and whose
+    authorization ignores it; a missing scheme is ``MARKING_UNRESOLVED``."""
+    for module in ("c2.gateway", "c8.tool_runtime"):
+        assert not hasattr(_mod(module), "MarkingEngine")
+    with pytest.raises(_mod("c4.marking").MarkingUnresolved) as excinfo:
+        _resolving().join(_marks({"classification": "SECRET"}), _marks(FULL))
+    assert _reason(excinfo) == "MARKING_UNRESOLVED"
+    with pytest.raises(_mod("c4.marking").MarkingUnresolved):
+        _resolving().authorized(_marks({"classification": "SECRET"}), _marks(CLEARED))
+    # The legacy slice is unchanged (programme point 6): its defaults are still the ones the
+    # current components no longer reach.
+    legacy = _legacy_engine()
+    assert legacy.join(_marks({"classification": "SECRET"}))["compartment"] == "NONE"
+    assert legacy.is_authorized(_marks({"classification": "SECRET"}), _marks(CLEARED))
+
+
+@pytest.mark.parametrize("content,clearance", UNRESOLVED_MARKINGS)
+def test_ncr_c6_012_a_missing_unknown_or_incomparable_marking_is_unresolved(content: dict[str, Any], clearance: dict[str, Any]) -> None:
+    with pytest.raises(_mod("c4.marking").MarkingUnresolved) as excinfo:
+        _resolving().authorized(_marks(content), _marks(clearance))
+    assert _reason(excinfo) == "MARKING_UNRESOLVED"
+
+
+@pytest.mark.parametrize("value", [FULL, None, "SECRET", ("classification", "SECRET")])
+def test_ncr_c6_012_a_marking_that_is_not_a_marking_set_is_unresolved(value: object) -> None:
+    with pytest.raises(_mod("c4.marking").MarkingUnresolved):
+        _resolving().resolve(value)
+
+
+def test_ncr_c6_012_a_complete_marking_is_authorized_only_when_the_clearance_dominates_it() -> None:
+    engine = _resolving()
+    assert engine.authorized(_marks(FULL), _marks(CLEARED))
+    assert engine.authorized(_marks(FULL), _marks(FULL))
+    assert not engine.authorized(_marks(FULL), _marks({"classification": "UNCLASSIFIED", "compartment": "ALL"}))
+    assert not engine.authorized(_marks(FULL), _marks({"classification": "TOP_SECRET", "compartment": "NONE"}))
+    assert engine.resolve(_marks(FULL)).values == FULL
+
+
+def test_ncr_c6_012_the_join_is_the_conservative_least_upper_bound_of_complete_markings() -> None:
+    engine = _resolving()
+    left, right = _marks(FULL), _marks({"classification": "UNCLASSIFIED", "compartment": "BRAVO"})
+    joined = engine.join(left, right)
+    assert dict(joined.values) == {"classification": "SECRET", "compartment": "ALL"}
+    # FR-131: the derived marking is never less restrictive than any input.
+    assert engine.authorized(left, joined) and engine.authorized(right, joined)
+    assert dict(engine.join(left).values) == FULL
+
+
+@pytest.mark.parametrize("partial", [
+    pytest.param({"classification": "SECRET"}, id="missing-scheme"),
+    pytest.param({**FULL, "compartment": "GAMMA"}, id="unknown-label"),
+    pytest.param({**FULL, "caveat": "NOFORN"}, id="unknown-scheme"),
+])
+def test_ncr_c6_012_the_join_never_defaults_an_unresolved_marking_to_the_bottom(partial: dict[str, Any]) -> None:
+    with pytest.raises(_mod("c4.marking").MarkingUnresolved):
+        _resolving().join(_marks(FULL), _marks(partial))
+
+
+def test_ncr_c6_012_the_join_of_no_marking_is_unresolved() -> None:
+    with pytest.raises(_mod("c4.marking").MarkingUnresolved):
+        _resolving().join()
+
+
+def test_ncr_c6_012_the_engine_needs_distinct_validated_lattices() -> None:
+    resolution = _mod("c4.marking_resolution")
+    classification, _ = _lattices()
+    for schemes in ([], [classification, classification]):
+        with pytest.raises(_mod("c4.marking").MarkingSchemeError):
+            resolution.ResolvedMarkingEngine(schemes)
+    with pytest.raises(TypeError):
+        resolution.ResolvedMarkingEngine([{"scheme_id": "classification", "levels": ["U"]}])
+
+
+class _ToolWorld:
+    """The C8 tool runtime on a resolving marking engine, the real capability authority, a stop
+    reader and the strict sandbox, recording every effect."""
+
+    def __init__(self, engine: Any) -> None:
+        safety = _safety()
+        capabilities = _mod("c6_capabilities")
+        agent = _mod("c8_agent")
+        kernel = _mod("kernel.governed_context")
+        self.tool_runtime = _mod("c8.tool_runtime")
+        self.effects: list[str] = []
+        sandbox = agent.StrictSandbox()
+
+        def restart_service(name: str) -> str:
+            self.effects.append(name)
+            return name
+
+        sandbox.register_tool("restart_service", restart_service)
+        epochs = safety.InMemoryStopEpochStore()
+        _fx().stop_controller(_registry(), epochs=epochs)
+        authority = capabilities.CapabilityAuthority(issuer="ocor-rem0054-marking-authority")
+        self.runtime = self.tool_runtime.ToolCallRuntime(
+            sandbox=sandbox, authority=authority, marking_engine=engine, stop=_fx().stop_reader(epochs))
+        self.authority = authority
+        self.budget = agent.TokenBudget(100)
+        self.context = kernel.GovernedContext(
+            tenant_id="t1", organization_id="o1", domain_id="d1", compartments=("default",),
+            classification_marking_ref="urn:sha256:" + "a" * 64, purpose="incident-response", effective_principal_id="agent-1",
+            actor_chain=("agent-1",), ontology_release_digest="urn:sha256:" + "b" * 64, policy_bundle_digest="urn:sha256:" + "c" * 64,
+            correlation_id="urn:ocor:correlation:rem0054",
+        )
+
+    def invoke(self, content: Any, clearance: Any) -> Any:
+        lease = self.authority.issue(subject="agent-1", capabilities=["tool:restart_service"], resources=["restart_service"],
+                                     issued_at=NOW, ttl=timedelta(hours=1))
+        return self.runtime.invoke(
+            "restart_service", "restart_service(name)", bindings={"name": "svc"}, lease=lease, context=self.context,
+            content_marking=content, clearance=clearance, budget=self.budget, estimated_tokens=1, stop_epoch=0, at=NOW,
+        )
+
+
+def test_ncr_c6_012_the_c8_tool_runtime_runs_a_call_whose_complete_marking_the_clearance_dominates() -> None:
+    world = _ToolWorld(_resolving())
+    receipt = world.invoke(_marks(FULL), _marks(CLEARED))
+    assert receipt.result == "svc"
+    assert world.effects == ["svc"]
+
+
+@pytest.mark.parametrize("content,clearance", UNRESOLVED_MARKINGS)
+def test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any_effect(
+        content: dict[str, Any], clearance: dict[str, Any]) -> None:
+    world = _ToolWorld(_resolving())
+    with pytest.raises(world.tool_runtime.ToolRuntimeError) as excinfo:
+        world.invoke(_marks(content), _marks(clearance))
+    assert excinfo.value.reason_code == "MARKING_UNRESOLVED"
+    assert world.effects == []
+    assert world.budget.used == 0
+
+
+def test_ncr_c6_012_the_c8_tool_runtime_denies_a_clearance_that_does_not_dominate() -> None:
+    world = _ToolWorld(_resolving())
+    with pytest.raises(world.tool_runtime.ToolRuntimeError) as excinfo:
+        world.invoke(_marks(FULL), _marks({"classification": "UNCLASSIFIED", "compartment": "ALL"}))
+    assert excinfo.value.reason_code == "MARKING_DENIED"
+    assert world.effects == [] and world.budget.used == 0
+
+
+def test_ncr_c6_012_the_c8_tool_runtime_refuses_the_legacy_engine() -> None:
+    with pytest.raises(TypeError):
+        _ToolWorld(_legacy_engine())
+
+
+class _RecordingMarkingPort:
+    """A ``MarkingAuthorizationPort`` that records each clearance it is asked about."""
+
+    def __init__(self) -> None:
+        self.asked: list[tuple[str, dict[str, str]]] = []
+
+    def exists_authorized(self, resource_id: str, clearance: Any) -> bool:
+        self.asked.append((resource_id, dict(clearance.values)))
+        return True
+
+
+C2_CONTRACT = "urn:ocor:contract:named-query:rem0054-marking"
+C2_MARKING_REF = "urn:sha256:" + "a" * 64
+
+
+def _named_query(*, resource_id: str | None = "urn:ocor:resource:rem0054") -> Any:
+    ports = _mod("c2.ports")
+    canonical = _mod("kernel.canonical")
+    kernel = _mod("kernel.governed_context")
+    context = kernel.GovernedContext(
+        tenant_id="urn:ocor:tenant:synthetic", organization_id="urn:ocor:org:synthetic", domain_id="urn:ocor:domain:logistics",
+        compartments=("urn:ocor:compartment:alpha",), classification_marking_ref=C2_MARKING_REF, purpose="rem0054-marking",
+        effective_principal_id="urn:ocor:principal:analyst-1", actor_chain=("urn:ocor:principal:analyst-1",),
+        ontology_release_digest="urn:sha256:" + "b" * 64, policy_bundle_digest="urn:sha256:" + "c" * 64,
+        correlation_id="018f2f95-01b2-7cc3-8d4e-123456789abc",
+    )
+    parameters = {} if resource_id is None else {"resource_id": resource_id}
+    return ports.NamedQueryRequest(
+        request_id="018f2f95-01b2-7cc3-8d4e-123456789abd", contract_id=C2_CONTRACT, contract_version="1.0.0",
+        contract_digest="urn:sha256:" + "d" * 64, parameters=parameters, governed_context=context,
+        governed_context_digest=canonical.canonical_digest(context.to_mapping()),
+        consistency=ports.ConsistencyRequirement(mode=ports.ConsistencyMode.BEST_AVAILABLE),
+    )
+
+
+def _c2_policy(engine: Any, clearance: Any, port: _RecordingMarkingPort) -> Any:
+    gateway = _mod("c2.gateway")
+    registered = gateway.RegisteredNamedQuery(contract_id=C2_CONTRACT, versions=frozenset({"1.0.0"}), marking_scheme_id="classification")
+    return gateway.RegistrationAndMarkingPolicy(registry={C2_CONTRACT: registered}, marking_engine=engine, marking_port=port,
+                                                clearance_by_marking_ref={C2_MARKING_REF: clearance})
+
+
+def test_ncr_c6_012_the_c2_policy_permits_with_a_complete_clearance_and_asks_the_port_with_it() -> None:
+    port = _RecordingMarkingPort()
+    policy = _c2_policy(_resolving(), _marks(CLEARED), port)
+    assert policy.decide(_named_query()) == _mod("c2.gateway").PERMIT
+    assert port.asked == [("urn:ocor:resource:rem0054", CLEARED)]
+    assert policy.decide(_named_query(resource_id=None)) == _mod("c2.gateway").PERMIT
+
+
+@pytest.mark.parametrize("clearance", [
+    pytest.param(_mod("c4_marking").MarkingSet({"classification": "TOP_SECRET"}), id="misses-a-scheme"),
+    pytest.param(_mod("c4_marking").MarkingSet({**CLEARED, "compartment": "GAMMA"}), id="unknown-label"),
+    pytest.param(_mod("c4_marking").MarkingSet({**CLEARED, "caveat": "NOFORN"}), id="unknown-scheme"),
+    pytest.param(CLEARED, id="not-a-marking-set"),
+])
+@pytest.mark.parametrize("resource_id", ["urn:ocor:resource:rem0054", None])
+def test_ncr_c6_012_the_c2_policy_denies_an_unresolved_clearance_without_asking_the_port(clearance: Any, resource_id: str | None) -> None:
+    # ADD v1.3 :401: an unresolvable marking is DENY, never a permissive posture.
+    port = _RecordingMarkingPort()
+    policy = _c2_policy(_resolving(), clearance, port)
+    assert policy.clearance(_named_query(resource_id=resource_id)) is None
+    assert policy.decide(_named_query(resource_id=resource_id)) == _mod("c2.gateway").DENY
+    assert port.asked == []
+
+
+def test_ncr_c6_012_the_c2_policy_refuses_the_legacy_engine() -> None:
+    with pytest.raises(TypeError):
+        _c2_policy(_legacy_engine(), _marks(CLEARED), _RecordingMarkingPort())
+
+
+def test_ncr_c6_012_the_c6_action_path_never_reaches_the_legacy_marking_default() -> None:
+    """The C6 engine hands committed events to the C7 relay without markings, so a relay that
+    carries the legacy engine refuses every emission and one without it evaluates no marking: the
+    legacy missing-scheme default is never reached on the C6 path."""
+    import ast
+
+    engine_source = inspect.getsource(_mod("c6.engine"))
+    calls = [node for node in ast.walk(ast.parse(engine_source))
+             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "emit"
+             and ast.unparse(node.func.value) == "self._relay"]
+    assert calls
+    assert all({keyword.arg for keyword in call.keywords} <= {"at"} for call in calls)
+    store = _mod("c3_store")
+    emission = _mod("c7_emission")
+    outbox = store.AtomicOutboxStore()
+    event = outbox.write("agg-1", {"k": "v"}, expected_version=0, writer_id="ocor-core", event_type="Committed",
+                         idempotency_key="rem0054-marking", occurred_at=NOW).event
+    sunk: list[Any] = []
+    fence = emission.EmissionFence(store=outbox, marking_engine=_legacy_engine())
+    with pytest.raises(_mod("errors").EmissionBlocked):
+        fence.emit(event, sunk.append, at=NOW)
+    assert sunk == []
