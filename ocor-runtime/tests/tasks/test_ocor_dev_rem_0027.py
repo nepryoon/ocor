@@ -40,7 +40,8 @@ from typing import Any
 
 import pytest
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.c6.safety import OutcomeReconciler, OutcomeStatus, SafetyError
 from ocor_runtime.c6_capabilities import CapabilityAuthority, CapabilityLease
 from ocor_runtime.c8 import tool_runtime as tool_runtime_module
@@ -98,7 +99,7 @@ class Harness:
         self.finished = threading.Event()
         self.sandbox = StrictSandbox()
         self.authority = CapabilityAuthority(issuer="rem-0027-authority")
-        self.marking = MarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
+        self.marking = ResolvedMarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
         self.stop = stop_controller()
         # REM-0028 (merged on main): reset approvers are resolved active humans
         # read from registry attributes, independent of the requester.

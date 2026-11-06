@@ -18,7 +18,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.c6.safety import EmergencyStopController
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError
@@ -72,9 +73,9 @@ def authority() -> CapabilityAuthority:
 
 
 @pytest.fixture
-def marking_engine() -> MarkingEngine:
+def marking_engine() -> ResolvedMarkingEngine:
     scheme = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))
-    return MarkingEngine([scheme])
+    return ResolvedMarkingEngine([scheme])
 
 
 @pytest.fixture
@@ -83,7 +84,7 @@ def stop() -> EmergencyStopController:
 
 
 @pytest.fixture
-def runtime(sandbox: StrictSandbox, authority: CapabilityAuthority, marking_engine: MarkingEngine, stop: EmergencyStopController) -> ToolCallRuntime:
+def runtime(sandbox: StrictSandbox, authority: CapabilityAuthority, marking_engine: ResolvedMarkingEngine, stop: EmergencyStopController) -> ToolCallRuntime:
     return ToolCallRuntime(sandbox=sandbox, authority=authority, marking_engine=marking_engine, stop=stop)
 
 

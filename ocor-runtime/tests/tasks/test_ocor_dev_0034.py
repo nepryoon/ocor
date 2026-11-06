@@ -47,6 +47,7 @@ from ocor_runtime.c2.ports import (
 )
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
 from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.kernel.governed_context import GovernedContext, GovernedContextError
 from ocor_runtime.security.ports import (
     AuthenticatedPrincipal,
@@ -230,7 +231,7 @@ def make_gateway(
     typedb: TypeDBExactCommitAdapter,
     marking_ref_to_clearance_level: dict[str, str],
 ) -> NamedQueryGateway:
-    engine = MarkingEngine([CLASSIFICATION_SCHEME])
+    engine = ResolvedMarkingEngine([CLASSIFICATION_SCHEME])
     registry = {
         CONTRACT_ID: RegisteredNamedQuery(
             contract_id=CONTRACT_ID,
@@ -264,7 +265,7 @@ def test_identity_backed_authority_conforms_to_the_sealed_port(identity_registry
 
 def test_registration_and_marking_policy_conforms_to_the_sealed_port(jena: JenaMarkingProjectionAdapter) -> None:
     policy = RegistrationAndMarkingPolicy(
-        registry={}, marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]), marking_port=jena, clearance_by_marking_ref={}
+        registry={}, marking_engine=ResolvedMarkingEngine([CLASSIFICATION_SCHEME]), marking_port=jena, clearance_by_marking_ref={}
     )
     assert isinstance(policy, PolicyDecisionPort)
 
@@ -519,7 +520,7 @@ def test_a_real_marking_backend_failure_propagates_and_never_defaults_to_permit(
                 contract_id=CONTRACT_ID, versions=frozenset({"1.0.0"}), marking_scheme_id="classification"
             )
         },
-        marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]),
+        marking_engine=ResolvedMarkingEngine([CLASSIFICATION_SCHEME]),
         marking_port=unreachable_port,
         clearance_by_marking_ref={DIGEST_A: clearance("SECRET")},
     )

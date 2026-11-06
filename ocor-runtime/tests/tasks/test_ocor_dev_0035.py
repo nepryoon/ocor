@@ -27,7 +27,8 @@ from ocor_runtime.c2.ports import (
     Watermark,
     WatermarkPort,
 )
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.kernel.governed_context import GovernedContext
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -111,7 +112,7 @@ def make_planner(*, typedb: TypeDBExactCommitAdapter, registered: bool) -> Consi
     )
     policy = RegistrationAndMarkingPolicy(
         registry=registry,
-        marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]),
+        marking_engine=ResolvedMarkingEngine([CLASSIFICATION_SCHEME]),
         marking_port=_NoResourcePort(),
         # NCP-U03 (NCR-C2-003), construction only: the request's classification_marking_ref
         # resolves -- ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401
@@ -206,7 +207,7 @@ class _SpyWatermarkPort:
 def test_an_unregistered_contract_never_reaches_the_watermark_check() -> None:
     policy = RegistrationAndMarkingPolicy(
         registry={},
-        marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]),
+        marking_engine=ResolvedMarkingEngine([CLASSIFICATION_SCHEME]),
         marking_port=_NoResourcePort(),
         clearance_by_marking_ref={},
     )
@@ -254,7 +255,7 @@ class _UnreachableWatermarkPort:
 def test_a_real_watermark_backend_failure_propagates_and_never_defaults_to_best_available() -> None:
     policy = RegistrationAndMarkingPolicy(
         registry={CONTRACT_ID: RegisteredNamedQuery(contract_id=CONTRACT_ID, versions=frozenset({"1.0.0"}), marking_scheme_id="classification")},
-        marking_engine=MarkingEngine([CLASSIFICATION_SCHEME]),
+        marking_engine=ResolvedMarkingEngine([CLASSIFICATION_SCHEME]),
         marking_port=_NoResourcePort(),
         # NCP-U03 (NCR-C2-003), construction only: the request's classification_marking_ref
         # resolves -- ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:401
