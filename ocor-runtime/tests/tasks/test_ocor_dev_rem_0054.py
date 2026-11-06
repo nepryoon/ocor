@@ -657,6 +657,249 @@ def test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port() -
     assert _reason(excinfo) == "BREAK_GLASS_STOP_ACTIVE"
 
 
+# --- NCR-C6-010: input robustness of the stop epoch, reset and break-glass paths -----------------
+# (NCP-THROUGHPUT-RULES point 1 self-check: data shape without conversion, typed errors, tampered
+# data refused, boundary signatures re-verified, one negative test per parsing path.)
+
+
+class _RefusingHistory:
+    """A stop-epoch port whose history read is refused by the adapter with a typed error."""
+
+    def __init__(self, inner: Any, error: BaseException) -> None:
+        self._inner = inner
+        self._error = error
+
+    def latest(self) -> Any:
+        return self._inner.latest()
+
+    def history(self) -> Any:
+        raise self._error
+
+    def append(self, signed: Any, *, expected_sequence: int) -> bool:
+        return bool(self._inner.append(signed, expected_sequence=expected_sequence))
+
+
+def test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason() -> None:
+    fx = _fx()
+    safety = _safety()
+    epochs = safety.InMemoryStopEpochStore()
+    fx.stop_controller(_registry(), epochs=epochs)
+    malformed = safety.SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "a stored stop epoch is malformed")
+    with pytest.raises(safety.SafetyError) as excinfo:
+        fx.stop_reader(_RefusingHistory(epochs, malformed)).history
+    assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+    with pytest.raises(safety.SafetyError) as excinfo:
+        fx.stop_reader(_RefusingHistory(epochs, RuntimeError("connection reset"))).history
+    assert _reason(excinfo) == "STOP_EPOCH_UNAVAILABLE"
+
+
+class _Incomparable:
+    def __eq__(self, other: object) -> bool:
+        raise RuntimeError("not comparable")
+
+    def __ne__(self, other: object) -> bool:
+        raise RuntimeError("not comparable")
+
+    __hash__ = None  # type: ignore[assignment]
+
+
+@pytest.mark.parametrize("fenced", [_Incomparable(), True, 0.0, "0", None], ids=["incomparable", "bool", "float", "str", "none"])
+def test_ncr_c6_010_a_fenced_epoch_that_is_not_an_integer_is_stale(fenced: object) -> None:
+    fx = _fx()
+    safety = _safety()
+    epochs = safety.InMemoryStopEpochStore()
+    fx.stop_controller(_registry(), epochs=epochs)
+    reader = fx.stop_reader(epochs)
+    assert reader.epoch == 0
+    with pytest.raises(safety.SafetyError) as excinfo:
+        reader.guard_dispatch(fenced_epoch=fenced)
+    assert _reason(excinfo) == "STOP_EPOCH_STALE"
+    reader.guard_dispatch(fenced_epoch=0)
+
+
+class _RevocableKeyring:
+    def __init__(self, inner: Any) -> None:
+        self._inner = inner
+        self.revoked: set[tuple[str, str]] = set()
+
+    def public_key(self, principal_id: str, keyid: str) -> bytes | None:
+        if (principal_id, keyid) in self.revoked:
+            return None
+        return self._inner.public_key(principal_id, keyid)  # type: ignore[no-any-return]
+
+
+def test_ncr_c6_010_a_reader_never_honours_a_signature_whose_key_the_keyring_no_longer_holds() -> None:
+    fx = _fx()
+    safety = _safety()
+    epochs = safety.InMemoryStopEpochStore()
+    fx.stop_controller(_registry(), epochs=epochs)
+    keyring = _RevocableKeyring(fx.keyring())
+    reader = safety.StopEpochReader(epochs=epochs, keyring=keyring, issuer_id=fx.CONTROL_PLANE)
+    assert reader.epoch == 0
+    keyring.revoked.add((fx.CONTROL_PLANE, fx.CONTROL_PLANE_KEYID))
+    for read in (lambda: reader.epoch, lambda: reader.history):
+        with pytest.raises(safety.SafetyError) as excinfo:
+            read()
+        assert _reason(excinfo) == "STOP_EPOCH_SIGNATURE_INVALID"
+
+
+@pytest.mark.parametrize(
+    "approvers,requester",
+    [
+        ("ab", HUMAN_C),
+        ([HUMAN_A, HUMAN_B], HUMAN_C),
+        ((HUMAN_A, ["unhashable"]), HUMAN_C),
+        ((HUMAN_A, 42), HUMAN_C),
+        (None, HUMAN_C),
+        ((HUMAN_A, HUMAN_B), 42),
+        ((HUMAN_A, HUMAN_B), None),
+        ((HUMAN_A, HUMAN_B), ("urn:ocor:human:c",)),
+    ],
+    ids=["approvers-str", "approvers-list", "approver-unhashable", "approver-int", "approvers-none",
+         "requester-int", "requester-none", "requester-tuple"],
+)
+def test_ncr_c6_010_a_reset_with_malformed_approvers_or_requester_is_the_dual_control_refusal(
+    approvers: object, requester: object
+) -> None:
+    fx = _fx()
+    safety = _safety()
+    stop = fx.stop_controller(_registry())
+    _stopped(stop)
+    before = stop.history
+    with pytest.raises(safety.SafetyError) as excinfo:
+        stop.request_reset(approvers=approvers, identities=_registry(), requester=requester, recovery=fx.recovery((HUMAN_A, HUMAN_B)))
+    assert _reason(excinfo) == "RESET_REQUIRES_DUAL_CONTROL"
+    assert stop.status is safety.StopStatus.STOPPED
+    assert stop.history == before
+
+
+def test_ncr_c6_010_a_reset_whose_approver_cannot_be_read_is_the_dual_control_refusal() -> None:
+    fx = _fx()
+    safety = _safety()
+
+    class _Unreadable:
+        def get(self, canonical_id: str) -> Any:
+            raise RuntimeError("identity registry unreachable")
+
+    class _NotARecord:
+        def get(self, canonical_id: str) -> Any:
+            return {"principal_kind": "HUMAN", "status": "ACTIVE", "roles": ""}
+
+    for identities in (_Unreadable(), _NotARecord()):
+        stop = fx.stop_controller(_registry())
+        _stopped(stop)
+        with pytest.raises(safety.SafetyError) as excinfo:
+            stop.request_reset(approvers=(HUMAN_A, HUMAN_B), identities=identities, requester=HUMAN_C,
+                               recovery=fx.recovery((HUMAN_A, HUMAN_B)))
+        assert _reason(excinfo) == "RESET_REQUIRES_DUAL_CONTROL"
+        assert stop.status is safety.StopStatus.STOPPED
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"capabilities": "restart_service"},
+        {"capabilities": ["restart_service"]},
+        {"capabilities": frozenset({"restart_service", 42})},
+        {"approvers": SDO},
+        {"approvers": [SDO, OWNER]},
+        {"approvers": (SDO, 42)},
+        {"grant_id": 42},
+        {"incident_ref": ("urn:ocor:incident:42",)},
+        {"scope": b"urn:ocor:target:site-1"},
+        {"domain": 7},
+    ],
+    ids=["capabilities-str", "capabilities-list", "capability-int", "approvers-str", "approvers-list", "approver-int",
+         "grant-id-int", "incident-tuple", "scope-bytes", "domain-int"],
+)
+def test_ncr_c6_010_a_break_glass_request_of_the_wrong_shape_is_refused_and_audited(change: dict[str, Any]) -> None:
+    safety = _safety()
+    controller, sink = _break_glass()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        _grant(controller, **change)
+    assert _reason(excinfo) == "BREAK_GLASS_GRANT_INVALID"
+    assert [event["event"] for event in sink.events] == ["BREAK_GLASS_GRANT_DENIED"]
+    assert sink.events[0]["reason_code"] == "BREAK_GLASS_GRANT_INVALID"
+
+
+@pytest.mark.parametrize("ttl", [600, "PT10M", None], ids=["int", "str", "none"])
+def test_ncr_c6_010_a_break_glass_ttl_that_is_not_a_duration_is_refused_and_audited(ttl: object) -> None:
+    controller, sink = _break_glass()
+    with pytest.raises(ValueError):
+        _grant(controller, ttl=ttl)
+    assert [event["event"] for event in sink.events] == ["BREAK_GLASS_GRANT_DENIED"]
+    assert sink.events[0]["reason_code"] == "BREAK_GLASS_GRANT_INVALID"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"capabilities": "restart_service"},
+        {"approvers": [OWNER, SDO]},
+        {"grant_id": 42},
+        {"ttl": 600},
+        {"keyid": None},
+        {"signature": b"c2ln"},
+    ],
+    ids=["capabilities-str", "approvers-list", "grant-id-int", "ttl-int", "keyid-none", "signature-bytes"],
+)
+def test_ncr_c6_010_a_break_glass_grant_of_the_wrong_shape_is_never_built(change: dict[str, Any]) -> None:
+    safety = _safety()
+    fields: dict[str, Any] = {
+        "grant_id": "urn:ocor:break-glass:1",
+        "requester": REQUESTER,
+        "reason": "production-incident",
+        "incident_ref": "urn:ocor:incident:42",
+        "scope": "urn:ocor:target:site-1",
+        "domain": DOMAIN,
+        "capabilities": frozenset({"restart_service"}),
+        "approvers": (OWNER, SDO),
+        "granted_at": NOW,
+        "ttl": timedelta(minutes=10),
+    }
+    safety.BreakGlassGrant(**fields)
+    fields.update(change)
+    with pytest.raises(ValueError):
+        safety.BreakGlassGrant(**fields)
+
+
+@pytest.mark.parametrize(
+    "capability,review_ref,reason",
+    [
+        (["restart_service"], "urn:ocor:review:1", "BREAK_GLASS_CAPABILITY_NOT_GRANTED"),
+        (None, "urn:ocor:review:1", "BREAK_GLASS_CAPABILITY_NOT_GRANTED"),
+        ("restart_service", 42, "BREAK_GLASS_REVIEW_REQUIRED"),
+        ("restart_service", ["urn:ocor:review:1"], "BREAK_GLASS_REVIEW_REQUIRED"),
+    ],
+    ids=["capability-list", "capability-none", "review-int", "review-list"],
+)
+def test_ncr_c6_010_a_break_glass_use_of_the_wrong_shape_is_refused_and_audited(
+    capability: object, review_ref: object, reason: str
+) -> None:
+    safety = _safety()
+    controller, sink = _break_glass()
+    grant = _grant(controller)
+    sink.events.clear()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        controller.authorize(grant, capability=capability, review_ref=review_ref)
+    assert _reason(excinfo) == reason
+    assert [event["event"] for event in sink.events] == ["BREAK_GLASS_USE_DENIED"]
+    controller.authorize(grant, capability="restart_service", review_ref="urn:ocor:review:1")
+
+
+@pytest.mark.parametrize("grant", [None, "urn:ocor:break-glass:1", {"grant_id": "urn:ocor:break-glass:1"}], ids=["none", "str", "mapping"])
+def test_ncr_c6_010_something_other_than_a_grant_is_never_issued(grant: object) -> None:
+    safety = _safety()
+    controller, sink = _break_glass()
+    with pytest.raises(safety.SafetyError) as excinfo:
+        controller.authorize(grant, capability="restart_service", review_ref="urn:ocor:review:1")
+    assert _reason(excinfo) == "BREAK_GLASS_GRANT_NOT_ISSUED"
+    assert [event["event"] for event in sink.events] == ["BREAK_GLASS_USE_DENIED"]
+    with pytest.raises(safety.SafetyError) as excinfo:
+        controller.revoke(grant)
+    assert _reason(excinfo) == "BREAK_GLASS_GRANT_NOT_ISSUED"
+
+
 # --- NCR-C6-013: ADD v1.3 risk-class names and gates (ADD :3298-3305, :2193; LLD :16-18) --------
 
 ADD_RISK_CLASSES = ["R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT"]
@@ -847,6 +1090,56 @@ def test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualif
     obligated.admit(fulfilled_obligations=frozenset({"audit:access"}))
     # An unqualified permit admits nothing more than it says: honouring extras changes nothing.
     permitted.admit(enforced_constraints=frozenset({"mask:pii"}))
+
+
+def _decision(effect: Any, obligations: object) -> Any:
+    ports = _mod("security.ports")
+    digest = "urn:sha256:" + "c" * 64
+    return ports.PolicyDecision(
+        decision_id="urn:ocor:policy-decision:rem0054",
+        effect=effect,
+        principal_id="urn:ocor:principal:rem0054",
+        action="read",
+        resource="urn:ocor:resource:rem0054",
+        purpose="incident-response",
+        governed_context_digest="urn:sha256:" + "d" * 64,
+        policy_bundle_digest=digest,
+        evaluated_at=NOW,
+        valid_until=NOW + timedelta(minutes=5),
+        obligations=obligations,  # type: ignore[arg-type]
+        status=ports.ControlStatus.available(ports.ControlName.POLICY, observed_at=NOW, source_digest=digest),
+    )
+
+
+@pytest.mark.parametrize(
+    "obligations",
+    ["audit:access", ["audit:access"], frozenset({"audit:access"}), None, ("audit:access", 42)],
+    ids=["str", "list", "frozenset", "none", "item-int"],
+)
+def test_ncr_c6_011_a_decision_whose_qualifiers_are_not_a_tuple_of_strings_is_invalid(obligations: object) -> None:
+    ports = _mod("security.ports")
+    assert _decision(ports.PolicyEffect.OBLIGATE, ("audit:access",)).obligations == ("audit:access",)
+    with pytest.raises(ports.SecurityControlError) as excinfo:
+        _decision(ports.PolicyEffect.OBLIGATE, obligations)
+    assert _reason(excinfo) == "POLICY_DECISION_INVALID"
+
+
+@pytest.mark.parametrize(
+    "honoured",
+    [
+        {"fulfilled_obligations": {"audit:access"}},
+        {"fulfilled_obligations": "audit:access"},
+        {"granted_approvals": frozenset({""})},
+        {"enforced_constraints": frozenset({42})},
+    ],
+    ids=["set", "str", "empty-item", "int-item"],
+)
+def test_ncr_c6_011_a_consumer_states_what_it_honours_as_a_set_of_names(honoured: dict[str, Any]) -> None:
+    ports = _mod("security.ports")
+    obligated = _decision(ports.PolicyEffect.OBLIGATE, ("audit:access",))
+    with pytest.raises(TypeError):
+        obligated.admit(**honoured)
+    obligated.admit(fulfilled_obligations=frozenset({"audit:access"}))
 
 
 # --- NCR-C6-012: MARKING_UNRESOLVED in the current components (LLD v1.1 :67; FR-131 :298; FR-006 :49)
