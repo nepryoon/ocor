@@ -75,7 +75,18 @@
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_ttl_that_is_not_a_duration_is_refused_and_audited",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_of_the_wrong_shape_is_never_built",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_use_of_the_wrong_shape_is_refused_and_audited",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_something_other_than_a_grant_is_never_issued"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_something_other_than_a_grant_is_never_issued",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_record_whose_recovery_evidence_is_not_text_is_never_built",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stored_stop_epoch_record_of_the_wrong_shape_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stored_signed_stop_epoch_of_the_wrong_shape_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_signed_stop_epoch_of_the_wrong_shape_is_never_built",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_refuses_malformed_settings",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_malformed_stored_row_is_an_invalid_stop_epoch_never_an_empty_store",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_turns_a_driver_failure_into_unavailable_and_closes_the_connection",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_refuses_a_malformed_read_and_closes_the_connection",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_requester_that_is_not_a_principal_identifier_is_refused_and_audited",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_activator_the_registry_cannot_read_is_unauthorized",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_principal_the_registry_cannot_read_is_refused_and_audited"
       ]
     },
     {
@@ -102,7 +113,8 @@
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualification",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_decision_whose_qualifiers_are_not_a_tuple_of_strings_is_invalid",
-        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_states_what_it_honours_as_a_set_of_names"
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_states_what_it_honours_as_a_set_of_names",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_qualification_response_of_the_wrong_shape_is_not_a_decision"
       ]
     },
     {
@@ -673,7 +685,8 @@
         2,
         3,
         4,
-        5
+        5,
+        6
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -681,6 +694,11 @@
     }
   ],
   "input_robustness_self_check": {
+    "after_preventive_review": {
+      "green": "1963c9d",
+      "note": "the gaps found by the preventive review (PRE-001, PRE-002) and the advisory protocol tests (PRE-003) entered the same table; no new reason code",
+      "red": "3e631d5"
+    },
     "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1: the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) plus boundary digests and bindings and the closure of every resource on every error path, for every adapter and parsing path touched by the unit, before the preventive review",
     "green": "d614bbd",
     "interpretations": [
@@ -688,7 +706,10 @@
       "a break-glass request of the wrong shape is BREAK_GLASS_GRANT_INVALID, audited as BREAK_GLASS_GRANT_DENIED, the reason code the controller already declares for a missing field; a grant that cannot be built stays the audited ValueError of the existing TTL bound",
       "a break-glass use whose capability is not a non-empty string is BREAK_GLASS_CAPABILITY_NOT_GRANTED and whose review reference is not a non-empty string is BREAK_GLASS_REVIEW_REQUIRED; something other than a grant is BREAK_GLASS_GRANT_NOT_ISSUED",
       "the qualifiers of a PolicyDecision are a tuple (its declared type): a string, a list or a set is POLICY_DECISION_INVALID",
-      "the reader caches a verified stop epoch under the key the keyring returns at each read, so a keyring that stops returning a key stops verifying the records it signed"
+      "the reader caches a verified stop epoch under the key the keyring returns at each read, so a keyring that stops returning a key stops verifying the records it signed",
+      "a break-glass requester that is not a string is BREAK_GLASS_GRANT_INVALID like the other text fields of the request (audited), never a registry read",
+      "a registry that cannot be read, or returns something other than an IdentityRecord whose attributes are a mapping, is BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID, the reason code the controller already declares for malformed principal attributes; for the stop activation it is STOP_ACTIVATOR_UNAUTHORIZED, the activation's existing refusal",
+      "an empty recovery evidence stays the absence of a recovery (records before a reset); any other value that is not text is malformed"
     ],
     "out_of_scope": [
       "the BreakGlassGrant and PolicyDecision changes refuse only shapes that no producer of the repository builds; no reason code, contract or accepted value changes"
@@ -703,7 +724,8 @@
           "signed_history translated a typed refusal of the port (STOP_EPOCH_SIGNATURE_INVALID of a malformed stored row) into STOP_EPOCH_UNAVAILABLE",
           "guard_dispatch compared the fenced epoch before checking its type (an object with a raising comparison escaped as a raw error)",
           "the reader's verification cache was not bound to the key the keyring holds now: a record stayed verified after its key left the keyring",
-          "request_reset read approvers and requester with conversion (a list accepted, an unhashable approver a raw TypeError, a non-string requester a raw ValueError at record construction) and an approver read that failed escaped as a raw error"
+          "request_reset read approvers and requester with conversion (a list accepted, an unhashable approver a raw TypeError, a non-string requester a raw ValueError at record construction) and an approver read that failed escaped as a raw error",
+          "StopEpochRecord read a falsy recovery evidence that is not text (None, False, 0, an empty list or mapping, empty bytes) as no evidence, and SignedStopEpoch did not check its record, issuer, key id and signature at construction (preventive review PRE-001; closed after the review, RED 3e631d5)"
         ],
         "parsing_paths": [
           "StopEpochRecord.__post_init__",
@@ -717,11 +739,12 @@
           "StopEpochReader.guard_dispatch",
           "RecoveryVerification.__post_init__",
           "EmergencyStopController.activate",
-          "EmergencyStopController.request_reset"
+          "EmergencyStopController.request_reset",
+          "SignedStopEpoch.__post_init__"
         ],
         "points": [
           {
-            "outcome": "PASS (after GREEN): record fields read without conversion (_text/_count, type is int, exact field sets); approvers a tuple of non-empty strings and the requester a string, else RESET_REQUIRES_DUAL_CONTROL; the fenced epoch is an int before any comparison",
+            "outcome": "PASS (after GREEN): record fields read without conversion (_text/_count, type is int, exact field sets); approvers a tuple of non-empty strings and the requester a string, else RESET_REQUIRES_DUAL_CONTROL; the fenced epoch is an int before any comparison; after the review: the recovery evidence is text before its digest form is checked, and a signed stop epoch is built only from a StopEpochRecord and strings",
             "point": "1 data shape"
           },
           {
@@ -733,7 +756,7 @@
             "point": "3 integrity"
           },
           {
-            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_fenced_epoch_that_is_not_an_integer_is_stale, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_never_honours_a_signature_whose_key_the_keyring_no_longer_holds, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_malformed_approvers_or_requester_is_the_dual_control_refusal, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_whose_approver_cannot_be_read_is_the_dual_control_refusal; earlier: test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies, test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies, test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed, test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal, test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused, test_ncr_c6_010_the_activation_names_its_incident, test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence, test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused",
+            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_fenced_epoch_that_is_not_an_integer_is_stale, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_never_honours_a_signature_whose_key_the_keyring_no_longer_holds, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_malformed_approvers_or_requester_is_the_dual_control_refusal, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_whose_approver_cannot_be_read_is_the_dual_control_refusal; earlier: test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies, test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies, test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed, test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal, test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused, test_ncr_c6_010_the_activation_names_its_incident, test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence, test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused; after the review: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_record_whose_recovery_evidence_is_not_text_is_never_built, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stored_stop_epoch_record_of_the_wrong_shape_is_refused, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stored_signed_stop_epoch_of_the_wrong_shape_is_refused, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_signed_stop_epoch_of_the_wrong_shape_is_never_built, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_activator_the_registry_cannot_read_is_unauthorized",
             "point": "4 negative tests"
           },
           {
@@ -755,7 +778,9 @@
         "gaps_closed": [
           "grant() split a string of capabilities or approvers into characters (a grant was issued with one capability per character) and let a non-string grant id, incident, scope or domain through",
           "BreakGlassGrant converted any iterable of capabilities into a frozenset and did not check the type of its text fields, approvers and TTL (a non-duration TTL was a raw TypeError, not audited)",
-          "authorize() and revoke() raised a raw AttributeError for something other than a grant, a raw TypeError for an unhashable capability, and authorized a use with a non-string review reference"
+          "authorize() and revoke() raised a raw AttributeError for something other than a grant, a raw TypeError for an unhashable capability, and authorized a use with a non-string review reference",
+          "grant() did not check that the requester is a string: an unhashable requester escaped from the registry read as a raw TypeError without the audited refusal (preventive review PRE-002)",
+          "_read_principal let a registry read error and a record that is not a registry record (or whose attributes are not a mapping) escape as raw errors from the stop activation and from the break-glass grant and use (preventive review PRE-002)"
         ],
         "parsing_paths": [
           "BreakGlassGrant.__post_init__",
@@ -770,11 +795,11 @@
         ],
         "points": [
           {
-            "outcome": "PASS (after GREEN): text fields are strings, capabilities a set or frozenset of non-empty strings, approvers a tuple of strings, the TTL a timedelta; the capability and the review reference of a use are non-empty strings",
+            "outcome": "PASS (after GREEN): text fields are strings, capabilities a set or frozenset of non-empty strings, approvers a tuple of strings, the TTL a timedelta; the capability and the review reference of a use are non-empty strings; after the review: the requester is a string like the other text fields, and a principal is read only from an IdentityRecord whose attributes are a mapping",
             "point": "1 data shape"
           },
           {
-            "outcome": "PASS (after GREEN): BREAK_GLASS_GRANT_INVALID (audited BREAK_GLASS_GRANT_DENIED) for a request of the wrong shape, ValueError audited as BREAK_GLASS_GRANT_INVALID for a grant that cannot be built (the existing behaviour of an out-of-range TTL), BREAK_GLASS_GRANT_NOT_ISSUED, BREAK_GLASS_CAPABILITY_NOT_GRANTED and BREAK_GLASS_REVIEW_REQUIRED (audited BREAK_GLASS_USE_DENIED)",
+            "outcome": "PASS (after GREEN): BREAK_GLASS_GRANT_INVALID (audited BREAK_GLASS_GRANT_DENIED) for a request of the wrong shape, ValueError audited as BREAK_GLASS_GRANT_INVALID for a grant that cannot be built (the existing behaviour of an out-of-range TTL), BREAK_GLASS_GRANT_NOT_ISSUED, BREAK_GLASS_CAPABILITY_NOT_GRANTED and BREAK_GLASS_REVIEW_REQUIRED (audited BREAK_GLASS_USE_DENIED); after the review: a registry that cannot be read or returns something other than a registry record is BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID (audited as BREAK_GLASS_GRANT_DENIED or BREAK_GLASS_USE_DENIED) and STOP_ACTIVATOR_UNAUTHORIZED for the stop activation",
             "point": "2 errors translated"
           },
           {
@@ -782,7 +807,7 @@
             "point": "3 integrity"
           },
           {
-            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_request_of_the_wrong_shape_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_ttl_that_is_not_a_duration_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_of_the_wrong_shape_is_never_built, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_use_of_the_wrong_shape_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_something_other_than_a_grant_is_never_issued; earlier: test_ncr_c6_010_the_break_glass_signature_covers_every_field, test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies, test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text",
+            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_request_of_the_wrong_shape_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_ttl_that_is_not_a_duration_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_of_the_wrong_shape_is_never_built, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_use_of_the_wrong_shape_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_something_other_than_a_grant_is_never_issued; earlier: test_ncr_c6_010_the_break_glass_signature_covers_every_field, test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies, test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text; after the review: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_requester_that_is_not_a_principal_identifier_is_refused_and_audited, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_principal_the_registry_cannot_read_is_refused_and_audited",
             "point": "4 negative tests"
           },
           {
@@ -801,7 +826,9 @@
       },
       {
         "adapter": "ocor-runtime/src/ocor_runtime/c6/adapters/postgres_stop.py",
-        "gaps_closed": [],
+        "gaps_closed": [
+          "a stored row whose recovery evidence was a falsy value that is not text was rebuilt instead of refused; closed in StopEpochRecord (preventive review PRE-001), the adapter itself unchanged"
+        ],
         "parsing_paths": [
           "PostgresStopEpochStore.__init__",
           "_run",
@@ -826,7 +853,7 @@
             "point": "3 integrity"
           },
           {
-            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason (the reader keeps the adapter's typed refusal)",
+            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason (the reader keeps the adapter's typed refusal); after the review, backend-free through a psycopg connection stand-in: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_refuses_malformed_settings, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_malformed_stored_row_is_an_invalid_stop_epoch_never_an_empty_store, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_turns_a_driver_failure_into_unavailable_and_closes_the_connection, ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_refuses_a_malformed_read_and_closes_the_connection",
             "point": "4 negative tests"
           },
           {
@@ -838,7 +865,7 @@
             "point": "6 boundary digests and bindings"
           },
           {
-            "outcome": "PASS: connection and transaction are context managers in _run: closed and rolled back on every error path",
+            "outcome": "PASS: connection and transaction are context managers in _run: closed and rolled back on every error path (after the review proven on every error path: connection and transaction exited for driver errors and malformed rows)",
             "point": "7 resources closed on every error path"
           }
         ]
@@ -983,7 +1010,7 @@
             "point": "3 integrity"
           },
           {
-            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision (real OPA over mTLS)",
+            "outcome": "PASS: ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision (real OPA over mTLS); after the review (advisory PRE-003): ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_qualification_response_of_the_wrong_shape_is_not_a_decision (real OPA over mTLS, only the qualification response replaced: HTTP 503, non-UTF-8, non-JSON, non-object, result not an object, allow false or missing)",
             "point": "4 negative tests"
           },
           {
@@ -1079,7 +1106,7 @@
       }
     ]
   },
-  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 5 of estimate 3",
+  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 6 of estimate 3",
   "open_decision_requests": [],
   "open_points_for_review": [
     "the C2 gateway and the identity provisioning deny PERMIT_WITH_CONSTRAINTS, REQUIRE_APPROVAL and OBLIGATE because no constraint, approval or obligation is enforced there today; a consumer that honours them is out of the NCP-U08 scope",
@@ -1088,7 +1115,54 @@
     "NCR-C6-013 lists FR-079 in the register; the unit module does not declare FR-079 because its tests exercise only the ADD v1.3 risk-class names and the gate of each class, not the whole Register text of FR-079 :211 (Approval obligation from risk class, policy, authority, domain and effect type): a requirement exercised only in part is never declared (NCP-UNBINDABLE-REQUALIFICATIONS point 4, fail-closed); FR-079 stays to its G6 task"
   ],
   "plan_unit": "NCP-U08",
-  "preventive_review": null,
+  "preventive_review": {
+    "base": "78ba179dec03f936ef0f254bf347ef99c4323510",
+    "created_at": "2026-11-06T09:46:00Z",
+    "decision": "PRE-CAMPAIGN-REVIEW (2026-10-26) point 3, PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30)",
+    "dispositions": [
+      {
+        "disposition": "FIXED",
+        "green": "1963c9d",
+        "id": "PRE-001",
+        "red": "3e631d5",
+        "severity": "BLOCKING",
+        "summary": "c6/safety.py: the recovery evidence of a StopEpochRecord is read as text before its digest form; SignedStopEpoch checks its fields at construction; negative cases for the stored record, the signed document, the adapter settings, rows, driver errors and connection closure"
+      },
+      {
+        "disposition": "FIXED",
+        "green": "1963c9d",
+        "id": "PRE-002",
+        "red": "3e631d5",
+        "severity": "BLOCKING",
+        "summary": "c6/safety.py: the break-glass requester is checked as a string with the other fields; _read_principal translates a registry read error and refuses a record that is not an IdentityRecord with mapping attributes; negative cases for activation, grant and use, audited"
+      },
+      {
+        "disposition": "ADOPTED_AS_TESTS",
+        "green": "1963c9d",
+        "id": "PRE-003",
+        "red": null,
+        "severity": "ADVISORY",
+        "summary": "the protocol paths of the OPA qualification read were already fail-closed; one parametrised case on real OPA over mTLS replaces only the qualification response (no code change)"
+      }
+    ],
+    "findings_by_severity": {
+      "ADVISORY": 1,
+      "BLOCKING": 2
+    },
+    "independence_limits": null,
+    "note": "the review is consultative and not evidence; per point 3 it is not repeated after the fixes; the finding texts stay in the outcome file",
+    "outcome_path": "~/.ocor-codex/prereviews/OCOR-DEV-REM-0054-05049b13ee05-pre.json (outside Git)",
+    "outcome_sha256": "b36247434182b32a26f05990e28be663765054e5648437f6806919464ac7a642",
+    "request_id": "OCOR-DEV-REM-0054-05049b13ee05-pre",
+    "reserve": false,
+    "reviewed_head": "05049b13ee05e3dbb7f3e6b34e8b768bcac8d81a",
+    "reviewer": {
+      "agent": "Antigravity CLI",
+      "model": "gemini-4-argon-high",
+      "provider": "Google"
+    },
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "product_orientation": [
     "the stop_epoch is a signed record on a durable port with a PostgreSQL adapter, read and verified by every consumer (G-DISPATCH, C8 tool runtime, break-glass), so the deployed stop and the tested stop are the same object and survive the process",
     "the stop-epoch and break-glass signing keys come from the caller (SafetyAuthorities), so production key management plugs in without changing C6",
@@ -1902,12 +1976,12 @@
     {
       "entry": "NCR-C6-010",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_authorised_safety_officer_activates_alone_and_immediately ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unresolved_or_unauthorised_activator_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_activation_names_its_incident ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_every_transition_publishes_a_signed_stop_epoch_record ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_on_the_same_port_sees_the_stop_of_another_controller ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_keeps_the_signed_epoch_across_processes ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_g_dispatch_reads_the_stop_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_verified_recovery_issues_a_new_signed_epoch ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_recovery_verification_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_is_a_delegation_signed_by_the_break_glass_authority ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_signature_covers_every_field ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_controller_requires_its_signing_authority ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_fenced_epoch_that_is_not_an_integer_is_stale ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_never_honours_a_signature_whose_key_the_keyring_no_longer_holds ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_malformed_approvers_or_requester_is_the_dual_control_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_whose_approver_cannot_be_read_is_the_dual_control_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_request_of_the_wrong_shape_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_ttl_that_is_not_a_duration_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_of_the_wrong_shape_is_never_built ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_use_of_the_wrong_shape_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_something_other_than_a_grant_is_never_issued"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_authorised_safety_officer_activates_alone_and_immediately ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_activator_that_is_not_an_active_human_safety_officer_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unresolved_or_unauthorised_activator_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_activation_names_its_incident ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_every_transition_publishes_a_signed_stop_epoch_record ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_tampered_stop_epoch_record_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_signed_by_another_key_or_issuer_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_refuses_a_forged_epoch_and_g_dispatch_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_empty_or_malformed_port_is_never_read_as_normal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_on_the_same_port_sees_the_stop_of_another_controller ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_keeps_the_signed_epoch_across_processes ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_is_append_only_and_compare_and_set ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_concurrent_activations_on_one_port_increment_the_epoch_once ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_g_dispatch_reads_the_stop_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_verified_recovery_issues_a_new_signed_epoch ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_a_matching_incident_and_recovery_verification_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_recovery_verification_needs_a_content_addressed_evidence ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_without_recovery_verification_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_is_a_delegation_signed_by_the_break_glass_authority ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_signature_covers_every_field ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_an_unsigned_or_foreign_signed_grant_never_verifies ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_reason_is_typed_never_free_text ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_break_glass_controller_requires_its_signing_authority ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_typed_refusal_of_the_port_history_keeps_its_reason ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_fenced_epoch_that_is_not_an_integer_is_stale ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reader_never_honours_a_signature_whose_key_the_keyring_no_longer_holds ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_with_malformed_approvers_or_requester_is_the_dual_control_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_reset_whose_approver_cannot_be_read_is_the_dual_control_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_request_of_the_wrong_shape_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_ttl_that_is_not_a_duration_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_grant_of_the_wrong_shape_is_never_built ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_use_of_the_wrong_shape_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_something_other_than_a_grant_is_never_issued ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_epoch_record_whose_recovery_evidence_is_not_text_is_never_built ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stored_stop_epoch_record_of_the_wrong_shape_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stored_signed_stop_epoch_of_the_wrong_shape_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_signed_stop_epoch_of_the_wrong_shape_is_never_built ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_refuses_malformed_settings ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_malformed_stored_row_is_an_invalid_stop_epoch_never_an_empty_store ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_turns_a_driver_failure_into_unavailable_and_closes_the_connection ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_the_postgres_store_refuses_a_malformed_read_and_closes_the_connection ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_requester_that_is_not_a_principal_identifier_is_refused_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_stop_activator_the_registry_cannot_read_is_unauthorized ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_010_a_break_glass_principal_the_registry_cannot_read_is_refused_and_audited"
     },
     {
       "entry": "NCR-C6-011",
       "outcome": "PENDING_CAMPAIGN",
-      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_the_signed_policy_produces_each_qualified_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_permit_without_qualification_stays_permit_and_a_deny_drops_it ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualification ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_decision_whose_qualifiers_are_not_a_tuple_of_strings_is_invalid ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_states_what_it_honours_as_a_set_of_names"
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_the_signed_policy_produces_each_qualified_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_permit_without_qualification_stays_permit_and_a_deny_drops_it ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualification ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_decision_whose_qualifiers_are_not_a_tuple_of_strings_is_invalid ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_consumer_states_what_it_honours_as_a_set_of_names ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py::test_ncr_c6_011_a_qualification_response_of_the_wrong_shape_is_not_a_decision"
     },
     {
       "entry": "NCR-C6-012",
