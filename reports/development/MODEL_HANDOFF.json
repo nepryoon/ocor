@@ -4,26 +4,14 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "858855f20f013591fc79a272d94adfa68c2aa696",
-  "baseline_commit": "858855f20f013591fc79a272d94adfa68c2aa696",
-  "branch": "governed/state-sync-rem0053-integrated-20261106",
+  "base_sha": "78ba179dec03f936ef0f254bf347ef99c4323510",
+  "baseline_commit": "78ba179dec03f936ef0f254bf347ef99c4323510",
+  "branch": "governed/state-sync-rem0054-iter1-20261106",
   "candidate_branch_evidence": {
-    "branch": "governed/ocor-dev-rem-0053-ncp-u07-c6-action-path",
-    "head_sha": "9b2710ccdd13e6cf3d26551b5659f6557396b069",
-    "merge_commit": "858855f20f013591fc79a272d94adfa68c2aa696",
-    "note": "REM-0053 unit record and 9 regression-class requalifications sealed after GO (cycle 0) and merged with PR #514",
-    "paths": [
-      "reports/assurance/OCOR-DEV-REM-0053-RCCAD/OCOR-DEV-REM-0053.json",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0053.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0053.json",
-      "reports/evidence/G3/OCOR-DEV-0030.requalified-rem0053.json",
-      "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0053.json",
-      "reports/evidence/G4/OCOR-DEV-0042.requalified-rem0053.json",
-      "reports/evidence/G4/OCOR-DEV-0043.requalified-rem0053.json",
-      "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0053.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0053.json",
-      "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0053.json"
-    ]
+    "branch": "governed/ocor-dev-rem-0054-ncp-u08-c6-safety-policy",
+    "head_sha": "3a90e6878c8e7054ad0de2eaf245b4b47d6207ce",
+    "note": "REM-0054 GREEN of NCR-C6-010 and NCR-C6-011, RED of NCR-C6-013; work in progress, not a candidate, no evidence",
+    "paths": []
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -40,45 +28,60 @@
   },
   "commands": [
     {
-      "command": "verdict OCOR-DEV-REM-0053-7853a59aea32-0",
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
       "exit_code": 0,
-      "summary": "GO_FOR_EVIDENCE_SEAL, zero findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 71535bfdb94422822ad391492e4430e4ecbf6aacf0f5368573f6f26ada3667b2"
+      "summary": "8/8 OK"
     },
     {
-      "command": "merge origin/main dfab3d8 into governed/ocor-dev-rem-0053-ncp-u07-c6-action-path (non-destructive alignment)",
+      "command": "git grep OCOR-DEV-REM-0054 on origin/main and git ls-remote",
       "exit_code": 0,
-      "summary": "aligned head 4a20131; only the three state files differ from 7853a59aea32; non-state tree sha256 equal"
+      "summary": "only the forecasts in the state files: OCOR-DEV-REM-0054 is free"
     },
     {
-      "command": "seal.py (verdict OCOR-DEV-REM-0053-7853a59aea32-0)",
-      "exit_code": 0,
-      "summary": "unit record and 9 requalifications SEALED, manifests G0/G2/G3/G4/G5 updated surgically, raw logs unchanged; commit 9b2710ccdd13"
+      "command": "pytest test_ocor_dev_rem_0054.py at 0eee9ff (RED NCR-C6-010)",
+      "exit_code": 1,
+      "summary": "54 failed, 3 errors; fingerprint 6281c8e0c6fc"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
+      "command": "pytest unit + 15 consumer modules + mission thread at 0cd12df (dev services)",
       "exit_code": 0,
-      "summary": "47/47 workflow-derived non-suite steps PASS"
+      "summary": "1391 passed, 31 skipped (REM-0031 Keycloak/mTLS); fingerprint 5c0b5cdf4b95"
     },
     {
-      "command": "gh pr create (PR #514) and exact-head polling until mergeStateStatus CLEAN",
-      "exit_code": 0,
-      "summary": "13/13 required checks success, 0 reruns"
+      "command": "pytest test_ocor_dev_rem_0054.py at 28e9c48 (RED NCR-C6-013)",
+      "exit_code": 1,
+      "summary": "7 failed, 59 passed; fingerprint 6ff2d8524f67"
     },
     {
-      "command": "gh pr merge 514 --merge --match-head-commit 9b2710ccdd13e6cf3d26551b5659f6557396b069",
+      "command": "pytest test_ocor_dev_rem_0054.py at 341acf4 on the full CI stack (RED NCR-C6-011)",
+      "exit_code": 1,
+      "summary": "19 failed (12 NCR-C6-011, 7 NCR-C6-013), 60 passed; fingerprint 32acd401c28e"
+    },
+    {
+      "command": "pytest unit + 23 consumer modules + mission thread at 3a90e68 on the full CI stack",
+      "exit_code": 1,
+      "summary": "1755 passed, 0 skipped, 7 NCR-C6-013 failed pending NCP-U08-RISK-CLASS-NAME-ADAPTATION; fingerprint 608dc9190e10"
+    },
+    {
+      "command": "ruff check ., mypy (strict, 143 files) at 3a90e68",
       "exit_code": 0,
-      "summary": "merge commit 858855f20f013591fc79a272d94adfa68c2aa696; origin/main equals the merge commit; sealed hashes unchanged"
+      "summary": "PASS"
+    },
+    {
+      "command": "ast_compare.py 78ba179 0044 0047 REM-0024 REM-0027 REM-0028 REM-0053",
+      "exit_code": 0,
+      "summary": "same test functions, asserts, raises and parametrizations in all six modules"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "NCP-U08:not-started",
+  "current_task": "OCOR-DEV-REM-0054:implementation (NCP-U08, iteration 1 done; NCR-C6-012 next; NCP-U08-RISK-CLASS-NAME-ADAPTATION open)",
   "evidence_paths": [],
-  "exact_next_action": "Start NCP-U08 (ninth unit of plan_order of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), C6 safety and policy: authorised stop activation with signed stop epoch, reset with incident/recovery verification, signed break-glass delegation with typed reason; OPA effects with constraints, approval requirement and obligations; MARKING_UNRESOLVED instead of the legacy bottom default in current components; ADD v1.3 risk-class names and gates; depends_on_units NCP-U03 and NCP-U07, both on main) with the first free OCOR-DEV-REM-* verified read-only at its start (today OCOR-DEV-REM-0054), new worktree from origin/main: scope, resolves (NCR-C6-010..013), acceptance_criteria, red_tests, consumers_to_inventory and requalifications of plan_units.NCP-U08 in the register on main, required backend OPA, Keycloak and OpenBao, with the full cycle of programme point 5 (inventory, RED on current code, GREEN, requalifications per NCP-U01-SUPERSESSION-REQUALIFICATIONS points 3-4, NCP-U03-QUALIFYING-REQUALIFICATIONS and NCP-UNBINDABLE-REQUALIFICATIONS, reverse traceability index for new test files, input-robustness self-check of NCP-THROUGHPUT-RULES (2026-11-05) point 1 before the PRE-CAMPAIGN-REVIEW, PRE-CAMPAIGN-GATE, full suite, independent verification, seal, merge). Iteration limit per NCP-THROUGHPUT-RULES point 2: estimate 3, stop at 9, earlier after two consecutive iterations without progress; every state sync states 'iteration N of estimate 3 (stop at 9)'. Then NCP-U09, U10 (which also takes NCR-C8-008 per NCP-U07-C8-TOOL-RUNTIME-LEASE), U11, U12 in order, each after its depends_on_units are on main. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-  "head_sha": "858855f20f013591fc79a272d94adfa68c2aa696",
-  "head_sha_role": "merge commit of PR #514 (OCOR-DEV-REM-0053 integrated)",
+  "exact_next_action": "Resume OCOR-DEV-REM-0054 (NCP-U08) on governed/ocor-dev-rem-0054-ncp-u08-c6-safety-policy (.ocor/worktrees/rem-0054, head 3a90e6878c8e, kit ~/.ocor-codex/rem-0054 with NOTES.md, redgreen.sh (dev services) and redgreen_ci.sh (full CI stack provisioned in the worktree with scripts/bootstrap_ci_environment.py --execute; torn down at the end of each iteration), ast_compare.py, locked-path; pytest from ocor-runtime): if NCP-U08-RISK-CLASS-NAME-ADAPTATION (draft PR #516) is decided, record the disposition and apply it to NCR-C6-013 (prepared change in the kit, iter1/c6013_*.diff), with the syntax-tree comparison and the GREEN including 0048 on the full stack; NCR-C6-012 RED then GREEN (MARKING_UNRESOLVED for a missing, incomparable or unresolvable marking, LLD v1.1 :67, instead of the legacy c4_marking.MarkingEngine bottom default in c2/gateway.py and c8/tool_runtime.py; consumers 0034, 0035, 0047, REM-0027 adapted only as NORMATIVE-CONFORMANCE-PLAN point 5 allows, decision request otherwise); then the consumer inventory, the requalifications from the drift (NCP-U01-SUPERSESSION-REQUALIFICATIONS points 3-4, NCP-UNBINDABLE-REQUALIFICATIONS), unit record, register entries OPEN -> IN_REMEDIATION, reverse traceability index for test_ocor_dev_rem_0054.py and c6_safety_fixture.py, plan allowlist (also c6/adapters/__init__.py, c6/adapters/postgres_stop.py and reports/development/decision_requests/NCP-U08-RISK-CLASS-NAME-ADAPTATION.md), input-robustness self-check of NCP-THROUGHPUT-RULES point 1, PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite, verification, seal, merge. Iteration 1 of estimate 3 (stop at 9) used (NCP-THROUGHPUT-RULES point 2; earlier stop after two consecutive iterations without progress). Then NCP-U09, U10 (which also takes NCR-C8-008), U11, U12 in order. G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "head_sha": "3a90e6878c8e7054ad0de2eaf245b4b47d6207ce",
+  "head_sha_role": "REM-0054 work-in-progress head (not a candidate)",
   "independent_verification": {
     "head_sha": "7853a59aea32034c5f792c3509bee63622f0687b",
-    "next_verifier_constraint": "for the next unit: provider different from every implementer and from its preventive reviewer",
+    "next_verifier_constraint": "provider different from Anthropic (implementer) and from the preventive reviewer of REM-0054",
     "repair_cycle": 0,
     "request_id": "OCOR-DEV-REM-0053-7853a59aea32-0",
     "review_type": "REMEDIATION",
@@ -210,13 +213,15 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "PASS at the candidate head",
-    "full_suite": "PASS at the code head 90028ba369a5: bootstrap 15 containers, 11 typed services READY three times (after the faults and after the reset too), service qualifications of Temporal, SeaweedFS, TypeDB and OpenBao with fault recovery, SPIRE and the policy and identity services, bounded pause of TerminusDB, TypeDB, Fuseki, OPA, Keycloak, OpenBao and the SPIRE agent, reset idempotent; service contract suites 78 passed; unit module with the register, REM-0046 and evidence-validator tests 3x1463 passed; requalified modules 0030/0042/0043/0044/0058 and the mission thread 204 passed; consumers 0047, 0052, 0057, REM-0024, REM-0027, REM-0028, REM-0031, REM-0039, REM-0050 757 passed (live REM-0031 Keycloak/mTLS cases included); regression 0005/0050/0082 214 passed; CI evidence job command of 0004 PASS; reports portfolio 1626 passed; two-lane full suite (memory admission TWO_LANE) 4743/4743, zero skips, merged JUnit equal to the collection, 2491.9 s of the 5400 s cap; mains power for the whole run; host stack absent after the lanes",
-    "pre_campaign_gate": "47/47 steps exit 0 at 7853a59aea32 (drift 0, supply-chain scanner PASS); 46/47 at the code head (expected drift of the 9 planned tasks)"
+    "evidence_input_drift": "drift expected on the unit branch for the tasks whose inputs NCP-U08 changes (c6/safety.py, c6/composition.py, c8/tool_runtime.py, security/control_plane.py, security/ports.py and the adapted tests of 0044, 0047, REM-0024, REM-0027, REM-0028 and REM-0053)",
+    "pre_campaign_gate": "NOT_EXECUTED for the unit (not at a candidate boundary)",
+    "unit_tests": "unit module and 23 consumer modules + mission thread on the full CI stack: 1755 passed, 0 skipped, 7 NCR-C6-013 cases RED pending the decision; full suite NOT_EXECUTED"
   },
-  "next_task": "NCP-U08 (OCOR-DEV-REM-0054, to verify read-only at start)",
-  "phase": "REM_0053_NCP_U07_INTEGRATED_NCP_U08_NEXT",
-  "po_decisions_pending": [],
+  "next_task": "OCOR-DEV-REM-0054 iteration 2",
+  "phase": "REM_0054_NCP_U08_IN_PROGRESS",
+  "po_decisions_pending": [
+    "NCP-U08-RISK-CLASS-NAME-ADAPTATION"
+  ],
   "raw_evidence_location": "~/.ocor-codex/rem-0046 (RED log and fingerprint, helper scripts), outside Git",
   "requirement_ids": [
     "FR-006",
@@ -236,18 +241,9 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "all of REM-0053 (iterations 1-10); this integration (iteration 11 of estimate 6, stop at 18) as the backup implementer of the loop: alignment, sealing, PRE-CAMPAIGN-GATE, PR #514, exact-head CI, merge, state sync"
+        "scope": "OCOR-DEV-REM-0054 iteration 1 (unit start; RED and GREEN of NCR-C6-010 and NCR-C6-011; RED of NCR-C6-013 and its decision request) and this state sync, as the backup implementer of the loop"
       }
-    ],
-    "preventive_reviewer": {
-      "agent": "Antigravity CLI (attempted)",
-      "model": null,
-      "provider": "Google",
-      "request_id": "OCOR-DEV-REM-0053-90028ba369a5-pre",
-      "reserve": false,
-      "verdict": "SKIPPED"
-    },
-    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0053-7853a59aea32-0)"
+    ]
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
@@ -282,6 +278,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-06T02:29:49.203381+00:00",
-  "worktree": "rem-0053 unit and scratch worktrees removed after the merge (REPO-HYGIENE point 5); next unit: new worktree from origin/main"
+  "updated_at": "2026-11-06T03:54:07.314692+00:00",
+  "worktree": ".ocor/worktrees/rem-0054"
 }
