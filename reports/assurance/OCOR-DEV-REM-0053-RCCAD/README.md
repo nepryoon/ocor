@@ -6,8 +6,15 @@ verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-
 NCP-U10, per la decisione del PO `NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05)`, opzione 2 (decisa su delega
 completa del PO).
 
-Stato: `CANDIDATE_IN_PROGRESS` (bozza prima dell'autocontrollo di robustezza degli input, della revisione
-preventiva e della campagna). La FSM di C6 applica ogni transizione solo dal suo stato sorgente, con la guardia
+Stato: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` sul commit di codice `90028ba` (iterazione 10 di stima 6,
+stop a 18). L'autocontrollo di robustezza degli input di `NCP-THROUGHPUT-RULES (2026-11-05)` punto 1 ha chiuso 19
+lacune (RED `8fe6105`, GREEN `19b360f`; tabella nel record). La revisione preventiva
+`OCOR-DEV-REM-0053-90028ba369a5-pre` è `SKIPPED`, scritta dal loop dopo due tentativi del revisore senza esito
+valido: si prosegue registrandone il motivo (PRE-CAMPAIGN-REVIEW punto 3). PRE-CAMPAIGN-GATE al commit di codice
+46/47, con la sola deriva attesa dei nove task da riqualificare. Campagna `PASS` da shell pulita: qualifica dei
+servizi e fault injection, modulo d'unità tre volte, moduli riallineati o adattati, consumer, regressione, portfolio
+di `reports/tests`, e suite completa a due corsie 4743/4743, zero skip, JUnit unita uguale alla collezione, 2491.9 s sul
+tetto di 5400 s. La FSM di C6 applica ogni transizione solo dal suo stato sorgente, con la guardia
 valutata su uno snapshot legato a transizione e azione e con la precedenza dello stop di emergenza (RED `29ed884`,
 GREEN `a148287`). I tredici record canonici di C6 sono congelati con il loro digest, ricalcolato da ogni consumer;
 G-APPROVAL ammette solo il quorum firmato di umani distinti legato a digest, revisione, release e scadenza della
@@ -28,9 +35,10 @@ di test sigillati, ciascuna con il suo RED) e adattati con il confronto dell'alb
 `d7a62b1`, scelte di prodotto, ambiguità risolte in modo fail-closed, punti aperti, gli esiti dell'inventario dei
 consumer e la classificazione delle riqualifiche: tutte di sola regressione (`0030`, `0031`, `0042`, `0043`,
 `0044`, `0058` senza requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`; `0005`, `0050`,
-`0082` per l'allowlist del piano). Restano da eseguire: autocontrollo di `NCP-THROUGHPUT-RULES (2026-11-05)`
-punto 1, PRE-CAMPAIGN-GATE, revisione preventiva, campagna, riqualifiche `.requalified-rem0053` e verifica
-indipendente da un fornitore diverso da Anthropic e dal revisore preventivo.
+`0082` per l'allowlist del piano). Le nove riqualifiche `.requalified-rem0053`
+sono nella classe non qualificante di `REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)`, con inserimento
+chirurgico nei MANIFEST e deriva zero all'head candidato. Resta la verifica indipendente da un fornitore diverso
+da Anthropic, poi sigillo, merge e state sync.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, slice legacy (`c6_capabilities.py`, `c7_emission.py`), guard o workflow è modificato. `E1=0`, `E2=0`,
