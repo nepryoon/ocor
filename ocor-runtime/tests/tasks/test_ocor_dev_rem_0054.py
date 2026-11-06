@@ -27,8 +27,19 @@ NCR-C6-010 to NCR-C6-013.
   correction through aliases). The kernel risk class and the control-plane operation class carry
   the ADD names only, the wire forms carry them, and the gates are those of ADD v1.3 §5.4.
 
+* NCR-C6-011 -- ADD v1.3 :3141 (§5.1 authorisation: default-deny policy with the decisions
+  ``Permit``, ``Deny``, ``PermitWithConstraints``, ``RequireApproval``, ``Obligate``; a policy that is
+  absent or not evaluable gives no mutation) and Register FR-130 :295 (every governed contract
+  produces a versioned, explainable Policy Decision applying those five decisions; requests without
+  policy are denied). The OPA decision point derives the effect and its constraints, approval
+  requirements or obligations from the signed bundle, rejects a malformed or ambiguous
+  qualification, and a consumer admits a decision only when it enforces every constraint, holds every
+  required approval and fulfils every obligation.
+
 The durable stop-epoch store is the real PostgreSQL of the stack (``OCOR_LIVE_POSTGRES_DSN``);
-the other cases use the in-memory implementation of the same port.
+the other cases use the in-memory implementation of the same port. The policy cases evaluate signed
+bundles on the real OPA over mTLS (SPIFFE/SPIRE) for a real Keycloak principal, with the fixtures
+of the sealed OCOR-DEV-0048 module, reused unmodified.
 """
 
 from __future__ import annotations
@@ -36,6 +47,7 @@ from __future__ import annotations
 import base64
 import dataclasses
 import importlib
+import importlib.util
 import inspect
 import os
 import threading
@@ -698,3 +710,130 @@ def test_ncr_c6_013_the_gates_are_those_of_add_v1_3() -> None:
         with pytest.raises(gate.ApprovalGateError) as excinfo:
             gate.gate_disposition(getattr(risk, name), canonical_target=True)
         assert _reason(excinfo) == "NO_MUTATION_ADMITTED"
+
+
+# --- NCR-C6-011: the five policy effects (ADD v1.3 :3141, Register FR-130 :295) ----------------
+
+_M0048_PATH = importlib.import_module("pathlib").Path(__file__).resolve().parent / "test_ocor_dev_0048.py"
+_SPEC = importlib.util.spec_from_file_location("ocor_dev_0048_fixtures_for_rem0054", _M0048_PATH)
+assert _SPEC is not None and _SPEC.loader is not None
+m0048 = importlib.util.module_from_spec(_SPEC)
+importlib.import_module("sys").modules[_SPEC.name] = m0048
+_SPEC.loader.exec_module(m0048)
+
+# Real-backend fixtures of the sealed OCOR-DEV-0048 module, reused unmodified.
+env = m0048.env
+live_stack = m0048.live_stack
+admin_token = m0048.admin_token
+principals = m0048.principals
+mtls = m0048.mtls
+principal = m0048.principal
+
+
+def _provider(mtls: dict[str, object]) -> Any:
+    control_plane = _mod("security.control_plane")
+    return control_plane.OpaPolicyDecisionProvider(
+        str(mtls["opa"]), m0048.POLICY_ID, signer_public_key=(m0048._SIGNER_N, m0048._SIGNER_E),
+        ssl_context=mtls["ssl_context"],
+    )
+
+
+def _bundle(principal_id: str, *qualifiers: str, allow: bool = True) -> str:
+    rule = (
+        "allow if {\n"
+        f'    input.principal_id == "{principal_id}"\n'
+        '    input.resource == "urn:ocor:target:site-1"\n'
+        "}\n"
+    ) if allow else ""
+    return "package ocor.control_plane\n\ndefault allow := false\n\n" + rule + "".join(f"\n{item}\n" for item in qualifiers)
+
+
+def _decide(mtls: dict[str, object], principal: Any, *qualifiers: str, allow: bool = True, action: str = "read") -> Any:
+    provider = _provider(mtls)
+    digest = provider.install_policy(m0048._sign_bundle(_bundle(principal.principal_id, *qualifiers, allow=allow)))
+    return provider.evaluate(m0048._policy_request(principal, digest, action=action))
+
+
+def test_ncr_c6_011_conforms(principal: Any, mtls: dict[str, object]) -> None:
+    """The register's RED probe: the decision point produces more than PERMIT and DENY, with the
+    obligations of the signed policy."""
+    ports = _mod("security.ports")
+    decision = _decide(mtls, principal, 'obligations contains "audit:access" if input.action == "read"')
+    assert (decision.effect, decision.obligations) == (ports.PolicyEffect.OBLIGATE, ("audit:access",))
+
+
+@pytest.mark.parametrize(
+    "rule,effect,qualification",
+    [
+        ('constraints contains "mask:pii" if input.action == "read"', "PERMIT_WITH_CONSTRAINTS", ("mask:pii",)),
+        ('approval_requirements contains "approval:domain-owner" if input.action == "read"', "REQUIRE_APPROVAL",
+         ("approval:domain-owner",)),
+        ('obligations contains "audit:access" if input.action == "read"\nobligations contains "notify:owner" if input.action == "read"',
+         "OBLIGATE", ("audit:access", "notify:owner")),
+    ],
+    ids=["permit-with-constraints", "require-approval", "obligate"],
+)
+def test_ncr_c6_011_the_signed_policy_produces_each_qualified_effect(
+    principal: Any, mtls: dict[str, object], rule: str, effect: str, qualification: tuple[str, ...]
+) -> None:
+    decision = _decide(mtls, principal, rule)
+    assert (decision.effect.value, decision.obligations) == (effect, qualification)
+
+
+def test_ncr_c6_011_a_permit_without_qualification_stays_permit_and_a_deny_drops_it(principal: Any, mtls: dict[str, object]) -> None:
+    ports = _mod("security.ports")
+    rule = 'constraints contains "mask:pii" if input.action == "read"'
+    unqualified = _decide(mtls, principal, rule, action="list")
+    assert (unqualified.effect, unqualified.obligations) == (ports.PolicyEffect.PERMIT, ())
+    denied = _decide(mtls, principal, rule, allow=False)
+    assert (denied.effect, denied.obligations) == (ports.PolicyEffect.DENY, ())
+
+
+@pytest.mark.parametrize(
+    "rules",
+    [
+        ('constraints contains "mask:pii" if input.action == "read"', 'obligations contains "audit:access" if input.action == "read"'),
+        ('approval_requirements contains "approval:x" if input.action == "read"', 'constraints contains "mask:pii" if input.action == "read"'),
+        ('constraints := "mask:pii"',),
+        ("constraints := [1]",),
+        ('obligations := ["audit:access", "audit:access"]',),
+        ('obligations := [""]',),
+        ('approval_requirements := {"approval": true}',),
+    ],
+    ids=["constraints-and-obligations", "approval-and-constraints", "text", "number", "duplicate", "empty", "object"],
+)
+def test_ncr_c6_011_an_ambiguous_or_malformed_qualification_is_not_a_decision(
+    principal: Any, mtls: dict[str, object], rules: tuple[str, ...]
+) -> None:
+    ports = _mod("security.ports")
+    with pytest.raises(ports.SecurityControlError) as excinfo:
+        _decide(mtls, principal, *rules)
+    assert _reason(excinfo) == "POLICY_DECISION_INVALID"
+
+
+def test_ncr_c6_011_a_consumer_admits_a_decision_only_when_it_honours_its_qualification(principal: Any, mtls: dict[str, object]) -> None:
+    ports = _mod("security.ports")
+    constrained = _decide(mtls, principal, 'constraints contains "mask:pii" if input.action == "read"')
+    approval = _decide(mtls, principal, 'approval_requirements contains "approval:domain-owner" if input.action == "read"')
+    obligated = _decide(mtls, principal, 'obligations contains "audit:access" if input.action == "read"')
+    denied = _decide(mtls, principal, allow=False)
+    permitted = _decide(mtls, principal)
+    cases = [
+        (denied, {}, "POLICY_DENIED"),
+        (constrained, {}, "POLICY_CONSTRAINT_NOT_ENFORCED"),
+        (constrained, {"enforced_constraints": frozenset({"mask:other"})}, "POLICY_CONSTRAINT_NOT_ENFORCED"),
+        (approval, {}, "APPROVAL_REQUIRED"),
+        (approval, {"granted_approvals": frozenset({"approval:other"})}, "APPROVAL_REQUIRED"),
+        (obligated, {}, "POLICY_OBLIGATION_NOT_FULFILLED"),
+        (obligated, {"fulfilled_obligations": frozenset({"audit:other"})}, "POLICY_OBLIGATION_NOT_FULFILLED"),
+    ]
+    for decision, honoured, reason in cases:
+        with pytest.raises(ports.SecurityControlError) as excinfo:
+            decision.admit(**honoured)
+        assert _reason(excinfo) == reason
+    permitted.admit()
+    constrained.admit(enforced_constraints=frozenset({"mask:pii"}))
+    approval.admit(granted_approvals=frozenset({"approval:domain-owner"}))
+    obligated.admit(fulfilled_obligations=frozenset({"audit:access"}))
+    # An unqualified permit admits nothing more than it says: honouring extras changes nothing.
+    permitted.admit(enforced_constraints=frozenset({"mask:pii"}))
