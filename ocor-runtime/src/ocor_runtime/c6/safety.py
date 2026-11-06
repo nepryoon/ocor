@@ -191,7 +191,9 @@ class StopEpochRecord:
         _text("reason", self.reason)
         _text("incident_ref", self.incident_ref, empty=True)
         require_aware(self.at, field="at")
-        if self.recovery_evidence and _EVIDENCE_DIGEST.fullmatch(_text("recovery_evidence", self.recovery_evidence)) is None:
+        # Read without conversion: a falsy value that is not text is never "no evidence".
+        evidence = _text("recovery_evidence", self.recovery_evidence, empty=True)
+        if evidence and _EVIDENCE_DIGEST.fullmatch(evidence) is None:
             raise ValueError("recovery_evidence must be a urn:sha256 digest")
         if not isinstance(self.approvers, tuple) or any(not isinstance(item, str) or not item for item in self.approvers):
             raise ValueError("approvers must be a tuple of principal identifiers")
@@ -254,6 +256,14 @@ class SignedStopEpoch:
     issuer_id: str
     keyid: str
     signature: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.record, StopEpochRecord):
+            raise ValueError("record must be a StopEpochRecord")
+        _text("issuer_id", self.issuer_id)
+        _text("keyid", self.keyid)
+        # Empty only while it is being signed (sign_stop_epoch); verification refuses it.
+        _text("signature", self.signature, empty=True)
 
     def signed_bytes(self) -> bytes:
         return dsse_pae(STOP_EPOCH_PAYLOAD_TYPE, canonical_bytes({"issuer_id": self.issuer_id, "record": self.record.to_mapping()}))
@@ -834,11 +844,18 @@ class _Principal:
 
 def _read_principal(directory: PrincipalDirectory, canonical_id: str) -> _Principal | None:
     """Principal kind, status and roles read exclusively from the
-    registry record; absent or malformed attributes fail closed."""
+    registry record; absent or malformed attributes fail closed, and so
+    do a registry that cannot be read and a record that is not a
+    registry record."""
 
-    record = directory.get(canonical_id)
+    try:
+        record = directory.get(canonical_id)
+    except Exception as error:
+        raise SafetyError("BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID", f"{canonical_id!r} cannot be read from the registry") from error
     if record is None:
         return None
+    if not isinstance(record, IdentityRecord) or not isinstance(record.attributes, Mapping):
+        raise SafetyError("BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID", f"{canonical_id!r} is not a registry record")
     attributes = record.attributes
     kind = attributes.get(PRINCIPAL_KIND_ATTRIBUTE)
     if kind not in PRINCIPAL_KINDS:
@@ -992,7 +1009,7 @@ class BreakGlassController:
             try:
                 # Read without conversion: a string is never split into capabilities or approvers.
                 if (
-                    any(not isinstance(value, str) for value in (grant_id, incident_ref, scope, domain))
+                    any(not isinstance(value, str) for value in (grant_id, requester, incident_ref, scope, domain))
                     or not isinstance(capabilities, (set, frozenset))
                     or any(not isinstance(name, str) or not name for name in capabilities)
                     or not isinstance(approvers, tuple)
@@ -1000,7 +1017,8 @@ class BreakGlassController:
                 ):
                     raise SafetyError(
                         "BREAK_GLASS_GRANT_INVALID",
-                        "grant id, incident, scope and domain are strings, capabilities a set of names, approvers a tuple of principals",
+                        "grant id, requester, incident, scope and domain are strings, capabilities a set of names, "
+                        "approvers a tuple of principals",
                     )
                 if not (grant_id and reason and incident_ref and scope and domain and capabilities):
                     raise SafetyError(
