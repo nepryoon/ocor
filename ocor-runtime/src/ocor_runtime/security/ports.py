@@ -330,6 +330,47 @@ class PolicyDecision:
             )
         return self
 
+    def admit(
+        self,
+        *,
+        enforced_constraints: frozenset[str] = frozenset(),
+        granted_approvals: frozenset[str] = frozenset(),
+        fulfilled_obligations: frozenset[str] = frozenset(),
+    ) -> PolicyDecision:
+        """Apply the decision (ADD v1.3 :3141, Register FR-130; OCOR-DEV-REM-0054, NCR-C6-011).
+
+        ``DENY`` refuses. ``PERMIT_WITH_CONSTRAINTS`` admits only a consumer that enforces every
+        constraint, ``REQUIRE_APPROVAL`` only with every required approval granted and
+        ``OBLIGATE`` only with every obligation fulfilled; a consumer that cannot honour a
+        qualification refuses (default deny). ``PERMIT`` carries no qualification.
+        """
+        honoured: dict[str, frozenset[str]] = {}
+        for name, value in (
+            ("enforced_constraints", enforced_constraints),
+            ("granted_approvals", granted_approvals),
+            ("fulfilled_obligations", fulfilled_obligations),
+        ):
+            if not isinstance(value, frozenset) or any(not isinstance(item, str) or not item for item in value):
+                raise TypeError(f"{name} must be a frozenset of non-empty strings")
+            honoured[name] = value
+        required = frozenset(self.obligations)
+        if self.effect is PolicyEffect.DENY:
+            raise SecurityControlError("POLICY_DENIED", "the policy denies the request")
+        if self.effect is PolicyEffect.PERMIT:
+            if required:
+                raise SecurityControlError("POLICY_DECISION_INVALID", "an unqualified permit carries obligations")
+            return self
+        checks = {
+            PolicyEffect.PERMIT_WITH_CONSTRAINTS: ("enforced_constraints", "POLICY_CONSTRAINT_NOT_ENFORCED"),
+            PolicyEffect.REQUIRE_APPROVAL: ("granted_approvals", "APPROVAL_REQUIRED"),
+            PolicyEffect.OBLIGATE: ("fulfilled_obligations", "POLICY_OBLIGATION_NOT_FULFILLED"),
+        }
+        field, reason = checks[self.effect]
+        missing = sorted(required - honoured[field])
+        if missing:
+            raise SecurityControlError(reason, f"the {self.effect.value} decision is not honoured: {missing}")
+        return self
+
 
 @dataclass(frozen=True, slots=True)
 class WorkloadIdentity:
