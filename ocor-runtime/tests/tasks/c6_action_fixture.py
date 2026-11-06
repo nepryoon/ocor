@@ -468,7 +468,7 @@ def promotion_action(
     }
     values.update(overrides)
     action_proposal = world.proposal(action_type, **values)
-    if risk in ("R0_INFORMATIONAL", "R1_LOW"):
+    if risk in ("R0_READ", "R1_ANALYZE"):
         return PromotionAction(proposal=action_proposal, approval=None, decision=None,
                                lease=world.lease(action_proposal, None, **(lease_fields or {})))
     approval_set = world.approval_set(action_proposal)

@@ -668,15 +668,16 @@ class SignedPolicyBundle:
 
 
 class OperationClass(IntEnum):
-    """LLD v1.1 §4.1 operation classes, ordered by impact.
+    """Operation classes, ordered by impact: the classes of ADD v1.3 §5.4 (:3300-3305), which
+    prevail over the LLD v1.1 §4.1 names (LLD v1.1 :16-18; OCOR-DEV-REM-0054, NCR-C6-013).
 
     A ``DelegationGrant.effect_ceiling`` is the highest class an invocation
     under the grant may exercise; a higher class is outside the grant.
     """
 
     R0_READ = 0
-    R1_DERIVE = 1
-    R2_MUTATE = 2
+    R1_ANALYZE = 1
+    R2_CONTROLLED = 2
     R3_HIGH_IMPACT = 3
 
 

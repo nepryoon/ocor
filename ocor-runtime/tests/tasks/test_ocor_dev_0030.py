@@ -48,10 +48,10 @@ CONTEXT = GOVERNED.governed_context(purpose="retained-governed-action-slice")
 # NCP-U07 (OCOR-DEV-REM-0053): the engine admits only a proposal pinned to a signed, active
 # ActionType (NCR-C6-002, ADD v1.3 :2847), the ApprovalSet of the Human Gate and the Authority's
 # signed Decision on the frozen GatePackage (NCR-C6-001, ADD v1.3 :2849-2850). The launch is
-# R3_HIGH_IMPACT; the non-risk-bearing ActionType is R1_LOW, which admits no mutation.
+# R3_HIGH_IMPACT; the non-risk-bearing ActionType is R1_ANALYZE, which admits no mutation.
 WORLD = ActionWorld(now=NOW, release=governed_path.RELEASE)
 LAUNCH = WORLD.action_type("urn:ocor:action-type:launch", risk="R3_HIGH_IMPACT", capability="act:launch")
-SITE_NOTE = WORLD.action_type("urn:ocor:action-type:site-note", risk="R1_LOW", capability="act:launch")
+SITE_NOTE = WORLD.action_type("urn:ocor:action-type:site-note", risk="R1_ANALYZE", capability="act:launch")
 
 
 class RecordingSink:

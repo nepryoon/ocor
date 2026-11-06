@@ -1325,7 +1325,7 @@ def test_ncr_c6_008_conforms() -> None:
     assert r3.set_validity_after_last_signature == timedelta(minutes=10)
     r2 = gate.approval_requirement(RiskClass.R2_CONTROLLED)
     assert r2.mutation_admitted and r2.quorum == 1
-    for risk in (RiskClass.R0_INFORMATIONAL, RiskClass.R1_LOW):
+    for risk in (RiskClass.R0_READ, RiskClass.R1_ANALYZE):
         assert not gate.approval_requirement(risk).mutation_admitted
     assert set(inspect.signature(gate.ApprovalGate.assemble).parameters) == {"self", "proposal", "approvals", "approval_set_id"}
 
@@ -1346,10 +1346,10 @@ def test_ncr_c6_008_conforms() -> None:
     assert _gate_reason(lambda: world.approval_set((first,), set_id="urn:ocor:approval-set:one")) == "QUORUM_NOT_MET"
 
 
-@pytest.mark.parametrize("risk", ["R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
+@pytest.mark.parametrize("risk", ["R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
 def test_the_approval_obligation_follows_the_risk_class(risk: str) -> None:
     world = GateWorld(risk=risk)
-    if risk in {"R0_INFORMATIONAL", "R1_LOW"}:
+    if risk in {"R0_READ", "R1_ANALYZE"}:
         assert _gate_reason(lambda: world.approval_set(world.quorum())) == "NO_MUTATION_ADMITTED"
         return
     if risk == "R2_CONTROLLED":
@@ -1441,7 +1441,7 @@ class EngineSuite:
         )
         self.types = {
             risk: self.world.action_type(f"urn:ocor:action-type:rem0053:{risk.lower()}", risk=risk, capability="act:launch")
-            for risk in ("R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT")
+            for risk in ("R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT")
         }
         self.sink = EffectSink()
 
@@ -1491,17 +1491,17 @@ def test_ncr_c6_002_conforms() -> None:
     assert {"contract", "approvals", "decisions"} <= set(inspect.signature(engine_module.GovernedActionEngine).parameters)
 
     # ACT-T07: NOT_REQUIRED only for a gate not required on a non-canonical target.
-    assert gate.gate_disposition(RiskClass.R1_LOW, canonical_target=False) == "NOT_REQUIRED"
-    assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_LOW, canonical_target=True)) == "NO_MUTATION_ADMITTED"
+    assert gate.gate_disposition(RiskClass.R1_ANALYZE, canonical_target=False) == "NOT_REQUIRED"
+    assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_ANALYZE, canonical_target=True)) == "NO_MUTATION_ADMITTED"
     assert gate.gate_disposition(RiskClass.R2_CONTROLLED, canonical_target=True) == "REQUIRED"
 
     suite = EngineSuite()
     # A non-risk-bearing ActionType on the canonical target: denied without execution.
-    low = suite.proposal("R1_LOW")
+    low = suite.proposal("R1_ANALYZE")
     assert suite.denial(low, approval=None, decision=None) == ("NO_MUTATION_ADMITTED", "NO_MUTATION_ADMITTED")
     assert suite.untouched()
     # The proposer cannot lower the risk class of its signed ActionType.
-    lowered = suite.proposal("R3_HIGH_IMPACT", risk_class=RiskClass.R1_LOW)
+    lowered = suite.proposal("R3_HIGH_IMPACT", risk_class=RiskClass.R1_ANALYZE)
     assert suite.denial(lowered, approval=None, decision=None) == ("CONTRACT_INVALID", "ACTION_TYPE_MISMATCH")
     # A risk-bearing action without its Approval is denied (NFR-029).
     controlled = suite.proposal("R2_CONTROLLED")
@@ -1630,7 +1630,7 @@ def test_an_action_type_without_its_reliability_fields_is_not_published(field: s
     assert world.catalog.action_type("urn:ocor:action-type:incomplete") is None
 
 
-@pytest.mark.parametrize("risk", ["R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
+@pytest.mark.parametrize("risk", ["R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
 @pytest.mark.parametrize("canonical_target", [True, False])
 def test_the_gate_disposition_follows_the_risk_class_and_the_target(risk: str, canonical_target: bool) -> None:
     gate = _mod("human_gate")
@@ -1688,7 +1688,7 @@ def test_the_engine_denies_at_every_gate_before_any_effect(case: str) -> None:
         proposal = world.proposal(note, action_id=proposal.action_instance_id, proposer=OPERATOR, target=TARGET,
                                   governed_context_digest=suite.context.digest())
     elif case == "r0-on-canonical":
-        proposal = suite.proposal("R0_INFORMATIONAL")
+        proposal = suite.proposal("R0_READ")
     elif case == "authority":
         lease = suite.lease(proposal, decision, capability_id="act:read-only")
     elif case == "approval-missing":
@@ -3025,7 +3025,7 @@ def test_ncr_c6_009_conforms(backends: Any) -> None:
         assert state is not None and state.revision == 1
         assert "_c3.commit(" not in inspect.getsource(promotion.C6MemoryPromotionConsumer)
 
-    for risk in ("R0_INFORMATIONAL", "R1_LOW"):
+    for risk in ("R0_READ", "R1_ANALYZE"):
         with promotion.workflow(backends) as x:
             x.body["risk_class"] = int(_mod("records").RiskClass[risk])
             x.controls.put(x.result.audit_ref, x.body)
@@ -3561,7 +3561,7 @@ def test_a_denied_authority_ends_the_action_denied_and_it_is_never_resumed() -> 
 
 def test_a_non_risk_bearing_action_is_denied_at_the_control_check() -> None:
     suite = CompositionSuite()
-    low = suite.world.action_type("urn:ocor:action-type:rem0053:composed-low", risk="R1_LOW", capability="act:launch")
+    low = suite.world.action_type("urn:ocor:action-type:rem0053:composed-low", risk="R1_ANALYZE", capability="act:launch")
     proposal = suite.world.proposal(
         low,
         action_id=f"urn:ocor:action:rem0053:composed:{uuid.uuid4()}",

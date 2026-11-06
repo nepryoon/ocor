@@ -1335,7 +1335,7 @@ _CAPABILITY = CapabilityInvocation(
     capability_id="urn:ocor:capability:read-site",
     capability_version="1.0.0",
     effect_class=OperationClass.R0_READ,
-    risk_class=RiskClass.R0_INFORMATIONAL,
+    risk_class=RiskClass.R0_READ,
 )
 
 
@@ -1382,7 +1382,7 @@ def _sign_delegation(
         "compartments": ("compartment-a",),
         "permitted_purposes": permitted_purposes,
         "effect_ceiling": OperationClass.R0_READ,
-        "risk_ceiling": RiskClass.R0_INFORMATIONAL,
+        "risk_ceiling": RiskClass.R0_READ,
         "not_before": not_before or _now() - timedelta(minutes=5),
         "expires_at": expires_at or _now() + timedelta(hours=1),
         "max_chain_depth": 1,
@@ -2458,7 +2458,7 @@ def test_repair5_grant_scope_is_an_intersection(
     (replace(_CAPABILITY, capability_id="urn:ocor:capability:erase-site"),
      "DELEGATION_CAPABILITY_MISMATCH"),
     (replace(_CAPABILITY, capability_version="2.0.0"), "DELEGATION_CAPABILITY_MISMATCH"),
-    (replace(_CAPABILITY, effect_class=OperationClass.R2_MUTATE), "DELEGATION_CEILING_EXCEEDED"),
+    (replace(_CAPABILITY, effect_class=OperationClass.R2_CONTROLLED), "DELEGATION_CEILING_EXCEEDED"),
     (replace(_CAPABILITY, risk_class=RiskClass.R2_CONTROLLED), "DELEGATION_CEILING_EXCEEDED"),
     (None, "DELEGATION_INVALID"),
 ])
@@ -2469,12 +2469,12 @@ def test_repair5_capability_must_fit_grant_ceilings(
     provider, digest = opa_delegated
     grant = _sign_delegation(
         delegatee_id=principal.principal_id,
-        effect_ceiling=OperationClass.R1_DERIVE,
-        risk_ceiling=RiskClass.R1_LOW,
+        effect_ceiling=OperationClass.R1_ANALYZE,
+        risk_ceiling=RiskClass.R1_ANALYZE,
     )
     request = _delegated_policy_request(principal, digest, grant)
-    for within in (_CAPABILITY, replace(_CAPABILITY, effect_class=OperationClass.R1_DERIVE,
-                                        risk_class=RiskClass.R1_LOW)):
+    for within in (_CAPABILITY, replace(_CAPABILITY, effect_class=OperationClass.R1_ANALYZE,
+                                        risk_class=RiskClass.R1_ANALYZE)):
         assert provider.evaluate(request, delegation=grant, capability=within).effect is (
             PolicyEffect.PERMIT)
     _expect(reason, lambda: provider.evaluate(request, delegation=grant, capability=capability))
@@ -2565,7 +2565,7 @@ def _grant_chain(
         "policy_bundle_digest": digest, "redelegation_allowed": True, "max_chain_depth": 2,
         "domains": ("domain-a", "domain-b"), "compartments": ("compartment-a", "compartment-b"),
         "permitted_purposes": ("read-site-1", "audit-site-1"),
-        "effect_ceiling": OperationClass.R1_DERIVE, "risk_ceiling": RiskClass.R1_LOW,
+        "effect_ceiling": OperationClass.R1_ANALYZE, "risk_ceiling": RiskClass.R1_ANALYZE,
     }
     root_fields.update(root or {})
     root_grant = _sign_delegation(**root_fields)  # type: ignore[arg-type]
@@ -2604,7 +2604,7 @@ def _canonical(instant: datetime) -> datetime:
     ({}, {"domains": ("domain-a", "domain-c")}, "DELEGATION_AMPLIFICATION"),
     ({}, {"compartments": ("compartment-a", "compartment-c")}, "DELEGATION_AMPLIFICATION"),
     ({}, {"permitted_purposes": ("read-site-1", "write-site-1")}, "DELEGATION_AMPLIFICATION"),
-    ({}, {"effect_ceiling": OperationClass.R2_MUTATE}, "DELEGATION_AMPLIFICATION"),
+    ({}, {"effect_ceiling": OperationClass.R2_CONTROLLED}, "DELEGATION_AMPLIFICATION"),
     ({}, {"risk_ceiling": RiskClass.R2_CONTROLLED}, "DELEGATION_AMPLIFICATION"),
     ({}, {"expires_at": _now() + timedelta(hours=3)}, "DELEGATION_AMPLIFICATION"),
     ({}, {"max_chain_depth": 2}, "DELEGATION_AMPLIFICATION"),
@@ -3022,8 +3022,8 @@ def test_repair6_act_claim_does_not_replace_the_grant(repair6_act, mtls):
     ({"resource_scope": "urn:ocor:target:other-site"}, "DELEGATION_SCOPE_MISMATCH"),
     ({"permitted_purposes": ("write-site-1",)}, "DELEGATION_PURPOSE_MISMATCH"),
     ({"capability_id": "urn:ocor:capability:other"}, "DELEGATION_CAPABILITY_MISMATCH"),
-    ({"effect_ceiling": OperationClass.R0_READ, "risk_ceiling": RiskClass.R0_INFORMATIONAL,
-      "_capability": OperationClass.R1_DERIVE}, "DELEGATION_CEILING_EXCEEDED"),
+    ({"effect_ceiling": OperationClass.R0_READ, "risk_ceiling": RiskClass.R0_READ,
+      "_capability": OperationClass.R1_ANALYZE}, "DELEGATION_CEILING_EXCEEDED"),
     ({"delegator_id": "delegator-2"}, "IDENTITY_BINDING_MISMATCH"),
     ({"confirmation_key_thumbprint": "urn:sha256:" + "a" * 64},
      "DELEGATION_KEY_BINDING_MISMATCH"),
