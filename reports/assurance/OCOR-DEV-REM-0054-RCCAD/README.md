@@ -5,8 +5,17 @@ verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-
 registro, con il criterio aggiuntivo del punto 2 per NCP-U08 (`stop_epoch` firmato, durevole e letto tramite una
 porta).
 
-Stato: `CANDIDATE_IN_PROGRESS` (bozza prima dell'autocontrollo di robustezza degli input, della revisione
-preventiva e della campagna). Lo stop di emergenza è attivato solo da un Safety Officer autorizzato per un
+Stato: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` sul commit di codice `f22de61` (iterazione 8 di stima 3,
+stop a 9). L'autocontrollo di robustezza degli input di `NCP-THROUGHPUT-RULES (2026-11-05)` punto 1 ha chiuso le
+lacune trovate (RED `4bc3bfc`, GREEN `d614bbd`; tabella nel record). La revisione preventiva
+`OCOR-DEV-REM-0054-05049b13ee05-pre` (Antigravity CLI, Google) ha dato `BLOCKING_FINDINGS`: i due finding
+bloccanti sono corretti (RED `3e631d5`, GREEN `1963c9d`) e il consultivo è adottato come test; la revisione non si
+ripete (PRE-CAMPAIGN-REVIEW punto 3). PRE-CAMPAIGN-GATE al commit di codice 46/47, con la sola deriva attesa
+degli undici task da riqualificare. Campagna `PASS` da shell pulita: qualifica dei servizi e fault injection,
+modulo d'unità tre volte, moduli adattati, consumer, regressione, portfolio di `reports/tests`, e suite completa
+seriale sullo stack dell'host secondo `NCP-U08-LANE-TEMPORAL-READINESS (2026-11-06)` opzione A1 4982/4982, zero
+skip, JUnit uguale alla collezione, 3961.4 s sul tetto di 5400 s; i due run a due corsie fermati nel bootstrap delle
+corsie (Temporal non ancora pronto) sono tentativi diagnostici senza conteggi. Lo stop di emergenza è attivato solo da un Safety Officer autorizzato per un
 incidente nominato; ogni transizione pubblica uno `stop_epoch` firmato Ed25519 sulla `StopEpochPort` durevole,
 con l'adapter PostgreSQL append-only e compare-and-set, e ogni lettura lo verifica (G-DISPATCH, runtime dei tool
 C8, break-glass); il reset richiede due approvatori distinti e la verifica di incidente e ripristino; il
@@ -25,9 +34,10 @@ precondizioni del caso 3 e righe `ADAPTED` della decisione) con il confronto del
 `78ba179`, scelte di prodotto, ambiguità risolte in modo fail-closed, punti aperti, gli esiti dell'inventario dei
 consumer e la classificazione delle riqualifiche: tutte di sola regressione (`0030`, `0034`, `0035`, `0044`,
 `0047`, `0048` senza requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`; `0009`, `0014`
-con test invariati; `0005`, `0050`, `0082` per l'allowlist del piano). Restano da eseguire: autocontrollo di
-`NCP-THROUGHPUT-RULES (2026-11-05)` punto 1, PRE-CAMPAIGN-GATE, revisione preventiva, campagna, riqualifiche
-`.requalified-rem0054` e verifica indipendente da un fornitore diverso da Anthropic e dal revisore preventivo.
+con test invariati; `0005`, `0050`, `0082` per l'allowlist del piano). Le undici riqualifiche `.requalified-rem0054`
+sono nella classe non qualificante di `REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)`, con inserimento
+chirurgico nei MANIFEST e deriva zero all'head candidato. Resta la verifica indipendente da un fornitore diverso
+da Anthropic e da Google, poi sigillo, merge e state sync.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, slice legacy (`c4_marking.py`, `c6_capabilities.py`, `c7_emission.py`), guard o workflow è
