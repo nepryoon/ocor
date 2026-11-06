@@ -5,8 +5,20 @@ verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-
 registro, con il criterio aggiuntivo del punto 2 per NCP-U08 (`stop_epoch` firmato, durevole e letto tramite una
 porta).
 
-Stato: `CANDIDATE_IN_PROGRESS` (bozza prima dell'autocontrollo di robustezza degli input, della revisione
-preventiva e della campagna). Lo stop di emergenza è attivato solo da un Safety Officer autorizzato per un
+Stato: `CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION` sul commit di codice `ff0508c` del ciclo di riparazione 1
+(iterazione 10 di stima 3, estensione fino alla tredicesima secondo `NCP-U08-ITERATION-LIMIT (2026-11-06)`
+opzione 1). L'autocontrollo di robustezza degli input di `NCP-THROUGHPUT-RULES (2026-11-05)` punto 1 ha chiuso le
+lacune trovate (RED `4bc3bfc`, GREEN `d614bbd`; tabella nel record). La revisione preventiva
+`OCOR-DEV-REM-0054-05049b13ee05-pre` (Antigravity CLI, Google) ha dato `BLOCKING_FINDINGS`: i due finding
+bloccanti sono corretti (RED `3e631d5`, GREEN `1963c9d`) e il consultivo è adottato come test. La verifica del
+ciclo 0 (`OCOR-DEV-REM-0054-84443cf94590-0`) ha dato `NO_GO` per la sola riqualifica mancante di `REM-0053`; la
+riparazione (`145dc23`, `4b0d8cc`, `ff0508c`) non tocca codice né test, e la sua revisione preventiva
+`OCOR-DEV-REM-0054-ff0508c04e5c-pre` (Codex CLI, OpenAI, revisore di riserva) ha dato `NO_BLOCKING_FINDINGS`.
+PRE-CAMPAIGN-GATE al commit di codice 46/47, con la sola deriva attesa degli undici task completati da
+riqualificare. Campagna `PASS` da shell pulita, ripetuta per intero all'head della riparazione: qualifica dei
+servizi e fault injection, modulo d'unità tre volte, moduli adattati, consumer, regressione, portfolio di
+`reports/tests`, e suite completa seriale sullo stack dell'host secondo `NCP-U08-LANE-TEMPORAL-READINESS
+(2026-11-06)` opzione A1 4982/4982, zero skip, JUnit uguale alla collezione, 4013.1 s sul tetto di 5400 s. Lo stop di emergenza è attivato solo da un Safety Officer autorizzato per un
 incidente nominato; ogni transizione pubblica uno `stop_epoch` firmato Ed25519 sulla `StopEpochPort` durevole,
 con l'adapter PostgreSQL append-only e compare-and-set, e ogni lettura lo verifica (G-DISPATCH, runtime dei tool
 C8, break-glass); il reset richiede due approvatori distinti e la verifica di incidente e ripristino; il
@@ -27,9 +39,11 @@ consumer e la classificazione delle riqualifiche: tutte di sola regressione (`00
 `0047`, `0048` senza requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`; `0009`, `0014`
 con test invariati; `0005`, `0050`, `0082` per l'allowlist del piano; `REM-0053`, unità non completata, perché lo
 richiede `NCP-U08-RISK-CLASS-NAME-ADAPTATION (2026-11-06)` opzione 1, aggiunta nel ciclo di riparazione 1 dopo
-il finding VF-001 della verifica `OCOR-DEV-REM-0054-84443cf94590-0`). Restano da eseguire: autocontrollo di
-`NCP-THROUGHPUT-RULES (2026-11-05)` punto 1, PRE-CAMPAIGN-GATE, revisione preventiva, campagna, riqualifiche
-`.requalified-rem0054` e verifica indipendente da un fornitore diverso da Anthropic e dal revisore preventivo.
+il finding VF-001 della verifica `OCOR-DEV-REM-0054-84443cf94590-0`). Le dodici riqualifiche
+`.requalified-rem0054` sono nella classe non qualificante di `REM-0046-REGRESSION-REQUALIFICATION-RECORDS
+(2026-10-30)`, con inserimento chirurgico nei MANIFEST e deriva zero all'head candidato; quella di `REM-0053`
+supersede il record sigillato `OCOR-DEV-REM-0053-90028ba369a5` senza modificarlo. Resta la verifica indipendente
+da un fornitore diverso da Anthropic, Google e OpenAI, poi sigillo, merge e state sync.
 
 Implementatore: Claude Code (Anthropic). Nessun file di `inputs/`, ADD, LLD, contratto, schema, registro
 normativo, slice legacy (`c4_marking.py`, `c6_capabilities.py`, `c7_emission.py`), guard o workflow è
