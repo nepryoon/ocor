@@ -19,6 +19,14 @@ NCR-C6-010 to NCR-C6-013.
   durable and is read through a port by G-DISPATCH and by the C8 tool runtime; it is not an
   attribute of the process that activates the stop.
 
+* NCR-C6-013 -- ADD v1.3 :3298-3305 (§5.4 risk classes ``R0_READ``, ``R1_ANALYZE``,
+  ``R2_CONTROLLED``, ``R3_HIGH_IMPACT`` and their gates: R0 policy and Authority without Approval,
+  R1 no mutation, R2 one independent human approver, R3 two independent human approvers), ADD
+  v1.3 :2193 (the ``risk_class`` enum of the Action Type Contract), LLD v1.1 :313-318 (§4.1 names
+  ``R1_DERIVE`` and ``R2_MUTATE``) and LLD v1.1 :16-18 (§0.1: ADD v1.3 prevails over the LLD; no
+  correction through aliases). The kernel risk class and the control-plane operation class carry
+  the ADD names only, the wire forms carry them, and the gates are those of ADD v1.3 §5.4.
+
 The durable stop-epoch store is the real PostgreSQL of the stack (``OCOR_LIVE_POSTGRES_DSN``);
 the other cases use the in-memory implementation of the same port.
 """
@@ -625,3 +633,68 @@ def test_ncr_c6_010_break_glass_never_overrides_a_stop_read_through_the_port() -
     with pytest.raises(safety.SafetyError) as excinfo:
         controller.authorize(grant, capability="restart_service", review_ref="urn:ocor:review:1")
     assert _reason(excinfo) == "BREAK_GLASS_STOP_ACTIVE"
+
+
+# --- NCR-C6-013: ADD v1.3 risk-class names and gates (ADD :3298-3305, :2193; LLD :16-18) --------
+
+ADD_RISK_CLASSES = ["R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT"]
+
+
+def test_ncr_c6_013_conforms() -> None:
+    """The register's RED probe: the kernel RiskClass and the control-plane OperationClass names."""
+    governance = _mod("kernel.governance")
+    control_plane = _mod("security.control_plane")
+    assert [member.name for member in governance.RiskClass] == ADD_RISK_CLASSES
+    assert [member.name for member in control_plane.OperationClass] == ADD_RISK_CLASSES
+
+
+@pytest.mark.parametrize("module,enum", [("kernel.governance", "RiskClass"), ("security.control_plane", "OperationClass")])
+def test_ncr_c6_013_the_classes_are_the_add_names_in_impact_order_without_aliases(module: str, enum: str) -> None:
+    kind = getattr(_mod(module), enum)
+    # LLD v1.1 :18: no implicit correction through aliases -- __members__ also lists aliases.
+    assert list(kind.__members__) == ADD_RISK_CLASSES
+    assert [int(member) for member in kind] == [0, 1, 2, 3]
+    for legacy in ("R0_INFORMATIONAL", "R1_LOW", "R1_DERIVE", "R2_MUTATE"):
+        assert not hasattr(kind, legacy)
+
+
+def test_ncr_c6_013_the_policy_input_carries_the_add_names() -> None:
+    control_plane = _mod("security.control_plane")
+    governance = _mod("kernel.governance")
+    rows = []
+    for level in range(4):
+        invocation = control_plane.CapabilityInvocation(
+            capability_id="urn:ocor:capability:rem0054", capability_version="1",
+            effect_class=control_plane.OperationClass(level), risk_class=governance.RiskClass(level),
+        )
+        policy_input = invocation.to_policy_input()
+        rows.append((policy_input["effect_class"], policy_input["risk_class"]))
+    assert rows == [(name, name) for name in ADD_RISK_CLASSES]
+
+
+@pytest.mark.parametrize("risk", ADD_RISK_CLASSES)
+def test_ncr_c6_013_a_signed_action_type_carries_the_add_risk_class_on_the_wire(risk: str) -> None:
+    fixture = importlib.import_module("c6_action_fixture")
+    world = fixture.ActionWorld(now=NOW, release="urn:sha256:" + "1" * 64)
+    action_type = world.action_type(f"urn:ocor:action-type:rem0054-{risk.lower()}", risk=risk, capability="act:launch")
+    assert action_type.risk_class.name == risk
+    assert action_type.to_mapping()["risk_class"] == risk
+
+
+def test_ncr_c6_013_the_gates_are_those_of_add_v1_3() -> None:
+    governance = _mod("kernel.governance")
+    gate = _mod("c6.human_gate")
+    risk = governance.RiskClass
+    read, analyze, controlled, high = (gate.approval_requirement(getattr(risk, name)) for name in ADD_RISK_CLASSES)
+    # R0_READ: Policy and Authority, no Approval; R1_ANALYZE: no mutation (ADD v1.3 :3302-3303).
+    assert (read.mutation_admitted, read.quorum, analyze.mutation_admitted, analyze.quorum) == (False, 0, False, 0)
+    # R2_CONTROLLED: one independent human approver (ADD v1.3 :3304), not the LLD R2_MUTATE gate.
+    assert (controlled.mutation_admitted, controlled.quorum, controlled.required_roles) == (True, 1, frozenset())
+    # R3_HIGH_IMPACT: two independent human approvers, Domain and National (ADD v1.3 :3305, :3338).
+    assert (high.mutation_admitted, high.quorum, high.required_roles) == (
+        True, 2, frozenset({gate.DOMAIN_APPROVER, gate.NATIONAL_APPROVER})
+    )
+    for name in ("R0_READ", "R1_ANALYZE"):
+        with pytest.raises(gate.ApprovalGateError) as excinfo:
+            gate.gate_disposition(getattr(risk, name), canonical_target=True)
+        assert _reason(excinfo) == "NO_MUTATION_ADMITTED"
