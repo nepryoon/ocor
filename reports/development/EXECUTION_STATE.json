@@ -1,19 +1,18 @@
 {
   "active_iteration": {
-    "baseline_commit": "c8bd8b7764b771ee47c949f9c0bc1a5c274ded2b",
-    "branch": "governed/state-sync-rem0055-iter1-20261107",
+    "baseline_commit": "bd5e15bb233c2f3e7bb54a224aa9071033628552",
+    "branch": "governed/state-sync-rem0055-iter2-20261107",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0055 iteration 1 (B1 remediation of NCP-U08-LANE-TEMPORAL-READINESS: RED, GREEN, self-check, allowlist and DR files, PRE-CAMPAIGN-GATE, preventive review request)",
+    "change_set": "state sync after OCOR-DEV-REM-0055 iteration 2 (preventive review dispositions, PRE-CAMPAIGN-GATE, campaign with the two-lane full suite, unit record, 7 regression-only requalifications, verification request)",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable_kB": 47263148,
+      "MemAvailable_kB": 45745192,
       "MemTotal_kB": 64199668,
-      "observed_at": "2026-11-07T02:51:21.516108+00:00",
+      "observed_at": "2026-11-07T04:57:00.957489+00:00",
       "source": "/proc/meminfo (LOCAL-SUITE-SPLIT-MEMORY-DEFERRAL (2026-10-27) point 2)"
     },
-    "next_action": "Resume OCOR-DEV-REM-0055 after the preventive review OCOR-DEV-REM-0055-193559ef56e2-pre (outcome in ~/.ocor-codex/prereviews/OCOR-DEV-REM-0055-193559ef56e2-pre.json): on governed/ocor-dev-rem-0055-lane-temporal-readiness from 193559ef56e2 in .ocor/worktrees/rem-0055 (venv with test+lint extras and .ocor/tools in place; locked PATH ~/.ocor-codex/rem-0055/locked-path; kit ~/.ocor-codex/rem-0055, gate script iter1/pregate_unit.py). Dispose of every blocking finding (RED/GREEN fix commit or reproducible rebuttal) and record advisory ones; merge origin/main non-destructively if it moved (state files only); rerun PRE-CAMPAIGN-GATE on the final head; build the TypeScript SDK in the worktree; campaign (adapt ~/.ocor-codex/rem-0054-q run.sh/qualify_run.py; the CI stack of the worktree is torn down and its credentials archived): service qualification (0073/0075/0079 commands: bootstrap, typed health, Temporal --fault-recovery), unit module 3 runs, regression of 0005, 0050, 0073, 0075, 0079, 0082 and REM-0038, reports portfolio, then the two-lane full suite (scripts/run_local_lane_campaign.py --execute; the lane bootstrap typed health is the reproduction this remediation fixes); unit record reports/assurance/OCOR-DEV-REM-0055-RCCAD/ (README, json, log: implementer Claude Code/Anthropic, RED/GREEN, self-check table, interpretations, preventive review reference, the two DR files with sha256) and the seven regression-only .requalified-rem0055 records with surgical MANIFEST entries (paths already allowlisted); verify request REMEDIATION (verifier not Anthropic and not the preventive reviewer's provider); then seal, PR, exact-head CI, merge, integration state sync (blockers of the two NCP-U08 DRs: file on main). Then NCP-U09, U10 (also NCR-C8-008), U11, U12 in order, each after its depends_on_units are on main; every new unit stops at 3 x estimate_iterations. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-    "normative_interpretations": "Interpretations (fail-closed, no semantic impact): (1) the sealed REM-0038 case test_typed_verification_includes_the_new_services fixes the call _run_qualify_script(repository, script, ['--execute']) with three positional arguments, so the wait lives in qualify.py --execute (literal reuse of wait_ready) and the subprocess bound is chosen per script inside the runner; the 60 s bound could not contain the 90 s wait, and it changes only for Temporal (option B1: other services unchanged). (2) 'sealed records that have the touched files among their inputs' = the latest sealed records naming qualify.py or verify_external_services.py: 0073, 0075, 0079 (drift validator) and OCOR-DEV-REM-0038 (repair-1 record, a REM outside completed_evidence_tasks, included as the REM-0054 VF-001 precedent requires); 0005, 0050 and 0082 follow from the plan allowlist as usual. The operation record FUSEKI-LOCAL-IDENTITY-20261008 (no backlog task, its 0073/0075/0079 records already superseded twice) is listed and not requalified; the REM records naming only the plan validator are not requalified (standing practice of every governed change set since REM-0045). All requalifications regression-only (tests of those tasks unchanged).",
-    "phase": "REM_0055_AWAITING_PREVENTIVE_REVIEW",
+    "next_action": "Wait for the independent verification OCOR-DEV-REM-0055-4b1c51ad992b-0 (REMEDIATION, verifier of a provider other than Anthropic and Google; the loop runs it). Then, with GO_FOR_EVIDENCE_SEAL: record verifier identity and verdict in the unit record and the 7 requalifications, seal, align with main (state paths only), open the PR of governed/ocor-dev-rem-0055-lane-temporal-readiness, wait for every required check on the exact head (one rerun for infrastructure failures), merge with --match-head-commit, verify the seal hashes on main, integration state sync (blockers of the two NCP-U08 decision requests: file on main). With NO_GO: repair cycle 1 (at most 2). Afterwards NCP-U09, U10 (also NCR-C8-008), U11, U12 in order, each after its depends_on_units are on main, every new unit stopping at 3 x estimate_iterations; G6 0060/0062-0067 only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+    "phase": "REM_0055_AWAITING_INDEPENDENT_VERIFICATION",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
       "implementers": [
@@ -21,8 +20,19 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0055 iteration 1 (RED, GREEN, self-check, allowlist and DR files, PRE-CAMPAIGN-GATE) and this state sync"
+          "scope": "OCOR-DEV-REM-0055 iterations 1-2 (the only implementer of the task) and this state sync"
         }
+      ],
+      "preventive_reviewer": {
+        "agent": "Antigravity CLI",
+        "model": "gemini-4-argon-high",
+        "provider": "Google",
+        "request_id": "OCOR-DEV-REM-0055-193559ef56e2-pre",
+        "verdict": "BLOCKING_FINDINGS"
+      },
+      "verifier_excluded_providers": [
+        "Anthropic",
+        "Google"
       ]
     },
     "unit": "OCOR-DEV-REM-0055"
@@ -1753,7 +1763,7 @@
       }
     }
   },
-  "baseline_commit": "c8bd8b7764b771ee47c949f9c0bc1a5c274ded2b",
+  "baseline_commit": "bd5e15bb233c2f3e7bb54a224aa9071033628552",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -9738,7 +9748,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0055 after the preventive review OCOR-DEV-REM-0055-193559ef56e2-pre (outcome in ~/.ocor-codex/prereviews/OCOR-DEV-REM-0055-193559ef56e2-pre.json): on governed/ocor-dev-rem-0055-lane-temporal-readiness from 193559ef56e2 in .ocor/worktrees/rem-0055 (venv with test+lint extras and .ocor/tools in place; locked PATH ~/.ocor-codex/rem-0055/locked-path; kit ~/.ocor-codex/rem-0055, gate script iter1/pregate_unit.py). Dispose of every blocking finding (RED/GREEN fix commit or reproducible rebuttal) and record advisory ones; merge origin/main non-destructively if it moved (state files only); rerun PRE-CAMPAIGN-GATE on the final head; build the TypeScript SDK in the worktree; campaign (adapt ~/.ocor-codex/rem-0054-q run.sh/qualify_run.py; the CI stack of the worktree is torn down and its credentials archived): service qualification (0073/0075/0079 commands: bootstrap, typed health, Temporal --fault-recovery), unit module 3 runs, regression of 0005, 0050, 0073, 0075, 0079, 0082 and REM-0038, reports portfolio, then the two-lane full suite (scripts/run_local_lane_campaign.py --execute; the lane bootstrap typed health is the reproduction this remediation fixes); unit record reports/assurance/OCOR-DEV-REM-0055-RCCAD/ (README, json, log: implementer Claude Code/Anthropic, RED/GREEN, self-check table, interpretations, preventive review reference, the two DR files with sha256) and the seven regression-only .requalified-rem0055 records with surgical MANIFEST entries (paths already allowlisted); verify request REMEDIATION (verifier not Anthropic and not the preventive reviewer's provider); then seal, PR, exact-head CI, merge, integration state sync (blockers of the two NCP-U08 DRs: file on main). Then NCP-U09, U10 (also NCR-C8-008), U11, U12 in order, each after its depends_on_units are on main; every new unit stops at 3 x estimate_iterations. G6 0060/0062-0067 start only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "next_executable_action": "Wait for the independent verification OCOR-DEV-REM-0055-4b1c51ad992b-0 (REMEDIATION, verifier of a provider other than Anthropic and Google; the loop runs it). Then, with GO_FOR_EVIDENCE_SEAL: record verifier identity and verdict in the unit record and the 7 requalifications, seal, align with main (state paths only), open the PR of governed/ocor-dev-rem-0055-lane-temporal-readiness, wait for every required check on the exact head (one rerun for infrastructure failures), merge with --match-head-commit, verify the seal hashes on main, integration state sync (blockers of the two NCP-U08 decision requests: file on main). With NO_GO: repair cycle 1 (at most 2). Afterwards NCP-U09, U10 (also NCR-C8-008), U11, U12 in order, each after its depends_on_units are on main, every new unit stopping at 3 x estimate_iterations; G6 0060/0062-0067 only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -10101,10 +10111,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "7a5efacc82d112c58ad8c648908231d63269e435",
-    "branch": "governed/state-sync-rem0054-integrated-20261107",
-    "change_set": "OCOR-DEV-REM-0054 (NCP-U08) integration (GO at repair cycle 1, seal, exact-head CI PASS, merged PR #529)",
-    "phase": "REM_0054_NCP_U08_INTEGRATED_B1_REMEDIATION_NEXT"
+    "baseline_commit": "c8bd8b7764b771ee47c949f9c0bc1a5c274ded2b",
+    "branch": "governed/state-sync-rem0055-iter1-20261107",
+    "change_set": "state sync after OCOR-DEV-REM-0055 iteration 1 (B1 remediation of NCP-U08-LANE-TEMPORAL-READINESS: RED, GREEN, self-check, allowlist and DR files, PRE-CAMPAIGN-GATE, preventive review request)",
+    "phase": "REM_0055_AWAITING_PREVENTIVE_REVIEW"
   },
   "previous_candidate_ci": {
     "bad_checks": [],
@@ -10200,11 +10210,11 @@
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
       "OCOR-DEV-REM-0043": "suspended by the PO (REM-0043-NCP-SUSPENSION), candidate 4c0102805412 not integrated",
-      "OCOR-DEV-REM-0055": "B1 remediation of NCP-U08-LANE-TEMPORAL-READINESS, implemented at 193559ef56e2; preventive review OCOR-DEV-REM-0055-193559ef56e2-pre requested"
+      "OCOR-DEV-REM-0055": "B1 remediation of NCP-U08-LANE-TEMPORAL-READINESS: candidate 4b1c51ad992b (code 351bb27eeeb0), verification OCOR-DEV-REM-0055-4b1c51ad992b-0 requested"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-07T02:51:21.516108+00:00",
+    "observed_at": "2026-11-07T04:57:00.957489+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U09",
@@ -35101,14 +35111,19 @@
       "authority": "NCP-U08-LANE-TEMPORAL-READINESS (2026-11-06) option B1, decided on full delegation of the PO (model claude-opus-5-5, effort xhigh; request file at de3f9bc2c9b38392ff664d13865f938352b042af, sha256 19d1cb837ed4e8089a086e46dc99087c0aba4949a5c97d79282922f71c4addd6 verified); governed change set, not a programme unit",
       "base": "c8bd8b7764b771ee47c949f9c0bc1a5c274ded2b",
       "branch": "governed/ocor-dev-rem-0055-lane-temporal-readiness",
+      "campaign": "Campaign PASS from a clean shell at the code commit 351bb27eeeb0 (locked PATH, env -i; kit ~/.ocor-codex/rem-0055-q): versioned CI bootstrap 15 containers with the typed health 11/11 READY; Temporal --execute --fault-recovery, SeaweedFS, TypeDB, OpenBao fault recovery, SPIRE, policy and identity; bounded pause of 7 services; typed verification after faults and after reset 11/11 READY; unit module with the register, REM-0046 and runtime evidence validator suites 3 runs x 231 passed (3 live cases on the real Temporal each run); service contract suites, regression (0005, 0050, 0079, 0082, REM-0038), evidence job G0 and the reports portfolio PASS; two-lane full suite (memory admission TWO_LANE) 5118/5118, zero skips, JUnit equal to the collection, 2587.6 s of the 5400 s cap: both lane bootstraps passed their typed service health with the changed Temporal check (the step where the two REM-0054 runs had stopped); MemAvailable min 38686.9 MiB; mains power for the whole run: True",
       "change": "deploy/bootstrap/services/temporal/qualify.py: --execute reaches the server runtime and the protocol observation through wait_ready (STARTUP_WAIT_SECONDS = 90.0, reused, lines 190-201 at base) instead of a single probe; the un-executed probe stays single; shapes of lock and container inspections are typed refusals (no coercion). scripts/verify_external_services.py: QUALIFY_SCRIPT_TIMEOUT_SECONDS = {'temporal': 240}, default 60 for every other script; check_temporal unchanged. Required outcome, other services, test timeouts and criteria unchanged.",
+      "code_commit": "351bb27eeeb03647ca724c81dcce65398d1ebc7f",
       "commits": {
         "GREEN_1": "4a5e5f5",
         "GREEN_2_input_robustness": "193559e",
+        "GREEN_3_preventive_review": "351bb27",
         "RED_1": "1052409",
         "RED_1_adjustment": "bcda5d2",
         "RED_2_input_robustness": "c51ed23",
-        "allowlist_index_and_dr_files": "6324ed2"
+        "RED_3_preventive_review": "6f554e3",
+        "allowlist_index_and_dr_files": "6324ed2",
+        "evidence": "4b1c51a"
       },
       "decision_request_files": {
         "reports/development/decision_requests/NCP-U08-ITERATION-LIMIT.md": {
@@ -35122,11 +35137,43 @@
           "source_commit": "0e0d6039fef752f458289f24ab8a2e06a4a29f71"
         }
       },
-      "head": "193559ef56e2d13a0b1f882b5f8bac72fe180fca",
+      "full_campaign": {
+        "counts": {
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "tests": 5118
+        },
+        "diagnostic_attempts": 0,
+        "duration_seconds": 2587.55,
+        "exact_union": {
+          "collected": 5118,
+          "collection_sha256": "e3126ea232fc5edc98d123c4296f24b1a31170a4c09ab4fbbc6678ed8bf4258a",
+          "duplicated": [],
+          "executed": 5118,
+          "executed_identity_sha256": "5a24dac6d5ee600724b720d741b4daf97594a2c4876b8a0fbefdc95396ce2955",
+          "missing": [],
+          "unexpected": []
+        },
+        "mode": "TWO_LANE",
+        "status": "PASS"
+      },
+      "head": "4b1c51ad992b8b4a7d57ac98665006739e3b7bfe",
       "id_verification": "first free OCOR-DEV-REM-* verified read-only at the start: OCOR-DEV-REM-0055 appears only as a forecast in the three state files; no branch, record or PR uses it",
       "implementers": [
         "Claude Code (Anthropic, claude-opus-5-5)"
       ],
+      "independent_verification": {
+        "excluded_providers": [
+          "Anthropic",
+          "Google"
+        ],
+        "head_sha": "4b1c51ad992b8b4a7d57ac98665006739e3b7bfe",
+        "request_id": "OCOR-DEV-REM-0055-4b1c51ad992b-0",
+        "requested_at": "2026-11-07T04:57:00.957489+00:00",
+        "review_type": "REMEDIATION",
+        "status": "REQUESTED"
+      },
       "input_robustness_self_check": {
         "adapters": [
           {
@@ -35134,91 +35181,286 @@
             "boundary_digests": "PASS: the running image digest is read from docker inspect at the boundary and compared with the services lock, never taken from the caller",
             "paths": [
               {
-                "negative_test": "PASS (test_malformed_lock_is_a_typed_refusal x3)",
+                "negative_test": "PASS (test_unreadable_lock_file_is_a_typed_refusal x3, test_missing_lock_file_is_a_typed_refusal, test_main_reports_an_unreadable_lock_as_typed_json x3)",
+                "path": "qualify() lock file reader",
+                "shape_without_coercion": "PASS (json.loads of the UTF-8 text, then validate_lock)",
+                "tampered_refused": "PASS",
+                "typed_error": "PASS (OSError, UnicodeDecodeError and JSONDecodeError become QualificationError 'service lock is unreadable', also through main(): GREEN 351bb27)"
+              },
+              {
+                "negative_test": "PASS (test_malformed_lock_is_a_typed_refusal x3, test_malformed_lock_leaf_is_a_typed_refusal x23: int, bool, null, list and object leaves, empty lock, null services and null entry)",
                 "path": "validate_lock / _entry (services lock JSON)",
-                "shape_without_coercion": "PASS (lock object, services list of objects: RED c51ed23, GREEN 193559e)",
+                "shape_without_coercion": "PASS (lock object, services list of objects; image and version leaves must be text themselves, the str() conversions removed in 351bb27; the structural test test_lock_fields_are_never_converted_to_text keeps it so)",
                 "tampered_refused": "PASS (mutable image, source, license, version mismatch: sealed contract suite test_qualify.py)",
-                "typed_error": "PASS (QualificationError)"
+                "typed_error": "PASS (QualificationError with the unchanged messages)"
               },
               {
-                "negative_test": "PASS (malformed inspection cases)",
+                "negative_test": "PASS (real child-process responders: test_undecodable_command_output_is_a_typed_refusal x2, test_command_timeout_and_start_failure_are_typed_refusals)",
+                "path": "run (bounded subprocess)",
+                "shape_without_coercion": "n/a",
+                "tampered_refused": "PASS",
+                "typed_error": "PASS (OSError, TimeoutExpired and UnicodeDecodeError of undecodable stdout or stderr become QualificationError: GREEN 351bb27)"
+              },
+              {
+                "negative_test": "PASS (real child-process responder: test_malformed_docker_inspect_output_is_a_typed_refusal x7: undecodable, invalid JSON, [], [null], object, two containers, non-zero exit; test_well_formed_docker_inspect_output_is_parsed)",
                 "path": "inspect_container (docker inspect JSON)",
-                "shape_without_coercion": "PASS (exactly one object, unchanged)",
+                "shape_without_coercion": "PASS (exactly one object)",
                 "tampered_refused": "PASS",
                 "typed_error": "PASS"
               },
               {
-                "negative_test": "PASS (test_malformed_server_inspection_is_a_typed_refusal, test_malformed_private_inspection_is_a_typed_refusal, persistent failures)",
-                "path": "_require_running_healthy (Config, State, Health)",
-                "shape_without_coercion": "PASS (objects required: GREEN 193559e)",
-                "tampered_refused": "PASS (other image, paused, unhealthy)",
+                "negative_test": "PASS (test_malformed_server_inspection_is_a_typed_refusal, test_malformed_private_inspection_is_a_typed_refusal, test_non_boolean_paused_state_is_a_typed_refusal x7, test_empty_inspection_is_a_typed_refusal, persistent failures)",
+                "path": "_require_running_healthy (Config, State, Paused, Health)",
+                "shape_without_coercion": "PASS (objects required; State.Paused must be a boolean when present, absent means not paused: GREEN 351bb27)",
+                "tampered_refused": "PASS (other image, paused, unhealthy, non-boolean Paused)",
                 "typed_error": "PASS"
               },
               {
-                "negative_test": "PASS",
-                "path": "_bindings / validate_server_inspection (Ports, bindings, HostPort)",
-                "shape_without_coercion": "PASS (bindings list of objects; HostPort exact text, the str() coercion removed in 193559e)",
-                "tampered_refused": "PASS (public binding, extra publication, other port)",
+                "negative_test": "PASS (test_falsy_non_object_ports_are_a_typed_refusal x8, test_null_port_binding_is_a_typed_refusal x2, test_absent_ports_of_a_private_container_are_no_publication x2)",
+                "path": "_bindings / validate_server_inspection / validate_private_inspection (Ports, bindings, HostPort)",
+                "shape_without_coercion": "PASS (Ports an object, null or absent meaning no mapping; falsy non-objects no longer coerced to {}: GREEN 351bb27; bindings list of objects; HostPort exact text)",
+                "tampered_refused": "PASS (public binding, extra publication, other port, private publication)",
                 "typed_error": "PASS"
               },
               {
-                "negative_test": "PASS (persistent failures x10 after the bounded wait)",
-                "path": "validate_observations (CLI health, system JSON, absent namespace)",
-                "shape_without_coercion": "PASS (unchanged: exact SERVING, JSON object, exact serverVersion, refusal with not found)",
+                "negative_test": "PASS (persistent failures x10 after the bounded wait, test_malformed_system_information_is_a_typed_refusal x6, test_undecodable_cli_output_is_a_typed_refusal)",
+                "path": "cli / probe / validate_observations (CLI health, system JSON, absent namespace)",
+                "shape_without_coercion": "PASS (exact SERVING, JSON object, exact serverVersion text, refusal with not found)",
                 "tampered_refused": "PASS",
-                "typed_error": "PASS"
+                "typed_error": "PASS (undecodable CLI output typed through run)"
               },
               {
-                "negative_test": "PASS",
+                "negative_test": "PASS (test_malformed_server_inspection_during_start_up_is_waited_for_then_refused_typed, test_undecodable_output_during_start_up_is_waited_for_then_refused_typed)",
                 "path": "wait_ready (bounded 90 s start-up wait, reused)",
                 "shape_without_coercion": "n/a",
                 "tampered_refused": "PASS (same required outcome)",
-                "typed_error": "PASS (only QualificationError is retried; malformed shapes are now typed and therefore bounded, test_malformed_server_inspection_during_start_up_is_waited_for_then_refused_typed)"
+                "typed_error": "PASS (only QualificationError is retried; every malformed or undecodable observation is typed and therefore bounded)"
               }
             ],
-            "resources_closed_on_error": "PASS: TCP probe in a context manager; every subprocess bounded by a timeout and translated into QualificationError; the live pause test unpauses in finally"
+            "resources_closed_on_error": "PASS: TCP probe in a context manager; every subprocess bounded by a timeout (subprocess.run kills the child on expiry) and translated into QualificationError; the live pause test unpauses in finally"
           },
           {
-            "adapter": "scripts/verify_external_services.py (_run_qualify_script, check_temporal)",
-            "known_limit": "the shared runner of all services lets subprocess.TimeoutExpired and a non-object JSON payload propagate (non-zero exit, the bootstrap step fails closed); unchanged because option B1 excludes changes to the other services",
+            "adapter": "scripts/verify_external_services.py (check_temporal over _run_qualify_script)",
+            "boundary_digests": "n/a (the typed check consumes the qualification result; the digest checks are inside qualify.py)",
             "paths": [
               {
-                "change": "Temporal 240 s (90 s wait + one bounded attempt + two private inspections), every other script 60 s unchanged",
+                "change": "Temporal 240 s (90 s wait + one bounded attempt + two private inspections), every other script 60 s unchanged; signature unchanged (sealed REM-0038 test)",
                 "negative_test": "PASS (test_typed_check_bounds_the_temporal_subprocess_beyond_the_wait)",
                 "path": "_run_qualify_script subprocess bound"
               },
               {
-                "change": "none (READY, DEGRADED, NOT_PROVISIONED, UNREACHABLE)",
-                "negative_test": "PASS (test_typed_check_maps_the_bounded_outcome)",
-                "path": "check_temporal payload mapping"
+                "negative_test": "PASS (real child-process responders: test_typed_check_refuses_a_misbehaving_qualification_process x5; test_typed_check_refuses_a_qualification_process_that_cannot_start)",
+                "path": "check_temporal runner failures",
+                "shape_without_coercion": "n/a",
+                "tampered_refused": "PASS",
+                "typed_error": "PASS (TimeoutExpired, UnicodeDecodeError and OSError of the Temporal qualification process become a typed UNREACHABLE outcome with a fixed error text: GREEN 351bb27)"
+              },
+              {
+                "negative_test": "PASS (test_typed_check_refuses_a_malformed_qualification_payload x11, test_typed_check_maps_the_bounded_outcome, test_typed_check_keeps_well_formed_payloads_unchanged)",
+                "path": "check_temporal payload shape",
+                "shape_without_coercion": "PASS (an object with text result and, when present, errors as a list of texts; anything else UNREACHABLE, never coerced; {} is no longer replaced by the stderr detail)",
+                "tampered_refused": "PASS",
+                "typed_error": "PASS"
               }
-            ]
+            ],
+            "resources_closed_on_error": "PASS: subprocess.run with capture_output and timeout; no other resource",
+            "scope_limit": "confined to check_temporal (NCP-U08-LANE-TEMPORAL-READINESS option B1 excludes changes to the other services): the shared runner and the shared payload mapping of the other ten services are unchanged"
           }
         ],
-        "authority": "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) five points and NCP-THROUGHPUT-RULES (2026-11-05) point 1 (boundary digests, resources closed on error), applied before the preventive review; OCOR-DEV-REM-0055 is a governed remediation, not a programme unit, and applies the self-check voluntarily"
+        "after_preventive_review": {
+          "green": "351bb27",
+          "note": "the four blocking findings entered the same table; no reason code, contract or observable behaviour changed beyond the typed refusal",
+          "red": "6f554e3"
+        },
+        "authority": "PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) five points and NCP-THROUGHPUT-RULES (2026-11-05) point 1 (boundary digests, resources closed on error); OCOR-DEV-REM-0055 is a governed remediation, not a programme unit, and applies the self-check voluntarily; table of iteration 1 (RED c51ed23, GREEN 193559e) completed after the preventive review OCOR-DEV-REM-0055-193559ef56e2-pre (RED 6f554e3, GREEN 351bb27): the whole class is closed on every parsing path of both adapters",
+        "before_preventive_review": {
+          "green": "193559e",
+          "red": "c51ed23"
+        },
+        "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1"
       },
-      "known_pending_gates": [
-        "validate_evidence_input_drift.py: FAIL on OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0073, OCOR-DEV-0075, OCOR-DEV-0079, OCOR-DEV-0082 until the regression-only requalifications enter the candidate"
+      "known_pending_gates": [],
+      "lanes": [
+        {
+          "campaign_elapsed_seconds": 1773.038,
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 2511
+          },
+          "lane": 1,
+          "lane_duration_seconds": 1607.883,
+          "provisioning_seconds": 4.913,
+          "sandbox": "ocor-lane-351bb27eeeb0-1794024674-1",
+          "selected": 2511,
+          "selected_sha256": "8482872d23c231d22674fa224710118ef8b539c12fd96ab4d96da71ef903fd75",
+          "status": "PASS"
+        },
+        {
+          "campaign_elapsed_seconds": 2575.869,
+          "counts": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 2607
+          },
+          "lane": 2,
+          "lane_duration_seconds": 2411.529,
+          "provisioning_seconds": 4.847,
+          "sandbox": "ocor-lane-351bb27eeeb0-1794024674-2",
+          "selected": 2607,
+          "selected_sha256": "20b8e29ff212663920264e106db14094a4084b668898d453e6555fac71e7ca04",
+          "status": "PASS"
+        }
       ],
       "normative_interpretations": "Interpretations (fail-closed, no semantic impact): (1) the sealed REM-0038 case test_typed_verification_includes_the_new_services fixes the call _run_qualify_script(repository, script, ['--execute']) with three positional arguments, so the wait lives in qualify.py --execute (literal reuse of wait_ready) and the subprocess bound is chosen per script inside the runner; the 60 s bound could not contain the 90 s wait, and it changes only for Temporal (option B1: other services unchanged). (2) 'sealed records that have the touched files among their inputs' = the latest sealed records naming qualify.py or verify_external_services.py: 0073, 0075, 0079 (drift validator) and OCOR-DEV-REM-0038 (repair-1 record, a REM outside completed_evidence_tasks, included as the REM-0054 VF-001 precedent requires); 0005, 0050 and 0082 follow from the plan allowlist as usual. The operation record FUSEKI-LOCAL-IDENTITY-20261008 (no backlog task, its 0073/0075/0079 records already superseded twice) is listed and not requalified; the REM records naming only the plan validator are not requalified (standing practice of every governed change set since REM-0045). All requalifications regression-only (tests of those tasks unchanged).",
       "plan_allowlist": "the unit test, the unit record (README, json, log), the two NCP-U08 DR files and the .requalified-rem0055 paths of 0005, 0050, 0073, 0075, 0079, 0082 and REM-0038; only the validator self-hash line of OCOR_PLAN_RUN_STATE.json settled; reverse traceability index rebuilt (new test file, subject task OCOR-DEV-0079, a link, not a declaration); plan validator PASS",
       "pre_campaign_gate": {
-        "artefacts": "~/.ocor-codex/rem-0055/iter1/gate/gates-193559ef56e2/",
-        "failed": [
-          "drift"
+        "artefacts": "~/.ocor-codex/rem-0055/iter2/gate/gates-351bb27eeeb0/",
+        "candidate_head": {
+          "head": "4b1c51ad992b8b4a7d57ac98665006739e3b7bfe",
+          "result": "49/49 PASS (drift 0)"
+        },
+        "earlier_heads": [
+          {
+            "head": "193559ef56e2d13a0b1f882b5f8bac72fe180fca",
+            "result": "48/49 exit 0 (drift only)",
+            "role": "head of the preventive review, superseded by the fixes"
+          }
         ],
-        "head": "193559ef56e2d13a0b1f882b5f8bac72fe180fca",
-        "passed": 48,
-        "steps": 49
+        "head": "351bb27eeeb03647ca724c81dcce65398d1ebc7f",
+        "result": "48/49 PASS; drift FAIL expected for 0005, 0050, 0073, 0075, 0079, 0082 before the requalifications"
       },
       "preventive_review": {
         "base_sha": "c8bd8b7764b771ee47c949f9c0bc1a5c274ded2b",
+        "dispositions": [
+          {
+            "disposition": "FIXED",
+            "green": "351bb27",
+            "id": "P1",
+            "red": "6f554e3",
+            "severity": "blocking",
+            "summary": "qualify.py: lock image and version leaves must be text (no str() conversion); falsy non-object Ports refused (null or absent means no mapping); State.Paused must be a boolean when present"
+          },
+          {
+            "disposition": "FIXED",
+            "green": "351bb27",
+            "id": "P2",
+            "red": "6f554e3",
+            "severity": "blocking",
+            "summary": "qualify.py: undecodable command output is a QualificationError in run() (so wait_ready retries and bounds it); an unreadable, undecodable or invalid lock file is a QualificationError in qualify() and a typed JSON failure in main()"
+          },
+          {
+            "disposition": "FIXED",
+            "green": "351bb27",
+            "id": "P3",
+            "red": "6f554e3",
+            "severity": "blocking",
+            "summary": "verify_external_services.py, confined to check_temporal (option B1): TimeoutExpired, UnicodeDecodeError and OSError of the qualification process and a payload that is not an object with text result and text errors are a typed UNREACHABLE outcome; the empty object is no longer replaced; _run_qualify_script signature and the other services unchanged"
+          },
+          {
+            "disposition": "FIXED",
+            "green": "351bb27",
+            "id": "P4",
+            "red": "6f554e3",
+            "severity": "blocking",
+            "summary": "negative tests on every parsing path named: run, inspect_container and cli through real child-process responders on PATH, the lock reader and leaves, Ports, bindings and Paused, system information shapes, and check_temporal through real qualification processes and malformed payloads (input-robustness self-check table updated)"
+          }
+        ],
+        "findings_by_severity": {
+          "blocking": 4
+        },
         "head_sha": "193559ef56e2d13a0b1f882b5f8bac72fe180fca",
-        "request_file": "~/.ocor-codex/prereview_request.json",
+        "outcome_sha256": "4f19199a6f7733004f88a05ae1634bcb9b2b55bc2c43f1419c5d0cef3c65a731",
         "request_id": "OCOR-DEV-REM-0055-193559ef56e2-pre",
-        "requested_at": "2026-11-07T02:51:21.516108+00:00",
-        "status": "REQUESTED"
+        "reviewer": {
+          "agent": "Antigravity CLI",
+          "model": "gemini-4-argon-high",
+          "provider": "Google"
+        },
+        "status": "DISPOSED",
+        "verdict": "BLOCKING_FINDINGS"
       },
+      "requalifications": [
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0055.json",
+          "record_sha256": "c9f9b1cc63908a62ddfe418a93d89792cff1cd1ccfe365e13a3c9c0898fb9cc7",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-0005-requalified-rem0054-ff0508c04e5c",
+          "supersedes_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0054.json",
+          "task_id": "OCOR-DEV-0005",
+          "tests_realigned_or_adapted": false
+        },
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0055.json",
+          "record_sha256": "9c00565765dcb835985ea863ebdc5bc93073398550e54201351b3e38f1f2c964",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-0050-requalified-rem0054-ff0508c04e5c",
+          "supersedes_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0054.json",
+          "task_id": "OCOR-DEV-0050",
+          "tests_realigned_or_adapted": false
+        },
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0055.json",
+          "record_sha256": "88f4e74ad977ebcce2a689da215051fd7671c3496fa723c398c8b02afc464cef",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-0073-requalified-rem0052-4ecec3344165",
+          "supersedes_record": "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0052.json",
+          "task_id": "OCOR-DEV-0073",
+          "tests_realigned_or_adapted": false
+        },
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0055.json",
+          "record_sha256": "c7dd6e683b569e581ebdc963906630b0b51f74fca9f460da708eca46ebfa0af7",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-0075-requalified-rem0052-4ecec3344165",
+          "supersedes_record": "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0052.json",
+          "task_id": "OCOR-DEV-0075",
+          "tests_realigned_or_adapted": false
+        },
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0055.json",
+          "record_sha256": "e562d99b33312e189249c58e0c4d940d97b6251bfba5d1e4d1714e3f8be58400",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-0079-requalified-rem0052-4ecec3344165",
+          "supersedes_record": "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0052.json",
+          "task_id": "OCOR-DEV-0079",
+          "tests_realigned_or_adapted": false
+        },
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0055.json",
+          "record_sha256": "a063a37944e06912508b15c4a96cb371ec2ebdf68cd8d56ee88f9c13dc391f55",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-0082-requalified-rem0054-ff0508c04e5c",
+          "supersedes_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0054.json",
+          "task_id": "OCOR-DEV-0082",
+          "tests_realigned_or_adapted": false
+        },
+        {
+          "qualifies_requirements": false,
+          "record": "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0055.json",
+          "record_sha256": "69066f074aecf4c57fb24c7ed82d343c958858e2f24c68853261f5527f05192d",
+          "scope": "regression",
+          "superseded_by_path": false,
+          "supersedes": "OCOR-DEV-REM-0038-repair1-12659a1cd847",
+          "supersedes_record": "reports/assurance/OCOR-DEV-REM-0038-RCCAD/repair-1.json",
+          "task_id": "OCOR-DEV-REM-0038",
+          "tests_realigned_or_adapted": false
+        }
+      ],
       "requalifications_not_planned": {
         "reports/assurance/FUSEKI-LOCAL-IDENTITY-20261008/candidate.json": "operation record without backlog task (FUSEKI-LOCAL-IDENTITY-AFTER-CI-EXERCISE); the 0073/0075/0079 records it produced are superseded by the rem0038 and rem0052 requalifications, which this remediation supersedes in turn"
       },
@@ -35231,13 +35473,18 @@
         "OCOR-DEV-0082",
         "OCOR-DEV-REM-0038"
       ],
-      "status": "IMPLEMENTED_AWAITING_PREVENTIVE_REVIEW",
+      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
       "tdd": {
         "GREEN": "GREEN 4a5e5f5 + 193559e: qualify.py --execute reaches the server runtime and the protocol observation through the reused wait_ready (STARTUP_WAIT_SECONDS = 90.0) with the same required outcome (running, healthy, loopback-only server, SERVING, locked version, absent namespace refused); the un-executed probe stays single; verify_external_services bounds only the Temporal qualification subprocess at 240 s (90 s wait + one bounded attempt + two private inspections; every other script 60 s unchanged); lock and inspection shapes are typed refusals without coercion. Unit module + test_ocor_dev_rem_0038.py + test_ocor_dev_0079.py on the live stack: 86 passed at the head (gate step log sha256 8b4c8dd14c950561572dac041a7e4b643220d15e82e070947e2856a69be321f5); Temporal contract suite 9 OK; typed verification --execute --typed 11/11 READY; ruff, mypy strict (144) PASS",
         "RED": "RED 1052409/bcda5d2 on the real CI stack provisioned in the unit worktree: 19 failed, 7 passed (fingerprint d77c801d88f3445ed6158ffd6d436c2f547d49381fdff5451e795032ccd06351, raw log sha256 a870c1028b77d90c7f2f5e0fe66aeac4b3e0420ae8f04401cffcdcaac1aa1fd3): the executed probe is single (frontend answering at 57 s, first probe at 32 s: 'Temporal cluster health is not SERVING'; absent-namespace start-up symptom; server health 'starting'; host publication not yet open), persistent failures are not bounded by a 90 s wait, the Temporal subprocess is bounded at 60 s, and live: the real server paused at probe time gives NOT_PROVISIONED ('Temporal server container is not running')",
         "RED_input_robustness": "RED c51ed23 (input-robustness self-check): 19 failed, 25 passed (fingerprint 5c0aaf9baf32f8b431bc97b27c8d18861ca42a05455c13008f2acc978a6aec8c, raw log sha256 3b5f2c304d3c78c995a5bf740ee35bba92d3433c42980a3e1ed35e2aec43a61f): malformed lock, inspection, Config, State, Health, NetworkSettings, Ports and bindings raise AttributeError instead of QualificationError, HostPort coerced by str()"
       },
-      "updated_at": "2026-11-07T02:51:21.516108+00:00",
+      "unit_record": {
+        "path": "reports/assurance/OCOR-DEV-REM-0055-RCCAD/OCOR-DEV-REM-0055.json",
+        "raw_output_sha256": "67bc1944a24186aaa7f6d8096a64710f83687a8db62f4b69ba5126c5ed1ebd4a",
+        "sha256": "06e97d47322809ad1a5fe9b68d64fb8029c9ca71ce697786e387b62c998e2c7a"
+      },
+      "updated_at": "2026-11-07T04:57:00.957489+00:00",
       "worktree": ".ocor/worktrees/rem-0055"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -36483,7 +36730,7 @@
     "recorded_at": "2026-11-07T01:51:06.604444+00:00",
     "status": "SUPERSEDED_PO_DECISION_NCP_U08_ITERATION_LIMIT"
   },
-  "updated_at": "2026-11-07T02:51:21.516108+00:00",
+  "updated_at": "2026-11-07T04:57:00.957489+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
