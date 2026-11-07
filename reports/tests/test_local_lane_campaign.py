@@ -1,10 +1,14 @@
-"""RED-first controls for the local two-lane full-suite orchestrator (OCOR-DEV-REM-0037).
+"""RED-first controls for the local full-suite lane orchestrator (OCOR-DEV-REM-0037, OCOR-DEV-REM-0056).
 
 PO LOCAL-SUITE-SPLIT (2026-10-25) point 4 and LOCAL-SUITE-SPLIT-REACTIVATION
 (2026-10-26) point 5: a deterministic partition computed from measured per-case
 times, every collected case exactly once, and an exact JUnit union with zero
 skips (missing, duplicated and extra cases are rejected). Memory admission
 falls back to the serial suite below the measured start threshold.
+
+PO LOCAL-SUITE-FOUR-LANES (2026-11-07): four lanes, admitted in three levels
+(FOUR_LANE, TWO_LANE with the unchanged threshold, SERIAL); partition, union,
+supervision, results and teardown work on the lane count admitted at start.
 """
 from __future__ import annotations
 
@@ -76,44 +80,70 @@ def lane_junits(tmp_path, parts):
 
 # --- partitioner ----------------------------------------------------------
 
-def test_partition_places_every_collected_case_exactly_once():
-    parts = LANES.lane_partition(nodes(), weights())
+ADMITTED = (4, 2)
+
+
+def test_the_orchestrator_runs_four_lanes_and_admits_only_four_or_two():
+    assert LANES.LANE_COUNT == 4
+    assert LANES.ADMITTED_LANE_COUNTS == (4, 2)
+
+
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_places_every_collected_case_exactly_once(count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     flat = [node for part in parts for node in part]
-    assert len(parts) == 2 and all(parts)
+    assert len(parts) == count and all(parts)
     assert sorted(flat) == sorted(nodes()) and len(flat) == len(set(flat))
 
 
-def test_partition_is_deterministic_and_independent_of_weight_order():
+def test_partition_defaults_to_four_lanes():
+    assert LANES.lane_partition(nodes(), weights()) == LANES.lane_partition(nodes(), weights(), lanes=4)
+    assert len(LANES.lane_partition(nodes(), weights())) == 4
+
+
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_is_deterministic_and_independent_of_weight_order(count):
     reordered = dict(reversed(list(weights().items())))
-    first = LANES.lane_partition(nodes(), weights())
-    assert LANES.lane_partition(list(nodes()), reordered) == first
-    assert LANES.lane_partition(nodes(), weights()) == first
+    first = LANES.lane_partition(nodes(), weights(), lanes=count)
+    assert LANES.lane_partition(list(nodes()), reordered, lanes=count) == first
+    assert LANES.lane_partition(nodes(), weights(), lanes=count) == first
 
 
-def test_partition_keeps_collection_order_inside_each_lane():
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_keeps_collection_order_inside_each_lane(count):
     order = {node: index for index, node in enumerate(nodes())}
-    for part in LANES.lane_partition(nodes(), weights()):
+    for part in LANES.lane_partition(nodes(), weights(), lanes=count):
         assert part == sorted(part, key=order.__getitem__)
 
 
-def test_partition_keeps_every_other_module_whole():
-    parts = LANES.lane_partition(nodes(), weights())
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_keeps_every_other_module_whole(count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     for module in ('tests/tasks/test_a.py', 'tests/tasks/test_b.py', 'tests/tasks/test_c.py'):
         holders = [index for index, part in enumerate(parts) if any(node.startswith(module + '::') for node in part)]
         assert len(holders) == 1, module
 
 
-def test_partition_distributes_the_0049_module_across_both_lanes():
-    parts = LANES.lane_partition(nodes(), weights())
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_distributes_the_0049_module_across_every_lane(count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     assert all(any(node.startswith(M49 + '::') for node in part) for part in parts)
 
 
-def test_partition_balances_lanes_within_the_largest_unit():
-    parts = LANES.lane_partition(nodes(), weights())
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_balances_lanes_within_the_largest_unit(count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     loads = LANES.lane_loads(parts, weights())
     assert max(loads) - min(loads) <= max(LANES.case_weight(node, weights()) for node in nodes())
     # Helm (400 s) and the slow 0049 case (300 s) must not share a lane.
     assert not any(HELM in part and f'{M49}::test_slow' in part for part in parts)
+
+
+def test_four_way_partition_separates_the_three_heaviest_units():
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
+    heavy = [HELM, f'{M49}::test_slow', f'{M49}::test_mid']
+    holders = [next(index for index, part in enumerate(parts) if node in part) for node in heavy]
+    assert len(set(holders)) == 3
 
 
 def test_unmeasured_cases_use_the_declared_default_weight():
@@ -121,15 +151,23 @@ def test_unmeasured_cases_use_the_declared_default_weight():
     assert LANES.case_weight(f'{M49}::test_slow', weights()) == 300.0
 
 
+@pytest.mark.parametrize('count', ADMITTED)
 @pytest.mark.parametrize('bad', [
     [],
     ['tests/tasks/test_a.py::test_one'],
     ['tests/tasks/test_a.py::test_one', 'tests/tasks/test_a.py::test_one'],
     ['tests/tasks/test_a.py::test_one', 'tests/tasks/test_a.py::test_two'],
 ])
-def test_partition_rejects_empty_duplicate_or_unsplittable_collections(bad):
+def test_partition_rejects_empty_duplicate_or_unsplittable_collections(bad, count):
     with pytest.raises(CAMPAIGN.CampaignError):
-        LANES.lane_partition(bad, weights())
+        LANES.lane_partition(bad, weights(), lanes=count)
+
+
+def test_four_way_partition_rejects_fewer_units_than_lanes():
+    three_units = ['tests/tasks/test_a.py::test_one', 'tests/tasks/test_b.py::test_one', 'tests/tasks/test_c.py::test_one']
+    assert len(LANES.lane_partition(three_units, {}, lanes=2)) == 2
+    with pytest.raises(CAMPAIGN.CampaignError, match='nonempty'):
+        LANES.lane_partition(three_units, {}, lanes=4)
 
 
 def test_partition_rejects_ambiguous_junit_identities():
@@ -137,80 +175,113 @@ def test_partition_rejects_ambiguous_junit_identities():
         LANES.lane_partition(['tests/x.py::test_a', 'tests/x/py::test_a', 'tests/y.py::test_b'], {})
 
 
-@pytest.mark.parametrize('lanes', [0, 1, 3])
-def test_partition_supports_exactly_two_lanes(lanes):
+@pytest.mark.parametrize('lanes', [0, 1, 3, 5, 8, -4, True])
+def test_partition_supports_only_the_admitted_lane_counts(lanes):
     with pytest.raises(CAMPAIGN.CampaignError):
         LANES.lane_partition(nodes(), weights(), lanes=lanes)
 
 
-def test_partition_digest_changes_with_assignment():
-    parts = LANES.lane_partition(nodes(), weights())
-    swapped = [parts[1], parts[0]]
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_digest_changes_with_assignment(count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    swapped = [parts[1], parts[0], *parts[2:]]
     assert CAMPAIGN.partition_digest(parts) != CAMPAIGN.partition_digest(swapped)
 
 
 # --- exact union ----------------------------------------------------------
 
-def test_union_accepts_exactly_the_collected_cases(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
-    summary = LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts))
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_accepts_exactly_the_collected_cases(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    summary = LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts), lanes=count)
     assert summary == {'collected': len(nodes()), 'executed': len(nodes()), 'missing': [], 'duplicated': [], 'unexpected': [],
                        'lanes': [len(part) for part in parts]}
 
 
-def test_union_rejects_a_missing_case(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
+def test_union_defaults_to_four_lanes(tmp_path):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
+    assert LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts))['lanes'] == [len(part) for part in parts]
+    (tmp_path / 'two').mkdir()
+    two = lane_junits(tmp_path / 'two', LANES.lane_partition(nodes(), weights(), lanes=2))
+    with pytest.raises(CAMPAIGN.CampaignError, match='expected 4 lane JUnit files'):
+        LANES.check_exact_union(nodes(), two)
+
+
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_a_missing_case(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     # drop from a lane that keeps other cases, so the rejection is for the missing case
     big = max(range(len(parts)), key=lambda index: len(parts[index]))
     parts[big] = parts[big][1:]
     with pytest.raises(CAMPAIGN.CampaignError, match='missing'):
-        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts))
+        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts), lanes=count)
 
 
-def test_union_rejects_a_duplicated_case(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
-    parts[1] = parts[1] + [parts[0][0]]
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_a_duplicated_case(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    parts[-1] = parts[-1] + [parts[0][0]]
     with pytest.raises(CAMPAIGN.CampaignError, match='duplicated'):
-        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts))
+        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts), lanes=count)
 
 
-def test_union_rejects_an_extra_case(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
-    parts[1] = parts[1] + ['tests/tasks/test_z.py::test_extra']
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_an_extra_case(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    parts[-1] = parts[-1] + ['tests/tasks/test_z.py::test_extra']
     with pytest.raises(CAMPAIGN.CampaignError, match='unexpected'):
-        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts))
+        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts), lanes=count)
 
 
-def test_union_rejects_a_skipped_case(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_a_skipped_case(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     cases = [CAMPAIGN.junit_identity(node) for node in parts[0]]
     paths = lane_junits(tmp_path, parts)
     write_junit(paths[0], cases, skipped={cases[0]})
     with pytest.raises(CAMPAIGN.CampaignError):
-        LANES.check_exact_union(nodes(), paths)
+        LANES.check_exact_union(nodes(), paths, lanes=count)
 
 
-def test_union_rejects_a_failed_case(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
-    cases = [CAMPAIGN.junit_identity(node) for node in parts[1]]
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_a_failed_case(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    cases = [CAMPAIGN.junit_identity(node) for node in parts[-1]]
     paths = lane_junits(tmp_path, parts)
-    write_junit(paths[1], cases, failed={cases[-1]})
+    write_junit(paths[-1], cases, failed={cases[-1]})
     with pytest.raises(CAMPAIGN.CampaignError):
-        LANES.check_exact_union(nodes(), paths)
+        LANES.check_exact_union(nodes(), paths, lanes=count)
 
 
-def test_union_rejects_a_missing_lane(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
-    with pytest.raises(CAMPAIGN.CampaignError):
-        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts)[:1])
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_a_missing_lane(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    with pytest.raises(CAMPAIGN.CampaignError, match=f'expected {count} lane JUnit files'):
+        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts)[:-1], lanes=count)
 
 
-def test_union_rejects_an_absent_junit(tmp_path):
-    parts = LANES.lane_partition(nodes(), weights())
+def test_union_of_four_lanes_rejects_any_single_absent_lane(tmp_path):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
     paths = lane_junits(tmp_path, parts)
-    paths[1].unlink()
+    for absent in range(4):
+        with pytest.raises(CAMPAIGN.CampaignError, match='expected 4 lane JUnit files'):
+            LANES.check_exact_union(nodes(), paths[:absent] + paths[absent + 1:], lanes=4)
+
+
+@pytest.mark.parametrize('lanes', [0, 1, 3, 5])
+def test_union_rejects_a_lane_count_that_is_not_admitted(tmp_path, lanes):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
     with pytest.raises(CAMPAIGN.CampaignError):
-        LANES.check_exact_union(nodes(), paths)
+        LANES.check_exact_union(nodes(), lane_junits(tmp_path, parts), lanes=lanes)
+
+
+@pytest.mark.parametrize('count', ADMITTED)
+def test_union_rejects_an_absent_junit(tmp_path, count):
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    paths = lane_junits(tmp_path, parts)
+    paths[-1].unlink()
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.check_exact_union(nodes(), paths, lanes=count)
 
 
 # --- memory admission -----------------------------------------------------
@@ -223,23 +294,66 @@ def test_memory_admission_starts_two_lanes_at_or_above_the_threshold():
     threshold_kib = int(LANES.TWO_LANE_START_THRESHOLD_MIB * 1024)
     assert LANES.memory_admission(meminfo(31743008, threshold_kib + 1024))['mode'] == 'TWO_LANE'
     assert LANES.memory_admission(meminfo(31743008, threshold_kib + 1))['mode'] == 'TWO_LANE'
+    assert LANES.memory_admission(meminfo(31743008, threshold_kib + 1))['lanes'] == 2
 
 
 def test_memory_admission_falls_back_to_serial_below_the_threshold():
     threshold_kib = int(LANES.TWO_LANE_START_THRESHOLD_MIB * 1024)
     decision = LANES.memory_admission(meminfo(31743008, threshold_kib - 1))
-    assert decision['mode'] == 'SERIAL'
+    assert decision['mode'] == 'SERIAL' and decision['lanes'] == 1
     assert decision['mem_available_kib'] == threshold_kib - 1 and decision['threshold_mib'] == LANES.TWO_LANE_START_THRESHOLD_MIB
 
 
-@pytest.mark.parametrize('text', ['', 'MemTotal: 1 kB\n', 'MemAvailable: x kB\nMemTotal: 1 kB\n'])
+def test_memory_admission_starts_four_lanes_at_or_above_the_four_lane_threshold():
+    four_kib = LANES.FOUR_LANE_START_THRESHOLD_MIB * 1024
+    for available in (int(four_kib) + 1, int(four_kib) + 1024, 57000000):
+        decision = LANES.memory_admission(meminfo(64199664, available))
+        assert decision['mode'] == 'FOUR_LANE' and decision['lanes'] == 4, available
+        assert decision['threshold_mib'] == LANES.FOUR_LANE_START_THRESHOLD_MIB
+
+
+def test_memory_admission_falls_back_to_two_lanes_just_below_the_four_lane_threshold():
+    four_kib = LANES.FOUR_LANE_START_THRESHOLD_MIB * 1024
+    for available in (int(four_kib) - 1, int(LANES.TWO_LANE_START_THRESHOLD_MIB * 1024) + 1, 26000000):
+        decision = LANES.memory_admission(meminfo(64199664, available))
+        assert decision['mode'] == 'TWO_LANE' and decision['lanes'] == 2, available
+        assert decision['threshold_mib'] == LANES.TWO_LANE_START_THRESHOLD_MIB
+        assert 'below the four-lane threshold' in decision['reason']
+
+
+def test_memory_admission_boundaries_are_inclusive_at_each_level():
+    exact_four = LANES.memory_admission(f'MemTotal: 64199664 kB\nMemAvailable: {26297549} kB\n')
+    assert exact_four['mode'] == 'FOUR_LANE'
+    assert LANES.memory_admission('MemTotal: 64199664 kB\nMemAvailable: 26297548 kB\n')['mode'] == 'TWO_LANE'
+    assert LANES.memory_admission('MemTotal: 64199664 kB\nMemAvailable: 14684775 kB\n')['mode'] == 'TWO_LANE'
+    assert LANES.memory_admission('MemTotal: 64199664 kB\nMemAvailable: 14684774 kB\n')['mode'] == 'SERIAL'
+
+
+def test_memory_admission_records_both_thresholds_and_the_guard():
+    decision = LANES.memory_admission(meminfo(64199664, 57000000))
+    assert decision['thresholds_mib'] == {'FOUR_LANE': 25681.2, 'TWO_LANE': 14340.6}
+    assert decision['guard_mib'] == 3000 and decision['mem_total_kib'] == 64199664 and decision['mem_available_kib'] == 57000000
+
+
+@pytest.mark.parametrize('text', ['', 'MemTotal: 1 kB\n', 'MemAvailable: x kB\nMemTotal: 1 kB\n',
+                                  'MemAvailable: 57000000 kB\n', 'MemTotal: 64199664 kB\nMemAvailable: -5 kB\n'])
 def test_memory_admission_without_a_readable_measure_is_serial(text):
-    assert LANES.memory_admission(text)['mode'] == 'SERIAL'
+    decision = LANES.memory_admission(text)
+    assert decision['mode'] == 'SERIAL' and decision['lanes'] == 1
 
 
 def test_threshold_is_the_measured_value_and_the_guard_is_unchanged():
     assert LANES.TWO_LANE_START_THRESHOLD_MIB == 14340.6
     assert LANES.MEMORY_GUARD_MIB == 3000
+
+
+def test_four_lane_threshold_follows_the_measured_rule_of_rem_0037():
+    # lanes x single-lane peak occupancy (5670.3 MiB) + the unchanged guard
+    assert LANES.LANE_PEAK_OCCUPANCY_MIB == 5670.3
+    assert LANES.FOUR_LANE_START_THRESHOLD_MIB == 25681.2
+    assert LANES.FOUR_LANE_START_THRESHOLD_MIB == round(4 * LANES.LANE_PEAK_OCCUPANCY_MIB + LANES.MEMORY_GUARD_MIB, 1)
+    assert LANES.TWO_LANE_START_THRESHOLD_MIB == round(2 * LANES.LANE_PEAK_OCCUPANCY_MIB + LANES.MEMORY_GUARD_MIB, 1)
+    assert LANES.ADMISSION_LEVELS == (('FOUR_LANE', 4, 25681.2), ('TWO_LANE', 2, 14340.6))
 
 
 # --- limits, weights file and defaults ------------------------------------
@@ -282,8 +396,11 @@ def test_measured_partition_estimate_is_reported_with_its_lower_bound():
     estimate = LANES.partition_estimate(list(data['weights'].keys()), data['weights'])
     nodeids = list(data['weights'].keys())
     assert estimate['lower_bound_seconds'] == max(LANES.case_weight(node, data['weights']) for node in nodeids)
-    assert len(estimate['lane_seconds']) == 2
+    assert len(estimate['lane_seconds']) == 4 and estimate['lanes'] == 4
     assert max(estimate['lane_seconds']) >= estimate['lower_bound_seconds']
+    two = LANES.partition_estimate(nodeids, data['weights'], lanes=2)
+    assert len(two['lane_seconds']) == 2 and two['lanes'] == 2
+    assert two['lower_bound_seconds'] == estimate['lower_bound_seconds']
 
 
 # The 0049 Helm case sleeps until the next tick of the approved */15 CronJob
@@ -321,10 +438,11 @@ def test_clock_aligned_wait_matches_the_only_cron_aligned_0049_case():
     assert set(LANES.CLOCK_ALIGNED_WAIT_SECONDS.values()) == {900.0}
 
 
-def test_partition_estimate_counts_the_clock_aligned_wait_in_the_lower_bound():
-    estimate = LANES.partition_estimate(nodes(), weights())
+@pytest.mark.parametrize('count', ADMITTED)
+def test_partition_estimate_counts_the_clock_aligned_wait_in_the_lower_bound(count):
+    estimate = LANES.partition_estimate(nodes(), weights(), lanes=count)
     assert estimate['lower_bound_seconds'] == pytest.approx(1300.0)
-    parts = LANES.lane_partition(nodes(), weights())
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     helm_lane = next(index for index, part in enumerate(parts) if HELM in part)
     assert parts[helm_lane] == [HELM]
 
@@ -387,8 +505,12 @@ def test_lane_resources_are_scoped_to_the_campaign_and_never_use_the_stack_names
     assert first.volumes == (f'{first.name}-docker', f'{first.name}-home')
     assert first.repository == first.root / 'repo' and first.output == first.root / 'out'
     assert {first.name, second.name}.isdisjoint({'ocor-bootstrap', 'ocor-poc'})
-    with pytest.raises(CAMPAIGN.CampaignError):
-        LANES.Lane(index=3, campaign=CAMPAIGN_ID, root=tmp_path, home=Path('/home/luca'), uid=1000, gid=1000)
+    fourth = lane(tmp_path, 4)
+    assert fourth.name == f'ocor-lane-{CAMPAIGN_ID}-4'
+    assert len({lane(tmp_path, index).name for index in range(1, 5)}) == 4
+    for index in (0, 5, -1):
+        with pytest.raises(CAMPAIGN.CampaignError):
+            LANES.Lane(index=index, campaign=CAMPAIGN_ID, root=tmp_path, home=Path('/home/luca'), uid=1000, gid=1000)
 
 
 def test_lane_path_puts_locked_tools_first_then_the_lane_checkout(tmp_path):
@@ -776,7 +898,7 @@ def test_lane_pytest_command_is_the_sealed_supervisor_command_with_the_explicit_
 
 @pytest.mark.parametrize('change', [
     {'head': HEAD[:39]}, {'head': HEAD.upper()}, {'selection': []}, {'selection': [HELM, HELM]},
-    {'campaign_start': 0}, {'lane': 3}, {'stop_file': ''}])
+    {'campaign_start': 0}, {'lane': 5}, {'lane': 0}, {'lane': '1'}, {'lane': True}, {'stop_file': ''}])
 def test_lane_spec_rejects_incomplete_or_ambiguous_input(tmp_path, change):
     path = lane_spec(tmp_path)
     data = {**json.loads(path.read_text()), **change}
@@ -968,6 +1090,17 @@ def two_lanes(tmp_path):
     return lanes
 
 
+def four_lanes(tmp_path):
+    lanes = [lane(tmp_path, index) for index in range(1, 5)]
+    for item in lanes:
+        item.output.mkdir(parents=True)
+    return lanes
+
+
+def admitted_lanes(tmp_path, count):
+    return two_lanes(tmp_path) if count == 2 else four_lanes(tmp_path)
+
+
 def test_lane_spec_is_written_in_the_lane_output_and_is_exact(tmp_path):
     item = two_lanes(tmp_path)[0]
     path = LANES.write_lane_spec(item, HEAD, LANE_SELECTION, LANE_CLOCK[0])
@@ -1026,6 +1159,39 @@ def test_a_lane_that_ignores_the_stop_request_is_killed_after_the_grace(tmp_path
     assert clock.now - LANE_CLOCK[0] >= LANES.STOP_GRACE_SECONDS
 
 
+def test_supervision_of_four_passing_lanes_writes_no_stop_request(tmp_path):
+    lanes, clock = four_lanes(tmp_path), FakeClock()
+    processes = {index: FakeProcess(0, index) for index in range(1, 5)}
+    report = LANES.supervise_lanes(processes, lanes, clock.now - 10, clock=clock, sleep=clock.sleep)
+    assert report['returncodes'] == {1: 0, 2: 0, 3: 0, 4: 0} and report['first_failure'] is None
+    assert not any((item.output / 'STOP').exists() for item in lanes)
+
+
+def test_first_failure_of_one_of_four_lanes_stops_the_other_three(tmp_path):
+    lanes, clock = four_lanes(tmp_path), FakeClock()
+    processes = {1: FakeProcess(1, 4), 2: FakeProcess(1, 5), 3: FakeProcess(1, 1), 4: FakeProcess(1, 6)}
+    report = LANES.supervise_lanes(processes, lanes, clock.now, clock=clock, sleep=clock.sleep)
+    assert report['first_failure'] == 3 and report['returncodes'] == {1: 1, 2: 1, 3: 1, 4: 1}
+    assert all('lane 3' in (lanes[index].output / 'STOP').read_text() for index in (0, 1, 3))
+    assert not (lanes[2].output / 'STOP').exists() and report['killed_after_grace'] == []
+
+
+def test_host_clock_at_the_limit_stops_all_four_lanes(tmp_path):
+    lanes, clock = four_lanes(tmp_path), FakeClock()
+    processes = {index: FakeProcess(1, 3) for index in range(1, 5)}
+    report = LANES.supervise_lanes(processes, lanes, clock.now - 5400, clock=clock, sleep=clock.sleep)
+    assert '90-minute campaign limit reached' in report['stop_reason']
+    assert all('90-minute' in (item.output / 'STOP').read_text() for item in lanes)
+
+
+def test_stuck_lanes_among_four_are_killed_after_the_grace(tmp_path):
+    lanes, clock = four_lanes(tmp_path), FakeClock(step=60.0)
+    stuck = {1: FakeProcess(0, None), 4: FakeProcess(0, None)}
+    report = LANES.supervise_lanes({**stuck, 2: FakeProcess(1, 0), 3: FakeProcess(0, 0)}, lanes, clock.now,
+                                   clock=clock, sleep=clock.sleep)
+    assert all(process.killed for process in stuck.values()) and sorted(report['killed_after_grace']) == [1, 4]
+
+
 def test_stop_grace_covers_the_longest_uninterruptible_lane_step():
     assert LANES.STOP_GRACE_SECONDS >= LANES.PROVISION_TIMEOUT_SECONDS + 60
     assert LANES.STOP_GRACE_SECONDS < LANES.FULL_SUITE_LIMIT_SECONDS
@@ -1040,49 +1206,80 @@ def write_lane_result(item, part, **changes):
     return result
 
 
-def test_lane_results_must_both_pass_for_their_exact_selection_and_head(tmp_path):
-    lanes = two_lanes(tmp_path)
-    parts = LANES.lane_partition(nodes(), weights())
+@pytest.mark.parametrize('count', ADMITTED)
+def test_lane_results_must_all_pass_for_their_exact_selection_and_head(tmp_path, count):
+    lanes = admitted_lanes(tmp_path, count)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     for item, part in zip(lanes, parts):
         write_lane_result(item, part)
     results = LANES.read_lane_results(lanes, HEAD, parts)
-    assert [result['lane'] for result in results] == [1, 2]
+    assert [result['lane'] for result in results] == list(range(1, count + 1))
 
 
+@pytest.mark.parametrize('count', ADMITTED)
 @pytest.mark.parametrize('change, match', [
     ({'status': 'FAIL', 'error': 'pytest exit code 1'}, 'pytest exit code 1'),
     ({'candidate_head': '0' * 40}, 'head'),
     ({'lane': 1}, 'lane'),
     ({'selected_sha256': '0' * 64}, 'selection'),
 ])
-def test_lane_results_reject_a_failure_another_head_lane_or_selection(tmp_path, change, match):
-    lanes = two_lanes(tmp_path)
-    parts = LANES.lane_partition(nodes(), weights())
-    write_lane_result(lanes[0], parts[0])
-    write_lane_result(lanes[1], parts[1], **change)
+def test_lane_results_reject_a_failure_another_head_lane_or_selection(tmp_path, change, match, count):
+    lanes = admitted_lanes(tmp_path, count)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    for item, part in zip(lanes[:-1], parts[:-1]):
+        write_lane_result(item, part)
+    write_lane_result(lanes[-1], parts[-1], **change)
     with pytest.raises(CAMPAIGN.CampaignError, match=match):
         LANES.read_lane_results(lanes, HEAD, parts)
 
 
-def test_lane_results_reject_an_absent_result(tmp_path):
-    lanes = two_lanes(tmp_path)
-    parts = LANES.lane_partition(nodes(), weights())
-    write_lane_result(lanes[0], parts[0])
-    with pytest.raises(CAMPAIGN.CampaignError, match='lane 2'):
+@pytest.mark.parametrize('count', ADMITTED)
+def test_lane_results_reject_an_absent_result(tmp_path, count):
+    lanes = admitted_lanes(tmp_path, count)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
+    for item, part in zip(lanes[:-1], parts[:-1]):
+        write_lane_result(item, part)
+    with pytest.raises(CAMPAIGN.CampaignError, match=f'lane {count}'):
         LANES.read_lane_results(lanes, HEAD, parts)
 
 
-def test_merged_junit_keeps_every_lane_suite_and_enforces_required_modules(tmp_path):
-    lanes = two_lanes(tmp_path)
-    parts = LANES.lane_partition(nodes(), weights())
+def test_lane_results_reject_a_lane_set_that_differs_from_the_partition(tmp_path):
+    lanes = four_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
+    for item, part in zip(lanes, parts):
+        write_lane_result(item, part)
+    with pytest.raises(ValueError):
+        LANES.read_lane_results(lanes[:3], HEAD, parts)
+
+
+@pytest.mark.parametrize('count', ADMITTED)
+def test_merged_junit_keeps_every_lane_suite_and_enforces_required_modules(tmp_path, count):
+    lanes = admitted_lanes(tmp_path, count)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=count)
     for item, part in zip(lanes, parts):
         write_junit(item.output / LANES.LANE_JUNIT, [CAMPAIGN.junit_identity(node) for node in part])
     merged = tmp_path / 'merged.xml'
     counts = LANES.merge_lane_junit(lanes, merged, required_modules=['test_ocor_dev_0049'])
     assert counts == {'tests': len(nodes()), 'failures': 0, 'errors': 0, 'skipped': 0}
-    assert [suite.get('name') for suite in ET.parse(merged).getroot().iter('testsuite')] == ['pytest-lane-1', 'pytest-lane-2']
+    assert [suite.get('name') for suite in ET.parse(merged).getroot().iter('testsuite')] == [
+        f'pytest-lane-{index}' for index in range(1, count + 1)]
     with pytest.raises(CAMPAIGN.CampaignError, match='required guard'):
         LANES.merge_lane_junit(lanes, tmp_path / 'other.xml', required_modules=['test_ocor_dev_0048'])
+
+
+def test_coverage_of_four_lanes_is_combined_with_every_lane_path_remapped(tmp_path):
+    lanes = four_lanes(tmp_path)
+    for item in lanes:
+        (item.output / 'runtime_coverage.data').write_bytes(b'data-%d' % item.index)
+    suite, output = tmp_path / 'host/ocor-runtime', tmp_path / 'campaign'
+    output.mkdir()
+    runner = FakeRunner()
+    LANES.combine_lane_coverage(suite, lanes, output, runner)
+    text = (output / 'lane_coverage.rc').read_text()
+    sources = [line.strip() for line in text.split('source =', 1)[1].splitlines() if line.strip()]
+    assert sources == [str(suite / 'src'), *(str(item.repository / 'ocor-runtime/src') for item in lanes)]
+    combine, _ = runner.calls
+    assert combine['argv'][-4:] == [str(output / f'runtime_coverage.lane-{index}') for index in range(1, 5)]
 
 
 def test_coverage_is_combined_onto_the_host_checkout_with_both_lane_paths_remapped(tmp_path):
@@ -1135,7 +1332,7 @@ def test_power_reading_reports_mains_battery_or_not_executed(tmp_path):
 @pytest.fixture
 def host_world(tmp_path, monkeypatch):
     """The host side of --execute with lane provisioning, sandboxes and lane processes observed."""
-    world = {'calls': [], 'lane_exit': {1: 0, 2: 0}, 'fail_provision': None, 'collected': nodes(), 'head': HEAD}
+    world = {'calls': [], 'lane_exit': {1: 0, 2: 0, 3: 0, 4: 0}, 'fail_provision': None, 'collected': nodes(), 'head': HEAD}
     source = tmp_path / 'host'
     (source / 'ocor-runtime').mkdir(parents=True)
     world['source'] = source
@@ -1227,6 +1424,8 @@ def test_execute_runs_both_lanes_in_parallel_and_records_an_exact_pass(host_worl
     assert result['status'] == 'PASS' and result == stored_result(host_world)
     assert result['mode'] == 'TWO_LANE' and result['selection_scope'] == 'FULL_SUITE' and result['qualifying_scope'] is True
     assert result['head'] == HEAD and result['memory']['mode'] == 'TWO_LANE'
+    assert result['admission_level'] == 'TWO_LANE' and result['lanes_admitted'] == 2 and result['lanes_run'] == 2
+    assert 'below the four-lane threshold' in result['memory']['reason']
     collected = host_world['collected']
     assert result['collection']['collected'] == len(collected)
     assert result['collection']['collected_sha256'] == CAMPAIGN.collection_digest(collected)
@@ -1267,6 +1466,7 @@ def test_execute_below_the_memory_threshold_records_the_serial_fallback_and_prov
     host_world['meminfo'].write_text(meminfo(31743008, 1000))
     result = execute(host_world)
     assert result['status'] == 'SERIAL_FALLBACK' and result['mode'] == 'SERIAL' and result['memory']['mode'] == 'SERIAL'
+    assert result['admission_level'] == 'SERIAL' and result['lanes_admitted'] == 1 and result['lanes_run'] == 0
     assert 'run_qualifying_campaign.py' in result['next_action']
     assert not [call for call in host_world['calls'] if call[0] in ('provision', 'sandbox', 'launch', 'root_image')]
     assert stored_result(host_world) == result
@@ -1297,9 +1497,264 @@ def test_execute_tears_down_both_lanes_when_provisioning_fails(host_world):
 
 
 def test_execute_rejects_a_union_that_differs_from_the_collection(host_world, monkeypatch):
-    monkeypatch.setattr(LANES, 'lane_partition', lambda collected, weights_map: [collected[:3], collected[4:]])
+    monkeypatch.setattr(LANES, 'lane_partition', lambda collected, weights_map, lanes: [collected[:3], collected[4:]])
     result = execute(host_world, selection=nodes())
     assert result['status'] == 'FAIL' and 'missing' in result['error']
+
+
+FOUR_LANE_MEMINFO = meminfo(64199664, 57000000)
+
+
+def test_execute_runs_four_lanes_in_parallel_when_memory_admits_them(host_world):
+    host_world['collected'] = [*nodes(), M48]
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    result = execute(host_world)
+    assert result['status'] == 'PASS' and result == stored_result(host_world)
+    assert result['mode'] == 'FOUR_LANE' and result['admission_level'] == 'FOUR_LANE' and result['memory']['mode'] == 'FOUR_LANE'
+    assert result['lanes_admitted'] == 4 and result['lanes_run'] == 4
+    collected = host_world['collected']
+    assert len(result['collection']['lane_cases']) == 4 and sum(result['collection']['lane_cases']) == len(collected)
+    assert len(result['collection']['lane_estimated_seconds']) == 4
+    assert result['union'] == {'collected': len(collected), 'executed': len(collected), 'missing': [], 'duplicated': [], 'unexpected': [],
+                               'lanes': result['collection']['lane_cases']}
+    assert result['counts'] == {'tests': len(collected), 'failures': 0, 'errors': 0, 'skipped': 0}
+    assert [entry['lane'] for entry in result['lanes']] == [1, 2, 3, 4]
+    assert all(entry['result']['status'] == 'PASS' for entry in result['lanes'])
+    calls = [call[0] for call in host_world['calls']]
+    launches = [i for i, call in enumerate(calls) if call == 'launch']
+    assert len(launches) == 4 and launches == list(range(launches[0], launches[0] + 4))
+    assert max(i for i, call in enumerate(calls) if call in ('provision', 'sandbox')) < launches[0]
+    assert calls.count('provision') == calls.count('sandbox') == calls.count('teardown') == 4
+    assert calls.index('coverage') > launches[-1] and calls[-1] == 'residue'
+    assert result['limit_seconds'] == 5400 and result['threshold_seconds'] == 3600
+
+
+def test_execute_falls_back_to_two_lanes_below_the_four_lane_threshold(host_world):
+    host_world['meminfo'].write_text(meminfo(64199664, int(LANES.FOUR_LANE_START_THRESHOLD_MIB * 1024) - 1))
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS' and result['admission_level'] == 'TWO_LANE' and result['lanes_run'] == 2
+    calls = [call[0] for call in host_world['calls']]
+    assert calls.count('launch') == calls.count('teardown') == 2
+
+
+def test_execute_with_four_lanes_records_the_failing_lane_and_tears_down_all_four(host_world):
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    host_world['lane_exit'][3] = 1
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'lane 3' in result['error'] and result['supervision']['first_failure'] == 3
+    calls = [call[0] for call in host_world['calls']]
+    assert calls.count('teardown') == 4 and 'coverage' not in calls and calls[-1] == 'residue'
+
+
+def test_execute_with_four_lanes_tears_down_all_four_when_provisioning_fails(host_world):
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    host_world['fail_provision'] = 3
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'provisioning failed' in result['error']
+    assert result['lanes_admitted'] == 4 and result['lanes_run'] == 0
+    calls = [call[0] for call in host_world['calls']]
+    assert 'launch' not in calls and calls.count('teardown') == 4 and calls[-1] == 'residue'
+
+
+def test_execute_with_four_lanes_rejects_a_union_with_an_absent_lane(host_world, monkeypatch):
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    real = LANES.check_exact_union
+    monkeypatch.setattr(LANES, 'check_exact_union', lambda collected, junits, lanes: real(collected, junits[:-1], lanes=lanes))
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'expected 4 lane JUnit files' in result['error']
+
+
+# --- lifecycle check: four sandboxes, parallel stack bootstrap, typed probes --
+# PO LOCAL-SUITE-FOUR-LANES (2026-11-07) point 3: provisioning, the four private
+# daemons, the four stacks bootstrapped in parallel, the typed probe of every
+# service, teardown without residue; per lane the bootstrap time and the time
+# Temporal answers SERVING since the start of its container.
+
+STARTED_AT = '2026-11-07T10:00:00.250000000Z'
+SERVING_WALL = 1794045658.25  # 2026-11-07T10:00:58.25Z
+
+
+def bootstrap_output(*, status='PASS', services=None):
+    services = [{'service': name, 'status': state} for name, state in (services or {'postgresql': 'READY', 'temporal': 'READY'}).items()]
+    final = {'status': status, 'provisioning_seconds': 101.5,
+             'services': {'status': 'PASS' if all(item['status'] == 'READY' for item in services) else 'FAIL', 'services': services}}
+    if status != 'PASS':
+        final = {'status': 'FAIL', 'error': 'typed service health failed'}
+    return ('{"operation": "teardown", "status": "PASS"}\n{"exit_code": 0, "operation": "control-plane SVID"}\n'
+            + json.dumps(final, indent=2, sort_keys=True) + '\n')
+
+
+def test_bootstrap_summary_reads_the_final_typed_result():
+    summary = LANES.bootstrap_summary(bootstrap_output())
+    assert summary == {'status': 'PASS', 'provisioning_seconds': 101.5, 'services': {'postgresql': 'READY', 'temporal': 'READY'}}
+
+
+@pytest.mark.parametrize('text', ['', 'no json\n', '{"operation": "x"}\n{\n  "status": "PASS"\n', '[1, 2]\n',
+                                  '{"status": "PASS", "services": {"services": [{"service": "x"}]}}\n',
+                                  '{"status": "PASS", "services": {"services": "x"}}\n',
+                                  '{"status": "PASS", "services": {"services": []}}\n',
+                                  '{"status": "PASS", "services": {"services": [{"service": "x", "status": "READY"},'
+                                  ' {"service": "x", "status": "READY"}]}}\n'])
+def test_bootstrap_summary_rejects_absent_or_malformed_output(text):
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.bootstrap_summary(text)
+
+
+def test_container_start_is_parsed_with_nanoseconds_and_rejects_other_text():
+    assert LANES.container_started_epoch(STARTED_AT) == pytest.approx(1794045600.25)
+    assert LANES.container_started_epoch('2026-11-07T10:00:00Z') == pytest.approx(1794045600.0)
+    for text in ('', '0001-01-01T00:00:00Z', 'yesterday', '2026-11-07 10:00:00', '2026-11-07T10:00:00.1+01:00'):
+        with pytest.raises(CAMPAIGN.CampaignError):
+            LANES.container_started_epoch(text)
+
+
+def temporal_runner(*, serving=True, started=STARTED_AT, extra=()):
+    return FakeRunner([*extra, (['*', 'git rev-parse HEAD'], 0, HEAD + '\n'),
+                       (['*', 'operator cluster health'], 0 if serving else 1, 'SERVING\n' if serving else 'context deadline exceeded\n'),
+                       (['*', '{{.State.StartedAt}}'], 0, started + '\n')])
+
+
+def test_temporal_serving_is_measured_from_the_start_of_its_container(tmp_path):
+    item = four_lanes(tmp_path)[0]
+    runner = temporal_runner()
+    observed = LANES.observe_temporal_serving(item, '/p', runner, finished=lambda: False, wall=lambda: SERVING_WALL,
+                                              sleep=lambda seconds: None, monotonic=FakeClock(0.0, 1.0))
+    assert observed['serving'] is True and observed['seconds_from_container_start'] == pytest.approx(58.0)
+    assert observed['container_started_at'] == STARTED_AT
+    health = [argv for argv in runner.argvs() if 'health' in argv][0]
+    assert health[-11:] == ['docker', 'exec', 'ocor-bootstrap-temporal-admin-tools-1', 'temporal', 'operator', 'cluster', 'health',
+                            '--address', 'temporal:7233', '--command-timeout', '5s']
+    assert health[:3] == ['docker', 'exec', '-u'] and item.name in health
+    assert any('ocor-bootstrap-temporal-1' in argv for argv in runner.argvs() if '{{.State.StartedAt}}' in argv)
+
+
+def test_temporal_not_serving_before_the_bootstrap_ends_is_recorded_as_not_observed(tmp_path):
+    item = four_lanes(tmp_path)[0]
+    polls = []
+
+    def finished():
+        polls.append(1)
+        return len(polls) > 3
+    observed = LANES.observe_temporal_serving(item, '/p', temporal_runner(serving=False), finished=finished, wall=lambda: SERVING_WALL,
+                                              sleep=lambda seconds: None, monotonic=FakeClock(0.0, 1.0))
+    assert observed['serving'] is False and observed['seconds_from_container_start'] is None and observed['polls'] >= 3
+
+
+def test_temporal_observation_is_bounded(tmp_path):
+    item = four_lanes(tmp_path)[0]
+    clock = FakeClock(0.0, 0.0)
+    observed = LANES.observe_temporal_serving(item, '/p', temporal_runner(serving=False), finished=lambda: False,
+                                              wall=lambda: SERVING_WALL, sleep=lambda seconds: setattr(clock, 'now', clock.now + 30.0),
+                                              monotonic=clock)
+    assert observed['serving'] is False and clock.now >= LANES.LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS
+
+
+def lifecycle(world, runner=None, *, lanes=4):
+    return LANES.lifecycle_check(world['work'], HEAD, [Path('/home/luca/.ocor-codex/impl-env/x/bin')], runner or temporal_runner(),
+                                 source=world['source'], launcher=world['bootstrap_launcher'], meminfo_path=world['meminfo'],
+                                 wall=lambda: SERVING_WALL, sleep=lambda seconds: None, lanes=lanes)
+
+
+@pytest.fixture
+def life_world(host_world):
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    host_world['bootstrap'] = {}
+
+    def bootstrap_launcher(argv, log):
+        index = int(argv[argv.index('-w') + 1].split('/lane-')[-1].split('/')[0])
+        host_world['calls'].append(('bootstrap', index, list(argv)))
+        exit_code, text = host_world['bootstrap'].get(index, (0, bootstrap_output()))
+        log.write_text(text)
+        return FakeProcess(exit_code, 1)
+    host_world['bootstrap_launcher'] = bootstrap_launcher
+    return host_world
+
+
+def test_lifecycle_check_bootstraps_four_stacks_in_parallel_and_records_the_measures(life_world):
+    report = lifecycle(life_world)
+    assert report['status'] == 'PASS', report.get('error')
+    assert report['lanes_requested'] == 4 and report['memory']['mode'] == 'FOUR_LANE'
+    assert [entry['lane'] for entry in report['lanes']] == [1, 2, 3, 4]
+    for entry in report['lanes']:
+        assert entry['bootstrap']['exit_code'] == 0 and isinstance(entry['bootstrap']['seconds'], float)
+        assert entry['bootstrap']['services'] == {'postgresql': 'READY', 'temporal': 'READY'}
+        assert entry['temporal']['serving'] is True and entry['temporal']['seconds_from_container_start'] == pytest.approx(58.0)
+        assert entry['probes']['head'] == HEAD
+    calls = [call[0] for call in life_world['calls']]
+    starts = [i for i, call in enumerate(calls) if call == 'bootstrap']
+    assert len(starts) == 4 and starts == list(range(starts[0], starts[0] + 4))
+    assert max(i for i, call in enumerate(calls) if call in ('provision', 'sandbox')) < starts[0]
+    assert calls.count('teardown') == 4 and calls[-1] == 'residue'
+    bootstrap = next(call[2] for call in life_world['calls'] if call[0] == 'bootstrap')
+    command = bootstrap[-1]
+    assert bootstrap[:3] == ['docker', 'exec', '-u'] and 'bootstrap_ci_environment.py --teardown --execute' in command
+    assert 'bootstrap_ci_environment.py --execute --timeout 600' in command
+    assert command.index('--teardown') < command.index('--timeout 600')
+    assert report['staggered'] is False
+
+
+def test_lifecycle_check_fails_closed_on_a_lane_bootstrap_failure_and_still_tears_down_all(life_world):
+    life_world['bootstrap'][2] = (1, bootstrap_output(status='FAIL'))
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'lane 2' in report['error'] and 'bootstrap' in report['error']
+    calls = [call[0] for call in life_world['calls']]
+    assert calls.count('teardown') == 4 and calls[-1] == 'residue'
+
+
+def test_lifecycle_check_rejects_a_service_that_is_not_ready(life_world):
+    life_world['bootstrap'][4] = (0, bootstrap_output(services={'postgresql': 'READY', 'temporal': 'DEGRADED'}))
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'lane 4' in report['error'] and 'temporal' in report['error']
+
+
+def test_lifecycle_check_rejects_a_temporal_that_was_never_seen_serving(life_world):
+    report = lifecycle(life_world, temporal_runner(serving=False))
+    assert report['status'] == 'FAIL' and 'Temporal' in report['error']
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lifecycle_check_refuses_more_lanes_than_memory_admits(life_world):
+    life_world['meminfo'].write_text(meminfo(64199664, 26000000))
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'admits 2' in report['error']
+    assert not [call for call in life_world['calls'] if call[0] in ('provision', 'sandbox', 'bootstrap')]
+
+
+def test_lifecycle_check_of_two_lanes_is_admitted_at_the_two_lane_level(life_world):
+    life_world['meminfo'].write_text(meminfo(64199664, 26000000))
+    report = lifecycle(life_world, lanes=2)
+    assert report['status'] == 'PASS' and [entry['lane'] for entry in report['lanes']] == [1, 2]
+
+
+@pytest.mark.parametrize('lanes', [0, 1, 3, 5])
+def test_lifecycle_check_runs_only_an_admitted_lane_count(life_world, lanes):
+    report = lifecycle(life_world, lanes=lanes)
+    assert report['status'] == 'FAIL'
+    assert not [call for call in life_world['calls'] if call[0] in ('provision', 'bootstrap')]
+
+
+def test_lifecycle_check_kills_a_bootstrap_that_exceeds_its_bound(life_world, monkeypatch):
+    stuck = FakeProcess(0, None)
+    life_world['bootstrap_launcher'] = lambda argv, log: (log.write_text(''), stuck)[1]
+    monkeypatch.setattr(LANES, 'LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS', 0)
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'bound' in report['error'] and stuck.killed
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lifecycle_cli_passes_the_lane_count(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake(work, head, tool_bins, **kwargs):
+        seen.update(kwargs)
+        return {'status': 'PASS'}
+    monkeypatch.setattr(LANES, 'lifecycle_check', fake)
+    assert LANES.main(['--lifecycle-check', str(tmp_path), '--expected-head', HEAD, '--tool-bin', str(tmp_path)]) == 0
+    assert seen['lanes'] == 4
+    assert LANES.main(['--lifecycle-check', str(tmp_path), '--expected-head', HEAD, '--tool-bin', str(tmp_path), '--lanes', '2']) == 0
+    assert seen['lanes'] == 2
+    with pytest.raises(SystemExit):
+        LANES.main(['--lifecycle-check', str(tmp_path), '--expected-head', HEAD, '--tool-bin', str(tmp_path), '--lanes', '3'])
 
 
 @pytest.mark.parametrize('argv', [
