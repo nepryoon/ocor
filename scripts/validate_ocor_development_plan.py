@@ -1345,6 +1345,32 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0054.log",
         "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.json",
         "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.log",
+        # OCOR-DEV-REM-0055 (remediation B1 of NCP-U08-LANE-TEMPORAL-READINESS, 2026-11-06): the executed
+        # typed Temporal check waits for start-up within the bounded wait_ready of qualify.py; the RED test,
+        # the unit record, the two NCP-U08 decision requests that enter main with it
+        # (NCP-U08-LANE-TEMPORAL-READINESS and NCP-U08-ITERATION-LIMIT, byte-identical with their
+        # dispositions), the regression-only requalifications of 0073, 0075, 0079 and REM-0038 (sealed
+        # records with the touched files among their inputs) and of 0005, 0050 and 0082 forced by this allowlist.
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0055.py",
+        "reports/development/decision_requests/NCP-U08-LANE-TEMPORAL-READINESS.md",
+        "reports/development/decision_requests/NCP-U08-ITERATION-LIMIT.md",
+        "reports/assurance/OCOR-DEV-REM-0055-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0055-RCCAD/OCOR-DEV-REM-0055.json",
+        "reports/assurance/OCOR-DEV-REM-0055-RCCAD/OCOR-DEV-REM-0055.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0055.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0055.log",
+        "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0055.json",
+        "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0055.log",
+        "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0055.json",
+        "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0055.log",
+        "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0055.json",
+        "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0055.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0055.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0055.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0055.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0055.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0055.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0055.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

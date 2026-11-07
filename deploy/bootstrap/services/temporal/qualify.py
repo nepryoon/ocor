@@ -33,14 +33,28 @@ SERVER_IMAGE = re.compile(r"^temporalio/server@sha256:[0-9a-f]{64}$")
 ADMIN_IMAGE = re.compile(r"^temporalio/admin-tools@sha256:[0-9a-f]{64}$")
 POSTGRES_IMAGE = re.compile(r"^postgres@sha256:[0-9a-f]{64}$")
 SEMVER = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
+# Start-up tolerance of the executed check (OCOR-DEV-REM-0055, decision request
+# NCP-U08-LANE-TEMPORAL-READINESS option B1): the Compose healthcheck is TCP-only, so
+# the frontend can answer the CLI tens of seconds after the container is healthy.
+STARTUP_WAIT_SECONDS = 90.0
 
 
 class QualificationError(RuntimeError):
     """A mandatory Temporal qualification control failed."""
 
 
+def _object(value: Any, label: str) -> dict[str, Any]:
+    """The value itself when it is a JSON object; any other shape is a typed refusal, never coerced."""
+    if not isinstance(value, dict):
+        raise QualificationError(f"{label} is not an object")
+    return value
+
+
 def _entry(lock: dict[str, Any], service_id: str) -> dict[str, Any]:
-    matches = [item for item in lock.get("services", []) if item.get("id") == service_id]
+    services = _object(lock, "service lock").get("services", [])
+    if not isinstance(services, list) or not all(isinstance(item, dict) for item in services):
+        raise QualificationError("service lock services must be a list of objects")
+    matches = [item for item in services if item.get("id") == service_id]
     if len(matches) != 1:
         raise QualificationError(f"service lock must contain exactly one {service_id} entry")
     entry: dict[str, Any] = matches[0]
@@ -49,15 +63,20 @@ def _entry(lock: dict[str, Any], service_id: str) -> dict[str, Any]:
     return entry
 
 
+def _matches(pattern: re.Pattern[str], value: Any) -> bool:
+    """A lock leaf matches only when it is text itself; other JSON types are never converted."""
+    return isinstance(value, str) and pattern.fullmatch(value) is not None
+
+
 def validate_lock(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
     server = _entry(lock, "temporal")
     admin = _entry(lock, "temporal-admin-tools")
     database = _entry(lock, "postgresql")
-    if not SERVER_IMAGE.fullmatch(str(server.get("image", ""))):
+    if not _matches(SERVER_IMAGE, server.get("image")):
         raise QualificationError("Temporal server image is not digest-pinned")
-    if not ADMIN_IMAGE.fullmatch(str(admin.get("image", ""))):
+    if not _matches(ADMIN_IMAGE, admin.get("image")):
         raise QualificationError("Temporal admin-tools image is not digest-pinned")
-    if not POSTGRES_IMAGE.fullmatch(str(database.get("image", ""))):
+    if not _matches(POSTGRES_IMAGE, database.get("image")):
         raise QualificationError("Temporal PostgreSQL image is not digest-pinned")
     if server.get("source") != "https://hub.docker.com/r/temporalio/server":
         raise QualificationError("Temporal server source is not the approved official registry")
@@ -65,7 +84,7 @@ def validate_lock(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
         raise QualificationError("Temporal admin-tools source is not the approved official registry")
     if server.get("license") != "MIT" or admin.get("license") != "MIT":
         raise QualificationError("Temporal license metadata mismatch")
-    if not SEMVER.fullmatch(str(server.get("version", ""))):
+    if not _matches(SEMVER, server.get("version")):
         raise QualificationError("Temporal lock has no exact semantic version")
     if admin.get("version") != server.get("version"):
         raise QualificationError("Temporal admin-tools version differs from the server version")
@@ -73,36 +92,46 @@ def validate_lock(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _require_running_healthy(inspection: dict[str, Any], label: str, expected_image: str) -> None:
-    if inspection.get("Config", {}).get("Image") != expected_image:
+    inspection = _object(inspection, f"{label} inspection")
+    if _object(inspection.get("Config", {}), f"{label} inspection Config").get("Image") != expected_image:
         raise QualificationError(f"running {label} image differs from the exact service lock")
-    state = inspection.get("State", {})
-    if state.get("Running") is not True or state.get("Paused") is True:
+    state = _object(inspection.get("State", {}), f"{label} inspection State")
+    paused = state.get("Paused", False)
+    if not isinstance(paused, bool):
+        raise QualificationError(f"{label} inspection State Paused is not a boolean")
+    if state.get("Running") is not True or paused:
         raise QualificationError(f"{label} container is not running")
-    if state.get("Health", {}).get("Status") != "healthy":
+    if _object(state.get("Health", {}), f"{label} inspection Health").get("Status") != "healthy":
         raise QualificationError(f"{label} container is not healthy")
 
 
 def _bindings(inspection: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-    ports = inspection.get("NetworkSettings", {}).get("Ports", {}) or {}
+    network = _object(inspection.get("NetworkSettings", {}), "container inspection NetworkSettings")
+    # Docker reports a container without port mappings as null; any other non-object is refused.
+    ports_value = network.get("Ports")
+    ports = {} if ports_value is None else _object(ports_value, "container inspection Ports")
+    for value in ports.values():
+        if value is not None and (not isinstance(value, list) or not all(isinstance(item, dict) for item in value)):
+            raise QualificationError("container port bindings must be a list of objects")
     return {key: value for key, value in ports.items() if value}
 
 
 def validate_server_inspection(inspection: dict[str, Any], expected_image: str) -> dict[str, Any]:
     _require_running_healthy(inspection, "Temporal server", expected_image)
-    published = _bindings(inspection)
+    published = _bindings(_object(inspection, "Temporal server inspection"))
     if set(published) != {"7233/tcp"} or len(published["7233/tcp"]) != 1:
         raise QualificationError("Temporal server must publish exactly the frontend gRPC port")
     binding = published["7233/tcp"][0]
     if binding.get("HostIp") != HOST:
         raise QualificationError("Temporal frontend publication is not loopback-only")
-    if str(binding.get("HostPort")) != str(HOST_PORT):
+    if binding.get("HostPort") != str(HOST_PORT):
         raise QualificationError("Temporal frontend host port differs from the approved profile")
     return {"health": "healthy", "ports": {"7233/tcp": str(HOST_PORT)}}
 
 
 def validate_private_inspection(inspection: dict[str, Any], label: str, expected_image: str) -> dict[str, Any]:
     _require_running_healthy(inspection, label, expected_image)
-    if _bindings(inspection):
+    if _bindings(_object(inspection, f"{label} inspection")):
         raise QualificationError(f"{label} must not publish any host port")
     return {"health": "healthy", "ports": {}}
 
@@ -139,7 +168,7 @@ def validate_observations(
 def run(command: Sequence[str], timeout: float = 20.0) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(list(command), check=False, capture_output=True, text=True, timeout=timeout)
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except (OSError, subprocess.TimeoutExpired, UnicodeDecodeError) as exc:
         raise QualificationError(f"bounded command failed: {command[0]}") from exc
 
 
@@ -241,11 +270,23 @@ def fault_and_recover(server: str, admin: str, expected_image: str, expected_ver
 def qualify(args: argparse.Namespace) -> dict[str, Any]:
     if args.fault_recovery and not args.execute:
         raise QualificationError("--fault-recovery requires explicit --execute")
-    entries = validate_lock(json.loads(args.lock.read_text(encoding="utf-8")))
+    try:
+        lock = json.loads(args.lock.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise QualificationError(f"service lock is unreadable: {exc}") from exc
+    entries = validate_lock(lock)
     server_image = entries["server"]["image"]
     version = entries["server"]["version"]
+    protocol: dict[str, Any] | None = None
+    if args.execute:
+        # Same required outcome as the single probe, reached within the bounded wait.
+        ready = wait_ready(args.server_container, args.admin_container, server_image, version,
+                           timeout=STARTUP_WAIT_SECONDS)
+        server_runtime, protocol = ready["runtime"], ready["protocol"]
+    else:
+        server_runtime = validate_server_inspection(inspect_container(args.server_container), server_image)
     runtime = {
-        "server": validate_server_inspection(inspect_container(args.server_container), server_image),
+        "server": server_runtime,
         "admin_tools": validate_private_inspection(
             inspect_container(args.admin_container), "Temporal admin-tools", entries["admin"]["image"]
         ),
@@ -265,7 +306,7 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
             "license": entries["server"]["license"],
         },
         "runtime": runtime,
-        "protocol": probe(args.admin_container, version),
+        "protocol": protocol if protocol is not None else probe(args.admin_container, version),
     }
     if args.fault_recovery:
         result["fault_recovery"] = fault_and_recover(

@@ -307,6 +307,13 @@ def check_qdrant(repository: Path, services: list[dict[str, Any]], *, execute: b
     return ServiceHealth("qdrant", ServiceStatus.READY, detail)
 
 
+# Subprocess bound per qualification script. The executed Temporal check waits up to 90 s
+# for start-up (OCOR-DEV-REM-0055); its last attempt adds one inspection, the TCP connect
+# and three 20 s CLI calls, then the two private-container inspections.
+QUALIFY_SCRIPT_TIMEOUT_SECONDS = {"temporal": 240}
+DEFAULT_QUALIFY_SCRIPT_TIMEOUT_SECONDS = 60
+
+
 def _run_qualify_script(repository: Path, script: Path, extra_args: list[str]) -> tuple[int, dict[str, Any] | None, str]:
     if not script.is_file():
         return 127, None, f"missing qualification script: {script}"
@@ -316,7 +323,7 @@ def _run_qualify_script(repository: Path, script: Path, extra_args: list[str]) -
         text=True,
         capture_output=True,
         check=False,
-        timeout=60,
+        timeout=QUALIFY_SCRIPT_TIMEOUT_SECONDS.get(script.parent.name, DEFAULT_QUALIFY_SCRIPT_TIMEOUT_SECONDS),
     )
     try:
         payload = json.loads(completed.stdout)
@@ -364,11 +371,34 @@ def check_policy_identity(repository: Path) -> ServiceHealth:
     return ServiceHealth("opa-keycloak", status, payload or {"stderr": stderr})
 
 
+def _well_formed_qualification(payload: Any) -> bool:
+    if not isinstance(payload, dict) or not isinstance(payload.get("result"), str):
+        return False
+    errors = payload.get("errors", [])
+    return isinstance(errors, list) and all(isinstance(error, str) for error in errors)
+
+
 def check_temporal(repository: Path, *, execute: bool) -> ServiceHealth:
+    # Only the Temporal check translates its runner failures and validates the payload shape
+    # (OCOR-DEV-REM-0055, option B1 leaves the other services unchanged): every outcome is typed.
     script = repository / "deploy/bootstrap/services/temporal/qualify.py"
-    returncode, payload, stderr = _run_qualify_script(repository, script, ["--execute"] if execute else [])
-    status = _status_from_qualify_payload(payload, returncode)
-    return ServiceHealth("temporal", status, payload or {"stderr": stderr})
+    try:
+        returncode, payload, stderr = _run_qualify_script(repository, script, ["--execute"] if execute else [])
+    except subprocess.TimeoutExpired:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification exceeded its subprocess bound"})
+    except UnicodeDecodeError:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification output is not decodable"})
+    except OSError:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification process could not start"})
+    if payload is None:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE, {"stderr": stderr})
+    if not _well_formed_qualification(payload):
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification output is not a well-formed result object", "stderr": stderr})
+    return ServiceHealth("temporal", _status_from_qualify_payload(payload, returncode), payload)
 
 
 def check_seaweedfs(repository: Path, *, execute: bool) -> ServiceHealth:
