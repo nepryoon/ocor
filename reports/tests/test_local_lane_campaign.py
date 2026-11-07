@@ -2196,3 +2196,10 @@ def test_power_reading_with_an_undecodable_supply_is_not_executed(tmp_path):
     root = power_supplies(tmp_path, AC={'type': 'Mains', 'online': '1'})
     (root / 'AC/online').write_bytes(b'\xff\n')
     assert LANES.power_reading(root)['source'] == 'NOT_EXECUTED'
+
+
+@pytest.mark.parametrize('check', [True, False])
+def test_command_output_is_decoded_as_strict_utf8(check):
+    assert LANES.run_command([sys.executable, '-c', 'print("SERVING")'], check=check) == LANES.CommandResult(0, 'SERVING\n')
+    with pytest.raises(CAMPAIGN.CampaignError, match='UTF-8'):
+        LANES.run_command([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(b"SERV\\xffING")'], check=check)
