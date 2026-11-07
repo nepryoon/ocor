@@ -4,24 +4,21 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "a38d949b7929dad30229ed682f622c26779a5928",
-  "baseline_commit": "a38d949b7929dad30229ed682f622c26779a5928",
-  "branch": "governed/state-sync-rem0055-integrated-20261107",
+  "base_sha": "c4d63aa09bd34beff919bc6a5cbbeec60dd6687d",
+  "baseline_commit": "c4d63aa09bd34beff919bc6a5cbbeec60dd6687d",
+  "branch": "governed/state-sync-rem0056-iter1-20261107",
   "candidate_branch_evidence": {
-    "branch": "governed/ocor-dev-rem-0055-lane-temporal-readiness",
-    "head_sha": "4c93f5376ea4df44b697b5d67cda266bebf2656b",
-    "merge_commit": "a38d949b7929dad30229ed682f622c26779a5928",
-    "note": "REM-0055 unit record and 7 regression-class requalifications sealed after GO (repair cycle 0) and merged with PR #533",
+    "branch": "governed/ocor-dev-rem-0056-local-suite-four-lanes",
+    "head_sha": "0fd478064f9b721dc4be4d9a32304d208eea3f58",
+    "note": "REM-0056 head submitted to the preventive review; not yet a candidate, no evidence",
     "paths": [
-      "reports/assurance/OCOR-DEV-REM-0055-RCCAD/OCOR-DEV-REM-0055.json",
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0055.json",
-      "reports/evidence/G2/OCOR-DEV-0073.requalified-rem0055.json",
-      "reports/evidence/G2/OCOR-DEV-0075.requalified-rem0055.json",
-      "reports/evidence/G2/OCOR-DEV-0079.requalified-rem0055.json",
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0055.json",
-      "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0055.json",
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0055.json"
-    ]
+      "scripts/run_local_lane_campaign.py",
+      "reports/tests/test_local_lane_campaign.py",
+      "scripts/validate_ocor_development_plan.py",
+      "reports/planning/OCOR_PLAN_RUN_STATE.json",
+      "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md"
+    ],
+    "worktree": ".ocor/worktrees/rem-0056"
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
@@ -38,156 +35,55 @@
   },
   "commands": [
     {
-      "command": "verdict OCOR-DEV-REM-0055-4b1c51ad992b-0",
+      "command": "sha256sum -c inputs/normative/SHA256SUMS",
       "exit_code": 0,
-      "summary": "GO_FOR_EVIDENCE_SEAL, no findings, nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 4a11e137d8059984c07637752a6acac5a6467e98277c2e723137c761c1e70bab"
+      "summary": "8/8 OK"
     },
     {
-      "command": "merge origin/main 045d1cc into governed/ocor-dev-rem-0055-lane-temporal-readiness (non-destructive alignment)",
-      "exit_code": 0,
-      "summary": "aligned head 9929673; only the three state files differ from 4b1c51ad992b; non-state tree sha256 equal"
+      "command": "pytest reports/tests/test_local_lane_campaign.py (RED 7d2d2ab)",
+      "exit_code": 1,
+      "summary": "95 failed, 109 passed (expected RED)"
     },
     {
-      "command": "seal.py (verdict OCOR-DEV-REM-0055-4b1c51ad992b-0)",
+      "command": "pytest reports/tests/test_local_lane_campaign.py (GREEN 52cc194)",
       "exit_code": 0,
-      "summary": "unit record and 7 requalifications SEALED, manifests G0/G2/G5 updated surgically, raw logs unchanged; commit 4c93f5376ea4"
+      "summary": "204 passed"
     },
     {
-      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
-      "exit_code": 0,
-      "summary": "49/49 workflow-derived non-suite steps PASS"
+      "command": "pytest reports/tests/test_local_lane_campaign.py (RED 533edb4)",
+      "exit_code": 1,
+      "summary": "13 failed, 209 passed (expected RED)"
     },
     {
-      "command": "gh pr create (PR #533) and exact-head polling until mergeStateStatus CLEAN",
+      "command": "pytest reports/tests/test_local_lane_campaign.py (GREEN 0fd4780)",
       "exit_code": 0,
-      "summary": "13/13 required checks success, 0 reruns"
+      "summary": "222 passed"
     },
     {
-      "command": "gh pr merge 533 --merge --match-head-commit 4c93f5376ea4df44b697b5d67cda266bebf2656b",
+      "command": "validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
       "exit_code": 0,
-      "summary": "merge commit a38d949b7929dad30229ed682f622c26779a5928; origin/main equals the merge commit; sealed hashes unchanged"
+      "summary": "PASS"
     },
     {
-      "command": "git commit-tree + push governed/decision-request-ncr-governance-002-matrix-erratum",
+      "command": "python3 ~/.ocor-codex/rem-0056/iter1/pregate_unit.py",
       "exit_code": 0,
-      "summary": "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md DECIDED_BY_PO at 73111b117d46de9c76a3e0076103bd1ea9ba006e, sha256 d020b18e3ca09aff6ea34f2890067db1a6450f6b9153ba1f464551401787d7b1 (git cat-file, merge-base --is-ancestor and sha256sum verified)"
+      "summary": "PRE-CAMPAIGN-GATE 49/50 PASS at 0fd478064f9b (only drift FAILs: OCOR-DEV-0005, 0050 and 0082 on scripts/validate_ocor_development_plan.py, expected; regression-only requalifications at candidate time); supply-chain scanner PASS (0 blocking); validation-closure guards 476 passed, 94 subtests; lane guard 222 passed"
+    },
+    {
+      "command": "validate_evidence_input_drift.py --root .",
+      "exit_code": 1,
+      "summary": "drifted_tasks OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0082 (expected)"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "LOCAL-SUITE-FOUR-LANES:not-started (OCOR-DEV-REM-0056)",
+  "current_task": "OCOR-DEV-REM-0056:implementation (awaiting preventive review)",
   "evidence_paths": [],
-  "exact_next_action": "Start the LOCAL-SUITE-FOUR-LANES (2026-11-07) change set with the first free OCOR-DEV-REM-* verified read-only at its start (today OCOR-DEV-REM-0056), new governed/ worktree from origin/main, before NCP-U09 (decision point 5): in scripts/run_local_lane_campaign.py LANE_COUNT 4 and partitioner, merge, supervision, collection and teardown on the admitted lane count; three-level memory admission FOUR_LANE >= 25681.2 MiB, TWO_LANE >= 14340.6 MiB (unchanged), else SERIAL, guard 3000 MiB unchanged; campaign result reports the admitted level and the lanes run; caps 5400/3600/5100 s unchanged; reports/tests/test_local_lane_campaign.py RED first (four-way partition, four-JUnit merge with missing/duplicate/extra case and absent lane, three admission levels, fall back to two lanes); point 3 proofs on the same head (--lifecycle-check with four sandboxes and per-lane bootstrap and Temporal SERVING times, one non-qualifying four-lane full suite with memory, load and duration, serial versus four-lane equivalence); regression-only requalifications of the sealed records having the orchestrator, its guard or lane_weights.json among their inputs (at least OCOR-DEV-REM-0037; 0005, 0050, 0082 always), PRE-CAMPAIGN-GATE, preventive review, qualifying campaign with the versioned orchestrator of the head, independent verification, seal, merge (estimate 3 iterations, not a programme unit). The same change set carries reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md byte-identical from 73111b117d46 with its plan allowlist entry; the state sync after its integration applies the NCR-GOVERNANCE-002 register patch of MATRIX-ERRATUM-NCP-U14 point 2 (DECISION_REQUIRED -> OPEN, plan_unit NCP-U14, plan_units/plan_order/plan_summary). Then NCP-U09, U10 (also NCR-C8-008), U11, U12 in order, each after its depends_on_units are on main, every new unit stopping at 3 x estimate_iterations; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 (first free REM, backlog criteria of 0068/0069, estimate 3) that also runs NCP-U14 (estimate 2); G6 0060/0062-0067 only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
-  "head_sha": "a38d949b7929dad30229ed682f622c26779a5928",
-  "head_sha_role": "merge commit of PR #533 (OCOR-DEV-REM-0055 integrated)",
+  "exact_next_action": "Resume OCOR-DEV-REM-0056 after the preventive review OCOR-DEV-REM-0056-0fd478064f9b-pre (outcome in ~/.ocor-codex/prereviews/OCOR-DEV-REM-0056-0fd478064f9b-pre.json): on governed/ocor-dev-rem-0056-local-suite-four-lanes from 0fd478064f9b in .ocor/worktrees/rem-0056 (venv with test+lint extras, .ocor/tools and the TypeScript SDK built; locked PATH ~/.ocor-codex/rem-0056/locked-path; kit ~/.ocor-codex/rem-0056 with NOTES.md, gate script iter1/pregate_unit.py). Dispose of every blocking finding (RED/GREEN or reproducible rebuttal) and record advisory ones; merge origin/main non-destructively if it moved; then on the final head, in order (LOCAL-SUITE-FOUR-LANES point 3): --lifecycle-check with four sandboxes (per-lane bootstrap and Temporal SERVING times), one non-qualifying four-lane full suite (MemAvailable minimum, peak occupancy total and per lane, load, duration; FOUR_LANE threshold recomputed upward only if the per-lane peak exceeds 5670.3 MiB), the serial versus four-lane equivalence (same case set, zero skips, both PASS); staggered bootstrap only if four parallel bootstraps fail, decision request if four lanes still do not hold or MemAvailable falls below the guard; then regression-only requalifications of REM-0037, 0005, 0050, 0082, PRE-CAMPAIGN-GATE, qualifying campaign with the versioned orchestrator of the head, unit record reports/assurance/OCOR-DEV-REM-0056-RCCAD/, verify request REMEDIATION (verifier not Anthropic and not the preventive reviewer's provider), seal, PR, merge; the integration state sync applies the NCR-GOVERNANCE-002 register patch of MATRIX-ERRATUM-NCP-U14 point 2. Then NCP-U09, U10 (also NCR-C8-008), U11, U12 in order; after NCP-U12 the G7-REVIEW-AND-CANDIDATE-CRITERIA change set with NCP-U14; G6 0060/0062-0067 only under decision point 11; 0068/0069 stay blocked; OCOR-DEV-REM-0043 is resumed by NCP-U10. No new DEC; claims unchanged.",
+  "head_sha": "0fd478064f9b721dc4be4d9a32304d208eea3f58",
+  "head_sha_role": "REM-0056 head submitted to the preventive review",
   "independent_verification": {
-    "findings": [],
-    "head_sha": "4b1c51ad992b8b4a7d57ac98665006739e3b7bfe",
-    "next_verifier_constraint": "for the next unit: provider different from every implementer and from its preventive reviewer",
-    "not_executed": [],
-    "repair_cycle": 0,
-    "request_id": "OCOR-DEV-REM-0055-4b1c51ad992b-0",
-    "review_type": "REMEDIATION",
-    "status": "GO_FOR_EVIDENCE_SEAL",
-    "verdict_created_at": "2026-11-07T06:39:48Z",
-    "verdict_file_sha256": "4a11e137d8059984c07637752a6acac5a6467e98277c2e723137c761c1e70bab",
-    "verifier": "Cursor CLI / grok-4.7-high / xAI",
-    "verifier_commands": [
-      {
-        "command": "sha256sum -c inputs/normative/SHA256SUMS",
-        "exit_code": 0,
-        "summary": "Tutti i digest normativi OK. git diff base..HEAD -- inputs/ vuoto."
-      },
-      {
-        "command": "python scripts/preflight_environment.py --require-ready",
-        "exit_code": 0,
-        "summary": "Preflight rieseguito: PASS, errors vuoti. environment.json sha256 215518d31c92234cd8e973c04fe926213c90794ea3cecf489d7470758854cd19. Host Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Hash degli strumenti host e di python 3.12.11 uguali a infra/toolchain.lock.json."
-      },
-      {
-        "command": "env -i ... python scripts/bootstrap_ci_environment.py --teardown --execute && --execute --timeout 600",
-        "exit_code": 0,
-        "summary": "Shell pulita (nomi: HOME LANG LOGNAME OCOR_VERIFIER_WORKTREE PATH USER). Teardown ALREADY_REMOVED. Provisioning PASS in 51.155 s. fuseki_max_heap_bytes=1073741824. control-plane SVID spiffe://ocor.test/ocor/control-plane presente. 11 servizi READY, temporal cluster_health SERVING, server_version 1.32.1, absent_namespace_lookup FAIL_CLOSED. Archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA512 verificato e presente nel lock."
-      },
-      {
-        "command": "ruff check .",
-        "exit_code": 0,
-        "summary": "All checks passed."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python -m mypy",
-        "exit_code": 0,
-        "summary": "Success: no issues found in 144 source files."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
-        "exit_code": 0,
-        "summary": "PASS: nessun file tracciato fuori dall'area autorizzata."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
-        "exit_code": 0,
-        "summary": "PASS."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py --base origin/main --head HEAD --branch governed/ocor-dev-rem-0055-lane-temporal-readiness",
-        "exit_code": 0,
-        "summary": "PASS. Diff base..HEAD limitato a qualify.py, verify_external_services.py, test_ocor_dev_rem_0055.py, allowlist del piano, indice di tracciabilita inversa, stato del piano, due decision request NCP-U08 e evidenze/riqualifiche."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
-        "exit_code": 0,
-        "summary": "PASS. checked_tasks 75, drifted_inputs 0, findings vuoti."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python scripts/validate_test_reverse_traceability.py",
-        "exit_code": 0,
-        "summary": "PASS, findings vuoti."
-      },
-      {
-        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
-        "exit_code": 0,
-        "summary": "verdict PASS. I due NOT_EXECUTED interni sono i controlli opzionali markdownlint e mmdc, con fallback deterministico; non sono controlli obbligatori di questa verifica."
-      },
-      {
-        "command": "validate_runtime_evidence.py --non-skipped per 0005, 0050, 0073, 0075, 0079, 0082, REM-0038 e evidence_manifest 0004",
-        "exit_code": 0,
-        "summary": "Tutti PASS. Hash delle evidenze dichiarate nella richiesta coincidono. Record di riqualifica regression, qualifies_requirements false, supersedes verso il record precedente, raw log sha256 67bc1944a24186aaa7f6d8096a64710f83687a8db62f4b69ba5126c5ed1ebd4a, commit 351bb27eeeb03647ca724c81dcce65398d1ebc7f. Claim E1=0 E2=0 Verified=0 PoC NO-GO Production NO-GO runtime NOT_ESTABLISHED."
-      },
-      {
-        "command": "env -i ... verify_external_services.py --execute --typed",
-        "exit_code": 0,
-        "summary": "status PASS. Temporal SERVING, versione 1.32.1, namespace assente FAIL_CLOSED. Variabili esportate solo OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN, piu OCOR_VERIFIER_WORKTREE da env.sh. Nessuno strumento dell'implementatore eseguito."
-      },
-      {
-        "command": "env -i ... deploy/bootstrap/services/temporal/qualify.py --execute --fault-recovery",
-        "exit_code": 0,
-        "summary": "result PASS. Protocollo invariato SERVING / 1.32.1 / FAIL_CLOSED. unpause_recovery PASS, restart_recovery PASS."
-      },
-      {
-        "command": "pytest -p no:cacheprovider test_ocor_dev_rem_0055.py test_normative_conformance_register.py test_ocor_dev_rem_0046.py test_runtime_evidence_validator.py",
-        "exit_code": 0,
-        "summary": "231 passed, 964 subtests passed in 46.99s. Nessuno skip. Include i casi positivi di attesa, i dieci rifiuti persistenti fail-closed, i negativi di parsing e il test di integrita del registro."
-      },
-      {
-        "command": "pytest --import-mode=importlib deploy/bootstrap/services/temporal/test_qualify.py",
-        "exit_code": 0,
-        "summary": "9 passed, 13 subtests passed in 0.05s. Nessuno skip."
-      },
-      {
-        "command": "pytest test_ocor_dev_0005.py test_ocor_dev_0050.py test_ocor_dev_0079.py test_ocor_dev_0082.py test_ocor_dev_rem_0038.py",
-        "exit_code": 0,
-        "summary": "253 passed in 25.52s. Nessuno skip. La forma della chiamata _run_qualify_script resta (temporal, [--execute])."
-      },
-      {
-        "command": "env -i ... scripts/reset_test_environment.py --execute",
-        "exit_code": 0,
-        "summary": "status PASS. Residui owned containers, networks e volumes vuoti. Stack host ocor-bootstrap assente prima della campagna."
-      },
-      {
-        "command": "env -i ... scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0055-4b1c51ad992b-0/lanes --expected-head 4b1c51ad992b8b4a7d57ac98665006739e3b7bfe --tool-bin <verifier bin>",
-        "exit_code": 0,
-        "summary": "TWO_LANE, FULL_SUITE, status PASS, head 4b1c51ad992b8b4a7d57ac98665006739e3b7bfe. Durata 2583.467 s, tetto 5400 s, margine 2816.533 s, soglia di notifica 3600 s non superata. MemAvailable iniziale 48597648 kB sopra la soglia 14340.6 MiB. Raccolta 5118, eseguiti 5118, skipped 0, failures 0, errors 0. Unione JUnit ricontata: lane 2511 e 2607, overlap 0, merged 5118, missing e unexpected vuoti. Entrambe le corsie: bootstrap PASS, heap 1073741824, temporal READY SERVING 1.32.1 FAIL_CLOSED. Teardown delle due sandbox PASS. host_residue vuoto. Nessun servizio OOMKilled. Unhealthy di ocor-ops classificato EXPECTED_READINESS_GATE (HTTP 503 e RESTORE_UNTESTED), affects_test_outcome false. Alimentazione MAINS all'inizio (2026-11-07T05:54:32Z) e alla fine (2026-11-07T06:37:36Z), ADP0 online=1. Shell pulita, nessuna variabile OCOR di credenziale ereditata, nessun tool dell'implementatore."
-      }
-    ]
+    "note": "preventive review OCOR-DEV-REM-0056-0fd478064f9b-pre requested; independent verification not yet requested",
+    "status": "NOT_REQUESTED"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -249,17 +145,21 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
-    "campaign": "PASS",
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "PASS (0)",
-    "full_suite": "TWO_LANE 5118/5118, 2587.6 s",
-    "pre_campaign_gate": "48/49 PASS; drift FAIL expected for 0005, 0050, 0073, 0075, 0079, 0082 before the requalifications",
-    "pre_campaign_gate_candidate_head": "49/49 PASS at 4b1c51ad992b (drift 0; artefacts ~/.ocor-codex/rem-0055/iter2/gate/gates-4b1c51ad992b/)"
+    "evidence_input_drift": "FAIL (expected: OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0082)",
+    "language": "PASS",
+    "mypy_strict": "PASS",
+    "plan": "PASS",
+    "pre_campaign_gate": "49/50 PASS at 0fd478064f9b (drift expected)",
+    "rccad": "PASS",
+    "ruff": "PASS",
+    "scope": "PASS",
+    "supply_chain_scanner": "PASS"
   },
-  "next_task": "LOCAL-SUITE-FOUR-LANES change set (OCOR-DEV-REM-0056, to verify read-only at start), then NCP-U09",
-  "phase": "REM_0055_INTEGRATED_FOUR_LANES_NEXT",
+  "next_task": "OCOR-DEV-REM-0056:point 3 proofs, campaign, candidate and verify request",
+  "phase": "REM_0056_AWAITING_PREVENTIVE_REVIEW",
   "po_decisions_pending": [],
-  "raw_evidence_location": "~/.ocor-codex/rem-0055 and ~/.ocor-codex/rem-0055-q (RED/GREEN logs, gates, campaign), archived in the raw JSONL of the records",
+  "raw_evidence_location": "~/.ocor-codex/rem-0056 (RED/GREEN logs and fingerprints, gates, self-check, inventory), outside Git",
   "requirement_ids": [
     "FR-006",
     "FR-010",
@@ -272,39 +172,31 @@
     "NFR-048"
   ],
   "roles": {
-    "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26)",
     "implementers": [
       {
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "all of REM-0055 (iterations 1-2); this integration (iteration 3) as the backup implementer of the loop: alignment, sealing, PRE-CAMPAIGN-GATE, PR #533, exact-head CI, merge, state sync, registration of the PO decisions of 2026-11-07 and the NCR-GOVERNANCE-002 decision request file"
+        "scope": "OCOR-DEV-REM-0056 iteration 1 (RED, GREEN, self-check, allowlist and DR file, PRE-CAMPAIGN-GATE) and this state sync"
       }
-    ],
-    "preventive_reviewer": {
-      "agent": "Antigravity CLI",
-      "model": "gemini-4-argon-high",
-      "provider": "Google",
-      "request_id": "OCOR-DEV-REM-0055-193559ef56e2-pre",
-      "reserve": false,
-      "verdict": "BLOCKING_FINDINGS"
-    },
-    "verifier": "Cursor CLI / grok-4.7-high / xAI (effective, verdict OCOR-DEV-REM-0055-4b1c51ad992b-0)"
+    ]
   },
   "rollback_result": "revert the REM-0041 overlay commits; no consumer is wired to the adapter, no migration; scenario branches live in disposable test databases",
   "schema_version": "1.0",
   "seal_hashes": {},
   "security_observability_notes": [
-    "Campaign stacks (host stack and lane sandboxes) torn down; host residue none; generated credentials archived outside Git and redacted in the raw log."
+    "No full suite and no stack bootstrap run in this iteration (lane guard is backend-free)."
   ],
   "test_results": {
-    "campaign": "Campaign PASS from a clean shell at the code commit 351bb27eeeb0 (locked PATH, env -i; kit ~/.ocor-codex/rem-0055-q): versioned CI bootstrap 15 containers with the typed health 11/11 READY; Temporal --execute --fault-recovery, SeaweedFS, TypeDB, OpenBao fault recovery, SPIRE, policy and identity; bounded pause of 7 services; typed verification after faults and after reset 11/11 READY; unit module with the register, REM-0046 and runtime evidence validator suites 3 runs x 231 passed (3 live cases on the real Temporal each run); service contract suites, regression (0005, 0050, 0079, 0082, REM-0038), evidence job G0 and the reports portfolio PASS; two-lane full suite (memory admission TWO_LANE) 5118/5118, zero skips, JUnit equal to the collection, 2587.6 s of the 5400 s cap: both lane bootstraps passed their typed service health with the changed Temporal check (the step where the two REM-0054 runs had stopped); MemAvailable min 38686.9 MiB; mains power for the whole run: True",
-    "preventive_review_dispositions": "P1 FIXED (RED 6f554e3, GREEN 351bb27): qualify.py: lock image and version leaves must be text (no str() conversion); falsy non-object Ports refused (null or absent means no mapping); State.Paused must be a boolean when present; P2 FIXED (RED 6f554e3, GREEN 351bb27): qualify.py: undecodable command output is a QualificationError in run() (so wait_ready retries and bounds it); an unreadable, undecodable or invalid lock file is a QualificationError in qualify() and a typed JSON failure in main(); P3 FIXED (RED 6f554e3, GREEN 351bb27): verify_external_services.py, confined to check_temporal (option B1): TimeoutExpired, UnicodeDecodeError and OSError of the qualification process and a payload that is not an object with text result and text errors are a typed UNREACHABLE outcome; the empty object is no longer replaced; _run_qualify_script signature and the other services unchanged; P4 FIXED (RED 6f554e3, GREEN 351bb27): negative tests on every parsing path named: run, inspect_container and cli through real child-process responders on PATH, the lock reader and leaves, Ports, bindings and Paused, system information shapes, and check_temporal through real qualification processes and malformed payloads (input-robustness self-check table updated)",
-    "requalifications": "7 regression-only .requalified-rem0055 records (non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS): OCOR-DEV-0005 supersedes OCOR-DEV-0005-requalified-rem0054-ff0508c04e5c, OCOR-DEV-0050 supersedes OCOR-DEV-0050-requalified-rem0054-ff0508c04e5c, OCOR-DEV-0073 supersedes OCOR-DEV-0073-requalified-rem0052-4ecec3344165, OCOR-DEV-0075 supersedes OCOR-DEV-0075-requalified-rem0052-4ecec3344165, OCOR-DEV-0079 supersedes OCOR-DEV-0079-requalified-rem0052-4ecec3344165, OCOR-DEV-0082 supersedes OCOR-DEV-0082-requalified-rem0054-ff0508c04e5c, OCOR-DEV-REM-0038 supersedes OCOR-DEV-REM-0038-repair1-12659a1cd847; surgical MANIFEST insertions; drift validator 0 at the candidate head; sealed records byte-identical"
+    "green": "GREEN 52cc194: 204 passed (fingerprint 69a5d5056a41a94b01ce11bf81a3a3c68cd1f730766fa2486f733def8dc1a243): LANE_COUNT 4, ADMITTED_LANE_COUNTS (4, 2), admission FOUR_LANE >= 25681.2 MiB (4 x 5670.3 + 3000), TWO_LANE >= 14340.6 MiB (unchanged), else SERIAL, guard 3000 MiB unchanged; partition, exact union, supervision, results, JUnit merge, coverage and teardown on the lane count admitted at start; campaign result records admission_level, lanes_admitted and lanes_run; --lifecycle-check (default 4 lanes, --lanes 4|2, refused above the admitted count) provisions the lanes, bootstraps every stack in parallel (LANE_BOOTSTRAP), reads the typed probe of every service and records per lane the bootstrap time and the Temporal SERVING delay since its container start; caps 5400/3600/5100 s, run_qualifying_campaign.py, workflows and CI unchanged; ruff and mypy strict (144) PASS",
+    "input_robustness": "RED 533edb4 (input-robustness self-check): 13 failed, 209 passed (fingerprint 87cacd3d2a794d2c3abb4b7cc4d85f483dbc940a9b95fe63e5cd92d0c1714a08, raw log sha256 38ffe33fe9937f88fb8420030fb0a56d6d189fa6767522ad76c7f355e07c9e46): status, error and provisioning time of the bootstrap result taken by conversion, impossible container start times accepted, bootstrap processes left running when a launch or the wait fails; GREEN 0fd4780: 222 passed (fingerprint 46d7ddeb3619136471fde64e2b61b9139bd2ff5c64455ed4ff9c73459f92cc25)",
+    "pre_campaign_gate": "49/50",
+    "red": "RED 7d2d2ab (reports/tests/test_local_lane_campaign.py, backend-free): 95 failed, 109 passed (fingerprint 6f5371c25c7489d5534a065989115e9dbcce918495a7755722df8706adf8756e, raw log sha256 e8feefa22be49193f513a732289a180e17b6b5a2960806dfaa52587292605b82): no LANE_COUNT 4, no three-level admission (FOUR_LANE, lanes field, thresholds), no lanes parameter for union and estimate, Lane and lane spec capped at 2, execute_campaign without admission level and lanes run, lifecycle check without parallel bootstrap, typed probes and Temporal SERVING time"
   },
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-07T07:23:03.461113+00:00",
+  "updated_at": "2026-11-07T08:17:00.415724+00:00",
   "worktree": "rem-0055 unit and scratch worktrees removed after the merge (REPO-HYGIENE point 5); next unit: new worktree from origin/main"
 }
