@@ -306,8 +306,13 @@ def run_command(argv: list[str], *, cwd: Path | None = None, env: dict[str, str]
     except (OSError, subprocess.SubprocessError) as exc:
         raise CampaignError(f"command could not run: {argv[:4]}: {exc}") from exc
     if check and result.returncode:
+        # stderr is diagnostic text for the message only; it is never parsed.
         raise CampaignError(f"command failed ({result.returncode}): {argv[:6]}: {result.stderr.decode(errors='replace')[-2000:]}")
-    return CommandResult(result.returncode, result.stdout.decode(errors="replace"))
+    try:
+        stdout = result.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise CampaignError(f"command output is not UTF-8: {argv[:4]}: {exc}") from exc
+    return CommandResult(result.returncode, stdout)
 
 
 def campaign_id(head: str, started: int) -> str:
