@@ -497,3 +497,301 @@ def test_malformed_server_inspection_during_start_up_is_waited_for_then_refused_
 def test_malformed_server_inspection_recovers_when_well_formed_within_the_wait(install):
     install(FakeTemporal(ready_at=0.0, server=lambda now: _server(State="starting") if now < 50.0 else _server()))
     assert _execute("--execute")["protocol"] == EXPECTED_PROTOCOL
+
+
+# --- preventive review OCOR-DEV-REM-0055-193559ef56e2-pre: the whole input-robustness class -----------
+# Every parsing path of qualify.py and of the typed Temporal check refuses a malformed or undecodable
+# input with the typed error of its contract; the local responders are real child processes.
+
+
+@pytest.mark.parametrize("ports", [[], False, 0, ""], ids=["empty-list", "false", "zero", "empty-text"])
+@pytest.mark.parametrize("kind", ["server", "private"])
+def test_falsy_non_object_ports_are_a_typed_refusal(kind, ports):
+    if kind == "server":
+        with pytest.raises(qualify.QualificationError, match="Ports is not an object"):
+            qualify.validate_server_inspection(_server(NetworkSettings={"Ports": ports}), SERVER_IMAGE)
+    else:
+        with pytest.raises(qualify.QualificationError, match="Ports is not an object"):
+            qualify.validate_private_inspection(_inspection(ADMIN_IMAGE, ports={}) | {"NetworkSettings": {"Ports": ports}},
+                                                "Temporal admin-tools", ADMIN_IMAGE)
+
+
+@pytest.mark.parametrize("network", [{"Ports": None}, {}], ids=["ports-null", "ports-absent"])
+def test_absent_ports_of_a_private_container_are_no_publication(network):
+    inspection = _inspection(ADMIN_IMAGE) | {"NetworkSettings": network}
+    assert qualify.validate_private_inspection(inspection, "Temporal admin-tools", ADMIN_IMAGE) == {
+        "health": "healthy", "ports": {}}
+
+
+@pytest.mark.parametrize("bindings", [[None], [{"HostIp": "127.0.0.1", "HostPort": "17233"}, None]],
+                         ids=["null-binding", "null-after-binding"])
+def test_null_port_binding_is_a_typed_refusal(bindings):
+    with pytest.raises(qualify.QualificationError, match="list of objects"):
+        qualify.validate_server_inspection(_server(NetworkSettings={"Ports": {"7233/tcp": bindings}}), SERVER_IMAGE)
+    with pytest.raises(qualify.QualificationError, match="list of objects"):
+        qualify.validate_private_inspection(_inspection(ADMIN_IMAGE, ports={"7233/tcp": bindings}),
+                                            "Temporal admin-tools", ADMIN_IMAGE)
+
+
+def test_empty_inspection_is_a_typed_refusal():
+    with pytest.raises(qualify.QualificationError, match="image differs"):
+        qualify.validate_server_inspection({}, SERVER_IMAGE)
+    with pytest.raises(qualify.QualificationError, match="image differs"):
+        qualify.validate_private_inspection({}, "Temporal admin-tools", ADMIN_IMAGE)
+
+
+@pytest.mark.parametrize("paused", ["true", "false", 1, 0, [], {}, None],
+                         ids=["text-true", "text-false", "one", "zero", "list", "object", "null"])
+def test_non_boolean_paused_state_is_a_typed_refusal(paused):
+    def with_paused(image: str, ports: dict[str, Any]) -> dict[str, Any]:
+        inspection = _inspection(image, ports=ports)
+        inspection["State"]["Paused"] = paused
+        return inspection
+
+    with pytest.raises(qualify.QualificationError, match="State Paused is not a boolean"):
+        qualify.validate_server_inspection(with_paused(SERVER_IMAGE, SERVER_PORTS), SERVER_IMAGE)
+    with pytest.raises(qualify.QualificationError, match="State Paused is not a boolean"):
+        qualify.validate_private_inspection(with_paused(ADMIN_IMAGE, {}), "Temporal admin-tools", ADMIN_IMAGE)
+
+
+def test_absent_paused_state_is_not_paused():
+    inspection = _inspection(SERVER_IMAGE, ports=SERVER_PORTS)
+    del inspection["State"]["Paused"]
+    assert qualify.validate_server_inspection(inspection, SERVER_IMAGE) == EXPECTED_SERVER_RUNTIME
+
+
+def _service(service_id: str, **changes: Any) -> Any:
+    lock = json.loads(json.dumps(LOCK))
+    for entry in lock["services"]:
+        if entry["id"] == service_id:
+            entry.update(changes)
+    return lock
+
+
+LEAF_TYPES = {"int": 1, "bool": True, "null": None, "list": ["x"], "object": {"image": "x"}}
+MALFORMED_LEAVES: dict[str, tuple[Any, str]] = {
+    **{f"server-image-{name}": (_service("temporal", image=value), "server image is not digest-pinned")
+       for name, value in LEAF_TYPES.items()},
+    **{f"admin-image-{name}": (_service("temporal-admin-tools", image=value), "admin-tools image is not digest-pinned")
+       for name, value in LEAF_TYPES.items()},
+    **{f"database-image-{name}": (_service("postgresql", image=value), "PostgreSQL image is not digest-pinned")
+       for name, value in LEAF_TYPES.items()},
+    **{f"server-version-{name}": (_service("temporal", version=value), "no exact semantic version")
+       for name, value in LEAF_TYPES.items()},
+    "lock-empty-object": ({}, "exactly one temporal entry"),
+    "services-null-entry": (_lock_with(services=[None, *LOCK["services"]]), "list of objects"),
+    "services-null": (_lock_with(services=None), "list of objects"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_LEAVES))
+def test_malformed_lock_leaf_is_a_typed_refusal(case):
+    lock, reason = MALFORMED_LEAVES[case]
+    with pytest.raises(qualify.QualificationError, match=reason):
+        qualify.validate_lock(lock)
+
+
+def test_lock_fields_are_never_converted_to_text():
+    import ast
+    import inspect as source_inspect
+
+    tree = ast.parse(source_inspect.getsource(qualify))
+    coercions = [node.lineno for node in ast.walk(tree)
+                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "str"
+                 and node.args and isinstance(node.args[0], ast.Call)
+                 and isinstance(node.args[0].func, ast.Attribute) and node.args[0].func.attr == "get"]
+    assert coercions == []
+
+
+LOCK_FILES: dict[str, bytes] = {
+    "not-utf8": b"\xff\xfe{}",
+    "not-json": b"{not json",
+    "empty": b"",
+}
+
+
+@pytest.mark.parametrize("case", sorted(LOCK_FILES))
+def test_unreadable_lock_file_is_a_typed_refusal(install, tmp_path, case):
+    fake = install(FakeTemporal(ready_at=0.0))
+    path = tmp_path / "lock.json"
+    path.write_bytes(LOCK_FILES[case])
+    with pytest.raises(qualify.QualificationError, match="service lock is unreadable"):
+        qualify.qualify(qualify.parse_args(["--execute", "--lock", str(path)]))
+    assert fake.calls == []
+
+
+def test_missing_lock_file_is_a_typed_refusal(tmp_path):
+    with pytest.raises(qualify.QualificationError, match="service lock is unreadable"):
+        qualify.qualify(qualify.parse_args(["--lock", str(tmp_path / "absent.json")]))
+
+
+@pytest.mark.parametrize("case", sorted(LOCK_FILES))
+def test_main_reports_an_unreadable_lock_as_typed_json(tmp_path, capsys, case):
+    path = tmp_path / "lock.json"
+    path.write_bytes(LOCK_FILES[case])
+    assert qualify.main(["--lock", str(path)]) == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["result"] == "FAIL"
+    assert payload["errors"][0].startswith("service lock is unreadable")
+
+
+SYSTEM_OUTPUTS = {"list": "[]", "null": "null", "empty-object": "{}", "version-null": '{"serverVersion": null}',
+                  "version-int": '{"serverVersion": 1321}', "version-list": '{"serverVersion": ["1.32.1"]}'}
+
+
+@pytest.mark.parametrize("case", sorted(SYSTEM_OUTPUTS))
+def test_malformed_system_information_is_a_typed_refusal(case):
+    with pytest.raises(qualify.QualificationError, match="server version does not match the lock"):
+        qualify.validate_observations(health_exit=0, health_output="SERVING\n", system_exit=0,
+                                      system_output=SYSTEM_OUTPUTS[case], absent_exit=1,
+                                      absent_output="Namespace x is not found.", expected_version=VERSION)
+
+
+# Local responders: a ``docker`` executable on PATH that writes fixed bytes, so run(), inspect_container()
+# and cli() parse a real child process output.
+
+
+def _responder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stdout: bytes, *, stderr: bytes = b"",
+               code: int = 0, sleep: float = 0.0) -> None:
+    directory = tmp_path / "bin"
+    directory.mkdir(exist_ok=True)
+    script = directory / "docker"
+    script.write_text(
+        "#!" + sys.executable + "\nimport sys, time\n"
+        f"time.sleep({sleep!r})\nsys.stdout.buffer.write({stdout!r})\nsys.stderr.buffer.write({stderr!r})\n"
+        f"sys.exit({code})\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{directory}:/usr/bin:/bin")
+
+
+@pytest.mark.parametrize("stream", ["stdout", "stderr"])
+def test_undecodable_command_output_is_a_typed_refusal(tmp_path, monkeypatch, stream):
+    _responder(tmp_path, monkeypatch, b"\xff\xfe" if stream == "stdout" else b"[]",
+               stderr=b"\xff\xfe" if stream == "stderr" else b"")
+    with pytest.raises(qualify.QualificationError, match="bounded command failed: docker"):
+        qualify.run(["docker", "inspect", qualify.SERVER_CONTAINER])
+
+
+def test_command_timeout_and_start_failure_are_typed_refusals(tmp_path, monkeypatch):
+    _responder(tmp_path, monkeypatch, b"[]", sleep=5.0)
+    with pytest.raises(qualify.QualificationError, match="bounded command failed: docker"):
+        qualify.run(["docker", "inspect", qualify.SERVER_CONTAINER], timeout=0.5)
+    with pytest.raises(qualify.QualificationError, match="bounded command failed"):
+        qualify.run([str(tmp_path / "absent-docker")])
+
+
+INSPECT_OUTPUTS: dict[str, tuple[bytes, int, str]] = {
+    "not-utf8": (b"\xff\xfe", 0, "bounded command failed: docker"),
+    "not-json": (b"[{not json", 0, "docker inspect returned invalid JSON"),
+    "empty-list": (b"[]", 0, "unexpected container set"),
+    "null-element": (b"[null]", 0, "unexpected container set"),
+    "object-not-list": (b"{}", 0, "unexpected container set"),
+    "two-containers": (b"[{}, {}]", 0, "unexpected container set"),
+    "not-found": (b"[]", 1, "container not found"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(INSPECT_OUTPUTS))
+def test_malformed_docker_inspect_output_is_a_typed_refusal(tmp_path, monkeypatch, case):
+    stdout, code, reason = INSPECT_OUTPUTS[case]
+    _responder(tmp_path, monkeypatch, stdout, code=code)
+    with pytest.raises(qualify.QualificationError, match=reason):
+        qualify.inspect_container(qualify.SERVER_CONTAINER)
+
+
+def test_well_formed_docker_inspect_output_is_parsed(tmp_path, monkeypatch):
+    _responder(tmp_path, monkeypatch, json.dumps([_server()]).encode())
+    assert qualify.inspect_container(qualify.SERVER_CONTAINER) == _server()
+
+
+def test_undecodable_cli_output_is_a_typed_refusal(tmp_path, monkeypatch):
+    _responder(tmp_path, monkeypatch, b"SERVING\xff\n")
+    with pytest.raises(qualify.QualificationError, match="bounded command failed: docker"):
+        qualify.cli(qualify.ADMIN_CONTAINER, "operator", "cluster", "health")
+
+
+def test_undecodable_output_during_start_up_is_waited_for_then_refused_typed(tmp_path, monkeypatch):
+    _responder(tmp_path, monkeypatch, b"\xff\xfe")
+    clock = FakeTemporal(ready_at=0.0)
+    monkeypatch.setattr(qualify.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(qualify.time, "sleep", clock.sleep)
+    with pytest.raises(qualify.QualificationError) as raised:
+        qualify.wait_ready(qualify.SERVER_CONTAINER, qualify.ADMIN_CONTAINER, SERVER_IMAGE, VERSION, timeout=5.0)
+    assert str(raised.value) == "Temporal did not recover within 5s: bounded command failed: docker"
+    assert clock.now - FIRST_PROBE_AT >= 5.0
+
+
+# The typed check of verify_external_services: malformed qualification output, a subprocess beyond its
+# bound or undecodable output is a typed UNREACHABLE outcome of check_temporal, never a raw exception.
+
+MALFORMED_PAYLOADS: dict[str, tuple[int, Any]] = {
+    "list": (1, []),
+    "text": (1, "FAIL"),
+    "number": (1, 1),
+    "true-with-zero-exit": (0, True),
+    "empty-object": (1, {}),
+    "result-not-text": (0, {"result": ["PASS"]}),
+    "errors-null": (1, {"result": "FAIL", "errors": None}),
+    "errors-number": (1, {"result": "FAIL", "errors": 1}),
+    "errors-text": (1, {"result": "FAIL", "errors": "container not found"}),
+    "errors-null-element": (1, {"result": "FAIL", "errors": [None]}),
+    "errors-number-element": (1, {"result": "FAIL", "errors": [404]}),
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_PAYLOADS))
+def test_typed_check_refuses_a_malformed_qualification_payload(monkeypatch, case):
+    returncode, payload = MALFORMED_PAYLOADS[case]
+    monkeypatch.setattr(verify, "_run_qualify_script", lambda repository, script, extra_args: (returncode, payload, "err"))
+    health = verify.check_temporal(ROOT, execute=True)
+    assert health.status is verify.ServiceStatus.UNREACHABLE
+    assert health.detail == {"error": "Temporal qualification output is not a well-formed result object",
+                             "stderr": "err"}
+
+
+def _temporal_script(tmp_path: Path, body: str) -> Path:
+    script = tmp_path / "deploy/bootstrap/services/temporal/qualify.py"
+    script.parent.mkdir(parents=True)
+    script.write_text("import sys, time\n" + body + "\n", encoding="utf-8")
+    return tmp_path
+
+
+RESPONDER_SCRIPTS: dict[str, tuple[str, str]] = {
+    "stdout-not-utf8": ("sys.stdout.buffer.write(b'\\xff\\xfe')", "Temporal qualification output is not decodable"),
+    "stderr-not-utf8": ("sys.stderr.buffer.write(b'\\xff\\xfe'); sys.exit(1)",
+                        "Temporal qualification output is not decodable"),
+    "beyond-the-bound": ("time.sleep(10)", "Temporal qualification exceeded its subprocess bound"),
+    "non-object-json": ("print('[]'); sys.exit(1)", "Temporal qualification output is not a well-formed result object"),
+    "errors-null": ("print('{\"result\": \"FAIL\", \"errors\": null}'); sys.exit(1)",
+                    "Temporal qualification output is not a well-formed result object"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RESPONDER_SCRIPTS))
+def test_typed_check_refuses_a_misbehaving_qualification_process(tmp_path, monkeypatch, case):
+    body, error = RESPONDER_SCRIPTS[case]
+    monkeypatch.setitem(verify.QUALIFY_SCRIPT_TIMEOUT_SECONDS, "temporal", 1)
+    health = verify.check_temporal(_temporal_script(tmp_path, body), execute=True)
+    assert health.status is verify.ServiceStatus.UNREACHABLE
+    assert health.detail["error"] == error
+
+
+def test_typed_check_refuses_a_qualification_process_that_cannot_start(monkeypatch):
+    def unstartable(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        raise PermissionError("not executable")
+
+    monkeypatch.setattr(verify.subprocess, "run", unstartable)
+    health = verify.check_temporal(ROOT, execute=True)
+    assert health.status is verify.ServiceStatus.UNREACHABLE
+    assert health.detail["error"] == "Temporal qualification process could not start"
+
+
+def test_typed_check_keeps_well_formed_payloads_unchanged(tmp_path):
+    passed = verify.check_temporal(_temporal_script(tmp_path, "print('{\"result\": \"PASS\", \"protocol\": {}}')"),
+                                   execute=True)
+    assert passed.status is verify.ServiceStatus.READY and passed.detail == {"result": "PASS", "protocol": {}}
+    missing = verify.check_temporal(tmp_path / "absent", execute=True)
+    assert missing.status is verify.ServiceStatus.UNREACHABLE and missing.detail["stderr"].startswith(
+        "missing qualification script")
