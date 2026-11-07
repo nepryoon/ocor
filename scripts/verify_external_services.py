@@ -371,11 +371,34 @@ def check_policy_identity(repository: Path) -> ServiceHealth:
     return ServiceHealth("opa-keycloak", status, payload or {"stderr": stderr})
 
 
+def _well_formed_qualification(payload: Any) -> bool:
+    if not isinstance(payload, dict) or not isinstance(payload.get("result"), str):
+        return False
+    errors = payload.get("errors", [])
+    return isinstance(errors, list) and all(isinstance(error, str) for error in errors)
+
+
 def check_temporal(repository: Path, *, execute: bool) -> ServiceHealth:
+    # Only the Temporal check translates its runner failures and validates the payload shape
+    # (OCOR-DEV-REM-0055, option B1 leaves the other services unchanged): every outcome is typed.
     script = repository / "deploy/bootstrap/services/temporal/qualify.py"
-    returncode, payload, stderr = _run_qualify_script(repository, script, ["--execute"] if execute else [])
-    status = _status_from_qualify_payload(payload, returncode)
-    return ServiceHealth("temporal", status, payload or {"stderr": stderr})
+    try:
+        returncode, payload, stderr = _run_qualify_script(repository, script, ["--execute"] if execute else [])
+    except subprocess.TimeoutExpired:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification exceeded its subprocess bound"})
+    except UnicodeDecodeError:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification output is not decodable"})
+    except OSError:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification process could not start"})
+    if payload is None:
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE, {"stderr": stderr})
+    if not _well_formed_qualification(payload):
+        return ServiceHealth("temporal", ServiceStatus.UNREACHABLE,
+                             {"error": "Temporal qualification output is not a well-formed result object", "stderr": stderr})
+    return ServiceHealth("temporal", _status_from_qualify_payload(payload, returncode), payload)
 
 
 def check_seaweedfs(repository: Path, *, execute: bool) -> ServiceHealth:

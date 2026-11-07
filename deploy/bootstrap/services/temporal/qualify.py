@@ -63,15 +63,20 @@ def _entry(lock: dict[str, Any], service_id: str) -> dict[str, Any]:
     return entry
 
 
+def _matches(pattern: re.Pattern[str], value: Any) -> bool:
+    """A lock leaf matches only when it is text itself; other JSON types are never converted."""
+    return isinstance(value, str) and pattern.fullmatch(value) is not None
+
+
 def validate_lock(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
     server = _entry(lock, "temporal")
     admin = _entry(lock, "temporal-admin-tools")
     database = _entry(lock, "postgresql")
-    if not SERVER_IMAGE.fullmatch(str(server.get("image", ""))):
+    if not _matches(SERVER_IMAGE, server.get("image")):
         raise QualificationError("Temporal server image is not digest-pinned")
-    if not ADMIN_IMAGE.fullmatch(str(admin.get("image", ""))):
+    if not _matches(ADMIN_IMAGE, admin.get("image")):
         raise QualificationError("Temporal admin-tools image is not digest-pinned")
-    if not POSTGRES_IMAGE.fullmatch(str(database.get("image", ""))):
+    if not _matches(POSTGRES_IMAGE, database.get("image")):
         raise QualificationError("Temporal PostgreSQL image is not digest-pinned")
     if server.get("source") != "https://hub.docker.com/r/temporalio/server":
         raise QualificationError("Temporal server source is not the approved official registry")
@@ -79,7 +84,7 @@ def validate_lock(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
         raise QualificationError("Temporal admin-tools source is not the approved official registry")
     if server.get("license") != "MIT" or admin.get("license") != "MIT":
         raise QualificationError("Temporal license metadata mismatch")
-    if not SEMVER.fullmatch(str(server.get("version", ""))):
+    if not _matches(SEMVER, server.get("version")):
         raise QualificationError("Temporal lock has no exact semantic version")
     if admin.get("version") != server.get("version"):
         raise QualificationError("Temporal admin-tools version differs from the server version")
@@ -91,7 +96,10 @@ def _require_running_healthy(inspection: dict[str, Any], label: str, expected_im
     if _object(inspection.get("Config", {}), f"{label} inspection Config").get("Image") != expected_image:
         raise QualificationError(f"running {label} image differs from the exact service lock")
     state = _object(inspection.get("State", {}), f"{label} inspection State")
-    if state.get("Running") is not True or state.get("Paused") is True:
+    paused = state.get("Paused", False)
+    if not isinstance(paused, bool):
+        raise QualificationError(f"{label} inspection State Paused is not a boolean")
+    if state.get("Running") is not True or paused:
         raise QualificationError(f"{label} container is not running")
     if _object(state.get("Health", {}), f"{label} inspection Health").get("Status") != "healthy":
         raise QualificationError(f"{label} container is not healthy")
@@ -99,7 +107,9 @@ def _require_running_healthy(inspection: dict[str, Any], label: str, expected_im
 
 def _bindings(inspection: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     network = _object(inspection.get("NetworkSettings", {}), "container inspection NetworkSettings")
-    ports = _object(network.get("Ports", {}) or {}, "container inspection Ports")
+    # Docker reports a container without port mappings as null; any other non-object is refused.
+    ports_value = network.get("Ports")
+    ports = {} if ports_value is None else _object(ports_value, "container inspection Ports")
     for value in ports.values():
         if value is not None and (not isinstance(value, list) or not all(isinstance(item, dict) for item in value)):
             raise QualificationError("container port bindings must be a list of objects")
@@ -158,7 +168,7 @@ def validate_observations(
 def run(command: Sequence[str], timeout: float = 20.0) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(list(command), check=False, capture_output=True, text=True, timeout=timeout)
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except (OSError, subprocess.TimeoutExpired, UnicodeDecodeError) as exc:
         raise QualificationError(f"bounded command failed: {command[0]}") from exc
 
 
@@ -260,7 +270,11 @@ def fault_and_recover(server: str, admin: str, expected_image: str, expected_ver
 def qualify(args: argparse.Namespace) -> dict[str, Any]:
     if args.fault_recovery and not args.execute:
         raise QualificationError("--fault-recovery requires explicit --execute")
-    entries = validate_lock(json.loads(args.lock.read_text(encoding="utf-8")))
+    try:
+        lock = json.loads(args.lock.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise QualificationError(f"service lock is unreadable: {exc}") from exc
+    entries = validate_lock(lock)
     server_image = entries["server"]["image"]
     version = entries["server"]["version"]
     protocol: dict[str, Any] | None = None
