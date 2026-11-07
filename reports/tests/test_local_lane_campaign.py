@@ -1853,3 +1853,346 @@ def test_execute_cli_passes_the_selection_and_returns_the_status(monkeypatch, tm
                        '--select', 'tests/a.py::t', '--select', 'tests/b.py::t']) == 0
     monkeypatch.setattr(LANES, 'execute_campaign', lambda *a, **k: {'status': 'FAIL'})
     assert LANES.main(['--execute', str(tmp_path / 'w'), '--expected-head', HEAD, '--tool-bin', str(tmp_path)]) == 1
+
+
+# --- input robustness of every parsing path (preventive review OCOR-DEV-REM-0056-0fd478064f9b-pre) --
+# PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) and NCP-THROUGHPUT-RULES (2026-11-05)
+# point 1, on the whole orchestrator: shape checked without conversion (ASCII
+# digits only, no bool where a number is due, no NaN or Infinity), decoding and
+# conversion errors translated into the typed CampaignError or the recorded
+# serial fallback, tampered data refused, and every process stopped on every
+# error path.
+
+ARABIC_INDIC = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
+FULLWIDTH = str.maketrans('0123456789', '０１２３４５６７８９')
+
+
+@pytest.mark.parametrize('text', [
+    'MemTotal: ² kB\nMemAvailable: 57000000 kB\n',
+    'MemTotal: 64199664 kB\nMemAvailable: ¹ kB\n',
+    FOUR_LANE_MEMINFO.translate(ARABIC_INDIC),
+    FOUR_LANE_MEMINFO.translate(FULLWIDTH),
+    'MemTotal: 64199664 kB\nMemAvailable: 57000000 MB\n',
+    'MemTotal: 64199664 kB\nMemAvailable: 57000000\n',
+    'MemTotal: 64199664 kB\nMemAvailable: 57000000 kB extra\n',
+    'MemTotal: 64199664 kB\nMemAvailable: 57000000 kB\nMemAvailable: 1 kB\n',
+])
+def test_memory_admission_reads_only_ascii_kib_fields_and_never_raises(text):
+    decision = LANES.memory_admission(text)
+    assert decision['mode'] == 'SERIAL' and decision['lanes'] == 1
+
+
+@pytest.mark.parametrize('content', [b'\xff\xfe' + FOUR_LANE_MEMINFO.encode(), FOUR_LANE_MEMINFO.encode() + b'\x80'])
+def test_memory_reading_of_non_utf8_meminfo_is_the_recorded_serial_fallback(tmp_path, content):
+    path = tmp_path / 'meminfo'
+    path.write_bytes(content)
+    decision = LANES.read_memory_admission(path)
+    assert decision['mode'] == 'SERIAL' and decision['lanes'] == 1 and 'meminfo' in decision['reason']
+    absent = LANES.read_memory_admission(tmp_path / 'absent')
+    assert absent['mode'] == 'SERIAL' and 'meminfo unreadable' in absent['reason']
+    path.write_text(FOUR_LANE_MEMINFO)
+    assert LANES.read_memory_admission(path)['mode'] == 'FOUR_LANE'
+
+
+def test_execute_with_non_utf8_meminfo_records_the_serial_fallback(host_world):
+    host_world['meminfo'].write_bytes(b'\xff\xfe' + FOUR_LANE_MEMINFO.encode())
+    result = execute(host_world)
+    assert result['status'] == 'SERIAL_FALLBACK' and result == stored_result(host_world)
+    assert not [call for call in host_world['calls'] if call[0] in ('provision', 'sandbox', 'launch')]
+
+
+def test_lifecycle_check_with_non_utf8_meminfo_records_the_serial_fallback(life_world):
+    life_world['meminfo'].write_bytes(b'\xff\xfe' + FOUR_LANE_MEMINFO.encode())
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and report['memory']['mode'] == 'SERIAL' and 'admits 1' in report['error']
+    assert not [call for call in life_world['calls'] if call[0] in ('provision', 'sandbox', 'bootstrap')]
+
+
+def typed_final(**changes):
+    final = {'status': 'PASS', 'provisioning_seconds': 101.5,
+             'services': {'status': 'PASS', 'services': [{'service': 'postgresql', 'status': 'READY'}]}}
+    final.update(changes)
+    return final
+
+
+@pytest.mark.parametrize('text', [
+    '{"status": "PASS", "provisioning_seconds": NaN, "services": {"status": "PASS", "services": [{"service": "x", "status": "READY"}]}}\n',
+    '{"status": "PASS", "provisioning_seconds": Infinity, "services": {"status": "PASS", "services": [{"service": "x", "status": "READY"}]}}\n',
+    '{"status": "PASS", "provisioning_seconds": -Infinity, "services": {"status": "PASS", "services": [{"service": "x", "status": "READY"}]}}\n',
+    json.dumps(typed_final(provisioning_seconds=-5.0)) + '\n',
+    json.dumps(typed_final(services={'status': 'FAIL', 'services': [{'service': 'postgresql', 'status': 'READY'}]})) + '\n',
+    json.dumps(typed_final(services={'status': 1, 'services': [{'service': 'postgresql', 'status': 'READY'}]})) + '\n',
+    json.dumps(typed_final(services={'services': [{'service': 'postgresql', 'status': 'READY'}]})) + '\n',
+    json.dumps(typed_final(services={'status': 'PASS', 'services': [{'service': '', 'status': 'READY'}]})) + '\n',
+    json.dumps(typed_final(services={'status': 'PASS', 'services': [{'service': 'postgresql', 'status': ''}]})) + '\n',
+    json.dumps(typed_final(services={})) + '\n',
+    '{}\n',
+])
+def test_bootstrap_summary_refuses_non_finite_negative_or_inconsistent_results(text):
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.bootstrap_summary(text)
+
+
+def test_bootstrap_summary_accepts_an_integral_provisioning_time():
+    assert LANES.bootstrap_summary(json.dumps(typed_final(provisioning_seconds=0)) + '\n')['provisioning_seconds'] == 0
+
+
+@pytest.mark.parametrize('text', [STARTED_AT.translate(ARABIC_INDIC), STARTED_AT.translate(FULLWIDTH),
+                                  '2026-11-07T10:00:00.٢٥Z'])
+def test_container_start_refuses_non_ascii_digits(text):
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.container_started_epoch(text)
+
+
+def test_lifecycle_check_refuses_a_bootstrap_log_that_is_not_utf8(life_world):
+    real = life_world['bootstrap_launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        if '/lane-2/' in argv[argv.index('-w') + 1]:
+            log.write_bytes(bootstrap_output().replace('postgresql', 'post\udcffgres').encode('utf-8', 'surrogateescape'))
+        return process
+    life_world['bootstrap_launcher'] = launcher
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'lane 2' in report['error'] and 'UTF-8' in report['error']
+    lane_two = report['lanes'][1]['bootstrap']
+    assert lane_two['status'] == 'FAIL' and 'services' not in lane_two
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lane_bootstrap_record_is_failed_whenever_the_lane_is_rejected(life_world):
+    life_world['bootstrap'][3] = (0, bootstrap_output(services={'postgresql': 'READY', 'temporal': 'DEGRADED'}))
+    report = lifecycle(life_world, temporal_runner())
+    assert report['status'] == 'FAIL'
+    assert [entry['bootstrap']['status'] for entry in report['lanes']] == ['PASS', 'PASS', 'FAIL', 'PASS']
+    life_world['calls'].clear()
+    report = lifecycle(life_world, temporal_runner(serving=False))
+    assert all(entry['bootstrap']['status'] == 'FAIL' for entry in report['lanes'])
+
+
+def test_a_temporal_probe_that_times_out_once_does_not_end_the_observation(tmp_path):
+    item = four_lanes(tmp_path)[0]
+    inner = temporal_runner()
+    probes = []
+
+    def runner(argv, **kwargs):
+        if 'health' in argv:
+            probes.append(1)
+            if len(probes) == 1:
+                raise CAMPAIGN.CampaignError('command could not run: probe timed out after 15 s')
+        return inner(argv, **kwargs)
+    observed = LANES.observe_temporal_serving(item, '/p', runner, finished=lambda: False, wall=lambda: SERVING_WALL,
+                                              sleep=lambda seconds: None, monotonic=FakeClock(0.0, 1.0))
+    assert observed['serving'] is True and observed['polls'] == 2 and observed['probe_errors'] == 1
+
+
+class WaitTimesOut(FakeProcess):
+    """A bootstrap that never ends and whose wait after kill times out."""
+
+    def __init__(self):
+        super().__init__(0, None)
+
+    def poll(self):
+        return None
+
+    def wait(self, timeout=None):
+        import subprocess
+        raise subprocess.TimeoutExpired('docker', timeout)
+
+
+def test_lifecycle_check_stops_every_bootstrap_when_one_wait_times_out(life_world, monkeypatch):
+    stubborn = WaitTimesOut()
+    others = [FakeProcess(0, None) for _ in range(3)]
+    pending = iter([stubborn, *others])
+    life_world['bootstrap_launcher'] = lambda argv, log: (log.write_text(''), next(pending))[1]
+    monkeypatch.setattr(LANES, 'LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS', 0)
+    report = lifecycle(life_world, temporal_runner(serving=False))
+    assert report['status'] == 'FAIL' and 'lane 1' in report['error'] and 'did not stop' in report['error']
+    assert stubborn.killed and all(process.killed for process in others)
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lifecycle_check_translates_a_wait_timeout_in_the_cleanup(life_world):
+    stubborn = WaitTimesOut()
+    pending = iter([FakeProcess(0, None), stubborn, FakeProcess(0, None), FakeProcess(0, None)])
+    started = []
+
+    def launcher(argv, log):
+        log.write_text('')
+        if len(started) == 3:
+            raise OSError('cannot start lane 4 bootstrap')
+        started.append(next(pending))
+        return started[-1]
+    life_world['bootstrap_launcher'] = launcher
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'lane 4' in report['error'] and 'lane 2' in report['error']
+    assert all(process.killed for process in started)
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_supervision_translates_a_kill_that_does_not_stop_a_lane(tmp_path):
+    lanes, clock = four_lanes(tmp_path), FakeClock(step=60.0)
+    stubborn, stuck = WaitTimesOut(), FakeProcess(0, None)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lane 1'):
+        LANES.supervise_lanes({1: stubborn, 2: FakeProcess(1, 0), 3: stuck, 4: FakeProcess(0, 0)}, lanes, clock.now,
+                              clock=clock, sleep=clock.sleep)
+    assert stubborn.killed and stuck.killed
+
+
+def test_execute_records_a_lane_that_does_not_stop_and_tears_down_all(host_world, monkeypatch):
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    monkeypatch.setattr(LANES, 'STOP_GRACE_SECONDS', 0)
+    real = host_world['launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        return WaitTimesOut() if '/lane-1/' in argv[argv.index('--run-lane') + 1] else FakeProcess(1, 0)
+    host_world['launcher'] = launcher
+    result = execute(host_world)
+    assert result['status'] == 'FAIL' and 'lane 1' in result['error'] and result == stored_result(host_world)
+    assert [call[0] for call in host_world['calls']].count('teardown') == 4
+
+
+@pytest.mark.parametrize('content', [b'[]', b'null', b'{}', b'"spec"', b'{"head": ', b'\xff\xfe{}'])
+def test_lane_spec_refuses_a_document_that_is_not_a_spec_object(tmp_path, content):
+    path = lane_spec(tmp_path)
+    path.write_bytes(content)
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.load_lane_spec(path)
+
+
+@pytest.mark.parametrize('change', [
+    {'selection': [{}]}, {'selection': [['a::b']]}, {'selection': ['tests/a.py::t', 1]},
+    {'campaign_start': True}, {'campaign_start': float('nan')}, {'campaign_start': float('inf')}, {'campaign_start': '1793000000'},
+    {'stop_file': 5}, {'extra': 1}])
+def test_lane_spec_takes_no_field_by_conversion(tmp_path, change):
+    path = lane_spec(tmp_path)
+    path.write_text(json.dumps({**json.loads(path.read_text()), **change}))
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.load_lane_spec(path)
+
+
+@pytest.mark.parametrize('content', [b'[]', b'null', b'\xff\xfe{}', b'{"lane": 1, "campaign_start": NaN}'])
+def test_lane_with_an_unreadable_spec_records_a_typed_failure(lane_world, tmp_path, content):
+    spec = lane_spec(tmp_path)
+    spec.write_bytes(content)
+    assert run_lane(lane_world, spec) == 1
+    result = assert_lane_failed(spec, 'lane spec')
+    assert result['lane'] is None
+    assert not [call for call in lane_world['calls'] if call[0] in ('run', 'pytest')]
+
+
+def test_lane_stops_on_a_stop_request_that_is_not_utf8(lane_world, tmp_path):
+    spec = lane_spec(tmp_path)
+    (spec.parent / 'STOP').write_bytes(b'lane 2 failed \xff\n')
+    assert run_lane(lane_world, spec) == 1
+    assert_lane_failed(spec, 'stopped by the orchestrator')
+
+
+def test_lane_service_environment_refuses_an_env_file_that_is_not_utf8(tmp_path):
+    (tmp_path / '.ocor').mkdir()
+    (tmp_path / '.ocor/bootstrap.env').write_bytes(b'OCOR_LOCAL_POSTGRES_PASSWORD=\xff\xfe\n')
+    with pytest.raises(CAMPAIGN.CampaignError, match='env'):
+        LANES.lane_service_environment(tmp_path)
+
+
+@pytest.mark.parametrize('content', [b'[]', b'null', b'{}', b'"PASS"', b'{"status": ', b'\xff\xfe{}'])
+def test_lane_results_refuse_a_document_that_is_not_a_result_object(tmp_path, content):
+    lanes = four_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
+    for item, part in zip(lanes, parts):
+        write_lane_result(item, part)
+    (lanes[1].output / 'lane_result.json').write_bytes(content)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lane 2'):
+        LANES.read_lane_results(lanes, HEAD, parts)
+
+
+@pytest.mark.parametrize('change', [{'lane': True}, {'po_decision_required': 'false'}, {'po_decision_required': 0},
+                                    {'po_decision_required': None}, {'selected': True}, {'selected': float('nan')}])
+def test_lane_results_take_no_field_by_conversion(tmp_path, change):
+    lanes = four_lanes(tmp_path)
+    parts = LANES.lane_partition(nodes(), weights(), lanes=4)
+    for item, part in zip(lanes, parts):
+        write_lane_result(item, part)
+    write_lane_result(lanes[0], parts[0], **change)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lane 1'):
+        LANES.read_lane_results(lanes, HEAD, parts)
+
+
+@pytest.mark.parametrize('content', [b'\xff\xfe{}', b'{"status": ', b'[]'])
+def test_execute_records_a_corrupted_lane_result_and_tears_down_all(host_world, content):
+    host_world['meminfo'].write_text(FOUR_LANE_MEMINFO)
+    real = host_world['launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        if '/lane-2/' in argv[argv.index('--run-lane') + 1]:
+            (Path(argv[argv.index('--run-lane') + 1]).parent / 'lane_result.json').write_bytes(content)
+        return process
+    host_world['launcher'] = launcher
+    result = execute(host_world)
+    assert result['status'] == 'FAIL' and 'lane 2' in result['error'] and result == stored_result(host_world)
+    lane_two = next(entry for entry in result['lanes'] if entry['lane'] == 2)
+    assert 'unreadable' in lane_two['result']
+    assert [call[0] for call in host_world['calls']].count('teardown') == 4
+
+
+@pytest.mark.parametrize('weights_doc', [
+    [], {}, {'weights': []}, {'weights': {'a::b': '5'}}, {'weights': {'a::b': True}}, {'weights': {'a::b': -1}},
+    {'weights': {'a::b': None}}])
+def test_weights_file_takes_no_weight_by_conversion(tmp_path, weights_doc):
+    path = tmp_path / 'lane_weights.json'
+    path.write_text(json.dumps(weights_doc))
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.load_weights(path)
+
+
+@pytest.mark.parametrize('content', [b'{"weights": {"a::b": NaN}}', b'{"weights": {"a::b": Infinity}}', b'\xff{}', b'{"weights": '])
+def test_weights_file_refuses_non_finite_or_undecodable_content(tmp_path, content):
+    path = tmp_path / 'lane_weights.json'
+    path.write_bytes(content)
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.load_weights(path)
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.load_weights(tmp_path / 'absent.json')
+
+
+@pytest.mark.parametrize('seconds', ['nan', 'inf', '-1', 'abc', '٢.5', ''])
+def test_derived_weights_refuse_a_time_that_is_not_a_finite_ascii_number(tmp_path, seconds):
+    junit = write_junit(tmp_path / 'm.xml', [('tests.tasks.test_a', 'test_x')])
+    junit.write_text(junit.read_text().replace('time="0.1"', f'time="{seconds}"'))
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.derive_weights(junit)
+
+
+def test_derived_weights_refuse_a_malformed_junit(tmp_path):
+    junit = tmp_path / 'm.xml'
+    junit.write_text('<testsuite><testcase')
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.derive_weights(junit)
+    assert LANES.main(['--derive-weights', str(junit)]) == 1
+
+
+@pytest.mark.parametrize('lock', [[], {}, {'tools': {}}, {'tools': [5]}, {'tools': [{'id': 'kind'}]},
+                                  {'tools': [{'id': '../kind', 'binary_sha256': '0' * 64}]},
+                                  {'tools': [{'id': 'kind', 'binary_sha256': 'ABC'}]}, {'tools': []}])
+def test_lane_tools_lock_is_refused_when_malformed(tmp_path, lock):
+    repo = tmp_path / 'repo'
+    (repo / 'infra').mkdir(parents=True)
+    (repo / 'infra/qualification_tools.lock.json').write_text(json.dumps(lock))
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.verify_lane_tools(repo)
+
+
+def test_lane_tools_lock_that_is_not_utf8_is_refused(tmp_path):
+    repo = tmp_path / 'repo'
+    (repo / 'infra').mkdir(parents=True)
+    (repo / 'infra/qualification_tools.lock.json').write_bytes(b'\xff{"tools": []}')
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.verify_lane_tools(repo)
+
+
+def test_power_reading_with_an_undecodable_supply_is_not_executed(tmp_path):
+    root = power_supplies(tmp_path, AC={'type': 'Mains', 'online': '1'})
+    (root / 'AC/online').write_bytes(b'\xff\n')
+    assert LANES.power_reading(root)['source'] == 'NOT_EXECUTED'
