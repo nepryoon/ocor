@@ -43,8 +43,18 @@ class QualificationError(RuntimeError):
     """A mandatory Temporal qualification control failed."""
 
 
+def _object(value: Any, label: str) -> dict[str, Any]:
+    """The value itself when it is a JSON object; any other shape is a typed refusal, never coerced."""
+    if not isinstance(value, dict):
+        raise QualificationError(f"{label} is not an object")
+    return value
+
+
 def _entry(lock: dict[str, Any], service_id: str) -> dict[str, Any]:
-    matches = [item for item in lock.get("services", []) if item.get("id") == service_id]
+    services = _object(lock, "service lock").get("services", [])
+    if not isinstance(services, list) or not all(isinstance(item, dict) for item in services):
+        raise QualificationError("service lock services must be a list of objects")
+    matches = [item for item in services if item.get("id") == service_id]
     if len(matches) != 1:
         raise QualificationError(f"service lock must contain exactly one {service_id} entry")
     entry: dict[str, Any] = matches[0]
@@ -77,36 +87,41 @@ def validate_lock(lock: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _require_running_healthy(inspection: dict[str, Any], label: str, expected_image: str) -> None:
-    if inspection.get("Config", {}).get("Image") != expected_image:
+    inspection = _object(inspection, f"{label} inspection")
+    if _object(inspection.get("Config", {}), f"{label} inspection Config").get("Image") != expected_image:
         raise QualificationError(f"running {label} image differs from the exact service lock")
-    state = inspection.get("State", {})
+    state = _object(inspection.get("State", {}), f"{label} inspection State")
     if state.get("Running") is not True or state.get("Paused") is True:
         raise QualificationError(f"{label} container is not running")
-    if state.get("Health", {}).get("Status") != "healthy":
+    if _object(state.get("Health", {}), f"{label} inspection Health").get("Status") != "healthy":
         raise QualificationError(f"{label} container is not healthy")
 
 
 def _bindings(inspection: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-    ports = inspection.get("NetworkSettings", {}).get("Ports", {}) or {}
+    network = _object(inspection.get("NetworkSettings", {}), "container inspection NetworkSettings")
+    ports = _object(network.get("Ports", {}) or {}, "container inspection Ports")
+    for value in ports.values():
+        if value is not None and (not isinstance(value, list) or not all(isinstance(item, dict) for item in value)):
+            raise QualificationError("container port bindings must be a list of objects")
     return {key: value for key, value in ports.items() if value}
 
 
 def validate_server_inspection(inspection: dict[str, Any], expected_image: str) -> dict[str, Any]:
     _require_running_healthy(inspection, "Temporal server", expected_image)
-    published = _bindings(inspection)
+    published = _bindings(_object(inspection, "Temporal server inspection"))
     if set(published) != {"7233/tcp"} or len(published["7233/tcp"]) != 1:
         raise QualificationError("Temporal server must publish exactly the frontend gRPC port")
     binding = published["7233/tcp"][0]
     if binding.get("HostIp") != HOST:
         raise QualificationError("Temporal frontend publication is not loopback-only")
-    if str(binding.get("HostPort")) != str(HOST_PORT):
+    if binding.get("HostPort") != str(HOST_PORT):
         raise QualificationError("Temporal frontend host port differs from the approved profile")
     return {"health": "healthy", "ports": {"7233/tcp": str(HOST_PORT)}}
 
 
 def validate_private_inspection(inspection: dict[str, Any], label: str, expected_image: str) -> dict[str, Any]:
     _require_running_healthy(inspection, label, expected_image)
-    if _bindings(inspection):
+    if _bindings(_object(inspection, f"{label} inspection")):
         raise QualificationError(f"{label} must not publish any host port")
     return {"health": "healthy", "ports": {}}
 
