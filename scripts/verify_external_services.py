@@ -307,6 +307,13 @@ def check_qdrant(repository: Path, services: list[dict[str, Any]], *, execute: b
     return ServiceHealth("qdrant", ServiceStatus.READY, detail)
 
 
+# Subprocess bound per qualification script. The executed Temporal check waits up to 90 s
+# for start-up (OCOR-DEV-REM-0055); its last attempt adds one inspection, the TCP connect
+# and three 20 s CLI calls, then the two private-container inspections.
+QUALIFY_SCRIPT_TIMEOUT_SECONDS = {"temporal": 240}
+DEFAULT_QUALIFY_SCRIPT_TIMEOUT_SECONDS = 60
+
+
 def _run_qualify_script(repository: Path, script: Path, extra_args: list[str]) -> tuple[int, dict[str, Any] | None, str]:
     if not script.is_file():
         return 127, None, f"missing qualification script: {script}"
@@ -316,7 +323,7 @@ def _run_qualify_script(repository: Path, script: Path, extra_args: list[str]) -
         text=True,
         capture_output=True,
         check=False,
-        timeout=60,
+        timeout=QUALIFY_SCRIPT_TIMEOUT_SECONDS.get(script.parent.name, DEFAULT_QUALIFY_SCRIPT_TIMEOUT_SECONDS),
     )
     try:
         payload = json.loads(completed.stdout)

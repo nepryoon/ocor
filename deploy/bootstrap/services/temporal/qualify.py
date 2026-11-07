@@ -33,6 +33,10 @@ SERVER_IMAGE = re.compile(r"^temporalio/server@sha256:[0-9a-f]{64}$")
 ADMIN_IMAGE = re.compile(r"^temporalio/admin-tools@sha256:[0-9a-f]{64}$")
 POSTGRES_IMAGE = re.compile(r"^postgres@sha256:[0-9a-f]{64}$")
 SEMVER = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
+# Start-up tolerance of the executed check (OCOR-DEV-REM-0055, decision request
+# NCP-U08-LANE-TEMPORAL-READINESS option B1): the Compose healthcheck is TCP-only, so
+# the frontend can answer the CLI tens of seconds after the container is healthy.
+STARTUP_WAIT_SECONDS = 90.0
 
 
 class QualificationError(RuntimeError):
@@ -244,8 +248,16 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
     entries = validate_lock(json.loads(args.lock.read_text(encoding="utf-8")))
     server_image = entries["server"]["image"]
     version = entries["server"]["version"]
+    protocol: dict[str, Any] | None = None
+    if args.execute:
+        # Same required outcome as the single probe, reached within the bounded wait.
+        ready = wait_ready(args.server_container, args.admin_container, server_image, version,
+                           timeout=STARTUP_WAIT_SECONDS)
+        server_runtime, protocol = ready["runtime"], ready["protocol"]
+    else:
+        server_runtime = validate_server_inspection(inspect_container(args.server_container), server_image)
     runtime = {
-        "server": validate_server_inspection(inspect_container(args.server_container), server_image),
+        "server": server_runtime,
         "admin_tools": validate_private_inspection(
             inspect_container(args.admin_container), "Temporal admin-tools", entries["admin"]["image"]
         ),
@@ -265,7 +277,7 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
             "license": entries["server"]["license"],
         },
         "runtime": runtime,
-        "protocol": probe(args.admin_container, version),
+        "protocol": protocol if protocol is not None else probe(args.admin_container, version),
     }
     if args.fault_recovery:
         result["fault_recovery"] = fault_and_recover(
