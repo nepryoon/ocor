@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import calendar
+import datetime
 import hashlib
 import heapq
 import io
@@ -522,8 +523,14 @@ def bootstrap_summary(text: str) -> dict[str, Any]:
         raise CampaignError(f"bootstrap result is not valid JSON: {exc}") from exc
     if text[end:].strip() or not isinstance(result, dict):
         raise CampaignError("bootstrap result is not a single trailing JSON object")
-    if result.get("status") != "PASS":
-        return {"status": str(result.get("status")), "error": str(result.get("error", ""))[:600]}
+    status, error = result.get("status"), result.get("error", "")
+    if not isinstance(status, str) or not isinstance(error, str):
+        raise CampaignError("bootstrap result status or error is not text")
+    if status != "PASS":
+        return {"status": status, "error": error[:600]}
+    seconds = result.get("provisioning_seconds")
+    if type(seconds) not in (int, float):
+        raise CampaignError("bootstrap result has no numeric provisioning time")
     typed = result.get("services")
     entries = typed.get("services") if isinstance(typed, dict) else None
     if not isinstance(entries, list) or not entries:
@@ -535,7 +542,7 @@ def bootstrap_summary(text: str) -> dict[str, Any]:
         if entry["service"] in services:
             raise CampaignError(f"bootstrap result lists {entry['service']} twice")
         services[entry["service"]] = entry["status"]
-    return {"status": "PASS", "provisioning_seconds": result.get("provisioning_seconds"), "services": services}
+    return {"status": "PASS", "provisioning_seconds": seconds, "services": services}
 
 
 def container_started_epoch(text: str) -> float:
@@ -543,7 +550,12 @@ def container_started_epoch(text: str) -> float:
     match = CONTAINER_STARTED_AT.fullmatch(text)
     if match is None or int(match.group(1)) < 2000:
         raise CampaignError(f"unexpected container start time: {text[:60]!r}")
-    whole = calendar.timegm(tuple(int(match.group(index)) for index in range(1, 7)) + (0, 0, 0))
+    fields = tuple(int(match.group(index)) for index in range(1, 7))
+    try:
+        datetime.datetime(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5])
+    except ValueError as exc:
+        raise CampaignError(f"impossible container start time: {text[:60]!r}") from exc
+    whole = calendar.timegm(fields + (0, 0, 0))
     return whole + (int(match.group(7).ljust(9, "0")) / 1e9 if match.group(7) else 0.0)
 
 
@@ -598,15 +610,20 @@ def bootstrap_lanes(lanes: list[Lane], paths: dict[int, str], runner: Runner, la
         except (CampaignError, OSError, ValueError) as exc:
             observations[lane.index] = {"serving": False, "seconds_from_container_start": None, "error": str(exc)}
 
-    for lane in lanes:
-        began[lane.index] = monotonic()
-        processes[lane.index] = launcher(sandbox_exec_argv(lane, paths[lane.index], lane_bootstrap_command(lane), {}),
-                                         lane.output / "lifecycle_bootstrap.log")
-    watchers = [threading.Thread(target=watch, args=(lane,), daemon=True) for lane in lanes]
-    for thread in watchers:
-        thread.start()
-    start, killed = monotonic(), []
+    watchers: list[threading.Thread] = []
+    killed: list[int] = []
     try:
+        for lane in lanes:
+            began[lane.index] = monotonic()
+            try:
+                processes[lane.index] = launcher(sandbox_exec_argv(lane, paths[lane.index], lane_bootstrap_command(lane), {}),
+                                                 lane.output / "lifecycle_bootstrap.log")
+            except OSError as exc:
+                raise CampaignError(f"lane {lane.index} bootstrap could not start: {exc}") from exc
+        watchers = [threading.Thread(target=watch, args=(lane,), daemon=True) for lane in lanes]
+        for thread in watchers:
+            thread.start()
+        start = monotonic()
         while len(returncodes) < len(processes):
             for index, process in processes.items():
                 if index not in returncodes and (code := process.poll()) is not None:
@@ -622,6 +639,11 @@ def bootstrap_lanes(lanes: list[Lane], paths: dict[int, str], runner: Runner, la
                 break
             sleep(SUPERVISE_POLL_SECONDS)
     finally:
+        # Every bootstrap still running on any exit path is stopped before the lanes are torn down.
+        for index, process in processes.items():
+            if index not in returncodes:
+                process.kill()
+                process.wait(timeout=60)
         for event in events.values():
             event.set()
         for thread in watchers:
