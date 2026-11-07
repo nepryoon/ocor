@@ -34,6 +34,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 QUALIFY_PATH = ROOT / "deploy/bootstrap/services/temporal/qualify.py"
 LOCK_PATH = ROOT / "infra/services.lock.json"
+sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _load(name: str, path: Path) -> Any:
@@ -63,6 +64,8 @@ EXPECTED_PROTOCOL = {
 EXPECTED_SERVER_RUNTIME = {"health": "healthy", "ports": {"7233/tcp": str(qualify.HOST_PORT)}}
 # Lane reproduction 4 of the decision request: the frontend answered the CLI ~57 s after start,
 # the single typed probe ran at ~30-35 s.
+# The bounded wait decided in option B1 (wait_ready of qualify.py).
+WAIT = 90.0
 FRONTEND_READY_AT = 57.0
 FIRST_PROBE_AT = 32.0
 
@@ -176,7 +179,7 @@ def test_executed_typed_probe_waits_for_the_frontend_started_late(install):
     probes = fake.probes()
     assert probes[0] == FIRST_PROBE_AT and len(probes) >= 2
     assert probes[-1] >= FRONTEND_READY_AT
-    assert fake.now - FIRST_PROBE_AT <= qualify.STARTUP_WAIT_SECONDS
+    assert fake.now - FIRST_PROBE_AT <= WAIT
 
 
 def test_executed_typed_probe_tolerates_the_absent_namespace_start_up_symptom(install):
@@ -267,15 +270,15 @@ def test_executed_typed_probe_fails_closed_after_the_bounded_wait(install, case)
     with pytest.raises(qualify.QualificationError) as raised:
         _execute("--execute")
     message = str(raised.value)
-    assert message.startswith(f"Temporal did not recover within {qualify.STARTUP_WAIT_SECONDS:.0f}s: ")
+    assert message.startswith(f"Temporal did not recover within {WAIT:.0f}s: ")
     assert reason in message
     elapsed = fake.now - FIRST_PROBE_AT
-    assert qualify.STARTUP_WAIT_SECONDS <= elapsed <= qualify.STARTUP_WAIT_SECONDS + 25.0 + 5.0
+    assert WAIT <= elapsed <= WAIT + 25.0 + 5.0
     assert len([call for call in fake.calls if call[1] == f"inspect {qualify.SERVER_CONTAINER}"]) >= 2
 
 
 def test_bounded_wait_is_the_decided_ninety_seconds():
-    assert qualify.STARTUP_WAIT_SECONDS == 90.0
+    assert qualify.STARTUP_WAIT_SECONDS == WAIT
 
 
 @pytest.mark.parametrize("container", [qualify.ADMIN_CONTAINER, qualify.DATABASE_CONTAINER])
@@ -338,7 +341,7 @@ def test_typed_check_bounds_the_temporal_subprocess_beyond_the_wait(monkeypatch)
     monkeypatch.setattr(verify.subprocess, "run", fake_run)
     for service in ("temporal", "typedb", "openbao", "spire", "seaweedfs"):
         verify._run_qualify_script(ROOT, ROOT / "deploy/bootstrap/services" / service / "qualify.py", ["--execute"])
-    assert seen.pop("temporal") > qualify.STARTUP_WAIT_SECONDS + 3 * 20.0 + 20.0
+    assert seen.pop("temporal") > WAIT + 3 * 20.0 + 20.0
     assert seen == {"typedb": 60, "openbao": 60, "spire": 60, "seaweedfs": 60}
 
 
