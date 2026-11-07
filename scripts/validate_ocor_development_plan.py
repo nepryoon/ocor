@@ -1371,6 +1371,23 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-REM-0038.requalified-rem0055.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0055.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0055.log",
+        # OCOR-DEV-REM-0056 (LOCAL-SUITE-FOUR-LANES, 2026-11-07): the local full suite in four lanes with
+        # three-level memory admission; the unit record, the decided NCR-GOVERNANCE-002 decision request that
+        # enters main with it (byte-identical with its DECIDED_BY_PO disposition, MATRIX-ERRATUM-NCP-U14 point 4),
+        # the regression-only requalification of REM-0037 (sealed record with the orchestrator, its guard and
+        # lane_weights.json among its inputs) and those of 0005, 0050 and 0082 forced by this allowlist.
+        "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md",
+        "reports/assurance/OCOR-DEV-REM-0056-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0056-RCCAD/OCOR-DEV-REM-0056.json",
+        "reports/assurance/OCOR-DEV-REM-0056-RCCAD/OCOR-DEV-REM-0056.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0056.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0056.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0056.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0056.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0056.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0056.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0056.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0056.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
