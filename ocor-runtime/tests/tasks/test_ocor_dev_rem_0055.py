@@ -418,3 +418,82 @@ def test_live_bounded_wait_fails_closed_when_the_server_never_answers(monkeypatc
         with pytest.raises(qualify.QualificationError) as raised:
             _execute("--execute")
     assert str(raised.value) == "Temporal did not recover within 6s: Temporal server container is not running"
+
+
+# --- input robustness of the parsing paths of qualify.py (self-check before the preventive review) --
+
+
+def _lock_with(**changes: Any) -> Any:
+    lock = json.loads(json.dumps(LOCK))
+    for key, value in changes.items():
+        lock[key] = value
+    return lock
+
+
+MALFORMED_LOCKS: dict[str, Any] = {
+    "lock-not-object": [],
+    "services-not-list": _lock_with(services={"id": "temporal"}),
+    "service-entry-not-object": _lock_with(services=["temporal", *LOCK["services"]]),
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_LOCKS))
+def test_malformed_lock_is_a_typed_refusal(case):
+    with pytest.raises(qualify.QualificationError, match="service lock"):
+        qualify.validate_lock(MALFORMED_LOCKS[case])
+
+
+def _server(**overrides: Any) -> dict[str, Any]:
+    inspection = _inspection(SERVER_IMAGE, ports=SERVER_PORTS)
+    inspection.update(overrides)
+    return inspection
+
+
+MALFORMED_INSPECTIONS: dict[str, Any] = {
+    "inspection-not-object": ["Config"],
+    "config-not-object": _server(Config="temporalio/server"),
+    "state-not-object": _server(State=["Running"]),
+    "health-not-object": _server(State={"Running": True, "Paused": False, "Health": "healthy"}),
+    "network-not-object": _server(NetworkSettings="7233/tcp"),
+    "ports-not-object": _server(NetworkSettings={"Ports": ["7233/tcp"]}),
+    "port-bindings-not-list": _server(NetworkSettings={"Ports": {"7233/tcp": {"HostIp": "127.0.0.1", "HostPort": "17233"}}}),
+    "binding-not-object": _server(NetworkSettings={"Ports": {"7233/tcp": ["127.0.0.1:17233"]}}),
+    "host-port-not-text": _server(NetworkSettings={"Ports": {"7233/tcp": [{"HostIp": "127.0.0.1", "HostPort": 17233}]}}),
+}
+
+
+@pytest.mark.parametrize("case", sorted(MALFORMED_INSPECTIONS))
+def test_malformed_server_inspection_is_a_typed_refusal(case):
+    with pytest.raises(qualify.QualificationError):
+        qualify.validate_server_inspection(MALFORMED_INSPECTIONS[case], SERVER_IMAGE)
+
+
+@pytest.mark.parametrize("case", ["inspection-not-object", "config-not-object", "state-not-object", "health-not-object",
+                                  "network-not-object", "ports-not-object"])
+def test_malformed_private_inspection_is_a_typed_refusal(case):
+    inspection = MALFORMED_INSPECTIONS[case]
+    if isinstance(inspection, dict) and isinstance(inspection.get("Config"), dict):
+        inspection = {**inspection, "Config": {"Image": ADMIN_IMAGE}}
+    with pytest.raises(qualify.QualificationError):
+        qualify.validate_private_inspection(inspection, "Temporal admin-tools", ADMIN_IMAGE)
+
+
+def test_well_formed_inspections_are_still_accepted():
+    assert qualify.validate_server_inspection(_server(), SERVER_IMAGE) == EXPECTED_SERVER_RUNTIME
+    assert qualify.validate_private_inspection(_inspection(ADMIN_IMAGE), "Temporal admin-tools", ADMIN_IMAGE) == {
+        "health": "healthy", "ports": {}}
+    assert qualify.validate_private_inspection(_inspection(ADMIN_IMAGE, ports={"7233/tcp": None}), "Temporal admin-tools",
+                                               ADMIN_IMAGE) == {"health": "healthy", "ports": {}}
+
+
+def test_malformed_server_inspection_during_start_up_is_waited_for_then_refused_typed(install):
+    fake = install(FakeTemporal(ready_at=0.0, server=lambda now: _server(State="starting")))
+    with pytest.raises(qualify.QualificationError) as raised:
+        _execute("--execute")
+    assert str(raised.value).startswith(f"Temporal did not recover within {WAIT:.0f}s: ")
+    assert fake.now - FIRST_PROBE_AT >= WAIT
+
+
+def test_malformed_server_inspection_recovers_when_well_formed_within_the_wait(install):
+    install(FakeTemporal(ready_at=0.0, server=lambda now: _server(State="starting") if now < 50.0 else _server()))
+    assert _execute("--execute")["protocol"] == EXPECTED_PROTOCOL
