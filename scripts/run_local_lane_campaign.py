@@ -31,6 +31,7 @@ import hashlib
 import heapq
 import io
 import json
+import math
 import os
 import re
 import shlex
@@ -46,7 +47,7 @@ from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol, TypeGuard
 
 import bootstrap_ci_environment as bootstrap_ci
 import observe_kind_teardown as kind_observer
@@ -91,6 +92,51 @@ PROVISION_TIMEOUT_SECONDS = 1200
 CGROUP_DELEGATION_ATTEMPTS = 50
 CGROUP_DELEGATION_PAUSE_SECONDS = 0.2
 REQUIRED_CONTROLLERS = frozenset({"cpu", "cpuset", "io", "memory", "pids"})
+# Every file and process output the orchestrator parses is read without
+# conversion: strict UTF-8, ASCII digits only, finite JSON numbers, no bool
+# where a number is due; any other input is the typed CampaignError.
+MEMINFO_FIELDS = ("MemTotal", "MemAvailable")
+ASCII_DIGITS = re.compile(r"[0-9]+", re.ASCII)
+JUNIT_TIME = re.compile(r"[0-9]+(?:\.[0-9]+)?", re.ASCII)
+TOOL_ID = re.compile(r"[a-z0-9][a-z0-9_.-]*", re.ASCII)
+SHA256_HEX = re.compile(r"[0-9a-f]{64}", re.ASCII)
+PROCESS_STOP_SECONDS = 60
+
+
+def _refuse_constant(name: str) -> Any:
+    raise ValueError(f"non-finite JSON number {name}")
+
+
+def read_utf8(path: Path, what: str) -> str:
+    """Strict UTF-8 text of a file, or the typed refusal naming it."""
+    try:
+        return path.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CampaignError(f"{what} unreadable or not UTF-8: {path}: {exc}") from exc
+
+
+def load_json_document(path: Path, what: str) -> Any:
+    """A JSON document without NaN or Infinity, or the typed refusal naming it."""
+    text = read_utf8(path, what)
+    try:
+        return json.loads(text, parse_constant=_refuse_constant)
+    except ValueError as exc:
+        raise CampaignError(f"{what} is not valid JSON: {path}: {exc}") from exc
+
+
+def is_finite_number(value: object) -> TypeGuard[int | float]:
+    """An int or float that is finite; bool is not a number here."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def stop_process(process: Any) -> str | None:
+    """Kill and reap a process; the reason it could not be stopped, else None."""
+    try:
+        process.kill()
+        process.wait(timeout=PROCESS_STOP_SECONDS)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return str(exc) or type(exc).__name__
+    return None
 
 
 def weight_key(nodeid: str) -> str:
@@ -105,10 +151,17 @@ def case_weight(nodeid: str, weights: dict[str, float]) -> float:
 
 def derive_weights(junit: Path) -> dict[str, Any]:
     """Reproducible weights file content from a PASS serial JUnit."""
-    root = ET.parse(junit).getroot()
+    try:
+        root = ET.parse(junit).getroot()
+    except (OSError, ET.ParseError) as exc:
+        raise CampaignError(f"weights source JUnit unreadable: {junit}: {exc}") from exc
     cases = list(root.iter("testcase"))
-    weights = {f"{case.get('classname', '')}::{case.get('name', '')}": round(float(case.get("time", "0")), 3)
-               for case in cases}
+    weights: dict[str, float] = {}
+    for case in cases:
+        seconds = case.get("time", "0")
+        if not JUNIT_TIME.fullmatch(seconds):
+            raise CampaignError(f"JUnit case time is not a finite ASCII number: {seconds[:40]!r}")
+        weights[f"{case.get('classname', '')}::{case.get('name', '')}"] = round(float(seconds), 3)
     return {
         "default_case_seconds": DEFAULT_CASE_SECONDS,
         "minimum_case_seconds": MINIMUM_MEASURED_SECONDS,
@@ -118,8 +171,12 @@ def derive_weights(junit: Path) -> dict[str, Any]:
 
 
 def load_weights(path: Path = WEIGHTS_PATH) -> dict[str, float]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return {key: float(value) for key, value in data["weights"].items()}
+    data = load_json_document(path, "lane weights")
+    weights = data.get("weights") if isinstance(data, dict) else None
+    if (not isinstance(weights, dict) or not weights
+            or not all(isinstance(key, str) and is_finite_number(value) and value >= 0 for key, value in weights.items())):
+        raise CampaignError(f"lane weights file is malformed: {path}")
+    return {key: float(value) for key, value in weights.items()}
 
 
 def require_admitted_lane_count(lanes: object) -> int:
@@ -188,15 +245,23 @@ def check_exact_union(collected: list[str], junits: list[Path], *, lanes: int = 
 def memory_admission(meminfo: str) -> dict[str, Any]:
     """The highest level whose threshold a readable MemAvailable reaches: FOUR_LANE, TWO_LANE, else SERIAL."""
     values: dict[str, int] = {}
+    malformed: set[str] = set()
     for line in meminfo.splitlines():
         key, _, rest = line.partition(":")
-        fields = rest.split()
-        if fields and fields[0].isdigit():
-            values[key.strip()] = int(fields[0])
+        name, fields = key.strip(), rest.split()
+        if name not in MEMINFO_FIELDS:
+            continue
+        if name in values or len(fields) != 2 or fields[1] != "kB" or not ASCII_DIGITS.fullmatch(fields[0]):
+            malformed.add(name)
+            continue
+        values[name] = int(fields[0])
     available = values.get("MemAvailable")
     decision = {"mem_total_kib": values.get("MemTotal"), "mem_available_kib": available,
                 "threshold_mib": TWO_LANE_START_THRESHOLD_MIB, "guard_mib": MEMORY_GUARD_MIB,
                 "thresholds_mib": {mode: threshold for mode, _, threshold in ADMISSION_LEVELS}}
+    if malformed:
+        return {**decision, "mode": "SERIAL", "lanes": 1,
+                "reason": f"{', '.join(sorted(malformed))} not a single ASCII kB value"}
     if available is None or values.get("MemTotal") is None:
         return {**decision, "mode": "SERIAL", "lanes": 1, "reason": "MemTotal or MemAvailable unreadable"}
     for position, (mode, lanes, threshold) in enumerate(ADMISSION_LEVELS):
@@ -206,6 +271,14 @@ def memory_admission(meminfo: str) -> dict[str, Any]:
                 reason += f" and below the {ADMISSION_LEVELS[position - 1][0].lower().replace('_', '-')} threshold"
             return {**decision, "mode": mode, "lanes": lanes, "threshold_mib": threshold, "reason": reason}
     return {**decision, "mode": "SERIAL", "lanes": 1, "reason": "MemAvailable below the measured threshold"}
+
+
+def read_memory_admission(path: Path) -> dict[str, Any]:
+    """Admission from a meminfo file; unreadable or non-UTF-8 content is the recorded serial fallback."""
+    try:
+        return memory_admission(read_utf8(path, "meminfo"))
+    except CampaignError as exc:
+        return {"mode": "SERIAL", "lanes": 1, "reason": f"meminfo unreadable: {exc}"}
 
 
 def check_campaign_deadline(elapsed: float) -> bool:
@@ -367,8 +440,14 @@ def ensure_root_image(runner: Runner, links: dict[str, str]) -> None:
 
 def verify_lane_tools(repository: Path) -> None:
     """Copied qualification tools must match infra/qualification_tools.lock.json byte for byte."""
-    lock = json.loads((repository / "infra/qualification_tools.lock.json").read_text(encoding="utf-8"))
-    for tool in lock["tools"]:
+    lock = load_json_document(repository / "infra/qualification_tools.lock.json", "qualification tools lock")
+    tools = lock.get("tools") if isinstance(lock, dict) else None
+    if (not isinstance(tools, list) or not tools
+            or not all(isinstance(tool, dict) and isinstance(tool.get("id"), str) and TOOL_ID.fullmatch(tool["id"])
+                       and isinstance(tool.get("binary_sha256"), str) and SHA256_HEX.fullmatch(tool["binary_sha256"])
+                       for tool in tools)):
+        raise CampaignError("qualification tools lock is malformed")
+    for tool in tools:
         binary = repository / ".ocor/tools/bin" / tool["id"]
         try:
             digest = hashlib.sha256(binary.read_bytes()).hexdigest()
@@ -507,7 +586,7 @@ TEMPORAL_ADMIN_CONTAINER = "ocor-bootstrap-temporal-admin-tools-1"
 TEMPORAL_FRONTEND_ADDRESS = "temporal:7233"
 TEMPORAL_POLL_SECONDS = 1.0
 TEMPORAL_PROBE_TIMEOUT_SECONDS = 15
-CONTAINER_STARTED_AT = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z")
+CONTAINER_STARTED_AT = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?Z", re.ASCII)
 
 
 def bootstrap_summary(text: str) -> dict[str, Any]:
@@ -518,7 +597,7 @@ def bootstrap_summary(text: str) -> dict[str, Any]:
         raise CampaignError("bootstrap output has no JSON result")
     offset = sum(len(line) for line in lines[:starts[-1]])
     try:
-        result, end = json.JSONDecoder().raw_decode(text, offset)
+        result, end = json.JSONDecoder(parse_constant=_refuse_constant).raw_decode(text, offset)
     except ValueError as exc:
         raise CampaignError(f"bootstrap result is not valid JSON: {exc}") from exc
     if text[end:].strip() or not isinstance(result, dict):
@@ -529,19 +608,26 @@ def bootstrap_summary(text: str) -> dict[str, Any]:
     if status != "PASS":
         return {"status": status, "error": error[:600]}
     seconds = result.get("provisioning_seconds")
-    if type(seconds) not in (int, float):
-        raise CampaignError("bootstrap result has no numeric provisioning time")
+    if not is_finite_number(seconds) or seconds < 0:
+        raise CampaignError("bootstrap result has no finite non-negative provisioning time")
     typed = result.get("services")
-    entries = typed.get("services") if isinstance(typed, dict) else None
+    if not isinstance(typed, dict):
+        raise CampaignError("bootstrap result has no typed service result")
+    entries = typed.get("services")
     if not isinstance(entries, list) or not entries:
         raise CampaignError("bootstrap result has no typed service list")
+    if typed.get("status") not in ("PASS", "FAIL"):
+        raise CampaignError(f"bootstrap result has no typed service status: {str(typed.get('status'))[:40]!r}")
     services: dict[str, str] = {}
     for entry in entries:
-        if not isinstance(entry, dict) or not isinstance(entry.get("service"), str) or not isinstance(entry.get("status"), str):
+        if (not isinstance(entry, dict) or not isinstance(entry.get("service"), str) or not entry["service"]
+                or not isinstance(entry.get("status"), str) or not entry["status"]):
             raise CampaignError("bootstrap result has a malformed typed service entry")
         if entry["service"] in services:
             raise CampaignError(f"bootstrap result lists {entry['service']} twice")
         services[entry["service"]] = entry["status"]
+    if (typed["status"] == "PASS") != all(status == "READY" for status in services.values()):
+        raise CampaignError(f"bootstrap result typed status {typed['status']} contradicts its services")
     return {"status": "PASS", "provisioning_seconds": seconds, "services": services}
 
 
@@ -568,22 +654,27 @@ def observe_temporal_serving(lane: Lane, path: str, runner: Runner, *, finished:
                              wall: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
                              monotonic: Callable[[], float] = time.monotonic) -> dict[str, Any]:
     """Poll the lane's Temporal until it answers SERVING; report the delay since its container started."""
-    start, polls = monotonic(), 0
+    start, polls, probe_errors, last_error = monotonic(), 0, 0, ""
     while True:
         polls += 1
         done = finished()
-        reply = runner(temporal_health_argv(lane, path), check=False, timeout=TEMPORAL_PROBE_TIMEOUT_SECONDS)
-        if reply.returncode == 0 and reply.stdout.strip() == "SERVING":
+        try:
+            reply: CommandResult | None = runner(temporal_health_argv(lane, path), check=False, timeout=TEMPORAL_PROBE_TIMEOUT_SECONDS)
+        except CampaignError as exc:
+            # One probe that cannot run or times out under load is a poll without SERVING, not the end of the watch.
+            reply, probe_errors, last_error = None, probe_errors + 1, str(exc)
+        if reply is not None and reply.returncode == 0 and reply.stdout.strip() == "SERVING":
             observed = wall()
             break
         if done or monotonic() - start >= LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS:
-            return {"serving": False, "seconds_from_container_start": None, "polls": polls, "poll_seconds": TEMPORAL_POLL_SECONDS}
+            return {"serving": False, "seconds_from_container_start": None, "polls": polls, "poll_seconds": TEMPORAL_POLL_SECONDS,
+                    "probe_errors": probe_errors, **({"last_probe_error": last_error[:600]} if last_error else {})}
         sleep(TEMPORAL_POLL_SECONDS)
     started_text = runner(sandbox_exec_argv(lane, path, ["docker", "inspect", "-f", "{{.State.StartedAt}}", TEMPORAL_SERVER_CONTAINER], {}),
                           timeout=TEMPORAL_PROBE_TIMEOUT_SECONDS).stdout.strip()
     return {"serving": True, "container_started_at": started_text, "observed_at_epoch": observed,
             "seconds_from_container_start": round(observed - container_started_epoch(started_text), 3),
-            "polls": polls, "poll_seconds": TEMPORAL_POLL_SECONDS}
+            "polls": polls, "poll_seconds": TEMPORAL_POLL_SECONDS, "probe_errors": probe_errors}
 
 
 def lane_bootstrap_command(lane: Lane) -> list[str]:
@@ -612,6 +703,8 @@ def bootstrap_lanes(lanes: list[Lane], paths: dict[int, str], runner: Runner, la
 
     watchers: list[threading.Thread] = []
     killed: list[int] = []
+    unstopped: dict[int, str] = {}
+    failure: CampaignError | None = None
     try:
         for lane in lanes:
             began[lane.index] = monotonic()
@@ -632,22 +725,28 @@ def bootstrap_lanes(lanes: list[Lane], paths: dict[int, str], runner: Runner, la
             if len(returncodes) < len(processes) and monotonic() - start >= LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS:
                 for index, process in processes.items():
                     if index not in returncodes:
-                        process.kill()
-                        process.wait(timeout=60)
+                        if (problem := stop_process(process)) is not None:
+                            unstopped[index] = problem
                         returncodes[index], ended[index] = None, monotonic()
                         killed.append(index)
                 break
             sleep(SUPERVISE_POLL_SECONDS)
+    except (CampaignError, OSError, subprocess.SubprocessError) as exc:
+        failure = exc if isinstance(exc, CampaignError) else CampaignError(str(exc) or type(exc).__name__)
     finally:
-        # Every bootstrap still running on any exit path is stopped before the lanes are torn down.
+        # Every bootstrap still running on any exit path is stopped, and every watcher released and
+        # joined, before the lanes are torn down; a process that does not stop is reported, never skipped.
         for index, process in processes.items():
-            if index not in returncodes:
-                process.kill()
-                process.wait(timeout=60)
+            if index not in returncodes and (problem := stop_process(process)) is not None:
+                unstopped[index] = problem
         for event in events.values():
             event.set()
         for thread in watchers:
             thread.join()
+    problems = ([str(failure)] if failure is not None else []) + [
+        f"lane {index} bootstrap did not stop: {problem}" for index, problem in sorted(unstopped.items())]
+    if problems:
+        raise CampaignError("; ".join(problems)) from failure
     return {index: {"exit_code": returncodes[index], "killed_after_bound": index in killed,
                     "seconds": round(ended[index] - began[index], 3), "temporal": observations.get(index, {"serving": False})}
             for index in processes}
@@ -657,11 +756,10 @@ def judge_lane_bootstrap(lane: Lane, outcome: dict[str, Any]) -> tuple[dict[str,
     """Exit code, final typed result with every service READY, and Temporal seen SERVING."""
     errors: list[str] = []
     log = lane.output / "lifecycle_bootstrap.log"
-    text = log.read_text(errors="replace") if log.is_file() else ""
     record: dict[str, Any] = {"exit_code": outcome["exit_code"], "seconds": float(outcome["seconds"]),
                               "killed_after_bound": outcome["killed_after_bound"]}
     try:
-        summary = bootstrap_summary(text)
+        summary = bootstrap_summary(read_utf8(log, f"lane {lane.index} bootstrap log") if log.is_file() else "")
     except CampaignError as exc:
         summary = {"status": "FAIL", "error": str(exc)}
     record.update(summary)
@@ -673,6 +771,8 @@ def judge_lane_bootstrap(lane: Lane, outcome: dict[str, Any]) -> tuple[dict[str,
         errors.append(f"lane {lane.index} services not READY: {', '.join(not_ready)}")
     if not outcome["temporal"].get("serving"):
         errors.append(f"lane {lane.index} Temporal was not observed SERVING: {outcome['temporal'].get('error', 'not before the bootstrap ended')}")
+    if errors:
+        record["status"] = "FAIL"
     return record, errors
 
 
@@ -685,10 +785,7 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     source = (source or Path(__file__).resolve().parents[1]).resolve()
     launch = launcher or launch_lane
     report: dict[str, Any] = {"head": head, "lanes_requested": lanes, "lanes": [], "teardown": [], "status": "FAIL", "staggered": False}
-    try:
-        report["memory"] = memory_admission(meminfo_path.read_text())
-    except OSError as exc:
-        report["memory"] = {"mode": "SERIAL", "lanes": 1, "reason": f"meminfo unreadable: {exc}"}
+    report["memory"] = read_memory_admission(meminfo_path)
     try:
         require_admitted_lane_count(lanes)
         if report["memory"]["lanes"] < lanes:
@@ -725,7 +822,7 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
         if errors:
             raise CampaignError("; ".join(errors))
         report["status"] = "PASS"
-    except (CampaignError, OSError, ValueError, KeyError) as exc:
+    except (CampaignError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
         report["error"] = str(exc)
     finally:
         for lane in lane_set:
@@ -756,15 +853,20 @@ LANE_BOOTSTRAP = (["scripts/bootstrap_ci_environment.py", "--teardown", "--execu
                   ["scripts/bootstrap_ci_environment.py", "--execute", "--timeout", "600"])
 
 
+LANE_SPEC_KEYS = frozenset({"campaign_start", "head", "lane", "selection", "stop_file"})
+
+
 def load_lane_spec(path: Path) -> dict[str, Any]:
-    spec = json.loads(path.read_text(encoding="utf-8"))
-    selection = spec.get("selection")
-    if (not isinstance(spec.get("head"), str) or not re.fullmatch(r"[0-9a-f]{40}", spec["head"])
-            or type(spec.get("lane")) is not int or spec["lane"] not in range(1, LANE_COUNT + 1)
-            or not isinstance(selection, list) or not selection or len(selection) != len(set(selection))
-            or not all(isinstance(node, str) and "::" in node for node in selection)
-            or not isinstance(spec.get("campaign_start"), (int, float)) or spec["campaign_start"] <= 0
-            or not isinstance(spec.get("stop_file"), str) or not spec["stop_file"]):
+    spec = load_json_document(path, "lane spec")
+    if not isinstance(spec, dict) or set(spec) != LANE_SPEC_KEYS:
+        raise CampaignError(f"incomplete or ambiguous lane spec: {path}")
+    selection = spec["selection"]
+    if (not isinstance(spec["head"], str) or not re.fullmatch(r"[0-9a-f]{40}", spec["head"])
+            or type(spec["lane"]) is not int or spec["lane"] not in range(1, LANE_COUNT + 1)
+            or not isinstance(selection, list) or not selection
+            or not all(isinstance(node, str) and "::" in node for node in selection) or len(selection) != len(set(selection))
+            or not is_finite_number(spec["campaign_start"]) or spec["campaign_start"] <= 0
+            or not isinstance(spec["stop_file"], str) or not spec["stop_file"]):
         raise CampaignError(f"incomplete or ambiguous lane spec: {path}")
     return dict(spec)
 
@@ -772,7 +874,7 @@ def load_lane_spec(path: Path) -> dict[str, Any]:
 def lane_service_environment(repository: Path) -> dict[str, str]:
     """The two variables the versioned CI exports after provisioning, for the lane's own stack."""
     env_file = (repository / ".ocor/bootstrap.env").resolve()
-    values = dict(line.split("=", 1) for line in env_file.read_text(encoding="utf-8").splitlines() if "=" in line)
+    values = dict(line.split("=", 1) for line in read_utf8(env_file, "lane bootstrap env").splitlines() if "=" in line)
     if not values.get("OCOR_LOCAL_POSTGRES_PASSWORD"):
         raise CampaignError("lane bootstrap env has no generated PostgreSQL password")
     return {"OCOR_BOOTSTRAP_ENV": str(env_file),
@@ -799,7 +901,11 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
     def clock() -> bool:
         stop_file = Path(spec["stop_file"])
         if stop_file.exists():
-            raise CampaignError(f"lane {spec['lane']} stopped by the orchestrator: {stop_file.read_text(errors='replace')[:200].strip()}")
+            try:
+                reason = read_utf8(stop_file, "stop request")[:200].strip()
+            except CampaignError:
+                reason = "stop request unreadable or not UTF-8"
+            raise CampaignError(f"lane {spec['lane']} stopped by the orchestrator: {reason}")
         return check_campaign_deadline(time.time() - spec["campaign_start"])
 
     try:
@@ -989,10 +1095,14 @@ def supervise_lanes(processes: dict[int, LaneProcess], lanes: list[Lane], starte
                 stop_reason = str(exc)
                 request_stop(stop_reason)
         if stop_at is not None and clock() - stop_at >= STOP_GRACE_SECONDS:
+            unstopped: dict[int, str] = {}
             for index in running:
-                processes[index].kill()
-                processes[index].wait(timeout=60)
+                if (problem := stop_process(processes[index])) is not None:
+                    unstopped[index] = problem
                 killed.append(index)
+            if unstopped:
+                raise CampaignError("; ".join(f"lane {index} did not stop after kill: {problem}"
+                                              for index, problem in sorted(unstopped.items())))
         sleep(SUPERVISE_POLL_SECONDS)
     return {"returncodes": returncodes, "first_failure": first_failure, "stop_reason": stop_reason,
             "killed_after_grace": killed, "po_decision_required": decision}
@@ -1002,18 +1112,20 @@ def read_lane_results(lanes: list[Lane], head: str, parts: list[list[str]]) -> l
     """Every lane result PASS, for this head, this lane and exactly its selection."""
     results = []
     for lane, part in zip(lanes, parts, strict=True):
-        try:
-            result = json.loads((lane.output / "lane_result.json").read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            raise CampaignError(f"lane {lane.index} result absent or invalid") from exc
+        result = load_json_document(lane.output / "lane_result.json", f"lane {lane.index} result")
+        if not isinstance(result, dict):
+            raise CampaignError(f"lane {lane.index} result is not a JSON object")
         if result.get("status") != "PASS":
-            raise CampaignError(f"lane {lane.index} failed: {result.get('error')}")
+            raise CampaignError(f"lane {lane.index} failed: {str(result.get('error'))[:600]}")
         if result.get("candidate_head") != head:
-            raise CampaignError(f"lane {lane.index} ran another head: {result.get('candidate_head')}")
-        if result.get("lane") != lane.index:
-            raise CampaignError(f"lane {lane.index} result names lane {result.get('lane')}")
-        if result.get("selected") != len(part) or result.get("selected_sha256") != campaign.collection_digest(part):
+            raise CampaignError(f"lane {lane.index} ran another head: {str(result.get('candidate_head'))[:60]}")
+        if type(result.get("lane")) is not int or result["lane"] != lane.index:
+            raise CampaignError(f"lane {lane.index} result names lane {str(result.get('lane'))[:20]}")
+        if (type(result.get("selected")) is not int or result["selected"] != len(part)
+                or result.get("selected_sha256") != campaign.collection_digest(part)):
             raise CampaignError(f"lane {lane.index} ran another selection")
+        if type(result.get("po_decision_required")) is not bool:
+            raise CampaignError(f"lane {lane.index} result has no boolean po_decision_required")
         results.append(result)
     return results
 
@@ -1051,7 +1163,7 @@ def power_reading(root: Path = POWER_SUPPLY_ROOT) -> dict[str, Any]:
         for entry in sorted(root.iterdir()):
             supplies[entry.name] = {key: (entry / key).read_text().strip()
                                     for key in ("type", "online", "status") if (entry / key).is_file()}
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         supplies = {}
     mains = [values for values in supplies.values() if values.get("type") == "Mains" and "online" in values]
     source = "NOT_EXECUTED" if not mains else ("MAINS" if any(values["online"] == "1" for values in mains) else "BATTERY")
@@ -1075,10 +1187,7 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
         "required_modules": required_modules, "limit_seconds": FULL_SUITE_LIMIT_SECONDS,
         "threshold_seconds": PO_DECISION_THRESHOLD_SECONDS, "campaign_start": started,
         "power_start": power_reading(power_root), "lanes": [], "teardown": []}
-    try:
-        result["memory"] = memory_admission(meminfo_path.read_text())
-    except OSError as exc:
-        result["memory"] = {"mode": "SERIAL", "lanes": 1, "reason": f"meminfo unreadable: {exc}"}
+    result["memory"] = read_memory_admission(meminfo_path)
     count = result["memory"]["lanes"]
     if result["memory"]["mode"] == "SERIAL" or count not in ADMITTED_LANE_COUNTS:
         result.update(status="SERIAL_FALLBACK", mode="SERIAL", next_action=f"run the serial suite: {SERIAL_COMMAND}",
@@ -1120,7 +1229,12 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
         finally:
             for entry, lane in zip(result["lanes"], lanes, strict=False):
                 if (lane.output / "lane_result.json").is_file():
-                    entry["result"] = json.loads((lane.output / "lane_result.json").read_text(encoding="utf-8"))
+                    # Recorded as found; a corrupted result never masks the typed failure above.
+                    try:
+                        stored = load_json_document(lane.output / "lane_result.json", f"lane {lane.index} result")
+                    except CampaignError as exc:
+                        stored = f"unreadable: {exc}"
+                    entry["result"] = stored if isinstance(stored, (dict, str)) else "unreadable: not a JSON object"
         if result["supervision"]["stop_reason"]:
             raise CampaignError(result["supervision"]["stop_reason"])
         result["union"] = check_exact_union(collected, [lane.output / LANE_JUNIT for lane in lanes], lanes=count)
@@ -1131,7 +1245,7 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
                                           or result["supervision"]["po_decision_required"]
                                           or any(item["po_decision_required"] for item in lane_results))
         result["status"] = "PASS"
-    except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError) as exc:
+    except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError, subprocess.SubprocessError) as exc:
         result["error"] = str(exc)
     finally:
         for lane in lanes:
@@ -1191,13 +1305,18 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["status"] == "PASS" else 1
     if args.derive_weights:
-        print(json.dumps(derive_weights(args.derive_weights), indent=2, sort_keys=True))
+        try:
+            derived = derive_weights(args.derive_weights)
+        except CampaignError as exc:
+            print(json.dumps({"status": "FAIL", "error": str(exc)}))
+            return 1
+        print(json.dumps(derived, indent=2, sort_keys=True))
         return 0
     if args.plan:
         try:
             collected = campaign.collect_nodeids(Path(__file__).resolve().parents[1] / "ocor-runtime", ["tests/"])
             weights = load_weights()
-            memory = memory_admission(Path("/proc/meminfo").read_text())
+            memory = read_memory_admission(Path("/proc/meminfo"))
             estimates = {str(count): partition_estimate(collected, weights, lanes=count) for count in ADMITTED_LANE_COUNTS}
             plan = {"collected": len(collected), "collected_sha256": campaign.collection_digest(collected), "memory": memory,
                     "estimates": estimates, **estimates[str(memory["lanes"] if memory["lanes"] in ADMITTED_LANE_COUNTS else LANE_COUNT)]}

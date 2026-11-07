@@ -2045,7 +2045,7 @@ def test_execute_records_a_lane_that_does_not_stop_and_tears_down_all(host_world
     real = host_world['launcher']
 
     def launcher(argv, log):
-        process = real(argv, log)
+        real(argv, log)
         return WaitTimesOut() if '/lane-1/' in argv[argv.index('--run-lane') + 1] else FakeProcess(1, 0)
     host_world['launcher'] = launcher
     result = execute(host_world)
