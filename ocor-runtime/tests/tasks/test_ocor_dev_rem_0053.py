@@ -1325,7 +1325,7 @@ def test_ncr_c6_008_conforms() -> None:
     assert r3.set_validity_after_last_signature == timedelta(minutes=10)
     r2 = gate.approval_requirement(RiskClass.R2_CONTROLLED)
     assert r2.mutation_admitted and r2.quorum == 1
-    for risk in (RiskClass.R0_INFORMATIONAL, RiskClass.R1_LOW):
+    for risk in (RiskClass.R0_READ, RiskClass.R1_ANALYZE):
         assert not gate.approval_requirement(risk).mutation_admitted
     assert set(inspect.signature(gate.ApprovalGate.assemble).parameters) == {"self", "proposal", "approvals", "approval_set_id"}
 
@@ -1346,10 +1346,10 @@ def test_ncr_c6_008_conforms() -> None:
     assert _gate_reason(lambda: world.approval_set((first,), set_id="urn:ocor:approval-set:one")) == "QUORUM_NOT_MET"
 
 
-@pytest.mark.parametrize("risk", ["R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
+@pytest.mark.parametrize("risk", ["R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
 def test_the_approval_obligation_follows_the_risk_class(risk: str) -> None:
     world = GateWorld(risk=risk)
-    if risk in {"R0_INFORMATIONAL", "R1_LOW"}:
+    if risk in {"R0_READ", "R1_ANALYZE"}:
         assert _gate_reason(lambda: world.approval_set(world.quorum())) == "NO_MUTATION_ADMITTED"
         return
     if risk == "R2_CONTROLLED":
@@ -1441,7 +1441,7 @@ class EngineSuite:
         )
         self.types = {
             risk: self.world.action_type(f"urn:ocor:action-type:rem0053:{risk.lower()}", risk=risk, capability="act:launch")
-            for risk in ("R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT")
+            for risk in ("R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT")
         }
         self.sink = EffectSink()
 
@@ -1491,17 +1491,17 @@ def test_ncr_c6_002_conforms() -> None:
     assert {"contract", "approvals", "decisions"} <= set(inspect.signature(engine_module.GovernedActionEngine).parameters)
 
     # ACT-T07: NOT_REQUIRED only for a gate not required on a non-canonical target.
-    assert gate.gate_disposition(RiskClass.R1_LOW, canonical_target=False) == "NOT_REQUIRED"
-    assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_LOW, canonical_target=True)) == "NO_MUTATION_ADMITTED"
+    assert gate.gate_disposition(RiskClass.R1_ANALYZE, canonical_target=False) == "NOT_REQUIRED"
+    assert _gate_reason(lambda: gate.gate_disposition(RiskClass.R1_ANALYZE, canonical_target=True)) == "NO_MUTATION_ADMITTED"
     assert gate.gate_disposition(RiskClass.R2_CONTROLLED, canonical_target=True) == "REQUIRED"
 
     suite = EngineSuite()
     # A non-risk-bearing ActionType on the canonical target: denied without execution.
-    low = suite.proposal("R1_LOW")
+    low = suite.proposal("R1_ANALYZE")
     assert suite.denial(low, approval=None, decision=None) == ("NO_MUTATION_ADMITTED", "NO_MUTATION_ADMITTED")
     assert suite.untouched()
     # The proposer cannot lower the risk class of its signed ActionType.
-    lowered = suite.proposal("R3_HIGH_IMPACT", risk_class=RiskClass.R1_LOW)
+    lowered = suite.proposal("R3_HIGH_IMPACT", risk_class=RiskClass.R1_ANALYZE)
     assert suite.denial(lowered, approval=None, decision=None) == ("CONTRACT_INVALID", "ACTION_TYPE_MISMATCH")
     # A risk-bearing action without its Approval is denied (NFR-029).
     controlled = suite.proposal("R2_CONTROLLED")
@@ -1630,7 +1630,7 @@ def test_an_action_type_without_its_reliability_fields_is_not_published(field: s
     assert world.catalog.action_type("urn:ocor:action-type:incomplete") is None
 
 
-@pytest.mark.parametrize("risk", ["R0_INFORMATIONAL", "R1_LOW", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
+@pytest.mark.parametrize("risk", ["R0_READ", "R1_ANALYZE", "R2_CONTROLLED", "R3_HIGH_IMPACT"])
 @pytest.mark.parametrize("canonical_target", [True, False])
 def test_the_gate_disposition_follows_the_risk_class_and_the_target(risk: str, canonical_target: bool) -> None:
     gate = _mod("human_gate")
@@ -1688,7 +1688,7 @@ def test_the_engine_denies_at_every_gate_before_any_effect(case: str) -> None:
         proposal = world.proposal(note, action_id=proposal.action_instance_id, proposer=OPERATOR, target=TARGET,
                                   governed_context_digest=suite.context.digest())
     elif case == "r0-on-canonical":
-        proposal = suite.proposal("R0_INFORMATIONAL")
+        proposal = suite.proposal("R0_READ")
     elif case == "authority":
         lease = suite.lease(proposal, decision, capability_id="act:read-only")
     elif case == "approval-missing":
@@ -3025,7 +3025,7 @@ def test_ncr_c6_009_conforms(backends: Any) -> None:
         assert state is not None and state.revision == 1
         assert "_c3.commit(" not in inspect.getsource(promotion.C6MemoryPromotionConsumer)
 
-    for risk in ("R0_INFORMATIONAL", "R1_LOW"):
+    for risk in ("R0_READ", "R1_ANALYZE"):
         with promotion.workflow(backends) as x:
             x.body["risk_class"] = int(_mod("records").RiskClass[risk])
             x.controls.put(x.result.audit_ref, x.body)
@@ -3206,6 +3206,7 @@ COMPOSITION_AUDIT_KEYID = "rem0053-composition-audit"
 OFFICER = "urn:ocor:human:security-duty-officer"
 OWNER = "urn:ocor:human:maritime-domain-owner"
 REQUESTER = "urn:ocor:human:break-glass-requester"
+from c6_safety_fixture import INCIDENT, SAFETY_OFFICER  # noqa: E402
 # FR-008 :59: the record each transition of the canonical path persists, in canonical order.
 CANONICAL_RECORDS = (
     "ActionProposal",
@@ -3247,6 +3248,7 @@ class CompositionSuite:
     def __init__(self) -> None:
         import os
 
+        import c6_safety_fixture as safety_fixture
         import test_ocor_dev_rem_0050 as governed_path
         from c6_action_fixture import DOMAIN as FIXTURE_DOMAIN
         from c6_action_fixture import NATIONAL as FIXTURE_NATIONAL
@@ -3280,6 +3282,7 @@ class CompositionSuite:
                 (OFFICER, "SECURITY_DUTY_OFFICER"),
                 (OWNER, "DOMAIN_OWNER:maritime"),
                 (REQUESTER, "OPERATOR"),
+                (SAFETY_OFFICER, "SAFETY_OFFICER"),
             )
         )
         self.delegations = dispatch.InMemoryDelegationRegistry()
@@ -3299,6 +3302,16 @@ class CompositionSuite:
             gate_signing_key=seeded_key("c6-human-gate"),
             gate_id="urn:ocor:component:c6:human-gate",
             gate_keyid="gate-k1",
+            safety=self.composition.SafetyAuthorities(
+                stop_epochs=safety_fixture.InMemoryStopEpochStore(),
+                keyring=safety_fixture.keyring(),
+                control_plane_key=safety_fixture.CONTROL_PLANE_KEY,
+                control_plane_id=safety_fixture.CONTROL_PLANE,
+                control_plane_keyid=safety_fixture.CONTROL_PLANE_KEYID,
+                break_glass_key=safety_fixture.BREAK_GLASS_KEY,
+                break_glass_id=safety_fixture.BREAK_GLASS_AUTHORITY,
+                break_glass_keyid=safety_fixture.BREAK_GLASS_KEYID,
+            ),
         )
         governed = governed_path.GovernedC3(
             release=governed_path.RELEASE,
@@ -3492,7 +3505,7 @@ def test_the_composed_emergency_stop_cancels_the_action_before_the_send() -> Non
     proposal = suite.proposal()
     approval_set, decision = suite.decided(proposal)
     lease = suite.world.lease(proposal, decision)
-    suite.root.stop.activate(reason="containment drill", at=ENGINE_NOW)
+    suite.root.stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="containment drill", at=ENGINE_NOW)
     assert suite.root.mutation_fence.emergency_stop_active() is True
     assert suite.governed.fence is suite.root.mutation_fence
     assert suite.refusal(proposal, approval=approval_set, decision=decision, lease=lease) == (
@@ -3510,7 +3523,7 @@ def test_the_composed_break_glass_never_overrides_the_composed_stop_and_is_audit
     grant = suite.root.break_glass.grant(
         grant_id=f"urn:ocor:break-glass:{uuid.uuid4()}",
         requester=REQUESTER,
-        reason="incident containment",
+        reason="incident-containment",
         incident_ref="urn:ocor:incident:rem0053",
         scope="urn:ocor:scope:maritime",
         domain="maritime",
@@ -3518,7 +3531,7 @@ def test_the_composed_break_glass_never_overrides_the_composed_stop_and_is_audit
         approvers=(OFFICER, OWNER),
         ttl=timedelta(minutes=10),
     )
-    suite.root.stop.activate(reason="containment drill", at=ENGINE_NOW)
+    suite.root.stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="containment drill", at=ENGINE_NOW)
     with pytest.raises(_mod("safety").SafetyError) as refused:
         suite.root.break_glass.authorize(grant, capability="act:launch", review_ref="urn:ocor:review:rem0053")
     assert refused.value.reason_code == "BREAK_GLASS_STOP_ACTIVE"
@@ -3548,7 +3561,7 @@ def test_a_denied_authority_ends_the_action_denied_and_it_is_never_resumed() -> 
 
 def test_a_non_risk_bearing_action_is_denied_at_the_control_check() -> None:
     suite = CompositionSuite()
-    low = suite.world.action_type("urn:ocor:action-type:rem0053:composed-low", risk="R1_LOW", capability="act:launch")
+    low = suite.world.action_type("urn:ocor:action-type:rem0053:composed-low", risk="R1_ANALYZE", capability="act:launch")
     proposal = suite.world.proposal(
         low,
         action_id=f"urn:ocor:action:rem0053:composed:{uuid.uuid4()}",

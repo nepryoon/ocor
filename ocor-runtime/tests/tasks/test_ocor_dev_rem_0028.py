@@ -11,8 +11,9 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
 from ocor_runtime.c6.human_gate import ApprovalPolicy, GateSignature, HumanGateCoordinator, HumanGateError
-from ocor_runtime.c6.safety import EmergencyStopController, SafetyError, StopStatus
+from ocor_runtime.c6.safety import SafetyError, StopStatus
 from ocor_runtime.kernel.governance import InMemoryTrustedClock
+from c6_safety_fixture import INCIDENT, recovery, SAFETY_OFFICER, stop_controller
 
 NOW = datetime(2026, 10, 15, 9, tzinfo=UTC)
 ROLES = frozenset({'DOMAIN_APPROVER', 'NATIONAL_APPROVER'})
@@ -73,20 +74,20 @@ def test_valid_registry_quorum_is_accepted() -> None:
 
 @pytest.mark.parametrize('attributes', INVALID)
 def test_invalid_registry_approver_cannot_reset(attributes: dict[str, object]) -> None:
-    stop = EmergencyStopController()
-    stop.activate(reason='incident', at=NOW)
+    stop = stop_controller()
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason='incident', at=NOW)
     stop.finish_draining(at=NOW)
     with pytest.raises(SafetyError, match='RESET_REQUIRES_DUAL_CONTROL'):
-        stop.request_reset(approvers=('a', 'b'), identities=directory(attributes), requester="requester", at=NOW)
+        stop.request_reset(approvers=('a', 'b'), recovery=recovery(('a', 'b')), identities=directory(attributes), requester="requester", at=NOW)
     assert stop.status is StopStatus.STOPPED
 
 
 def test_reset_timestamp_comes_from_boundary_not_request() -> None:
-    stop = EmergencyStopController()
-    stop.activate(reason='incident', at=NOW)
+    stop = stop_controller()
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason='incident', at=NOW)
     stop.finish_draining(at=NOW)
     before = datetime.now(UTC)
-    event = stop.request_reset(approvers=('a', 'b'), identities=directory(), requester="requester", at=NOW - timedelta(days=90))
+    event = stop.request_reset(approvers=('a', 'b'), recovery=recovery(('a', 'b')), identities=directory(), requester="requester", at=NOW - timedelta(days=90))
     assert before <= event.at <= datetime.now(UTC)
 
 
@@ -155,12 +156,12 @@ def test_success_checks_control_and_preserves_registry_records() -> None:
 @pytest.mark.parametrize('approvers,requester', [(('a', 'a'), 'requester'), (('a', 'b'), 'a'), (('a', 'b'), ''),
                                                (('a', 'b', 'requester'), 'other'), (('a', 'missing'), 'requester')])
 def test_reset_rejects_bad_quorum_without_changing_state(approvers: tuple[str, ...], requester: str) -> None:
-    stop = EmergencyStopController()
-    stop.activate(reason='incident', at=NOW)
+    stop = stop_controller()
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason='incident', at=NOW)
     stop.finish_draining(at=NOW)
     before = stop.history
     with pytest.raises(SafetyError, match='RESET_REQUIRES_DUAL_CONTROL'):
-        stop.request_reset(approvers=approvers, identities=directory(), requester=requester)
+        stop.request_reset(approvers=approvers, recovery=recovery(approvers), identities=directory(), requester=requester)
     assert stop.status is StopStatus.STOPPED
     assert stop.history == before
 
@@ -168,10 +169,10 @@ def test_reset_rejects_bad_quorum_without_changing_state(approvers: tuple[str, .
 def test_reset_needs_no_invented_fixed_role_and_never_writes_registry() -> None:
     registry = directory({'principal_kind': 'HUMAN', 'status': 'ACTIVE', 'roles': ''})
     before = registry.all_records()
-    stop = EmergencyStopController()
-    stop.activate(reason='incident', at=NOW)
+    stop = stop_controller()
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason='incident', at=NOW)
     stop.finish_draining(at=NOW)
-    event = stop.request_reset(approvers=('a', 'b'), identities=registry, requester='requester')
+    event = stop.request_reset(approvers=('a', 'b'), recovery=recovery(('a', 'b')), identities=registry, requester='requester')
     assert event.status is StopStatus.RESET_PENDING
     assert registry.all_records() == before
 
@@ -183,9 +184,9 @@ def test_requests_cannot_supply_or_set_authority_attributes() -> None:
     with pytest.raises(TypeError):
         gate.validate(action_id='action', proposer_id='requester', policy=ApprovalPolicy(ROLES, 2, timedelta(minutes=10)),
                       signatures=signatures(), scope='scope', principal_kind='HUMAN', roles='DOMAIN_APPROVER')
-    stop = EmergencyStopController()
+    stop = stop_controller()
     with pytest.raises(TypeError):
-        stop.request_reset(approvers=('a', 'b'), identities=registry, requester='requester', status='ACTIVE')
+        stop.request_reset(approvers=('a', 'b'), recovery=recovery(('a', 'b')), identities=registry, requester='requester', status='ACTIVE')
     assert registry.all_records() == before
 
 

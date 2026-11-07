@@ -31,6 +31,7 @@ from ocor_runtime.c6.safety import (
     StopStatus,
 )
 from ocor_runtime.kernel.governance import InMemoryTrustedClock
+from c6_safety_fixture import break_glass_controller, INCIDENT, recovery, SAFETY_OFFICER, stop_controller
 
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 
@@ -48,15 +49,15 @@ def identities() -> IdentityRegistry:
 
 
 def test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_one(identities: IdentityRegistry) -> None:
-    stop = EmergencyStopController()
+    stop = stop_controller()
     pre_stop_epoch = stop.epoch
     stop.guard_dispatch(fenced_epoch=pre_stop_epoch)
 
-    stop.activate(reason="incident-42", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-42", at=NOW)
     assert stop.status is StopStatus.STOPPING
     stop.finish_draining(at=NOW)
     assert stop.status is StopStatus.STOPPED
-    stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, requester="urn:ocor:human:c", at=NOW)
+    stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), recovery=recovery(("urn:ocor:human:a", "urn:ocor:human:b")), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert stop.status is StopStatus.RESET_PENDING
     event = stop.confirm_reset(at=NOW)
     assert stop.status is StopStatus.NORMAL
@@ -70,8 +71,8 @@ def test_the_full_stop_reset_cycle_issues_a_new_epoch_that_invalidates_the_old_o
 
 
 def test_dispatch_is_blocked_while_stopping_even_at_the_current_epoch(identities: IdentityRegistry) -> None:
-    stop = EmergencyStopController()
-    stop.activate(reason="incident-42", at=NOW)
+    stop = stop_controller()
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-42", at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
         stop.guard_dispatch(fenced_epoch=stop.epoch)
@@ -79,32 +80,32 @@ def test_dispatch_is_blocked_while_stopping_even_at_the_current_epoch(identities
 
 
 def test_reset_requires_two_distinct_resolved_human_approvers(identities: IdentityRegistry) -> None:
-    stop = EmergencyStopController()
-    stop.activate(reason="incident-42", at=NOW)
+    stop = stop_controller()
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-42", at=NOW)
     stop.finish_draining(at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:a"), identities=identities, requester="urn:ocor:human:c", at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:a"), recovery=recovery(("urn:ocor:human:a", "urn:ocor:human:a")), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert excinfo.value.reason_code == "RESET_REQUIRES_DUAL_CONTROL"
 
     with pytest.raises(SafetyError) as excinfo:
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"), identities=identities, requester="urn:ocor:human:c", at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:never-registered"), recovery=recovery(("urn:ocor:human:a", "urn:ocor:human:never-registered")), identities=identities, requester="urn:ocor:human:c", at=NOW)
     assert excinfo.value.reason_code == "RESET_REQUIRES_DUAL_CONTROL"
 
 
 def test_out_of_order_stop_transitions_are_refused(identities: IdentityRegistry) -> None:
-    stop = EmergencyStopController()
+    stop = stop_controller()
 
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
         stop.finish_draining(at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
-        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), identities=identities, requester="urn:ocor:human:c", at=NOW)
+        stop.request_reset(approvers=("urn:ocor:human:a", "urn:ocor:human:b"), recovery=recovery(("urn:ocor:human:a", "urn:ocor:human:b")), identities=identities, requester="urn:ocor:human:c", at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
         stop.confirm_reset(at=NOW)
 
-    stop.activate(reason="incident-42", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-42", at=NOW)
     with pytest.raises(SafetyError, match="INVALID_STOP_TRANSITION"):
-        stop.activate(reason="second activation", at=NOW)
+        stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="second activation", at=NOW)
 
 
 def test_a_real_concurrent_stop_race_never_lets_a_stale_epoch_dispatch_through() -> None:
@@ -114,7 +115,7 @@ def test_a_real_concurrent_stop_race_never_lets_a_stale_epoch_dispatch_through()
     EmergencyStopController must make epoch capture-and-check atomic:
     every dispatch that actually succeeds must have captured the
     epoch strictly before the real activation happened, never after."""
-    stop = EmergencyStopController()
+    stop = stop_controller()
     succeeded: list[int] = []
     failed: list[int] = []
     barrier = threading.Barrier(9)
@@ -130,7 +131,7 @@ def test_a_real_concurrent_stop_race_never_lets_a_stale_epoch_dispatch_through()
 
     def activator() -> None:
         barrier.wait()
-        stop.activate(reason="race-test", at=NOW)
+        stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="race-test", at=NOW)
 
     threads = [threading.Thread(target=dispatcher) for _ in range(8)] + [threading.Thread(target=activator)]
     for thread in threads:
@@ -196,12 +197,12 @@ def clock() -> InMemoryTrustedClock:
 
 
 def _break_glass_controller(identities: IdentityRegistry, stop: EmergencyStopController, clock: InMemoryTrustedClock) -> BreakGlassController:
-    return BreakGlassController(identities=identities, stop=stop, clock=clock, audit=_AuditLog(), alerts=_AlertChannel())
+    return break_glass_controller(identities=identities, stop=stop, clock=clock, audit=_AuditLog(), alerts=_AlertChannel())
 
 
 @pytest.fixture
 def controller(break_glass_identities: IdentityRegistry, clock: InMemoryTrustedClock) -> BreakGlassController:
-    return _break_glass_controller(break_glass_identities, EmergencyStopController(), clock)
+    return _break_glass_controller(break_glass_identities, stop_controller(), clock)
 
 
 def test_a_valid_grant_authorizes_an_allowed_capability_with_mandatory_review(controller: BreakGlassController) -> None:
@@ -329,7 +330,7 @@ def test_forbidden_capabilities_are_never_authorized_by_break_glass(controller: 
 
 
 def test_break_glass_can_never_override_an_active_emergency_stop(break_glass_identities: IdentityRegistry, clock: InMemoryTrustedClock) -> None:
-    stop = EmergencyStopController()
+    stop = stop_controller()
     controller = _break_glass_controller(break_glass_identities, stop, clock)
     grant = controller.grant(
         grant_id="bg-8",
@@ -342,7 +343,7 @@ def test_break_glass_can_never_override_an_active_emergency_stop(break_glass_ide
         approvers=("urn:ocor:human:a", "urn:ocor:human:b"),
         ttl=timedelta(minutes=10),
     )
-    stop.activate(reason="unrelated-incident", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="unrelated-incident", at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
         controller.authorize(grant, capability="restart_service", review_ref="REV-1")
@@ -487,14 +488,14 @@ def test_stop_precedence_combined_with_reconciliation_end_to_end(identities: Ide
     becomes ambiguous, an emergency stop is activated mid-reconciliation,
     and the stale-epoch dispatch guard still blocks any further
     dispatch even though the reconciliation state is independent."""
-    stop = EmergencyStopController()
+    stop = stop_controller()
     reconciler = OutcomeReconciler()
 
     epoch = stop.epoch
     stop.guard_dispatch(fenced_epoch=epoch)
     reconciler.mark_ambiguous("cmd-10", idempotent_effect_proven=False, at=NOW)
 
-    stop.activate(reason="incident-during-reconciliation", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-during-reconciliation", at=NOW)
 
     with pytest.raises(SafetyError, match="SYSTEM_NOT_NORMAL"):
         stop.guard_dispatch(fenced_epoch=epoch)

@@ -50,7 +50,9 @@ from ..audit import AuditError, AuditEvent, AuditPort
 from ..c2_identity import IdentityRegistry, ResolutionStatus
 from ..c4.typedb_adapter import TypeDBUnavailableError
 from ..c4.watermark import ConfirmedWatermark
-from ..c4_marking import MarkingEngine, MarkingSet
+from ..c4.marking import MarkingUnresolved
+from ..c4.marking_resolution import ResolvedMarkingEngine
+from ..c4_marking import MarkingSet
 from ..kernel.canonical import canonical_digest
 from ..security.ports import PolicyDecisionPort as ContextPolicyPort
 from ..security.ports import PolicyDecision, PolicyEffect, PolicyRequest, SecurityControlError
@@ -222,16 +224,21 @@ class RegistrationAndMarkingPolicy:
     request names a resource -- that resource is authorized for the
     requester's clearance under the real marking join (OCOR-DEV-0018).
     Any other outcome is DENY; this port never distinguishes a marking denial from an
-    absent resource in its return value."""
+    absent resource in its return value. The clearance is resolved by the
+    ``ResolvedMarkingEngine`` (OCOR-DEV-REM-0054, NCR-C6-012): one that misses a scheme of the
+    active set or names an unknown scheme or label is ``MARKING_UNRESOLVED`` (LLD v1.1 :67) and
+    so DENY (ADD v1.3 :401), never the legacy default that ignores a missing scheme."""
 
     def __init__(
         self,
         *,
         registry: Mapping[str, RegisteredNamedQuery],
-        marking_engine: MarkingEngine,
+        marking_engine: ResolvedMarkingEngine,
         marking_port: MarkingAuthorizationPort,
         clearance_by_marking_ref: Mapping[str, MarkingSet],
     ) -> None:
+        if not isinstance(marking_engine, ResolvedMarkingEngine):
+            raise TypeError("marking_engine must be the ResolvedMarkingEngine, not the legacy MarkingEngine")
         self._registry = dict(registry)
         self._marking_engine = marking_engine
         self._marking_port = marking_port
@@ -239,9 +246,12 @@ class RegistrationAndMarkingPolicy:
 
     def clearance(self, request: NamedQueryRequest) -> MarkingSet | None:
         clearance = self._clearance_by_marking_ref.get(request.governed_context.classification_marking_ref)
-        if clearance is not None:
-            self._marking_engine.validate(clearance)
-        return clearance
+        if clearance is None:
+            return None
+        try:
+            return self._marking_engine.resolve(clearance)
+        except MarkingUnresolved:
+            return None
 
     def authorized(self, resource_id: str, clearance: MarkingSet) -> bool:
         """The real marking join of one result item (LLD v1.1 :122)."""
@@ -872,7 +882,7 @@ def compose_named_query_gateway(
     release_package: Any,
     identity_registry: IdentityRegistry,
     context_policy: ContextPolicyPort,
-    marking_engine: MarkingEngine,
+    marking_engine: ResolvedMarkingEngine,
     marking_port: MarkingAuthorizationPort,
     clearance_by_marking_ref: Mapping[str, MarkingSet],
     projection: ProjectionReadPort,

@@ -60,8 +60,12 @@ _REASON_FAILURE_CLASSES = MappingProxyType(
 
 
 class RiskClass(IntEnum):
-    R0_INFORMATIONAL = 0
-    R1_LOW = 1
+    """The risk classes of ADD v1.3 §5.4 (:3300-3305) and of the Action Type Contract ``risk_class``
+    enum (:2193), in impact order. ADD v1.3 prevails over the LLD v1.1 §4.1 names (LLD v1.1 :16-18,
+    OCOR-DEV-REM-0054, NCR-C6-013); no alias of another name exists."""
+
+    R0_READ = 0
+    R1_ANALYZE = 1
     R2_CONTROLLED = 2
     R3_HIGH_IMPACT = 3
 

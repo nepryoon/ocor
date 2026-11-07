@@ -1299,6 +1299,52 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0058.requalified-rem0053.log",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0053.json",
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0053.log",
+        # OCOR-DEV-REM-0054 (NCP-U08 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): C6 safety and policy
+        # (the signed durable stop_epoch behind the StopEpochPort with its PostgreSQL adapter, the five
+        # policy effects of the OPA decision point, the resolving marking engine of C2 and C8, the ADD v1.3
+        # risk-class names), the shared C6 safety test support module, the RED test, the unit record, the
+        # decision request of the unit that enters main with it (NCP-U08-RISK-CLASS-NAME-ADAPTATION,
+        # option 1), and the requalifications of 0009, 0014, 0030, 0034, 0035, 0044, 0047 and 0048 (changed
+        # inputs, realigned or adapted tests, NCP-UNBINDABLE-REQUALIFICATIONS) and of 0005, 0050 and 0082
+        # forced by this allowlist; repair cycle 1: the requalification of REM-0053 required by
+        # NCP-U08-RISK-CLASS-NAME-ADAPTATION option 1.
+        "ocor-runtime/src/ocor_runtime/c4/marking_resolution.py",
+        "ocor-runtime/src/ocor_runtime/c6/adapters/__init__.py",
+        "ocor-runtime/src/ocor_runtime/c6/adapters/postgres_stop.py",
+        "ocor-runtime/src/ocor_runtime/kernel/governance.py",
+        "ocor-runtime/src/ocor_runtime/security/control_plane.py",
+        "ocor-runtime/src/ocor_runtime/security/ports.py",
+        "ocor-runtime/tests/tasks/c6_safety_fixture.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_0048.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py",
+        "reports/development/decision_requests/NCP-U08-RISK-CLASS-NAME-ADAPTATION.md",
+        "reports/assurance/OCOR-DEV-REM-0054-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0054-RCCAD/OCOR-DEV-REM-0054.json",
+        "reports/assurance/OCOR-DEV-REM-0054-RCCAD/OCOR-DEV-REM-0054.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0054.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0054.log",
+        "reports/evidence/G1/OCOR-DEV-0009.requalified-rem0054.json",
+        "reports/evidence/G1/OCOR-DEV-0009.requalified-rem0054.log",
+        "reports/evidence/G1/OCOR-DEV-0014.requalified-rem0054.json",
+        "reports/evidence/G1/OCOR-DEV-0014.requalified-rem0054.log",
+        "reports/evidence/G3/OCOR-DEV-0030.requalified-rem0054.json",
+        "reports/evidence/G3/OCOR-DEV-0030.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-0034.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-0035.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-0035.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-0044.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-0048.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-0048.requalified-rem0054.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0054.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0054.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0054.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0054.log",
+        "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.json",
+        "reports/evidence/G4/OCOR-DEV-REM-0053.requalified-rem0054.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

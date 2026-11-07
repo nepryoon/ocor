@@ -12,13 +12,23 @@ Three real safety mechanisms, each producing immutable evidence:
 
 * ``EmergencyStopController`` -- the approved ``NORMAL -> STOPPING ->
   STOPPED -> RESET_PENDING -> NORMAL`` machine (LLD 4.3). Accepting a
-  stop atomically increments a monotonic ``stop_epoch`` under a real
-  lock; ``guard_dispatch`` fails closed unless the system is
+  stop atomically increments a monotonic ``stop_epoch``;
+  ``guard_dispatch`` fails closed unless the system is
   ``NORMAL`` *and* the presented fencing epoch is exactly the current
   one -- a command fenced to any other epoch, older or from a prior
   stop/reset cycle, can never dispatch, so a reset never silently
   re-enables a lease issued before it. Reset requires dual control
   (two distinct, resolved human approvers).
+  OCOR-DEV-REM-0054 (NCR-C6-010; ADD v1.3 :3343, :3351, :3360, LLD v1.1
+  :328, Register NFR-047): only an active human Safety Officer of the
+  registry activates the stop, naming the incident; every transition is
+  a ``StopEpochRecord`` signed by the Emergency Control Plane and
+  appended, compare-and-set, to the durable ``StopEpochPort``
+  (``c6.adapters.postgres_stop`` on PostgreSQL); the state is read
+  through ``StopEpochReader`` -- by G-DISPATCH, the C8 tool runtime and
+  the break-glass -- never from the activating process; the reset also
+  needs the ``RecoveryVerification`` of the stop's incident by one of its
+  approvers.
 * ``BreakGlassController`` -- a bounded, dual-human-approved
   exceptional grant (ADD v1.3 sections 5.4-5.5, LLD 4.2, aligned by
   OCOR-DEV-REM-0024): requires a requester, a typed reason, an
@@ -38,7 +48,11 @@ Three real safety mechanisms, each producing immutable evidence:
   Every use requires a non-empty review reference, making the LLD's
   "review obbligatoria" structural; grants, uses, refusals and
   revocations are audited synchronously and grants and uses alerted
-  immediately, failing closed.
+  immediately, failing closed. OCOR-DEV-REM-0054 (NCR-C6-010; ADD v1.3
+  :3347, LLD v1.1 :324, Register FR-139): the grant is a Delegation
+  signed by the break-glass authority over every field, verified at
+  every use, and its reason (the mandatory purpose) is a typed reason
+  code, never free text.
 * ``OutcomeReconciler`` -- LLD ``ACT-T18a``/``T18b``/``T20a``-``c``/
   ``T21``-``T21e``/``T24``/``T25``'s ambiguous-outcome and compensation
   reconciliation path: an ambiguous timeout suspends retry and opens
@@ -60,20 +74,24 @@ Three real safety mechanisms, each producing immutable evidence:
 
 from __future__ import annotations
 
+import base64
+import binascii
 import re
 import threading
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from ..audit import AuditError, AuditEvent, AuditPort, SealedAuditRecord, verify_audit_chain
+from ..c1.signing import Ed25519SigningKey, dsse_pae, ed25519_verify
 from ..c2_identity import IdentityRecord, IdentityRegistry
 from ..c3_store import require_aware
 from ..errors import OCORError
-from ..kernel.canonical import parse_utc_timestamp
+from ..kernel.canonical import canonical_bytes, format_utc_timestamp, parse_utc_timestamp
 from ..kernel.governance import TrustedClock
+from .human_gate import SignerKeyring
 
 MAX_BREAK_GLASS_TTL = timedelta(minutes=15)
 
@@ -109,109 +127,551 @@ class StopStatus(str, Enum):
     RESET_PENDING = "RESET_PENDING"
 
 
+SAFETY_OFFICER_ROLE = "SAFETY_OFFICER"
+STOP_EPOCH_PAYLOAD_TYPE = "application/vnd.ocor.c6.stop-epoch+json"
+BREAK_GLASS_PAYLOAD_TYPE = "application/vnd.ocor.c6.break-glass-delegation+json"
+_EVIDENCE_DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
+_BREAK_GLASS_REASON = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
+MAX_BREAK_GLASS_REASON_LENGTH = 64
+_GENESIS_REASON = "genesis"
+
+
+def _text(name: str, value: object, *, empty: bool = False) -> str:
+    # Read without conversion: only a string is text.
+    if not isinstance(value, str) or (not value and not empty):
+        raise ValueError(f"{name} must be a{'' if empty else ' non-empty'} string")
+    return value
+
+
+def _count(name: str, value: object, *, minimum: int = 0) -> int:
+    if type(value) is not int or value < minimum:
+        raise ValueError(f"{name} must be an integer >= {minimum}")
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class StopEvent:
+    """One accepted transition of the emergency stop, as read from the signed stop epoch."""
+
     epoch: int
     status: StopStatus
     reason: str
     at: datetime
+    actor: str = ""
+    incident_ref: str = ""
+
+    @property
+    def activated_by(self) -> str:
+        return self.actor
 
 
-class EmergencyStopController:
-    """The approved emergency-stop FSM with a real lock around its
-    epoch and status, so a concurrent activation and dispatch attempt
-    can never race past each other."""
+@dataclass(frozen=True, slots=True)
+class StopEpochRecord:
+    """The state of the Emergency Control Plane after one transition (ADD v1.3 :3351; LLD v1.1
+    :328): a strictly increasing ``sequence`` per transition, the ``stop_epoch``, the FSM state,
+    the principal that caused it, the reason and the incident; a reset also carries its two
+    approvers and the content-addressed recovery evidence."""
+
+    sequence: int
+    epoch: int
+    status: StopStatus
+    actor: str
+    reason: str
+    incident_ref: str
+    at: datetime
+    recovery_evidence: str = ""
+    approvers: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        _count("sequence", self.sequence)
+        _count("epoch", self.epoch)
+        if not isinstance(self.status, StopStatus):
+            raise ValueError("status must be a StopStatus")
+        _text("actor", self.actor)
+        _text("reason", self.reason)
+        _text("incident_ref", self.incident_ref, empty=True)
+        require_aware(self.at, field="at")
+        # Read without conversion: a falsy value that is not text is never "no evidence".
+        evidence = _text("recovery_evidence", self.recovery_evidence, empty=True)
+        if evidence and _EVIDENCE_DIGEST.fullmatch(evidence) is None:
+            raise ValueError("recovery_evidence must be a urn:sha256 digest")
+        if not isinstance(self.approvers, tuple) or any(not isinstance(item, str) or not item for item in self.approvers):
+            raise ValueError("approvers must be a tuple of principal identifiers")
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "sequence": self.sequence,
+            "epoch": self.epoch,
+            "status": self.status.value,
+            "actor": self.actor,
+            "reason": self.reason,
+            "incident_ref": self.incident_ref,
+            "at": format_utc_timestamp(self.at),
+            "recovery_evidence": self.recovery_evidence,
+            "approvers": list(self.approvers),
+        }
+
+    @classmethod
+    def from_mapping(cls, value: object) -> StopEpochRecord:
+        """A record read back from a store: shape checked without conversion."""
+
+        if not isinstance(value, Mapping) or set(value) != _STOP_RECORD_FIELDS:
+            raise ValueError("a stop epoch record has exactly the fields of StopEpochRecord")
+        status = value["status"]
+        approvers = value["approvers"]
+        at = value["at"]
+        if not isinstance(status, str) or status not in StopStatus.__members__:
+            raise ValueError("unknown stop status")
+        if not isinstance(approvers, list) or not isinstance(at, str):
+            raise ValueError("malformed stop epoch record")
+        return cls(
+            sequence=value["sequence"],
+            epoch=value["epoch"],
+            status=StopStatus(status),
+            actor=value["actor"],
+            reason=value["reason"],
+            incident_ref=value["incident_ref"],
+            at=parse_utc_timestamp(at),
+            recovery_evidence=value["recovery_evidence"],
+            approvers=tuple(approvers),
+        )
+
+    def event(self) -> StopEvent:
+        return StopEvent(
+            epoch=self.epoch, status=self.status, reason=self.reason, at=self.at, actor=self.actor, incident_ref=self.incident_ref
+        )
+
+
+_STOP_RECORD_FIELDS = frozenset(
+    {"sequence", "epoch", "status", "actor", "reason", "incident_ref", "at", "recovery_evidence", "approvers"}
+)
+
+
+@dataclass(frozen=True, slots=True)
+class SignedStopEpoch:
+    """A ``StopEpochRecord`` signed by the Emergency Control Plane (Ed25519 over the DSSE
+    pre-authentication encoding of the issuer and the record)."""
+
+    record: StopEpochRecord
+    issuer_id: str
+    keyid: str
+    signature: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.record, StopEpochRecord):
+            raise ValueError("record must be a StopEpochRecord")
+        _text("issuer_id", self.issuer_id)
+        _text("keyid", self.keyid)
+        # Empty only while it is being signed (sign_stop_epoch); verification refuses it.
+        _text("signature", self.signature, empty=True)
+
+    def signed_bytes(self) -> bytes:
+        return dsse_pae(STOP_EPOCH_PAYLOAD_TYPE, canonical_bytes({"issuer_id": self.issuer_id, "record": self.record.to_mapping()}))
+
+    def to_mapping(self) -> dict[str, object]:
+        return {"record": self.record.to_mapping(), "issuer_id": self.issuer_id, "keyid": self.keyid, "signature": self.signature}
+
+    @classmethod
+    def from_mapping(cls, value: object) -> SignedStopEpoch:
+        if not isinstance(value, Mapping) or set(value) != {"record", "issuer_id", "keyid", "signature"}:
+            raise ValueError("a signed stop epoch has exactly record, issuer_id, keyid and signature")
+        return cls(
+            record=StopEpochRecord.from_mapping(value["record"]),
+            issuer_id=_text("issuer_id", value["issuer_id"]),
+            keyid=_text("keyid", value["keyid"]),
+            signature=_text("signature", value["signature"]),
+        )
+
+
+def sign_stop_epoch(key: Ed25519SigningKey, *, issuer_id: str, keyid: str, record: StopEpochRecord) -> SignedStopEpoch:
+    """The Emergency Control Plane's signature of a stop epoch record."""
+
+    if not isinstance(key, Ed25519SigningKey):
+        raise TypeError("key must be the Emergency Control Plane's Ed25519 signing key")
+    if not isinstance(record, StopEpochRecord):
+        raise TypeError("record must be a StopEpochRecord")
+    unsigned = SignedStopEpoch(record=record, issuer_id=_text("issuer_id", issuer_id), keyid=_text("keyid", keyid), signature="")
+    signature = base64.b64encode(key.sign(unsigned.signed_bytes())).decode("ascii")
+    return replace(unsigned, signature=signature)
+
+
+def _signature_holds(public_key: object, message: bytes, signature: object) -> bool:
+    if not isinstance(public_key, bytes) or len(public_key) != 32 or not isinstance(signature, str) or not signature:
+        return False
+    try:
+        raw = base64.b64decode(signature, validate=True)
+    except (binascii.Error, ValueError):
+        return False
+    return ed25519_verify(public_key, message, raw)
+
+
+def verify_stop_epoch(signed: object, *, keyring: SignerKeyring, issuer_id: str) -> StopEpochRecord:
+    """The record of ``signed`` when the Emergency Control Plane ``issuer_id`` signed it under a
+    key of ``keyring``; ``STOP_EPOCH_SIGNATURE_INVALID`` otherwise."""
+
+    try:
+        valid = (
+            isinstance(signed, SignedStopEpoch)
+            and isinstance(signed.record, StopEpochRecord)
+            and signed.issuer_id == issuer_id
+            and isinstance(signed.keyid, str)
+            and _signature_holds(keyring.public_key(issuer_id, signed.keyid), signed.signed_bytes(), signed.signature)
+        )
+    except Exception as error:
+        raise SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "the stop epoch could not be verified") from error
+    if not valid:
+        raise SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "the stop epoch is not signed by the Emergency Control Plane")
+    assert isinstance(signed, SignedStopEpoch)
+    return signed.record
+
+
+@runtime_checkable
+class StopEpochPort(Protocol):
+    """The durable store of the signed stop epoch (NORMATIVE-CONFORMANCE-PLAN point 2 for NCP-U08:
+    durable, read through a port, never an attribute of the activating process).
+
+    ``append`` adds ``signed`` only when the latest stored record has ``expected_sequence``
+    (``-1`` for an empty store) and ``signed`` is its successor; it returns whether it did, so
+    two writers never both advance the same state. Records are never changed or removed."""
+
+    def latest(self) -> SignedStopEpoch | None: ...
+
+    def history(self) -> tuple[SignedStopEpoch, ...]: ...
+
+    def append(self, signed: SignedStopEpoch, *, expected_sequence: int) -> bool: ...
+
+
+class InMemoryStopEpochStore:
+    """``StopEpochPort`` in memory, shared by every reader and controller holding it."""
 
     def __init__(self) -> None:
-        self._lock = threading.RLock()
-        self._status = StopStatus.NORMAL
-        self._epoch = 0
-        self._history: list[StopEvent] = []
+        self._lock = threading.Lock()
+        self._records: list[SignedStopEpoch] = []
+
+    def latest(self) -> SignedStopEpoch | None:
+        with self._lock:
+            return self._records[-1] if self._records else None
+
+    def history(self) -> tuple[SignedStopEpoch, ...]:
+        with self._lock:
+            return tuple(self._records)
+
+    def append(self, signed: SignedStopEpoch, *, expected_sequence: int) -> bool:
+        if not isinstance(signed, SignedStopEpoch):
+            raise TypeError("the store keeps signed stop epochs only")
+        if type(expected_sequence) is not int:
+            raise TypeError("expected_sequence must be an integer")
+        with self._lock:
+            current = self._records[-1].record.sequence if self._records else -1
+            if current != expected_sequence or signed.record.sequence != expected_sequence + 1:
+                return False
+            self._records.append(signed)
+            return True
+
+
+class StopEpochReader:
+    """The signed stop epoch read through its durable port, as G-DISPATCH, the C8 tool runtime
+    and the break-glass read it (ADD v1.3 :2852, :3351, :3360). Every read verifies the
+    signature of the Emergency Control Plane; an empty, unreadable or unverifiable port is never
+    taken for ``NORMAL``: the read fails closed."""
+
+    def __init__(self, *, epochs: StopEpochPort, keyring: SignerKeyring, issuer_id: str) -> None:
+        if not isinstance(epochs, StopEpochPort):
+            raise TypeError("epochs must implement StopEpochPort")
+        if not callable(getattr(keyring, "public_key", None)):
+            raise TypeError("keyring must implement SignerKeyring")
+        self._epochs = epochs
+        self._keyring = keyring
+        self._issuer_id = _text("issuer_id", issuer_id)
+        self._verified: dict[tuple[str, str, bytes, bytes | None], StopEpochRecord] = {}
+        self._cache_lock = threading.Lock()
 
     @property
-    def status(self) -> StopStatus:
-        with self._lock:
-            return self._status
+    def issuer_id(self) -> str:
+        return self._issuer_id
 
-    @property
-    def epoch(self) -> int:
-        with self._lock:
-            return self._epoch
+    def _verify(self, signed: object) -> StopEpochRecord:
+        if not isinstance(signed, SignedStopEpoch):
+            raise SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "the port answered something other than a signed stop epoch")
+        try:
+            # The cache is bound to the key the keyring holds now: a key it no longer holds never
+            # keeps a record verified.
+            public_key = self._keyring.public_key(self._issuer_id, signed.keyid)
+            key = (signed.keyid, signed.signature, signed.signed_bytes(), public_key)
+        except Exception as error:
+            raise SafetyError("STOP_EPOCH_SIGNATURE_INVALID", "the stop epoch is malformed") from error
+        with self._cache_lock:
+            cached = self._verified.get(key) if isinstance(public_key, bytes) else None
+        if cached is not None:
+            return cached
+        record = verify_stop_epoch(signed, keyring=self._keyring, issuer_id=self._issuer_id)
+        with self._cache_lock:
+            if len(self._verified) > 256:
+                self._verified.clear()
+            self._verified[key] = record
+        return record
+
+    def current_signed(self) -> SignedStopEpoch:
+        try:
+            signed = self._epochs.latest()
+        except SafetyError:
+            raise
+        except Exception as error:
+            raise SafetyError("STOP_EPOCH_UNAVAILABLE", "the stop epoch port cannot be read") from error
+        if signed is None:
+            raise SafetyError("STOP_EPOCH_UNAVAILABLE", "no signed stop epoch has been published")
+        self._verify(signed)
+        assert isinstance(signed, SignedStopEpoch)
+        return signed
+
+    def current(self) -> StopEpochRecord:
+        return self.current_signed().record
+
+    def signed_history(self) -> tuple[SignedStopEpoch, ...]:
+        try:
+            history = self._epochs.history()
+        except SafetyError:
+            raise
+        except Exception as error:
+            raise SafetyError("STOP_EPOCH_UNAVAILABLE", "the stop epoch port cannot be read") from error
+        if not isinstance(history, tuple) or not history:
+            raise SafetyError("STOP_EPOCH_UNAVAILABLE", "no signed stop epoch has been published")
+        for position, signed in enumerate(history):
+            if self._verify(signed).sequence != position:
+                raise SafetyError("STOP_EPOCH_HISTORY_INVALID", "the stop epoch history is not contiguous")
+        return history
 
     @property
     def history(self) -> tuple[StopEvent, ...]:
-        with self._lock:
-            return tuple(self._history)
+        """The accepted transitions, oldest first (the genesis record is not a transition)."""
+        return tuple(signed.record.event() for signed in self.signed_history()[1:])
 
-    def activate(self, *, reason: str, at: datetime) -> StopEvent:
-        instant = require_aware(at, field="at")
-        if not reason:
-            raise ValueError("an emergency stop requires a reason")
+    @property
+    def status(self) -> StopStatus:
+        return self.current().status
+
+    @property
+    def epoch(self) -> int:
+        return self.current().epoch
+
+    def current_stop_epoch(self) -> int:
+        return self.current().epoch
+
+    def emergency_stop_active(self) -> bool:
+        return self.current().status is not StopStatus.NORMAL
+
+    def guard_dispatch(self, *, fenced_epoch: int) -> None:
+        record = self.current()
+        if record.status is not StopStatus.NORMAL:
+            raise SafetyError("SYSTEM_NOT_NORMAL", f"emergency stop is {record.status.value}, dispatch is blocked")
+        if type(fenced_epoch) is not int or fenced_epoch != record.epoch:
+            raise SafetyError("STOP_EPOCH_STALE", f"command fenced to epoch {fenced_epoch!r}, current epoch is {record.epoch}")
+
+
+@dataclass(frozen=True, slots=True)
+class RecoveryVerification:
+    """The verification of incident and recovery a reset requires (LLD v1.1 :328): the incident
+    of the stop, the reset approver who verified the recovery and the content-addressed evidence
+    of the recovery."""
+
+    incident_ref: str
+    verified_by: str
+    evidence_digest: str
+
+    def __post_init__(self) -> None:
+        _text("incident_ref", self.incident_ref)
+        _text("verified_by", self.verified_by)
+        if _EVIDENCE_DIGEST.fullmatch(_text("evidence_digest", self.evidence_digest)) is None:
+            raise ValueError("evidence_digest must be a urn:sha256 digest of the recovery evidence")
+
+
+class EmergencyStopController:
+    """The Emergency Control Plane (ADD v1.3 :3343, :3351, :3360; LLD v1.1 :328): the approved
+    ``NORMAL -> STOPPING -> STOPPED -> RESET_PENDING -> NORMAL`` machine whose every transition is
+    a ``StopEpochRecord`` signed by the control plane and appended to the durable
+    ``StopEpochPort``. The state is the latest signed record of the port, never an attribute of
+    this object: any controller or ``StopEpochReader`` on the same port reads the same epoch, and
+    of two concurrent transitions from the same state only one is appended.
+
+    Activation is immediate and needs one authorised Safety Officer (an active human principal
+    of the registry holding ``SAFETY_OFFICER``) and the incident; it increments the epoch. The
+    reset needs two distinct resolved human approvers independent of the requester and the
+    verification of the incident and of the recovery; its confirmation issues a new epoch, so a
+    lease fenced to an earlier epoch is never re-enabled."""
+
+    def __init__(
+        self,
+        *,
+        epochs: StopEpochPort,
+        identities: PrincipalDirectory,
+        signing_key: Ed25519SigningKey,
+        issuer_id: str,
+        keyid: str,
+        keyring: SignerKeyring,
+    ) -> None:
+        if not isinstance(signing_key, Ed25519SigningKey):
+            raise TypeError("signing_key must be the Emergency Control Plane's Ed25519 key")
+        if not callable(getattr(identities, "get", None)):
+            raise TypeError("identities must be a PrincipalDirectory")
+        self._reader = StopEpochReader(epochs=epochs, keyring=keyring, issuer_id=issuer_id)
+        if keyring.public_key(issuer_id, _text("keyid", keyid)) != signing_key.public_key:
+            raise ValueError("the keyring does not pin the Emergency Control Plane's key under its keyid")
+        self._epochs = epochs
+        self._identities = identities
+        self._key = signing_key
+        self._issuer_id = issuer_id
+        self._keyid = keyid
+        self._lock = threading.RLock()
+        if epochs.latest() is None:
+            genesis = StopEpochRecord(
+                sequence=0, epoch=0, status=StopStatus.NORMAL, actor=issuer_id, reason=_GENESIS_REASON,
+                incident_ref="", at=datetime.now(UTC),
+            )
+            epochs.append(self._sign(genesis), expected_sequence=-1)
+        self._reader.current()
+
+    def _sign(self, record: StopEpochRecord) -> SignedStopEpoch:
+        return sign_stop_epoch(self._key, issuer_id=self._issuer_id, keyid=self._keyid, record=record)
+
+    @property
+    def reader(self) -> StopEpochReader:
+        return self._reader
+
+    @property
+    def status(self) -> StopStatus:
+        return self._reader.status
+
+    @property
+    def epoch(self) -> int:
+        return self._reader.epoch
+
+    @property
+    def history(self) -> tuple[StopEvent, ...]:
+        return self._reader.history
+
+    def current_stop_epoch(self) -> int:
+        return self._reader.current_stop_epoch()
+
+    def emergency_stop_active(self) -> bool:
+        return self._reader.emergency_stop_active()
+
+    def _advance(self, expected: StopStatus, action: str, build: Callable[[StopEpochRecord], StopEpochRecord]) -> StopEvent:
         with self._lock:
-            if self._status is not StopStatus.NORMAL:
-                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot activate stop from {self._status.value}")
-            self._epoch += 1
-            self._status = StopStatus.STOPPING
-            event = StopEvent(epoch=self._epoch, status=self._status, reason=reason, at=instant)
-            self._history.append(event)
-            return event
+            current = self._reader.current()
+            if current.status is not expected:
+                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot {action} from {current.status.value}")
+            record = build(current)
+            if not self._epochs.append(self._sign(record), expected_sequence=current.sequence):
+                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot {action}: the stop epoch changed concurrently")
+            return record.event()
+
+    def _require_safety_officer(self, activator: object) -> str:
+        refused = SafetyError("STOP_ACTIVATOR_UNAUTHORIZED", "the stop is activated only by an authorised Safety Officer")
+        if not isinstance(activator, str) or not activator:
+            raise refused
+        try:
+            principal = _read_principal(self._identities, activator)
+        except SafetyError as error:
+            raise refused from error
+        if principal is None or principal.kind != "HUMAN" or not principal.active or SAFETY_OFFICER_ROLE not in principal.roles:
+            raise refused
+        return activator
+
+    def activate(self, *, activator: str, reason: str, incident_ref: str, at: datetime) -> StopEvent:
+        instant = require_aware(at, field="at")
+        if not isinstance(reason, str) or not reason:
+            raise ValueError("an emergency stop requires a reason")
+        if not isinstance(incident_ref, str) or not incident_ref:
+            raise ValueError("an emergency stop names its incident")
+        officer = self._require_safety_officer(activator)
+        return self._advance(
+            StopStatus.NORMAL,
+            "activate stop",
+            lambda current: StopEpochRecord(
+                sequence=current.sequence + 1, epoch=current.epoch + 1, status=StopStatus.STOPPING, actor=officer,
+                reason=reason, incident_ref=incident_ref, at=instant,
+            ),
+        )
 
     def finish_draining(self, *, at: datetime) -> StopEvent:
         instant = require_aware(at, field="at")
-        with self._lock:
-            if self._status is not StopStatus.STOPPING:
-                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot finish draining from {self._status.value}")
-            self._status = StopStatus.STOPPED
-            event = StopEvent(epoch=self._epoch, status=self._status, reason="drain complete", at=instant)
-            self._history.append(event)
-            return event
+        return self._advance(
+            StopStatus.STOPPING,
+            "finish draining",
+            lambda current: replace(current, sequence=current.sequence + 1, status=StopStatus.STOPPED, actor=self._issuer_id,
+                                    reason="drain complete", at=instant),
+        )
 
     def request_reset(
-        self, *, approvers: tuple[str, str], identities: IdentityRegistry, requester: str, at: datetime | None = None
+        self,
+        *,
+        approvers: tuple[str, str],
+        identities: IdentityRegistry,
+        requester: str,
+        recovery: RecoveryVerification | None,
+        at: datetime | None = None,
     ) -> StopEvent:
         # No temporal window is specified for reset; its event timestamp comes
         # from the local boundary UTC clock, never the compatibility ``at``.
-        from datetime import UTC
-
         from .human_gate import _active_human_roles
 
         instant = datetime.now(UTC)
+        dual_control = SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset requires two distinct human approvers, independent of the requester")
+        # Read without conversion: a tuple of two principal identifiers and a principal identifier.
+        if (
+            not isinstance(approvers, tuple)
+            or any(not isinstance(item, str) or not item for item in approvers)
+            or not isinstance(requester, str)
+        ):
+            raise dual_control
         distinct = set(approvers)
         if len(approvers) != 2 or len(distinct) != 2 or not requester or requester in distinct:
-            raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset requires two distinct human approvers, independent of the requester")
+            raise dual_control
         with self._lock:
-            if self._status is not StopStatus.STOPPED:
-                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot request reset from {self._status.value}")
+            current = self._reader.current()
+            if current.status is not StopStatus.STOPPED:
+                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot request reset from {current.status.value}")
             # Fresh authority reads immediately before the state transition.
             # Request, signature and grant cannot set registry attributes.
-            for principal in distinct:
-                if _active_human_roles(identities.get(principal)) is None:
+            for principal in sorted(distinct):
+                try:
+                    roles = _active_human_roles(identities.get(principal))
+                except Exception as error:
+                    raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "a reset approver cannot be read from the registry") from error
+                if roles is None:
                     raise SafetyError("RESET_REQUIRES_DUAL_CONTROL", "reset approver is not a resolved active human with valid attributes")
-            self._status = StopStatus.RESET_PENDING
-            event = StopEvent(epoch=self._epoch, status=self._status, reason="reset requested", at=instant)
-            self._history.append(event)
-            return event
+            # LLD v1.1 :328: the reset verifies the incident and the recovery.
+            if (
+                not isinstance(recovery, RecoveryVerification)
+                or recovery.incident_ref != current.incident_ref
+                or recovery.verified_by not in distinct
+            ):
+                raise SafetyError(
+                    "RESET_RECOVERY_NOT_VERIFIED",
+                    "the reset needs the recovery of the stop's incident verified by one of its approvers",
+                )
+            evidence = recovery.evidence_digest
+            return self._advance(
+                StopStatus.STOPPED,
+                "request reset",
+                lambda state: replace(state, sequence=state.sequence + 1, status=StopStatus.RESET_PENDING, actor=requester,
+                                      reason="reset requested", at=instant, recovery_evidence=evidence,
+                                      approvers=tuple(sorted(distinct))),
+            )
 
     def confirm_reset(self, *, at: datetime) -> StopEvent:
         instant = require_aware(at, field="at")
-        with self._lock:
-            if self._status is not StopStatus.RESET_PENDING:
-                raise SafetyError("INVALID_STOP_TRANSITION", f"cannot confirm reset from {self._status.value}")
-            # A brand-new epoch: never re-enables a lease or command
-            # fenced to the pre-stop epoch, even now that the system
-            # is NORMAL again.
-            self._epoch += 1
-            self._status = StopStatus.NORMAL
-            event = StopEvent(epoch=self._epoch, status=self._status, reason="reset confirmed, new epoch issued", at=instant)
-            self._history.append(event)
-            return event
+        # A brand-new epoch: never re-enables a lease or command fenced to the
+        # pre-stop epoch, even now that the system is NORMAL again.
+        return self._advance(
+            StopStatus.RESET_PENDING,
+            "confirm reset",
+            lambda current: replace(current, sequence=current.sequence + 1, epoch=current.epoch + 1, status=StopStatus.NORMAL,
+                                    actor=self._issuer_id, reason="reset confirmed, new epoch issued", at=instant),
+        )
 
     def guard_dispatch(self, *, fenced_epoch: int) -> None:
-        with self._lock:
-            if self._status is not StopStatus.NORMAL:
-                raise SafetyError("SYSTEM_NOT_NORMAL", f"emergency stop is {self._status.value}, dispatch is blocked")
-            if fenced_epoch != self._epoch:
-                raise SafetyError("STOP_EPOCH_STALE", f"command fenced to epoch {fenced_epoch}, current epoch is {self._epoch}")
+        self._reader.guard_dispatch(fenced_epoch=fenced_epoch)
 
 
 @dataclass(frozen=True, slots=True)
@@ -232,9 +692,22 @@ class BreakGlassGrant:
     approvers: tuple[str, str]
     granted_at: datetime
     ttl: timedelta
+    issuer_id: str = ""
+    keyid: str = ""
+    signature: str = ""
 
     def __post_init__(self) -> None:
         require_aware(self.granted_at, field="granted_at")
+        # Read without conversion: text is a string, the capabilities a set of names (a string is
+        # never split into characters), the approvers a tuple and the TTL a duration.
+        for name in ("grant_id", "requester", "reason", "incident_ref", "scope", "domain", "issuer_id", "keyid", "signature"):
+            _text(name, getattr(self, name), empty=True)
+        if not isinstance(self.capabilities, (set, frozenset)):
+            raise ValueError("the capabilities of a BreakGlassGrant are a set of names")
+        if not isinstance(self.approvers, tuple) or any(not isinstance(item, str) for item in self.approvers):
+            raise ValueError("the approvers of a BreakGlassGrant are a tuple of principal identifiers")
+        if not isinstance(self.ttl, timedelta):
+            raise ValueError("the ttl of a BreakGlassGrant is a duration")
         object.__setattr__(self, "capabilities", frozenset(self.capabilities))
         if not self.grant_id:
             raise ValueError("a BreakGlassGrant requires a grant_id")
@@ -260,6 +733,61 @@ class BreakGlassGrant:
     @property
     def expires_at(self) -> datetime:
         return self.granted_at + self.ttl
+
+    def delegation_mapping(self) -> dict[str, object]:
+        """The exceptional Delegation the break-glass authority signs (ADD v1.3 :3347): every field
+        of the grant and the signer, so any change invalidates the signature."""
+
+        return {
+            "grant_id": self.grant_id,
+            "requester": self.requester,
+            "reason": self.reason,
+            "incident_ref": self.incident_ref,
+            "scope": self.scope,
+            "domain": self.domain,
+            "capabilities": sorted(self.capabilities),
+            "approvers": list(self.approvers),
+            "granted_at": format_utc_timestamp(self.granted_at),
+            "ttl_microseconds": self.ttl // timedelta(microseconds=1),
+            "issuer_id": self.issuer_id,
+            "keyid": self.keyid,
+        }
+
+    def signed_bytes(self) -> bytes:
+        return dsse_pae(BREAK_GLASS_PAYLOAD_TYPE, canonical_bytes(self.delegation_mapping()))
+
+
+def sign_break_glass_grant(key: Ed25519SigningKey, *, issuer_id: str, keyid: str, grant: BreakGlassGrant) -> BreakGlassGrant:
+    """The break-glass authority's signature of a grant: the signed Delegation of ADD v1.3 :3347."""
+
+    if not isinstance(key, Ed25519SigningKey):
+        raise TypeError("key must be the break-glass authority's Ed25519 signing key")
+    if not isinstance(grant, BreakGlassGrant):
+        raise TypeError("grant must be a BreakGlassGrant")
+    unsigned = replace(grant, issuer_id=_text("issuer_id", issuer_id), keyid=_text("keyid", keyid), signature="")
+    return replace(unsigned, signature=base64.b64encode(key.sign(unsigned.signed_bytes())).decode("ascii"))
+
+
+def _grant_signature_holds(grant: object, issuer_id: str, public_key: object) -> bool:
+    return (
+        isinstance(grant, BreakGlassGrant)
+        and grant.issuer_id == issuer_id
+        and _signature_holds(public_key, grant.signed_bytes(), grant.signature)
+    )
+
+
+def verify_break_glass_grant(grant: object, *, keyring: SignerKeyring, issuer_id: str) -> None:
+    """``BREAK_GLASS_SIGNATURE_INVALID`` unless ``grant`` is a Delegation signed by the break-glass
+    authority ``issuer_id`` under a key of ``keyring``."""
+
+    try:
+        valid = isinstance(grant, BreakGlassGrant) and _grant_signature_holds(
+            grant, issuer_id, keyring.public_key(issuer_id, grant.keyid)
+        )
+    except Exception as error:
+        raise SafetyError("BREAK_GLASS_SIGNATURE_INVALID", "the break-glass delegation could not be verified") from error
+    if not valid:
+        raise SafetyError("BREAK_GLASS_SIGNATURE_INVALID", "the break-glass delegation is not signed by the break-glass authority")
 
 
 @dataclass(frozen=True, slots=True)
@@ -316,11 +844,18 @@ class _Principal:
 
 def _read_principal(directory: PrincipalDirectory, canonical_id: str) -> _Principal | None:
     """Principal kind, status and roles read exclusively from the
-    registry record; absent or malformed attributes fail closed."""
+    registry record; absent or malformed attributes fail closed, and so
+    do a registry that cannot be read and a record that is not a
+    registry record."""
 
-    record = directory.get(canonical_id)
+    try:
+        record = directory.get(canonical_id)
+    except Exception as error:
+        raise SafetyError("BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID", f"{canonical_id!r} cannot be read from the registry") from error
     if record is None:
         return None
+    if not isinstance(record, IdentityRecord) or not isinstance(record.attributes, Mapping):
+        raise SafetyError("BREAK_GLASS_PRINCIPAL_ATTRIBUTES_INVALID", f"{canonical_id!r} is not a registry record")
     attributes = record.attributes
     kind = attributes.get(PRINCIPAL_KIND_ATTRIBUTE)
     if kind not in PRINCIPAL_KINDS:
@@ -384,11 +919,21 @@ class BreakGlassController:
         self,
         *,
         identities: PrincipalDirectory,
-        stop: EmergencyStopController,
+        stop: EmergencyStopController | StopEpochReader,
         clock: TrustedClock,
         audit: BreakGlassAuditSink,
         alerts: BreakGlassAlertSink,
+        signing_key: Ed25519SigningKey,
+        issuer_id: str,
+        keyid: str,
     ) -> None:
+        if not isinstance(stop, (EmergencyStopController, StopEpochReader)):
+            raise TypeError("stop must be the Emergency Control Plane or a reader of its signed stop epoch")
+        if not isinstance(signing_key, Ed25519SigningKey):
+            raise TypeError("signing_key must be the break-glass authority's Ed25519 key")
+        self._key = signing_key
+        self._issuer_id = _text("issuer_id", issuer_id)
+        self._keyid = _text("keyid", keyid)
         self._identities = identities
         self._stop = stop
         self._clock = clock
@@ -454,9 +999,27 @@ class BreakGlassController:
         ttl: timedelta,
     ) -> BreakGlassGrant:
         instant = self._now()
-        request = {"grant_id": grant_id, "requester": requester, "approvers": list(approvers), "domain": domain}
+        request = {
+            "grant_id": grant_id,
+            "requester": requester,
+            "approvers": list(approvers) if isinstance(approvers, tuple) else approvers,
+            "domain": domain,
+        }
         with self._lock:
             try:
+                # Read without conversion: a string is never split into capabilities or approvers.
+                if (
+                    any(not isinstance(value, str) for value in (grant_id, requester, incident_ref, scope, domain))
+                    or not isinstance(capabilities, (set, frozenset))
+                    or any(not isinstance(name, str) or not name for name in capabilities)
+                    or not isinstance(approvers, tuple)
+                    or any(not isinstance(approver, str) or not approver for approver in approvers)
+                ):
+                    raise SafetyError(
+                        "BREAK_GLASS_GRANT_INVALID",
+                        "grant id, requester, incident, scope and domain are strings, capabilities a set of names, "
+                        "approvers a tuple of principals",
+                    )
                 if not (grant_id and reason and incident_ref and scope and domain and capabilities):
                     raise SafetyError(
                         "BREAK_GLASS_GRANT_INVALID",
@@ -467,7 +1030,16 @@ class BreakGlassController:
                 forbidden = sorted(set(capabilities) & FORBIDDEN_BREAK_GLASS_CAPABILITIES)
                 if forbidden:
                     raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never grant {forbidden}")
-                self._validate_principals(requester, tuple(approvers), domain)
+                self._validate_principals(requester, approvers, domain)
+                # LLD v1.1 :324 typed reason, the purpose of ADD v1.3 :3347: a reason code, never free text.
+                if (
+                    not isinstance(reason, str)
+                    or len(reason) > MAX_BREAK_GLASS_REASON_LENGTH
+                    or _BREAK_GLASS_REASON.fullmatch(reason) is None
+                ):
+                    raise SafetyError(
+                        "BREAK_GLASS_REASON_UNTYPED", "the break-glass reason is a typed reason code (lower-case, hyphen-separated)"
+                    )
             except SafetyError as error:
                 raise self._refuse("BREAK_GLASS_GRANT_DENIED", None, instant, error, **request) from error
             first, second = sorted(approvers)
@@ -484,6 +1056,7 @@ class BreakGlassController:
                     granted_at=instant,
                     ttl=ttl,
                 )
+                issued = sign_break_glass_grant(self._key, issuer_id=self._issuer_id, keyid=self._keyid, grant=issued)
             except ValueError as invalid:
                 self._append(
                     _event("BREAK_GLASS_GRANT_DENIED", None, instant, reason_code="BREAK_GLASS_GRANT_INVALID", detail=str(invalid), **request),
@@ -502,8 +1075,12 @@ class BreakGlassController:
         return issued
 
     def _require_issued(self, grant: BreakGlassGrant) -> None:
+        if not isinstance(grant, BreakGlassGrant):
+            raise SafetyError("BREAK_GLASS_GRANT_NOT_ISSUED", "only a grant issued by this controller is honoured")
         if self._issued.get(grant.grant_id) != grant:
             raise SafetyError("BREAK_GLASS_GRANT_NOT_ISSUED", f"grant {grant.grant_id!r} was not issued by this controller or was altered")
+        if grant.keyid != self._keyid or not _grant_signature_holds(grant, self._issuer_id, self._key.public_key):
+            raise SafetyError("BREAK_GLASS_SIGNATURE_INVALID", f"grant {grant.grant_id!r} is not a delegation signed by this authority")
 
     def revoke(self, grant: BreakGlassGrant) -> None:
         instant = self._now()
@@ -530,18 +1107,21 @@ class BreakGlassController:
                     raise SafetyError("BREAK_GLASS_EXPIRED", f"grant {grant.grant_id!r} expired at {grant.expires_at.isoformat()}")
                 if instant < grant.granted_at:
                     raise SafetyError("BREAK_GLASS_NOT_YET_VALID", f"grant {grant.grant_id!r} is valid from {grant.granted_at.isoformat()}")
+                if not isinstance(capability, str) or not capability:
+                    raise SafetyError("BREAK_GLASS_CAPABILITY_NOT_GRANTED", "a break-glass use names one capability")
                 if capability in FORBIDDEN_BREAK_GLASS_CAPABILITIES:
                     raise SafetyError("BREAK_GLASS_FORBIDDEN_CAPABILITY", f"break-glass can never authorize {capability!r}")
                 if capability not in grant.capabilities:
                     raise SafetyError("BREAK_GLASS_CAPABILITY_NOT_GRANTED", f"{capability!r} is not a capability named in grant {grant.grant_id!r}")
                 if self._stop.status is not StopStatus.NORMAL:
                     raise SafetyError("BREAK_GLASS_STOP_ACTIVE", "break-glass can never override an active emergency stop")
-                if not review_ref:
+                if not isinstance(review_ref, str) or not review_ref:
                     raise SafetyError("BREAK_GLASS_REVIEW_REQUIRED", "every break-glass use requires a mandatory review reference")
                 self._validate_principals(grant.requester, grant.approvers, grant.domain)
             except SafetyError as error:
                 raise self._refuse(
-                    "BREAK_GLASS_USE_DENIED", None, instant, error, grant_id=grant.grant_id, capability=capability, review_ref=review_ref
+                    "BREAK_GLASS_USE_DENIED", None, instant, error,
+                    grant_id=grant.grant_id if isinstance(grant, BreakGlassGrant) else None, capability=capability, review_ref=review_ref,
                 ) from error
             authorized = _event("BREAK_GLASS_USE_AUTHORIZED", grant, instant, capability=capability, review_ref=review_ref)
             self._append(authorized)

@@ -44,6 +44,7 @@ from ocor_runtime.c6.safety import (
 )
 from ocor_runtime.errors import IdentityConflictError, TemporalGuardViolation
 from ocor_runtime.kernel.governance import InMemoryTrustedClock
+from c6_safety_fixture import break_glass_controller, INCIDENT, SAFETY_OFFICER, stop_controller
 
 NOW = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
 
@@ -179,14 +180,14 @@ def alerts() -> RecordingAlertSink:
 
 @pytest.fixture
 def stop() -> EmergencyStopController:
-    return EmergencyStopController()
+    return stop_controller()
 
 
 @pytest.fixture
 def controller(
     registry: IdentityRegistry, stop: EmergencyStopController, clock: InMemoryTrustedClock, audit: RecordingAuditSink, alerts: RecordingAlertSink
 ) -> BreakGlassController:
-    return BreakGlassController(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
+    return break_glass_controller(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
 
 
 def _grant(controller: BreakGlassController, **overrides: object) -> BreakGlassGrant:
@@ -561,7 +562,7 @@ def test_an_issued_grant_altered_after_issuance_never_authorizes(controller: Bre
 def test_a_grant_issued_by_another_controller_never_authorizes(
     controller: BreakGlassController, registry: IdentityRegistry, stop: EmergencyStopController, clock: InMemoryTrustedClock
 ) -> None:
-    other = BreakGlassController(identities=registry, stop=stop, clock=clock, audit=RecordingAuditSink(), alerts=RecordingAlertSink())
+    other = break_glass_controller(identities=registry, stop=stop, clock=clock, audit=RecordingAuditSink(), alerts=RecordingAlertSink())
     foreign = _grant(other)
 
     with pytest.raises(SafetyError) as excinfo:
@@ -638,7 +639,7 @@ def test_expiry_revokes_automatically_and_a_rewound_clock_never_revives_the_gran
     registry: IdentityRegistry, stop: EmergencyStopController, audit: RecordingAuditSink, alerts: RecordingAlertSink
 ) -> None:
     clock = SettableClock(NOW)
-    controller = BreakGlassController(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
+    controller = break_glass_controller(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
     grant = _grant(controller, ttl=timedelta(minutes=5))
     clock.current = NOW + timedelta(minutes=5)
     with pytest.raises(SafetyError) as excinfo:
@@ -656,7 +657,7 @@ def test_a_trusted_instant_before_issuance_is_refused(
     registry: IdentityRegistry, stop: EmergencyStopController, audit: RecordingAuditSink, alerts: RecordingAlertSink
 ) -> None:
     clock = SettableClock(NOW)
-    controller = BreakGlassController(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
+    controller = break_glass_controller(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
     grant = _grant(controller)
     clock.current = NOW - timedelta(seconds=1)
 
@@ -672,7 +673,7 @@ def test_a_naive_trusted_instant_fails_closed(
     registry: IdentityRegistry, stop: EmergencyStopController, audit: RecordingAuditSink, alerts: RecordingAlertSink
 ) -> None:
     clock = SettableClock(NOW.replace(tzinfo=None))
-    controller = BreakGlassController(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
+    controller = break_glass_controller(identities=registry, stop=stop, clock=clock, audit=audit, alerts=alerts)
 
     with pytest.raises(TemporalGuardViolation):
         _grant(controller)
@@ -715,7 +716,7 @@ def test_a_revocation_holds_even_when_its_audit_append_fails(controller: BreakGl
 def test_break_glass_never_overrides_an_active_emergency_stop(controller: BreakGlassController, stop: EmergencyStopController) -> None:
     grant = _grant(controller)
     controller.authorize(grant, capability="restart_service", review_ref="REV-1")
-    stop.activate(reason="unrelated-incident", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="unrelated-incident", at=NOW)
 
     with pytest.raises(SafetyError) as excinfo:
         controller.authorize(grant, capability="restart_service", review_ref="REV-2")
@@ -737,7 +738,7 @@ def _directory_controller(
     stop: EmergencyStopController, clock: InMemoryTrustedClock, audit: RecordingAuditSink, alerts: RecordingAlertSink
 ) -> tuple[BreakGlassController, MutableDirectory]:
     directory = MutableDirectory(RECORDS)
-    return BreakGlassController(identities=directory, stop=stop, clock=clock, audit=audit, alerts=alerts), directory
+    return break_glass_controller(identities=directory, stop=stop, clock=clock, audit=audit, alerts=alerts), directory
 
 
 @pytest.mark.parametrize(

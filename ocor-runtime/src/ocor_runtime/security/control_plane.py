@@ -668,15 +668,16 @@ class SignedPolicyBundle:
 
 
 class OperationClass(IntEnum):
-    """LLD v1.1 §4.1 operation classes, ordered by impact.
+    """Operation classes, ordered by impact: the classes of ADD v1.3 §5.4 (:3300-3305), which
+    prevail over the LLD v1.1 §4.1 names (LLD v1.1 :16-18; OCOR-DEV-REM-0054, NCR-C6-013).
 
     A ``DelegationGrant.effect_ceiling`` is the highest class an invocation
     under the grant may exercise; a higher class is outside the grant.
     """
 
     R0_READ = 0
-    R1_DERIVE = 1
-    R2_MUTATE = 2
+    R1_ANALYZE = 1
+    R2_CONTROLLED = 2
     R3_HIGH_IMPACT = 3
 
 
@@ -1270,6 +1271,27 @@ def _rule_name(rule: object) -> str | None:
     return name if isinstance(name, str) and name else None
 
 
+def _rule_head_name(rule: object) -> str | None:
+    """The name of a compiled rule, also when OPA reports it only in the head reference
+    (multi-value ``contains`` rules)."""
+    name = _rule_name(rule)
+    if name is not None:
+        return name
+    head = rule.get("head") if isinstance(rule, dict) else None
+    ref = head.get("ref") if isinstance(head, dict) else None
+    first = ref[0] if isinstance(ref, list) and ref else None
+    value = first.get("value") if isinstance(first, dict) else None
+    return value if isinstance(value, str) and value else None
+
+
+# OCOR-DEV-REM-0054 (NCR-C6-011): the set rules of the governed package that qualify a permit.
+_QUALIFIERS = {
+    "constraints": PolicyEffect.PERMIT_WITH_CONSTRAINTS,
+    "approval_requirements": PolicyEffect.REQUIRE_APPROVAL,
+    "obligations": PolicyEffect.OBLIGATE,
+}
+
+
 def _data_references(node: object) -> list[list[object]]:
     """Every ``data``-rooted reference (and bare ``data`` variable) in an AST."""
     found: list[list[object]] = []
@@ -1340,6 +1362,7 @@ class OpaPolicyDecisionProvider:
     """
 
     _ALLOW_PATH = "/v1/data/ocor/control_plane/allow"
+    _PACKAGE_PATH = "/v1/data/ocor/control_plane"
 
     def __init__(
         self,
@@ -1917,7 +1940,10 @@ class OpaPolicyDecisionProvider:
         # Revalidate after backend I/O: a module can drift, a grant can be
         # revoked and an authority can expire while OPA is answering.
         self._require_fresh_bundle(correlation_id, snapshot)
-        effect = PolicyEffect.PERMIT if raw_result else PolicyEffect.DENY
+        effect: PolicyEffect = PolicyEffect.DENY
+        obligations: tuple[str, ...] = ()
+        if raw_result:
+            effect, obligations = self._qualify(policy_input, snapshot, correlation_id)
         now = _now()
         request.principal.require_valid(at=now)
         valid_until = min(now + timedelta(seconds=300), request.principal.expires_at,
@@ -1943,9 +1969,70 @@ class OpaPolicyDecisionProvider:
             effect=effect,
             decision_id=decision_id,
             valid_until=valid_until,
-            obligations=(),
+            obligations=obligations,
             status=status_record,
         )
+
+    def _qualify(
+        self, policy_input: Mapping[str, object], snapshot: _VerifiedBundleSnapshot, correlation_id: str
+    ) -> tuple[PolicyEffect, tuple[str, ...]]:
+        """The effect of a permitted request (ADD v1.3 :3141, Register FR-130; OCOR-DEV-REM-0054,
+        NCR-C6-011).
+
+        The signed bundle qualifies a permit through the set rules ``constraints``
+        (``PERMIT_WITH_CONSTRAINTS``), ``approval_requirements`` (``REQUIRE_APPROVAL``) and
+        ``obligations`` (``OBLIGATE``) of the governed package. A bundle that defines none of them
+        permits without qualification. Otherwise the package document is evaluated once more on the
+        same input, bound to the same verified snapshot: it must still permit, every qualifier must
+        be an array of distinct non-empty strings, and at most one may be non-empty -- the norm
+        defines no combination of effects, so an ambiguous qualification is no decision.
+        """
+        correlation = f"correlation_id={correlation_id}"
+        defined = {_rule_head_name(json.loads(rule)) for rule in snapshot.rules}
+        if defined.isdisjoint(_QUALIFIERS):
+            return PolicyEffect.PERMIT, ()
+        status, body = _request(
+            "POST",
+            f"{self._base_url}{self._PACKAGE_PATH}?explain=full",
+            data=json.dumps({"input": policy_input}).encode(),
+            headers={"Content-Type": "application/json"},
+            timeout=self._timeout,
+            correlation_id=correlation_id,
+            ssl_context=self._ssl_context,
+        )
+        if status != 200:
+            raise SecurityControlError("POLICY_UNAVAILABLE", f"{correlation} policy qualification HTTP {status}")
+        try:
+            response = json.loads(body.decode())
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise SecurityControlError("POLICY_DECISION_INVALID", f"{correlation} malformed policy qualification") from exc
+        if not isinstance(response, dict) or not isinstance(response.get("result"), dict):
+            raise SecurityControlError("POLICY_DECISION_INVALID", f"{correlation} malformed policy qualification")
+        self._require_evaluation_provenance(response, snapshot, correlation_id)
+        self._require_fresh_bundle(correlation_id, snapshot)
+        document = response["result"]
+        if document.get("allow") is not True:
+            raise SecurityControlError(
+                "POLICY_DECISION_INVALID", f"{correlation} the qualification does not confirm the permit"
+            )
+        qualified: list[tuple[PolicyEffect, tuple[str, ...]]] = []
+        for rule, effect in _QUALIFIERS.items():
+            value = document.get(rule, [])
+            if (
+                not isinstance(value, list)
+                or any(not isinstance(item, str) or not item for item in value)
+                or len(set(value)) != len(value)
+            ):
+                raise SecurityControlError(
+                    "POLICY_DECISION_INVALID", f"{correlation} {rule} is not a set of non-empty strings"
+                )
+            if value:
+                qualified.append((effect, tuple(sorted(value))))
+        if len(qualified) > 1:
+            raise SecurityControlError(
+                "POLICY_DECISION_INVALID", f"{correlation} the policy qualifies the permit with more than one effect"
+            )
+        return qualified[0] if qualified else (PolicyEffect.PERMIT, ())
 
 
 class SpireWorkloadIdentityProvider:

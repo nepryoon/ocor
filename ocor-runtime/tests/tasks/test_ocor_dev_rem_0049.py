@@ -49,7 +49,8 @@ import yaml
 from c4_projection_fixture import ClassificationJena
 from ocor_runtime.c4.jena_adapter import JenaAdapterError
 from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError, TypeDBProjectionAdapter
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.kernel.canonical import canonical_digest
 from ocor_runtime.kernel.governed_context import GovernedContext
 from ocor_runtime.security.ports import (
@@ -296,7 +297,7 @@ class Gateway:
 
         self.lookups = lookups
         self.context_policy = ContextPolicy() if context_policy is None else context_policy
-        self.engine = MarkingEngine([SCHEME])
+        self.engine = ResolvedMarkingEngine([SCHEME])
         self.catalog = gateway.NamedQueryCatalog(
             ontology_release_digest=RELEASE,
             queries={CONTRACT_ID: gateway.RegisteredNamedQuery(

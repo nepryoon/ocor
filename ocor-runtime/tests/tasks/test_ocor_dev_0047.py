@@ -18,13 +18,15 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.c6.safety import EmergencyStopController
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError
 from ocor_runtime.c8_agent import StrictSandbox, TokenBudget
 from ocor_runtime.errors import SandboxViolation, TokenBudgetExceeded
 from ocor_runtime.kernel.governed_context import GovernedContext
+from c6_safety_fixture import INCIDENT, SAFETY_OFFICER, stop_controller
 
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 DIGEST_A = "urn:sha256:" + "a" * 64
@@ -71,18 +73,18 @@ def authority() -> CapabilityAuthority:
 
 
 @pytest.fixture
-def marking_engine() -> MarkingEngine:
+def marking_engine() -> ResolvedMarkingEngine:
     scheme = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))
-    return MarkingEngine([scheme])
+    return ResolvedMarkingEngine([scheme])
 
 
 @pytest.fixture
 def stop() -> EmergencyStopController:
-    return EmergencyStopController()
+    return stop_controller()
 
 
 @pytest.fixture
-def runtime(sandbox: StrictSandbox, authority: CapabilityAuthority, marking_engine: MarkingEngine, stop: EmergencyStopController) -> ToolCallRuntime:
+def runtime(sandbox: StrictSandbox, authority: CapabilityAuthority, marking_engine: ResolvedMarkingEngine, stop: EmergencyStopController) -> ToolCallRuntime:
     return ToolCallRuntime(sandbox=sandbox, authority=authority, marking_engine=marking_engine, stop=stop)
 
 
@@ -309,7 +311,7 @@ def test_an_active_emergency_stop_produces_no_tool_effect(
 ) -> None:
     lease = grant(authority)
     budget = TokenBudget(1000)
-    stop.activate(reason="incident-during-tool-call", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-during-tool-call", at=NOW)
 
     with pytest.raises(ToolRuntimeError) as excinfo:
         runtime.invoke(
@@ -337,7 +339,7 @@ def test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect(
     lease = grant(authority)
     budget = TokenBudget(1000)
     stale_epoch = stop.epoch
-    stop.activate(reason="incident", at=NOW)
+    stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident", at=NOW)
     stop.finish_draining(at=NOW)
 
     with pytest.raises(ToolRuntimeError) as excinfo:

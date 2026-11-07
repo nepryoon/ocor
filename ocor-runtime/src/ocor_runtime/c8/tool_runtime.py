@@ -11,8 +11,10 @@ bindings, all enforced BEFORE any tool effect ever runs:
   ``ocor_runtime.kernel.governed_context.GovernedContext`` (sealed,
   reused unmodified) that already fails closed on a missing purpose
   at construction, revalidated here defensively;
-* **marking-bound** -- a real clearance check via the sealed
-  ``ocor_runtime.c4_marking.MarkingEngine.require_authorized``;
+* **marking-bound** -- a real clearance check via
+  ``ocor_runtime.c4.marking_resolution.ResolvedMarkingEngine`` (OCOR-DEV-REM-0054,
+  NCR-C6-012): a missing, unknown or incomparable marking is ``MARKING_UNRESOLVED``
+  (LLD v1.1 :67), a clearance that does not dominate is ``MARKING_DENIED``;
 * **stop-bound** -- a real emergency-stop epoch fence via
   OCOR-DEV-0044's sealed
   ``ocor_runtime.c6.safety.EmergencyStopController.guard_dispatch``;
@@ -102,8 +104,10 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Callable, Mapping
 
 from ..c3_store import require_aware
-from ..c4_marking import MarkingEngine, MarkingSet
-from ..c6.safety import EmergencyStopController, OutcomeReconciler, ReconciliationRecord, SafetyError
+from ..c4.marking import MarkingUnresolved
+from ..c4.marking_resolution import ResolvedMarkingEngine
+from ..c4_marking import MarkingSet
+from ..c6.safety import EmergencyStopController, OutcomeReconciler, ReconciliationRecord, SafetyError, StopEpochReader
 from ..c6_capabilities import CapabilityAuthority, CapabilityLease, StopEpochDenied
 from ..c8_agent import StrictSandbox, TokenBudget
 from ..errors import AuthorizationError, OCORError
@@ -241,7 +245,7 @@ _COOPERATIVE_GRACE_SECONDS = 0.25
 
 @dataclass(frozen=True, slots=True)
 class _DispatchedCall:
-    stop: EmergencyStopController
+    stop: StopEpochReader
     fenced_epoch: int
     cancelled: threading.Event
 
@@ -251,7 +255,7 @@ _DISPATCHED_CALL: contextvars.ContextVar[_DispatchedCall | None] = contextvars.C
 )
 
 
-def _stop_accepted(stop: EmergencyStopController, fenced_epoch: int) -> bool:
+def _stop_accepted(stop: StopEpochReader, fenced_epoch: int) -> bool:
     try:
         stop.guard_dispatch(fenced_epoch=fenced_epoch)
     except SafetyError:
@@ -293,13 +297,21 @@ class ToolCallRuntime:
         *,
         sandbox: StrictSandbox,
         authority: CapabilityAuthority,
-        marking_engine: MarkingEngine,
-        stop: EmergencyStopController,
+        marking_engine: ResolvedMarkingEngine,
+        stop: EmergencyStopController | StopEpochReader,
         tool_call_deadline: timedelta = DEFAULT_TOOL_CALL_DEADLINE,
         reconciler: OutcomeReconciler | None = None,
     ) -> None:
         if not isinstance(tool_call_deadline, timedelta) or not timedelta(0) < tool_call_deadline <= CONTAINMENT_TARGET:
             raise ValueError(f"tool_call_deadline must be positive and at most {CONTAINMENT_TARGET}")
+        # OCOR-DEV-REM-0054 (NCR-C6-010): the signed stop epoch is read through its durable port,
+        # never from the process that activates the stop.
+        if not isinstance(marking_engine, ResolvedMarkingEngine):
+            raise TypeError("marking_engine must be the ResolvedMarkingEngine, not the legacy MarkingEngine")
+        if isinstance(stop, EmergencyStopController):
+            stop = stop.reader
+        if not isinstance(stop, StopEpochReader):
+            raise TypeError("stop must be a StopEpochReader of the signed stop epoch")
         authority.bind_stop_controller(stop)
         self._sandbox = sandbox
         self._authority = authority
@@ -370,9 +382,11 @@ class ToolCallRuntime:
             raise ToolRuntimeError("PURPOSE_REQUIRED", "a tool call requires a non-empty GovernedContext purpose")
 
         try:
-            self._marking_engine.require_authorized(content_marking, clearance)
-        except AuthorizationError as error:
-            raise ToolRuntimeError("MARKING_DENIED", str(error)) from error
+            marking_authorized = self._marking_engine.authorized(content_marking, clearance)
+        except MarkingUnresolved as error:
+            raise ToolRuntimeError("MARKING_UNRESOLVED", str(error)) from error
+        if not marking_authorized:
+            raise ToolRuntimeError("MARKING_DENIED", "clearance does not dominate the content marking")
 
         lease_epoch = authorized.stop_epoch
         if lease_epoch is None:

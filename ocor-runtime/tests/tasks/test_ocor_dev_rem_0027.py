@@ -40,14 +40,16 @@ from typing import Any
 
 import pytest
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
-from ocor_runtime.c6.safety import EmergencyStopController, OutcomeReconciler, OutcomeStatus, SafetyError
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
+from ocor_runtime.c6.safety import OutcomeReconciler, OutcomeStatus, SafetyError
 from ocor_runtime.c6_capabilities import CapabilityAuthority, CapabilityLease
 from ocor_runtime.c8 import tool_runtime as tool_runtime_module
 from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError
 from ocor_runtime.c8_agent import AgentKernel, StrictSandbox, TokenBudget
 from ocor_runtime.errors import AuthorizationError
 from ocor_runtime.kernel.governed_context import GovernedContext
+from c6_safety_fixture import INCIDENT, recovery, SAFETY_OFFICER, stop_controller
 
 NOW = datetime(2026, 10, 13, 12, 0, 0, tzinfo=UTC)
 DIGEST = "urn:sha256:"
@@ -97,8 +99,8 @@ class Harness:
         self.finished = threading.Event()
         self.sandbox = StrictSandbox()
         self.authority = CapabilityAuthority(issuer="rem-0027-authority")
-        self.marking = MarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
-        self.stop = EmergencyStopController()
+        self.marking = ResolvedMarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
+        self.stop = stop_controller()
         # REM-0028 (merged on main): reset approvers are resolved active humans
         # read from registry attributes, independent of the requester.
         self.identities = IdentityRegistry(
@@ -150,7 +152,7 @@ class Harness:
         caller resumes only once the stop has been accepted."""
 
         def run() -> None:
-            self.stop.activate(reason="external emergency stop", at=datetime.now(UTC))
+            self.stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="external emergency stop", at=datetime.now(UTC))
             self.stop_accepted_at = time.monotonic()
 
         worker = threading.Thread(target=run)
@@ -166,7 +168,7 @@ class Harness:
 
     def reset(self) -> None:
         self.stop.finish_draining(at=NOW)
-        self.stop.request_reset(approvers=HUMANS, identities=self.identities, requester=RESET_REQUESTER, at=NOW)
+        self.stop.request_reset(approvers=HUMANS, recovery=recovery(HUMANS), identities=self.identities, requester=RESET_REQUESTER, at=NOW)
         self.stop.confirm_reset(at=NOW)
 
     def invoke(
@@ -496,7 +498,7 @@ def test_an_authority_bound_to_one_controller_cannot_be_rebound_to_another() -> 
     harness = Harness()
 
     with pytest.raises(ValueError):
-        ToolCallRuntime(sandbox=harness.sandbox, authority=harness.authority, marking_engine=harness.marking, stop=EmergencyStopController())
+        ToolCallRuntime(sandbox=harness.sandbox, authority=harness.authority, marking_engine=harness.marking, stop=stop_controller())
 
 
 # --- class check: every tool actually called is covered by the lease ---------------
