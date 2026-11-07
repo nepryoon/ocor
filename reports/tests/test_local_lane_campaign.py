@@ -1600,6 +1600,30 @@ def test_bootstrap_summary_rejects_absent_or_malformed_output(text):
         LANES.bootstrap_summary(text)
 
 
+@pytest.mark.parametrize('final', [
+    {'status': 1}, {'status': None}, {'status': 'FAIL', 'error': {'x': 1}}, {'status': 'FAIL', 'error': 5},
+    {'status': 'PASS', 'provisioning_seconds': True, 'services': {'services': [{'service': 'x', 'status': 'READY'}]}},
+    {'status': 'PASS', 'provisioning_seconds': '101', 'services': {'services': [{'service': 'x', 'status': 'READY'}]}},
+    {'status': 'PASS', 'services': {'services': [{'service': 'x', 'status': 'READY'}]}},
+])
+def test_bootstrap_summary_takes_no_field_by_conversion(final):
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.bootstrap_summary(json.dumps(final, indent=2) + '\n')
+
+
+def test_bootstrap_summary_keeps_a_typed_failure():
+    assert LANES.bootstrap_summary('{"status": "FAIL", "error": "typed service health failed"}\n') == {
+        'status': 'FAIL', 'error': 'typed service health failed'}
+    assert LANES.bootstrap_summary('{"status": "FAIL"}\n') == {'status': 'FAIL', 'error': ''}
+
+
+@pytest.mark.parametrize('text', ['2026-13-01T00:00:00Z', '2026-02-30T00:00:00Z', '2026-11-07T24:00:00Z',
+                                  '2026-11-07T10:61:00Z', '2026-11-07T10:00:00.Z', '2026-11-07T10:00:00.1234567890Z'])
+def test_container_start_rejects_impossible_or_malformed_times(text):
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.container_started_epoch(text)
+
+
 def test_container_start_is_parsed_with_nanoseconds_and_rejects_other_text():
     assert LANES.container_started_epoch(STARTED_AT) == pytest.approx(1794045600.25)
     assert LANES.container_started_epoch('2026-11-07T10:00:00Z') == pytest.approx(1794045600.0)
@@ -1739,6 +1763,54 @@ def test_lifecycle_check_kills_a_bootstrap_that_exceeds_its_bound(life_world, mo
     monkeypatch.setattr(LANES, 'LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS', 0)
     report = lifecycle(life_world)
     assert report['status'] == 'FAIL' and 'bound' in report['error'] and stuck.killed
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lifecycle_check_records_an_unreadable_temporal_start_as_not_observed(life_world):
+    report = lifecycle(life_world, temporal_runner(extra=[(['*', '{{.State.StartedAt}}'], 1, '')]))
+    assert report['status'] == 'FAIL' and 'Temporal was not observed SERVING' in report['error']
+    assert all(entry['temporal']['serving'] is False and entry['temporal']['error'] for entry in report['lanes'])
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lifecycle_check_with_a_malformed_temporal_start_fails_closed(life_world):
+    report = lifecycle(life_world, temporal_runner(started='0001-01-01T00:00:00Z'))
+    assert report['status'] == 'FAIL' and 'unexpected container start time' in report['error']
+
+
+def test_lifecycle_check_stops_the_started_bootstraps_when_a_launch_fails(life_world):
+    started = []
+    real = life_world['bootstrap_launcher']
+
+    def launcher(argv, log):
+        index = int(argv[argv.index('-w') + 1].split('/lane-')[-1].split('/')[0])
+        if index == 3:
+            raise OSError('cannot start lane 3 bootstrap')
+        real(argv, log)
+        started.append(FakeProcess(0, None))
+        return started[-1]
+    life_world['bootstrap_launcher'] = launcher
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL' and 'lane 3' in report['error']
+    assert len(started) == 2 and all(process.killed for process in started)
+    assert [call[0] for call in life_world['calls']].count('teardown') == 4
+
+
+def test_lifecycle_check_kills_every_running_bootstrap_when_the_wait_fails(life_world, monkeypatch):
+    stuck = [FakeProcess(0, None) for _ in range(4)]
+    pending = iter(stuck)
+    life_world['bootstrap_launcher'] = lambda argv, log: (log.write_text(''), next(pending))[1]
+    calls = {'n': 0}
+
+    def failing_sleep(seconds):
+        calls['n'] += 1
+        if calls['n'] > 2:
+            raise OSError('host clock unavailable')
+    report = LANES.lifecycle_check(life_world['work'], HEAD, [Path('/x/bin')], temporal_runner(serving=False), source=life_world['source'],
+                                   launcher=life_world['bootstrap_launcher'], meminfo_path=life_world['meminfo'],
+                                   wall=lambda: SERVING_WALL, sleep=failing_sleep, lanes=4)
+    assert report['status'] == 'FAIL' and 'host clock unavailable' in report['error']
+    assert all(process.killed for process in stuck)
     assert [call[0] for call in life_world['calls']].count('teardown') == 4
 
 
