@@ -1,0 +1,1050 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.2: SimulateIntervention(do(X=x)) replaces F_X and removes the incoming edges of X; ADD v1.3 \u00a74.2 flow: identification, NOT_IDENTIFIED, do(X) in an isolated SCM; FR-094: do(X) output matches the interventional ground truth within tolerance; FR-009: intervention comparison; a non-identifiable case returns NOT_IDENTIFIED",
+      "entry": "NCR-C7-001",
+      "norm_refs": [
+        {
+          "lines": "2977",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2965-2972",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "235",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "60",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-094",
+        "FR-009"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_the_registered_model_declares_v_u_p_u_and_f",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_do_replaces_the_target_mechanism_and_removes_its_incoming_edges",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_simulate_intervention_matches_the_interventional_ground_truth",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_identification_is_derived_from_the_registered_scm",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_a_non_identifiable_query_returns_not_identified_and_no_estimate",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_at_least_two_interventions_are_compared",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_the_engine_port_keeps_abduction_action_and_prediction_distinct"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option A with two precisions): causal outcomes use only the closed sets of ADD v1.3 section 4.2. REJECTED, with contract_or_policy_reason equal to the current code: RELEASE_MISMATCH, MAIN_CONTAMINATED, MISSING_FACTUAL_SET, FACTUAL_SCHEMA_INVALID; REJECTED with INTERVENTION_SCHEMA_INVALID for a missing or malformed validity envelope or a non-numeric value; REJECTED with FACTUAL_SCHEMA_INVALID for a non-binary treatment. ABSTAIN OUTSIDE_VALIDITY_ENVELOPE with failed_conditions for a value outside an explicit constraint of a well-formed envelope; ABSTAIN NOT_IDENTIFIED for unresolved confounding; ABSTAIN ASSUMPTION_VIOLATION for a stratum without one of the two arms; OUT_OF_DISTRIBUTION only with empirical-support diagnostics. REJECTED conditions are evaluated before ABSTAIN conditions; among ABSTAIN conditions the ADD precedence applies.",
+      "entry": "NCR-C7-002",
+      "norm_refs": [
+        {
+          "lines": "3007-3022",
+          "note": "ADD v1.3 \u00a74.2 closed ABSTAIN.reason_code set and precedence",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3024",
+          "note": "ADD v1.3 \u00a74.2: signature, schema, policy or version-pin errors produce REJECTED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "note": "LLD v1.1 \u00a72.7: OOD, positivity failure, unresolved confounding, missing factual set, incompatible release or contaminated main produce disjoint reason codes",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "16-18",
+          "note": "LLD v1.1 \u00a70.1 precedence",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "60",
+          "note": "FR-009",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "239",
+          "note": "FR-098: out-of-envelope fixture produces abstention",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-009",
+        "FR-098"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_release_mismatch_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_main_contamination_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_missing_factual_set_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_an_invalid_factual_schema_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_non_binary_treatment_is_rejected_as_factual_schema_invalid",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_missing_or_malformed_envelope_or_a_non_numeric_value_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_value_outside_an_explicit_constraint_abstains_outside_validity_envelope",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_unresolved_confounding_abstains_not_identified",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_stratum_without_an_arm_abstains_assumption_violation",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_out_of_distribution_only_with_empirical_support_diagnostics",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_abstain_precedence_between_two_conditions",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_rejected_conditions_are_evaluated_before_abstain_conditions",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_only_the_closed_sets_are_produced"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.2 CausalRunOutcome := ESTIMATED | ABSTAIN | REJECTED | FAILED; ADD v1.3 \u00a74.2: pin errors produce REJECTED; LLD v1.1 \u00a72.7: result includes uncertainty, sensitivity, lineage, inputs, seed and reproducibility digest; FR-093: incomplete SimulationResult fails schema validation; FR-097: no P0 quantitative result without uncertainty descriptor; NFR-030: invalid digest or signature blocks the run",
+      "entry": "NCR-C7-003",
+      "norm_refs": [
+        {
+          "lines": "2979-3005",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3024",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "233",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "238",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "228",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-093",
+        "FR-097",
+        "NFR-030"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_a_pin_mismatch_is_rejected_not_raised",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_only_the_four_outcome_statuses_exist",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_every_estimate_carries_the_estimated_fields",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_an_abstention_carries_its_fields_and_no_effect",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_a_computational_fault_is_failed_with_retry_safety",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_simulation_result_is_immutable_and_schema_validated",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_outcome_document_is_schema_validated",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_an_invalid_signature_blocks_the_run",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_revoked_key_blocks_the_run",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_validly_signed_model_other_than_the_pinned_one_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_non_canonical_signed_payload_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_valid_signature_admits_the_run_and_the_rejection_carries_no_estimate"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.2 ScenarioRunSpec fields and overlay; ADD v1.3 \u00a74.2 L2 job lifecycle; budget, quota, progress, cancellation, timeout mandatory; LLD v1.1 \u00a72.7 CausalQuery content; LLD v1.1 \u00a76: C7 job cancellable with resource release; FR-092: scenario version pinning; FR-103: cancel and timeout release resources and are audited; FR-161: submit, observe, cancel and retrieve a job Cancelling a causal job releases its resources within PT30S (ADD v1.3 section 4.1.3).",
+      "entry": "NCR-C7-004",
+      "norm_refs": [
+        {
+          "lines": "2949-2961",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3026-3032",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "357",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "232",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "244",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "402",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "2927",
+          "note": "ADD v1.3 section 4.1.3: a cancelled causal job releases resources within PT30S",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-092",
+        "FR-103",
+        "FR-161"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_run_spec_has_exactly_the_add_fields_and_is_immutable",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_incomplete_or_malformed_spec_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_spec_digest_covers_every_pin_and_no_trace_identifier",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_query_is_built_from_the_spec_and_the_overlay_hypothesis",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_hypothesis_is_read_at_the_pinned_revision",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_missing_or_malformed_hypothesis_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_branch_of_another_run_or_baseline_is_rejected",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_factual_set_and_the_sample_budget_are_pinned",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_client_submits_observes_and_retrieves_a_versioned_result",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_identical_runs_give_equivalent_results",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_rejected_run_completes_with_its_sealed_rejection",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_only_the_add_transitions_are_allowed_and_refusals_change_nothing",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_queued_job_is_cancelled_and_audited",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_cancelling_a_running_job_releases_its_resources_within_pt30s",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_paused_job_stops_its_worker_until_resumed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_timeout_expires_the_job_without_a_partial_result",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_result_after_the_deadline_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_result_bound_to_another_spec_or_tampered_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_audit_is_append_only",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_quota_and_backpressure_refuse_and_audit_submissions",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_lost_worker_fails_the_job_with_retry_safety",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_unreachable_backend_is_a_typed_error_without_credentials",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_foreign_table_shape_is_a_schema_mismatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_tampered_stored_job_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_tampered_audit_or_resource_row_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_malformed_calls_are_refused_with_typed_errors",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_overdue_jobs_without_a_runner_expire_and_free_the_quota",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_unreadable_hypothesis_fails_the_job_and_releases_its_resources"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: NFR-007: identical runs give identical digests or differences within the preregistered tolerance; tolerance is mandatory; FR-092: equivalent output within the declared tolerance; NFR-015; LLD v1.1 \u00a72.7: reproducibility digest",
+      "entry": "NCR-C7-005",
+      "norm_refs": [
+        {
+          "lines": "61",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "232",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "133",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "177",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-007",
+        "FR-092",
+        "NFR-015"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_the_digest_does_not_depend_on_trace_identifiers",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_the_tolerance_is_mandatory_and_declared",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_reproduction_accepts_differences_within_the_tolerance_only"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 4 (option A): in the PoC profile every structurally valid unit-level counterfactual query returns REJECTED{CAPABILITY_DEFERRED, ELM-070} without reading the factual set; a structurally invalid one returns REJECTED for its schema error; identical inputs give an identical, reproducible outcome.",
+      "entry": "NCR-C7-006",
+      "norm_refs": [
+        {
+          "lines": "3036",
+          "note": "ADD v1.3 \u00a74.2: ELM-070 deferred; PoC returns REJECTED{CAPABILITY_DEFERRED, ELM-070} for full AAP execution",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "236",
+          "note": "FR-095 (P0 MVP): AAP counterfactual",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-095"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_valid_counterfactual_query_is_rejected_capability_deferred",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_structurally_invalid_counterfactual_query_is_rejected_for_its_schema"
+      ]
+    }
+  ],
+  "additional_criterion": "NORMATIVE-CONFORMANCE-PLAN point 2 for NCP-U09: SCM with V, U, P(U) and F; do(X) replaces F_X; engine port with abduction, action and prediction distinct (PoC: action and prediction only); job ledger of C7 on PostgreSQL (tests of NCR-C7-001 and NCR-C7-004)",
+  "ambiguities_resolved_fail_closed": [
+    "NCR-C7-004: progress is reported by the runner at phase level (0.1 after preparation, 1 on completion), not by the engine: ADD v1.3 :3026-3032 requires observable progress and does not fix its granularity",
+    "NCR-C7-004: the job deadline counts from submission, queue time included (the stricter reading of budget.max_runtime_seconds)",
+    "NCR-C7-004: the samples resource recorded for a running job is the budgeted maximum (budget.max_samples), released in full on every terminal transition",
+    "NCR-C7-004: the hypothesis of a run is the last causal_query delta of the overlay at the pinned revision; a missing or malformed one is REJECTED INTERVENTION_SCHEMA_INVALID",
+    "NFR-030: the trust root of the causal model signature is configured by the deployment, never by the caller; a revoked or unknown key, another model or a non-canonical payload is REJECTED"
+  ],
+  "change_anchors": [
+    {
+      "change": "registered SCM M=(U, V, F, P(U)) with a mandatory tolerance; do(X=x) replaces F_X and removes the incoming edges on the engine port, whose abduction, action and prediction are distinct (abduction deferred, ELM-070); identification from the SCM with NOT_IDENTIFIED; comparison of at least two interventions; CausalRunOutcome ESTIMATED, ABSTAIN, REJECTED and FAILED with the ADD v1.3 closed reason sets, the PO mapping of NCR-C7-002 and the precedence (REJECTED before ABSTAIN); uncertainty and sensitivity on every estimate; schema-validated outcome document and immutable SimulationResult; digest without trace identifiers and tolerance-aware reproduction check; counterfactual REJECTED{CAPABILITY_DEFERRED, ELM-070}; REJECTED MODEL_SIGNATURE_INVALID, SCENARIO_PIN_MISMATCH and BUDGET_EXCEEDED",
+      "function": "StructuralCausalModel (from_document, do, sample, edges), Mechanism, ExogenousVariable, CausalEnginePort (identify, abduct, act, predict), default_engine, CausalQuery (run_pins), CausalOutcome, OUTCOME_SCHEMA, outcome_document, outcome_from_document, estimate_intervention, estimate_uncertainty, estimate_sensitivity, simulate_intervention, compare_interventions, estimate_counterfactual, verify_reproduction, SimulationResult",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2977-3005, :3024, :3036, :3586; docs/OCOR_LLD_v1.1.md:173-177",
+      "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+    },
+    {
+      "change": "new: the default engine of the port: DoWhy identification (identify_effect_auto) over the graph of the registered SCM, the exogenous variables unobserved; action and prediction on the SCM; abduction refused (ELM-070 deferred); DoWhy imported lazily",
+      "function": "DoWhyCausalEngine (identify, abduct, act, predict)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2977; docs/OCOR_LLD_v1.1.md:177",
+      "path": "ocor-runtime/src/ocor_runtime/c7/adapters/dowhy_engine.py"
+    },
+    {
+      "change": "new: the immutable ScenarioRunSpec with exactly the ADD v1.3 fields and a digest of every pin without trace identifiers; the CausalQuery built from the spec and the overlay hypothesis read at the pinned revision; the causal model signed as a DSSE envelope with Ed25519 and verified at the boundary against the deployment trust root (REJECTED MODEL_SIGNATURE_INVALID or MODEL_PIN_MISMATCH)",
+      "function": "ScenarioRunSpec (from_document, digest), CausalModelTrustRoot, sign_causal_model, verify_causal_model, prepare_scenario_run, PreparedRun (to_payload, from_payload, execute), run_scenario",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2949-2961; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md NFR-030; docs/OCOR_LLD_v1.1.md:177",
+      "path": "ocor-runtime/src/ocor_runtime/c7/scenario_run.py"
+    },
+    {
+      "change": "new: the L2 job lifecycle queued -> running -> paused | cancelled | completed | failed | expired; the runner executes the run in a worker process (pause and resume stop and continue it, cancellation and timeout terminate it and release its resources within PT30S, a lost worker fails the job with retry safety) and seals the result through the overlay store",
+      "function": "CausalJobLedger (port), CausalJob, JobTransition, JobResource, JobResult, RunInputs, CausalJobRunner.run",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2927, :3026-3032; docs/OCOR_LLD_v1.1.md:357",
+      "path": "ocor-runtime/src/ocor_runtime/c7/jobs.py"
+    },
+    {
+      "change": "new: the C7 job ledger on PostgreSQL: compare-and-set transitions under row locks, database-clock deadlines with overdue jobs expired before every admission, quota and backpressure with audited refusals, append-only audit and results, release-only resources, the result bound to the pinned spec and re-verified on read, typed errors without server text or DSN",
+      "function": "PostgresCausalJobLedger (initialize, submit, start, report_progress, pause, resume, cancel, expire, expire_overdue, fail, complete, release_resources, job, spec, transitions, refusals, resources, result)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2927, :3026-3032; docs/OCOR_LLD_v1.1.md:357, :372 (BA-06)",
+      "path": "ocor-runtime/src/ocor_runtime/c7/adapters/postgres_jobs.py"
+    },
+    {
+      "change": "the sealed-result adapter stores and reads the structured CausalRunOutcome document validated by the runtime schema (SEALED_RESULT_TAMPERED on a schema error)",
+      "function": "_body, _decode",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:2980-3005; docs/OCOR_LLD_v1.1.md:372 (BA-06)",
+      "path": "ocor-runtime/src/ocor_runtime/c7/adapters/seaweedfs.py"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c7/runtime.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py"
+    ]
+  },
+  "consumers_inventory_findings": [
+    "the product consumers of c7/runtime.py are c7/scenario_run.py, c7/jobs.py, c7/adapters/postgres_jobs.py and c7/adapters/seaweedfs.py, all changed or added by the unit; c7/scenario_overlay.py and c7/sealed_results.py name the runtime only in docstrings and are unchanged",
+    "the test consumers are exactly those of consumers_to_inventory (test_ocor_dev_0045.py, test_ocor_dev_rem_0040.py, test_ocor_dev_rem_0041_overlay.py) and the two unit modules; the REM-0041 overlay module is imported by test_ocor_dev_rem_0057_jobs.py for its live TerminusDB and SeaweedFS fixtures",
+    "c7_emission.py (ocor_runtime.c7_emission and its src shim) is the legacy emission slice, not the causal runtime: unchanged, and its consumers (acceptance_ev, backend_assumptions BA-07, runtime hardening, mission thread, 0030, 0043, c6_action_fixture, REM-0050, REM-0053) do not import c7.runtime",
+    "REM-0040 and REM-0041 are remediation units, not completed backlog tasks: their sealed records are not inputs of the drift validator, so their adapted and realigned tests run in the campaign without a requalification record"
+  ],
+  "consumers_inventory_note": "grep of c7.runtime, c7.scenario_run, c7.jobs and c7.adapters over ocor-runtime, scripts and reports/tests at the unit head",
+  "decided_requests": [],
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 4, 5 and 8 (NCP-U09 row; decisions on NCR-C7-002 option A with two precisions and NCR-C7-006 option A; BA-06 and the NCR-C7-004 extended criterion); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "changed_functions": [
+          "test_counterfactual_abstains_identically_to_intervention_on_main",
+          "test_counterfactual_imputes_a_specific_units_outcome_under_the_opposite_treatment",
+          "test_counterfactual_rejects_an_out_of_range_unit_index",
+          "test_intervention_abstains_with_disjoint_reason_codes",
+          "test_missing_factual_set_abstains_without_estimate",
+          "test_out_of_domain_intervention_abstains_without_estimate",
+          "test_pin_mismatch_fails_loudly",
+          "test_positivity_failure_abstains_without_estimate",
+          "test_reimplemented_intervention_reproduces_the_sealed_spikes_oracle_bit_for_bit",
+          "test_same_pinned_inputs_reproduce_identical_sealed_identified_result",
+          "test_sensitivity_abstains_identically_to_intervention_on_main",
+          "test_sensitivity_reports_the_shifted_effect_and_whether_the_sign_flips",
+          "test_uncertainty_abstains_identically_to_intervention_on_main",
+          "test_uncertainty_produces_a_deterministic_bootstrap_interval_around_the_ate"
+        ],
+        "functions": [
+          21,
+          21
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_seal_and_read_round_trip_an_identified_and_an_abstained_outcome"
+        ],
+        "functions": [
+          21,
+          21
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_seal_result_composes_the_seaweedfs_subset_end_to_end"
+        ],
+        "functions": [
+          37,
+          37
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
+        "same_names": true
+      }
+    ],
+    "note": "numbers and names of test functions and parametrizations unchanged; the only differences are the fourteen realigned functions of test_ocor_dev_0045.py, the realigned round trip of test_ocor_dev_rem_0040.py and the realigned end-to-end estimate of test_ocor_dev_rem_0041_overlay.py listed in existing_tests_realigned_or_adapted, each with its RED; the adapted constructions and pins change no assertion; to be repeated on the candidate head",
+    "tool": "~/.ocor-codex/rem-0057/ast_compare.py against the unit base ef92062 (test functions, asserts, pytest.raises, decorators)"
+  },
+  "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment and has its RED; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; test_ocor_dev_rem_0040.py and test_ocor_dev_rem_0041_overlay.py are inputs of no latest evidence record of a completed task (drift validator): they run in the consumer modules of the campaign",
+  "existing_tests_realigned_or_adapted": {
+    "adapted": [
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 cases 2 and 3 and its NCP-U09 table",
+        "kind": "ADAPT_CONSTRUCTION_AND_PINS",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+        "red": null,
+        "what": "SCM MODEL and CONFOUNDED_MODEL, query without adjustment and caller booleans, run_intervention(model=...), sealed_query() for the spike"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 cases 2 and 3 and its NCP-U09 table",
+        "kind": "ADAPT_CONSTRUCTION_AND_PINS",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py",
+        "red": null,
+        "what": "_outcome with a registered SCM (non-identifiable for the abstained case), no adjustment; C7_RUNTIME_SHA256 at the unit head (case 2)"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 cases 2 and 3 and its NCP-U09 table",
+        "kind": "ADAPT_CONSTRUCTION_AND_PINS",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
+        "red": null,
+        "what": "_outcome with a registered SCM, no adjustment; SEALED_SHA256 of c7/runtime.py and c7/adapters/seaweedfs.py at the unit head (case 2)"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 3 (construction)",
+        "kind": "ADAPT_CONSTRUCTION_AND_PINS",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py",
+        "red": null,
+        "what": "iteration 2 (3fb9c8f): _outcome baseline_commit carries the run nonce so that the outcome stays unique to the run (trace identifiers outside the digest); C7_RUNTIME_SHA256 at the head (case 2); AST against acc0f70: no assertion changed"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 case 2",
+        "kind": "ADAPT_CONSTRUCTION_AND_PINS",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
+        "red": null,
+        "what": "iteration 2 (3fb9c8f): SEALED_SHA256 of c7/runtime.py at the head"
+      }
+    ],
+    "realigned": [
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 table (NCP-U09) and existing_tests_to_realign_or_adapt of NCP-U09",
+        "functions": 14,
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+        "red": {
+          "commit_base": "ef92062",
+          "fingerprint": "250dbbf27d77b25d57f211a22f4ea0b8725f50a85d62f82102b84136e98b5f67",
+          "summary": "the realigned assertions with the old construction on the base code: 20 failed"
+        },
+        "what": "ESTIMATED instead of IDENTIFIED; REJECTED for main contamination, release and pin errors (pytest.raises replaced by the outcome); ABSTAIN NOT_IDENTIFIED, ASSUMPTION_VIOLATION, OUTSIDE_VALIDITY_ENVELOPE; counterfactual REJECTED{CAPABILITY_DEFERRED, ELM-070}"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 table (NCP-U09: the abstained round trip of REM-0040 is a non-identifiable case awaiting NOT_IDENTIFIED)",
+        "functions": 1,
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py",
+        "red": {
+          "commit_base": "ef92062",
+          "fingerprint": "d9e5825b63146a035beac8a40fd7b38f146e11b100fe49cfd60b412b29bed2c2",
+          "summary": "with the REM-0041 assertion: 2 failed"
+        },
+        "what": "reason_code of the abstained round trip NOT_IDENTIFIED"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 (test_ocor_dev_rem_0041_overlay.py line 1225, NCP-U09)",
+        "functions": 1,
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py",
+        "red": {
+          "commit_base": "ef92062",
+          "fingerprint": "d9e5825b63146a035beac8a40fd7b38f146e11b100fe49cfd60b412b29bed2c2",
+          "summary": "with the REM-0040 assertion: 2 failed"
+        },
+        "what": "end-to-end estimate status ESTIMATED"
+      }
+    ]
+  },
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "input_robustness_self_check": {
+    "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1: the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) plus boundary digests and bindings and the closure of every resource on every error path, for every adapter and parsing path touched by the unit, before the preventive review",
+    "findings_fixed": [
+      "overdue jobs without a runner kept their quota (10506d3 -> 9c37ca5)",
+      "an unreadable hypothesis left the job queued (10506d3 -> 9c37ca5)"
+    ],
+    "green": "9c37ca5",
+    "note": "every gap found was closed with RED/GREEN on the real stack (local ports only for the failure paths); the table informs the preventive review and does not replace it",
+    "red": [
+      "10506d3"
+    ],
+    "table": [
+      {
+        "adapter_path": "c7/adapters/postgres_jobs.py _job and spec()",
+        "closed_on_error": "connection and transaction context managers",
+        "digest_at_boundary": "spec digest recomputed",
+        "negative_tests": "test_ncr_c7_004_conforms_a_tampered_stored_job_is_refused (8 cases)",
+        "shape_without_coercion": "state, progress pattern, sha256, boolean, retry safety, result reference against the state",
+        "tampered_refused": "spec digest recomputed on read",
+        "typed_error": "BACKEND_ERROR, SPEC_TAMPERED"
+      },
+      {
+        "adapter_path": "c7/adapters/postgres_jobs.py _transition and _resource",
+        "closed_on_error": "yes",
+        "digest_at_boundary": "not applicable",
+        "negative_tests": "test_ncr_c7_004_conforms_a_tampered_audit_or_resource_row_is_refused",
+        "shape_without_coercion": "yes",
+        "tampered_refused": "yes",
+        "typed_error": "BACKEND_ERROR"
+      },
+      {
+        "adapter_path": "c7/adapters/postgres_jobs.py result()",
+        "closed_on_error": "yes",
+        "digest_at_boundary": "outcome digest and run_spec_digest recomputed",
+        "negative_tests": "test_ncr_c7_004_conforms_a_result_bound_to_another_spec_or_tampered_is_refused",
+        "shape_without_coercion": "outcome schema through outcome_from_document",
+        "tampered_refused": "yes (append-only trigger; out-of-band update detected)",
+        "typed_error": "RESULT_TAMPERED, NO_VALID_RESULT"
+      },
+      {
+        "adapter_path": "c7/adapters/postgres_jobs.py complete()",
+        "closed_on_error": "rollback on the pin mismatch",
+        "digest_at_boundary": "recomputed, never taken from the caller",
+        "negative_tests": "same, and test_ncr_c7_004_conforms_a_result_after_the_deadline_is_refused",
+        "shape_without_coercion": "CausalOutcome only",
+        "tampered_refused": "forged outcome refused",
+        "typed_error": "RESULT_INVALID, RESULT_PIN_MISMATCH, JOB_EXPIRED"
+      },
+      {
+        "adapter_path": "c7/adapters/postgres_jobs.py submit(), initialize(), expire_overdue()",
+        "closed_on_error": "yes; a refusal is audited, committed, then raised",
+        "digest_at_boundary": "spec digest recomputed",
+        "negative_tests": "quota_and_backpressure, foreign_table_shape, overdue_jobs_without_a_runner",
+        "shape_without_coercion": "spec re-parsed from its document; catalogue rows checked",
+        "tampered_refused": "not applicable",
+        "typed_error": "QUOTA_EXCEEDED, BACKPRESSURE, SCHEMA_MISMATCH"
+      },
+      {
+        "adapter_path": "c7/adapters/postgres_jobs.py driver",
+        "closed_on_error": "psycopg context managers",
+        "digest_at_boundary": "not applicable",
+        "negative_tests": "test_ncr_c7_004_conforms_an_unreachable_backend_is_a_typed_error_without_credentials",
+        "shape_without_coercion": "not applicable",
+        "tampered_refused": "not applicable",
+        "typed_error": "BACKEND_UNAVAILABLE, BACKEND_ERROR without server text or DSN"
+      },
+      {
+        "adapter_path": "c7/scenario_run.py ScenarioRunSpec.from_document",
+        "closed_on_error": "not applicable",
+        "digest_at_boundary": "digest recomputed from the pins",
+        "negative_tests": "test_ncr_c7_004_conforms_an_incomplete_or_malformed_spec_is_refused (17 cases)",
+        "shape_without_coercion": "exact keys; booleans are not integers; UTC offset and ISO duration required",
+        "tampered_refused": "not applicable",
+        "typed_error": "RUN_SPEC_INVALID"
+      },
+      {
+        "adapter_path": "c7/scenario_run.py verify_causal_model",
+        "closed_on_error": "not applicable",
+        "digest_at_boundary": "model digest recomputed from the signed payload",
+        "negative_tests": "test_nfr_030_conforms_* (14 cases)",
+        "shape_without_coercion": "exact envelope keys, strict base64, canonical JSON payload",
+        "tampered_refused": "swapped payload, other key, revoked key, non-canonical payload",
+        "typed_error": "REJECTED MODEL_SIGNATURE_INVALID or MODEL_PIN_MISMATCH"
+      },
+      {
+        "adapter_path": "c7/scenario_run.py prepare_scenario_run (overlay view and query delta)",
+        "closed_on_error": "the runner stops the worker and closes the pipe in finally",
+        "digest_at_boundary": "intervention digest recomputed",
+        "negative_tests": "malformed_hypothesis (7 cases), branch_of_another_run_or_baseline, factual_set_and_sample_budget, unreadable_hypothesis",
+        "shape_without_coercion": "view branch and revision checked; exact delta keys",
+        "tampered_refused": "delta chain verified by read_at (REM-0041)",
+        "typed_error": "REJECTED INTERVENTION_SCHEMA_INVALID, SCENARIO_PIN_MISMATCH, MODEL_SCHEMA_INVALID, BUDGET_EXCEEDED; overlay errors fail the job"
+      },
+      {
+        "adapter_path": "c7/jobs.py CausalJobRunner worker channel",
+        "closed_on_error": "terminate, kill and join of the worker in finally",
+        "digest_at_boundary": "outcome digest recomputed",
+        "negative_tests": "test_ncr_c7_004_conforms_a_lost_worker_fails_the_job_with_retry_safety",
+        "shape_without_coercion": "('outcome', document, digest) only",
+        "tampered_refused": "outcome_from_document",
+        "typed_error": "WORKER_ERROR, WORKER_RESULT_INVALID, WORKER_LOST"
+      }
+    ]
+  },
+  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 4 iterations (12), earlier after two consecutive iterations without progress; iteration 3 of estimate 4",
+  "open_decision_requests": [],
+  "open_points_for_review": [
+    "NCR-C7-001: identification uses the backdoor criterion of DoWhy on the registered SCM; an estimand identifiable only by front-door or instrumental variables abstains NOT_IDENTIFIED (no estimator for them in the PoC), with the available strategies in the diagnostics",
+    "NCR-C7-001: simulate_intervention returns E[Y | do(X=x)] on M_do(X=x) by seeded Monte Carlo with the model's sample size; compare_interventions reports the contrast of the second intervention against the first and every expectation",
+    "NCR-C7-002: the empirical support of an intervention value is the set of treatment values observed in the factual set; OUT_OF_DISTRIBUTION is produced only when every explicit envelope constraint holds",
+    "NCR-C7-003: estimate_uncertainty and estimate_sensitivity keep their flat legacy detail keys (ci_low, ci_high, resamples; confounding_shift, shifted_effect, sign_flipped) besides the structured uncertainty and sensitivity, so that the sealed 0045 assertions on them stay unchanged",
+    "NCR-C7-003 / NFR-030: the digest pins and the signature of the causal model block the run (REJECTED)",
+    "NCR-C7-004: the runner reports phase-level progress (0.1 after preparation, 1 on completion), not engine-level progress",
+    "NCR-C7-004: the job deadline counts from submission (the queue time is included in budget.max_runtime_seconds)",
+    "NCR-C7-004: the samples resource recorded for a running job is the budgeted maximum (budget.max_samples)",
+    "NCR-C7-004: the hypothesis of a run is the last causal_query delta of the overlay at the pinned revision",
+    "NFR-030: the causal model is signed as a DSSE envelope (payload type application/vnd.ocor.causal-model.v1+json) with Ed25519 (c1.signing); the trust root is configured by the deployment, never by the caller"
+  ],
+  "open_points_resolved_during_the_unit": [
+    "NCR-C7-004 self-check: overdue jobs without a runner kept their quota (RED 10506d3, GREEN 9c37ca5)",
+    "NCR-C7-004 self-check: an unreadable hypothesis left the job queued (RED 10506d3, GREEN 9c37ca5)"
+  ],
+  "plan_unit": "NCP-U09",
+  "preventive_review": null,
+  "product_orientation": [
+    "the causal model is a signed artefact verified at the boundary against a trust root of the deployment, so production key management plugs in without changing C7",
+    "the C7 job ledger is the PostgreSQL of the suite with append-only audit and results and database-clock deadlines, the production store of the lifecycle",
+    "the run executes in a worker process that the runner can pause, cancel and terminate, so a production scheduler replaces the runner behind the same ledger port",
+    "the sealed results and the scenario overlay are the SeaweedFS and TerminusDB adapters of REM-0040 and REM-0041, reused unchanged in their contracts"
+  ],
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0056.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "fourteen assertions realigned (NCR-C7-002, NCR-C7-003, NCR-C7-006: ESTIMATED instead of IDENTIFIED, REJECTED for main contamination, release and pin errors, ABSTAIN NOT_IDENTIFIED, ASSUMPTION_VIOLATION and OUTSIDE_VALIDITY_ENVELOPE, counterfactual REJECTED{CAPABILITY_DEFERRED, ELM-070}) and the construction adapted (registered SCM, query without adjustment, spike query for the cross-validation)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c7/runtime.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0045.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0045.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'dimostrazione + ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione + ispezione",
+            "requirement_id": "BR-009",
+            "title": "Il sistema DEVE consentire di comprendere e governare una minaccia ibrida simulata alla continuit\u00e0 elettrica includendo dipendenze cyber, telecomunicazioni, informazione e supply chain."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + analisi' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + analisi",
+            "requirement_id": "FR-009",
+            "title": "Il sistema DEVE confrontare almeno due interventi simulati mediante un modello causale versionato dichiarando estimand, identificabilit\u00e0, assunzioni, incertezza, sensitivity e condizioni di astensione."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-013",
+            "title": "Il sistema DEVE usare un dataset sintetico corredato da manifest, schema, seed, release, timeline eventi, identity ground truth, evidence graph, hypothesis truth e causal ground truth."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-026 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di conformit\u00e0",
+            "requirement_id": "FR-026",
+            "title": "Il sistema DEVE rappresentare separatamente Link Type/Link, Qualified Relation, relazione n-aria, ruoli, Interface, Object Type Group, Tag e Taxonomy, senza confonderli con Causal Edge."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test, analisi e benchmark' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test, analisi e benchmark",
+            "requirement_id": "FR-034",
+            "title": "Il sistema DEVE rappresentare Causal Variable, Causal Edge, Causal Mechanism, Causal Model, Assumption, ruoli causali, Causal Query, Estimand, Identification Result, Estimator, Effect Estimate, Diagnostics, Causal Intervention Specification, Operational Intervention Plan, Causal Validation e Model Governance."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-035 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test end-to-end",
+            "requirement_id": "FR-035",
+            "title": "Il sistema DEVE rappresentare World, Scenario Definition, Scenario, Baseline, Simulation Experiment/Run, Trajectory, Ensemble, Outcome Distribution, Forecast, Scenario Estimate, Interventional Estimate, Counterfactual Query/Result e SimulationResult."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "FR-060",
+            "title": "Il sistema DEVE registrare artifact digest, versione, deployment, schema input/output, mapping, validity envelope e lineage di ogni invocazione di modello."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-066 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-066",
+            "title": "Il sistema DEVE offrire lettura a commit, diff, branch lineage, TTL e stato dei branch."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-086 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test API/compiler",
+            "requirement_id": "FR-086",
+            "title": "Il sistema DEVE esporre request e result type distinti per logical what-if, prediction, causal intervention, counterfactual, optimization e homeostatic deliberation."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-088 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "schema/compiler test",
+            "requirement_id": "FR-088",
+            "title": "Ogni Causal Model DEVE dichiarare variabili, ruoli, archi, meccanismi, lag, assunzioni, popolazione, periodo, owner, versione, evidenze e validity envelope."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-089 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test negativo",
+            "requirement_id": "FR-089",
+            "title": "Causal Edge e Link DEVONO restare elementi distinti e non convertibili automaticamente."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-090 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test su ground truth",
+            "requirement_id": "FR-090",
+            "title": "Ogni Causal Query DEVE produrre Estimand, Identification Result, metodo, estimator e Diagnostics e produrre Effect Estimate solo se valido."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-091 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-091",
+            "title": "Il sistema DEVE supportare almeno NOT_IDENTIFIED, INSUFFICIENT_EVIDENCE, OUT_OF_DISTRIBUTION, EXTRAPOLATIVE e STALE_CONTEXT."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-092 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test di riproducibilit\u00e0",
+            "requirement_id": "FR-092",
+            "title": "Il sistema DEVE fissare baseline, branch/world, ontology release, logica, modello causale, policy snapshot, seed, assunzioni, orizzonte, input e budget di ogni run."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-093 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test schema",
+            "requirement_id": "FR-093",
+            "title": "SimulationResult DEVE contenere output, uncertainty, violations, validity status, lineage e tutti i riferimenti di versione fissati."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, benchmark' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, benchmark",
+            "requirement_id": "FR-094",
+            "title": "`SimulateIntervention` DEVE sostituire il meccanismo entrante della variabile target e propagare gli effetti secondo il modello fissato."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, ispezione",
+            "requirement_id": "FR-097",
+            "title": "Il sistema DEVE associare Effect Estimate, Forecast e Outcome Distribution a metodo di incertezza, intervallo o distribuzione, assunzioni e diagnostica."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, dimostrazione",
+            "requirement_id": "FR-099",
+            "title": "Il sistema DEVE confrontare scenari su outcome, uncertainty, feasibility, policy, rischio, costo, tempo e risorse, conservando il contributo per criterio."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test, dimostrazione",
+            "requirement_id": "FR-101",
+            "title": "Il sistema DEVE rappresentare Goal, setpoint, banda operativa, deviation, utility, preference, risk appetite, resource constraint e policy applicabile."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-145 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Static analysis e compatibility test",
+            "requirement_id": "FR-145",
+            "title": "Release e dipendenze DEVONO usare Stable Resource ID, versione, digest e lock deterministico; ogni modifica DEVE essere classificata compatible, conditional, breaking, destructive o causal-breaking."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione",
+            "requirement_id": "NFR-004",
+            "title": "Per ogni P0 la matrice di verifica DEVE dichiarare metrica, soglia, baseline, scenario/dataset, risultato ed evidenza."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark",
+            "requirement_id": "NFR-007",
+            "title": "Il sistema DEVE riprodurre una simulazione eseguita con identica baseline, release, modello, seed e input entro la tolleranza dichiarata dal modello."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of NFR-015 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test",
+            "requirement_id": "NFR-015",
+            "title": "Ogni Scenario DEVE fissare baseline, ontology release, logic version, causal model version, seed, assumption set e input digest."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of NFR-030 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "NFR-030",
+            "title": "Modello causale e artifact eseguibile DEVONO essere content-addressed, firmati e riproducibili."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Analisi, review threat model, security test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Analisi, review threat model, security test",
+            "requirement_id": "NFR-038",
+            "title": "Il sistema DEVE mantenere per ogni release DFD, trust boundary, threat register, owner, mitigazioni, test e rischio residuo."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Substitution spike, conformance e benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Substitution spike, conformance e benchmark",
+            "requirement_id": "NFR-058",
+            "title": "Un adapter candidato DEVE superare conformance P0, round-trip, replay scenario, security propagation e benchmark senza modificare OaC/API/SDK/domain contract."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of NFR-072 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Load/backpressure/cancellation test",
+            "requirement_id": "NFR-072",
+            "title": "Simulazioni causali, effect estimation e ottimizzazione complesse DEVONO essere job asincroni con budget, progress, cancellation, timeout, quota e backpressure."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Analisi dei contratti e tracing test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Analisi dei contratti e tracing test",
+            "requirement_id": "NFR-076",
+            "title": "Il sistema DEVE classificare ogni contratto operativo come `L0 bounded-online`, `L1 bounded-command-or-micro-scenario` oppure `L2 asynchronous-compute`."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Usability test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Usability test e dimostrazione",
+            "requirement_id": "NFR-082",
+            "title": "Il sistema DEVE includere in ogni release documentazione generata, esempi, fixture, sandbox e conformance kit utilizzabili offline."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Replay, access-control test e analisi' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Replay, access-control test e analisi",
+            "requirement_id": "NFR-090",
+            "title": "Il PoC DEVE essere riproducibile dal manifest sintetico senza esporre al sistema la ground truth riservata alla valutazione."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Contract test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Contract test e dimostrazione",
+            "requirement_id": "FR-161",
+            "title": "Il sistema DEVE esporre per ogni job L2 accettazione, identificativo, stato, cancellazione o timeout e risultato versionato."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0045",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0056.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0056.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks after the allowlist commit (scripts/validate_evidence_input_drift.py): 0045 with realigned and adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4: the MIXED and non-test methods fail the first condition, the AUTOMATED_TEST requirements are not exercised in full by the changed tests), and 0005, 0050 and 0082 for the allowlist; the with_supersession candidate 0045 of the plan is regression-only under NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 and NCP-UNBINDABLE-REQUALIFICATIONS point 3",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0045",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "PostgreSQL/S3 (sealed result, overlay store) -- realised as the PostgreSQL (C7 job ledger), SeaweedFS (sealed results) and TerminusDB (scenario overlay) services of ocor-bootstrap; causal model signatures with locally generated Ed25519 keys; DoWhy from the locked environment",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C7-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_the_registered_model_declares_v_u_p_u_and_f ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_do_replaces_the_target_mechanism_and_removes_its_incoming_edges ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_simulate_intervention_matches_the_interventional_ground_truth ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_identification_is_derived_from_the_registered_scm ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_a_non_identifiable_query_returns_not_identified_and_no_estimate ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_at_least_two_interventions_are_compared ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_the_engine_port_keeps_abduction_action_and_prediction_distinct"
+    },
+    {
+      "entry": "NCR-C7-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_release_mismatch_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_main_contamination_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_missing_factual_set_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_an_invalid_factual_schema_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_non_binary_treatment_is_rejected_as_factual_schema_invalid ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_missing_or_malformed_envelope_or_a_non_numeric_value_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_value_outside_an_explicit_constraint_abstains_outside_validity_envelope ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_unresolved_confounding_abstains_not_identified ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_stratum_without_an_arm_abstains_assumption_violation ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_out_of_distribution_only_with_empirical_support_diagnostics ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_abstain_precedence_between_two_conditions ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_rejected_conditions_are_evaluated_before_abstain_conditions ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_only_the_closed_sets_are_produced"
+    },
+    {
+      "entry": "NCR-C7-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_a_pin_mismatch_is_rejected_not_raised ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_only_the_four_outcome_statuses_exist ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_every_estimate_carries_the_estimated_fields ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_an_abstention_carries_its_fields_and_no_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_a_computational_fault_is_failed_with_retry_safety ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_simulation_result_is_immutable_and_schema_validated ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_outcome_document_is_schema_validated ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_an_invalid_signature_blocks_the_run ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_revoked_key_blocks_the_run ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_validly_signed_model_other_than_the_pinned_one_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_non_canonical_signed_payload_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_valid_signature_admits_the_run_and_the_rejection_carries_no_estimate"
+    },
+    {
+      "entry": "NCR-C7-004",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_run_spec_has_exactly_the_add_fields_and_is_immutable ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_incomplete_or_malformed_spec_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_spec_digest_covers_every_pin_and_no_trace_identifier ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_query_is_built_from_the_spec_and_the_overlay_hypothesis ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_hypothesis_is_read_at_the_pinned_revision ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_missing_or_malformed_hypothesis_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_branch_of_another_run_or_baseline_is_rejected ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_factual_set_and_the_sample_budget_are_pinned ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_client_submits_observes_and_retrieves_a_versioned_result ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_identical_runs_give_equivalent_results ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_rejected_run_completes_with_its_sealed_rejection ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_only_the_add_transitions_are_allowed_and_refusals_change_nothing ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_queued_job_is_cancelled_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_cancelling_a_running_job_releases_its_resources_within_pt30s ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_paused_job_stops_its_worker_until_resumed ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_timeout_expires_the_job_without_a_partial_result ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_result_after_the_deadline_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_result_bound_to_another_spec_or_tampered_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_audit_is_append_only ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_quota_and_backpressure_refuse_and_audit_submissions ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_lost_worker_fails_the_job_with_retry_safety ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_unreachable_backend_is_a_typed_error_without_credentials ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_foreign_table_shape_is_a_schema_mismatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_tampered_stored_job_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_tampered_audit_or_resource_row_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_malformed_calls_are_refused_with_typed_errors ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_overdue_jobs_without_a_runner_expire_and_free_the_quota ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_unreadable_hypothesis_fails_the_job_and_releases_its_resources"
+    },
+    {
+      "entry": "NCR-C7-005",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_the_digest_does_not_depend_on_trace_identifiers ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_the_tolerance_is_mandatory_and_declared ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_reproduction_accepts_differences_within_the_tolerance_only"
+    },
+    {
+      "entry": "NCR-C7-006",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_valid_counterfactual_query_is_rejected_capability_deferred ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_structurally_invalid_counterfactual_query_is_rejected_for_its_schema"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C7-001",
+    "NCR-C7-002",
+    "NCR-C7-003",
+    "NCR-C7-004",
+    "NCR-C7-005",
+    "NCR-C7-006"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0057 commits: the new C7 modules (scenario_run, jobs, adapters/dowhy_engine, adapters/postgres_jobs) and the two unit test modules disappear; c7/runtime.py, c7/adapters/seaweedfs.py and the realigned or adapted tests of 0045, REM-0040 and REM-0041 return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the C7 job schemas of a development PostgreSQL are dropped with the stack volumes",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0057",
+  "tdd": {
+    "GREEN_0045": {
+      "commit": "781ce01",
+      "fingerprint": "d6c5b05e423cd83dcc1d6f21bee1d7c1c36fe561a0d35f9fff5ef2a76d9d40bb",
+      "summary": "0045 + unit: 72 passed"
+    },
+    "GREEN_C7_001_002_003_005_006": {
+      "commit": "c78270b",
+      "fingerprint": "9d130cd7fac665bc8f0fca05b9e7eb06b7593ec5573832f72111990771fe765e",
+      "summary": "unit module: 45 passed"
+    },
+    "GREEN_C7_004_NFR_030": {
+      "commit": "3fb9c8f",
+      "fingerprint": "8af93de0bf2fc75445858e8955ccb74241ccd2de4a9fe29f62d75c4dfaa401f1",
+      "summary": "0045 + REM-0040 + REM-0041 + both unit modules on the live backends: 209 passed"
+    },
+    "GREEN_C7_CONSUMERS": {
+      "commit": "acc0f70",
+      "fingerprint": "a07f90d1d7a6d4fd578660e95b12ed642a30d946f0f66c0fa5f41e43cbb31cc5",
+      "summary": "0045 + REM-0040 + REM-0041 + unit on the live backends: 130 passed"
+    },
+    "GREEN_SELF_CHECK_ERROR_PATHS": {
+      "commit": "9c37ca5",
+      "fingerprint": "c103ec7b4a060d2d01e8883520d46267a1e46ecd9b842a28b415650147a66528",
+      "summary": "all C7 modules on the live backends: 211 passed"
+    },
+    "RED_C7_001_002_003_005_006": {
+      "commit": "b498a6a",
+      "fingerprint": "a1872672489d41e1ac4ed713949c41eff638734fc960958eee456ac3c21e4c20",
+      "summary": "unit module on the base code: 45 failed"
+    },
+    "RED_C7_004_NFR_030": {
+      "commit": "c251812",
+      "fingerprint": "f624914736cc85b0b277665f04a9eff01568226a5306ab702f1b8d8c03e9b43b",
+      "summary": "test_ocor_dev_rem_0057_jobs.py on the base code: 47 failed, 32 errors (missing modules)"
+    },
+    "RED_REALIGN_0045": {
+      "commit": "781ce01",
+      "fingerprint": "250dbbf27d77b25d57f211a22f4ea0b8725f50a85d62f82102b84136e98b5f67",
+      "summary": "realigned 0045 assertions, old construction, base code: 20 failed"
+    },
+    "RED_REALIGN_REM0040_REM0041": {
+      "commit": "acc0f70",
+      "fingerprint": "d9e5825b63146a035beac8a40fd7b38f146e11b100fe49cfd60b412b29bed2c2",
+      "summary": "the two realigned assertions, old construction, base code, live SeaweedFS and TerminusDB: 2 failed"
+    },
+    "RED_SELF_CHECK_ERROR_PATHS": {
+      "commit": "10506d3",
+      "fingerprint": "d9cda809dddee82b369fcf82396fd7845f189dcf96ee329b38581c53a1e0e766",
+      "summary": "the two error-path cases at the GREEN head: 2 failed"
+    },
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML (~/.ocor-codex/rem-0057/redgreen.sh)"
+  }
+}
