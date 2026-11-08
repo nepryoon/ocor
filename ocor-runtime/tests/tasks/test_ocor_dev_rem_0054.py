@@ -459,7 +459,7 @@ def test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port() -> Non
     fx.activate(controller, reason="incident-42", at=NOW)
     with pytest.raises(tool_runtime.ToolRuntimeError) as excinfo:
         invoke("after")
-    assert excinfo.value.reason_code == "STOP_BOUND_DENIED"
+    assert excinfo.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert effects == ["before"]
 
 
@@ -1724,7 +1724,8 @@ def test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any
     world = _ToolWorld(_resolving())
     with pytest.raises(world.tool_runtime.ToolRuntimeError) as excinfo:
         world.invoke(_marks(content), _marks(clearance))
-    assert excinfo.value.reason_code == "MARKING_UNRESOLVED"
+    assert excinfo.value.reason_code == "POLICY_DENIED"
+    assert excinfo.value.marking_outcome == "MARKING_UNRESOLVED"
     assert world.effects == []
     assert world.budget.used == 0
 
@@ -1733,7 +1734,8 @@ def test_ncr_c6_012_the_c8_tool_runtime_denies_a_clearance_that_does_not_dominat
     world = _ToolWorld(_resolving())
     with pytest.raises(world.tool_runtime.ToolRuntimeError) as excinfo:
         world.invoke(_marks(FULL), _marks({"classification": "UNCLASSIFIED", "compartment": "ALL"}))
-    assert excinfo.value.reason_code == "MARKING_DENIED"
+    assert excinfo.value.reason_code == "POLICY_DENIED"
+    assert excinfo.value.marking_outcome == "MARKING_DENIED"
     assert world.effects == [] and world.budget.used == 0
 
 

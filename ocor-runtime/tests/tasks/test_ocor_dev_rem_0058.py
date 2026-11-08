@@ -447,3 +447,922 @@ def test_ncr_c8_004_error_codes_are_the_closed_enum_of_the_contract() -> None:
     for code in ("MARKING_DENIED", "PURPOSE_REQUIRED", "RECONCILIATION_UNAVAILABLE", "STOP_BOUND_DENIED", "TOOL_DEADLINE_EXCEEDED"):
         with pytest.raises(ValueError):
             ToolContractError(code, "x")
+
+
+# --- the C8 tool runtime world (NCR-C8-004 runtime part, 005, 007, 008) ----------------------------
+#
+# Anchors: ADD v1.3 Part II §2.12 (:3856) -- tool invocation always re-evaluates live capability,
+# delegation, policy, memory instruction eligibility and stop epoch; §4.3.1 invariants 2, 4, 6 and 8
+# (:3115, :3117, :3119, :3121); §5.1 agent identity (:3140); §5.2 rule 5 (:3220); §5.5 point 6
+# (:3358); error_codes enum (:1759-1778). Register v1.1 FR-004 :47, FR-110 :258, FR-120 :269,
+# NFR-036 :271, FR-162 :404, FR-163 :407. LLD v1.1 §6 (:358) and §7.2 FGM-17 (:398).
+
+import ast as _ast  # noqa: E402
+import os  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+from collections.abc import Callable  # noqa: E402
+from datetime import UTC, datetime, timedelta  # noqa: E402
+
+WORLD_NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
+DELEGATION = "urn:sha256:" + "e" * 64
+OTHER_DELEGATION = "urn:sha256:" + "f" * 64
+SCOPE = "urn:ocor:scope:services"
+TOOL_SCHEMA_IN = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["name"],
+    "properties": {"name": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"}},
+}
+TOOL_SCHEMA_OUT = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "string", "maxLength": 128}
+TOOL_PIN_IN = {"schema_id": "urn:ocor:schema:tool:service-name:input", "version": "1.0.0", "digest": wire_digest(TOOL_SCHEMA_IN)}
+TOOL_PIN_OUT = {"schema_id": "urn:ocor:schema:tool:service-text:output", "version": "1.0.0", "digest": wire_digest(TOOL_SCHEMA_OUT)}
+WORLD_TOOLS = ("note", "restart_service", "slow_restart")
+
+
+def world_context(*, purpose: str = "incident-response", principal: str = "agent-1") -> Any:
+    from ocor_runtime.kernel.governed_context import GovernedContext
+
+    return GovernedContext(
+        tenant_id="t1",
+        organization_id="o1",
+        domain_id="d1",
+        compartments=("default",),
+        classification_marking_ref="urn:sha256:" + "a" * 64,
+        purpose=purpose,
+        effective_principal_id=principal,
+        actor_chain=(principal,),
+        ontology_release_digest="urn:sha256:" + "b" * 64,
+        policy_bundle_digest="urn:sha256:" + "c" * 64,
+        correlation_id="urn:ocor:correlation:rem-0058",
+    )
+
+
+def later_than(instant: datetime) -> datetime:
+    """The current instant, strictly after ``instant`` (a revocation recorded while a call runs)."""
+    now = datetime.now(UTC)
+    return now if now > instant else instant + timedelta(microseconds=1)
+
+
+class RecordingPolicy:
+    """``security.ports.PolicyDecisionPort`` whose effect the test switches between calls; every
+    request it evaluates is recorded."""
+
+    def __init__(self) -> None:
+        self.effect = "PERMIT"
+        self.unavailable = False
+        self.requests: list[Any] = []
+
+    def evaluate(self, request: Any) -> Any:
+        from ocor_runtime.security.ports import ControlName, ControlStatus, PolicyDecision, PolicyEffect
+
+        self.requests.append(request)
+        if self.unavailable:
+            raise RuntimeError("policy decision point unreachable")
+        effect = PolicyEffect(self.effect)
+        obligations = ("urn:ocor:approval:tool-call",) if effect is PolicyEffect.REQUIRE_APPROVAL else ()
+        return PolicyDecision.from_request(
+            request,
+            effect=effect,
+            decision_id=f"urn:ocor:policy-decision:{len(self.requests)}",
+            valid_until=request.at + timedelta(hours=1),
+            status=ControlStatus.available(
+                ControlName.POLICY, observed_at=request.at, source_digest=request.governed_context.policy_bundle_digest
+            ),
+            obligations=obligations,
+        )
+
+
+def audited_reconciler(schema: str = "ocor_audit_rem_0058_tool_runtime") -> Any:
+    """The C6 reconciler appending to the signed audit chain on the live PostgreSQL (FR-163)."""
+    from ocor_runtime import audit
+    from ocor_runtime.c6.safety import OutcomeReconciler
+
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN")
+    if not dsn:
+        raise RuntimeError("OCOR_LIVE_POSTGRES_DSN is mandatory: the reconciliation audit is on PostgreSQL")
+    from c6_action_fixture import seeded_key
+
+    log = audit.PostgresAuditLog(
+        dsn, schema=schema, signer=audit.AuditSigner(key=seeded_key("rem-0058-tool-runtime-audit"), keyid="rem-0058-tool-runtime-audit")
+    )
+    log.initialize()
+    return OutcomeReconciler(audit=log)
+
+
+class World:
+    """The real collaborators of the C8 tool runtime: contract registry, C8 tool grants, governance
+    controls (Authority and Delegation), policy decision port, memory instruction eligibility, the
+    signed stop epoch, the resolved marking engine, the audited reconciler and the budget ledger.
+    ``effects`` is appended to only by the tool adapters."""
+
+    def __init__(self, *, deadline: timedelta | None = None, timeout_ms: int = 5000, reconciler: Any = None) -> None:
+        from c6_safety_fixture import stop_controller
+        from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
+        from ocor_runtime.c4_marking import MarkingSchemeDefinition
+        from ocor_runtime.c8 import tool_runtime
+        from ocor_runtime.c8.tool_contract import SchemaCatalog, ToolRegistry
+        from ocor_runtime.kernel.governance import Authority, RiskClass
+
+        self.module = tool_runtime
+        self.effects: list[str] = []
+        self.bodies: dict[str, Callable[[], None]] = {}
+        self.context = world_context()
+        self.schemas = SchemaCatalog()
+        self.schemas.add(TOOL_PIN_IN["schema_id"], TOOL_PIN_IN["version"], TOOL_SCHEMA_IN)
+        self.schemas.add(TOOL_PIN_OUT["schema_id"], TOOL_PIN_OUT["version"], TOOL_SCHEMA_OUT)
+        self.registry = ToolRegistry(governed_context_ref=self.context.digest(), schemas=self.schemas)
+        for name in WORLD_TOOLS:
+            self.register(name, timeout_ms=timeout_ms)
+        self.stop = stop_controller()
+        self.grants = tool_runtime.ToolGrantLedger(stop=self.stop.reader)
+        self.controls = tool_runtime.InMemoryGovernanceControls()
+        self.authority = Authority(
+            authority_id="urn:ocor:authority:agent-1",
+            effective_principal_id="agent-1",
+            capability_ids=tuple(f"urn:ocor:capability:tool:{name}" for name in WORLD_TOOLS),
+            resource_scopes=(SCOPE,),
+            tenant_id="t1",
+            domains=("d1",),
+            compartments=("default",),
+            permitted_purposes=("incident-response",),
+            risk_ceiling=RiskClass.R1_ANALYZE,
+            not_before=WORLD_NOW - timedelta(days=1),
+            expires_at=WORLD_NOW + timedelta(days=1),
+            delegation_ref=DELEGATION,
+            policy_bundle_digest=self.context.policy_bundle_digest,
+            signature_ref="urn:ocor:signature:authority-agent-1",
+        )
+        self.controls.add_authority(self.authority, signature_verified=True)
+        self.controls.bind_delegation("agent-1", DELEGATION)
+        self.policy = RecordingPolicy()
+        self.eligibility = tool_runtime.InMemoryInstructionEligibility()
+        self.agent = self.binding()
+        self.eligibility.allow(self.agent.agent_run_id)
+        self.marking = ResolvedMarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
+        self.budgets = tool_runtime.AgentBudgetLedger()
+        for level, key in (("agent", "agent-1"), ("run", self.agent.agent_run_id), ("team", "team-1"), ("tenant", "t1")):
+            self.budgets.set_quota(level, key, self.quota())
+        options: dict[str, Any] = {} if deadline is None else {"tool_call_deadline": deadline}
+        self.reconciler = audited_reconciler() if reconciler is None else reconciler
+        self.runtime = tool_runtime.ToolCallRuntime(
+            registry=self.registry,
+            grants=self.grants,
+            controls=self.controls,
+            policy=self.policy,
+            eligibility=self.eligibility,
+            marking_engine=self.marking,
+            stop=self.stop.reader,
+            reconciler=self.reconciler,
+            **options,
+        )
+        self.invoked_at = WORLD_NOW
+
+    @staticmethod
+    def quota(**changes: int) -> Any:
+        from ocor_runtime.c8.tool_runtime import BudgetQuota
+
+        values = {
+            "tool_calls": 100,
+            "steps": 100,
+            "tokens": 10_000,
+            "cost": 10_000,
+            "wall_time_ms": 600_000,
+            "compute_ms": 600_000,
+            "risk_exposure": 100,
+        }
+        values.update(changes)
+        return BudgetQuota(**values)
+
+    def register(self, name: str, *, timeout_ms: int = 5000) -> None:
+        from ocor_runtime.c8.tool_contract import ToolBinding, ToolContract
+
+        document = contract_document(
+            contract_id=f"urn:ocor:tool-contract:{name.replace('_', '-')}",
+            capability_id=f"urn:ocor:capability:tool:{name}",
+            governed_context_ref=self.context.digest(),
+            input_schema=dict(TOOL_PIN_IN),
+            output_schema=dict(TOOL_PIN_OUT),
+            timeout_ms=timeout_ms,
+        )
+        contract = ToolContract.from_document(document, schemas=self.schemas)
+
+        def adapter(name_: str) -> Callable[..., str]:
+            def call(name: str) -> str:
+                body = self.bodies.get(name_)
+                if body is not None:
+                    body()
+                self.effects.append(name_)
+                return f"{name_} {name}"
+
+            return call
+
+        self.registry.register(
+            contract,
+            ToolBinding(
+                tool_name=name,
+                binding_id=f"urn:ocor:tool-binding:{name.replace('_', '-')}:local",
+                contract_id=contract.contract_id,
+                contract_version=contract.version,
+                contract_digest=contract.contract_digest,
+                adapter=adapter(name),
+                egress_destinations=(),
+            ),
+        )
+
+    def binding(self, *, tier: str = "ANALYZE", run: str = "urn:ocor:agent-run:1", principal: str = "agent-1", team: str = "team-1") -> Any:
+        return self.module.AgentIdentityBinding(
+            agent_principal_id=principal,
+            agent_run_id=run,
+            workload_identity=f"spiffe://ocor.internal/agent/{principal}/run/{run.rsplit(':', 1)[-1]}",
+            owner="urn:ocor:human:owner-1",
+            autonomy_tier=tier,
+            agent_version="1.0.0",
+            team_id=team,
+            tenant_id="t1",
+        )
+
+    def principal(self, principal: str = "agent-1") -> Any:
+        from ocor_runtime.security.ports import AuthenticatedPrincipal, ControlName, ControlStatus
+
+        return AuthenticatedPrincipal(
+            principal_id=principal,
+            session_id="urn:ocor:session:rem-0058",
+            actor_chain=(principal,),
+            assurance_level="spiffe-svid",
+            authenticated_at=WORLD_NOW - timedelta(hours=1),
+            expires_at=WORLD_NOW + timedelta(hours=1),
+            status=ControlStatus.available(ControlName.IDENTITY, observed_at=WORLD_NOW, source_digest="urn:sha256:" + "9" * 64),
+        )
+
+    def grant(self, *tools: str, agent: Any = None, ttl: timedelta = timedelta(hours=1), **options: Any) -> Any:
+        return self.grants.issue(
+            agent=agent or self.agent,
+            tools=tools or ("note", "restart_service"),
+            scope=SCOPE,
+            delegation_ref=DELEGATION,
+            authority_id=self.authority.authority_id,
+            issued_at=self.invoked_at - timedelta(minutes=1),
+            ttl=ttl,
+            **options,
+        )
+
+    def budget(self, agent: Any = None) -> Any:
+        return self.budgets.budget(agent or self.agent)
+
+    def revoke_now(self, grant: Any) -> None:
+        self.grants.revoke(grant.lease_id, at=later_than(self.invoked_at))
+
+    def accept_stop(self) -> None:
+        from c6_safety_fixture import INCIDENT, SAFETY_OFFICER
+
+        worker = threading.Thread(
+            target=lambda: self.stop.activate(
+                activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="external emergency stop", at=datetime.now(UTC)
+            )
+        )
+        worker.start()
+        worker.join()
+
+    def invoke(self, expression: str, grant: Any, *, tool_name: str = "note", agent: Any = None, budget: Any = None, **changes: Any) -> Any:
+        from ocor_runtime.c4_marking import MarkingSet
+
+        agent = agent or self.agent
+        arguments: dict[str, Any] = {
+            "bindings": {"name": "svc"},
+            "lease": grant,
+            "agent": agent,
+            "principal": self.principal(agent.agent_principal_id),
+            "context": self.context,
+            "content_marking": MarkingSet({"classification": "SECRET"}),
+            "clearance": MarkingSet({"classification": "TOP_SECRET"}),
+            "budget": budget if budget is not None else self.budget(agent),
+            "estimated_tokens": 10,
+            "stop_epoch": self.stop.epoch,
+            "at": self.invoked_at,
+        }
+        arguments.update(changes)
+        return self.runtime.invoke(tool_name, expression, **arguments)
+
+    def refused(self, expression: str, grant: Any, code: str, **kwargs: Any) -> Any:
+        with pytest.raises(self.module.ToolRuntimeError) as refused:
+            self.invoke(expression, grant, **kwargs)
+        assert refused.value.reason_code == code, str(refused.value)
+        return refused.value
+
+
+TWO_TOOLS = "[note(name), restart_service(name)]"
+
+
+# --- NCR-C8-005: live policy, autonomy tier, eligibility, Authority, agent binding, budget --------
+
+
+def test_ncr_c8_005_conforms() -> None:
+    """RED of NCR-C8-005: every dispatch re-evaluates the policy decision, the autonomy tier and the
+    memory instruction eligibility (ADD v1.3 :3856, :3115; FR-110 :258), the receipt records agent
+    ID, run, delegator, scope, budget and autonomy tier with the taint of the output (FR-004 :47,
+    ADD v1.3 :3140) and the budget is multidimensional at agent, run, team and tenant (FR-120 :269,
+    ADD v1.3 :3119)."""
+    world = World()
+    grant = world.grant()
+    budget = world.budget()
+
+    receipt = world.invoke(TWO_TOOLS, grant, budget=budget)
+
+    assert world.effects == ["note", "restart_service"]
+    assert receipt.result == ["note svc", "restart_service svc"]
+    assert receipt.agent_principal_id == "agent-1"
+    assert receipt.agent_run_id == "urn:ocor:agent-run:1"
+    assert receipt.agent_version == "1.0.0"
+    assert receipt.workload_identity == world.agent.workload_identity
+    assert receipt.delegation_ref == DELEGATION
+    assert receipt.delegator == world.authority.authority_id
+    assert receipt.scope == SCOPE
+    assert receipt.autonomy_tier == "ANALYZE"
+    assert receipt.authority_id == world.authority.authority_id
+    assert receipt.governed_context_digest == world.context.digest()
+    assert receipt.taint_labels == ("TOOL_OUTPUT", "UNTRUSTED")
+    assert [invocation.tool_name for invocation in receipt.invocations] == ["note", "restart_service"]
+    assert all(invocation.input_digest.startswith("sha256:") and invocation.output_digest.startswith("sha256:") for invocation in receipt.invocations)
+    # the policy is evaluated for the call, for each called tool and again at each dispatch
+    dispatched = [request.action for request in world.policy.requests]
+    assert dispatched.count("urn:ocor:capability:tool:restart_service") >= 2
+    assert receipt.policy_decision_ids and len(receipt.policy_decision_ids) == len(world.policy.requests)
+    assert set(receipt.budget_charged) == set(world.module.BUDGET_DIMENSIONS)
+    assert receipt.budget_charged["tool_calls"] == 2 and receipt.budget_charged["steps"] == 1 and receipt.budget_charged["tokens"] == 10
+    for level in world.module.BUDGET_LEVELS:
+        assert budget.spent("tool_calls", level=level) == 2
+    assert world.module.POC_AUTONOMY_TIERS == ("OBSERVE", "ANALYZE", "SIMULATE", "PROPOSE")
+    # an autonomy tier the contract does not allow never dispatches
+    observer = world.binding(tier="OBSERVE", run="urn:ocor:agent-run:2")
+    world.eligibility.allow(observer.agent_run_id)
+    world.budgets.set_quota("run", observer.agent_run_id, world.quota())
+    world.refused("note(name)", world.grant("note", agent=observer), "POLICY_DENIED", agent=observer)
+    assert world.effects == ["note", "restart_service"]
+
+
+def test_ncr_c8_005_the_policy_is_evaluated_live_at_every_dispatch() -> None:
+    world = World()
+    grant = world.grant()
+    world.bodies["note"] = lambda: setattr(world.policy, "effect", "DENY")
+
+    refused = world.refused(TWO_TOOLS, grant, "POLICY_DENIED")
+
+    assert world.effects == ["note"]
+    assert refused.execution_unknown is False
+
+
+@pytest.mark.parametrize(("effect", "code"), [("DENY", "POLICY_DENIED"), ("REQUIRE_APPROVAL", "APPROVAL_REQUIRED")])
+def test_ncr_c8_005_a_policy_that_does_not_permit_refuses_before_any_effect(effect: str, code: str) -> None:
+    world = World()
+    world.policy.effect = effect
+    budget = world.budget()
+
+    world.refused("note(name)", world.grant(), code, budget=budget)
+
+    assert world.effects == []
+    assert all(budget.spent(dimension) == 0 for dimension in world.module.BUDGET_DIMENSIONS)
+
+
+def test_ncr_c8_005_an_unavailable_policy_decision_point_fails_closed() -> None:
+    world = World()
+    world.policy.unavailable = True
+
+    world.refused("note(name)", world.grant(), "POLICY_DENIED")
+
+    assert world.effects == []
+
+
+@pytest.mark.parametrize("tier", ["OBSERVE", "PROPOSE", "EXECUTE_APPROVED"])
+def test_ncr_c8_005_an_autonomy_tier_outside_the_contract_or_the_poc_profile_is_denied(tier: str) -> None:
+    world = World()
+    agent = world.binding(tier=tier, run="urn:ocor:agent-run:tier")
+    world.eligibility.allow(agent.agent_run_id)
+    world.budgets.set_quota("run", agent.agent_run_id, world.quota())
+
+    world.refused("note(name)", world.grant("note", agent=agent), "POLICY_DENIED", agent=agent)
+
+    assert world.effects == []
+
+
+def test_ncr_c8_005_memory_instruction_eligibility_is_reevaluated_at_every_dispatch() -> None:
+    world = World()
+    grant = world.grant()
+    world.bodies["note"] = lambda: world.eligibility.withdraw(world.agent.agent_run_id)
+
+    world.refused(TWO_TOOLS, grant, "POLICY_DENIED")
+
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_005_a_run_without_instruction_eligibility_never_dispatches() -> None:
+    world = World()
+    agent = world.binding(run="urn:ocor:agent-run:ineligible")
+    world.budgets.set_quota("run", agent.agent_run_id, world.quota())
+
+    world.refused("note(name)", world.grant("note", agent=agent), "POLICY_DENIED", agent=agent)
+
+    assert world.effects == []
+
+
+def test_ncr_c8_005_the_authority_is_required_and_evaluated_live() -> None:
+    from ocor_runtime.kernel.governance import Authority
+
+    missing = World()
+    grant = missing.grants.issue(
+        agent=missing.agent,
+        tools=("note",),
+        scope=SCOPE,
+        delegation_ref=DELEGATION,
+        authority_id="urn:ocor:authority:never-registered",
+        issued_at=missing.invoked_at - timedelta(minutes=1),
+        ttl=timedelta(hours=1),
+    )
+    missing.refused("note(name)", grant, "AUTHORITY_MISSING")
+
+    revoked = World()
+    grant = revoked.grant()
+    revoked.bodies["note"] = lambda: revoked.controls.revoke(revoked.authority.authority_id)
+    revoked.refused(TWO_TOOLS, grant, "CAPABILITY_REVOKED")
+    assert revoked.effects == ["note"]
+
+    narrow = World()
+    fields = {name: getattr(narrow.authority, name) for name in narrow.authority.__dataclass_fields__}
+    fields.update(authority_id="urn:ocor:authority:narrow", capability_ids=("urn:ocor:capability:tool:note",))
+    narrow.controls.add_authority(Authority(**fields), signature_verified=True)
+    grant = narrow.grants.issue(
+        agent=narrow.agent,
+        tools=("note", "restart_service"),
+        scope=SCOPE,
+        delegation_ref=DELEGATION,
+        authority_id="urn:ocor:authority:narrow",
+        issued_at=narrow.invoked_at - timedelta(minutes=1),
+        ttl=timedelta(hours=1),
+    )
+    narrow.refused(TWO_TOOLS, grant, "CAPABILITY_DENIED")
+    assert narrow.effects == []
+
+    unsigned = World()
+    fields = {name: getattr(unsigned.authority, name) for name in unsigned.authority.__dataclass_fields__}
+    fields.update(authority_id="urn:ocor:authority:unsigned")
+    unsigned.controls.add_authority(Authority(**fields), signature_verified=False)
+    grant = unsigned.grants.issue(
+        agent=unsigned.agent,
+        tools=("note",),
+        scope=SCOPE,
+        delegation_ref=DELEGATION,
+        authority_id="urn:ocor:authority:unsigned",
+        issued_at=unsigned.invoked_at - timedelta(minutes=1),
+        ttl=timedelta(hours=1),
+    )
+    unsigned.refused("note(name)", grant, "AUTHORITY_MISSING")
+    assert unsigned.effects == []
+
+
+def test_ncr_c8_005_the_delegation_is_evaluated_live_at_every_dispatch() -> None:
+    world = World()
+    grant = world.grant()
+    world.bodies["note"] = lambda: world.controls.revoke(DELEGATION)
+
+    world.refused(TWO_TOOLS, grant, "CAPABILITY_REVOKED")
+
+    assert world.effects == ["note"]
+
+    rebound = World()
+    rebound.controls.rebind_delegation("agent-1", OTHER_DELEGATION)
+    rebound.refused("note(name)", rebound.grant(), "CAPABILITY_DENIED")
+    assert rebound.effects == []
+
+
+def test_ncr_c8_005_the_agent_binding_must_match_the_principal_the_context_and_the_grant() -> None:
+    world = World()
+    grant = world.grant()
+    world.refused("note(name)", grant, "CAPABILITY_DENIED", principal=world.principal("agent-2"))
+    other_run = world.binding(run="urn:ocor:agent-run:other")
+    world.eligibility.allow(other_run.agent_run_id)
+    world.budgets.set_quota("run", other_run.agent_run_id, world.quota())
+    world.refused("note(name)", grant, "CAPABILITY_DENIED", agent=other_run)
+    world.refused("note(name)", grant, "CAPABILITY_DENIED", agent=world.binding(principal="agent-2"))
+    assert world.effects == []
+
+
+@pytest.mark.parametrize("level", ["agent", "run", "team", "tenant"])
+@pytest.mark.parametrize("dimension", ["tool_calls", "steps", "tokens", "cost", "wall_time_ms", "compute_ms", "risk_exposure"])
+def test_ncr_c8_005_every_budget_dimension_is_enforced_at_every_level(dimension: str, level: str) -> None:
+    world = World()
+    key = {"agent": "agent-1", "run": world.agent.agent_run_id, "team": "team-1", "tenant": "t1"}[level]
+    world.budgets.set_quota(level, key, world.quota(**{dimension: 0}))
+    budget = world.budget()
+
+    world.refused("note(name)", world.grant(), "BUDGET_EXCEEDED", budget=budget, estimated_cost=5)
+
+    assert world.effects == []
+    # an exceeded dimension charges nothing at any level (no partial charge)
+    for each_level in world.module.BUDGET_LEVELS:
+        for each in world.module.BUDGET_DIMENSIONS:
+            assert budget.spent(each, level=each_level) == 0, (each, each_level)
+
+
+def test_ncr_c8_005_measured_wall_time_and_compute_are_charged_and_then_enforced() -> None:
+    world = World()
+    world.budgets.set_quota("run", world.agent.agent_run_id, world.quota(wall_time_ms=40))
+    world.bodies["note"] = lambda: time.sleep(0.06)
+    budget = world.budget()
+
+    receipt = world.invoke("note(name)", world.grant(), budget=budget)
+
+    assert receipt.budget_charged["wall_time_ms"] >= 60
+    assert budget.spent("wall_time_ms", level="run") >= 60
+    assert budget.spent("compute_ms", level="run") >= 0
+    world.refused("note(name)", world.grant(), "BUDGET_EXCEEDED", budget=budget)
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_005_team_and_tenant_quotas_are_shared_by_the_runs_of_the_team() -> None:
+    world = World()
+    world.budgets.set_quota("team", "team-1", world.quota(tool_calls=1))
+    second = world.binding(run="urn:ocor:agent-run:2")
+    world.eligibility.allow(second.agent_run_id)
+    world.budgets.set_quota("run", second.agent_run_id, world.quota())
+
+    world.invoke("note(name)", world.grant())
+    world.refused("note(name)", world.grant("note", agent=second), "BUDGET_EXCEEDED", agent=second)
+
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_005_a_budget_without_a_quota_at_some_level_fails_closed() -> None:
+    world = World()
+    orphan = world.binding(run="urn:ocor:agent-run:no-quota")
+    world.eligibility.allow(orphan.agent_run_id)
+
+    world.refused("note(name)", world.grant("note", agent=orphan), "BUDGET_EXCEEDED", agent=orphan)
+
+    assert world.effects == []
+
+
+# --- NCR-C8-004, runtime part: the runtime dispatches only through the contract registry ----------
+
+
+def test_ncr_c8_004_the_runtime_dispatches_only_contract_bound_allow_listed_tools() -> None:
+    world = World()
+    grant = world.grant()
+
+    world.refused("note(name)", grant, "SCHEMA_VIOLATION", bindings={"name": "Not A Service!"})
+    world.refused("note(name)", grant, "CAPABILITY_DENIED", tool_name="shell")
+    world.refused("slow_restart(name)", grant, "CAPABILITY_DENIED", tool_name="slow_restart")
+    assert world.effects == []
+    assert world.runtime.tool_names == ("note", "restart_service", "slow_restart")
+
+
+def test_ncr_c8_004_a_registry_of_another_governed_context_is_stale() -> None:
+    world = World()
+
+    world.refused("note(name)", world.grant(), "STALE_CONTEXT", context=world_context(purpose="other-purpose"))
+
+    assert world.effects == []
+
+
+def test_ncr_c8_004_marking_refusals_are_policy_denials_keeping_the_marking_outcome() -> None:
+    from ocor_runtime.c4_marking import MarkingSet
+
+    world = World()
+    denied = world.refused("note(name)", world.grant(), "POLICY_DENIED", clearance=MarkingSet({"classification": "UNCLASSIFIED"}))
+    assert denied.marking_outcome == "MARKING_DENIED"
+    unresolved = world.refused("note(name)", world.grant(), "POLICY_DENIED", content_marking=MarkingSet({"classification": "COSMIC"}))
+    assert unresolved.marking_outcome == "MARKING_UNRESOLVED"
+    assert world.effects == []
+
+
+def test_ncr_c8_004_the_runtime_raises_only_contract_error_codes() -> None:
+    from ocor_runtime.c8.tool_contract import TOOL_ERROR_CODES
+
+    world = World()
+    assert set(world.module.TOOL_RUNTIME_REASON_CODES) <= set(TOOL_ERROR_CODES)
+    for code in ("MARKING_DENIED", "PURPOSE_REQUIRED", "RECONCILIATION_UNAVAILABLE", "STOP_BOUND_DENIED", "TOOL_DEADLINE_EXCEEDED"):
+        with pytest.raises(ValueError):
+            world.module.ToolRuntimeError(code, "x")
+
+
+# --- NCR-C8-007: dispatch-time live revocation (OCOR-DEV-REM-0043 cases on the C8 grants) ---------
+
+
+def test_ncr_c8_007_conforms() -> None:
+    """RED of NCR-C8-007 (the OCOR-DEV-REM-0043 RED case, 81a8b76): a grant revoked now, while the
+    expression runs and later than the presented ``at``, refuses the next tool before its dispatch
+    (ADD v1.3 :3856, :3121; NFR-036 :271; FGM-17, LLD v1.1 :398)."""
+    world = World()
+    holder: dict[str, Any] = {}
+    world.bodies["note"] = lambda: world.revoke_now(holder["grant"])
+    holder["grant"] = world.grant()
+
+    refused = world.refused(TWO_TOOLS, holder["grant"], "CAPABILITY_REVOKED")
+
+    revoked = world.grants.get(holder["grant"].lease_id)
+    assert revoked is not None and revoked.revoked_at is not None and revoked.revoked_at > world.invoked_at
+    assert world.effects == ["note"]
+    assert refused.execution_unknown is False and refused.reconciliation is None
+    assert world.runtime.unknown_outcomes == ()
+
+
+def test_ncr_c8_007_without_a_revocation_every_tool_of_the_expression_is_dispatched() -> None:
+    world = World()
+    grant = world.grant()
+
+    receipt = world.invoke(TWO_TOOLS, grant)
+
+    assert world.effects == ["note", "restart_service"]
+    assert receipt.result == ["note svc", "restart_service svc"]
+    assert receipt.lease_id == grant.lease_id
+    assert world.runtime.unknown_outcomes == ()
+
+
+def test_ncr_c8_007_a_revocation_after_the_last_tool_changes_nothing_already_dispatched() -> None:
+    world = World()
+    holder: dict[str, Any] = {}
+    world.bodies["restart_service"] = lambda: world.revoke_now(holder["grant"])
+    holder["grant"] = world.grant()
+
+    receipt = world.invoke(TWO_TOOLS, holder["grant"])
+
+    assert world.effects == ["note", "restart_service"]
+    assert receipt.result == ["note svc", "restart_service svc"]
+    budget = world.budget()
+    world.refused("note(name)", holder["grant"], "CAPABILITY_REVOKED", budget=budget)
+    assert world.effects == ["note", "restart_service"] and budget.spent("tokens", level="run") == 10
+
+
+def test_ncr_c8_007_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool() -> None:
+    world = World()
+    holder: dict[str, Any] = {}
+    world.bodies["note"] = lambda: world.revoke_now(holder["grant"])
+    holder["grant"] = world.grant()
+
+    refused = world.refused(TWO_TOOLS, holder["grant"], "CAPABILITY_REVOKED")
+
+    assert world.effects == ["note"]
+    assert refused.execution_unknown is False and refused.reconciliation is None
+
+
+def test_ncr_c8_007_a_delegation_revoked_during_the_expression_refuses_the_next_tool_of_the_delegate() -> None:
+    world = World()
+    delegator = world.binding(principal="agent-0", run="urn:ocor:agent-run:0")
+    parent = world.grant(agent=delegator, redelegation_allowed=True)
+    child = world.grants.delegate(parent.lease_id, agent=world.agent, tools=("note", "restart_service"), issued_at=world.invoked_at, ttl=timedelta(minutes=30))
+    world.bodies["note"] = lambda: world.revoke_now(parent)
+
+    refused = world.refused(TWO_TOOLS, child, "CAPABILITY_REVOKED")
+
+    assert world.effects == ["note"]
+    assert refused.execution_unknown is False
+    delegate = world.grants.get(child.lease_id)
+    assert delegate is not None and delegate.revoked_at is None
+
+
+def test_ncr_c8_007_a_lease_revoked_after_the_presented_instant_is_refused_before_anything_is_charged() -> None:
+    world = World()
+    grant = world.grant("note")
+    world.revoke_now(grant)
+    budget = world.budget()
+
+    world.refused("note(name)", grant, "CAPABILITY_REVOKED", budget=budget)
+
+    assert world.effects == [] and budget.spent("tokens", level="run") == 0
+    assert world.grants.usage(grant.lease_id) == 0
+
+
+def test_ncr_c8_007_a_revoked_lease_is_refused_on_the_effect_channel_whatever_instant_is_presented() -> None:
+    world = World()
+    grant = world.grant("note")
+    assert world.runtime.authorize_effect(grant, "note", agent=world.agent, at=world.invoked_at).lease_id == grant.lease_id
+    world.revoke_now(grant)
+
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.runtime.authorize_effect(grant, "note", agent=world.agent, at=world.invoked_at)
+
+    assert refused.value.reason_code == "CAPABILITY_REVOKED"
+
+
+def test_ncr_c8_007_a_delegation_revoked_after_the_presented_instant_is_refused_on_the_effect_channel() -> None:
+    world = World()
+    delegator = world.binding(principal="agent-0", run="urn:ocor:agent-run:0")
+    parent = world.grant("note", agent=delegator, redelegation_allowed=True)
+    child = world.grants.delegate(parent.lease_id, agent=world.agent, tools=("note",), issued_at=world.invoked_at, ttl=timedelta(minutes=30))
+    world.revoke_now(parent)
+
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.runtime.authorize_effect(child, "note", agent=world.agent, at=world.invoked_at)
+
+    assert refused.value.reason_code == "CAPABILITY_REVOKED"
+
+
+def test_ncr_c8_007_a_stop_and_a_revocation_during_the_expression_refuse_the_next_tool_as_stop_bound() -> None:
+    world = World()
+    holder: dict[str, Any] = {}
+
+    def revoke_and_stop() -> None:
+        world.revoke_now(holder["grant"])
+        world.accept_stop()
+
+    world.bodies["note"] = revoke_and_stop
+    holder["grant"] = world.grant()
+
+    world.refused(TWO_TOOLS, holder["grant"], "EMERGENCY_STOP_ACTIVE")
+
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_007_a_stop_accepted_after_the_gates_stays_stop_bound() -> None:
+    world = World()
+    grant = world.grant("note")
+    budget = world.budget()
+    charge = budget.charge
+
+    def stop_while_charging(**amounts: int) -> Any:
+        world.accept_stop()  # after every gate, before the sandbox
+        return charge(**amounts)
+
+    budget.charge = stop_while_charging  # type: ignore[method-assign]
+
+    world.refused("note(name)", grant, "EMERGENCY_STOP_ACTIVE", budget=budget)
+
+    assert world.effects == []
+
+
+def test_ncr_c8_007_the_effect_channel_refuses_a_stopped_and_revoked_lease_as_stop_bound() -> None:
+    world = World()
+    grant = world.grant("note")
+    world.revoke_now(grant)
+    world.accept_stop()
+
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.runtime.authorize_effect(grant, "note", agent=world.agent, at=world.invoked_at)
+
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
+
+
+def test_ncr_c8_007_a_revocation_racing_the_dispatch_from_another_thread_never_reaches_the_second_tool() -> None:
+    world = World()
+    holder: dict[str, Any] = {}
+    revoked = threading.Event()
+
+    def revoke_from_control_plane() -> None:
+        worker = threading.Thread(target=lambda: (world.revoke_now(holder["grant"]), revoked.set()))
+        worker.start()
+        worker.join()
+
+    world.bodies["note"] = revoke_from_control_plane
+    holder["grant"] = world.grant()
+
+    started = time.monotonic()
+    world.refused(TWO_TOOLS, holder["grant"], "CAPABILITY_REVOKED")
+
+    assert revoked.is_set() and world.effects == ["note"]
+    assert time.monotonic() - started < 5.0
+
+
+def test_ncr_c8_007_a_grant_cannot_be_redelegated_or_widened_by_default() -> None:
+    world = World()
+    delegator = world.binding(principal="agent-0", run="urn:ocor:agent-run:0")
+    closed = world.grant("note", agent=delegator)
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.grants.delegate(closed.lease_id, agent=world.agent, tools=("note",), issued_at=world.invoked_at, ttl=timedelta(minutes=1))
+    assert refused.value.reason_code == "CAPABILITY_DENIED"
+    open_ = world.grant("note", agent=delegator, redelegation_allowed=True)
+    for tools, ttl in ((("note", "restart_service"), timedelta(minutes=1)), (("note",), timedelta(hours=2))):
+        with pytest.raises(world.module.ToolRuntimeError) as refused:
+            world.grants.delegate(open_.lease_id, agent=world.agent, tools=tools, issued_at=world.invoked_at, ttl=ttl)
+        assert refused.value.reason_code == "CAPABILITY_DENIED"
+
+
+# --- NCR-C8-008: no legacy lease, no unaudited reconciler, no permissive default ------------------
+
+
+def _imports(path: Path) -> set[str]:
+    tree = _ast.parse(path.read_text(encoding="utf-8"))
+    names: set[str] = set()
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.ImportFrom):
+            names.add(("." * node.level) + (node.module or ""))
+        elif isinstance(node, _ast.Import):
+            names.update(alias.name for alias in node.names)
+    return names
+
+
+def test_ncr_c8_008_conforms() -> None:
+    """RED of NCR-C8-008 (PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE, option 2): the C8 tool runtime
+    does not use ``ocor_runtime.c6_capabilities``, builds no unaudited OutcomeReconciler by default
+    and records every EXECUTION_UNKNOWN outcome on the reconciler of the signed audit port (ADD v1.3
+    :3220, :3360, :3856; FR-162 :404, NFR-036 :271, FR-163 :407)."""
+    from ocor_runtime.c6.safety import OutcomeReconciler, OutcomeStatus
+
+    source = ROOT / "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+    assert not any(name.endswith("c6_capabilities") for name in _imports(source))
+    assert "c6_capabilities" not in source.read_text(encoding="utf-8").split('"""', 2)[-1]
+    world = World(deadline=timedelta(milliseconds=300))
+    common = {
+        "registry": world.registry,
+        "grants": world.grants,
+        "controls": world.controls,
+        "policy": world.policy,
+        "eligibility": world.eligibility,
+        "marking_engine": world.marking,
+        "stop": world.stop.reader,
+    }
+    with pytest.raises(TypeError):
+        world.module.ToolCallRuntime(**common)  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        world.module.ToolCallRuntime(**common, reconciler=OutcomeReconciler())
+    world.bodies["slow_restart"] = lambda: time.sleep(1.0)
+
+    refused = world.refused("slow_restart(name)", world.grant("slow_restart"), "EXECUTION_UNKNOWN", tool_name="slow_restart")
+
+    assert refused.execution_unknown is True and refused.reconciliation is not None
+    assert world.reconciler.audited is True
+    record = world.reconciler.record(refused.reconciliation.command_id)
+    assert record is not None and record.status is OutcomeStatus.UNKNOWN
+
+
+def test_ncr_c8_008_the_runtime_is_never_built_without_its_governance_controls() -> None:
+    world = World()
+    full = {
+        "registry": world.registry,
+        "grants": world.grants,
+        "controls": world.controls,
+        "policy": world.policy,
+        "eligibility": world.eligibility,
+        "marking_engine": world.marking,
+        "stop": world.stop.reader,
+        "reconciler": world.reconciler,
+    }
+    for missing in ("registry", "grants", "controls", "policy", "eligibility"):
+        with pytest.raises(TypeError):
+            world.module.ToolCallRuntime(**{key: value for key, value in full.items() if key != missing})
+        with pytest.raises(TypeError):
+            world.module.ToolCallRuntime(**{**full, missing: None})
+
+
+def test_ncr_c8_008_a_stop_while_a_tool_runs_records_its_unknown_outcome_on_the_audited_reconciler() -> None:
+    from ocor_runtime.c6.safety import OutcomeStatus
+
+    world = World()
+    started = threading.Event()
+
+    def slow() -> None:
+        started.set()
+        time.sleep(1.5)
+
+    world.bodies["slow_restart"] = slow
+
+    def stop_when_started() -> None:
+        started.wait(5)
+        world.accept_stop()
+
+    threading.Thread(target=stop_when_started, daemon=True).start()
+    refused = world.refused("slow_restart(name)", world.grant("slow_restart"), "EMERGENCY_STOP_ACTIVE", tool_name="slow_restart")
+
+    assert refused.execution_unknown is True and refused.reconciliation is not None
+    assert world.reconciler.record(refused.reconciliation.command_id).status is OutcomeStatus.UNKNOWN
+
+
+def test_ncr_c8_008_an_unavailable_audited_reconciler_fails_closed_as_execution_unknown() -> None:
+    from ocor_runtime import audit
+    from ocor_runtime.c6.safety import OutcomeReconciler
+    from c6_action_fixture import seeded_key
+
+    dead = audit.PostgresAuditLog(
+        "postgresql://ocor:unused@127.0.0.1:1/ocor",
+        schema="ocor_audit_rem_0058_dead",
+        signer=audit.AuditSigner(key=seeded_key("rem-0058-dead"), keyid="rem-0058-dead"),
+        connect_timeout=1,
+    )
+    world = World(deadline=timedelta(milliseconds=300), reconciler=OutcomeReconciler(audit=dead))
+    world.bodies["slow_restart"] = lambda: time.sleep(1.0)
+
+    refused = world.refused("slow_restart(name)", world.grant("slow_restart"), "EXECUTION_UNKNOWN", tool_name="slow_restart")
+
+    assert refused.execution_unknown is True and refused.reconciliation is None
+    assert world.runtime.unknown_outcomes == ()
+
+
+def test_ncr_c8_008_the_contract_timeout_bounds_the_dispatch() -> None:
+    world = World(timeout_ms=200)
+    world.bodies["slow_restart"] = lambda: time.sleep(1.0)
+    started = time.monotonic()
+
+    refused = world.refused("slow_restart(name)", world.grant("slow_restart"), "EXECUTION_UNKNOWN", tool_name="slow_restart")
+
+    assert time.monotonic() - started < 1.0
+    assert refused.execution_unknown is True
+
+
+def test_ncr_c8_008_a_grant_is_bound_to_the_stop_epoch_of_its_issuance() -> None:
+    world = World()
+    grant = world.grant("note")
+    world.accept_stop()
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.grant("note")
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
+    world.refused("note(name)", grant, "EMERGENCY_STOP_ACTIVE", stop_epoch=world.stop.epoch)
+    assert world.effects == []

@@ -291,7 +291,7 @@ def test_a_stop_accepted_after_the_gates_and_before_the_sandbox_produces_no_effe
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("restart_service(name)", lease, budget=StopWhileCharging(1000))
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert harness.stop_accepted_at is not None
     assert harness.effects == []
 
@@ -305,7 +305,7 @@ def test_a_stop_accepted_between_two_tools_of_one_expression_prevents_the_second
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("[note(name), restart_service(name)]", lease)
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert harness.stop_accepted_at is not None
     assert harness.names() == ["note"]
 
@@ -329,7 +329,7 @@ def test_a_stop_during_a_slow_non_cooperative_tool_refuses_the_next_tool_within_
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
     harness.wait_settled("slow_restart")
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert getattr(refused.value, "execution_unknown", False) is True
     assert harness.stop_accepted_at is not None
     assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
@@ -351,7 +351,7 @@ def test_a_stop_during_a_non_cooperative_tool_that_swallows_errors_still_prevent
     harness.wait_settled("slow_restart")
     settled_at = time.monotonic()
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert refused.value.execution_unknown is True
     assert harness.stop_accepted_at is not None
     assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
@@ -388,7 +388,7 @@ def test_a_stop_during_a_slow_cooperative_tool_cancels_it_with_no_effect() -> No
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
     finished_at = time.monotonic()
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert harness.stop_accepted_at is not None
     assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
     assert finished_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
@@ -409,7 +409,7 @@ def test_a_slow_tool_without_any_stop_is_bounded_by_the_call_deadline() -> None:
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
     harness.wait_settled("slow_restart")
 
-    assert refused.value.reason_code == "TOOL_DEADLINE_EXCEEDED"
+    assert refused.value.reason_code == "EXECUTION_UNKNOWN"
     assert getattr(refused.value, "execution_unknown", False) is True
     assert returned_at - started <= CONTAINMENT_TARGET_SECONDS
     # no mutative effect once the call deadline has expired
@@ -427,7 +427,7 @@ def test_a_cooperative_tool_past_the_call_deadline_is_cancelled_with_no_effect()
         harness.invoke("slow_restart(name)", lease, tool_name="slow_restart")
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
 
-    assert refused.value.reason_code == "TOOL_DEADLINE_EXCEEDED"
+    assert refused.value.reason_code == "EXECUTION_UNKNOWN"
     assert time.monotonic() - started <= 3.0
     # the deadline reaches the tool through its cooperative checkpoint before
     # any preemption
@@ -454,7 +454,7 @@ def test_a_lease_issued_before_a_stop_is_refused_after_the_dual_control_reset() 
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("restart_service(name)", lease)  # the caller presents the current epoch 2
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert harness.effects == []
 
 
@@ -490,7 +490,7 @@ def test_a_lease_not_bound_to_a_stop_epoch_is_refused() -> None:
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("restart_service(name)", unbound)
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert harness.effects == []
 
 
@@ -529,7 +529,7 @@ def test_a_lease_revoked_during_the_expression_refuses_the_next_tool() -> None:
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("[note(name), restart_service(name)]", holder["lease"], tool_name="note")
 
-    assert refused.value.reason_code == "CAPABILITY_DENIED"
+    assert refused.value.reason_code == "CAPABILITY_REVOKED"
     assert harness.names() == ["note"]
 
 
@@ -607,7 +607,7 @@ def test_a_command_fenced_before_the_stop_is_refused_even_with_a_fresh_lease() -
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("restart_service(name)", lease, stop_epoch=command_epoch)
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert harness.effects == []
 
 
@@ -831,11 +831,11 @@ def test_a_stop_during_a_non_cooperative_tool_records_its_unknown_outcome_with_t
     returned_at = time.monotonic()
     harness.wait_settled("slow_restart")
 
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert refused.value.execution_unknown is True
     assert harness.stop_accepted_at is not None
     assert returned_at - harness.stop_accepted_at <= CONTAINMENT_TARGET_SECONDS
-    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="STOP_BOUND_DENIED")
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="EMERGENCY_STOP_ACTIVE")
 
 
 def test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconciler() -> None:
@@ -847,13 +847,16 @@ def test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconc
         harness.invoke("slow_restart(name)", lease, tool_name="slow_restart")
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
 
-    assert refused.value.reason_code == "TOOL_DEADLINE_EXCEEDED"
+    assert refused.value.reason_code == "EXECUTION_UNKNOWN"
     assert refused.value.execution_unknown is True
-    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="TOOL_DEADLINE_EXCEEDED")
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="EXECUTION_UNKNOWN")
 
 
 def test_the_default_runtime_reconciles_with_its_own_c6_reconciler() -> None:
     harness = Harness(deadline=timedelta(seconds=1))
+    # NCR-C8-008 (ADD v1.3 :3358, Register FR-163 :407): no runtime is built without the audited reconciler
+    with pytest.raises(TypeError):
+        ToolCallRuntime(sandbox=harness.sandbox, authority=harness.authority, marking_engine=harness.marking, stop=harness.stop)
     harness.tool("slow_restart", slow_cooperative(harness))
     lease = harness.lease("slow_restart")
 
@@ -862,7 +865,8 @@ def test_the_default_runtime_reconciles_with_its_own_c6_reconciler() -> None:
     assert harness.finished.wait(SLOW_SECONDS + 5.0)
 
     assert isinstance(harness.runtime.reconciler, OutcomeReconciler)
-    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="TOOL_DEADLINE_EXCEEDED")
+    assert harness.runtime.reconciler.audited is True
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="EXECUTION_UNKNOWN")
 
 
 def test_an_unavailable_reconciler_fails_closed_without_any_receipt() -> None:
@@ -879,7 +883,7 @@ def test_an_unavailable_reconciler_fails_closed_without_any_receipt() -> None:
     harness.wait_settled("slow_restart")
 
     assert receipts == []
-    assert refused.value.reason_code == "RECONCILIATION_UNAVAILABLE"
+    assert refused.value.reason_code == "EXECUTION_UNKNOWN"
     assert refused.value.execution_unknown is True
     assert refused.value.reconciliation is None
     assert isinstance(refused.value.__cause__, OSError)
@@ -939,12 +943,12 @@ def test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_r
 
     assert harness.stop_accepted_at is not None
     stop_at = harness.stop_accepted_at
-    assert refused.value.reason_code == "STOP_BOUND_DENIED"
+    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert refused.value.execution_unknown is True
     assert returned_at - stop_at <= CONTAINMENT_TARGET_SECONDS
-    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="STOP_BOUND_DENIED")
+    assert_reconciled(harness, refused.value, tool="slow_restart", lease=lease, reason_code="EMERGENCY_STOP_ACTIVE")
     # the late effect on the lease channel is refused by the stop fence
-    assert [reason for reason, _ in governed] == ["STOP_BOUND_DENIED"]
+    assert [reason for reason, _ in governed] == ["EMERGENCY_STOP_ACTIVE"]
     # the registered callable never journalled an effect
     assert harness.effects == []
     # ungoverned residual: measured and recorded, not a containment PASS

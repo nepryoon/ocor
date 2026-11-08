@@ -152,7 +152,7 @@ def test_a_revoked_capability_produces_no_tool_effect(
             at=NOW,
         )
 
-    assert excinfo.value.reason_code == "CAPABILITY_DENIED"
+    assert excinfo.value.reason_code == "CAPABILITY_REVOKED"
     assert effects == []
     assert budget.used == 0
 
@@ -242,7 +242,7 @@ def test_over_budget_work_produces_no_tool_effect(
     lease = grant(authority)
     tight_budget = TokenBudget(1)
 
-    with pytest.raises(TokenBudgetExceeded):
+    with pytest.raises(ToolRuntimeError) as excinfo:
         runtime.invoke(
             "restart_service",
             "restart_service(name)",
@@ -257,6 +257,7 @@ def test_over_budget_work_produces_no_tool_effect(
             at=NOW,
         )
 
+    assert excinfo.value.reason_code == "BUDGET_EXCEEDED"
     assert effects == []
     assert tight_budget.used == 0
 
@@ -285,7 +286,8 @@ def test_insufficient_clearance_produces_no_tool_effect(
             at=NOW,
         )
 
-    assert excinfo.value.reason_code == "MARKING_DENIED"
+    assert excinfo.value.reason_code == "POLICY_DENIED"
+    assert excinfo.value.marking_outcome == "MARKING_DENIED"
     assert effects == []
     assert budget.used == 0
 
@@ -328,7 +330,7 @@ def test_an_active_emergency_stop_produces_no_tool_effect(
             at=NOW,
         )
 
-    assert excinfo.value.reason_code == "STOP_BOUND_DENIED"
+    assert excinfo.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert effects == []
     assert budget.used == 0
 
@@ -357,7 +359,7 @@ def test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect(
             at=NOW,
         )
 
-    assert excinfo.value.reason_code == "STOP_BOUND_DENIED"
+    assert excinfo.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert effects == []
 
 
