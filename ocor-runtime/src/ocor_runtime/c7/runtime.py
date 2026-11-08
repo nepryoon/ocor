@@ -515,7 +515,12 @@ _UNCERTAINTY: dict[str, Any] = {
 _SENSITIVITY: dict[str, Any] = {
     "type": "object",
     "required": ["method", "confounding_shift", "shifted_effect", "sign_flipped"],
-    "properties": {"method": {"type": "string", "minLength": 1}, "sign_flipped": {"type": "boolean"}},
+    "properties": {
+        "method": {"type": "string", "minLength": 1},
+        "confounding_shift": {"type": "string", "pattern": _DECIMAL_PATTERN},
+        "shifted_effect": {"type": "string", "pattern": _DECIMAL_PATTERN},
+        "sign_flipped": {"type": "boolean"},
+    },
 }
 OUTCOME_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -620,7 +625,13 @@ def validate_outcome_document(document: object) -> None:
 def outcome_from_document(document: object, reproducibility_digest: str) -> CausalOutcome:
     """Rebuild a sealed outcome after validating its schema and recomputing its digest."""
     validate_outcome_document(document)
-    if not isinstance(document, Mapping) or canonical_digest(document) != reproducibility_digest:
+    if not isinstance(document, Mapping):
+        raise CausalRuntimeError("OUTCOME_SCHEMA_INVALID: the content is not an object")
+    try:
+        digest = canonical_digest(document)
+    except (TypeError, ValueError) as exc:
+        raise CausalRuntimeError("OUTCOME_SCHEMA_INVALID: the content has no canonical digest (non-JSON or non-finite value)") from exc
+    if digest != reproducibility_digest:
         raise CausalRuntimeError("REPRODUCIBILITY_DIGEST_MISMATCH: the content does not match its digest")
     return CausalOutcome(
         status=document["status"],
@@ -1154,6 +1165,20 @@ def compare_interventions(
     )
 
 
+def _counterfactual_well_formed(query: CausalQuery, model: Any, intervention: Any, unit_index: Any) -> bool:
+    """The structure of a unit-level counterfactual query, checked before the deferral: a
+    registered SCM document, an intervention of the query's treatment with a numeric value
+    and validity envelope, and an integer unit index. The factual set is never read."""
+    if not isinstance(model, Mapping) or type(unit_index) is not int:
+        return False
+    try:
+        StructuralCausalModel.from_document(model)
+        _intervention_value(query, intervention)
+    except (ModelSchemaError, _Rejected):
+        return False
+    return True
+
+
 def estimate_counterfactual(
     query: CausalQuery, *, model: Any, factual_rows: Any, intervention: Any, unit_index: Any
 ) -> CausalOutcome:
@@ -1162,15 +1187,10 @@ def estimate_counterfactual(
     is ``REJECTED{CAPABILITY_DEFERRED, ELM-070}`` without reading the factual set, on
     any branch and for any unit index; a structurally invalid one is rejected for its
     schema error."""
-    if (
-        not isinstance(query, CausalQuery)
-        or not isinstance(model, Mapping)
-        or not isinstance(intervention, Mapping)
-        or type(unit_index) is not int
-    ):
-        if isinstance(query, CausalQuery):
-            return _seal(query, status="REJECTED", reason_code="COUNTERFACTUAL_SCHEMA_INVALID")
+    if not isinstance(query, CausalQuery):
         raise CausalRuntimeError("COUNTERFACTUAL_SCHEMA_INVALID: the query is not a CausalQuery")
+    if not _counterfactual_well_formed(query, model, intervention, unit_index):
+        return _seal(query, status="REJECTED", reason_code="COUNTERFACTUAL_SCHEMA_INVALID")
     return _seal(query, status="REJECTED", reason_code="CAPABILITY_DEFERRED", details={"element": COUNTERFACTUAL_ELEMENT})
 
 

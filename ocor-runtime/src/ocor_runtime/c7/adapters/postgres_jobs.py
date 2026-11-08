@@ -36,7 +36,7 @@ from ..jobs import (
     JobResult,
     JobTransition,
 )
-from ..runtime import CausalOutcome, CausalRuntimeError, outcome_document, outcome_from_document
+from ..runtime import OUTCOME_STATUSES, CausalOutcome, CausalRuntimeError, outcome_document, outcome_from_document
 from ..scenario_run import ScenarioRunError, ScenarioRunSpec
 
 SCHEMA_NAME = re.compile(r"[a-z_][a-z0-9_]{0,48}")
@@ -110,8 +110,16 @@ def _actor(value: object, name: str = "actor") -> str:
     return value
 
 
+def _column(row: object, column: str) -> Any:
+    """The value of ``column`` in a row returned by the backend: a row that is not a
+    mapping or lacks the column is a ``BACKEND_ERROR``, never a raw ``KeyError``."""
+    if not isinstance(row, Mapping) or column not in row:
+        raise _backend(f"a stored row has no {column} column")
+    return row[column]
+
+
 def _stored_text(row: Mapping[str, Any], column: str, *, nullable: bool = False) -> Any:
-    value = row[column]
+    value = _column(row, column)
     if value is None and nullable:
         return None
     if not isinstance(value, str) or not value:
@@ -120,7 +128,7 @@ def _stored_text(row: Mapping[str, Any], column: str, *, nullable: bool = False)
 
 
 def _stored_instant(row: Mapping[str, Any], column: str, *, nullable: bool = False) -> Any:
-    value = row[column]
+    value = _column(row, column)
     if value is None and nullable:
         return None
     if not isinstance(value, datetime) or value.utcoffset() is None:
@@ -129,7 +137,7 @@ def _stored_instant(row: Mapping[str, Any], column: str, *, nullable: bool = Fal
 
 
 def _stored_count(row: Mapping[str, Any], column: str, *, minimum: int) -> int:
-    value = row[column]
+    value = _column(row, column)
     if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
         raise _backend(f"stored {column} is not an integer >= {minimum}")
     return value
@@ -230,7 +238,7 @@ class PostgresCausalJobLedger:
             raise CausalJobError("JOB_NOT_FOUND", "no job with this identifier")
         if not isinstance(row, Mapping) or not _COLUMNS["c7_job"] | {"overdue"} <= set(row):
             raise _backend("a stored job is not of the expected shape")
-        if row["job_id"] != job_id:
+        if _column(row, "job_id") != job_id:
             raise _backend("the backend returned another job")
         return row
 
@@ -245,7 +253,7 @@ class PostgresCausalJobLedger:
         spec_digest = _stored_text(row, "spec_digest")
         if _HEX64.fullmatch(spec_digest) is None:
             raise _backend("stored spec_digest is not a sha256 digest")
-        overdue = row["overdue"]
+        overdue = _column(row, "overdue")
         if not isinstance(overdue, bool):
             raise _backend("stored deadline comparison is not a boolean")
         retry = _stored_text(row, "retry_safety", nullable=True)
@@ -254,6 +262,16 @@ class PostgresCausalJobLedger:
         result_digest = _stored_text(row, "result_digest", nullable=True)
         if (result_digest is None) != (state != "completed"):
             raise _backend("stored result reference does not match the state")
+        if result_digest is not None and _HEX64.fullmatch(result_digest) is None:
+            raise _backend("stored result_digest is not a sha256 digest")
+        outcome_status = _stored_text(row, "outcome_status", nullable=True)
+        if outcome_status is not None and outcome_status not in OUTCOME_STATUSES:
+            raise _backend("stored outcome_status is not an outcome status")
+        if (outcome_status is None) != (state != "completed"):
+            raise _backend("stored outcome status does not match the state")
+        technical_failure = _stored_text(row, "technical_failure", nullable=True)
+        if (technical_failure is None) != (state != "failed") or (retry is None) != (state != "failed"):
+            raise _backend("stored technical failure and retry safety do not match the state")
         return CausalJob(
             job_id=_stored_text(row, "job_id"),
             principal=_stored_text(row, "principal"),
@@ -263,8 +281,8 @@ class PostgresCausalJobLedger:
             deadline=_stored_instant(row, "deadline"),
             overdue=overdue,
             result_digest=result_digest,
-            outcome_status=_stored_text(row, "outcome_status", nullable=True),
-            technical_failure=_stored_text(row, "technical_failure", nullable=True),
+            outcome_status=outcome_status,
+            technical_failure=technical_failure,
             retry_safety=retry,
             submitted_at=_stored_instant(row, "submitted_at"),
             updated_at=_stored_instant(row, "updated_at"),
@@ -280,7 +298,7 @@ class PostgresCausalJobLedger:
         row = self._run("spec", lambda connection: self._job_row(connection, job_id))
         job = self._job(row)
         try:
-            spec = ScenarioRunSpec.from_document(row["spec"])
+            spec = ScenarioRunSpec.from_document(_column(row, "spec"))
         except ScenarioRunError as exc:
             raise _backend("the stored spec is not a valid ScenarioRunSpec") from exc
         if spec.digest != job.spec_digest:
@@ -343,7 +361,7 @@ class PostgresCausalJobLedger:
     def _resource(row: object, job_id: str) -> JobResource:
         if not isinstance(row, Mapping) or not _COLUMNS["c7_job_resource"] <= set(row):
             raise _backend("a stored resource is not of the expected shape")
-        if row["job_id"] != job_id:
+        if _column(row, "job_id") != job_id:
             raise _backend("the backend listed a resource of another job")
         return JobResource(
             job_id=job_id,
@@ -370,9 +388,13 @@ class PostgresCausalJobLedger:
             raise CausalJobError("NO_VALID_RESULT", f"a {job.state} job has no valid result")
         if not isinstance(row, Mapping) or not _COLUMNS["c7_job_result"] <= set(row):
             raise _backend("the stored result is missing or not of the expected shape")
+        if _stored_text(row, "job_id") != job_id:
+            raise _backend("the backend returned the result of another job")
+        _stored_instant(row, "recorded_at")
+        version = _stored_count(row, "result_version", minimum=1)
         digest = _stored_text(row, "reproducibility_digest")
         try:
-            outcome = outcome_from_document(row["outcome"], digest)
+            outcome = outcome_from_document(_column(row, "outcome"), digest)
         except CausalRuntimeError as exc:
             raise CausalJobError("RESULT_TAMPERED", "the stored result does not match its digest or schema") from exc
         if (
@@ -384,7 +406,7 @@ class PostgresCausalJobLedger:
         return JobResult(
             job_id=job_id,
             spec_digest=job.spec_digest,
-            result_version=_stored_count(row, "result_version", minimum=1),
+            result_version=version,
             outcome=outcome,
         )
 
@@ -661,8 +683,8 @@ class PostgresCausalJobLedger:
                 "WHERE job_id = %s AND released_at IS NULL RETURNING resource".encode(),
                 (job_id,),
             ).fetchall()
-            if released:
-                names = sorted(str(row["resource"]) for row in released if isinstance(row, Mapping))
+            names = sorted(_released_name(row) for row in released)
+            if names:
                 self._audit(
                     connection, job_id=job_id, principal=job.principal, from_state=job.state, to_state="resources_released",
                     actor=actor, reason="RELEASED:" + ",".join(names),
@@ -673,6 +695,13 @@ class PostgresCausalJobLedger:
         if job.state not in TERMINAL_STATES:
             raise CausalJobError("INVALID_TRANSITION", f"a {job.state} job keeps its resources")
         return self.resources(job_id)
+
+
+def _released_name(row: object) -> str:
+    name = _stored_text(row, "resource")  # type: ignore[arg-type]
+    if _RESOURCE.fullmatch(name) is None:
+        raise _backend("a released resource is not a resource name")
+    return str(name)
 
 
 class _NotOverdue(Exception):

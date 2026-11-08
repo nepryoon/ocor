@@ -412,6 +412,15 @@ def _query_delta(view: OverlayView) -> Mapping[str, Any] | None:
     return found
 
 
+def _finite_json(value: Any) -> bool:
+    """Whether ``value`` has a canonical digest: JSON values only, finite numbers only."""
+    try:
+        canonical_digest(_thaw(value))
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
 def _valid_query_delta(delta: Mapping[str, Any] | None) -> bool:
     if delta is None or set(delta) != QUERY_DELTA_FIELDS or delta["operation"] not in OPERATIONS:
         return False
@@ -422,6 +431,7 @@ def _valid_query_delta(delta: Mapping[str, Any] | None) -> bool:
         names_ok
         and isinstance(population, Mapping)
         and bool(population)
+        and _finite_json(population)
         and isinstance(interventions, (list, tuple))
         and len(interventions) >= (2 if delta["operation"] == "compare_interventions" else 1)
         and (delta["operation"] == "compare_interventions" or len(interventions) == 1)

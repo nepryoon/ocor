@@ -52,7 +52,7 @@ ADAPTER_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/adapters/seaweedfs.py"
 C7_RUNTIME_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/runtime.py"
 # c7/runtime.py at the head of OCOR-DEV-REM-0057 (NCP-U09), which aligns it with ADD v1.3 §4.2
 # (NORMATIVE-CONFORMANCE-PLAN point 5, case 2); sealed by OCOR-DEV-0045 before.
-C7_RUNTIME_SHA256 = "09360e5a53d7305ca9f3a1b5a6f04c077fa6a6fb4769c52ffc815e8cbb79d27d"
+C7_RUNTIME_SHA256 = "bbcdd7fe8abeee13c73d2ed73b24699eebad46867c39ddc2100c04a278ae0759"
 QUALIFY_PATH = REPOSITORY_ROOT / "deploy/bootstrap/services/seaweedfs/qualify.py"
 URL = os.environ.get("OCOR_LIVE_SEAWEEDFS_URL", "http://127.0.0.1:18333")
 ACCESS_KEY = "ocor-bootstrap-s3"  # deploy/bootstrap/compose.yaml, seaweedfs service

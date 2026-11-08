@@ -22,6 +22,7 @@ from __future__ import annotations
 import multiprocessing
 import os
 import signal
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -211,35 +212,49 @@ class CausalJobRunner:
     def run(self, job_id: str, inputs: RunInputs) -> CausalJob:
         spec = self._ledger.spec(job_id)
         self._ledger.start(job_id, actor=self._actor, resources={"worker_process": 1, "samples": int(spec.budget["max_samples"])})
+        # From here the job holds resources: every path below ends in a settled job whose
+        # resources are released (NCP-THROUGHPUT-RULES point 1; ADD v1.3 :2927).
+        process: Any = None
+        receiver: Connection | None = None
         try:
-            prepared = prepare_scenario_run(
-                spec,
-                overlay=self._overlay,
-                branch=inputs.branch,
-                revision=inputs.revision,
-                model_envelope=inputs.model_envelope,
-                trust_root=self._trust_root,
-                factual_rows=inputs.factual_rows,
-                expected_release_digest=self._expected_release,
-            )
-        except ScenarioOverlayError as error:
-            return self._failed(job_id, f"OVERLAY_{error.code}", "SAFE_TO_RETRY")
-        except ScenarioRunError as error:
-            return self._failed(job_id, f"PREPARATION_{error.code}", "NOT_SAFE_TO_RETRY")
-        if isinstance(prepared, CausalOutcome):
-            return self._finish(job_id, prepared)
-        self._ledger.report_progress(job_id, "0.1", actor=self._actor)
-        receiver, sender = self._context.Pipe(duplex=False)
-        process = self._context.Process(target=_worker, args=(sender, prepared.to_payload()), daemon=True)
-        process.start()
-        sender.close()
-        if self._on_worker is not None and process.pid is not None:
-            self._on_worker(process.pid)
-        try:
+            try:
+                prepared = prepare_scenario_run(
+                    spec,
+                    overlay=self._overlay,
+                    branch=inputs.branch,
+                    revision=inputs.revision,
+                    model_envelope=inputs.model_envelope,
+                    trust_root=self._trust_root,
+                    factual_rows=inputs.factual_rows,
+                    expected_release_digest=self._expected_release,
+                )
+            except ScenarioOverlayError as error:
+                return self._failed(job_id, f"OVERLAY_{error.code}", "SAFE_TO_RETRY")
+            except ScenarioRunError as error:
+                return self._failed(job_id, f"PREPARATION_{error.code}", "NOT_SAFE_TO_RETRY")
+            if isinstance(prepared, CausalOutcome):
+                return self._finish(job_id, prepared)
+            self._ledger.report_progress(job_id, "0.1", actor=self._actor)
+            receiver, sender = self._context.Pipe(duplex=False)
+            try:
+                process = self._context.Process(target=_worker, args=(sender, prepared.to_payload()), daemon=True)
+                process.start()
+            except OSError:
+                return self._failed(job_id, "WORKER_START_FAILED", "SAFE_TO_RETRY")
+            finally:
+                sender.close()
+            if self._on_worker is not None and process.pid is not None:
+                self._on_worker(process.pid)
             return self._supervise(job_id, process, receiver)
+        except CausalJobError as error:
+            # A concurrent cancellation or timeout (INVALID_TRANSITION, JOB_EXPIRED) settles
+            # the job: only its resources remain to release. Any other ledger refusal fails it.
+            return self._failed(job_id, f"RUNNER_{error.code}", "SAFE_TO_RETRY")
         finally:
-            self._stop(process)
-            receiver.close()
+            if process is not None:
+                self._stop(process)
+            if receiver is not None:
+                receiver.close()
 
     def _supervise(self, job_id: str, process: Any, receiver: Connection) -> CausalJob:
         stopped = False
@@ -255,10 +270,10 @@ class CausalJobRunner:
                 self._ledger.release_resources(job_id, actor=self._actor)
                 return self._ledger.job(job_id)
             if job.state == "paused" and not stopped:
-                os.kill(process.pid, signal.SIGSTOP)
+                self._signal(process, signal.SIGSTOP)
                 stopped = True
             elif job.state == "running" and stopped:
-                os.kill(process.pid, signal.SIGCONT)
+                self._signal(process, signal.SIGCONT)
                 stopped = False
             if not stopped and receiver.poll(self._poll):
                 try:
@@ -273,9 +288,21 @@ class CausalJobRunner:
                     return self._failed(job_id, "WORKER_RESULT_INVALID", "SAFE_TO_RETRY")
                 return self._finish(job_id, outcome)
             if stopped:
-                process.join(self._poll)
-            if not process.is_alive() and not receiver.poll():
+                if process.is_alive():
+                    process.join(self._poll)
+                else:
+                    time.sleep(self._poll)
+            elif not process.is_alive() and not receiver.poll():
                 return self._lost(job_id)
+
+    @staticmethod
+    def _signal(process: Any, signum: int) -> None:
+        """Stops or resumes the worker. A worker that already exited cannot be signalled:
+        its outcome, or its loss, is read from the channel once the job runs again."""
+        try:
+            os.kill(process.pid, signum)
+        except ProcessLookupError:
+            process.join(0)
 
     def _lost(self, job_id: str) -> CausalJob:
         return self._failed(job_id, "WORKER_LOST", "SAFE_TO_RETRY")
