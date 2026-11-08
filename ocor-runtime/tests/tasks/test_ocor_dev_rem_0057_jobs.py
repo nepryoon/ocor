@@ -880,3 +880,27 @@ def test_ncr_c7_004_conforms_malformed_calls_are_refused_with_typed_errors(
     job = ledger.submit(_spec(branch), actor=CLIENT).job_id
     assert _job_code(lambda: call(ledger, job)) == code
     assert ledger.job(job).state == "queued"
+
+
+def test_ncr_c7_004_conforms_overdue_jobs_without_a_runner_expire_and_free_the_quota(ledger: Any, overlay: Any) -> None:
+    branch = _fork(overlay, _query_delta())
+    short = _spec(branch, budget={"max_runtime_seconds": 1, "max_samples": 1_000_000})
+    stale = [ledger.submit(short, actor=CLIENT).job_id for _ in range(2)]
+    assert _job_code(lambda: ledger.submit(short, actor=CLIENT)) == "QUOTA_EXCEEDED"
+    time.sleep(1.2)
+    assert ledger.submit(_spec(branch), actor=CLIENT).state == "queued"
+    for job in stale:
+        assert ledger.job(job).state == "expired"
+        last = ledger.transitions(job)[-1]
+        assert (last.from_state, last.to_state, last.reason) == ("queued", "expired", "TIMEOUT")
+        assert _job_code(lambda job=job: ledger.result(job)) == "NO_VALID_RESULT"
+
+
+def test_ncr_c7_004_conforms_an_unreadable_hypothesis_fails_the_job_and_releases_its_resources(ledger: Any, overlay: Any) -> None:
+    branch = _fork(overlay, _query_delta())
+    job = ledger.submit(_spec(branch), actor=CLIENT).job_id
+    finished = _runner(ledger, overlay).run(job, _inputs(branch, revision=5))
+    assert (finished.state, finished.retry_safety, finished.result_digest) == ("failed", "SAFE_TO_RETRY", None)
+    assert finished.technical_failure is not None and finished.technical_failure.startswith("OVERLAY_")
+    assert all(r.released_at is not None for r in ledger.resources(job))
+    assert [t.to_state for t in ledger.transitions(job)] == ["queued", "running", "failed", "resources_released"]
