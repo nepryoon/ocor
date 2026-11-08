@@ -36,6 +36,7 @@ engine runs in the worker process of the job.
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import importlib
 import importlib.util
@@ -44,7 +45,7 @@ import time
 import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import FrozenInstanceError
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -147,16 +148,26 @@ def _spec_document(branch: Any, *, model: dict[str, Any] = MODEL, rows: Any = RO
         "time_horizon": "P7D",
         "validity_at": "2026-11-08T00:00:00+00:00",
         "budget": {"max_runtime_seconds": 120, "max_samples": 1_000_000},
+        # The complete, closed GovernedContext v1.2 record of ADD v1.3 §1.4 (:181-199), whose
+        # release and policy pins are those of the run (ADD v1.3 :2959).
         "governed_context": {
+            "tenant_id": "urn:ocor:tenant:synthetic",
+            "organization_id": "urn:ocor:organization:synthetic",
             "domain_id": "urn:ocor:domain:logistics",
+            "compartments": sorted(getattr(branch, "compartments", overlay_suite.COMPARTMENTS)),
             "classification_marking_ref": "urn:sha256:" + "a" * 64,
+            "purpose": "urn:ocor:purpose:causal-what-if",
             "effective_principal_id": PRINCIPAL,
             "actor_chain": [PRINCIPAL],
+            "ontology_release_digest": RELEASE,
+            "policy_bundle_digest": "urn:sha256:" + "d" * 64,
             "correlation_id": f"rem0057-jobs-{NONCE}",
-            "causation_id": "urn:ocor:causation:rem0057-jobs",
         },
     }
     document.update(overrides)
+    if "governed_context" not in overrides:
+        for pin in ("ontology_release_digest", "policy_bundle_digest"):
+            document["governed_context"][pin] = document[pin]
     return document
 
 
@@ -391,7 +402,7 @@ def test_ncr_c7_004_conforms_an_incomplete_or_malformed_spec_is_refused(overlay:
 def test_ncr_c7_004_conforms_the_spec_digest_covers_every_pin_and_no_trace_identifier(overlay: Any) -> None:
     branch = _fork(overlay)
     base = _spec(branch)
-    traced = _spec(branch, governed_context={**_spec_document(branch)["governed_context"], "correlation_id": "other", "causation_id": "x"})
+    traced = _spec(branch, governed_context={**_spec_document(branch)["governed_context"], "correlation_id": "other"})
     assert traced.digest == base.digest
     for name, value in (
         ("seed", 1),
@@ -904,3 +915,363 @@ def test_ncr_c7_004_conforms_an_unreadable_hypothesis_fails_the_job_and_releases
     assert finished.technical_failure is not None and finished.technical_failure.startswith("OVERLAY_")
     assert all(r.released_at is not None for r in ledger.resources(job))
     assert [t.to_state for t in ledger.transitions(job)] == ["queued", "running", "failed", "resources_released"]
+
+
+# --- preventive review OCOR-DEV-REM-0057-1a64cb83f153-pre (P1, P3, P4, P5) ---------------------
+#
+# P1: the governed context of a run is the complete, closed GovernedContext v1.2 record of
+# ADD v1.3 §1.4 (:181-199), as ADD v1.3 :2959 requires ("record canonico §1.4 completo").
+
+
+def test_ncr_c7_004_conforms_the_governed_context_is_the_complete_closed_add_record(overlay: Any) -> None:
+    from ocor_runtime.kernel.governed_context import GCS_FIELDS
+
+    branch = _fork(overlay, _query_delta())
+    document = _spec_document(branch)
+    assert tuple(_run().GOVERNED_CONTEXT_FIELDS) == GCS_FIELDS
+    spec = _run().ScenarioRunSpec.from_document(document)
+    assert tuple(spec.governed_context) == GCS_FIELDS
+    assert spec.to_document() == document
+    assert spec.pins()["governed_context"] == {k: v for k, v in document["governed_context"].items() if k != "correlation_id"}
+
+
+_GC_MUTATIONS = [
+    *({"drop": name} for name in ("tenant_id", "organization_id", "compartments", "purpose", "ontology_release_digest", "policy_bundle_digest")),
+    {"set": ("causation_id", "urn:ocor:causation:rem0057")},
+    {"set": ("classification_marking_ref", "NOT-A-URN-SHA256")},
+    {"set": ("classification_marking_ref", "sha256:" + "a" * 64)},
+    {"set": ("actor_chain", [PRINCIPAL, PRINCIPAL])},
+    {"set": ("compartments", [])},
+    {"set": ("compartments", ["urn:ocor:compartment:alpha", "urn:ocor:compartment:alpha"])},
+    {"set": ("compartments", "urn:ocor:compartment:alpha")},
+    {"set": ("tenant_id", 7)},
+    {"set": ("ontology_release_digest", "urn:sha256:" + "e" * 64)},
+    {"set": ("policy_bundle_digest", "urn:sha256:" + "e" * 64)},
+]
+
+
+@pytest.mark.parametrize("mutation", _GC_MUTATIONS, ids=[str(i) for i in range(len(_GC_MUTATIONS))])
+def test_ncr_c7_004_conforms_a_governed_context_other_than_the_closed_add_record_is_refused(mutation: dict[str, Any]) -> None:
+    branch = _offline_branch()
+    context = dict(_spec_document(branch)["governed_context"])
+    if "drop" in mutation:
+        del context[mutation["drop"]]
+    else:
+        context[mutation["set"][0]] = mutation["set"][1]
+    with pytest.raises(_run().ScenarioRunError) as caught:
+        _run().ScenarioRunSpec.from_document(_spec_document(branch, governed_context=context))
+    assert caught.value.code == "RUN_SPEC_INVALID"
+
+
+def test_ncr_c7_004_conforms_the_query_trace_is_the_context_correlation_and_the_run(overlay: Any) -> None:
+    branch = _fork(overlay, _query_delta())
+    spec = _spec(branch)
+    prepared = _prepare(overlay, branch, spec)
+    assert isinstance(prepared, _run().PreparedRun)
+    assert (prepared.query.correlation_id, prepared.query.causation_id) == (spec.governed_context["correlation_id"], spec.run_id)
+
+
+def test_ncr_c7_004_conforms_an_overlay_of_other_compartments_is_rejected(overlay: Any) -> None:
+    branch = _fork(overlay, _query_delta())
+    context = {**_spec_document(branch)["governed_context"], "compartments": [overlay_suite.COMPARTMENTS[0]]}
+    _rejected(_prepare(overlay, branch, _spec(branch, governed_context=context)), "SCENARIO_PIN_MISMATCH")
+
+
+# P5: the population of the hypothesis is canonical, finite JSON like its interventions; a
+# delta that is not is REJECTED{INTERVENTION_SCHEMA_INVALID} (ADD v1.3 :3024), never a raw error.
+
+
+def _offline_branch() -> Any:
+    from ocor_runtime.c7.scenario_overlay import ScenarioBranch
+
+    return ScenarioBranch(
+        scenario_id=f"urn:ocor:scenario:rem0057:{NONCE}",
+        run_id="run-offline",
+        compartments=overlay_suite.COMPARTMENTS,
+        canonical_commit_ref="c" * 32,
+        scenario_branch="scenario/rem0057-offline",
+    )
+
+
+class _OneViewOverlay:
+    """Returns one fixed overlay view: the failure handling of a hypothesis that the real
+    store could not hold (non-finite numbers are not representable in its JSON)."""
+
+    def __init__(self, branch: Any, delta: dict[str, Any]) -> None:
+        from ocor_runtime.c7.scenario_overlay import OverlayDelta, OverlayView
+
+        self._view = OverlayView(branch=branch, revision=1, deltas=(OverlayDelta(1, delta, "0" * 64, None),))
+
+    def read_at(self, branch: Any, revision: int) -> Any:
+        return self._view
+
+
+@pytest.mark.parametrize(
+    "population",
+    [{"threshold": float("nan")}, {"threshold": float("inf")}, {"unit": object()}, {"unit": {"nested": float("-inf")}}],
+    ids=["nan", "inf", "not-json", "nested-inf"],
+)
+def test_ncr_c7_004_conforms_a_hypothesis_population_that_is_not_finite_json_is_rejected(population: dict[str, Any]) -> None:
+    branch = _offline_branch()
+    stub = _OneViewOverlay(branch, _query_delta(population=population))
+    _rejected(_prepare(stub, branch, _spec(branch)), "INTERVENTION_SCHEMA_INVALID")
+    accepted = _prepare(_OneViewOverlay(branch, _query_delta()), branch, _spec(branch))
+    assert isinstance(accepted, _run().PreparedRun)
+
+
+# P4: once the runner has started a job (resources acquired), every path releases them:
+# a cancellation or timeout before the progress report, a worker that cannot be started,
+# and a worker that exits before it is stopped or resumed (ADD v1.3 :2927, :3026-3032).
+
+
+class _CancelledBeforeProgress:
+    """The real ledger, cancelled by the client just before the runner reports progress."""
+
+    def __init__(self, inner: Any) -> None:
+        self._inner = inner
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
+
+    def report_progress(self, job_id: str, progress: str, *, actor: str) -> Any:
+        self._inner.cancel(job_id, actor=CLIENT, reason="cancelled before the progress report")
+        return self._inner.report_progress(job_id, progress, actor=actor)
+
+
+def test_ncr_c7_004_conforms_a_job_cancelled_before_its_progress_report_releases_its_resources(ledger: Any, overlay: Any) -> None:
+    branch = _fork(overlay, _query_delta())
+    job = ledger.submit(_spec(branch), actor=CLIENT).job_id
+    finished = _runner(_CancelledBeforeProgress(ledger), overlay).run(job, _inputs(branch))
+    assert (finished.state, finished.result_digest) == ("cancelled", None)
+    assert ledger.resources(job) and all(r.released_at is not None for r in ledger.resources(job))
+    assert [t.to_state for t in ledger.transitions(job)] == ["queued", "running", "cancelled", "resources_released"]
+
+
+class _UnstartableContext:
+    """A multiprocessing context whose worker cannot be started (the OS refuses it)."""
+
+    def __init__(self) -> None:
+        import multiprocessing
+
+        self._real = multiprocessing.get_context("spawn")
+        self.receivers: list[Any] = []
+
+    def Pipe(self, duplex: bool = True) -> Any:  # noqa: N802 - the multiprocessing API name
+        receiver, sender = self._real.Pipe(duplex=duplex)
+        self.receivers.append(receiver)
+        return receiver, sender
+
+    def Process(self, **kwargs: Any) -> Any:  # noqa: N802 - the multiprocessing API name
+        class _Refused:
+            pid = None
+
+            def start(self) -> None:
+                raise OSError("synthetic: the worker process cannot be created")
+
+            def is_alive(self) -> bool:
+                return False
+
+            def join(self, timeout: float | None = None) -> None:
+                return None
+
+        return _Refused()
+
+
+def test_ncr_c7_004_conforms_a_worker_that_cannot_start_fails_the_job_and_releases_everything(ledger: Any, overlay: Any) -> None:
+    branch = _fork(overlay, _query_delta())
+    job = ledger.submit(_spec(branch), actor=CLIENT).job_id
+    runner = _runner(ledger, overlay)
+    context = _UnstartableContext()
+    runner._context = context
+    finished = runner.run(job, _inputs(branch))
+    assert (finished.state, finished.technical_failure, finished.retry_safety) == ("failed", "WORKER_START_FAILED", "SAFE_TO_RETRY")
+    assert all(r.released_at is not None for r in ledger.resources(job))
+    assert context.receivers and all(receiver.closed for receiver in context.receivers)
+
+
+def _exited_worker() -> tuple[Any, Any]:
+    import multiprocessing
+
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(target=os.getpid, daemon=True)
+    process.start()
+    process.join(30)
+    receiver, sender = context.Pipe(duplex=False)
+    sender.close()
+    return process, receiver
+
+
+@pytest.mark.parametrize(("then", "state"), [("cancel", "cancelled"), ("resume", "failed")])
+def test_ncr_c7_004_conforms_a_worker_gone_before_pause_or_resume_never_escapes_untyped(
+    ledger: Any, overlay: Any, then: str, state: str
+) -> None:
+    branch = _fork(overlay, _query_delta())
+    job = ledger.submit(_spec(branch), actor=CLIENT).job_id
+    ledger.start(job, actor="runner", resources={"worker_process": 1})
+    ledger.pause(job, actor=CLIENT, reason="pause before the signal")
+    process, receiver = _exited_worker()
+    try:
+        box, thread = _background(lambda: _runner(ledger, overlay)._supervise(job, process, receiver))
+        time.sleep(0.5)
+        assert not box, box
+        getattr(ledger, then)(job, actor=CLIENT, reason=f"{then} after the worker exited")
+        thread.join(timeout=30)
+    finally:
+        receiver.close()
+    assert box and not isinstance(box[0], BaseException), box
+    finished = ledger.job(job)
+    assert finished.state == state
+    if state == "failed":
+        assert (finished.technical_failure, finished.retry_safety) == ("WORKER_LOST", "SAFE_TO_RETRY")
+    assert all(r.released_at is not None for r in ledger.resources(job))
+
+
+# P3: every row returned by the backend is checked for its shape before use; a missing
+# column, a coerced value, an incoherent state, a foreign result or a non-finite number is a
+# typed error (BACKEND_ERROR or RESULT_TAMPERED), never a raw KeyError or ValueError. The
+# rows are scripted: the real PostgreSQL schema cannot return them (missing columns, TEXT
+# holding an integer, JSONB holding NaN), so this is the local failure handling only.
+
+_NOW = datetime(2026, 11, 8, tzinfo=UTC)
+_JOB = "urn:ocor:c7:job:scripted"
+
+
+def _job_row(**overrides: Any) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "job_id": _JOB, "principal": PRINCIPAL, "spec_digest": "a" * 64, "spec": {}, "state": "queued", "progress": "0",
+        "deadline": _NOW, "result_digest": None, "outcome_status": None, "technical_failure": None, "retry_safety": None,
+        "submitted_at": _NOW, "updated_at": _NOW, "overdue": False,
+    }
+    row.update(overrides)
+    return row
+
+
+class _Cursor:
+    def __init__(self, rows: list[Any]) -> None:
+        self._rows = rows
+
+    def fetchone(self) -> Any:
+        return self._rows[0] if self._rows else None
+
+    def fetchall(self) -> list[Any]:
+        return list(self._rows)
+
+
+class _ScriptedConnection:
+    def __init__(self, script: list[tuple[str, list[Any]]]) -> None:
+        self._script = script
+
+    def __enter__(self) -> _ScriptedConnection:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def transaction(self) -> Any:
+        return contextlib.nullcontext()
+
+    def execute(self, statement: Any, params: Any = ()) -> _Cursor:
+        text = statement.decode() if isinstance(statement, bytes) else str(statement)
+        for marker, rows in self._script:
+            if marker in text:
+                return _Cursor(rows)
+        return _Cursor([])
+
+
+def _scripted(monkeypatch: pytest.MonkeyPatch, *script: tuple[str, list[Any]]) -> Any:
+    module = _ledger_module()
+    monkeypatch.setattr(module.psycopg, "connect", lambda *args, **kwargs: _ScriptedConnection(list(script)))
+    return module.PostgresCausalJobLedger("postgresql://scripted", schema="ocor_rem0057_scripted")
+
+
+_JOB_SQL = "AS overdue FROM"
+
+
+def _rejected_document() -> tuple[dict[str, Any], str]:
+    from ocor_runtime.c7.runtime import CausalQuery, estimate_counterfactual
+
+    query = CausalQuery(
+        baseline_commit="c" * 32, scenario_branch="scenario/rem0057-scripted", model_digest=canonical_digest(MODEL),
+        data_digest=canonical_digest(ROWS), intervention_digest=canonical_digest(None), ontology_release_digest=RELEASE,
+        expected_release_digest=RELEASE, treatment="expedite", outcome="delay_hours", seed=1, correlation_id="c", causation_id="r",
+        run_pins={"run_spec_digest": "a" * 64},
+    )
+    outcome = estimate_counterfactual(query, model=MODEL, factual_rows=ROWS, intervention={"value": 1, "valid_envelope": [0, 1]}, unit_index=0)
+    return outcome_document(outcome), outcome.reproducibility_digest
+
+
+@pytest.mark.parametrize(
+    ("script", "call"),
+    [
+        # release_resources: a released resource that is not a named text row
+        ([(_JOB_SQL, [_job_row(state="cancelled")]), ("RETURNING resource", [{"resource": 123}])], "release"),
+        ([(_JOB_SQL, [_job_row(state="cancelled")]), ("RETURNING resource", ["not-a-mapping"])], "release"),
+        ([(_JOB_SQL, [_job_row(state="cancelled")]), ("RETURNING resource", [{"name": "worker_process"}])], "release"),
+        # the overdue sweep and the admission count with a missing column
+        ([("ORDER BY job_id FOR UPDATE", [{"job_id": _JOB, "principal": PRINCIPAL}])], "expire"),
+        ([("count(*) FILTER", [{"mine": 0}])], "submit"),
+        # a stored job whose outcome status, failure or retry safety contradicts its state
+        ([(_JOB_SQL, [_job_row(outcome_status="BOGUS_STATUS")])], "job"),
+        ([(_JOB_SQL, [_job_row(state="queued", outcome_status="ESTIMATED")])], "job"),
+        ([(_JOB_SQL, [_job_row(state="completed", result_digest="b" * 64, progress="1")])], "job"),
+        ([(_JOB_SQL, [_job_row(state="failed")])], "job"),
+        ([(_JOB_SQL, [_job_row(state="failed", technical_failure="WORKER_LOST")])], "job"),
+        ([(_JOB_SQL, [_job_row(state="queued", technical_failure="WORKER_LOST", retry_safety="SAFE_TO_RETRY")])], "job"),
+        ([(_JOB_SQL, [{k: v for k, v in _job_row().items() if k != "overdue"}])], "job"),
+    ],
+    ids=["release-int", "release-row", "release-missing", "sweep-missing", "count-missing", "status-unknown", "status-not-completed",
+         "completed-no-status", "failed-no-failure", "failed-no-retry", "failure-not-failed", "row-missing-column"],
+)
+def test_ncr_c7_004_conforms_a_backend_row_of_the_wrong_shape_is_a_typed_backend_error(
+    monkeypatch: pytest.MonkeyPatch, script: list[tuple[str, list[Any]]], call: str
+) -> None:
+    ledger = _scripted(monkeypatch, *script)
+    calls: dict[str, Callable[[], object]] = {
+        "release": lambda: ledger.release_resources(_JOB, actor="runner"),
+        "expire": lambda: ledger.expire_overdue(actor="scheduler"),
+        "submit": lambda: ledger.submit(_spec(_offline_branch()), actor=CLIENT),
+        "job": lambda: ledger.job(_JOB),
+    }
+    assert _job_code(calls[call]) == "BACKEND_ERROR"
+
+
+@pytest.mark.parametrize("tamper", ["foreign-job", "bad-recorded-at", "nan-in-outcome"])
+def test_ncr_c7_004_conforms_a_stored_result_foreign_or_not_finite_is_refused(monkeypatch: pytest.MonkeyPatch, tamper: str) -> None:
+    document, digest = _rejected_document()
+    run_spec_digest = "a" * 64
+    result = {
+        "job_id": _JOB, "spec_digest": run_spec_digest, "result_version": 1, "outcome": document,
+        "reproducibility_digest": digest, "recorded_at": _NOW,
+    }
+    if tamper == "foreign-job":
+        result["job_id"] = "urn:ocor:c7:job:another"
+    elif tamper == "bad-recorded-at":
+        result["recorded_at"] = "NOT-A-DATETIME"
+    else:
+        result["outcome"] = {**document, "lineage": {**document["lineage"], "nan_probe": float("nan")}}
+    ledger = _scripted(
+        monkeypatch,
+        (_JOB_SQL, [_job_row(state="completed", progress="1", result_digest=digest, outcome_status="REJECTED")]),
+        ("c7_job_result WHERE", [result]),
+    )
+    assert _job_code(lambda: ledger.result(_JOB)) == ("RESULT_TAMPERED" if tamper == "nan-in-outcome" else "BACKEND_ERROR")
+
+
+def test_ncr_c7_004_conforms_well_shaped_backend_rows_are_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The positive side of the two tests above: the same scripted rows, well shaped, pass."""
+    document, digest = _rejected_document()
+    completed = _job_row(state="completed", progress="1", result_digest=digest, outcome_status="REJECTED")
+    result = {
+        "job_id": _JOB, "spec_digest": "a" * 64, "result_version": 1, "outcome": document, "reproducibility_digest": digest,
+        "recorded_at": _NOW,
+    }
+    ledger = _scripted(monkeypatch, (_JOB_SQL, [completed]), ("c7_job_result WHERE", [result]))
+    assert ledger.result(_JOB).outcome.reproducibility_digest == digest
+    failed = _job_row(state="failed", technical_failure="WORKER_LOST", retry_safety="SAFE_TO_RETRY")
+    assert _scripted(monkeypatch, (_JOB_SQL, [failed])).job(_JOB).technical_failure == "WORKER_LOST"
+    ledger = _scripted(
+        monkeypatch, (_JOB_SQL, [_job_row(state="cancelled")]), ("RETURNING resource", [{"resource": "worker_process"}])
+    )
+    assert ledger.release_resources(_JOB, actor="runner") == ()
+    swept = _scripted(monkeypatch, ("ORDER BY job_id FOR UPDATE", [{"job_id": _JOB, "principal": PRINCIPAL, "state": "queued"}]))
+    assert swept.expire_overdue(actor="scheduler") == (_JOB,)

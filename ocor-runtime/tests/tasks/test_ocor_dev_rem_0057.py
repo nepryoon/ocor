@@ -572,3 +572,245 @@ def test_ncr_c7_006_conforms_a_valid_counterfactual_query_is_rejected_capability
 def test_ncr_c7_006_conforms_a_structurally_invalid_counterfactual_query_is_rejected_for_its_schema(unit_index: Any) -> None:
     outcome = estimate_counterfactual(_query(), model=MODEL, factual_rows=_Unreadable(ROWS), intervention=INTERVENTION, unit_index=unit_index)
     _rejected(outcome, "COUNTERFACTUAL_SCHEMA_INVALID")
+
+
+# --- preventive review OCOR-DEV-REM-0057-1a64cb83f153-pre (P2, P7, P8) --------------------------
+#
+# NCR-C7-003: a sealed or stored CausalRunOutcome is re-validated at every boundary. A document
+# with a non-finite number has no canonical digest: it is refused with the typed error of the
+# boundary, never a raw ValueError (outcome_from_document, the SeaweedFS sealed-result adapter).
+
+
+def _with_nan(document: Mapping[str, Any]) -> dict[str, Any]:
+    return {**document, "lineage": {**document["lineage"], "nan_probe": float("nan")}}
+
+
+def test_ncr_c7_003_conforms_an_outcome_document_with_a_non_finite_number_is_refused_typed() -> None:
+    document = c7.outcome_document(_estimate())
+    assert c7.outcome_from_document(document, canonical_digest(document)).status == "ESTIMATED"
+    for tampered in (_with_nan(document), {**document, "lineage": {**document["lineage"], "probe": float("inf")}}):
+        with pytest.raises(CausalRuntimeError):
+            c7.outcome_from_document(tampered, canonical_digest(document))
+
+
+def test_ncr_c7_003_conforms_the_sensitivity_descriptor_carries_decimal_strings_only() -> None:
+    document = c7.outcome_document(_estimate())
+    c7.validate_outcome_document(document)
+    sensitivity = document["details"]["sensitivity"]
+    for name, value in (("confounding_shift", 123), ("shifted_effect", float("nan")), ("shifted_effect", "about -3")):
+        tampered = {**document, "details": {**document["details"], "sensitivity": {**sensitivity, name: value}}}
+        with pytest.raises(CausalRuntimeError, match="OUTCOME_SCHEMA_INVALID"):
+            c7.validate_outcome_document(tampered)
+
+
+@pytest.mark.parametrize(
+    ("model", "intervention"),
+    [({}, INTERVENTION), ({"model_id": "x"}, INTERVENTION), (MODEL, {"value": "bad"}), (MODEL, {"treatment": "expedite", "value": 1})],
+    ids=["empty-model", "malformed-model", "non-numeric-value", "no-envelope"],
+)
+def test_ncr_c7_006_conforms_a_malformed_counterfactual_model_or_intervention_is_rejected_for_its_schema(
+    model: dict[str, Any], intervention: dict[str, Any]
+) -> None:
+    outcome = estimate_counterfactual(_query(), model=model, factual_rows=_Unreadable(ROWS), intervention=intervention, unit_index=0)
+    assert (outcome.status, outcome.reason_code, outcome.effect) == ("REJECTED", "COUNTERFACTUAL_SCHEMA_INVALID", None)
+    valid = estimate_counterfactual(_query(), model=MODEL, factual_rows=_Unreadable(ROWS), intervention=INTERVENTION, unit_index=0)
+    assert (valid.reason_code, dict(valid.details)) == ("CAPABILITY_DEFERRED", {"element": "ELM-070"})
+
+
+# P2: the SeaweedFS sealed-result adapter (touched by this unit) checks the structure of every
+# S3 response and translates every transport fault. A local responder plays the server: the
+# real SeaweedFS cannot be made to send a malformed status line, a truncated body or XML of
+# another shape, so this is the local failure handling only; the live server is exercised by
+# test_ocor_dev_rem_0040.py and test_ocor_dev_rem_0041_overlay.py.
+
+_S3_NS = "http://s3.amazonaws.com/doc/2006-03-01/"
+_LOCK_OK = f'<?xml version="1.0" encoding="UTF-8"?><ObjectLockConfiguration xmlns="{_S3_NS}"><ObjectLockEnabled>Enabled</ObjectLockEnabled></ObjectLockConfiguration>'
+_VERSIONING_OK = f'<VersioningConfiguration xmlns="{_S3_NS}"><Status>Enabled</Status></VersioningConfiguration>'
+_NO_VERSIONS = f'<ListVersionsResult xmlns="{_S3_NS}"><Name>b</Name><IsTruncated>false</IsTruncated></ListVersionsResult>'
+_RETENTION_OK = f'<Retention xmlns="{_S3_NS}"><Mode>COMPLIANCE</Mode><RetainUntilDate>2099-01-01T00:00:00Z</RetainUntilDate></Retention>'
+
+
+def _listing(key: str) -> str:
+    return (
+        f'<ListVersionsResult xmlns="{_S3_NS}"><IsTruncated>false</IsTruncated>'
+        f"<Version><Key>{key}</Key><VersionId>v1</VersionId></Version></ListVersionsResult>"
+    )
+
+
+class _Responder:
+    """A local HTTP server answering by query string: ``routes`` maps the first query key
+    (``object-lock``, ``versioning``, ``versions``, ``versionId``, ``retention``, ``PUT``)
+    to ``(status, headers, body)`` or to raw bytes sent as the whole response."""
+
+    def __init__(self, routes: dict[str, Any]) -> None:
+        import socket
+        import threading
+
+        self.routes = routes
+        self._socket = socket.socket()
+        self._socket.bind(("127.0.0.1", 0))
+        self._socket.listen(8)
+        self.endpoint = f"http://127.0.0.1:{self._socket.getsockname()[1]}"
+        self._thread = threading.Thread(target=self._serve, daemon=True)
+        self._thread.start()
+
+    def _route(self, request_line: str) -> Any:
+        method, target = request_line.split(" ")[:2]
+        if method == "PUT":
+            return self.routes.get("PUT")
+        query = target.partition("?")[2]
+        for name in ("retention", "versions", "object-lock", "versioning", "versionId"):
+            if name + "=" in query.split("&") or any(part.startswith(name + "=") for part in query.split("&")):
+                return self.routes.get(name)
+        return None
+
+    def _serve(self) -> None:
+        while True:
+            try:
+                connection, _ = self._socket.accept()
+            except OSError:
+                return
+            with connection:
+                data = b""
+                while b"\r\n\r\n" not in data:
+                    chunk = connection.recv(65536)
+                    if not chunk:
+                        break
+                    data += chunk
+                head, _, rest = data.partition(b"\r\n\r\n")
+                length = next(
+                    (int(line.split(b":", 1)[1]) for line in head.split(b"\r\n") if line.lower().startswith(b"content-length:")), 0
+                )
+                while len(rest) < length:
+                    chunk = connection.recv(65536)
+                    if not chunk:
+                        break
+                    rest += chunk
+                route = self._route(head.split(b"\r\n", 1)[0].decode("latin-1"))
+                if route is None:
+                    route = (404, {}, "<Error><Code>NoSuchKey</Code></Error>")
+                if isinstance(route, bytes):
+                    connection.sendall(route)
+                    continue
+                status, headers, body = route
+                payload = body if isinstance(body, bytes) else body.encode("utf-8")
+                lines = [f"HTTP/1.1 {status} X", f"Content-Length: {len(payload)}", "Connection: close"]
+                lines += [f"{name}: {value}" for name, value in headers.items()]
+                connection.sendall(("\r\n".join(lines) + "\r\n\r\n").encode("latin-1") + payload)
+
+    def close(self) -> None:
+        self._socket.close()
+
+
+@pytest.fixture
+def responder() -> Iterator[Any]:
+    created: list[_Responder] = []
+
+    def make(**routes: Any) -> _Responder:
+        server = _Responder({"object-lock": (200, {}, _LOCK_OK), "versioning": (200, {}, _VERSIONING_OK), **routes})
+        created.append(server)
+        return server
+
+    yield make
+    for server in created:
+        server.close()
+
+
+def _local_store(server: Any) -> Any:
+    from datetime import timedelta
+
+    from ocor_runtime.c7.adapters.seaweedfs import SeaweedFSSealedResultStore
+
+    return SeaweedFSSealedResultStore(
+        endpoint=server.endpoint, bucket="ocor-c7-local", access_key="local", secret_key="local-secret", retention=timedelta(minutes=1)
+    )
+
+
+def _sealed_code(call: Any) -> str:
+    from ocor_runtime.c7.sealed_results import SealedResultError
+
+    with pytest.raises(SealedResultError) as caught:
+        call()
+    code: str = caught.value.code
+    return code
+
+
+_TRUNCATED_403 = b"HTTP/1.1 403 Forbidden\r\nContent-Length: 500\r\nConnection: close\r\n\r\n<Error><Code>Access"
+
+
+@pytest.mark.parametrize(
+    ("routes", "code"),
+    [
+        ({"object-lock": b"NOT_HTTP\r\n"}, "STORE_UNAVAILABLE"),
+        ({"object-lock": b"HTTP/1.1 200 OK\r\nContent-Length: 400\r\nConnection: close\r\n\r\n<ObjectLock"}, "STORE_UNAVAILABLE"),
+        ({"object-lock": _TRUNCATED_403}, "STORE_UNAVAILABLE"),
+        ({"object-lock": (200, {}, "<Wrong><ObjectLockEnabled>Enabled</ObjectLockEnabled></Wrong>")}, "UNEXPECTED_RESPONSE"),
+        ({"object-lock": (200, {}, "not xml <ObjectLockEnabled>Enabled</ObjectLockEnabled>")}, "UNEXPECTED_RESPONSE"),
+        ({"object-lock": (200, {}, f'<ObjectLockConfiguration xmlns="{_S3_NS}"><ObjectLockEnabled>Disabled</ObjectLockEnabled></ObjectLockConfiguration>')},
+         "BUCKET_OBJECT_LOCK_DISABLED"),
+        ({"versioning": (200, {}, "<Wrong><Status>Enabled</Status></Wrong>")}, "UNEXPECTED_RESPONSE"),
+        ({"versioning": (200, {}, f'<VersioningConfiguration xmlns="{_S3_NS}"><Status>Suspended</Status></VersioningConfiguration>')},
+         "BUCKET_VERSIONING_DISABLED"),
+    ],
+    ids=["bad-status-line", "incomplete-read", "truncated-error-body", "lock-wrong-root", "lock-not-xml", "lock-disabled",
+         "versioning-wrong-root", "versioning-suspended"],
+)
+def test_ncr_c7_003_conforms_the_sealed_store_refuses_a_malformed_bucket_answer_typed(
+    responder: Any, routes: dict[str, Any], code: str
+) -> None:
+    assert _sealed_code(lambda: _local_store(responder(**routes)).initialize()) == code
+    _local_store(responder()).initialize()
+
+
+def _local_sealed_payload(outcome: CausalOutcome) -> tuple[str, bytes]:
+    from ocor_runtime.c7.adapters.seaweedfs import object_key, sealed_payload
+
+    return object_key(outcome.reproducibility_digest), sealed_payload(outcome)
+
+
+def test_ncr_c7_003_conforms_the_sealed_store_refuses_a_malformed_read_answer_typed(responder: Any) -> None:
+    import hashlib
+    import json
+
+    outcome = _estimate()
+    key, payload = _local_sealed_payload(outcome)
+    good = _local_store(responder(versions=(200, {}, _listing(key)), versionId=(200, {}, payload)))
+    good.initialize()
+    assert good.read_sealed_result(outcome.reproducibility_digest) == outcome
+    wrong_root = _local_store(responder(versions=(200, {}, f"<Wrong><Version><Key>{key}</Key></Version></Wrong>")))
+    wrong_root.initialize()
+    assert _sealed_code(lambda: wrong_root.read_sealed_result(outcome.reproducibility_digest)) == "UNEXPECTED_RESPONSE"
+    truncated = _local_store(
+        responder(versions=(200, {}, _listing(key)), versionId=b"HTTP/1.1 200 OK\r\nContent-Length: 9999\r\nConnection: close\r\n\r\n{")
+    )
+    truncated.initialize()
+    assert _sealed_code(lambda: truncated.read_sealed_result(outcome.reproducibility_digest)) == "STORE_UNAVAILABLE"
+    body = _with_nan(c7.outcome_document(outcome))
+    nan_payload = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    nan_digest = hashlib.sha256(nan_payload).hexdigest()
+    from ocor_runtime.c7.adapters.seaweedfs import object_key
+
+    nan_store = _local_store(responder(versions=(200, {}, _listing(object_key(nan_digest))), versionId=(200, {}, nan_payload)))
+    nan_store.initialize()
+    assert _sealed_code(lambda: nan_store.read_sealed_result(nan_digest)) == "SEALED_RESULT_TAMPERED"
+
+
+def test_ncr_c7_003_conforms_the_sealed_store_checks_the_retention_answer_structurally(responder: Any) -> None:
+    outcome = _estimate()
+    put = (200, {"x-amz-version-id": "v1"}, "")
+    good = _local_store(responder(versions=(200, {}, _NO_VERSIONS), PUT=put, retention=(200, {}, _RETENTION_OK)))
+    good.initialize()
+    assert good.seal_result(outcome).newly_sealed is True
+    for answer in ("<Wrong><Mode>COMPLIANCE</Mode></Wrong>", "garbage <Mode>COMPLIANCE</Mode>",
+                   f'<Retention xmlns="{_S3_NS}"><Mode>GOVERNANCE</Mode></Retention>'):
+        store = _local_store(responder(versions=(200, {}, _NO_VERSIONS), PUT=put, retention=(200, {}, answer)))
+        store.initialize()
+        assert _sealed_code(lambda store=store: store.seal_result(outcome)) == "RETENTION_NOT_APPLIED"
+
+
+def test_ncr_c7_003_conforms_an_outcome_without_a_canonical_digest_is_never_sealed() -> None:
+    from ocor_runtime.c7.adapters.seaweedfs import sealed_payload
+
+    outcome = _estimate()
+    tampered = replace(outcome, lineage=_with_nan(c7.outcome_document(outcome))["lineage"])
+    assert _sealed_code(lambda: sealed_payload(tampered)) == "OUTCOME_DIGEST_MISMATCH"
