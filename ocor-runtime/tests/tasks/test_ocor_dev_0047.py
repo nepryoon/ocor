@@ -11,22 +11,27 @@ callable, is asserted to gain exactly one entry across the entire
 test, proving zero tool effect on every denial path. Pure, in-memory,
 deterministic component (no external service needed, like
 OCOR-DEV-0028/0030/0042/0043/0044/0045/0046's own C1/C6/C7/C8 slices).
+
+OCOR-DEV-REM-0058 (NCP-U10): the runtime is built on its normative
+collaborators (``c8_tool_runtime_fixture``): contract-bound tools, C8
+grants, live Authority/Delegation/policy/instruction eligibility, the
+multidimensional budget and the audited reconciler, whose signed audit
+chain is on the live PostgreSQL (``OCOR_LIVE_POSTGRES_DSN``).
 """
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
 from ocor_runtime.c6.safety import EmergencyStopController
-from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c8.tool_runtime import ToolCallRuntime, ToolRuntimeError
-from ocor_runtime.c8_agent import StrictSandbox, TokenBudget
 from ocor_runtime.errors import SandboxViolation, TokenBudgetExceeded
 from ocor_runtime.kernel.governed_context import GovernedContext
 from c6_safety_fixture import INCIDENT, SAFETY_OFFICER, stop_controller
+from c8_tool_runtime_fixture import ToolRuntimeWorld
 
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 DIGEST_A = "urn:sha256:" + "a" * 64
@@ -56,23 +61,6 @@ def effects() -> list[str]:
 
 
 @pytest.fixture
-def sandbox(effects: list[str]) -> StrictSandbox:
-    box = StrictSandbox()
-
-    def restart_service(name: str) -> str:
-        effects.append(name)
-        return f"restarted {name}"
-
-    box.register_tool("restart_service", restart_service)
-    return box
-
-
-@pytest.fixture
-def authority() -> CapabilityAuthority:
-    return CapabilityAuthority(issuer="ocor-c8-tool-runtime-authority")
-
-
-@pytest.fixture
 def marking_engine() -> ResolvedMarkingEngine:
     scheme = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))
     return ResolvedMarkingEngine([scheme])
@@ -84,14 +72,26 @@ def stop() -> EmergencyStopController:
 
 
 @pytest.fixture
-def runtime(sandbox: StrictSandbox, authority: CapabilityAuthority, marking_engine: ResolvedMarkingEngine, stop: EmergencyStopController) -> ToolCallRuntime:
-    return ToolCallRuntime(sandbox=sandbox, authority=authority, marking_engine=marking_engine, stop=stop)
+def world(effects: list[str], marking_engine: ResolvedMarkingEngine, stop: EmergencyStopController) -> ToolRuntimeWorld:
+    """OCOR-DEV-REM-0058 (NCP-U10): the C8 runtime of contract-bound tools, C8 grants, Authority,
+    Delegation, policy, instruction eligibility and the audited reconciler."""
+    box = ToolRuntimeWorld(context=make_context(), marking_engine=marking_engine, stop=stop, now=NOW)
+
+    def restart_service(name: str) -> str:
+        effects.append(name)
+        return f"restarted {name}"
+
+    box.tool("restart_service", restart_service)
+    return box
 
 
-def grant(authority: CapabilityAuthority, *, tool_name: str = "restart_service"):
-    return authority.issue(
-        subject="agent-1", capabilities=[f"tool:{tool_name}"], resources=[tool_name], issued_at=NOW, ttl=timedelta(hours=1)
-    )
+@pytest.fixture
+def runtime(world: ToolRuntimeWorld) -> ToolCallRuntime:
+    return world.runtime
+
+
+def grant(world: ToolRuntimeWorld, *, tool_name: str = "restart_service"):
+    return world.grant(tool_name)
 
 
 CONTENT_MARKING = MarkingSet({"classification": "SECRET"})
@@ -100,10 +100,10 @@ INSUFFICIENT_CLEARANCE = MarkingSet({"classification": "UNCLASSIFIED"})
 
 
 def test_a_fully_bound_call_produces_a_receipt_and_a_real_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
 
     receipt = runtime.invoke(
         "restart_service",
@@ -117,6 +117,7 @@ def test_a_fully_bound_call_produces_a_receipt_and_a_real_tool_effect(
         estimated_tokens=10,
         stop_epoch=stop.epoch,
         at=NOW,
+        **world.call_bindings(),
     )
 
     assert receipt.tool_name == "restart_service"
@@ -131,11 +132,11 @@ def test_a_fully_bound_call_produces_a_receipt_and_a_real_tool_effect(
 
 
 def test_a_revoked_capability_produces_no_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    authority.revoke(lease.lease_id, at=NOW)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    world.grants.revoke(lease.lease_id, at=NOW)
+    budget = world.budget(1000)
 
     with pytest.raises(ToolRuntimeError) as excinfo:
         runtime.invoke(
@@ -150,6 +151,7 @@ def test_a_revoked_capability_produces_no_tool_effect(
             estimated_tokens=10,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
 
     assert excinfo.value.reason_code == "CAPABILITY_REVOKED"
@@ -158,9 +160,9 @@ def test_a_revoked_capability_produces_no_tool_effect(
 
 
 def test_a_fabricated_lease_never_issued_produces_no_tool_effect(
-    runtime: ToolCallRuntime, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    budget = TokenBudget(1000)
+    budget = world.budget(1000)
     with pytest.raises(ToolRuntimeError) as excinfo:
         runtime.invoke(
             "restart_service",
@@ -174,6 +176,7 @@ def test_a_fabricated_lease_never_issued_produces_no_tool_effect(
             estimated_tokens=10,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
     assert excinfo.value.reason_code == "CAPABILITY_DENIED"
     assert effects == []
@@ -183,10 +186,10 @@ def test_a_fabricated_lease_never_issued_produces_no_tool_effect(
 
 
 def test_an_escape_syntax_attempt_produces_no_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
 
     with pytest.raises(SandboxViolation):
         runtime.invoke(
@@ -201,6 +204,7 @@ def test_an_escape_syntax_attempt_produces_no_tool_effect(
             estimated_tokens=10,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
 
     assert effects == []
@@ -211,10 +215,10 @@ def test_an_escape_syntax_attempt_produces_no_tool_effect(
 
 
 def test_a_registered_forbidden_looking_name_never_reaches_the_tool_either(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
 
     with pytest.raises(SandboxViolation):
         runtime.invoke(
@@ -229,6 +233,7 @@ def test_a_registered_forbidden_looking_name_never_reaches_the_tool_either(
             estimated_tokens=10,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
     assert effects == []
 
@@ -237,10 +242,10 @@ def test_a_registered_forbidden_looking_name_never_reaches_the_tool_either(
 
 
 def test_over_budget_work_produces_no_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    tight_budget = TokenBudget(1)
+    lease = grant(world)
+    tight_budget = world.budget(1)
 
     with pytest.raises(ToolRuntimeError) as excinfo:
         runtime.invoke(
@@ -255,6 +260,7 @@ def test_over_budget_work_produces_no_tool_effect(
             estimated_tokens=100,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
 
     assert excinfo.value.reason_code == "BUDGET_EXCEEDED"
@@ -266,10 +272,10 @@ def test_over_budget_work_produces_no_tool_effect(
 
 
 def test_insufficient_clearance_produces_no_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
 
     with pytest.raises(ToolRuntimeError) as excinfo:
         runtime.invoke(
@@ -284,6 +290,7 @@ def test_insufficient_clearance_produces_no_tool_effect(
             estimated_tokens=10,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
 
     assert excinfo.value.reason_code == "POLICY_DENIED"
@@ -309,10 +316,10 @@ def test_a_missing_purpose_is_refused_before_construction() -> None:
 
 
 def test_an_active_emergency_stop_produces_no_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
     stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident-during-tool-call", at=NOW)
 
     with pytest.raises(ToolRuntimeError) as excinfo:
@@ -328,6 +335,7 @@ def test_an_active_emergency_stop_produces_no_tool_effect(
             estimated_tokens=10,
             stop_epoch=stop.epoch,
             at=NOW,
+            **world.call_bindings(),
         )
 
     assert excinfo.value.reason_code == "EMERGENCY_STOP_ACTIVE"
@@ -336,10 +344,10 @@ def test_an_active_emergency_stop_produces_no_tool_effect(
 
 
 def test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
     stale_epoch = stop.epoch
     stop.activate(activator=SAFETY_OFFICER, incident_ref=INCIDENT, reason="incident", at=NOW)
     stop.finish_draining(at=NOW)
@@ -357,6 +365,7 @@ def test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect(
             estimated_tokens=10,
             stop_epoch=stale_epoch,
             at=NOW,
+            **world.call_bindings(),
         )
 
     assert excinfo.value.reason_code == "EMERGENCY_STOP_ACTIVE"
@@ -364,14 +373,14 @@ def test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect(
 
 
 def test_all_denial_paths_combined_never_produce_more_than_the_one_legitimate_effect(
-    runtime: ToolCallRuntime, authority: CapabilityAuthority, stop: EmergencyStopController, effects: list[str]
+    runtime: ToolCallRuntime, world: ToolRuntimeWorld, stop: EmergencyStopController, effects: list[str]
 ) -> None:
     """Integration-level proof: run one legitimate call and every
     denial scenario in sequence against the shared effects list,
     proving exactly one real effect ever lands no matter how many
     ways a call is attempted and refused."""
-    lease = grant(authority)
-    budget = TokenBudget(1000)
+    lease = grant(world)
+    budget = world.budget(1000)
 
     runtime.invoke(
         "restart_service",
@@ -385,15 +394,16 @@ def test_all_denial_paths_combined_never_produce_more_than_the_one_legitimate_ef
         estimated_tokens=10,
         stop_epoch=stop.epoch,
         at=NOW,
+        **world.call_bindings(),
     )
 
-    revoked_lease = grant(authority)
-    authority.revoke(revoked_lease.lease_id, at=NOW)
+    revoked_lease = grant(world)
+    world.grants.revoke(revoked_lease.lease_id, at=NOW)
     for bad_lease, bad_clearance, bad_expression, bad_budget in [
         (revoked_lease, FULL_CLEARANCE, "restart_service(name)", budget),
-        (grant(authority), INSUFFICIENT_CLEARANCE, "restart_service(name)", budget),
-        (grant(authority), FULL_CLEARANCE, "os.system('rm -rf /')", budget),
-        (grant(authority), FULL_CLEARANCE, "restart_service(name)", TokenBudget(0)),
+        (grant(world), INSUFFICIENT_CLEARANCE, "restart_service(name)", budget),
+        (grant(world), FULL_CLEARANCE, "os.system('rm -rf /')", budget),
+        (grant(world), FULL_CLEARANCE, "restart_service(name)", world.budget(0)),
     ]:
         with pytest.raises((ToolRuntimeError, SandboxViolation, TokenBudgetExceeded)):
             runtime.invoke(
@@ -408,6 +418,7 @@ def test_all_denial_paths_combined_never_produce_more_than_the_one_legitimate_ef
                 estimated_tokens=10,
                 stop_epoch=stop.epoch,
                 at=NOW,
+                **world.call_bindings(),
             )
 
     assert effects == ["the-only-real-one"]

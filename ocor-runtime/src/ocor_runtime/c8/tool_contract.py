@@ -1005,6 +1005,11 @@ class ToolRegistry:
         self._tools: dict[str, tuple[ToolContract, ToolBinding]] = {}
 
     @property
+    def governed_context_ref(self) -> str:
+        """The digest of the Governed Context Set every registered contract is bound to."""
+        return self._context_ref
+
+    @property
     def tool_names(self) -> tuple[str, ...]:
         return tuple(sorted(self._tools))
 
