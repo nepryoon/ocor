@@ -1,0 +1,1519 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a72.5 rule 10: every canonical mutation is produced only by C6 on the governed path; ADD v1.3 \u00a72.5 rule 7: Agent Message, Memory, retrieved content and tool output remain tainted and non-canonical; ADD v1.3 \u00a74.3.1 invariant 3: Goal, Plan, Message, Memory, Recommendation and tool output do not become Canonical Assertion without an explicit workflow; LLD v1.1 \u00a72.8 closed C8 records AgentRun, Task, Assignment, Commitment, Handoff, Dissent; FR-117: a Message does not become a Canonical Assertion nor grant Authority without an explicit process; FR-115: coordination only through the Agent Kernel and typed contracts, not shared datastore access",
+      "entry": "NCR-C8-001",
+      "norm_refs": [
+        {
+          "lines": "342",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "339",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3116",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "183",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "266",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "264",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-117",
+        "FR-115"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_every_record_is_closed_and_immutable",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_message_injection_changes_neither_state_nor_capability",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_tool_invocation_is_a_c8_record_of_the_task",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_the_run_ledger_refuses_a_malformed_entry_before_writing",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_the_run_ledger_replays_an_idempotent_entry_with_json_equal_content",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_an_undecodable_backend_answer_is_a_typed_run_ledger_error",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_run_ledger_failure_leaves_no_state_the_ledger_does_not_have",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_malformed_tool_receipt_is_a_schema_violation",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_recorded_tool_invocation_is_always_untrusted_tool_output"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.3 HandoffEnvelope attested by the Kernel; ADD v1.3 \u00a74.3: every handoff crosses the Kernel, which authenticates the Principal and checks capability, Delegation, Policy, schema, budget, marking, taint, expiry and version fence; ADD v1.3 \u00a71.4 GCS table: the declared handoff sender is compared with the transport Principal; mismatch CAPABILITY_DENIED + audit; LLD v1.1 \u00a72.8: Handoff keeps sender, recipient, schema, input/output refs, GCS digest and accepted/rejected status; FR-010: every handoff validates a schema; FR-128: actor chain, purpose and effective authority checked at every hop",
+      "entry": "NCR-C8-002",
+      "norm_refs": [
+        {
+          "lines": "3068-3098",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3042",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "388",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "183",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "62",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "278",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-010",
+        "FR-128"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_sender_that_is_not_the_transport_principal_is_denied_and_audited",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_every_handoff_validates_its_schema",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_actor_chain_purpose_and_effective_authority_are_checked_at_every_hop",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_handoff_after_the_stop_or_the_task_deadline_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_signature_ref_without_an_ed25519_signature_is_a_typed_refusal",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_handoff_refused_before_its_checks_is_rejected_and_audited",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_rejected_envelope_keeps_the_handoff_fields_of_the_lld"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.3 roles, typed outputs and hard prohibitions; ADD v1.3 \u00a74.3 task lifecycle, Commitment, attempts, cycle detection, maximum delegation depth, timeout, termination; Critical dissent blocks a High-Impact proposal; LLD v1.1 \u00a72.8: task graph rejects cycles and depth beyond policy; assignment checks machine identity, capability, delegation, autonomy tier, budget and termination condition; dissent resolution is a separate record; LLD v1.1 \u00a76: C8 task claim with bounded lease; cycle/depth/budget enforcement; FR-010: distinct roles; budget or termination condition stop the task; dissent kept; FR-114: team, roles, task, assignment, commitment, dependencies, state and termination condition; FR-121: termination condition, max delegation depth, timeout and escalation target; a cycle or excessive depth is stopped",
+      "entry": "NCR-C8-003",
+      "norm_refs": [
+        {
+          "lines": "3057-3064",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3101-3110",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "183",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "358",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "62",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "263",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "270",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-010",
+        "FR-114",
+        "FR-121"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_assignment_checks_identity_capability_delegation_tier_budget_and_policy",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_member_cannot_hold_a_tier_outside_the_poc_profile_or_share_an_identity",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_completion_requires_the_typed_conforming_output_of_the_role_and_evidence",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_the_coordinator_has_no_domain_inference_approval_or_dissent_suppression",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_retries_keep_the_logical_task_with_a_distinct_attempt_up_to_the_limit",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_budget_exhausted_during_the_task_stops_it",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_the_run_timeout_and_task_limit_terminate_with_the_escalation_target",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_task_beyond_its_timeout_expires_and_a_proposal_carries_unresolved_dissent",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_instant_that_is_not_timezone_aware_is_a_typed_refusal",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_unrepresentable_timeout_is_a_typed_refusal",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_retry_never_overwrites_another_task",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_refused_call_does_not_consume_its_lease",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_delegation_port_answer_that_is_not_a_delegation_ref_is_revoked",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_dissent_reason_is_bounded_text"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a73.5 mcp-tool-contract:1.2 required fields; ADD v1.3 \u00a73.5 error_codes enum; ADD v1.3 \u00a73.5: every tools/call carries a transport-attested invocation envelope; non allow-listed tools are not exportable capabilities; ADD v1.3 \u00a74.3.1 invariant 4: every tool call is allow-listed, schema-bound, parameter-constrained and mediated by Kernel, Gateway and Policy Engine; FR-108: Tool Contract schema; FR-127: schema validation, provenance/taint, allow-list, parameter constraints, sandbox and egress policy before and after every tool call",
+      "entry": "NCR-C8-004",
+      "norm_refs": [
+        {
+          "lines": "1589-1620",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1759-1778",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1988",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3117",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "255",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "277",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-108",
+        "FR-127"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_contract_schema_is_the_add_block_and_meta_validates",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_each_conditional_branch_admits_its_positive_and_refuses_its_negative",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_contract_whose_digest_does_not_hold_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_schema_pins_resolve_to_meta_valid_schemas_with_the_pinned_digest",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_only_allow_listed_tools_are_exported_and_callable",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_binding_cannot_change_the_contract_or_bind_another_context",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_arguments_are_parameter_constrained_before_the_adapter_runs",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_output_is_schema_bound_tainted_and_digested_after_the_call",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_egress_outside_the_binding_allow_list_is_denied_and_nothing_is_done",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_preconditions_are_evaluated_and_fail_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_error_codes_are_the_closed_enum_of_the_contract",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_runtime_dispatches_only_contract_bound_allow_listed_tools",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_registry_of_another_governed_context_is_stale",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_marking_refusals_are_policy_denials_keeping_the_marking_outcome",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_runtime_raises_only_contract_error_codes",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_schema_that_is_not_i_json_is_a_schema_violation",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_only_a_schema_pin_resolves",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_binding_whose_adapter_signature_is_unreadable_or_variadic_is_refused",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_malformed_call_bindings_are_a_schema_violation_before_anything_is_charged"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 \u00a74.3.1 invariant 2: PoC autonomy tiers observe, analyze, simulate, propose; ADD v1.3 \u00a74.3.1 invariant 6: budget per tool, steps, token/cost, wall time, compute and risk exposure at agent, run, team and tenant; ADD v1.3 Part II \u00a72.12: tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch; ADD v1.3 \u00a75.1: agent identity binds workload identity, agent_principal_id, agent_run_id, owner, autonomy tier and agent version; FR-004: every sensitive operation records agent ID, capability, delegator, scope, budget and autonomy tier; FR-110: autonomy tiers enforced; FR-120: multidimensional agent budget",
+      "entry": "NCR-C8-005",
+      "norm_refs": [
+        {
+          "lines": "3115",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3119",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3856",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3140",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "47",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "258",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "269",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-004",
+        "FR-110",
+        "FR-120"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_policy_is_evaluated_live_at_every_dispatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_policy_that_does_not_permit_refuses_before_any_effect",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_unavailable_policy_decision_point_fails_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_autonomy_tier_outside_the_contract_or_the_poc_profile_is_denied",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_memory_instruction_eligibility_is_reevaluated_at_every_dispatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_run_without_instruction_eligibility_never_dispatches",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_authority_is_required_and_evaluated_live",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_delegation_is_evaluated_live_at_every_dispatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_agent_binding_must_match_the_principal_the_context_and_the_grant",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_every_budget_dimension_is_enforced_at_every_level",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_measured_wall_time_and_compute_are_charged_and_then_enforced",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_team_and_tenant_quotas_are_shared_by_the_runs_of_the_team",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_budget_without_a_quota_at_some_level_fails_closed",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_real_opa_permit_admits_every_dispatch_with_its_decisions",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_real_opa_refuses_before_any_effect",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_tool_the_real_opa_does_not_permit_is_refused_before_its_dispatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_coordination_kernel_is_decided_by_the_real_opa",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_decision_from_the_future_or_expired_at_the_call_is_denied",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_budget_ledger_refuses_malformed_amounts_and_stays_enforced",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_budget_ledger_charges_only_an_agent_binding",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_authority_port_answer_that_is_not_an_authority_is_authority_missing",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_rejected_rebinding_keeps_the_verified_delegation"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: ADD v1.3 Part II \u00a72.12: tool invocation always re-evaluates live capability, delegation, policy, memory instruction eligibility and stop epoch; ADD v1.3 \u00a74.3.1 invariant 8: revocation produces stop or fail-closed; LLD v1.1 \u00a77.2 FGM-17: kill switch/delegation revocation race, no subsequent retrieval or tool influence; NFR-036: no new tool call after the effective revocation",
+      "entry": "NCR-C8-007",
+      "norm_refs": [
+        {
+          "lines": "3856",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3121",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "398",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "271",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "NFR-036",
+        "FR-128"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_without_a_revocation_every_tool_of_the_expression_is_dispatched",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_revocation_after_the_last_tool_changes_nothing_already_dispatched",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_delegation_revoked_during_the_expression_refuses_the_next_tool_of_the_delegate",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_lease_revoked_after_the_presented_instant_is_refused_before_anything_is_charged",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_revoked_lease_is_refused_on_the_effect_channel_whatever_instant_is_presented",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_delegation_revoked_after_the_presented_instant_is_refused_on_the_effect_channel",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_stop_and_a_revocation_during_the_expression_refuse_the_next_tool_as_stop_bound",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_stop_accepted_after_the_gates_stays_stop_bound",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_the_effect_channel_refuses_a_stopped_and_revoked_lease_as_stop_bound",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_revocation_racing_the_dispatch_from_another_thread_never_reaches_the_second_tool",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_grant_cannot_be_redelegated_or_widened_by_default",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_use_is_recorded_only_for_an_issued_grant"
+      ]
+    },
+    {
+      "criterion": "Per PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05) option 2: the C8 tool runtime no longer uses ocor_runtime.c6_capabilities (neither CapabilityAuthority nor its CapabilityLease) and at every dispatch re-evaluates live capability, Delegation, policy and stop epoch (ADD v1.3 lines 3220 and 3856); the runtime builds no unaudited OutcomeReconciler by default and records every EXECUTION_UNKNOWN outcome on the reconciler that writes to the signed audit port (Register FR-163)",
+      "entry": "NCR-C8-008",
+      "norm_refs": [
+        {
+          "lines": "3220",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3360",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3856",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "404",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "271",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "407",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-162",
+        "NFR-036",
+        "FR-163"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_the_runtime_is_never_built_without_its_governance_controls",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_stop_while_a_tool_runs_records_its_unknown_outcome_on_the_audited_reconciler",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_an_unavailable_audited_reconciler_fails_closed_as_execution_unknown",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_the_contract_timeout_bounds_the_dispatch",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_grant_is_bound_to_the_stop_epoch_of_its_issuance",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_worker_that_cannot_start_is_a_typed_refusal_and_nothing_runs"
+      ]
+    }
+  ],
+  "additional_criterion": "NORMATIVE-CONFORMANCE-PLAN point 4 for NCP-U10 (NCR-C8-006 option A): the current C8 kernel is never built without an Authority, controls, policy, eligibility, registry, grants or an audited reconciler (no permissive default) -- test_ncr_c8_008_the_runtime_is_never_built_without_its_governance_controls",
+  "ambiguities_resolved_fail_closed": [
+    "NCR-C8-005: the risk requested of the Authority for a tool call is the more restrictive of the contract effect_class and risk_class (no normative mapping between the two enums)",
+    "NCR-C8-005: a policy decision is verified at the later of the presented instant and its own evaluation instant: a live decision point (OPA) evaluates after the instant the caller presents; a decision evaluated after the runtime clock, or expired at the presented instant, is POLICY_DENIED",
+    "NCR-C8-008: a supervised worker that cannot start is EXECUTION_UNKNOWN (the closed enum has no runtime-unavailable code; the tool did not run, execution_unknown stays false and nothing is reconciled)",
+    "NCR-C8-001: a Run Ledger failure is LEDGER_UNAVAILABLE and restores the in-memory state of the call; entries the ledger already appended in the same call stay (append-only)",
+    "NCR-C8-002: a REJECTED envelope carries the LLD v1.1 :183 Handoff fields the refused call has (sender, recipient, contract, payload reference, Governed Context digest, status); fields the call does not carry are recorded as null, never converted"
+  ],
+  "change_anchors": [
+    {
+      "change": "new: the mcp-tool-contract:1.2 schema of ADD v1.3 \u00a73.5 verbatim and its closed error_codes enum; contracts admitted only when schema-conformant, digest-verified and with both schema pins resolving to meta-validated schemas; bindings that cannot change the contract nor bind another Governed Context; only allow-listed tools exportable and callable; arguments bound to a readable non-variadic adapter signature and validated against the pinned input schema; named preconditions fail closed (ESCALATE -> APPROVAL_REQUIRED); egress confined to the binding allow-list; output schema-validated, digested and tainted TOOL_OUTPUT/UNTRUSTED; schemas read through their canonical I-JSON bytes",
+      "function": "TOOL_CONTRACT_SCHEMA, TOOL_ERROR_CODES, ToolContractError, wire_digest, SchemaCatalog (add, resolve), ToolContract (from_document, validate_input, validate_output), ToolBinding, ToolOutput, egress_checkpoint, ToolRegistry (register, export, contract, binding, arguments, check_preconditions, invoke)",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:1589-1985, :1759-1778, :1988, :3117; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-108 :255, FR-127 :277",
+      "path": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py"
+    },
+    {
+      "change": "rebuilt on the normative C8 elements: C8 tool grants (bounded task-claim leases) whose revocation anywhere in the delegation chain is CAPABILITY_REVOKED at every dispatch (OCOR-DEV-REM-0043 correction); live re-evaluation of stop epoch, grant, Delegation, Authority (validate_authority, no default), autonomy tier, memory instruction eligibility and policy (OPA in the product) for the call, for each named tool and before each dispatch; policy decisions verified where they are used (a live decision evaluated after the presented instant is valid, one from after the runtime clock or expired at the call is POLICY_DENIED); multidimensional budget at agent, run, team and tenant with integer amounts only; agent identity binding and the FR-004 receipt; audited reconciler required (no default) and EXECUTION_UNKNOWN on stop, deadline or worker start failure",
+      "function": "ToolGrantLedger, InMemoryGovernanceControls (GovernanceControlPort), InMemoryInstructionEligibility, AgentIdentityBinding, BudgetQuota, AgentBudgetLedger, AgentBudget, ToolCallRuntime (invoke, authorize_effect), verified_decision, ToolCallReceipt",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3856, :3220, :3115, :3119, :3140, :3358; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-004 :47, FR-110 :258, FR-120 :269, FR-162 :404, FR-163 :407, NFR-036 :271",
+      "path": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py"
+    },
+    {
+      "change": "rebuilt: AgentRun state as closed C8 records in the Run Ledger, never canonical aggregates; the Coordination Kernel attests every 28-field HandoffEnvelope (DSSE/Ed25519) after checking capability, Delegation, policy, schema, budget, marking, taint, expiry and version fence, with the declared sender bound to the transport Principal (REJECTED envelope and DENIED audit otherwise); roles with typed outputs and hard prohibitions; task lifecycle with attempts, cycle detection, maximum delegation depth, timeouts, termination and escalation target; Critical dissent blocks a High-Impact proposal; leases consumed only where a transition is committed; every public transition atomic with the Run Ledger (LEDGER_UNAVAILABLE)",
+      "function": "CoordinationKernel (validated_digest, sign, stop_check, delegation, decide, charge, remaining), AgentRunOrchestrator (start_run, propose_task, retry, assign, commit, handoff, complete, abstain, fail, cancel, register_dissent, resolve_dissent, propose_decision, send_message, record_tool_invocation), closed records AgentRun, Task, Assignment, Commitment, HandoffEnvelope, Dissent, DissentResolution, DecisionProposal, ToolInvocation, Message, TerminationCondition, envelope_signing_bytes, envelope_signature",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:339, :342, :388, :3042, :3057-3064, :3068-3098, :3101-3110, :3116; docs/OCOR_LLD_v1.1.md:183, :358; ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-010 :62, FR-114 :263, FR-115 :264, FR-117 :266, FR-121 :270, FR-128 :278",
+      "path": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+    },
+    {
+      "change": "the closed kind set extended to every C8 record of the AgentRun state (constraint re-created at initialize, rows never rewritten); kind type-checked and payload written as its canonical I-JSON value (non-finite, set, bytes, non-string keys refused before any write; idempotent replay compares JSON values); an undecodable backend answer is BACKEND_ERROR",
+      "function": "KINDS, SCHEMA, PostgresRunLedger (initialize, append, entries, _entry), _driver",
+      "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:276, :342; docs/OCOR_LLD_v1.1.md:183",
+      "path": "ocor-runtime/src/ocor_runtime/c8/adapters/postgres_ledger.py"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {
+    "ocor-runtime/src/ocor_runtime/c6_capabilities.py": [
+      "ocor-runtime/src/c6_capabilities.py",
+      "ocor-runtime/tests/acceptance_ev/test_ev_020_028_actions_capabilities.py",
+      "ocor-runtime/tests/acceptance_ev/test_ev_029_035_fence_agent_e2e.py",
+      "ocor-runtime/tests/backend_assumptions/test_ba08_capability_expiration.py",
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/runtime/test_c7_emission_hardening.py",
+      "ocor-runtime/tests/runtime/test_public_surface_and_c8_hardening.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0030.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0043.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0046.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c8/orchestrator.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py": [
+      "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+    ],
+    "ocor-runtime/src/ocor_runtime/c8_agent.py": [
+      "ocor-runtime/src/c8_agent.py",
+      "ocor-runtime/tests/acceptance_ev/test_ev_029_035_fence_agent_e2e.py",
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "ocor-runtime/tests/runtime/test_public_surface_and_c8_hardening.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+      "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+    ]
+  },
+  "consumers_inventory_findings": [
+    "the product consumers of c8/tool_runtime.py, c8/tool_contract.py and c8/orchestrator.py are the C8 modules themselves (the orchestrator imports the tool runtime and the tool contract) and c8/adapters/postgres_ledger.py; no other product module imports them",
+    "c6_capabilities.py (code_paths of the plan unit) is unchanged: the coordination leases stay on the sealed CapabilityAuthority; its consumers (acceptance_ev, BA-08, mission thread, C7 emission hardening, public surface, 0030, 0043, 0046, 0047, REM-0027) are unchanged and run in the broad selection",
+    "c8_agent.py (legacy StrictSandbox) is unchanged: the runtime builds its own sandbox and registers argument-validating wrappers; its consumers (EV-029..035, mission thread, public surface, 0047, REM-0027) pass in the broad selection",
+    "the test consumers of the C8 runtime and orchestrator are exactly those of consumers_to_inventory plus test_ocor_dev_rem_0050.py (Run Ledger kinds and the C8 run-state case) and test_ocor_dev_rem_0054.py (C6 stop and marking through the C8 runtime), both adapted with the shared fixtures; REM-0027, REM-0050 and REM-0054 are remediation units, not completed backlog tasks: their sealed records are not inputs of the drift validator, so their realigned and adapted tests run in the campaign without a requalification record"
+  ],
+  "consumers_inventory_note": "grep of c8.tool_runtime, c8.tool_contract, c8.orchestrator, c8.adapters.postgres_ledger, c6_capabilities and c8_agent over ocor-runtime, scripts and reports/tests at the unit head",
+  "decided_requests": [],
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 4, 5 and 10 (NCP-U10 row; NCR-C8-006 option A additional criterion; the point 5 PO choices POLICY_DENIED and EXECUTION_UNKNOWN; OCOR-DEV-REM-0043 test and correction resumed as NCR-C8-007); NCP-U07-C8-TOOL-RUNTIME-LEASE (2026-11-05) option 2; NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); SELF-CHECK-CHECKLIST (2026-11-08); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "changed_functions": [
+          "test_an_agent_cannot_write_canonical_state_directly_only_the_orchestrator_can"
+        ],
+        "functions": [
+          12,
+          12
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect",
+          "test_a_revoked_capability_produces_no_tool_effect",
+          "test_an_active_emergency_stop_produces_no_tool_effect",
+          "test_insufficient_clearance_produces_no_tool_effect",
+          "test_over_budget_work_produces_no_tool_effect"
+        ],
+        "functions": [
+          11,
+          11
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_a_call_past_its_deadline_records_its_unknown_outcome_with_the_c6_reconciler",
+          "test_a_command_fenced_before_the_stop_is_refused_even_with_a_fresh_lease",
+          "test_a_cooperative_tool_past_the_call_deadline_is_cancelled_with_no_effect",
+          "test_a_finally_after_a_native_wait_is_refused_on_the_lease_channel_and_its_residual_is_measured",
+          "test_a_lease_issued_before_a_stop_is_refused_after_the_dual_control_reset",
+          "test_a_lease_not_bound_to_a_stop_epoch_is_refused",
+          "test_a_lease_revoked_during_the_expression_refuses_the_next_tool",
+          "test_a_slow_tool_without_any_stop_is_bounded_by_the_call_deadline",
+          "test_a_stop_accepted_after_the_gates_and_before_the_sandbox_produces_no_effect",
+          "test_a_stop_accepted_between_two_tools_of_one_expression_prevents_the_second",
+          "test_a_stop_during_a_non_cooperative_tool_records_its_unknown_outcome_with_the_c6_reconciler",
+          "test_a_stop_during_a_non_cooperative_tool_that_swallows_errors_still_prevents_its_late_effect",
+          "test_a_stop_during_a_slow_cooperative_tool_cancels_it_with_no_effect",
+          "test_a_stop_during_a_slow_non_cooperative_tool_refuses_the_next_tool_within_the_target",
+          "test_an_unavailable_reconciler_fails_closed_without_any_receipt",
+          "test_the_default_runtime_reconciles_with_its_own_c6_reconciler"
+        ],
+        "functions": [
+          39,
+          39
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [],
+        "functions": [
+          47,
+          47
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py",
+        "same_names": true
+      },
+      {
+        "changed_functions": [
+          "test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port",
+          "test_ncr_c6_012_the_c8_tool_runtime_denies_a_clearance_that_does_not_dominate",
+          "test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any_effect"
+        ],
+        "functions": [
+          76,
+          76
+        ],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py",
+        "same_names": true
+      }
+    ],
+    "note": "numbers and names of test functions and parametrizations unchanged; the functions with changed asserts, pytest.raises or parametrizations are exactly those of the realigned rows of existing_tests_realigned_or_adapted (each with its RED be53786, 2ac5c64 or a479515), listed per function here; the adapted constructions change no assertion; to be repeated on the candidate head",
+    "tool": "~/.ocor-codex/rem-0058/ast_compare.py against the unit base b6232f8 (test functions, asserts, pytest.raises, decorators)"
+  },
+  "existing_tests_note": "every realigned assertion cites the norm with file and line in a comment and has its RED; numbers of test functions and parametrised cases unchanged; no test removed, skipped, marked or weakened; test_ocor_dev_rem_0027.py, test_ocor_dev_rem_0050.py and test_ocor_dev_rem_0054.py are inputs of no latest evidence record of a completed task (drift validator): they run in the consumer modules of the campaign",
+  "existing_tests_realigned_or_adapted": {
+    "adapted": [
+      {
+        "ast_comparison": "no test function, assert, pytest.raises or parametrization changed",
+        "commit": "144ae25",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+      },
+      {
+        "ast_comparison": "no test function, assert, pytest.raises or parametrization changed",
+        "commit": "144ae25",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py"
+      },
+      {
+        "ast_comparison": "no test function, assert, pytest.raises or parametrization changed",
+        "commit": "144ae25",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py"
+      },
+      {
+        "ast_comparison": "only the realigned parameter-set assertion changed (case 1); the handoff lease realignment changes an argument",
+        "commit": "a479515",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+      },
+      {
+        "ast_comparison": "no test function, assert, pytest.raises or parametrization changed",
+        "commit": "9cdfd10",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py"
+      }
+    ],
+    "realigned": [
+      {
+        "anchor": "ADD v1.3 :1759-1778, :3220",
+        "current_assertion": "reason_code == CAPABILITY_DENIED",
+        "entry": "NCR-C8-007",
+        "function": "test_a_revoked_capability_produces_no_tool_effect",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "prescribed": "CAPABILITY_REVOKED",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778, :3119; FR-120",
+        "current_assertion": "pytest.raises(TokenBudgetExceeded)",
+        "entry": "NCR-C8-005",
+        "function": "test_over_budget_work_produces_no_tool_effect",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "prescribed": "ToolRuntimeError BUDGET_EXCEEDED",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778; LLD v1.1 :67",
+        "current_assertion": "reason_code == MARKING_DENIED",
+        "entry": "NCR-C8-004",
+        "function": "test_insufficient_clearance_produces_no_tool_effect",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "prescribed": "POLICY_DENIED (PO table, NORMATIVE-CONFORMANCE-PLAN point 5) with marking_outcome MARKING_DENIED",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778",
+        "current_assertion": "reason_code == STOP_BOUND_DENIED",
+        "entry": "NCR-C8-004",
+        "function": "test_an_active_emergency_stop_produces_no_tool_effect, test_a_call_fenced_to_a_stale_epoch_produces_no_tool_effect",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py",
+        "prescribed": "EMERGENCY_STOP_ACTIVE",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778",
+        "current_assertion": "STOP_BOUND_DENIED",
+        "entry": "NCR-C8-004",
+        "function": "10 stop cases, assert_reconciled and the lease-channel case",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "EMERGENCY_STOP_ACTIVE",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778",
+        "current_assertion": "TOOL_DEADLINE_EXCEEDED",
+        "entry": "NCR-C8-004",
+        "function": "deadline cases (3 asserts, 2 assert_reconciled)",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "EXECUTION_UNKNOWN (PO table, LLD v1.1 :282); the unknown-outcome assertions stay",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778; FR-163",
+        "current_assertion": "RECONCILIATION_UNAVAILABLE",
+        "entry": "NCR-C8-008",
+        "function": "test_an_unavailable_reconciler_fails_closed_without_any_receipt",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "EXECUTION_UNKNOWN with reconciliation None",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778, :3220",
+        "current_assertion": "CAPABILITY_DENIED",
+        "entry": "NCR-C8-007",
+        "function": "test_a_lease_revoked_during_the_expression_refuses_the_next_tool",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "CAPABILITY_REVOKED",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :3358; FR-163",
+        "current_assertion": "a runtime built without a reconciler reconciles on a default one",
+        "entry": "NCR-C8-008",
+        "function": "test_the_default_runtime_reconciles_with_its_own_c6_reconciler",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "pytest.raises(TypeError) without the reconciler; the runtime's reconciler is audited",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :3220, :3856; PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE option 2",
+        "current_assertion": "STOP_BOUND_DENIED",
+        "entry": "NCR-C8-008",
+        "function": "test_a_lease_not_bound_to_a_stop_epoch_is_refused",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0027.py",
+        "prescribed": "CAPABILITY_DENIED (a legacy lease is not a C8 grant)",
+        "red": "2ac5c64"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778",
+        "current_assertion": "STOP_BOUND_DENIED",
+        "entry": "NCR-C8-004",
+        "function": "test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py",
+        "prescribed": "EMERGENCY_STOP_ACTIVE",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :1759-1778 over LLD v1.1 :67 (RCCAD precedence)",
+        "current_assertion": "MARKING_UNRESOLVED / MARKING_DENIED",
+        "entry": "NCR-C8-004",
+        "function": "test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any_effect, ..._denies_a_clearance_that_does_not_dominate",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0054.py",
+        "prescribed": "POLICY_DENIED with marking_outcome kept",
+        "red": "be53786"
+      },
+      {
+        "anchor": "ADD v1.3 :388, :3042",
+        "current_assertion": "handoff lease granted to the recipient agent-2",
+        "entry": "NCR-C8-002",
+        "function": "test_handoff_transfers_the_commitment_to_a_new_agent",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py",
+        "prescribed": "handoff lease of the sender holding the commitment (agent-1), compared with the transport Principal; assertions unchanged",
+        "red": "a479515"
+      },
+      {
+        "anchor": "LLD v1.1 :183; ADD v1.3 :342",
+        "current_assertion": "orchestrator parameters == {authority, ledger}",
+        "entry": "NCR-C8-003",
+        "function": "test_an_agent_cannot_write_canonical_state_directly_only_the_orchestrator_can",
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py",
+        "prescribed": "== {authority, kernel, ledger} (the Coordination Kernel; none is a canonical port)",
+        "red": "a479515"
+      }
+    ]
+  },
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "input_robustness_self_check": {
+    "accepted_residuals": [
+      "unhashable arguments of in-process lookups (ToolGrantLedger.chain/usage, InMemoryGovernanceControls.authority/revoked, InMemoryInstructionEligibility.withdraw, AgentBudgetLedger.spent) raise TypeError: in-process programming interfaces, never reached with external data (the runtime checks types first or wraps the port call)",
+      "an empty or invalid expression is a SandboxViolation of the sealed legacy StrictSandbox after the step of the call is charged (existing convention of OCOR-DEV-0047/REM-0027)",
+      "an adapter error that is not a ToolContractError leaves the sandbox as SandboxViolation (existing convention of the legacy sandbox; contract errors are unwrapped to their code)"
+    ],
+    "columns": {
+      "boundary_digests": "digests, signatures and bindings recomputed at the boundary",
+      "complete_normative_records": "normative records complete through the kernel codec",
+      "finite_numbers": "NaN and Infinity refused",
+      "processes_and_resources": "typed process and resource errors, release in finally",
+      "strict_decoding": "UTF-8 strict, typed error",
+      "types_before_conversions": "types checked before conversion, bool never an int, missing/extra/empty refused"
+    },
+    "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1 extended by SELF-CHECK-CHECKLIST (2026-11-08): the whole modules c8/tool_contract.py, c8/tool_runtime.py, c8/orchestrator.py and c8/adapters/postgres_ledger.py, one row per parsing, adapter or port-answer path, with the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29), boundary digests and bindings, resource release and the five controls of SELF-CHECK-CHECKLIST (2026-11-08) point 2",
+    "green": [
+      "f1503b8",
+      "6a32d61"
+    ],
+    "note": "FIXED marks a gap found by the self-check and closed with RED/GREEN on the CI stack (OPA, Keycloak, SPIRE mTLS, PostgreSQL; scripted connections only for undecodable answers); the table informs the preventive review and does not replace it",
+    "red": [
+      "0ce3c96",
+      "9a4b76a",
+      "91bda4e"
+    ],
+    "table": [
+      {
+        "checks": {
+          "boundary_digests": "PASS",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "PASS",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (set, bytes, non-string keys were converted or raw TypeError)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py",
+        "function": "SchemaCatalog.add",
+        "paths": "schema documents of the catalogue",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_schema_that_is_not_i_json_is_a_schema_violation",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_schema_pins_resolve_to_meta_valid_schemas_with_the_pinned_digest"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (non-SchemaPin raised AttributeError)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py",
+        "function": "SchemaCatalog.resolve",
+        "paths": "schema pins",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_only_a_schema_pin_resolves"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (contract_digest recomputed)",
+          "complete_normative_records": "PASS (ADD v1.3 \u00a73.5 schema verbatim, every conditional branch positive and negative)",
+          "finite_numbers": "PASS",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "PASS"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py",
+        "function": "ToolContract.from_document",
+        "paths": "Tool Contract documents",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_each_conditional_branch_admits_its_positive_and_refuses_its_negative",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_contract_whose_digest_does_not_hold_is_refused"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "PASS (arguments digested as I-JSON)",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (unreadable or variadic adapter signatures were admitted, ValueError raw)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py",
+        "function": "ToolBinding.__post_init__, ToolRegistry.arguments",
+        "paths": "adapter signature and call arguments",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_binding_whose_adapter_signature_is_unreadable_or_variadic_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_arguments_are_parameter_constrained_before_the_adapter_runs"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (contract re-admitted at registration)",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "PASS (output digested as I-JSON)",
+          "processes_and_resources": "PASS (egress scope reset in finally)",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "PASS (predicate outcome `is True` only)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py",
+        "function": "ToolRegistry.register, check_preconditions, invoke, egress_checkpoint",
+        "paths": "bindings, predicate outcomes, adapter outputs, egress destinations",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_binding_cannot_change_the_contract_or_bind_another_context",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_preconditions_are_evaluated_and_fail_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_egress_outside_the_binding_allow_list_is_denied_and_nothing_is_done",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_output_is_schema_bound_tainted_and_digested_after_the_call"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "FIXED (NaN/Infinity reached PostgreSQL)",
+          "processes_and_resources": "PASS (connection context closes on every path)",
+          "strict_decoding": "PASS",
+          "types_before_conversions": "FIXED (unhashable kind raw TypeError; non-string payload keys converted)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/adapters/postgres_ledger.py",
+        "function": "PostgresRunLedger.append",
+        "paths": "entries written to PostgreSQL",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_the_run_ledger_refuses_a_malformed_entry_before_writing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_the_run_ledger_replays_an_idempotent_entry_with_json_equal_content"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "PASS",
+          "strict_decoding": "FIXED (UnicodeDecodeError escaped raw)",
+          "types_before_conversions": "PASS (rows shape-checked without coercion, bool entry_no refused)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/adapters/postgres_ledger.py",
+        "function": "_driver, initialize, entries, _entry",
+        "paths": "backend answers and stored rows",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_an_undecodable_backend_answer_is_a_typed_run_ledger_error",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py (sealed scripted-row cases of the ledger)"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "FIXED (a NaN disabled every later quota check)",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (bool, float, negative, unknown dimensions accepted on the ledger paths; non-binding agents)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "function": "AgentBudgetLedger.charge, record, remaining; AgentBudget",
+        "paths": "budget amounts and bindings",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_budget_ledger_refuses_malformed_amounts_and_stays_enforced",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_budget_ledger_charges_only_an_agent_binding"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (validate_authority with the verified binding)",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (a non-Authority answer escaped as AttributeError)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "function": "ToolCallRuntime._live_authority",
+        "paths": "Authority port answers",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_authority_port_answer_that_is_not_an_authority_is_authority_missing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_authority_is_required_and_evaluated_live"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (decisions of the real OPA were refused as expired; bindings verified, decisions from the future refused)",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "PASS (PolicyDecision only, aware instant)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "function": "verified_decision, ToolCallRuntime._live_policy",
+        "paths": "policy decisions (OPA in the product)",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_real_opa_permit_admits_every_dispatch_with_its_decisions",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_real_opa_refuses_before_any_effect",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_decision_from_the_future_or_expired_at_the_call_is_denied",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_unavailable_policy_decision_point_fails_closed"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (Governed Context digest recomputed)",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "PASS",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (non-mapping bindings escaped raw after charging); PASS for epoch and estimates (exact int)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "function": "ToolCallRuntime.invoke, _bind",
+        "paths": "call bindings, agent binding, principal, Governed Context, marking, epoch, estimates",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_malformed_call_bindings_are_a_schema_violation_before_anything_is_charged",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_agent_binding_must_match_the_principal_the_context_and_the_grant",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_registry_of_another_governed_context_is_stale"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "PASS (UnknownToolOutcome on the audited reconciler)",
+          "finite_numbers": "PASS (monotonic and thread times)",
+          "processes_and_resources": "FIXED (a worker start failure escaped as RuntimeError)",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "N/A"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "function": "ToolCallRuntime._dispatch, _reconcile",
+        "paths": "supervised worker thread, stop and deadline",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_worker_that_cannot_start_is_a_typed_refusal_and_nothing_runs",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_stop_while_a_tool_runs_records_its_unknown_outcome_on_the_audited_reconciler",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_an_unavailable_audited_reconciler_fails_closed_as_execution_unknown",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_the_contract_timeout_bounds_the_dispatch"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (a use recorded for a grant never issued; a rejected rebinding dropped the binding)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+        "function": "ToolGrantLedger (issue, delegate, revoke, record_use), InMemoryGovernanceControls.rebind_delegation",
+        "paths": "grants and Delegation bindings",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_use_is_recorded_only_for_an_issued_grant",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_rejected_rebinding_keeps_the_verified_delegation",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_grant_cannot_be_redelegated_or_widened_by_default"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "FIXED (OverflowError raw on unrepresentable timeouts)",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (ValueError raw)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+        "function": "require_aware, _deadline (every public method)",
+        "paths": "instants and timeouts",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_instant_that_is_not_timezone_aware_is_a_typed_refusal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_unrepresentable_timeout_is_a_typed_refusal"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "FIXED (a ledger failure escaped raw and left in-memory state; a refused call consumed its lease)",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "N/A"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+        "function": "AgentRunOrchestrator._append, _atomic, _lease",
+        "paths": "Run Ledger writes and lease consumption",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_run_ledger_failure_leaves_no_state_the_ledger_does_not_have",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_refused_call_does_not_consume_its_lease"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (digest computed in the kernel; policy decision verified)",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "PASS (NaN/Infinity SCHEMA_VIOLATION)",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "PASS (lone surrogates refused by the canonical encoder)",
+          "types_before_conversions": "FIXED (a non-reference Delegation answer was stored)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+        "function": "CoordinationKernel.delegation, decide, validated_digest",
+        "paths": "Delegation port answers, policy decisions, payloads and typed outputs",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_delegation_port_answer_that_is_not_a_delegation_ref_is_revoked",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_coordination_kernel_is_decided_by_the_real_opa",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_every_handoff_validates_its_schema",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_completion_requires_the_typed_conforming_output_of_the_role_and_evidence"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (sender bound to the transport Principal, payload digested and envelope signed by the kernel)",
+          "complete_normative_records": "FIXED (REJECTED record lacked the LLD v1.1 :183 fields; refusals before the checks wrote no REJECTED envelope nor audit); PASS (accepted envelope: the 28 ADD fields)",
+          "finite_numbers": "PASS",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (signature_ref without a signature escaped raw or yielded empty bytes)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+        "function": "AgentRunOrchestrator.handoff, _handoff, _reject_handoff, envelope_signature",
+        "paths": "handoff calls, envelopes and signature references",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_signature_ref_without_an_ed25519_signature_is_a_typed_refusal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_handoff_refused_before_its_checks_is_rejected_and_audited",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_rejected_envelope_keeps_the_handoff_fields_of_the_lld",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_conforms",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_sender_that_is_not_the_transport_principal_is_denied_and_audited"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (the receipt taint came from the caller; now TOOL_OUTPUT/UNTRUSTED)",
+          "complete_normative_records": "N/A",
+          "finite_numbers": "N/A",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "N/A",
+          "types_before_conversions": "FIXED (a retry overwrote another task; blank or oversized reasons accepted; malformed receipts escaped raw)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+        "function": "AgentRunOrchestrator.retry, register_dissent, record_tool_invocation",
+        "paths": "retry identifiers, dissent reasons, tool receipts",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_retry_never_overwrites_another_task",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_dissent_reason_is_bounded_text",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_malformed_tool_receipt_is_a_schema_violation",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_recorded_tool_invocation_is_always_untrusted_tool_output"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (context digest recomputed, 7-field version fence)",
+          "complete_normative_records": "PASS (governed context as the 11-field kernel codec mapping)",
+          "finite_numbers": "PASS (NaN/Infinity SCHEMA_VIOLATION in payloads)",
+          "processes_and_resources": "N/A",
+          "strict_decoding": "PASS (canonical encoder)",
+          "types_before_conversions": "PASS (exact types, bounded texts, exact-int termination)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+        "function": "AgentRunOrchestrator._caller, start_run, propose_task, assign, commit, complete, send_message",
+        "paths": "transport principal, Governed Context and version fence; members; payloads",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_actor_chain_purpose_and_effective_authority_are_checked_at_every_hop",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_member_cannot_hold_a_tier_outside_the_poc_profile_or_share_an_identity",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_message_injection_changes_neither_state_nor_capability",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_assignment_checks_identity_capability_delegation_tier_budget_and_policy"
+        ]
+      }
+    ]
+  },
+  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 5 iterations (15), earlier after two consecutive iterations without progress; iteration 4 of estimate 5",
+  "open_decision_requests": [],
+  "open_points_for_review": [
+    "NCR-C8-004: the PO choices of NORMATIVE-CONFORMANCE-PLAN point 5 for NCP-U10 already decide the two po_choice items of plan_units.NCP-U10 (test_ocor_dev_0047.py MARKING_DENIED -> POLICY_DENIED; test_ocor_dev_rem_0027.py TOOL_DEADLINE_EXCEEDED -> EXECUTION_UNKNOWN): no decision request is needed for them",
+    "NCR-C8-004: test_ocor_dev_rem_0054.py asserts the C8 refusal codes MARKING_UNRESOLVED (lines 1727 and the parametrized cases, NCR-C6-012 of NCP-U08) and MARKING_DENIED (line 1736). Normative precedence of OCOR_RCCAD_v1.0 (ADD before LLD): the refusal code of a tool call belongs to the closed error_codes enum of ADD v1.3 :1759-1778, while LLD v1.1 :67 fixes the outcome of the marking resolution, which the runtime keeps as the detail of a POLICY_DENIED refusal (marking outcome MARKING_UNRESOLVED or MARKING_DENIED, as the PO chose POLICY_DENIED for the same denial in test_ocor_dev_0047.py); both assertions are realigned as case 1 of NORMATIVE-CONFORMANCE-PLAN point 5 for NCR-C8-004, with RED, keeping the marking outcome asserted; no semantic change of the marking resolution, so no decision request",
+    "Authority request risk of a tool call: the more restrictive, in impact order, of the contract effect_class (READ_ONLY R0_READ; ANALYZE, SIMULATE, PROPOSE_ACTION R1_ANALYZE; EXECUTE_APPROVED_ACTION never executed by C8, ADD v1.3 :1992, :3115) and of the contract risk_class (LOW R0, MEDIUM R1, HIGH R2, CRITICAL R3); risk exposure charged per dispatch LOW 1, MEDIUM 2, HIGH 3, CRITICAL 4. Ambiguity without semantic impact on approved contracts, resolved fail-closed (OCOR_RCCAD_v1.0 precedence); listed for the preventive review",
+    "Wall time and compute are measured per dispatch and charged after it; an exhausted dimension refuses the next call (ADD v1.3 :3122, no reservation semantics); the dispatch deadline is the contract timeout_ms bounded by the <=10 s containment target",
+    "The OPA-backed policy case of the required backend (plan_units.NCP-U10 required_backend OPA, Keycloak/SPIFFE, PostgreSQL) is added in the packaging iteration on the REM-0054 OPA world; the unit cases use the PolicyDecisionPort contract with a recording port",
+    "The legacy CapabilityAuthority remains in test_ocor_dev_rem_0027.py only in the cases that exercise its own stop binding (c6_capabilities and the legacy slice are unchanged)",
+    "Coordination capabilities (agent:assign, agent:commit, agent:handoff, agent:dissent) stay single-use revocable leases of the sealed CapabilityAuthority, as the plan prescribes for 0046 (builds_with_legacy_slice_classes, handoff lease of the sender); the Coordination Kernel adds live Delegation, policy, stop epoch, budget, schema and version-fence checks around them. PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE option 2 concerns the tool runtime only; listed for the preventive review",
+    "Run-level records (RUN_STARTED, TASK_PROPOSED, MESSAGE_SENT, DECISION_PROPOSED, RUN_TERMINATED) are keyed by the team_run_id in the Run Ledger, task records by the task_id; the closed kind set of the ledger is extended and its constraint re-created at initialisation (rows are never rewritten): REM-0050 sealed input touched, requalification inventoried at packaging",
+    "Resolution of a dissent is reserved to its author or to the escalation target of the run (the Coordinator never resolves or suppresses a dissent, ADD v1.3 :3064, :3120); every unresolved dissent, Critical included, accompanies a STANDARD proposal (fail-closed reading of :3110)",
+    "Budget: one step is charged to the assignee at assignment, commitment and completion, and to the recipient of a handoff; an exhausted budget fails the task (FR-010 :62); budget_remaining of the envelope is the run-level headroom of the sender",
+    "design choices to defend: coordination leases stay on the sealed CapabilityAuthority; run-level records keyed by team_run_id; a dissent is resolved only by its author or the escalation target; one budget step per assign, commit, complete and handoff (charged to the recipient)",
+    "a tool receipt presented to record_tool_invocation is shape-checked and bound to the agent run of the commitment holder, and its taint is forced to TOOL_OUTPUT/UNTRUSTED; the receipt is not signed by the runtime, so its lease and decision identifiers are recorded as presented (no normative receipt signature)",
+    "the Governed Context digest of a recorded tool receipt is not compared with the recording call: the tool call and the recording call carry their own correlation identifiers",
+    "the HandoffEnvelope budget_remaining is the sender's headroom at the run level while the handoff step is charged to the recipient"
+  ],
+  "open_points_resolved_during_the_unit": [
+    "OPA-backed policy case: a real OPA decision was refused as expired by the runtime and the kernel (RED 0ce3c96, GREEN f1503b8)",
+    "SELF-CHECK-CHECKLIST gaps of tool_contract and postgres_ledger (RED 9a4b76a, GREEN f1503b8) and of tool_runtime and orchestrator (RED 91bda4e, GREEN 6a32d61)"
+  ],
+  "plan_unit": "NCP-U10",
+  "preventive_review": null,
+  "product_orientation": [
+    "the tool registry admits only contracts of the ADD v1.3 \u00a73.5 schema with verified digests and pinned schemas, so production tool catalogues plug in without changing the runtime",
+    "policy, Authority, Delegation, eligibility, stop epoch and budget are ports re-read at every dispatch; OPA over mTLS is the product policy decision point, exercised on the real stack",
+    "the AgentRun state is the PostgreSQL Run Ledger of C8, append-only, with every transition atomic with it",
+    "every HandoffEnvelope is signed by the Coordination Kernel key (Ed25519, DSSE PAE), so a production KMS replaces the local key behind the same signing call"
+  ],
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "two assertions realigned (NCR-C8-001: the coordination records live in the C8 AgentRun state and no canonical aggregate is written; NCR-C8-002: the handoff lease is held by the sender, compared with the transport Principal) and the parameter set of the orchestrator construction realigned; constructions adapted to the shared fixture c8_orchestrator_fixture.py",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c8/orchestrator.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0046.requalified-rem0050.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'ispezione + test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione + test",
+            "requirement_id": "FR-001",
+            "title": "Il sistema DEVE modellare i ruoli obbligatori di IRB-2 come ruoli distinguibili e impedirne l\u2019equivalenza implicita."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'Ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Ispezione",
+            "requirement_id": "FR-048",
+            "title": "Il sistema DOVREBBE supportare ulteriori SDK, incluso Rust, e contratti A2A quando una release richiede federazione fra agenti indipendenti."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert where the coordination records live and who authorises a handoff on a single team run; they do not exercise the full Register text of any requirement of the task (for example the agent-run state, roles and termination condition of FR-114, or the canonical-port obligations of FR-001/FR-056), which the unit module qualifies; the full Register text of FR-056 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-056",
+            "title": "Il sistema NON DEVE fornire agli agenti credenziali o query arbitrarie verso TypeDB, TerminusDB o Jena."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione trace' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione trace",
+            "requirement_id": "FR-107",
+            "title": "Ogni agent run DEVE propagare agent_run_id, principal, actor chain, purpose, tenant/domain e versioni di agent, model e instruction applicabili."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'dimostrazione, trace test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "dimostrazione, trace test",
+            "requirement_id": "FR-114",
+            "title": "Il sistema DEVE rappresentare team, ruoli, task, assignment, commitment, dipendenze, stato e termination condition."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test IAM e ispezione audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test IAM e ispezione audit",
+            "requirement_id": "FR-129",
+            "title": "Il sistema DEVE autenticare ogni umano, agente e workload con identit\u00e0 individuale verificabile; account condivisi non sono ammessi per operazioni governate."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0046",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0046.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "five functions realigned to the closed error_codes enum of ADD v1.3 :1759-1778 (CAPABILITY_REVOKED, BUDGET_EXCEEDED, POLICY_DENIED for the marking refusal as decided by NORMATIVE-CONFORMANCE-PLAN point 5, EMERGENCY_STOP_ACTIVE for the stop and the stale fence) and the invoke construction adapted to the C8 bindings (shared fixture c8_tool_runtime_fixture.py)",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/src/ocor_runtime/c8/tool_runtime.py",
+          "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+        ],
+        "latest_record": "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0054.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003",
+            "title": "Il sistema DEVE dimostrare continuit\u00e0 semantica, decisionale e di audit lungo l\u2019intero mission thread."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "ispezione",
+            "requirement_id": "BR-012",
+            "title": "Il sistema DEVE applicare exit criteria distinti per PoC, MVP e Production."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test + ispezione",
+            "requirement_id": "FR-004",
+            "title": "Il sistema DEVE autenticare ogni agente con identit\u00e0 distinta e valutare capability, delega, scopo, budget, autonomia e kill switch prima di ogni operazione sensibile."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-016 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-016",
+            "title": "Il sistema DEVE esporre API, SDK, subscription/change feed e tool contract derivati dalla Canonical IR."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-052 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test",
+            "requirement_id": "FR-052",
+            "title": "Il sistema DOVREBBE offrire un Language Server e integrazioni IDE coerenti con parser, type checker e diagnostica della CLI."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-106 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test identity",
+            "requirement_id": "FR-106",
+            "title": "Il sistema DEVE assegnare a ogni Agent Type e Agent instance Stable Resource ID, owner, trust/autonomy tier, lifecycle e workload identity."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-109 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "portability test",
+            "requirement_id": "FR-109",
+            "title": "Tool Binding DEVE associare contract vendor-neutral, adapter o deployment, environment, scope e versione senza modificare l\u2019interfaccia applicativa."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-120 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test",
+            "requirement_id": "FR-120",
+            "title": "Il sistema DEVE definire e far rispettare quote per tool, passi, token/costo, wall time, compute e risk exposure a livello agent, run, team e tenant."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark, analisi' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark, analisi",
+            "requirement_id": "FR-125",
+            "title": "La evaluation suite DEVE misurare task success, evidence fidelity, policy compliance, tool correctness, abstention/escalation quality e outcome contribution."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-126 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "test di sicurezza",
+            "requirement_id": "FR-126",
+            "title": "Un agente NON DEVE modificare autonomamente trust tier, autonomy tier, capability, budget o evaluation record."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-127 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "adversarial/security test",
+            "requirement_id": "FR-127",
+            "title": "Il sistema DEVE applicare schema validation, content provenance o taint, allow-list, parameter constraints, sandbox ed egress policy prima e dopo ogni tool call."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-165 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Contract e authorization test",
+            "requirement_id": "FR-165",
+            "title": "Il sistema DEVE trasformare ogni modifica proposta da una UI in una patch o Change Proposal revisionabile senza scrivere direttamente artefatti generati o datastore."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of FR-169 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Generation e contract test",
+            "requirement_id": "FR-169",
+            "title": "Il sistema DEVE generare API, eventi e tool da contratti versionati OpenAPI, Protobuf/gRPC, AsyncAPI e MCP."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark",
+            "requirement_id": "NFR-035",
+            "title": "Revoca o kill switch DEVE impedire nuove tool call entro il budget di propagazione approvato."
+          },
+          {
+            "bindable": false,
+            "method_kind": "NON_TEST_METHOD",
+            "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "benchmark",
+            "requirement_id": "NFR-036",
+            "title": "Kill switch e cancel DEVONO essere fail-safe, auditati e verificati sotto carico."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of NFR-077 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Test di integrazione e failure injection",
+            "requirement_id": "NFR-077",
+            "title": "Il sistema DEVE riportare per ogni risposta state-dependent branch, commit canonico servito, watermark, release ontologica e staleness secondo la semantica dichiarata del consistency token."
+          },
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'Test i18n e accessibility audit' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "Test i18n e accessibility audit",
+            "requirement_id": "NFR-083",
+            "title": "Il sistema DEVE mantenere identificatori semantici indipendenti dalla lingua e rendere localizzabili e accessibili le interfacce umane."
+          },
+          {
+            "bindable": false,
+            "method_kind": "AUTOMATED_TEST",
+            "reason": "the realigned cases assert the refusal code of single tool calls; they do not exercise the full Register text of any requirement of the task (for example the receipt fields of FR-004, the multidimensional budget of FR-120 or the before/after checks of FR-127), which the unit module qualifies; the full Register text of NFR-085 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+            "register_method": "Round-trip, conformance e security test",
+            "requirement_id": "NFR-085",
+            "title": "Il sistema DEVE verificare integrit\u00e0, equivalenza semantica e rispetto delle policy nell'export e nel reimport."
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4",
+        "task_id": "OCOR-DEV-0047",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/tasks/test_ocor_dev_0047.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0057.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks after the allowlist commit aba972c (scripts/validate_evidence_input_drift.py): 0046 and 0047 with realigned and adapted tests and no bindable requirement (NCP-UNBINDABLE-REQUALIFICATIONS points 3 and 4: the MIXED and non-test methods fail the first condition, the AUTOMATED_TEST requirements are not exercised in full by the changed tests), and 0005, 0050 and 0082 for the allowlist; the with_supersession candidates 0046 and 0047 of the plan are regression-only under NCP-U01-SUPERSESSION-REQUALIFICATIONS point 4 and NCP-UNBINDABLE-REQUALIFICATIONS point 3",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0046",
+      "OCOR-DEV-0047",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "OPA, Keycloak/SPIFFE, PostgreSQL -- realised as the OPA (signed bundles over SPIFFE/SPIRE mTLS), Keycloak and PostgreSQL services of the CI stack (scripts/bootstrap_ci_environment.py); the C8 Run Ledger and the signed audit chain on PostgreSQL; Ed25519 kernel keys generated locally",
+  "resolution_probes": [
+    {
+      "entry": "NCR-C8-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_every_record_is_closed_and_immutable ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_message_injection_changes_neither_state_nor_capability ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_tool_invocation_is_a_c8_record_of_the_task ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_the_run_ledger_refuses_a_malformed_entry_before_writing ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_the_run_ledger_replays_an_idempotent_entry_with_json_equal_content ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_an_undecodable_backend_answer_is_a_typed_run_ledger_error ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_run_ledger_failure_leaves_no_state_the_ledger_does_not_have ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_malformed_tool_receipt_is_a_schema_violation ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_001_a_recorded_tool_invocation_is_always_untrusted_tool_output"
+    },
+    {
+      "entry": "NCR-C8-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_sender_that_is_not_the_transport_principal_is_denied_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_every_handoff_validates_its_schema ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_actor_chain_purpose_and_effective_authority_are_checked_at_every_hop ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_handoff_after_the_stop_or_the_task_deadline_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_signature_ref_without_an_ed25519_signature_is_a_typed_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_handoff_refused_before_its_checks_is_rejected_and_audited ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_002_a_rejected_envelope_keeps_the_handoff_fields_of_the_lld"
+    },
+    {
+      "entry": "NCR-C8-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_assignment_checks_identity_capability_delegation_tier_budget_and_policy ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_member_cannot_hold_a_tier_outside_the_poc_profile_or_share_an_identity ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_completion_requires_the_typed_conforming_output_of_the_role_and_evidence ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_the_coordinator_has_no_domain_inference_approval_or_dissent_suppression ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_retries_keep_the_logical_task_with_a_distinct_attempt_up_to_the_limit ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_budget_exhausted_during_the_task_stops_it ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_the_run_timeout_and_task_limit_terminate_with_the_escalation_target ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_task_beyond_its_timeout_expires_and_a_proposal_carries_unresolved_dissent ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_instant_that_is_not_timezone_aware_is_a_typed_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_an_unrepresentable_timeout_is_a_typed_refusal ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_retry_never_overwrites_another_task ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_refused_call_does_not_consume_its_lease ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_delegation_port_answer_that_is_not_a_delegation_ref_is_revoked ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_003_a_dissent_reason_is_bounded_text"
+    },
+    {
+      "entry": "NCR-C8-004",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_contract_schema_is_the_add_block_and_meta_validates ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_each_conditional_branch_admits_its_positive_and_refuses_its_negative ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_contract_whose_digest_does_not_hold_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_schema_pins_resolve_to_meta_valid_schemas_with_the_pinned_digest ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_only_allow_listed_tools_are_exported_and_callable ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_binding_cannot_change_the_contract_or_bind_another_context ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_arguments_are_parameter_constrained_before_the_adapter_runs ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_output_is_schema_bound_tainted_and_digested_after_the_call ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_egress_outside_the_binding_allow_list_is_denied_and_nothing_is_done ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_preconditions_are_evaluated_and_fail_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_error_codes_are_the_closed_enum_of_the_contract ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_runtime_dispatches_only_contract_bound_allow_listed_tools ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_registry_of_another_governed_context_is_stale ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_marking_refusals_are_policy_denials_keeping_the_marking_outcome ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_the_runtime_raises_only_contract_error_codes ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_schema_that_is_not_i_json_is_a_schema_violation ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_only_a_schema_pin_resolves ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_a_binding_whose_adapter_signature_is_unreadable_or_variadic_is_refused ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_004_malformed_call_bindings_are_a_schema_violation_before_anything_is_charged"
+    },
+    {
+      "entry": "NCR-C8-005",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_policy_is_evaluated_live_at_every_dispatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_policy_that_does_not_permit_refuses_before_any_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_unavailable_policy_decision_point_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_autonomy_tier_outside_the_contract_or_the_poc_profile_is_denied ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_memory_instruction_eligibility_is_reevaluated_at_every_dispatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_run_without_instruction_eligibility_never_dispatches ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_authority_is_required_and_evaluated_live ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_delegation_is_evaluated_live_at_every_dispatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_agent_binding_must_match_the_principal_the_context_and_the_grant ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_every_budget_dimension_is_enforced_at_every_level ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_measured_wall_time_and_compute_are_charged_and_then_enforced ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_team_and_tenant_quotas_are_shared_by_the_runs_of_the_team ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_budget_without_a_quota_at_some_level_fails_closed ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_real_opa_permit_admits_every_dispatch_with_its_decisions ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_real_opa_refuses_before_any_effect ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_tool_the_real_opa_does_not_permit_is_refused_before_its_dispatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_coordination_kernel_is_decided_by_the_real_opa ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_decision_from_the_future_or_expired_at_the_call_is_denied ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_budget_ledger_refuses_malformed_amounts_and_stays_enforced ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_the_budget_ledger_charges_only_an_agent_binding ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_an_authority_port_answer_that_is_not_an_authority_is_authority_missing ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_005_a_rejected_rebinding_keeps_the_verified_delegation"
+    },
+    {
+      "entry": "NCR-C8-007",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_without_a_revocation_every_tool_of_the_expression_is_dispatched ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_revocation_after_the_last_tool_changes_nothing_already_dispatched ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_lease_revoked_at_the_current_instant_during_the_expression_refuses_the_next_tool ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_delegation_revoked_during_the_expression_refuses_the_next_tool_of_the_delegate ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_lease_revoked_after_the_presented_instant_is_refused_before_anything_is_charged ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_revoked_lease_is_refused_on_the_effect_channel_whatever_instant_is_presented ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_delegation_revoked_after_the_presented_instant_is_refused_on_the_effect_channel ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_stop_and_a_revocation_during_the_expression_refuse_the_next_tool_as_stop_bound ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_stop_accepted_after_the_gates_stays_stop_bound ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_the_effect_channel_refuses_a_stopped_and_revoked_lease_as_stop_bound ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_revocation_racing_the_dispatch_from_another_thread_never_reaches_the_second_tool ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_grant_cannot_be_redelegated_or_widened_by_default ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_007_a_use_is_recorded_only_for_an_issued_grant"
+    },
+    {
+      "entry": "NCR-C8-008",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_the_runtime_is_never_built_without_its_governance_controls ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_stop_while_a_tool_runs_records_its_unknown_outcome_on_the_audited_reconciler ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_an_unavailable_audited_reconciler_fails_closed_as_execution_unknown ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_the_contract_timeout_bounds_the_dispatch ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_grant_is_bound_to_the_stop_epoch_of_its_issuance ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py::test_ncr_c8_008_a_worker_that_cannot_start_is_a_typed_refusal_and_nothing_runs"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-C8-001",
+    "NCR-C8-002",
+    "NCR-C8-003",
+    "NCR-C8-004",
+    "NCR-C8-005",
+    "NCR-C8-007",
+    "NCR-C8-008"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0058 commits: c8/tool_contract.py, the two shared C8 fixtures and the unit test module disappear; c8/tool_runtime.py, c8/orchestrator.py, c8/adapters/postgres_ledger.py and the realigned or adapted tests of 0046, 0047, REM-0027, REM-0050 and REM-0054 return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the widened c8_run_ledger kind constraint of a development PostgreSQL is dropped with the stack volumes",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0058",
+  "tdd": {
+    "GREEN_C8_004_REGISTRY": {
+      "commit": "de7a980",
+      "fingerprint": "6f646fff923b796f63c684fedd60e7500d54fe3739d9ac82e23582d4987d1e54",
+      "summary": "unit module: 33 passed, 1 failed (test_ncr_c8_004_conforms waits for the runtime reason codes)"
+    },
+    "GREEN_C8_005_OPA_SELF_CHECK": {
+      "commit": "f1503b8",
+      "fingerprint": "fa1098914eadb9c3473a68906e1ecfd06141fa550bdc3da42940e372ffac8e65",
+      "summary": "unit + 0046 + REM-0050 + 0047 + REM-0027 + REM-0054 on the CI stack: 800 passed, 0 skipped"
+    },
+    "GREEN_C8_ORCHESTRATOR": {
+      "commit": "9cdfd10",
+      "fingerprint": "17db4e1fb80c8d5d15b46c98b07ec68e399f921718af4398a3d7d1f8a7729852",
+      "summary": "unit + 0046 + 0047 + REM-0027 + REM-0050 + REM-0054 + consumers: 740 passed, 20 skipped, 2 failed and 40 errors on backends not provisioned (TerminusDB, Kafka, OPA-backed promotion, mission thread); the 40 orchestrator cases pass (5e1a306dafa4)"
+    },
+    "GREEN_C8_RUNTIME": {
+      "commit": "144ae25",
+      "fingerprint": "5dcd76275e0cd8410f88d2a1ec33690ab357f6e4adbcd0a5db91b35708933802",
+      "summary": "unit + 0047 + REM-0027 + REM-0054: 372 passed, 20 skipped (REM-0054 OPA cases without the CI stack)"
+    },
+    "GREEN_SELF_CHECK_2": {
+      "commit": "6a32d61",
+      "fingerprint": "17d426b6d628972238a33c13d390cddfb267b607c8f031e5697618123eac1c76",
+      "summary": "unit + 0046 + REM-0050 + 0047 + REM-0027 + REM-0054 + EV-029..035 + public surface + mission thread on the CI stack: 872 passed, 0 skipped"
+    },
+    "RED_C8_004": {
+      "commit": "7dbd52f",
+      "fingerprint": "0e657414c49e6be4f0121f2c50a7a409e85a5c1308c8857e50dd31b7a525ee8d",
+      "summary": "unit module on the base code: 34 failed"
+    },
+    "RED_C8_005_OPA": {
+      "commit": "0ce3c96",
+      "fingerprint": "bfb1db34d69ce939cf2455a430e81379e6a4ca05dcea624793272e98179673e1",
+      "summary": "real OPA over mTLS for a Keycloak principal: 3 failed (permit, require-approval, kernel permit refused as POLICY_DECISION_EXPIRED), 3 passed for the wrong reason"
+    },
+    "RED_C8_ORCHESTRATOR": {
+      "commit": "a479515",
+      "fingerprint": "ec60d592beeeae47b8da29e4d528654f40b1e073e49aa38fb03f2e83f08c1987",
+      "summary": "40 selected orchestrator cases (unit 001-003, 0046, REM-0050 C8 run state) on the orchestrator of 144ae25: 35 errors, 5 failed"
+    },
+    "RED_C8_RUNTIME": {
+      "commit": "be53786",
+      "fingerprint": "180eb0a837ff4c61c45fca48c7d142a574c6b25fc09429bac1651d92ec6fab89",
+      "summary": "unit + 0047 + REM-0027 + REM-0054 tool-runtime selection on the runtime of de7a980: 98 failed, 66 passed"
+    },
+    "RED_C8_RUNTIME_2": {
+      "commit": "2ac5c64",
+      "summary": "REM-0027 legacy-lease case on the runtime of be53786: 1 failed"
+    },
+    "RED_SELF_CHECK": {
+      "commit": "9a4b76a",
+      "fingerprint": "fe4e7be7e2b318b3110cba29f34b4ccce563d424d1a3d7b9e3ae4540d3539138",
+      "summary": "tool_contract and postgres_ledger self-check: 19 failed (raw TypeError/AttributeError/UnicodeDecodeError, conversions, non-finite payload at PostgreSQL, replay conflict), 2 passed"
+    },
+    "RED_SELF_CHECK_2": {
+      "commit": "91bda4e",
+      "fingerprint": "c3a2905db1767c3fc0e0be9964271d9e88bd327ab0fa1a6d6965490f44aa4801",
+      "summary": "tool_runtime and orchestrator self-check: 39 failed on the reported defects, 2 passed (guards)"
+    },
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML (~/.ocor-codex/rem-0058/redgreen.sh, redgreen_ci.sh)"
+  }
+}
