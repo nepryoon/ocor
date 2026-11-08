@@ -1433,13 +1433,15 @@ def test_ncr_c8_001_conforms(world: Any) -> None:
         assert cls.__dataclass_params__.frozen, record
         assert hasattr(cls, "__slots__"), record
 
-    task = world.propose("t-001")
+    # the live Run Ledger keeps the rows of earlier runs: the task id is fresh, so the whole entry list is this run's
+    task_id = f"t-001-{uuid_hex()}"
+    task = world.propose(task_id)
     assert isinstance(task, module.Task) and task.state is module.TaskState.PROPOSED
-    assignment = world.assign("t-001", "agent-1")
+    assignment = world.assign(task_id, "agent-1")
     assert isinstance(assignment, module.Assignment)
-    world.commit("t-001", "agent-1")
+    world.commit(task_id, "agent-1")
     assert [entry.kind for entry in world.ledger.entries(world.team_run_id)] == ["RUN_STARTED", "TASK_PROPOSED"]
-    assert [entry.kind for entry in world.ledger.entries("t-001")] == ["TASK_ASSIGNED", "TASK_COMMITTED"]
+    assert [entry.kind for entry in world.ledger.entries(task_id)] == ["TASK_ASSIGNED", "TASK_COMMITTED"]
     rows = _sql_rows(world.dsn, "SELECT to_regclass('c3_aggregate') IS NOT NULL")
     if rows[0][0]:
         assert _sql_rows(world.dsn, "SELECT count(*) FROM c3_aggregate WHERE aggregate_ref LIKE 'urn:ocor:agentrun:%%'") == [(0,)]
@@ -1457,10 +1459,10 @@ def test_ncr_c8_001_conforms(world: Any) -> None:
     assert {"AGENT_MESSAGE", "UNTRUSTED"} <= set(message.taint_labels)
     with pytest.raises(module.OrchestratorError) as refused:
         world.orchestrator.assign(
-            "t-001", "agent-2", capability="act:analyze", lease=message.message_id, assigned_by="agent-1", at=NOW_C8, **team.caller("agent-1")
+            task_id, "agent-2", capability="act:analyze", lease=message.message_id, assigned_by="agent-1", at=NOW_C8, **team.caller("agent-1")
         )
     assert orchestration_refused(refused) == "CAPABILITY_DENIED"
-    assert world.orchestrator.assignment("t-001").agent_id == "agent-1"
+    assert world.orchestrator.assignment(task_id).agent_id == "agent-1"
 
 
 def _sql_rows(dsn: str, statement: str, *params: Any) -> list[tuple[Any, ...]]:
@@ -1603,13 +1605,15 @@ def test_ncr_c8_002_every_handoff_validates_its_schema(world: Any) -> None:
     """FR-010 :62: every handoff validates a schema; a non-conforming payload is rejected and audited."""
     from ocor_runtime.c8 import orchestrator as module
 
-    world.accepted("t-012", "agent-1")
+    # the live Run Ledger keeps the rows of earlier runs: the task id is fresh, so the whole entry list is this run's
+    task_id = f"t-012-{uuid_hex()}"
+    world.accepted(task_id, "agent-1")
     for payload in ({"state_summary": ""}, {"state_summary": "x", "authority": "root"}, {"other": 1}, ["state_summary"]):
         with pytest.raises(module.OrchestratorError) as refused:
-            world.handoff("t-012", sender="agent-1", to="agent-2", payload=payload)
+            world.handoff(task_id, sender="agent-1", to="agent-2", payload=payload)
         assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
-    assert world.orchestrator.commitment("t-012").agent_id == "agent-1"
-    assert [entry.payload["rejection_reason"] for entry in world.ledger.entries("t-012") if entry.kind == "HANDOFF_REJECTED"] == [
+    assert world.orchestrator.commitment(task_id).agent_id == "agent-1"
+    assert [entry.payload["rejection_reason"] for entry in world.ledger.entries(task_id) if entry.kind == "HANDOFF_REJECTED"] == [
         "SCHEMA_VIOLATION"
     ] * 4
 
