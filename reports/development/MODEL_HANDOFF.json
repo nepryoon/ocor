@@ -4,9 +4,9 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "2e724c45155d65a109b284bbd71b8f864072f00e",
-  "baseline_commit": "2e724c45155d65a109b284bbd71b8f864072f00e",
-  "branch": "governed/state-sync-rem0057-iter5-20261108",
+  "base_sha": "da5ca98c101e6118b71c0c85690efd96add66dd5",
+  "baseline_commit": "da5ca98c101e6118b71c0c85690efd96add66dd5",
+  "branch": "governed/state-sync-rem0057-iter6-20261108",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0057-ncp-u09-c7-causal-runtime",
     "head_sha": "7d0d9965ea5e52af151e4d2c57ee536f70e8287c",
@@ -23,7 +23,8 @@
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/ITERATION_LOG.md",
-    "reports/development/MODEL_HANDOFF.json"
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/TERMINAL_BLOCKED_REPORT.json"
   ],
   "claims": {
     "E1": 0,
@@ -35,40 +36,25 @@
   },
   "commands": [
     {
-      "command": "verdict OCOR-DEV-REM-0057-4e1a87c2a49a-0",
+      "command": "preflight: git fetch, sha256sum -c inputs/normative/SHA256SUMS, gh pr list/view",
       "exit_code": 0,
-      "summary": "GO_FOR_EVIDENCE_SEAL, one non-blocking finding VF-001 (accepted, pre-seal descriptive field), nothing NOT_EXECUTED; Cursor CLI / grok-4.7-high / xAI; file sha256 cfc95e91339dade218585128ed15473e9a0c214d0446df84697e8d34dd399cb6"
+      "summary": "main da5ca98c101e clean; inputs 8/8; open PRs #544 (BLOCKED, unchanged) and #545 (draft)"
     },
     {
-      "command": "merge origin/main 2e724c4 into governed/ocor-dev-rem-0057-ncp-u09-c7-causal-runtime (non-destructive alignment)",
+      "command": "lookup of a disposition for REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE in the iteration instructions",
       "exit_code": 0,
-      "summary": "aligned head 1ab141b; only the three state files differ from 4e1a87c2a49a; non-state tree sha256 equal"
+      "summary": "absent: decision pending"
     },
     {
-      "command": "seal.py (verdict OCOR-DEV-REM-0057-4e1a87c2a49a-0)",
+      "command": "probe_dl.sh 150 (release assets used by CI)",
       "exit_code": 0,
-      "summary": "unit record and 4 requalifications SEALED, manifests G0/G2/G4/G5 updated surgically, raw logs unchanged; commit 7d0d9965ea5e"
-    },
-    {
-      "command": "PRE-CAMPAIGN-GATE on the seal head (clean env, locked PATH, detached scratch worktree)",
-      "exit_code": 0,
-      "summary": "51/51 workflow-derived non-suite steps PASS"
-    },
-    {
-      "command": "gh pr create (PR #544); CI attempt 1 and gh run rerun --failed",
-      "exit_code": 1,
-      "summary": "external GitHub outage: attempt 1 23 failed checks in setup/download steps; rerun 17/23 passed, 3 jobs failed again in the qualification tool download (read timeout), zero failed tests; 11/13 required checks success; rerun budget exhausted"
-    },
-    {
-      "command": "decision request REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (git commit-tree on governed/decision-request-rem0057-integration-ci-external-outage, draft PR #545)",
-      "exit_code": 0,
-      "summary": "OPEN_PO_DECISION_REQUIRED, operational, recommendation option 1 (one additional attempt on the same head); file sha256 690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d"
+      "summary": "13:36:11 uv=206 kind=206; RESULT OK"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
   "current_task": "OCOR-DEV-REM-0057:integration-blocked-REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE",
   "evidence_paths": [],
-  "exact_next_action": "Wait for the decision REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (operational, OPEN_PO_DECISION_REQUIRED; file reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md on governed/decision-request-rem0057-integration-ci-external-outage commit 043ecc5c352a, draft PR #545; recommendation option 1). With option 1: probe the release assets used by CI for at least ten consecutive minutes without errors, then the single additional attempt 'gh run rerun <run> --failed' of only the failed jobs of PR #544 on the sealed head 7d0d9965ea5e (runs 42469221327, 42469221334, 42469221388, 42469221419, 42469221501, 42469221615, 42469221713); all 13 required checks success on the exact head -> gh pr merge 544 --merge --match-head-commit 7d0d9965ea5e52af151e4d2c57ee536f70e8287c; then ONE integration state sync built on the head of this state sync (kit ~/.ocor-codex/integrate-rem0057-20261108: state_sync.py prepared for a branch built on #543; rebuild it on this branch, record #543 and this PR, the decision, REPO-HYGIENE branch deletions, close the draft decision-request PR as resolved). Same cause again -> no further attempt on that head, new decision request. A failed test is never infrastructure. Then NCP-U10 (first free OCOR-DEV-REM-*, today OCOR-DEV-REM-0058; estimate 5, stop at 15; it also takes NCR-C8-008 and resumes OCOR-DEV-REM-0043), U11, U12 in order; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
+  "exact_next_action": "TERMINAL_BLOCKED on the decision request REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (operational, OPEN_PO_DECISION_REQUIRED; file reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md on governed/decision-request-rem0057-integration-ci-external-outage commit 043ecc5c352a743a765752ef5bc947dc191c15da, sha256 690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d, draft PR #545; recommendation option 1). After the decision: with option 1 probe the release assets used by CI for at least ten consecutive minutes without errors, then the single additional attempt 'gh run rerun <run> --failed' of only the failed jobs of PR #544 on the sealed head 7d0d9965ea5e (runs 42469221327, 42469221334, 42469221388, 42469221419, 42469221501, 42469221615, 42469221713); all 13 required checks success on the exact head -> gh pr merge 544 --merge --match-head-commit 7d0d9965ea5e52af151e4d2c57ee536f70e8287c; then ONE integration state sync built on main (kit ~/.ocor-codex/integrate-rem0057-20261108: state_sync.py to rebuild on the current main), recording the decision, #544, REPO-HYGIENE branch deletions and closing the draft decision-request PR as resolved. Same cause again -> no further attempt on that head, new decision request. A failed test is never infrastructure. Then NCP-U10 (first free OCOR-DEV-REM-*, today OCOR-DEV-REM-0058; estimate 5, stop at 15; it also takes NCR-C8-008 and resumes OCOR-DEV-REM-0043), U11, U12 in order; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
   "head_sha": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
   "head_sha_role": "REM-0057 candidate submitted to the independent verification",
   "independent_verification": {
@@ -244,7 +230,7 @@
     "unit_tests": "campaign PASS; full suite FOUR_LANE 5304/5304, zero skips, 1619.6 s"
   },
   "next_task": "merge of PR #544 after REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE, then NCP-U10 (OCOR-DEV-REM-0058, to verify read-only at start)",
-  "phase": "REM_0057_NCP_U09_SEALED_CI_EXTERNAL_OUTAGE_DECISION_PENDING",
+  "phase": "REM_0057_NCP_U09_SEALED_CI_EXTERNAL_OUTAGE_DECISION_PENDING_TERMINAL_BLOCKED",
   "po_decisions_pending": [
     "REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE"
   ],
@@ -321,6 +307,6 @@
     "REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (merge of PR #544)",
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-08T12:29:49.507333+00:00",
-  "worktree": ".ocor/worktrees/rem-0057 (unit, sealed head 7d0d9965ea5e), .ocor/worktrees/ss-rem0057-iter4 and .ocor/worktrees/ss-rem0057-iter5 kept until the integration"
+  "updated_at": "2026-11-08T13:36:21.273318+00:00",
+  "worktree": ".ocor/worktrees/rem-0057 (unit, sealed head 7d0d9965ea5e) kept until the integration"
 }
