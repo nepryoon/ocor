@@ -70,3 +70,16 @@ programma senza motivo tecnico.
 - Non bloccati: lo state sync dell'iterazione, che porta solo i tre file di stato.
 - Nessun test, limite, timeout, soglia, workflow, guard, contratto, schema, ruleset o registro normativo cambia.
   Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## Disposition del Product Owner — 2026-11-08
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (2026-11-08)`, **opzione 1** (un solo tentativo aggiuntivo `gh run rerun <run> --failed` dei soli job falliti della PR #544 sull'HEAD sigillato `7d0d9965ea5e52af151e4d2c57ee536f70e8287c`, dopo almeno dieci minuti consecutivi senza errori nel download degli asset di release usati dalla CI; integrazione con `--match-head-commit` se tutti i 13 check obbligatori sono `success` sull'HEAD esatto; nessun altro tentativo su quell'HEAD e nuova decision request se fallisce di nuovo per la stessa causa; un test fallito non è mai infrastruttura). Vale come decisione del PO a ogni effetto. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `043ecc5c352a743a765752ef5bc947dc191c15da`, sha256 `690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (2026-11-08) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE` (branch `governed/decision-request-rem0057-integration-ci-external-outage`, commit `043ecc5c352a743a765752ef5bc947dc191c15da`, file `reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md`, sha256 `690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
