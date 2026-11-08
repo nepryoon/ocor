@@ -1674,8 +1674,173 @@
     }
   ],
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "1ab141b15e54a429cf962acd8dab019131a3ce98",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "2e724c45155d65a109b284bbd71b8f864072f00e",
+      "nonstate_git_tree_sha256": "6793ddfb371d64788a19e2d679e04b5688fa7d2ebc4b2739fd11831cf582b112",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the three state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "6f5db778725edc5a2f9a3a4deef8f0e2ed660eb4a4fef0265ce0b3fe8d299c25",
+    "candidate_json_sha256_after_pre_seal_correction": "5b86db1d17e74a13a3ce92b47ee19eb27ad6d25b645bc6d293e399cf6e12c296",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i file in inputs/normative/SHA256SUMS risultano OK. inputs/ non e' stato modificato."
+      },
+      {
+        "command": "sha256 of host tools and qualification tools against infra/toolchain.lock.json and infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, ruff, tsc, uv, helm, kind e kubectl coincidono con i digest dei lock. environment.json sha256 59678ce6c45eabff84d7cfe7b5dbee9fe4a3b58356ce18710ca6644d3a24196b. Host: Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Preflight rieseguito: PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "status PASS, errors vuoti. Shell pulita env -i, source di env.sh, senza caricare .ocor/bootstrap.env."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute && ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Teardown iniziale ALREADY_REMOVED. Provisioning PASS: fuseki_max_heap_bytes=1073741824, control-plane SVID exit 0, archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz con SHA512 verificata. Quindici container ocor-bootstrap healthy, immagini pinned ai digest di infra/services.lock.json. Fuseki built image sha256:af9762cef0aa8649203d880a1707a43e5539c46929a471c8b9ef103843934324, lock identity 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 148 source files."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato usa un'estensione sorvegliata fuori dall'area autorizzata."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "status PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py",
+        "exit_code": 0,
+        "summary": "PASS: 30 path cambiati fra base e head; superfici immutabili intatte; ledger dei task stabile."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+        "exit_code": 0,
+        "summary": "PASS: 241 input, 75 task, drifted_inputs 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_test_reverse_traceability.py",
+        "exit_code": 0,
+        "summary": "PASS, findings vuoti."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "verdict PASS. I due NOT_EXECUTED interni sono i controlli opzionali markdownlint e mmdc, con fallback deterministico eseguito; non sono conteggiati come PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped && --task OCOR-DEV-0045 --manifest reports/evidence/G4/MANIFEST.json --non-skipped && --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped && --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS per OCOR-DEV-0005, OCOR-DEV-0045, OCOR-DEV-0050 e OCOR-DEV-0082. evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped PASS."
+      },
+      {
+        "command": "pytest task and consumer modules with OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only",
+        "exit_code": 0,
+        "summary": "Shell pulita. Task: 281 passed, 966 subtests passed, 0 skipped, 8 SyntaxWarning di DoWhy. Consumer e regressione 0005/0050/0082/0045/REM-0040/REM-0041: 299 passed, 0 skipped. Registro: il diff di NORMATIVE_CONFORMANCE_REGISTER.json cambia solo NCR-C7-001..006 da OPEN a IN_REMEDIATION, con remediation_unit, remediation_record e resolution_proof."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Prima della suite: teardown REMOVED, residui vuoti. Docker Hub RateLimit-Remaining 100/100 prima della campagna. Alimentazione ADP0 online=1 (rete elettrica) all'inizio e alla fine."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0057-4e1a87c2a49a-0/lanes --expected-head 4e1a87c2a49a8c78db803ac1f6aaf85919e0d135 --tool-bin <verifier bin> --tool-bin <worktree .ocor/tools/bin>",
+        "exit_code": 0,
+        "summary": "Shell pulita senza OCOR_BOOTSTRAP_ENV ne' OCOR_LIVE_POSTGRES_DSN; env.sh imposta solo PATH e OCOR_VERIFIER_WORKTREE. FOUR_LANE, 4 corsie, head esatto. Raccolta 5304, unione eseguita 5304, missing e duplicated vuoti, skipped 0, failures 0, errors 0. Durata 1649.961 s, tetto 5400 s, margine 3750.039 s. Teardown delle quattro sandbox PASS. Dopo la suite: 0 container in esecuzione, nessun volume o rete ocor/lane. Power source MAINS all'inizio (2026-11-08T09:19:43Z) e alla fine (2026-11-08T09:47:13Z)."
+      }
+    ],
+    "finding_disposition": {
+      "VF-001": "Accepted; the record attribution is correct (only Claude Code / Anthropic touched REM-0057; Codex was never started on it). Before sealing only the descriptive field roles.loop_verifier_exclusion was added, stating that the external loop always counts Codex CLI (OpenAI) as a task implementer for verifier exclusion only; no other field, test, raw log or requalification changed"
+    },
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "La sezione Ruoli di questa verifica elenca gli implementatori del task come claude,codex. La richiesta (campo implementers) e il record reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json (implementers e roles.implementers) dichiarano solo Claude Code (Anthropic, claude-opus-5-5) come unico autore che ha toccato il task. I commit ef920626..4e1a87c2 risultano di Luca <lilloluca@gmail.com> e non identificano un secondo modello. Il verifier e' xAI, fornitore diverso da Anthropic, da OpenAI (Codex) e da Google (revisore preventivo Antigravity, gemini-4-argon-high).",
+        "id": "VF-001",
+        "path": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json:1662",
+        "required_fix": "Allineare richiesta e record all'elenco del loop, nominando ogni implementatore, oppure correggere l'attribuzione del loop se Codex non ha scritto il change set. Il verifier non e' dello stesso fornitore di nessuno dei due nomi.",
+        "severity": "medium"
+      }
+    ],
+    "findings_disposition": "Un finding non bloccante (VF-001, medium), nulla NOT_EXECUTED: accettato; l attribuzione del record e corretta (solo Claude Code / Anthropic ha toccato il task; Codex non e stato avviato su REM-0057): prima del sigillo e stato aggiunto solo il campo descrittivo roles.loop_verifier_exclusion, che allinea il record all elenco del loop spiegando che il loop conta sempre Codex (OpenAI) come implementatore ai soli fini dell esclusione del verifier; nessun altro campo, test, raw log o riqualifica cambia. Il verifier (Cursor CLI / grok-4.7-high / xAI) ha rieseguito da shell pulita: lock e preflight PASS, inputs 8/8, bootstrap CI PASS (quindici container healthy, immagini pinned); ruff, mypy strict (148 file), language, rccad, scope (30 path), drift 0 (241 input, 75 task), tracciabilita inversa, piano, evidenza runtime --non-skipped di 0005/0045/0050/0082 ed evidence_manifest 0004 PASS; moduli del task 281 passed e 966 subtest, consumer e regressione 0005/0050/0082/0045/REM-0040/REM-0041 299 passed, zero skip; registro cambiato solo per NCR-C7-001..006 OPEN -> IN_REMEDIATION; campagna FOUR_LANE sull HEAD esatto 5304/5304, zero skip, 1649,961 s su 5400 s, teardown senza residui, alimentazione di rete.",
+    "head_sha": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
+    "not_executed": [],
+    "pre_seal_corrections": [
+      {
+        "finding": "VF-001",
+        "path": "roles.loop_verifier_exclusion",
+        "value": {
+          "loop_implementer_exclusion_set": [
+            "Claude Code (Anthropic)",
+            "Codex CLI (OpenAI)"
+          ],
+          "note": "Il loop esterno (ocor-loop2.sh, in_impl/impl_list) conta sempre Codex CLI (OpenAI), implementatore principale della rotazione, fra gli implementatori del task ai soli fini dell esclusione del verifier, e vi aggiunge gli implementatori di riserva effettivamente avviati (.impl_actual = claude). Codex non e stato avviato su REM-0057 e non ha scritto alcun commit del change set: l unico implementatore effettivo resta Claude Code / claude-opus-5-5 / Anthropic (roles.implementers). Il verifier (xAI) non e dello stesso fornitore di nessuno dei due nomi ne del revisore preventivo (Google).",
+          "source_finding": "VF-001 di OCOR-DEV-REM-0057-4e1a87c2a49a-0"
+        }
+      }
+    ],
+    "raw_output_sha256_unchanged": "edccc33c6ee845f13e3ffd3fc957229767c23fa3a0a7b511f025bd3b2ce4a68a",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "sealed_requalification_records": {
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
+        "candidate_json_sha256": "a075bf02ba09249384b2cccac36bccecf62f574de763a454fad4e2cee4d6bde8",
+        "sealed_json_sha256": "192397579831677ebbdd4e2b68a5a5f6908cd56d69e13ef8fc1d20208d150e83"
+      },
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0057.json": {
+        "candidate_json_sha256": "2156ca3efe7b57f352edc0b7ec4c5c824c9952f493bbb0fc6f1743d520268670",
+        "sealed_json_sha256": "6f85e51b5708b9694faec9a1f547187418d4b7d962b6369e162ff4c5a9b8dd55"
+      },
+      "reports/evidence/G4/OCOR-DEV-0045.requalified-rem0057.json": {
+        "candidate_json_sha256": "e881ec47b4f17ac9a7be8a0334a926a56d72be899f096c8bca32081d2d643c6c",
+        "sealed_json_sha256": "1a5e9d8eb2a4924bf3c19634c12fbb82df8eed929f4c577211e945b05e1654c2"
+      },
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.json": {
+        "candidate_json_sha256": "e89f850a7da133e9808071fcd351df4b6aba39ee3a8b14b3e2d4bccdca6a10d9",
+        "sealed_json_sha256": "15181a833d2d307cee50c85300ad857070df7e66045b3d1e1ee8c92443e9adca"
+      }
+    },
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-08T09:49:13Z",
+    "verdict_file_sha256": "cfc95e91339dade218585128ed15473e9a0c214d0446df84697e8d34dd399cb6",
+    "verdict_head_sha": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
+    "verdict_request_id": "OCOR-DEV-REM-0057-4e1a87c2a49a-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore dichiarato nel record e nella richiesta: Claude Code, claude-opus-5-5, fornitore Anthropic. Il loop nomina anche codex (OpenAI); vedi VF-001. Revisore preventivo: Antigravity CLI, gemini-4-argon-high, fornitore Google; la revisione preventiva non e' stata letta ne' usata come prova. Il verifier non e' lo stesso fornitore dell'autore degli elenchi iniziali del programma (Anthropic). Processo e contesto separati dall'implementazione. Nessuno strumento dell'implementatore e' stato eseguito. Campagna, bootstrap e teardown avviati da shell pulita (env -i); non e' stato fatto source di .ocor/bootstrap.env. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+      "exit_code": 0,
+      "summary": "status PASS, errors vuoti. Shell pulita env -i, source di env.sh, senza caricare .ocor/bootstrap.env."
+    }
   },
   "input_robustness_self_check": {
     "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1: the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29) plus boundary digests and bindings and the closure of every resource on every error path, for every adapter and parsing path touched by the unit, before the preventive review",
@@ -3207,6 +3372,12 @@
   "result": "PASS",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatore di REM-0057: Claude Code / claude-opus-5-5 / Anthropic per tutta l unita (iterazioni 1-4; sigillo e integrazione all iterazione 5, come implementatore di riserva del loop); il loop conta anche Codex CLI / OpenAI ai soli fini dell esclusione (VF-001). Revisore preventivo: Antigravity CLI / gemini-4-argon-high / Google. Nessun implementatore ne revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "implementers": [
       {
         "agent": "Claude Code",
@@ -3215,6 +3386,20 @@
         "scope": "all of REM-0057, iterations 1-4: RED/GREEN of NCR-C7-001/002/003/005/006 (RED b498a6a, GREEN c78270b), the realigned and adapted consumers (781ce01, acc0f70), NCR-C7-004 and NFR-030 (RED c251812, GREEN 3fb9c8f), the input-robustness self-check (RED 10506d3, GREEN 9c37ca5), packaging (4248172, 1a64cb8), the fixes of the preventive review (RED b936fb8, GREEN 7c11a44 and cb3220b, record 10e9473), PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation; the only implementer that touched the task"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
+    "loop_verifier_exclusion": {
+      "loop_implementer_exclusion_set": [
+        "Claude Code (Anthropic)",
+        "Codex CLI (OpenAI)"
+      ],
+      "note": "Il loop esterno (ocor-loop2.sh, in_impl/impl_list) conta sempre Codex CLI (OpenAI), implementatore principale della rotazione, fra gli implementatori del task ai soli fini dell esclusione del verifier, e vi aggiunge gli implementatori di riserva effettivamente avviati (.impl_actual = claude). Codex non e stato avviato su REM-0057 e non ha scritto alcun commit del change set: l unico implementatore effettivo resta Claude Code / claude-opus-5-5 / Anthropic (roles.implementers). Il verifier (xAI) non e dello stesso fornitore di nessuno dei due nomi ne del revisore preventivo (Google).",
+      "source_finding": "VF-001 di OCOR-DEV-REM-0057-4e1a87c2a49a-0"
+    },
     "preventive_reviewer": {
       "agent": "Antigravity CLI",
       "model": "gemini-4-argon-high",
@@ -3233,12 +3418,13 @@
       "constraint": "provider neither Anthropic (implementer) nor Google (preventive reviewer)",
       "process": "external loop only, separate clean context"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback_procedure": "revert the REM-0057 commits: the new C7 modules (scenario_run, jobs, adapters/dowhy_engine, adapters/postgres_jobs) and the two unit test modules disappear; c7/runtime.py, c7/adapters/seaweedfs.py and the realigned or adapted tests of 0045, REM-0040 and REM-0041 return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the C7 job schemas of a development PostgreSQL are dropped with the stack volumes",
   "rollback_procedure_verified": "Mechanical review: revert the REM-0057 commits: the new C7 modules (scenario_run, jobs, adapters/dowhy_engine, adapters/postgres_jobs) and the two unit test modules disappear; c7/runtime.py, c7/adapters/seaweedfs.py and the realigned or adapted tests of 0045, REM-0040 and REM-0041 return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the C7 job schemas of a development PostgreSQL are dropped with the stack volumes. The C7 job ledger schemas are created at run time in the disposable stack; no contract, schema of record or data migration of record involved.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "task_id": "OCOR-DEV-REM-0057",
   "task_runs": {
     "cases_per_run": 281,
