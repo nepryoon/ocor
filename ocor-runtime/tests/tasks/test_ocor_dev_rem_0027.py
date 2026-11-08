@@ -490,7 +490,9 @@ def test_a_lease_not_bound_to_a_stop_epoch_is_refused() -> None:
     with pytest.raises(ToolRuntimeError) as refused:
         harness.invoke("restart_service(name)", unbound)
 
-    assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
+    # OCOR-DEV-REM-0058 (NCR-C8-008, PO decision NCP-U07-C8-TOOL-RUNTIME-LEASE option 2; ADD v1.3
+    # :3220, :3856): a legacy lease is not a C8 tool grant of the runtime's ledger
+    assert refused.value.reason_code == "CAPABILITY_DENIED"
     assert harness.effects == []
 
 
