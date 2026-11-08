@@ -1,9 +1,9 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "da5ca98c101e6118b71c0c85690efd96add66dd5",
+  "baseline_commit": "0f65f722f1bda5200cb237298b0289e2d080c250",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "b2a1fe3db69bfaec7baaf1bdbed623d2aa5125687cbfaf47017aff63c9a73669"
+    "sha256": "24e38d841e1aa55a41f65e1fa4d0f4eb0e177730d581db29415d7c4372a21d1c"
   },
   "blocking_tasks": [
     "OCOR-DEV-0060",
@@ -28,17 +28,26 @@
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocks": "merge of PR #544 (OCOR-DEV-REM-0057 / NCP-U09 integration); hence NCP-U10, U11, U12, the G7 criteria change set with NCP-U14 and the G6/G7 tasks behind them",
+      "blocks": "nothing after the decision",
       "branch": "governed/decision-request-rem0057-integration-ci-external-outage",
       "commit": "043ecc5c352a743a765752ef5bc947dc191c15da",
       "decision_level": "OPERATIONAL",
+      "disposition_record": {
+        "branch": "governed/decision-request-rem0057-integration-ci-external-outage",
+        "commit": "fecbe16605ee05711d744c821534355a1c797fd2",
+        "path": "reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md",
+        "pr": 545,
+        "pr_state": "CLOSED_AS_RESOLVED_NOT_MERGED",
+        "sha256": "474fe0d619b3905df7f0b7233a7c20a4fe9b9daee3797465452c3a3b03ca17ed"
+      },
       "id": "REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE",
       "path": "reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md",
+      "po_decision": "REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (2026-11-08)",
       "pr": 545,
-      "publication": "DRAFT_PR_NOT_TO_BE_MERGED",
+      "publication": "DRAFT_PR_CLOSED_RESOLVED_NOT_MERGED",
       "recommendation": "1",
       "sha256": "690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "status": "DECIDED_BY_PO"
     }
   ],
   "direct_ready_disposition": "NOT_EXECUTABLE_SUSPENDED_OR_BLOCKED_BY_PO_NORMATIVE_CONFORMANCE_PROGRAMME",
@@ -50,13 +59,14 @@
   ],
   "in_progress_unit": {
     "branch": "governed/ocor-dev-rem-0057-ncp-u09-c7-causal-runtime",
-    "done": "GO_FOR_EVIDENCE_SEAL OCOR-DEV-REM-0057-4e1a87c2a49a-0, sealed 7d0d9965ea5e, PRE-CAMPAIGN-GATE 51/51; PR #544 CI attempt and the only rerun failed in setup/download steps during an external GitHub outage, zero failed tests",
+    "done": "integrated: PR #544 merged (0f65f722f1bd) after the single additional CI attempt of REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (2026-11-08) option 1",
     "estimate_iterations": 4,
     "head": "7d0d9965ea5e52af151e4d2c57ee536f70e8287c",
     "id": "OCOR-DEV-REM-0057",
-    "iterations_used": 6,
+    "iterations_used": 7,
     "plan_unit": "NCP-U09",
     "pr": 544,
+    "status": "INTEGRATED",
     "stop_at_iterations": 12
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
@@ -66,22 +76,22 @@
     "pre_campaign_gate_sealed_head": "51/51 PASS at 7d0d9965ea5e (iteration 5)",
     "pre_campaign_gate_state_sync": "47/47 PASS at the state commit 774018acfdcf (only this field changed afterwards); the gate of the final head is recorded in the PR body and in the next state sync"
   },
-  "minimal_unblock_action": "PO decision on the operational decision request REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (draft PR #545, reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md on branch governed/decision-request-rem0057-integration-ci-external-outage, commit 043ecc5c352a743a765752ef5bc947dc191c15da, sha256 690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d); recommended option 1",
-  "next_executable_action": "TERMINAL_BLOCKED on the decision request REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (operational, OPEN_PO_DECISION_REQUIRED; file reports/development/decision_requests/REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE.md on governed/decision-request-rem0057-integration-ci-external-outage commit 043ecc5c352a743a765752ef5bc947dc191c15da, sha256 690f1a1fb9ba6bc8c24f2a1e13117c7018537beefcd7e2ab3dee8a93c9b6af2d, draft PR #545; recommendation option 1). After the decision: with option 1 probe the release assets used by CI for at least ten consecutive minutes without errors, then the single additional attempt 'gh run rerun <run> --failed' of only the failed jobs of PR #544 on the sealed head 7d0d9965ea5e (runs 42469221327, 42469221334, 42469221388, 42469221419, 42469221501, 42469221615, 42469221713); all 13 required checks success on the exact head -> gh pr merge 544 --merge --match-head-commit 7d0d9965ea5e52af151e4d2c57ee536f70e8287c; then ONE integration state sync built on main (kit ~/.ocor-codex/integrate-rem0057-20261108: state_sync.py to rebuild on the current main), recording the decision, #544, REPO-HYGIENE branch deletions and closing the draft decision-request PR as resolved. Same cause again -> no further attempt on that head, new decision request. A failed test is never infrastructure. Then NCP-U10 (first free OCOR-DEV-REM-*, today OCOR-DEV-REM-0058; estimate 5, stop at 15; it also takes NCR-C8-008 and resumes OCOR-DEV-REM-0043), U11, U12 in order; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
+  "minimal_unblock_action": "Done: PO decision REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (2026-11-08), option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh).",
+  "next_executable_action": "Start NCP-U10 (eleventh unit of plan_order of NORMATIVE-CONFORMANCE-PLAN (2026-10-30), C8 Governed Agent Kernel; resolves NCR-C8-001..005, 007 and 008 (NCR-C8-008 per NCP-U07-C8-TOOL-RUNTIME-LEASE; NCR-C8-006 DECISION_REQUIRED stays outside); estimate 5, stop at 3 x 5 = 15; required backend OPA, Keycloak/SPIFFE, PostgreSQL) with the first free OCOR-DEV-REM-* verified read-only at its start (today OCOR-DEV-REM-0058), new governed/ worktree from origin/main; it resumes the OCOR-DEV-REM-0043 correction (RED 81a8b76) as NCR-C8-007; the two po_choice items of plan_units.NCP-U10 (reason codes of NCR-C8-004 realigned tests) are decided by the PO or applied with the proposed code under DELEGA-COMPLETA with a decision request record; full unit cycle of NORMATIVE-CONFORMANCE-PLAN (RED, GREEN, input-robustness self-check of NCP-THROUGHPUT-RULES, requalifications with 0005/0050/0082 always, PRE-CAMPAIGN-GATE, preventive review, qualifying full suite with the versioned four-lane orchestrator (FOUR_LANE if MemAvailable >= 25681.2 MiB, else TWO_LANE, else SERIAL; Docker Hub pull budget read before every pulling step), independent verification, seal, merge). Then NCP-U11 and U12 in order; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. Housekeeping first: delete the merged branch governed/state-sync-rem0057-integrated-20261108 (REPO-HYGIENE) and record it. No new DEC; claims unchanged.",
   "no_new_po_normative_decision_required": true,
-  "open_pull_requests": 2,
+  "open_pull_requests": 0,
   "previous_report": {
-    "commit": "146e9cc",
+    "commit": "9b765f3",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
-    "sha256": "e910773ac49b96f537901d29f6647bbe03963d2a421e54a7b9facfd1d7a12a0d",
+    "sha256": "471dc3464cfbf6400e71105b99501341626768c134cdc43d195e11434f59c859",
     "status": "HISTORICAL_PRESERVED_IN_GIT"
   },
   "reason": "all residual admitted work depends on the PO decision on REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (merge of PR #544, OCOR-DEV-REM-0057 / NCP-U09), because the NCP units run one at a time in plan_order (NORMATIVE-CONFORMANCE-PLAN point 1), or on suspensions and blocks set by the PO",
-  "recorded_at": "2026-11-08T13:36:21.273318+00:00",
+  "recorded_at": "2026-11-08T15:10:04.890449+00:00",
   "remaining_backlog_tasks": 9,
   "schema_version": "1.0",
   "session_resources_created": false,
-  "status": "TERMINAL_BLOCKED",
-  "terminal_state": "TERMINAL_BLOCKED",
-  "updated_at": "2026-11-08T13:36:21.273318+00:00"
+  "status": "SUPERSEDED_PO_DECISION_REM_0057_INTEGRATION_CI_EXTERNAL_OUTAGE",
+  "terminal_state": "NOT_TERMINAL_LOOP_CONTINUE",
+  "updated_at": "2026-11-08T15:10:04.890449+00:00"
 }
