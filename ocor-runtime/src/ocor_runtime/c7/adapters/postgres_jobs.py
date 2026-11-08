@@ -40,6 +40,7 @@ from ..runtime import CausalOutcome, CausalRuntimeError, outcome_document, outco
 from ..scenario_run import ScenarioRunError, ScenarioRunSpec
 
 SCHEMA_NAME = re.compile(r"[a-z_][a-z0-9_]{0,48}")
+LEDGER_ACTOR = "urn:ocor:c7:job-ledger"
 T = TypeVar("T")
 AUDIT_STATES = (*JOB_STATES, "refused", "resources_released")
 _STATES_SQL = ", ".join(f"'{state}'" for state in JOB_STATES)
@@ -418,6 +419,7 @@ class PostgresCausalJobLedger:
 
         def work(connection: psycopg.Connection[dict[str, Any]]) -> str | Mapping[str, Any]:
             connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (self._schema + "/c7-jobs-admission",))
+            self._sweep(connection)
             counts = connection.execute(
                 f"SELECT count(*) FILTER (WHERE principal = %s) AS mine, count(*) AS total FROM {self._schema}.c7_job "
                 "WHERE state = ANY(%s)".encode(),
@@ -448,6 +450,34 @@ class PostgresCausalJobLedger:
         if isinstance(outcome, str):
             raise CausalJobError(outcome, "the job was not admitted")
         return self._job(outcome)
+
+    def _sweep(self, connection: psycopg.Connection[dict[str, Any]], actor: str = LEDGER_ACTOR) -> tuple[str, ...]:
+        """Expires every active job past its deadline, audited as ``TIMEOUT`` by the
+        ledger; resources stay recorded until their holder releases them."""
+        rows = connection.execute(
+            f"SELECT job_id, principal, state FROM {self._schema}.c7_job WHERE state = ANY(%s) AND clock_timestamp() >= deadline "
+            "ORDER BY job_id FOR UPDATE".encode(),
+            (sorted(ACTIVE_STATES),),
+        ).fetchall()
+        expired = []
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise _backend("an overdue job row is not of the expected shape")
+            job_id, principal, state = _stored_text(row, "job_id"), _stored_text(row, "principal"), _stored_text(row, "state")
+            if state not in ACTIVE_STATES:
+                raise _backend("an overdue job row names an inactive state")
+            connection.execute(
+                f"UPDATE {self._schema}.c7_job SET state = 'expired', updated_at = clock_timestamp() WHERE job_id = %s AND state = %s".encode(),
+                (job_id, state),
+            )
+            self._audit(connection, job_id=job_id, principal=principal, from_state=state, to_state="expired", actor=actor, reason="TIMEOUT")
+            expired.append(job_id)
+        return tuple(expired)
+
+    def expire_overdue(self, *, actor: str) -> tuple[str, ...]:
+        """Expires every overdue active job (for a scheduler); returns their identifiers."""
+        _actor(actor)
+        return self._run("expire_overdue", lambda connection: self._sweep(connection, actor))
 
     def _transit(
         self,

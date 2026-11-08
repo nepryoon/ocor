@@ -29,8 +29,8 @@ from multiprocessing.connection import Connection
 from typing import Any, Protocol, runtime_checkable
 
 from .runtime import CausalOutcome, CausalRuntimeError, outcome_document, outcome_from_document
-from .scenario_overlay import ScenarioBranch
-from .scenario_run import CausalModelTrustRoot, PreparedRun, ScenarioRunSpec, prepare_scenario_run
+from .scenario_overlay import ScenarioBranch, ScenarioOverlayError
+from .scenario_run import CausalModelTrustRoot, PreparedRun, ScenarioRunError, ScenarioRunSpec, prepare_scenario_run
 
 JOB_STATES = ("queued", "running", "paused", "cancelled", "completed", "failed", "expired")
 TERMINAL_STATES = frozenset({"cancelled", "completed", "failed", "expired"})
@@ -113,7 +113,8 @@ class JobResult:
 class CausalJobLedger(Protocol):
     """The C7 job ledger port. Every transition outside ``TRANSITIONS`` is refused with
     ``INVALID_TRANSITION`` and leaves no trace but the refusal; every transition and
-    every refused submission is audited with its actor and reason."""
+    every refused submission is audited with its actor and reason. Overdue active jobs
+    expire (``expire_overdue``, also before every admission), with or without a runner."""
 
     def submit(self, spec: ScenarioRunSpec, *, actor: str) -> CausalJob: ...
 
@@ -132,6 +133,8 @@ class CausalJobLedger(Protocol):
     def cancel(self, job_id: str, *, actor: str, reason: str) -> CausalJob: ...
 
     def expire(self, job_id: str, *, actor: str) -> CausalJob: ...
+
+    def expire_overdue(self, *, actor: str) -> tuple[str, ...]: ...
 
     def fail(self, job_id: str, *, actor: str, technical_failure: str, retry_safety: str) -> CausalJob: ...
 
@@ -207,20 +210,22 @@ class CausalJobRunner:
 
     def run(self, job_id: str, inputs: RunInputs) -> CausalJob:
         spec = self._ledger.spec(job_id)
-        prepared = prepare_scenario_run(
-            spec,
-            overlay=self._overlay,
-            branch=inputs.branch,
-            revision=inputs.revision,
-            model_envelope=inputs.model_envelope,
-            trust_root=self._trust_root,
-            factual_rows=inputs.factual_rows,
-            expected_release_digest=self._expected_release,
-        )
-        samples = int(spec.budget["max_samples"])
-        if isinstance(prepared, PreparedRun):
-            samples = int(prepared.model["samples"])
-        self._ledger.start(job_id, actor=self._actor, resources={"worker_process": 1, "samples": samples})
+        self._ledger.start(job_id, actor=self._actor, resources={"worker_process": 1, "samples": int(spec.budget["max_samples"])})
+        try:
+            prepared = prepare_scenario_run(
+                spec,
+                overlay=self._overlay,
+                branch=inputs.branch,
+                revision=inputs.revision,
+                model_envelope=inputs.model_envelope,
+                trust_root=self._trust_root,
+                factual_rows=inputs.factual_rows,
+                expected_release_digest=self._expected_release,
+            )
+        except ScenarioOverlayError as error:
+            return self._failed(job_id, f"OVERLAY_{error.code}", "SAFE_TO_RETRY")
+        except ScenarioRunError as error:
+            return self._failed(job_id, f"PREPARATION_{error.code}", "NOT_SAFE_TO_RETRY")
         if isinstance(prepared, CausalOutcome):
             return self._finish(job_id, prepared)
         self._ledger.report_progress(job_id, "0.1", actor=self._actor)
