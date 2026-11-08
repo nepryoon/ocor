@@ -2867,7 +2867,7 @@ def test_ncr_c8_005_a_binding_other_than_the_granted_one_is_refused(changes: dic
     grant = world.grant()
     other = replace(world.agent, **changes)
 
-    world.refused("note(name)", grant, "CAPABILITY_DENIED", agent=other, budget=world.budget(), envelope=envelope(world, other))
+    world.refused("note(name)", grant, "CAPABILITY_DENIED", agent=other, budget=world.budget(other))
 
     assert world.effects == []
 
