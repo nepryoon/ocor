@@ -999,7 +999,7 @@ def estimate_intervention(
         single=True,
         engine=engine,
         estimate=lambda admitted, _engine: _backdoor_outcome(
-            query, admitted, method="BACKDOOR_STRATIFIED_ATE", shift=admitted.model.sensitivity_shift, legacy=False
+            query, admitted, method="STRATIFIED_BACKDOOR_ATE", shift=admitted.model.sensitivity_shift, legacy=False
         ),
     )
 
