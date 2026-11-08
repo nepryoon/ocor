@@ -2431,3 +2431,265 @@ def test_ncr_c8_001_an_undecodable_backend_answer_is_a_typed_run_ledger_error(op
         calls[operation]()
     assert refused.value.reason_code == "BACKEND_ERROR"
     assert "\\xff" not in str(refused.value)
+
+
+# SELF-CHECK-CHECKLIST: c8/tool_runtime.py (whole module) ------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "amounts",
+    [{"tokens": float("nan")}, {"tokens": float("inf")}, {"tokens": -5}, {"steps": True}, {"tokens": 1.5}, {"bogus": 1}],
+    ids=["nan", "infinity", "negative", "bool", "float", "unknown-dimension"],
+)
+def test_ncr_c8_005_the_budget_ledger_refuses_malformed_amounts_and_stays_enforced(amounts: dict[str, Any]) -> None:
+    world = World()
+    ledger, agent = world.budgets, world.agent
+    for charge in (lambda: ledger.charge(agent, amounts, {}), lambda: ledger.charge(agent, {}, amounts), lambda: ledger.record(agent, amounts)):
+        with pytest.raises(ValueError):
+            charge()
+    assert all(ledger.spent("run", agent.agent_run_id, dimension) == 0 for dimension in world.module.BUDGET_DIMENSIONS)
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        ledger.charge(agent, {"tokens": 10**12}, {})
+    assert refused.value.reason_code == "BUDGET_EXCEEDED"
+
+
+def test_ncr_c8_005_the_budget_ledger_charges_only_an_agent_binding() -> None:
+    world = World()
+    for call in (
+        lambda: world.budgets.charge("agent-1", {"tokens": 1}, {}),
+        lambda: world.budgets.record(None, {"tokens": 1}),
+        lambda: world.budgets.remaining("agent-1"),
+        lambda: world.module.AgentBudget(None, None),  # type: ignore[arg-type]
+    ):
+        with pytest.raises(TypeError):
+            call()
+
+
+def test_ncr_c8_005_an_authority_port_answer_that_is_not_an_authority_is_authority_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    world = World()
+    grant = world.grant()
+    monkeypatch.setattr(world.controls, "authority", lambda ref: SimpleNamespace(authority_id=ref))
+    monkeypatch.setattr(world.controls, "signature_verified", lambda authority: True)
+    monkeypatch.setattr(world.controls, "revoked", lambda ref: False)
+    world.refused("note(name)", grant, "AUTHORITY_MISSING")
+    assert world.effects == []
+
+
+def test_ncr_c8_008_a_worker_that_cannot_start_is_a_typed_refusal_and_nothing_runs(monkeypatch: pytest.MonkeyPatch) -> None:
+    world = World()
+    grant = world.grant()
+    start = threading.Thread.start
+
+    def refuse_tool_workers(thread: threading.Thread) -> None:
+        if thread.name.startswith("ocor-c8-tool-"):
+            raise RuntimeError("can't start new thread")
+        start(thread)
+
+    monkeypatch.setattr(threading.Thread, "start", refuse_tool_workers)
+    refused = world.refused("note(name)", grant, "EXECUTION_UNKNOWN")
+    assert world.effects == []
+    assert refused.execution_unknown is False
+
+
+@pytest.mark.parametrize("bindings", [[1], "name=svc", {1: "svc"}], ids=["list", "text", "non-string-key"])
+def test_ncr_c8_004_malformed_call_bindings_are_a_schema_violation_before_anything_is_charged(bindings: Any) -> None:
+    world = World()
+    budget = world.budget()
+    world.refused("note(name)", world.grant(), "SCHEMA_VIOLATION", bindings=bindings, budget=budget)
+    assert world.effects == []
+    assert all(budget.spent(dimension) == 0 for dimension in world.module.BUDGET_DIMENSIONS)
+
+
+def test_ncr_c8_005_a_rejected_rebinding_keeps_the_verified_delegation() -> None:
+    world = World()
+    with pytest.raises(ValueError):
+        world.controls.rebind_delegation("agent-1", "not-a-digest")
+    assert world.controls.verified_delegation("agent-1") == DELEGATION
+
+
+def test_ncr_c8_007_a_use_is_recorded_only_for_an_issued_grant() -> None:
+    world = World()
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.grants.record_use("urn:ocor:c8:tool-grant:ghost")
+    assert refused.value.reason_code == "CAPABILITY_DENIED"
+    assert world.grants.usage("urn:ocor:c8:tool-grant:ghost") == 0
+
+
+# SELF-CHECK-CHECKLIST: c8/orchestrator.py (whole module) ------------------------------------------
+
+
+@pytest.mark.parametrize("instant", [NOW_C8.replace(tzinfo=None), "2026-09-14T12:00:00Z", None], ids=["naive", "text", "none"])
+def test_ncr_c8_003_an_instant_that_is_not_timezone_aware_is_a_typed_refusal(world: Any, instant: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-naive", at=instant)
+    assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+    assert world.orchestrator.task("t-naive") is None
+
+
+def test_ncr_c8_003_an_unrepresentable_timeout_is_a_typed_refusal(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-overflow", timeout=timedelta.max)
+    assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+    assert world.orchestrator.task("t-overflow") is None
+    with pytest.raises(module.OrchestratorError) as refused:
+        team.TeamWorld(
+            team.live_dsn(),
+            termination=module.TerminationCondition(
+                max_delegation_depth=2, timeout=timedelta.max, max_attempts=3, max_tasks=50, escalation_target=team.ESCALATION_TARGET
+            ),
+        )
+    assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+
+
+def test_ncr_c8_003_a_retry_never_overwrites_another_task(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("c1", "agent-1")
+    other = world.propose("c1#attempt-2")
+    world.orchestrator.fail("c1", reason="no answer", at=NOW_C8, **team.caller("agent-1"))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.retry("c1", at=NOW_C8, **team.caller("team-lead-1"))
+    assert orchestration_refused(refused) == "TASK_EXISTS"
+    assert world.orchestrator.task("c1#attempt-2") == other
+
+
+def test_ncr_c8_003_a_refused_call_does_not_consume_its_lease(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.propose("t-lease")
+    lease = world.grant(subject="team-lead-1", capability="agent:assign", resource="agent-3")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.assign(
+            "t-lease", "agent-3", capability="act:analyze", lease=lease, assigned_by="team-lead-1", at=NOW_C8, **team.caller("team-lead-1")
+        )
+    assert orchestration_refused(refused) == "ROLE_MISMATCH"
+    assert world.authority.usage(lease.lease_id) == 0
+
+
+class _FailingLedger:
+    """The real PostgreSQL Run Ledger, failing the appends of one kind while ``failing`` is set."""
+
+    def __init__(self, dsn: str, kind: str) -> None:
+        from ocor_runtime.c8.adapters.postgres_ledger import PostgresRunLedger
+
+        self._ledger = PostgresRunLedger(dsn)
+        self._ledger.initialize()
+        self.kind = kind
+        self.failing = False
+
+    def append(self, **entry: Any) -> Any:
+        if self.failing and entry["kind"] == self.kind:
+            raise RuntimeError("PostgreSQL is down")
+        return self._ledger.append(**entry)
+
+    def entries(self, task_id: str) -> tuple[Any, ...]:
+        return self._ledger.entries(task_id)
+
+
+@pytest.mark.parametrize("kind", ["TASK_PROPOSED", "TASK_ASSIGNED"])
+def test_ncr_c8_001_a_run_ledger_failure_leaves_no_state_the_ledger_does_not_have(kind: str) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    ledger = _FailingLedger(team.live_dsn(), kind)
+    world = team.TeamWorld(team.live_dsn(), ledger=ledger)
+    if kind == "TASK_ASSIGNED":
+        world.propose("t-ledger")
+    ledger.failing = True
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-ledger") if kind == "TASK_PROPOSED" else world.assign("t-ledger", "agent-1")
+    assert orchestration_refused(refused) == "LEDGER_UNAVAILABLE"
+    task = world.orchestrator.task("t-ledger")
+    assert task is None if kind == "TASK_PROPOSED" else task.state is module.TaskState.PROPOSED
+    assert world.orchestrator.assignment("t-ledger") is None
+
+
+@pytest.mark.parametrize("answer", [42, "", "urn:sha256:short", None], ids=["integer", "empty", "malformed", "none"])
+def test_ncr_c8_003_a_delegation_port_answer_that_is_not_a_delegation_ref_is_revoked(world: Any, answer: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.propose("t-delegation")
+    monkeypatch.setattr(world.controls, "verified_delegation", lambda agent_id: answer)
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.assign("t-delegation", "agent-1")
+    assert orchestration_refused(refused) == "CAPABILITY_REVOKED"
+    assert world.orchestrator.assignment("t-delegation") is None
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [{"invocations": (None,)}, {"policy_decision_ids": None}, {"policy_decision_ids": ("",)}, {"lease_id": ""}, {"tool_name": 7}],
+    ids=["invocation-none", "decisions-none", "decision-empty", "lease-empty", "tool-name-integer"],
+)
+def test_ncr_c8_001_a_malformed_tool_receipt_is_a_schema_violation(world: Any, changes: dict[str, Any]) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-receipt", "agent-1")
+    receipt = replace(_tool_receipt(), **changes)
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.record_tool_invocation("t-receipt", receipt, at=NOW_C8, **team.caller("agent-1"))
+    assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+    assert world.ledger.entries("t-receipt")[-1].kind != "TOOL_INVOKED"
+
+
+def test_ncr_c8_001_a_recorded_tool_invocation_is_always_untrusted_tool_output(world: Any) -> None:
+    world.accepted("t-taint", "agent-1")
+    record = world.orchestrator.record_tool_invocation("t-taint", replace(_tool_receipt(), taint_labels=()), at=NOW_C8, **team.caller("agent-1"))
+    assert record.taint_labels == ("TOOL_OUTPUT", "UNTRUSTED")
+
+
+@pytest.mark.parametrize("signature_ref", [None, "x:", "urn:ocor:signature:zz", 7], ids=["none", "empty-signature", "not-hex", "integer"])
+def test_ncr_c8_002_a_signature_ref_without_an_ed25519_signature_is_a_typed_refusal(world: Any, signature_ref: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-signature", "agent-1")
+    envelope = world.handoff("t-signature", sender="agent-1", to="agent-2")
+    with pytest.raises(module.OrchestratorError) as refused:
+        module.envelope_signature(replace(envelope, signature_ref=signature_ref))
+    assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+
+
+@pytest.mark.parametrize("reason", ["", None], ids=["empty", "none"])
+def test_ncr_c8_002_a_handoff_refused_before_its_checks_is_rejected_and_audited(world: Any, reason: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-rejected", "agent-1")
+    lease = world.grant(subject="agent-1", capability="agent:handoff", resource="agent-2")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.handoff(
+            "t-rejected", sender="agent-1", to_agent_id="agent-2", reason=reason, payload={"state_summary": "x"}, lease=lease, at=NOW_C8,
+            **team.caller("agent-1"),
+        )
+    assert orchestration_refused(refused) == "HANDOFF_REASON_REQUIRED"
+    rejected = world.ledger.entries("t-rejected")[-1]
+    assert rejected.kind == "HANDOFF_REJECTED"
+    assert {"contract_id", "contract_version", "governed_context_digest", "correlation_id", "created_at"} <= set(rejected.payload)
+    assert any(record["reason_code"] == "HANDOFF_REASON_REQUIRED" for record in world.audited())
+
+
+def test_ncr_c8_002_a_rejected_envelope_keeps_the_handoff_fields_of_the_lld(world: Any) -> None:
+    world.accepted("t-rejected-2", "agent-1")
+    with pytest.raises(Exception):
+        world.handoff("t-rejected-2", sender="agent-1", to="agent-2", transport="agent-3")
+    rejected = world.ledger.entries("t-rejected-2")[-1].payload
+    assert (rejected["status"], rejected["rejection_reason"]) == ("REJECTED", "CAPABILITY_DENIED")
+    # LLD v1.1 :183: sender, recipient, schema, input/output refs, GCS digest and status
+    assert rejected["asserted_sender_principal"] == "agent-1" and rejected["recipient_principal"] == "agent-2"
+    assert rejected["contract_id"] == world.kernel.handoff_contract.contract_id
+    assert rejected["payload_digest"].startswith("sha256:")
+    assert rejected["governed_context_digest"] == team.context("agent-3").digest()
+
+
+@pytest.mark.parametrize("reason", ["   ", "x" * 600], ids=["blank", "oversized"])
+def test_ncr_c8_003_a_dissent_reason_is_bounded_text(world: Any, reason: str) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-dissent-reason", "agent-1")
+    with pytest.raises(module.OrchestratorError):
+        world.dissent("t-dissent-reason", "agent-3", reason=reason)
+    assert all(entry.kind != "DISSENT_REGISTERED" for entry in world.ledger.entries("t-dissent-reason"))
