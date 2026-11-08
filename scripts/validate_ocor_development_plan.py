@@ -1388,6 +1388,28 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0056.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0056.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0056.log",
+        # OCOR-DEV-REM-0057 (NCP-U09 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): the C7 causal runtime
+        # (DoWhy identification behind the engine port, the immutable ScenarioRunSpec with the signed causal
+        # model, the L2 job ledger of C7 on PostgreSQL and its worker-process runner), the two unit test
+        # modules, the unit record, and the regression-only requalifications of 0045 (realigned and adapted
+        # tests, NCP-UNBINDABLE-REQUALIFICATIONS) and of 0005, 0050 and 0082 forced by this allowlist.
+        "ocor-runtime/src/ocor_runtime/c7/adapters/dowhy_engine.py",
+        "ocor-runtime/src/ocor_runtime/c7/adapters/postgres_jobs.py",
+        "ocor-runtime/src/ocor_runtime/c7/jobs.py",
+        "ocor-runtime/src/ocor_runtime/c7/scenario_run.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py",
+        "reports/assurance/OCOR-DEV-REM-0057-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+        "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0057.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0057.log",
+        "reports/evidence/G4/OCOR-DEV-0045.requalified-rem0057.json",
+        "reports/evidence/G4/OCOR-DEV-0045.requalified-rem0057.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
