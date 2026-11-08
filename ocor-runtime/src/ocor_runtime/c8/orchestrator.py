@@ -47,13 +47,15 @@ revocable); the Kernel adds the live controls around them.
 
 from __future__ import annotations
 
+import functools
+import re
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from enum import Enum
 from types import MappingProxyType
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, runtime_checkable
 
 from ..audit import AuditEvent, AuditPort
 from ..c1.signing import Ed25519SigningKey, dsse_pae
@@ -63,7 +65,7 @@ from ..errors import OCORError
 from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp
 from ..kernel.governed_context import GovernedContext
 from ..security.ports import AuthenticatedPrincipal, PolicyDecisionPort, PolicyRequest
-from .tool_contract import SchemaCatalog, SchemaPin
+from .tool_contract import UNTRUSTED_TOOL_OUTPUT_TAINT, SchemaCatalog, SchemaPin, ToolOutput
 from .tool_runtime import (
     POC_AUTONOMY_TIERS,
     AgentBudgetLedger,
@@ -77,8 +79,45 @@ from .tool_runtime import (
 
 def require_aware(instant: datetime, *, field: str) -> datetime:
     if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
-        raise ValueError(f"{field} must be timezone-aware")
+        raise OrchestratorError("SCHEMA_VIOLATION", f"{field} must be a timezone-aware instant")
     return instant
+
+
+def _deadline(instant: datetime, timeout: timedelta) -> datetime:
+    """``instant + timeout``; a timeout beyond the representable instants is refused."""
+    try:
+        return instant + timeout
+    except OverflowError as error:
+        raise OrchestratorError("SCHEMA_VIOLATION", "the timeout is beyond the representable instants") from error
+
+
+_DELEGATION_REF = re.compile(r"^urn:sha256:[0-9a-f]{64}$")
+_SIGNATURE_HEX = re.compile(r"^[0-9a-f]{128}$")
+
+
+class _LedgerUnavailable(RuntimeError):
+    """The Run Ledger did not record an entry (raised to the caller as ``LEDGER_UNAVAILABLE``)."""
+
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def _atomic(method: Callable[Concatenate[AgentRunOrchestrator, _P], _R]) -> Callable[Concatenate[AgentRunOrchestrator, _P], _R]:
+    """A public transition of the orchestrator either reaches the Run Ledger or leaves no
+    in-memory state: when the ledger fails, the state of the call is restored and the failure is
+    ``LEDGER_UNAVAILABLE``."""
+
+    def atomic(self: AgentRunOrchestrator, /, *args: _P.args, **kwargs: _P.kwargs) -> _R:
+        snapshot = self._snapshot()
+        try:
+            return method(self, *args, **kwargs)
+        except _LedgerUnavailable as error:
+            self._restore(snapshot)
+            raise OrchestratorError("LEDGER_UNAVAILABLE", "the Run Ledger did not record the transition") from error
+
+    functools.update_wrapper(atomic, method)
+    return atomic
 
 
 @runtime_checkable
@@ -407,10 +446,11 @@ def envelope_signing_bytes(envelope: HandoffEnvelope) -> bytes:
 
 def envelope_signature(envelope: HandoffEnvelope) -> bytes:
     """The Ed25519 signature carried by ``signature_ref``."""
-    try:
-        return bytes.fromhex(envelope.signature_ref.rsplit(":", 1)[1])
-    except (ValueError, IndexError) as error:
-        raise _refuse("SCHEMA_VIOLATION", "signature_ref carries no signature") from error
+    reference = envelope.signature_ref
+    signature = reference.rsplit(":", 1)[-1] if isinstance(reference, str) and ":" in reference else ""
+    if _SIGNATURE_HEX.fullmatch(signature) is None:
+        raise _refuse("SCHEMA_VIOLATION", "signature_ref carries no Ed25519 signature")
+    return bytes.fromhex(signature)
 
 
 @dataclass(frozen=True, slots=True)
@@ -611,8 +651,8 @@ class CoordinationKernel:
             revoked = None if delegation is None else self.controls.revoked(delegation)
         except Exception as error:  # noqa: BLE001 - unreadable controls are never a pass
             raise _refuse("CAPABILITY_REVOKED", f"the Delegation of {agent_id!r} cannot be verified") from error
-        if delegation is None or revoked is not False:
-            raise _refuse("CAPABILITY_REVOKED", f"the Delegation of {agent_id!r} is withdrawn or revoked")
+        if not isinstance(delegation, str) or _DELEGATION_REF.fullmatch(delegation) is None or revoked is not False:
+            raise _refuse("CAPABILITY_REVOKED", f"the Delegation of {agent_id!r} is withdrawn, revoked or not a verified reference")
         return delegation
 
     def decide(self, principal: AuthenticatedPrincipal, context: GovernedContext, digest: str, action: str, resource: str, at: datetime) -> str:
@@ -715,16 +755,47 @@ class AgentRunOrchestrator:
 
     # -- plumbing ------------------------------------------------------------------------------
 
+    def _snapshot(self) -> tuple[Any, ...]:
+        return (
+            dict(self._runs),
+            dict(self._tasks),
+            dict(self._assignments),
+            dict(self._commitments),
+            list(self._handoffs),
+            list(self._dissents),
+            dict(self._resolutions),
+            list(self._proposals),
+            list(self._messages),
+            self._sequence,
+        )
+
+    def _restore(self, snapshot: tuple[Any, ...]) -> None:
+        (
+            self._runs,
+            self._tasks,
+            self._assignments,
+            self._commitments,
+            self._handoffs,
+            self._dissents,
+            self._resolutions,
+            self._proposals,
+            self._messages,
+            self._sequence,
+        ) = snapshot
+
     def _append(self, run: AgentRun, key: str, kind: str, agent_id: str, payload: Mapping[str, Any], at: datetime) -> None:
         self._sequence += 1
-        self._ledger.append(
-            idempotency_key=f"{run.team_run_id}:{self._sequence}",
-            task_id=key,
-            kind=kind,
-            agent_id=agent_id,
-            payload={"team_run_id": run.team_run_id, **{name: _wire(value) for name, value in payload.items()}},
-            recorded_at=at,
-        )
+        try:
+            self._ledger.append(
+                idempotency_key=f"{run.team_run_id}:{self._sequence}",
+                task_id=key,
+                kind=kind,
+                agent_id=agent_id,
+                payload={"team_run_id": run.team_run_id, **{name: _wire(value) for name, value in payload.items()}},
+                recorded_at=at,
+            )
+        except Exception as error:  # noqa: BLE001 - an unrecorded transition never stands
+            raise _LedgerUnavailable(f"{kind} of {key}") from error
 
     def _caller(self, principal: object, context: object, at: datetime, run: AgentRun | None) -> _Caller:
         """The transport Principal bound to the Governed Context of the call (ADD v1.3 :388) and,
@@ -745,11 +816,13 @@ class AgentRunOrchestrator:
                 raise _refuse("STALE_CONTEXT", "the GovernedContext is outside the version fence of the run")
         return _Caller(principal=principal, context=context, digest=digest)
 
-    def _lease(self, lease: object, capability: str, *, subject: str, resource: str, at: datetime) -> str:
+    def _lease(self, lease: object, capability: str, *, subject: str, resource: str, at: datetime, consume: bool = False) -> str:
+        """The lease is checked where the call is admitted and consumed (``consume``) only where the
+        transition is committed, so a refused call never spends a use of its lease."""
         if not isinstance(lease, (CapabilityLease, str)):
             raise _refuse("CAPABILITY_DENIED", f"{capability} requires a capability lease")
         try:
-            self._authority.authorize(lease, capability, resource, at=at, subject=subject, consume=True)
+            self._authority.authorize(lease, capability, resource, at=at, subject=subject, consume=consume)
         except Exception as error:  # noqa: BLE001 - a lease the authority does not admit never authorises
             raise _refuse("CAPABILITY_DENIED", str(error)) from error
         return lease.lease_id if isinstance(lease, CapabilityLease) else lease
@@ -849,6 +922,7 @@ class AgentRunOrchestrator:
 
     # -- team run --------------------------------------------------------------------------------
 
+    @_atomic
     def start_run(
         self,
         team_run_id: str,
@@ -905,7 +979,7 @@ class AgentRunOrchestrator:
             governed_context=_frozen_mapping(context.to_mapping()),
             governed_context_digest=call.digest,
             started_at=instant,
-            deadline=instant + termination.timeout,
+            deadline=_deadline(instant, termination.timeout),
         )
         self._runs[team_run_id] = run
         self._append(
@@ -952,6 +1026,7 @@ class AgentRunOrchestrator:
                 stack.extend(edges.get(node, ()))
         return False
 
+    @_atomic
     def propose_task(
         self,
         team_run_id: str,
@@ -1002,6 +1077,7 @@ class AgentRunOrchestrator:
             raise _refuse("DELEGATION_DEPTH_EXCEEDED", f"delegation depth {depth} exceeds {run.termination.max_delegation_depth}")
         if self._has_cycle(run, logical, depends):
             raise _refuse("TASK_CYCLE_DETECTED", f"task {logical} closes a dependency cycle")
+        deadline = min(_deadline(instant, timeout), run.deadline)
         self._kernel.stop_check()
         self._kernel.decide(call.principal, call.context, call.digest, ACTIONS["propose-task"], task_id, instant)
         task = Task(
@@ -1016,7 +1092,7 @@ class AgentRunOrchestrator:
             parent_task_id=None if parent is None else parent.task_id,
             delegation_depth=depth,
             timeout=timeout,
-            deadline=min(instant + timeout, run.deadline),
+            deadline=deadline,
             proposed_by=call.agent_id,
             proposed_at=instant,
         )
@@ -1035,6 +1111,7 @@ class AgentRunOrchestrator:
             at,
         )
 
+    @_atomic
     def retry(self, task_id: str, *, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime) -> Task:
         instant = require_aware(at, field="at")
         task = self._task(task_id)
@@ -1050,14 +1127,17 @@ class AgentRunOrchestrator:
             raise _refuse("TERMINATION_CONDITION_MET", f"task {task.logical_task_id} reached its limit of {run.termination.max_attempts} attempts")
         if sum(1 for item in self._tasks.values() if item.team_run_id == run.team_run_id) >= run.termination.max_tasks:
             raise _refuse("TERMINATION_CONDITION_MET", f"team run {run.team_run_id} reached its task limit")
+        retried_id = f"{task.logical_task_id}#attempt-{attempt}"
+        if retried_id in self._tasks:
+            raise _refuse("INVALID_TRANSITION", f"task {retried_id} already exists; the retry would overwrite it")
         self._kernel.stop_check()
         self._kernel.decide(call.principal, call.context, call.digest, ACTIONS["retry"], task.task_id, instant)
         retried = replace(
             task,
-            task_id=f"{task.logical_task_id}#attempt-{attempt}",
+            task_id=retried_id,
             attempt=attempt,
             state=TaskState.PROPOSED,
-            deadline=min(instant + task.timeout, run.deadline),
+            deadline=min(_deadline(instant, task.timeout), run.deadline),
             proposed_by=call.agent_id,
             proposed_at=instant,
             output_digest=None,
@@ -1069,6 +1149,7 @@ class AgentRunOrchestrator:
 
     # -- assignment and commitment ---------------------------------------------------------------
 
+    @_atomic
     def assign(
         self,
         task_id: str,
@@ -1120,11 +1201,13 @@ class AgentRunOrchestrator:
             autonomy_tier=binding.autonomy_tier,
             policy_decision_id=decision,
         )
+        self._lease(lease, "agent:assign", subject=assigned_by, resource=agent_id, at=instant, consume=True)
         self._append(run, task.task_id, "TASK_ASSIGNED", agent_id, {name: getattr(assignment, name) for name in Assignment.__dataclass_fields__}, instant)
         self._transition(task, TaskState.POLICY_AUTHORIZED, instant)
         self._assignments[task.task_id] = assignment
         return assignment
 
+    @_atomic
     def commit(self, task_id: str, *, lease: CapabilityLease | str, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime) -> Commitment:
         instant = require_aware(at, field="at")
         run, task = self._live_task(task_id, instant)
@@ -1149,6 +1232,7 @@ class AgentRunOrchestrator:
             assignment_id=assignment.assignment_id,
             committed_at=instant,
         )
+        self._lease(lease, "agent:commit", subject=assignment.agent_id, resource=assignment.agent_id, at=instant, consume=True)
         self._append(run, task.task_id, "TASK_COMMITTED", assignment.agent_id, {name: getattr(commitment, name) for name in Commitment.__dataclass_fields__}, instant)
         self._transition(task, TaskState.ACCEPTED, instant)
         self._commitments[task.task_id] = commitment
@@ -1156,6 +1240,7 @@ class AgentRunOrchestrator:
 
     # -- handoff (ADD v1.3 :3068-3098, :388) -------------------------------------------------------
 
+    @_atomic
     def handoff(
         self,
         task_id: str,
@@ -1173,17 +1258,18 @@ class AgentRunOrchestrator:
     ) -> HandoffEnvelope:
         instant = require_aware(at, field="at")
         run, task = self._live_task(task_id, instant)
-        commitment = self._commitments.get(task.task_id)
-        if commitment is None or task.state is not TaskState.ACCEPTED:
-            raise _refuse("UNKNOWN_TASK", f"no commitment for {task.task_id!r}")
-        if not isinstance(reason, str) or not reason:
-            raise _refuse("HANDOFF_REASON_REQUIRED", "a handoff requires an explicit reason")
         handoff_id = f"urn:ocor:c8:handoff:{uuid.uuid4()}"
         try:
+            commitment = self._commitments.get(task.task_id)
+            if commitment is None or task.state is not TaskState.ACCEPTED:
+                raise _refuse("UNKNOWN_TASK", f"no commitment for {task.task_id!r}")
+            if not isinstance(reason, str) or not reason:
+                raise _refuse("HANDOFF_REASON_REQUIRED", "a handoff requires an explicit reason")
             return self._handoff(run, task, commitment, handoff_id, sender, to_agent_id, reason, payload, lease, principal, context, instant,
                                  evidence_refs, provenance_refs)
         except OrchestratorError as error:
-            self._reject_handoff(run, task, handoff_id, sender, to_agent_id, principal, context, lease, error, instant)
+            # every refused handoff is a REJECTED envelope and a DENIED audit record
+            self._reject_handoff(run, task, handoff_id, sender, to_agent_id, principal, context, lease, payload, error, instant)
             raise
 
     def _handoff(
@@ -1265,6 +1351,7 @@ class AgentRunOrchestrator:
             rejection_reason=None,
         )
         envelope = replace(unsigned, signature_ref=self._kernel.sign(unsigned))
+        self._lease(lease, "agent:handoff", subject=commitment.agent_id, resource=recipient_id, at=instant, consume=True)
         self._append(
             run,
             task.task_id,
@@ -1295,17 +1382,37 @@ class AgentRunOrchestrator:
         principal: object,
         context: object,
         lease: object,
+        payload: object,
         error: OrchestratorError,
         instant: datetime,
     ) -> None:
-        """A refused handoff is a REJECTED envelope in the Run Ledger and a DENIED audit record."""
+        """A refused handoff is a REJECTED envelope in the Run Ledger and a DENIED audit record. It
+        keeps what LLD v1.1 :183 requires of a Handoff -- sender, recipient, schema (contract),
+        payload reference, Governed Context digest and status -- as far as the refused call carries
+        them: a payload that cannot be digested, or a context that is not a GovernedContext, is
+        recorded as absent (``None``), never converted."""
         actor = principal.principal_id if isinstance(principal, AuthenticatedPrincipal) else "urn:ocor:c8:unauthenticated"
         gcs = context if isinstance(context, GovernedContext) else None
+        try:
+            payload_digest: str | None = canonical_digest(dict(payload)) if isinstance(payload, Mapping) else None
+        except Exception:  # noqa: BLE001 - a payload that is not I-JSON has no digest to record
+            payload_digest = None
+        assignment = self._assignments.get(task.task_id)
+        contract = self._kernel.handoff_contract
         detail = {
             "team_run_id": run.team_run_id,
             "handoff_id": handoff_id,
+            "assignment_id": None if assignment is None else assignment.assignment_id,
             "asserted_sender_principal": sender if isinstance(sender, str) else None,
             "recipient_principal": to_agent_id if isinstance(to_agent_id, str) else None,
+            "contract_id": contract.contract_id,
+            "contract_version": contract.contract_version,
+            "speech_act": "HANDOFF",
+            "payload_digest": payload_digest,
+            "payload_ref": None if payload_digest is None else f"urn:ocor:c8:handoff-payload:{payload_digest.rsplit(':', 1)[1]}",
+            "governed_context_digest": None if gcs is None else gcs.digest(),
+            "correlation_id": run.team_run_id if gcs is None else gcs.correlation_id,
+            "created_at": format_utc_timestamp(instant),
             "status": "REJECTED",
             "rejection_reason": error.reason_code,
         }
@@ -1332,6 +1439,7 @@ class AgentRunOrchestrator:
 
     # -- outcomes ------------------------------------------------------------------------------------
 
+    @_atomic
     def complete(
         self,
         task_id: str,
@@ -1368,17 +1476,21 @@ class AgentRunOrchestrator:
         self._kernel.decide(call.principal, call.context, call.digest, ACTIONS[action], task.task_id, instant)
         return self._transition(task, state, instant, agent_id=call.agent_id, reason=reason)
 
+    @_atomic
     def abstain(self, task_id: str, *, reason: str, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime) -> Task:
         return self._close(task_id, TaskState.ABSTAINED, "abstain", reason, principal, context, at)
 
+    @_atomic
     def fail(self, task_id: str, *, reason: str, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime) -> Task:
         return self._close(task_id, TaskState.FAILED, "fail", reason, principal, context, at)
 
+    @_atomic
     def cancel(self, task_id: str, *, reason: str, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime) -> Task:
         return self._close(task_id, TaskState.CANCELLED, "cancel", reason, principal, context, at)
 
     # -- dissent and decision proposal -------------------------------------------------------------
 
+    @_atomic
     def register_dissent(
         self,
         task_id: str,
@@ -1395,8 +1507,9 @@ class AgentRunOrchestrator:
         instant = require_aware(at, field="at")
         task = self._task(task_id)
         run = self._run(task.team_run_id, instant)
-        if not isinstance(reason, str) or not reason:
+        if not isinstance(reason, str) or not reason.strip():
             raise _refuse("DISSENT_REASON_REQUIRED", "a dissent requires an explicit reason")
+        _text("reason", reason)
         if not isinstance(severity, DissentSeverity) or not isinstance(category, DissentCategory):
             raise _refuse("SCHEMA_VIOLATION", "a dissent carries its severity and category")
         self._kernel.stop_check()
@@ -1416,10 +1529,12 @@ class AgentRunOrchestrator:
             category=category,
             registered_at=instant,
         )
+        self._lease(lease, "agent:dissent", subject=agent_id, resource=agent_id, at=instant, consume=True)
         self._append(run, task.task_id, "DISSENT_REGISTERED", agent_id, {name: getattr(record, name) for name in Dissent.__dataclass_fields__}, instant)
         self._dissents.append(record)
         return record
 
+    @_atomic
     def resolve_dissent(
         self, dissent_id: str, *, resolution: str, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime
     ) -> DissentResolution:
@@ -1447,6 +1562,7 @@ class AgentRunOrchestrator:
         self._resolutions[dissent.dissent_id] = record
         return record
 
+    @_atomic
     def propose_decision(
         self,
         team_run_id: str,
@@ -1502,6 +1618,7 @@ class AgentRunOrchestrator:
 
     # -- tainted communication and tool invocations ------------------------------------------------
 
+    @_atomic
     def send_message(
         self,
         team_run_id: str,
@@ -1542,6 +1659,7 @@ class AgentRunOrchestrator:
         self._messages.append(message)
         return message
 
+    @_atomic
     def record_tool_invocation(
         self, task_id: str, receipt: ToolCallReceipt, *, principal: AuthenticatedPrincipal, context: GovernedContext, at: datetime
     ) -> ToolInvocation:
@@ -1551,6 +1669,13 @@ class AgentRunOrchestrator:
         commitment = self._holder(task, call)
         if not isinstance(receipt, ToolCallReceipt):
             raise _refuse("SCHEMA_VIOLATION", "a tool invocation is recorded from the receipt of the governed tool runtime")
+        _text("tool_name", receipt.tool_name)
+        _text("lease_id", receipt.lease_id)
+        if not isinstance(receipt.invocations, tuple) or not receipt.invocations or any(not isinstance(item, ToolOutput) for item in receipt.invocations):
+            raise _refuse("SCHEMA_VIOLATION", "the receipt carries the contract invocations of the governed tool runtime")
+        decisions = receipt.policy_decision_ids
+        if not isinstance(decisions, tuple) or not decisions or any(not isinstance(item, str) or not item for item in decisions):
+            raise _refuse("SCHEMA_VIOLATION", "the receipt carries the policy decisions of the call")
         binding = self._member(run, commitment.agent_id).binding
         if (receipt.agent_principal_id, receipt.agent_run_id, receipt.workload_identity) != (
             binding.agent_principal_id,
@@ -1571,7 +1696,8 @@ class AgentRunOrchestrator:
             input_digests=tuple(item.input_digest for item in receipt.invocations),
             output_digests=tuple(item.output_digest for item in receipt.invocations),
             policy_decision_ids=tuple(receipt.policy_decision_ids),
-            taint_labels=tuple(receipt.taint_labels),
+            # tool output is always untrusted (ADD v1.3 :339, :3117): the taint is never the caller's
+            taint_labels=UNTRUSTED_TOOL_OUTPUT_TAINT,
             recorded_at=instant,
         )
         self._append(run, task.task_id, "TOOL_INVOKED", call.agent_id, {name: getattr(record, name) for name in ToolInvocation.__dataclass_fields__}, instant)

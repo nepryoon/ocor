@@ -440,6 +440,8 @@ class ToolGrantLedger:
 
     def record_use(self, lease_id: str) -> None:
         with self._lock:
+            if not isinstance(lease_id, str) or lease_id not in self._grants:
+                raise _refuse("CAPABILITY_DENIED", f"no grant {lease_id!r} was issued")
             self._uses[lease_id] = self._uses.get(lease_id, 0) + 1
 
     def chain(self, lease_id: str) -> tuple[ToolGrant, ...]:
@@ -505,9 +507,12 @@ class InMemoryGovernanceControls:
             raise ValueError("the principal is already bound to another Delegation")
 
     def rebind_delegation(self, effective_principal_id: str, delegation_ref: str) -> None:
+        """Replace the verified Delegation of a principal; a rejected reference leaves it bound."""
+        _text("effective_principal_id", effective_principal_id)
+        if not isinstance(delegation_ref, str) or _SHA256_URN.fullmatch(delegation_ref) is None:
+            raise ValueError("delegation_ref must be a SHA-256 URN")
         with self._lock:
-            self._delegations.pop(effective_principal_id, None)
-        self.bind_delegation(effective_principal_id, delegation_ref)
+            self._delegations[effective_principal_id] = delegation_ref
 
     def revoke(self, ref: str) -> None:
         _text("ref", ref)
@@ -581,7 +586,14 @@ class BudgetQuota:
                 raise ValueError(f"quota {dimension} must be a non-negative integer")
 
 
+def _require_binding(agent: object) -> None:
+    if not isinstance(agent, AgentIdentityBinding):
+        raise TypeError("agent must be an AgentIdentityBinding")
+
+
 def _amounts(name: str, values: Mapping[str, int]) -> dict[str, int]:
+    if not isinstance(values, Mapping):
+        raise TypeError(f"{name}: amounts are a mapping of budget dimensions")
     result: dict[str, int] = {}
     for dimension, value in values.items():
         if dimension not in BUDGET_DIMENSIONS:
@@ -625,7 +637,11 @@ class AgentBudgetLedger:
 
     def charge(self, agent: AgentIdentityBinding, amounts: Mapping[str, int], require: Mapping[str, int]) -> None:
         """Charge ``amounts`` at every level, atomically, if they and the headroom in ``require``
-        fit every quota; otherwise ``BUDGET_EXCEEDED`` with nothing charged."""
+        fit every quota; otherwise ``BUDGET_EXCEEDED`` with nothing charged. Amounts are
+        non-negative integers of known dimensions (never a bool, a float, NaN or infinity)."""
+        _require_binding(agent)
+        amounts = _amounts("charge", amounts)
+        require = _amounts("require", require)
         with self._lock:
             for level in self._levels(agent):
                 quota = self._quotas.get(level)
@@ -644,6 +660,8 @@ class AgentBudgetLedger:
     def record(self, agent: AgentIdentityBinding, amounts: Mapping[str, int]) -> None:
         """Charge a measured consumption (wall time, compute) at every level; an exhausted
         dimension refuses the next charge."""
+        _require_binding(agent)
+        amounts = _amounts("record", amounts)
         with self._lock:
             for level in self._levels(agent):
                 spent = self._spent.setdefault(level, {})
@@ -657,6 +675,7 @@ class AgentBudgetLedger:
     def remaining(self, agent: AgentIdentityBinding, *, level: str = "run") -> dict[str, int]:
         """The headroom of every dimension at one level (``budget_remaining`` of a HandoffEnvelope,
         ADD v1.3 :3097); a level without a quota is ``BUDGET_EXCEEDED``."""
+        _require_binding(agent)
         if level not in BUDGET_LEVELS:
             raise ValueError(f"level must be one of {BUDGET_LEVELS}")
         key = dict(self._levels(agent))[level]
@@ -672,6 +691,9 @@ class AgentBudget:
     """The budget of one agent run on a ledger."""
 
     def __init__(self, ledger: AgentBudgetLedger, agent: AgentIdentityBinding) -> None:
+        if not isinstance(ledger, AgentBudgetLedger):
+            raise TypeError("ledger must be an AgentBudgetLedger")
+        _require_binding(agent)
         self._ledger = ledger
         self._agent = agent
 
@@ -1007,6 +1029,8 @@ class ToolCallRuntime:
         instant = require_aware(at, field="at")
         call = self._bind(agent, principal, context, budget, instant)
         self._sync_tools()
+        if bindings is not None and (not isinstance(bindings, Mapping) or any(not isinstance(key, str) for key in bindings)):
+            raise _refuse("SCHEMA_VIOLATION", "the call bindings are a mapping of names")
 
         grant = self._live(tool_name, lease, call)
         contract = self._contract(tool_name)
@@ -1164,7 +1188,7 @@ class ToolCallRuntime:
         risk = max(effect_risk, _CONTRACT_RISK[contract.risk_class])
         try:
             authority = self._controls.authority(grant.authority_id)
-            if authority is None:
+            if not isinstance(authority, Authority):
                 raise _refuse("AUTHORITY_MISSING", f"no Authority {grant.authority_id!r}")
             signed = self._controls.signature_verified(authority) is True
             revoked = self._controls.revoked(authority.authority_id) is not False
@@ -1290,7 +1314,11 @@ class ToolCallRuntime:
             )
 
         deadline = started + deadline_seconds
-        worker.start()
+        try:
+            worker.start()
+        except (RuntimeError, OSError) as start_error:
+            # nothing has run: the tool is not dispatched and the call fails closed
+            raise _refuse("EXECUTION_UNKNOWN", f"the supervised worker of {name!r} could not start; the tool did not run") from start_error
         while not worker.done.wait(_SUPERVISION_INTERVAL_SECONDS):
             if _stop_accepted(self._stop, fenced_epoch):
                 self._cancel(worker, dispatched)

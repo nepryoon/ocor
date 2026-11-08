@@ -2555,7 +2555,7 @@ def test_ncr_c8_003_a_retry_never_overwrites_another_task(world: Any) -> None:
     world.orchestrator.fail("c1", reason="no answer", at=NOW_C8, **team.caller("agent-1"))
     with pytest.raises(module.OrchestratorError) as refused:
         world.orchestrator.retry("c1", at=NOW_C8, **team.caller("team-lead-1"))
-    assert orchestration_refused(refused) == "TASK_EXISTS"
+    assert orchestration_refused(refused) == "INVALID_TRANSITION"
     assert world.orchestrator.task("c1#attempt-2") == other
 
 
@@ -2681,7 +2681,7 @@ def test_ncr_c8_002_a_rejected_envelope_keeps_the_handoff_fields_of_the_lld(worl
     # LLD v1.1 :183: sender, recipient, schema, input/output refs, GCS digest and status
     assert rejected["asserted_sender_principal"] == "agent-1" and rejected["recipient_principal"] == "agent-2"
     assert rejected["contract_id"] == world.kernel.handoff_contract.contract_id
-    assert rejected["payload_digest"].startswith("sha256:")
+    assert rejected["payload_digest"].startswith("urn:sha256:")
     assert rejected["governed_context_digest"] == team.context("agent-3").digest()
 
 
@@ -2689,7 +2689,8 @@ def test_ncr_c8_002_a_rejected_envelope_keeps_the_handoff_fields_of_the_lld(worl
 def test_ncr_c8_003_a_dissent_reason_is_bounded_text(world: Any, reason: str) -> None:
     from ocor_runtime.c8 import orchestrator as module
 
-    world.accepted("t-dissent-reason", "agent-1")
+    task = f"t-dissent-reason-{_uuid.uuid4()}"
+    world.accepted(task, "agent-1")
     with pytest.raises(module.OrchestratorError):
-        world.dissent("t-dissent-reason", "agent-3", reason=reason)
-    assert all(entry.kind != "DISSENT_REGISTERED" for entry in world.ledger.entries("t-dissent-reason"))
+        world.dissent(task, "agent-3", reason=reason)
+    assert all(entry.kind != "DISSENT_REGISTERED" for entry in world.ledger.entries(task))
