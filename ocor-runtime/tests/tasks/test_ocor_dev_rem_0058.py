@@ -557,7 +557,7 @@ class World:
     signed stop epoch, the resolved marking engine, the audited reconciler and the budget ledger.
     ``effects`` is appended to only by the tool adapters."""
 
-    def __init__(self, *, deadline: timedelta | None = None, timeout_ms: int = 5000, reconciler: Any = None) -> None:
+    def __init__(self, *, deadline: timedelta | None = None, timeout_ms: int = 5000, reconciler: Any = None, policy: Any = None) -> None:
         from c6_safety_fixture import stop_controller
         from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
         from ocor_runtime.c4_marking import MarkingSchemeDefinition
@@ -596,7 +596,7 @@ class World:
         )
         self.controls.add_authority(self.authority, signature_verified=True)
         self.controls.bind_delegation("agent-1", DELEGATION)
-        self.policy = RecordingPolicy()
+        self.policy = RecordingPolicy() if policy is None else policy
         self.eligibility = tool_runtime.InMemoryInstructionEligibility()
         self.agent = self.binding()
         self.eligibility.allow(self.agent.agent_run_id)
@@ -2229,3 +2229,205 @@ def test_ncr_c8_005_the_coordination_kernel_is_decided_by_the_real_opa(
             datetime.now(UTC),
         )
     assert orchestration_refused(refused) == "POLICY_DENIED"
+
+
+class _ShiftedPolicy(RecordingPolicy):
+    """Permits, but evaluated ``evaluated`` after the presented instant and valid for ``valid``."""
+
+    def __init__(self, *, evaluated: timedelta, valid: timedelta) -> None:
+        super().__init__()
+        self.evaluated, self.valid = evaluated, valid
+
+    def evaluate(self, request: Any) -> Any:
+        from ocor_runtime.security.ports import ControlName, ControlStatus, PolicyDecision, PolicyEffect
+
+        self.requests.append(request)
+        at = request.at + self.evaluated
+        return PolicyDecision(
+            decision_id=f"urn:ocor:policy-decision:shifted:{len(self.requests)}",
+            effect=PolicyEffect.PERMIT,
+            principal_id=request.principal.principal_id,
+            action=request.action,
+            resource=request.resource,
+            purpose=request.governed_context.purpose,
+            governed_context_digest=request.governed_context_digest,
+            policy_bundle_digest=request.governed_context.policy_bundle_digest,
+            evaluated_at=at,
+            valid_until=at + self.valid,
+            obligations=(),
+            status=ControlStatus.available(ControlName.POLICY, observed_at=at, source_digest=request.governed_context.policy_bundle_digest),
+        )
+
+
+@pytest.mark.parametrize(
+    ("evaluated", "valid"),
+    [(datetime.now(UTC) - WORLD_NOW + timedelta(days=1), timedelta(hours=1)), (-timedelta(hours=2), timedelta(hours=1))],
+    ids=["evaluated-after-the-runtime-clock", "expired-at-the-presented-instant"],
+)
+def test_ncr_c8_005_a_decision_from_the_future_or_expired_at_the_call_is_denied(evaluated: timedelta, valid: timedelta) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world = World(policy=_ShiftedPolicy(evaluated=evaluated, valid=valid))
+    world.refused("note(name)", world.grant(), "POLICY_DENIED")
+    assert world.effects == []
+    team_world = team.TeamWorld(team.live_dsn())
+    team_world.kernel.policy = _ShiftedPolicy(evaluated=evaluated, valid=valid)
+    with pytest.raises(module.OrchestratorError) as refused:
+        team_world.propose("t-shifted")
+    assert orchestration_refused(refused) == "POLICY_DENIED"
+
+
+# --- SELF-CHECK-CHECKLIST (2026-11-08): negative tests of the whole touched modules ---------------
+#
+# One test per parsing or adapter path of c8/tool_contract.py and c8/adapters/postgres_ledger.py
+# that the self-check found without a typed refusal: types before conversions, no raw exception out
+# of the boundary, payloads canonical I-JSON before they are written.
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"type": "object", "enum": [{1, 2}]},
+        {"type": "object", "description": b"\xff"},
+        {"type": "object", "maximum": float("inf")},
+        {1: "x"},
+    ],
+    ids=["set", "bytes", "infinity", "non-string-key"],
+)
+def test_ncr_c8_004_a_schema_that_is_not_i_json_is_a_schema_violation(schema: Any) -> None:
+    from ocor_runtime.c8.tool_contract import SchemaCatalog, ToolContractError
+
+    with pytest.raises(ToolContractError) as refused:
+        SchemaCatalog().add("urn:ocor:schema:tool:x", "1.0.0", schema)
+    assert refused.value.reason_code == "SCHEMA_VIOLATION"
+
+
+@pytest.mark.parametrize("pin", ["urn:ocor:schema:tool:x", None, {"schema_id": "urn:ocor:schema:tool:x", "version": "1.0.0", "digest": "x"}])
+def test_ncr_c8_004_only_a_schema_pin_resolves(pin: Any) -> None:
+    from ocor_runtime.c8.tool_contract import SchemaCatalog, ToolContractError
+
+    catalog = SchemaCatalog()
+    catalog.add("urn:ocor:schema:tool:x", "1.0.0", {"type": "object"})
+    with pytest.raises(ToolContractError) as refused:
+        catalog.resolve(pin)
+    assert refused.value.reason_code == "SCHEMA_VIOLATION"
+
+
+class _UnreadableSignature:
+    __signature__ = "not a signature"
+
+    def __call__(self, name: str) -> str:
+        return name
+
+
+@pytest.mark.parametrize(
+    "adapter",
+    [_UnreadableSignature(), lambda *names: "x", lambda **names: "x"],
+    ids=["unreadable-signature", "variadic-positional", "variadic-keyword"],
+)
+def test_ncr_c8_004_a_binding_whose_adapter_signature_is_unreadable_or_variadic_is_refused(adapter: Any) -> None:
+    from ocor_runtime.c8.tool_contract import ToolBinding, ToolContractError
+
+    with pytest.raises(ToolContractError) as refused:
+        ToolBinding(
+            tool_name="restart_service",
+            binding_id="urn:ocor:tool-binding:restart-service:x",
+            contract_id="urn:ocor:tool-contract:restart-service",
+            contract_version="1.0.0",
+            contract_digest="sha256:" + "0" * 64,
+            adapter=adapter,
+            egress_destinations=(),
+        )
+    assert refused.value.reason_code == "SCHEMA_VIOLATION"
+
+
+def _ledger() -> Any:
+    from ocor_runtime.c8.adapters.postgres_ledger import PostgresRunLedger
+
+    ledger = PostgresRunLedger(team.live_dsn())
+    ledger.initialize()
+    return ledger
+
+
+@pytest.mark.parametrize(
+    ("changes", "field"),
+    [
+        ({"kind": ["TASK_PROPOSED"]}, "kind"),
+        ({"kind": None}, "kind"),
+        ({"payload": {"value": float("nan")}}, "payload"),
+        ({"payload": {"value": float("-inf")}}, "payload"),
+        ({"payload": {"value": {1, 2}}}, "payload"),
+        ({"payload": {1: "x"}}, "payload"),
+        ({"payload": {"value": b"\xff"}}, "payload"),
+    ],
+    ids=["kind-list", "kind-none", "nan", "negative-infinity", "set", "non-string-key", "bytes"],
+)
+def test_ncr_c8_001_the_run_ledger_refuses_a_malformed_entry_before_writing(changes: dict[str, Any], field: str) -> None:
+    from ocor_runtime.c8.adapters.postgres_ledger import RunLedgerError
+
+    ledger = _ledger()
+    task = f"t-malformed-{_uuid.uuid4()}"
+    entry: dict[str, Any] = {
+        "idempotency_key": f"k-{_uuid.uuid4()}",
+        "task_id": task,
+        "kind": "TASK_PROPOSED",
+        "agent_id": "agent-1",
+        "payload": {"value": 1},
+        "recorded_at": NOW_C8,
+    }
+    entry.update(changes)
+    with pytest.raises(RunLedgerError) as refused:
+        ledger.append(**entry)
+    assert refused.value.reason_code == "SCHEMA_VIOLATION", str(refused.value)
+    assert field in str(refused.value)
+    assert ledger.entries(task) == ()
+
+
+def test_ncr_c8_001_the_run_ledger_replays_an_idempotent_entry_with_json_equal_content() -> None:
+    ledger = _ledger()
+    entry: dict[str, Any] = {
+        "idempotency_key": f"k-{_uuid.uuid4()}",
+        "task_id": f"t-replay-{_uuid.uuid4()}",
+        "kind": "TASK_PROPOSED",
+        "agent_id": "agent-1",
+        "payload": {"dependencies": ("t-1", "t-2"), "attempt": 1},
+        "recorded_at": NOW_C8,
+    }
+    first = ledger.append(**entry)
+    assert ledger.append(**entry) == first
+    assert first.payload == {"dependencies": ["t-1", "t-2"], "attempt": 1}
+
+
+class _UndecodableConnection:
+    """A psycopg connection whose every statement fails to decode the server's answer."""
+
+    def __enter__(self) -> _UndecodableConnection:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def transaction(self) -> _UndecodableConnection:
+        return self
+
+    def execute(self, *args: Any, **kwargs: Any) -> Any:
+        raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+
+
+@pytest.mark.parametrize("operation", ["initialize", "append", "entries"])
+def test_ncr_c8_001_an_undecodable_backend_answer_is_a_typed_run_ledger_error(operation: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ocor_runtime.c8.adapters import postgres_ledger
+
+    monkeypatch.setattr(postgres_ledger.psycopg, "connect", lambda *args, **kwargs: _UndecodableConnection())
+    ledger = postgres_ledger.PostgresRunLedger("postgresql://scripted")
+    calls = {
+        "initialize": lambda: ledger.initialize(),
+        "append": lambda: ledger.append(
+            idempotency_key="k", task_id="t", kind="TASK_PROPOSED", agent_id="a", payload={}, recorded_at=NOW_C8
+        ),
+        "entries": lambda: ledger.entries("t"),
+    }
+    with pytest.raises(postgres_ledger.RunLedgerError) as refused:
+        calls[operation]()
+    assert refused.value.reason_code == "BACKEND_ERROR"
+    assert "\\xff" not in str(refused.value)
