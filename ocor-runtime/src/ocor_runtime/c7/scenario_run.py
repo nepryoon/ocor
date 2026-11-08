@@ -32,6 +32,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ..c1.signing import dsse_pae, ed25519_verify
+from ..kernel.governed_context import GCS_FIELDS, GovernedContext, GovernedContextError
 from .runtime import (
     CausalOutcome,
     CausalQuery,
@@ -66,12 +67,10 @@ RUN_SPEC_FIELDS = (
     "budget",
     "governed_context",
 )
-# ADD v1.3 :2959 and §1.4: the governed context carries domain, marking, the
-# transport-bound Principal, the actor chain and the correlation.
-GOVERNED_CONTEXT_FIELDS = frozenset(
-    {"domain_id", "classification_marking_ref", "effective_principal_id", "actor_chain", "correlation_id", "causation_id"}
-)
-TRACE_FIELDS = frozenset({"correlation_id", "causation_id"})
+# ADD v1.3 :2959: the governed context is the complete canonical record of §1.4
+# (:181-199), the closed GovernedContext v1.2, whose release and policy pins are the run's.
+GOVERNED_CONTEXT_FIELDS = GCS_FIELDS
+TRACE_FIELDS = frozenset({"correlation_id"})
 BUDGET_FIELDS = frozenset({"max_runtime_seconds", "max_samples"})
 CAUSAL_MODEL_PAYLOAD_TYPE = "application/vnd.ocor.causal-model.v1+json"
 QUERY_DELTA_KIND = "causal_query"
@@ -114,6 +113,34 @@ def _count(value: object, name: str, *, minimum: int, maximum: int) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or not minimum <= value <= maximum:
         raise _invalid(f"{name} must be an integer between {minimum} and {maximum}")
     return value
+
+
+def _governed_context(document: Mapping[str, Any]) -> dict[str, Any]:
+    """The closed GovernedContext v1.2 record of ADD v1.3 §1.4, validated by the kernel
+    codec (exact fields, ``urn:sha256`` marking and pins, non-empty arrays without
+    duplicates, compartments in canonical order) and bound to the run: its release and
+    policy pins are the spec's and its actor chain ends with the effective principal."""
+    context = document["governed_context"]
+    if not isinstance(context, Mapping):
+        raise _invalid("governed_context must be the GovernedContext v1.2 record")
+    try:
+        record = GovernedContext.from_mapping(context)
+    except GovernedContextError as exc:
+        raise _invalid(f"governed_context is not the closed GovernedContext v1.2 record ({exc.code})") from exc
+    for name in GCS_FIELDS:
+        value = context[name]
+        if isinstance(value, str) and value != value.strip():
+            raise _invalid(f"governed_context.{name} must not carry surrounding blanks")
+    if list(record.compartments) != list(context["compartments"]):
+        raise _invalid("governed_context.compartments must be in canonical order")
+    if (record.ontology_release_digest, record.policy_bundle_digest) != (
+        document["ontology_release_digest"],
+        document["policy_bundle_digest"],
+    ):
+        raise _invalid("governed_context release and policy pins must be the pins of the run")
+    if record.actor_chain[-1] != record.effective_principal_id:
+        raise _invalid("governed_context.actor_chain must end with the effective principal")
+    return record.to_mapping()
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,16 +208,7 @@ class ScenarioRunSpec:
             raise _invalid(f"budget must have exactly {sorted(BUDGET_FIELDS)}")
         _count(budget["max_runtime_seconds"], "budget.max_runtime_seconds", minimum=1, maximum=MAX_RUNTIME_SECONDS)
         _count(budget["max_samples"], "budget.max_samples", minimum=1, maximum=1_000_000)
-        context = document["governed_context"]
-        if not isinstance(context, Mapping) or set(context) != GOVERNED_CONTEXT_FIELDS:
-            raise _invalid(f"governed_context must have exactly {sorted(GOVERNED_CONTEXT_FIELDS)}")
-        for name in sorted(GOVERNED_CONTEXT_FIELDS - {"actor_chain"}):
-            _text(context, name)
-        chain = context["actor_chain"]
-        if not isinstance(chain, list) or not chain or not all(isinstance(item, str) and item for item in chain):
-            raise _invalid("governed_context.actor_chain must be a non-empty list of principals")
-        if chain[-1] != context["effective_principal_id"]:
-            raise _invalid("governed_context.actor_chain must end with the effective principal")
+        context = _governed_context(document)
         return cls(
             scenario_id=_text(document, "scenario_id"),
             parent_scenario_id=parent,
@@ -209,7 +227,7 @@ class ScenarioRunSpec:
             time_horizon=horizon,
             validity_at=validity_at,
             budget=dict(budget),
-            governed_context=dict(context),
+            governed_context=context,
         )
 
     def to_document(self) -> dict[str, Any]:
@@ -443,7 +461,8 @@ def _query(
         outcome=outcome,
         seed=spec.seed,
         correlation_id=str(spec.governed_context["correlation_id"]),
-        causation_id=str(spec.governed_context["causation_id"]),
+        # GovernedContext v1.2 has no causation: the query is caused by the run of the spec.
+        causation_id=spec.run_id,
         run_pins=run_pins,
     )
 
@@ -496,6 +515,10 @@ def prepare_scenario_run(
         expected_release_digest=expected_release_digest,
     )
     if (branch.scenario_id, branch.run_id, branch.canonical_commit_ref) != (spec.scenario_id, spec.run_id, spec.canonical_commit_ref):
+        return _rejected(query, "SCENARIO_PIN_MISMATCH")
+    # ADD v1.3 :2961: the overlay is isolated per (scenario_id, run_id, compartments); the
+    # compartments of the run are those of its governed context.
+    if frozenset(branch.compartments) != frozenset(spec.governed_context["compartments"]):
         return _rejected(query, "SCENARIO_PIN_MISMATCH")
     try:
         model = verify_causal_model(model_envelope, trust_root, expected_digest=spec.causal_model_digest)
