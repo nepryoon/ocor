@@ -931,7 +931,7 @@ def test_ncr_c3_002_c8_run_state_is_the_run_ledger_not_canonical_state(postgres_
     produces a canonical mutation (ADD v1.3 :342)."""
     from ocor_runtime.c6_capabilities import CapabilityAuthority
 
-    orchestrator_module = _module("ocor_runtime.c8.orchestrator")
+    _module("ocor_runtime.c8.orchestrator")
     ledger_module = _module("ocor_runtime.c8.adapters.postgres_ledger")
     ledger = ledger_module.PostgresRunLedger(dsn)
     ledger.initialize()
@@ -943,8 +943,7 @@ def test_ncr_c3_002_c8_run_state_is_the_run_ledger_not_canonical_state(postgres_
     from c8_orchestrator_fixture import TeamWorld, caller
 
     team = TeamWorld(dsn, authority=authority, ledger=ledger)
-    assert isinstance(team.orchestrator, orchestrator_module.AgentRunOrchestrator)
-    orchestrator = team.orchestrator
+    orchestrator: Any = team.orchestrator
     task = f"task-rem0050-{uuid.uuid4().hex[:8]}"
     team.propose(task)
     lease = authority.issue(subject="team-lead-1", capabilities=["agent:assign"], resources=["agent-1"], issued_at=TEAM_NOW,

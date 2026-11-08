@@ -637,6 +637,19 @@ class AgentBudgetLedger:
         with self._lock:
             return self._spent.get((level, key), {}).get(dimension, 0)
 
+    def remaining(self, agent: AgentIdentityBinding, *, level: str = "run") -> dict[str, int]:
+        """The headroom of every dimension at one level (``budget_remaining`` of a HandoffEnvelope,
+        ADD v1.3 :3097); a level without a quota is ``BUDGET_EXCEEDED``."""
+        if level not in BUDGET_LEVELS:
+            raise ValueError(f"level must be one of {BUDGET_LEVELS}")
+        key = dict(self._levels(agent))[level]
+        with self._lock:
+            quota = self._quotas.get((level, key))
+            if quota is None:
+                raise _refuse("BUDGET_EXCEEDED", f"no {level} quota for {key!r}")
+            spent = self._spent.get((level, key), {})
+            return {dimension: max(getattr(quota, dimension) - spent.get(dimension, 0), 0) for dimension in BUDGET_DIMENSIONS}
+
 
 class AgentBudget:
     """The budget of one agent run on a ledger."""
