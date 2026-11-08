@@ -6533,10 +6533,10 @@
           "path": "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.md"
         }
       ],
-      "plan_unit": "",
+      "plan_unit": "NCP-U14",
       "po_decision_ref": {
-        "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
-        "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
+        "path": "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md",
+        "sha256": "d020b18e3ca09aff6ea34f2890067db1a6450f6b9153ba1f464551401787d7b1"
       },
       "provenance": "observed by the MVP and Production review of 2026-10-30, registered by PO decision NORMATIVE-CONFORMANCE-PLAN (2026-10-30)",
       "remediation_record": "",
@@ -6546,7 +6546,7 @@
       "severity": "MEDIUM",
       "severity_basis": "the Register v1.1 prevails and carries the correct values; a tool that reads priority or release from the matrix gets wrong values",
       "statement": "In the normative traceability matrix (reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json and .md) the priority and release columns are shifted for more than one hundred rows: priority holds decision or source identifiers (for example DEC-063) and release holds dependencies or statuses (for example Confermato) instead of the Register values. The Register v1.1 prevails; correcting the matrix is a normative erratum for the PO.",
-      "status": "DECISION_REQUIRED",
+      "status": "OPEN",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -17260,11 +17260,12 @@
     "NCP-U09",
     "NCP-U10",
     "NCP-U11",
-    "NCP-U12"
+    "NCP-U12",
+    "NCP-U14"
   ],
   "plan_summary": {
-    "entries_resolved_by_plan": 73,
-    "estimate_iterations_total": 48,
+    "entries_resolved_by_plan": 74,
+    "estimate_iterations_total": 50,
     "g6_unblocking": {
       "OCOR-DEV-0060": {
         "decision_required_entries": [
@@ -17418,9 +17419,10 @@
       "NCP-U11",
       "NCP-U12"
     ],
+    "ncp_u14_note": "MATRIX-ERRATUM-NCP-U14 (2026-11-07): NCP-U14 added (NCR-GOVERNANCE-002, MEDIUM, estimate 2, depends on NCP-U12); counts incremented by the unit; high_entry_units and g6_unblocking unchanged (the entry is MEDIUM and blocks no G6 task)",
     "note": "estimates are planning figures, not commitments; each unit follows the full remediation cycle of point 5",
-    "open_entries": 73,
-    "units": 13
+    "open_entries": 74,
+    "units": 14
   },
   "plan_units": {
     "NCP-U01": {
@@ -22107,6 +22109,83 @@
         "NCR-GOVERNANCE-001"
       ],
       "scope": "Plan, evidence and governance tooling (proposals under point 4.f until the PO decision): requirement-specific bindings and criteria for OCOR-DEV-0060..0067, implementation allocation of the twelve ledger-allocated and three misallocated requirements, FGM binding to FR-118/FR-119, verification method per the Register, reverse test traceability, evidence-package fields and their validator, AFF-009/AFF-010 strengthened",
+      "status": "PROPOSED"
+    },
+    "NCP-U14": {
+      "acceptance_criteria": [
+        {
+          "criterion": "MATRIX-ERRATUM-NCP-U14 (2026-11-07) option 1 of NCR-GOVERNANCE-002: scripts/build_traceability_matrix_erratum.py, deterministic and command-line, reads the Register v1.1 by column name, table by table, and rewrites for every matrix row only the fields the Register defines (priority, release, source_authority, acceptance_criterion, verification_method, dependencies and, where they diverge, title, normative_statement, type, rationale); every other field and reverse_traceability stay byte for byte; 285 rows in the same order; JSON and Markdown regenerated together and equal row by row; reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix_ERRATA.md lists requirement, field, previous value, corrected value and Register row for every corrected field, with the decision, the sha256 of JSON and Markdown before and after and the notice that the matrix authority derives from the Register (DEC-208, DEC-209) and that the erratum changes no requirement; the JSON authority field and the Markdown control text cite the erratum; the entry command prints 0; hashes of OCOR_AGENT_CONTEXT_MANIFEST.json (normative_core) and OCOR_PLAN_RUN_STATE.json change only for the files touched; validate_ocor_development_plan.py, validate_rccad.py, test_backlog_generator_reality_parity.py and the workflows pass unchanged; a Register row with no recognisable priority or release is not corrected, stays in the erratum as not resolvable from the Register and becomes a new OPEN entry",
+          "entry": "NCR-GOVERNANCE-002",
+          "norm_refs": [
+            {
+              "lines": "14",
+              "note": "Register v1.1 header of the first tables: column Fonte before Priorita",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "112",
+              "note": "Register v1.1 row of FR-022 (tables with Fonte esatta | Decisione | Domanda di origine before Priorita): P0",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "46",
+              "note": "matrix row of FR-022 with shifted priority, release, criterion, method and dependencies",
+              "path": "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.md"
+            }
+          ],
+          "requirement_ids": []
+        }
+      ],
+      "closed_scope_note": "only NCR-GOVERNANCE-002; Register, ADD, LLD, contracts, schemas, backlog, traceability plan, runtime tests, inputs/, sealed records, the legacy slice, the invariance guards and the workflows are out of scope",
+      "code_paths": [
+        "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json",
+        "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.md",
+        "scripts/build_traceability_matrix_erratum.py",
+        "reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix_ERRATA.md"
+      ],
+      "consumers_to_inventory": {
+        "docs/development_plan/OCOR_AGENT_CONTEXT_MANIFEST.json": "normative_core hashes of the matrix files only",
+        "reports/planning/OCOR_PLAN_RUN_STATE.json": "hashes of the files touched only",
+        "scripts/validate_ocor_development_plan.py": "path list: the new paths enter; validation unchanged"
+      },
+      "decision_required_entries_outside_scope": [],
+      "depends_on_units": [
+        "NCP-U12"
+      ],
+      "estimate_iterations": 2,
+      "existing_tests_to_realign_or_adapt": [],
+      "g6_tasks_contributed": [],
+      "g6_tasks_unblocked": [],
+      "options_for_po": [],
+      "order": 14,
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md",
+        "sha256": "d020b18e3ca09aff6ea34f2890067db1a6450f6b9153ba1f464551401787d7b1"
+      },
+      "rationale": "Added to the approved plan by MATRIX-ERRATUM-NCP-U14 (2026-11-07); run in the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6, after the NCP-U12 integration and before OCOR-DEV-0060; its estimate adds to that change set's estimate.",
+      "red_tests": [
+        {
+          "asserts": "for every requirement: priority in P0-P3 and equal to the Register cell Priorita; release, verification_method, acceptance_criterion, dependencies and source_authority equal to the Register cells read by column name; JSON and Markdown equal; every other field equal to the commit before the erratum",
+          "entry": "NCR-GOVERNANCE-002",
+          "fails_on_current_code_because": "prints 115: 115 of the 285 matrix rows have a priority outside P0-P3; the FR-022 row has priority 'DEC-060' and release 'Context Pack \u00a76.2; `FR-039' (matrix .md line 46), while the Register v1.1 line 112 gives P0. CONFIRMED at 12f6088592ce98393b8df119deeb28f626ef46a8 (state sync after the OCOR-DEV-REM-0045 integration, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 12).",
+          "reproduction": "python3 -c \"import json,re; rows=json.load(open('reports/traceability/OCOR_IRB_ADD_LLD_v1.1_Matrix.json'))['rows']; print(sum(1 for r in rows if not re.fullmatch(r'P[0-3]', str(r.get('priority','')).strip())))\"",
+          "test": "reports/tests/test_traceability_matrix_register_parity.py (local guard and verifier, not in the workflows)"
+        }
+      ],
+      "requalifications": {
+        "always_regression_only": [
+          "OCOR-DEV-0005",
+          "OCOR-DEV-0050",
+          "OCOR-DEV-0082"
+        ],
+        "method": "regression-only requalifications of the sealed records whose inputs include a file touched (NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)); fixed again at the unit RED head from the files actually changed",
+        "with_supersession_candidates": {}
+      },
+      "required_backend": "none (traceability matrix regeneration from the Register)",
+      "resolves": [
+        "NCR-GOVERNANCE-002"
+      ],
+      "scope": "Governed erratum of the normative traceability matrix (JSON and Markdown) regenerated from the Requirement Register v1.1, with ERRATA file, RED parity test and consumer hashes (MATRIX-ERRATUM-NCP-U14 (2026-11-07) point 2)",
       "status": "PROPOSED"
     }
   },
