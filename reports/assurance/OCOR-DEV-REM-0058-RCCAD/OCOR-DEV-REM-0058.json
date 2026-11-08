@@ -1282,7 +1282,8 @@
   "open_points_resolved_during_the_unit": [
     "OPA-backed policy case: a real OPA decision was refused as expired by the runtime and the kernel (RED 0ce3c96, GREEN f1503b8)",
     "SELF-CHECK-CHECKLIST gaps of tool_contract and postgres_ledger (RED 9a4b76a, GREEN f1503b8) and of tool_runtime and orchestrator (RED 91bda4e, GREEN 6a32d61)",
-    "blocking findings P1-P8 of the preventive review OCOR-DEV-REM-0058-9f452aaa0f64-pre (RED 23c7715/baa473c, GREEN e6a921e)"
+    "blocking findings P1-P8 of the preventive review OCOR-DEV-REM-0058-9f452aaa0f64-pre (RED 23c7715/baa473c, GREEN e6a921e)",
+    "test isolation of two unit cases on the live Run Ledger, found by the second task run of the first campaign attempt at f177556 (RED_CAMPAIGN_LEDGER_ISOLATION, GREEN 4e648a8)"
   ],
   "plan_unit": "NCP-U10",
   "preventive_review": {
@@ -1692,6 +1693,18 @@
   "rollback_procedure": "revert the REM-0058 commits: c8/tool_contract.py, the two shared C8 fixtures and the unit test module disappear; c8/tool_runtime.py, c8/orchestrator.py, c8/adapters/postgres_ledger.py and the realigned or adapted tests of 0046, 0047, REM-0027, REM-0050 and REM-0054 return to the base; the plan allowlist, the register entries and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again; the widened c8_run_ledger kind constraint of a development PostgreSQL is dropped with the stack volumes",
   "schema_version": "1.0",
   "status": "CANDIDATE_IN_PROGRESS",
+  "stopped_campaign_attempts": [
+    {
+      "attempt": "stopped-f177556",
+      "cause": "test isolation defect of the unit module: two cases compared the whole Run Ledger entry list of fixed task ids while the live Run Ledger keeps the rows of the first task run of the same campaign",
+      "diagnosis_sha256": "82cbb44dc3910e2207aa0d78cc27ecec9294a0f3eae9a0afcb60e04bd13b700d",
+      "disposition": "real test failure, not infrastructure (QUALIFICATION-CAMPAIGN-INFRA-RERUN does not apply): fixed in 4e648a8 with RED/GREEN in tdd (RED_CAMPAIGN_LEDGER_ISOLATION, GREEN_CAMPAIGN_LEDGER_ISOLATION); stack torn down; PRE-CAMPAIGN-GATE and the whole campaign repeated at the new head; no count of the stopped attempt is transferred",
+      "evidence_raw_sha256": "31509864e8235f9b0bb25d5703733d3f9f2b44100e94c4b0df322cc9ee20922a",
+      "head": "f177556132eef6b058bec869485288b4a040bfe7",
+      "status": "STOPPED_REAL_TEST_FAILURE",
+      "stopped_at_label": "task-rem0058-run2 (phase A3)"
+    }
+  ],
   "task_id": "OCOR-DEV-REM-0058",
   "tdd": {
     "GREEN_C8_004_REGISTRY": {
@@ -1713,6 +1726,11 @@
       "commit": "144ae25",
       "fingerprint": "5dcd76275e0cd8410f88d2a1ec33690ab357f6e4adbcd0a5db91b35708933802",
       "summary": "unit + 0047 + REM-0027 + REM-0054: 372 passed, 20 skipped (REM-0054 OPA cases without the CI stack)"
+    },
+    "GREEN_CAMPAIGN_LEDGER_ISOLATION": {
+      "commit": "4e648a8",
+      "fingerprint": "cfbf8be777c78e34a89426b042a6f40533f055dbc763c41704aef6c52920868e",
+      "summary": "fresh task id per run in the two cases (no assertion or product change): unit, requalified, consumer and regression modules twice more on the same stack with the rows of the earlier runs, 1259 passed, 0 skipped each"
     },
     "GREEN_PREVENTIVE_REVIEW": {
       "commit": "e6a921e",
@@ -1747,6 +1765,11 @@
     "RED_C8_RUNTIME_2": {
       "commit": "2ac5c64",
       "summary": "REM-0027 legacy-lease case on the runtime of be53786: 1 failed"
+    },
+    "RED_CAMPAIGN_LEDGER_ISOLATION": {
+      "commit": "f177556",
+      "fingerprint": "77e19f249df6aea7167b4a1a19a7bcdec7fae1b9e30d20af5dd16cc40bdab889",
+      "summary": "second task run of the qualifying campaign at f177556 on the same live PostgreSQL: 2 failed (test_ncr_c8_001_conforms, test_ncr_c8_002_every_handoff_validates_its_schema: the Run Ledger keeps the rows of the first run under the fixed task ids t-001 and t-012), 1335 passed"
     },
     "RED_PREVENTIVE_REVIEW": {
       "commit": "23c7715",
