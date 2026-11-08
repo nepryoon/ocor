@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Partition and union checks for the local full suite in two parallel lanes (OCOR-DEV-REM-0037).
+"""Partition and union checks for the local full suite in parallel lanes (OCOR-DEV-REM-0037, OCOR-DEV-REM-0056).
 
 PO LOCAL-SUITE-SPLIT (2026-10-25) as reactivated by LOCAL-SUITE-SPLIT-REACTIVATION
-(2026-10-26). Additive orchestrator: it imports the sealed supervisor
+(2026-10-26) and extended to four lanes by LOCAL-SUITE-FOUR-LANES (2026-11-07).
+Additive orchestrator: it imports the sealed supervisor
 ``run_qualifying_campaign.py`` and never rebinds it, so the serial campaign,
 the CI parts and the verifier procedure keep their behaviour.
 
@@ -11,49 +12,60 @@ the CI parts and the verifier procedure keep their behaviour.
   the cases of ``INDEPENDENT_MODULES`` (0049), which are distributed across the
   lanes; each lane keeps collection order.
 - The union of the lanes' JUnit must equal the collection exactly, zero skips.
-- Two lanes start only if MemAvailable reaches the measured start threshold;
-  otherwise the serial suite runs and the fallback is recorded.
+- Admission has three levels, each lanes x the measured single-lane peak plus the
+  unchanged guard: four lanes, else two lanes, else the serial suite, recorded.
+  Partition, union, supervision, results and teardown use the admitted count.
 - The governed full-suite limits apply to the whole campaign, not to a lane.
 - Each lane runs in an OCOR-labelled sandbox with its own dockerd, network
   namespace, /run, /tmp and HOME, and a self-contained clone of the exact head
   at the same absolute path. The stack keeps its default names and ports
   (ocor-bootstrap, ocor-poc, 127.0.0.1) because daemon and network are private;
-  both lanes use a sandbox, so the host daemon's development stack is untouched.
+  every lane uses a sandbox, so the host daemon's development stack is untouched.
 """
 from __future__ import annotations
 
 import argparse
+import calendar
+import datetime
 import hashlib
 import heapq
 import io
 import json
+import math
 import os
 import re
+import shlex
 import shutil
 import signal
 import subprocess
 import sys
 import tarfile
+import threading
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol, TypeGuard
 
 import bootstrap_ci_environment as bootstrap_ci
 import observe_kind_teardown as kind_observer
 import run_qualifying_campaign as campaign
 from run_qualifying_campaign import CampaignError
 
-LANE_COUNT = 2
+LANE_COUNT = 4
+ADMITTED_LANE_COUNTS = (4, 2)
 FULL_SUITE_LIMIT_SECONDS = campaign.FULL_SUITE_LIMIT_SECONDS
 PO_DECISION_THRESHOLD_SECONDS = campaign.PO_DECISION_THRESHOLD_SECONDS
 # Measured in the serial campaign at 266cf12 (REM-0037 preimplementation record):
-# 2 x conservative single-lane peak occupancy (5670.3 MiB) + the unchanged guard.
+# lanes x conservative single-lane peak occupancy (5670.3 MiB) + the unchanged guard.
+LANE_PEAK_OCCUPANCY_MIB = 5670.3
 TWO_LANE_START_THRESHOLD_MIB = 14340.6
+FOUR_LANE_START_THRESHOLD_MIB = 25681.2
 MEMORY_GUARD_MIB = 3000
+# Highest level first; below the last one the serial suite runs.
+ADMISSION_LEVELS = (("FOUR_LANE", 4, FOUR_LANE_START_THRESHOLD_MIB), ("TWO_LANE", 2, TWO_LANE_START_THRESHOLD_MIB))
 # Partition weights only; they never select or exclude a case.
 MINIMUM_MEASURED_SECONDS = 0.5
 DEFAULT_CASE_SECONDS = 0.05
@@ -80,6 +92,51 @@ PROVISION_TIMEOUT_SECONDS = 1200
 CGROUP_DELEGATION_ATTEMPTS = 50
 CGROUP_DELEGATION_PAUSE_SECONDS = 0.2
 REQUIRED_CONTROLLERS = frozenset({"cpu", "cpuset", "io", "memory", "pids"})
+# Every file and process output the orchestrator parses is read without
+# conversion: strict UTF-8, ASCII digits only, finite JSON numbers, no bool
+# where a number is due; any other input is the typed CampaignError.
+MEMINFO_FIELDS = ("MemTotal", "MemAvailable")
+ASCII_DIGITS = re.compile(r"[0-9]+", re.ASCII)
+JUNIT_TIME = re.compile(r"[0-9]+(?:\.[0-9]+)?", re.ASCII)
+TOOL_ID = re.compile(r"[a-z0-9][a-z0-9_.-]*", re.ASCII)
+SHA256_HEX = re.compile(r"[0-9a-f]{64}", re.ASCII)
+PROCESS_STOP_SECONDS = 60
+
+
+def _refuse_constant(name: str) -> Any:
+    raise ValueError(f"non-finite JSON number {name}")
+
+
+def read_utf8(path: Path, what: str) -> str:
+    """Strict UTF-8 text of a file, or the typed refusal naming it."""
+    try:
+        return path.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CampaignError(f"{what} unreadable or not UTF-8: {path}: {exc}") from exc
+
+
+def load_json_document(path: Path, what: str) -> Any:
+    """A JSON document without NaN or Infinity, or the typed refusal naming it."""
+    text = read_utf8(path, what)
+    try:
+        return json.loads(text, parse_constant=_refuse_constant)
+    except ValueError as exc:
+        raise CampaignError(f"{what} is not valid JSON: {path}: {exc}") from exc
+
+
+def is_finite_number(value: object) -> TypeGuard[int | float]:
+    """An int or float that is finite; bool is not a number here."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def stop_process(process: Any) -> str | None:
+    """Kill and reap a process; the reason it could not be stopped, else None."""
+    try:
+        process.kill()
+        process.wait(timeout=PROCESS_STOP_SECONDS)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return str(exc) or type(exc).__name__
+    return None
 
 
 def weight_key(nodeid: str) -> str:
@@ -94,10 +151,17 @@ def case_weight(nodeid: str, weights: dict[str, float]) -> float:
 
 def derive_weights(junit: Path) -> dict[str, Any]:
     """Reproducible weights file content from a PASS serial JUnit."""
-    root = ET.parse(junit).getroot()
+    try:
+        root = ET.parse(junit).getroot()
+    except (OSError, ET.ParseError) as exc:
+        raise CampaignError(f"weights source JUnit unreadable: {junit}: {exc}") from exc
     cases = list(root.iter("testcase"))
-    weights = {f"{case.get('classname', '')}::{case.get('name', '')}": round(float(case.get("time", "0")), 3)
-               for case in cases}
+    weights: dict[str, float] = {}
+    for case in cases:
+        seconds = case.get("time", "0")
+        if not JUNIT_TIME.fullmatch(seconds):
+            raise CampaignError(f"JUnit case time is not a finite ASCII number: {seconds[:40]!r}")
+        weights[f"{case.get('classname', '')}::{case.get('name', '')}"] = round(float(seconds), 3)
     return {
         "default_case_seconds": DEFAULT_CASE_SECONDS,
         "minimum_case_seconds": MINIMUM_MEASURED_SECONDS,
@@ -107,14 +171,23 @@ def derive_weights(junit: Path) -> dict[str, Any]:
 
 
 def load_weights(path: Path = WEIGHTS_PATH) -> dict[str, float]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return {key: float(value) for key, value in data["weights"].items()}
+    data = load_json_document(path, "lane weights")
+    weights = data.get("weights") if isinstance(data, dict) else None
+    if (not isinstance(weights, dict) or not weights
+            or not all(isinstance(key, str) and is_finite_number(value) and value >= 0 for key, value in weights.items())):
+        raise CampaignError(f"lane weights file is malformed: {path}")
+    return {key: float(value) for key, value in weights.items()}
+
+
+def require_admitted_lane_count(lanes: object) -> int:
+    if type(lanes) is not int or lanes not in ADMITTED_LANE_COUNTS:
+        raise CampaignError(f"the local suite runs in {' or '.join(map(str, ADMITTED_LANE_COUNTS))} lanes, not {lanes!r}")
+    return lanes
 
 
 def lane_partition(nodeids: list[str], weights: dict[str, float], *, lanes: int = LANE_COUNT) -> list[list[str]]:
     """Longest-processing-time assignment of whole units; ties resolve by node ID and lane index."""
-    if lanes != LANE_COUNT:
-        raise CampaignError(f"the local suite runs in exactly {LANE_COUNT} lanes")
+    require_admitted_lane_count(lanes)
     if not nodeids or len(nodeids) != len(set(nodeids)):
         raise CampaignError(f"cannot partition {len(nodeids)} collected tests with duplicates or none")
     if len({campaign.junit_identity(node) for node in nodeids}) != len(nodeids):
@@ -139,17 +212,18 @@ def lane_loads(parts: list[list[str]], weights: dict[str, float]) -> list[float]
     return [round(sum(case_weight(node, weights) for node in part), 3) for part in parts]
 
 
-def partition_estimate(nodeids: list[str], weights: dict[str, float]) -> dict[str, Any]:
-    parts = lane_partition(nodeids, weights)
-    return {"lane_cases": [len(part) for part in parts], "lane_seconds": lane_loads(parts, weights),
+def partition_estimate(nodeids: list[str], weights: dict[str, float], *, lanes: int = LANE_COUNT) -> dict[str, Any]:
+    parts = lane_partition(nodeids, weights, lanes=lanes)
+    return {"lanes": lanes, "lane_cases": [len(part) for part in parts], "lane_seconds": lane_loads(parts, weights),
             "lower_bound_seconds": max(case_weight(node, weights) for node in nodeids),
             "partition_sha256": campaign.partition_digest(parts)}
 
 
-def check_exact_union(collected: list[str], junits: list[Path]) -> dict[str, Any]:
+def check_exact_union(collected: list[str], junits: list[Path], *, lanes: int = LANE_COUNT) -> dict[str, Any]:
     """Accept the lanes only if their JUnit union is exactly the collection, with zero skips."""
-    if len(junits) != LANE_COUNT:
-        raise CampaignError(f"expected {LANE_COUNT} lane JUnit files, found {len(junits)}")
+    require_admitted_lane_count(lanes)
+    if len(junits) != lanes:
+        raise CampaignError(f"expected {lanes} lane JUnit files, found {len(junits)}")
     executed: list[tuple[str, str]] = []
     per_lane = []
     for path in junits:
@@ -169,21 +243,42 @@ def check_exact_union(collected: list[str], junits: list[Path]) -> dict[str, Any
 
 
 def memory_admission(meminfo: str) -> dict[str, Any]:
-    """TWO_LANE only with a readable MemAvailable at or above the measured threshold."""
+    """The highest level whose threshold a readable MemAvailable reaches: FOUR_LANE, TWO_LANE, else SERIAL."""
     values: dict[str, int] = {}
+    malformed: set[str] = set()
     for line in meminfo.splitlines():
         key, _, rest = line.partition(":")
-        fields = rest.split()
-        if fields and fields[0].isdigit():
-            values[key.strip()] = int(fields[0])
+        name, fields = key.strip(), rest.split()
+        if name not in MEMINFO_FIELDS:
+            continue
+        if name in values or len(fields) != 2 or fields[1] != "kB" or not ASCII_DIGITS.fullmatch(fields[0]):
+            malformed.add(name)
+            continue
+        values[name] = int(fields[0])
     available = values.get("MemAvailable")
     decision = {"mem_total_kib": values.get("MemTotal"), "mem_available_kib": available,
-                "threshold_mib": TWO_LANE_START_THRESHOLD_MIB, "guard_mib": MEMORY_GUARD_MIB}
+                "threshold_mib": TWO_LANE_START_THRESHOLD_MIB, "guard_mib": MEMORY_GUARD_MIB,
+                "thresholds_mib": {mode: threshold for mode, _, threshold in ADMISSION_LEVELS}}
+    if malformed:
+        return {**decision, "mode": "SERIAL", "lanes": 1,
+                "reason": f"{', '.join(sorted(malformed))} not a single ASCII kB value"}
     if available is None or values.get("MemTotal") is None:
-        return {**decision, "mode": "SERIAL", "reason": "MemTotal or MemAvailable unreadable"}
-    if available / 1024 >= TWO_LANE_START_THRESHOLD_MIB:
-        return {**decision, "mode": "TWO_LANE", "reason": "MemAvailable at or above the measured threshold"}
-    return {**decision, "mode": "SERIAL", "reason": "MemAvailable below the measured threshold"}
+        return {**decision, "mode": "SERIAL", "lanes": 1, "reason": "MemTotal or MemAvailable unreadable"}
+    for position, (mode, lanes, threshold) in enumerate(ADMISSION_LEVELS):
+        if available / 1024 >= threshold:
+            reason = "MemAvailable at or above the measured threshold"
+            if position:
+                reason += f" and below the {ADMISSION_LEVELS[position - 1][0].lower().replace('_', '-')} threshold"
+            return {**decision, "mode": mode, "lanes": lanes, "threshold_mib": threshold, "reason": reason}
+    return {**decision, "mode": "SERIAL", "lanes": 1, "reason": "MemAvailable below the measured threshold"}
+
+
+def read_memory_admission(path: Path) -> dict[str, Any]:
+    """Admission from a meminfo file; unreadable or non-UTF-8 content is the recorded serial fallback."""
+    try:
+        return memory_admission(read_utf8(path, "meminfo"))
+    except CampaignError as exc:
+        return {"mode": "SERIAL", "lanes": 1, "reason": f"meminfo unreadable: {exc}"}
 
 
 def check_campaign_deadline(elapsed: float) -> bool:
@@ -211,8 +306,13 @@ def run_command(argv: list[str], *, cwd: Path | None = None, env: dict[str, str]
     except (OSError, subprocess.SubprocessError) as exc:
         raise CampaignError(f"command could not run: {argv[:4]}: {exc}") from exc
     if check and result.returncode:
+        # stderr is diagnostic text for the message only; it is never parsed.
         raise CampaignError(f"command failed ({result.returncode}): {argv[:6]}: {result.stderr.decode(errors='replace')[-2000:]}")
-    return CommandResult(result.returncode, result.stdout.decode(errors="replace"))
+    try:
+        stdout = result.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise CampaignError(f"command output is not UTF-8: {argv[:4]}: {exc}") from exc
+    return CommandResult(result.returncode, stdout)
 
 
 def campaign_id(head: str, started: int) -> str:
@@ -231,7 +331,8 @@ class Lane:
     gid: int
 
     def __post_init__(self) -> None:
-        if not 1 <= self.index <= LANE_COUNT or not re.fullmatch(r"[0-9a-f]{12}-[0-9]+", self.campaign):
+        if (type(self.index) is not int or not 1 <= self.index <= LANE_COUNT
+                or not re.fullmatch(r"[0-9a-f]{12}-[0-9]+", self.campaign)):
             raise CampaignError(f"invalid lane {self.index} of campaign {self.campaign!r}")
 
     @property
@@ -344,8 +445,14 @@ def ensure_root_image(runner: Runner, links: dict[str, str]) -> None:
 
 def verify_lane_tools(repository: Path) -> None:
     """Copied qualification tools must match infra/qualification_tools.lock.json byte for byte."""
-    lock = json.loads((repository / "infra/qualification_tools.lock.json").read_text(encoding="utf-8"))
-    for tool in lock["tools"]:
+    lock = load_json_document(repository / "infra/qualification_tools.lock.json", "qualification tools lock")
+    tools = lock.get("tools") if isinstance(lock, dict) else None
+    if (not isinstance(tools, list) or not tools
+            or not all(isinstance(tool, dict) and isinstance(tool.get("id"), str) and TOOL_ID.fullmatch(tool["id"])
+                       and isinstance(tool.get("binary_sha256"), str) and SHA256_HEX.fullmatch(tool["binary_sha256"])
+                       for tool in tools)):
+        raise CampaignError("qualification tools lock is malformed")
+    for tool in tools:
         binary = repository / ".ocor/tools/bin" / tool["id"]
         try:
             digest = hashlib.sha256(binary.read_bytes()).hexdigest()
@@ -475,43 +582,263 @@ def check_host_residue(campaign: str, runner: Runner) -> dict[str, Any]:
     return residue
 
 
-def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner = run_command) -> dict[str, Any]:
-    """Non-qualifying: provision both lanes, start their sandboxes, probe them, tear down with zero residue."""
-    source = Path(__file__).resolve().parents[1]
-    campaign.verify_revision(source, head)
-    started = int(time.time())
-    lanes = [Lane(index, campaign_id(head, started), work / f"lane-{index}", Path.home(), os.getuid(), os.getgid())
-             for index in range(1, LANE_COUNT + 1)]
-    report: dict[str, Any] = {"campaign": lanes[0].campaign, "head": head, "memory": memory_admission(Path("/proc/meminfo").read_text()),
-                              "lanes": [], "teardown": [], "status": "FAIL"}
+# The lifecycle check bootstraps every lane stack in parallel, as the campaign
+# does, and observes Temporal from the start of its container (LOCAL-SUITE-FOUR-LANES
+# point 3). Both bounds only stop the non-qualifying check; no service wait changes.
+LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS = 2 * PROVISION_TIMEOUT_SECONDS
+TEMPORAL_SERVER_CONTAINER = "ocor-bootstrap-temporal-1"
+TEMPORAL_ADMIN_CONTAINER = "ocor-bootstrap-temporal-admin-tools-1"
+TEMPORAL_FRONTEND_ADDRESS = "temporal:7233"
+TEMPORAL_POLL_SECONDS = 1.0
+TEMPORAL_PROBE_TIMEOUT_SECONDS = 15
+CONTAINER_STARTED_AT = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?Z", re.ASCII)
+
+
+def bootstrap_summary(text: str) -> dict[str, Any]:
+    """The final JSON object printed by bootstrap_ci_environment.py: status, provisioning time and typed services."""
+    lines = text.splitlines(keepends=True)
+    starts = [index for index, line in enumerate(lines) if line.startswith("{")]
+    if not starts:
+        raise CampaignError("bootstrap output has no JSON result")
+    offset = sum(len(line) for line in lines[:starts[-1]])
     try:
-        ensure_root_image(runner, host_usr_links())
+        result, end = json.JSONDecoder(parse_constant=_refuse_constant).raw_decode(text, offset)
+    except ValueError as exc:
+        raise CampaignError(f"bootstrap result is not valid JSON: {exc}") from exc
+    if text[end:].strip() or not isinstance(result, dict):
+        raise CampaignError("bootstrap result is not a single trailing JSON object")
+    status, error = result.get("status"), result.get("error", "")
+    if not isinstance(status, str) or not isinstance(error, str):
+        raise CampaignError("bootstrap result status or error is not text")
+    if status != "PASS":
+        return {"status": status, "error": error[:600]}
+    seconds = result.get("provisioning_seconds")
+    if not is_finite_number(seconds) or seconds < 0:
+        raise CampaignError("bootstrap result has no finite non-negative provisioning time")
+    typed = result.get("services")
+    if not isinstance(typed, dict):
+        raise CampaignError("bootstrap result has no typed service result")
+    entries = typed.get("services")
+    if not isinstance(entries, list) or not entries:
+        raise CampaignError("bootstrap result has no typed service list")
+    if typed.get("status") not in ("PASS", "FAIL"):
+        raise CampaignError(f"bootstrap result has no typed service status: {str(typed.get('status'))[:40]!r}")
+    services: dict[str, str] = {}
+    for entry in entries:
+        if (not isinstance(entry, dict) or not isinstance(entry.get("service"), str) or not entry["service"]
+                or not isinstance(entry.get("status"), str) or not entry["status"]):
+            raise CampaignError("bootstrap result has a malformed typed service entry")
+        if entry["service"] in services:
+            raise CampaignError(f"bootstrap result lists {entry['service']} twice")
+        services[entry["service"]] = entry["status"]
+    if (typed["status"] == "PASS") != all(status == "READY" for status in services.values()):
+        raise CampaignError(f"bootstrap result typed status {typed['status']} contradicts its services")
+    return {"status": "PASS", "provisioning_seconds": seconds, "services": services}
+
+
+def container_started_epoch(text: str) -> float:
+    """Docker's RFC 3339 UTC StartedAt (nanoseconds allowed); the zero time of a never-started container is rejected."""
+    match = CONTAINER_STARTED_AT.fullmatch(text)
+    if match is None or int(match.group(1)) < 2000:
+        raise CampaignError(f"unexpected container start time: {text[:60]!r}")
+    fields = tuple(int(match.group(index)) for index in range(1, 7))
+    try:
+        datetime.datetime(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5])
+    except ValueError as exc:
+        raise CampaignError(f"impossible container start time: {text[:60]!r}") from exc
+    whole = calendar.timegm(fields + (0, 0, 0))
+    return whole + (int(match.group(7).ljust(9, "0")) / 1e9 if match.group(7) else 0.0)
+
+
+def temporal_health_argv(lane: Lane, path: str) -> list[str]:
+    return sandbox_exec_argv(lane, path, ["docker", "exec", TEMPORAL_ADMIN_CONTAINER, "temporal", "operator", "cluster", "health",
+                                          "--address", TEMPORAL_FRONTEND_ADDRESS, "--command-timeout", "5s"], {})
+
+
+def observe_temporal_serving(lane: Lane, path: str, runner: Runner, *, finished: Callable[[], bool],
+                             wall: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
+                             monotonic: Callable[[], float] = time.monotonic) -> dict[str, Any]:
+    """Poll the lane's Temporal until it answers SERVING; report the delay since its container started."""
+    start, polls, probe_errors, last_error = monotonic(), 0, 0, ""
+    while True:
+        polls += 1
+        done = finished()
+        try:
+            reply: CommandResult | None = runner(temporal_health_argv(lane, path), check=False, timeout=TEMPORAL_PROBE_TIMEOUT_SECONDS)
+        except CampaignError as exc:
+            # One probe that cannot run or times out under load is a poll without SERVING, not the end of the watch.
+            reply, probe_errors, last_error = None, probe_errors + 1, str(exc)
+        if reply is not None and reply.returncode == 0 and reply.stdout.strip() == "SERVING":
+            observed = wall()
+            break
+        if done or monotonic() - start >= LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS:
+            return {"serving": False, "seconds_from_container_start": None, "polls": polls, "poll_seconds": TEMPORAL_POLL_SECONDS,
+                    "probe_errors": probe_errors, **({"last_probe_error": last_error[:600]} if last_error else {})}
+        sleep(TEMPORAL_POLL_SECONDS)
+    started_text = runner(sandbox_exec_argv(lane, path, ["docker", "inspect", "-f", "{{.State.StartedAt}}", TEMPORAL_SERVER_CONTAINER], {}),
+                          timeout=TEMPORAL_PROBE_TIMEOUT_SECONDS).stdout.strip()
+    return {"serving": True, "container_started_at": started_text, "observed_at_epoch": observed,
+            "seconds_from_container_start": round(observed - container_started_epoch(started_text), 3),
+            "polls": polls, "poll_seconds": TEMPORAL_POLL_SECONDS, "probe_errors": probe_errors}
+
+
+def lane_bootstrap_command(lane: Lane) -> list[str]:
+    """The lane runner's bootstrap sequence (LANE_BOOTSTRAP), stopping at the first failure."""
+    python = str(lane.repository / "ocor-runtime/.venv/bin/python")
+    return ["sh", "-c", " && ".join(shlex.join([python, *argv]) for argv in LANE_BOOTSTRAP)]
+
+
+def bootstrap_lanes(lanes: list[Lane], paths: dict[int, str], runner: Runner, launcher: Callable[[list[str], Path], LaneProcess], *,
+                    wall: Callable[[], float], sleep: Callable[[float], None],
+                    monotonic: Callable[[], float]) -> dict[int, dict[str, Any]]:
+    """Start every lane bootstrap together, watch Temporal in each, wait within the bound; no lane is judged here."""
+    processes: dict[int, LaneProcess] = {}
+    began: dict[int, float] = {}
+    ended: dict[int, float] = {}
+    returncodes: dict[int, int | None] = {}
+    events = {lane.index: threading.Event() for lane in lanes}
+    observations: dict[int, dict[str, Any]] = {}
+
+    def watch(lane: Lane) -> None:
+        try:
+            observations[lane.index] = observe_temporal_serving(lane, paths[lane.index], runner, finished=events[lane.index].is_set,
+                                                                wall=wall, sleep=sleep, monotonic=monotonic)
+        except (CampaignError, OSError, ValueError) as exc:
+            observations[lane.index] = {"serving": False, "seconds_from_container_start": None, "error": str(exc)}
+
+    watchers: list[threading.Thread] = []
+    killed: list[int] = []
+    unstopped: dict[int, str] = {}
+    failure: CampaignError | None = None
+    try:
         for lane in lanes:
-            path = lane_path(lane, tool_bins)
-            entry: dict[str, Any] = {"provision": provision_lane(lane, source, head, runner, {"HOME": str(lane.home), "PATH": path})}
+            began[lane.index] = monotonic()
+            try:
+                processes[lane.index] = launcher(sandbox_exec_argv(lane, paths[lane.index], lane_bootstrap_command(lane), {}),
+                                                 lane.output / "lifecycle_bootstrap.log")
+            except OSError as exc:
+                raise CampaignError(f"lane {lane.index} bootstrap could not start: {exc}") from exc
+        watchers = [threading.Thread(target=watch, args=(lane,), daemon=True) for lane in lanes]
+        for thread in watchers:
+            thread.start()
+        start = monotonic()
+        while len(returncodes) < len(processes):
+            for index, process in processes.items():
+                if index not in returncodes and (code := process.poll()) is not None:
+                    returncodes[index], ended[index] = code, monotonic()
+                    events[index].set()
+            if len(returncodes) < len(processes) and monotonic() - start >= LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS:
+                for index, process in processes.items():
+                    if index not in returncodes:
+                        if (problem := stop_process(process)) is not None:
+                            unstopped[index] = problem
+                        returncodes[index], ended[index] = None, monotonic()
+                        killed.append(index)
+                break
+            sleep(SUPERVISE_POLL_SECONDS)
+    except (CampaignError, OSError, subprocess.SubprocessError) as exc:
+        failure = exc if isinstance(exc, CampaignError) else CampaignError(str(exc) or type(exc).__name__)
+    finally:
+        # Every bootstrap still running on any exit path is stopped, and every watcher released and
+        # joined, before the lanes are torn down; a process that does not stop is reported, never skipped.
+        for index, process in processes.items():
+            if index not in returncodes and (problem := stop_process(process)) is not None:
+                unstopped[index] = problem
+        for event in events.values():
+            event.set()
+        for thread in watchers:
+            thread.join()
+    problems = ([str(failure)] if failure is not None else []) + [
+        f"lane {index} bootstrap did not stop: {problem}" for index, problem in sorted(unstopped.items())]
+    if problems:
+        raise CampaignError("; ".join(problems)) from failure
+    return {index: {"exit_code": returncodes[index], "killed_after_bound": index in killed,
+                    "seconds": round(ended[index] - began[index], 3), "temporal": observations.get(index, {"serving": False})}
+            for index in processes}
+
+
+def judge_lane_bootstrap(lane: Lane, outcome: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """Exit code, final typed result with every service READY, and Temporal seen SERVING."""
+    errors: list[str] = []
+    log = lane.output / "lifecycle_bootstrap.log"
+    record: dict[str, Any] = {"exit_code": outcome["exit_code"], "seconds": float(outcome["seconds"]),
+                              "killed_after_bound": outcome["killed_after_bound"]}
+    try:
+        summary = bootstrap_summary(read_utf8(log, f"lane {lane.index} bootstrap log") if log.is_file() else "")
+    except CampaignError as exc:
+        summary = {"status": "FAIL", "error": str(exc)}
+    record.update(summary)
+    if outcome["killed_after_bound"]:
+        errors.append(f"lane {lane.index} bootstrap exceeded its bound of {LIFECYCLE_BOOTSTRAP_LIMIT_SECONDS} s")
+    elif outcome["exit_code"] != 0 or summary["status"] != "PASS":
+        errors.append(f"lane {lane.index} bootstrap failed (exit {outcome['exit_code']}): {summary.get('error', '')}")
+    elif not_ready := sorted(f"{name}={status}" for name, status in summary["services"].items() if status != "READY"):
+        errors.append(f"lane {lane.index} services not READY: {', '.join(not_ready)}")
+    if not outcome["temporal"].get("serving"):
+        errors.append(f"lane {lane.index} Temporal was not observed SERVING: {outcome['temporal'].get('error', 'not before the bootstrap ended')}")
+    if errors:
+        record["status"] = "FAIL"
+    return record, errors
+
+
+def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner = run_command, *, source: Path | None = None,
+                    launcher: Callable[[list[str], Path], LaneProcess] | None = None, meminfo_path: Path = Path("/proc/meminfo"),
+                    lanes: int = LANE_COUNT, wall: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
+                    monotonic: Callable[[], float] = time.monotonic) -> dict[str, Any]:
+    """Non-qualifying: provision the lanes, start their sandboxes, probe them, bootstrap every stack in parallel
+    with typed probes and the Temporal start-up time, then tear down with zero residue."""
+    source = (source or Path(__file__).resolve().parents[1]).resolve()
+    launch = launcher or launch_lane
+    report: dict[str, Any] = {"head": head, "lanes_requested": lanes, "lanes": [], "teardown": [], "status": "FAIL", "staggered": False}
+    report["memory"] = read_memory_admission(meminfo_path)
+    try:
+        require_admitted_lane_count(lanes)
+        if report["memory"]["lanes"] < lanes:
+            raise CampaignError(f"memory admits {report['memory']['lanes']} lanes, not {lanes}: {report['memory']['reason']}")
+    except CampaignError as exc:
+        report["error"] = str(exc)
+        return report
+    name = campaign_id(head, int(wall()))
+    report["campaign"] = name
+    lane_set = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, lanes + 1)]
+    paths = {lane.index: lane_path(lane, tool_bins) for lane in lane_set}
+    try:
+        campaign.verify_revision(source, head)
+        ensure_root_image(runner, host_usr_links())
+        for lane in lane_set:
+            entry: dict[str, Any] = {"lane": lane.index, "provision": provision_lane(
+                lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
             entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
             probes = {"head": ["git", "rev-parse", "HEAD"], "python": ["python", "-c", "import sys; print(sys.version.split()[0])"],
                       "docker": ["docker", "info", "--format", "{{.ServerVersion}} {{.CgroupVersion}}"], "kind": ["kind", "version"],
                       "node": ["node", "--version"], "uid": ["id", "-u"]}
-            entry["probes"] = {key: runner(sandbox_exec_argv(lane, path, argv, {})).stdout.strip() for key, argv in probes.items()}
+            entry["probes"] = {key: runner(sandbox_exec_argv(lane, paths[lane.index], argv, {})).stdout.strip() for key, argv in probes.items()}
             if entry["probes"]["head"] != head:
                 raise CampaignError(f"lane {lane.index} sandbox sees {entry['probes']['head']}")
             report["lanes"].append(entry)
+        outcomes = bootstrap_lanes(lane_set, paths, runner, launch, wall=wall, sleep=sleep, monotonic=monotonic)
+        errors: list[str] = []
+        for entry, lane in zip(report["lanes"], lane_set, strict=True):
+            entry["bootstrap"], lane_errors = judge_lane_bootstrap(lane, outcomes[lane.index])
+            entry["temporal"] = outcomes[lane.index]["temporal"]
+            errors += lane_errors
+        if errors:
+            raise CampaignError("; ".join(errors))
         report["status"] = "PASS"
-    except (CampaignError, OSError, ValueError, KeyError) as exc:
+    except (CampaignError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
         report["error"] = str(exc)
     finally:
-        for lane in lanes:
+        for lane in lane_set:
             try:
-                report["teardown"].append(teardown_lane(lane, lane_path(lane, tool_bins), runner))
+                report["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
             except CampaignError as exc:
                 report["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
                 report["status"] = "FAIL"
         try:
             remove_root_image(runner)
-            report["host_residue"] = check_host_residue(lanes[0].campaign, runner)
+            report["host_residue"] = check_host_residue(name, runner)
         except CampaignError as exc:
             report["host_residue"] = {"error": str(exc)}
             report["status"] = "FAIL"
@@ -531,15 +858,20 @@ LANE_BOOTSTRAP = (["scripts/bootstrap_ci_environment.py", "--teardown", "--execu
                   ["scripts/bootstrap_ci_environment.py", "--execute", "--timeout", "600"])
 
 
+LANE_SPEC_KEYS = frozenset({"campaign_start", "head", "lane", "selection", "stop_file"})
+
+
 def load_lane_spec(path: Path) -> dict[str, Any]:
-    spec = json.loads(path.read_text(encoding="utf-8"))
-    selection = spec.get("selection")
-    if (not isinstance(spec.get("head"), str) or not re.fullmatch(r"[0-9a-f]{40}", spec["head"])
-            or spec.get("lane") not in range(1, LANE_COUNT + 1)
-            or not isinstance(selection, list) or not selection or len(selection) != len(set(selection))
-            or not all(isinstance(node, str) and "::" in node for node in selection)
-            or not isinstance(spec.get("campaign_start"), (int, float)) or spec["campaign_start"] <= 0
-            or not isinstance(spec.get("stop_file"), str) or not spec["stop_file"]):
+    spec = load_json_document(path, "lane spec")
+    if not isinstance(spec, dict) or set(spec) != LANE_SPEC_KEYS:
+        raise CampaignError(f"incomplete or ambiguous lane spec: {path}")
+    selection = spec["selection"]
+    if (not isinstance(spec["head"], str) or not re.fullmatch(r"[0-9a-f]{40}", spec["head"])
+            or type(spec["lane"]) is not int or spec["lane"] not in range(1, LANE_COUNT + 1)
+            or not isinstance(selection, list) or not selection
+            or not all(isinstance(node, str) and "::" in node for node in selection) or len(selection) != len(set(selection))
+            or not is_finite_number(spec["campaign_start"]) or spec["campaign_start"] <= 0
+            or not isinstance(spec["stop_file"], str) or not spec["stop_file"]):
         raise CampaignError(f"incomplete or ambiguous lane spec: {path}")
     return dict(spec)
 
@@ -547,7 +879,7 @@ def load_lane_spec(path: Path) -> dict[str, Any]:
 def lane_service_environment(repository: Path) -> dict[str, str]:
     """The two variables the versioned CI exports after provisioning, for the lane's own stack."""
     env_file = (repository / ".ocor/bootstrap.env").resolve()
-    values = dict(line.split("=", 1) for line in env_file.read_text(encoding="utf-8").splitlines() if "=" in line)
+    values = dict(line.split("=", 1) for line in read_utf8(env_file, "lane bootstrap env").splitlines() if "=" in line)
     if not values.get("OCOR_LOCAL_POSTGRES_PASSWORD"):
         raise CampaignError("lane bootstrap env has no generated PostgreSQL password")
     return {"OCOR_BOOTSTRAP_ENV": str(env_file),
@@ -574,7 +906,11 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
     def clock() -> bool:
         stop_file = Path(spec["stop_file"])
         if stop_file.exists():
-            raise CampaignError(f"lane {spec['lane']} stopped by the orchestrator: {stop_file.read_text(errors='replace')[:200].strip()}")
+            try:
+                reason = read_utf8(stop_file, "stop request")[:200].strip()
+            except CampaignError:
+                reason = "stop request unreadable or not UTF-8"
+            raise CampaignError(f"lane {spec['lane']} stopped by the orchestrator: {reason}")
         return check_campaign_deadline(time.time() - spec["campaign_start"])
 
     try:
@@ -685,11 +1021,12 @@ def run_lane(spec_path: Path, *, repository: Path | None = None, runner: Runner 
 
 
 # --- --execute orchestration on the host ------------------------------------
-# Memory admission, exact head, collection and partition on the host checkout;
-# both lanes provisioned and started, then launched in parallel with only HOME
-# and PATH. The host keeps the whole-campaign clock and stops the other lane on
-# the first failure; union, JUnit and coverage are checked on the host, and both
-# lanes are always torn down with zero residue.
+# Memory admission (four lanes, else two, else serial), exact head, collection
+# and partition on the host checkout; every admitted lane provisioned and
+# started, then launched in parallel with only HOME and PATH. The host keeps the
+# whole-campaign clock and stops the other lanes on the first failure; union,
+# JUnit and coverage are checked on the host, and every lane is always torn down
+# with zero residue.
 
 SUPERVISE_POLL_SECONDS = 5
 # A lane observes its STOP file between steps; its longest step that cannot be
@@ -729,7 +1066,7 @@ def launch_lane(argv: list[str], log: Path) -> LaneProcess:
 
 def supervise_lanes(processes: dict[int, LaneProcess], lanes: list[Lane], started: float, *,
                     clock: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
-    """Wait for both lanes; the first failure or the whole-campaign limit stops the others."""
+    """Wait for every lane; the first failure or the whole-campaign limit stops the others."""
     by_index = {lane.index: lane for lane in lanes}
     returncodes: dict[int, int | None] = dict.fromkeys(processes)
     first_failure: int | None = None
@@ -763,31 +1100,37 @@ def supervise_lanes(processes: dict[int, LaneProcess], lanes: list[Lane], starte
                 stop_reason = str(exc)
                 request_stop(stop_reason)
         if stop_at is not None and clock() - stop_at >= STOP_GRACE_SECONDS:
+            unstopped: dict[int, str] = {}
             for index in running:
-                processes[index].kill()
-                processes[index].wait(timeout=60)
+                if (problem := stop_process(processes[index])) is not None:
+                    unstopped[index] = problem
                 killed.append(index)
+            if unstopped:
+                raise CampaignError("; ".join(f"lane {index} did not stop after kill: {problem}"
+                                              for index, problem in sorted(unstopped.items())))
         sleep(SUPERVISE_POLL_SECONDS)
     return {"returncodes": returncodes, "first_failure": first_failure, "stop_reason": stop_reason,
             "killed_after_grace": killed, "po_decision_required": decision}
 
 
 def read_lane_results(lanes: list[Lane], head: str, parts: list[list[str]]) -> list[dict[str, Any]]:
-    """Both lane results PASS, for this head, this lane and exactly its selection."""
+    """Every lane result PASS, for this head, this lane and exactly its selection."""
     results = []
     for lane, part in zip(lanes, parts, strict=True):
-        try:
-            result = json.loads((lane.output / "lane_result.json").read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            raise CampaignError(f"lane {lane.index} result absent or invalid") from exc
+        result = load_json_document(lane.output / "lane_result.json", f"lane {lane.index} result")
+        if not isinstance(result, dict):
+            raise CampaignError(f"lane {lane.index} result is not a JSON object")
         if result.get("status") != "PASS":
-            raise CampaignError(f"lane {lane.index} failed: {result.get('error')}")
+            raise CampaignError(f"lane {lane.index} failed: {str(result.get('error'))[:600]}")
         if result.get("candidate_head") != head:
-            raise CampaignError(f"lane {lane.index} ran another head: {result.get('candidate_head')}")
-        if result.get("lane") != lane.index:
-            raise CampaignError(f"lane {lane.index} result names lane {result.get('lane')}")
-        if result.get("selected") != len(part) or result.get("selected_sha256") != campaign.collection_digest(part):
+            raise CampaignError(f"lane {lane.index} ran another head: {str(result.get('candidate_head'))[:60]}")
+        if type(result.get("lane")) is not int or result["lane"] != lane.index:
+            raise CampaignError(f"lane {lane.index} result names lane {str(result.get('lane'))[:20]}")
+        if (type(result.get("selected")) is not int or result["selected"] != len(part)
+                or result.get("selected_sha256") != campaign.collection_digest(part)):
             raise CampaignError(f"lane {lane.index} ran another selection")
+        if type(result.get("po_decision_required")) is not bool:
+            raise CampaignError(f"lane {lane.index} result has no boolean po_decision_required")
         results.append(result)
     return results
 
@@ -825,7 +1168,7 @@ def power_reading(root: Path = POWER_SUPPLY_ROOT) -> dict[str, Any]:
         for entry in sorted(root.iterdir()):
             supplies[entry.name] = {key: (entry / key).read_text().strip()
                                     for key in ("type", "online", "status") if (entry / key).is_file()}
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         supplies = {}
     mains = [values for values in supplies.values() if values.get("type") == "Mains" and "online" in values]
     source = "NOT_EXECUTED" if not mains else ("MAINS" if any(values["online"] == "1" for values in mains) else "BATTERY")
@@ -835,7 +1178,7 @@ def power_reading(root: Path = POWER_SUPPLY_ROOT) -> dict[str, Any]:
 def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: list[str], *, source: Path | None = None,
                      runner: Runner = run_command, launcher: Callable[[list[str], Path], LaneProcess] = launch_lane,
                      meminfo_path: Path = Path("/proc/meminfo"), power_root: Path = POWER_SUPPLY_ROOT) -> dict[str, Any]:
-    """Two-lane campaign at the exact head; campaign_result.json records PASS, FAIL or the serial fallback."""
+    """Lane campaign at the exact head on the admitted lane count; campaign_result.json records PASS, FAIL or the serial fallback."""
     source = (source or Path(__file__).resolve().parents[1]).resolve()
     suite = source / "ocor-runtime"
     full = selection == FULL_SUITE_SELECTION
@@ -843,29 +1186,29 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
     work.mkdir(parents=True, exist_ok=True)
     started, monotonic_start = time.time(), time.monotonic()
     result: dict[str, Any] = {
-        "status": "FAIL", "mode": "TWO_LANE", "head": head, "selection": selection,
+        "status": "FAIL", "mode": "SERIAL", "admission_level": "SERIAL", "lanes_admitted": 1, "lanes_run": 0,
+        "head": head, "selection": selection,
         "selection_scope": "FULL_SUITE" if full else "EXPLICIT_NON_QUALIFYING", "qualifying_scope": full,
         "required_modules": required_modules, "limit_seconds": FULL_SUITE_LIMIT_SECONDS,
         "threshold_seconds": PO_DECISION_THRESHOLD_SECONDS, "campaign_start": started,
         "power_start": power_reading(power_root), "lanes": [], "teardown": []}
-    try:
-        result["memory"] = memory_admission(meminfo_path.read_text())
-    except OSError as exc:
-        result["memory"] = {"mode": "SERIAL", "reason": f"meminfo unreadable: {exc}"}
-    if result["memory"]["mode"] != "TWO_LANE":
+    result["memory"] = read_memory_admission(meminfo_path)
+    count = result["memory"]["lanes"]
+    if result["memory"]["mode"] == "SERIAL" or count not in ADMITTED_LANE_COUNTS:
         result.update(status="SERIAL_FALLBACK", mode="SERIAL", next_action=f"run the serial suite: {SERIAL_COMMAND}",
                       power_end=power_reading(power_root), total_duration_seconds=round(time.monotonic() - monotonic_start, 3))
         (work / "campaign_result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
         return result
+    result.update(mode=result["memory"]["mode"], admission_level=result["memory"]["mode"], lanes_admitted=count)
     name = campaign_id(head, int(started))
     result["campaign"] = name
-    lanes = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, LANE_COUNT + 1)]
+    lanes = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, count + 1)]
     paths = {lane.index: lane_path(lane, tool_bins) for lane in lanes}
     try:
         campaign.verify_revision(source, head)
         collected = campaign.collect_nodeids(suite, selection)
         weights = load_weights()
-        parts = lane_partition(collected, weights)
+        parts = lane_partition(collected, weights, lanes=count)
         result["collection"] = {"collected": len(collected), "collected_sha256": campaign.collection_digest(collected),
                                 "partition_sha256": campaign.partition_digest(parts), "lane_cases": [len(part) for part in parts],
                                 "lane_estimated_seconds": lane_loads(parts, weights),
@@ -884,16 +1227,22 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
             result["lanes"].append(entry)
         processes = {lane.index: launcher(lane_run_argv(lane, paths[lane.index], specs[lane.index]), lane.output / "lane_runner.log")
                      for lane in lanes}
+        result["lanes_run"] = len(processes)
         result["supervision"] = supervise_lanes(processes, lanes, started)
         try:
             lane_results = read_lane_results(lanes, head, parts)
         finally:
             for entry, lane in zip(result["lanes"], lanes, strict=False):
                 if (lane.output / "lane_result.json").is_file():
-                    entry["result"] = json.loads((lane.output / "lane_result.json").read_text(encoding="utf-8"))
+                    # Recorded as found; a corrupted result never masks the typed failure above.
+                    try:
+                        stored = load_json_document(lane.output / "lane_result.json", f"lane {lane.index} result")
+                    except CampaignError as exc:
+                        stored = f"unreadable: {exc}"
+                    entry["result"] = stored if isinstance(stored, (dict, str)) else "unreadable: not a JSON object"
         if result["supervision"]["stop_reason"]:
             raise CampaignError(result["supervision"]["stop_reason"])
-        result["union"] = check_exact_union(collected, [lane.output / LANE_JUNIT for lane in lanes])
+        result["union"] = check_exact_union(collected, [lane.output / LANE_JUNIT for lane in lanes], lanes=count)
         result["counts"] = merge_lane_junit(lanes, work / LANE_JUNIT, required_modules=required_modules)
         combine_lane_coverage(suite, lanes, work, runner)
         campaign.verify_revision(source, head)
@@ -901,7 +1250,7 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
                                           or result["supervision"]["po_decision_required"]
                                           or any(item["po_decision_required"] for item in lane_results))
         result["status"] = "PASS"
-    except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError) as exc:
+    except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError, subprocess.SubprocessError) as exc:
         result["error"] = str(exc)
     finally:
         for lane in lanes:
@@ -932,12 +1281,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--derive-weights", type=Path, metavar="JUNIT", help="write the weights file content derived from a serial PASS JUnit")
     parser.add_argument("--plan", action="store_true", help="collect on this checkout and print the memory decision and lane estimate")
     parser.add_argument("--lifecycle-check", type=Path, metavar="WORK_DIR",
-                        help="non-qualifying: provision both lane sandboxes at --expected-head, probe them and tear them down")
+                        help="non-qualifying: provision the lane sandboxes at --expected-head, probe them, bootstrap every stack "
+                             "in parallel with typed probes and the Temporal start-up time, and tear them down")
+    parser.add_argument("--lanes", type=int, choices=ADMITTED_LANE_COUNTS, default=LANE_COUNT,
+                        help="lane count of --lifecycle-check (memory admission must allow it)")
     parser.add_argument("--expected-head", help="exact head of this checkout, required with --lifecycle-check and --execute")
     parser.add_argument("--tool-bin", type=Path, action="append", default=[], help="directory of locked tool links, first on the lane PATH")
     parser.add_argument("--run-lane", type=Path, metavar="LANE_SPEC", help="inside a lane sandbox: run the spec's exact node list on the lane stack")
     parser.add_argument("--execute", type=Path, metavar="WORK_DIR",
-                        help="two-lane campaign at --expected-head (full suite unless --select); serial fallback below the memory threshold")
+                        help="lane campaign at --expected-head (full suite unless --select) on the admitted lane count; serial fallback")
     parser.add_argument("--select", action="append", default=[], metavar="NODE_ID",
                         help="explicit node IDs for a non-qualifying run of --execute")
     args = parser.parse_args(argv)
@@ -953,18 +1305,26 @@ def main(argv: list[str] | None = None) -> int:
     if args.lifecycle_check:
         if not args.expected_head or not args.tool_bin:
             parser.error("--lifecycle-check requires --expected-head and --tool-bin")
-        report = lifecycle_check(args.lifecycle_check.resolve(), args.expected_head, [path.resolve() for path in args.tool_bin])
+        report = lifecycle_check(args.lifecycle_check.resolve(), args.expected_head, [path.resolve() for path in args.tool_bin],
+                                 lanes=args.lanes)
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["status"] == "PASS" else 1
     if args.derive_weights:
-        print(json.dumps(derive_weights(args.derive_weights), indent=2, sort_keys=True))
+        try:
+            derived = derive_weights(args.derive_weights)
+        except CampaignError as exc:
+            print(json.dumps({"status": "FAIL", "error": str(exc)}))
+            return 1
+        print(json.dumps(derived, indent=2, sort_keys=True))
         return 0
     if args.plan:
         try:
             collected = campaign.collect_nodeids(Path(__file__).resolve().parents[1] / "ocor-runtime", ["tests/"])
             weights = load_weights()
-            plan = {"collected": len(collected), "collected_sha256": campaign.collection_digest(collected),
-                    "memory": memory_admission(Path("/proc/meminfo").read_text()), **partition_estimate(collected, weights)}
+            memory = read_memory_admission(Path("/proc/meminfo"))
+            estimates = {str(count): partition_estimate(collected, weights, lanes=count) for count in ADMITTED_LANE_COUNTS}
+            plan = {"collected": len(collected), "collected_sha256": campaign.collection_digest(collected), "memory": memory,
+                    "estimates": estimates, **estimates[str(memory["lanes"] if memory["lanes"] in ADMITTED_LANE_COUNTS else LANE_COUNT)]}
         except (CampaignError, OSError, ValueError, KeyError) as exc:
             print(json.dumps({"status": "FAIL", "error": str(exc)}))
             return 1
