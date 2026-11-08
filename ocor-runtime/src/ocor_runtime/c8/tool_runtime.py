@@ -272,6 +272,23 @@ def _current_stop(stop: StopEpochReader) -> int:
     return record.epoch
 
 
+def verified_decision(policy: PolicyDecisionPort, request: PolicyRequest) -> PolicyDecision:
+    """The decision of the policy decision point for ``request``, verified where it is used.
+
+    The decision point evaluates live: a real decision (OPA) is evaluated at the instant it answers,
+    after the instant the caller presented. It is therefore verified at the later of the two -- it
+    must be bound to the request, not expired at the presented instant and valid when evaluated --
+    and a decision evaluated after the runtime's own clock (from the future) is refused. Anything
+    else (no ``PolicyDecision``, other bindings, an empty or past window) raises."""
+    decision = policy.evaluate(request)
+    if not isinstance(decision, PolicyDecision):
+        raise TypeError("the policy decision point returned no PolicyDecision")
+    evaluated_at = require_aware(decision.evaluated_at, field="evaluated_at")
+    if evaluated_at > datetime.now(UTC):
+        raise ValueError("the policy decision is evaluated after the runtime clock")
+    return decision.verify(request, at=max(request.at, evaluated_at))
+
+
 class ToolGrantLedger:
     """The C8 grants, read live by the runtime at every authorisation. ``redelegation_allowed`` is
     false by default; a delegate never widens tools, scope or duration; a revocation is recorded
@@ -1195,10 +1212,7 @@ class ToolCallRuntime:
                 governed_context_digest=call.context_digest,
                 at=call.instant,
             )
-            decision = self._policy.evaluate(request)
-            if not isinstance(decision, PolicyDecision):
-                raise TypeError("the policy decision point returned no PolicyDecision")
-            decision.verify(request, at=call.instant)
+            decision = verified_decision(self._policy, request)
         except Exception as error:  # noqa: BLE001 - an unavailable policy is never a pass
             raise _refuse("POLICY_DENIED", f"no valid policy decision for {contract.contract_id}") from error
         call.decisions.append(decision.decision_id)

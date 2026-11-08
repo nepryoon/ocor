@@ -62,7 +62,7 @@ from ..c6_capabilities import CapabilityAuthority, CapabilityLease
 from ..errors import OCORError
 from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp
 from ..kernel.governed_context import GovernedContext
-from ..security.ports import AuthenticatedPrincipal, PolicyDecision, PolicyDecisionPort, PolicyRequest
+from ..security.ports import AuthenticatedPrincipal, PolicyDecisionPort, PolicyRequest
 from .tool_contract import SchemaCatalog, SchemaPin
 from .tool_runtime import (
     POC_AUTONOMY_TIERS,
@@ -71,6 +71,7 @@ from .tool_runtime import (
     GovernanceControlPort,
     ToolCallReceipt,
     ToolRuntimeError,
+    verified_decision,
 )
 
 
@@ -619,10 +620,7 @@ class CoordinationKernel:
             request = PolicyRequest(
                 principal=principal, action=action, resource=resource, governed_context=context, governed_context_digest=digest, at=at
             )
-            decision = self.policy.evaluate(request)
-            if not isinstance(decision, PolicyDecision):
-                raise TypeError("the policy decision point returned no PolicyDecision")
-            decision.verify(request, at=at)
+            decision = verified_decision(self.policy, request)
         except Exception as error:  # noqa: BLE001 - an unavailable policy is never a pass
             raise _refuse("POLICY_DENIED", f"no valid policy decision for {action} on {resource}") from error
         try:

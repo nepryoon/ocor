@@ -777,6 +777,15 @@ def _violation(message: str) -> ToolContractError:
     return ToolContractError("SCHEMA_VIOLATION", message)
 
 
+def _i_json(value: Any, what: str) -> Any:
+    """The JSON value of ``value`` read through its RFC 8785 canonical bytes (no conversion of
+    anything that is not I-JSON)."""
+    try:
+        return json.loads(canonical_bytes(value))
+    except Exception as error:  # noqa: BLE001 - every non I-JSON value is a schema violation
+        raise _violation(f"{what} is not canonical I-JSON") from error
+
+
 def _first_error(validator: Draft202012Validator, value: Any) -> str | None:
     errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
     if not errors:
@@ -807,7 +816,9 @@ class SchemaCatalog:
             raise _violation("schema version is not a semantic version")
         if not isinstance(schema, Mapping):
             raise _violation("a schema is a JSON object")
-        document = json.loads(json.dumps(dict(schema)))
+        # canonical I-JSON first: a set, bytes, a non-string key or a non-finite number is refused,
+        # never converted by a JSON round trip
+        document = _i_json(schema, "schema")
         try:
             Draft202012Validator.check_schema(document)
         except SchemaError as error:
@@ -821,6 +832,8 @@ class SchemaCatalog:
         return digest
 
     def resolve(self, pin: SchemaPin) -> Draft202012Validator:
+        if not isinstance(pin, SchemaPin):
+            raise _violation("only a SchemaPin resolves")
         known = self._schemas.get((pin.schema_id, pin.version))
         if known is None:
             raise _violation(f"schema pin {pin.schema_id}@{pin.version} does not resolve")
@@ -939,6 +952,7 @@ class ToolBinding:
             raise _violation("contract_digest is not a sha256 wire digest")
         if not callable(self.adapter):
             raise _violation("a binding adapter is callable")
+        _parameters(self.adapter, self.tool_name)
         if not isinstance(self.egress_destinations, tuple) or not all(
             isinstance(item, str) and _DESTINATION.fullmatch(item) for item in self.egress_destinations
         ):
@@ -963,6 +977,19 @@ class ToolOutput:
 Predicate = Callable[[Mapping[str, Any]], object]
 
 _EGRESS: contextvars.ContextVar[tuple[str, frozenset[str]] | None] = contextvars.ContextVar("ocor_c8_tool_egress", default=None)
+
+
+def _parameters(adapter: Callable[..., Any], tool_name: str) -> inspect.Signature:
+    """The readable, non-variadic signature of a tool adapter."""
+    try:
+        signature = inspect.signature(adapter)
+    except (TypeError, ValueError) as error:
+        raise _violation(f"adapter of {tool_name!r} has no readable signature") from error
+    if any(
+        parameter.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD) for parameter in signature.parameters.values()
+    ):
+        raise _violation(f"adapter of {tool_name!r} declares variadic parameters")
+    return signature
 
 
 def egress_checkpoint(destination: str) -> None:
@@ -1047,16 +1074,11 @@ class ToolRegistry:
     def arguments(self, tool_name: str, args: tuple[Any, ...], kwargs: Mapping[str, Any]) -> dict[str, Any]:
         """Bind a call to the adapter signature and validate it against the input schema."""
         contract = self.contract(tool_name)
-        adapter = self._tools[tool_name][1].adapter
+        signature = _parameters(self._tools[tool_name][1].adapter, tool_name)
         try:
-            bound = inspect.signature(adapter).bind(*args, **kwargs)
+            bound = signature.bind(*args, **kwargs)
         except TypeError as error:
             raise _violation(f"call of {tool_name!r} does not match its parameters: {error}") from error
-        if any(
-            parameter.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
-            for parameter in inspect.signature(adapter).parameters.values()
-        ):
-            raise _violation(f"adapter of {tool_name!r} declares variadic parameters")
         arguments = dict(bound.arguments)
         contract.validate_input(arguments)
         wire_digest(arguments)

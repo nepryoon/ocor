@@ -15,10 +15,13 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
+import json
 
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
+
+from ...kernel.canonical import canonical_bytes
 
 _SCHEMA_TEMPLATE = """
 CREATE TABLE IF NOT EXISTS c8_run_ledger (
@@ -97,6 +100,8 @@ def _driver(operation: str) -> Iterator[None]:
     never echoed."""
     try:
         yield
+    except UnicodeDecodeError as exc:
+        raise RunLedgerError("BACKEND_ERROR", f"{operation}: the PostgreSQL answer is not decodable") from exc
     except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
         raise RunLedgerError("BACKEND_UNAVAILABLE", f"{operation}: PostgreSQL is unavailable") from exc
     except psycopg.Error as exc:
@@ -161,13 +166,18 @@ class PostgresRunLedger:
         for name, value in (("idempotency_key", idempotency_key), ("task_id", task_id), ("agent_id", agent_id)):
             if not isinstance(value, str) or not value:
                 raise RunLedgerError("SCHEMA_VIOLATION", f"{name} is required")
-        if kind not in KINDS:
-            raise RunLedgerError("SCHEMA_VIOLATION", f"unknown run ledger kind {kind!r}")
+        if not isinstance(kind, str) or kind not in KINDS:
+            raise RunLedgerError("SCHEMA_VIOLATION", "kind is not a run ledger kind")
         if not isinstance(recorded_at, datetime) or recorded_at.utcoffset() is None:
             raise RunLedgerError("SCHEMA_VIOLATION", "recorded_at must be timezone-aware")
         if not isinstance(payload, Mapping):
             raise RunLedgerError("SCHEMA_VIOLATION", "payload must be an object")
-        body = dict(payload)
+        # the payload is written as its canonical I-JSON value (a set, bytes, a non-string key or a
+        # non-finite number is refused, never converted) and an idempotent replay compares JSON values
+        try:
+            body = json.loads(canonical_bytes(payload))
+        except Exception as error:  # noqa: BLE001 - a payload that is not I-JSON is never written
+            raise RunLedgerError("SCHEMA_VIOLATION", "payload is not canonical I-JSON") from error
         with _driver("append"), psycopg.connect(self._dsn, row_factory=dict_row) as connection:
             row = connection.execute(
                 """INSERT INTO c8_run_ledger (idempotency_key, task_id, kind, agent_id, payload, recorded_at)
