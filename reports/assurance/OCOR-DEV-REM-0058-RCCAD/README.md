@@ -32,8 +32,17 @@ Il record `OCOR-DEV-REM-0058.json` contiene criteri, test per voce, ancore, test
 tabella di autocontrollo, scelte di prodotto, ambiguità risolte in modo fail-closed, punti aperti, esiti
 dell'inventario dei consumer e la classificazione delle riqualifiche: tutte di sola regressione (`0046` e `0047`
 senza requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`; `0005`, `0050`, `0082` per
-l'allowlist del piano). Restano `PRE-CAMPAIGN-GATE`, revisione preventiva, campagna qualificante, riqualifiche e
-verifica indipendente da un fornitore diverso da Anthropic e dal revisore preventivo.
+l'allowlist del piano).
+
+Revisione preventiva `OCOR-DEV-REM-0058-9f452aaa0f64-pre` (Codex/OpenAI, revisore di riserva): otto finding
+bloccanti e uno consultivo. Iterazione 5: RED `23c7715` e `baa473c`, GREEN `e6a921e` chiudono P1-P8
+(rivalutazione all'istante di ogni dispatch, approval del contratto, binding concesso ed envelope di invocazione
+attestato, marking dell'handoff rispetto alla clearance del destinatario, rilettura del Run Ledger, pin e
+riferimenti degli schemi, invocazioni della ricevuta, una transazione del Run Ledger per transizione con le lease
+consumate al suo interno). Selezione ampia sullo stack CI: 950 passati, zero skip. Il record riporta la
+disposition di ogni finding e le annotazioni del punto 3 di `SELF-CHECK-CHECKLIST (2026-11-08)`; la traccia del
+`PRE-CAMPAIGN-GATE` dell'head finale entra nel record con la campagna. Restano campagna qualificante,
+riqualifiche e verifica indipendente da un fornitore diverso da Anthropic, da OpenAI e dal revisore preventivo.
 
 Implementatore: Claude Code (Anthropic). Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime conformance
 `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
