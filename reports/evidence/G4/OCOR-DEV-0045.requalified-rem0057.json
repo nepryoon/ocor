@@ -1,0 +1,1759 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0057-ncp-u09-c7-causal-runtime",
+    "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2, 4, 5 and 8 (NCP-U09 row; decisions on NCR-C7-002 option A with two precisions and NCR-C7-006 option A; BA-06 and the NCR-C7-004 extended criterion); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30); PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite in four lanes (LOCAL-SUITE-FOUR-LANES (2026-11-07)), independent verification; mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
+    "id": "OCOR-DEV-REM-0057",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+    "repair_cycle": 0
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker network ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.032,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "stack-absent-initial",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-08T07:47:21.881537+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "cwd": ".",
+      "duration_seconds": 49.761,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "bootstrap",
+      "raw_sha256": "b91716effb6aa15689b269fd511a8835093a80b66c3f0fe86e0e07929b8088a9",
+      "started_at": "2026-11-08T07:47:21.916541+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "cwd": ".",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "verify-manifest-only",
+      "raw_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+      "started_at": "2026-11-08T07:48:11.681065+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "cwd": ".",
+      "duration_seconds": 2.819,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "verify-typed-execute",
+      "raw_sha256": "555f94314a7a85f9cddbd171df0dbb6651558e136942d403afa94ead0f74bb1b",
+      "started_at": "2026-11-08T07:48:11.748092+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --check",
+      "cwd": ".",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "bootstrap-check",
+      "raw_sha256": "918a8e777662d9f50aa18104ec10c1c50e1f1f266e16a5b7927b7c1c9c25e644",
+      "started_at": "2026-11-08T07:48:14.570781+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py",
+      "cwd": ".",
+      "duration_seconds": 0.364,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "preflight",
+      "raw_sha256": "74bfde37a1da22c0340c6962f3d475a68cd9e82ed1e5278e01bd04b3552c8b02",
+      "started_at": "2026-11-08T07:48:14.751896+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/task-rem0057-run1.xml",
+      "cwd": ".",
+      "duration_seconds": 47.545,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "a394d8437146998cc7f3bc90bf878ece761b0a6ccd2be3d6680850188ffe54c7",
+      "label": "task-rem0057-run1",
+      "raw_sha256": "f6357d5d2efb100906485499062a070e3840f44b91cf3a21a0933bedfee72488",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 281,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:48:15.119685+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/task-rem0057-run2.xml",
+      "cwd": ".",
+      "duration_seconds": 48.387,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "b2d0eaa678389ab5bd3c01a37f369ccc1e6893351175df7d53b1aa08420dc2f5",
+      "label": "task-rem0057-run2",
+      "raw_sha256": "5eb8c539d91105329778b3f45a1d5b90c8b3c91ebea49f46decd981a1f4c5782",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 281,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:49:02.668577+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/task-rem0057-run3.xml",
+      "cwd": ".",
+      "duration_seconds": 47.892,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "1fb87f672f5a0490accaf0742b47b1c49c8449060c83b8b70d1bf33fe6ca46a9",
+      "label": "task-rem0057-run3",
+      "raw_sha256": "b1c91f9b29c507c7c4bdb50ecd7f22e838b66677025803303070082feb4f2be6",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 281,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:49:51.059971+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_0045.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/requalified-modules.xml",
+      "cwd": ".",
+      "duration_seconds": 1.619,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "b8e0ac3de490d535d8a39bd56eff9f261a7d1d4ddd4cd522a538de2a5c8ae6c4",
+      "label": "requalified-modules",
+      "raw_sha256": "3cf9b6b2943a47604e1ff2310ef4d80804d6c520d6c1e75c2741cfb7a0725769",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 27,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:50:38.955996+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0040.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0041_overlay.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/consumers.xml",
+      "cwd": ".",
+      "duration_seconds": 39.974,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "c72cc72ac53aaed23ab793ab1f4aeb0f50defd92c03681ea08c4188fc120f1f0",
+      "label": "consumers",
+      "raw_sha256": "1108ecdd5a80dddf7957afccd01c53f18bab71d483b462d8baeb8b22e675c180",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 58,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:50:40.578669+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/regression.xml",
+      "cwd": ".",
+      "duration_seconds": 5.078,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "784e431802912886b0a0c5c38a26901e79e2d89d72633785f9100318e44bb275",
+      "label": "regression",
+      "raw_sha256": "939c9b317ad05f9bb921fc5104dcf6e5dabac14afaa50ed1c1955760db2267cb",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 214,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:51:20.556295+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+      "cwd": ".",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "evidence-job-g0",
+      "raw_sha256": "e1f31d0d7c78c62feed6c73f3404f8e16553eb975ac080c9db506168fe58da08",
+      "started_at": "2026-11-08T07:51:25.637683+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest reports/tests/test_bootstrap_lock_validation.py reports/tests/test_autonomous_tooling_policy.py reports/tests/test_reset_teardown_residue.py reports/tests/test_evidence_input_drift.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_kind_teardown_observation.py reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_local_lane_campaign.py reports/tests/test_rem0037_0006_teardown_scope.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_normative_conformance_register.py reports/tests/test_backlog_generator_reality_parity.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0057-q/q/reports-portfolio.xml",
+      "cwd": ".",
+      "duration_seconds": 56.451,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "5b7743273079666a2d5f85f1625cd03bfb9b61fc241413922484bb204908e521",
+      "label": "reports-portfolio",
+      "raw_sha256": "006fd16509b3ebec0affd7e670900e3748b17f1a7f04e98ddd1c0dc084fdf980",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 760,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:51:25.704915+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --plan",
+      "cwd": ".",
+      "duration_seconds": 3.121,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "lane-plan",
+      "raw_sha256": "3729d8c8e82cdcd54e8bfee58c93d0010c9325f2b8cd14484c1579721342731d",
+      "started_at": "2026-11-08T07:52:22.162046+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "cwd": ".",
+      "duration_seconds": 2.018,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "teardown-after-a",
+      "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "started_at": "2026-11-08T07:52:25.315822+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker network ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.032,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "stack-absent-after-a",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-08T07:52:27.338254+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.008,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "host-stack-absent-before-lanes",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-08T07:52:27.407806+00:00",
+      "status": "PASS"
+    },
+    {
+      "admission_level": "FOUR_LANE",
+      "campaign_duration_seconds": 1619.575,
+      "campaign_mode": "FOUR_LANE",
+      "campaign_result_raw_sha256": "d39bee1ee4948e7184680c992eb72cc2137c20d998fb2eea8cf113f8d6e3f044",
+      "campaign_status": "PASS",
+      "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0057-q/lanes --expected-head 10e9473a9426fad524b9a254d318996463167806 --tool-bin /home/luca/.ocor-codex/impl-env/rem-0057/bin",
+      "cwd": ".",
+      "duration_seconds": 1619.656,
+      "exact_union": {
+        "collected": 5304,
+        "collection_sha256": "6af9adcea9359127611753cc8b5619ce6fefcb9c529f5270de56fdc6d90ca5bf",
+        "duplicated": [],
+        "executed": 5304,
+        "executed_identity_sha256": "a21a34e520b9437b95f6592cb1ce5d56b14b2b42f955fe97c1bcc87c8a68d91c",
+        "missing": [],
+        "unexpected": []
+      },
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "junit_raw_sha256": "0a8882ffce3d3ceb719ed740e78b09849317e6c54566ddbb7f73e84e670e829f",
+      "junit_sha256": "0a8882ffce3d3ceb719ed740e78b09849317e6c54566ddbb7f73e84e670e829f",
+      "label": "four-lane-full",
+      "lanes_run": 4,
+      "raw_sha256": "d39bee1ee4948e7184680c992eb72cc2137c20d998fb2eea8cf113f8d6e3f044",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 5304,
+        "skipped": 0
+      },
+      "started_at": "2026-11-08T07:52:27.418220+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.008,
+      "exit_code": 0,
+      "head_sha": "10e9473a9426fad524b9a254d318996463167806",
+      "label": "host-stack-absent-after-lanes",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-08T08:19:27.078319+00:00",
+      "status": "PASS"
+    }
+  ],
+  "commit": "10e9473a9426fad524b9a254d318996463167806",
+  "commit_role": "qualified code/test source; the exact publication HEAD is bound by the external verification request",
+  "created_at": "2026-11-08T08:19:53Z",
+  "drifted_inputs": [
+    "ocor-runtime/src/ocor_runtime/c7/runtime.py",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0045.py"
+  ],
+  "environment": {
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:fdf2e8435089f95f541afa6d1b29d7e5f07c0f943c5fb2aa89af250853620e84",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-seaweedfs-1": {
+        "image_id": "sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8",
+        "image_ref": "chrislusf/seaweedfs@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-temporal-1": {
+        "image_id": "sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049",
+        "image_ref": "temporalio/server@sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-temporal-admin-tools-1": {
+        "image_id": "sha256:9ef0dc5b063bf4ffd5c1512de72e0e73e225bd2c7006a18ce69bd592a8862a83",
+        "image_ref": "temporalio/admin-tools@sha256:9ef0dc5b063bf4ffd5c1512de72e0e73e225bd2c7006a18ce69bd592a8862a83",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-temporal-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "bootstrap_env_sourced": false,
+    "bootstrap_procedure": "task, requalified-module, consumer, regression and portfolio phases: scripts/bootstrap_ci_environment.py --execute --timeout 600 from a fresh worktree-local credential file (VERIFIER-ENV-STANDARD-BOOTSTRAP, VERIFIER-ENV-CLEAN-SHELL), 15 containers, then teardown with the host stack absent; full suite: the same versioned bootstrap inside each lane sandbox, driven by scripts/run_local_lane_campaign.py --execute at the same code commit (memory admission at start, LOCAL-SUITE-FOUR-LANES (2026-11-07))",
+    "branch": "governed/ocor-dev-rem-0057-ncp-u09-c7-causal-runtime",
+    "clean_shell": true,
+    "cpu_model": "Intel Core Ultra 9 275HX",
+    "env_exports": [
+      "OCOR_BOOTSTRAP_ENV",
+      "OCOR_LIVE_POSTGRES_DSN"
+    ],
+    "fuseki_max_heap_bytes": 1073741824,
+    "host": "Lenovo Legion Pro 5 16IAX10H (HOST-MIGRATION 2026-10-24), memory upgraded to 64 GB (2026-11-03)",
+    "implementer_cli": "Claude Code (claude-opus-5-5)",
+    "mains_power": true,
+    "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "10e9473a9426fad524b9a254d318996463167806",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal at the campaign (run.progress, phase C), not at record assembly",
+    "threads": 24,
+    "toolchain": {
+      "docker": {
+        "lock_sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/docker/docker",
+        "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "version": "29.7.2"
+      },
+      "gh": {
+        "lock_sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/gh_2.99.0_linux_amd64/bin/gh",
+        "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "version": "2.99.0"
+      },
+      "git": {
+        "lock_sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/rem0019-escalation-20261020/isolated-git/usr/lib/git-core/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "version": "2.53.0"
+      },
+      "helm": {
+        "lock_sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0057/.ocor/tools/bin/helm",
+        "sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "version": "3.14.4"
+      },
+      "java": {
+        "image": "eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0",
+        "sha256": "db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0"
+      },
+      "kind": {
+        "lock_sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0057/.ocor/tools/bin/kind",
+        "sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "version": "0.29.0"
+      },
+      "kubectl": {
+        "lock_sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0057/.ocor/tools/bin/kubectl",
+        "sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "version": "1.33.1"
+      },
+      "node": {
+        "lock_sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin/node",
+        "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "version": "20.20.2"
+      },
+      "python": {
+        "lock_sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/bin/python3.12",
+        "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "version": "3.12.11"
+      },
+      "ruff": {
+        "lock_sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.local/share/uv/tools/ruff/bin/ruff",
+        "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "version": "0.13.1"
+      },
+      "tsc": {
+        "lock_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/ts/node_modules/typescript/bin/tsc",
+        "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "version": "7.0.2"
+      },
+      "uv": {
+        "lock_sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/uv-x86_64-unknown-linux-gnu/uv",
+        "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "version": "0.12.5"
+      }
+    },
+    "typescript_sdk": "built in the candidate worktree with the locked PATH before the campaign (npm install --no-audit --no-fund && npm run build; sdk-build.log in the raw log)"
+  },
+  "full_campaign": {
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5304
+    },
+    "diagnostic_attempts": [],
+    "duration_seconds": 1619.575,
+    "exact_union": {
+      "collected": 5304,
+      "collection_sha256": "6af9adcea9359127611753cc8b5619ce6fefcb9c529f5270de56fdc6d90ca5bf",
+      "duplicated": [],
+      "executed": 5304,
+      "executed_identity_sha256": "a21a34e520b9437b95f6592cb1ce5d56b14b2b42f955fe97c1bcc87c8a68d91c",
+      "missing": [],
+      "unexpected": []
+    },
+    "mode": "FOUR_LANE",
+    "status": "PASS",
+    "valid_attempt": "first run"
+  },
+  "independent_verification": {
+    "alignment": {
+      "aligned_head": "1ab141b15e54a429cf962acd8dab019131a3ce98",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "2e724c45155d65a109b284bbd71b8f864072f00e",
+      "nonstate_git_tree_sha256": "6793ddfb371d64788a19e2d679e04b5688fa7d2ebc4b2739fd11831cf582b112",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the three state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "e881ec47b4f17ac9a7be8a0334a926a56d72be899f096c8bca32081d2d643c6c",
+    "commands": [
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "Tutti i file in inputs/normative/SHA256SUMS risultano OK. inputs/ non e' stato modificato."
+      },
+      {
+        "command": "sha256 of host tools and qualification tools against infra/toolchain.lock.json and infra/qualification_tools.lock.json",
+        "exit_code": 0,
+        "summary": "docker, git, gh, node, ruff, tsc, uv, helm, kind e kubectl coincidono con i digest dei lock. environment.json sha256 59678ce6c45eabff84d7cfe7b5dbee9fe4a3b58356ce18710ca6644d3a24196b. Host: Intel Core Ultra 9 275HX, 24 thread, MemTotal 64199668 kB. Preflight rieseguito: PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+        "exit_code": 0,
+        "summary": "status PASS, errors vuoti. Shell pulita env -i, source di env.sh, senza caricare .ocor/bootstrap.env."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute && ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "Teardown iniziale ALREADY_REMOVED. Provisioning PASS: fuseki_max_heap_bytes=1073741824, control-plane SVID exit 0, archivio Fuseki cache MISS da https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz con SHA512 verificata. Quindici container ocor-bootstrap healthy, immagini pinned ai digest di infra/services.lock.json. Fuseki built image sha256:af9762cef0aa8649203d880a1707a43e5539c46929a471c8b9ef103843934324, lock identity 6534156b8d8f16b28faf0c336096e5c6a751794828525a8ef42c60ef46c9cc2b."
+      },
+      {
+        "command": "ruff check .",
+        "exit_code": 0,
+        "summary": "All checks passed."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m mypy",
+        "exit_code": 0,
+        "summary": "Success: no issues found in 148 source files."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_language_policy.py",
+        "exit_code": 0,
+        "summary": "PASS: nessun file tracciato usa un'estensione sorvegliata fuori dall'area autorizzata."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_rccad.py --base-ref origin/main",
+        "exit_code": 0,
+        "summary": "status PASS_LOCAL_PRECHECK."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_change_scope.py",
+        "exit_code": 0,
+        "summary": "PASS: 30 path cambiati fra base e head; superfici immutabili intatte; ledger dei task stabile."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+        "exit_code": 0,
+        "summary": "PASS: 241 input, 75 task, drifted_inputs 0."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_test_reverse_traceability.py",
+        "exit_code": 0,
+        "summary": "PASS, findings vuoti."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+        "exit_code": 0,
+        "summary": "verdict PASS. I due NOT_EXECUTED interni sono i controlli opzionali markdownlint e mmdc, con fallback deterministico eseguito; non sono conteggiati come PASS."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/validate_runtime_evidence.py --task OCOR-DEV-0005 --manifest reports/evidence/G0/MANIFEST.json --non-skipped && --task OCOR-DEV-0045 --manifest reports/evidence/G4/MANIFEST.json --non-skipped && --task OCOR-DEV-0050 --manifest reports/evidence/G5/MANIFEST.json --non-skipped && --task OCOR-DEV-0082 --manifest reports/evidence/G2/MANIFEST.json --non-skipped",
+        "exit_code": 0,
+        "summary": "PASS per OCOR-DEV-0005, OCOR-DEV-0045, OCOR-DEV-0050 e OCOR-DEV-0082. evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped PASS."
+      },
+      {
+        "command": "pytest task and consumer modules with OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only",
+        "exit_code": 0,
+        "summary": "Shell pulita. Task: 281 passed, 966 subtests passed, 0 skipped, 8 SyntaxWarning di DoWhy. Consumer e regressione 0005/0050/0082/0045/REM-0040/REM-0041: 299 passed, 0 skipped. Registro: il diff di NORMATIVE_CONFORMANCE_REGISTER.json cambia solo NCR-C7-001..006 da OPEN a IN_REMEDIATION, con remediation_unit, remediation_record e resolution_proof."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+        "exit_code": 0,
+        "summary": "Prima della suite: teardown REMOVED, residui vuoti. Docker Hub RateLimit-Remaining 100/100 prima della campagna. Alimentazione ADP0 online=1 (rete elettrica) all'inizio e alla fine."
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /tmp/ocor-verify-OCOR-DEV-REM-0057-4e1a87c2a49a-0/lanes --expected-head 4e1a87c2a49a8c78db803ac1f6aaf85919e0d135 --tool-bin <verifier bin> --tool-bin <worktree .ocor/tools/bin>",
+        "exit_code": 0,
+        "summary": "Shell pulita senza OCOR_BOOTSTRAP_ENV ne' OCOR_LIVE_POSTGRES_DSN; env.sh imposta solo PATH e OCOR_VERIFIER_WORKTREE. FOUR_LANE, 4 corsie, head esatto. Raccolta 5304, unione eseguita 5304, missing e duplicated vuoti, skipped 0, failures 0, errors 0. Durata 1649.961 s, tetto 5400 s, margine 3750.039 s. Teardown delle quattro sandbox PASS. Dopo la suite: 0 container in esecuzione, nessun volume o rete ocor/lane. Power source MAINS all'inizio (2026-11-08T09:19:43Z) e alla fine (2026-11-08T09:47:13Z)."
+      }
+    ],
+    "findings": [
+      {
+        "blocking": false,
+        "evidence": "La sezione Ruoli di questa verifica elenca gli implementatori del task come claude,codex. La richiesta (campo implementers) e il record reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json (implementers e roles.implementers) dichiarano solo Claude Code (Anthropic, claude-opus-5-5) come unico autore che ha toccato il task. I commit ef920626..4e1a87c2 risultano di Luca <lilloluca@gmail.com> e non identificano un secondo modello. Il verifier e' xAI, fornitore diverso da Anthropic, da OpenAI (Codex) e da Google (revisore preventivo Antigravity, gemini-4-argon-high).",
+        "id": "VF-001",
+        "path": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json:1662",
+        "required_fix": "Allineare richiesta e record all'elenco del loop, nominando ogni implementatore, oppure correggere l'attribuzione del loop se Codex non ha scritto il change set. Il verifier non e' dello stesso fornitore di nessuno dei due nomi.",
+        "severity": "medium"
+      }
+    ],
+    "findings_disposition": "Un finding non bloccante (VF-001, medium), nulla NOT_EXECUTED: accettato; l attribuzione del record e corretta (solo Claude Code / Anthropic ha toccato il task; Codex non e stato avviato su REM-0057): prima del sigillo e stato aggiunto solo il campo descrittivo roles.loop_verifier_exclusion, che allinea il record all elenco del loop spiegando che il loop conta sempre Codex (OpenAI) come implementatore ai soli fini dell esclusione del verifier; nessun altro campo, test, raw log o riqualifica cambia. Il verifier (Cursor CLI / grok-4.7-high / xAI) ha rieseguito da shell pulita: lock e preflight PASS, inputs 8/8, bootstrap CI PASS (quindici container healthy, immagini pinned); ruff, mypy strict (148 file), language, rccad, scope (30 path), drift 0 (241 input, 75 task), tracciabilita inversa, piano, evidenza runtime --non-skipped di 0005/0045/0050/0082 ed evidence_manifest 0004 PASS; moduli del task 281 passed e 966 subtest, consumer e regressione 0005/0050/0082/0045/REM-0040/REM-0041 299 passed, zero skip; registro cambiato solo per NCR-C7-001..006 OPEN -> IN_REMEDIATION; campagna FOUR_LANE sull HEAD esatto 5304/5304, zero skip, 1649,961 s su 5400 s, teardown senza residui, alimentazione di rete.",
+    "head_sha": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
+    "not_executed": [],
+    "raw_output_sha256_unchanged": "edccc33c6ee845f13e3ffd3fc957229767c23fa3a0a7b511f025bd3b2ce4a68a",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-08T09:49:13Z",
+    "verdict_file_sha256": "cfc95e91339dade218585128ed15473e9a0c214d0446df84697e8d34dd399cb6",
+    "verdict_head_sha": "4e1a87c2a49a8c78db803ac1f6aaf85919e0d135",
+    "verdict_request_id": "OCOR-DEV-REM-0057-4e1a87c2a49a-0",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "Verifier: Cursor CLI, modello grok-4.7-high, fornitore xAI. Implementatore dichiarato nel record e nella richiesta: Claude Code, claude-opus-5-5, fornitore Anthropic. Il loop nomina anche codex (OpenAI); vedi VF-001. Revisore preventivo: Antigravity CLI, gemini-4-argon-high, fornitore Google; la revisione preventiva non e' stata letta ne' usata come prova. Il verifier non e' lo stesso fornitore dell'autore degli elenchi iniziali del programma (Anthropic). Processo e contesto separati dall'implementazione. Nessuno strumento dell'implementatore e' stato eseguito. Campagna, bootstrap e teardown avviati da shell pulita (env -i); non e' stato fatto source di .ocor/bootstrap.env. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py --require-ready",
+      "exit_code": 0,
+      "summary": "status PASS, errors vuoti. Shell pulita env -i, source di env.sh, senza caricare .ocor/bootstrap.env."
+    }
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/c7/runtime.py": "bbcdd7fe8abeee13c73d2ed73b24699eebad46867c39ddc2100c04a278ae0759",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0045.py": "59f77317ba900aa81ca1ea509663e2670de5c6811f5e37f86cf0612cfe045d10"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "module_in_full_suite": {
+    "all_pass": true,
+    "cases": 27,
+    "mode": "FOUR_LANE"
+  },
+  "previous_record": {
+    "inputs": {
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime/src/ocor_runtime/c7/runtime.py": "618296ae3e490cb2170f1f330a7cc1e3a821795791203d5bfc88c194b32ce118",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0045.py": "bc61fcb023d880ce6ace7c1e0e40e85dd2c52e24372c89e826dd3b1138008721"
+    },
+    "raw_sha256": "0f20f98154b36c9a7473e642c6d65f2d6b65aa72fd379126fb6de409c2cbc5b8",
+    "record_id": "reports/evidence/G4/OCOR-DEV-0045.json",
+    "record_id_basis": "NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) option B1: the superseded record is a sealed record without record_id, recognised by reports/traceability/OCOR_SEALED_EVIDENCE_REGISTRY.json by path and sha256; supersedes and record_id equal its path",
+    "record_path": "reports/evidence/G4/OCOR-DEV-0045.json",
+    "record_sha256": "31d6fa965f5ee51efaaf4918983e5900ec3ce810a3b9725727add97dba346525",
+    "status": "SEALED (sealed evidence registry, by path and sha256)"
+  },
+  "qualification_limits": {
+    "duration_notification_seconds": 3600,
+    "full_seconds": 5400,
+    "full_seconds_authority": "LOCAL-FULL-SUITE-CAP-90 (2026-10-26); applied to the whole four-lane campaign (LOCAL-SUITE-SPLIT point 5, LOCAL-SUITE-FOUR-LANES point 1)",
+    "limits_changed": "none",
+    "task_seconds": 2700
+  },
+  "qualifies_requirements": false,
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env degli stack della campagna e dell'ambiente di sviluppo, assegnazioni OCOR_LOCAL_* degli stack delle corsie) e le password dei DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {
+    "OCOR_LOCAL_POSTGRES_PASSWORD": 33
+  },
+  "raw_output_sha256": "edccc33c6ee845f13e3ffd3fc957229767c23fa3a0a7b511f025bd3b2ce4a68a",
+  "realigned_tests": {
+    "authority": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5 and NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 7",
+    "base": "ef920626f6182b32d3bbcb4fc363441c56e53d9e",
+    "docstring_added": false,
+    "entries": [
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 cases 2 and 3 and its NCP-U09 table",
+        "kind": "ADAPT_CONSTRUCTION_AND_PINS",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+        "red": null,
+        "what": "SCM MODEL and CONFOUNDED_MODEL, query without adjustment and caller booleans, run_intervention(model=...), sealed_query() for the spike"
+      },
+      {
+        "authority": "NORMATIVE-CONFORMANCE-PLAN point 5 table (NCP-U09) and existing_tests_to_realign_or_adapt of NCP-U09",
+        "functions": 14,
+        "functions_detail": [
+          {
+            "base_lines": [
+              177,
+              181
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.status == \"ABSTAIN\"",
+              "assert outcome.reason_code == \"MAIN_CONTAMINATED\"",
+              "assert outcome.effect is None"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_counterfactual_abstains_identically_to_intervention_on_main",
+            "lines": [
+              237,
+              242
+            ],
+            "norm_ref": [
+              "ADD v1.3 :3036",
+              "NCR-C7-006 (option A)"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.status == \"REJECTED\"",
+              "assert outcome.reason_code == \"CAPABILITY_DEFERRED\"",
+              "assert outcome.effect is None"
+            ]
+          },
+          {
+            "base_lines": [
+              165,
+              174
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.status == \"IDENTIFIED\"",
+              "assert outcome.method == \"STRATIFIED_BACKDOOR_COUNTERFACTUAL\"",
+              "assert outcome.effect == \"6\"",
+              "assert outcome.details[\"actual_treatment\"] == \"0\""
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_counterfactual_imputes_a_specific_units_outcome_under_the_opposite_treatment",
+            "lines": [
+              225,
+              234
+            ],
+            "norm_ref": [
+              "ADD v1.3 :3036",
+              "NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-006 (option A)"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.status == \"REJECTED\"",
+              "assert outcome.method is None",
+              "assert outcome.reason_code == \"CAPABILITY_DEFERRED\"",
+              "assert outcome.effect is None",
+              "assert outcome.details[\"element\"] == \"ELM-070\""
+            ]
+          },
+          {
+            "base_lines": [
+              184,
+              186
+            ],
+            "current_assertion_at_base": [
+              "with pytest.raises(CausalRuntimeError, match=\"UNIT_INDEX_OUT_OF_RANGE\"):"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_counterfactual_rejects_an_out_of_range_unit_index",
+            "lines": [
+              245,
+              249
+            ],
+            "norm_ref": [
+              "ADD v1.3 :3036",
+              "NCR-C7-006 (option A)"
+            ],
+            "prescribed_assertion": [
+              "assert (outcome.status, outcome.reason_code, outcome.effect) == (\"REJECTED\", \"CAPABILITY_DEFERRED\", None)"
+            ]
+          },
+          {
+            "base_lines": [
+              115,
+              120
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.status == \"ABSTAIN\"",
+              "assert outcome.reason_code == reason",
+              "assert outcome.effect is None",
+              "assert outcome.details == {}"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_intervention_abstains_with_disjoint_reason_codes",
+            "lines": [
+              162,
+              174
+            ],
+            "norm_ref": [
+              "ADD v1.3 :2992-2998"
+            ],
+            "prescribed_assertion": [
+              "assert isinstance(value, dict)",
+              "assert outcome.status == status",
+              "assert outcome.reason_code == reason",
+              "assert outcome.effect is None",
+              "assert set(outcome.details) == expected"
+            ]
+          },
+          {
+            "base_lines": [
+              123,
+              126
+            ],
+            "current_assertion_at_base": [
+              "assert (outcome.status, outcome.reason_code, outcome.effect) == (\"ABSTAIN\", \"MISSING_FACTUAL_SET\", None)"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_missing_factual_set_abstains_without_estimate",
+            "lines": [
+              177,
+              181
+            ],
+            "norm_ref": [
+              "NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002"
+            ],
+            "prescribed_assertion": [
+              "assert (outcome.status, outcome.reason_code, outcome.effect) == (\"REJECTED\", \"MISSING_FACTUAL_SET\", None)"
+            ]
+          },
+          {
+            "base_lines": [
+              136,
+              140
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.reason_code == \"OUT_OF_DOMAIN\"",
+              "assert outcome.effect is None"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_out_of_domain_intervention_abstains_without_estimate",
+            "lines": [
+              193,
+              199
+            ],
+            "norm_ref": [
+              "ADD v1.3 :3012",
+              "NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.reason_code == \"OUTSIDE_VALIDITY_ENVELOPE\"",
+              "assert outcome.effect is None"
+            ]
+          },
+          {
+            "base_lines": [
+              144,
+              146
+            ],
+            "current_assertion_at_base": [
+              "with pytest.raises(CausalRuntimeError, match=\"PIN_MISMATCH\"):"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_pin_mismatch_fails_loudly",
+            "lines": [
+              203,
+              206
+            ],
+            "norm_ref": [
+              "ADD v1.3 :3024",
+              "NCR-C7-003"
+            ],
+            "prescribed_assertion": [
+              "assert (outcome.status, outcome.reason_code, outcome.effect) == (\"REJECTED\", f\"{pin.removesuffix('_digest').upper()}_PIN_MISMATCH\", None)"
+            ]
+          },
+          {
+            "base_lines": [
+              129,
+              133
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.reason_code == \"POSITIVITY_FAILURE\"",
+              "assert outcome.effect is None"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_positivity_failure_abstains_without_estimate",
+            "lines": [
+              184,
+              190
+            ],
+            "norm_ref": [
+              "ADD v1.3 :3016",
+              "NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.reason_code == \"ASSUMPTION_VIOLATION\"",
+              "assert outcome.effect is None"
+            ]
+          },
+          {
+            "base_lines": [
+              82,
+              89
+            ],
+            "current_assertion_at_base": [
+              "assert retained.status == sealed.status == \"IDENTIFIED\"",
+              "assert retained.method == sealed.method == \"STRATIFIED_BACKDOOR_ATE\"",
+              "assert retained.effect == sealed.effect == \"-4\"",
+              "assert retained.assumptions == sealed.assumptions"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_reimplemented_intervention_reproduces_the_sealed_spikes_oracle_bit_for_bit",
+            "lines": [
+              124,
+              132
+            ],
+            "norm_ref": [
+              "ADD v1.3 :2979-2981",
+              "NCR-C7-003"
+            ],
+            "prescribed_assertion": [
+              "assert (retained.status, sealed.status) == (\"ESTIMATED\", \"IDENTIFIED\")",
+              "assert retained.method == sealed.method == \"STRATIFIED_BACKDOOR_ATE\"",
+              "assert retained.effect == sealed.effect == \"-4\"",
+              "assert retained.assumptions == sealed.assumptions"
+            ]
+          },
+          {
+            "base_lines": [
+              95,
+              102
+            ],
+            "current_assertion_at_base": [
+              "assert first.status == \"IDENTIFIED\"",
+              "assert first.effect == \"-4\"",
+              "assert first.reproducibility_digest == second.reproducibility_digest",
+              "assert first.lineage[\"seed\"] == 271828"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_same_pinned_inputs_reproduce_identical_sealed_identified_result",
+            "lines": [
+              138,
+              145
+            ],
+            "norm_ref": [
+              "ADD v1.3 :2979-2981",
+              "NCR-C7-003"
+            ],
+            "prescribed_assertion": [
+              "assert first.status == \"ESTIMATED\"  # ADD v1.3 :2979-2981 (NCR-C7-003)",
+              "assert first.effect == \"-4\"",
+              "assert first.reproducibility_digest == second.reproducibility_digest",
+              "assert first.lineage[\"seed\"] == 271828"
+            ]
+          },
+          {
+            "base_lines": [
+              242,
+              248
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.status == \"ABSTAIN\"",
+              "assert outcome.reason_code == \"MAIN_CONTAMINATED\"",
+              "assert outcome.effect is None"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_sensitivity_abstains_identically_to_intervention_on_main",
+            "lines": [
+              305,
+              311
+            ],
+            "norm_ref": [
+              "NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.status == \"REJECTED\"  # PO decision NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002",
+              "assert outcome.reason_code == \"MAIN_CONTAMINATED\"",
+              "assert outcome.effect is None"
+            ]
+          },
+          {
+            "base_lines": [
+              227,
+              234
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.status == \"IDENTIFIED\"",
+              "assert outcome.method == \"ADDITIVE_CONFOUNDING_SHIFT_SENSITIVITY\"",
+              "assert outcome.effect == \"-4\"",
+              "assert outcome.details[\"confounding_shift\"] == \"1\"",
+              "assert Decimal(outcome.details[\"shifted_effect\"]) != Decimal(outcome.effect)"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_sensitivity_reports_the_shifted_effect_and_whether_the_sign_flips",
+            "lines": [
+              290,
+              297
+            ],
+            "norm_ref": [
+              "ADD v1.3 :2979-2981",
+              "NCR-C7-003"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.status == \"ESTIMATED\"  # ADD v1.3 :2979-2981 (NCR-C7-003)",
+              "assert outcome.method == \"ADDITIVE_CONFOUNDING_SHIFT_SENSITIVITY\"",
+              "assert outcome.effect == \"-4\"",
+              "assert outcome.details[\"confounding_shift\"] == \"1\"",
+              "assert Decimal(outcome.details[\"shifted_effect\"]) != Decimal(outcome.effect)"
+            ]
+          },
+          {
+            "base_lines": [
+              216,
+              221
+            ],
+            "current_assertion_at_base": [
+              "assert outcome.status == \"ABSTAIN\"",
+              "assert outcome.reason_code == \"MAIN_CONTAMINATED\"",
+              "assert outcome.effect is None",
+              "assert outcome.details == {}"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_uncertainty_abstains_identically_to_intervention_on_main",
+            "lines": [
+              279,
+              284
+            ],
+            "norm_ref": [
+              "NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002"
+            ],
+            "prescribed_assertion": [
+              "assert outcome.status == \"REJECTED\"  # PO decision NORMATIVE-CONFORMANCE-PLAN point 4, NCR-C7-002",
+              "assert outcome.reason_code == \"MAIN_CONTAMINATED\"",
+              "assert outcome.effect is None",
+              "assert outcome.details == {}"
+            ]
+          },
+          {
+            "base_lines": [
+              198,
+              207
+            ],
+            "current_assertion_at_base": [
+              "assert first.status == \"IDENTIFIED\"",
+              "assert first.method == \"BOOTSTRAP_CI\"",
+              "assert first.effect == \"-4\"",
+              "assert Decimal(first.details[\"ci_low\"]) <= Decimal(first.details[\"ci_high\"])",
+              "assert first.reproducibility_digest == second.reproducibility_digest"
+            ],
+            "file": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+            "function": "test_uncertainty_produces_a_deterministic_bootstrap_interval_around_the_ate",
+            "lines": [
+              261,
+              270
+            ],
+            "norm_ref": [
+              "ADD v1.3 :2979-2981",
+              "NCR-C7-003"
+            ],
+            "prescribed_assertion": [
+              "assert first.status == \"ESTIMATED\"  # ADD v1.3 :2979-2981 (NCR-C7-003)",
+              "assert first.method == \"BOOTSTRAP_CI\"",
+              "assert first.effect == \"-4\"",
+              "assert Decimal(first.details[\"ci_low\"]) <= Decimal(first.details[\"ci_high\"])",
+              "assert first.reproducibility_digest == second.reproducibility_digest"
+            ]
+          }
+        ],
+        "kind": "REALIGN",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+        "red": {
+          "commit_base": "ef92062",
+          "fingerprint": "250dbbf27d77b25d57f211a22f4ea0b8725f50a85d62f82102b84136e98b5f67",
+          "summary": "the realigned assertions with the old construction on the base code: 20 failed"
+        },
+        "what": "ESTIMATED instead of IDENTIFIED; REJECTED for main contamination, release and pin errors (pytest.raises replaced by the outcome); ABSTAIN NOT_IDENTIFIED, ASSUMPTION_VIOLATION, OUTSIDE_VALIDITY_ENVELOPE; counterfactual REJECTED{CAPABILITY_DEFERRED, ELM-070}"
+      }
+    ],
+    "head": "10e9473a9426fad524b9a254d318996463167806",
+    "syntax_tree_comparison": [
+      {
+        "added": [],
+        "base": "ef920626f6182b32d3bbcb4fc363441c56e53d9e",
+        "base_sha256": "bc61fcb023d880ce6ace7c1e0e40e85dd2c52e24372c89e826dd3b1138008721",
+        "changed_functions": [
+          {
+            "asserts_base": 3,
+            "asserts_head": 3,
+            "asserts_identical": false,
+            "function": "test_counterfactual_abstains_identically_to_intervention_on_main",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 4,
+            "asserts_head": 5,
+            "asserts_identical": false,
+            "function": "test_counterfactual_imputes_a_specific_units_outcome_under_the_opposite_treatment",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 0,
+            "asserts_head": 1,
+            "asserts_identical": false,
+            "function": "test_counterfactual_rejects_an_out_of_range_unit_index",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 1,
+            "raises_head": 0,
+            "raises_identical": false
+          },
+          {
+            "asserts_base": 4,
+            "asserts_head": 5,
+            "asserts_identical": false,
+            "function": "test_intervention_abstains_with_disjoint_reason_codes",
+            "marks_base": [
+              "parametrize"
+            ],
+            "marks_head": [
+              "parametrize"
+            ],
+            "param_cases_base": [
+              5
+            ],
+            "param_cases_head": [
+              5
+            ],
+            "parametrize_identical": false,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 1,
+            "asserts_head": 1,
+            "asserts_identical": false,
+            "function": "test_missing_factual_set_abstains_without_estimate",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 2,
+            "asserts_head": 2,
+            "asserts_identical": false,
+            "function": "test_out_of_domain_intervention_abstains_without_estimate",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 0,
+            "asserts_head": 0,
+            "asserts_identical": true,
+            "function": "test_outcome_details_and_lineage_are_immutable",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 2,
+            "raises_head": 2,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 0,
+            "asserts_head": 1,
+            "asserts_identical": false,
+            "function": "test_pin_mismatch_fails_loudly",
+            "marks_base": [
+              "parametrize"
+            ],
+            "marks_head": [
+              "parametrize"
+            ],
+            "param_cases_base": [
+              3
+            ],
+            "param_cases_head": [
+              3
+            ],
+            "parametrize_identical": true,
+            "raises_base": 1,
+            "raises_head": 0,
+            "raises_identical": false
+          },
+          {
+            "asserts_base": 2,
+            "asserts_head": 2,
+            "asserts_identical": false,
+            "function": "test_positivity_failure_abstains_without_estimate",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 4,
+            "asserts_head": 4,
+            "asserts_identical": false,
+            "function": "test_reimplemented_intervention_reproduces_the_sealed_spikes_oracle_bit_for_bit",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 4,
+            "asserts_head": 4,
+            "asserts_identical": false,
+            "function": "test_same_pinned_inputs_reproduce_identical_sealed_identified_result",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 3,
+            "asserts_head": 3,
+            "asserts_identical": false,
+            "function": "test_sensitivity_abstains_identically_to_intervention_on_main",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 5,
+            "asserts_head": 5,
+            "asserts_identical": false,
+            "function": "test_sensitivity_reports_the_shifted_effect_and_whether_the_sign_flips",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 4,
+            "asserts_head": 4,
+            "asserts_identical": false,
+            "function": "test_uncertainty_abstains_identically_to_intervention_on_main",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          },
+          {
+            "asserts_base": 5,
+            "asserts_head": 5,
+            "asserts_identical": false,
+            "function": "test_uncertainty_produces_a_deterministic_bootstrap_interval_around_the_ate",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          }
+        ],
+        "declared_cases_base": 27,
+        "declared_cases_head": 27,
+        "function_names_identical": true,
+        "head": "10e9473a9426fad524b9a254d318996463167806",
+        "head_sha256": "59f77317ba900aa81ca1ea509663e2670de5c6811f5e37f86cf0612cfe045d10",
+        "marks_added": [],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0045.py",
+        "removed": [],
+        "skip_or_xfail_added": false,
+        "test_functions_base": 21,
+        "test_functions_head": 21,
+        "unchanged_functions": 6
+      }
+    ],
+    "syntax_tree_method": "ast_compare.py (outside Git, sha256 119676103089bc0a67f3dde0f076730ece98f95561aaa9a4add97358fe1ad4d8): per module, test function names and counts, declared parametrised cases, pytest marks; per changed function, the sha256 of each assert and pytest.raises node and of each parametrize decorator, at the unit base and at the code head; a construction adaptation (point 5 case 3) leaves every assert, pytest.raises and parametrize identical; the fourteen realigned functions are listed one by one in entries[].functions_detail with their RED"
+  },
+  "record_id": "OCOR-DEV-0045-requalified-rem0057-10e9473a9426",
+  "regression_run": {
+    "backing_labels": [
+      "requalified-modules",
+      "four-lane-full"
+    ],
+    "backing_raw_sha256": [
+      "3cf9b6b2943a47604e1ff2310ef4d80804d6c520d6c1e75c2741cfb7a0725769",
+      "d39bee1ee4948e7184680c992eb72cc2137c20d998fb2eea8cf113f8d6e3f044"
+    ],
+    "label": "requalified-modules",
+    "module": "test_ocor_dev_0045",
+    "modules": [
+      "test_ocor_dev_0045"
+    ],
+    "result": {
+      "failed": 0,
+      "not_executed": 0,
+      "passed": 27,
+      "skipped": 0
+    },
+    "status": "PASS",
+    "test_case_sha256": [
+      "d854c926f65284ab71db2921e1d0ecc13c3d8e7f795117ef480a70d134a3fc98",
+      "24b28692080887db44af9496de46941e10ff6eff052e4785935f98045d98ab71",
+      "0d392173b4df33a72e71f19098da9c3fd94bed936372464662c2440f8b296967",
+      "74494ccb22738bb706d02647ca78155a8705dc8ef3166a114c6da8622414b90d",
+      "2efb439e96922a15721f0e14adb615bbb1cfc6a808c3018dfa32bf5d8804e266",
+      "90144102faee72be03afb65bd3debf772077e6100a6fbe8bc5387ac246b5a938",
+      "2855c025a6c0c607bee65500b5755c68d6c6f561f32df15752da6bbfae3428cf",
+      "371c58298473907ecb13f22cf544b9a3454cfb9b43de535d17233c9a1de32594",
+      "442a9b28c3355b8514a4df0f248d94fbb3135fc4a984a5175377a23034b3a278",
+      "bd733d9eb4a4a9f6b0c6343e2d69b35021f1d7fc29a11d624dd874af96bb83dc",
+      "1ea688c22fe4008c99e644b929c7365d04f51a9d815d51e2377d81ad50fddc0d",
+      "b8f2aec30b2c29e88925e732378ffebedc7bb22414426a7afce049c9b1e49b71",
+      "5b5333787b32c7a6d8ce340a57946bac32c71dcc7ac51457ed7ecb93d3e128f3",
+      "0e9704f72acea01ea85c93dd1ec328bdec2526d88057edfac715adffbae425b2",
+      "8cbfa9a8cd35150a7831476c7b78c1f92ffa542741e4a12c4ea5a52551b70229",
+      "3dff9172c9d4af01e6b9fb5649f483cba01e8a4ad2517489fdb9bdfb71cca51a",
+      "9c7d40d74c28fd19374ae2ce7cff14f77cd319ac402a2a6d48727c41cec52f9e",
+      "a0709541338b81ee4a8becbabb11f131453db395618c14ece12ecef80c01a834",
+      "bfa524b5963a845fa7ba840f135662bbe70d52d2b60583d8a95e11b83efdb3a3",
+      "ce35da42ccb1da91795242e70292cba8603ce716b8efac332142b271d415e61e",
+      "20651c1b294ce6b9d0917280d95724d19f11debd4ba7b93bb483c3ddcd94d5b9",
+      "7af894a38b40d9a9035777507e320cfdc673892a9322725ef4dca46a298f440b",
+      "0e6af5994705d7652acced6dcbcf49c9de70f76f6bab0966d384681bfada1007",
+      "91f13e0b150bb255547d3da8833b64be4727afe66072f198b87ea1c0f6e63e47",
+      "58ee7b85df9901131d0b168fe7d1c5584b82052048442d666b2569b329e0bc50",
+      "dc10f453e33c665c0dd8548a097d3651273f6d4df6d23b787d06d9310c5bc8e0",
+      "b68c1cd353ed418dbc45d8900a85d6272b1f9fb2427de069c81dc8ff41f118e7"
+    ],
+    "tests": [
+      "test_a_large_enough_confounding_shift_flips_the_effects_sign",
+      "test_counterfactual_abstains_identically_to_intervention_on_main",
+      "test_counterfactual_imputes_a_specific_units_outcome_under_the_opposite_treatment",
+      "test_counterfactual_is_reproducible_for_identical_pinned_inputs",
+      "test_counterfactual_rejects_an_out_of_range_unit_index",
+      "test_intervention_abstains_with_disjoint_reason_codes",
+      "test_missing_factual_set_abstains_without_estimate",
+      "test_out_of_domain_intervention_abstains_without_estimate",
+      "test_outcome_details_and_lineage_are_immutable",
+      "test_pin_mismatch_fails_loudly",
+      "test_positivity_failure_abstains_without_estimate",
+      "test_reimplemented_intervention_reproduces_the_sealed_spikes_oracle_bit_for_bit",
+      "test_same_pinned_inputs_reproduce_identical_sealed_identified_result",
+      "test_seed_is_part_of_the_reproducibility_seal",
+      "test_sensitivity_abstains_identically_to_intervention_on_main",
+      "test_sensitivity_is_reproducible_for_identical_pinned_inputs",
+      "test_sensitivity_reports_the_shifted_effect_and_whether_the_sign_flips",
+      "test_uncertainty_abstains_identically_to_intervention_on_main",
+      "test_uncertainty_differs_deterministically_with_a_different_seed",
+      "test_uncertainty_produces_a_deterministic_bootstrap_interval_around_the_ate",
+      "test_unexplained_result_drift_fails_reproducibility_check"
+    ]
+  },
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "docstring_added": false,
+    "requirements": [
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test/dimostrazione",
+        "requirement_id": "BR-003",
+        "title": "Il sistema DEVE dimostrare continuità semantica, decisionale e di audit lungo l’intero mission thread."
+      },
+      {
+        "bindable": false,
+        "method_kind": "NON_TEST_METHOD",
+        "reason": "Register method 'dimostrazione + ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "dimostrazione + ispezione",
+        "requirement_id": "BR-009",
+        "title": "Il sistema DEVE consentire di comprendere e governare una minaccia ibrida simulata alla continuità elettrica includendo dipendenze cyber, telecomunicazioni, informazione e supply chain."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test + analisi' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test + analisi",
+        "requirement_id": "FR-009",
+        "title": "Il sistema DEVE confrontare almeno due interventi simulati mediante un modello causale versionato dichiarando estimand, identificabilità, assunzioni, incertezza, sensitivity e condizioni di astensione."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test + ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test + ispezione",
+        "requirement_id": "FR-013",
+        "title": "Il sistema DEVE usare un dataset sintetico corredato da manifest, schema, seed, release, timeline eventi, identity ground truth, evidence graph, hypothesis truth e causal ground truth."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-026 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "Test di conformità",
+        "requirement_id": "FR-026",
+        "title": "Il sistema DEVE rappresentare separatamente Link Type/Link, Qualified Relation, relazione n-aria, ruoli, Interface, Object Type Group, Tag e Taxonomy, senza confonderli con Causal Edge."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'Test, analisi e benchmark' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Test, analisi e benchmark",
+        "requirement_id": "FR-034",
+        "title": "Il sistema DEVE rappresentare Causal Variable, Causal Edge, Causal Mechanism, Causal Model, Assumption, ruoli causali, Causal Query, Estimand, Identification Result, Estimator, Effect Estimate, Diagnostics, Causal Intervention Specification, Operational Intervention Plan, Causal Validation e Model Governance."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-035 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "Test end-to-end",
+        "requirement_id": "FR-035",
+        "title": "Il sistema DEVE rappresentare World, Scenario Definition, Scenario, Baseline, Simulation Experiment/Run, Trajectory, Ensemble, Outcome Distribution, Forecast, Scenario Estimate, Interventional Estimate, Counterfactual Query/Result e SimulationResult."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test, ispezione",
+        "requirement_id": "FR-060",
+        "title": "Il sistema DEVE registrare artifact digest, versione, deployment, schema input/output, mapping, validity envelope e lineage di ogni invocazione di modello."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-066 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test",
+        "requirement_id": "FR-066",
+        "title": "Il sistema DEVE offrire lettura a commit, diff, branch lineage, TTL e stato dei branch."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-086 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test API/compiler",
+        "requirement_id": "FR-086",
+        "title": "Il sistema DEVE esporre request e result type distinti per logical what-if, prediction, causal intervention, counterfactual, optimization e homeostatic deliberation."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-088 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "schema/compiler test",
+        "requirement_id": "FR-088",
+        "title": "Ogni Causal Model DEVE dichiarare variabili, ruoli, archi, meccanismi, lag, assunzioni, popolazione, periodo, owner, versione, evidenze e validity envelope."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-089 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test negativo",
+        "requirement_id": "FR-089",
+        "title": "Causal Edge e Link DEVONO restare elementi distinti e non convertibili automaticamente."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-090 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test su ground truth",
+        "requirement_id": "FR-090",
+        "title": "Ogni Causal Query DEVE produrre Estimand, Identification Result, metodo, estimator e Diagnostics e produrre Effect Estimate solo se valido."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-091 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test",
+        "requirement_id": "FR-091",
+        "title": "Il sistema DEVE supportare almeno NOT_IDENTIFIED, INSUFFICIENT_EVIDENCE, OUT_OF_DISTRIBUTION, EXTRAPOLATIVE e STALE_CONTEXT."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-092 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test di riproducibilità",
+        "requirement_id": "FR-092",
+        "title": "Il sistema DEVE fissare baseline, branch/world, ontology release, logica, modello causale, policy snapshot, seed, assunzioni, orizzonte, input e budget di ogni run."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-093 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test schema",
+        "requirement_id": "FR-093",
+        "title": "SimulationResult DEVE contenere output, uncertainty, violations, validity status, lineage e tutti i riferimenti di versione fissati."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test, benchmark' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test, benchmark",
+        "requirement_id": "FR-094",
+        "title": "`SimulateIntervention` DEVE sostituire il meccanismo entrante della variabile target e propagare gli effetti secondo il modello fissato."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test, ispezione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test, ispezione",
+        "requirement_id": "FR-097",
+        "title": "Il sistema DEVE associare Effect Estimate, Forecast e Outcome Distribution a metodo di incertezza, intervallo o distribuzione, assunzioni e diagnostica."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test, dimostrazione",
+        "requirement_id": "FR-099",
+        "title": "Il sistema DEVE confrontare scenari su outcome, uncertainty, feasibility, policy, rischio, costo, tempo e risorse, conservando il contributo per criterio."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test, dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test, dimostrazione",
+        "requirement_id": "FR-101",
+        "title": "Il sistema DEVE rappresentare Goal, setpoint, banda operativa, deviation, utility, preference, risk appetite, resource constraint e policy applicabile."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of FR-145 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "Static analysis e compatibility test",
+        "requirement_id": "FR-145",
+        "title": "Release e dipendenze DEVONO usare Stable Resource ID, versione, digest e lock deterministico; ogni modifica DEVE essere classificata compatible, conditional, breaking, destructive o causal-breaking."
+      },
+      {
+        "bindable": false,
+        "method_kind": "NON_TEST_METHOD",
+        "reason": "Register method 'ispezione' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "ispezione",
+        "requirement_id": "NFR-004",
+        "title": "Per ogni P0 la matrice di verifica DEVE dichiarare metrica, soglia, baseline, scenario/dataset, risultato ed evidenza."
+      },
+      {
+        "bindable": false,
+        "method_kind": "NON_TEST_METHOD",
+        "reason": "Register method 'benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "benchmark",
+        "requirement_id": "NFR-007",
+        "title": "Il sistema DEVE riprodurre una simulazione eseguita con identica baseline, release, modello, seed e input entro la tolleranza dichiarata dal modello."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of NFR-015 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "Test",
+        "requirement_id": "NFR-015",
+        "title": "Ogni Scenario DEVE fissare baseline, ontology release, logic version, causal model version, seed, assumption set e input digest."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of NFR-030 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "test",
+        "requirement_id": "NFR-030",
+        "title": "Modello causale e artifact eseguibile DEVONO essere content-addressed, firmati e riproducibili."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'Analisi, review threat model, security test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Analisi, review threat model, security test",
+        "requirement_id": "NFR-038",
+        "title": "Il sistema DEVE mantenere per ogni release DFD, trust boundary, threat register, owner, mitigazioni, test e rischio residuo."
+      },
+      {
+        "bindable": false,
+        "method_kind": "NON_TEST_METHOD",
+        "reason": "Register method 'Substitution spike, conformance e benchmark' is NON_TEST_METHOD, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Substitution spike, conformance e benchmark",
+        "requirement_id": "NFR-058",
+        "title": "Un adapter candidato DEVE superare conformance P0, round-trip, replay scenario, security propagation e benchmark senza modificare OaC/API/SDK/domain contract."
+      },
+      {
+        "bindable": false,
+        "method_kind": "AUTOMATED_TEST",
+        "reason": "the realigned cases assert the outcome status and reason code of single operations on a two-variable fixture and the cross-validation against the sealed spike; they do not exercise the full Register text of any requirement of the task (for example the schema and contract obligations of FR-093, the reproducibility protocol of FR-092 or the cancellation and backpressure of NFR-072), which the unit modules qualify; the full Register text of NFR-072 is not exercised by the realigned or adapted tests of the task (point 1, second condition; point 4: in doubt, not bindable)",
+        "register_method": "Load/backpressure/cancellation test",
+        "requirement_id": "NFR-072",
+        "title": "Simulazioni causali, effect estimation e ottimizzazione complesse DEVONO essere job asincroni con budget, progress, cancellation, timeout, quota e backpressure."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'Analisi dei contratti e tracing test' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Analisi dei contratti e tracing test",
+        "requirement_id": "NFR-076",
+        "title": "Il sistema DEVE classificare ogni contratto operativo come `L0 bounded-online`, `L1 bounded-command-or-micro-scenario` oppure `L2 asynchronous-compute`."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'Usability test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Usability test e dimostrazione",
+        "requirement_id": "NFR-082",
+        "title": "Il sistema DEVE includere in ogni release documentazione generata, esempi, fixture, sandbox e conformance kit utilizzabili offline."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'Replay, access-control test e analisi' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Replay, access-control test e analisi",
+        "requirement_id": "NFR-090",
+        "title": "Il PoC DEVE essere riproducibile dal manifest sintetico senza esporre al sistema la ground truth riservata alla valutazione."
+      },
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'Contract test e dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "Contract test e dimostrazione",
+        "requirement_id": "FR-161",
+        "title": "Il sistema DEVE esporre per ogni job L2 accettazione, identificativo, stato, cancellazione o timeout e risultato versionato."
+      }
+    ],
+    "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4"
+  },
+  "residual_risks": [
+    "Regression-only requalification after input changes of OCOR-DEV-REM-0057; not runtime conformance, not BA/FGM evidence, never evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only: proves the task's tests pass at the REM-0057 code head after its input changes; not a re-assessment of its conformance",
+  "roles": {
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatore di REM-0057: Claude Code / claude-opus-5-5 / Anthropic per tutta l unita (iterazioni 1-4; sigillo e integrazione all iterazione 5, come implementatore di riserva del loop); il loop conta anche Codex CLI / OpenAI ai soli fini dell esclusione (VF-001). Revisore preventivo: Antigravity CLI / gemini-4-argon-high / Google. Nessun implementatore ne revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
+    "implementers": [
+      {
+        "agent": "Claude Code",
+        "model": "claude-opus-5-5",
+        "provider": "Anthropic",
+        "scope": "all of REM-0057, iterations 1-4: RED/GREEN of NCR-C7-001/002/003/005/006 (RED b498a6a, GREEN c78270b), the realigned and adapted consumers (781ce01, acc0f70), NCR-C7-004 and NFR-030 (RED c251812, GREEN 3fb9c8f), the input-robustness self-check (RED 10506d3, GREEN 9c37ca5), packaging (4248172, 1a64cb8), the fixes of the preventive review (RED b936fb8, GREEN 7c11a44 and cb3220b, record 10e9473), PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation; the only implementer that touched the task"
+      }
+    ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
+    "preventive_reviewer": {
+      "agent": "Antigravity CLI",
+      "model": "gemini-4-argon-high",
+      "note": "PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 and PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30): consultative, not evidence; 5 blocking findings fixed (RED b936fb8, GREEN 7c11a44 and cb3220b), 3 advisory accepted; not repeated after the fixes (point 3); excluded from the final verification",
+      "provider": "Google",
+      "request_id": "OCOR-DEV-REM-0057-1a64cb83f153-pre",
+      "reserve": false,
+      "verdict": "BLOCKING_FINDINGS"
+    },
+    "verifier_excluded_providers": [
+      "Anthropic",
+      "Google"
+    ],
+    "verifier_requested": {
+      "agent": "chosen by the external loop",
+      "constraint": "provider neither Anthropic (implementer) nor Google (preventive reviewer)",
+      "process": "external loop only, separate clean context"
+    },
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
+  },
+  "rollback_procedure_verified": "Mechanical review: revert the REM-0057 commits; the OCOR-DEV-0045.json record becomes the most recent again once this record is removed with the revert. No data migration, no sealed-history rewrite.",
+  "schema_version": "1.0",
+  "status": "SEALED",
+  "supersedes": "reports/evidence/G4/OCOR-DEV-0045.json",
+  "supersession_scope": "Regression-only after the OCOR-DEV-REM-0057 change of ocor-runtime/src/ocor_runtime/c7/runtime.py (C7 causal runtime change of the unit, NCR-C7-001 to NCR-C7-006); ocor-runtime/tests/tasks/test_ocor_dev_0045.py (fourteen assertions realigned and the construction adapted, NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5 (NCP-U09 row), listed in the unit record); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 3 and 4: no requirement of the task is bindable (the per-requirement Register method and reason are in requirement_classification), so the requalification is regression-only in the non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30), with no docstring added; the task's tests are realigned or adapted only as listed in realigned_tests, with the syntax-tree comparison. Not a re-assessment of its conformance and never evidence of a requirement: the requirement evidence of the task stays that of the supersedes chain; the new C7 causal runtime behaviour is qualified by the unit tests and the requirements by the G6 tasks.",
+  "task_id": "OCOR-DEV-0045",
+  "test_case_identity": "test_case_sha256 = sha256 of the exact pytest node id (ocor-runtime/<classname as path>.py::<name>) of each JUnit testcase stored verbatim in the raw log; tests holds base names",
+  "tests_unchanged_from_base": false
+}

@@ -50,8 +50,9 @@ ADAPTER = "ocor_runtime.c7.adapters.seaweedfs"
 PORT_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/sealed_results.py"
 ADAPTER_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/adapters/seaweedfs.py"
 C7_RUNTIME_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/runtime.py"
-# c7/runtime.py as sealed by OCOR-DEV-0045 (REM-0040-C7-SEALED-RESULT-PORT, Fatti).
-C7_RUNTIME_SHA256 = "618296ae3e490cb2170f1f330a7cc1e3a821795791203d5bfc88c194b32ce118"
+# c7/runtime.py at the head of OCOR-DEV-REM-0057 (NCP-U09), which aligns it with ADD v1.3 §4.2
+# (NORMATIVE-CONFORMANCE-PLAN point 5, case 2); sealed by OCOR-DEV-0045 before.
+C7_RUNTIME_SHA256 = "bbcdd7fe8abeee13c73d2ed73b24699eebad46867c39ddc2100c04a278ae0759"
 QUALIFY_PATH = REPOSITORY_ROOT / "deploy/bootstrap/services/seaweedfs/qualify.py"
 URL = os.environ.get("OCOR_LIVE_SEAWEEDFS_URL", "http://127.0.0.1:18333")
 ACCESS_KEY = "ocor-bootstrap-s3"  # deploy/bootstrap/compose.yaml, seaweedfs service
@@ -145,8 +146,31 @@ def _version_bytes(digest: str, version_id: str) -> bytes:
 
 
 def _outcome(label: str, *, abstain: bool = False) -> CausalOutcome:
-    """A real CausalOutcome computed by the sealed c7/runtime.py, unique to this run."""
-    model = {"graph": "treatment->outcome; stratum->treatment; stratum->outcome", "label": label}
+    """A real CausalOutcome computed by the sealed c7/runtime.py, unique to this run. The
+    abstained outcome is a non-identifiable case (NORMATIVE-CONFORMANCE-PLAN point 5, NCP-U09):
+    an unobserved common cause of treatment and outcome (OCOR-DEV-REM-0057 construction)."""
+    prefix, confounded = "rem0040", abstain
+    confounder = "u_latent" if confounded else "stratum"
+    model = {
+        "model_id": f"{prefix}-{label}",
+        "version": 1,
+        "estimand": "ATE",
+        "tolerance": "0.25",
+        "samples": 1000,
+        "sensitivity_shift": "1",
+        "exogenous": {
+            "u_stratum": {"distribution": "bernoulli", "p": "0.5"},
+            "u_treatment": {"distribution": "normal", "mean": "0", "sd": "1"},
+            "u_outcome": {"distribution": "normal", "mean": "0", "sd": "1"},
+            **({"u_latent": {"distribution": "normal", "mean": "0", "sd": "1"}} if confounded else {}),
+        },
+        "endogenous": {
+            "stratum": {"mechanism": "linear", "intercept": "0", "parents": {"u_stratum": "1"}},
+            "treatment": {"mechanism": "threshold", "intercept": "-0.5", "parents": {confounder: "1", "u_treatment": "1"}},
+            "outcome": {"mechanism": "linear", "intercept": "1", "parents": {"treatment": "2", confounder: "1", "u_outcome": "1"}},
+        },
+        "observed": ["stratum", "treatment", "outcome"],
+    }
     rows = [
         {"stratum": "a", "treatment": 0, "outcome": 1.0},
         {"stratum": "a", "treatment": 1, "outcome": 3.0},
@@ -155,8 +179,10 @@ def _outcome(label: str, *, abstain: bool = False) -> CausalOutcome:
     ]
     intervention = {"value": 1, "valid_envelope": [0, 1]}
     query = CausalQuery(
-        baseline_commit="rem0040-baseline",
-        scenario_branch="main" if abstain else "scenario/rem0040",
+        # The trace identifiers are outside the digest (NCR-C7-005): the run nonce in the
+        # baseline keeps the outcome unique to this run (OCOR-DEV-REM-0057 construction).
+        baseline_commit=f"rem0040-baseline-{RUN_NONCE}",
+        scenario_branch="scenario/rem0040",
         model_digest=canonical_digest(model),
         data_digest=canonical_digest(rows),
         intervention_digest=canonical_digest(intervention),
@@ -164,7 +190,6 @@ def _outcome(label: str, *, abstain: bool = False) -> CausalOutcome:
         expected_release_digest="release-1",
         treatment="treatment",
         outcome="outcome",
-        adjustment="stratum",
         seed=7,
         correlation_id=f"rem0040-{RUN_NONCE}-{label}",
         causation_id=f"rem0040-{label}",
@@ -334,7 +359,9 @@ def test_seal_and_read_round_trip_an_identified_and_an_abstained_outcome(store: 
         assert read == outcome
         assert dict(read.details) == dict(outcome.details) and dict(read.lineage) == dict(outcome.lineage)
         c7_runtime.verify_reproduction(outcome, read)
-    assert store.read_sealed_result(_outcome("round-trip-abstain", abstain=True).reproducibility_digest).reason_code == "MAIN_CONTAMINATED"
+    # NORMATIVE-CONFORMANCE-PLAN point 5 (NCP-U09): the abstained round trip is a non-identifiable
+    # case and returns ABSTAIN NOT_IDENTIFIED (ADD v1.3 :3009; PO mapping of NCR-C7-002).
+    assert store.read_sealed_result(_outcome("round-trip-abstain", abstain=True).reproducibility_digest).reason_code == "NOT_IDENTIFIED"
 
 
 def test_the_sealed_version_carries_a_compliance_retention_in_a_versioned_object_lock_bucket(store: Any) -> None:

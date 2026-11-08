@@ -4138,17 +4138,30 @@
       ],
       "plan_unit": "NCP-U09",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+      "remediation_unit": "OCOR-DEV-REM-0057",
       "requirement_ids": [
         "FR-094",
         "FR-009"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_do_replaces_the_target_mechanism_and_removes_its_incoming_edges",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_simulate_intervention_matches_the_interventional_ground_truth",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_identification_is_derived_from_the_registered_scm",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_a_non_identifiable_query_returns_not_identified_and_no_estimate",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_at_least_two_interventions_are_compared",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_the_engine_port_keeps_abduction_action_and_prediction_distinct"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_001_conforms_the_registered_model_declares_v_u_p_u_and_f"
+      },
       "seed_ref": "C7-1",
       "severity": "HIGH",
       "severity_basis": "FR-094 and FR-009 are P0 PoC",
       "statement": "There is no do(X) on a structural causal model: the model is only a digest pin (the estimator never reads it), the effect is a stratified treated-minus-control difference on observed rows (STRATIFIED_BACKDOOR_ATE), so no identifiability test under the registered SCM exists and NOT_IDENTIFIED is never produced; each call takes one intervention and no comparison between interventions exists.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -4216,17 +4229,36 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+      "remediation_unit": "OCOR-DEV-REM-0057",
       "requirement_ids": [
         "FR-009",
         "FR-098"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_main_contamination_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_missing_factual_set_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_an_invalid_factual_schema_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_non_binary_treatment_is_rejected_as_factual_schema_invalid",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_missing_or_malformed_envelope_or_a_non_numeric_value_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_value_outside_an_explicit_constraint_abstains_outside_validity_envelope",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_unresolved_confounding_abstains_not_identified",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_a_stratum_without_an_arm_abstains_assumption_violation",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_out_of_distribution_only_with_empirical_support_diagnostics",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_abstain_precedence_between_two_conditions",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_rejected_conditions_are_evaluated_before_abstain_conditions",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_only_the_closed_sets_are_produced"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_002_conforms_release_mismatch_is_rejected"
+      },
       "seed_ref": "C7-2",
       "severity": "HIGH",
       "severity_basis": "FR-009 and FR-098 are P0 PoC",
       "statement": "The six abstention codes produced (MAIN_CONTAMINATED, RELEASE_MISMATCH, MISSING_FACTUAL_SET, UNRESOLVED_CONFOUNDING, OUT_OF_DOMAIN, POSITIVITY_FAILURE) are outside the closed ABSTAIN set of ADD v1.3 \u00a74.2 and no precedence is applied. LLD v1.1 \u00a72.7 names exactly these six conditions as disjoint reason codes, ADD v1.3 \u00a74.2 prescribes eight different codes with a precedence and sends signature, schema, policy and version-pin errors to REJECTED. ADD prevails (LLD v1.1 \u00a70.1), and some mappings are univocal (RELEASE_MISMATCH -> REJECTED; an explicit valid_envelope violation -> OUTSIDE_VALIDITY_ENVELOPE), but the mapping of MAIN_CONTAMINATED, MISSING_FACTUAL_SET, UNRESOLVED_CONFOUNDING and POSITIVITY_FAILURE is not fixed by either text.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -4303,18 +4335,42 @@
       ],
       "plan_unit": "NCP-U09",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+      "remediation_unit": "OCOR-DEV-REM-0057",
       "requirement_ids": [
         "FR-093",
         "FR-097",
         "NFR-030"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_only_the_four_outcome_statuses_exist",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_every_estimate_carries_the_estimated_fields",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_an_abstention_carries_its_fields_and_no_effect",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_a_computational_fault_is_failed_with_retry_safety",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_simulation_result_is_immutable_and_schema_validated",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_outcome_document_is_schema_validated",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_an_outcome_document_with_a_non_finite_number_is_refused_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_sensitivity_descriptor_carries_decimal_strings_only",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_sealed_store_refuses_a_malformed_bucket_answer_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_sealed_store_refuses_a_malformed_read_answer_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_the_sealed_store_checks_the_retention_answer_structurally",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_an_outcome_without_a_canonical_digest_is_never_sealed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_an_invalid_signature_blocks_the_run",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_revoked_key_blocks_the_run",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_validly_signed_model_other_than_the_pinned_one_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_non_canonical_signed_payload_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_nfr_030_conforms_a_valid_signature_admits_the_run_and_the_rejection_carries_no_estimate"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_003_conforms_a_pin_mismatch_is_rejected_not_raised"
+      },
       "seed_ref": "C7-3",
       "severity": "HIGH",
       "severity_basis": "FR-093, FR-097 and NFR-030 are P0 PoC",
       "statement": "The outcome is only IDENTIFIED or ABSTAIN: model, data and intervention pin mismatches raise CausalRuntimeError instead of returning REJECTED, there is no FAILED with retry safety, ABSTAIN carries no diagnostics, failed_conditions, evidence_refs or permissible_next_steps, the intervention estimate has no uncertainty descriptor or sensitivity, and no immutable SimulationResult is produced. A sealed test asserts the exception.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "ccf5117c0ca0250e6879f6caebeaad0312aa3c45",
@@ -4393,18 +4449,63 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+      "remediation_unit": "OCOR-DEV-REM-0057",
       "requirement_ids": [
         "FR-092",
         "FR-103",
         "FR-161"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_incomplete_or_malformed_spec_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_spec_digest_covers_every_pin_and_no_trace_identifier",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_query_is_built_from_the_spec_and_the_overlay_hypothesis",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_hypothesis_is_read_at_the_pinned_revision",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_missing_or_malformed_hypothesis_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_branch_of_another_run_or_baseline_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_factual_set_and_the_sample_budget_are_pinned",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_client_submits_observes_and_retrieves_a_versioned_result",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_identical_runs_give_equivalent_results",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_rejected_run_completes_with_its_sealed_rejection",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_only_the_add_transitions_are_allowed_and_refusals_change_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_queued_job_is_cancelled_and_audited",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_cancelling_a_running_job_releases_its_resources_within_pt30s",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_paused_job_stops_its_worker_until_resumed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_timeout_expires_the_job_without_a_partial_result",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_result_after_the_deadline_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_result_bound_to_another_spec_or_tampered_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_audit_is_append_only",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_quota_and_backpressure_refuse_and_audit_submissions",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_lost_worker_fails_the_job_with_retry_safety",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_unreachable_backend_is_a_typed_error_without_credentials",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_foreign_table_shape_is_a_schema_mismatch",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_tampered_stored_job_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_tampered_audit_or_resource_row_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_malformed_calls_are_refused_with_typed_errors",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_overdue_jobs_without_a_runner_expire_and_free_the_quota",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_unreadable_hypothesis_fails_the_job_and_releases_its_resources",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_governed_context_is_the_complete_closed_add_record",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_governed_context_other_than_the_closed_add_record_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_query_trace_is_the_context_correlation_and_the_run",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_an_overlay_of_other_compartments_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_hypothesis_population_that_is_not_finite_json_is_rejected",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_job_cancelled_before_its_progress_report_releases_its_resources",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_worker_that_cannot_start_fails_the_job_and_releases_everything",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_worker_gone_before_pause_or_resume_never_escapes_untyped",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_backend_row_of_the_wrong_shape_is_a_typed_backend_error",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_a_stored_result_foreign_or_not_finite_is_refused",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_well_shaped_backend_rows_are_accepted"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057_jobs.py::test_ncr_c7_004_conforms_the_run_spec_has_exactly_the_add_fields_and_is_immutable"
+      },
       "seed_ref": "C7-4",
       "severity": "HIGH",
       "severity_basis": "FR-092, FR-103 and FR-161 are P0 PoC",
       "statement": "CausalQuery has no scenario_id, run_id, estimand, population, validity envelope, budget, time_horizon, validity_at, projection watermarks, policy or logic bundle digests or governed_context, and is not built from a ScenarioRunSpec or read from the scenario overlay; main contamination and unresolved confounding are decided by two booleans declared by the caller; there is no asynchronous job lifecycle (queued, running, paused, cancelled, completed, failed, expired) with budget, cancellation and timeout.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -4458,18 +4559,27 @@
       ],
       "plan_unit": "NCP-U09",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+      "remediation_unit": "OCOR-DEV-REM-0057",
       "requirement_ids": [
         "NFR-007",
         "FR-092",
         "NFR-015"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_the_tolerance_is_mandatory_and_declared",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_reproduction_accepts_differences_within_the_tolerance_only"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_005_conforms_the_digest_does_not_depend_on_trace_identifiers"
+      },
       "seed_ref": "C7-5",
       "severity": "HIGH",
       "severity_basis": "NFR-007, FR-092 and NFR-015 are P0 PoC",
       "statement": "Reproducibility: no tolerance is declared or applied for any operation (including the bootstrap interval), and the reproducibility digest covers correlation_id and causation_id, so two runs with identical inputs and artefacts but a different causation get different digests.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -4511,16 +4621,25 @@
         "path": "reports/development/decision_requests/NORMATIVE-CONFORMANCE-PLAN.md",
         "sha256": "2859bbc42c8d5e6ddeb982efc75b7525d308d4b89c68bb25dc5cddda41463f2f"
       },
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0057-RCCAD/OCOR-DEV-REM-0057.json",
+      "remediation_unit": "OCOR-DEV-REM-0057",
       "requirement_ids": [
         "FR-095"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_structurally_invalid_counterfactual_query_is_rejected_for_its_schema",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_malformed_counterfactual_model_or_intervention_is_rejected_for_its_schema"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0057.py::test_ncr_c7_006_conforms_a_valid_counterfactual_query_is_rejected_capability_deferred"
+      },
       "seed_ref": "C7-6",
       "severity": "MEDIUM",
       "severity_basis": "closed element of ADD v1.3 \u00a74.2 (capability deferral); FR-095 is MVP, not PoC",
       "statement": "estimate_counterfactual returns IDENTIFIED with a unit-level counterfactual outcome (STRATIFIED_BACKDOOR_COUNTERFACTUAL: observed outcome plus the within-stratum arm difference). In the PoC profile the Counterfactual Query (ELM-070) is deferred and full abduction-action-prediction execution returns REJECTED{CAPABILITY_DEFERRED, ELM-070}; the operation is not AAP (no abduction of U), but it answers a unit-level counterfactual query, and the norm does not say whether such a non-AAP imputation is inside the deferred capability.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "EXTRA",
       "verification": {

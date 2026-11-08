@@ -33,6 +33,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import http.client
 import json
 import re
 import urllib.error
@@ -43,7 +44,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ..runtime import CausalOutcome, canonical_digest
+from ..runtime import CausalOutcome, CausalRuntimeError, canonical_digest, outcome_document, outcome_from_document
 from ..sealed_results import SealedResult, SealedResultError
 
 ALLOWED_METHODS = frozenset({"GET", "PUT"})
@@ -69,70 +70,78 @@ def object_key(reproducibility_digest: str) -> str:
 
 
 def _body(outcome: CausalOutcome) -> dict[str, Any]:
-    return {
-        "status": outcome.status,
-        "reason_code": outcome.reason_code,
-        "method": outcome.method,
-        "effect": outcome.effect,
-        "details": dict(outcome.details),
-        "assumptions": list(outcome.assumptions),
-        "lineage": dict(outcome.lineage),
-    }
+    # OCOR-DEV-REM-0057 (NCP-U09): the canonical content of a CausalRunOutcome, whose
+    # status-specific fields are structured (ADD v1.3 :2979-3005).
+    return outcome_document(outcome)
 
 
 def _encode(body: Mapping[str, Any]) -> bytes:
-    # The encoding of c7.runtime.canonical_digest; every caller checks the result
-    # against that function, so the two can never diverge silently.
-    return json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    # The encoding of c7.runtime.canonical_digest (finite JSON only); every caller checks
+    # the result against that function, so the two can never diverge silently.
+    return json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
 
 
 def sealed_payload(outcome: CausalOutcome) -> bytes:
     """The bytes sealed for ``outcome``: the canonical preimage of its digest."""
-    body = _body(outcome)
-    payload = _encode(body)
+    try:
+        body = _body(outcome)
+        payload = _encode(body)
+        canonical = canonical_digest(body)
+    except (TypeError, ValueError) as exc:
+        raise SealedResultError("OUTCOME_DIGEST_MISMATCH", "the outcome content has no canonical digest") from exc
     digest = hashlib.sha256(payload).hexdigest()
-    if digest != canonical_digest(body) or digest != outcome.reproducibility_digest:
+    if digest != canonical or digest != outcome.reproducibility_digest:
         raise SealedResultError("OUTCOME_DIGEST_MISMATCH", "the reproducibility digest is not the digest of the outcome content")
     return payload
+
+
+def _no_constant(name: str) -> Any:
+    raise ValueError(f"{name} is not a finite JSON number")
 
 
 def _decode(payload: bytes, reproducibility_digest: str) -> CausalOutcome:
     if hashlib.sha256(payload).hexdigest() != reproducibility_digest:
         raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content does not match its digest")
     try:
-        body = json.loads(payload.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content is not canonical JSON") from exc
+        body = json.loads(payload.decode("utf-8"), parse_constant=_no_constant)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content is not canonical, finite JSON") from exc
     if not isinstance(body, dict) or set(body) != BODY_FIELDS or _encode(body) != payload:
         raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content is not a canonical causal outcome")
     if canonical_digest(body) != reproducibility_digest:
         raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content does not match its digest")
-    details, assumptions, lineage = body["details"], body["assumptions"], body["lineage"]
-    if (
-        not isinstance(body["status"], str)
-        or not all(body[name] is None or isinstance(body[name], str) for name in ("reason_code", "method", "effect"))
-        or not isinstance(details, dict)
-        or not all(isinstance(value, str) for value in details.values())
-        or not isinstance(assumptions, list)
-        or not all(isinstance(value, str) for value in assumptions)
-        or not isinstance(lineage, dict)
-    ):
-        raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content does not have the causal outcome types")
-    return CausalOutcome(
-        status=body["status"],
-        reason_code=body["reason_code"],
-        method=body["method"],
-        effect=body["effect"],
-        details=details,
-        assumptions=tuple(assumptions),
-        lineage=lineage,
-        reproducibility_digest=reproducibility_digest,
-    )
+    # OCOR-DEV-REM-0057 (NCP-U09): the sealed content must be a complete CausalRunOutcome of
+    # its status (ADD v1.3 :2979-3005; Register FR-093 :233), validated by the runtime schema.
+    try:
+        return outcome_from_document(body, reproducibility_digest)
+    except CausalRuntimeError as exc:
+        raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content is not a complete causal outcome") from exc
 
 
-def _error_code(text: str) -> str:
-    match = re.search(r"<Code>([^<]+)</Code>", text)
-    return match.group(1) if match else ""
+def _error_code(raw: bytes) -> str:
+    """The ``Code`` of an S3 ``Error`` document (un-namespaced), or ``""`` for any other
+    answer; only used to classify a refusal, never to accept one."""
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        return ""
+    return (root.findtext("Code") or "") if root.tag == "Error" else ""
+
+
+def _document(raw: bytes, root_name: str) -> ET.Element:
+    """The S3 answer parsed as XML whose root is ``root_name`` in the S3 namespace;
+    anything else is an ``UNEXPECTED_RESPONSE``, never searched for substrings."""
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError as exc:
+        raise SealedResultError("UNEXPECTED_RESPONSE", f"the {root_name} answer is not XML") from exc
+    if root.tag != f"{S3_NAMESPACE}{root_name}":
+        raise SealedResultError("UNEXPECTED_RESPONSE", f"the answer is not an S3 {root_name} document")
+    return root
+
+
+def _field(root: ET.Element, name: str) -> str:
+    return (root.findtext(f"{S3_NAMESPACE}{name}") or "").strip()
 
 
 class SeaweedFSSealedResultStore:
@@ -216,16 +225,20 @@ class SeaweedFSSealedResultStore:
             headers=self._signed_headers(method, url, payload, extra),
         )
         try:
-            with urllib.request.urlopen(prepared, timeout=timeout) as response:
-                return response.status, {k.lower(): v for k, v in response.headers.items()}, response.read()
-        except urllib.error.HTTPError as exc:
-            return exc.code, {k.lower(): v for k, v in exc.headers.items()}, exc.read()
-        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+            try:
+                with urllib.request.urlopen(prepared, timeout=timeout) as response:
+                    return response.status, {k.lower(): v for k, v in response.headers.items()}, response.read()
+            except urllib.error.HTTPError as exc:
+                with exc:
+                    return exc.code, {k.lower(): v for k, v in exc.headers.items()}, exc.read()
+        except (urllib.error.URLError, http.client.HTTPException, OSError, TimeoutError) as exc:
+            # Unreachable, refused, timed out, or an answer that is not HTTP or is truncated
+            # (BadStatusLine, IncompleteRead, also while reading an error body).
             raise SealedResultError("STORE_UNAVAILABLE", f"SeaweedFS endpoint {self._endpoint} unreachable ({type(exc).__name__})") from exc
 
-    def _denied(self, status: int, text: str) -> SealedResultError | None:
+    def _denied(self, status: int, raw: bytes) -> SealedResultError | None:
         if status == 403:
-            return SealedResultError("ACCESS_DENIED", f"SeaweedFS refused the request ({_error_code(text) or status})")
+            return SealedResultError("ACCESS_DENIED", f"SeaweedFS refused the request ({_error_code(raw) or status})")
         return None
 
     # -- lifecycle -------------------------------------------------------------------
@@ -234,18 +247,16 @@ class SeaweedFSSealedResultStore:
         """Refuse a bucket that is missing, unreachable, without Object Lock or without
         versioning. Nothing is created: the bucket is provisioned out of band."""
         status, _, raw = self._request("GET", f"/{self._bucket}", query="object-lock=")
-        text = raw.decode("utf-8", "replace")
-        if (denied := self._denied(status, text)) is not None:
+        if (denied := self._denied(status, raw)) is not None:
             raise denied
-        if status == 404 and _error_code(text) == "NoSuchBucket":
+        if status == 404 and _error_code(raw) == "NoSuchBucket":
             raise SealedResultError("BUCKET_NOT_FOUND", f"bucket {self._bucket} does not exist")
-        if status != 200 or "<ObjectLockEnabled>Enabled</ObjectLockEnabled>" not in text:
+        if status != 200 or _field(_document(raw, "ObjectLockConfiguration"), "ObjectLockEnabled") != "Enabled":
             raise SealedResultError("BUCKET_OBJECT_LOCK_DISABLED", f"bucket {self._bucket} has no S3 Object Lock")
         status, _, raw = self._request("GET", f"/{self._bucket}", query="versioning=")
-        text = raw.decode("utf-8", "replace")
-        if (denied := self._denied(status, text)) is not None:
+        if (denied := self._denied(status, raw)) is not None:
             raise denied
-        if status != 200 or "<Status>Enabled</Status>" not in text:
+        if status != 200 or _field(_document(raw, "VersioningConfiguration"), "Status") != "Enabled":
             raise SealedResultError("BUCKET_VERSIONING_DISABLED", f"bucket {self._bucket} has no enabled versioning")
         self._initialized = True
 
@@ -260,16 +271,12 @@ class SeaweedFSSealedResultStore:
         delete markers; ``None`` when the key was never written."""
         query = "prefix=" + urllib.parse.quote(key, safe="") + "&versions="
         status, _, raw = self._request("GET", f"/{self._bucket}", query=query)
-        text = raw.decode("utf-8", "replace")
-        if (denied := self._denied(status, text)) is not None:
+        if (denied := self._denied(status, raw)) is not None:
             raise denied
         if status != 200:
             raise SealedResultError("UNEXPECTED_RESPONSE", f"listing versions returned {status}")
-        try:
-            root = ET.fromstring(raw)
-        except ET.ParseError as exc:
-            raise SealedResultError("UNEXPECTED_RESPONSE", "listing versions returned invalid XML") from exc
-        if (root.findtext(f"{S3_NAMESPACE}IsTruncated") or "false").strip().lower() != "false":
+        root = _document(raw, "ListVersionsResult")
+        if (_field(root, "IsTruncated") or "false").lower() != "false":
             raise SealedResultError("UNEXPECTED_RESPONSE", "listing versions of one key was truncated")
         versions = [
             element.findtext(f"{S3_NAMESPACE}VersionId") or ""
@@ -287,7 +294,7 @@ class SeaweedFSSealedResultStore:
         if version is None:
             return None
         status, _, raw = self._request("GET", f"/{self._bucket}/{key}", query="versionId=" + urllib.parse.quote(version, safe=""))
-        if (denied := self._denied(status, raw.decode("utf-8", "replace"))) is not None:
+        if (denied := self._denied(status, raw)) is not None:
             raise denied
         if status != 200:
             raise SealedResultError("UNEXPECTED_RESPONSE", f"reading the sealed version returned {status}")
@@ -321,8 +328,7 @@ class SeaweedFSSealedResultStore:
             },
             timeout=WRITE_TIMEOUT,
         )
-        text = raw.decode("utf-8", "replace")
-        if (denied := self._denied(status, text)) is not None:
+        if (denied := self._denied(status, raw)) is not None:
             raise denied
         if status == 412:
             existing = self._sealed_bytes(key)
@@ -335,9 +341,17 @@ class SeaweedFSSealedResultStore:
         status, _, raw = self._request(
             "GET", f"/{self._bucket}/{key}", query="retention=&versionId=" + urllib.parse.quote(version, safe="")
         )
-        if status != 200 or f"<Mode>{RETENTION_MODE}</Mode>" not in raw.decode("utf-8", "replace"):
+        if status != 200 or self._retention_mode(raw) != RETENTION_MODE:
             raise SealedResultError("RETENTION_NOT_APPLIED", f"the sealed version has no {RETENTION_MODE} retention")
         return SealedResult(reproducibility_digest=digest, newly_sealed=True)
+
+    @staticmethod
+    def _retention_mode(raw: bytes) -> str:
+        """The ``Mode`` of an S3 ``Retention`` document; ``""`` for any other answer."""
+        try:
+            return _field(_document(raw, "Retention"), "Mode")
+        except SealedResultError:
+            return ""
 
     def read_sealed_result(self, reproducibility_digest: str) -> CausalOutcome:
         key = object_key(reproducibility_digest)
