@@ -66,8 +66,8 @@ ADAPTER_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/adapters/terminusdb_overlay.p
 # (OCOR-DEV-0045), the C3 TerminusDB adapter and service (OCOR-DEV-REM-0041 C3 unit).
 SEALED_SHA256 = {
     "src/ocor_runtime/c7/sealed_results.py": "ee45cd53f136c7f859a03c004d470be04367c0fab1ed0ffff86e64b2aedeba74",
-    "src/ocor_runtime/c7/adapters/seaweedfs.py": "f81a4a0bc5b964be010c1d25f41d319443199eeeef8673b018bb7ece25f7c7dc",
-    "src/ocor_runtime/c7/runtime.py": "618296ae3e490cb2170f1f330a7cc1e3a821795791203d5bfc88c194b32ce118",
+    "src/ocor_runtime/c7/adapters/seaweedfs.py": "13dcadb6490c724af11b2054a98abad833f8a3feeed7a522297757f12cc912e6",
+    "src/ocor_runtime/c7/runtime.py": "a9d9c7488372b49fc442a633f4f7b4109abeb584e928c97455bf99880fbc354d",
     "src/ocor_runtime/c3/adapters/terminusdb.py": "73bb90a0edccc934b63348f57831152a5b237b04c985b5c792bb94723053ee39",
     "src/ocor_runtime/c3/terminusdb_service.py": "a63a11994c8945b67138c91937ad0983b199c71ea34608be10fb7e1482d1f76e",
 }
@@ -337,8 +337,30 @@ def _terminus_branch(branch: Any) -> str:
 
 def _outcome(branch: Any, label: str) -> CausalOutcome:
     """A real CausalOutcome computed by the sealed c7/runtime.py on the overlay's own
-    scenario branch and baseline commit, unique to this run."""
-    model = {"graph": "treatment->outcome; stratum->treatment; stratum->outcome", "label": label}
+    scenario branch and baseline commit, unique to this run. The model is a registered SCM
+    (OCOR-DEV-REM-0057 construction, NORMATIVE-CONFORMANCE-PLAN point 5)."""
+    prefix, confounded = "rem0041-overlay", False
+    confounder = "stratum"
+    model = {
+        "model_id": f"{prefix}-{label}",
+        "version": 1,
+        "estimand": "ATE",
+        "tolerance": "0.25",
+        "samples": 1000,
+        "sensitivity_shift": "1",
+        "exogenous": {
+            "u_stratum": {"distribution": "bernoulli", "p": "0.5"},
+            "u_treatment": {"distribution": "normal", "mean": "0", "sd": "1"},
+            "u_outcome": {"distribution": "normal", "mean": "0", "sd": "1"},
+            **({"u_latent": {"distribution": "normal", "mean": "0", "sd": "1"}} if confounded else {}),
+        },
+        "endogenous": {
+            "stratum": {"mechanism": "linear", "intercept": "0", "parents": {"u_stratum": "1"}},
+            "treatment": {"mechanism": "threshold", "intercept": "-0.5", "parents": {confounder: "1", "u_treatment": "1"}},
+            "outcome": {"mechanism": "linear", "intercept": "1", "parents": {"treatment": "2", confounder: "1", "u_outcome": "1"}},
+        },
+        "observed": ["stratum", "treatment", "outcome"],
+    }
     rows = [
         {"stratum": "a", "treatment": 0, "outcome": 1.0},
         {"stratum": "a", "treatment": 1, "outcome": 3.0},
@@ -356,7 +378,6 @@ def _outcome(branch: Any, label: str) -> CausalOutcome:
         expected_release_digest="release-1",
         treatment="treatment",
         outcome="outcome",
-        adjustment="stratum",
         seed=7,
         correlation_id=f"rem0041-overlay-{RUN_NONCE}-{label}",
         causation_id=f"rem0041-overlay-{label}",
@@ -1230,7 +1251,8 @@ def test_seal_result_composes_the_seaweedfs_subset_end_to_end(overlay: Any, seal
     branch = _fork(overlay)
     overlay.append_overlay(branch, {"intervention": "do(treatment=1)"})
     outcome = _outcome(branch, "end-to-end")
-    assert outcome.status == "IDENTIFIED" and outcome.lineage["scenario_branch"] == branch.scenario_branch
+    # ADD v1.3 :2979-2981 (NCR-C7-003, NORMATIVE-CONFORMANCE-PLAN point 5): an estimate is ESTIMATED.
+    assert outcome.status == "ESTIMATED" and outcome.lineage["scenario_branch"] == branch.scenario_branch
     receipt = overlay.seal_result(outcome)
     assert receipt.newly_sealed is True and receipt.reproducibility_digest == outcome.reproducibility_digest
     assert overlay.read_sealed_result(receipt.reproducibility_digest) == outcome

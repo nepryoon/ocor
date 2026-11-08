@@ -606,9 +606,8 @@ def validate_outcome_document(document: object) -> None:
 def outcome_from_document(document: object, reproducibility_digest: str) -> CausalOutcome:
     """Rebuild a sealed outcome after validating its schema and recomputing its digest."""
     validate_outcome_document(document)
-    if canonical_digest(document) != reproducibility_digest:
+    if not isinstance(document, Mapping) or canonical_digest(document) != reproducibility_digest:
         raise CausalRuntimeError("REPRODUCIBILITY_DIGEST_MISMATCH: the content does not match its digest")
-    assert isinstance(document, Mapping)
     return CausalOutcome(
         status=document["status"],
         reason_code=document["reason_code"],
@@ -1275,7 +1274,8 @@ class SimulationResult:
         errors = sorted(_SIMULATION_RESULT_VALIDATOR.iter_errors(document), key=lambda error: list(error.absolute_path))
         if errors:
             raise CausalRuntimeError(f"SIMULATION_RESULT_SCHEMA_INVALID: {errors[0].message}")
-        assert isinstance(document, Mapping)
+        if not isinstance(document, Mapping):
+            raise CausalRuntimeError("SIMULATION_RESULT_SCHEMA_INVALID: the result is not an object")
         return cls(
             output=document["output"],
             estimator_ref=document["estimator_ref"],

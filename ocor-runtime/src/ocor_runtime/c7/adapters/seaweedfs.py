@@ -43,7 +43,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ..runtime import CausalOutcome, canonical_digest
+from ..runtime import CausalOutcome, CausalRuntimeError, canonical_digest, outcome_document, outcome_from_document
 from ..sealed_results import SealedResult, SealedResultError
 
 ALLOWED_METHODS = frozenset({"GET", "PUT"})
@@ -69,15 +69,9 @@ def object_key(reproducibility_digest: str) -> str:
 
 
 def _body(outcome: CausalOutcome) -> dict[str, Any]:
-    return {
-        "status": outcome.status,
-        "reason_code": outcome.reason_code,
-        "method": outcome.method,
-        "effect": outcome.effect,
-        "details": dict(outcome.details),
-        "assumptions": list(outcome.assumptions),
-        "lineage": dict(outcome.lineage),
-    }
+    # OCOR-DEV-REM-0057 (NCP-U09): the canonical content of a CausalRunOutcome, whose
+    # status-specific fields are structured (ADD v1.3 :2979-3005).
+    return outcome_document(outcome)
 
 
 def _encode(body: Mapping[str, Any]) -> bytes:
@@ -107,27 +101,12 @@ def _decode(payload: bytes, reproducibility_digest: str) -> CausalOutcome:
         raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content is not a canonical causal outcome")
     if canonical_digest(body) != reproducibility_digest:
         raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content does not match its digest")
-    details, assumptions, lineage = body["details"], body["assumptions"], body["lineage"]
-    if (
-        not isinstance(body["status"], str)
-        or not all(body[name] is None or isinstance(body[name], str) for name in ("reason_code", "method", "effect"))
-        or not isinstance(details, dict)
-        or not all(isinstance(value, str) for value in details.values())
-        or not isinstance(assumptions, list)
-        or not all(isinstance(value, str) for value in assumptions)
-        or not isinstance(lineage, dict)
-    ):
-        raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content does not have the causal outcome types")
-    return CausalOutcome(
-        status=body["status"],
-        reason_code=body["reason_code"],
-        method=body["method"],
-        effect=body["effect"],
-        details=details,
-        assumptions=tuple(assumptions),
-        lineage=lineage,
-        reproducibility_digest=reproducibility_digest,
-    )
+    # OCOR-DEV-REM-0057 (NCP-U09): the sealed content must be a complete CausalRunOutcome of
+    # its status (ADD v1.3 :2979-3005; Register FR-093 :233), validated by the runtime schema.
+    try:
+        return outcome_from_document(body, reproducibility_digest)
+    except CausalRuntimeError as exc:
+        raise SealedResultError("SEALED_RESULT_TAMPERED", "the sealed content is not a complete causal outcome") from exc
 
 
 def _error_code(text: str) -> str:
