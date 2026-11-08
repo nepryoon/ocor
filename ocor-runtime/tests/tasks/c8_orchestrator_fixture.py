@@ -17,6 +17,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ocor_runtime import audit
+from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
+from ocor_runtime.c4_marking import MarkingSchemeDefinition, MarkingSet
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c8 import orchestrator as orchestration
 from ocor_runtime.c8 import tool_runtime
@@ -31,6 +33,8 @@ NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 TENANT = "t1"
 ESCALATION_TARGET = "urn:ocor:human:mission-owner"
 KERNEL_KEYID = "urn:ocor:key:c8-coordination-kernel"
+MODEL_PIN = "urn:sha256:" + "1" * 64
+INSTRUCTION_PIN = "urn:sha256:" + "2" * 64
 OUTPUT_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -54,6 +58,13 @@ DEFAULT_MEMBERS: tuple[tuple[str, str], ...] = (
 )
 
 
+CONTEXT_MARKING_REF = "urn:sha256:" + "a" * 64
+
+
+def marking_engine() -> ResolvedMarkingEngine:
+    return ResolvedMarkingEngine([MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET", "TOP_SECRET"))])
+
+
 def delegation_of(agent_id: str) -> str:
     return "urn:sha256:" + uuid.uuid5(uuid.NAMESPACE_URL, f"delegation:{agent_id}").hex * 2
 
@@ -64,7 +75,7 @@ def context(agent_id: str, *, purpose: str = "incident-response", tenant: str = 
         organization_id="o1",
         domain_id="d1",
         compartments=("default",),
-        classification_marking_ref="urn:sha256:" + "a" * 64,
+        classification_marking_ref=CONTEXT_MARKING_REF,
         purpose=purpose,
         effective_principal_id=agent_id,
         actor_chain=(agent_id,),
@@ -203,6 +214,9 @@ class TeamWorld:
         self.budgets = tool_runtime.AgentBudgetLedger()
         self.schemas = SchemaCatalog()
         self.kernel_key = seeded_key("c8-coordination-kernel")
+        # the Governed Context of the team is SECRET; every member is cleared TOP_SECRET
+        self.markings = orchestration.InMemoryCoordinationMarkings()
+        self.markings.define(CONTEXT_MARKING_REF, MarkingSet({"classification": "SECRET"}))
         self.members = {}
         tiers = tiers or {}
         self.team_run_id = team_run_id or f"urn:ocor:team-run:{uuid.uuid4()}"
@@ -210,6 +224,7 @@ class TeamWorld:
             binding = self.binding(agent_id, tier=tiers.get(agent_id, "PROPOSE" if role == "COORDINATOR" else "ANALYZE"))
             self.members[agent_id] = orchestration.TeamMember(role=orchestration.AgentRole[role], binding=binding)
             self.controls.bind_delegation(agent_id, delegation_of(agent_id))
+            self.markings.set_clearance(agent_id, MarkingSet({"classification": "TOP_SECRET"}))
             for level, key in (("agent", agent_id), ("run", binding.agent_run_id)):
                 self.budgets.set_quota(level, key, quota())
         self.budgets.set_quota("team", "team-1", quota(steps=1000))
@@ -225,6 +240,8 @@ class TeamWorld:
             audit=self.audit,
             signing_key=self.kernel_key,
             keyid=KERNEL_KEYID,
+            marking_engine=marking_engine(),
+            markings=self.markings,
         )
         self.orchestrator = orchestration.AgentRunOrchestrator(authority=self.authority, kernel=self.kernel, ledger=self.ledger)
         self.termination = termination or orchestration.TerminationCondition(
@@ -247,6 +264,8 @@ class TeamWorld:
             owner="urn:ocor:human:owner-1",
             autonomy_tier=tier,
             agent_version="1.0.0",
+            model_pin=MODEL_PIN,
+            instruction_pin=INSTRUCTION_PIN,
             team_id="team-1",
             tenant_id=TENANT,
         )

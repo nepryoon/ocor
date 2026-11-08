@@ -787,7 +787,10 @@ def _i_json(value: Any, what: str) -> Any:
 
 
 def _first_error(validator: Draft202012Validator, value: Any) -> str | None:
-    errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
+    try:
+        errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
+    except Exception as error:  # noqa: BLE001 - a schema that cannot be evaluated never admits a value
+        raise _violation(f"the value cannot be validated ({type(error).__name__})") from error
     if not errors:
         return None
     first = errors[0]
@@ -795,11 +798,79 @@ def _first_error(validator: Draft202012Validator, value: Any) -> str | None:
     return f"{location}: {first.message}"
 
 
+_REFERENCE_KEYWORDS = ("$ref", "$dynamicRef")
+_ANCHOR_KEYWORDS = ("$anchor", "$dynamicAnchor")
+
+
+def _references(node: Any) -> Iterator[str]:
+    """Every reference a schema makes (string values of ``$ref``/``$dynamicRef``), anywhere."""
+    if isinstance(node, Mapping):
+        for key, value in node.items():
+            if key in _REFERENCE_KEYWORDS and isinstance(value, str):
+                yield value
+            else:
+                yield from _references(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _references(item)
+
+
+def _anchors(node: Any) -> set[str]:
+    found: set[str] = set()
+    if isinstance(node, Mapping):
+        for key, value in node.items():
+            if key in _ANCHOR_KEYWORDS and isinstance(value, str):
+                found.add(value)
+            else:
+                found |= _anchors(value)
+    elif isinstance(node, list):
+        for item in node:
+            found |= _anchors(item)
+    return found
+
+
+def _require_resolvable(document: Mapping[str, Any], name: str) -> None:
+    """A schema is self-contained: every reference is a JSON Pointer (``#/...``) into the schema
+    itself or one of its anchors (``#name``) and resolves there. There is no registry of remote
+    schemas, so any other reference could never resolve and the schema is refused on admission."""
+    anchors = _anchors(document)
+    for reference in _references(document):
+        if not reference.startswith("#"):
+            raise _violation(f"schema {name} references {reference!r} outside itself")
+        fragment = reference[1:]
+        if fragment == "":
+            continue
+        if not fragment.startswith("/"):
+            if fragment not in anchors:
+                raise _violation(f"schema {name}: anchor {reference!r} does not resolve")
+            continue
+        target: Any = document
+        for token in fragment[1:].split("/"):
+            token = token.replace("~1", "/").replace("~0", "~")
+            if isinstance(target, Mapping) and token in target:
+                target = target[token]
+            elif isinstance(target, list) and token.isdigit() and int(token) < len(target):
+                target = target[int(token)]
+            else:
+                raise _violation(f"schema {name}: reference {reference!r} does not resolve")
+
+
 @dataclass(frozen=True, slots=True)
 class SchemaPin:
+    """A pin of a schema by identifier, semantic version and wire digest; every field is checked
+    on construction (``SCHEMA_VIOLATION``)."""
+
     schema_id: str
     version: str
     digest: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.schema_id, str) or _STABLE_ID.fullmatch(self.schema_id) is None:
+            raise _violation("schema pin: schema_id is not a stable OCOR identifier")
+        if not isinstance(self.version, str) or _SEMVER.fullmatch(self.version) is None:
+            raise _violation("schema pin: version is not a semantic version")
+        if not isinstance(self.digest, str) or _WIRE_DIGEST.fullmatch(self.digest) is None:
+            raise _violation("schema pin: digest is not a sha256 wire digest")
 
 
 class SchemaCatalog:
@@ -823,6 +894,7 @@ class SchemaCatalog:
             Draft202012Validator.check_schema(document)
         except SchemaError as error:
             raise _violation(f"schema {schema_id}@{version} is not a valid JSON Schema 2020-12: {error.message}") from error
+        _require_resolvable(document, f"{schema_id}@{version}")
         key = (schema_id, version)
         digest = wire_digest(document)
         known = self._schemas.get(key)
@@ -972,6 +1044,26 @@ class ToolOutput:
     input_digest: str
     output_digest: str
     taint_labels: tuple[str, ...] = UNTRUSTED_TOOL_OUTPUT_TAINT
+
+
+def verified_tool_output(output: object) -> ToolOutput:
+    """A ``ToolOutput`` whose fields are well formed and whose ``output_digest`` is the digest of its
+    value, recomputed here (``SCHEMA_VIOLATION`` otherwise)."""
+    if not isinstance(output, ToolOutput):
+        raise _violation("not a ToolOutput of the governed tool runtime")
+    for name in ("contract_id", "binding_id"):
+        value = getattr(output, name)
+        if not isinstance(value, str) or _STABLE_ID.fullmatch(value) is None:
+            raise _violation(f"tool output: {name} is not a stable OCOR identifier")
+    if not isinstance(output.tool_name, str) or _TOOL_NAME.fullmatch(output.tool_name) is None:
+        raise _violation("tool output: tool_name is not a lowercase identifier")
+    for name in ("contract_digest", "input_digest", "output_digest"):
+        value = getattr(output, name)
+        if not isinstance(value, str) or _WIRE_DIGEST.fullmatch(value) is None:
+            raise _violation(f"tool output: {name} is not a sha256 wire digest")
+    if wire_digest(output.value) != output.output_digest:
+        raise _violation("tool output: output_digest is not the digest of the output value")
+    return output
 
 
 Predicate = Callable[[Mapping[str, Any]], object]

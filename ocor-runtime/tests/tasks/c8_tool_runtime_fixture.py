@@ -12,6 +12,7 @@ signed audit chain on the live PostgreSQL (``OCOR_LIVE_POSTGRES_DSN``, Register 
 from __future__ import annotations
 
 import os
+import uuid
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any
@@ -23,11 +24,14 @@ from ocor_runtime.c8 import tool_runtime
 from ocor_runtime.c8.tool_contract import SchemaCatalog, ToolBinding, ToolContract, ToolRegistry, wire_digest
 from ocor_runtime.kernel.governance import Authority, RiskClass
 from ocor_runtime.kernel.governed_context import GovernedContext
-from ocor_runtime.security.ports import AuthenticatedPrincipal, ControlName, ControlStatus, PolicyDecision, PolicyEffect
+from ocor_runtime.security.ports import AuthenticatedPrincipal, ControlName, ControlStatus, PolicyDecision, PolicyEffect, WorkloadIdentity
 
 from c6_action_fixture import seeded_key
 
 DELEGATION = "urn:sha256:" + "e" * 64
+MODEL_PIN = "urn:sha256:" + "1" * 64
+INSTRUCTION_PIN = "urn:sha256:" + "2" * 64
+TRUST_BUNDLE = "urn:sha256:" + "3" * 64
 SCOPE = "urn:ocor:scope:services"
 INPUT_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -141,6 +145,8 @@ class ToolRuntimeWorld:
             owner="urn:ocor:human:owner-1",
             autonomy_tier="ANALYZE",
             agent_version="1.0.0",
+            model_pin=MODEL_PIN,
+            instruction_pin=INSTRUCTION_PIN,
             team_id="team-1",
             tenant_id=context.tenant_id,
         )
@@ -237,6 +243,30 @@ class ToolRuntimeWorld:
             ledger.set_quota(level, key, quota)
         return ledger.budget(self.agent) if budget_class is None else budget_class(ledger, self.agent)
 
+    def envelope(self) -> tool_runtime.InvocationEnvelope:
+        """The invocation envelope of a call of the agent run (ADD v1.3 :1988), with the attested
+        SVID of its workload and a fresh idempotency key."""
+        workload = WorkloadIdentity(
+            spiffe_id=self.agent.workload_identity,
+            svid_ref=f"urn:ocor:svid:{uuid.uuid4()}",
+            trust_bundle_digest=TRUST_BUNDLE,
+            attested=True,
+            not_before=self.now - timedelta(days=1),
+            expires_at=self.now + timedelta(days=30),
+            status=ControlStatus.available(ControlName.WORKLOAD_IDENTITY, observed_at=self.now, source_digest=TRUST_BUNDLE),
+        )
+        return tool_runtime.InvocationEnvelope(
+            agent_run_id=self.agent.agent_run_id,
+            workload=workload,
+            delegation_ref=DELEGATION,
+            governed_context_digest=self.context.digest(),
+            ontology_release_digest=self.context.ontology_release_digest,
+            model_pin=self.agent.model_pin,
+            instruction_pin=self.agent.instruction_pin,
+            correlation_id=self.context.correlation_id,
+            idempotency_key=f"urn:ocor:idempotency:{uuid.uuid4()}",
+        )
+
     def call_bindings(self) -> dict[str, Any]:
-        """The agent bindings every ``invoke`` presents."""
-        return {"agent": self.agent, "principal": self.principal}
+        """The agent bindings and the invocation envelope every ``invoke`` presents."""
+        return {"agent": self.agent, "principal": self.principal, "envelope": self.envelope()}

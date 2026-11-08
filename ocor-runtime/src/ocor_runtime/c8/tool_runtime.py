@@ -31,12 +31,25 @@ dispatch, the runtime reads, as recorded now and whatever instant the caller pre
   but an explicit ``True`` is ``POLICY_DENIED``;
 * the policy decision (``security.ports.PolicyDecisionPort``, OPA in the product), verified against
   the request and applied with ``PolicyDecision.admit``: ``DENY`` or an unavailable decision point
-  is ``POLICY_DENIED``, ``REQUIRE_APPROVAL`` is ``APPROVAL_REQUIRED``.
+  is ``POLICY_DENIED``, ``REQUIRE_APPROVAL`` is ``APPROVAL_REQUIRED``;
+* the approval the admitted contract requires: the C8 call carries no Approval, so a contract whose
+  ``approval.mode`` is ``HUMAN_GATE`` or ``DUAL_CONTROL`` is ``APPROVAL_REQUIRED`` whatever the
+  policy decides (human-gated effects go through the C6 Human Gate, never through C8);
+* the authenticated agent principal and the attested workload SVID of the invocation envelope.
+
+The re-evaluation before a dispatch happens at the instant of that dispatch: the presented instant
+plus the time the expression has run (monotonic clock), so a grant, Authority, principal, SVID or
+decision that expires while an earlier tool runs refuses the next one.
 
 Agent identity (ADD v1.3 §5.1 :3140, FR-004 :47): every call presents an ``AgentIdentityBinding``
 (agent principal, run, workload identity, owner, autonomy tier, agent version, team, tenant) that
-must match the authenticated principal and the Governed Context; the Governed Context digest is
-recomputed and must be the one the registry is bound to (``STALE_CONTEXT``). The receipt records
+must match the authenticated principal and the Governed Context, and be the binding the grant was
+issued to (workload identity, owner, version, tier and the model and instruction pins included);
+the Governed Context digest is recomputed and must be the one the registry is bound to
+(``STALE_CONTEXT``). Every call carries the invocation envelope of ADD v1.3 :1988
+(``InvocationEnvelope``): agent run, the transport-attested workload SVID, Delegation, Governed
+Context and ontology digests, model and instruction pins, correlation ID and idempotency key, each
+verified at the boundary against what the runtime recomputes or holds. The receipt records
 agent, run, version, workload identity, tier, Delegation and delegator, scope, Authority, context
 digest, every contract invocation with its input/output digests, every policy decision and the
 budget charged, with the taint of the output.
@@ -113,7 +126,7 @@ from ..kernel.governance import (
     validate_authority,
 )
 from ..kernel.governed_context import GovernedContext
-from ..security.ports import SPIFFE_ID, AuthenticatedPrincipal, PolicyDecision, PolicyDecisionPort, PolicyRequest
+from ..security.ports import SPIFFE_ID, AuthenticatedPrincipal, PolicyDecision, PolicyDecisionPort, PolicyRequest, WorkloadIdentity
 from .tool_contract import TOOL_ERROR_CODES, UNTRUSTED_TOOL_OUTPUT_TAINT, ToolContract, ToolContractError, ToolOutput, ToolRegistry
 
 # Every reason code the runtime raises; all of them belong to the error_codes enum (ADD v1.3 :1759-1778).
@@ -155,6 +168,8 @@ _CONTRACT_RISK = MappingProxyType(
 _RISK_EXPOSURE = MappingProxyType({"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4})
 _URN = re.compile(r"^urn:[A-Za-z0-9][A-Za-z0-9-]{0,31}:[^\s]{1,240}$")
 _SHA256_URN = re.compile(r"^urn:sha256:[0-9a-f]{64}$")
+# the idempotency key of an envelope: bounded (ADD v1.3 :615) and without whitespace
+_IDEMPOTENCY_KEY = re.compile(r"^[^\s]{16,256}$")
 
 
 class ToolRuntimeError(OCORError):
@@ -211,7 +226,8 @@ def _text(name: str, value: object) -> str:
 @dataclass(frozen=True, slots=True)
 class AgentIdentityBinding:
     """The binding between workload identity, agent principal, agent run, owner, autonomy tier and
-    agent version (ADD v1.3 :3140), with the team and tenant its budget is charged to."""
+    agent version (ADD v1.3 :3140), with the model and instruction pins of the run (ADD v1.3
+    :1988) and the team and tenant its budget is charged to."""
 
     agent_principal_id: str
     agent_run_id: str
@@ -219,16 +235,53 @@ class AgentIdentityBinding:
     owner: str
     autonomy_tier: str
     agent_version: str
+    model_pin: str
+    instruction_pin: str
     team_id: str
     tenant_id: str
 
     def __post_init__(self) -> None:
         for name in ("agent_principal_id", "agent_run_id", "owner", "agent_version", "team_id", "tenant_id"):
             _text(name, getattr(self, name))
+        for name in ("model_pin", "instruction_pin"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or _SHA256_URN.fullmatch(value) is None:
+                raise ValueError(f"{name} must be a SHA-256 URN")
         if not isinstance(self.workload_identity, str) or SPIFFE_ID.fullmatch(self.workload_identity) is None:
             raise ValueError("workload_identity must be a SPIFFE ID")
         if self.autonomy_tier not in AUTONOMY_TIERS:
             raise ValueError(f"autonomy_tier must be one of {AUTONOMY_TIERS}")
+
+
+@dataclass(frozen=True, slots=True)
+class InvocationEnvelope:
+    """The invocation envelope every ``tools/call`` carries (ADD v1.3 :1988): agent run, the
+    transport-attested workload identity (the SVID the transport verified), Delegation, Governed
+    Context and ontology digests, model and instruction pins, correlation ID and idempotency key.
+    A malformed envelope is ``SCHEMA_VIOLATION``; the runtime verifies each field at the boundary."""
+
+    agent_run_id: str
+    workload: WorkloadIdentity
+    delegation_ref: str
+    governed_context_digest: str
+    ontology_release_digest: str
+    model_pin: str
+    instruction_pin: str
+    correlation_id: str
+    idempotency_key: str
+
+    def __post_init__(self) -> None:
+        try:
+            for name in ("agent_run_id", "correlation_id"):
+                _text(name, getattr(self, name))
+        except ValueError as error:
+            raise _refuse("SCHEMA_VIOLATION", f"invocation envelope: {error}") from error
+        for name in ("delegation_ref", "governed_context_digest", "ontology_release_digest", "model_pin", "instruction_pin"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or _SHA256_URN.fullmatch(value) is None:
+                raise _refuse("SCHEMA_VIOLATION", f"invocation envelope: {name} must be a SHA-256 URN")
+        if not isinstance(self.idempotency_key, str) or _IDEMPOTENCY_KEY.fullmatch(self.idempotency_key) is None:
+            raise _refuse("SCHEMA_VIOLATION", "invocation envelope: idempotency_key must be 16-256 characters without whitespace")
 
 
 # --- C8 tool grants: the bounded task-claim lease (LLD v1.1 :358; ADD v1.3 :3215-3220) ----------
@@ -237,9 +290,9 @@ class AgentIdentityBinding:
 @dataclass(frozen=True, slots=True)
 class ToolGrant:
     """A C8 grant of named tools to one agent run, bound to the stop epoch of its issuance, to a
-    Delegation, a scope and the Authority that covers it. ``parent_lease_id`` names the grant it was
-    delegated from; ``delegator`` is the delegating agent principal, or the Authority of a root
-    grant."""
+    Delegation, a scope and the Authority that covers it. ``agent`` is the complete identity binding
+    the grant was issued to; ``parent_lease_id`` names the grant it was delegated from; ``delegator``
+    is the delegating agent principal, or the Authority of a root grant."""
 
     lease_id: str
     agent_principal_id: str
@@ -254,11 +307,19 @@ class ToolGrant:
     parent_lease_id: str | None
     redelegation_allowed: bool
     delegator: str
+    agent: AgentIdentityBinding
     revoked_at: datetime | None = None
 
 
 def _refuse(code: str, message: str) -> ToolRuntimeError:
     return ToolRuntimeError(code, message)
+
+
+def _require_no_approval(contract: ToolContract) -> None:
+    """The approval the contract requires (ADD v1.3 :1657-1677, :1990): a C8 tool call carries no
+    Approval, so a ``HUMAN_GATE`` or ``DUAL_CONTROL`` contract is never executed through C8."""
+    if contract.approval_mode != "NONE":
+        raise _refuse("APPROVAL_REQUIRED", f"{contract.contract_id} requires {contract.approval_mode}; a C8 tool call carries no Approval")
 
 
 def _current_stop(stop: StopEpochReader) -> int:
@@ -411,6 +472,7 @@ class ToolGrantLedger:
             parent_lease_id=None if parent is None else parent.lease_id,
             redelegation_allowed=redelegation_allowed,
             delegator=authority_id if parent is None else parent.agent_principal_id,
+            agent=agent,
         )
         with self._lock:
             self._grants[grant.lease_id] = grant
@@ -872,6 +934,9 @@ class ToolCallReceipt:
     agent_version: str
     workload_identity: str
     autonomy_tier: str
+    model_pin: str
+    instruction_pin: str
+    idempotency_key: str
     delegation_ref: str
     delegator: str
     scope: str
@@ -897,7 +962,13 @@ class _Call:
     instant: datetime
     budget: AgentBudget
     decisions: list[str]
+    envelope: InvocationEnvelope
+    started: float = field(default_factory=time.monotonic)
     charged: dict[str, int] = field(default_factory=dict)
+
+    def now(self) -> datetime:
+        """The instant of a dispatch: the presented instant plus the time the call has run."""
+        return self.instant + timedelta(seconds=max(0.0, time.monotonic() - self.started))
 
     def add(self, amounts: Mapping[str, int]) -> None:
         for dimension, value in amounts.items():
@@ -1004,6 +1075,9 @@ class ToolCallRuntime:
         if grant.stop_epoch != epoch:
             raise _refuse("EMERGENCY_STOP_ACTIVE", f"effect of {tool_name!r}: the grant belongs to stop epoch {grant.stop_epoch}")
         self._live_delegation(grant, agent)
+        # an allow-listed tool whose contract requires an approval never reaches an effect from C8
+        if tool_name in self._registry.tool_names:
+            _require_no_approval(self._contract(tool_name))
         return grant
 
     # -- invocation --------------------------------------------------------------------------
@@ -1024,18 +1098,21 @@ class ToolCallRuntime:
         estimated_tokens: int,
         stop_epoch: int,
         at: datetime,
+        envelope: InvocationEnvelope | None,
         estimated_cost: int = 0,
     ) -> ToolCallReceipt:
         instant = require_aware(at, field="at")
-        call = self._bind(agent, principal, context, budget, instant)
+        call = self._bind(agent, principal, context, budget, envelope, instant)
         self._sync_tools()
         if bindings is not None and (not isinstance(bindings, Mapping) or any(not isinstance(key, str) for key in bindings)):
             raise _refuse("SCHEMA_VIOLATION", "the call bindings are a mapping of names")
 
-        grant = self._live(tool_name, lease, call)
+        grant = self._live(tool_name, lease, call, call.instant)
+        if call.envelope.delegation_ref != grant.delegation_ref:
+            raise _refuse("CAPABILITY_DENIED", "the invocation envelope names another Delegation than the grant")
         contract = self._contract(tool_name)
         for called in self._called_tools(expression):
-            self._live(called, grant.lease_id, call)
+            self._live(called, grant.lease_id, call, call.instant)
 
         if not context.purpose:
             raise _refuse("POLICY_DENIED", "a tool call requires a non-empty GovernedContext purpose")
@@ -1082,8 +1159,11 @@ class ToolCallRuntime:
             agent_principal_id=agent.agent_principal_id,
             agent_run_id=agent.agent_run_id,
             agent_version=agent.agent_version,
-            workload_identity=agent.workload_identity,
+            workload_identity=call.envelope.workload.spiffe_id,
             autonomy_tier=agent.autonomy_tier,
+            model_pin=call.envelope.model_pin,
+            instruction_pin=call.envelope.instruction_pin,
+            idempotency_key=call.envelope.idempotency_key,
             delegation_ref=grant.delegation_ref,
             delegator=grant.delegator,
             scope=grant.scope,
@@ -1095,11 +1175,12 @@ class ToolCallRuntime:
         )
 
     def _bind(
-        self, agent: object, principal: object, context: object, budget: object, instant: datetime
+        self, agent: object, principal: object, context: object, budget: object, envelope: object, instant: datetime
     ) -> _Call:
         """The agent binding (ADD v1.3 :3140): the agent principal is the authenticated principal
         and the effective principal of the Governed Context, in its tenant; the context digest is
-        recomputed here and must be the one the registry is bound to."""
+        recomputed here and must be the one the registry is bound to. The invocation envelope
+        (ADD v1.3 :1988) is verified against the binding, the recomputed digests and the context."""
         if not isinstance(context, GovernedContext):
             raise TypeError("context must be a GovernedContext")
         if not isinstance(agent, AgentIdentityBinding):
@@ -1120,7 +1201,36 @@ class ToolCallRuntime:
             principal.require_valid(at=instant)
         except Exception as error:  # noqa: BLE001 - an invalid identity is never a pass
             raise _refuse("CAPABILITY_DENIED", f"the agent principal is not valid: {error}") from error
-        return _Call(agent=agent, principal=principal, context=context, context_digest=digest, instant=instant, budget=budget, decisions=[])
+        if not isinstance(envelope, InvocationEnvelope):
+            raise _refuse("CAPABILITY_DENIED", "a tool call requires its transport-attested invocation envelope")
+        if not isinstance(envelope.workload, WorkloadIdentity) or envelope.workload.spiffe_id != agent.workload_identity:
+            raise _refuse("CAPABILITY_DENIED", "the attested workload identity is not the workload of the agent binding")
+        if envelope.agent_run_id != agent.agent_run_id:
+            raise _refuse("CAPABILITY_DENIED", "the invocation envelope belongs to another agent run")
+        if envelope.governed_context_digest != digest or envelope.ontology_release_digest != context.ontology_release_digest:
+            raise _refuse("STALE_CONTEXT", "the invocation envelope is bound to another Governed Context or ontology release")
+        if envelope.correlation_id != context.correlation_id:
+            raise _refuse("CAPABILITY_DENIED", "the invocation envelope carries another correlation ID than the Governed Context")
+        if (envelope.model_pin, envelope.instruction_pin) != (agent.model_pin, agent.instruction_pin):
+            raise _refuse("CAPABILITY_DENIED", "the invocation envelope pins another model or instruction set than the agent run")
+        call = _Call(
+            agent=agent, principal=principal, context=context, context_digest=digest, instant=instant, budget=budget, decisions=[],
+            envelope=envelope,
+        )
+        self._live_identity(call, instant)
+        return call
+
+    @staticmethod
+    def _live_identity(call: _Call, instant: datetime) -> None:
+        """The agent principal and its attested SVID, valid at ``instant``."""
+        try:
+            call.principal.require_valid(at=instant)
+        except Exception as error:  # noqa: BLE001 - an invalid identity is never a pass
+            raise _refuse("CAPABILITY_DENIED", f"the agent principal is not valid: {error}") from error
+        try:
+            call.envelope.workload.require_valid(at=instant)
+        except Exception as error:  # noqa: BLE001 - an expired or unavailable SVID is never a pass
+            raise _refuse("CAPABILITY_DENIED", f"the attested workload identity is not valid: {error}") from error
 
     def _contract(self, name: str) -> ToolContract:
         try:
@@ -1128,27 +1238,30 @@ class ToolCallRuntime:
         except ToolContractError as error:
             raise _refuse(error.reason_code, str(error)) from error
 
-    def _live(self, name: str, lease: ToolGrant | str, call: _Call) -> ToolGrant:
-        """Re-evaluate, as recorded now, everything that authorises ``name`` (ADD v1.3 :3856)."""
+    def _live(self, name: str, lease: ToolGrant | str, call: _Call, instant: datetime) -> ToolGrant:
+        """Re-evaluate, as recorded now and at ``instant``, everything that authorises ``name``
+        (ADD v1.3 :3856)."""
         contract = self._contract(name)
+        _require_no_approval(contract)
         epoch = _current_stop(self._stop)
-        grant = self._live_grant(lease, name, call.agent, call.instant)
+        grant = self._live_grant(lease, name, call.agent, instant)
         if grant.stop_epoch != epoch:
             raise _refuse("EMERGENCY_STOP_ACTIVE", f"tool {name!r}: the grant belongs to stop epoch {grant.stop_epoch}, current is {epoch}")
+        self._live_identity(call, instant)
         delegation = self._live_delegation(grant, call.agent)
-        self._live_authority(grant, contract, delegation, call)
+        self._live_authority(grant, contract, delegation, call, instant)
         tier = call.agent.autonomy_tier
         if tier not in POC_AUTONOMY_TIERS or tier not in contract.allowed_autonomy_tiers:
             raise _refuse("POLICY_DENIED", f"autonomy tier {tier} is not allowed for {contract.contract_id} in the PoC profile")
         try:
             eligible = self._eligibility.instruction_eligible(
-                agent_run_id=call.agent.agent_run_id, governed_context_digest=call.context_digest, at=call.instant
+                agent_run_id=call.agent.agent_run_id, governed_context_digest=call.context_digest, at=instant
             )
         except Exception as error:  # noqa: BLE001 - an unreadable eligibility is never a pass
             raise _refuse("POLICY_DENIED", "memory instruction eligibility cannot be read") from error
         if eligible is not True:
             raise _refuse("POLICY_DENIED", f"the memory instructions of {call.agent.agent_run_id} are not eligible")
-        self._live_policy(contract, call)
+        self._live_policy(contract, call, instant)
         return grant
 
     def _live_grant(self, lease: ToolGrant | str, name: str, agent: AgentIdentityBinding, instant: datetime) -> ToolGrant:
@@ -1165,6 +1278,8 @@ class ToolCallRuntime:
                 raise _refuse("CAPABILITY_DENIED", f"tool {name!r}: a grant of the chain is outside its validity window")
         if (grant.agent_principal_id, grant.agent_run_id) != (agent.agent_principal_id, agent.agent_run_id):
             raise _refuse("CAPABILITY_DENIED", f"tool {name!r}: the grant belongs to another agent run")
+        if grant.agent != agent:
+            raise _refuse("CAPABILITY_DENIED", f"tool {name!r}: the grant was issued to another binding of the agent run")
         if name not in grant.tool_names:
             raise _refuse("CAPABILITY_DENIED", f"tool {name!r} is not covered by the grant")
         return grant
@@ -1181,7 +1296,7 @@ class ToolCallRuntime:
             raise _refuse("CAPABILITY_DENIED", "the grant is bound to another Delegation")
         return delegation
 
-    def _live_authority(self, grant: ToolGrant, contract: ToolContract, delegation: str, call: _Call) -> None:
+    def _live_authority(self, grant: ToolGrant, contract: ToolContract, delegation: str, call: _Call, instant: datetime) -> None:
         effect_risk = _EFFECT_RISK.get(contract.effect_class)
         if effect_risk is None:
             raise _refuse("POLICY_DENIED", f"effect class {contract.effect_class} is never executed by C8 in the PoC profile")
@@ -1200,7 +1315,7 @@ class ToolCallRuntime:
         # the correlation identifier the kernel fault requires
         if revoked:
             raise _refuse("CAPABILITY_REVOKED", f"Authority {grant.authority_id!r} is revoked")
-        if not signed or not authority.not_before <= call.instant < authority.expires_at:
+        if not signed or not authority.not_before <= instant < authority.expires_at:
             raise _refuse("AUTHORITY_MISSING", f"Authority {grant.authority_id!r} is unsigned or outside its validity window")
         try:
             validate_authority(
@@ -1210,7 +1325,7 @@ class ToolCallRuntime:
                     resource_scope=grant.scope,
                     risk_class=risk,
                     governed_context=call.context,
-                    at=call.instant,
+                    at=instant,
                 ),
                 signature_verified=signed,
                 revoked=revoked,
@@ -1226,7 +1341,7 @@ class ToolCallRuntime:
         except Exception as error:  # noqa: BLE001 - an Authority that cannot be evaluated never authorises
             raise _refuse("CAPABILITY_DENIED", f"Authority {grant.authority_id!r} does not contain the request") from error
 
-    def _live_policy(self, contract: ToolContract, call: _Call) -> None:
+    def _live_policy(self, contract: ToolContract, call: _Call, instant: datetime) -> None:
         try:
             request = PolicyRequest(
                 principal=call.principal,
@@ -1234,7 +1349,7 @@ class ToolCallRuntime:
                 resource=contract.contract_id,
                 governed_context=call.context,
                 governed_context_digest=call.context_digest,
-                at=call.instant,
+                at=instant,
             )
             decision = verified_decision(self._policy, request)
         except Exception as error:  # noqa: BLE001 - an unavailable policy is never a pass
@@ -1277,7 +1392,7 @@ class ToolCallRuntime:
     def _dispatch(self, name: str, run: Callable[[], Any], *, lease_id: str, call: _Call) -> Any:
         """Run one tool call of the expression: re-evaluated live, fenced and charged immediately
         before dispatch, supervised until it ends, the stop is accepted or the deadline expires."""
-        grant = self._live(name, lease_id, call)
+        grant = self._live(name, lease_id, call, call.now())
         self._fence(grant.stop_epoch)
         contract = self._contract(name)
         call.add(

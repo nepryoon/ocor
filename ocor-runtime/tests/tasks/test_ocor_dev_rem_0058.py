@@ -680,6 +680,8 @@ class World:
             owner="urn:ocor:human:owner-1",
             autonomy_tier=tier,
             agent_version="1.0.0",
+            model_pin=MODEL_PIN,
+            instruction_pin=INSTRUCTION_PIN,
             team_id=team,
             tenant_id="t1",
         )
@@ -743,6 +745,8 @@ class World:
             "stop_epoch": self.stop.epoch,
             "at": self.invoked_at,
         }
+        if "envelope" not in changes:
+            arguments["envelope"] = envelope(self, agent)
         arguments.update(changes)
         return self.runtime.invoke(tool_name, expression, **arguments)
 
@@ -2123,6 +2127,7 @@ class OpaToolWorld:
             estimated_tokens=1,
             stop_epoch=self.stop.epoch,
             at=datetime.now(UTC),
+            envelope=self.world.envelope(),
         )
 
 
@@ -2212,6 +2217,8 @@ def test_ncr_c8_005_the_coordination_kernel_is_decided_by_the_real_opa(
         audit=team.audit_log(team.live_dsn(), schema="ocor_audit_rem_0058_opa"),
         signing_key=team.seeded_key("rem-0058-opa-kernel"),
         keyid="urn:ocor:key:rem-0058-opa-kernel",
+        marking_engine=team.marking_engine(),
+        markings=module.InMemoryCoordinationMarkings(),
     )
     context = _opa_context(principal.principal_id, digest)
 

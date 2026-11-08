@@ -31,8 +31,10 @@ task and attempt limits stop the work (FR-121 :270); an exhausted budget fails t
 
 Handoff (ADD v1.3 :3068-3098, :388): the sender holding the commitment must be the transport
 Principal, with a lease of its own; the payload is validated against the pinned handoff schema and
-digested here, never taken from the caller; the Kernel signs the 28-field ``HandoffEnvelope``. A
-refused handoff is kept as a ``REJECTED`` envelope in the Run Ledger and written to the signed audit
+digested here, never taken from the caller; the marking of the Governed Context of the handoff is
+resolved and must be dominated by the clearance of the recipient (``POLICY_DENIED`` otherwise, or
+when either cannot be resolved; ADD v1.3 :3042, :3118); the Kernel signs the 28-field
+``HandoffEnvelope``. A refused handoff is kept as a ``REJECTED`` envelope in the Run Ledger and written to the signed audit
 chain (``CAPABILITY_DENIED`` + audit for a sender that is not the transport Principal).
 
 Dissent (ADD v1.3 :3108-3110): a Critical dissent about identity ambiguity, policy violation, causal
@@ -43,6 +45,13 @@ its author or by the run's escalation target.
 Coordination capabilities (``agent:assign``, ``agent:commit``, ``agent:handoff``, ``agent:dissent``)
 remain leases of the sealed ``CapabilityAuthority`` composed through its public methods (single-use,
 revocable); the Kernel adds the live controls around them.
+
+Atomicity: the Run Ledger entries of one public transition -- several for a run timeout, which
+expires every open task -- are written in one ledger transaction at the end of the call, and the
+leases the transition consumes are consumed inside that transaction, before it commits. A ledger
+that does not record the transition restores the in-memory state of the call and spends no lease
+(``LEDGER_UNAVAILABLE``). Residual, declared: a commit that fails after the leases were consumed
+leaves them spent with no transition (fail-closed: a use is lost, never granted twice).
 """
 
 from __future__ import annotations
@@ -60,12 +69,15 @@ from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, runtime_check
 from ..audit import AuditEvent, AuditPort
 from ..c1.signing import Ed25519SigningKey, dsse_pae
 from ..c6.safety import EmergencyStopController, StopEpochReader, StopStatus
+from ..c4.marking import MarkingUnresolved
+from ..c4.marking_resolution import ResolvedMarkingEngine
+from ..c4_marking import MarkingSet
 from ..c6_capabilities import CapabilityAuthority, CapabilityLease
 from ..errors import OCORError
 from ..kernel.canonical import canonical_bytes, canonical_digest, format_utc_timestamp
 from ..kernel.governed_context import GovernedContext
 from ..security.ports import AuthenticatedPrincipal, PolicyDecisionPort, PolicyRequest
-from .tool_contract import UNTRUSTED_TOOL_OUTPUT_TAINT, SchemaCatalog, SchemaPin, ToolOutput
+from .tool_contract import UNTRUSTED_TOOL_OUTPUT_TAINT, SchemaCatalog, SchemaPin, ToolOutput, verified_tool_output
 from .tool_runtime import (
     POC_AUTONOMY_TIERS,
     AgentBudgetLedger,
@@ -95,26 +107,35 @@ _DELEGATION_REF = re.compile(r"^urn:sha256:[0-9a-f]{64}$")
 _SIGNATURE_HEX = re.compile(r"^[0-9a-f]{128}$")
 
 
-class _LedgerUnavailable(RuntimeError):
-    """The Run Ledger did not record an entry (raised to the caller as ``LEDGER_UNAVAILABLE``)."""
-
-
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
 
 def _atomic(method: Callable[Concatenate[AgentRunOrchestrator, _P], _R]) -> Callable[Concatenate[AgentRunOrchestrator, _P], _R]:
     """A public transition of the orchestrator either reaches the Run Ledger or leaves no
-    in-memory state: when the ledger fails, the state of the call is restored and the failure is
-    ``LEDGER_UNAVAILABLE``."""
+    in-memory state. Its entries are written in one ledger transaction when the call ends -- also
+    when it ends with a refusal that changed state (a run timeout, an expired task, a rejected
+    handoff) -- and the leases it consumes are consumed inside that transaction, only when the call
+    succeeded. When the ledger fails, the state of the call is restored, no lease is spent and the
+    failure is ``LEDGER_UNAVAILABLE``."""
 
     def atomic(self: AgentRunOrchestrator, /, *args: _P.args, **kwargs: _P.kwargs) -> _R:
-        snapshot = self._snapshot()
-        try:
+        if self._pending is not None:
             return method(self, *args, **kwargs)
-        except _LedgerUnavailable as error:
-            self._restore(snapshot)
-            raise OrchestratorError("LEDGER_UNAVAILABLE", "the Run Ledger did not record the transition") from error
+        snapshot = self._snapshot()
+        self._pending, self._consumes = [], []
+        try:
+            try:
+                result = method(self, *args, **kwargs)
+            except OrchestratorError as refusal:
+                # a refused call spends no lease; the state it changed is still recorded
+                self._consumes = []
+                self._flush(snapshot)
+                raise refusal
+            self._flush(snapshot)
+            return result
+        finally:
+            self._pending, self._consumes = None, []
 
     functools.update_wrapper(atomic, method)
     return atomic
@@ -134,6 +155,12 @@ class RunLedgerPort(Protocol):
         payload: Mapping[str, Any],
         recorded_at: datetime,
     ) -> Any: ...
+
+    def append_all(self, entries: Sequence[Mapping[str, Any]], *, before_commit: Callable[[], None]) -> Any:
+        """Append ``entries`` (each with the arguments of ``append``) in one transaction; call
+        ``before_commit`` inside it, after the inserts and before the commit, so that an error it
+        raises rolls every entry back."""
+        ...
 
     def entries(self, task_id: str) -> tuple[Any, ...]: ...
 
@@ -538,6 +565,40 @@ class Message:
 # --- the Coordination Kernel ----------------------------------------------------------------------
 
 
+@runtime_checkable
+class CoordinationMarkingPort(Protocol):
+    """The marking of a Governed Context (by its ``classification_marking_ref``) and the clearance
+    of an agent principal, read live at every handoff."""
+
+    def marking(self, marking_ref: str) -> MarkingSet: ...
+
+    def clearance(self, agent_principal_id: str) -> MarkingSet: ...
+
+
+class InMemoryCoordinationMarkings:
+    """``CoordinationMarkingPort`` held in memory: an unknown reference or agent raises."""
+
+    def __init__(self) -> None:
+        self._markings: dict[str, MarkingSet] = {}
+        self._clearances: dict[str, MarkingSet] = {}
+
+    def define(self, marking_ref: str, marking: MarkingSet) -> None:
+        if not isinstance(marking_ref, str) or not isinstance(marking, MarkingSet):
+            raise TypeError("a marking is a MarkingSet named by its reference")
+        self._markings[marking_ref] = marking
+
+    def set_clearance(self, agent_principal_id: str, clearance: MarkingSet) -> None:
+        if not isinstance(agent_principal_id, str) or not isinstance(clearance, MarkingSet):
+            raise TypeError("a clearance is a MarkingSet of an agent principal")
+        self._clearances[agent_principal_id] = clearance
+
+    def marking(self, marking_ref: str) -> MarkingSet:
+        return self._markings[marking_ref]
+
+    def clearance(self, agent_principal_id: str) -> MarkingSet:
+        return self._clearances[agent_principal_id]
+
+
 @dataclass(frozen=True, slots=True)
 class OutputContract:
     """A typed output (or the handoff payload) and the pinned schema it validates against."""
@@ -551,8 +612,9 @@ class OutputContract:
 class CoordinationKernel:
     """The live controls of C8 coordination: Delegation (``GovernanceControlPort``), policy
     (``PolicyDecisionPort``, OPA in the product), the signed stop epoch, the multidimensional budget,
-    the pinned schemas of typed outputs and handoffs, the signed audit chain and the key that attests
-    every HandoffEnvelope. There is no default for any of them."""
+    the pinned schemas of typed outputs and handoffs, the markings and clearances of every handoff,
+    the signed audit chain and the key that attests every HandoffEnvelope. There is no default for
+    any of them."""
 
     def __init__(
         self,
@@ -567,7 +629,13 @@ class CoordinationKernel:
         audit: AuditPort,
         signing_key: Ed25519SigningKey,
         keyid: str,
+        marking_engine: ResolvedMarkingEngine,
+        markings: CoordinationMarkingPort,
     ) -> None:
+        if not isinstance(marking_engine, ResolvedMarkingEngine):
+            raise TypeError("marking_engine must be the ResolvedMarkingEngine")
+        if not isinstance(markings, CoordinationMarkingPort):
+            raise TypeError("markings must implement the CoordinationMarkingPort")
         if not isinstance(controls, GovernanceControlPort):
             raise TypeError("controls must implement the GovernanceControlPort")
         if policy is None or not callable(getattr(policy, "evaluate", None)):
@@ -606,6 +674,27 @@ class CoordinationKernel:
         self._contracts = MappingProxyType(known)
         self.handoff_contract = handoff_contract
         self._key = signing_key
+        self.marking_engine = marking_engine
+        self.markings = markings
+
+    def check_marking(self, context: GovernedContext, recipient_id: str) -> None:
+        """The marking of the handoff's Governed Context must be dominated by the clearance of the
+        recipient (ADD v1.3 :3042, :3118); anything that cannot be resolved is a denial."""
+        try:
+            content = self.markings.marking(context.classification_marking_ref)
+            clearance = self.markings.clearance(recipient_id)
+        except Exception as error:  # noqa: BLE001 - an unreadable marking or clearance is never a pass
+            raise _refuse("POLICY_DENIED", f"the marking or the clearance of {recipient_id!r} cannot be read") from error
+        if not isinstance(content, MarkingSet) or not isinstance(clearance, MarkingSet):
+            raise _refuse("POLICY_DENIED", f"the marking or the clearance of {recipient_id!r} is not a MarkingSet")
+        try:
+            authorized = self.marking_engine.authorized(content, clearance)
+        except MarkingUnresolved as error:
+            raise _refuse("POLICY_DENIED", f"MARKING_UNRESOLVED: {error}") from error
+        except Exception as error:  # noqa: BLE001 - a marking that cannot be evaluated is never a pass
+            raise _refuse("POLICY_DENIED", f"MARKING_UNRESOLVED: the marking cannot be evaluated ({type(error).__name__})") from error
+        if authorized is not True:
+            raise _refuse("POLICY_DENIED", f"MARKING_DENIED: the clearance of {recipient_id!r} does not dominate the handoff marking")
 
     @property
     def public_key(self) -> bytes:
@@ -718,6 +807,9 @@ class AgentRunOrchestrator:
         self._proposals: list[DecisionProposal] = []
         self._messages: list[Message] = []
         self._sequence = 0
+        # the Run Ledger entries and lease consumptions of the public call in progress (_atomic)
+        self._pending: list[dict[str, Any]] | None = None
+        self._consumes: list[Callable[[], None]] = []
 
     # -- read-only views ---------------------------------------------------------------------
 
@@ -784,18 +876,42 @@ class AgentRunOrchestrator:
         ) = snapshot
 
     def _append(self, run: AgentRun, key: str, kind: str, agent_id: str, payload: Mapping[str, Any], at: datetime) -> None:
+        """Queue an entry of the public call in progress; ``_flush`` writes them together."""
+        if self._pending is None:
+            raise RuntimeError("a Run Ledger entry is written only within a public transition")
         self._sequence += 1
+        self._pending.append(
+            {
+                "idempotency_key": f"{run.team_run_id}:{self._sequence}",
+                "task_id": key,
+                "kind": kind,
+                "agent_id": agent_id,
+                "payload": {"team_run_id": run.team_run_id, **{name: _wire(value) for name, value in payload.items()}},
+                "recorded_at": at,
+            }
+        )
+
+    def _flush(self, snapshot: tuple[Any, ...]) -> None:
+        """Write the queued entries in one ledger transaction, consuming the queued leases inside it;
+        on any failure restore ``snapshot`` and spend nothing."""
+        entries, consumes = list(self._pending or ()), list(self._consumes)
+
+        def consume() -> None:
+            for step in consumes:
+                step()
+
         try:
-            self._ledger.append(
-                idempotency_key=f"{run.team_run_id}:{self._sequence}",
-                task_id=key,
-                kind=kind,
-                agent_id=agent_id,
-                payload={"team_run_id": run.team_run_id, **{name: _wire(value) for name, value in payload.items()}},
-                recorded_at=at,
-            )
+            if entries:
+                self._ledger.append_all(entries, before_commit=consume)
+            else:
+                consume()
+        except OrchestratorError:
+            self._restore(snapshot)
+            raise
         except Exception as error:  # noqa: BLE001 - an unrecorded transition never stands
-            raise _LedgerUnavailable(f"{kind} of {key}") from error
+            self._restore(snapshot)
+            kinds = ", ".join(entry["kind"] for entry in entries)
+            raise OrchestratorError("LEDGER_UNAVAILABLE", f"the Run Ledger did not record the transition ({kinds})") from error
 
     def _caller(self, principal: object, context: object, at: datetime, run: AgentRun | None) -> _Caller:
         """The transport Principal bound to the Governed Context of the call (ADD v1.3 :388) and,
@@ -817,14 +933,21 @@ class AgentRunOrchestrator:
         return _Caller(principal=principal, context=context, digest=digest)
 
     def _lease(self, lease: object, capability: str, *, subject: str, resource: str, at: datetime, consume: bool = False) -> str:
-        """The lease is checked where the call is admitted and consumed (``consume``) only where the
-        transition is committed, so a refused call never spends a use of its lease."""
+        """The lease is checked where the call is admitted; with ``consume`` its use is queued and
+        spent inside the Run Ledger transaction of the call (``_flush``), so a refused call, or one
+        the ledger does not record, never spends a use of its lease."""
         if not isinstance(lease, (CapabilityLease, str)):
             raise _refuse("CAPABILITY_DENIED", f"{capability} requires a capability lease")
-        try:
-            self._authority.authorize(lease, capability, resource, at=at, subject=subject, consume=consume)
-        except Exception as error:  # noqa: BLE001 - a lease the authority does not admit never authorises
-            raise _refuse("CAPABILITY_DENIED", str(error)) from error
+
+        def authorize(spend: bool) -> None:
+            try:
+                self._authority.authorize(lease, capability, resource, at=at, subject=subject, consume=spend)
+            except Exception as error:  # noqa: BLE001 - a lease the authority does not admit never authorises
+                raise _refuse("CAPABILITY_DENIED", str(error)) from error
+
+        authorize(False)
+        if consume:
+            self._consumes.append(lambda: authorize(True))
         return lease.lease_id if isinstance(lease, CapabilityLease) else lease
 
     def _run(self, team_run_id: object, at: datetime) -> AgentRun:
@@ -1306,6 +1429,7 @@ class AgentRunOrchestrator:
             raise _refuse("ROLE_MISMATCH", f"{recipient_id} is {recipient.role.value}, task {task.task_id} needs {task.role.value}")
         delegation = self._kernel.delegation(commitment.agent_id)
         self._kernel.delegation(recipient_id)
+        self._kernel.check_marking(call.context, recipient_id)
         if _TIER_RANK.get(recipient.binding.autonomy_tier, -1) < _TIER_RANK[task.autonomy_tier]:
             raise _refuse("POLICY_DENIED", f"autonomy tier of {recipient_id} is below {task.autonomy_tier}")
         contract = self._kernel.handoff_contract
@@ -1673,6 +1797,11 @@ class AgentRunOrchestrator:
         _text("lease_id", receipt.lease_id)
         if not isinstance(receipt.invocations, tuple) or not receipt.invocations or any(not isinstance(item, ToolOutput) for item in receipt.invocations):
             raise _refuse("SCHEMA_VIOLATION", "the receipt carries the contract invocations of the governed tool runtime")
+        for item in receipt.invocations:
+            try:
+                verified_tool_output(item)
+            except Exception as error:  # noqa: BLE001 - an invocation that is not well formed is never recorded
+                raise _refuse("SCHEMA_VIOLATION", f"a contract invocation of the receipt is malformed: {error}") from error
         decisions = receipt.policy_decision_ids
         if not isinstance(decisions, tuple) or not decisions or any(not isinstance(item, str) or not item for item in decisions):
             raise _refuse("SCHEMA_VIOLATION", "the receipt carries the policy decisions of the call")

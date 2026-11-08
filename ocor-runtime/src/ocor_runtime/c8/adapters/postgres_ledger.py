@@ -10,7 +10,7 @@ adapter (AFF-002/AFF-006); the caller only sees plain Python types.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -74,6 +74,7 @@ _KIND_LIST = ", ".join(f"'{kind}'" for kind in sorted(KINDS))
 # earlier, narrower set admits the closed set above (rows are never rewritten)
 SCHEMA = _SCHEMA_TEMPLATE.replace("{kinds}", _KIND_LIST)
 COLUMNS = frozenset({"entry_no", "idempotency_key", "task_id", "kind", "agent_id", "payload", "recorded_at"})
+_ENTRY_FIELDS = COLUMNS - {"entry_no"}
 
 
 class RunLedgerError(RuntimeError):
@@ -96,16 +97,25 @@ class RunLedgerEntry:
 @contextmanager
 def _driver(operation: str) -> Iterator[None]:
     """Driver failures leave the adapter only as ``RunLedgerError``: an unreachable server
-    is ``BACKEND_UNAVAILABLE``, any other refusal ``BACKEND_ERROR``; the server text is
-    never echoed."""
+    is ``BACKEND_UNAVAILABLE``, any other refusal ``BACKEND_ERROR``, an answer the driver cannot
+    decode (text that is not UTF-8, a JSON body that does not parse) ``BACKEND_ERROR``; the
+    server text is never echoed."""
     try:
         yield
-    except UnicodeDecodeError as exc:
+    except ValueError as exc:
+        # UnicodeDecodeError and json.JSONDecodeError (the driver's JSON loader) are ValueErrors
         raise RunLedgerError("BACKEND_ERROR", f"{operation}: the PostgreSQL answer is not decodable") from exc
     except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
         raise RunLedgerError("BACKEND_UNAVAILABLE", f"{operation}: PostgreSQL is unavailable") from exc
     except psycopg.Error as exc:
         raise RunLedgerError("BACKEND_ERROR", f"{operation}: PostgreSQL refused the statement ({type(exc).__name__})") from exc
+
+
+def _rows(result: object) -> list[Any]:
+    """The rows of a result set: a list, anything else fails closed."""
+    if not isinstance(result, list):
+        raise RunLedgerError("BACKEND_ERROR", "the backend answered without a list of rows")
+    return result
 
 
 def _stored_text(row: Mapping[str, Any], field: str) -> str:
@@ -140,10 +150,12 @@ class PostgresRunLedger:
 
     @staticmethod
     def _columns(connection: psycopg.Connection[Any]) -> frozenset[str]:
-        rows = connection.execute(
-            """SELECT column_name FROM information_schema.columns
-               WHERE table_schema = current_schema() AND table_name = 'c8_run_ledger'"""
-        ).fetchall()
+        rows = _rows(
+            connection.execute(
+                """SELECT column_name FROM information_schema.columns
+                   WHERE table_schema = current_schema() AND table_name = 'c8_run_ledger'"""
+            ).fetchall()
+        )
         names = set()
         for row in rows:
             if not isinstance(row, Mapping) or "column_name" not in row:
@@ -163,6 +175,42 @@ class PostgresRunLedger:
     ) -> RunLedgerEntry:
         """Appends one entry; the same idempotency key with the same content returns the
         original entry, with other content it is ``IDEMPOTENCY_CONFLICT``."""
+        body = self._checked(idempotency_key, task_id, kind, agent_id, payload, recorded_at)
+        with _driver("append"), psycopg.connect(self._dsn, row_factory=dict_row) as connection:
+            return self._insert(connection, idempotency_key, task_id, kind, agent_id, body, recorded_at)
+
+    def append_all(self, entries: Sequence[Mapping[str, Any]], *, before_commit: Callable[[], None]) -> tuple[RunLedgerEntry, ...]:
+        """Appends ``entries`` (each with the keyword arguments of ``append``) in one transaction,
+        with the same idempotency semantics; ``before_commit`` runs inside the transaction after
+        the inserts, so an error it raises -- or any failure -- rolls every entry back. Every entry
+        is checked before the connection is opened."""
+        if isinstance(entries, (str, bytes)) or not isinstance(entries, Sequence) or not entries:
+            raise RunLedgerError("SCHEMA_VIOLATION", "entries must be a non-empty sequence")
+        if not callable(before_commit):
+            raise RunLedgerError("SCHEMA_VIOLATION", "before_commit must be callable")
+        checked = []
+        for entry in entries:
+            if not isinstance(entry, Mapping) or set(entry) != _ENTRY_FIELDS:
+                raise RunLedgerError("SCHEMA_VIOLATION", "every entry has exactly the fields of append")
+            body = self._checked(
+                entry["idempotency_key"], entry["task_id"], entry["kind"], entry["agent_id"], entry["payload"], entry["recorded_at"]
+            )
+            checked.append((entry["idempotency_key"], entry["task_id"], entry["kind"], entry["agent_id"], body, entry["recorded_at"]))
+        refused: Exception | None = None
+        with _driver("append_all"), psycopg.connect(self._dsn, row_factory=dict_row) as connection:
+            with connection.transaction():
+                written = tuple(self._insert(connection, *values) for values in checked)
+                try:
+                    before_commit()
+                except Exception as error:  # noqa: BLE001 - re-raised unchanged after the rollback
+                    refused = error
+                    raise psycopg.Rollback() from None
+        if refused is not None:
+            raise refused
+        return written
+
+    @staticmethod
+    def _checked(idempotency_key: object, task_id: object, kind: object, agent_id: object, payload: object, recorded_at: object) -> Any:
         for name, value in (("idempotency_key", idempotency_key), ("task_id", task_id), ("agent_id", agent_id)):
             if not isinstance(value, str) or not value:
                 raise RunLedgerError("SCHEMA_VIOLATION", f"{name} is required")
@@ -175,22 +223,25 @@ class PostgresRunLedger:
         # the payload is written as its canonical I-JSON value (a set, bytes, a non-string key or a
         # non-finite number is refused, never converted) and an idempotent replay compares JSON values
         try:
-            body = json.loads(canonical_bytes(payload))
+            return json.loads(canonical_bytes(payload))
         except Exception as error:  # noqa: BLE001 - a payload that is not I-JSON is never written
             raise RunLedgerError("SCHEMA_VIOLATION", "payload is not canonical I-JSON") from error
-        with _driver("append"), psycopg.connect(self._dsn, row_factory=dict_row) as connection:
-            row = connection.execute(
-                """INSERT INTO c8_run_ledger (idempotency_key, task_id, kind, agent_id, payload, recorded_at)
-                   VALUES (%s, %s, %s, %s, %s, %s)
-                   ON CONFLICT (idempotency_key) DO NOTHING
-                   RETURNING *""",
-                (idempotency_key, task_id, kind, agent_id, Json(body), recorded_at),
-            ).fetchone()
-            if row is not None:
-                return self._entry(row)
-            row = connection.execute(
-                "SELECT * FROM c8_run_ledger WHERE idempotency_key=%s", (idempotency_key,)
-            ).fetchone()
+
+    def _insert(
+        self, connection: psycopg.Connection[Any], idempotency_key: str, task_id: str, kind: str, agent_id: str, body: Any, recorded_at: datetime
+    ) -> RunLedgerEntry:
+        row = connection.execute(
+            """INSERT INTO c8_run_ledger (idempotency_key, task_id, kind, agent_id, payload, recorded_at)
+               VALUES (%s, %s, %s, %s, %s, %s)
+               ON CONFLICT (idempotency_key) DO NOTHING
+               RETURNING *""",
+            (idempotency_key, task_id, kind, agent_id, Json(body), recorded_at),
+        ).fetchone()
+        if row is not None:
+            return self._entry(row)
+        row = connection.execute(
+            "SELECT * FROM c8_run_ledger WHERE idempotency_key=%s", (idempotency_key,)
+        ).fetchone()
         if row is None:
             raise RunLedgerError("IDEMPOTENCY_CONFLICT", "idempotency key rebound to other run ledger content")
         entry = self._entry(row)
@@ -214,6 +265,11 @@ class PostgresRunLedger:
         payload = row["payload"]
         if not isinstance(payload, dict):
             raise RunLedgerError("BACKEND_ERROR", "stored payload is not a JSON object")
+        try:
+            # read back as I-JSON: a non-finite number, a non-string key or a non-JSON value fails closed
+            canonical_bytes(payload)
+        except Exception as error:  # noqa: BLE001 - a stored payload that is not I-JSON is never returned
+            raise RunLedgerError("BACKEND_ERROR", "stored payload is not canonical I-JSON") from error
         recorded_at = row["recorded_at"]
         if not isinstance(recorded_at, datetime) or recorded_at.utcoffset() is None:
             raise RunLedgerError("BACKEND_ERROR", "stored recorded_at is not a timezone-aware instant")
@@ -231,9 +287,9 @@ class PostgresRunLedger:
         if not isinstance(task_id, str) or not task_id:
             raise RunLedgerError("SCHEMA_VIOLATION", "task_id is required")
         with _driver("entries"), psycopg.connect(self._dsn, row_factory=dict_row) as connection:
-            rows = connection.execute(
-                "SELECT * FROM c8_run_ledger WHERE task_id=%s ORDER BY entry_no", (task_id,)
-            ).fetchall()
+            rows = _rows(
+                connection.execute("SELECT * FROM c8_run_ledger WHERE task_id=%s ORDER BY entry_no", (task_id,)).fetchall()
+            )
         entries = tuple(self._entry(row) for row in rows)
         if any(entry.task_id != task_id for entry in entries):
             raise RunLedgerError("BACKEND_ERROR", "the backend listed an entry of another task")
