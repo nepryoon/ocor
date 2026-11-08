@@ -635,7 +635,7 @@ class World:
         values.update(changes)
         return BudgetQuota(**values)
 
-    def register(self, name: str, *, timeout_ms: int = 5000) -> None:
+    def register(self, name: str, *, timeout_ms: int = 5000, **contract_changes: Any) -> None:
         from ocor_runtime.c8.tool_contract import ToolBinding, ToolContract
 
         document = contract_document(
@@ -645,6 +645,7 @@ class World:
             input_schema=dict(TOOL_PIN_IN),
             output_schema=dict(TOOL_PIN_OUT),
             timeout_ms=timeout_ms,
+            **contract_changes,
         )
         contract = ToolContract.from_document(document, schemas=self.schemas)
 
@@ -2588,6 +2589,11 @@ class _FailingLedger:
             raise RuntimeError("PostgreSQL is down")
         return self._ledger.append(**entry)
 
+    def append_all(self, entries: Any, *, before_commit: Any) -> Any:
+        if self.failing and any(entry["kind"] == self.kind for entry in entries):
+            raise RuntimeError("PostgreSQL is down")
+        return self._ledger.append_all(entries, before_commit=before_commit)
+
     def entries(self, task_id: str) -> tuple[Any, ...]:
         return self._ledger.entries(task_id)
 
@@ -2694,3 +2700,582 @@ def test_ncr_c8_003_a_dissent_reason_is_bounded_text(world: Any, reason: str) ->
     with pytest.raises(module.OrchestratorError):
         world.dissent(task, "agent-3", reason=reason)
     assert all(entry.kind != "DISSENT_REGISTERED" for entry in world.ledger.entries(task))
+
+
+# --- preventive review OCOR-DEV-REM-0058-9f452aaa0f64-pre: blocking findings P1-P8 -------------------
+# Every case below is RED on 9f452aa (the packaged head the review read).
+
+MODEL_PIN = "urn:sha256:" + "1" * 64
+INSTRUCTION_PIN = "urn:sha256:" + "2" * 64
+TRUST_BUNDLE = "urn:sha256:" + "3" * 64
+
+
+def attested_workload(spiffe_id: str, *, not_before: datetime | None = None, expires_at: datetime | None = None) -> Any:
+    """The transport-attested workload identity (SVID) of the calling agent run."""
+    from ocor_runtime.security.ports import ControlName, ControlStatus, WorkloadIdentity
+
+    return WorkloadIdentity(
+        spiffe_id=spiffe_id,
+        svid_ref=f"urn:ocor:svid:{_uuid.uuid4()}",
+        trust_bundle_digest=TRUST_BUNDLE,
+        attested=True,
+        not_before=WORLD_NOW - timedelta(hours=1) if not_before is None else not_before,
+        expires_at=WORLD_NOW + timedelta(hours=1) if expires_at is None else expires_at,
+        status=ControlStatus.available(ControlName.WORKLOAD_IDENTITY, observed_at=WORLD_NOW, source_digest=TRUST_BUNDLE),
+    )
+
+
+def envelope(world: World, agent: Any = None, **changes: Any) -> Any:
+    """The invocation envelope of ADD v1.3 :1988 for a call of ``agent`` in ``world``."""
+    agent = agent or world.agent
+    values: dict[str, Any] = {
+        "agent_run_id": agent.agent_run_id,
+        "workload": attested_workload(agent.workload_identity),
+        "delegation_ref": DELEGATION,
+        "governed_context_digest": world.context.digest(),
+        "ontology_release_digest": world.context.ontology_release_digest,
+        "model_pin": getattr(agent, "model_pin", MODEL_PIN),
+        "instruction_pin": getattr(agent, "instruction_pin", INSTRUCTION_PIN),
+        "correlation_id": world.context.correlation_id,
+        "idempotency_key": f"urn:ocor:idempotency:{_uuid.uuid4()}",
+    }
+    values.update(changes)
+    return world.module.InvocationEnvelope(**values)
+
+
+def expiring_soon(world: World) -> datetime:
+    """An instant 200 ms after the presented instant of the call: valid when the call starts,
+    passed while its first tool runs for 300 ms."""
+    return world.invoked_at + timedelta(milliseconds=200)
+
+
+def first_tool_runs_300_ms(world: World) -> None:
+    world.bodies["note"] = lambda: time.sleep(0.3)
+
+
+# P1: authorisations that expire during the expression ------------------------------------------------
+
+
+def test_ncr_c8_007_a_grant_expiring_during_the_expression_refuses_the_next_tool() -> None:
+    world = World()
+    first_tool_runs_300_ms(world)
+    grant = world.grant(ttl=expiring_soon(world) - (world.invoked_at - timedelta(minutes=1)))
+
+    world.refused(TWO_TOOLS, grant, "CAPABILITY_DENIED")
+
+    assert world.effects == ["note"]
+    assert world.grants.usage(grant.lease_id) == 1
+
+
+def test_ncr_c8_005_an_authority_expiring_during_the_expression_refuses_the_next_tool() -> None:
+    world = World()
+    first_tool_runs_300_ms(world)
+    world.controls.add_authority(replace(world.authority, expires_at=expiring_soon(world)), signature_verified=True)
+
+    world.refused(TWO_TOOLS, world.grant(), "AUTHORITY_MISSING")
+
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_005_an_agent_principal_expiring_during_the_expression_refuses_the_next_tool() -> None:
+    world = World()
+    first_tool_runs_300_ms(world)
+    principal = replace(world.principal(), expires_at=expiring_soon(world))
+
+    world.refused(TWO_TOOLS, world.grant(), "CAPABILITY_DENIED", principal=principal)
+
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_005_a_workload_svid_expiring_during_the_expression_refuses_the_next_tool() -> None:
+    world = World()
+    first_tool_runs_300_ms(world)
+    svid = attested_workload(world.agent.workload_identity, expires_at=expiring_soon(world))
+
+    world.refused(TWO_TOOLS, world.grant(), "CAPABILITY_DENIED", envelope=envelope(world, workload=svid))
+
+    assert world.effects == ["note"]
+
+
+def test_ncr_c8_005_each_dispatch_is_evaluated_at_its_own_instant() -> None:
+    world = World()
+    first_tool_runs_300_ms(world)
+
+    world.invoke(TWO_TOOLS, world.grant())
+
+    instants = [request.at for request in world.policy.requests]
+    assert instants[0] == world.invoked_at
+    assert instants[-1] >= world.invoked_at + timedelta(milliseconds=300)
+
+
+# P2: the approval the admitted contract requires -----------------------------------------------------
+
+
+def register_gated(world: World, approval: dict[str, Any]) -> None:
+    """Allow-list ``gated`` with ``approval`` and extend the Authority to it: grant, Authority and a
+    PERMIT of the policy all admit the call."""
+    world.register("gated", approval=approval)
+    capabilities = (*world.authority.capability_ids, "urn:ocor:capability:tool:gated")
+    world.controls.add_authority(replace(world.authority, capability_ids=capabilities), signature_verified=True)
+
+
+@pytest.mark.parametrize(
+    "approval",
+    [
+        _approval("HUMAN_GATE", independent_approver_count=1, required_approver_roles=["urn:ocor:role:safety-officer"]),
+        DUAL,
+    ],
+    ids=["human-gate", "dual-control"],
+)
+def test_ncr_c8_004_a_contract_requiring_approval_is_never_executed_on_a_policy_permit(approval: dict[str, Any]) -> None:
+    world = World()
+    register_gated(world, approval)
+    grant = world.grant("note", "gated")
+
+    world.refused("gated(name)", grant, "APPROVAL_REQUIRED", tool_name="gated")
+    with pytest.raises(world.module.ToolRuntimeError) as effect:
+        world.runtime.authorize_effect(grant, "gated", agent=world.agent, at=world.invoked_at)
+
+    assert effect.value.reason_code == "APPROVAL_REQUIRED"
+    assert world.effects == []
+    assert world.grants.usage(grant.lease_id) == 0
+
+
+def test_ncr_c8_004_an_approval_free_tool_cannot_call_a_gated_tool_inside_its_expression() -> None:
+    world = World()
+    register_gated(world, DUAL)
+
+    world.refused("[note(name), gated(name)]", world.grant("note", "gated"), "APPROVAL_REQUIRED")
+
+    assert world.effects == []
+
+
+# P3: the agent binding and the transport-attested invocation envelope ---------------------------------
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"workload_identity": "spiffe://ocor.internal/unrelated/workload"},
+        {"agent_version": "99.0.0"},
+        {"owner": "urn:ocor:human:someone-else"},
+    ],
+    ids=["workload", "agent-version", "owner"],
+)
+def test_ncr_c8_005_a_binding_other_than_the_granted_one_is_refused(changes: dict[str, Any]) -> None:
+    world = World()
+    grant = world.grant()
+    other = replace(world.agent, **changes)
+
+    world.refused("note(name)", grant, "CAPABILITY_DENIED", agent=other, budget=world.budget(), envelope=envelope(world, other))
+
+    assert world.effects == []
+
+
+@pytest.mark.parametrize(
+    ("changes", "code"),
+    [
+        ({"workload": "spiffe-workload"}, "CAPABILITY_DENIED"),
+        ({"workload": "other-spiffe"}, "CAPABILITY_DENIED"),
+        ({"workload": "expired-svid"}, "CAPABILITY_DENIED"),
+        ({"agent_run_id": "urn:ocor:agent-run:other"}, "CAPABILITY_DENIED"),
+        ({"delegation_ref": OTHER_DELEGATION}, "CAPABILITY_DENIED"),
+        ({"governed_context_digest": "urn:sha256:" + "0" * 64}, "STALE_CONTEXT"),
+        ({"ontology_release_digest": "urn:sha256:" + "0" * 64}, "STALE_CONTEXT"),
+        ({"model_pin": "urn:sha256:" + "0" * 64}, "CAPABILITY_DENIED"),
+        ({"instruction_pin": "urn:sha256:" + "0" * 64}, "CAPABILITY_DENIED"),
+        ({"correlation_id": "urn:ocor:correlation:other"}, "CAPABILITY_DENIED"),
+    ],
+    ids=["workload-not-attested", "workload-other", "svid-expired", "run", "delegation", "context", "ontology", "model", "instruction",
+         "correlation"],
+)
+def test_ncr_c8_004_every_field_of_the_invocation_envelope_is_verified_at_the_boundary(changes: dict[str, Any], code: str) -> None:
+    world = World()
+    workload = changes.get("workload")
+    if workload == "spiffe-workload":
+        changes["workload"] = world.agent.workload_identity
+    elif workload == "other-spiffe":
+        changes["workload"] = attested_workload("spiffe://ocor.internal/agent/agent-2/run/1")
+    elif workload == "expired-svid":
+        changes["workload"] = attested_workload(
+            world.agent.workload_identity, not_before=WORLD_NOW - timedelta(hours=2), expires_at=WORLD_NOW - timedelta(hours=1)
+        )
+    grant = world.grant()
+    remaining = dict(world.budgets.remaining(world.agent))
+
+    world.refused("note(name)", grant, code, envelope=envelope(world, **changes))
+
+    assert world.effects == []
+    assert world.grants.usage(grant.lease_id) == 0
+    assert dict(world.budgets.remaining(world.agent)) == remaining
+
+
+def test_ncr_c8_004_a_call_without_its_invocation_envelope_is_refused() -> None:
+    world = World()
+
+    world.refused("note(name)", world.grant(), "CAPABILITY_DENIED", envelope=None)
+
+    assert world.effects == []
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"idempotency_key": "short"},
+        {"idempotency_key": 12345678901234567},
+        {"idempotency_key": "x" * 257},
+        {"idempotency_key": "has spaces in the key"},
+        {"model_pin": "sha256:" + "1" * 64},
+        {"instruction_pin": None},
+        {"agent_run_id": ""},
+        {"correlation_id": 7},
+    ],
+    ids=["key-short", "key-integer", "key-oversized", "key-whitespace", "model-pin-form", "instruction-pin-none", "run-empty",
+         "correlation-integer"],
+)
+def test_ncr_c8_004_a_malformed_invocation_envelope_is_a_schema_violation(changes: dict[str, Any]) -> None:
+    world = World()
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        envelope(world, **changes)
+    assert refused.value.reason_code == "SCHEMA_VIOLATION"
+
+
+def test_ncr_c8_004_the_receipt_carries_the_envelope_pins_and_idempotency_key() -> None:
+    world = World()
+    presented = envelope(world)
+
+    receipt = world.invoke("note(name)", world.grant(), envelope=presented)
+
+    assert (receipt.idempotency_key, receipt.model_pin, receipt.instruction_pin, receipt.workload_identity) == (
+        presented.idempotency_key,
+        world.agent.model_pin,
+        world.agent.instruction_pin,
+        presented.workload.spiffe_id,
+    )
+
+
+@pytest.mark.parametrize("pin", ["model_pin", "instruction_pin"])
+def test_ncr_c8_005_the_agent_binding_pins_its_model_and_instructions(pin: str) -> None:
+    world = World()
+    with pytest.raises(ValueError):
+        replace(world.agent, **{pin: "not-a-digest"})
+
+
+# P4: the marking of a handoff against the clearance of its recipient ---------------------------------
+
+
+def test_ncr_c8_002_a_recipient_without_the_clearance_of_the_payload_marking_is_denied_and_audited(world: Any) -> None:
+    from ocor_runtime.c4_marking import MarkingSet
+    from ocor_runtime.c8 import orchestrator as module
+
+    task = f"t-marking-{_uuid.uuid4()}"
+    world.accepted(task, "agent-1")
+    world.markings.set_clearance("agent-2", MarkingSet({"classification": "UNCLASSIFIED"}))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff(task, sender="agent-1", to="agent-2")
+    assert orchestration_refused(refused) == "POLICY_DENIED"
+    assert world.orchestrator.commitment(task).agent_id == "agent-1"
+    assert world.ledger.entries(task)[-1].kind == "HANDOFF_REJECTED"
+    assert world.audited()[-1]["reason_code"] == "POLICY_DENIED"
+
+    world.markings.set_clearance("agent-2", MarkingSet({"classification": "TOP_SECRET"}))
+    assert world.handoff(task, sender="agent-1", to="agent-2").recipient_principal == "agent-2"
+
+
+@pytest.mark.parametrize("failure", ["unknown-marking", "unreadable-clearance", "unresolvable-clearance"])
+def test_ncr_c8_002_a_marking_or_clearance_that_cannot_be_resolved_is_denied(world: Any, failure: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ocor_runtime.c4_marking import MarkingSet
+    from ocor_runtime.c8 import orchestrator as module
+
+    task = f"t-marking-{_uuid.uuid4()}"
+    world.accepted(task, "agent-1")
+    if failure == "unknown-marking":
+        monkeypatch.setattr(world.markings, "marking", lambda ref: (_ for _ in ()).throw(KeyError(ref)))
+    elif failure == "unreadable-clearance":
+        monkeypatch.setattr(world.markings, "clearance", lambda agent_id: "TOP_SECRET")
+    else:
+        world.markings.set_clearance("agent-2", MarkingSet({"compartment": "UNKNOWN-SCHEME"}))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff(task, sender="agent-1", to="agent-2")
+    assert orchestration_refused(refused) == "POLICY_DENIED"
+    assert world.orchestrator.commitment(task).agent_id == "agent-1"
+
+
+def test_ncr_c8_002_the_coordination_kernel_is_never_built_without_its_marking_controls() -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world = team.TeamWorld(team.live_dsn())
+    arguments = {name: getattr(world.kernel, name) for name in ("controls", "policy", "stop", "budgets", "audit", "keyid")}
+    with pytest.raises(TypeError):
+        module.CoordinationKernel(
+            **arguments,
+            schemas=world.schemas,
+            contracts=team.output_contracts(world.schemas),
+            handoff_contract=team.handoff_contract(world.schemas),
+            signing_key=world.kernel_key,
+        )
+
+
+# P5: everything the Run Ledger reads back from PostgreSQL -------------------------------------------
+
+
+class _ScriptedCursor:
+    def __init__(self, rows: Any) -> None:
+        self.rows = rows
+
+    def fetchall(self) -> Any:
+        return self.rows
+
+    def fetchone(self) -> Any:
+        return self.rows[0] if isinstance(self.rows, list) and self.rows else None
+
+
+class _ScriptedConnection:
+    """A psycopg connection answering every statement with ``rows`` (or raising ``error``)."""
+
+    def __init__(self, rows: Any = None, error: BaseException | None = None) -> None:
+        self.rows = rows
+        self.error = error
+
+    def __enter__(self) -> _ScriptedConnection:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def transaction(self) -> _ScriptedConnection:
+        return self
+
+    def execute(self, *args: Any, **kwargs: Any) -> Any:
+        if self.error is not None:
+            raise self.error
+        return _ScriptedCursor(self.rows)
+
+
+def _stored_row(**changes: Any) -> dict[str, Any]:
+    row = {
+        "entry_no": 1,
+        "idempotency_key": "k",
+        "task_id": "t",
+        "kind": "TASK_PROPOSED",
+        "agent_id": "a",
+        "payload": {"x": 1},
+        "recorded_at": NOW_C8,
+    }
+    row.update(changes)
+    return row
+
+
+def _ledger_call(postgres_ledger: Any, operation: str) -> Any:
+    ledger = postgres_ledger.PostgresRunLedger("postgresql://scripted")
+    calls = {
+        "initialize": lambda: ledger.initialize(),
+        "append": lambda: ledger.append(
+            idempotency_key="k", task_id="t", kind="TASK_PROPOSED", agent_id="a", payload={"x": 1}, recorded_at=NOW_C8
+        ),
+        "entries": lambda: ledger.entries("t"),
+    }
+    return calls[operation]
+
+
+@pytest.mark.parametrize("operation", ["initialize", "append", "entries"])
+def test_ncr_c8_001_a_json_body_the_driver_cannot_decode_is_a_typed_run_ledger_error(operation: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ocor_runtime.c8.adapters import postgres_ledger
+
+    error = json.JSONDecodeError("Expecting property name enclosed in double quotes", "{bad", 1)
+    monkeypatch.setattr(postgres_ledger.psycopg, "connect", lambda *args, **kwargs: _ScriptedConnection(error=error))
+    with pytest.raises(postgres_ledger.RunLedgerError) as refused:
+        _ledger_call(postgres_ledger, operation)()
+    assert refused.value.reason_code == "BACKEND_ERROR"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{"x": float("nan")}, {"x": {"y": float("inf")}}, {"x": [float("-inf")]}, {1: "non-string key"}, {"x": {1, 2}}],
+    ids=["nan", "nested-infinity", "listed-negative-infinity", "integer-key", "set"],
+)
+def test_ncr_c8_001_a_stored_payload_that_is_not_i_json_is_a_typed_run_ledger_error(payload: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ocor_runtime.c8.adapters import postgres_ledger
+
+    monkeypatch.setattr(postgres_ledger.psycopg, "connect", lambda *args, **kwargs: _ScriptedConnection(rows=[_stored_row(payload=payload)]))
+    with pytest.raises(postgres_ledger.RunLedgerError) as refused:
+        _ledger_call(postgres_ledger, "entries")()
+    assert refused.value.reason_code == "BACKEND_ERROR"
+
+
+@pytest.mark.parametrize("operation", ["initialize", "entries"])
+@pytest.mark.parametrize("rows", [None, {}, "rows", 7], ids=["none", "mapping", "text", "integer"])
+def test_ncr_c8_001_a_result_set_that_is_not_a_list_of_rows_is_a_typed_run_ledger_error(
+    operation: str, rows: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ocor_runtime.c8.adapters import postgres_ledger
+
+    monkeypatch.setattr(postgres_ledger.psycopg, "connect", lambda *args, **kwargs: _ScriptedConnection(rows=rows))
+    with pytest.raises(postgres_ledger.RunLedgerError) as refused:
+        _ledger_call(postgres_ledger, operation)()
+    assert refused.value.reason_code == "BACKEND_ERROR"
+
+
+# P6: schema pins and schema references -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "fields_",
+    [
+        ([], "1.0.0", "sha256:" + "0" * 64),
+        ("urn:ocor:schema:x", ["1"], "sha256:" + "0" * 64),
+        ("urn:ocor:schema:x", "1.0.0", None),
+        ("urn:ocor:schema:x", "1.0.0", "sha256:short"),
+        ("not-a-urn", "1.0.0", "sha256:" + "0" * 64),
+        ("urn:ocor:schema:x", "one", "sha256:" + "0" * 64),
+    ],
+    ids=["id-list", "version-list", "digest-none", "digest-form", "id-form", "version-form"],
+)
+def test_ncr_c8_004_a_schema_pin_with_malformed_fields_is_a_schema_violation(fields_: tuple[Any, Any, Any]) -> None:
+    from ocor_runtime.c8.tool_contract import SchemaCatalog, SchemaPin, ToolContractError
+
+    with pytest.raises(ToolContractError) as refused:
+        SchemaCatalog().resolve(SchemaPin(*fields_))
+    assert refused.value.reason_code == "SCHEMA_VIOLATION"
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"$ref": "urn:ocor:schema:not-registered"},
+        {"type": "object", "properties": {"x": {"$ref": "https://example.org/remote.json"}}},
+        {"$ref": "#/$defs/missing"},
+        {"$defs": {"a": {"type": "string"}}, "properties": {"x": {"$ref": "#/$defs/a/missing"}}},
+        {"$dynamicRef": "#unknown-anchor"},
+    ],
+    ids=["unregistered-urn", "remote-url", "missing-local-def", "missing-local-path", "dynamic-ref"],
+)
+def test_ncr_c8_004_a_schema_with_a_reference_that_does_not_resolve_is_refused_on_admission(schema: dict[str, Any]) -> None:
+    from ocor_runtime.c8.tool_contract import SchemaCatalog, ToolContractError
+
+    document = {"$schema": "https://json-schema.org/draft/2020-12/schema", **schema}
+    with pytest.raises(ToolContractError) as refused:
+        SchemaCatalog().add("urn:ocor:schema:tool:referencing", "1.0.0", document)
+    assert refused.value.reason_code == "SCHEMA_VIOLATION"
+
+
+def test_ncr_c8_004_a_schema_with_a_resolvable_local_reference_is_admitted_and_enforced() -> None:
+    from ocor_runtime.c8.tool_contract import SchemaCatalog, SchemaPin, ToolContractError
+
+    document = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"name": {"type": "string", "pattern": "^svc-[0-9]+$"}},
+        "type": "object",
+        "properties": {"name": {"$ref": "#/$defs/name"}},
+    }
+    catalog_ = SchemaCatalog()
+    digest = catalog_.add("urn:ocor:schema:tool:local-ref", "1.0.0", document)
+    validator = catalog_.resolve(SchemaPin("urn:ocor:schema:tool:local-ref", "1.0.0", digest))
+    assert validator.is_valid({"name": "svc-1"}) and not validator.is_valid({"name": "other"})
+    with pytest.raises(ToolContractError):
+        catalog_.resolve(SchemaPin("urn:ocor:schema:tool:local-ref", "1.0.0", "sha256:" + "0" * 64))
+
+
+# P7: the contract invocations of a recorded tool receipt ------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"contract_id": 42},
+        {"contract_digest": "not-a-digest"},
+        {"binding_id": None},
+        {"tool_name": 7},
+        {"input_digest": None},
+        {"output_digest": "not-a-digest"},
+        {"output_digest": "sha256:" + "0" * 64},
+        {"value": float("nan")},
+    ],
+    ids=["contract-id-integer", "contract-digest-form", "binding-none", "tool-name-integer", "input-digest-none", "output-digest-form",
+         "output-digest-of-another-value", "value-not-i-json"],
+)
+def test_ncr_c8_001_a_receipt_invocation_with_malformed_fields_is_a_schema_violation(world: Any, changes: dict[str, Any]) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    task = f"t-invocation-{_uuid.uuid4()}"
+    world.accepted(task, "agent-1")
+    receipt = _tool_receipt()
+    receipt = replace(receipt, invocations=(replace(receipt.invocations[0], **changes),))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.record_tool_invocation(task, receipt, at=NOW_C8, **team.caller("agent-1"))
+    assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+    assert all(entry.kind != "TOOL_INVOKED" for entry in world.ledger.entries(task))
+
+
+# P8: one public transition, one Run Ledger transaction; leases spent only with it ------------------------
+
+
+def test_ncr_c8_003_a_run_timeout_that_the_ledger_cannot_record_leaves_no_expired_task_behind() -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    ledger = _FailingLedger(team.live_dsn(), "RUN_TERMINATED")
+    world = team.TeamWorld(team.live_dsn(), ledger=ledger)
+    first, second = (f"t-timeout-{_uuid.uuid4()}" for _ in range(2))
+    world.accepted(first, "agent-1")
+    world.accepted(second, "agent-2")
+    late = NOW_C8 + timedelta(hours=2)
+
+    ledger.failing = True
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose(f"t-timeout-{_uuid.uuid4()}", at=late)
+    assert orchestration_refused(refused) == "LEDGER_UNAVAILABLE"
+    assert world.orchestrator.run(world.team_run_id).status == "RUNNING"
+    for task in (first, second):
+        assert world.orchestrator.task(task).state is module.TaskState.ACCEPTED
+        assert all(entry.kind != "TASK_EXPIRED" for entry in ledger.entries(task))
+
+    ledger.failing = False
+    with pytest.raises(module.OrchestratorError) as terminated:
+        world.propose(f"t-timeout-{_uuid.uuid4()}", at=late)
+    assert orchestration_refused(terminated) == "RUN_TERMINATED"
+    for task in (first, second):
+        assert world.orchestrator.task(task).state is module.TaskState.EXPIRED
+        assert [entry.kind for entry in ledger.entries(task)].count("TASK_EXPIRED") == 1
+
+
+@pytest.mark.parametrize(("kind", "operation"), [("TASK_ASSIGNED", "assign"), ("TASK_COMMITTED", "commit"), ("TASK_HANDED_OFF", "handoff")])
+def test_ncr_c8_003_a_single_use_lease_is_not_spent_when_the_ledger_does_not_record_the_transition(kind: str, operation: str) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    ledger = _FailingLedger(team.live_dsn(), kind)
+    world = team.TeamWorld(team.live_dsn(), ledger=ledger)
+    task = f"t-lease-{_uuid.uuid4()}"
+    world.propose(task)
+    if operation != "assign":
+        world.assign(task, "agent-1")
+    if operation == "handoff":
+        world.commit(task, "agent-1")
+    subject, capability, resource = {
+        "assign": ("team-lead-1", "agent:assign", "agent-1"),
+        "commit": ("agent-1", "agent:commit", "agent-1"),
+        "handoff": ("agent-1", "agent:handoff", "agent-2"),
+    }[operation]
+    lease = world.authority.issue(subject=subject, capabilities=[capability], resources=[resource], issued_at=NOW_C8, ttl=timedelta(hours=1), max_uses=1)
+
+    def call() -> Any:
+        if operation == "assign":
+            return world.orchestrator.assign(
+                task, "agent-1", capability="act:analyze", lease=lease, assigned_by="team-lead-1", at=NOW_C8, **team.caller("team-lead-1")
+            )
+        if operation == "commit":
+            return world.orchestrator.commit(task, lease=lease, at=NOW_C8, **team.caller("agent-1"))
+        return world.orchestrator.handoff(
+            task, sender="agent-1", to_agent_id="agent-2", reason="rebalancing", payload={"state_summary": "partial"}, lease=lease, at=NOW_C8,
+            **team.caller("agent-1"),
+        )
+
+    ledger.failing = True
+    with pytest.raises(module.OrchestratorError) as refused:
+        call()
+    assert orchestration_refused(refused) == "LEDGER_UNAVAILABLE"
+    assert world.authority.usage(lease.lease_id) == 0
+
+    ledger.failing = False
+    call()
+    assert world.authority.usage(lease.lease_id) == 1
+    assert [entry.kind for entry in ledger.entries(task)].count(kind) == 1
