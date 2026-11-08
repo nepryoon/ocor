@@ -29,6 +29,18 @@ OCOR-DEV-0028/0030/0042/0043/0044/0045's own C1/C6/C7 slices).
 # refused by the real C3 admission while the C6-signed command is admitted. The
 # references to the store in the module docstring above describe the sealed task as
 # it was; the backend is now the real PostgreSQL (``OCOR_LIVE_POSTGRES_DSN``).
+#
+# OCOR-DEV-REM-0058 (NCP-U10, NCR-C8-001..003) realignment and adaptation. Case 1 of point 5 of
+# NORMATIVE-CONFORMANCE-PLAN: every handoff crosses the Kernel, which authenticates the Principal
+# (ADD v1.3 :3042), and the declared handoff sender is compared with the transport Principal
+# (ADD v1.3 §1.4 :388): the handoff lease is the sender's (agent-1, holding the commitment), not the
+# recipient's; an assignment checks machine identity, Delegation, autonomy tier, budget and
+# termination condition (LLD v1.1 §2.8 :183), so the orchestrator is built with the Coordination
+# Kernel next to the capability authority and the Run Ledger, and the exact parameter set asserted
+# below names it. Case 3: the team run, its proposed tasks, the transport principal and Governed
+# Context of every call, the handoff payload and the dissent severity and category are the
+# constructions the corrected orchestrator requires (``c8_orchestrator_fixture``); every other
+# assertion is unchanged.
 
 from __future__ import annotations
 
@@ -43,6 +55,8 @@ from typing import Any
 import pytest
 from ocor_runtime.c6_capabilities import CapabilityAuthority
 from ocor_runtime.c8.orchestrator import AgentRunOrchestrator, Dissent, OrchestratorError
+
+from c8_orchestrator_fixture import TeamWorld, caller
 
 NOW = datetime(2026, 9, 14, 12, 0, 0, tzinfo=UTC)
 
@@ -76,8 +90,26 @@ def ledger(dsn: str) -> Any:
 
 
 @pytest.fixture
-def orchestrator(authority: CapabilityAuthority, ledger: Any) -> AgentRunOrchestrator:
-    return AgentRunOrchestrator(authority=authority, ledger=ledger)
+def world(dsn: str, authority: CapabilityAuthority, ledger: Any) -> TeamWorld:
+    team = TeamWorld(dsn, authority=authority, ledger=ledger)
+    for task_id in ("task-1", "task-2", "task-3", "task-4", "task-5", "task-6", "task-7", "task-8", "task-10"):
+        team.propose(task_id)
+    return team
+
+
+@pytest.fixture
+def orchestrator(world: TeamWorld) -> AgentRunOrchestrator:
+    return world.orchestrator
+
+
+def dissent_of(severity: str = "LOW", category: str = "COUNTER_EVIDENCE") -> dict[str, Any]:
+    from ocor_runtime.c8.orchestrator import DissentCategory, DissentSeverity
+
+    return {"severity": DissentSeverity[severity], "category": DissentCategory[category]}
+
+
+def handoff_payload() -> dict[str, Any]:
+    return {"sender": "agent-1", "payload": {"state_summary": "agent-1 hands over its open work"}}
 
 
 def grant(authority: CapabilityAuthority, *, subject: str, capability: str, resource: str, ttl: timedelta = timedelta(hours=1)):
@@ -93,17 +125,21 @@ def test_the_full_assign_commit_dissent_lifecycle_writes_real_canonical_state(
 ) -> None:
     # Realigned (ADD v1.3 :276): the lifecycle is durable in the C8 Run Ledger.
     assign_lease = grant(authority, subject="team-lead-1", capability="agent:assign", resource="agent-1")
-    assignment = orchestrator.assign("task-1", "agent-1", capability="act:do-thing", lease=assign_lease, assigned_by="team-lead-1", at=NOW)
+    assignment = orchestrator.assign(
+        "task-1", "agent-1", capability="act:do-thing", lease=assign_lease, assigned_by="team-lead-1", at=NOW, **caller("team-lead-1")
+    )
     assert assignment.agent_id == "agent-1"
     assert _kinds(ledger, "task-1") == [("TASK_ASSIGNED", "agent-1")]
 
     commit_lease = grant(authority, subject="agent-1", capability="agent:commit", resource="agent-1")
-    commitment = orchestrator.commit("task-1", lease=commit_lease, at=NOW)
+    commitment = orchestrator.commit("task-1", lease=commit_lease, at=NOW, **caller("agent-1"))
     assert commitment.agent_id == "agent-1"
     assert _kinds(ledger, "task-1") == [("TASK_ASSIGNED", "agent-1"), ("TASK_COMMITTED", "agent-1")]
 
     dissent_lease = grant(authority, subject="agent-1", capability="agent:dissent", resource="agent-1")
-    dissent = orchestrator.register_dissent("task-1", "agent-1", reason="risk ceiling exceeded", lease=dissent_lease, at=NOW)
+    dissent = orchestrator.register_dissent(
+        "task-1", "agent-1", reason="risk ceiling exceeded", lease=dissent_lease, at=NOW, **dissent_of(), **caller("agent-1")
+    )
     assert dissent.reason == "risk ceiling exceeded"
     assert orchestrator.dissents == (dissent,)
     assert _kinds(ledger, "task-1") == [
@@ -116,12 +152,15 @@ def test_the_full_assign_commit_dissent_lifecycle_writes_real_canonical_state(
 
 def test_handoff_transfers_the_commitment_to_a_new_agent(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     assign_lease = grant(authority, subject="team-lead-1", capability="agent:assign", resource="agent-1")
-    orchestrator.assign("task-2", "agent-1", capability="act:do-thing", lease=assign_lease, assigned_by="team-lead-1", at=NOW)
+    orchestrator.assign("task-2", "agent-1", capability="act:do-thing", lease=assign_lease, assigned_by="team-lead-1", at=NOW, **caller("team-lead-1"))
     commit_lease = grant(authority, subject="agent-1", capability="agent:commit", resource="agent-1")
-    orchestrator.commit("task-2", lease=commit_lease, at=NOW)
+    orchestrator.commit("task-2", lease=commit_lease, at=NOW, **caller("agent-1"))
 
-    handoff_lease = grant(authority, subject="agent-2", capability="agent:handoff", resource="agent-2")
-    record = orchestrator.handoff("task-2", to_agent_id="agent-2", reason="agent-1 is overloaded", lease=handoff_lease, at=NOW)
+    # Realigned (ADD v1.3 :388, :3042): the handoff is authorised for the sender holding the commitment.
+    handoff_lease = grant(authority, subject="agent-1", capability="agent:handoff", resource="agent-2")
+    record = orchestrator.handoff(
+        "task-2", to_agent_id="agent-2", reason="agent-1 is overloaded", lease=handoff_lease, at=NOW, **handoff_payload(), **caller("agent-1")
+    )
 
     assert record.from_agent_id == "agent-1"
     assert record.to_agent_id == "agent-2"
@@ -131,31 +170,31 @@ def test_handoff_transfers_the_commitment_to_a_new_agent(orchestrator: AgentRunO
 
     # the new agent can now commit again using its own real lease
     second_commit_lease = grant(authority, subject="agent-2", capability="agent:commit", resource="agent-2")
-    recommitment = orchestrator.commit("task-2", lease=second_commit_lease, at=NOW)
+    recommitment = orchestrator.commit("task-2", lease=second_commit_lease, at=NOW, **caller("agent-2"))
     assert recommitment.agent_id == "agent-2"
 
 
 def test_a_handoff_without_a_reason_is_refused(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     assign_lease = grant(authority, subject="team-lead-1", capability="agent:assign", resource="agent-1")
-    orchestrator.assign("task-3", "agent-1", capability="act:do-thing", lease=assign_lease, assigned_by="team-lead-1", at=NOW)
+    orchestrator.assign("task-3", "agent-1", capability="act:do-thing", lease=assign_lease, assigned_by="team-lead-1", at=NOW, **caller("team-lead-1"))
     commit_lease = grant(authority, subject="agent-1", capability="agent:commit", resource="agent-1")
-    orchestrator.commit("task-3", lease=commit_lease, at=NOW)
+    orchestrator.commit("task-3", lease=commit_lease, at=NOW, **caller("agent-1"))
 
     handoff_lease = grant(authority, subject="agent-2", capability="agent:handoff", resource="agent-2")
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.handoff("task-3", to_agent_id="agent-2", reason="", lease=handoff_lease, at=NOW)
+        orchestrator.handoff("task-3", to_agent_id="agent-2", reason="", lease=handoff_lease, at=NOW, **handoff_payload(), **caller("agent-1"))
     assert excinfo.value.reason_code == "HANDOFF_REASON_REQUIRED"
 
 
 def test_committing_or_handing_off_an_unassigned_task_is_refused(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     commit_lease = grant(authority, subject="agent-1", capability="agent:commit", resource="agent-1")
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.commit("never-assigned", lease=commit_lease, at=NOW)
+        orchestrator.commit("never-assigned", lease=commit_lease, at=NOW, **caller("agent-1"))
     assert excinfo.value.reason_code == "UNKNOWN_TASK"
 
     handoff_lease = grant(authority, subject="agent-2", capability="agent:handoff", resource="agent-2")
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.handoff("never-committed", to_agent_id="agent-2", reason="x", lease=handoff_lease, at=NOW)
+        orchestrator.handoff("never-committed", to_agent_id="agent-2", reason="x", lease=handoff_lease, at=NOW, **handoff_payload(), **caller("agent-1"))
     assert excinfo.value.reason_code == "UNKNOWN_TASK"
 
 
@@ -164,21 +203,23 @@ def test_committing_or_handing_off_an_unassigned_task_is_refused(orchestrator: A
 
 def test_a_fabricated_lease_id_never_issued_by_the_authority_is_refused(orchestrator: AgentRunOrchestrator) -> None:
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.assign("task-4", "agent-1", capability="act:do-thing", lease="agent-1-made-this-up", assigned_by="agent-1", at=NOW)
+        orchestrator.assign(
+            "task-4", "agent-1", capability="act:do-thing", lease="agent-1-made-this-up", assigned_by="agent-1", at=NOW, **caller("agent-1")
+        )
     assert excinfo.value.reason_code == "CAPABILITY_DENIED"
 
 
 def test_a_lease_for_a_different_capability_is_refused(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     wrong_capability_lease = grant(authority, subject="agent-1", capability="agent:invoke", resource="agent-1")
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.register_dissent("task-5", "agent-1", reason="x", lease=wrong_capability_lease, at=NOW)
+        orchestrator.register_dissent("task-5", "agent-1", reason="x", lease=wrong_capability_lease, at=NOW, **dissent_of(), **caller("agent-1"))
     assert excinfo.value.reason_code == "CAPABILITY_DENIED"
 
 
 def test_a_lease_scoped_to_a_different_resource_is_refused(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     wrong_resource_lease = grant(authority, subject="agent-1", capability="agent:dissent", resource="agent-999")
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.register_dissent("task-6", "agent-1", reason="x", lease=wrong_resource_lease, at=NOW)
+        orchestrator.register_dissent("task-6", "agent-1", reason="x", lease=wrong_resource_lease, at=NOW, **dissent_of(), **caller("agent-1"))
     assert excinfo.value.reason_code == "CAPABILITY_DENIED"
 
 
@@ -186,7 +227,7 @@ def test_a_revoked_lease_is_refused_even_though_it_was_valid_when_issued(orchest
     lease = grant(authority, subject="agent-1", capability="agent:dissent", resource="agent-1")
     authority.revoke(lease.lease_id, at=NOW)
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.register_dissent("task-7", "agent-1", reason="x", lease=lease, at=NOW)
+        orchestrator.register_dissent("task-7", "agent-1", reason="x", lease=lease, at=NOW, **dissent_of(), **caller("agent-1"))
     assert excinfo.value.reason_code == "CAPABILITY_DENIED"
 
 
@@ -241,7 +282,8 @@ def test_an_agent_cannot_write_canonical_state_directly_only_the_orchestrator_ca
 
     assert service.commit(governed.command(fields)).to_revision == 1
     assert revision() == 1
-    assert set(inspect.signature(AgentRunOrchestrator).parameters) == {"authority", "ledger"}
+    # Realigned (LLD v1.1 :183): the Coordination Kernel is the third collaborator; none is a canonical port.
+    assert set(inspect.signature(AgentRunOrchestrator).parameters) == {"authority", "kernel", "ledger"}
     service.reset()
 
 
@@ -251,15 +293,23 @@ def test_an_agent_cannot_write_canonical_state_directly_only_the_orchestrator_ca
 def test_dissent_is_append_only_and_the_class_exposes_no_removal_method(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     lease_a = grant(authority, subject="agent-1", capability="agent:dissent", resource="agent-1")
     lease_b = grant(authority, subject="agent-1", capability="agent:dissent", resource="agent-1")
-    first = orchestrator.register_dissent("task-8", "agent-1", reason="first objection", lease=lease_a, at=NOW)
-    second = orchestrator.register_dissent("task-8", "agent-1", reason="second objection", lease=lease_b, at=NOW)
+    first = orchestrator.register_dissent("task-8", "agent-1", reason="first objection", lease=lease_a, at=NOW, **dissent_of(), **caller("agent-1"))
+    second = orchestrator.register_dissent("task-8", "agent-1", reason="second objection", lease=lease_b, at=NOW, **dissent_of(), **caller("agent-1"))
 
     assert orchestrator.dissents == (first, second)
     assert not any(name.startswith(("remove", "retract", "delete", "clear", "update")) for name in dir(orchestrator) if "dissent" in name.lower())
 
 
 def test_a_dissent_record_itself_is_frozen_and_cannot_be_mutated() -> None:
-    dissent = Dissent(task_id="task-9", agent_id="agent-1", reason="objection", registered_at=NOW)
+    dissent = Dissent(
+        dissent_id="urn:ocor:c8:dissent:task-9",
+        team_run_id="urn:ocor:team-run:task-9",
+        task_id="task-9",
+        agent_id="agent-1",
+        reason="objection",
+        registered_at=NOW,
+        **dissent_of(),
+    )
     with pytest.raises(FrozenInstanceError):
         dissent.reason = "tampered"  # type: ignore[misc]
 
@@ -267,5 +317,5 @@ def test_a_dissent_record_itself_is_frozen_and_cannot_be_mutated() -> None:
 def test_a_dissent_without_a_reason_is_refused(orchestrator: AgentRunOrchestrator, authority: CapabilityAuthority) -> None:
     lease = grant(authority, subject="agent-1", capability="agent:dissent", resource="agent-1")
     with pytest.raises(OrchestratorError) as excinfo:
-        orchestrator.register_dissent("task-10", "agent-1", reason="", lease=lease, at=NOW)
+        orchestrator.register_dissent("task-10", "agent-1", reason="", lease=lease, at=NOW, **dissent_of(), **caller("agent-1"))
     assert excinfo.value.reason_code == "DISSENT_REASON_REQUIRED"

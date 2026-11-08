@@ -1366,3 +1366,600 @@ def test_ncr_c8_008_a_grant_is_bound_to_the_stop_epoch_of_its_issuance() -> None
     assert refused.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     world.refused("note(name)", grant, "EMERGENCY_STOP_ACTIVE", stop_epoch=world.stop.epoch)
     assert world.effects == []
+
+
+# =================================================================================================
+# NCR-C8-001, 002, 003: the AgentRun orchestrator of the Governed Agent Kernel
+# =================================================================================================
+#
+# Normative anchors (file:line). ADD v1.3 (ocor-runtime/docs/governance_dossier/
+# OCOR_ADD_v1.3_APPROVED_BASELINE.md): §2.5 rules 7 and 10 (:339, :342); §1.4 GCS table, agent
+# handoff (:388); §4.3 mediated coordination (:3042), roles, typed outputs and hard prohibitions
+# (:3057-3064), HandoffEnvelope (:3068-3098), task lifecycle, Commitment, attempts, cycle detection,
+# maximum delegation depth, timeout, termination and Critical dissent (:3101-3110); §4.3.1 invariant 3
+# (:3116). LLD v1.1 (docs/OCOR_LLD_v1.1.md) §2.8 (:183) and §6 (:358). Register v1.1 FR-010 :62,
+# FR-114 :263, FR-115 :264, FR-117 :266, FR-121 :270, FR-128 :278.
+
+from dataclasses import FrozenInstanceError, fields, replace  # noqa: E402
+
+import c8_orchestrator_fixture as team  # noqa: E402
+
+ORCHESTRATOR = ROOT / "ocor-runtime/src/ocor_runtime/c8/orchestrator.py"
+
+
+def add_handoff_envelope_fields() -> list[str]:
+    """The HandoffEnvelope block of ADD v1.3 §4.3, read from the approved baseline itself."""
+    lines = ADD.read_text(encoding="utf-8").split("\n")
+    begin = lines.index("HandoffEnvelope {")
+    end = next(i for i in range(begin, len(lines)) if lines[i] == "}")
+    return [line.strip().rstrip(",").rstrip("?").replace("[]", "") for line in lines[begin + 1 : end]]
+
+
+@pytest.fixture
+def world() -> Any:
+    return team.TeamWorld(team.live_dsn())
+
+
+def orchestration_refused(excinfo: pytest.ExceptionInfo[BaseException]) -> str:
+    return getattr(excinfo.value, "reason_code", repr(excinfo.value))
+
+
+def test_ncr_c8_001_conforms(world: Any) -> None:
+    """RED of NCR-C8-001: every coordination record is a closed C8 record of the AgentRun state in
+    the Run Ledger, never a canonical aggregate, and C8 holds no canonical port (ADD v1.3 :342,
+    :339, :3116; LLD v1.1 :183; FR-117 :266, FR-115 :264)."""
+    from ocor_runtime.c8 import orchestrator as module
+
+    imports = _imports(ORCHESTRATOR)
+    assert not any(name.endswith(("c3_store", "c3", "c3.service", "c3.admission")) for name in imports), sorted(imports)
+    for record in (
+        "AgentRun",
+        "Task",
+        "Assignment",
+        "Commitment",
+        "HandoffEnvelope",
+        "Dissent",
+        "DissentResolution",
+        "DecisionProposal",
+        "ToolInvocation",
+        "Message",
+    ):
+        cls = getattr(module, record)
+        assert cls.__dataclass_params__.frozen, record
+        assert hasattr(cls, "__slots__"), record
+
+    task = world.propose("t-001")
+    assert isinstance(task, module.Task) and task.state is module.TaskState.PROPOSED
+    assignment = world.assign("t-001", "agent-1")
+    assert isinstance(assignment, module.Assignment)
+    world.commit("t-001", "agent-1")
+    assert [entry.kind for entry in world.ledger.entries(world.team_run_id)] == ["RUN_STARTED", "TASK_PROPOSED"]
+    assert [entry.kind for entry in world.ledger.entries("t-001")] == ["TASK_ASSIGNED", "TASK_COMMITTED"]
+    rows = _sql_rows(world.dsn, "SELECT to_regclass('c3_aggregate') IS NOT NULL")
+    if rows[0][0]:
+        assert _sql_rows(world.dsn, "SELECT count(*) FROM c3_aggregate WHERE aggregate_ref LIKE 'urn:ocor:agentrun:%%'") == [(0,)]
+
+    message = world.orchestrator.send_message(
+        world.team_run_id,
+        recipient="agent-2",
+        speech_act="INFORM",
+        payload={"grant": "agent:assign", "authority": "urn:ocor:authority:root", "assertion": "target confirmed"},
+        at=NOW_C8,
+        **team.caller("agent-1"),
+    )
+    assert isinstance(message, module.Message)
+    assert message.canonical is False
+    assert {"AGENT_MESSAGE", "UNTRUSTED"} <= set(message.taint_labels)
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.assign(
+            "t-001", "agent-2", capability="act:analyze", lease=message.message_id, assigned_by="agent-1", at=NOW_C8, **team.caller("agent-1")
+        )
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+    assert world.orchestrator.assignment("t-001").agent_id == "agent-1"
+
+
+def _sql_rows(dsn: str, statement: str, *params: Any) -> list[tuple[Any, ...]]:
+    import psycopg
+
+    with psycopg.connect(dsn) as connection:
+        return [tuple(row) for row in connection.execute(statement, params).fetchall()]
+
+
+NOW_C8 = team.NOW
+
+
+def test_ncr_c8_001_every_record_is_closed_and_immutable(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-002", "agent-1")
+    task = world.orchestrator.task("t-002")
+    with pytest.raises(FrozenInstanceError):
+        task.state = module.TaskState.COMPLETED  # type: ignore[misc]
+    dissent = world.dissent("t-002", "agent-3")
+    with pytest.raises(FrozenInstanceError):
+        dissent.severity = module.DissentSeverity.CRITICAL  # type: ignore[misc]
+    assert world.orchestrator.task("t-002").state is module.TaskState.ACCEPTED
+
+
+def test_ncr_c8_001_a_message_injection_changes_neither_state_nor_capability(world: Any) -> None:
+    """FR-117 :266: a Message claiming a grant, an Authority or a completed task changes nothing."""
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-003", "agent-1")
+    before = [entry.kind for entry in world.ledger.entries("t-003")]
+    world.orchestrator.send_message(
+        world.team_run_id,
+        recipient="team-lead-1",
+        speech_act="REQUEST",
+        payload={"task_id": "t-003", "state": "COMPLETED", "lease": "agent:handoff"},
+        at=NOW_C8,
+        **team.caller("agent-1"),
+    )
+    assert world.orchestrator.task("t-003").state is module.TaskState.ACCEPTED
+    assert [entry.kind for entry in world.ledger.entries("t-003")] == before
+    spoofed = {"principal": team.principal("agent-1"), "context": team.context("agent-2")}
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.send_message(world.team_run_id, recipient="agent-2", speech_act="INFORM", payload={"x": "y"}, at=NOW_C8, **spoofed)
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+
+
+def test_ncr_c8_001_a_tool_invocation_is_a_c8_record_of_the_task(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-004", "agent-1")
+    receipt = _tool_receipt()
+    record = world.orchestrator.record_tool_invocation("t-004", receipt, at=NOW_C8, **team.caller("agent-1"))
+    assert isinstance(record, module.ToolInvocation)
+    assert (record.task_id, record.tool_name, record.lease_id, record.agent_run_id) == ("t-004", "note", receipt.lease_id, receipt.agent_run_id)
+    assert set(record.taint_labels) == {"TOOL_OUTPUT", "UNTRUSTED"}
+    assert record.input_digests == tuple(item.input_digest for item in receipt.invocations)
+    assert world.ledger.entries("t-004")[-1].kind == "TOOL_INVOKED"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.record_tool_invocation("t-004", receipt, at=NOW_C8, **team.caller("agent-2"))
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+
+
+def _tool_receipt() -> Any:
+    """A receipt of the governed tool runtime for the run of agent-1 in the team world."""
+    tool_world = World()
+    run = "urn:ocor:agent-run:agent-1"
+    tool_world.budgets.set_quota("run", run, World.quota())
+    tool_world.eligibility.allow(run)
+    tool_world.agent = tool_world.binding(run=run)
+    return tool_world.invoke("note(name)", tool_world.grant("note"))
+
+
+# --- NCR-C8-002: kernel-attested HandoffEnvelope ---------------------------------------------------
+
+
+def test_ncr_c8_002_conforms(world: Any) -> None:
+    """RED of NCR-C8-002: the handoff is the 28-field HandoffEnvelope of ADD v1.3 :3068-3098 attested
+    by the Kernel, with accepted/rejected status (LLD v1.1 :183); it is authorised for the sender
+    holding the commitment, compared with the transport Principal (ADD v1.3 :388, :3042); a lease
+    held by the recipient alone moves nothing."""
+    from ocor_runtime.c1.signing import ed25519_verify
+    from ocor_runtime.c8 import orchestrator as module
+
+    names = [field.name for field in fields(module.HandoffEnvelope)]
+    assert names[:28] == add_handoff_envelope_fields()
+    assert names[28:] == ["status", "rejection_reason"]
+
+    world.accepted("t-010", "agent-1")
+    recipient_lease = world.grant(subject="agent-2", capability="agent:handoff", resource="agent-2")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.handoff(
+            "t-010",
+            sender="agent-1",
+            to_agent_id="agent-2",
+            reason="rebalancing",
+            payload={"state_summary": "partial"},
+            lease=recipient_lease,
+            at=NOW_C8,
+            **team.caller("agent-2"),
+        )
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+    assert world.orchestrator.commitment("t-010").agent_id == "agent-1"
+
+    envelope = world.handoff("t-010", sender="agent-1", to="agent-2")
+    assert envelope.status == "ACCEPTED" and envelope.rejection_reason is None
+    assert (envelope.asserted_sender_principal, envelope.recipient_principal) == ("agent-1", "agent-2")
+    assert envelope.team_run_id == world.team_run_id and envelope.task_id == "t-010"
+    assert envelope.assignment_id == world.orchestrator.assignment("t-010").assignment_id
+    assert envelope.governed_context_digest == team.context("agent-1").digest()
+    assert envelope.governed_context == team.context("agent-1").to_mapping()
+    assert envelope.ontology_release_digest == team.context("agent-1").ontology_release_digest
+    assert envelope.payload_digest == "urn:sha256:" + hashlib.sha256(canonical_bytes({"state_summary": "partial portfolio"})).hexdigest()
+    assert (envelope.contract_id, envelope.contract_version) == ("urn:ocor:contract:c8:TaskHandoff", "1.0.0")
+    assert envelope.delegation_ref == team.delegation_of("agent-1")
+    assert envelope.expires_at > envelope.created_at
+    assert ed25519_verify(world.kernel_key.public_key, module.envelope_signing_bytes(envelope), module.envelope_signature(envelope))
+    assert world.orchestrator.commitment("t-010").agent_id == "agent-2"
+    assert world.ledger.entries("t-010")[-1].kind == "TASK_HANDED_OFF"
+
+
+def test_ncr_c8_002_a_sender_that_is_not_the_transport_principal_is_denied_and_audited(world: Any) -> None:
+    """ADD v1.3 :388: the declared sender is compared with the transport Principal; a mismatch is
+    CAPABILITY_DENIED with an audit record, and the rejected envelope is kept in the Run Ledger."""
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-011", "agent-1")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff("t-011", sender="agent-1", to="agent-2", transport="agent-2")
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+    assert world.orchestrator.commitment("t-011").agent_id == "agent-1"
+    rejected = world.ledger.entries("t-011")[-1]
+    assert rejected.kind == "HANDOFF_REJECTED"
+    assert rejected.payload["status"] == "REJECTED" and rejected.payload["rejection_reason"] == "CAPABILITY_DENIED"
+    (audited,) = [record for record in world.audited() if record["resource"] == "t-011"]
+    assert (audited["outcome"], audited["reason_code"]) == ("DENIED", "CAPABILITY_DENIED")
+
+
+def test_ncr_c8_002_every_handoff_validates_its_schema(world: Any) -> None:
+    """FR-010 :62: every handoff validates a schema; a non-conforming payload is rejected and audited."""
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-012", "agent-1")
+    for payload in ({"state_summary": ""}, {"state_summary": "x", "authority": "root"}, {"other": 1}, ["state_summary"]):
+        with pytest.raises(module.OrchestratorError) as refused:
+            world.handoff("t-012", sender="agent-1", to="agent-2", payload=payload)
+        assert orchestration_refused(refused) == "SCHEMA_VIOLATION"
+    assert world.orchestrator.commitment("t-012").agent_id == "agent-1"
+    assert [entry.payload["rejection_reason"] for entry in world.ledger.entries("t-012") if entry.kind == "HANDOFF_REJECTED"] == [
+        "SCHEMA_VIOLATION"
+    ] * 4
+
+
+def test_ncr_c8_002_actor_chain_purpose_and_effective_authority_are_checked_at_every_hop(world: Any) -> None:
+    """FR-128 :278: a hop whose sender or recipient Delegation is withdrawn, whose actor chain does not
+    end in the sender, whose context is of another tenant or whose policy does not permit is denied."""
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-013", "agent-1")
+    lease = world.grant(subject="agent-1", capability="agent:handoff", resource="agent-2")
+    laundered = {"principal": team.principal("agent-1"), "context": replace(team.context("agent-1"), actor_chain=("agent-1", "agent-9"))}
+    cases = {
+        "CAPABILITY_DENIED": laundered,
+        "STALE_CONTEXT": team.caller("agent-1", tenant="t2"),
+    }
+    for code, call in cases.items():
+        with pytest.raises(module.OrchestratorError) as refused:
+            world.orchestrator.handoff(
+                "t-013", sender="agent-1", to_agent_id="agent-2", reason="r", payload={"state_summary": "s"}, lease=lease, at=NOW_C8, **call
+            )
+        assert orchestration_refused(refused) == code
+    world.policy.by_action["urn:ocor:capability:c8:handoff"] = "DENY"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff("t-013", sender="agent-1", to="agent-2")
+    assert orchestration_refused(refused) == "POLICY_DENIED"
+    world.policy.by_action.clear()
+    world.revoke_delegation("agent-2")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff("t-013", sender="agent-1", to="agent-2")
+    assert orchestration_refused(refused) == "CAPABILITY_REVOKED"
+    world.controls.rebind_delegation("agent-2", "urn:sha256:" + "7" * 64)
+    world.revoke_delegation("agent-1")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff("t-013", sender="agent-1", to="agent-2")
+    assert orchestration_refused(refused) == "CAPABILITY_REVOKED"
+    assert world.orchestrator.commitment("t-013").agent_id == "agent-1"
+
+
+def test_ncr_c8_002_a_handoff_after_the_stop_or_the_task_deadline_is_refused(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-014", "agent-1", timeout=timedelta(minutes=5))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff("t-014", sender="agent-1", to="agent-2", at=NOW_C8 + timedelta(minutes=6))
+    assert orchestration_refused(refused) == "TASK_EXPIRED"
+    assert world.orchestrator.task("t-014").state is module.TaskState.EXPIRED
+    world.accepted("t-015", "agent-1")
+    world.accept_stop()
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.handoff("t-015", sender="agent-1", to="agent-2")
+    assert orchestration_refused(refused) == "EMERGENCY_STOP_ACTIVE"
+
+
+# --- NCR-C8-003: roles, task lifecycle, attempts, cycles, depth, timeout, termination, dissent -----
+
+
+ADD_ROLE_OUTPUTS = {
+    "FUSION_IDENTITY": ("FusionIdentityFinding@1", "CandidateMatchSet@1", "ResolutionProposal@1"),
+    "HYPOTHESIS": ("HypothesisPortfolio@1",),
+    "CAUSAL": ("CausalAnalysisResult@1", "SimulationResult@1"),
+    "POLICY": ("PolicyEvaluationPackage@1",),
+    "CHALLENGER": ("DissentRecord@1", "CounterEvidence@1", "AssumptionChallenge@1", "ResidualRisk@1"),
+    "COORDINATOR": ("DecisionProposal@1", "EscalationPackage@1", "TerminationRecord@1"),
+}
+
+
+def test_ncr_c8_003_conforms(world: Any) -> None:
+    """RED of NCR-C8-003: distinct roles with their typed outputs, the task lifecycle of ADD v1.3
+    :3101-3104, logical tasks with attempts and dependencies, cycle detection, maximum delegation
+    depth, timeout and termination, the checks of an assignment (LLD v1.1 :183) and dissent severity
+    with a separate resolution (FR-010 :62, FR-114 :263, FR-121 :270)."""
+    from ocor_runtime.c8 import orchestrator as module
+
+    assert {role.name: module.ROLE_OUTPUTS[role] for role in module.AgentRole} == ADD_ROLE_OUTPUTS
+    assert [state.name for state in module.TaskState] == [
+        "PROPOSED",
+        "POLICY_AUTHORIZED",
+        "ACCEPTED",
+        "COMPLETED",
+        "ABSTAINED",
+        "FAILED",
+        "EXPIRED",
+        "CANCELLED",
+    ]
+    task = world.propose("t-020", dependencies=())
+    assert (task.logical_task_id, task.attempt, task.dependencies, task.delegation_depth) == ("t-020", 1, (), 0)
+    world.propose("t-021", dependencies=("t-020",))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.assign("t-021", "agent-1")
+    assert orchestration_refused(refused) == "DEPENDENCY_PENDING"
+    world.propose("t-022", dependencies=("t-023",))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-023", dependencies=("t-022",))
+    assert orchestration_refused(refused) == "TASK_CYCLE_DETECTED"
+    assignment = world.assign("t-020", "agent-1")
+    assert world.orchestrator.task("t-020").state is module.TaskState.POLICY_AUTHORIZED
+    assert (assignment.agent_run_id, assignment.workload_identity, assignment.delegation_ref, assignment.autonomy_tier) == (
+        "urn:ocor:agent-run:agent-1",
+        "spiffe://ocor.internal/agent/agent-1/run/agent-1",
+        team.delegation_of("agent-1"),
+        "ANALYZE",
+    )
+    assert assignment.policy_decision_id.startswith("urn:ocor:policy-decision:")
+    commitment = world.commit("t-020", "agent-1")
+    assert commitment.assignment_id == assignment.assignment_id
+    assert world.orchestrator.task("t-020").state is module.TaskState.ACCEPTED
+    done = world.orchestrator.complete(
+        "t-020", output={"summary": "two hypotheses"}, evidence_refs=("urn:ocor:evidence:e1",), at=NOW_C8, **team.caller("agent-1")
+    )
+    assert done.state is module.TaskState.COMPLETED
+    assert done.output_digest == "urn:sha256:" + hashlib.sha256(canonical_bytes({"summary": "two hypotheses"})).hexdigest()
+    world.assign("t-021", "agent-2")
+
+    sub = world.propose("t-024", parent_task_id="t-021", by="team-lead-1")
+    assert sub.delegation_depth == 1
+    world.propose("t-025", parent_task_id="t-024")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-026", parent_task_id="t-025")
+    assert orchestration_refused(refused) == "DELEGATION_DEPTH_EXCEEDED"
+
+    critical = world.dissent("t-020", "agent-3", severity="CRITICAL", category="PROVENANCE_GAP", reason="source unverifiable")
+    minor = world.dissent("t-020", "agent-3", severity="LOW", category="COUNTER_EVIDENCE", reason="weak counter-evidence")
+    with pytest.raises(module.OrchestratorError) as refused:
+        _propose_decision(world, impact="HIGH_IMPACT")
+    assert orchestration_refused(refused) == "CRITICAL_DISSENT_BLOCKS"
+    resolution = world.orchestrator.resolve_dissent(
+        critical.dissent_id, resolution="provenance restored", at=NOW_C8, **team.caller("agent-3")
+    )
+    assert isinstance(resolution, module.DissentResolution) and resolution.dissent_id == critical.dissent_id
+    assert world.orchestrator.dissents[0] == critical
+    proposal = _propose_decision(world, impact="HIGH_IMPACT")
+    assert proposal.executable is False
+    assert proposal.dissent_ids == (minor.dissent_id,)
+
+
+def _propose_decision(world: Any, *, impact: str, by: str = "team-lead-1") -> Any:
+    from ocor_runtime.c8 import orchestrator as module
+
+    return world.orchestrator.propose_decision(
+        world.team_run_id,
+        impact=module.ProposalImpact[impact],
+        alternatives=("restart service", "fail over"),
+        assumptions=("telemetry is current",),
+        uncertainty="medium",
+        provenance_refs=("urn:ocor:evidence:e1",),
+        at=NOW_C8,
+        **team.caller(by),
+    )
+
+
+@pytest.mark.parametrize(
+    "case, code",
+    [
+        ("unknown-agent", "UNKNOWN_AGENT"),
+        ("role-mismatch", "ROLE_MISMATCH"),
+        ("delegation-revoked", "CAPABILITY_REVOKED"),
+        ("tier-below-task", "POLICY_DENIED"),
+        ("budget-exhausted", "BUDGET_EXCEEDED"),
+        ("policy-deny", "POLICY_DENIED"),
+        ("policy-approval", "APPROVAL_REQUIRED"),
+        ("not-coordinator", "ROLE_FORBIDDEN"),
+        ("transport-mismatch", "CAPABILITY_DENIED"),
+        ("stop", "EMERGENCY_STOP_ACTIVE"),
+    ],
+)
+def test_ncr_c8_003_an_assignment_checks_identity_capability_delegation_tier_budget_and_policy(world: Any, case: str, code: str) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.propose("t-030", autonomy_tier="SIMULATE" if case == "tier-below-task" else "ANALYZE")
+    agent, by, transport = "agent-1", "team-lead-1", "team-lead-1"
+    if case == "unknown-agent":
+        agent = "agent-99"
+    elif case == "role-mismatch":
+        agent = "agent-3"
+    elif case == "delegation-revoked":
+        world.revoke_delegation("agent-1")
+    elif case == "budget-exhausted":
+        world.budgets.set_quota("run", "urn:ocor:agent-run:agent-1", team.quota(steps=0))
+    elif case == "policy-deny":
+        world.policy.effect = "DENY"
+    elif case == "policy-approval":
+        world.policy.effect = "REQUIRE_APPROVAL"
+    elif case == "not-coordinator":
+        by = transport = "agent-2"
+    elif case == "transport-mismatch":
+        transport = "agent-2"
+    elif case == "stop":
+        world.accept_stop()
+    lease = world.grant(subject=by, capability="agent:assign", resource=agent)
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.assign("t-030", agent, capability="act:analyze", lease=lease, assigned_by=by, at=NOW_C8, **team.caller(transport))
+    assert orchestration_refused(refused) == code
+    assert world.orchestrator.assignment("t-030") is None
+    assert world.ledger.entries("t-030") == () or world.ledger.entries("t-030")[-1].kind == "TASK_FAILED"
+
+
+def test_ncr_c8_003_a_member_cannot_hold_a_tier_outside_the_poc_profile_or_share_an_identity() -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    with pytest.raises(module.OrchestratorError) as refused:
+        team.TeamWorld(team.live_dsn(), tiers={"agent-1": "EXECUTE_APPROVED"})
+    assert orchestration_refused(refused) == "POLICY_DENIED"
+    world = team.TeamWorld(team.live_dsn())
+    twin = module.TeamMember(role=module.AgentRole.HYPOTHESIS, binding=world.members["agent-1"].binding)
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.start_run(
+            f"urn:ocor:team-run:{uuid_hex()}",
+            team_id="team-1",
+            members=(*world.members.values(), twin),
+            termination=world.termination,
+            at=NOW_C8,
+            **team.caller("team-lead-1"),
+        )
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+
+
+def uuid_hex() -> str:
+    import uuid
+
+    return str(uuid.uuid4())
+
+
+def test_ncr_c8_003_completion_requires_the_typed_conforming_output_of_the_role_and_evidence(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-040", "agent-1")
+    attempts = [
+        ({"summary": "ok"}, (), "SCHEMA_VIOLATION"),
+        ({"summary": ""}, ("urn:ocor:evidence:e1",), "SCHEMA_VIOLATION"),
+        ({"summary": "ok", "canonical": True}, ("urn:ocor:evidence:e1",), "SCHEMA_VIOLATION"),
+    ]
+    for output, evidence, code in attempts:
+        with pytest.raises(module.OrchestratorError) as refused:
+            world.orchestrator.complete("t-040", output=output, evidence_refs=evidence, at=NOW_C8, **team.caller("agent-1"))
+        assert orchestration_refused(refused) == code
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.complete("t-040", output={"summary": "ok"}, evidence_refs=("urn:ocor:evidence:e1",), at=NOW_C8, **team.caller("agent-2"))
+    assert orchestration_refused(refused) == "CAPABILITY_DENIED"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-041", role="HYPOTHESIS", output_type="DecisionProposal@1")
+    assert orchestration_refused(refused) == "ROLE_OUTPUT_FORBIDDEN"
+    assert world.orchestrator.task("t-040").state is module.TaskState.ACCEPTED
+
+
+def test_ncr_c8_003_the_coordinator_has_no_domain_inference_approval_or_dissent_suppression(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-050", "agent-1")
+    dissent = world.dissent("t-050", "agent-3", severity="CRITICAL", category="POLICY_VIOLATION")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.resolve_dissent(dissent.dissent_id, resolution="overruled", at=NOW_C8, **team.caller("team-lead-1"))
+    assert orchestration_refused(refused) == "ROLE_FORBIDDEN"
+    with pytest.raises(module.OrchestratorError) as refused:
+        _propose_decision(world, impact="STANDARD", by="agent-1")
+    assert orchestration_refused(refused) == "ROLE_FORBIDDEN"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-051", role="COORDINATOR")
+        world.assign("t-051", "agent-1")
+    assert orchestration_refused(refused) == "ROLE_MISMATCH"
+    assert not any(
+        name.startswith(("remove", "retract", "delete", "clear", "update", "suppress", "approve"))
+        for name in dir(world.orchestrator)
+        if not name.startswith("_")
+    )
+    proposal = _propose_decision(world, impact="STANDARD")
+    assert proposal.dissent_ids == (dissent.dissent_id,)
+
+
+def test_ncr_c8_003_retries_keep_the_logical_task_with_a_distinct_attempt_up_to_the_limit(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.accepted("t-060", "agent-1")
+    failed = world.orchestrator.fail("t-060", reason="tool unavailable", at=NOW_C8, **team.caller("agent-1"))
+    assert failed.state is module.TaskState.FAILED
+    second = world.orchestrator.retry("t-060", at=NOW_C8, **team.caller("team-lead-1"))
+    assert (second.logical_task_id, second.attempt, second.state) == ("t-060", 2, module.TaskState.PROPOSED)
+    assert second.task_id != "t-060"
+    world.assign(second.task_id, "agent-2")
+    world.commit(second.task_id, "agent-2")
+    world.orchestrator.fail(second.task_id, reason="again", at=NOW_C8, **team.caller("agent-2"))
+    third = world.orchestrator.retry(second.task_id, at=NOW_C8, **team.caller("team-lead-1"))
+    assert third.attempt == 3
+    world.assign(third.task_id, "agent-1")
+    world.commit(third.task_id, "agent-1")
+    world.orchestrator.fail(third.task_id, reason="once more", at=NOW_C8, **team.caller("agent-1"))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.retry(third.task_id, at=NOW_C8, **team.caller("team-lead-1"))
+    assert orchestration_refused(refused) == "TERMINATION_CONDITION_MET"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.retry("t-060", at=NOW_C8, **team.caller("team-lead-1"))
+    assert orchestration_refused(refused) == "INVALID_TRANSITION"
+    world.propose("t-061")
+    cancelled = world.orchestrator.cancel("t-061", reason="superseded", at=NOW_C8, **team.caller("team-lead-1"))
+    assert cancelled.state is module.TaskState.CANCELLED
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.cancel("t-061", reason="again", at=NOW_C8, **team.caller("team-lead-1"))
+    assert orchestration_refused(refused) == "INVALID_TRANSITION"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.orchestrator.retry("t-061", at=NOW_C8, **team.caller("team-lead-1"))
+    assert orchestration_refused(refused) == "INVALID_TRANSITION"
+
+
+def test_ncr_c8_003_a_budget_exhausted_during_the_task_stops_it(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.propose("t-070")
+    world.assign("t-070", "agent-1")
+    world.budgets.set_quota("agent", "agent-1", team.quota(steps=1))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.commit("t-070", "agent-1")
+    assert orchestration_refused(refused) == "BUDGET_EXCEEDED"
+    assert world.orchestrator.task("t-070").state is module.TaskState.FAILED
+    assert world.ledger.entries("t-070")[-1].kind == "TASK_FAILED"
+
+
+def test_ncr_c8_003_the_run_timeout_and_task_limit_terminate_with_the_escalation_target() -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    termination = module.TerminationCondition(
+        max_delegation_depth=1, timeout=timedelta(minutes=10), max_attempts=2, max_tasks=2, escalation_target=team.ESCALATION_TARGET
+    )
+    world = team.TeamWorld(team.live_dsn(), termination=termination)
+    world.propose("t-080")
+    world.propose("t-081")
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.propose("t-082")
+    assert orchestration_refused(refused) == "TERMINATION_CONDITION_MET"
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.assign("t-080", "agent-1", at=NOW_C8 + timedelta(minutes=11))
+    assert orchestration_refused(refused) == "RUN_TERMINATED"
+    run = world.orchestrator.run(world.team_run_id)
+    assert run.status == "TERMINATED"
+    assert run.termination_reason == "TIMEOUT" and run.termination.escalation_target == team.ESCALATION_TARGET
+    assert world.orchestrator.task("t-080").state is module.TaskState.EXPIRED
+    assert world.ledger.entries(world.team_run_id)[-1].kind == "RUN_TERMINATED"
+    with pytest.raises(ValueError):
+        module.TerminationCondition(max_delegation_depth=-1, timeout=timedelta(0), max_attempts=0, max_tasks=0, escalation_target="")
+
+
+def test_ncr_c8_003_a_task_beyond_its_timeout_expires_and_a_proposal_carries_unresolved_dissent(world: Any) -> None:
+    from ocor_runtime.c8 import orchestrator as module
+
+    world.propose("t-090", timeout=timedelta(minutes=1))
+    with pytest.raises(module.OrchestratorError) as refused:
+        world.assign("t-090", "agent-1", at=NOW_C8 + timedelta(minutes=2))
+    assert orchestration_refused(refused) == "TASK_EXPIRED"
+    assert world.orchestrator.task("t-090").state is module.TaskState.EXPIRED
+    world.accepted("t-091", "agent-4", role="CAUSAL")
+    abstained = world.orchestrator.abstain("t-091", reason="identification fails", at=NOW_C8, **team.caller("agent-4"))
+    assert abstained.state is module.TaskState.ABSTAINED
+    critical = world.dissent("t-091", "agent-3", severity="CRITICAL", category="CAUSAL_ABSTENTION")
+    with pytest.raises(module.OrchestratorError) as refused:
+        _propose_decision(world, impact="HIGH_IMPACT")
+    assert orchestration_refused(refused) == "CRITICAL_DISSENT_BLOCKS"
+    standard = _propose_decision(world, impact="STANDARD")
+    assert standard.dissent_ids == (critical.dissent_id,)
+    assert world.ledger.entries(world.team_run_id)[-1].kind == "DECISION_PROPOSED"

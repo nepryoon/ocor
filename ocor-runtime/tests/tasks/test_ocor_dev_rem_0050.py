@@ -936,12 +936,22 @@ def test_ncr_c3_002_c8_run_state_is_the_run_ledger_not_canonical_state(postgres_
     ledger = ledger_module.PostgresRunLedger(dsn)
     ledger.initialize()
     authority = CapabilityAuthority(issuer="ocor-c8-rem0050-authority")
-    orchestrator = orchestrator_module.AgentRunOrchestrator(authority=authority, ledger=ledger)
+    # OCOR-DEV-REM-0058 (NCP-U10) case-3 adaptation: the orchestrator is built with the Coordination
+    # Kernel of a started team run (LLD v1.1 :183) and the task is proposed before it is assigned;
+    # the assertions are unchanged.
+    from c8_orchestrator_fixture import NOW as TEAM_NOW
+    from c8_orchestrator_fixture import TeamWorld, caller
+
+    team = TeamWorld(dsn, authority=authority, ledger=ledger)
+    assert isinstance(team.orchestrator, orchestrator_module.AgentRunOrchestrator)
+    orchestrator = team.orchestrator
     task = f"task-rem0050-{uuid.uuid4().hex[:8]}"
-    lease = authority.issue(subject="team-lead-1", capabilities=["agent:assign"], resources=["agent-1"], issued_at=NOW,
+    team.propose(task)
+    lease = authority.issue(subject="team-lead-1", capabilities=["agent:assign"], resources=["agent-1"], issued_at=TEAM_NOW,
                             ttl=timedelta(hours=1))
     commits = postgres_backend.commits()
-    orchestrator.assign(task, "agent-1", capability="act:do-thing", lease=lease, assigned_by="team-lead-1", at=NOW)
+    orchestrator.assign(task, "agent-1", capability="act:do-thing", lease=lease, assigned_by="team-lead-1", at=TEAM_NOW,
+                        **caller("team-lead-1"))
     assert postgres_backend.commits() == commits
     assert [entry.kind for entry in ledger.entries(task)] == ["TASK_ASSIGNED"]
     rows = _sql(dsn, "SELECT kind FROM c8_run_ledger WHERE task_id=%s", task)
