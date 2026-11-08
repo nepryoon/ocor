@@ -567,8 +567,194 @@
     "valid_attempt": "first run of the qualifying campaign"
   },
   "independent_verification": {
-    "head_sha": null,
-    "status": "PENDING_EXTERNAL_LOOP"
+    "alignment": {
+      "aligned_head": "64bd20a07e8ec41199860a2597dde4b63c864468",
+      "all_nonstate_paths_byte_identical": true,
+      "changed_paths": [
+        "reports/development/EXECUTION_STATE.json",
+        "reports/development/ITERATION_LOG.md",
+        "reports/development/MODEL_HANDOFF.json"
+      ],
+      "main_head": "87a7d3afa52c3c98a97d4f61c989caee2ba8922f",
+      "nonstate_git_tree_sha256": "8aac72caf179e4645f7c4908de89ecf3eb5bbbc6e7351489aac01435ecf8667a",
+      "nonstate_git_tree_sha256_method": "sha256 of git ls-tree -r --full-tree output lines (newline-joined, trailing newline) excluding the three state paths; equal for qualified_head and aligned_head",
+      "qualified_head": "c67d14bbb2a733759192eaf7009c8c09294d5510",
+      "stat_excluding_state": ""
+    },
+    "candidate_json_sha256": "eac26ab8304c9f04ea024c8254ccff47604acee0700a225c25bbce87e824eb64",
+    "commands": [
+      {
+        "command": "environment declaration: source env.sh; sha256 of tools against infra/toolchain.lock.json and infra/qualification_tools.lock.json; preflight rerun",
+        "exit_code": 0,
+        "summary": "environment.json sha256 a51ddb75705a3cebb5dce733c1a01d2d312780a30770c0b3dff4ab473a581398; preflight PASS; host Intel Core Ultra 9 275HX, 24 threads, MemTotal 64199668 kB; power ADP0 online=1 (mains) at start and end; tool and qualification digests match the locks; HEAD c67d14bbb2a733759192eaf7009c8c09294d5510. Clean shells via env -i. Campaigns exported only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN for the live regression and the serial suite; lifecycle and four-lane exported no OCOR_* variables. No implementer tools executed. No second worktree."
+      },
+      {
+        "command": "sha256sum -c inputs/normative/SHA256SUMS",
+        "exit_code": 0,
+        "summary": "all normative checksums OK; inputs/ untouched"
+      },
+      {
+        "command": "evidence sha256 versus the request",
+        "exit_code": 0,
+        "summary": "14 evidence files match evidence_sha256; claims E1=0 E2=0 Verified=0 runtime NOT_ESTABLISHED PoC and Production NO-GO"
+      },
+      {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider reports/tests/test_local_lane_campaign.py reports/tests/test_rem0037_0006_teardown_scope.py reports/tests/test_kind_teardown_observation.py reports/tests/test_qualifying_campaign_guard.py",
+        "exit_code": 0,
+        "summary": "519 passed, 105 subtests passed"
+      },
+      {
+        "command": "validate_evidence_input_drift.py; validate_runtime_evidence.py --non-skipped for 0005, 0050, 0082, REM-0037; evidence_manifest.py validate OCOR-DEV-0004; validate_ocor_development_plan.py; validate_rccad.py; validate_language_policy.py; validate_ocor_change_scope.py; ruff check .; mypy; pytest reports/tests/test_normative_conformance_register.py",
+        "exit_code": 0,
+        "summary": "all exit 0; drift findings empty; plan PASS; rccad PASS_LOCAL_PRECHECK; ruff and mypy clean; register integrity 15 passed"
+      },
+      {
+        "command": "bootstrap_ci_environment.py --execute --timeout 600",
+        "exit_code": 0,
+        "summary": "PASS at 2026-11-08T00:05:23Z; fuseki_max_heap_bytes=1073741824; control-plane SVID operation exit 0; 15 healthy services. Quota before the step 100 of 100 (threshold 31)."
+      },
+      {
+        "command": "pytest ocor-runtime/tests/tasks/test_ocor_dev_0005.py test_ocor_dev_0050.py test_ocor_dev_0082.py with OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN",
+        "exit_code": 0,
+        "summary": "214 passed, 0 skipped, 4.92s"
+      },
+      {
+        "command": "reset_test_environment.py --execute",
+        "exit_code": 0,
+        "summary": "PASS; owned containers, networks and volumes empty"
+      },
+      {
+        "command": "run_local_lane_campaign.py --lifecycle-check on c67d14bbb2a733759192eaf7009c8c09294d5510",
+        "exit_code": 0,
+        "summary": "PASS; FOUR_LANE threshold 25681.2; staggered false; bootstrap seconds 190.007, 200.007, 200.007, 195.007; Temporal SERVING from container start 0.814, 0.535, 1.503, 0.502 s with probe_errors 0; teardown PASS; host residue empty. Quota before the step 100 (threshold 60); after the step 54."
+      },
+      {
+        "command": "run_local_lane_campaign.py --execute four lanes on c67d14bbb2a733759192eaf7009c8c09294d5510",
+        "exit_code": 0,
+        "summary": "PASS FOUR_LANE lanes_admitted=4 lanes_run=4; 5118 tests, 0 failures, 0 errors, 0 skipped; union missing/duplicated/unexpected empty and executed 5118; collection sha256 e3126ea232fc5edc98d123c4296f24b1a31170a4c09ab4fbbc6678ed8bf4258a; duration 1601.514 s (margin 3798 s under the 5400 s cap, under the 3600 s flag); power MAINS at start and end; residue empty. Started at 2026-11-08T01:00:00Z with quota 100 (threshold 77). No OOM."
+      },
+      {
+        "command": "first serial attempt: bootstrap_ci_environment.py --execute while .ocor/bootstrap.env already existed",
+        "exit_code": 1,
+        "summary": "stopped by the versioned freshness guard before any pull or test; not a product assertion failure and not counted as a campaign attempt"
+      },
+      {
+        "command": "bootstrap_ci_environment.py --teardown --execute, then --execute --timeout 600, then run_qualifying_campaign.py --execute serial on c67d14bbb2a733759192eaf7009c8c09294d5510",
+        "exit_code": 0,
+        "summary": "bootstrap PASS, fuseki_max_heap_bytes=1073741824, control-plane SVID exit 0. Serial PASS: 5118 tests, 0 failures, 0 errors, 0 skipped, duration 4530.724 s (margin 869 s under 5400 s and 569 s under the 5100 s decision-request threshold; po_decision_required true because the run exceeds the 3600 s notification). JUnit identities equal the collection; collection digest equals the four-lane digest. test_ocor_dev_0048: 196 cases, 0 skipped. Power mains at start and at teardown. Quota before the step 43 (threshold 35). No OOM. Final teardown PASS, no bootstrap, lane or kind residue. Tracked tree clean."
+      }
+    ],
+    "findings": [],
+    "findings_disposition": "Nessun finding, nulla NOT_EXECUTED nella verifica di ricontrollo dell ambiente OCOR-DEV-REM-0056-c67d14bbb2a7-0-env-recheck sullo stesso candidato c67d14b, senza modifiche al codice. Il verifier ha rieseguito da shell pulita (env -i): lock e preflight PASS, inputs 8/8, sha256 delle 14 evidenze uguali alla richiesta; guard dell orchestratore e suite reports 519 passed e 105 subtest; drift, runtime evidence --non-skipped di 0005/0050/0082/REM-0037, evidence_manifest 0004, piano, rccad, language, scope, ruff, mypy, registro 15 passed, tutti exit 0; bootstrap CI PASS; regressione 0005/0050/0082 214 passed zero skip; lifecycle-check a quattro sandbox PASS (FOUR_LANE, soglia 25681,2, non scaglionato, Temporal SERVING entro 1,503 s); suite a quattro corsie FOUR_LANE 5118/5118 zero skip in 1601,5 s; suite seriale 5118/5118 zero skip in 4530,7 s, stesso digest di raccolta (prova di equivalenza PASS); alimentazione di rete; nessun residuo. Il verdetto precedente OCOR-DEV-REM-0056-c67d14bbb2a7-0 (NO_GO, solo VF-001 di categoria ambiente: 429 di Docker Hub, nessuna asserzione di prodotto fallita) resta registrato in prior_verdicts e non ha consumato un ciclo di riparazione: VF-001 e chiuso dal ricontrollo con la regola del bilancio dei pull.",
+    "head_sha": "c67d14bbb2a733759192eaf7009c8c09294d5510",
+    "not_executed": [],
+    "prior_verdicts": [
+      {
+        "commands": [
+          {
+            "command": "sha256 of host tools, qualification tools, and scripts/preflight_environment.py --require-ready",
+            "exit_code": 0,
+            "summary": "Toolchain, Node 20.20.2, ruff, uv, helm, kind and kubectl match the locks. Preflight PASS. environment.json sha256 f531e46626e3f1c6583508120c7ca1f3af6fe40104dabc117ac23c679000a527. Host: Intel Core Ultra 9 275HX, 24 threads, MemTotal 64199668 kB. Power at start and end: ADP0 online=1, BAT0 Not charging."
+          },
+          {
+            "command": "sha256sum -c inputs/normative/SHA256SUMS",
+            "exit_code": 0,
+            "summary": "8/8 OK. Diff c4d63aa..c67d14b does not touch inputs/."
+          },
+          {
+            "command": "pytest reports/tests/test_local_lane_campaign.py reports/tests/test_rem0037_0006_teardown_scope.py reports/tests/test_kind_teardown_observation.py reports/tests/test_qualifying_campaign_guard.py",
+            "exit_code": 0,
+            "summary": "519 passed, 105 subtests passed, 34.15s, zero skipped."
+          },
+          {
+            "command": "ruff check . && python -m mypy",
+            "exit_code": 0,
+            "summary": "ruff: all checks passed. mypy: no issues in 144 source files."
+          },
+          {
+            "command": "validate_evidence_input_drift.py; validate_runtime_evidence.py for 0005, 0050, 0082, REM-0037 --non-skipped; evidence_manifest.py validate OCOR-DEV-0004; validate_ocor_development_plan.py --authorized-extension; validate_rccad.py; validate_language_policy.py; validate_ocor_change_scope.py c4d63aa..c67d14b",
+            "exit_code": 0,
+            "summary": "Drift 0. Evidence validators PASS. Plan PASS (NOT_EXECUTED 2 inside the plan report, not this change). RCCAD PASS_LOCAL_PRECHECK. Language policy PASS. Scope PASS, 19 paths, immutable surfaces untouched."
+          },
+          {
+            "command": "env -i clean shell; scripts/bootstrap_ci_environment.py --execute --timeout 600",
+            "exit_code": 0,
+            "summary": "PASS in 54.226s. fuseki_max_heap_bytes=1073741824. control-plane SVID present. Fuseki archive cache MISS from https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-6.2.0.tar.gz, SHA512 verified. Typed service health PASS. Exported names for the following tests only: OCOR_BOOTSTRAP_ENV, OCOR_LIVE_POSTGRES_DSN. No implementer tools."
+          },
+          {
+            "command": "pytest ocor-runtime/tests/tasks/test_ocor_dev_0005.py test_ocor_dev_0050.py test_ocor_dev_0082.py test_ocor_dev_0048.py",
+            "exit_code": 0,
+            "summary": "410 passed in 131.63s on the live bootstrap stack, zero skipped, including the CI-0048 compensatory file."
+          },
+          {
+            "command": "scripts/bootstrap_ci_environment.py --teardown --execute",
+            "exit_code": 0,
+            "summary": "REMOVED. Residual containers, volumes and networks empty."
+          },
+          {
+            "command": "scripts/run_local_lane_campaign.py --lifecycle-check on head c67d14bbb2a733759192eaf7009c8c09294d5510",
+            "exit_code": 0,
+            "summary": "FOUR_LANE, MemAvailable 55871280 KiB, threshold 25681.2, staggered false, four private stacks, every listed service READY. Bootstrap seconds 200.007, 195.006, 190.006, 195.006. Temporal SERVING from container start 0.983s, 1.268s, 0.633s, 0.963s, probe_errors 0. Teardown PASS, host residue empty. Ended 2026-11-07T13:15:38Z."
+          },
+          {
+            "command": "scripts/run_local_lane_campaign.py --execute four lanes on head c67d14bbb2a733759192eaf7009c8c09294d5510",
+            "exit_code": 1,
+            "summary": "Admission FOUR_LANE, four lanes started, total_duration_seconds 913.024, status FAIL. Lane 2 pytest exit 1: 45 errors, all test_ocor_dev_0049 setup, Docker Hub 429 pulling python:3.11@sha256:c7220863385ee39fb6d822da81f4469d0cd33ff893d92ce94105e5c3f4b95fe2. Lane 4 had 47 errors of the same class before the stop. Other lanes stopped by the orchestrator. Teardown PASS, host residue empty. Power remained on mains."
+          },
+          {
+            "command": "scripts/bootstrap_ci_environment.py --execute --timeout 600 for the serial suite, then diagnostic docker pull of the locked Kafka digest",
+            "exit_code": 1,
+            "summary": "Fresh provision refused while .ocor/bootstrap.env remained, then after removing that generated file the provision failed with pinned pull failed: kafka. docker pull of confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047 returned 429 Too Many Requests. The serial suite did not start."
+          }
+        ],
+        "disposition": "VF-001 di categoria ambiente (429 di Docker Hub per tre passi con pull nella stessa finestra oraria, ~108 > 100; nessuna asserzione di prodotto fallita): diagnosi registrata nello state sync dell iterazione 3 (PR #537), nessuna modifica del candidato, ricontrollo dell ambiente richiesto con la regola del bilancio dei pull; ciclo di riparazione non consumato. Chiuso dal GO_FOR_EVIDENCE_SEAL del ricontrollo.",
+        "findings": [
+          {
+            "blocking": true,
+            "evidence": "Categoria ambiente, non un difetto del codice di REM-0056. Sullo HEAD c67d14bbb2a733759192eaf7009c8c09294d5510 la suite a quattro corsie e partita in FOUR_LANE (MemAvailable 55850036 KiB) ed e terminata FAIL in 913.024 s: lane 2, pytest exit 1, 45 errori di setup in tests/tasks/test_ocor_dev_0049.py:1614, tutti per il pull di python:3.11@sha256:c7220863385ee39fb6d822da81f4469d0cd33ff893d92ce94105e5c3f4b95fe2 rifiutato da registry-1.docker.io con 429 Too Many Requests; lane 4, 47 errori della stessa classe. L'orchestratore ha fermato le altre corsie e il teardown ha lasciato residui host vuoti. Il bootstrap successivo della suite seriale e fallito con pinned pull failed: kafka; un docker pull diagnostico del digest pinnato ha restituito lo stesso 429. Il lifecycle-check precedente, quattro stack privati, aveva gia consumato il bilancio di pull dello stesso indirizzo. Non ci sono asserzioni di prodotto fallite per una ragione diversa dal pull. LOCAL-SUITE-FOUR-LANES richiede che io riesegua seriale e quattro corsie, entrambe PASS: questa coppia non c'e. Shell pulita, variabili esportate solo OCOR_BOOTSTRAP_ENV e OCOR_LIVE_POSTGRES_DSN nei test sul primo stack, nessuno strumento dell'implementatore.",
+            "id": "VF-001",
+            "path": "ocor-runtime/tests/tasks/test_ocor_dev_0049.py:1614",
+            "required_fix": "Ripetere da shell pulita, quando registry-1.docker.io accetta i pull dei digest pinnati da questo indirizzo, la suite seriale con scripts/run_qualifying_campaign.py --execute e la suite a quattro corsie con scripts/run_local_lane_campaign.py --execute sullo stesso HEAD. Non trattare questa esecuzione come PASS e non modificare il codice di REM-0056 solo per questo 429.",
+            "severity": "high"
+          }
+        ],
+        "not_executed": [
+          "Suite seriale completa scripts/run_qualifying_campaign.py --execute sullo HEAD c67d14bbb2a733759192eaf7009c8c09294d5510: non partita. Il bootstrap versionato e fallito con pinned pull failed: kafka e il pull diagnostico dello stesso digest ha restituito 429 Too Many Requests.",
+          "Prova di equivalenza seriale contro quattro corsie, entrambe PASS, richiesta da LOCAL-SUITE-FOUR-LANES (2026-11-07): la modalita a quattro corsie e stata eseguita e non e PASS per il 429; la seriale non e partita. Un nuovo tentativo immediato della stessa procedura non puo riuscire finche il registry risponde 429."
+        ],
+        "verdict_created_at": "2026-11-07T13:38:04Z",
+        "verdict_file_sha256": "9aad4ba9ab07e4f437c0fd79e22e0f18eb3047500a9d1c3d5ee145854facb1a1",
+        "verdict_head_sha": "c67d14bbb2a733759192eaf7009c8c09294d5510",
+        "verdict_request_id": "OCOR-DEV-REM-0056-c67d14bbb2a7-0",
+        "verdict_status": "NO_GO",
+        "verifier": {
+          "independence_limits": "Verifier: Cursor CLI, Grok 4.7, fornitore xAI. Implementatore dichiarato nella richiesta e nell'evidenza: Claude Code, Anthropic, claude-opus-5-5, unico autore che ha toccato REM-0056. La riga dei ruoli del loop nomina anche codex (OpenAI) fra gli implementatori dal GO precedente; richiesta ed evidenza non lo indicano come autore del codice. Nessuno dei due e xAI. Revisore preventivo: Antigravity CLI, gemini-4-argon-high, Google, non letto come input. Non sono il fornitore Anthropic degli elenchi NCP. Processo e contesto separati. Campagne da shell pulita dopo source di env.sh; nessun source di .ocor/bootstrap.env; nessuno strumento dell'implementatore. Tool-bin: bin dell'ambiente standard piu la directory del Node 20.20.2 pinnato a cui quel bin punta, cosi npm e il Node del lock.",
+          "model": "grok-4.7-high (xAI)",
+          "process": "Cursor CLI, contesto pulito non interattivo, VERIFIER-ENV-STANDARD"
+        }
+      }
+    ],
+    "raw_output_sha256_unchanged": "841e348dcdd31ba3dd60677d4c8886bdb9876de47f15d05f5236a02cf1b38cc7",
+    "repair_cycle": 0,
+    "review_type": "REMEDIATION",
+    "status": "GO_FOR_EVIDENCE_SEAL",
+    "verdict_created_at": "2026-11-08T02:48:51Z",
+    "verdict_file_sha256": "087e3200deaea71f0a02c09d75cbb3b250e16f22f061134c206e02eb7fca43f6",
+    "verdict_head_sha": "c67d14bbb2a733759192eaf7009c8c09294d5510",
+    "verdict_request_id": "OCOR-DEV-REM-0056-c67d14bbb2a7-0-env-recheck",
+    "verdict_status": "GO_FOR_EVIDENCE_SEAL",
+    "verifier": "Grok 4.7 (Cursor CLI, xAI)",
+    "verifier_configuration": {
+      "independence_limits": "processo e contesto separati; verifier Cursor, modello grok-4.7-high, fornitore xAI; implementatore Claude Code, modello claude-opus-5-5, fornitore Anthropic; revisore preventivo Antigravity CLI, modello gemini-4-argon-high, fornitore Google. Nessun implementatore e' del fornitore xAI. Gli elenchi iniziali del programma di conformita' normativa sono di Anthropic: il verifier non e' Anthropic. La riga dei ruoli del loop nomina anche codex; la richiesta e il record attribuiscono il change set soltanto a Claude Code, e l'iterazione 3 e' la diagnosi d'ambiente senza modifica del candidato.",
+      "model": "grok-4.7-high",
+      "process": "Cursor CLI, contesto pulito, esecuzione non interattiva",
+      "provider": "xAI"
+    },
+    "verifier_environment": {
+      "command": "environment declaration: source env.sh; sha256 of tools against infra/toolchain.lock.json and infra/qualification_tools.lock.json; preflight rerun",
+      "exit_code": 0,
+      "summary": "environment.json sha256 a51ddb75705a3cebb5dce733c1a01d2d312780a30770c0b3dff4ab473a581398; preflight PASS; host Intel Core Ultra 9 275HX, 24 threads, MemTotal 64199668 kB; power ADP0 online=1 (mains) at start and end; tool and qualification digests match the locks; HEAD c67d14bbb2a733759192eaf7009c8c09294d5510. Clean shells via env -i. Campaigns exported only OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN for the live regression and the serial suite; lifecycle and four-lane exported no OCOR_* variables. No implementer tools executed. No second worktree."
+    }
   },
   "inputs": {
     ".github/workflows/ocor-validation-closure.yml": "eb60126c95614d02c8b67a3b9a3ddf64086dfd5869fd4f4235dc399e06ea1109",
@@ -908,6 +1094,12 @@
   "review_scope": "regression-only: proves the task's tests pass at the REM-0056 code head after its input changes; not a re-assessment of its conformance",
   "roles": {
     "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "effective_verifier": {
+      "agent": "Cursor CLI",
+      "independence": "Processo e contesto separati. Verifier: Cursor CLI / grok-4.7-high / xAI. Implementatore di REM-0056: Claude Code / claude-opus-5-5 / Anthropic per tutta l unita (iterazioni 1-2; diagnosi d ambiente all iterazione 3; sigillo e integrazione all iterazione 4, come implementatore di riserva del loop). Revisore preventivo: Antigravity CLI / gemini-4-argon-high / Google. Nessun implementatore ne revisore preventivo e dello stesso fornitore del verifier.",
+      "model": "grok-4.7-high",
+      "provider": "xAI"
+    },
     "implementers": [
       {
         "agent": "Claude Code",
@@ -916,6 +1108,12 @@
         "scope": "all of REM-0056, iterations 1-2: RED/GREEN of the four-lane orchestrator (RED 7d2d2ab, GREEN 52cc194), input-robustness self-check (RED 533edb4, GREEN 0fd4780), allowlist and NCR-GOVERNANCE-002 decision request file (6cb2069), fixes of the preventive review (RED 555bb32, GREEN 91ba110; RED c82d696, GREEN de79d98), PRE-CAMPAIGN-GATE, point 3 proofs, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation; the only implementer that touched the task"
       }
     ],
+    "integration_agent": {
+      "agent": "Claude Code",
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "scope": "metadata-only alignment, evidence sealing, exact-head CI and merge; implementation, tests and raw logs unchanged"
+    },
     "preventive_reviewer": {
       "agent": "Antigravity CLI",
       "model": "gemini-4-argon-high",
@@ -934,11 +1132,12 @@
       "constraint": "provider neither Anthropic (implementer) nor Google (preventive reviewer)",
       "process": "external loop only, separate clean context"
     },
-    "verifier_started_by_implementer": false
+    "verifier_started_by_implementer": false,
+    "verifier_status": "GO_FOR_EVIDENCE_SEAL"
   },
   "rollback_procedure_verified": "Mechanical review: revert the REM-0056 commits; the OCOR-DEV-0050.requalified-rem0055.json record becomes the most recent again once this record is removed with the revert. No data migration, no sealed-history rewrite.",
   "schema_version": "1.0",
-  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "status": "SEALED",
   "supersedes": "OCOR-DEV-0050-requalified-rem0055-351bb27eeeb0",
   "supersession_scope": "Regression-only after the OCOR-DEV-REM-0056 change of scripts/validate_ocor_development_plan.py (exact allowlist of the REM-0056 paths); LOCAL-SUITE-FOUR-LANES (2026-11-07) point 4 names the sealed records with the orchestrator, its guard or lane_weights.json among their inputs and always foresees 0005, 0050 and 0082; the rule of the unit classification (always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS) places it in the non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30); the task's tests are byte-identical. Not a re-assessment of its conformance and never evidence of a requirement: the requirement evidence of the task stays that of the supersedes chain.",
   "task_id": "OCOR-DEV-0050",
