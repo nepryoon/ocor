@@ -20,7 +20,12 @@ runtime with ADD v1.3 §4.2, LLD v1.1 §2.7 and the PO decision on the plan (poi
 - every estimate carries identification, uncertainty, sensitivity, diagnostics,
   assumptions and lineage (Register FR-097 :238); the reproducibility digest covers
   content and version pins, never the trace identifiers, and two runs are equivalent
-  when their digests match or their numbers differ within the declared tolerance.
+  when their digests match or their numbers differ within the declared tolerance;
+- a query built from a ``ScenarioRunSpec`` and its overlay hypothesis
+  (``c7.scenario_run``, ``NCR-C7-004``) carries the run pins into the lineage; the signed
+  model, scenario and budget checks of that module return ``REJECTED`` with
+  ``MODEL_SIGNATURE_INVALID``, ``SCENARIO_PIN_MISMATCH`` or ``BUDGET_EXCEEDED``
+  (Register NFR-030 :228, FR-092 :232); jobs run under ``c7.jobs``.
 
 The legacy ``ocor_runtime.c7_emission`` module is a different C7 concern (durable,
 ordered effect emission) and is not touched here.
@@ -62,6 +67,9 @@ REJECTED_REASONS = frozenset(
         "DATA_PIN_MISMATCH",
         "INTERVENTION_PIN_MISMATCH",
         "MODEL_SCHEMA_INVALID",
+        "MODEL_SIGNATURE_INVALID",
+        "SCENARIO_PIN_MISMATCH",
+        "BUDGET_EXCEEDED",
         "INTERVENTION_SCHEMA_INVALID",
         "MAIN_CONTAMINATED",
         "RELEASE_MISMATCH",
@@ -425,6 +433,12 @@ class CausalQuery:
     seed: int
     correlation_id: str
     causation_id: str
+    # The pins of the ScenarioRunSpec and of the overlay hypothesis the query was built
+    # from (``c7.scenario_run``); they enter the lineage, never the trace identifiers.
+    run_pins: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "run_pins", MappingProxyType(_freeze(self.run_pins)))
 
 
 @dataclass(frozen=True, slots=True)
@@ -630,6 +644,8 @@ def _lineage(query: CausalQuery, model: StructuralCausalModel | None) -> dict[st
         "ontology_release_digest": query.ontology_release_digest,
         "seed": query.seed,
     }
+    if query.run_pins:
+        lineage["run"] = _thaw(query.run_pins)
     if model is not None:
         lineage.update(model_id=model.model_id, model_version=model.version, tolerance=_text(model.tolerance))
     return lineage

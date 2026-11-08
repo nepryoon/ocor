@@ -52,7 +52,7 @@ ADAPTER_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/adapters/seaweedfs.py"
 C7_RUNTIME_PATH = RUNTIME_ROOT / "src/ocor_runtime/c7/runtime.py"
 # c7/runtime.py at the head of OCOR-DEV-REM-0057 (NCP-U09), which aligns it with ADD v1.3 §4.2
 # (NORMATIVE-CONFORMANCE-PLAN point 5, case 2); sealed by OCOR-DEV-0045 before.
-C7_RUNTIME_SHA256 = "a9d9c7488372b49fc442a633f4f7b4109abeb584e928c97455bf99880fbc354d"
+C7_RUNTIME_SHA256 = "09360e5a53d7305ca9f3a1b5a6f04c077fa6a6fb4769c52ffc815e8cbb79d27d"
 QUALIFY_PATH = REPOSITORY_ROOT / "deploy/bootstrap/services/seaweedfs/qualify.py"
 URL = os.environ.get("OCOR_LIVE_SEAWEEDFS_URL", "http://127.0.0.1:18333")
 ACCESS_KEY = "ocor-bootstrap-s3"  # deploy/bootstrap/compose.yaml, seaweedfs service
@@ -179,7 +179,9 @@ def _outcome(label: str, *, abstain: bool = False) -> CausalOutcome:
     ]
     intervention = {"value": 1, "valid_envelope": [0, 1]}
     query = CausalQuery(
-        baseline_commit="rem0040-baseline",
+        # The trace identifiers are outside the digest (NCR-C7-005): the run nonce in the
+        # baseline keeps the outcome unique to this run (OCOR-DEV-REM-0057 construction).
+        baseline_commit=f"rem0040-baseline-{RUN_NONCE}",
         scenario_branch="scenario/rem0040",
         model_digest=canonical_digest(model),
         data_digest=canonical_digest(rows),
