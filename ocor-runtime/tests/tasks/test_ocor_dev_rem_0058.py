@@ -1963,3 +1963,269 @@ def test_ncr_c8_003_a_task_beyond_its_timeout_expires_and_a_proposal_carries_unr
     standard = _propose_decision(world, impact="STANDARD")
     assert standard.dissent_ids == (critical.dissent_id,)
     assert world.ledger.entries(world.team_run_id)[-1].kind == "DECISION_PROPOSED"
+
+
+# --- NCR-C8-005 on the real policy decision point: OPA over mTLS for a Keycloak principal ---------
+#
+# The required backend of the unit (plan unit NCP-U10: OPA, Keycloak/SPIFFE, PostgreSQL). The real
+# signed bundle decides every tool dispatch and every coordination action: ADD v1.3 :3856 (live
+# re-evaluation of policy), :3117 (mediated by Kernel, Gateway and Policy Engine), :3141 (the five
+# effects). The fixtures of the sealed OCOR-DEV-0048 module are reused unmodified.
+
+import importlib.util as _importlib_util  # noqa: E402
+import sys as _sys  # noqa: E402
+import uuid as _uuid  # noqa: E402
+
+_M0048_PATH = Path(__file__).resolve().parent / "test_ocor_dev_0048.py"
+_M0048_SPEC = _importlib_util.spec_from_file_location(
+    "ocor_dev_0048_fixtures_for_rem0058", _M0048_PATH
+)
+assert _M0048_SPEC is not None and _M0048_SPEC.loader is not None
+m0048 = _importlib_util.module_from_spec(_M0048_SPEC)
+_sys.modules[_M0048_SPEC.name] = m0048
+_M0048_SPEC.loader.exec_module(m0048)
+
+env = m0048.env
+live_stack = m0048.live_stack
+admin_token = m0048.admin_token
+principals = m0048.principals
+mtls = m0048.mtls
+principal = m0048.principal
+
+
+def _opa(mtls: dict[str, object]) -> Any:
+    from ocor_runtime.security import control_plane
+
+    return control_plane.OpaPolicyDecisionProvider(
+        str(mtls["opa"]),
+        m0048.POLICY_ID,
+        signer_public_key=(m0048._SIGNER_N, m0048._SIGNER_E),
+        ssl_context=mtls["ssl_context"],
+    )
+
+
+def _opa_bundle(principal_id: str, actions: tuple[str, ...], *qualifiers: str) -> str:
+    """The signed package: ``allow`` only for ``principal_id`` on the listed actions."""
+    allowed = ", ".join(json.dumps(action) for action in actions)
+    return (
+        "package ocor.control_plane\n\ndefault allow := false\n\n"
+        f"allowed_actions := {{{allowed}}}\n\n"
+        "allow if {\n"
+        f'    input.principal_id == "{principal_id}"\n'
+        "    allowed_actions[input.action]\n"
+        "}\n" + "".join(f"\n{item}\n" for item in qualifiers)
+    )
+
+
+def _opa_context(principal_id: str, policy_digest: str) -> Any:
+    from ocor_runtime.kernel.governed_context import GovernedContext
+
+    return GovernedContext(
+        tenant_id="t1",
+        organization_id="o1",
+        domain_id="d1",
+        compartments=("default",),
+        classification_marking_ref="urn:sha256:" + "a" * 64,
+        purpose="incident-response",
+        effective_principal_id=principal_id,
+        actor_chain=(principal_id,),
+        ontology_release_digest="urn:sha256:" + "b" * 64,
+        policy_bundle_digest=policy_digest,
+        correlation_id=str(_uuid.uuid4()),
+    )
+
+
+class OpaToolWorld:
+    """The governed tool runtime of the shared fixture, decided by the real OPA for the real
+    Keycloak principal, at the current instant (the principal and the decision are live)."""
+
+    def __init__(
+        self,
+        principal: Any,
+        mtls: dict[str, object],
+        *qualifiers: str,
+        actions: tuple[str, ...] | None = None,
+    ) -> None:
+        from c6_safety_fixture import stop_controller
+        from ocor_runtime.c4.marking_resolution import ResolvedMarkingEngine
+        from ocor_runtime.c4_marking import MarkingSchemeDefinition
+        from ocor_runtime.c8 import tool_runtime
+
+        import c8_tool_runtime_fixture as tools
+
+        self.module = tool_runtime
+        self.effects: list[str] = []
+        self.opa = _opa(mtls)
+        granted = (
+            actions
+            if actions is not None
+            else (
+                "urn:ocor:capability:tool:note",
+                "urn:ocor:capability:tool:restart_service",
+            )
+        )
+        self.digest = self.opa.install_policy(
+            m0048._sign_bundle(
+                _opa_bundle(principal.principal_id, granted, *qualifiers)
+            )
+        )
+        self.now = datetime.now(UTC)
+        self.stop = stop_controller()
+        self.world = tools.ToolRuntimeWorld(
+            context=_opa_context(principal.principal_id, self.digest),
+            marking_engine=ResolvedMarkingEngine(
+                [
+                    MarkingSchemeDefinition(
+                        "classification", levels=("UNCLASSIFIED", "SECRET")
+                    )
+                ]
+            ),
+            stop=self.stop,
+            now=self.now,
+        )
+        for name in ("note", "restart_service"):
+            self.world.tool(name, self._adapter(name))
+        self.principal = principal
+        self.runtime = tool_runtime.ToolCallRuntime(
+            registry=self.world.registry,
+            grants=self.world.grants,
+            controls=self.world.controls,
+            policy=self.opa,
+            eligibility=self.world.eligibility,
+            marking_engine=self.world.runtime._marking_engine,
+            stop=self.world.reader,
+            reconciler=self.world.reconciler,
+        )
+
+    def _adapter(self, tool: str) -> Callable[[str], str]:
+        def call(name: str) -> str:
+            self.effects.append(tool)
+            return f"{tool} {name}"
+
+        return call
+
+    def invoke(self, expression: str) -> Any:
+        from ocor_runtime.c4_marking import MarkingSet
+
+        grant = self.world.grant("note", "restart_service")
+        return self.runtime.invoke(
+            "note",
+            expression,
+            bindings={"name": "svc"},
+            lease=grant,
+            agent=self.world.agent,
+            principal=self.principal,
+            context=self.world.context,
+            content_marking=MarkingSet({"classification": "UNCLASSIFIED"}),
+            clearance=MarkingSet({"classification": "SECRET"}),
+            budget=self.world.budget(100),
+            estimated_tokens=1,
+            stop_epoch=self.stop.epoch,
+            at=datetime.now(UTC),
+        )
+
+
+def test_ncr_c8_005_the_real_opa_permit_admits_every_dispatch_with_its_decisions(
+    principal: Any, mtls: dict[str, object]
+) -> None:
+    world = OpaToolWorld(principal, mtls)
+
+    receipt = world.invoke(TWO_TOOLS)
+
+    assert world.effects == ["note", "restart_service"]
+    assert receipt.agent_principal_id == principal.principal_id
+    # one OPA decision for the call, one per named tool and one per dispatch, each a distinct URN
+    assert len(receipt.policy_decision_ids) >= 5
+    assert all(item.startswith("urn:sha256:") for item in receipt.policy_decision_ids)
+
+
+@pytest.mark.parametrize(
+    ("qualifier", "actions", "code"),
+    [
+        ("", (), "POLICY_DENIED"),
+        (
+            'approval_requirements contains "approval:domain-owner" if input.action == "urn:ocor:capability:tool:note"',
+            None,
+            "APPROVAL_REQUIRED",
+        ),
+        (
+            'obligations contains "audit:access" if input.action == "urn:ocor:capability:tool:note"',
+            None,
+            "POLICY_DENIED",
+        ),
+    ],
+    ids=["deny", "require-approval", "obligate-not-honoured"],
+)
+def test_ncr_c8_005_the_real_opa_refuses_before_any_effect(
+    principal: Any,
+    mtls: dict[str, object],
+    qualifier: str,
+    actions: tuple[str, ...] | None,
+    code: str,
+) -> None:
+    world = OpaToolWorld(
+        principal, mtls, *((qualifier,) if qualifier else ()), actions=actions
+    )
+
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.invoke("note(name)")
+
+    assert refused.value.reason_code == code, str(refused.value)
+    assert world.effects == []
+
+
+def test_ncr_c8_005_a_tool_the_real_opa_does_not_permit_is_refused_before_its_dispatch(
+    principal: Any, mtls: dict[str, object]
+) -> None:
+    world = OpaToolWorld(principal, mtls, actions=("urn:ocor:capability:tool:note",))
+
+    with pytest.raises(world.module.ToolRuntimeError) as refused:
+        world.invoke(TWO_TOOLS)
+
+    assert refused.value.reason_code == "POLICY_DENIED", str(refused.value)
+    assert world.effects == []
+
+
+def test_ncr_c8_005_the_coordination_kernel_is_decided_by_the_real_opa(
+    principal: Any, mtls: dict[str, object]
+) -> None:
+    from c6_safety_fixture import stop_controller
+    from ocor_runtime.c8 import orchestrator as module
+    from ocor_runtime.c8 import tool_runtime
+    from ocor_runtime.c8.tool_contract import SchemaCatalog
+
+    opa = _opa(mtls)
+    assign = module.ACTIONS["assign"]
+    digest = opa.install_policy(
+        m0048._sign_bundle(_opa_bundle(principal.principal_id, (assign,)))
+    )
+    schemas = SchemaCatalog()
+    kernel = module.CoordinationKernel(
+        controls=tool_runtime.InMemoryGovernanceControls(),
+        policy=opa,
+        stop=stop_controller().reader,
+        budgets=tool_runtime.AgentBudgetLedger(),
+        schemas=schemas,
+        contracts=team.output_contracts(schemas),
+        handoff_contract=team.handoff_contract(schemas),
+        audit=team.audit_log(team.live_dsn(), schema="ocor_audit_rem_0058_opa"),
+        signing_key=team.seeded_key("rem-0058-opa-kernel"),
+        keyid="urn:ocor:key:rem-0058-opa-kernel",
+    )
+    context = _opa_context(principal.principal_id, digest)
+
+    decision = kernel.decide(
+        principal, context, context.digest(), assign, "agent-2", datetime.now(UTC)
+    )
+
+    assert decision.startswith("urn:sha256:")
+    with pytest.raises(module.OrchestratorError) as refused:
+        kernel.decide(
+            principal,
+            context,
+            context.digest(),
+            module.ACTIONS["handoff"],
+            "agent-2",
+            datetime.now(UTC),
+        )
+    assert orchestration_refused(refused) == "POLICY_DENIED"
