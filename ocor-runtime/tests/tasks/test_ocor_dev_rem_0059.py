@@ -280,7 +280,9 @@ def test_ncr_memory_003_bulk_scopes_forget_every_visible_item_of_the_scope(lifec
         assert world.status(record.item.memory_item_id) == "ACTIVE"
         assert t55.content_present(world, record)
         assert world.tombstones.entries(record.item.memory_item_id) == ()
-    assert _served(world, t55.TEXT) == {"c"}
+    # Nothing of the scope is served; the item outside it is served wherever the caller may search it
+    # (the caller holds search Authority for project-1 only).
+    assert _served(world, t55.TEXT) == ({"c"} if scope == "PRINCIPAL_SCOPE" else set())
     # Replay of the same request returns the same receipt and deletes nothing more.
     assert world.delete("a", scope=scope, op="forget-scope").to_mapping() == receipt.to_mapping()
     assert world.status("c") == "ACTIVE" and t55.denials(world) == []

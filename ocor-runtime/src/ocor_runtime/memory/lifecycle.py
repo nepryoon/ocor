@@ -149,8 +149,16 @@ TRANSITION_REQUIRED = ENVELOPE_FIELDS | {"memory_version", "target_status", "rea
 TRANSITION_OPTIONAL = frozenset({"legal_hold_ref"})
 DELETION_FIELDS = ENVELOPE_FIELDS | {"reason_code", "deletion_scope"}
 DELETION_SCOPES = frozenset({"LATEST_VERSION", "ALL_VERSIONS", "PROJECT_SCOPE", "PRINCIPAL_SCOPE"})
-# The PoC deletes an item with every version; narrower and bulk scopes fail closed.
-SUPPORTED_DELETION_SCOPES = frozenset({"ALL_VERSIONS"})
+# Every declared scope executes through the deletion saga (NCR-MEMORY-003): ALL_VERSIONS
+# forgets the item with every version; LATEST_VERSION forgets the item and purges its head
+# version only (earlier versions stay unreachable history: the item ends DELETED, nothing
+# is resurrected); PROJECT_SCOPE and PRINCIPAL_SCOPE forget, with every version, each item
+# visible to the caller sharing the addressed item's project_id or owner principal.
+SUPPORTED_DELETION_SCOPES = DELETION_SCOPES
+BULK_DELETION_SCOPES = frozenset({"PROJECT_SCOPE", "PRINCIPAL_SCOPE"})
+# Upper bound of the items one scoped deletion may forget; beyond it the request fails
+# closed before any write.
+MAX_SCOPE_DELETION_ITEMS = 1000
 
 S = LifecycleStatus
 # ADD v1.3 Part II §2.10, verbatim.  LEGAL_HOLD leaves only to the recorded
@@ -352,9 +360,17 @@ class ContentParticipant:
         for partition in target.partitions():
             for stored in self._metadata.versions_in(partition.digest):
                 staged = stored.staged
-                if staged.memory_item_id == target.memory_item_id:
-                    continue
                 if staged.content_object_ref not in mine:
+                    continue
+                if staged.memory_item_id == target.memory_item_id:
+                    # A version kept by a LATEST_VERSION deletion still references it;
+                    # the item's metadata-only deletion versions never do.
+                    if (
+                        staged.memory_version_ref not in target.version_refs
+                        and staged.item.get("lifecycle_status")
+                        not in {status.value for status in DELETION_STATUSES}
+                    ):
+                        shared.add(staged.content_object_ref)
                     continue
                 head = self._metadata.head(staged.memory_item_id)
                 head_version = self._metadata.get(staged.memory_item_id, head) if head else None
@@ -823,6 +839,7 @@ class _Plan:
     request_digest: str
     legal_hold_ref: str | None = None
     stop_epoch: int | None = None
+    deletion_scope: str = "ALL_VERSIONS"
 
 
 # --------------------------------------------------------------------------
@@ -1369,6 +1386,7 @@ class MemoryLifecycleCoordinator:
             "legal_hold_ref": plan.legal_hold_ref if status is S.LEGAL_HOLD else None,
             "deletion_epoch": deletion_epoch,
             "phase": suffix or "TRANSITION",
+            **({"deletion_scope": plan.deletion_scope} if plan.deletion_scope != "ALL_VERSIONS" else {}),
         }
         audit_event = {
             "action": plan.action,
@@ -1502,6 +1520,8 @@ class MemoryLifecycleCoordinator:
                 "governed_context_digest": request.gcs_digest,
             }
         )
+        if scope in BULK_DELETION_SCOPES:
+            return self._scoped_deletion(memory_item_id, request, reason, scope, request_digest)
         replayed = self._replay(memory_item_id, request, request_digest)
         if replayed is not None:
             return replayed, True
@@ -1509,7 +1529,7 @@ class MemoryLifecycleCoordinator:
             raise MemoryLifecycleError(
                 "UNSUPPORTED_CAPABILITY",
                 "DELETION_SCOPE_UNSUPPORTED",
-                f"{scope} deletion is not supported; delete the item with ALL_VERSIONS",
+                f"{scope} deletion is not supported",
             )
         head = self._committed_head(memory_item_id, request.context)
         plan = _Plan(
@@ -1519,8 +1539,156 @@ class MemoryLifecycleCoordinator:
             target=S.DELETION_PENDING,
             reason_code=reason,
             request_digest=request_digest,
+            deletion_scope=scope,
         )
         return self._forget(plan), False
+
+    def _scope_members(
+        self, addressed: AdmittedMemoryVersion, scope: str, context: GovernedContext
+    ) -> tuple[str, ...]:
+        """Every caller-visible, not yet forgotten item of the addressed item's scope."""
+
+        item = addressed.item
+        if scope == "PROJECT_SCOPE":
+            key: str | None = item.project_id
+            if key is None:
+                raise _schema_error(
+                    "DELETION_SCOPE_NOT_APPLICABLE", "the addressed item has no project_id binding"
+                )
+        else:
+            key = item.owner_principal_id
+        candidates: set[str] = set()
+        for partition in self._metadata.partitions():
+            if partition.tenant_id != item.tenant_id:
+                continue
+            for stored in self._metadata.versions_in(partition.digest):
+                candidates.add(stored.staged.memory_item_id)
+                if len(candidates) > MAX_SCOPE_DELETION_ITEMS:
+                    raise MemoryLifecycleError(
+                        "REPRESENTATION_NOT_READY",
+                        "DELETION_SCOPE_BACKPRESSURE",
+                        "the deletion scope exceeds the configured bound",
+                    )
+        members: list[str] = []
+        for candidate in sorted(candidates):
+            latest = self._ledger.latest_version(candidate)
+            record = self._ledger.get(candidate, latest) if latest else None
+            if record is None or not self._visible(record.item, context):
+                continue
+            head = record.item
+            value = head.project_id if scope == "PROJECT_SCOPE" else head.owner_principal_id
+            if value != key or head.lifecycle_status is S.DELETED:
+                continue
+            members.append(candidate)
+        return tuple(members)
+
+    def _scoped_deletion(
+        self, memory_item_id: str, request: _Request, reason: str, scope: str, request_digest: str
+    ) -> tuple[LifecycleReceipt, bool]:
+        """PROJECT_SCOPE / PRINCIPAL_SCOPE: one saga per item, one receipt for the request.
+
+        Every member is checked (committed head, forgettable, legal hold, live policy)
+        before the first write, so a refusal changes nothing.  A replay of the same
+        request resumes or returns the saga of every member it started.
+        """
+
+        replayed: dict[str, LifecycleReceipt] = {}
+        for candidate in self._recorded_members(request.operation_id):
+            receipt = self._replay(candidate, request, request_digest)
+            if receipt is not None:
+                replayed[candidate] = receipt
+        if memory_item_id in replayed:
+            return self._scope_receipt(memory_item_id, request, scope, replayed), True
+        if replayed:
+            raise MemoryLifecycleError(
+                "MEMORY_IDEMPOTENCY_CONFLICT",
+                "OPERATION_REUSED",
+                "operation_id is bound to another lifecycle request",
+            )
+        addressed = self._committed_head(memory_item_id, request.context)
+        members = self._scope_members(addressed, scope, request.context)
+        plans: list[_Plan] = []
+        for member in members:
+            head = self._committed_head(member, request.context)
+            if head.item.lifecycle_status is S.DELETION_PENDING:
+                raise _invalid("DELETION_IN_PROGRESS", "an item of the scope is already being deleted")
+            self._check_forgettable(head.item, request.context)
+            self._decide(OPERATION_DELETE, head.item, S.DELETION_PENDING, request.context)
+            plans.append(
+                _Plan(
+                    action=OPERATION_DELETE,
+                    request=request,
+                    head=head,
+                    target=S.DELETION_PENDING,
+                    reason_code=reason,
+                    request_digest=request_digest,
+                    deletion_scope=scope,
+                )
+            )
+        receipts = {plan.head.item.memory_item_id: self._forget(plan) for plan in plans}
+        return self._scope_receipt(memory_item_id, request, scope, receipts), False
+
+    def _recorded_members(self, operation_id: str) -> tuple[str, ...]:
+        """Items holding a lifecycle version of ``operation_id`` (a scoped request's saga)."""
+
+        found: set[str] = set()
+        for partition in self._metadata.partitions():
+            for stored in self._metadata.versions_in(partition.digest):
+                item_id = stored.staged.memory_item_id
+                if item_id in found:
+                    continue
+                if self._recorded(item_id, operation_id) or self._recorded(item_id, operation_id, "PENDING"):
+                    found.add(item_id)
+        return tuple(sorted(found))
+
+    def _scope_receipt(
+        self,
+        memory_item_id: str,
+        request: _Request,
+        scope: str,
+        receipts: Mapping[str, LifecycleReceipt],
+    ) -> LifecycleReceipt:
+        members = [
+            {"memory_version_ref": r.memory_version_ref, "lifecycle_status": r.lifecycle_status}
+            for _, r in sorted(receipts.items())
+        ]
+        complete = all(r.lifecycle_status == S.DELETED.value for r in receipts.values())
+        event = {
+            "action": OPERATION_DELETE,
+            "outcome": "COMPLETED" if complete else "FAILED",
+            "operation_id": request.operation_id,
+            "deletion_scope": scope,
+            "addressed_memory_item_id": memory_item_id,
+            "members": members,
+            "governed_context_digest": request.gcs_digest,
+            "binding_ref": request.binding.binding_ref,
+            "correlation_id": request.context.correlation_id,
+        }
+        audit_ref = canonical_digest(event)
+        try:
+            self._audit.record({**event, "audit_ref": audit_ref})
+        except Exception as exc:  # noqa: BLE001 -- no receipt without its audit event
+            raise MemoryLifecycleError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "AUDIT_UNAVAILABLE",
+                "the operation could not be audited; a replay completes it",
+            ) from exc
+        addressed = receipts[memory_item_id]
+        return LifecycleReceipt(
+            receipt=MappingProxyType(
+                {
+                    "operation_id": request.operation_id,
+                    "operation_kind": OPERATION_DELETE,
+                    "status": "COMPLETED" if complete else "FAILED",
+                    "governed_context_digest": request.gcs_digest,
+                    "audit_ref": audit_ref,
+                }
+            ),
+            memory_version_ref=addressed.memory_version_ref,
+            lifecycle_status=addressed.lifecycle_status,
+            deletion_epoch=addressed.deletion_epoch,
+            tombstone_digest=addressed.tombstone_digest,
+        )
 
     def _check_forgettable(self, head: GovernedMemoryItem, context: GovernedContext) -> None:
         source = head.lifecycle_status
@@ -1561,6 +1729,7 @@ class MemoryLifecycleCoordinator:
             target=S.DELETION_PENDING,
             reason_code=str(event.get("reason_code")),
             request_digest=str(event.get("request_digest")),
+            deletion_scope=str(event.get("deletion_scope", "ALL_VERSIONS")),
         )
         if done is not None:
             tombstone = self._last_tombstone(item_id)
@@ -1642,6 +1811,26 @@ class MemoryLifecycleCoordinator:
             ) from exc
         self._retire(item.memory_item_id, item.memory_version)
 
+    def _saga_versions(self, memory_item_id: str, upto: int, scope: str) -> tuple[StoredVersion, ...]:
+        """The committed versions a deletion of ``scope`` forgets.
+
+        LATEST_VERSION keeps every earlier content version out of the saga (only the
+        last content version and the metadata-only deletion versions are forgotten).
+        """
+
+        versions = self._versions(memory_item_id, upto)
+        if scope != "LATEST_VERSION":
+            return versions
+        deletion = {status.value for status in DELETION_STATUSES}
+        content = [s for s in versions if s.staged.item.get("lifecycle_status") not in deletion]
+        latest = content[-1].staged.memory_version_ref if content else None
+        return tuple(
+            s
+            for s in versions
+            if s.staged.memory_version_ref == latest
+            or s.staged.item.get("lifecycle_status") in deletion
+        )
+
     def _versions(self, memory_item_id: str, upto: int) -> tuple[StoredVersion, ...]:
         found = []
         for version in range(1, upto + 1):
@@ -1688,7 +1877,7 @@ class MemoryLifecycleCoordinator:
         retained: int = 0,
     ) -> TombstoneEntry:
         item = record.item
-        versions = self._versions(item.memory_item_id, item.memory_version - 1)
+        versions = self._saga_versions(item.memory_item_id, item.memory_version - 1, plan.deletion_scope)
         refs = sorted({s.staged.memory_version_ref for s in versions} | {item.version_ref})
         partitions = sorted(
             {s.staged.partition.digest for s in versions} | {MemoryPartition.for_item(item).digest}
@@ -1727,7 +1916,7 @@ class MemoryLifecycleCoordinator:
         assert epoch is not None
         target = DeletionTarget(
             memory_item_id=item.memory_item_id,
-            versions=self._versions(item.memory_item_id, item.memory_version - 1),
+            versions=self._saga_versions(item.memory_item_id, item.memory_version - 1, plan.deletion_scope),
             deletion_epoch=epoch,
             operation_id=plan.request.operation_id,
             binding=plan.request.binding,
