@@ -15,6 +15,17 @@ entries NCR-MEMORY-001..005 of ``reports/development/NORMATIVE_CONFORMANCE_REGIS
   GovernedContext and recalculates its digest (§2.5 :3789), evaluates policy,
   marking and lifecycle, and audits the read; an unauthorised item is
   indistinguishable from an absent one (FR-119).
+* NCR-MEMORY-003 -- ``requestMemoryDeletion`` executes the four declared
+  ``deletion_scope`` values of the contract (``ocor-governed-memory.openapi.yaml``
+  :273; UNSUPPORTED_CAPABILITY only for undeclared combinations, LLD v1.1 :421)
+  through the deletion saga (ADD v1.3 Part II §2.10 :3836; FR-118 Register v1.1
+  :267): ``ALL_VERSIONS`` forgets the item with every version; ``LATEST_VERSION``
+  forgets the item and purges its head version only, keeping the earlier
+  versions as unreachable history (no resurrection: the item stays
+  ``DELETED``); ``PROJECT_SCOPE`` and ``PRINCIPAL_SCOPE`` forget, with every
+  version, each item visible to the caller that shares the addressed item's
+  ``project_id`` or owner principal, with one saga, tombstone and audit event
+  per item and one receipt for the request.
 
 Each ``test_ncr_memory_<nnn>_conforms`` was written first and run RED on the
 unremediated code (``origin/main`` ``f683aa7``), then GREEN.  Qualifying cases
@@ -28,11 +39,13 @@ stop-state and audit ports are test ports (as in OCOR-DEV-0052).
 from __future__ import annotations
 
 import importlib
+from collections.abc import Iterator
 from datetime import timedelta
 from typing import Any
 
 import pytest
 import test_ocor_dev_0052 as t52
+import test_ocor_dev_0055 as t55
 import test_ocor_dev_rem_0020 as r20
 from ocor_runtime.kernel.governed_context import GovernedContext
 from ocor_runtime.memory.model import MemoryAdmissionError
@@ -197,3 +210,77 @@ def test_ncr_memory_004_conforms(backends: t52.Backends) -> None:
     denied = [e for e in world.audit.events if e["action"] == "getMemoryItemVersion.denied"]
     assert {e["reason_code"] for e in denied} >= {"MEMORY_NOT_FOUND", "MEMORY_VERSION_NOT_FOUND", "MEMORY_SCHEMA_INVALID"}
     assert all(e["governed_context_digest"] == caller.expected.digest() for e in denied if e["reason_code"] == "MEMORY_NOT_FOUND")
+
+
+# --------------------------------------------------------------------------
+# NCR-MEMORY-003: the four declared deletion scopes
+# --------------------------------------------------------------------------
+
+@pytest.fixture
+def lifecycle_backends(live_backends: t52.Backends) -> Iterator[t55.Backends]:
+    """The OCOR-DEV-0055 lifecycle worlds over the module's live backends."""
+
+    state = t55.Backends(dsn=live_backends.dsn, qdrant=live_backends.qdrant, bao=live_backends.bao)
+    try:
+        yield state
+    finally:
+        state.release()
+
+
+def _deleted(world: t55.World, item_id: str) -> bool:
+    head = world.lifecycle.head(item_id)
+    return head is not None and head.item.lifecycle_status.value == "DELETED" and head.item.deletion_epoch is not None
+
+
+def _served(world: t55.World, text: str) -> set[str]:
+    return {ref.split(":")[3] for refs in world.every_mode(text).values() for ref in refs}
+
+
+def test_ncr_memory_003_latest_version_forgets_only_the_head_version(lifecycle_backends: t55.Backends) -> None:
+    """NCR-MEMORY-003, ``LATEST_VERSION`` (contract :273; ADD v1.3 :3836; FR-118 Register v1.1 :267)."""
+
+    world = lifecycle_backends.world()
+    first = world.admit("x", t55.TEXT + " north")
+    second = world.admit("x", t55.TEXT + " north corrected", version=2)
+    keep = world.admit("keep", t55.TEXT)
+    receipt = world.delete("x", scope="LATEST_VERSION", op="forget-latest")
+    assert receipt.to_mapping()["status"] == "COMPLETED" and receipt.lifecycle_status == "DELETED"
+    assert receipt.tombstone_digest is not None and _deleted(world, "x")
+    # The head version is purged everywhere; the earlier version stays as history only.
+    assert not t55.content_present(world, second)
+    assert t55.content_present(world, first) and t55.content_present(world, keep)
+    tombstone = world.tombstones.entries("x")[-1]
+    assert "urn:ocor:memory:x:v2" in tombstone.version_refs and "urn:ocor:memory:x:v1" not in tombstone.version_refs
+    # No resurrection: the item is absent from every mode, the other item is served.
+    assert "x" not in _served(world, "north") and "keep" in _served(world, t55.TEXT)
+    # Replay returns the same receipt.
+    assert world.delete("x", scope="LATEST_VERSION", op="forget-latest").to_mapping() == receipt.to_mapping()
+    assert t55.denials(world) == []
+
+
+@pytest.mark.parametrize("scope", ["PROJECT_SCOPE", "PRINCIPAL_SCOPE"])
+def test_ncr_memory_003_bulk_scopes_forget_every_visible_item_of_the_scope(lifecycle_backends: t55.Backends, scope: str) -> None:
+    """NCR-MEMORY-003, ``PROJECT_SCOPE`` and ``PRINCIPAL_SCOPE`` (contract :273; ADD v1.3 :3836; FR-118)."""
+
+    world = lifecycle_backends.world()
+    other_owner = t52.context(principal="agent-principal-2")
+    if scope == "PROJECT_SCOPE":
+        inside = [world.admit("a", t55.TEXT + " alpha"), world.admit("b", t55.TEXT + " bravo", ctx=other_owner)]
+        outside = [world.admit("c", t55.TEXT + " charlie", bindings={"project_id": "project-2"})]
+    else:
+        inside = [world.admit("a", t55.TEXT + " alpha"), world.admit("b", t55.TEXT + " bravo", bindings={"project_id": "project-2"})]
+        outside = [world.admit("c", t55.TEXT + " charlie", ctx=other_owner)]
+    receipt = world.delete("a", scope=scope, op="forget-scope")
+    assert receipt.to_mapping()["status"] == "COMPLETED" and receipt.lifecycle_status == "DELETED"
+    for record in inside:
+        assert _deleted(world, record.item.memory_item_id), record.item.memory_item_id
+        assert not t55.content_present(world, record)
+        assert [e.phase for e in world.tombstones.entries(record.item.memory_item_id)] == ["STARTED", "COMPLETED"]
+    for record in outside:
+        assert world.status(record.item.memory_item_id) == "ACTIVE"
+        assert t55.content_present(world, record)
+        assert world.tombstones.entries(record.item.memory_item_id) == ()
+    assert _served(world, t55.TEXT) == {"c"}
+    # Replay of the same request returns the same receipt and deletes nothing more.
+    assert world.delete("a", scope=scope, op="forget-scope").to_mapping() == receipt.to_mapping()
+    assert world.status("c") == "ACTIVE" and t55.denials(world) == []
