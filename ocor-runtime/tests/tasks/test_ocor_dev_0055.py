@@ -182,6 +182,7 @@ class World(t53.World):
             markings=self.markings,
             clock=self.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": HORIZON, "retention:short": timedelta(days=30)}),
+            quota=base.RecordingAdmissionQuota(),
         )
         self.lc_policy = LifecycleGrant()
         self.holds = HoldRegistry()
@@ -1265,6 +1266,7 @@ def test_lifecycle_state_is_durable_across_fresh_adapters(backends: Backends, tm
     world.admission = MemoryAdmissionService(
         ledger=world.ledger, resolver=t52.Resolver(), policy=LifecycleGuardPolicy(base.Policy(), ledger=world.ledger),
         markings=world.markings, clock=world.clock, limits=AdmissionLimits(retention_horizons={"retention:standard": HORIZON}),
+        quota=base.RecordingAdmissionQuota(),
     )
     world.coordinator = world.build()
     world.lifecycle = world.build_lifecycle()

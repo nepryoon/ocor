@@ -286,6 +286,7 @@ class World:
             markings=self.markings,
             clock=self.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": timedelta(days=365)}),
+            quota=base.RecordingAdmissionQuota(),
         )
         self.metadata = metadata
         self.content = content

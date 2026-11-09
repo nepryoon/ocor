@@ -23,6 +23,7 @@ fixture registries, never a mock of the admission boundary itself.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import hashlib
 import json
@@ -274,6 +275,18 @@ class CountingLedger(InMemoryMemoryVersionLedger):
         super().append(record)
 
 
+class RecordingAdmissionQuota:
+    """Explicit test quota port of an admission-only world: admits and records every hold."""
+
+    def __init__(self) -> None:
+        self.holds: list[tuple[str, int]] = []
+
+    @contextlib.contextmanager
+    def admission_hold(self, item: Any, payload: bytes) -> Iterator[None]:
+        self.holds.append((item.memory_item_id, item.memory_version))
+        yield
+
+
 def evidence_record(evidence_id: str = "ev-1", marking: str = M_UNCLASSIFIED, **overrides: Any) -> EvidenceRecord:
     values: dict[str, Any] = {
         "evidence_id": evidence_id,
@@ -365,6 +378,7 @@ def make_world(ledger: Any | None = None) -> World:
                 "retention:working": timedelta(days=1),
             }
         ),
+        quota=RecordingAdmissionQuota(),
     )
     binding = VerifiedGovernedContextBinding(binding_ref="binding:keycloak-session-1", expected=GCS)
     return World(service, ledger, resolver, policy, clock, binding, audit)
@@ -1018,6 +1032,7 @@ def test_same_idempotency_key_revalidates_the_current_content_registry(journal: 
         clock=later.clock,
         limits=AdmissionLimits(retention_horizons={}, content_schemas=frozenset()),
         audit=later.audit,
+        quota=RecordingAdmissionQuota(),
     )
     with pytest.raises(MemoryAdmissionError) as caught:
         service.admit(envelope(candidate()), binding=later.binding, payload=PAYLOAD)

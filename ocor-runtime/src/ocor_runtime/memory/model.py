@@ -1273,8 +1273,11 @@ class AdmissionQuotaAuthority(Protocol):
 class MemoryAdmissionService:
     """``MemoryAdmissionPort.admitMemory``: fail-closed, persistence-last admission.
 
-    With a quota authority, quota is verified under its partition serialization
+    Quota is verified under the quota authority's partition serialization
     immediately before the single ledger append; a refusal appends nothing.
+    Without a quota authority, or with a value that is not one, every
+    admission refuses ``CONTROL_PLANE_UNAVAILABLE`` / ``QUOTA_UNAVAILABLE``
+    before any write.
     """
 
     def __init__(
@@ -1493,9 +1496,13 @@ class MemoryAdmissionService:
         )
         # 11. Quota, then persistence last, as one atomic append inside the
         #     quota authority's partition serialization (LLD v1.1 §2.8.2).
+        #     A value that is not a quota authority fails in the hold below.
         if self._quota is None:
-            self._ledger.append(record)
-            return receipt
+            raise MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "QUOTA_UNAVAILABLE",
+                "no quota authority is composed: admitMemory never writes without the quota check",
+            )
         try:
             hold = self._quota.admission_hold(item, bytes(payload))
             hold.__enter__()

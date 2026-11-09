@@ -217,6 +217,18 @@ class Policy:
         )
 
 
+class RecordingAdmissionQuota:
+    """Explicit test quota port of an admission-only world: admits and records every hold."""
+
+    def __init__(self) -> None:
+        self.holds: list[tuple[str, int]] = []
+
+    @contextlib.contextmanager
+    def admission_hold(self, item: Any, payload: bytes) -> Iterator[None]:
+        self.holds.append((item.memory_item_id, item.memory_version))
+        yield
+
+
 class Admission:
     """The real admission service over one ledger shared by every compartment."""
 
@@ -233,6 +245,7 @@ class Admission:
             ),
             clock=self.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": timedelta(days=365)}),
+            quota=RecordingAdmissionQuota(),
         )
         self._ops = 0
 
