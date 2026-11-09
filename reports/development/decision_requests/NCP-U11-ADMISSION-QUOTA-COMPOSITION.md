@@ -8,12 +8,12 @@ decisione `NCP-U11-REM0023-CONSUMER-GUARD (2026-11-09)` («Se l'attuazione richi
 scelte descrivono esplicitamente, fermati e apri una decision request»), il punto 1 di
 `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)` e il punto 5 dello stesso piano («Fuori da questi casi, fermati e apri una
 decision request»), e su indicazione esplicita del verdetto. Implementatore: Claude Code (Anthropic),
-implementatore di riserva del loop.
+implementatore di riserva.
 
 ## Contesto
 
-- Il verdetto indipendente `OCOR-DEV-REM-0059-3425a01a39c1-0` (Cursor, grok-4.7-high, xAI; `~/.ocor-codex/verdicts/`,
-  2026-11-09T10:30:35Z) è `NO_GO` con il finding bloccante `VF-001` (gravità `high`): `docs/OCOR_LLD_v1.1.md` riga 206
+- Il verdetto indipendente `OCOR-DEV-REM-0059-3425a01a39c1-0` (Cursor, grok-4.7-high, xAI; creato il
+  2026-11-09T10:30:35Z, head `3425a01a39c11780628ad3df513e9bf21a525427`) è `NO_GO` con il finding bloccante `VF-001` (gravità `high`): `docs/OCOR_LLD_v1.1.md` riga 206
   richiede che `admitMemory` verifichi la quota prima della scrittura atomica, ma
   `ocor-runtime/src/ocor_runtime/memory/model.py` righe 1487-1489 (al candidato) appende la versione ammessa e
   restituisce la receipt quando `self._quota is None`. `MemoryAdmissionQuota` è composta soltanto nel modulo
@@ -49,9 +49,14 @@ implementatore di riserva del loop.
   richiede, dopo la decisione: RED/GREEN e adattamenti, autocontrollo, `PRE-CAMPAIGN-GATE`, revisione preventiva,
   campagna qualificante, verifica indipendente, sigillo e merge, cioè almeno tre iterazioni (7, 8 e 9) senza margine.
 
-## Quesito A — composizione della quota
+## Opzioni
 
-1. **Quota obbligatoria, quota reale nei mondi con metadata store, port di test esplicito negli altri
+Quesito A: come si compone l'autorità di quota su ogni percorso di ammissione. Quesito B: budget di iterazioni del
+ciclo di riparazione.
+
+### Opzioni del quesito A
+
+A1. **Quota obbligatoria, quota reale nei mondi con metadata store, port di test esplicito negli altri
    (raccomandata).** `MemoryAdmissionService` richiede l'autorità di quota: senza di essa, o con un valore che non
    implementa `AdmissionQuotaAuthority`, `admitMemory` rifiuta con `CONTROL_PLANE_UNAVAILABLE`/`QUOTA_UNAVAILABLE`
    prima di qualsiasi scrittura (RED nel modulo dell'unità: ammissione e consolidamento senza quota rifiutano e non
@@ -66,24 +71,24 @@ implementatore di riserva del loop.
    confrontati byte per byte con testi fissati nel guard; casi negativi in più (quota tolta, limiti cambiati, un altro
    argomento cambiato fanno fallire il guard). Effetto: nessun percorso ammette senza quota; consolidamento coperto con
    la quota reale; guard stretto su tutto il resto.
-2. **Quota obbligatoria, port di test esplicito in tutti i mondi sigillati.** Come l'opzione 1, ma i nove punti
+A2. **Quota obbligatoria, port di test esplicito in tutti i mondi sigillati.** Come l'opzione A1, ma i nove punti
    compongono il port di test che ammette e registra; `MemoryAdmissionQuota` reale resta solo nel modulo dell'unità
    (consolidamento compreso, già provato da
    `test_ncr_memory_002_consolidation_output_is_counted_against_quota_at_admission`). Estensione del guard più piccola
    (un argomento e un'istruzione). Effetto: conformità del servizio identica; i consumatori sigillati non esercitano
    la quota reale.
-3. **Nessuna modifica dei mondi sigillati: quota facoltativa, divergenza residua.** Il default `quota=None` resta;
+A3. **Nessuna modifica dei mondi sigillati: quota facoltativa, divergenza residua.** Il default `quota=None` resta;
    `NCR-MEMORY-002` non passa a `IN_REMEDIATION` per il percorso predefinito e si apre una voce nuova `OPEN` del
    registro per la composizione obbligatoria. Effetto: `VF-001` resta aperto, la verifica successiva sarebbe
    prevedibilmente `NO_GO`, `OCOR-DEV-0062` (bloccato dalla voce) resta bloccato.
 
-## Quesito B — iterazioni
+### Opzioni del quesito B
 
-1. **B1 (raccomandata).** Per `OCOR-DEV-REM-0059` sono autorizzate fino a quattro iterazioni oltre la nona (dalla
+B1. **Quattro iterazioni oltre la nona (raccomandata).** Per `OCOR-DEV-REM-0059` sono autorizzate fino a quattro iterazioni oltre la nona (dalla
    decima alla tredicesima), solo per il ciclo di riparazione 1 di questo verdetto e, se una verifica `NO_GO` lo
    richiede, per il ciclo di riparazione 2; restano lo stop anticipato per due iterazioni consecutive senza
    avanzamento e il massimo di due cicli di riparazione (stesso modello di `NCP-U08-ITERATION-LIMIT (2026-11-06)`).
-2. **B2.** Nessuna estensione: se il ciclo non si chiude entro la nona iterazione, l'unità si ferma con una decision
+B2. **Nessuna estensione.** Nessuna estensione: se il ciclo non si chiude entro la nona iterazione, l'unità si ferma con una decision
    request di livello normativo.
 
 ## Raccomandazione
