@@ -1863,7 +1863,7 @@ def test_prereview_p1_a_journal_digest_that_is_not_an_ascii_sha256_urn_is_refuse
 @pytest.mark.parametrize(("path", "value"), [
     (("item_digest",), "é"), (("item_digest",), 7), (("item_digest",), None), (("item_digest",), "urn:sha256:" + "G" * 64),
     (("receipt", "audit_ref"), "é"), (("receipt", "audit_ref"), 7), (("receipt", "content_digest"), 7),
-    (("receipt", "memory_version"), "1"), (("receipt", "memory_version"), True), (("receipt", "memory_version"), 1.0),
+    (("receipt", "memory_version"), "1"), (("receipt", "memory_version"), True), (("receipt", "memory_version"), [1]),
     (("receipt", "memory_item_id"), 7), (("receipt", "lifecycle_status"), None), (("receipt", "governed_context_digest"), 7),
 ], ids=lambda v: repr(v))
 def test_prereview_p1_a_self_consistent_journal_record_with_malformed_digest_or_receipt_fields_is_refused(tmp_path: Any, path: tuple[str, ...], value: Any) -> None:
@@ -1898,7 +1898,8 @@ def test_prereview_p1_twin_the_tombstone_journal_checks_its_chain_fields_and_eve
         body = {"seq": chained["seq"], "prev": chained["prev"], "entry": chained["entry"], **fields}
         return canonical_bytes(dict(body, entry_digest=canonical_digest(body)))
 
-    variants = [rechain(seq=True), rechain(seq="1"), rechain(seq=1.0), rechain(prev=7),
+    # 1.0 is the integer 1 in canonical form (RFC 8785), so it is no malformed sequence number.
+    variants = [rechain(seq=True), rechain(seq="1"), rechain(seq=[1]), rechain(prev=7),
                 *(canonical_bytes(dict(chained, entry_digest=d)) for d in MALFORMED_DIGESTS),
                 canonical_bytes(dict(chained, entry_digest=7)), canonical_bytes(dict(chained, entry_digest=None)),
                 *(canonical_bytes(dict(chained, prev=d)) for d in NON_ASCII_DIGESTS),
