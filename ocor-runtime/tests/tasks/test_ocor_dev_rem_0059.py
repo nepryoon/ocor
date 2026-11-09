@@ -1611,9 +1611,33 @@ def test_ncr_memory_002_a_journal_line_that_is_not_strict_i_json_is_refused(tmp_
         line[:-1],
         b"[]",
         b"",
+        line.replace(b'"mem-1"', b'"mem-1\\ud800"', 1),
+        line.replace(b'"mem-1"', b'"mem-1\\u0000"', 1),
+        b"[" * 100_000 + b"]" * 100_000,
+        b'{"seq":' + b"[" * 100_000 + b"]" * 100_000 + b"}",
     ]
     for variant in variants:
         path.write_bytes(variant + b"\n")
         with pytest.raises(MemoryLedgerCorrupted) as caught:
             JournalMemoryVersionLedger(path)
         assert (caught.value.reason_code, caught.value.detail_code) == ("INTERNAL_ERROR", "MEMORY_LEDGER_CORRUPTED"), variant
+
+
+def test_ncr_memory_005_stored_metadata_bytes_and_library_parse_errors_are_typed() -> None:
+    """Re-read metadata rows: bytes columns (a SQL_ASCII client), invalid UTF-8, escaped lone surrogates and a
+    nesting deeper than the parser's recursion limit are METADATA_INVALID; a valid UTF-8 bytes body is read."""
+
+    world, coordinator, record, part, vector = _store_world()
+    stored = world.metadata.get(record.item.memory_item_id, 1)
+    body = json.dumps(stored.staged.body())
+    staged_at = stored.staged.staged_at
+    corrupt = ("INTERNAL_ERROR", "METADATA_INVALID")
+    deep = "[" * 100_000 + "]" * 100_000
+    for row in ((body.encode()[:-1] + b"\xff}", staged_at, "COMMITTED", staged_at), (body, staged_at, b"COMMITTED", staged_at),
+                (body, staged_at.encode(), "COMMITTED", staged_at), (body, staged_at, "COMMITTED", staged_at.encode()),
+                (body.replace('"mem-p"', '"mem-p\\ud800"', 1), staged_at, "COMMITTED", staged_at),
+                (deep, staged_at, "COMMITTED", staged_at), (deep.encode(), staged_at, "COMMITTED", staged_at)):
+        assert _code(lambda row=row: _pg([[row]]).get("mem-p", 1)) == corrupt, row[:2]
+    assert _pg([[(body.encode(), staged_at, "COMMITTED", staged_at)]]).get("mem-p", 1) is not None
+    for raw in (deep, deep.encode(), "{" + '"a":' * 50_000 + "1" + "}" * 50_000):
+        assert _code(lambda raw=raw: A._strict_json(raw, "INDEX_ANSWER_INVALID")) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
