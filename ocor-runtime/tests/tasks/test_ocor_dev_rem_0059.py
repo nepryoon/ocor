@@ -1271,3 +1271,259 @@ def test_ncr_memory_005_a_malformed_transit_answer_or_content_row_is_typed() -> 
     for row in ((5, b"x"), (key, "not bytes"), ("", b"x")):
         assert _code(lambda row=row: A.PostgresContentStore(_pg([[row]])).get("r")) == ("INTERNAL_ERROR", "CONTENT_INVALID")
 
+
+
+# -- Preventive review OCOR-DEV-REM-0059-90e47e872c3e-pre: blocking findings P1-P10 ----------
+
+
+def test_ncr_memory_002_admitted_versions_not_yet_committed_count_against_the_item_quota() -> None:
+    """P1: a new item admitted to the ledger and not yet committed to the stores consumes quota."""
+
+    world, _ = _quota_unit_world(_Serialization(), max_items=1)
+    world.admit("p", t55.TEXT + " p", commit=False)
+    assert _code(lambda: world.admit("q", t55.TEXT + " q", commit=False)) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
+    assert _code(lambda: world.admit("r", t55.TEXT + " r", commit=False)) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
+    assert [world.ledger.latest_version(name) for name in "pqr"] == [1, 0, 0]
+    # The same item's own pending version is not a second item, and a committed one still counts once.
+    world, _ = _quota_unit_world(_Serialization(), max_items=2)
+    world.admit("p", t55.TEXT + " p")
+    world.admit("q", t55.TEXT + " q", commit=False)
+    assert _code(lambda: world.admit("r", t55.TEXT + " r", commit=False)) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
+    assert world.ledger.latest_version("r") == 0
+
+
+def test_ncr_memory_002_pending_admissions_consume_index_entries_and_a_ledger_without_inventory_is_refused() -> None:
+    from ocor_runtime.memory.operations import MemoryAdmissionQuota, MemoryOperationsLimits
+
+    world, _ = _quota_unit_world(_Serialization(), max_items=10, max_index_entries=4)
+    world.admit("p", t55.TEXT + " p", commit=False)
+    assert _code(lambda: world.admit("q", t55.TEXT + " q", commit=False)) == ("POLICY_DENIED", "INDEX_QUOTA_EXCEEDED")
+
+    class NoInventory:
+        def get(self, *a: Any) -> None:
+            return None
+
+        def latest_version(self, *a: Any) -> int:
+            return 0
+
+    with pytest.raises(TypeError):
+        MemoryAdmissionQuota(metadata=world.metadata, ledger=NoInventory(),  # type: ignore[arg-type]
+                             limits=MemoryOperationsLimits(), serialization=_Serialization())
+    world, _ = _quota_unit_world(_Serialization())
+    world.ledger.records = lambda: (_ for _ in ()).throw(OSError("journal unreadable"))  # type: ignore[method-assign]
+    assert _code(lambda: world.admit("y", t55.TEXT + " y", commit=False)) == ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE")
+    assert world.ledger.latest_version("y") == 0
+
+
+def test_ncr_memory_004_a_metadata_answer_for_another_slot_is_never_served() -> None:
+    """P3: the exact-version read binds the stored version to the requested slot."""
+
+    world = _read_world()
+    world.admit("other", "charlie delta")
+    inner = world.metadata.get
+    world.metadata.get = lambda item_id, version: inner("other", version)  # type: ignore[method-assign]
+    assert _code(lambda: _read(world)) == ("INTERNAL_ERROR", "METADATA_INVALID")
+    assert _read_denials(world) == [("INTERNAL_ERROR", "METADATA_INVALID")]
+    assert not [e for e in world.audit.events if e.get("action") == "getMemoryItemVersion"]
+    # Historical version: the head is right, the older slot is answered with another item's version.
+    world = _read_world()
+    world.admit("item-1", "alpha bravo corrected", version=2)
+    world.admit("other", "charlie delta")
+    inner = world.metadata.get
+    world.metadata.get = lambda item_id, version: inner("other", 1) if version == 1 else inner(item_id, version)  # type: ignore[method-assign]
+    assert _code(lambda: _reader(world).get_item_version("item-1", 1, binding=t52.binding())) == ("INTERNAL_ERROR", "METADATA_INVALID")
+
+
+@pytest.mark.parametrize("permitted", ["no", 1, None])
+def test_ncr_memory_003_a_malformed_lifecycle_decision_never_authorises_a_deletion(permitted: Any) -> None:
+    """P4: ``_decide`` reads only a well-formed decision (the whole lifecycle class)."""
+
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    world.lc_policy.permitted = permitted
+    assert _code(lambda: world.delete("x", scope="PROJECT_SCOPE", op="bad-decision")) == INVALID
+    assert _code(lambda: world.delete("x", op="bad-decision-2")) == INVALID
+    assert world.status("x") == "ACTIVE"
+    assert t55.denials(world)[-1] == INVALID
+
+
+@pytest.mark.parametrize("decision_ref", [7, None, "", True])
+def test_ncr_memory_002_a_malformed_operations_decision_is_refused(decision_ref: Any) -> None:
+    """P4: ``MemoryOperationsService._authorize`` reads only a well-formed decision."""
+
+    w = t55.unit_world()
+    partition = t59.seed(w)
+    service, _audit, policy = t59.setup(w)
+    original = policy.authorize_operations
+    policy.authorize_operations = lambda *args: dataclasses.replace(original(*args), decision_ref=decision_ref)  # type: ignore[method-assign]
+    assert _code(lambda: t59.invoke(service, w, partition)) == ("CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID")
+    service, _audit, policy = t59.setup(w)
+    original_bundle = policy.authorize_operations
+    policy.authorize_operations = lambda *args: dataclasses.replace(original_bundle(*args), policy_bundle_digest=5)  # type: ignore[method-assign]
+    assert _code(lambda: t59.invoke(service, w, partition)) == ("CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID")
+
+
+@pytest.mark.parametrize(("port", "scope"), [("head", "PROJECT_SCOPE"), ("partitions", "PROJECT_SCOPE"),
+                                             ("versions_in", "PROJECT_SCOPE"), ("head", "ALL_VERSIONS")])
+def test_ncr_memory_003_a_metadata_failure_before_any_deletion_write_is_typed_and_audited(port: str, scope: str) -> None:
+    """P5: metadata reads of the lifecycle resolution are typed refusals, never raw backend errors."""
+
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    epoch = world.tombstones.latest_epoch()
+    setattr(world.metadata, port, lambda *a: (_ for _ in ()).throw(ConnectionError("postgres down")))
+    assert _code(lambda: world.delete("x", scope=scope, op="transport")) == ("REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE")
+    assert t55.denials(world) == [("REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE")]
+    assert world.tombstones.latest_epoch() == epoch and world.ledger.latest_version("x") == 1
+
+
+def test_ncr_memory_003_a_scoped_deletion_resumes_whatever_the_position_of_the_addressed_item() -> None:
+    """P6: the replay completes every member even when the addressed item was not started."""
+
+    tombstones = _FaultyTombstones(fail_at=3)
+    world = t55.unit_world(tombstones=tombstones)
+    for name in "abz":
+        world.admit(name, t55.TEXT + " " + name)
+    with pytest.raises(MemoryAdmissionError) as caught:
+        world.delete("z", scope="PROJECT_SCOPE", op="probe-replay")
+    left = getattr(caught.value, "incomplete_memory_item_ids", ())
+    assert "z" in left and world.status("a") == "DELETED"
+    tombstones.fail_at = -1
+    receipt = world.delete("z", scope="PROJECT_SCOPE", op="probe-replay")
+    assert receipt.to_mapping()["status"] == "COMPLETED"
+    assert {name: world.status(name) for name in "abz"} == dict.fromkeys("abz", "DELETED")
+    # Another request reusing the operation id is still refused.
+    world.admit("c", t55.TEXT + " c")
+    assert _code(lambda: world.delete("c", scope="PROJECT_SCOPE", op="probe-replay")) == (
+        "MEMORY_IDEMPOTENCY_CONFLICT", "OPERATION_REUSED")
+    assert world.status("c") == "ACTIVE"
+
+
+def test_ncr_memory_003_the_replay_of_a_scoped_deletion_never_widens_its_member_set() -> None:
+    """P7: the replay answers for the members of the original request only, with the original receipt."""
+
+    world = t55.unit_world()
+    world.admit("a", t55.TEXT + " a")
+    first = world.delete("a", scope="PROJECT_SCOPE", op="once")
+    world.admit("b", t55.TEXT + " b")
+    second = world.delete("a", scope="PROJECT_SCOPE", op="once")
+    assert world.status("b") == "ACTIVE"
+    assert first.to_mapping() == second.to_mapping()
+    # Half-way: a member admitted after the stop is not part of the resumed request either.
+    tombstones = _FaultyTombstones(fail_at=3)
+    world = t55.unit_world(tombstones=tombstones)
+    for name in "abc":
+        world.admit(name, t55.TEXT + " " + name)
+    with pytest.raises(MemoryAdmissionError):
+        world.delete("a", scope="PROJECT_SCOPE", op="half")
+    world.admit("d", t55.TEXT + " d")
+    tombstones.fail_at = -1
+    assert world.delete("a", scope="PROJECT_SCOPE", op="half").to_mapping()["status"] == "COMPLETED"
+    assert {name: world.status(name) for name in "abcd"} == {"a": "DELETED", "b": "DELETED", "c": "DELETED", "d": "ACTIVE"}
+
+
+def test_ncr_memory_003_a_tampered_recorded_member_set_is_refused() -> None:
+    tombstones = _FaultyTombstones(fail_at=3)
+    world = t55.unit_world(tombstones=tombstones)
+    for name in "abc":
+        world.admit(name, t55.TEXT + " " + name)
+    with pytest.raises(MemoryAdmissionError):
+        world.delete("a", scope="PROJECT_SCOPE", op="tamper")
+    tombstones.fail_at = -1
+    slots = [slot for slot, rec in world.ledger._versions.items()
+             if rec.lifecycle_event.get("operation_id") == "tamper" and rec.lifecycle_event.get("phase") == "PENDING"]
+    assert slots
+    for tampered in (["a"], "abc", [1, 2], ["a", "a", "b", "c"], None):
+        saved = {slot: world.ledger._versions[slot] for slot in slots}
+        for slot in slots:
+            rec = world.ledger._versions[slot]
+            event = {**rec.lifecycle_event, "scope_members": tampered}
+            world.ledger._versions[slot] = dataclasses.replace(rec, lifecycle_event=event)
+        assert _code(lambda: world.delete("a", scope="PROJECT_SCOPE", op="tamper")) == ("INTERNAL_ERROR", "MEMORY_LEDGER_CORRUPTED"), tampered
+        world.ledger._versions.update(saved)
+    assert world.delete("a", scope="PROJECT_SCOPE", op="tamper").to_mapping()["status"] == "COMPLETED"
+
+
+def test_ncr_memory_005_a_drifted_full_text_projection_is_repaired_by_the_rebuild(backends: t52.Backends) -> None:
+    """P8: the real PostgreSQL full-text row with a divergent body is replaced, not kept (ON CONFLICT DO NOTHING)."""
+
+    world = backends.world()
+    record = world.admit("x", TEXT)
+    partition = MemoryPartition.for_item(record.item)
+    pointer = _pointers(world, "x")["FULL_TEXT"]
+    index = world.lexical.inner
+    table = index.table(partition, pointer.representation_version)
+    with index._s.connect() as conn:
+        conn.execute(
+            f'UPDATE "{index._s.schema}"."{table}" SET document = %s, tsv = to_tsvector(\'simple\', %s) WHERE store_ref = %s',
+            ("tampered full text", "tampered full text", pointer.store_ref),
+        )
+    assert _store_refused(lambda: world.coordinator.read_version(partition, "x", 1)) == ("REPRESENTATION_NOT_READY", "PROJECTION_DRIFT")
+    report = world.coordinator.rebuild_projections(partition, "x", 1, embedding=t52.embed(TEXT))
+    assert report.rebuilt == (pointer.store_ref,)
+    assert index.read_back(partition, pointer.representation_version, pointer.store_ref).document == world.coordinator.read_version(
+        partition, "x", 1).payload.decode()
+    assert _hits(world, RetrievalMode.FULL_TEXT, TEXT) == [record.item.version_ref]
+    assert _hits(world, RetrievalMode.FULL_TEXT, "tampered") == []
+
+
+class _TruncatedError:
+    """An HTTP error response whose body read is cut short."""
+
+    def __init__(self) -> None:
+        self.closed = False
+
+    def __call__(self, request: Any, timeout: float) -> Any:
+        import http.client
+
+        owner = self
+
+        class Error(urllib.error.HTTPError):
+            def read(self, *a: Any) -> bytes:  # type: ignore[override]
+                raise http.client.IncompleteRead(b"{", 99)
+
+            def close(self) -> None:
+                owner.closed = True
+
+        raise Error("http://qdrant/x", 500, "boom", {}, None)  # type: ignore[arg-type]
+
+
+def test_ncr_memory_001_adapter_answers_that_overflow_or_break_mid_read_are_typed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """P9: IncompleteRead inside the HTTPError handler, non-ASCII transit plaintext, integers beyond float."""
+
+    truncated = _TruncatedError()
+    monkeypatch.setattr(A.urllib.request, "urlopen", truncated)
+    with pytest.raises(A.MemoryBackendUnavailable):
+        A._http("GET", "http://qdrant/x")
+    assert truncated.closed
+    key = "urn:ocor:memory-key:transit:memory-content"
+    ctx = {"content_object_ref": "a", "partition_digest": "b", "content_digest": "c"}
+    for plaintext in ("é", "eéA="):
+        assert _code(lambda p=plaintext: A.OpenBaoTransitCipher(_Bao({"data": {"plaintext": p}})).open(
+            context=ctx, sealed=SealedContent(key, b"v"))) == ("INTERNAL_ERROR", "CIPHER_ANSWER_INVALID")
+    index = A.QdrantVectorIndex("http://qdrant", "ns")
+    pid = index.point_id("r")
+    for score in (10**400, -(10**400)):
+        assert _code(lambda s=score: index._hits([{"id": pid, "payload": {"store_ref": "r"}, "score": s}])) == (
+            "INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
+    assert index._hits([{"id": pid, "payload": {"store_ref": "r"}, "score": 3}])[0].score == 3.0
+    for rank in (10**400, -(10**400)):
+        assert _code(lambda r=rank: A._rank(r)) == ("INTERNAL_ERROR", "POINTER_INVALID")
+    assert A._rank(2) == 2.0
+    part = object.__new__(MemoryPartition)
+    assert _code(lambda: _lexical([[("simple",)], [("r", "{}", 10**400)]]).search(part, "v", "q", limit=1, offset=0)) == (
+        "INTERNAL_ERROR", "POINTER_INVALID")
+
+
+def test_ncr_memory_001_postgres_rows_are_type_checked_before_use() -> None:
+    """P10: the lexical layout configuration and the content object refs are validated, never coerced."""
+
+    part = object.__new__(MemoryPartition)
+    for bad in (7, True, None, "", b"simple"):
+        assert _code(lambda b=bad: _lexical([[(b,)]]).get(part, "v", "r")) == ("INTERNAL_ERROR", "POINTER_INVALID"), bad
+        assert _code(lambda b=bad: _lexical([[(b,)], [("r", "{}", 0.5)]]).search(part, "v", "q", limit=1, offset=0)) == (
+            "INTERNAL_ERROR", "POINTER_INVALID"), bad
+    assert _lexical([[("simple",)], [('{"a": 1}',)]]).get(part, "v", "r") == {"a": 1}
+    for rows in ([(7,)], [(None,)], [("",)], [("a", "b")], [("a",), (True,)]):
+        assert _code(lambda rows=rows: A.PostgresContentStore(_pg([rows])).refs("part")) == ("INTERNAL_ERROR", "CONTENT_INVALID"), rows
+    assert A.PostgresContentStore(_pg([[("a",), ("b",)]])).refs("part") == ("a", "b")
