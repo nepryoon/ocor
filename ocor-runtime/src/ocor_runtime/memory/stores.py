@@ -67,6 +67,7 @@ from .model import (
     SCOPE_BINDINGS,
     AdmittedMemoryVersion,
     GovernedMemoryItem,
+    LifecycleStatus,
     MemoryAdmissionError,
     MemoryScope,
     MemoryVersionLedger,
@@ -1175,6 +1176,23 @@ class ReconciliationReport:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class ProjectionRebuildReport:
+    """Store refs rewritten from metadata, content and journal, and those already bound."""
+
+    rebuilt: tuple[str, ...]
+    verified: tuple[str, ...]
+
+    def to_mapping(self) -> dict[str, object]:
+        return {"rebuilt": list(self.rebuilt), "verified": list(self.verified)}
+
+
+EmbeddingSource = Callable[[GovernedMemoryItem, bytes], Sequence[float]]
+_FORGOTTEN = frozenset(
+    {LifecycleStatus.DELETED, LifecycleStatus.DELETION_PENDING, LifecycleStatus.DELETION_INCOMPLETE}
+)
+
+
 class _Outcome(StrEnum):
     COMPLETED = "COMPLETED"
     RETRACTED = "RETRACTED"
@@ -1865,6 +1883,134 @@ class MemoryStoreCoordinator:
             for stored in self._metadata.versions_in(partition.digest)
             if stored.state is VersionState.COMMITTED
         )
+
+    # -- projection rebuild -----------------------------------------------
+
+    def rebuild_projections(
+        self,
+        partition: MemoryPartition,
+        memory_item_id: str,
+        memory_version: int,
+        *,
+        embedding: Sequence[float] | None = None,
+    ) -> ProjectionRebuildReport:
+        """Rebuild the lost or drifted native projections of one committed version.
+
+        Full-text and vector indexes are rebuildable projections (ADD v1.3
+        Part II §2.2; LLD v1.1 §2.8.1): the source is the committed metadata
+        record, which must match the admission journal entry of the version,
+        and its verified content.  A vector body is not derivable from the
+        content, so ``embedding`` must be exactly the one the item digests.
+        Bound projections are only read.  A rebuilt superseded version is
+        retired again; a deleted item is not visible and is never re-projected.
+        """
+
+        stored = self._metadata.get(memory_item_id, memory_version)
+        if stored is None or stored.staged.partition.digest != partition.digest:
+            raise _not_visible()
+        source = None if embedding is None else (lambda item, payload: embedding)
+        rebuilt, verified = self._rebuild_version(partition, stored, source)
+        return ProjectionRebuildReport(tuple(sorted(rebuilt)), tuple(sorted(verified)))
+
+    def rebuild_partition(
+        self, partition: MemoryPartition, *, embed: EmbeddingSource | None = None
+    ) -> ProjectionRebuildReport:
+        """Rebuild every committed version of one partition, in canonical order.
+
+        ``embed`` recomputes the embedding of a version from its verified
+        content with the pinned model; each result is accepted only if it is
+        the embedding the item digests.  Versions of deleted items are skipped.
+        """
+
+        rows = sorted(
+            (
+                stored
+                for stored in self._metadata.versions_in(partition.digest)
+                if stored.state is VersionState.COMMITTED
+            ),
+            key=lambda stored: (stored.staged.memory_item_id, stored.staged.memory_version),
+        )
+        rebuilt: list[str] = []
+        verified: list[str] = []
+        for stored in rows:
+            if self._forgotten_item(stored.staged.memory_item_id):
+                continue
+            done, bound = self._rebuild_version(partition, stored, embed)
+            rebuilt.extend(done)
+            verified.extend(bound)
+        return ProjectionRebuildReport(tuple(sorted(rebuilt)), tuple(sorted(verified)))
+
+    def _forgotten_item(self, memory_item_id: str) -> bool:
+        head = self._metadata.get(memory_item_id, self._metadata.head(memory_item_id))
+        if head is None:
+            return True
+        item = head.staged.verify()
+        return item.lifecycle_status in _FORGOTTEN or item.deletion_epoch is not None
+
+    def _rebuild_version(
+        self, partition: MemoryPartition, stored: StoredVersion, embed: EmbeddingSource | None
+    ) -> tuple[list[str], list[str]]:
+        staged = stored.staged
+        if stored.state is not VersionState.COMMITTED:
+            raise _not_ready("VERSION_NOT_COMMITTED", "memory version is partially stored")
+        if self._forgotten_item(staged.memory_item_id):
+            raise _not_visible()
+        item = self._verify_committed(stored)
+        journal = self._ledger.get(staged.memory_item_id, staged.memory_version)
+        if (
+            journal is None
+            or not hmac.compare_digest(journal.item_digest, staged.item_digest)
+            or not hmac.compare_digest(journal.receipt.audit_ref, staged.audit_ref)
+        ):
+            raise MemoryStoreCorrupted("METADATA_INVALID", "metadata does not match the admission journal")
+        try:
+            stale = [p for p in staged.pointers if not self._projection_bound(partition, item, p)]
+        except MemoryStoreError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- an unreadable index rebuilds nothing
+            raise _not_ready("PROJECTION_REBUILD_INCOMPLETE", f"{staged.memory_version_ref} projections unreadable") from exc
+        verified = [p.store_ref for p in staged.pointers if p not in stale and p.representation_kind is not RepresentationKind.STRUCTURED]
+        if not stale:
+            return [], verified
+        payload = self._read_content(staged, item.content_digest)
+        kinds = {p.representation_kind for p in stale}
+        document = lexical_document(payload) if RepresentationKind.FULL_TEXT in kinds else None
+        vector: tuple[float, ...] | None = None
+        if RepresentationKind.VECTOR in kinds:
+            if embed is None:
+                raise MemoryStoreError(
+                    "MEMORY_SCHEMA_INVALID", "EMBEDDING_MISSING", "a vector projection needs its embedding"
+                )
+            try:
+                candidate = embed(item, payload)
+            except MemoryStoreError:
+                raise
+            except Exception as exc:  # noqa: BLE001 -- an unavailable model rebuilds nothing
+                raise _not_ready("EMBEDDING_UNAVAILABLE", "the embedding could not be recomputed") from exc
+            vector = validate_embedding(item, candidate)
+        for pointer in stale:
+            expected = self._pointer(item, staged.item_digest, partition, pointer.representation_kind, document, vector)
+            if expected != pointer:
+                if pointer.representation_kind is RepresentationKind.VECTOR:
+                    raise MemoryStoreError(
+                        "MEMORY_SCHEMA_INVALID", "EMBEDDING_INVALID", "embedding is not the one the item digests"
+                    )
+                raise _not_ready("PROJECTION_PROFILE_CHANGED", "the projection profile no longer derives the pointer")
+        head = self._metadata.head(staged.memory_item_id)
+        try:
+            for pointer in stale:
+                self._write_projection(partition, item, pointer, document, vector)
+                index = self._index(pointer.representation_kind)
+                if staged.memory_version < head and isinstance(index, EligibilityIndexPort):
+                    index.retire(partition, pointer.representation_version, staged.memory_item_id, head)
+        except MemoryStoreError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- every backend failure fails closed
+            raise _not_ready(
+                "PROJECTION_REBUILD_INCOMPLETE",
+                f"{staged.memory_version_ref} projections not rebuilt: {type(exc).__name__}",
+            ) from exc
+        return [p.store_ref for p in stale], verified
 
     # -- reconciliation ---------------------------------------------------
 
