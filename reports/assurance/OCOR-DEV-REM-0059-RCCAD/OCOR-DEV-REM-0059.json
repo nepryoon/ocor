@@ -1391,7 +1391,8 @@
         5,
         6,
         7,
-        8
+        8,
+        9
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -1422,12 +1423,93 @@
       "c5952e8"
     ],
     "green_preventive_review": "7801c9c",
+    "green_preventive_review_repair_1": [
+      "78d755d",
+      "dc2b5a9",
+      "21db552"
+    ],
     "green_repair_1": [
       "3a13bcb",
       "ac0928f"
     ],
     "na_reasons": "SELF-CHECK-CLASS-COVERAGE (2026-11-08) point 2, VF-002 of OCOR-DEV-REM-0059-3425a01a39c1-0: every N/A cell states why the control cannot apply; cells of paths that re-read stored data are PASS with the row and the test that prove them",
     "note": "FIXED marks a gap found by the self-check and closed with RED/GREEN on the real backends; the table informs the preventive review and does not replace it",
+    "path_inventory_preventive_review_repair_1": {
+      "change_set_files": [
+        {
+          "path": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
+          "rows": 8
+        },
+        {
+          "path": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
+          "rows": 11
+        },
+        {
+          "path": "ocor-runtime/src/ocor_runtime/memory/model.py",
+          "rows": 6
+        },
+        {
+          "path": "ocor-runtime/src/ocor_runtime/memory/operations.py",
+          "rows": 5
+        },
+        {
+          "path": "ocor-runtime/src/ocor_runtime/memory/retrieval.py",
+          "rows": 8
+        },
+        {
+          "path": "ocor-runtime/src/ocor_runtime/memory/stores.py",
+          "rows": 8
+        },
+        {
+          "no_row_reason": "the unit test module: the cases it adds are listed in the rows they prove (42-48)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "the unit record: data, no code",
+          "path": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+          "rows": 0
+        }
+      ],
+      "consumption_points_examined": {
+        "adapters/__init__.py": 0,
+        "lifecycle.py": 34,
+        "model.py": 9,
+        "operations.py": 25,
+        "retrieval.py": 7,
+        "stores.py": 18
+      },
+      "modules_out_of_the_change_set": "consolidation.py, context.py, deletion.py, promotion.py and embeddings.py are not touched by the unit; their consumers of the same answers are outside its self-check scope (SELF-CHECK-CHECKLIST point 1)",
+      "note": "information only: does not replace the preventive review or the independent verification",
+      "rule": "SELF-CHECK-PATH-INVENTORY (2026-11-09) points 1-4 (first applied in iteration 8; by MIGLIORIE-AUTOMATICHE-DECORRENZA (2026-11-09) point 1 it is in force from 2026-11-10, applied voluntarily)",
+      "searches": [
+        "grep -rn 'hmac.compare_digest' ocor-runtime/src/ocor_runtime/memory/ (text digest comparisons)",
+        "grep -n '\\.partitions\\(\\)|\\.versions_in\\(|\\.eligible_versions\\(|\\.head\\(|\\.latest_version\\(|_ledger\\.get\\(|ledger\\.get\\(|\\.by_idempotency_key\\(|latest_epoch\\(\\)|_metadata\\.get\\(|metadata\\.get\\(|\\.entries\\(|\\.stage\\(|\\.commit\\(|records\\(\\)' on lifecycle.py, stores.py, operations.py, retrieval.py, model.py, adapters/__init__.py (every consumer of a metadata, ledger or tombstone answer)",
+        "grep -n 'json.loads|parse_i_json|_strict_json|.decode(' on the same modules (decoders of backend answers)",
+        "git diff --name-only 5a5d301bbdf1..<repaired code head> (change set of the repair)"
+      ],
+      "shared_validation_helpers": {
+        "consumers_not_through_a_helper": [
+          "stores.py MemoryStoreCoordinator._verify_committed/_bound_pointer/_projection_bound: metadata.pointer answers are only compared for equality with the expected (pointer, COMMITTED) tuple; any other answer is unequal and refused",
+          "stores.py _reconcile_pending: the answer of metadata.commit is not used (the reconciliation re-reads the partition)",
+          "lifecycle.py _commit_metadata_version: stage/commit answers are read inside the try that maps every exception to LIFECYCLE_COMMIT_INCOMPLETE (typed) and their state is compared with VersionState.COMMITTED by identity",
+          "retrieval.py _read/_eligible: already through _stored_version and _head_version (rows 3 and 29)"
+        ],
+        "introduced": [
+          "model.digests_equal",
+          "model.ledger_version",
+          "model.ledger_record",
+          "stores.metadata_slot",
+          "stores.metadata_head",
+          "stores.metadata_partitions",
+          "stores.metadata_rows",
+          "lifecycle._tombstone_epoch",
+          "lifecycle._tombstone_entries",
+          "adapters._scalar_values"
+        ]
+      },
+      "text_digest_comparisons_examined": 22
+    },
     "path_inventory_repair_1": {
       "change_set_files": [
         {
@@ -1532,6 +1614,12 @@
       "573ca0b"
     ],
     "red_preventive_review": "d177078",
+    "red_preventive_review_repair_1": [
+      "a961656",
+      "b4e3809",
+      "d0cca26",
+      "01c565d"
+    ],
     "red_repair_1": [
       "390ee12",
       "540ecf6"
@@ -1752,6 +1840,7 @@
         "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "function": "_http, _strict_json",
         "paths": "HTTP request body and every Qdrant answer body",
+        "reexamined_preventive_review_repair_1": "re-examined after OCOR-DEV-REM-0059-5a5d301bbdf1-pre P3 (SELF-CHECK-CLASS-COVERAGE point 3): strict_decoding now also covers lone surrogates decoded from JSON escapes in values and keys, nested ones included (row 48); every other column unchanged",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_an_index_answer_that_is_not_strict_i_json_is_typed",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_index_transport_failures_and_non_finite_requests_are_typed"
@@ -1944,6 +2033,7 @@
         "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
         "function": "MemoryLifecycleCoordinator._scope_members, _recorded_members",
         "paths": "scope member list, bound, operation_id scan",
+        "reexamined_preventive_review_repair_1": "re-examined after P2: every metadata and ledger answer of the scope resolution goes through the shared validators (row 44)",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_another_tenant_and_invisible_items_neither_block_nor_bound_a_scoped_deletion",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_stored_metadata_bytes_and_library_parse_errors_are_typed"
@@ -1994,6 +2084,7 @@
         "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
         "function": "ContentParticipant._objects, MemoryLifecycleCoordinator._saga_versions",
         "paths": "LATEST_VERSION purge set over shared content objects",
+        "reexamined_preventive_review_repair_1": "re-examined after P2: the types cell was N/A on a path that re-reads metadata (versions_in, head, get); corrected in row 44",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_latest_version_purges_the_head_content_even_when_an_earlier_version_shares_it"
         ]
@@ -2010,6 +2101,7 @@
         "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
         "function": "MemoryLifecycleCoordinator._hold, _stop_epoch, _sweep",
         "paths": "legal hold registry, stop epoch and sweep limit answers",
+        "reexamined_preventive_review_repair_1": "re-examined after P2: the sweep reads partitions, rows, head and the ledger slot through the shared validators (row 44)",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_malformed_lifecycle_port_answers_are_typed",
           "ocor-runtime/tests/tasks/test_ocor_dev_0055.py::test_legal_hold_blocks_deletion_and_release_restores_the_prior_disposition"
@@ -2078,6 +2170,7 @@
         "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
         "function": "MemoryLifecycleCoordinator._port (_committed_head, _scope_members, _recorded_members)",
         "paths": "metadata and ledger reads before the first write",
+        "reexamined_preventive_review_repair_1": "re-examined after P2: _port types raised exceptions only; the answers it returns are now validated before use (row 44)",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_a_metadata_failure_before_any_deletion_write_is_typed_and_audited",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_stored_metadata_bytes_and_library_parse_errors_are_typed"
@@ -2185,6 +2278,7 @@
         "file": "ocor-runtime/src/ocor_runtime/memory/model.py",
         "function": "JournalMemoryVersionLedger._catch_up, _apply, records (and append, which re-reads before writing)",
         "paths": "re-read of the journal file at open, by records() (the inventory of MemoryAdmissionQuota and MemoryQuotaWriter) and before each append",
+        "reexamined_preventive_review_repair_1": "re-examined after P1: chain digests are ASCII sha256 URNs before any comparison; the record's digest and receipt fields are type-checked before conversion (row 42)",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_a_journal_entry_whose_chain_fields_have_the_wrong_type_is_refused",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_a_journal_line_that_is_not_strict_i_json_is_refused",
@@ -2246,6 +2340,127 @@
         "paths": "git show of the sealed baseline and the working-tree text of 0054/0055, parsed with ast",
         "tests": [
           "reports/tests/test_rem0023_consumer_fixture_scope.py"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (P1: a non-ASCII entry_digest reached hmac.compare_digest and raised a raw TypeError; class: every text digest comparison goes through digests_equal -- a value that is not ASCII text never matches -- and chain digests must be sha256 URNs)",
+          "complete_normative_records": "PASS (the record is rebuilt complete and verified; a receipt with a missing or extra field is refused)",
+          "finite_numbers": "PASS (row 38: NaN, Infinity and overflow refused by the I-JSON reader in every position)",
+          "processes_and_resources": "PASS (row 38: handle closed by with, flock released in finally)",
+          "strict_decoding": "PASS (row 38; a non-ASCII digest is text the I-JSON reader accepts, refused here as MEMORY_LEDGER_CORRUPTED)",
+          "types_before_conversions": "FIXED (class: item_digest, the five receipt text fields and the receipt version were converted with str()/int(str()) -- a quoted version \"1\" was accepted as 1; now checked before use: wrong type, missing or extra field are MEMORY_LEDGER_CORRUPTED)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/model.py",
+        "function": "digests_equal, AdmittedMemoryVersion.from_mapping and verify, JournalMemoryVersionLedger._apply (chain digests)",
+        "paths": "re-read journal entries and records; every text digest comparison of the memory package",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p1_a_journal_digest_that_is_not_an_ascii_sha256_urn_is_refused_on_every_re_read",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p1_a_self_consistent_journal_record_with_malformed_digest_or_receipt_fields_is_refused"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (twin of P1: a non-ASCII entry_digest raised a raw TypeError; now a sha256 URN before digests_equal)",
+          "complete_normative_records": "PASS (TombstoneEntry.from_mapping rebuilds and checks the entry; the epoch order is re-applied)",
+          "finite_numbers": "PASS (the I-JSON reader refuses NaN, Infinity and overflow)",
+          "processes_and_resources": "PASS (handle closed by with, flock released in finally on every path)",
+          "strict_decoding": "FIXED (class: a nesting beyond the parser's recursion limit raised a raw RecursionError); PASS for invalid UTF-8 and non-objects",
+          "types_before_conversions": "FIXED (a re-chained entry with seq true was accepted as seq 1; the digest went through str()); a string or list sequence and a non-string prev are TombstoneCorrupted"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
+        "function": "JournalTombstoneStore._apply (twin of row 38)",
+        "paths": "re-read tombstone journal lines",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p1_twin_the_tombstone_journal_checks_its_chain_fields_and_every_parse_error"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (the replay's request digest went through str() into hmac.compare_digest; digests_equal now)",
+          "complete_normative_records": "PASS (answers are the port's own typed records; a ledger answer of another slot or key is refused)",
+          "finite_numbers": "FIXED (a float head 1.0 compared equal to version 1); counts are non-bool, non-negative integers",
+          "processes_and_resources": "PASS (resolution reads keep the _port mapping of port exceptions to STORE_UNAVAILABLE; saga writes keep their own semantics)",
+          "strict_decoding": "PASS (re-read data is decoded strictly where it is read, rows 16 and 48)",
+          "types_before_conversions": "FIXED (P2: [None], [{}], a string or None from partitions/versions_in raised AttributeError after the port returned, outside _port, unaudited; head True/1.0 deleted the item; a non-record ledger answer, a non-integer tombstone epoch (True + 1) and malformed tombstone entries were used): shared validators metadata_head, metadata_partitions, metadata_rows, metadata_slot, ledger_version, ledger_record and the tombstone validators; typed and audited by _guarded/_sweep, nothing written before the first write"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
+        "function": "MemoryLifecycleCoordinator.head, _latest, _record, _partitions, _rows, _committed_head, _scope_members, _recorded_members, _key, _recorded, _replay, _content_of, _commit_content_version, _commit_metadata_version, _versions, _forget (epoch), _last_tombstone, _due, _run_sweep; ContentParticipant._objects; _tombstone_epoch, _tombstone_entries",
+        "paths": "every metadata, ledger and tombstone answer the lifecycle consumes",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_a_malformed_port_answer_before_the_first_deletion_write_is_typed_audited_and_writes_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_a_malformed_port_answer_of_a_sweep_is_typed_and_audited",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_a_malformed_port_answer_of_a_transition_is_typed_audited_and_writes_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_the_public_head_read_checks_the_metadata_head",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_a_malformed_tombstone_answer_of_a_completed_deletion_replay_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_a_malformed_metadata_slot_inside_the_saga_is_typed"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (class: every text digest comparison goes through digests_equal)",
+          "complete_normative_records": "PASS (StagedVersion.from_body rebuilds every stored version, row 12)",
+          "finite_numbers": "FIXED (a boolean or float head entered the commit receipt as head_version)",
+          "processes_and_resources": "PASS (the commit path keeps the backend's own exceptions -- sealed 0051/0055/0056 crash recovery; only answers returned without an exception are validated)",
+          "strict_decoding": "PASS (row 16)",
+          "types_before_conversions": "FIXED (a stage/commit answer that is not a stored version raised AttributeError; a malformed ledger slot raised AttributeError in the commit and the projection rebuild; [None] from versions_in raised AttributeError in committed_count): METADATA_INVALID / MEMORY_LEDGER_CORRUPTED"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/stores.py",
+        "function": "metadata_slot, metadata_head, metadata_partitions, metadata_rows (shared validators); MemoryStoreCoordinator._staged_answer, _commit, _prepare, _retire_predecessors, _receipt, committed_count, rebuild_partition, _rebuild_version, reconcile, _reconcile_pending",
+        "paths": "stage/commit answers, predecessor slot, ledger slots of commit and rebuild, receipt head, partition rows, reconciliation inventory",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_twin_store_coordinator_metadata_answers_are_checked",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_twin_store_coordinator_ledger_answers_are_checked"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (stage and item digests compared by equality of validated strings)",
+          "complete_normative_records": "PASS (records and stored versions verified before use, as before)",
+          "finite_numbers": "FIXED (a boolean or float head/latest version compared equal to 1 and the item was counted as committed)",
+          "processes_and_resources": "PASS (every exception is typed by _guard or by the quota hold before any write)",
+          "strict_decoding": "PASS (row 16)",
+          "types_before_conversions": "FIXED (shared validators on every metadata and ledger answer; the ledger inventory must be a sequence)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/operations.py",
+        "function": "_partition_heads, _pending_new_items, MemoryOperationsService pressure re-check, MemoryQuotaWriter._commit_locked (ledger slot), MemoryBackupService._entry, MemoryRestoreGate._verify",
+        "paths": "metadata and ledger answers of monitor, quota, pressure, retention, the quota writer, backup and restore",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_twin_operations_inventory_answers_are_checked",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_twin_a_malformed_ledger_inventory_refuses_the_quota_hold_before_any_write"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED (class: text digest comparisons go through digests_equal)",
+          "complete_normative_records": "PASS (rows 3 and 29)",
+          "finite_numbers": "N/A: no number is read from the partition inventory or the eligibility rows here; versions are checked in rows 3 and 29",
+          "processes_and_resources": "PASS (port exceptions are typed by the search guard)",
+          "strict_decoding": "PASS (row 16)",
+          "types_before_conversions": "FIXED (a malformed partition inventory or eligibility row reached attribute access): metadata_partitions, metadata_rows"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/retrieval.py",
+        "function": "MemorySearchService._plan (partition inventory), _structured (eligibility rows); digests_equal in _bound/_materialize",
+        "paths": "partition inventory and eligibility rows of the metadata store",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p2_twin_retrieval_partition_and_eligibility_answers_are_checked"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the parser recomputes no digest; the consumers bind pointers and digests (rows 14-16)",
+          "complete_normative_records": "N/A: the parser builds no record the norm defines",
+          "finite_numbers": "PASS (row 13: NaN, Infinity and overflow refused)",
+          "processes_and_resources": "N/A: pure parsing; the transport is row 36",
+          "strict_decoding": "FIXED (P3: a lone surrogate decoded from a JSON escape was accepted and raised a raw UnicodeEncodeError in QdrantVectorIndex._hits; class: every decoded string and key, nested ones included, and a text answer itself must be Unicode scalar values -- INDEX_ANSWER_INVALID or the caller's detail); a valid surrogate pair stays valid",
+          "types_before_conversions": "PASS (row 13: duplicate keys refused)"
+        },
+        "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
+        "function": "_strict_json, _scalar_values",
+        "paths": "HTTP answers of Qdrant and the JSON columns of PostgreSQL",
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p3_a_decoded_lone_surrogate_is_an_invalid_index_answer",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_prereview_p3_a_surrogate_store_ref_never_reaches_the_point_id_encoder"
         ]
       }
     ]
@@ -3104,6 +3319,76 @@
     ],
     "verdict": "BLOCKING_FINDINGS"
   },
+  "preventive_review_repair_cycles": [
+    {
+      "base": "f683aa7f194871dec1cf13eff60496269342bf64",
+      "blocking_dispositions": [
+        {
+          "disposition": "FIXED: RED a961656 (correction b4e3809), GREEN 78d755d -- chain digests must be ASCII sha256 URNs before any comparison; digests_equal for every text digest comparison of the touched modules; the record's digest and receipt fields type-checked before conversion; twin: the tombstone journal (boolean sequence, digests, RecursionError)",
+          "id": "P1",
+          "touches_the_norm": false
+        },
+        {
+          "disposition": "FIXED: RED a961656 and d0cca26 (correction 01c565d), GREEN 78d755d and 21db552 (retarget dc2b5a9) -- shared answer validators on every metadata, ledger and tombstone answer of the lifecycle (typed, audited, nothing written before the first write) and on their twins in stores, operations and retrieval",
+          "id": "P2",
+          "touches_the_norm": false
+        },
+        {
+          "disposition": "FIXED: RED a961656, GREEN 78d755d -- _strict_json refuses lone surrogates decoded from JSON escapes in values and keys, nested ones included",
+          "id": "P3",
+          "touches_the_norm": false
+        }
+      ],
+      "contested_findings": [],
+      "cycle": 1,
+      "decision": "PRE-CAMPAIGN-REVIEW (2026-10-26) point 1, PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30)",
+      "findings": 3,
+      "independence_limits": "Revisore di riserva: Codex \u00e8 l\u2019implementatore principale nominale del loop, ma non \u00e8 stato avviato come implementatore su questo task dal GO precedente. La revisione non ha la separazione nominale completa prevista dalla rotazione; il verifier finale previsto \u00e8 Cursor / grok-4.7-high / xAI e non legger\u00e0 questo esito.",
+      "normative_questions_early_dr": "NORMATIVE-QUESTIONS-EARLY-DR (2026-11-09) point 6: no finding contested; none touches the norm or a PO decision (the typed codes of malformed answers follow the existing METADATA_INVALID / MEMORY_LEDGER_CORRUPTED / TombstoneCorrupted conventions); no decision request opened",
+      "note": "consultative, not evidence; the fixes are covered by the campaign at the repaired head and by the independent verification",
+      "outcome_path": "~/.ocor-codex/prereviews/OCOR-DEV-REM-0059-5a5d301bbdf1-pre.json (outside Git; archived byte-identical in the raw log, label preventive-review-repair-1-outcome)",
+      "outcome_sha256": "448031976a299ed083d24d0b69c0e57fc8719fff2d148e7c7ea20b31bc60c18f",
+      "request_id": "OCOR-DEV-REM-0059-5a5d301bbdf1-pre",
+      "reserve": true,
+      "reviewed_head": "5a5d301bbdf10e59667caad6ebec1faa4f91f686",
+      "reviewer": {
+        "agent": "Codex CLI",
+        "model": "GPT-6",
+        "provider": "OpenAI"
+      },
+      "self_check_checklist_point_3": [
+        {
+          "category": "boundary digests / types before conversions (re-read journal)",
+          "cell_state_at_review": {
+            "boundary_digests": "PASS",
+            "types_before_conversions": "FIXED"
+          },
+          "class_gap": "the digest was type-checked as str but not as ASCII text before hmac.compare_digest; the twin tombstone journal and the record's digest/receipt fields had the same gap",
+          "finding": "P1",
+          "row_that_should_have_caught_it": "38 (JournalMemoryVersionLedger._catch_up, _apply, records)"
+        },
+        {
+          "category": "types before conversions (port answers)",
+          "cell_state_at_review": {
+            "types_before_conversions": "24 FIXED, 27 N/A (wrong: the path re-reads metadata), 28 FIXED/PASS, 32 N/A"
+          },
+          "class_gap": "_port typed the exceptions of a port call but not the answer it returned; the same answers were consumed unchecked in stores, operations and retrieval (twins, SELF-CHECK-PATH-INVENTORY point 2)",
+          "finding": "P2",
+          "row_that_should_have_caught_it": "24, 27, 28 and 32 (lifecycle resolution, content participant, sweep, _port)"
+        },
+        {
+          "category": "strict decoding",
+          "cell_state_at_review": {
+            "strict_decoding": "FIXED"
+          },
+          "class_gap": "byte-level UTF-8 and parser errors were covered; text decoded from \\u escapes (lone surrogates) was not",
+          "finding": "P3",
+          "row_that_should_have_caught_it": "13 (_http, _strict_json)"
+        }
+      ],
+      "verdict": "BLOCKING_FINDINGS"
+    }
+  ],
   "product_orientation": [
     "the real memory adapters live in the package (ocor_runtime.memory.adapters), so the product composes PostgreSQL, Qdrant and OpenBao without test code",
     "the pre-query policy partition is evaluated inside the PostgreSQL and Qdrant queries, so denied items cost no index work at production scale",
@@ -3705,7 +3990,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "all of REM-0059, iterations 1-8: the move of the real memory adapters into ocor_runtime.memory.adapters (9074905, 90e47e8), NCR-MEMORY-001 pre-query partition (RED 7b930a8, GREEN ab65f96), NCR-MEMORY-004 exact version reads (RED 2dd02ec, GREEN 8725b61), NCR-MEMORY-003 scoped forgetting (RED 50fdb6e, GREEN 2a017be), NCR-MEMORY-002 admission quota (RED a837a53, GREEN f527ca4), NCR-MEMORY-005 projection rebuild (RED e374937, GREEN f73b341), the REM-0023 guard of NCP-U11-REM0023-CONSUMER-GUARD option 1 (8d7fee6), the SELF-CHECK-CHECKLIST (RED 573ca0b, GREEN c5952e8), packaging (17bddd8, 50eacbd), the fixes of the preventive review (RED d177078, GREEN 7801c9c, record e113118), PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation; repair cycle 1 of OCOR-DEV-REM-0059-3425a01a39c1-0 (VF-002: RED 1505896/c8aa246, GREEN 62d8ec4/bf8f582, proofs 95f306c/1d41008, table e3fedb4/89867ab; VF-001: RED 390ee12/540ecf6, GREEN 3a13bcb/ac0928f, guard d751aaf); the only implementer that touched the task"
+        "scope": "all of REM-0059, iterations 1-9: the move of the real memory adapters into ocor_runtime.memory.adapters (9074905, 90e47e8), NCR-MEMORY-001 pre-query partition (RED 7b930a8, GREEN ab65f96), NCR-MEMORY-004 exact version reads (RED 2dd02ec, GREEN 8725b61), NCR-MEMORY-003 scoped forgetting (RED 50fdb6e, GREEN 2a017be), NCR-MEMORY-002 admission quota (RED a837a53, GREEN f527ca4), NCR-MEMORY-005 projection rebuild (RED e374937, GREEN f73b341), the REM-0023 guard of NCP-U11-REM0023-CONSUMER-GUARD option 1 (8d7fee6), the SELF-CHECK-CHECKLIST (RED 573ca0b, GREEN c5952e8), packaging (17bddd8, 50eacbd), the fixes of the preventive review (RED d177078, GREEN 7801c9c, record e113118), PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation; repair cycle 1 of OCOR-DEV-REM-0059-3425a01a39c1-0 (VF-002: RED 1505896/c8aa246, GREEN 62d8ec4/bf8f582, proofs 95f306c/1d41008, table e3fedb4/89867ab; VF-001: RED 390ee12/540ecf6, GREEN 3a13bcb/ac0928f, guard d751aaf); preventive review OCOR-DEV-REM-0059-5a5d301bbdf1-pre of repair cycle 1 (P1-P3: RED a961656/d0cca26, GREEN 78d755d/21db552); the only implementer that touched the task"
       }
     ],
     "loop_verifier_exclusion": {
@@ -3767,6 +4052,11 @@
       "fingerprint": "f0418811cf4ccac36b472f574c17be1d0fa3b3cea7adfbc191cb3b86f1c7b5f7",
       "summary": "memory consumers + REM-0023 guard + unit module (PostgreSQL, per-module Qdrant and OpenBao): 1377 passed, 0 failed, 0 skipped"
     },
+    "CONSUMERS_PREVENTIVE_REVIEW_REPAIR_1": {
+      "commit": "21db552",
+      "fingerprint": "f048ba1c2e038a19d4a2a218e2fea823c7bbe33693239f101a3242cdb28d2dc1",
+      "summary": "memory consumers and unit module on the dev PostgreSQL with the test Qdrant/OpenBao containers: 1486 passed, 3 warnings, 26 subtests passed in 398.15s (0:06:38)"
+    },
     "CONSUMERS_REPAIR_1": {
       "commit": "ac0928f",
       "fingerprint": "679ec297f6ea820a62b429c8d0061fb6000980c830bd37602fd3ae3b98fdde62",
@@ -3816,6 +4106,16 @@
       "commit": "7801c9c",
       "fingerprint": "2e603252cbaca56f0ccc1db784dcdff1cc6912c1815b37ab6f79bf42cab8af3e",
       "summary": "the same 20 cases: 20 passed"
+    },
+    "GREEN_PREVENTIVE_REVIEW_REPAIR_1": {
+      "commit": "78d755d",
+      "fingerprint": "dfe28f66e86b3681b6c10625c9b4f04629bb96b7139642ff31f5b26aa421b9f4",
+      "summary": "P1-P3 GREEN: 54 passed, 161 deselected in 0.84s"
+    },
+    "GREEN_PREVENTIVE_REVIEW_REPAIR_1_TWINS": {
+      "commit": "21db552",
+      "fingerprint": "298a0c67b17bc78df84a3601a43a98d22e40ef2799f77eafdf2826d3b22e9060",
+      "summary": "P1-P3 and the twins GREEN (the ledger inventory case retargeted to the admission quota hold in dc2b5a9: monitor and check_quota never read records()): 85 passed, 161 deselected in 1.37s"
     },
     "GREEN_SELF_CHECK": {
       "commit": "c5952e8",
@@ -3903,6 +4203,21 @@
       "fingerprint": "95976700c7a45fa97d6456703c1139bad031e08205f18cdf6e4c777edba59dd7",
       "summary": "the cases of the blocking findings P1 and P3-P10 on the code of 90e47e8 (dev PostgreSQL, per-module Qdrant and OpenBao): 20 failed, 0 passed; P1 restores the case withdrawn before GREEN in iteration 3"
     },
+    "RED_PREVENTIVE_REVIEW_REPAIR_1": {
+      "commit": "a961656",
+      "fingerprint": "491b36803ce09284b1dfa9ca1312882b5232c75d7f61efc7edb443af68a83ba3",
+      "summary": "P1-P3 of OCOR-DEV-REM-0059-5a5d301bbdf1-pre at the unrepaired code: raw TypeError (non-ASCII digests), AttributeError/TypeError (malformed lifecycle port answers), UnicodeEncodeError (decoded lone surrogate) or DID NOT RAISE (boolean head, boolean tombstone sequence, quoted receipt version): 45 failed, 9 passed, 161 deselected in 2.10s"
+    },
+    "RED_PREVENTIVE_REVIEW_REPAIR_1_CORRECTION": {
+      "commit": "b4e3809",
+      "fingerprint": "1c540326fcaeaedd6ce593bc8b96c28c41569b9d8b0c0e7997d970c17de2d15e",
+      "summary": "correction b4e3809 run at the unrepaired code (a961656 source): a float 1.0 is the integer 1 in canonical form (RFC 8785), so the two 1.0 cases were the valid entry (DID NOT RAISE on a valid input, not a valid RED); replaced by [1] (receipt version: already typed; tombstone sequence: fails): 8 failed, 2 passed, 205 deselected in 1.21s"
+    },
+    "RED_PREVENTIVE_REVIEW_REPAIR_1_TWINS": {
+      "commit": "01c565d",
+      "fingerprint": "b4641bcc6971d849a1b071291678f196aff6495de3a603bb46bbd2fc209b954d",
+      "summary": "P2 twins (d0cca26, corrected by 01c565d: the 0051 world reaches its ledger through world.admission.ledger; the first run iter9/pr_red3 failed on that test defect and is not counted) at the unrepaired code (78d755d source): raw AttributeError of the store coordinator and committed_count, DID NOT RAISE for a boolean or float head/latest version in monitor and check_quota and for the commit replay head; the other cases were already typed by _typed_port_failures or the operations guard: 10 failed, 17 passed, 215 deselected in 1.02s"
+    },
     "RED_PREVENTIVE_REVIEW_SUPPLEMENT": {
       "commit": "7801c9c",
       "summary": "the store_ref, score_entries and version-row cases added to test_ncr_memory_001_postgres_rows_are_type_checked_before_use after the RED commit, run in isolation against the sources of d177078: 1 failed (DID NOT RAISE); ~/.ocor-codex/rem-0059/iter4/pr1_red_supplement.txt"
@@ -3936,6 +4251,7 @@
     "raw_logs_archived_sha256": {
       "CONSUMERS_ITER2": "c67ff7886b99f5d663649155b6a89c304221c519d1b4b303ef99b3405c78086e",
       "CONSUMERS_PREVENTIVE_REVIEW": "738d2b3df761928694fdd3e6374a0bf2214b040456e3d179298cd7c7edc4ea2f",
+      "CONSUMERS_PREVENTIVE_REVIEW_REPAIR_1": "8482388ac471c607e50bc70178c32beb3e15ea88b3190d9dbf5b9d28f709dbab",
       "CONSUMERS_REPAIR_1": "15b8b2424c205a256ff3164c197fc1b6172d22f0538c43630ba2a749e4b07001",
       "CONSUMERS_SELF_CHECK": "04b99dff60fd422ee286eb401e7bf41bab8192bf8c238b9f4821d0488a0f4460",
       "CONSUMERS_VF001": "d753018cfedd4d68184c9c3d06340fb766491357a2e65c222756dfeeaa2be612",
@@ -3946,6 +4262,8 @@
       "GREEN_004": "adb44f46d96a2b0a4ecd0fe3c3b9dbca3d425ded5b23b5e7fdbbf05fd90b6b63",
       "GREEN_005": "824c992cec1b24b1c9e796fcd80f0f4db1698cccd87fdfd51d4593ba2306a1ea",
       "GREEN_PREVENTIVE_REVIEW": "b5e69c025c8d78b671af61cd8a3fc689b8b48bc7f50fb28f3317af5e5f2ac2f6",
+      "GREEN_PREVENTIVE_REVIEW_REPAIR_1": "8643b311d4d00e126afc49c576e686c8837ef862e19941755e52089a6e72fd0c",
+      "GREEN_PREVENTIVE_REVIEW_REPAIR_1_TWINS": "cb0f8639b728117975d77675be8d49319f9a5e5b268f0562bc201c615c673f8a",
       "GREEN_SELF_CHECK": "c31b84ffc872e5b601529a0f9c9fdc1627bb82b15b1f8aff4930eaa88c8b4a4a",
       "GREEN_VF001_AND_GUARD_RED": "01b8611c2d51536500deebf50b875a3240ec916baadcc12e76303b9c7e26e16d",
       "GREEN_VF001_HOLD": "bd0564b4f49142ec9f73907e5004d74f80273bb1db976f7cf3c819376053e956",
@@ -3961,6 +4279,9 @@
       "RED_004": "a50d781e06984abbfb19517b0a301d33872611379a58264355902cca0816df25",
       "RED_005": "a127ae84e4bff49222c7dcf2a46e92884a7b41c939b16ceddb3149520ca9a26f",
       "RED_PREVENTIVE_REVIEW": "410365f10611bebfbb488f0a3cf32fe7c452bda91f68ead9c232d48412d76302",
+      "RED_PREVENTIVE_REVIEW_REPAIR_1": "f39d8ee5074a0a75fef83774c0849386a074a58d6766240f23665545aa5137c9",
+      "RED_PREVENTIVE_REVIEW_REPAIR_1_CORRECTION": "66dfe370f0657f0c9ddf5e0d0149c75afe77db047abe2a45a2a6748cb68a7594",
+      "RED_PREVENTIVE_REVIEW_REPAIR_1_TWINS": "e624705343325dc6ca549876ede5a0711a87aed00cc1fceddac9d050e0b362cd",
       "RED_SELF_CHECK": "479372022ad85b2f83843f32f0ed6fa9d4af9cfc70174bffee0db338adf487d1",
       "RED_VF001": "ff5c6e5eec5471618a22f0133f65557fcfa0964c7f99ca6c178c2daa64954ecb",
       "RED_VF001_HOLD": "c2d072a6de78663d5633f1bf11c8ac6f8312ec5f366b83b8ff350f513d3a9333",
