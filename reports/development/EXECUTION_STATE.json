@@ -1,16 +1,16 @@
 {
   "active_iteration": {
-    "baseline_commit": "b032665312be1c44a1b155fbf4da4a69430a9811",
-    "branch": "governed/state-sync-rem0059-iter4-20261109",
+    "baseline_commit": "caf5f78ba24c3bba867ecb22a1cc0ded0d620435",
+    "branch": "governed/state-sync-rem0059-iter5-20261109",
     "campaign_background_processes_remaining": false,
-    "change_set": "state sync after OCOR-DEV-REM-0059 (NCP-U11) iteration 4: preventive review disposition (RED/GREEN of P1, P3-P10), record, PRE-CAMPAIGN-GATE",
+    "change_set": "state sync after OCOR-DEV-REM-0059 (NCP-U11) iteration 5: campaign PASS, eleven regression-only requalifications, candidate and verification request",
     "executor": "Claude Code / claude-opus-5-5 / Anthropic (backup implementer of the loop)",
     "host_memory_at_sync": {
-      "MemAvailable": 52344608,
+      "MemAvailable": 45706000,
       "MemTotal": 64199668
     },
-    "next_action": "Resume OCOR-DEV-REM-0059 (NCP-U11) for the qualifying campaign on governed/ocor-dev-rem-0059-ncp-u11-governed-memory (.ocor/worktrees/rem-0059, head e113118f2b46, kit ~/.ocor-codex/rem-0059 with NOTES.md, iter4/patch_record.py, iter4/pregate_unit.py, redgreen.sh, dev.env/dsn): preventive review OCOR-DEV-REM-0059-90e47e872c3e-pre disposed (P1-P10 fixed, P1 contested in part, P11 planned, P12 accepted). Run the qualifying full suite with the versioned four-lane orchestrator (FOUR_LANE if MemAvailable >= 25681.2 MiB, else TWO_LANE, else SERIAL; Docker Hub pull budget read before every pulling step; the C6/C8 consumers of memory need the CI stack), produce the eleven regression-only requalification records (0005, 0050, 0051, 0052, 0054, 0055, 0059, 0061, 0082, and REM-0023/REM-0036 with supersession of their rem0018 records), add the PRE-CAMPAIGN-GATE trace of the final head to the record (P12), candidate and verification request excluding Anthropic and OpenAI (the preventive reviewer); seal, merge. Iteration 4 of estimate 3 (stop at 9) used (NCP-THROUGHPUT-RULES point 2). Then NCP-U12; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14, and the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT once NCP-U12 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
-    "phase": "REM_0059_NCP_U11_AWAITING_CAMPAIGN",
+    "next_action": "Resume OCOR-DEV-REM-0059 (NCP-U11) after the independent verification OCOR-DEV-REM-0059-3425a01a39c1-0 (candidate 3425a01a39c1, code commit 16c24d91fa97, branch governed/ocor-dev-rem-0059-ncp-u11-governed-memory pushed): read ~/.ocor-codex/verdicts/OCOR-DEV-REM-0059-3425a01a39c1-0.json; GO_FOR_EVIDENCE_SEAL -> seal the unit record and the eleven requalification records (adapt the seal.py of ~/.ocor-codex/integrate-rem0058-*), PR, required checks on the exact head, merge with --match-head-commit, state sync (register NCR-MEMORY-001..005 stays IN_REMEDIATION until the sealed record is on main); NO_GO -> repair cycle 1 (at most two); the open point of the preventive review P1 (quota=None default) is for the verifier, decision request if held blocking. Then NCP-U12; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14, and the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT once NCP-U12 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. Iteration 5 of estimate 3 (stop at 9) used. No new DEC; claims unchanged.",
+    "phase": "REM_0059_NCP_U11_CANDIDATE",
     "roles": {
       "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
       "implementers": [
@@ -18,10 +18,19 @@
           "agent": "Claude Code",
           "model": "claude-opus-5-5",
           "provider": "Anthropic",
-          "scope": "OCOR-DEV-REM-0059 iterations 1-4 (unit start; adapter move; RED/GREEN of NCR-MEMORY-001..005; decision request; packaging, self-check, gate, preventive review request; preventive review disposition) and their state syncs, as the backup implementer of the loop"
+          "scope": "OCOR-DEV-REM-0059 iterations 1-5 (unit start; adapter move; RED/GREEN of NCR-MEMORY-001..005; decision request; packaging, self-check, gate, preventive review request; preventive review disposition; campaign, requalifications, candidate) and their state syncs, as the backup implementer of the loop"
         }
       ],
-      "preventive_reviewer": "Codex CLI / GPT-6 (Codex) / OpenAI (reserve, PRE-CAMPAIGN-REVIEW-ROTATION), excluded from the final verification of REM-0059"
+      "preventive_reviewer": {
+        "agent": "Codex CLI",
+        "provider": "OpenAI",
+        "request_id": "OCOR-DEV-REM-0059-90e47e872c3e-pre",
+        "reserve": true
+      },
+      "verifier_excluded_providers": [
+        "Anthropic",
+        "OpenAI"
+      ]
     },
     "unit": "OCOR-DEV-REM-0059"
   },
@@ -1751,7 +1760,7 @@
       }
     }
   },
-  "baseline_commit": "b032665312be1c44a1b155fbf4da4a69430a9811",
+  "baseline_commit": "caf5f78ba24c3bba867ecb22a1cc0ded0d620435",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -9924,7 +9933,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Resume OCOR-DEV-REM-0059 (NCP-U11) for the qualifying campaign on governed/ocor-dev-rem-0059-ncp-u11-governed-memory (.ocor/worktrees/rem-0059, head e113118f2b46, kit ~/.ocor-codex/rem-0059 with NOTES.md, iter4/patch_record.py, iter4/pregate_unit.py, redgreen.sh, dev.env/dsn): preventive review OCOR-DEV-REM-0059-90e47e872c3e-pre disposed (P1-P10 fixed, P1 contested in part, P11 planned, P12 accepted). Run the qualifying full suite with the versioned four-lane orchestrator (FOUR_LANE if MemAvailable >= 25681.2 MiB, else TWO_LANE, else SERIAL; Docker Hub pull budget read before every pulling step; the C6/C8 consumers of memory need the CI stack), produce the eleven regression-only requalification records (0005, 0050, 0051, 0052, 0054, 0055, 0059, 0061, 0082, and REM-0023/REM-0036 with supersession of their rem0018 records), add the PRE-CAMPAIGN-GATE trace of the final head to the record (P12), candidate and verification request excluding Anthropic and OpenAI (the preventive reviewer); seal, merge. Iteration 4 of estimate 3 (stop at 9) used (NCP-THROUGHPUT-RULES point 2). Then NCP-U12; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14, and the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT once NCP-U12 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
+  "next_executable_action": "Resume OCOR-DEV-REM-0059 (NCP-U11) after the independent verification OCOR-DEV-REM-0059-3425a01a39c1-0 (candidate 3425a01a39c1, code commit 16c24d91fa97, branch governed/ocor-dev-rem-0059-ncp-u11-governed-memory pushed): read ~/.ocor-codex/verdicts/OCOR-DEV-REM-0059-3425a01a39c1-0.json; GO_FOR_EVIDENCE_SEAL -> seal the unit record and the eleven requalification records (adapt the seal.py of ~/.ocor-codex/integrate-rem0058-*), PR, required checks on the exact head, merge with --match-head-commit, state sync (register NCR-MEMORY-001..005 stays IN_REMEDIATION until the sealed record is on main); NO_GO -> repair cycle 1 (at most two); the open point of the preventive review P1 (quota=None default) is for the verifier, decision request if held blocking. Then NCP-U12; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14, and the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT once NCP-U12 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. Iteration 5 of estimate 3 (stop at 9) used. No new DEC; claims unchanged.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -10341,10 +10350,10 @@
     "recorded_at": "2026-10-27T00:51:09.837104+00:00"
   },
   "previous_active_iteration_reference": {
-    "baseline_commit": "000000171eb13f7034a3364b89f0f9efbcb3ce06",
-    "branch": "governed/state-sync-rem0059-iter3-20261109",
-    "change_set": "state sync after OCOR-DEV-REM-0059 (NCP-U11) iteration 3: packaging, SELF-CHECK-CHECKLIST RED/GREEN, PRE-CAMPAIGN-GATE, preventive review requested",
-    "phase": "REM_0059_NCP_U11_AWAITING_PREVENTIVE_REVIEW"
+    "baseline_commit": "b032665312be1c44a1b155fbf4da4a69430a9811",
+    "branch": "governed/state-sync-rem0059-iter4-20261109",
+    "change_set": "state sync after OCOR-DEV-REM-0059 (NCP-U11) iteration 4: preventive review disposition (RED/GREEN of P1, P3-P10), record, PRE-CAMPAIGN-GATE",
+    "phase": "REM_0059_NCP_U11_AWAITING_CAMPAIGN"
   },
   "previous_candidate_ci": {
     "attempts": {
@@ -10444,11 +10453,11 @@
     "executable_now_note": "NCP-U10 integrated as OCOR-DEV-REM-0058 (PR #555; OCOR-DEV-REM-0043 closed as superseded): NCP-U11 next, then NCP-U12 and NCP-U14 inside the G7 criteria change set",
     "in_progress": {
       "OCOR-DEV-0062": "suspended by the PO (NORMATIVE-CONFORMANCE-PROGRAMME point 1); WIP fb7117a07c65 preserved, not integrated",
-      "OCOR-DEV-REM-0059": "NCP-U11 at e113118f2b46: preventive review disposed (P1-P10 fixed, P11 planned, P12 accepted), gate run, campaign next; iteration 4 of estimate 3 (stop at 9)"
+      "OCOR-DEV-REM-0059": "NCP-U11 candidate 3425a01a39c1 (code 16c24d91fa97): campaign PASS, eleven regression-only requalifications; verification OCOR-DEV-REM-0059-3425a01a39c1-0 requested; iteration 5 of estimate 3 (stop at 9)"
     },
     "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-09T06:45:57.269920+00:00",
+    "observed_at": "2026-11-09T08:57:13.383958+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U11",
@@ -38284,9 +38293,32 @@
       "authority": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 1: plan unit NCP-U11, twelfth of plan_order, programme unit under NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 5; point 2 (additional criterion: the real memory adapters of test_ocor_dev_0051.py move into ocor_runtime with the same behaviour, regression-only requalifications for the tasks whose latest record has a changed input); point 5 table for NCP-U11 (test_ocor_dev_0055.py lines 481-483: the three cases move to a positive deletion test); iteration limit of NCP-THROUGHPUT-RULES (2026-11-05) point 2",
       "base": "f683aa7f194871dec1cf13eff60496269342bf64",
       "branch": "governed/ocor-dev-rem-0059-ncp-u11-governed-memory",
+      "campaign": {
+        "code_commit": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+        "full_suite": {
+          "admission_level": "FOUR_LANE",
+          "cap_seconds": 5400,
+          "cases": 5717,
+          "duration_seconds": 1689.2,
+          "lanes_run": 4,
+          "mode": "FOUR_LANE"
+        },
+        "kit": "~/.ocor-codex/rem-0059-q",
+        "status": "PASS",
+        "task_runs": 3
+      },
+      "candidate": {
+        "code_commit": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+        "head": "3425a01a39c11780628ad3df513e9bf21a525427",
+        "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+        "verify_request": "OCOR-DEV-REM-0059-3425a01a39c1-0"
+      },
       "commits": {
         "ADAPTERS_PACKAGE": "90e47e8",
         "ALLOWLIST": "17bddd8",
+        "ALLOWLIST_P11": "16c24d9",
+        "CANDIDATE": "3425a01a39c11780628ad3df513e9bf21a525427",
+        "CODE_COMMIT": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
         "GREEN_001": "ab65f96",
         "GREEN_002": "f527ca4",
         "GREEN_003": "2a017be",
@@ -38325,9 +38357,9 @@
       ],
       "entries_pending": {},
       "estimate_iterations": 3,
-      "head": "e113118f2b4648576a56f1fa8f2e3fdf46de36ac",
+      "head": "3425a01a39c11780628ad3df513e9bf21a525427",
       "iteration_stop": 9,
-      "iterations_used": 4,
+      "iterations_used": 5,
       "open_points_for_the_record": [
         "NCR-MEMORY-001: the pre-query partition is an explicit set of denied item identifiers in the live retrieval decision (decision_ref identifies the decision; the receipt does not list the items, so the audit_ref and the explanations do not depend on them); post-query drops of items the pre-query partition admitted (a revocation between planning and materialisation) keep the bounded page widening and RETRIEVAL_BACKPRESSURE of REM-0020",
         "NCR-MEMORY-003: the contract enum gives no further semantics of LATEST_VERSION, PROJECT_SCOPE and PRINCIPAL_SCOPE; most restrictive reading recorded for the preventive review: LATEST_VERSION never resurrects an earlier version (the item ends DELETED), the bulk scopes forget only items visible to the caller and refuse the whole request before any write when one member is held, not forgettable or denied",
@@ -38340,14 +38372,23 @@
         "NCR-MEMORY-003 bulk scopes: a replay of a scoped request that stopped halfway completes every member of the scope not yet forgotten (the request digest binds the addressed item, reason, scope and GCS), then answers for all of them"
       ],
       "pending": [
-        "qualifying full suite with the versioned four-lane orchestrator on the final head (unit and memory consumers; the C6/C8 consumers 0058/REM-0050/REM-0053 on the CI stack)",
-        "the eleven regression-only requalification records (OCOR-DEV-0005, OCOR-DEV-0050, OCOR-DEV-0051, OCOR-DEV-0052, OCOR-DEV-0054, OCOR-DEV-0055, OCOR-DEV-0059, OCOR-DEV-0061, OCOR-DEV-0082, OCOR-DEV-REM-0023, OCOR-DEV-REM-0036), REM-0023/REM-0036 with supersession of the rem0018 records",
-        "PRE-CAMPAIGN-GATE trace of the final head in the record (P12), candidate, verification request excluding Anthropic and OpenAI (preventive reviewer), seal, merge"
+        "independent verification OCOR-DEV-REM-0059-3425a01a39c1-0, seal, merge, state sync"
       ],
       "pre_campaign_gate": {
-        "artefacts": "~/.ocor-codex/rem-0059/iter4/gate/gates-e113118f2b46",
-        "head": "e113118f2b4648576a56f1fa8f2e3fdf46de36ac",
-        "summary": "50 of 51 steps PASS from a clean shell in a scratch worktree; the only failing step is drift (validate_evidence_input_drift.py), exactly the nine backlog tasks of the planned regression-only requalifications (0005, 0050, 0051, 0052, 0054, 0055, 0059, 0061, 0082); supply-chain scanner PASS"
+        "candidate": {
+          "failed": [],
+          "head": "3425a01a39c11780628ad3df513e9bf21a525427",
+          "passed": 60,
+          "steps": 60
+        },
+        "code_commit": {
+          "failed": [
+            "drift"
+          ],
+          "head": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+          "passed": 50,
+          "steps": 51
+        }
       },
       "preventive_review": {
         "accepted": "P12",
@@ -38395,6 +38436,19 @@
         "NCR-MEMORY-004",
         "NCR-MEMORY-005"
       ],
+      "requalifications": [
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0051.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0052.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0054.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0055.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0059.json",
+        "reports/evidence/G6/OCOR-DEV-0061.requalified-rem0059.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.json"
+      ],
       "requalifications_planned": {
         "note": "REM-0023 and REM-0036 with supersession of their rem0018 requalification records (preventive review P11)",
         "qualifying": [],
@@ -38423,7 +38477,15 @@
         "red": "573ca0b",
         "rows": 37
       },
-      "status": "PREVENTIVE_REVIEW_DISPOSED_AWAITING_CAMPAIGN",
+      "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+      "superseded_campaigns": [
+        {
+          "cause": "plan allowlist incomplete for the P11 requalifications and the G6 manifest, completed in 16c24d9",
+          "counts_transferred": false,
+          "head": "e113118f2b4648576a56f1fa8f2e3fdf46de36ac",
+          "status": "PASS_SUPERSEDED"
+        }
+      ],
       "tdd": {
         "CONSUMERS_HEAD": {
           "commit": "e113118",
@@ -38526,7 +38588,7 @@
           "summary": "SELF-CHECK negative cases: 94 failed on the reported gaps, 7 passed (guards of already typed paths)"
         }
       },
-      "updated_at": "2026-11-09T06:45:57.269920+00:00",
+      "updated_at": "2026-11-09T08:57:13.383958+00:00",
       "worktree": ".ocor/worktrees/rem-0059"
     },
     "WORKSTATION_TOOLS_ARCHIVE": {
@@ -39772,13 +39834,13 @@
     ],
     "lifted_by": "REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (2026-11-08) option 1 (decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh)",
     "loop_status": "CONTINUE",
-    "next_action": "Resume OCOR-DEV-REM-0059 (NCP-U11) for the qualifying campaign on governed/ocor-dev-rem-0059-ncp-u11-governed-memory (.ocor/worktrees/rem-0059, head e113118f2b46, kit ~/.ocor-codex/rem-0059 with NOTES.md, iter4/patch_record.py, iter4/pregate_unit.py, redgreen.sh, dev.env/dsn): preventive review OCOR-DEV-REM-0059-90e47e872c3e-pre disposed (P1-P10 fixed, P1 contested in part, P11 planned, P12 accepted). Run the qualifying full suite with the versioned four-lane orchestrator (FOUR_LANE if MemAvailable >= 25681.2 MiB, else TWO_LANE, else SERIAL; Docker Hub pull budget read before every pulling step; the C6/C8 consumers of memory need the CI stack), produce the eleven regression-only requalification records (0005, 0050, 0051, 0052, 0054, 0055, 0059, 0061, 0082, and REM-0023/REM-0036 with supersession of their rem0018 records), add the PRE-CAMPAIGN-GATE trace of the final head to the record (P12), candidate and verification request excluding Anthropic and OpenAI (the preventive reviewer); seal, merge. Iteration 4 of estimate 3 (stop at 9) used (NCP-THROUGHPUT-RULES point 2). Then NCP-U12; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14, and the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT once NCP-U12 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
+    "next_action": "Resume OCOR-DEV-REM-0059 (NCP-U11) after the independent verification OCOR-DEV-REM-0059-3425a01a39c1-0 (candidate 3425a01a39c1, code commit 16c24d91fa97, branch governed/ocor-dev-rem-0059-ncp-u11-governed-memory pushed): read ~/.ocor-codex/verdicts/OCOR-DEV-REM-0059-3425a01a39c1-0.json; GO_FOR_EVIDENCE_SEAL -> seal the unit record and the eleven requalification records (adapt the seal.py of ~/.ocor-codex/integrate-rem0058-*), PR, required checks on the exact head, merge with --match-head-commit, state sync (register NCR-MEMORY-001..005 stays IN_REMEDIATION until the sealed record is on main); NO_GO -> repair cycle 1 (at most two); the open point of the preventive review P1 (quota=None default) is for the verifier, decision request if held blocking. Then NCP-U12; after the NCP-U12 integration and before OCOR-DEV-0060 the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14, and the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT once NCP-U12 is integrated; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. Iteration 5 of estimate 3 (stop at 9) used. No new DEC; claims unchanged.",
     "reason": "all residual admitted work depends on the PO decision on REM-0057-INTEGRATION-CI-EXTERNAL-OUTAGE (merge of PR #544, OCOR-DEV-REM-0057 / NCP-U09), because the NCP units run one at a time in plan_order (NORMATIVE-CONFORMANCE-PLAN point 1), or on suspensions and blocks set by the PO",
     "recorded_at": "2026-11-09T00:33:32.755042+00:00",
     "report": "reports/development/TERMINAL_BLOCKED_REPORT.json",
     "status": "LIFTED_PO_DECISION"
   },
-  "updated_at": "2026-11-09T06:45:57.269920+00:00",
+  "updated_at": "2026-11-09T08:57:13.383958+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
