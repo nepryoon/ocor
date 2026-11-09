@@ -74,3 +74,16 @@ modifica di `test_ocor_dev_0054.py` e `test_ocor_dev_0055.py`.
   riqualifiche.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, registri normativi, limiti e claim invariati
   (`E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-09
+
+Decisione del PO, su delega completa (`DELEGA-COMPLETA (2026-11-02)`), modello `claude-opus-5-5`, effort `xhigh`: `NCP-U11-REM0023-CONSUMER-GUARD (2026-11-09)`, **opzione 1** (il guard `reports/tests/test_rem0023_consumer_fixture_scope.py` ammette per `test_ocor_dev_0055.py`, oltre al cablaggio di audit, soltanto la differenza della scelta del punto 5 per NCP-U11: le tre voci tolte da `INVALID_DELETIONS`, confrontate per valore con quelle di `7cfb60d`, l'assegnazione `DECLARED_DELETIONS` e il test `test_declared_deletion_scopes_forget_the_item_through_the_saga`, confrontati byte per byte con testi fissati nel guard; ogni altro controllo resta, con casi negativi in più). Vale come decisione del PO a ogni effetto. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. La richiesta decisa è il file al commit `b99a407e54a61d0434b1e981303f772115d3f86c`, sha256 `ef290fe3de824255c2b6d26c3e67e2dbe435557a89534e51754919627fea4673` (verificata prima dell'attuazione). Attuazione: commit `8d7fee6` del branch `governed/ocor-dev-rem-0059-ncp-u11-governed-memory`. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U11-REM0023-CONSUMER-GUARD (2026-11-09) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U11-REM0023-CONSUMER-GUARD` (branch `governed/decision-request-ncp-u11-rem0023-consumer-guard`, commit `b99a407e54a61d0434b1e981303f772115d3f86c`, file `reports/development/decision_requests/NCP-U11-REM0023-CONSUMER-GUARD.md`, sha256 `ef290fe3de824255c2b6d26c3e67e2dbe435557a89534e51754919627fea4673`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
