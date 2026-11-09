@@ -1311,6 +1311,36 @@ def _stored_slot(stored: object, memory_item_id: str, memory_version: int) -> St
     return stored
 
 
+def metadata_slot(stored: object, memory_item_id: str, memory_version: int) -> StoredVersion | None:
+    """The metadata answer for one slot (shared by every consumer): absent, or exactly that slot."""
+
+    return _stored_slot(stored, memory_item_id, memory_version)
+
+
+def metadata_head(value: object) -> int:
+    """A metadata head pointer: a non-negative integer, never a boolean, float or text."""
+
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata head pointer is not a non-negative integer")
+    return value
+
+
+def metadata_partitions(value: object) -> tuple[MemoryPartition, ...]:
+    """A metadata partition inventory: a sequence of partitions, nothing else."""
+
+    if not isinstance(value, (tuple, list)) or not all(isinstance(p, MemoryPartition) for p in value):
+        raise MemoryStoreCorrupted("PARTITION_INVALID", "the metadata partition inventory is malformed")
+    return tuple(value)
+
+
+def metadata_rows(value: object) -> tuple[StoredVersion, ...]:
+    """The stored versions of one partition: a sequence of stored versions, nothing else."""
+
+    if not isinstance(value, (tuple, list)) or not all(isinstance(row, StoredVersion) for row in value):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata answer is not a sequence of stored versions")
+    return tuple(value)
+
+
 def _require_text_query(query: object) -> str:
     if not isinstance(query, str) or not query.strip():
         raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is empty")

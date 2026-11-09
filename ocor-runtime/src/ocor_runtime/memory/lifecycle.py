@@ -68,7 +68,6 @@ Decision, CapabilityLease or canonical state.
 from __future__ import annotations
 
 import fcntl
-import hmac
 import os
 import re
 import threading
@@ -119,7 +118,10 @@ from .model import (
     MemoryReceipt,
     MemoryVersionLedger,
     RepresentationKind,
+    digests_equal,
     idempotency_key,
+    ledger_record,
+    ledger_version,
     require_policy_decision,
 )
 from .retrieval import StopEpochPort
@@ -138,6 +140,10 @@ from .stores import (
     VersionState,
     content_object_ref,
     lexical_document,
+    metadata_head,
+    metadata_partitions,
+    metadata_rows,
+    metadata_slot,
     structured_representation_version,
     vector_digest,
 )
@@ -204,6 +210,7 @@ FORGETTING_TRIGGERS = frozenset(
 )
 REASON_CODE = re.compile(r"[A-Z][A-Z0-9_]{0,63}")
 GENESIS = "urn:sha256:" + "0" * 64
+_DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
 METRIC_OUTCOMES = frozenset({"COMPLETED", "REPLAYED", "DENIED", "INCOMPLETE"})
 
 
@@ -379,14 +386,18 @@ class ContentParticipant:
         mine = sorted({stored.staged.content_object_ref for stored in target.versions})
         shared: set[str] = set()
         for partition in target.partitions():
-            for stored in self._metadata.versions_in(partition.digest):
+            for stored in metadata_rows(self._metadata.versions_in(partition.digest)):
                 staged = stored.staged
                 if staged.content_object_ref not in mine:
                     continue
                 if staged.memory_item_id == target.memory_item_id:
                     continue  # the forgotten item never retains its own content
-                head = self._metadata.head(staged.memory_item_id)
-                head_version = self._metadata.get(staged.memory_item_id, head) if head else None
+                head = metadata_head(self._metadata.head(staged.memory_item_id))
+                head_version = (
+                    metadata_slot(self._metadata.get(staged.memory_item_id, head), staged.memory_item_id, head)
+                    if head
+                    else None
+                )
                 status = (
                     None
                     if head_version is None
@@ -586,6 +597,24 @@ class TombstoneEntry:
         return canonical_digest(self.to_mapping())
 
 
+def _tombstone_epoch(value: object) -> int:
+    """A tombstone store's latest epoch: a non-negative integer, never a boolean."""
+
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise TombstoneCorrupted("the tombstone store answered an epoch that is not a non-negative integer")
+    return value
+
+
+def _tombstone_entries(value: object, memory_item_id: str) -> tuple[TombstoneEntry, ...]:
+    """A tombstone store's entries of one item: a sequence of that item's entries, nothing else."""
+
+    if not isinstance(value, (tuple, list)) or not all(
+        isinstance(entry, TombstoneEntry) and entry.memory_item_id == memory_item_id for entry in value
+    ):
+        raise TombstoneCorrupted("the tombstone store answered malformed entries")
+    return tuple(value)
+
+
 class MemoryTombstoneStore(Protocol):
     """Append-only authority on deletion epochs and tombstones."""
 
@@ -684,7 +713,7 @@ class JournalTombstoneStore:
     def _apply(self, line: bytes) -> None:
         try:
             chained = parse_i_json(line)
-        except (CanonicalizationError, UnicodeError, ValueError) as exc:
+        except (CanonicalizationError, UnicodeError, ValueError, RecursionError) as exc:
             raise TombstoneCorrupted(f"journal entry is not I-JSON: {exc}") from exc
         if not isinstance(chained, Mapping) or set(chained) != {
             "seq",
@@ -695,10 +724,22 @@ class JournalTombstoneStore:
             raise TombstoneCorrupted("journal entry is not a closed chain entry")
         if canonical_bytes(chained) != line:
             raise TombstoneCorrupted("journal entry is not in canonical form")
-        body = {"seq": chained["seq"], "prev": chained["prev"], "entry": chained["entry"]}
-        if chained["seq"] != self._seq + 1 or chained["prev"] != self._head:
+        seq, prev, entry_digest = chained["seq"], chained["prev"], chained["entry_digest"]
+        # Types before comparison: a boolean is never a sequence number, and a
+        # digest is an ASCII sha256 URN before compare_digest sees it.
+        if (
+            isinstance(seq, bool)
+            or not isinstance(seq, int)
+            or not isinstance(prev, str)
+            or not isinstance(entry_digest, str)
+            or _DIGEST.fullmatch(prev) is None
+            or _DIGEST.fullmatch(entry_digest) is None
+        ):
+            raise TombstoneCorrupted("journal chain fields have the wrong type")
+        body = {"seq": seq, "prev": prev, "entry": chained["entry"]}
+        if seq != self._seq + 1 or prev != self._head:
             raise TombstoneCorrupted("journal chain is broken or reordered")
-        if not hmac.compare_digest(canonical_digest(body), str(chained["entry_digest"])):
+        if not digests_equal(canonical_digest(body), entry_digest):
             raise TombstoneCorrupted("journal entry digest mismatch")
         entry = TombstoneEntry.from_mapping(chained["entry"])
         try:
@@ -706,7 +747,7 @@ class JournalTombstoneStore:
         except MemoryAdmissionError as exc:
             raise TombstoneCorrupted(f"journal violates the epoch order: {exc}") from exc
         self._seq += 1
-        self._head = str(chained["entry_digest"])
+        self._head = entry_digest
 
     def entries(self, memory_item_id: str) -> tuple[TombstoneEntry, ...]:
         with self._lock, self._path.open("rb") as handle:
@@ -954,8 +995,10 @@ class MemoryLifecycleCoordinator:
     def head(self, memory_item_id: str) -> AdmittedMemoryVersion | None:
         """The committed head record of one item (lifecycle state), or ``None``."""
 
-        version = self._metadata.head(memory_item_id)
-        return None if version < 1 else self._ledger.get(memory_item_id, version)
+        version = metadata_head(self._metadata.head(memory_item_id))
+        if version < 1:
+            return None
+        return ledger_record(self._ledger.get(memory_item_id, version), (memory_item_id, version))
 
     # -- guarded execution ---------------------------------------------------
 
@@ -1104,12 +1147,24 @@ class MemoryLifecycleCoordinator:
                 "REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE", "a memory store could not be read"
             ) from exc
 
+    def _latest(self, memory_item_id: str) -> int:
+        return ledger_version(self._ledger.latest_version(memory_item_id))
+
+    def _record(self, memory_item_id: str, memory_version: int) -> AdmittedMemoryVersion | None:
+        return ledger_record(self._ledger.get(memory_item_id, memory_version), (memory_item_id, memory_version))
+
+    def _partitions(self) -> tuple[MemoryPartition, ...]:
+        return metadata_partitions(self._metadata.partitions())
+
+    def _rows(self, partition_digest: str) -> tuple[StoredVersion, ...]:
+        return metadata_rows(self._metadata.versions_in(partition_digest))
+
     def _committed_head(self, memory_item_id: str, context: GovernedContext) -> AdmittedMemoryVersion:
-        latest = self._port(lambda: self._ledger.latest_version(memory_item_id))
-        record = self._port(lambda: self._ledger.get(memory_item_id, latest)) if latest else None
+        latest = self._port(partial(self._latest, memory_item_id))
+        record = self._port(partial(self._record, memory_item_id, latest)) if latest else None
         if record is None or not self._visible(record.item, context):
             raise _not_found()
-        if self._port(lambda: self._metadata.head(memory_item_id)) != latest:
+        if self._port(lambda: metadata_head(self._metadata.head(memory_item_id))) != latest:
             raise MemoryLifecycleError(
                 "REPRESENTATION_NOT_READY",
                 "HEAD_NOT_COMMITTED",
@@ -1299,7 +1354,7 @@ class MemoryLifecycleCoordinator:
         """The verified content of the predecessor and the re-derived embedding."""
 
         item = record.item
-        previous = self._ledger.get(item.memory_item_id, item.memory_version - 1)
+        previous = self._record(item.memory_item_id, item.memory_version - 1)
         assert previous is not None
         source = previous.item
         materialized = self._store.read_version(
@@ -1316,7 +1371,9 @@ class MemoryLifecycleCoordinator:
         """Commit a lifecycle version with the (unchanged) content of its predecessor."""
 
         item = record.item
-        stored = self._metadata.get(item.memory_item_id, item.memory_version)
+        stored = metadata_slot(
+            self._metadata.get(item.memory_item_id, item.memory_version), item.memory_item_id, item.memory_version
+        )
         if stored is None or stored.state is not VersionState.COMMITTED:
             payload, embedding = content if content is not None else self._content_of(record)
             self._store.commit(record, payload=payload, embedding=embedding)
@@ -1332,9 +1389,7 @@ class MemoryLifecycleCoordinator:
                 "no pinned embedding model can rebuild the vector of the new version",
             )
         values = self._store.embed_query(VectorProfile.for_item(item), lexical_document(payload))
-        if item.embedding_digest is None or not hmac.compare_digest(
-            vector_digest(values), item.embedding_digest
-        ):
+        if item.embedding_digest is None or not digests_equal(vector_digest(values), item.embedding_digest):
             raise MemoryLifecycleError(
                 "REPRESENTATION_NOT_READY",
                 "EMBEDDING_NOT_REPRODUCIBLE",
@@ -1469,15 +1524,15 @@ class MemoryLifecycleCoordinator:
             raise
 
     def _key(self, memory_item_id: str, operation_id: str, suffix: str = "") -> tuple[str, str, str, str, str] | None:
-        latest = self._ledger.latest_version(memory_item_id)
-        record = self._ledger.get(memory_item_id, latest) if latest else None
+        latest = self._latest(memory_item_id)
+        record = self._record(memory_item_id, latest) if latest else None
         if record is None:
             return None
         return idempotency_key(record.item, f"lifecycle:{operation_id}{':' + suffix if suffix else ''}")
 
     def _recorded(self, memory_item_id: str, operation_id: str, suffix: str = "") -> AdmittedMemoryVersion | None:
         key = self._key(memory_item_id, operation_id, suffix)
-        return None if key is None else self._ledger.by_idempotency_key(key)
+        return None if key is None else ledger_record(self._ledger.by_idempotency_key(key), key=key)
 
     def _replay(
         self, memory_item_id: str, request: _Request, request_digest: str
@@ -1487,8 +1542,8 @@ class MemoryLifecycleCoordinator:
         )
         if first is None:
             return None
-        if first.item.memory_item_id != memory_item_id or not hmac.compare_digest(
-            str(first.lifecycle_event.get("request_digest")), request_digest
+        if first.item.memory_item_id != memory_item_id or not digests_equal(
+            first.lifecycle_event.get("request_digest"), request_digest
         ):
             raise MemoryLifecycleError(
                 "MEMORY_IDEMPOTENCY_CONFLICT",
@@ -1592,16 +1647,16 @@ class MemoryLifecycleCoordinator:
         else:
             key = item.owner_principal_id
         candidates: set[str] = set()
-        for partition in self._port(self._metadata.partitions):
+        for partition in self._port(self._partitions):
             if partition.tenant_id == item.tenant_id:
-                rows = self._port(partial(self._metadata.versions_in, partition.digest))
+                rows = self._port(partial(self._rows, partition.digest))
                 candidates.update(stored.staged.memory_item_id for stored in rows)
         # Only caller-visible members of the scope count against the bound: items
         # the caller cannot see neither decide the outcome nor reveal themselves.
         members: list[str] = []
         for candidate in sorted(candidates):
-            latest = self._port(partial(self._ledger.latest_version, candidate))
-            record = self._port(partial(self._ledger.get, candidate, latest)) if latest else None
+            latest = self._port(partial(self._latest, candidate))
+            record = self._port(partial(self._record, candidate, latest)) if latest else None
             if record is None or not self._visible(record.item, context):
                 continue
             head = record.item
@@ -1733,10 +1788,10 @@ class MemoryLifecycleCoordinator:
         """Caller-visible items of the caller's tenant holding a version of ``operation_id``."""
 
         found: set[str] = set()
-        for partition in self._port(self._metadata.partitions):
+        for partition in self._port(self._partitions):
             if partition.tenant_id != context.tenant_id:
                 continue
-            for stored in self._port(partial(self._metadata.versions_in, partition.digest)):
+            for stored in self._port(partial(self._rows, partition.digest)):
                 item_id = stored.staged.memory_item_id
                 if item_id in found or not self._visible(stored.staged.verify(), context):
                     continue
@@ -1813,7 +1868,7 @@ class MemoryLifecycleCoordinator:
         epoch = (
             head.deletion_epoch
             if head.lifecycle_status is S.DELETION_INCOMPLETE and head.deletion_epoch is not None
-            else self._tombstones.latest_epoch() + 1
+            else _tombstone_epoch(self._tombstones.latest_epoch()) + 1
         )
         pending = self._version(plan, decision, deletion_epoch=epoch, suffix="PENDING")
         self._tombstone(pending, plan, TombstonePhase.STARTED, epoch)
@@ -1862,16 +1917,18 @@ class MemoryLifecycleCoordinator:
         return self._run_saga(pending, plan, decision)
 
     def _last_tombstone(self, memory_item_id: str) -> TombstoneEntry | None:
-        entries = self._tombstones.entries(memory_item_id)
+        entries = _tombstone_entries(self._tombstones.entries(memory_item_id), memory_item_id)
         return entries[-1] if entries else None
 
     def _commit_metadata_version(self, record: AdmittedMemoryVersion) -> None:
         """Commit a content-free deletion version in the metadata store only."""
 
         item = record.item
-        existing = self._metadata.get(item.memory_item_id, item.memory_version)
+        existing = metadata_slot(
+            self._metadata.get(item.memory_item_id, item.memory_version), item.memory_item_id, item.memory_version
+        )
         if existing is not None and existing.state is VersionState.COMMITTED:
-            if not hmac.compare_digest(existing.staged.item_digest, record.item_digest):
+            if not digests_equal(existing.staged.item_digest, record.item_digest):
                 raise MemoryLifecycleError(
                     "INTERNAL_ERROR", "METADATA_SLOT_MISMATCH", "metadata holds another version"
                 )
@@ -1947,7 +2004,7 @@ class MemoryLifecycleCoordinator:
     def _versions(self, memory_item_id: str, upto: int) -> tuple[StoredVersion, ...]:
         found = []
         for version in range(1, upto + 1):
-            stored = self._metadata.get(memory_item_id, version)
+            stored = metadata_slot(self._metadata.get(memory_item_id, version), memory_item_id, version)
             if stored is not None and stored.state is VersionState.COMMITTED:
                 found.append(stored)
         return tuple(found)
@@ -2117,7 +2174,7 @@ class MemoryLifecycleCoordinator:
         if item.lifecycle_status in (S.DELETED, S.DELETION_PENDING):
             return None
         # Retention runs from the admission of the item, not of its latest version.
-        first = self._ledger.get(item.memory_item_id, 1)
+        first = self._record(item.memory_item_id, 1)
         horizon = self._horizons.get(item.retention_policy_ref)
         if first is None or horizon is None:
             return None
@@ -2135,8 +2192,8 @@ class MemoryLifecycleCoordinator:
         candidates: list[tuple[datetime, str, AdmittedMemoryVersion]] = []
         unresolved: list[str] = []
         seen: set[str] = set()
-        for partition in sorted(self._metadata.partitions(), key=lambda p: p.digest):
-            for stored in self._metadata.versions_in(partition.digest):
+        for partition in sorted(self._partitions(), key=lambda p: p.digest):
+            for stored in self._rows(partition.digest):
                 item_id = stored.staged.memory_item_id
                 if item_id in seen:
                     continue

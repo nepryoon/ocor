@@ -72,6 +72,22 @@ from ..kernel.governed_context import (
 )
 
 DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
+
+
+def digests_equal(left: object, right: object) -> bool:
+    """Constant-time equality of two text digests; anything but ASCII text never matches.
+
+    ``hmac.compare_digest`` raises a raw ``TypeError`` on non-ASCII text, so a
+    re-read or port-supplied digest is never handed to it unchecked.
+    """
+
+    return (
+        isinstance(left, str)
+        and isinstance(right, str)
+        and left.isascii()
+        and right.isascii()
+        and hmac.compare_digest(left, right)
+    )
 LANGUAGE = re.compile(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*")
 VERSION_REF = re.compile(r"urn:ocor:memory:(?P<item>.+):v(?P<version>[1-9][0-9]*)")
 CONTENT_SCHEMA = re.compile(
@@ -823,11 +839,24 @@ class AdmittedMemoryVersion:
             and all(isinstance(part, str) for part in key)
         ):
             raise MemoryLedgerCorrupted("record members have invalid types")
+        # Types before conversion: every receipt field is checked, never coerced.
+        item_digest = value["item_digest"]
+        receipt_text = ("memory_item_id", "content_digest", "lifecycle_status", "governed_context_digest", "audit_ref")
+        receipt_version = raw_receipt.get("memory_version")
+        if (
+            not isinstance(item_digest, str)
+            or DIGEST.fullmatch(item_digest) is None
+            or set(raw_receipt) != {*receipt_text, "memory_version"}
+            or not all(isinstance(raw_receipt[name], str) for name in receipt_text)
+            or isinstance(receipt_version, bool)
+            or not isinstance(receipt_version, int)
+        ):
+            raise MemoryLedgerCorrupted("record digest or receipt fields have invalid types")
         try:
             item = GovernedMemoryItem.from_mapping(raw_item)
             receipt = MemoryReceipt(
                 memory_item_id=str(raw_receipt["memory_item_id"]),
-                memory_version=int(str(raw_receipt["memory_version"])),
+                memory_version=receipt_version,
                 content_digest=str(raw_receipt["content_digest"]),
                 lifecycle_status=str(raw_receipt["lifecycle_status"]),
                 governed_context_digest=str(raw_receipt["governed_context_digest"]),
@@ -837,7 +866,7 @@ class AdmittedMemoryVersion:
             raise MemoryLedgerCorrupted(f"record does not re-validate: {exc}") from exc
         record = cls(
             item=item,
-            item_digest=str(value["item_digest"]),
+            item_digest=item_digest,
             idempotency_key=(key[0], key[1], key[2], key[3], key[4]),
             lifecycle_event=MappingProxyType(dict(lifecycle_event)),
             audit_event=MappingProxyType(dict(audit_event)),
@@ -847,9 +876,9 @@ class AdmittedMemoryVersion:
         return record
 
     def verify(self) -> None:
-        if not hmac.compare_digest(self.item.digest(), self.item_digest):
+        if not digests_equal(self.item.digest(), self.item_digest):
             raise MemoryLedgerCorrupted("item digest does not bind the persisted item")
-        if not hmac.compare_digest(canonical_digest(dict(self.audit_event)), self.receipt.audit_ref):
+        if not digests_equal(canonical_digest(dict(self.audit_event)), self.receipt.audit_ref):
             raise MemoryLedgerCorrupted("audit_ref does not bind the audit event")
         if self.audit_event.get("item_digest") != self.item_digest:
             raise MemoryLedgerCorrupted("audit event does not bind the item digest")
@@ -868,6 +897,32 @@ class MemoryLedgerCorrupted(MemoryAdmissionError):
 
     def __init__(self, message: str) -> None:
         super().__init__("INTERNAL_ERROR", "MEMORY_LEDGER_CORRUPTED", message)
+
+
+def ledger_version(value: object) -> int:
+    """A ledger's latest-version answer: a non-negative integer, never a boolean."""
+
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise MemoryLedgerCorrupted("the ledger answered a version that is not a non-negative integer")
+    return value
+
+
+def ledger_record(
+    value: object,
+    slot: tuple[str, int] | None = None,
+    key: IdempotencyKey | None = None,
+) -> AdmittedMemoryVersion | None:
+    """A ledger's record answer: absent, or an admitted version of exactly the slot or key asked for."""
+
+    if value is None:
+        return None
+    if not isinstance(value, AdmittedMemoryVersion):
+        raise MemoryLedgerCorrupted("the ledger answered something that is not an admitted version")
+    if slot is not None and (value.item.memory_item_id, value.item.memory_version) != slot:
+        raise MemoryLedgerCorrupted("the ledger answered another slot")
+    if key is not None and value.idempotency_key != key:
+        raise MemoryLedgerCorrupted("the ledger answered another idempotency key")
+    return value
 
 
 class MemoryVersionLedger(Protocol):
@@ -1029,10 +1084,14 @@ class JournalMemoryVersionLedger:
             or not isinstance(entry_digest, str)
         ):
             raise MemoryLedgerCorrupted("journal chain fields have the wrong type")
+        # A digest is an ASCII sha256 URN before any comparison (compare_digest
+        # raises a raw TypeError on non-ASCII text).
+        if DIGEST.fullmatch(prev) is None or DIGEST.fullmatch(entry_digest) is None:
+            raise MemoryLedgerCorrupted("journal chain digests are not sha256 URNs")
         body = {"seq": seq, "prev": prev, "record": entry["record"]}
         if seq != self._seq + 1 or prev != self._head:
             raise MemoryLedgerCorrupted("journal chain is broken or reordered")
-        if not hmac.compare_digest(canonical_digest(body), entry_digest):
+        if not digests_equal(canonical_digest(body), entry_digest):
             raise MemoryLedgerCorrupted("journal entry digest mismatch")
         raw_record = entry["record"]
         if not isinstance(raw_record, Mapping):
@@ -1425,9 +1484,9 @@ class MemoryAdmissionService:
         # 3. Idempotency: same key and digest returns the original receipt.
         key = idempotency_key(item, operation_id)
         item_digest = item.digest()
-        previous = self._ledger.by_idempotency_key(key)
+        previous = ledger_record(self._ledger.by_idempotency_key(key), key=key)
         if previous is not None:
-            if hmac.compare_digest(previous.item_digest, item_digest):
+            if digests_equal(previous.item_digest, item_digest):
                 # The item digest authenticates metadata, not the supplied bytes.
                 # Replays must satisfy the same content boundary before receiving
                 # an existing receipt (ADD Part II §2.4; LLD §2.8.2).
@@ -1571,7 +1630,7 @@ class MemoryAdmissionService:
         if not isinstance(payload, (bytes, bytearray)):
             raise _schema_error("PAYLOAD_INVALID", "payload must be bytes")
         calculated = "urn:sha256:" + hashlib.sha256(payload).hexdigest()
-        if not hmac.compare_digest(calculated, item.content_digest):
+        if not digests_equal(calculated, item.content_digest):
             raise _schema_error("CONTENT_DIGEST_MISMATCH", "content_digest does not bind payload")
         try:
             text = bytes(payload).decode("utf-8")
@@ -1650,10 +1709,11 @@ class MemoryAdmissionService:
     def _validate_lineage(
         self, item: GovernedMemoryItem, context: GovernedContext
     ) -> tuple[GovernedMemoryItem, ...]:
-        latest = self._ledger.latest_version(item.memory_item_id)
+        latest = ledger_version(self._ledger.latest_version(item.memory_item_id))
         if item.memory_version <= latest:
-            existing = self._ledger.get(item.memory_item_id, item.memory_version)
-            if existing is not None and hmac.compare_digest(existing.item_digest, item.digest()):
+            slot = (item.memory_item_id, item.memory_version)
+            existing = ledger_record(self._ledger.get(*slot), slot)
+            if existing is not None and digests_equal(existing.item_digest, item.digest()):
                 raise MemoryAdmissionError(
                     "MEMORY_IDEMPOTENCY_CONFLICT",
                     "VERSION_ALREADY_ADMITTED",
@@ -1704,7 +1764,7 @@ class MemoryAdmissionService:
             source_item, source_version = parse_memory_version_ref(ref)
             if source_item == item.memory_item_id and source_version >= item.memory_version:
                 raise _schema_error("LINEAGE_INVALID", "lineage cannot reference itself or later")
-            source = self._ledger.get(source_item, source_version)
+            source = ledger_record(self._ledger.get(source_item, source_version), (source_item, source_version))
             if source is None:
                 raise MemoryAdmissionError(
                     "MEMORY_VERSION_NOT_FOUND",
@@ -1757,7 +1817,7 @@ class MemoryAdmissionService:
                 "REFERENCE_RESOLVER_UNAVAILABLE",
                 "reference resolution failed closed",
             ) from exc
-        if source_digest is None or not hmac.compare_digest(source_digest, item.source_digest):
+        if source_digest is None or not digests_equal(source_digest, item.source_digest):
             raise _schema_error(
                 "SOURCE_UNRESOLVED", "source_ref does not resolve to source_digest under the GCS"
             )

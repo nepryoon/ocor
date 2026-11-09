@@ -95,6 +95,28 @@ def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _scalar_values(value: Any) -> Any:
+    """``value`` when every decoded string and key is Unicode scalar values.
+
+    A JSON escape can decode to a lone surrogate (``"\\ud800"``), which is no
+    UTF-8 text: ``str.encode`` raises ``UnicodeEncodeError`` (a ``ValueError``)
+    for it, nested values and keys included.
+    """
+
+    stack = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            item.encode("utf-8")
+        elif isinstance(item, dict):
+            for key, member in item.items():
+                key.encode("utf-8")
+                stack.append(member)
+        elif isinstance(item, list):
+            stack.extend(item)
+    return value
+
+
 def _strict_json(raw: object, detail: str) -> Any:
     """Strict UTF-8 I-JSON, or ``MemoryStoreCorrupted(detail)``."""
 
@@ -102,8 +124,11 @@ def _strict_json(raw: object, detail: str) -> Any:
         text = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
         if not isinstance(text, str):
             raise ValueError("the answer is not text")
-        return json.loads(text, parse_constant=_non_finite, parse_float=_finite_float, object_pairs_hook=_unique_keys)
-    except (UnicodeDecodeError, ValueError, RecursionError) as exc:  # JSONDecodeError is a ValueError; nesting beyond the parser limit
+        text.encode("utf-8")
+        return _scalar_values(
+            json.loads(text, parse_constant=_non_finite, parse_float=_finite_float, object_pairs_hook=_unique_keys)
+        )
+    except (UnicodeError, ValueError, RecursionError) as exc:  # JSONDecodeError and UnicodeEncodeError are ValueErrors; nesting beyond the parser limit
         raise MemoryStoreCorrupted(detail, "the backend answer is not strict UTF-8 I-JSON") from exc
 
 
