@@ -1989,7 +1989,7 @@
           "boundary_digests": "PASS (entry_digest recomputed over seq, prev and record and chained to the previous entry; canonical bytes required)",
           "complete_normative_records": "PASS (every record is rebuilt complete by AdmittedMemoryVersion.from_mapping and verified, receipt and audit bound; MEMORY_LEDGER_CORRUPTED otherwise)",
           "finite_numbers": "PASS (NaN, Infinity, -Infinity and 1e400 refused by the I-JSON reader in every position, nested record values included)",
-          "processes_and_resources": "PASS (the file handle is closed by `with` and the flock released in finally on every path; a file error of records() is QUOTA_UNAVAILABLE before any append, row 33)",
+          "processes_and_resources": "PASS (the file handle is closed by `with` and the flock released in finally on every path; a file error of records() is QUOTA_UNAVAILABLE before any append, row 33; a write failure of append is the typed INTERNAL_ERROR refusal of admitMemory, nothing admitted)",
           "strict_decoding": "FIXED (class: a nesting beyond the JSON parser's recursion limit raised a raw RecursionError); PASS for invalid UTF-8, a BOM, an escaped lone surrogate or NUL, a non-canonical line, a torn line and JSONDecodeError (MEMORY_LEDGER_CORRUPTED)",
           "types_before_conversions": "FIXED (a re-chained entry with seq true was accepted as seq 1; the entry digest went through str()); missing, extra or wrong-typed chain fields and a non-object record are MEMORY_LEDGER_CORRUPTED"
         },
@@ -2002,7 +2002,8 @@
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_quota_inventory_failure_and_invalid_operations_inputs_are_typed",
           "ocor-runtime/tests/tasks/test_ocor_dev_0050.py::test_tampering_with_an_acknowledged_version_is_detected_fail_closed",
           "ocor-runtime/tests/tasks/test_ocor_dev_0050.py::test_removed_or_reordered_entries_break_the_chain",
-          "ocor-runtime/tests/tasks/test_ocor_dev_0050.py::test_a_torn_unacknowledged_write_blocks_the_journal"
+          "ocor-runtime/tests/tasks/test_ocor_dev_0050.py::test_a_torn_unacknowledged_write_blocks_the_journal",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_the_quota_hold_never_turns_a_written_version_into_a_denial_nor_hides_a_failed_write"
         ]
       }
     ]
