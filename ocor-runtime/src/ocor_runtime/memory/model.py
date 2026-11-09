@@ -1496,7 +1496,8 @@ class MemoryAdmissionService:
         )
         # 11. Quota, then persistence last, as one atomic append inside the
         #     quota authority's partition serialization (LLD v1.1 §2.8.2).
-        #     A value that is not a quota authority fails in the hold below.
+        #     A value that is not a quota authority, or a hold that is not a
+        #     context manager, fails in the hold below before any write.
         if self._quota is None:
             raise MemoryAdmissionError(
                 "CONTROL_PLANE_UNAVAILABLE",
@@ -1505,6 +1506,8 @@ class MemoryAdmissionService:
             )
         try:
             hold = self._quota.admission_hold(item, bytes(payload))
+            if not isinstance(hold, AbstractContextManager):
+                raise TypeError("the quota hold is not a context manager")
             hold.__enter__()
         except MemoryAdmissionError:
             raise
