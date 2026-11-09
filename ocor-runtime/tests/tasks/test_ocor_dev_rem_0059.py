@@ -2071,7 +2071,7 @@ def test_prereview_p2_twin_store_coordinator_metadata_answers_are_checked(port: 
 def test_prereview_p2_twin_store_coordinator_ledger_answers_are_checked(action: str, answer: Any) -> None:
     world, coordinator, record, part, vector = _store_world()
     item_id = record.item.memory_item_id
-    _patched(world.ledger, "get", answer)
+    _patched(world.admission.ledger, "get", answer)
     if action == "replay":
         _code(lambda: coordinator.commit(record, payload=b"probe fixture text", embedding=vector))
     else:
