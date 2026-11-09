@@ -1433,12 +1433,12 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0058.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0058.log",
         # OCOR-DEV-REM-0059 (NCP-U11 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): governed memory (the real
-        # memory adapters moved out of test_ocor_dev_0051.py, point 2; the deletion scopes of lifecycle.py,
+        # memory adapters moved out of test_ocor_dev_0051.py into memory/adapters/, point 2; the deletion scopes of lifecycle.py,
         # NCR-MEMORY-003), the unit test module, the unit record,
         # the decision request NCP-U11-REM0023-CONSUMER-GUARD (decided by the PO on 2026-11-09), and the
         # regression-only requalifications of the tasks whose latest record has a changed input (0051, 0052,
         # 0054, 0055, 0059, 0061) and of 0005, 0050 and 0082 forced by this allowlist.
-        "ocor-runtime/src/ocor_runtime/memory/adapters.py",
+        "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
         "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py",
         "reports/assurance/OCOR-DEV-REM-0059-RCCAD/README.md",

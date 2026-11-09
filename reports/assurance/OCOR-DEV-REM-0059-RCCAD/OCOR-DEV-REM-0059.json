@@ -177,10 +177,10 @@
   ],
   "change_anchors": [
     {
-      "change": "new module: the real PostgreSQL metadata/content/full-text, Qdrant vector and OpenBao Transit adapters of test_ocor_dev_0051.py moved verbatim into the package (NORMATIVE-CONFORMANCE-PLAN point 2); OpenBaoTransitCipher takes any TransitClient; full-text and Qdrant queries evaluate the excluded item identifiers of the eligibility predicate (NCR-MEMORY-001)",
-      "function": "PostgresStores, PostgresContentStore, PostgresLexicalIndex, QdrantVectorIndex, OpenBaoTransitCipher, _attribute_sql, _item_sql, _layout_name",
+      "change": "new package module (memory/adapters/, the adapter location of the RCCAD dependency rules AFF-002/AFF-006): the real PostgreSQL metadata/content/full-text, Qdrant vector and OpenBao Transit adapters of test_ocor_dev_0051.py moved verbatim into the package (NORMATIVE-CONFORMANCE-PLAN point 2); OpenBaoTransitCipher takes any TransitClient; full-text and Qdrant queries evaluate the excluded item identifiers of the eligibility predicate (NCR-MEMORY-001)",
+      "function": "MemoryBackendUnavailable, PostgresStores, PostgresContentStore, PostgresLexicalIndex, QdrantVectorIndex, OpenBaoTransitCipher, _attribute_sql, _item_sql, _layout_name",
       "normative_element": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md:3763, :3797-3799; docs/OCOR_LLD_v1.1.md:202, :214",
-      "path": "ocor-runtime/src/ocor_runtime/memory/adapters.py"
+      "path": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py"
     },
     {
       "change": "pre-query policy partition down to the item: the live retrieval decision carries the denied item identifiers, evaluated inside the index queries so that denied items never fill, widen or back-pressure a page (FR-119, FGM-16); getMemoryItemVersion as a governed read: authenticated GovernedContext with digest recalculated, live read and materialisation decisions, partition visibility, compartments, marking dominance, expiry, ACTIVE undeleted head; every invisible case MEMORY_NOT_FOUND/ITEM_NOT_VISIBLE, audited",
@@ -424,7 +424,7 @@
       "strict_decoding": "UTF-8 strict, typed error",
       "types_before_conversions": "types checked before conversion, bool never an int, missing/extra/empty refused"
     },
-    "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1 extended by SELF-CHECK-CHECKLIST (2026-11-08): the whole adapters.py module and the classes touched by the unit -- retrieval.py MemorySearchService, RetrievalAuthorization and MemoryItemReadService; model.py MemoryAdmissionService and its policy decision; operations.py MemoryAdmissionQuota, MemoryQuotaWriter and MemoryOperationsService; lifecycle.py MemoryLifecycleCoordinator and ContentParticipant; stores.py MemoryStoreCoordinator, EligibilityPredicate and StagedVersion.from_body -- one row per parsing, adapter or port-answer path, with the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29), boundary digests and bindings, resource release and the five controls of SELF-CHECK-CHECKLIST (2026-11-08) point 2; audit by three read-only reviews of the implementer (Claude Code subagents, same provider), findings confirmed by backend-free probes",
+    "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1 extended by SELF-CHECK-CHECKLIST (2026-11-08): the whole adapters module (memory/adapters/__init__.py) and the classes touched by the unit -- retrieval.py MemorySearchService, RetrievalAuthorization and MemoryItemReadService; model.py MemoryAdmissionService and its policy decision; operations.py MemoryAdmissionQuota, MemoryQuotaWriter and MemoryOperationsService; lifecycle.py MemoryLifecycleCoordinator and ContentParticipant; stores.py MemoryStoreCoordinator, EligibilityPredicate and StagedVersion.from_body -- one row per parsing, adapter or port-answer path, with the five points of PRE-REVIEW-INPUT-ROBUSTNESS (2026-10-29), boundary digests and bindings, resource release and the five controls of SELF-CHECK-CHECKLIST (2026-11-08) point 2; audit by three read-only reviews of the implementer (Claude Code subagents, same provider), findings confirmed by backend-free probes",
     "green": [
       "c5952e8"
     ],
@@ -641,7 +641,7 @@
           "strict_decoding": "FIXED (a non-UTF-8 body raised UnicodeDecodeError; a non-JSON body JSONDecodeError)",
           "types_before_conversions": "FIXED (duplicate keys silently kept the last)"
         },
-        "file": "ocor-runtime/src/ocor_runtime/memory/adapters.py",
+        "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "function": "_http, _strict_json",
         "paths": "HTTP request body and every Qdrant answer body",
         "tests": [
@@ -658,7 +658,7 @@
           "strict_decoding": "N/A",
           "types_before_conversions": "FIXED (missing id or result KeyError, list payload AttributeError, string score ValueError, bool score and count coerced, float count truncated)"
         },
-        "file": "ocor-runtime/src/ocor_runtime/memory/adapters.py",
+        "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "function": "QdrantVectorIndex._result, _points, _hits, search, search_eligible, score_entries, get, read_back, entries, count, collections",
         "paths": "Qdrant result objects, points, ids, payloads, scores, counts, collection lists, scroll pages",
         "tests": [
@@ -675,7 +675,7 @@
           "strict_decoding": "PASS",
           "types_before_conversions": "FIXED (malformed JSON raised JSONDecodeError; a JSON list payload passed through; duplicate keys accepted)"
         },
-        "file": "ocor-runtime/src/ocor_runtime/memory/adapters.py",
+        "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "function": "PostgresLexicalIndex.search, search_eligible, score_entries, get, read_back, entries (_object, _rank)",
         "paths": "full-text rows: pointer payload JSON, rank, read-back flags",
         "tests": [
@@ -691,7 +691,7 @@
           "strict_decoding": "N/A",
           "types_before_conversions": "FIXED (malformed body JSONDecodeError, undeclared state ValueError, commit instant unchecked, a bool head accepted)"
         },
-        "file": "ocor-runtime/src/ocor_runtime/memory/adapters.py",
+        "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "function": "PostgresStores._row, get, versions_in, eligible_versions, commit, stage, pointer, partitions, head",
         "paths": "metadata, pointer and partition rows, state, commit instant, head column",
         "tests": [
@@ -707,7 +707,7 @@
           "strict_decoding": "FIXED (a non-ASCII ciphertext raised UnicodeDecodeError)",
           "types_before_conversions": "FIXED (missing data KeyError, int ciphertext AttributeError, an int key_ref accepted, junk base64 characters tolerated)"
         },
-        "file": "ocor-runtime/src/ocor_runtime/memory/adapters.py",
+        "file": "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
         "function": "PostgresContentStore.get, OpenBaoTransitCipher.seal, open",
         "paths": "content rows, transit answers, stored ciphertext and key reference",
         "tests": [

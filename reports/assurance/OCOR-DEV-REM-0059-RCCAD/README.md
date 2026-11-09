@@ -3,7 +3,7 @@
 Unità NCP-U11 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)` (punti 1, 2 e 5), primo `OCOR-DEV-REM-*` libero
 verificato in sola lettura all'avvio. Risolve, a sigillo avvenuto, le voci `NCR-MEMORY-001` … `NCR-MEMORY-005`
 del registro, con il criterio aggiuntivo del punto 2: gli adapter reali della memoria di
-`test_ocor_dev_0051.py` passano nel pacchetto (`ocor_runtime/memory/adapters.py`, `9074905`) con lo stesso
+`test_ocor_dev_0051.py` passano nel pacchetto (`ocor_runtime/memory/adapters/__init__.py`, `9074905`) con lo stesso
 comportamento.
 
 Stato: `CANDIDATE_IN_PROGRESS` (iterazione 3 di stima 3, stop a 9), prima della revisione preventiva.

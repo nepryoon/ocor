@@ -36,9 +36,9 @@ from typing import Any, Protocol
 
 import psycopg
 
-from ..kernel.canonical import TimestampError, canonical_bytes, parse_utc_timestamp
-from .model import memory_version_ref
-from .stores import (
+from ...kernel.canonical import TimestampError, canonical_bytes, parse_utc_timestamp
+from ..model import memory_version_ref
+from ..stores import (
     EligibilityPredicate,
     IndexEntry,
     IndexHit,
