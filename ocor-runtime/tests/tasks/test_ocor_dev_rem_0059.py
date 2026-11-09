@@ -981,6 +981,12 @@ def test_ncr_memory_002_quota_inventory_failure_and_invalid_operations_inputs_ar
     world.metadata.versions_in = lambda digest: (_ for _ in ()).throw(ConnectionError("pg down"))  # type: ignore[method-assign]
     assert _code(lambda: world.admit("y", t55.TEXT + " y", commit=False)) == ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE")
     assert world.ledger.latest_version("y") == 0
+    # The ledger inventory re-reads the journal: a file error of records() is the same typed refusal.
+    world, _ = _quota_unit_world(_Serialization())
+    for failure in (OSError("journal unreadable"), PermissionError("journal"), FileNotFoundError("journal")):
+        world.ledger.records = lambda f=failure: (_ for _ in ()).throw(f)  # type: ignore[method-assign]
+        assert _code(lambda: world.admit("y", t55.TEXT + " y", commit=False)) == ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE")
+        assert world.ledger.latest_version("y") == 0
     for kwargs in ({"target_items": True, "limit": 1}, {"target_items": 0, "limit": True}, {"target_items": 0, "limit": NAN},
                    {"target_items": INF, "limit": 1}, {"target_items": 0, "limit": 101}):
         w = t55.unit_world()
