@@ -1410,6 +1410,28 @@ def main() -> int:
         "reports/evidence/G4/OCOR-DEV-0045.requalified-rem0057.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.log",
+        # OCOR-DEV-REM-0058 (NCP-U10 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): the C8 Governed Agent
+        # Kernel (mcp-tool-contract:1.2 registry, governed tool runtime, AgentRun orchestrator), the two
+        # shared C8 test fixtures, the unit test module, the unit record, and the regression-only
+        # requalifications of 0046 and 0047 (realigned and adapted tests, NCP-UNBINDABLE-REQUALIFICATIONS)
+        # and of 0005, 0050 and 0082 forced by this allowlist.
+        "ocor-runtime/src/ocor_runtime/c8/tool_contract.py",
+        "ocor-runtime/tests/tasks/c8_orchestrator_fixture.py",
+        "ocor-runtime/tests/tasks/c8_tool_runtime_fixture.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py",
+        "reports/assurance/OCOR-DEV-REM-0058-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0058-RCCAD/OCOR-DEV-REM-0058.json",
+        "reports/assurance/OCOR-DEV-REM-0058-RCCAD/OCOR-DEV-REM-0058.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0058.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0058.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0058.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0058.log",
+        "reports/evidence/G4/OCOR-DEV-0046.requalified-rem0058.json",
+        "reports/evidence/G4/OCOR-DEV-0046.requalified-rem0058.log",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0058.json",
+        "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0058.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0058.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0058.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

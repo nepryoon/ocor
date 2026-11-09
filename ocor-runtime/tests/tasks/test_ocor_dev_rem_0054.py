@@ -81,6 +81,10 @@ def _mod(name: str) -> ModuleType:
     return importlib.import_module(f"ocor_runtime.{name}")
 
 
+def _c8_tool_runtime_fixture() -> ModuleType:
+    return importlib.import_module("c8_tool_runtime_fixture")
+
+
 def _fx() -> ModuleType:
     return importlib.import_module("c6_safety_fixture")
 
@@ -422,44 +426,43 @@ def test_ncr_c6_010_the_c8_tool_runtime_reads_the_stop_through_the_port() -> Non
     fx = _fx()
     safety = _safety()
     marking = _mod("c4_marking")
-    capabilities = _mod("c6_capabilities")
     tool_runtime = _mod("c8.tool_runtime")
-    agent = _mod("c8_agent")
     kernel = _mod("kernel.governed_context")
+    c8_world = _c8_tool_runtime_fixture()
     epochs = safety.InMemoryStopEpochStore()
     controller = fx.stop_controller(_registry(), epochs=epochs)
     effects: list[str] = []
-    sandbox = agent.StrictSandbox()
 
     def restart_service(name: str) -> str:
         effects.append(name)
         return name
 
-    sandbox.register_tool("restart_service", restart_service)
-    authority = capabilities.CapabilityAuthority(issuer="ocor-rem0054-tool-authority")
     engine = _mod("c4.marking_resolution").ResolvedMarkingEngine(
         [marking.MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET"))])
-    runtime = tool_runtime.ToolCallRuntime(sandbox=sandbox, authority=authority, marking_engine=engine, stop=fx.stop_reader(epochs))
-    lease = authority.issue(subject="agent-1", capabilities=["tool:restart_service"], resources=["restart_service"], issued_at=NOW, ttl=timedelta(hours=1))
     context = kernel.GovernedContext(
         tenant_id="t1", organization_id="o1", domain_id="d1", compartments=("default",),
         classification_marking_ref="urn:sha256:" + "a" * 64, purpose="incident-response", effective_principal_id="agent-1",
         actor_chain=("agent-1",), ontology_release_digest="urn:sha256:" + "b" * 64, policy_bundle_digest="urn:sha256:" + "c" * 64,
         correlation_id="urn:ocor:correlation:rem0054",
     )
+    # OCOR-DEV-REM-0058 (NCP-U10): the C8 runtime of contract-bound tools and C8 grants
+    world = c8_world.ToolRuntimeWorld(context=context, marking_engine=engine, stop=fx.stop_reader(epochs), now=NOW)
+    world.tool("restart_service", restart_service)
+    runtime = world.runtime
+    lease = world.grant("restart_service")
 
     def invoke(name: str) -> Any:
         return runtime.invoke(
             "restart_service", "restart_service(name)", bindings={"name": name}, lease=lease, context=context,
             content_marking=marking.MarkingSet({"classification": "SECRET"}), clearance=marking.MarkingSet({"classification": "SECRET"}),
-            budget=agent.TokenBudget(100), estimated_tokens=1, stop_epoch=0, at=NOW,
+            budget=world.budget(100), estimated_tokens=1, stop_epoch=0, at=NOW, **world.call_bindings(),
         )
 
     invoke("before")
     fx.activate(controller, reason="incident-42", at=NOW)
     with pytest.raises(tool_runtime.ToolRuntimeError) as excinfo:
         invoke("after")
-    assert excinfo.value.reason_code == "STOP_BOUND_DENIED"
+    assert excinfo.value.reason_code == "EMERGENCY_STOP_ACTIVE"
     assert effects == ["before"]
 
 
@@ -1676,38 +1679,35 @@ class _ToolWorld:
 
     def __init__(self, engine: Any) -> None:
         safety = _safety()
-        capabilities = _mod("c6_capabilities")
-        agent = _mod("c8_agent")
         kernel = _mod("kernel.governed_context")
         self.tool_runtime = _mod("c8.tool_runtime")
         self.effects: list[str] = []
-        sandbox = agent.StrictSandbox()
 
         def restart_service(name: str) -> str:
             self.effects.append(name)
             return name
 
-        sandbox.register_tool("restart_service", restart_service)
         epochs = safety.InMemoryStopEpochStore()
         _fx().stop_controller(_registry(), epochs=epochs)
-        authority = capabilities.CapabilityAuthority(issuer="ocor-rem0054-marking-authority")
-        self.runtime = self.tool_runtime.ToolCallRuntime(
-            sandbox=sandbox, authority=authority, marking_engine=engine, stop=_fx().stop_reader(epochs))
-        self.authority = authority
-        self.budget = agent.TokenBudget(100)
         self.context = kernel.GovernedContext(
             tenant_id="t1", organization_id="o1", domain_id="d1", compartments=("default",),
             classification_marking_ref="urn:sha256:" + "a" * 64, purpose="incident-response", effective_principal_id="agent-1",
             actor_chain=("agent-1",), ontology_release_digest="urn:sha256:" + "b" * 64, policy_bundle_digest="urn:sha256:" + "c" * 64,
             correlation_id="urn:ocor:correlation:rem0054",
         )
+        # OCOR-DEV-REM-0058 (NCP-U10): the C8 runtime of contract-bound tools and C8 grants
+        self.world = _c8_tool_runtime_fixture().ToolRuntimeWorld(
+            context=self.context, marking_engine=engine, stop=_fx().stop_reader(epochs), now=NOW)
+        self.world.tool("restart_service", restart_service)
+        self.runtime = self.world.runtime
+        self.budget = self.world.budget(100)
 
     def invoke(self, content: Any, clearance: Any) -> Any:
-        lease = self.authority.issue(subject="agent-1", capabilities=["tool:restart_service"], resources=["restart_service"],
-                                     issued_at=NOW, ttl=timedelta(hours=1))
+        lease = self.world.grant("restart_service")
         return self.runtime.invoke(
             "restart_service", "restart_service(name)", bindings={"name": "svc"}, lease=lease, context=self.context,
             content_marking=content, clearance=clearance, budget=self.budget, estimated_tokens=1, stop_epoch=0, at=NOW,
+            **self.world.call_bindings(),
         )
 
 
@@ -1724,7 +1724,8 @@ def test_ncr_c6_012_the_c8_tool_runtime_refuses_an_unresolved_marking_before_any
     world = _ToolWorld(_resolving())
     with pytest.raises(world.tool_runtime.ToolRuntimeError) as excinfo:
         world.invoke(_marks(content), _marks(clearance))
-    assert excinfo.value.reason_code == "MARKING_UNRESOLVED"
+    assert excinfo.value.reason_code == "POLICY_DENIED"
+    assert excinfo.value.marking_outcome == "MARKING_UNRESOLVED"
     assert world.effects == []
     assert world.budget.used == 0
 
@@ -1733,7 +1734,8 @@ def test_ncr_c6_012_the_c8_tool_runtime_denies_a_clearance_that_does_not_dominat
     world = _ToolWorld(_resolving())
     with pytest.raises(world.tool_runtime.ToolRuntimeError) as excinfo:
         world.invoke(_marks(FULL), _marks({"classification": "UNCLASSIFIED", "compartment": "ALL"}))
-    assert excinfo.value.reason_code == "MARKING_DENIED"
+    assert excinfo.value.reason_code == "POLICY_DENIED"
+    assert excinfo.value.marking_outcome == "MARKING_DENIED"
     assert world.effects == [] and world.budget.used == 0
 
 
