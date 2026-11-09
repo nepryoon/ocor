@@ -8,6 +8,13 @@ entries NCR-MEMORY-001..005 of ``reports/development/NORMATIVE_CONFORMANCE_REGIS
   authorised partition down to the item (LLD v1.1 §2.8.3, ``docs/OCOR_LLD_v1.1.md``
   :214), so unauthorised elements never influence content, existence, count,
   rank, score, cache or error (FR-119, Register v1.1 :268; FGM-16, LLD v1.1 :397).
+* NCR-MEMORY-002 -- ``admitMemory`` verifies quota before its atomic write
+  (LLD v1.1 §2.8.2 :206): the admission service consults the partition quota
+  authority of the operations port, under the partition serialization, before
+  the single ledger append; a refusal appends nothing and is audited.  The
+  consolidation service admits its derived items through the same admission,
+  so consolidation output is counted against quota at admission (FGM-19
+  quota/retention pressure, LLD v1.1 :400).
 * NCR-MEMORY-004 -- the contract operation ``getMemoryItemVersion`` (Governed
   Memory API 1.0.0, ``ocor-governed-memory.openapi.yaml`` :21-29, a materialised
   contract by LLD v1.1 §0.2 :26) is a governed service operation of the
@@ -45,10 +52,12 @@ from typing import Any
 
 import pytest
 import test_ocor_dev_0052 as t52
+import test_ocor_dev_0054 as t54
 import test_ocor_dev_0055 as t55
+import test_ocor_dev_0059 as t59
 import test_ocor_dev_rem_0020 as r20
 from ocor_runtime.kernel.governed_context import GovernedContext
-from ocor_runtime.memory.model import MemoryAdmissionError
+from ocor_runtime.memory.model import AdmissionLimits, MemoryAdmissionError, MemoryAdmissionService
 from ocor_runtime.memory.retrieval import MemoryRetrievalError, RetrievalAuthorization, RetrievalMode
 
 # The live worlds of OCOR-DEV-0052: real PostgreSQL, Qdrant and OpenBao.
@@ -286,3 +295,146 @@ def test_ncr_memory_003_bulk_scopes_forget_every_visible_item_of_the_scope(lifec
     # Replay of the same request returns the same receipt and deletes nothing more.
     assert world.delete("a", scope=scope, op="forget-scope").to_mapping() == receipt.to_mapping()
     assert world.status("c") == "ACTIVE" and t55.denials(world) == []
+
+
+# --------------------------------------------------------------------------
+# NCR-MEMORY-002: quota at admitMemory and on consolidation
+# --------------------------------------------------------------------------
+
+QUOTA: dict[str, Any] = {
+    "max_items": 10, "max_payload_bytes": 64, "max_embedding_dimensions": 8, "max_top_k": 10,
+    "max_consolidation_concurrency": 2, "max_index_entries": 30,
+    "retention_horizons": {"retention:standard": timedelta(days=365)},
+}
+RETENTION = {"retention:standard": timedelta(days=365)}
+
+
+class BrokenSerialization:
+    def hold(self, partition_digest: str) -> Any:
+        raise OSError("serialization authority unavailable")
+
+
+def _quota(world: Any, dsn: str, serialization: Any = None, **changes: Any) -> Any:
+    """The partition quota authority of the operations port, over the world's real metadata store."""
+
+    from ocor_runtime.memory.operations import MemoryAdmissionQuota, MemoryOperationsLimits
+
+    return MemoryAdmissionQuota(
+        metadata=world.metadata, ledger=world.ledger, limits=MemoryOperationsLimits(**{**QUOTA, **changes}),
+        serialization=serialization if serialization is not None else t59.PostgresSerializedQuota(dsn, world.metadata.schema),
+    )
+
+
+def _quota_world(backends: t52.Backends, serialization: Any = None, **changes: Any) -> tuple[t52.World, t52.Audit]:
+    world = backends.world()
+    audit = t52.Audit()
+    world.admission = MemoryAdmissionService(
+        ledger=world.ledger, resolver=t52.Resolver(), policy=t52.base.Policy(), markings=world.markings,
+        clock=world.clock, limits=AdmissionLimits(retention_horizons=RETENTION), audit=audit,
+        quota=_quota(world, backends.dsn, serialization, **changes),
+    )
+    return world, audit
+
+
+def _admission_refused(action: Any) -> tuple[str, str]:
+    with pytest.raises(MemoryAdmissionError) as caught:
+        action()
+    return caught.value.reason_code, caught.value.detail_code
+
+
+@pytest.mark.parametrize("changes,accepted,refusal", [
+    ({"max_items": 2}, 2, ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")),
+    ({"max_index_entries": 7}, 2, ("POLICY_DENIED", "INDEX_QUOTA_EXCEEDED")),
+    ({"max_payload_bytes": 8}, 0, ("POLICY_DENIED", "PAYLOAD_QUOTA_EXCEEDED")),
+    ({"max_embedding_dimensions": 2}, 0, ("POLICY_DENIED", "EMBEDDING_QUOTA_EXCEEDED")),
+    ({"retention_horizons": {"retention:other": timedelta(days=1)}}, 0, ("MEMORY_SCHEMA_INVALID", "RETENTION_UNCONFIGURED")),
+])
+def test_ncr_memory_002_admit_memory_verifies_quota_before_the_atomic_write(
+    backends: t52.Backends, changes: dict[str, Any], accepted: int, refusal: tuple[str, str],
+) -> None:
+    """NCR-MEMORY-002: ``admitMemory`` verifies quota and writes atomically (LLD v1.1 §2.8.2 :206).
+
+    The items admitted within quota are committed; the first one over quota is
+    refused by the admission itself, appends no version, reaches no store and
+    its refusal is audited.  A new version of an admitted item is not a new item.
+    """
+
+    world, audit = _quota_world(backends, **changes)
+    for n in range(accepted):
+        world.admit(f"item-{n}", f"{TEXT} {n}")
+    assert _admission_refused(lambda: world.admit("over", f"{TEXT} over")) == refusal
+    assert world.ledger.get("over", 1) is None and world.ledger.latest_version("over") == 0
+    assert world.metadata.head("over") == 0
+    assert [(e["reason_code"], e["detail_code"]) for e in audit.events] == [refusal]
+    if accepted:
+        corrected = world.admit("item-0", f"{TEXT} 0 corrected", version=2)
+        assert corrected.item.memory_version == 2 and world.metadata.head("item-0") == 2
+
+
+def test_ncr_memory_002_an_unavailable_quota_authority_refuses_and_writes_nothing(backends: t52.Backends) -> None:
+    """NCR-MEMORY-002: no admission without the quota check (fail closed)."""
+
+    world, audit = _quota_world(backends, BrokenSerialization())
+    refusal = ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_SERIALIZATION_UNAVAILABLE")
+    assert _admission_refused(lambda: world.admit("a", TEXT)) == refusal
+    assert world.ledger.get("a", 1) is None and world.metadata.head("a") == 0
+    assert [(e["reason_code"], e["detail_code"]) for e in audit.events] == [refusal]
+
+
+@pytest.fixture
+def consolidation_backends(live_backends: t52.Backends) -> Iterator[t54.Backends]:
+    """The OCOR-DEV-0054 consolidation worlds over the module's live backends."""
+
+    state = t54.Backends(dsn=live_backends.dsn, qdrant=live_backends.qdrant, bao=live_backends.bao)
+    try:
+        yield state
+    finally:
+        state.release()
+
+
+def _consolidation_world(backends: t54.Backends, **changes: Any) -> t54.CWorld:
+    world = backends.world()
+    world.admission = MemoryAdmissionService(
+        ledger=world.ledger, resolver=world.references, policy=world.guard, audit=world.admission_audit,
+        markings=world.markings, clock=world.clock, limits=AdmissionLimits(retention_horizons=RETENTION),
+        quota=_quota(world, backends.dsn, **{"max_payload_bytes": 64 * 1024, **changes}),
+    )
+    return world
+
+
+def _items(world: t54.CWorld, records: list[Any]) -> int:
+    from ocor_runtime.memory.stores import MemoryPartition
+
+    partition = MemoryPartition.for_item(records[0].item)
+    return len({s.staged.memory_item_id for s in world.metadata.versions_in(partition.digest)})
+
+
+def test_ncr_memory_002_consolidation_output_is_counted_against_quota_at_admission(
+    consolidation_backends: t54.Backends,
+) -> None:
+    """NCR-MEMORY-002: consolidation admits its derived items through the quota-bearing admission.
+
+    LLD v1.1 §2.8.2 (:206) and FGM-19 (:400): six convoy reports yield one
+    dissent and one summary.  With room for six items the first derived item is
+    refused at admission and the job writes no memory item; with room for eight
+    the job completes and its two derived items count, so a further admission
+    in the same partition is refused.
+    """
+
+    full = _consolidation_world(consolidation_backends, max_items=6)
+    sources = t54.convoy_sources(full)
+    refs = t54.refs_of(sources)
+    request = t54.consolidation_request(refs)
+    assert _admission_refused(
+        lambda: full.consolidator().consolidate(request, binding=t52.binding(t54.CTX))
+    ) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
+    assert _items(full, sources) == 6
+    assert [e["detail_code"] for e in t54.denials(full)] == ["ITEM_QUOTA_EXCEEDED"]
+
+    room = _consolidation_world(consolidation_backends, max_items=8)
+    sources = t54.convoy_sources(room)
+    outcome = room.consolidator().consolidate(t54.consolidation_request(t54.refs_of(sources)), binding=t52.binding(t54.CTX))
+    assert len(outcome.dissent_refs) == 1 and _items(room, sources) == 8
+    assert _admission_refused(
+        lambda: room.source("late", ("bridge-7", "sector", "north"))
+    ) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
