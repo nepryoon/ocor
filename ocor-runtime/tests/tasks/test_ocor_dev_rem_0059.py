@@ -2081,7 +2081,7 @@ def test_prereview_p2_twin_store_coordinator_ledger_answers_are_checked(action: 
 @pytest.mark.parametrize(("owner", "port", "answers"), [
     ("metadata", "versions_in", BAD_SEQUENCES), ("metadata", "head", (*BAD_COUNTS, *BOOL_HEADS)),
     ("metadata", "get", BAD_RECORDS), ("ledger", "latest_version", (*BAD_COUNTS, *BOOL_HEADS)),
-    ("ledger", "get", BAD_RECORDS), ("ledger", "records", (5, None, "x")),
+    ("ledger", "get", BAD_RECORDS),
 ])
 def test_prereview_p2_twin_operations_inventory_answers_are_checked(owner: str, port: str, answers: tuple[Any, ...]) -> None:
     """Operations (monitor, quota) never accept a boolean or float head as version 1, nor a malformed row."""
@@ -2114,3 +2114,13 @@ def test_prereview_p2_twin_retrieval_partition_and_eligibility_answers_are_check
                 world.search(RetrievalMode.STRUCTURED)
         finally:
             setattr(world.metadata, port, original)
+
+
+@pytest.mark.parametrize("answer", [5, None, "x", {"a": 1}, [None]])
+def test_prereview_p2_twin_a_malformed_ledger_inventory_refuses_the_quota_hold_before_any_write(answer: Any) -> None:
+    """The ledger inventory (records()) is read by the admission quota only: a malformed answer writes nothing."""
+
+    world, _ = _quota_unit_world(_Serialization())
+    world.ledger.records = lambda value=answer: value  # type: ignore[method-assign]
+    _code(lambda: world.admit("y", t55.TEXT + " y", commit=False))
+    assert world.ledger.latest_version("y") == 0
