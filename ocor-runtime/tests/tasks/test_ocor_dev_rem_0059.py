@@ -53,21 +53,36 @@ stop-state and audit ports are test ports (as in OCOR-DEV-0052).
 
 from __future__ import annotations
 
+import contextlib
+import dataclasses
 import importlib
+import json
+import urllib.error
 from collections.abc import Iterator
 from datetime import timedelta
 from typing import Any
 
 import pytest
+import test_ocor_dev_0050 as t50
+import test_ocor_dev_0051 as t51
 import test_ocor_dev_0052 as t52
 import test_ocor_dev_0054 as t54
 import test_ocor_dev_0055 as t55
 import test_ocor_dev_0059 as t59
 import test_ocor_dev_rem_0020 as r20
 from ocor_runtime.kernel.governed_context import GovernedContext
+from ocor_runtime.memory import adapters as A
+from ocor_runtime.memory import lifecycle as L
 from ocor_runtime.memory.model import AdmissionLimits, MemoryAdmissionError, MemoryAdmissionService
 from ocor_runtime.memory.retrieval import MemoryRetrievalError, RetrievalAuthorization, RetrievalMode
-from ocor_runtime.memory.stores import MemoryPartition, VectorProfile, index_attributes
+from ocor_runtime.memory.stores import (
+    EligibilityPredicate,
+    IndexHit,
+    MemoryPartition,
+    SealedContent,
+    VectorProfile,
+    index_attributes,
+)
 
 # The live worlds of OCOR-DEV-0052: real PostgreSQL, Qdrant and OpenBao.
 live_backends = t52.live_backends
@@ -554,3 +569,694 @@ def test_ncr_memory_005_a_deleted_item_is_never_resurrected_by_a_rebuild(lifecyc
     assert report.rebuilt == () and all("gone" not in ref for ref in report.verified)
     assert "gone" not in _served(world, "alpha") and "keep" in _served(world, t55.TEXT)
     assert not t55.content_present(world, gone)
+
+
+# --------------------------------------------------------------------------
+# SELF-CHECK-CHECKLIST (2026-11-08): input robustness of every parsing, adapter
+# and port-answer path of the touched classes (backend-free negative cases on
+# the unit worlds of OCOR-DEV-0050/0051/0052/0055/0059 and scripted backends).
+# Each case is tied to the entry whose class it hardens.
+# --------------------------------------------------------------------------
+
+NAN, INF = float("nan"), float("inf")
+
+
+def _code(action: Any) -> tuple[str, str]:
+    """The typed refusal of ``action``; any other exception fails the case."""
+
+    with pytest.raises(MemoryAdmissionError) as caught:
+        action()
+    return caught.value.reason_code, caught.value.detail_code
+
+
+class _Twist:
+    """Wraps a policy port and rewrites the fields of its answers."""
+
+    def __init__(self, inner: Any, *, retrieval: dict[str, Any] | None = None,
+                 materialization: dict[str, Any] | None = None) -> None:
+        self.inner, self.retrieval, self.materialization = inner, retrieval or {}, materialization or {}
+
+    def authorize_retrieval(self, request: Any, ctx: Any) -> Any:
+        return dataclasses.replace(self.inner.authorize_retrieval(request, ctx), **self.retrieval)
+
+    def authorize_read(self, item_id: str, version: int, ctx: Any) -> Any:
+        return dataclasses.replace(self.inner.authorize_read(item_id, version, ctx), **self.retrieval)
+
+    def authorize_materialization(self, item: Any, ctx: Any) -> Any:
+        return dataclasses.replace(self.inner.authorize_materialization(item, ctx), **self.materialization)
+
+
+MALFORMED_AUTHORIZATION = [
+    ("permitted str", {"permitted": "no"}), ("permitted int", {"permitted": 1}),
+    ("denied list", {"denied_memory_item_ids": ["item-1"]}), ("denied int", {"denied_memory_item_ids": frozenset({1})}),
+    ("kinds list", {"memory_kinds": ["EPISODIC"]}), ("kinds str", {"memory_kinds": frozenset({"EPISODIC"})}),
+    ("scopes list", {"memory_scopes": ["PROJECT"]}),
+    ("bindings list", {"scope_bindings": [("project_id", "project-1")]}),
+    ("binding value str", {"scope_bindings": {"project_id": "xxproject-1xx"}}),
+    ("bundles list", {"policy_bundle_digests": ["x"]}), ("domains none", {"domains": None}),
+    ("purposes str", {"compatible_purposes": "mission-planning"}),
+    ("decision int", {"decision_ref": 7}), ("decision nan", {"decision_ref": NAN}), ("decision empty", {"decision_ref": ""}),
+]
+MALFORMED_DECISION = [
+    ("permitted str", {"permitted": "no"}), ("permitted int", {"permitted": 1}),
+    ("decision none", {"decision_ref": None}), ("decision inf", {"decision_ref": INF}), ("decision empty", {"decision_ref": ""}),
+]
+INVALID = ("CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID")
+
+
+def _search_world() -> t52.World:
+    world = t52.unit_world()
+    world.admit("item-1", "alpha bravo")
+    world.admit("item-2", "alpha charlie")
+    return world
+
+
+def _search(world: t52.World, mode: RetrievalMode = RetrievalMode.FULL_TEXT) -> Any:
+    return world.service().search(t52.request(mode, text="alpha bravo"), binding=t52.binding())
+
+
+def _search_denials(world: t52.World) -> list[tuple[str, str]]:
+    return [(str(e["reason_code"]), str(e["detail_code"])) for e in world.audit.events if e["action"] == "searchMemory.denied"]
+
+
+@pytest.mark.parametrize(("label", "fields"), MALFORMED_AUTHORIZATION, ids=[c[0] for c in MALFORMED_AUTHORIZATION])
+def test_ncr_memory_001_a_malformed_retrieval_authorization_fails_closed(label: str, fields: dict[str, Any]) -> None:
+    """SELF-CHECK-CHECKLIST point 2 (types before conversions): no field of the live decision is coerced or trusted."""
+
+    world = _search_world()
+    world.policy = _Twist(world.policy, retrieval=fields)  # type: ignore[assignment]
+    assert _code(lambda: _search(world)) == INVALID
+    assert _search_denials(world) == [INVALID]
+
+
+@pytest.mark.parametrize(("label", "fields"), MALFORMED_DECISION, ids=[c[0] for c in MALFORMED_DECISION])
+def test_ncr_memory_001_a_malformed_materialisation_decision_fails_closed(label: str, fields: dict[str, Any]) -> None:
+    world = _search_world()
+    world.policy = _Twist(world.policy, materialization=fields)  # type: ignore[assignment]
+    assert _code(lambda: _search(world)) == INVALID
+    assert _search_denials(world) == [INVALID]
+
+
+@pytest.mark.parametrize("mode", [RetrievalMode.FULL_TEXT, RetrievalMode.VECTOR])
+@pytest.mark.parametrize("score", [NAN, INF, -INF, "0.5", True, None], ids=["nan", "inf", "-inf", "str", "bool", "none"])
+def test_ncr_memory_001_an_index_hit_score_that_is_not_a_finite_number_fails_closed(mode: RetrievalMode, score: Any) -> None:
+    """SELF-CHECK-CHECKLIST point 2 (finite numbers): a NaN score never ranks first or zeroes the others."""
+
+    world = _search_world()
+    index = world.lexical if mode is RetrievalMode.FULL_TEXT else world.vector
+    inner = index.search_eligible
+
+    def scored(*args: Any, **kwargs: Any) -> list[IndexHit]:
+        return [dataclasses.replace(hit, score=score) for hit in inner(*args, **kwargs)]
+
+    index.search_eligible = scored  # type: ignore[method-assign]
+    assert _code(lambda: _search(world, mode)) == ("REPRESENTATION_NOT_READY", "PROJECTION_DRIFT")
+    assert _search_denials(world) == [("REPRESENTATION_NOT_READY", "PROJECTION_DRIFT")]
+
+
+def test_ncr_memory_001_unexpected_port_failures_and_answers_are_typed_and_audited() -> None:
+    world = _search_world()
+    inner_get = world.metadata.get
+    world.metadata.get = lambda *a: (_ for _ in ()).throw(RuntimeError("metadata store crashed"))  # type: ignore[method-assign]
+    assert _code(lambda: _search(world)) == ("INTERNAL_ERROR", "RETRIEVAL_UNAVAILABLE")
+    world.metadata.get = lambda *a: "row"  # type: ignore[method-assign]
+    assert _code(lambda: _search(world)) == ("INTERNAL_ERROR", "METADATA_INVALID")
+    world.metadata.get = inner_get  # type: ignore[method-assign]
+    world.metadata.head = lambda item_id: True  # type: ignore[method-assign]
+    assert _code(lambda: _search(world)) == ("INTERNAL_ERROR", "HEAD_INVALID")
+    assert _search_denials(world) == [
+        ("INTERNAL_ERROR", "RETRIEVAL_UNAVAILABLE"), ("INTERNAL_ERROR", "METADATA_INVALID"), ("INTERNAL_ERROR", "HEAD_INVALID"),
+    ]
+
+
+def _predicate(**changes: Any) -> EligibilityPredicate:
+    fields: dict[str, Any] = {"memory_kinds": frozenset({"EPISODIC"}), "memory_scopes": frozenset({"PROJECT"}),
+                              "valid_at": t52.NOW, "now": t52.NOW}
+    fields.update(changes)
+    return EligibilityPredicate(**fields)
+
+
+@pytest.mark.parametrize("changes", [
+    {"min_confidence": NAN}, {"min_confidence": INF}, {"min_confidence": True}, {"min_confidence": "0.5"}, {"min_confidence": 1.5},
+    {"memory_kinds": "EPISODIC"}, {"memory_scopes": ["PROJECT"]}, {"source_kinds": ["OBSERVATION"]},
+    {"content_schema_refs": frozenset({""})}, {"exclude_taint_labels": ["X"]}, {"excluded_memory_item_ids": frozenset({7})},
+], ids=lambda c: next(iter(c)) + ":" + repr(next(iter(c.values()))))
+def test_ncr_memory_001_an_eligibility_predicate_is_validated_at_construction(changes: dict[str, Any]) -> None:
+    assert _code(lambda: _predicate(**changes)) == ("MEMORY_SCHEMA_INVALID", "QUERY_INVALID")
+
+
+def test_ncr_memory_001_the_reference_predicate_never_raises_on_a_malformed_attribute_record() -> None:
+    world = t52.unit_world()
+    record = world.admit("item-1", "alpha bravo")
+    good = index_attributes(record.item)
+    predicate = _predicate(min_confidence=0.0, excluded_memory_item_ids=frozenset({"other"}))
+    assert predicate.accepts(good)
+    for name, value in (("memory_item_id", ["a"]), ("memory_kind", {}), ("taint_labels", [["x"]]), ("valid_from_us", False),
+                        ("confidence", True), ("confidence", NAN), ("lifecycle_status", None)):
+        assert predicate.accepts({**good, name: value}) is False, name
+    assert predicate.accepts(None) is False  # type: ignore[arg-type]
+    assert predicate.accepts(["not", "a", "mapping"]) is False  # type: ignore[arg-type]
+
+
+class _Response:
+    def __init__(self, status: int, raw: bytes) -> None:
+        self.status, self._raw = status, raw
+
+    def read(self) -> bytes:
+        return self._raw
+
+    def __enter__(self) -> _Response:
+        return self
+
+    def __exit__(self, *exc: object) -> bool:
+        return False
+
+
+@pytest.mark.parametrize(("label", "raw"), [
+    ("not json", b"<html>"), ("not utf-8", b"\xff\xfe\xfa"), ("nan token", b'{"x": NaN}'), ("infinity token", b'{"x": Infinity}'),
+    ("duplicate key", b'{"x": 1, "x": 2}'),
+], ids=lambda v: v if isinstance(v, str) else "")
+def test_ncr_memory_001_an_index_answer_that_is_not_strict_i_json_is_typed(monkeypatch: pytest.MonkeyPatch, label: str, raw: bytes) -> None:
+    monkeypatch.setattr(A.urllib.request, "urlopen", lambda request, timeout: _Response(200, raw))
+    assert _code(lambda: A._http("GET", "http://qdrant/collections")) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
+
+
+def test_ncr_memory_001_index_transport_failures_and_non_finite_requests_are_typed(monkeypatch: pytest.MonkeyPatch) -> None:
+    def down(request: Any, timeout: float) -> Any:
+        raise urllib.error.URLError("connection refused")
+
+    monkeypatch.setattr(A.urllib.request, "urlopen", down)
+    assert _code(lambda: A._http("GET", "http://qdrant/collections")) == ("REPRESENTATION_NOT_READY", "INDEX_UNAVAILABLE")
+    monkeypatch.setattr(A.urllib.request, "urlopen", lambda request, timeout: (_ for _ in ()).throw(TimeoutError("slow")))
+    assert _code(lambda: A._http("GET", "http://qdrant/collections")) == ("REPRESENTATION_NOT_READY", "INDEX_UNAVAILABLE")
+    assert _code(lambda: A._http("POST", "http://qdrant/x", {"query": [NAN]})) == ("MEMORY_SCHEMA_INVALID", "QUERY_INVALID")
+
+
+def _qdrant(status: int, data: Any) -> A.QdrantVectorIndex:
+    index = A.QdrantVectorIndex("http://qdrant", "ns")
+    index.collection = lambda partition, version: "c"  # type: ignore[method-assign]
+    index._call = lambda *args, **kwargs: (status, data)  # type: ignore[method-assign]
+    return index
+
+
+def test_ncr_memory_001_a_malformed_qdrant_answer_is_typed() -> None:
+    index = A.QdrantVectorIndex("http://qdrant", "ns")
+    pid = index.point_id("r")
+    point = {"id": pid, "payload": {"store_ref": "r", "pointer": {}}, "score": 0.5}
+    assert index._hits([point])[0].score == 0.5
+    for bad in ({"payload": {"store_ref": "r"}, "score": 0.1}, ["x"], {**point, "score": "abc"}, {**point, "score": True},
+                {**point, "score": NAN}, {k: v for k, v in point.items() if k != "score"}, {**point, "payload": [1]},
+                {**point, "id": True}):
+        assert _code(lambda bad=bad: index._hits([bad])) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID"), bad
+    part = object.__new__(MemoryPartition)
+    corrupt = ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
+    where = _predicate()
+    for data in ({"status": "ok"}, None, {"result": "x"}, {"result": {"points": "x"}}):
+        assert _code(lambda data=data: _qdrant(200, data).search_eligible(part, "v", [1.0], where=where, limit=1, offset=0)) == corrupt
+    assert _code(lambda: _qdrant(200, {"result": "x"}).score_entries(part, "v", [1.0], ["r"])) == corrupt
+    for data in ({"result": {"a": 1}}, {"result": ["x"]}):
+        assert _code(lambda data=data: _qdrant(200, data).read_back(part, "v", "r")) == corrupt
+    for data in ({"result": {"payload": None}}, {"result": {"payload": {"store_ref": "r"}}}):
+        assert _code(lambda data=data: _qdrant(200, data).get(part, "v", "r")) == corrupt
+    for count in (True, 3.9, "7", NAN, -1):
+        assert _code(lambda count=count: _qdrant(200, {"result": {"count": count}}).count(part, "v")) == corrupt
+    assert _code(lambda: _qdrant(200, {"result": {"collections": [{}]}}).collections()) == corrupt
+    assert _code(lambda: _qdrant(500, None).search_eligible(part, "v", [1.0], where=where, limit=1, offset=0)) == (
+        "REPRESENTATION_NOT_READY", "INDEX_UNAVAILABLE")
+
+
+def test_ncr_memory_001_the_qdrant_entry_scan_follows_every_page() -> None:
+    index = A.QdrantVectorIndex("http://qdrant", "ns")
+    index.collection = lambda partition, version: "c"  # type: ignore[method-assign]
+    pages = {None: (["a", "b"], "next"), "next": (["c"], None)}
+    seen: list[Any] = []
+
+    def call(method: str, path: str, body: Any = None) -> tuple[int, Any]:
+        seen.append(body.get("offset"))
+        refs, following = pages[body.get("offset")]
+        points = [{"id": index.point_id(r), "payload": {"store_ref": r, "pointer": {}}} for r in refs]
+        return 200, {"result": {"points": points, "next_page_offset": following}}
+
+    index._call = call  # type: ignore[method-assign]
+    assert [hit.store_ref for hit in index.entries(object.__new__(MemoryPartition), "v")] == ["a", "b", "c"]
+    assert seen == [None, "next"]
+
+
+class _Cursor:
+    def __init__(self, rows: list[Any]) -> None:
+        self.rows = rows
+
+    def fetchone(self) -> Any:
+        return self.rows[0] if self.rows else None
+
+    def fetchall(self) -> list[Any]:
+        return self.rows
+
+
+class _Connection:
+    def __init__(self, script: list[list[Any]]) -> None:
+        self.script = list(script)
+
+    def execute(self, sql: str, params: Any = None) -> _Cursor:
+        return _Cursor(self.script.pop(0) if self.script else [])
+
+    def transaction(self) -> _Connection:
+        return self
+
+    def __enter__(self) -> _Connection:
+        return self
+
+    def __exit__(self, *exc: object) -> bool:
+        return False
+
+
+def _pg(script: list[list[Any]]) -> A.PostgresStores:
+    stores = object.__new__(A.PostgresStores)
+    stores.dsn, stores.schema = "postgresql://scripted", "s"
+    stores.connect = lambda: _Connection(script)  # type: ignore[method-assign]
+    return stores
+
+
+def _lexical(script: list[list[Any]]) -> A.PostgresLexicalIndex:
+    index = A.PostgresLexicalIndex(_pg(script))
+    index.table = lambda partition, version: "lex_x"  # type: ignore[method-assign]
+    return index
+
+
+def test_ncr_memory_001_a_malformed_lexical_row_is_typed() -> None:
+    part = object.__new__(MemoryPartition)
+    corrupt = ("INTERNAL_ERROR", "POINTER_INVALID")
+    where = _predicate()
+    for payload in ("{bad", "[1, 2]", '{"deletion_epoch": NaN}', '{"a": 1, "a": 2}'):
+        assert _code(lambda p=payload: _lexical([[("simple",)], [("r", p, 0.5)]]).search(part, "v", "q", limit=1, offset=0)) == corrupt
+        assert _code(lambda p=payload: _lexical([[("simple",)], [("r", p, 0.5)]]).search_eligible(
+            part, "v", "q", where=where, limit=1, offset=0)) == corrupt
+        assert _code(lambda p=payload: _lexical([[("simple",)], [(p, "doc", True)]]).read_back(part, "v", "r")) == corrupt
+        assert _code(lambda p=payload: _lexical([[("simple",)], [("r", p)]]).entries(part, "v")) == corrupt
+        assert _code(lambda p=payload: _lexical([[("simple",)], [(p,)]]).get(part, "v", "r")) == corrupt
+    for score in (NAN, "0.5", True):
+        assert _code(lambda s=score: _lexical([[("simple",)], [("r", "{}", s)]]).search(part, "v", "q", limit=1, offset=0)) == corrupt
+
+
+def test_ncr_memory_001_query_inputs_that_cannot_reach_a_backend_are_refused() -> None:
+    world = t51.UnitWorld()
+    record, payload, vector = world.admission.admit("mem-p", "probe fixture text")
+    coordinator = world.coordinator()
+    coordinator.commit(record, payload=payload, embedding=vector)
+    part = t51.partition_of(record)
+    profile = VectorProfile.for_item(record.item)
+    invalid = ("MEMORY_SCHEMA_INVALID", "QUERY_INVALID")
+    for query in ("probe\x00fixture", "probe \ud800"):
+        assert _code(lambda q=query: coordinator.lexical_candidates(part, q, limit=1)) == invalid
+        assert _code(lambda q=query: coordinator.lexical_scores(part, q, [])) == invalid
+    assert _code(lambda: coordinator.vector_candidates(part, profile, [True, *vector[1:]], limit=1)) == invalid
+    assert _code(lambda: coordinator.vector_candidates(part, profile, [True, *vector], limit=1)) == invalid
+    assert _code(lambda: coordinator.vector_scores(part, profile, ["x"] * len(vector), [])) == invalid
+    assert _code(lambda: coordinator.vector_scores(part, profile, [True] * len(vector), [])) == invalid
+    # A hit whose payload is not an object is never a bound candidate (and never a raw error).
+    inner = world.lexical.search
+    for bad in ([1, 2], "ab", None):
+        world.lexical.search = lambda *a, bad=bad, **k: [IndexHit(h.store_ref, bad, h.score) for h in inner(*a, **k)]  # type: ignore[method-assign]
+        assert coordinator.lexical_candidates(part, "probe fixture", limit=1) == ()
+    world.lexical.search = lambda *a, **k: [object()]  # type: ignore[method-assign]
+    assert coordinator.lexical_candidates(part, "probe fixture", limit=1) == ()
+
+
+# -- NCR-MEMORY-002: admission ----------------------------------------------
+
+
+@pytest.mark.parametrize(("label", "fields"), MALFORMED_DECISION, ids=[c[0] for c in MALFORMED_DECISION])
+def test_ncr_memory_002_a_malformed_admission_decision_fails_closed_before_any_write(label: str, fields: dict[str, Any]) -> None:
+    world = t50.make_world()
+    inner = world.policy.authorize_admission
+    world.policy.authorize_admission = lambda item, ctx: dataclasses.replace(inner(item, ctx), **fields)  # type: ignore[method-assign]
+    assert _code(lambda: world.admit(t50.candidate())) == INVALID
+    assert world.ledger.latest_version("mem-1") == 0
+
+
+def test_ncr_memory_002_a_payload_that_is_not_strict_utf8_is_refused_before_any_write() -> None:
+    world = t50.make_world()
+    payload = b"observation \xff\xfe log"
+    content = t50.candidate(content_ref="content:" + t50.d(payload).removeprefix("urn:sha256:"), content_digest=t50.d(payload))
+    assert _code(lambda: world.admit(content, payload=payload)) == ("MEMORY_SCHEMA_INVALID", "PAYLOAD_INVALID")
+    assert world.ledger.latest_version("mem-1") == 0
+
+
+class _Serialization:
+    def __init__(self, *, exit_fail: bool = False, suppress: bool = False) -> None:
+        self.exit_fail, self.suppress, self.held = exit_fail, suppress, 0
+
+    @contextlib.contextmanager
+    def _plain(self) -> Iterator[None]:
+        self.held += 1
+        try:
+            yield
+        finally:
+            self.held -= 1
+            if self.exit_fail:
+                raise OSError("lease lost on release")
+
+    def hold(self, partition_digest: str) -> Any:
+        if not self.suppress:
+            return self._plain()
+        owner = self
+
+        class Suppressing:
+            def __enter__(self) -> None:
+                owner.held += 1
+
+            def __exit__(self, *exc: object) -> bool:
+                owner.held -= 1
+                return True
+
+        return Suppressing()
+
+
+def _quota_unit_world(serialization: Any, **limits: Any) -> tuple[t55.World, t52.Audit]:
+    from ocor_runtime.memory.operations import MemoryAdmissionQuota, MemoryOperationsLimits
+
+    world = t55.unit_world()
+    audit = t52.Audit()
+    horizons = {"retention:standard": timedelta(days=365)}
+    world.admission = MemoryAdmissionService(
+        ledger=world.ledger, resolver=t52.Resolver(), policy=t52.base.Policy(), markings=world.markings, clock=world.clock,
+        limits=AdmissionLimits(retention_horizons=horizons), audit=audit,
+        quota=MemoryAdmissionQuota(metadata=world.metadata, ledger=world.ledger,
+                                   limits=MemoryOperationsLimits(retention_horizons=horizons, **limits), serialization=serialization),
+    )
+    return world, audit
+
+
+def test_ncr_memory_002_the_quota_hold_never_turns_a_written_version_into_a_denial_nor_hides_a_failed_write() -> None:
+    serialization = _Serialization(exit_fail=True)
+    world, audit = _quota_unit_world(serialization)
+    assert _code(lambda: world.admit("z", t55.TEXT + " z", commit=False)) == ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_RELEASE_FAILED")
+    assert world.ledger.latest_version("z") == 1 and serialization.held == 0
+    assert [e for e in audit.events if str(e.get("action", "")).endswith(".denied")] == []
+    world, audit = _quota_unit_world(_Serialization(suppress=True))
+    world.ledger.append = lambda record: (_ for _ in ()).throw(OSError("ledger down"))  # type: ignore[method-assign]
+    assert _code(lambda: world.admit("y", t55.TEXT + " y", commit=False))[0] == "INTERNAL_ERROR"
+    assert world.ledger.latest_version("y") == 0
+
+
+def test_ncr_memory_002_admitted_versions_not_yet_committed_count_against_the_item_quota() -> None:
+    world, _ = _quota_unit_world(_Serialization(), max_items=1)
+    world.admit("p", t55.TEXT + " p", commit=False)
+    assert _code(lambda: world.admit("q", t55.TEXT + " q", commit=False)) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
+    assert world.ledger.latest_version("q") == 0
+
+
+def test_ncr_memory_002_quota_inventory_failure_and_invalid_operations_inputs_are_typed() -> None:
+    world, _ = _quota_unit_world(_Serialization())
+    world.metadata.versions_in = lambda digest: (_ for _ in ()).throw(ConnectionError("pg down"))  # type: ignore[method-assign]
+    assert _code(lambda: world.admit("y", t55.TEXT + " y", commit=False)) == ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE")
+    assert world.ledger.latest_version("y") == 0
+    for kwargs in ({"target_items": True, "limit": 1}, {"target_items": 0, "limit": True}, {"target_items": 0, "limit": NAN},
+                   {"target_items": INF, "limit": 1}, {"target_items": 0, "limit": 101}):
+        w = t55.unit_world()
+        partition = t59.seed(w)
+        service, _audit, _policy = t59.setup(w)
+        assert _code(lambda: t59.invoke(service, w, partition, "relieve_pressure", **kwargs))[1] == "PRESSURE_LIMIT_INVALID", kwargs
+    for demand in (None, {"new_items": 1}):
+        w = t55.unit_world()
+        partition = t59.seed(w)
+        service, _audit, _policy = t59.setup(w)
+        assert _code(lambda: t59.invoke(service, w, partition, "check_quota", demand=demand))[1] == "DEMAND_INVALID", demand
+
+
+# -- NCR-MEMORY-003: lifecycle ------------------------------------------------
+
+
+class _FaultyTombstones(L.InMemoryTombstoneStore):
+    def __init__(self, fail_at: int) -> None:
+        super().__init__()
+        self.appends, self.fail_at = 0, fail_at
+
+    def append(self, entry: Any) -> Any:
+        self.appends += 1
+        if self.appends == self.fail_at:
+            raise OSError("tombstone journal down")
+        return super().append(entry)
+
+
+def test_ncr_memory_003_a_scoped_deletion_stopped_halfway_names_every_member_left_and_its_replay_completes_it() -> None:
+    tombstones = _FaultyTombstones(fail_at=3)
+    world = t55.unit_world(tombstones=tombstones)
+    for name in "abc":
+        world.admit(name, t55.TEXT + " " + name)
+    with pytest.raises(MemoryAdmissionError) as caught:
+        world.delete("a", scope="PROJECT_SCOPE", op="scope-op")
+    error = caught.value
+    left = [name for name in "abc" if world.status(name) != "DELETED"]
+    assert left and getattr(error, "incomplete_memory_item_ids", None) == tuple(left)
+    assert all(name in str(error) for name in left)
+    denial = [e for e in world.lc_audit.events if e["action"] == "requestMemoryDeletion.denied"][-1]
+    assert denial["incomplete_memory_item_ids"] == list(left)
+    tombstones.fail_at = -1
+    receipt = world.delete("a", scope="PROJECT_SCOPE", op="scope-op")
+    assert receipt.to_mapping()["status"] == "COMPLETED"
+    assert {name: world.status(name) for name in "abc"} == dict.fromkeys("abc", "DELETED")
+
+
+def test_ncr_memory_003_a_bulk_scope_addressed_to_a_forgotten_item_changes_nothing() -> None:
+    world = t55.unit_world()
+    world.admit("a", t55.TEXT + " a")
+    world.admit("b", t55.TEXT + " b")
+    world.delete("a")
+    assert _code(lambda: world.delete("a", scope="PROJECT_SCOPE", op="again")) == ("LIFECYCLE_TRANSITION_INVALID", "TRANSITION_NOT_DECLARED")
+    assert world.status("b") == "ACTIVE"
+
+
+def test_ncr_memory_003_another_tenant_and_invisible_items_neither_block_nor_bound_a_scoped_deletion(monkeypatch: pytest.MonkeyPatch) -> None:
+    foreign = t52.context(compartments=("alpha", "bravo"), tenant="tenant-b")
+    world = t55.unit_world()
+    world.admit("mine", t55.TEXT)
+    world.admit("theirs", t55.TEXT + " b", ctx=foreign)
+    world.move("theirs", "REVOKED", ctx=foreign, op="shared-op")
+    assert world.delete("mine", scope="PROJECT_SCOPE", op="shared-op").lifecycle_status == "DELETED"
+    monkeypatch.setattr(L, "MAX_SCOPE_DELETION_ITEMS", 2)
+    world = t55.unit_world()
+    world.admit("mine", t55.TEXT)
+    world.admit("hidden-1", t55.TEXT + " h1", ctx=t55.OUTSIDER)
+    world.admit("hidden-2", t55.TEXT + " h2", ctx=t55.OUTSIDER)
+    assert world.delete("mine", scope="PRINCIPAL_SCOPE", op="p").lifecycle_status == "DELETED"
+    world = t55.unit_world()
+    for name in ("a", "b", "c"):
+        world.admit(name, t55.TEXT + " " + name)
+    assert _code(lambda: world.delete("a", scope="PROJECT_SCOPE", op="big")) == ("REPRESENTATION_NOT_READY", "DELETION_SCOPE_BACKPRESSURE")
+    assert {world.status(name) for name in "abc"} == {"ACTIVE"}
+
+
+def test_ncr_memory_003_scope_preconditions_refuse_the_whole_request_before_any_write() -> None:
+    world = t55.unit_world()
+    world.admit("run-item", t55.TEXT, scope="RUN", bindings={"agent_run_id": "run-1"})
+    assert _code(lambda: world.delete("run-item", scope="PROJECT_SCOPE")) == ("MEMORY_SCHEMA_INVALID", "DELETION_SCOPE_NOT_APPLICABLE")
+    world = t55.unit_world()
+    world.admit("a", t55.TEXT + " a")
+    world.admit("b", t55.TEXT + " b")
+    world.holds.place()
+    world.move("b", "LEGAL_HOLD", hold=t55.HOLD, reason="LITIGATION_HOLD")
+    epoch = world.tombstones.latest_epoch()
+    assert _code(lambda: world.delete("a", scope="PROJECT_SCOPE"))[0] == "LEGAL_HOLD_ACTIVE"
+    assert world.status("a") == "ACTIVE" and world.tombstones.latest_epoch() == epoch
+    world.holds.lift()
+    world.lc_policy.permitted = False
+    assert _code(lambda: world.delete("a", scope="PROJECT_SCOPE"))[0] == "POLICY_DENIED"
+    assert world.status("a") == "ACTIVE" and world.tombstones.latest_epoch() == epoch
+
+
+def test_ncr_memory_003_a_resumed_deletion_runs_the_verified_scope_only() -> None:
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT + " north")
+    world.admit("x", t55.TEXT + " north corrected", version=2)
+    inner = world.metadata.commit
+    state = {"fail": True}
+
+    def commit(*args: Any, **kwargs: Any) -> Any:
+        if state["fail"]:
+            state["fail"] = False
+            raise OSError("metadata down")
+        return inner(*args, **kwargs)
+
+    world.metadata.commit = commit  # type: ignore[method-assign]
+    with pytest.raises(MemoryAdmissionError):
+        world.delete("x", op="del-x")
+    slot = ("x", world.ledger.latest_version("x"))
+    record = world.ledger._versions[slot]
+    for tampered in ("LATEST_VERSION", 7):
+        event = {**record.lifecycle_event, "deletion_scope": tampered}
+        world.ledger._versions[slot] = dataclasses.replace(record, lifecycle_event=event)
+        assert _code(lambda: world.delete("x", op="del-x")) == ("INTERNAL_ERROR", "MEMORY_LEDGER_CORRUPTED"), tampered
+    world.ledger._versions[slot] = record
+    assert world.delete("x", op="del-x").lifecycle_status == "DELETED"
+
+
+def test_ncr_memory_003_latest_version_purges_the_head_content_even_when_an_earlier_version_shares_it() -> None:
+    world = t55.unit_world()
+    first = world.admit("x", t55.TEXT + " north")
+    world.move("x", "REVOKED")
+    receipt = world.delete("x", scope="LATEST_VERSION", op="forget-latest")
+    assert receipt.to_mapping()["status"] == "COMPLETED" and receipt.lifecycle_status == "DELETED"
+    assert not t55.content_present(world, first)
+
+
+def test_ncr_memory_003_malformed_lifecycle_port_answers_are_typed() -> None:
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    world.holds.place()
+    world.move("x", "LEGAL_HOLD", hold=t55.HOLD, reason="LITIGATION_HOLD")
+    world.holds.status = lambda ref, ctx: "active"  # type: ignore[method-assign]
+    assert _code(lambda: world.move("x", "ACTIVE", reason="HOLD_RELEASED")) == ("CONTROL_PLANE_UNAVAILABLE", "LEGAL_HOLD_REGISTRY_INVALID")
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    world.holds.place()
+    world.move("x", "LEGAL_HOLD", hold=t55.HOLD, reason="LITIGATION_HOLD")
+    world.holds.lift()
+    for epoch in (True, None, -1):
+        world.lc_stop.current_epoch = lambda ctx, epoch=epoch: epoch  # type: ignore[method-assign]
+        assert _code(lambda: world.move("x", "ACTIVE", reason="HOLD_RELEASED")) == ("CONTROL_PLANE_UNAVAILABLE", "STOP_STATE_INVALID"), epoch
+    world = t55.unit_world()
+    for limit in (True, 0, 1.5):
+        assert _code(lambda limit=limit: world.lifecycle.enforce_expiry(binding=t52.binding(), operation_id="e", limit=limit))[1] == "LIMIT_INVALID"
+
+
+# -- NCR-MEMORY-004: getMemoryItemVersion ---------------------------------------
+
+
+def _read_world() -> t52.World:
+    world = t52.unit_world()
+    world.admit("item-1", "alpha bravo")
+    world.policy = ReadGrantPolicy()
+    return world
+
+
+def _read(world: t52.World) -> Any:
+    return _reader(world).get_item_version("item-1", 1, binding=t52.binding())
+
+
+def _read_denials(world: t52.World) -> list[tuple[str, str]]:
+    return [(str(e["reason_code"]), str(e["detail_code"])) for e in world.audit.events if e["action"] == "getMemoryItemVersion.denied"]
+
+
+@pytest.mark.parametrize(("label", "fields"), MALFORMED_AUTHORIZATION, ids=[c[0] for c in MALFORMED_AUTHORIZATION])
+def test_ncr_memory_004_a_malformed_read_authorization_fails_closed(label: str, fields: dict[str, Any]) -> None:
+    world = _read_world()
+    world.policy = _Twist(world.policy, retrieval=fields)  # type: ignore[assignment]
+    assert _code(lambda: _read(world)) == INVALID
+    assert _read_denials(world) == [INVALID]
+
+
+@pytest.mark.parametrize(("label", "fields"), MALFORMED_DECISION, ids=[c[0] for c in MALFORMED_DECISION])
+def test_ncr_memory_004_a_malformed_read_materialisation_decision_fails_closed(label: str, fields: dict[str, Any]) -> None:
+    world = _read_world()
+    world.policy = _Twist(world.policy, materialization=fields)  # type: ignore[assignment]
+    assert _code(lambda: _read(world)) == INVALID
+    assert _read_denials(world) == [INVALID]
+
+
+def test_ncr_memory_004_port_failures_stale_policy_and_a_moving_stop_epoch_are_typed_and_audited() -> None:
+    world = _read_world()
+    world.metadata.get = lambda *a: "row"  # type: ignore[method-assign]
+    assert _code(lambda: _read(world)) == ("INTERNAL_ERROR", "METADATA_INVALID")
+    world = _read_world()
+    world.metadata.get = lambda *a: (_ for _ in ()).throw(RuntimeError("metadata store crashed"))  # type: ignore[method-assign]
+    assert _code(lambda: _read(world)) == ("INTERNAL_ERROR", "RETRIEVAL_UNAVAILABLE")
+    world = _read_world()
+    world.metadata.head = lambda item_id: 1.0  # type: ignore[method-assign]
+    assert _code(lambda: _read(world)) == ("INTERNAL_ERROR", "HEAD_INVALID")
+    world = _read_world()
+    world.policy.bundle = t52.base.d("old-bundle")
+    assert _code(lambda: _read(world)) == ("STALE_POLICY", "POLICY_BUNDLE_MISMATCH")
+    world = _read_world()
+    world.policy = _Twist(world.policy, materialization={"policy_bundle_digest": t52.base.d("old-bundle")})  # type: ignore[assignment]
+    assert _code(lambda: _read(world)) == ("STALE_POLICY", "POLICY_BUNDLE_MISMATCH")
+    world = _read_world()
+    world.stop.bump_after = 1
+    assert _code(lambda: _read(world)) == ("STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED")
+    assert _read_denials(world) == [("STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED")]
+
+
+# -- NCR-MEMORY-005: store coordinator and adapters --------------------------------
+
+
+def _store_world() -> tuple[Any, Any, Any, MemoryPartition, list[float]]:
+    world = t51.UnitWorld()
+    record, payload, vector = world.admission.admit("mem-p", "probe fixture text")
+    coordinator = world.coordinator()
+    coordinator.commit(record, payload=payload, embedding=vector)
+    return world, coordinator, record, t51.partition_of(record), list(vector)
+
+
+def test_ncr_memory_005_store_reads_and_rebuilds_validate_their_arguments_and_the_slot_returned() -> None:
+    world, coordinator, record, part, vector = _store_world()
+    item_id = record.item.memory_item_id
+    invalid = ("MEMORY_SCHEMA_INVALID", "QUERY_INVALID")
+    for args in ((part, item_id, True), (part, item_id, "1"), (part, item_id, 0), (part, "", 1), (part, None, 1), (None, item_id, 1)):
+        assert _code(lambda args=args: coordinator.read_version(*args)) == invalid, args
+        assert _code(lambda args=args: coordinator.rebuild_projections(*args, embedding=vector)) == invalid, args
+    other, other_payload, other_vector = world.admission.admit("mem-q", "other fixture text")
+    coordinator.commit(other, payload=other_payload, embedding=other_vector)
+    inner = world.metadata.get
+    world.metadata.get = lambda i, v: inner("mem-q", 1)  # type: ignore[method-assign]
+    assert _code(lambda: coordinator.read_version(part, item_id, 1)) == ("INTERNAL_ERROR", "METADATA_INVALID")
+    assert _code(lambda: coordinator.rebuild_projections(part, item_id, 1, embedding=other_vector)) == ("INTERNAL_ERROR", "METADATA_INVALID")
+
+
+@pytest.mark.parametrize("port", ["metadata.get", "metadata.head", "metadata.pointer", "lexical.read_back", "content.get", "metadata.versions_in"])
+def test_ncr_memory_005_a_store_port_failure_is_a_typed_refusal_on_every_read_and_rebuild_path(port: str) -> None:
+    world, coordinator, record, part, vector = _store_world()
+    owner, name = port.split(".")
+    setattr(getattr(world, owner), name, lambda *a, **k: (_ for _ in ()).throw(ConnectionError("backend down")))
+    item_id = record.item.memory_item_id
+    unavailable = ("REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE")
+    if port == "metadata.versions_in":
+        assert _code(lambda: coordinator.rebuild_partition(part, embed=lambda i, p: vector)) == unavailable
+        assert _code(lambda: coordinator.reconcile()) == unavailable
+        return
+    assert _code(lambda: coordinator.read_version(part, item_id, 1)) == unavailable
+    if port in ("metadata.get", "metadata.head"):
+        assert _code(lambda: coordinator.rebuild_projections(part, item_id, 1, embedding=vector)) == unavailable
+        assert _code(lambda: coordinator.read_latest(part, item_id)) == unavailable
+
+
+def test_ncr_memory_005_a_malformed_metadata_row_is_typed() -> None:
+    world, coordinator, record, part, vector = _store_world()
+    stored = world.metadata.get(record.item.memory_item_id, 1)
+    body = json.dumps(stored.staged.body())
+    staged_at = stored.staged.staged_at
+    corrupt = ("INTERNAL_ERROR", "METADATA_INVALID")
+    for row in (("{bad", staged_at, "COMMITTED", staged_at), ("[1]", staged_at, "COMMITTED", staged_at),
+                (body, staged_at, "WEIRD", staged_at), (body, staged_at, "COMMITTED", None), (body, staged_at, "COMMITTED", "yesterday"),
+                (body, "yesterday", "COMMITTED", staged_at), (body, staged_at, "PENDING", staged_at), (body.replace("}", ', "x": NaN}', 1), staged_at, "COMMITTED", staged_at)):
+        assert _code(lambda row=row: _pg([[row]]).get("mem-p", 1)) == corrupt, row
+    assert _pg([[(body, staged_at, "COMMITTED", staged_at)]]).get("mem-p", 1) is not None
+    for row in (("{bad", "COMMITTED"), ('{"a": 1}', "WEIRD")):
+        assert _code(lambda row=row: _pg([[row]]).pointer("r")) == ("INTERNAL_ERROR", "POINTER_INVALID")
+    assert _code(lambda: _pg([[("nope",)]]).partitions()) == ("INTERNAL_ERROR", "PARTITION_INVALID")
+    assert _code(lambda: _pg([[(True,)]]).head("mem-p")) == corrupt
+
+
+class _Bao:
+    def __init__(self, response: Any) -> None:
+        self.response = response
+
+    def call(self, method: str, path: str, body: Any = None) -> Any:
+        return self.response
+
+
+def test_ncr_memory_005_a_malformed_transit_answer_or_content_row_is_typed() -> None:
+    ctx = {"content_object_ref": "a", "partition_digest": "b", "content_digest": "c"}
+    corrupt = ("INTERNAL_ERROR", "CIPHER_ANSWER_INVALID")
+    for response in ({}, {"data": {"ciphertext": 5}}, None, {"data": {"ciphertext": "vault:v1:\udc80"}}):
+        assert _code(lambda r=response: A.OpenBaoTransitCipher(_Bao(r)).seal(context=ctx, plaintext=b"x")) == corrupt
+    key = "urn:ocor:memory-key:transit:memory-content"
+    for sealed, response in ((SealedContent(key, b"\xff"), {"data": {"plaintext": "eA=="}}),
+                             (SealedContent(key, b"v"), {"data": {"plaintext": "e!A=*="}}),
+                             (SealedContent(key, b"v"), {"data": {"plaintext": "e"}}),
+                             (SealedContent(key, b"v"), {"data": {}}),
+                             (SealedContent("urn:ocor:memory-key:transit:other", b"v"), {"data": {"plaintext": "eA=="}})):
+        assert _code(lambda s=sealed, r=response: A.OpenBaoTransitCipher(_Bao(r)).open(context=ctx, sealed=s)) == corrupt
+    assert A.OpenBaoTransitCipher(_Bao({"data": {"plaintext": "eA=="}})).open(context=ctx, sealed=SealedContent(key, b"v")) == b"x"
+    for row in ((5, b"x"), (key, "not bytes"), ("", b"x")):
+        assert _code(lambda row=row: A.PostgresContentStore(_pg([[row]])).get("r")) == ("INTERNAL_ERROR", "CONTENT_INVALID")
+
