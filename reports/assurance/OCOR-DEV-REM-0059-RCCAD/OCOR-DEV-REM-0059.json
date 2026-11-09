@@ -1609,6 +1609,59 @@
       "OpenBao client failures propagate unchanged from OpenBaoTransitCipher (OCOR-DEV-0051 asserts the RuntimeError of a foreign-context open); the coordinator types them as CONTENT_UNSEALABLE on read and STORE_COMMIT_INCOMPLETE on commit",
       "adapters raise the declared MemoryBackendUnavailable (a ConnectionError) for an unreachable backend or a failure status: the coordinator types it at the component boundary, so an index outage keeps STORE_COMMIT_INCOMPLETE on commit (OCOR-DEV-0051 vector outage)"
     ],
+    "cell_scan": {
+      "checks": "every row has file, function, paths and tests; every cell starts with PASS, FIXED or N/A; N/A has a reason of at least one sentence; on rows whose paths re-read stored, file, registry or process data an N/A of strict decoding, types or finite numbers needs a reason excluding external data (conservative keyword match, every hit reviewed); FIXED names the class in parentheses; every cited test is path::function and collected by pytest --collect-only at the scanned head",
+      "command": "python ~/.ocor-codex/rem-0059/iter9/cell_scan.py reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json ocor-runtime/.venv/bin/python (sha256 b01b28f56d17bcbd2a1a302c88f27156495bc5cd0939b7817630dc680cc6ce8d)",
+      "corrections": [
+        "rows 40 and 41: module-only test citations replaced by full path::function ids",
+        "rows 6, 11, 24, 28, 32 and 41: N/A cells on paths that re-read port, file or process data turned PASS with the row that checks the data",
+        "rows 4, 18, 19, 30, 31 and 40 (keyword hits): kept N/A after review -- exception translation (4), the caller's payload content scan (19) and in-process policy decisions or the admission's validated item (18, 30, 31, 40), no stored data re-read"
+      ],
+      "final_run": {
+        "cells": 288,
+        "cited_tests": 82,
+        "collected_cited": 82,
+        "counts": {
+          "FIXED": 72,
+          "N/A": 106,
+          "OTHER": 0,
+          "PASS": 110
+        },
+        "errors": [],
+        "output_sha256": "e3af2467a2c1b3420c2183bf2162ea837366daec4ec35ceee2fd168330329aa4",
+        "rows": 48
+      },
+      "first_run": {
+        "cells": 288,
+        "counts": {
+          "FIXED": 72,
+          "N/A": 114,
+          "OTHER": 0,
+          "PASS": 102
+        },
+        "errors": [
+          "row 4 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 4 types_before_conversions: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 6 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 11 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 11 types_before_conversions: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 18 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 28 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 30 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 31 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 32 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 32 types_before_conversions: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 40 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 40: test cited without its function: ocor-runtime/tests/tasks/test_ocor_dev_0051.py",
+          "row 40: test cited without its function: ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py",
+          "row 41 finite_numbers: N/A on a path that reads port/stored data without a reason that excludes external data",
+          "row 41: test cited without its function: reports/tests/test_rem0023_consumer_fixture_scope.py"
+        ],
+        "output_sha256": "f7133bfa0462d83f978e725203c632710c69753055a5ae10c191485f82289063",
+        "rows": 48
+      },
+      "rule": "SELF-CHECK-CELL-SCAN (2026-11-09) (automatic process improvement installed 2026-11-09 19:21; by MIGLIORIE-AUTOMATICHE-DECORRENZA-ITERAZIONE (2026-11-09) point 1 it is not in force for iteration 9, started at 19:19:43, and applies from the next iteration; applied voluntarily before the verification request)"
+    },
     "columns": {
       "boundary_digests": "digests, signatures and bindings recomputed at the boundary",
       "complete_normative_records": "normative records complete through the kernel codec",
@@ -1913,7 +1966,7 @@
         "checks": {
           "boundary_digests": "PASS (the policy_bundle_digest of the read and materialisation decisions must equal the authenticated GCS's; a stale bundle is refused)",
           "complete_normative_records": "PASS (read receipt with authorization, materialisation and stop epoch, audit_ref canonical digest)",
-          "finite_numbers": "N/A: the only number, the stop epoch, is a non-bool int checked under types, and an int is always finite",
+          "finite_numbers": "PASS (the only number re-read, the stop epoch, is a non-bool, non-negative int checked under types before use; an int is always finite)",
           "processes_and_resources": "N/A: the path opens no process, pipe, connection, transaction or file; the policy and stop ports answer in-process and their exceptions are typed in row 3",
           "strict_decoding": "N/A: nothing is decoded here: the policy or stop-state port answers an in-process Python object, never bytes, a file, a log or process output; its fields are checked under types",
           "types_before_conversions": "PASS"
@@ -1996,10 +2049,10 @@
         "checks": {
           "boundary_digests": "N/A: the wrapper maps an exception and reads no answer, so no digest or binding reaches it",
           "complete_normative_records": "N/A: the wrapper builds only the typed refusal",
-          "finite_numbers": "N/A: an exception carries no value the wrapper reads, compares or hashes",
+          "finite_numbers": "PASS (the wrapper reads no value; numbers of the answers are checked where they are read: rows 10, 14-16 and 45)",
           "processes_and_resources": "FIXED (raw ConnectionError/TimeoutError/OSError/RuntimeError escaped; now REPRESENTATION_NOT_READY/STORE_UNAVAILABLE; the commit path keeps the backend failure, completed by its replay)",
           "strict_decoding": "N/A: nothing is decoded by the wrapper; every decoding and parse error a port raises (UnicodeDecodeError, JSONDecodeError, RecursionError, ValueError, psycopg.DataError) is an Exception and becomes STORE_UNAVAILABLE",
-          "types_before_conversions": "N/A: the wrapper reads no field; every exception class is mapped (MemoryAdmissionError re-raised typed, any other Exception typed)"
+          "types_before_conversions": "PASS (the wrapper reads no field of an answer and maps every exception class; the answers it returns are type-checked by _require_slot/_stored_slot (row 10) and the shared metadata validators (row 45))"
         },
         "file": "ocor-runtime/src/ocor_runtime/memory/stores.py",
         "function": "MemoryStoreCoordinator read, scoring, rebuild and reconciliation paths (_typed_port_failures)",
@@ -2224,7 +2277,7 @@
         "checks": {
           "boundary_digests": "N/A: membership is read, not received with a digest; the recorded set is bound on replay (row 32)",
           "complete_normative_records": "N/A: the path returns item identifiers, not records the norm defines; each stored item is verified by staged.verify() (row 11)",
-          "finite_numbers": "N/A: no numeric field is read beyond versions, non-bool ints checked under types",
+          "finite_numbers": "PASS (the only numbers re-read are versions, non-bool, non-negative ints checked by the shared validators before use, row 44)",
           "processes_and_resources": "N/A: the path opens no process, pipe, connection, transaction or file; metadata and ledger port exceptions are typed in row 31",
           "strict_decoding": "PASS (re-read data: the stored bytes are decoded strictly where they are read, PostgresStores._row and _strict_json (row 15): a bytes column, invalid UTF-8, an escaped lone surrogate or a nesting beyond the parser limit is METADATA_INVALID, a driver decoding error is STORE_UNAVAILABLE (row 10); this path receives typed objects only)",
           "types_before_conversions": "FIXED (another tenant's operation_id refused the caller's request and revealed it; invisible items counted against MAX_SCOPE_DELETION_ITEMS)"
@@ -2292,7 +2345,7 @@
         "checks": {
           "boundary_digests": "N/A: the hold, stop and sweep answers carry no digest the contract defines",
           "complete_normative_records": "N/A: the answers are port values (status, epoch, limit), not records the norm defines",
-          "finite_numbers": "N/A: the stop epoch and the sweep limit are non-bool ints checked under types; an int is always finite",
+          "finite_numbers": "PASS (the stop epoch and the sweep limit are non-bool ints checked under types before use; an int is always finite)",
           "processes_and_resources": "PASS (an unreadable legal hold registry is CONTROL_PLANE_UNAVAILABLE/LEGAL_HOLD_REGISTRY_UNAVAILABLE; the ports open nothing in the coordinator)",
           "strict_decoding": "N/A: nothing is decoded here: the hold registry, stop-state or limit port answers an in-process Python object, never bytes, a file, a log or process output; its fields are checked under types",
           "types_before_conversions": "FIXED (a negative stop epoch was accepted); PASS (hold status and sweep limit already typed)"
@@ -2361,10 +2414,10 @@
         "checks": {
           "boundary_digests": "N/A: the wrapper maps an exception and reads no answer",
           "complete_normative_records": "N/A: the wrapper builds only the typed refusal and its denial audit",
-          "finite_numbers": "N/A: an exception carries no value the wrapper reads",
+          "finite_numbers": "PASS (the wrapper reads no value; heads, versions and epochs of the answers are non-bool, non-negative ints checked by the shared validators, row 44)",
           "processes_and_resources": "FIXED P5 (raw ConnectionError, no denial audit)",
           "strict_decoding": "PASS (re-read data: the stored bytes are decoded strictly where they are read, PostgresStores._row and _strict_json (row 15): a bytes column, invalid UTF-8, an escaped lone surrogate or a nesting beyond the parser limit is METADATA_INVALID, a driver decoding error is STORE_UNAVAILABLE (row 10); this path receives typed objects only)",
-          "types_before_conversions": "N/A: the wrapper reads no field; every exception class of the metadata and ledger ports is mapped"
+          "types_before_conversions": "PASS (the wrapper maps every exception class of the metadata and ledger ports; since the preventive review P2 the answers it returns are validated inside the wrapped reads by the shared validators, row 44)"
         },
         "file": "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
         "function": "MemoryLifecycleCoordinator._port (_committed_head, _scope_members, _recorded_members)",
@@ -2521,15 +2574,16 @@
         "paths": "test port composed in the admission-only sealed worlds; receives the candidate item and payload from MemoryAdmissionService",
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_0050.py::test_same_idempotency_key_revalidates_the_current_content_registry",
-          "ocor-runtime/tests/tasks/test_ocor_dev_0051.py",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py"
+          "ocor-runtime/tests/tasks/test_ocor_dev_0051.py::test_partition_is_canonical_and_binds_the_scope_owner",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_store_reads_and_rebuilds_validate_their_arguments_and_the_slot_returned",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py::test_consumer_fixture_scope_and_durable_sink"
         ]
       },
       {
         "checks": {
           "boundary_digests": "PASS (the authorised quota argument is compared byte for byte with the fixed text; every other node of the protected functions is compared with the baseline by ast.dump)",
           "complete_normative_records": "N/A: the guard builds no record the norm defines; it compares syntax trees",
-          "finite_numbers": "N/A: no number is read; the guard compares source text and syntax trees",
+          "finite_numbers": "PASS (the git output and the files are parsed as Python source only: no number is parsed or converted; the guard compares source text and syntax trees)",
           "processes_and_resources": "PASS (fail closed: a git show failure, a non-zero exit or the 15 s timeout raises in the guard test and fails it; subprocess.check_output waits for and reaps the process on every path)",
           "strict_decoding": "PASS (fail closed: the git output and the files are decoded as text with the strict error handler; an undecodable byte raises UnicodeDecodeError and fails the guard test)",
           "types_before_conversions": "PASS (a quota keyword that is missing, duplicated, of another text, or an argument added or changed next to it fails the guard: five negative mutations)"
@@ -2538,7 +2592,8 @@
         "function": "baseline, strip_quota_port, compare (REM-0023 consumer guard)",
         "paths": "git show of the sealed baseline and the working-tree text of 0054/0055, parsed with ast",
         "tests": [
-          "reports/tests/test_rem0023_consumer_fixture_scope.py"
+          "reports/tests/test_rem0023_consumer_fixture_scope.py::ConsumerFixtureScope::test_exact_allowed_fixture_diff_and_required_wiring",
+          "reports/tests/test_rem0023_consumer_fixture_scope.py::ConsumerFixtureScope::test_guard_rejects_any_protected_or_unrelated_change"
         ]
       },
       {
