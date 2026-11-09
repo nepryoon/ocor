@@ -1,6 +1,6 @@
 # NCP-U11-ADMISSION-QUOTA-WORLDS
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0059`
+Status: `DECIDED_BY_PO` (era `OPEN_PO_NORMATIVE_DECISION_REQUIRED`). Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0059`
 (NCP-U11 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, memoria governata; branch
 `governed/ocor-dev-rem-0059-ncp-u11-governed-memory`, head `89867abfa7e6afdcd919efcb31a1192d43bc9016`), il ciclo di
 riparazione 1 del verdetto `OCOR-DEV-REM-0059-3425a01a39c1-0` (finding `VF-001`) e la voce `NCR-MEMORY-002` di
@@ -105,3 +105,16 @@ precedente non descriveva, e moltiplica per sei il tempo dei consumatori.
   input.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, registri normativi, limiti e claim invariati
   (`E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-09
+
+Decisione del PO su delega completa: `NCP-U11-ADMISSION-QUOTA-WORLDS (2026-11-09)`, **opzione 1**, come descritta in questo file al commit `557af40bd300321ad60951f2dfaee058bddb369b` (sha256 `1e069a58718f19f02edd78112f25b0ce972edb3bde8368b461713ecc31e67cae`, verificata prima dell'attuazione); decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U11-ADMISSION-QUOTA-WORLDS (2026-11-09) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U11-ADMISSION-QUOTA-WORLDS` (branch `governed/decision-request-ncp-u11-admission-quota-worlds`, commit `557af40bd300321ad60951f2dfaee058bddb369b`, file `reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-WORLDS.md`, sha256 `1e069a58718f19f02edd78112f25b0ce972edb3bde8368b461713ecc31e67cae`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
