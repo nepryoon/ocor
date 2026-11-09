@@ -1,6 +1,6 @@
 # NCP-U11-ADMISSION-QUOTA-COMPOSITION
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0059`
+Status: `DECIDED_BY_PO` (era `OPEN_PO_NORMATIVE_DECISION_REQUIRED`). Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0059`
 (NCP-U11 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, memoria governata; branch
 `governed/ocor-dev-rem-0059-ncp-u11-governed-memory`, candidato `3425a01a39c11780628ad3df513e9bf21a525427`) e la
 voce `NCR-MEMORY-002` di `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json`. Aperta secondo il punto 2 della
@@ -108,3 +108,16 @@ negativi. B1 evita uno stop prevedibile: il ciclo di riparazione richiede tre it
   REM-0023 vi sono già), salvo quanto l'inventario sull'head finale aggiunge.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, registri normativi, limiti e claim invariati
   (`E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-09
+
+Decisione normativa del PO: `NCP-U11-ADMISSION-QUOTA-COMPOSITION (2026-11-09)`, **opzioni A1 e B1**, come raccomandate e descritte in questo file al commit `f5f18e1581397b37601ee3f8b91cd5f666c56a86` (sha256 `38be32056d58182f7f85f6f74bcd4d56da14ffae91d8fb2ac1e127179fff2a41`, verificata prima dell'attuazione). Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U11-ADMISSION-QUOTA-COMPOSITION (2026-11-09) — decisione normativa del PO
+
+Decisione **di livello normativo**, presa dal PO con istruzione esplicita il 2026-11-09. Il PO risolve la decision request `NCP-U11-ADMISSION-QUOTA-COMPOSITION` (branch `governed/decision-request-ncp-u11-admission-quota-composition`, commit `f5f18e1581397b37601ee3f8b91cd5f666c56a86`, file `reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-COMPOSITION.md`, sha256 `38be32056d58182f7f85f6f74bcd4d56da14ffae91d8fb2ac1e127179fff2a41`, draft PR #563) con le **opzioni A1 e B1**, come raccomandate e descritte in quel file a quel commit, senza condizioni aggiuntive. Il commit `f5f18e1581397b37601ee3f8b91cd5f666c56a86` riporta lo stesso contenuto del commit `a62a0d532410371ccec94e607c139212bc708af4` (sha256 `2acc58f2443ce228813329c1d1cd5415ca3961ea92d8983e830f6f5cec95bb48`), con il formato delle opzioni corretto: dove i due testi differiscono vale quello del commit `f5f18e1581397b37601ee3f8b91cd5f666c56a86`.
+
+1. **Opzione A1.** Attua l'opzione A1 esattamente come la descrive il file: `admitMemory` rifiuta prima di qualsiasi scrittura quando l'autorità di quota manca o non è valida; `MemoryAdmissionQuota` reale nei mondi sigillati di 0051, 0052, 0054 e 0055, sul loro metadata store e ledger, con limiti non inferiori alla domanda di ogni mondo e nessun esito esistente cambiato; port di quota di test esplicito nei mondi di sola ammissione di 0050 e REM-0023, senza nuovi backend; adattamenti del caso 3 del punto 5 del piano, registrati con il confronto dell'albero sintattico; estensione del guard REM-0023 per 0054 e 0055 limitata ai testi fissati, con i casi negativi descritti. Dove questo riassunto e il file differiscono, vale il file. Ciò che l'opzione non descrive resta da decidere: fermati e apri una nuova decision request invece di estenderla.
+2. **Opzione B1.** Per `OCOR-DEV-REM-0059` (NCP-U11) sono autorizzate fino a quattro iterazioni oltre la nona (dalla decima alla tredicesima), solo per il ciclo di riparazione 1 del verdetto `OCOR-DEV-REM-0059-3425a01a39c1-0` e, se una verifica `NO_GO` lo richiede, per il ciclo di riparazione 2. Restano lo stop anticipato per due iterazioni consecutive senza avanzamento (punto 2 di `NCP-THROUGHPUT-RULES (2026-11-05)`) e il massimo di due cicli di riparazione. Se le iterazioni finiscono senza merge, l'unità si ferma e apre una decision request di livello normativo con lo stato del lavoro.
+3. **Registrazione.** Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione; `evidence` aggiornato al commit `f5f18e1581397b37601ee3f8b91cd5f666c56a86` e al suo sha256, con i valori completi come chiede `STATE-REGISTRY-FULL-COMMIT (2026-11-06)`) e nell'`ITERATION_LOG.md`, secondo la prassi e l'allowlist vigenti; chiudi la draft PR come risolta, come per le decisioni precedenti dell'unità. Negli state sync indica «iterazione N di stima 3, estensione fino alla tredicesima».
+4. Nessun nuovo `DEC-*`. Oltre a quanto descrivono le opzioni A1 e B1, nessun test, guard, limite di tempo, soglia, workflow, contratto, schema o registro normativo cambia. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
