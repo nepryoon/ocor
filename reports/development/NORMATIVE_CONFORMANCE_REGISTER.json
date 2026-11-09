@@ -5490,16 +5490,35 @@
       ],
       "plan_unit": "NCP-U11",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+      "remediation_unit": "OCOR-DEV-REM-0059",
       "requirement_ids": [
         "FR-119"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_a_malformed_retrieval_authorization_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_a_malformed_materialisation_decision_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_an_index_hit_score_that_is_not_a_finite_number_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_unexpected_port_failures_and_answers_are_typed_and_audited",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_an_eligibility_predicate_is_validated_at_construction",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_the_reference_predicate_never_raises_on_a_malformed_attribute_record",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_an_index_answer_that_is_not_strict_i_json_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_index_transport_failures_and_non_finite_requests_are_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_a_malformed_qdrant_answer_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_the_qdrant_entry_scan_follows_every_page",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_a_malformed_lexical_row_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_query_inputs_that_cannot_reach_a_backend_are_refused"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_001_conforms"
+      },
       "seed_ref": "M-1",
       "severity": "HIGH",
       "severity_basis": "FR-119 is P0 PoC",
       "statement": "Index-backed retrieval (FULL_TEXT, VECTOR, HYBRID) drops policy-denied hits only after the index query: the denied hits still fill the page, so _index_pool widens the page (more index lookups) and, past the max_candidates bound, fails with REPRESENTATION_NOT_READY/RETRIEVAL_BACKPRESSURE. Unauthorised items inside an authorised partition therefore change the work done and the error returned. A sealed test pins the divergent outcome (130 denied items produce RETRIEVAL_BACKPRESSURE and 15 lookups).",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
@@ -5561,14 +5580,27 @@
       ],
       "plan_unit": "NCP-U11",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+      "remediation_unit": "OCOR-DEV-REM-0059",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_an_unavailable_quota_authority_refuses_and_writes_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_consolidation_output_is_counted_against_quota_at_admission",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_a_malformed_admission_decision_fails_closed_before_any_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_a_payload_that_is_not_strict_utf8_is_refused_before_any_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_the_quota_hold_never_turns_a_written_version_into_a_denial_nor_hides_a_failed_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_quota_inventory_failure_and_invalid_operations_inputs_are_typed"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_002_admit_memory_verifies_quota_before_the_atomic_write"
+      },
       "seed_ref": "M-2",
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a72.8.2; no P0 PoC requirement names memory quota",
       "statement": "admitMemory does not check quota: MemoryAdmissionService.admit contains no quota check, which exists only in the separate MemoryQuotaWriter port; the consolidation service admits derived items through MemoryAdmissionService.admit and commits them through the store coordinator directly, bypassing the quota-bearing writer, so consolidation output is never counted against quota at admission.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "DIVERGENT",
       "verification": {
@@ -5626,17 +5658,32 @@
       ],
       "plan_unit": "NCP-U11",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+      "remediation_unit": "OCOR-DEV-REM-0059",
       "requirement_ids": [
         "FR-118"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_bulk_scopes_forget_every_visible_item_of_the_scope",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_a_scoped_deletion_stopped_halfway_names_every_member_left_and_its_replay_completes_it",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_a_bulk_scope_addressed_to_a_forgotten_item_changes_nothing",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_another_tenant_and_invisible_items_neither_block_nor_bound_a_scoped_deletion",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_scope_preconditions_refuse_the_whole_request_before_any_write",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_a_resumed_deletion_runs_the_verified_scope_only",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_latest_version_purges_the_head_content_even_when_an_earlier_version_shares_it",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_malformed_lifecycle_port_answers_are_typed"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_003_latest_version_forgets_only_the_head_version"
+      },
       "seed_correction": "severity raised from MEDIUM to HIGH by the point 4.b rule (contract of LLD v1.1 \u00a70.2)",
       "seed_ref": "M-3",
       "severity": "HIGH",
       "severity_basis": "violates the Governed Memory API contract of LLD v1.1 \u00a70.2; FR-118 is P0 PoC",
       "statement": "requestMemoryDeletion accepts the four deletion_scope values of the Governed Memory API (LATEST_VERSION, ALL_VERSIONS, PROJECT_SCOPE, PRINCIPAL_SCOPE) but executes only ALL_VERSIONS: the other three are refused with UNSUPPORTED_CAPABILITY/DELETION_SCOPE_UNSUPPORTED, although the contract declares them and UNSUPPORTED_CAPABILITY is reserved for undeclared capability combinations. A sealed test pins the refusal.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "f5433029b97b1ebf16c0744a5ae7b122c9de4d5f",
@@ -5696,17 +5743,27 @@
       ],
       "plan_unit": "NCP-U11",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+      "remediation_unit": "OCOR-DEV-REM-0059",
       "requirement_ids": [
         "FR-119"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_004_a_malformed_read_authorization_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_004_a_malformed_read_materialisation_decision_fails_closed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_004_port_failures_stale_policy_and_a_moving_stop_epoch_are_typed_and_audited"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_004_conforms"
+      },
       "seed_correction": "severity raised from MEDIUM to HIGH by the point 4.b rule (contract of LLD v1.1 \u00a70.2)",
       "seed_ref": "M-4",
       "severity": "HIGH",
       "severity_basis": "violates the Governed Memory API contract of LLD v1.1 \u00a70.2; FR-119 is P0 PoC",
       "statement": "The contract operation getMemoryItemVersion has no service implementation: no governed operation binds a GovernedContext, evaluates policy, marking and lifecycle and audits the read; only the internal store read MemoryStoreCoordinator.read_version(partition, memory_item_id, memory_version) exists, which checks the partition digest and nothing about the caller.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
@@ -5766,15 +5823,28 @@
       ],
       "plan_unit": "NCP-U11",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+      "remediation_unit": "OCOR-DEV-REM-0059",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_a_lost_partition_index_is_rebuilt_and_superseded_versions_stay_retired",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_a_deleted_item_is_never_resurrected_by_a_rebuild",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_store_reads_and_rebuilds_validate_their_arguments_and_the_slot_returned",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_a_store_port_failure_is_a_typed_refusal_on_every_read_and_rebuild_path",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_a_malformed_metadata_row_is_typed",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_a_malformed_transit_answer_or_content_row_is_typed"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py::test_ncr_memory_005_a_lost_or_drifted_projection_is_rebuilt_from_metadata_content_and_journal"
+      },
       "seed_correction": "the parallel vector representation rebuild of embeddings.py exists; the divergence is the rebuild of lost or drifted committed projections",
       "seed_ref": "M-5",
       "severity": "MEDIUM",
       "severity_basis": "closed element of ADD v1.3 Part II \u00a72.2; no P0 PoC requirement or contract names projection rebuild",
       "statement": "Committed full-text and vector projections cannot be rebuilt from metadata and content: the lexical index is written only inside the commit path (_commit/_write_projection); a replayed commit of a COMMITTED version returns without re-projecting; read_version fails with PROJECTION_DRIFT on an unbound projection, and the embedding rebuild (a parallel representation version for model upgrades) reads through read_version, so it too needs the original projections intact. Corrected scope: a parallel vector rebuild exists; a rebuild after a lost or drifted projection does not.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [],
       "type": "MISSING",
       "verification": {
