@@ -1825,3 +1825,214 @@ def test_ncr_memory_001_postgres_connections_are_released_on_every_exit() -> Non
             with pytest.raises(Exception):
                 action()
         assert ledger.count("enter") == ledger.count("exit") and ledger[-1] == "exit", (fail, ledger)
+
+
+# -- Preventive review OCOR-DEV-REM-0059-5a5d301bbdf1-pre (repair cycle 1) ------------------------------------------
+
+NON_ASCII_DIGESTS = ("é", "urn:sha256:" + "0" * 63 + "é", "urn:sha256:" + "٠" * 64)
+MALFORMED_DIGESTS = (*NON_ASCII_DIGESTS, "", "urn:sha256:" + "G" * 64, "urn:sha256:" + "A" * 64, "urn:sha256:" + "0" * 63, "sha256:" + "0" * 64)
+
+
+def test_prereview_p1_a_journal_digest_that_is_not_an_ascii_sha256_urn_is_refused_on_every_re_read(tmp_path: Any) -> None:
+    """P1: entry_digest and prev are checked as sha256 URNs before any comparison (open, records() and append catch-up)."""
+
+    from ocor_runtime.memory.model import JournalMemoryVersionLedger, MemoryLedgerCorrupted
+
+    path = tmp_path / "versions.jsonl"
+    t50.make_world(JournalMemoryVersionLedger(path)).admit(t50.candidate())
+    entry = _journal_entry(path)
+    from ocor_runtime.kernel.canonical import canonical_bytes
+
+    for field in ("entry_digest", "prev"):
+        for digest in MALFORMED_DIGESTS:
+            path.write_bytes(canonical_bytes(dict(entry, **{field: digest})) + b"\n")
+            with pytest.raises(MemoryLedgerCorrupted) as caught:
+                JournalMemoryVersionLedger(path)
+            assert caught.value.detail_code == "MEMORY_LEDGER_CORRUPTED", (field, digest)
+    # A foreign line with a non-ASCII digest is refused by records() and by the catch-up of append().
+    for reader in ("records", "append"):
+        path.write_bytes(canonical_bytes(entry) + b"\n")
+        reopened = JournalMemoryVersionLedger(path)
+        record = reopened.records()[0]
+        with path.open("ab") as handle:
+            handle.write(canonical_bytes(dict(entry, seq=2, prev=entry["entry_digest"], entry_digest="é")) + b"\n")
+        with pytest.raises(MemoryLedgerCorrupted):
+            reopened.records() if reader == "records" else reopened.append(record)
+
+
+@pytest.mark.parametrize(("path", "value"), [
+    (("item_digest",), "é"), (("item_digest",), 7), (("item_digest",), None), (("item_digest",), "urn:sha256:" + "G" * 64),
+    (("receipt", "audit_ref"), "é"), (("receipt", "audit_ref"), 7), (("receipt", "content_digest"), 7),
+    (("receipt", "memory_version"), "1"), (("receipt", "memory_version"), True), (("receipt", "memory_version"), 1.0),
+    (("receipt", "memory_item_id"), 7), (("receipt", "lifecycle_status"), None), (("receipt", "governed_context_digest"), 7),
+], ids=lambda v: repr(v))
+def test_prereview_p1_a_self_consistent_journal_record_with_malformed_digest_or_receipt_fields_is_refused(tmp_path: Any, path: tuple[str, ...], value: Any) -> None:
+    """P1 twin (record re-read): digest and receipt fields are type-checked before conversion or comparison."""
+
+    from ocor_runtime.memory.model import JournalMemoryVersionLedger, MemoryLedgerCorrupted
+
+    journal = tmp_path / "versions.jsonl"
+    t50.make_world(JournalMemoryVersionLedger(journal)).admit(t50.candidate())
+    entry = _journal_entry(journal)
+    record = json.loads(json.dumps(entry["record"]))
+    target = record
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    _write_entry(journal, dict(entry, record=record))
+    with pytest.raises(MemoryLedgerCorrupted):
+        JournalMemoryVersionLedger(journal)
+
+
+def test_prereview_p1_twin_the_tombstone_journal_checks_its_chain_fields_and_every_parse_error(tmp_path: Any) -> None:
+    """P1 twin (tombstone journal): a boolean sequence, a malformed digest and every parse error are TombstoneCorrupted."""
+
+    from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest
+
+    path = tmp_path / "tombstones.jsonl"
+    L.JournalTombstoneStore(path).append(t55._entry("a", 1, "STARTED"))
+    line = path.read_bytes().rstrip(b"\n")
+    chained = json.loads(line)
+
+    def rechain(**fields: Any) -> bytes:
+        body = {"seq": chained["seq"], "prev": chained["prev"], "entry": chained["entry"], **fields}
+        return canonical_bytes(dict(body, entry_digest=canonical_digest(body)))
+
+    variants = [rechain(seq=True), rechain(seq="1"), rechain(seq=1.0), rechain(prev=7),
+                *(canonical_bytes(dict(chained, entry_digest=d)) for d in MALFORMED_DIGESTS),
+                canonical_bytes(dict(chained, entry_digest=7)), canonical_bytes(dict(chained, entry_digest=None)),
+                *(canonical_bytes(dict(chained, prev=d)) for d in NON_ASCII_DIGESTS),
+                b"[" * 100_000 + b"]" * 100_000, b'{"seq":' + b"[" * 100_000 + b"]" * 100_000 + b"}",
+                line[:-1] + b"\xff}", b"[]"]
+    for variant in variants:
+        path.write_bytes(variant + b"\n")
+        with pytest.raises(L.TombstoneCorrupted):
+            L.JournalTombstoneStore(path)
+
+
+def _patched(obj: Any, name: str, answer: Any) -> Any:
+    original = getattr(obj, name)
+    setattr(obj, name, lambda *args, value=answer: value)
+    return original
+
+
+BAD_SEQUENCES = ([None], [{}], ["x"], None, "x", 5, {"a": 1})
+BAD_COUNTS = (True, False, 1.0, "1", None, -1, [1])
+BAD_RECORDS = ({}, "x", 1, True)
+
+
+@pytest.mark.parametrize(("owner", "port", "scope", "answers"), [
+    ("metadata", "partitions", "PROJECT_SCOPE", BAD_SEQUENCES),
+    ("metadata", "versions_in", "PROJECT_SCOPE", BAD_SEQUENCES),
+    ("metadata", "head", "PROJECT_SCOPE", BAD_COUNTS),
+    ("metadata", "head", "ALL_VERSIONS", BAD_COUNTS),
+    ("ledger", "latest_version", "ALL_VERSIONS", BAD_COUNTS),
+    ("ledger", "latest_version", "PROJECT_SCOPE", BAD_COUNTS),
+    ("ledger", "get", "ALL_VERSIONS", BAD_RECORDS),
+    ("ledger", "get", "PROJECT_SCOPE", BAD_RECORDS),
+    ("ledger", "by_idempotency_key", "ALL_VERSIONS", BAD_RECORDS),
+    ("tombstones", "latest_epoch", "ALL_VERSIONS", BAD_COUNTS),
+])
+def test_prereview_p2_a_malformed_port_answer_before_the_first_deletion_write_is_typed_audited_and_writes_nothing(owner: str, port: str, scope: str, answers: tuple[Any, ...]) -> None:
+    """P2: every metadata, ledger and tombstone answer of the deletion resolution is checked before use."""
+
+    for answer in answers:
+        world = t55.unit_world()
+        world.admit("x", t55.TEXT)
+        epoch, target = world.tombstones.latest_epoch(), getattr(world, owner)
+        original = _patched(target, port, answer)
+        try:
+            with pytest.raises(MemoryAdmissionError):
+                world.delete("x", scope=scope, op="probe")
+        finally:
+            setattr(target, port, original)
+        assert t55.denials(world), (port, answer)
+        assert world.tombstones.latest_epoch() == epoch and world.ledger.latest_version("x") == 1, (port, answer)
+        assert world.status("x") == "ACTIVE", (port, answer)
+
+
+@pytest.mark.parametrize(("owner", "port", "answers"), [
+    ("metadata", "partitions", BAD_SEQUENCES), ("metadata", "versions_in", BAD_SEQUENCES),
+    ("metadata", "head", BAD_COUNTS), ("ledger", "get", BAD_RECORDS),
+])
+def test_prereview_p2_a_malformed_port_answer_of_a_sweep_is_typed_and_audited(owner: str, port: str, answers: tuple[Any, ...]) -> None:
+    for answer in answers:
+        world = t55.unit_world()
+        world.admit("x", t55.TEXT)
+        target = getattr(world, owner)
+        original = _patched(target, port, answer)
+        try:
+            with pytest.raises(MemoryAdmissionError):
+                world.lifecycle.enforce_retention(binding=t52.binding(), operation_id="sweep")
+        finally:
+            setattr(target, port, original)
+        assert t55.denials(world), (port, answer)
+
+
+@pytest.mark.parametrize(("owner", "port", "answers"), [
+    ("metadata", "head", BAD_COUNTS), ("ledger", "latest_version", BAD_COUNTS), ("ledger", "get", BAD_RECORDS),
+    ("ledger", "by_idempotency_key", BAD_RECORDS),
+])
+def test_prereview_p2_a_malformed_port_answer_of_a_transition_is_typed_audited_and_writes_nothing(owner: str, port: str, answers: tuple[Any, ...]) -> None:
+    for answer in answers:
+        world = t55.unit_world()
+        world.admit("x", t55.TEXT)
+        target = getattr(world, owner)
+        original = _patched(target, port, answer)
+        try:
+            with pytest.raises(MemoryAdmissionError):
+                world.move("x", "REVOKED", reason="SOURCE_RETRACTED", version=1)
+        finally:
+            setattr(target, port, original)
+        assert t55.denials(world), (port, answer)
+        assert world.ledger.latest_version("x") == 1 and world.status("x") == "ACTIVE", (port, answer)
+
+
+@pytest.mark.parametrize("answer", BAD_COUNTS)
+def test_prereview_p2_the_public_head_read_checks_the_metadata_head(answer: Any) -> None:
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    _patched(world.metadata, "head", answer)
+    with pytest.raises(MemoryAdmissionError):
+        world.lifecycle.head("x")
+
+
+@pytest.mark.parametrize("answer", [[None], [{}], None, "x", 5])
+def test_prereview_p2_a_malformed_tombstone_answer_of_a_completed_deletion_replay_is_typed(answer: Any) -> None:
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    assert world.delete("x", op="d").lifecycle_status == "DELETED"
+    _patched(world.tombstones, "entries", answer)
+    with pytest.raises(MemoryAdmissionError):
+        world.delete("x", op="d")
+
+
+@pytest.mark.parametrize("answer", [{}, "x", 1])
+def test_prereview_p2_a_malformed_metadata_slot_inside_the_saga_is_typed(answer: Any) -> None:
+    world = t55.unit_world()
+    world.admit("x", t55.TEXT)
+    _patched(world.metadata, "get", answer)
+    with pytest.raises(MemoryAdmissionError):
+        world.delete("x", op="d")
+    assert t55.denials(world)
+
+
+@pytest.mark.parametrize("raw", [
+    b'{"x":"\\ud800"}', b'{"\\udfff":1}', b'{"a":[{"b":"ok\\udc80"}]}', b'["\\ud800\\ud800"]', b'"\\udbff"',
+], ids=["value", "key", "nested", "array", "scalar"])
+def test_prereview_p3_a_decoded_lone_surrogate_is_an_invalid_index_answer(raw: bytes) -> None:
+    """P3: strings and keys decoded from JSON escapes are validated as Unicode scalar values, nested ones included."""
+
+    assert _code(lambda: A._strict_json(raw, "INDEX_ANSWER_INVALID")) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
+    assert _code(lambda: A._strict_json(raw.decode("ascii"), "METADATA_INVALID")) == ("INTERNAL_ERROR", "METADATA_INVALID")
+
+
+def test_prereview_p3_a_surrogate_store_ref_never_reaches_the_point_id_encoder(monkeypatch: pytest.MonkeyPatch) -> None:
+    body = b'{"result":{"points":[{"id":"x","payload":{"store_ref":"\\ud800","pointer":{}},"score":0.5}]}}'
+    monkeypatch.setattr(A.urllib.request, "urlopen", lambda request, timeout: _Response(200, body))
+    index = A.QdrantVectorIndex("http://qdrant", "probe")
+    index.collection = lambda *args: "c"  # type: ignore[method-assign]
+    part = object.__new__(MemoryPartition)
+    assert _code(lambda: index.search(part, "v", [1.0], limit=1, offset=0)) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
+    # Valid non-ASCII text (a scalar value outside the BMP, written as a surrogate pair escape) stays valid.
+    assert A._strict_json(b'{"x":"\\ud83d\\ude00"}', "INDEX_ANSWER_INVALID") == {"x": "\U0001F600"}
