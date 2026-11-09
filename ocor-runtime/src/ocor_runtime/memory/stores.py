@@ -47,8 +47,8 @@ metadata is authority for memory metadata only, never for canonical state.
 
 from __future__ import annotations
 
+import functools
 import hashlib
-import hmac
 import math
 import struct
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -58,19 +58,22 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Protocol, runtime_checkable
+from typing import ParamSpec, Protocol, TypeVar, runtime_checkable
 
-from ..kernel.canonical import canonical_digest, format_utc_timestamp, parse_utc_timestamp
+from ..kernel.canonical import TimestampError, canonical_digest, format_utc_timestamp, parse_utc_timestamp
 from ..kernel.governance import TrustedClock
 from .model import (
     DIGEST,
     SCOPE_BINDINGS,
     AdmittedMemoryVersion,
     GovernedMemoryItem,
+    LifecycleStatus,
     MemoryAdmissionError,
     MemoryScope,
     MemoryVersionLedger,
     RepresentationKind,
+    digests_equal,
+    ledger_record,
     memory_version_ref,
 )
 
@@ -408,7 +411,7 @@ def validate_embedding(item: GovernedMemoryItem, vector: Sequence[float]) -> tup
             "EMBEDDING_INVALID",
             "embedding vanishes at the vector index precision",
         )
-    if item.embedding_digest is None or not hmac.compare_digest(
+    if item.embedding_digest is None or not digests_equal(
         vector_digest(values), item.embedding_digest
     ):
         raise MemoryStoreError(
@@ -667,6 +670,10 @@ class StagedVersion:
             or not isinstance(staged_at, str)
         ):
             raise MemoryStoreCorrupted("METADATA_INVALID", "stage members have invalid types")
+        try:
+            parse_utc_timestamp(staged_at)
+        except TimestampError as exc:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "stage instant is not a canonical timestamp") from exc
         staged = cls(
             memory_item_id=str(strings["memory_item_id"]),
             memory_version=version,
@@ -688,7 +695,7 @@ class StagedVersion:
             item = GovernedMemoryItem.from_mapping(self.item)
         except MemoryAdmissionError as exc:
             raise MemoryStoreCorrupted("METADATA_INVALID", f"stored item invalid: {exc}") from exc
-        if not hmac.compare_digest(item.digest(), self.item_digest):
+        if not digests_equal(item.digest(), self.item_digest):
             raise MemoryStoreCorrupted("METADATA_DIGEST_MISMATCH", "item digest mismatch")
         if (item.memory_item_id, item.memory_version) != (
             self.memory_item_id,
@@ -920,8 +927,11 @@ class EligibilityPredicate:
 
     A version matches when it is the item's head (not ``superseded``),
     ``ACTIVE``, not deleted, of a requested kind and scope, valid at
-    ``valid_at``, unexpired at ``now`` and accepted by the structured filters.
-    ``accepts`` is the reference semantics every adapter must reproduce.
+    ``valid_at``, unexpired at ``now``, accepted by the structured filters and
+    not among ``excluded_memory_item_ids``, the items the pre-query policy
+    denies inside an authorised partition (LLD v1.1 §2.8.3: they influence
+    neither page, count, rank nor error).  ``accepts`` is the reference
+    semantics every adapter must reproduce.
     """
 
     memory_kinds: frozenset[str]
@@ -932,11 +942,39 @@ class EligibilityPredicate:
     content_schema_refs: frozenset[str] | None = None
     min_confidence: float | None = None
     exclude_taint_labels: frozenset[str] = frozenset()
+    excluded_memory_item_ids: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
+        def names(value: object) -> bool:
+            return isinstance(value, frozenset) and all(isinstance(v, str) and v for v in value)
+
+        if not names(self.memory_kinds) or not names(self.memory_scopes):
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "kinds and scopes must be sets of names"
+            )
         if not self.memory_kinds or not self.memory_scopes:
             raise MemoryStoreError(
                 "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "kinds and scopes must not be empty"
+            )
+        if not names(self.excluded_memory_item_ids):
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "excluded items must be item identifiers"
+            )
+        if not names(self.exclude_taint_labels) or not all(
+            value is None or names(value) for value in (self.source_kinds, self.content_schema_refs)
+        ):
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "predicate sets must be sets of names"
+            )
+        confidence = self.min_confidence
+        if confidence is not None and (
+            isinstance(confidence, bool)
+            or not isinstance(confidence, (int, float))
+            or not math.isfinite(confidence)
+            or not 0 <= confidence <= 1
+        ):
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "min_confidence must be a number in [0, 1]"
             )
         _micros(self.valid_at)
         _micros(self.now)
@@ -950,9 +988,15 @@ class EligibilityPredicate:
         return _micros(self.now)
 
     def accepts(self, attributes: Mapping[str, object]) -> bool:
+        if not isinstance(attributes, Mapping):
+            return False
+        strings = ("memory_item_id", "lifecycle_status", "memory_kind", "memory_scope", "source_kind", "content_schema_ref")
         try:
+            if not all(isinstance(attributes[name], str) for name in strings):
+                return False
             if (
-                attributes["superseded"] is not False
+                attributes["memory_item_id"] in self.excluded_memory_item_ids
+                or attributes["superseded"] is not False
                 or attributes["deleted"] is not False
                 or attributes["lifecycle_status"] != "ACTIVE"
                 or attributes["memory_kind"] not in self.memory_kinds
@@ -964,7 +1008,9 @@ class EligibilityPredicate:
                 attributes["valid_until_us"],
                 attributes["expires_at_us"],
             )
-            if not all(isinstance(v, int) for v in (valid_from, valid_until, expires_at)):
+            if not all(
+                isinstance(v, int) and not isinstance(v, bool) for v in (valid_from, valid_until, expires_at)
+            ):
                 return False
             assert isinstance(valid_from, int) and isinstance(valid_until, int)
             assert isinstance(expires_at, int)
@@ -979,11 +1025,14 @@ class EligibilityPredicate:
                 return False
             confidence = attributes["confidence"]
             if self.min_confidence is not None and (
-                not isinstance(confidence, (int, float)) or confidence < self.min_confidence
+                isinstance(confidence, bool)
+                or not isinstance(confidence, (int, float))
+                or not math.isfinite(confidence)
+                or confidence < self.min_confidence
             ):
                 return False
             labels = attributes["taint_labels"]
-            if not isinstance(labels, list):
+            if not isinstance(labels, list) or not all(isinstance(label, str) for label in labels):
                 return False
             return not self.exclude_taint_labels & set(labels)
         except KeyError:
@@ -1002,6 +1051,11 @@ class EligibilityPredicate:
             else sorted(self.content_schema_refs),
             "min_confidence": self.min_confidence,
             "exclude_taint_labels": sorted(self.exclude_taint_labels),
+            **(
+                {"excluded_memory_item_ids": sorted(self.excluded_memory_item_ids)}
+                if self.excluded_memory_item_ids
+                else {}
+            ),
         }
 
 
@@ -1159,6 +1213,23 @@ class ReconciliationReport:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class ProjectionRebuildReport:
+    """Store refs rewritten from metadata, content and journal, and those already bound."""
+
+    rebuilt: tuple[str, ...]
+    verified: tuple[str, ...]
+
+    def to_mapping(self) -> dict[str, object]:
+        return {"rebuilt": list(self.rebuilt), "verified": list(self.verified)}
+
+
+EmbeddingSource = Callable[[GovernedMemoryItem, bytes], Sequence[float]]
+_FORGOTTEN = frozenset(
+    {LifecycleStatus.DELETED, LifecycleStatus.DELETION_PENDING, LifecycleStatus.DELETION_INCOMPLETE}
+)
+
+
 class _Outcome(StrEnum):
     COMPLETED = "COMPLETED"
     RETRACTED = "RETRACTED"
@@ -1189,6 +1260,111 @@ def _not_visible() -> MemoryStoreError:
 
 def _not_ready(detail: str, message: str) -> MemoryStoreError:
     return MemoryStoreError("REPRESENTATION_NOT_READY", detail, message)
+
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def _typed_port_failures(method: Callable[_P, _R]) -> Callable[_P, _R]:
+    """A store port failure on a read, scoring, rebuild or reconciliation path is a typed refusal.
+
+    The commit path keeps propagating the backend's own failure: its replay
+    completes the commit (OCOR-DEV-0055/0056 crash recovery).
+    """
+
+    @functools.wraps(method)
+    def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        try:
+            return method(*args, **kwargs)
+        except MemoryAdmissionError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- never an untyped refusal at the component boundary
+            raise _not_ready("STORE_UNAVAILABLE", "a memory store port failed") from exc
+
+    return wrapper
+
+
+def _require_slot(partition: object, memory_item_id: object, memory_version: object) -> None:
+    if (
+        not isinstance(partition, MemoryPartition)
+        or not isinstance(memory_item_id, str)
+        or not memory_item_id
+        or isinstance(memory_version, bool)
+        or not isinstance(memory_version, int)
+        or memory_version < 1
+    ):
+        raise MemoryStoreError(
+            "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "a version is addressed by partition, item id and version"
+        )
+
+
+def _stored_slot(stored: object, memory_item_id: str, memory_version: int) -> StoredVersion | None:
+    """The metadata answer for one slot: absent, or exactly that slot."""
+
+    if stored is None:
+        return None
+    if not isinstance(stored, StoredVersion) or (
+        stored.staged.memory_item_id,
+        stored.staged.memory_version,
+    ) != (memory_item_id, memory_version):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store returned another slot")
+    return stored
+
+
+def metadata_slot(stored: object, memory_item_id: str, memory_version: int) -> StoredVersion | None:
+    """The metadata answer for one slot (shared by every consumer): absent, or exactly that slot."""
+
+    return _stored_slot(stored, memory_item_id, memory_version)
+
+
+def metadata_head(value: object) -> int:
+    """A metadata head pointer: a non-negative integer, never a boolean, float or text."""
+
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata head pointer is not a non-negative integer")
+    return value
+
+
+def metadata_partitions(value: object) -> tuple[MemoryPartition, ...]:
+    """A metadata partition inventory: a sequence of partitions, nothing else."""
+
+    if not isinstance(value, (tuple, list)) or not all(isinstance(p, MemoryPartition) for p in value):
+        raise MemoryStoreCorrupted("PARTITION_INVALID", "the metadata partition inventory is malformed")
+    return tuple(value)
+
+
+def metadata_rows(value: object) -> tuple[StoredVersion, ...]:
+    """The stored versions of one partition: a sequence of stored versions, nothing else."""
+
+    if not isinstance(value, (tuple, list)) or not all(isinstance(row, StoredVersion) for row in value):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata answer is not a sequence of stored versions")
+    return tuple(value)
+
+
+def _require_text_query(query: object) -> str:
+    if not isinstance(query, str) or not query.strip():
+        raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is empty")
+    try:
+        query.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is not UTF-8 text") from exc
+    if "\x00" in query:
+        raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query contains NUL")
+    return query
+
+
+def _require_query_vector(vector: object, dimensions: int) -> list[float]:
+    if isinstance(vector, (str, bytes)) or not isinstance(vector, Sequence) or not all(
+        isinstance(v, (int, float)) and not isinstance(v, bool) for v in vector
+    ):
+        raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector must be numeric")
+    values = [float(v) for v in vector]
+    if len(values) != dimensions or not all(map(math.isfinite, values)):
+        raise MemoryStoreError(
+            "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector does not fit the profile"
+        )
+    return values
 
 
 def _eligible_index(index: object) -> EligibilityIndexPort:
@@ -1246,6 +1422,15 @@ class MemoryStoreCoordinator:
                 exc.correlation_id = correlation if isinstance(correlation, str) else None
             raise
 
+    @staticmethod
+    def _staged_answer(answer: object, staged: StagedVersion) -> StoredVersion:
+        """The stage/commit answer of the metadata store: a stored version of exactly that slot."""
+
+        stored = _stored_slot(answer, staged.memory_item_id, staged.memory_version)
+        if stored is None:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store answered no stored version")
+        return stored
+
     def _commit(
         self,
         record: AdmittedMemoryVersion,
@@ -1253,7 +1438,7 @@ class MemoryStoreCoordinator:
         embedding: Sequence[float] | None,
     ) -> StoreCommitReceipt:
         staged, document, vector = self._prepare(record, payload, embedding)
-        stored = self._metadata.stage(staged)
+        stored = self._staged_answer(self._metadata.stage(staged), staged)
         if stored.staged.stage_digest != staged.stage_digest:
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata returned another stage")
         if stored.state is VersionState.COMMITTED:
@@ -1288,6 +1473,7 @@ class MemoryStoreCoordinator:
                 "STORE_COMMIT_INCOMPLETE",
                 f"{staged.memory_version_ref} stays PENDING: {type(exc).__name__}",
             ) from exc
+        committed = self._staged_answer(committed, staged)
         if committed.state is not VersionState.COMMITTED:
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata commit was not applied")
         self._retire_predecessors(committed.staged)
@@ -1305,7 +1491,11 @@ class MemoryStoreCoordinator:
             return
         layouts: set[tuple[MemoryPartition, RepresentationKind, str]] = set()
         for stored in (
-            self._metadata.get(staged.memory_item_id, staged.memory_version - 1),
+            _stored_slot(
+                self._metadata.get(staged.memory_item_id, staged.memory_version - 1),
+                staged.memory_item_id,
+                staged.memory_version - 1,
+            ),
             StoredVersion(staged, VersionState.COMMITTED, None),
         ):
             if stored is None:
@@ -1350,18 +1540,19 @@ class MemoryStoreCoordinator:
                 "MEMORY_SCHEMA_INVALID", "RECORD_INVALID", "admitted version does not verify"
             ) from exc
         item = record.item
-        admitted = self._ledger.get(item.memory_item_id, item.memory_version)
+        slot = (item.memory_item_id, item.memory_version)
+        admitted = ledger_record(self._ledger.get(*slot), slot)
         if (
             admitted is None
-            or not hmac.compare_digest(admitted.item_digest, record.item_digest)
-            or not hmac.compare_digest(admitted.receipt.audit_ref, record.receipt.audit_ref)
+            or not digests_equal(admitted.item_digest, record.item_digest)
+            or not digests_equal(admitted.receipt.audit_ref, record.receipt.audit_ref)
         ):
             raise MemoryStoreError(
                 "MEMORY_VERSION_NOT_FOUND",
                 "VERSION_NOT_ADMITTED",
                 "only versions recorded by the admission ledger are stored",
             )
-        if not isinstance(payload, (bytes, bytearray)) or not hmac.compare_digest(
+        if not isinstance(payload, (bytes, bytearray)) or not digests_equal(
             _sha256(bytes(payload)), item.content_digest
         ):
             raise MemoryStoreError(
@@ -1496,7 +1687,7 @@ class MemoryStoreCoordinator:
             )
         except Exception as exc:  # noqa: BLE001 -- any decrypt failure is corruption
             raise MemoryStoreCorrupted("CONTENT_UNSEALABLE", "content does not open") from exc
-        if not hmac.compare_digest(_sha256(plaintext), content_digest):
+        if not digests_equal(_sha256(plaintext), content_digest):
             raise MemoryStoreCorrupted("CONTENT_DIGEST_MISMATCH", "content does not bind digest")
         return plaintext
 
@@ -1581,7 +1772,7 @@ class MemoryStoreCoordinator:
                 )
             except MemoryStoreError:
                 return False
-        return hmac.compare_digest(actual, pointer.representation_digest)
+        return digests_equal(actual, pointer.representation_digest)
 
     def _receipt(self, stored: StoredVersion) -> StoreCommitReceipt:
         staged = stored.staged
@@ -1595,7 +1786,7 @@ class MemoryStoreCoordinator:
                 for p in staged.pointers
             ),
             state=stored.state.value,
-            head_version=self._metadata.head(staged.memory_item_id),
+            head_version=self._head(staged.memory_item_id),
             audit_ref=staged.audit_ref,
         )
 
@@ -1609,12 +1800,14 @@ class MemoryStoreCoordinator:
 
     # -- reads ------------------------------------------------------------
 
+    @_typed_port_failures
     def read_version(
         self, partition: MemoryPartition, memory_item_id: str, memory_version: int
     ) -> MaterializedVersion:
         """Materialise one exact committed version of the authorized partition."""
 
-        stored = self._metadata.get(memory_item_id, memory_version)
+        _require_slot(partition, memory_item_id, memory_version)
+        stored = _stored_slot(self._metadata.get(memory_item_id, memory_version), memory_item_id, memory_version)
         if stored is None or stored.staged.partition.digest != partition.digest:
             raise _not_visible()
         if stored.state is not VersionState.COMMITTED:
@@ -1631,19 +1824,26 @@ class MemoryStoreCoordinator:
             partition_ref=partition.ref,
         )
 
+    @_typed_port_failures
     def read_latest(self, partition: MemoryPartition, memory_item_id: str) -> MaterializedVersion:
         """Follow the versioned head pointer to the latest committed version."""
 
-        head = self._metadata.head(memory_item_id)
+        head = self._head(memory_item_id)
         if head < 1:
             raise _not_visible()
         return self.read_version(partition, memory_item_id, head)
 
+    def _head(self, memory_item_id: str) -> int:
+        head = self._metadata.head(memory_item_id)
+        if isinstance(head, bool) or not isinstance(head, int) or head < 0:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata head pointer is invalid")
+        return head
+
+    @_typed_port_failures
     def lexical_candidates(
         self, partition: MemoryPartition, query: str, *, limit: int
     ) -> tuple[BoundHit, ...]:
-        if not isinstance(query, str) or not query.strip():
-            raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is empty")
+        query = _require_text_query(query)
         version = self._limits.lexical_profile.representation_version
         where = _ELIGIBILITY.get()
         index = self._lexical
@@ -1662,6 +1862,7 @@ class MemoryStoreCoordinator:
             partition, RepresentationKind.FULL_TEXT, version, page, limit
         )
 
+    @_typed_port_failures
     def vector_candidates(
         self,
         partition: MemoryPartition,
@@ -1670,16 +1871,7 @@ class MemoryStoreCoordinator:
         *,
         limit: int,
     ) -> tuple[BoundHit, ...]:
-        try:
-            values = [float(v) for v in vector if not isinstance(v, bool)]
-        except (TypeError, ValueError) as exc:
-            raise MemoryStoreError(
-                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector must be numeric"
-            ) from exc
-        if len(values) != profile.embedding_dimensions or not all(map(math.isfinite, values)):
-            raise MemoryStoreError(
-                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector does not fit the profile"
-            )
+        values = _require_query_vector(vector, profile.embedding_dimensions)
         version = profile.representation_version
         where = _ELIGIBILITY.get()
         index = self._vector
@@ -1696,18 +1888,19 @@ class MemoryStoreCoordinator:
 
         return self._bound_candidates(partition, RepresentationKind.VECTOR, version, page, limit)
 
+    @_typed_port_failures
     def lexical_scores(
         self, partition: MemoryPartition, query: str, pointers: Sequence[RepresentationPointer]
     ) -> dict[str, float]:
         """The lexical index's own score of ``query`` for committed pointers of the partition."""
 
-        if not isinstance(query, str) or not query.strip():
-            raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query is empty")
+        query = _require_text_query(query)
         version = self._limits.lexical_profile.representation_version
         return self._scores(
             partition, RepresentationKind.FULL_TEXT, version, self._lexical, query, pointers
         )
 
+    @_typed_port_failures
     def vector_scores(
         self,
         partition: MemoryPartition,
@@ -1717,11 +1910,7 @@ class MemoryStoreCoordinator:
     ) -> dict[str, float]:
         """The vector index's own similarity of ``vector`` for committed pointers of the partition."""
 
-        values = [float(v) for v in vector]
-        if len(values) != profile.embedding_dimensions or not all(map(math.isfinite, values)):
-            raise MemoryStoreError(
-                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "query vector does not fit the profile"
-            )
+        values = _require_query_vector(vector, profile.embedding_dimensions)
         return self._scores(
             partition,
             RepresentationKind.VECTOR,
@@ -1793,12 +1982,17 @@ class MemoryStoreCoordinator:
                 raise _not_ready("UNBOUND_BACKLOG", "index requires reconciliation")
             hits = page(offset)
             for hit in hits:
+                if not isinstance(hit, IndexHit) or not isinstance(hit.store_ref, str):
+                    continue  # not an index entry of this port: never a bound candidate
                 if hit.store_ref in seen:
                     continue
                 seen.add(hit.store_ref)
                 pointer = self._bound_pointer(partition, kind, representation_version, hit)
                 if pointer is None:
                     continue
+                score = hit.score
+                if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+                    raise _not_ready("PROJECTION_DRIFT", "a bound index hit has no finite score")
                 results.append(
                     BoundHit(
                         memory_version_ref=pointer.memory_version_ref,
@@ -1808,7 +2002,7 @@ class MemoryStoreCoordinator:
                         representation_kind=pointer.representation_kind.value,
                         representation_version=pointer.representation_version,
                         classification_marking_ref=pointer.classification_marking_ref,
-                        score=float(hit.score),
+                        score=float(score),
                     )
                 )
                 if len(results) == limit:
@@ -1825,6 +2019,8 @@ class MemoryStoreCoordinator:
         representation_version: str,
         hit: IndexHit,
     ) -> RepresentationPointer | None:
+        if not isinstance(hit.payload, Mapping):
+            return None
         try:
             pointer = RepresentationPointer.from_mapping(dict(hit.payload))
         except MemoryStoreError:
@@ -1846,12 +2042,150 @@ class MemoryStoreCoordinator:
 
         return sum(
             1
-            for stored in self._metadata.versions_in(partition.digest)
+            for stored in metadata_rows(self._metadata.versions_in(partition.digest))
             if stored.state is VersionState.COMMITTED
         )
 
+    # -- projection rebuild -----------------------------------------------
+
+    @_typed_port_failures
+    def rebuild_projections(
+        self,
+        partition: MemoryPartition,
+        memory_item_id: str,
+        memory_version: int,
+        *,
+        embedding: Sequence[float] | None = None,
+    ) -> ProjectionRebuildReport:
+        """Rebuild the lost or drifted native projections of one committed version.
+
+        Full-text and vector indexes are rebuildable projections (ADD v1.3
+        Part II §2.2; LLD v1.1 §2.8.1): the source is the committed metadata
+        record, which must match the admission journal entry of the version,
+        and its verified content.  A vector body is not derivable from the
+        content, so ``embedding`` must be exactly the one the item digests.
+        Bound projections are only read.  A rebuilt superseded version is
+        retired again; a deleted item is not visible and is never re-projected.
+        """
+
+        _require_slot(partition, memory_item_id, memory_version)
+        stored = _stored_slot(self._metadata.get(memory_item_id, memory_version), memory_item_id, memory_version)
+        if stored is None or stored.staged.partition.digest != partition.digest:
+            raise _not_visible()
+        source = None if embedding is None else (lambda item, payload: embedding)
+        rebuilt, verified = self._rebuild_version(partition, stored, source)
+        return ProjectionRebuildReport(tuple(sorted(rebuilt)), tuple(sorted(verified)))
+
+    @_typed_port_failures
+    def rebuild_partition(
+        self, partition: MemoryPartition, *, embed: EmbeddingSource | None = None
+    ) -> ProjectionRebuildReport:
+        """Rebuild every committed version of one partition, in canonical order.
+
+        ``embed`` recomputes the embedding of a version from its verified
+        content with the pinned model; each result is accepted only if it is
+        the embedding the item digests.  Versions of deleted items are skipped.
+        """
+
+        rows = sorted(
+            (
+                stored
+                for stored in metadata_rows(self._metadata.versions_in(partition.digest))
+                if stored.state is VersionState.COMMITTED
+            ),
+            key=lambda stored: (stored.staged.memory_item_id, stored.staged.memory_version),
+        )
+        rebuilt: list[str] = []
+        verified: list[str] = []
+        for stored in rows:
+            if self._forgotten_item(stored.staged.memory_item_id):
+                continue
+            done, bound = self._rebuild_version(partition, stored, embed)
+            rebuilt.extend(done)
+            verified.extend(bound)
+        return ProjectionRebuildReport(tuple(sorted(rebuilt)), tuple(sorted(verified)))
+
+    def _forgotten_item(self, memory_item_id: str) -> bool:
+        version = self._head(memory_item_id)
+        head = _stored_slot(self._metadata.get(memory_item_id, version), memory_item_id, version) if version else None
+        if head is None:
+            return True
+        item = head.staged.verify()
+        return item.lifecycle_status in _FORGOTTEN or item.deletion_epoch is not None
+
+    def _rebuild_version(
+        self, partition: MemoryPartition, stored: StoredVersion, embed: EmbeddingSource | None
+    ) -> tuple[list[str], list[str]]:
+        staged = stored.staged
+        if stored.state is not VersionState.COMMITTED:
+            raise _not_ready("VERSION_NOT_COMMITTED", "memory version is partially stored")
+        if self._forgotten_item(staged.memory_item_id):
+            raise _not_visible()
+        item = self._verify_committed(stored)
+        slot = (staged.memory_item_id, staged.memory_version)
+        journal = ledger_record(self._ledger.get(*slot), slot)
+        if (
+            journal is None
+            or not digests_equal(journal.item_digest, staged.item_digest)
+            or not digests_equal(journal.receipt.audit_ref, staged.audit_ref)
+        ):
+            raise MemoryStoreCorrupted("METADATA_INVALID", "metadata does not match the admission journal")
+        try:
+            stale = [p for p in staged.pointers if not self._projection_bound(partition, item, p)]
+        except MemoryStoreError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- an unreadable index rebuilds nothing
+            raise _not_ready("PROJECTION_REBUILD_INCOMPLETE", f"{staged.memory_version_ref} projections unreadable") from exc
+        verified = [p.store_ref for p in staged.pointers if p not in stale and p.representation_kind is not RepresentationKind.STRUCTURED]
+        if not stale:
+            return [], verified
+        payload = self._read_content(staged, item.content_digest)
+        kinds = {p.representation_kind for p in stale}
+        document = lexical_document(payload) if RepresentationKind.FULL_TEXT in kinds else None
+        vector: tuple[float, ...] | None = None
+        if RepresentationKind.VECTOR in kinds:
+            if embed is None:
+                raise MemoryStoreError(
+                    "MEMORY_SCHEMA_INVALID", "EMBEDDING_MISSING", "a vector projection needs its embedding"
+                )
+            try:
+                candidate = embed(item, payload)
+            except MemoryStoreError:
+                raise
+            except Exception as exc:  # noqa: BLE001 -- an unavailable model rebuilds nothing
+                raise _not_ready("EMBEDDING_UNAVAILABLE", "the embedding could not be recomputed") from exc
+            vector = validate_embedding(item, candidate)
+        for pointer in stale:
+            expected = self._pointer(item, staged.item_digest, partition, pointer.representation_kind, document, vector)
+            if expected != pointer:
+                if pointer.representation_kind is RepresentationKind.VECTOR:
+                    raise MemoryStoreError(
+                        "MEMORY_SCHEMA_INVALID", "EMBEDDING_INVALID", "embedding is not the one the item digests"
+                    )
+                raise _not_ready("PROJECTION_PROFILE_CHANGED", "the projection profile no longer derives the pointer")
+        head = self._head(staged.memory_item_id)
+        try:
+            for pointer in stale:
+                index = self._index(pointer.representation_kind)
+                # A drifted entry is replaced, not kept: an index upsert may leave
+                # an existing entry untouched (PostgreSQL ON CONFLICT DO NOTHING).
+                if pointer.representation_kind is not RepresentationKind.STRUCTURED:
+                    index.remove(partition, pointer.representation_version, pointer.store_ref)
+                self._write_projection(partition, item, pointer, document, vector)
+                if staged.memory_version < head and isinstance(index, EligibilityIndexPort):
+                    index.retire(partition, pointer.representation_version, staged.memory_item_id, head)
+        except MemoryStoreError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- every backend failure fails closed
+            raise _not_ready(
+                "PROJECTION_REBUILD_INCOMPLETE",
+                f"{staged.memory_version_ref} projections not rebuilt: {type(exc).__name__}",
+            ) from exc
+        return [p.store_ref for p in stale], verified
+
     # -- reconciliation ---------------------------------------------------
 
+    @_typed_port_failures
     def reconcile(self) -> ReconciliationReport:
         """Roll complete pending versions forward and retract every partial or unbound one."""
 
@@ -1861,9 +2195,9 @@ class MemoryStoreCoordinator:
         unbound: list[str] = []
         removed_content: list[str] = []
         cutoff = self._clock.now() - self._limits.reconcile_grace
-        for partition in self._metadata.partitions():
+        for partition in metadata_partitions(self._metadata.partitions()):
             versions = sorted(
-                self._metadata.versions_in(partition.digest),
+                metadata_rows(self._metadata.versions_in(partition.digest)),
                 key=lambda s: (s.staged.memory_item_id, s.staged.memory_version),
             )
             in_flight: set[str] = set()
@@ -1884,7 +2218,7 @@ class MemoryStoreCoordinator:
                     # Complete but waiting for its predecessor: keep its projections.
                     deferred.append(staged.memory_version_ref)
                     in_flight.add(staged.memory_version_ref)
-            refreshed = self._metadata.versions_in(partition.digest)
+            refreshed = metadata_rows(self._metadata.versions_in(partition.digest))
             unbound.extend(self._sweep_indexes(partition, refreshed, in_flight))
             removed_content.extend(self._sweep_content(partition, refreshed, in_flight))
         return ReconciliationReport(
@@ -1903,7 +2237,7 @@ class MemoryStoreCoordinator:
         except MemoryStoreError:
             complete = False
         if complete:
-            head = self._metadata.head(staged.memory_item_id)
+            head = self._head(staged.memory_item_id)
             if staged.memory_version != head + 1:
                 return _Outcome.DEFERRED
             self._metadata.commit(

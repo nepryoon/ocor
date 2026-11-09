@@ -44,6 +44,7 @@ import os
 import re
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -71,6 +72,22 @@ from ..kernel.governed_context import (
 )
 
 DIGEST = re.compile(r"urn:sha256:[0-9a-f]{64}")
+
+
+def digests_equal(left: object, right: object) -> bool:
+    """Constant-time equality of two text digests; anything but ASCII text never matches.
+
+    ``hmac.compare_digest`` raises a raw ``TypeError`` on non-ASCII text, so a
+    re-read or port-supplied digest is never handed to it unchecked.
+    """
+
+    return (
+        isinstance(left, str)
+        and isinstance(right, str)
+        and left.isascii()
+        and right.isascii()
+        and hmac.compare_digest(left, right)
+    )
 LANGUAGE = re.compile(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*")
 VERSION_REF = re.compile(r"urn:ocor:memory:(?P<item>.+):v(?P<version>[1-9][0-9]*)")
 CONTENT_SCHEMA = re.compile(
@@ -351,6 +368,18 @@ KIND_TAINT: Mapping[MemoryKind, frozenset[str]] = MappingProxyType(
 )
 
 
+def _release_hold(hold: AbstractContextManager[object], error: BaseException | None) -> BaseException | None:
+    """Exit a quota hold; its return value is ignored and its own failure returned."""
+
+    try:
+        hold.__exit__(
+            None if error is None else type(error), error, None if error is None else error.__traceback__
+        )
+    except Exception as release_error:  # noqa: BLE001 -- reported by the caller, never swallowed
+        return release_error
+    return None
+
+
 class MemoryAdmissionError(OCORError):
     """Fail-closed admission refusal carrying a closed Problem reason code.
 
@@ -371,6 +400,8 @@ class MemoryAdmissionError(OCORError):
         self.reason_code = reason_code
         self.detail_code = detail_code
         self.correlation_id = correlation_id
+        # True only when the refused call had already written its version.
+        self.admitted = False
         super().__init__(f"{reason_code}/{detail_code}: {message}")
 
     def to_problem(self) -> dict[str, object]:
@@ -808,11 +839,24 @@ class AdmittedMemoryVersion:
             and all(isinstance(part, str) for part in key)
         ):
             raise MemoryLedgerCorrupted("record members have invalid types")
+        # Types before conversion: every receipt field is checked, never coerced.
+        item_digest = value["item_digest"]
+        receipt_text = ("memory_item_id", "content_digest", "lifecycle_status", "governed_context_digest", "audit_ref")
+        receipt_version = raw_receipt.get("memory_version")
+        if (
+            not isinstance(item_digest, str)
+            or DIGEST.fullmatch(item_digest) is None
+            or set(raw_receipt) != {*receipt_text, "memory_version"}
+            or not all(isinstance(raw_receipt[name], str) for name in receipt_text)
+            or isinstance(receipt_version, bool)
+            or not isinstance(receipt_version, int)
+        ):
+            raise MemoryLedgerCorrupted("record digest or receipt fields have invalid types")
         try:
             item = GovernedMemoryItem.from_mapping(raw_item)
             receipt = MemoryReceipt(
                 memory_item_id=str(raw_receipt["memory_item_id"]),
-                memory_version=int(str(raw_receipt["memory_version"])),
+                memory_version=receipt_version,
                 content_digest=str(raw_receipt["content_digest"]),
                 lifecycle_status=str(raw_receipt["lifecycle_status"]),
                 governed_context_digest=str(raw_receipt["governed_context_digest"]),
@@ -822,7 +866,7 @@ class AdmittedMemoryVersion:
             raise MemoryLedgerCorrupted(f"record does not re-validate: {exc}") from exc
         record = cls(
             item=item,
-            item_digest=str(value["item_digest"]),
+            item_digest=item_digest,
             idempotency_key=(key[0], key[1], key[2], key[3], key[4]),
             lifecycle_event=MappingProxyType(dict(lifecycle_event)),
             audit_event=MappingProxyType(dict(audit_event)),
@@ -832,9 +876,9 @@ class AdmittedMemoryVersion:
         return record
 
     def verify(self) -> None:
-        if not hmac.compare_digest(self.item.digest(), self.item_digest):
+        if not digests_equal(self.item.digest(), self.item_digest):
             raise MemoryLedgerCorrupted("item digest does not bind the persisted item")
-        if not hmac.compare_digest(canonical_digest(dict(self.audit_event)), self.receipt.audit_ref):
+        if not digests_equal(canonical_digest(dict(self.audit_event)), self.receipt.audit_ref):
             raise MemoryLedgerCorrupted("audit_ref does not bind the audit event")
         if self.audit_event.get("item_digest") != self.item_digest:
             raise MemoryLedgerCorrupted("audit event does not bind the item digest")
@@ -853,6 +897,32 @@ class MemoryLedgerCorrupted(MemoryAdmissionError):
 
     def __init__(self, message: str) -> None:
         super().__init__("INTERNAL_ERROR", "MEMORY_LEDGER_CORRUPTED", message)
+
+
+def ledger_version(value: object) -> int:
+    """A ledger's latest-version answer: a non-negative integer, never a boolean."""
+
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise MemoryLedgerCorrupted("the ledger answered a version that is not a non-negative integer")
+    return value
+
+
+def ledger_record(
+    value: object,
+    slot: tuple[str, int] | None = None,
+    key: IdempotencyKey | None = None,
+) -> AdmittedMemoryVersion | None:
+    """A ledger's record answer: absent, or an admitted version of exactly the slot or key asked for."""
+
+    if value is None:
+        return None
+    if not isinstance(value, AdmittedMemoryVersion):
+        raise MemoryLedgerCorrupted("the ledger answered something that is not an admitted version")
+    if slot is not None and (value.item.memory_item_id, value.item.memory_version) != slot:
+        raise MemoryLedgerCorrupted("the ledger answered another slot")
+    if key is not None and value.idempotency_key != key:
+        raise MemoryLedgerCorrupted("the ledger answered another idempotency key")
+    return value
 
 
 class MemoryVersionLedger(Protocol):
@@ -994,7 +1064,7 @@ class JournalMemoryVersionLedger:
     def _apply(self, line: bytes) -> None:
         try:
             entry = parse_i_json(line)
-        except (CanonicalizationError, UnicodeError, ValueError) as exc:
+        except (CanonicalizationError, UnicodeError, ValueError, RecursionError) as exc:
             raise MemoryLedgerCorrupted(f"journal entry is not I-JSON: {exc}") from exc
         if not isinstance(entry, Mapping) or set(entry) != {
             "seq",
@@ -1005,10 +1075,23 @@ class JournalMemoryVersionLedger:
             raise MemoryLedgerCorrupted("journal entry is not a closed chain entry")
         if canonical_bytes(entry) != line:
             raise MemoryLedgerCorrupted("journal entry is not in canonical form")
-        body = {"seq": entry["seq"], "prev": entry["prev"], "record": entry["record"]}
-        if entry["seq"] != self._seq + 1 or entry["prev"] != self._head:
+        seq, prev, entry_digest = entry["seq"], entry["prev"], entry["entry_digest"]
+        # Types before comparison: a boolean is never a sequence number.
+        if (
+            isinstance(seq, bool)
+            or not isinstance(seq, int)
+            or not isinstance(prev, str)
+            or not isinstance(entry_digest, str)
+        ):
+            raise MemoryLedgerCorrupted("journal chain fields have the wrong type")
+        # A digest is an ASCII sha256 URN before any comparison (compare_digest
+        # raises a raw TypeError on non-ASCII text).
+        if DIGEST.fullmatch(prev) is None or DIGEST.fullmatch(entry_digest) is None:
+            raise MemoryLedgerCorrupted("journal chain digests are not sha256 URNs")
+        body = {"seq": seq, "prev": prev, "record": entry["record"]}
+        if seq != self._seq + 1 or prev != self._head:
             raise MemoryLedgerCorrupted("journal chain is broken or reordered")
-        if not hmac.compare_digest(canonical_digest(body), str(entry["entry_digest"])):
+        if not digests_equal(canonical_digest(body), entry_digest):
             raise MemoryLedgerCorrupted("journal entry digest mismatch")
         raw_record = entry["record"]
         if not isinstance(raw_record, Mapping):
@@ -1019,7 +1102,7 @@ class JournalMemoryVersionLedger:
         except MemoryAdmissionError as exc:
             raise MemoryLedgerCorrupted(f"journal violates immutability: {exc}") from exc
         self._seq += 1
-        self._head = str(entry["entry_digest"])
+        self._head = entry_digest
 
     def get(self, memory_item_id: str, memory_version: int) -> AdmittedMemoryVersion | None:
         with self._lock:
@@ -1032,6 +1115,17 @@ class JournalMemoryVersionLedger:
     def by_idempotency_key(self, key: IdempotencyKey) -> AdmittedMemoryVersion | None:
         with self._lock:
             return self._memory.by_idempotency_key(key)
+
+    def records(self) -> tuple[AdmittedMemoryVersion, ...]:
+        """Every acknowledged version in append order, including other processes' appends."""
+
+        with self._lock, self._path.open("rb") as handle:
+            fcntl.flock(handle, fcntl.LOCK_SH)
+            try:
+                self._catch_up(handle)
+            finally:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+            return self._memory.records()
 
     def append(self, record: AdmittedMemoryVersion) -> None:
         record.verify()
@@ -1114,6 +1208,29 @@ class MemoryPolicyDecision:
     decision_ref: str
     policy_bundle_digest: str
     reason: str = ""
+
+
+def require_policy_decision(
+    decision: object, error: type[MemoryAdmissionError] = MemoryAdmissionError
+) -> MemoryPolicyDecision:
+    """A policy answer used only when every field has its declared type.
+
+    A non-bool ``permitted`` is never read as a grant, and a decision without a
+    reference string is never cited by a receipt (SELF-CHECK-CHECKLIST point 2).
+    """
+
+    if (
+        not isinstance(decision, MemoryPolicyDecision)
+        or not isinstance(decision.permitted, bool)
+        or not isinstance(decision.decision_ref, str)
+        or not decision.decision_ref
+        or not isinstance(decision.policy_bundle_digest, str)
+        or not isinstance(decision.reason, str)
+    ):
+        raise error(
+            "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no well-formed policy decision"
+        )
+    return decision
 
 
 class MemoryAdmissionPolicy(Protocol):
@@ -1200,8 +1317,27 @@ class MemoryAdmissionAuditSink(Protocol):
         """Append one safe denial event, or fail closed."""
 
 
+class AdmissionQuotaAuthority(Protocol):
+    """Quota authority of ``admitMemory`` (LLD v1.1 §2.8.2), a trusted composition port.
+
+    ``admission_hold`` verifies the configured quotas for this exact candidate
+    and payload in the candidate's partition, raising ``MemoryAdmissionError``
+    on refusal, and keeps the partition serialized while the admission appends
+    its version. It is never caller-provided and never a reservation token.
+    """
+
+    def admission_hold(self, item: GovernedMemoryItem, payload: bytes) -> AbstractContextManager[None]: ...
+
+
 class MemoryAdmissionService:
-    """``MemoryAdmissionPort.admitMemory``: fail-closed, persistence-last admission."""
+    """``MemoryAdmissionPort.admitMemory``: fail-closed, persistence-last admission.
+
+    Quota is verified under the quota authority's partition serialization
+    immediately before the single ledger append; a refusal appends nothing.
+    Without a quota authority, or with a value that is not one, every
+    admission refuses ``CONTROL_PLANE_UNAVAILABLE`` / ``QUOTA_UNAVAILABLE``
+    before any write.
+    """
 
     def __init__(
         self,
@@ -1213,6 +1349,7 @@ class MemoryAdmissionService:
         clock: TrustedClock,
         limits: AdmissionLimits,
         audit: MemoryAdmissionAuditSink | None = None,
+        quota: AdmissionQuotaAuthority | None = None,
     ) -> None:
         self._ledger = ledger
         self._resolver = resolver
@@ -1221,6 +1358,7 @@ class MemoryAdmissionService:
         self._clock = clock
         self._limits = limits
         self._audit = audit
+        self._quota = quota
 
     def admit(
         self,
@@ -1249,7 +1387,8 @@ class MemoryAdmissionService:
         except MemoryAdmissionError as exc:
             # Error metadata from a downstream port cannot replace the binding.
             exc.correlation_id = correlation_id
-            self._record_denial(request, trusted, exc)
+            if not exc.admitted:  # a written version is never audited as denied
+                self._record_denial(request, trusted, exc)
             raise
         except Exception as exc:  # noqa: BLE001 -- unexpected port failures refuse closed
             error = MemoryAdmissionError(
@@ -1345,9 +1484,9 @@ class MemoryAdmissionService:
         # 3. Idempotency: same key and digest returns the original receipt.
         key = idempotency_key(item, operation_id)
         item_digest = item.digest()
-        previous = self._ledger.by_idempotency_key(key)
+        previous = ledger_record(self._ledger.by_idempotency_key(key), key=key)
         if previous is not None:
-            if hmac.compare_digest(previous.item_digest, item_digest):
+            if digests_equal(previous.item_digest, item_digest):
                 # The item digest authenticates metadata, not the supplied bytes.
                 # Replays must satisfy the same content boundary before receiving
                 # an existing receipt (ADD Part II §2.4; LLD §2.8.2).
@@ -1414,8 +1553,45 @@ class MemoryAdmissionService:
             audit_event=MappingProxyType(audit_event),
             receipt=receipt,
         )
-        # 11. Persistence last, as one atomic append.
-        self._ledger.append(record)
+        # 11. Quota, then persistence last, as one atomic append inside the
+        #     quota authority's partition serialization (LLD v1.1 §2.8.2).
+        #     A value that is not a quota authority, or a hold that is not a
+        #     context manager, fails in the hold below before any write.
+        if self._quota is None:
+            raise MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "QUOTA_UNAVAILABLE",
+                "no quota authority is composed: admitMemory never writes without the quota check",
+            )
+        try:
+            hold = self._quota.admission_hold(item, bytes(payload))
+            if not isinstance(hold, AbstractContextManager):
+                raise TypeError("the quota hold is not a context manager")
+            hold.__enter__()
+        except MemoryAdmissionError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- no admission without the quota check
+            raise MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE", "the quota authority is unavailable"
+            ) from exc
+        try:
+            self._ledger.append(record)
+        except Exception as exc:
+            # The hold is released but can never suppress the failed write.
+            released = _release_hold(hold, exc)
+            if released is not None:
+                exc.add_note(f"the quota serialization was not released either: {released!r}")
+            raise
+        released = _release_hold(hold, None)
+        if released is not None:
+            error = MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "QUOTA_RELEASE_FAILED",
+                "the version is admitted but the quota serialization was not released; "
+                "a replay returns its receipt",
+            )
+            error.admitted = True
+            raise error from released
         return receipt
 
     def _bind_to_context(
@@ -1454,9 +1630,13 @@ class MemoryAdmissionService:
         if not isinstance(payload, (bytes, bytearray)):
             raise _schema_error("PAYLOAD_INVALID", "payload must be bytes")
         calculated = "urn:sha256:" + hashlib.sha256(payload).hexdigest()
-        if not hmac.compare_digest(calculated, item.content_digest):
+        if not digests_equal(calculated, item.content_digest):
             raise _schema_error("CONTENT_DIGEST_MISMATCH", "content_digest does not bind payload")
-        text = bytes(payload).decode("utf-8", errors="replace")
+        try:
+            text = bytes(payload).decode("utf-8")
+        except UnicodeDecodeError as exc:
+            # Every registered content class is text; the scan never runs on altered text.
+            raise _schema_error("PAYLOAD_INVALID", "payload must be strict UTF-8") from exc
         for marker, pattern in PROHIBITED_PAYLOAD_PATTERNS:
             if pattern.search(text):
                 raise MemoryAdmissionError(
@@ -1529,10 +1709,11 @@ class MemoryAdmissionService:
     def _validate_lineage(
         self, item: GovernedMemoryItem, context: GovernedContext
     ) -> tuple[GovernedMemoryItem, ...]:
-        latest = self._ledger.latest_version(item.memory_item_id)
+        latest = ledger_version(self._ledger.latest_version(item.memory_item_id))
         if item.memory_version <= latest:
-            existing = self._ledger.get(item.memory_item_id, item.memory_version)
-            if existing is not None and hmac.compare_digest(existing.item_digest, item.digest()):
+            slot = (item.memory_item_id, item.memory_version)
+            existing = ledger_record(self._ledger.get(*slot), slot)
+            if existing is not None and digests_equal(existing.item_digest, item.digest()):
                 raise MemoryAdmissionError(
                     "MEMORY_IDEMPOTENCY_CONFLICT",
                     "VERSION_ALREADY_ADMITTED",
@@ -1583,7 +1764,7 @@ class MemoryAdmissionService:
             source_item, source_version = parse_memory_version_ref(ref)
             if source_item == item.memory_item_id and source_version >= item.memory_version:
                 raise _schema_error("LINEAGE_INVALID", "lineage cannot reference itself or later")
-            source = self._ledger.get(source_item, source_version)
+            source = ledger_record(self._ledger.get(source_item, source_version), (source_item, source_version))
             if source is None:
                 raise MemoryAdmissionError(
                     "MEMORY_VERSION_NOT_FOUND",
@@ -1636,7 +1817,7 @@ class MemoryAdmissionService:
                 "REFERENCE_RESOLVER_UNAVAILABLE",
                 "reference resolution failed closed",
             ) from exc
-        if source_digest is None or not hmac.compare_digest(source_digest, item.source_digest):
+        if source_digest is None or not digests_equal(source_digest, item.source_digest):
             raise _schema_error(
                 "SOURCE_UNRESOLVED", "source_ref does not resolve to source_digest under the GCS"
             )
@@ -1791,10 +1972,7 @@ class MemoryAdmissionService:
                 "POLICY_UNAVAILABLE",
                 "admission policy evaluation failed closed",
             ) from exc
-        if not isinstance(decision, MemoryPolicyDecision):
-            raise MemoryAdmissionError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        decision = require_policy_decision(decision)
         if decision.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryAdmissionError(
                 "STALE_POLICY",

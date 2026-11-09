@@ -1432,6 +1432,48 @@ def main() -> int:
         "reports/evidence/G4/OCOR-DEV-0047.requalified-rem0058.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0058.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0058.log",
+        # OCOR-DEV-REM-0059 (NCP-U11 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): governed memory (the real
+        # memory adapters moved out of test_ocor_dev_0051.py into memory/adapters/, point 2; the deletion scopes of lifecycle.py,
+        # NCR-MEMORY-003), the unit test module, the unit record,
+        # the decision request NCP-U11-REM0023-CONSUMER-GUARD (decided by the PO on 2026-11-09), and the
+        # regression-only requalifications of the tasks whose latest record has a changed input (0051, 0052,
+        # 0054, 0055, 0059, 0061) and of 0005, 0050 and 0082 forced by this allowlist.
+        "ocor-runtime/src/ocor_runtime/memory/adapters/__init__.py",
+        "ocor-runtime/src/ocor_runtime/memory/lifecycle.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py",
+        "reports/assurance/OCOR-DEV-REM-0059-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+        "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.log",
+        "reports/development/decision_requests/NCP-U11-REM0023-CONSUMER-GUARD.md",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0059.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0059.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0059.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-0051.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0051.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-0052.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0052.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-0054.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0054.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-0055.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0055.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0059.log",
+        "reports/evidence/G6/OCOR-DEV-0061.requalified-rem0059.json",
+        "reports/evidence/G6/OCOR-DEV-0061.requalified-rem0059.log",
+        # OCOR-DEV-REM-0059 preventive review P11: the regression-only requalifications of the sealed remediation
+        # units REM-0023 and REM-0036 (supersession of their rem0018 records), and the G6 manifest of the 0061 one.
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.log",
+        "reports/evidence/G6/MANIFEST.json",
+        # OCOR-DEV-REM-0059 repair cycle 1 (VF-001 of OCOR-DEV-REM-0059-3425a01a39c1-0): the decision requests
+        # NCP-U11-ADMISSION-QUOTA-COMPOSITION and NCP-U11-ADMISSION-QUOTA-WORLDS (decided on 2026-11-09), byte-identical.
+        "reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-COMPOSITION.md",
+        "reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-WORLDS.md",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',

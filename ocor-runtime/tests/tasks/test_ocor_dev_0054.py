@@ -222,6 +222,7 @@ class CWorld(r.World):
             markings=self.markings,
             clock=self.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": timedelta(days=365)}),
+            quota=base.RecordingAdmissionQuota(),
         )
         self.grant = ConsolidationGrant()
         self.jobs = jobs if jobs is not None else InMemoryConsolidationJobLedger()
@@ -407,6 +408,7 @@ class Backends:
             markings=clone.markings,
             clock=world.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": timedelta(days=365)}),
+            quota=base.RecordingAdmissionQuota(),
         )
         clone.coordinator = r.MemoryStoreCoordinator(
             ledger=world.ledger,

@@ -84,6 +84,7 @@ def live(tmp_path: Path) -> Iterator[tuple[Any, PostgresAudit, Path]]:
             retention_horizons={"retention:standard": base.timedelta(days=365)}
         ),
         audit=audit,
+        quota=base.RecordingAdmissionQuota(),
     )
     try:
         yield world, audit, path

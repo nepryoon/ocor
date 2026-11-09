@@ -72,7 +72,6 @@ creates Authority, Approval, Decision, CapabilityLease or canonical state.
 
 from __future__ import annotations
 
-import hmac
 import math
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -108,8 +107,10 @@ from .model import (
     MemoryScope,
     RepresentationKind,
     SourceKind,
+    digests_equal,
     memory_version_ref,
     parse_memory_version_ref,
+    require_policy_decision,
 )
 from .stores import (
     BoundHit,
@@ -119,11 +120,14 @@ from .stores import (
     MemoryMetadataStore,
     MemoryPartition,
     MemoryStoreCoordinator,
+    MemoryStoreCorrupted,
     RepresentationPointer,
     StoredVersion,
     VectorProfile,
     VersionState,
     eligibility_scope,
+    metadata_partitions,
+    metadata_rows,
     vector_digest,
 )
 
@@ -326,6 +330,13 @@ class RetrievalAuthorization:
     ``task_id``, ``agent_id``, ``team_id``, ``project_id``,
     ``federation_policy_ref``) to the values the caller holds explicit
     Authority for.  ``domains`` lists additional domains (cross-domain Authority).
+    ``denied_memory_item_ids`` completes the authorised partition down to the
+    item: the items the live policy denies inside an authorised partition.
+    They are excluded inside every index and metadata query, so they influence
+    neither page, count, rank, score normalisation nor error (LLD v1.1 §2.8.3,
+    FR-119, FGM-16); the post-query materialisation decision still re-validates
+    every hit.  ``decision_ref`` identifies the decision that lists them: the
+    receipt never does.
     """
 
     permitted: bool
@@ -339,6 +350,7 @@ class RetrievalAuthorization:
     policy_bundle_digests: frozenset[str] = frozenset()
     ontology_release_digests: frozenset[str] = frozenset()
     reason: str = ""
+    denied_memory_item_ids: frozenset[str] = frozenset()
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -355,6 +367,80 @@ class RetrievalAuthorization:
             "policy_bundle_digests": sorted(self.policy_bundle_digests),
             "ontology_release_digests": sorted(self.ontology_release_digests),
         }
+
+
+def _identifiers(value: object) -> bool:
+    return isinstance(value, frozenset) and all(isinstance(v, str) and v for v in value)
+
+
+def _require_authorization(authorization: object) -> RetrievalAuthorization:
+    """A live retrieval/read decision used only when every field has its declared type.
+
+    No field is coerced: a non-bool ``permitted`` is never a grant, a string is
+    never matched as a set of values (SELF-CHECK-CHECKLIST point 2).
+    """
+
+    if not isinstance(authorization, RetrievalAuthorization):
+        raise MemoryRetrievalError(
+            "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
+        )
+    a = authorization
+    bindings = a.scope_bindings
+    if (
+        not isinstance(a.permitted, bool)
+        or not isinstance(a.decision_ref, str)
+        or not a.decision_ref
+        or not isinstance(a.policy_bundle_digest, str)
+        or not isinstance(a.reason, str)
+        or not isinstance(a.memory_kinds, frozenset)
+        or not all(isinstance(kind, MemoryKind) for kind in a.memory_kinds)
+        or not isinstance(a.memory_scopes, frozenset)
+        or not all(isinstance(scope, MemoryScope) for scope in a.memory_scopes)
+        or not isinstance(bindings, Mapping)
+        or not all(isinstance(name, str) and _identifiers(values) for name, values in bindings.items())
+        or not all(
+            _identifiers(values)
+            for values in (
+                a.domains,
+                a.compatible_purposes,
+                a.policy_bundle_digests,
+                a.ontology_release_digests,
+                a.denied_memory_item_ids,
+            )
+        )
+    ):
+        raise MemoryRetrievalError(
+            "CONTROL_PLANE_UNAVAILABLE",
+            "POLICY_DECISION_INVALID",
+            "the policy decision is not a well-formed retrieval authorization",
+        )
+    return a
+
+
+def _require_decision(decision: object) -> MemoryPolicyDecision:
+    return require_policy_decision(decision, MemoryRetrievalError)
+
+
+def _stored_version(value: object, memory_item_id: str, memory_version: int) -> StoredVersion | None:
+    """The metadata answer for one slot: absent, or a stored version of exactly that slot."""
+
+    if value is None:
+        return None
+    if not isinstance(value, StoredVersion):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store returned no stored version")
+    if (value.staged.memory_item_id, value.staged.memory_version) != (memory_item_id, memory_version):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store returned another slot")
+    return value
+
+
+def _head_version(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise MemoryRetrievalError("INTERNAL_ERROR", "HEAD_INVALID", "the metadata head pointer is invalid")
+    return value
+
+
+def _unavailable() -> MemoryRetrievalError:
+    return MemoryRetrievalError("INTERNAL_ERROR", "RETRIEVAL_UNAVAILABLE", "retrieval failed closed")
 
 
 class MemoryRetrievalPolicy(Protocol):
@@ -680,6 +766,50 @@ def _pointer(
     )
 
 
+def _partition_visible(
+    partition: MemoryPartition,
+    memory_scopes: frozenset[MemoryScope],
+    context: GovernedContext,
+    authorization: RetrievalAuthorization,
+    markings: MarkingDominance,
+) -> bool:
+    """Decide on the partition tuple alone, before any candidate is read."""
+
+    if (
+        partition.tenant_id != context.tenant_id
+        or partition.organization_id != context.organization_id
+    ):
+        return False  # cross-tenant/organization is deny-by-default
+    if partition.domain_id != context.domain_id and (
+        partition.domain_id not in authorization.domains
+    ):
+        return False
+    if not set(partition.compartments) <= set(context.compartments):
+        return False
+    if partition.memory_scope not in memory_scopes:
+        return False
+    if partition.purpose != context.purpose and (
+        partition.purpose not in authorization.compatible_purposes
+    ):
+        return False
+    bundles = authorization.policy_bundle_digests | {context.policy_bundle_digest}
+    releases = authorization.ontology_release_digests | {context.ontology_release_digest}
+    if (
+        partition.policy_bundle_digest not in bundles
+        or partition.ontology_release_digest not in releases
+    ):
+        return False
+    for name, value in partition.scope_bindings:
+        if value not in authorization.scope_bindings.get(name, frozenset()):
+            return False
+    try:
+        return markings.dominates(
+            context.classification_marking_ref, partition.classification_marking_ref
+        )
+    except MemoryAdmissionError:
+        return False  # a marking outside the lattice is never dominated
+
+
 # --------------------------------------------------------------------------
 # Service
 # --------------------------------------------------------------------------
@@ -753,6 +883,11 @@ class MemorySearchService:
                 exc.correlation_id = correlation_id
             self._metrics[(mode_label, exc.reason_code)] += 1
             raise
+        except Exception as exc:  # noqa: BLE001 -- never an untyped refusal
+            error = _unavailable()
+            error.correlation_id = correlation_id
+            self._metrics[(mode_label, error.reason_code)] += 1
+            raise error from exc
         self._metrics[(mode_label, "OK")] += 1
         return response
 
@@ -767,6 +902,10 @@ class MemorySearchService:
         except MemoryAdmissionError as exc:
             self._record_denial(query, context, gcs_digest, binding.binding_ref, exc, now)
             raise
+        except Exception as exc:  # noqa: BLE001 -- an unexpected port failure is a typed, audited refusal
+            error = _unavailable()
+            self._record_denial(query, context, gcs_digest, binding.binding_ref, error, now)
+            raise error from exc
         try:
             with eligibility_scope(plan.predicate):
                 candidates = self._candidates(plan)
@@ -782,6 +921,12 @@ class MemorySearchService:
                 query, context, gcs_digest, binding.binding_ref, exc, self._clock.now()
             )
             raise
+        except Exception as exc:  # noqa: BLE001 -- an unexpected port failure is a typed, audited refusal
+            error = _unavailable()
+            self._record_denial(
+                query, context, gcs_digest, binding.binding_ref, error, self._clock.now()
+            )
+            raise error from exc
 
     # -- request -------------------------------------------------------------
 
@@ -940,7 +1085,7 @@ class MemorySearchService:
             sorted(
                 (
                     partition
-                    for partition in self._metadata.partitions()
+                    for partition in metadata_partitions(self._metadata.partitions())
                     if self._partition_authorized(partition, query, context, authorization)
                 ),
                 key=lambda partition: partition.digest,
@@ -958,6 +1103,7 @@ class MemorySearchService:
             content_schema_refs=filters.content_schema_refs,
             min_confidence=filters.min_confidence,
             exclude_taint_labels=filters.exclude_taint_labels,
+            excluded_memory_item_ids=authorization.denied_memory_item_ids,
         )
         return _Plan(
             query=query,
@@ -998,10 +1144,7 @@ class MemorySearchService:
                 "POLICY_UNAVAILABLE",
                 "retrieval policy evaluation failed closed",
             ) from exc
-        if not isinstance(authorization, RetrievalAuthorization):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        authorization = _require_authorization(authorization)
         if authorization.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
                 "STALE_POLICY",
@@ -1031,46 +1174,16 @@ class MemorySearchService:
     ) -> bool:
         """Decide on the partition tuple alone, before any candidate is read."""
 
-        if (
-            partition.tenant_id != context.tenant_id
-            or partition.organization_id != context.organization_id
-        ):
-            return False  # cross-tenant/organization is deny-by-default
-        if partition.domain_id != context.domain_id and (
-            partition.domain_id not in authorization.domains
-        ):
-            return False
-        if not set(partition.compartments) <= set(context.compartments):
-            return False
-        if partition.memory_scope not in query.memory_scopes:
-            return False
-        if partition.purpose != context.purpose and (
-            partition.purpose not in authorization.compatible_purposes
-        ):
-            return False
-        bundles = authorization.policy_bundle_digests | {context.policy_bundle_digest}
-        releases = authorization.ontology_release_digests | {context.ontology_release_digest}
-        if (
-            partition.policy_bundle_digest not in bundles
-            or partition.ontology_release_digest not in releases
-        ):
-            return False
-        for name, value in partition.scope_bindings:
-            if value not in authorization.scope_bindings.get(name, frozenset()):
-                return False
-        try:
-            return self._markings.dominates(
-                context.classification_marking_ref, partition.classification_marking_ref
-            )
-        except MemoryAdmissionError:
-            return False  # a marking outside the lattice is never dominated
+        return _partition_visible(
+            partition, query.memory_scopes, context, authorization, self._markings
+        )
 
     # -- policy before materialisation ---------------------------------------
 
     def _eligible(self, plan: _Plan, memory_item_id: str, memory_version: int) -> _Candidate | None:
         """Re-validate one exact committed version against the plan and live policy."""
 
-        stored = self._metadata.get(memory_item_id, memory_version)
+        stored = _stored_version(self._metadata.get(memory_item_id, memory_version), memory_item_id, memory_version)
         if stored is None or stored.state is not VersionState.COMMITTED:
             return None
         partition = stored.staged.partition
@@ -1078,7 +1191,9 @@ class MemorySearchService:
             return None
         item = stored.staged.verify()
         query, context = plan.query, plan.context
-        if self._metadata.head(item.memory_item_id) != item.memory_version:
+        if item.memory_item_id in plan.authorization.denied_memory_item_ids:
+            return None  # outside the pre-query partition (an index must not return it)
+        if _head_version(self._metadata.head(item.memory_item_id)) != item.memory_version:
             return None  # superseded, corrected or reclassified: never the exact current one
         if item.lifecycle_status is not LifecycleStatus.ACTIVE or item.deletion_epoch is not None:
             return None
@@ -1115,10 +1230,7 @@ class MemorySearchService:
                 "POLICY_UNAVAILABLE",
                 "materialisation policy evaluation failed closed",
             ) from exc
-        if not isinstance(decision, MemoryPolicyDecision):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        decision = _require_decision(decision)
         if decision.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
                 "STALE_POLICY",
@@ -1171,7 +1283,7 @@ class MemorySearchService:
                         )
                     item_id, version = parse_memory_version_ref(hit.memory_version_ref)
                     candidate = self._eligible(plan, item_id, version)
-                    if candidate is not None and hmac.compare_digest(
+                    if candidate is not None and digests_equal(
                         candidate.stored.staged.item_digest, hit.item_digest
                     ):
                         eligible.append((candidate, hit.score))
@@ -1292,7 +1404,7 @@ class MemorySearchService:
             )
         candidates: list[_Candidate] = []
         for partition in plan.partitions:
-            for stored in metadata.eligible_versions(partition.digest, plan.predicate):
+            for stored in metadata_rows(metadata.eligible_versions(partition.digest, plan.predicate)):
                 staged = stored.staged
                 if (
                     stored.state is not VersionState.COMMITTED
@@ -1393,7 +1505,7 @@ class MemorySearchService:
                 candidate.partition, staged.memory_item_id, staged.memory_version
             )
             item = materialized.item
-            if not hmac.compare_digest(item.digest(), staged.item_digest):
+            if not digests_equal(item.digest(), staged.item_digest):
                 raise MemoryRetrievalError(
                     "INTERNAL_ERROR", "MATERIALIZED_DIGEST_MISMATCH", "item digest mismatch"
                 )
@@ -1538,10 +1650,301 @@ class MemorySearchService:
             ) from exc
 
 
+# --------------------------------------------------------------------------
+# getMemoryItemVersion (MemoryReadPort)
+# --------------------------------------------------------------------------
+
+
+class MemoryReadPolicy(Protocol):
+    """Live policy of exact-version reads (OPA in the product)."""
+
+    def authorize_read(
+        self, memory_item_id: str, memory_version: int, context: GovernedContext
+    ) -> RetrievalAuthorization:
+        """What the caller may read, decided before any version is read."""
+
+    def authorize_materialization(
+        self, item: GovernedMemoryItem, context: GovernedContext
+    ) -> MemoryPolicyDecision:
+        """Live decision on one exact version before it is returned."""
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryItemVersionRead:
+    """``getMemoryItemVersion`` result: the policy-filtered exact version."""
+
+    item: GovernedMemoryItem
+    audit_ref: str
+
+    def to_mapping(self) -> dict[str, object]:
+        """The closed ``governed-memory-item`` of the contract response."""
+
+        return self.item.to_mapping()
+
+
+_NOT_VISIBLE = ("MEMORY_NOT_FOUND", "ITEM_NOT_VISIBLE", "no visible memory item")
+
+
+class MemoryItemReadService:
+    """``MemoryReadPort.getMemoryItemVersion`` (Governed Memory API 1.0.0).
+
+    The caller's GovernedContext is the one of the authenticated binding and
+    its digest is recalculated here (ADD v1.3 Part II §2.5).  An item is
+    visible only when its committed head is ``ACTIVE``, undeleted and
+    unexpired, inside a partition the live read policy authorises, dominated
+    by the caller's marking and compartments and permitted by the live
+    materialisation decision; the requested version must pass the same
+    checks.  Absent, unauthorised, over-marked, revoked, deleted and expired
+    items all fail with the same ``MEMORY_NOT_FOUND`` (FR-119: unauthorised
+    elements do not influence existence); ``MEMORY_VERSION_NOT_FOUND`` is
+    reserved to a missing or invisible version of a visible item.  Every read
+    and every refusal is audited; no audit, no answer.
+    """
+
+    def __init__(
+        self,
+        *,
+        coordinator: MemoryStoreCoordinator,
+        metadata: MemoryMetadataStore,
+        policy: MemoryReadPolicy,
+        markings: MarkingDominance,
+        stop: StopEpochPort,
+        audit: RetrievalAuditSink,
+        clock: TrustedClock,
+    ) -> None:
+        self._coordinator = coordinator
+        self._metadata = metadata
+        self._policy = policy
+        self._markings = markings
+        self._stop = stop
+        self._audit = audit
+        self._clock = clock
+
+    def get_item_version(
+        self,
+        memory_item_id: object,
+        memory_version: object,
+        *,
+        binding: VerifiedGovernedContextBinding | None,
+    ) -> MemoryItemVersionRead:
+        if not isinstance(binding, VerifiedGovernedContextBinding):
+            raise MemoryRetrievalError(
+                "AUTHENTICATION_REQUIRED",
+                "BINDING_MISSING",
+                "getMemoryItemVersion requires an authenticated governed-context binding",
+            )
+        context = binding.expected
+        try:
+            gcs_digest = context.digest()
+        except GovernedContextError as exc:
+            raise MemoryRetrievalError("GOVERNED_CONTEXT_MISMATCH", exc.code, str(exc)) from exc
+        try:
+            try:
+                item_id, version = self._parameters(memory_item_id, memory_version)
+                return self._read(item_id, version, context, gcs_digest, binding.binding_ref)
+            except MemoryAdmissionError:
+                raise
+            except Exception as exc:  # noqa: BLE001 -- an unexpected port failure is a typed, audited refusal
+                raise _unavailable() from exc
+        except MemoryAdmissionError as exc:
+            if exc.correlation_id is None:
+                exc.correlation_id = context.correlation_id
+            self._record(
+                {
+                    "action": "getMemoryItemVersion.denied",
+                    "correlation_id": context.correlation_id,
+                    "governed_context_digest": gcs_digest,
+                    "binding_ref": binding.binding_ref,
+                    "reason_code": exc.reason_code,
+                    "detail_code": exc.detail_code,
+                    "evaluated_at": format_utc_timestamp(self._clock.now()),
+                }
+            )
+            raise
+
+    @staticmethod
+    def _parameters(memory_item_id: object, memory_version: object) -> tuple[str, int]:
+        if not isinstance(memory_item_id, str) or not memory_item_id:
+            raise _schema_error("MEMORY_ITEM_ID_INVALID", "memory_item_id must be a non-empty string")
+        if (
+            isinstance(memory_version, bool)
+            or not isinstance(memory_version, int)
+            or memory_version < 1
+        ):
+            raise _schema_error("MEMORY_VERSION_INVALID", "memory_version must be an integer >= 1")
+        return memory_item_id, memory_version
+
+    def _stop_epoch(self, context: GovernedContext) -> int:
+        try:
+            epoch = self._stop.current_epoch(context)
+        except Exception as exc:  # noqa: BLE001 -- unknown stop state fails closed
+            raise MemoryRetrievalError(
+                "CONTROL_PLANE_UNAVAILABLE", "STOP_STATE_UNAVAILABLE", "stop state is unknown"
+            ) from exc
+        if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:
+            raise MemoryRetrievalError(
+                "CONTROL_PLANE_UNAVAILABLE", "STOP_STATE_INVALID", "stop epoch is invalid"
+            )
+        return epoch
+
+    def _authorize(
+        self, memory_item_id: str, memory_version: int, context: GovernedContext
+    ) -> RetrievalAuthorization:
+        try:
+            authorization = self._policy.authorize_read(memory_item_id, memory_version, context)
+        except MemoryAdmissionError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- unavailable policy fails closed
+            raise MemoryRetrievalError(
+                "CONTROL_PLANE_UNAVAILABLE", "POLICY_UNAVAILABLE", "read policy evaluation failed closed"
+            ) from exc
+        authorization = _require_authorization(authorization)
+        if authorization.policy_bundle_digest != context.policy_bundle_digest:
+            raise MemoryRetrievalError(
+                "STALE_POLICY",
+                "POLICY_BUNDLE_MISMATCH",
+                "policy decision was not evaluated against the context bundle",
+            )
+        return authorization
+
+    def _materialization(
+        self, item: GovernedMemoryItem, context: GovernedContext
+    ) -> MemoryPolicyDecision:
+        try:
+            decision = self._policy.authorize_materialization(item, context)
+        except MemoryAdmissionError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- unavailable policy fails closed
+            raise MemoryRetrievalError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "POLICY_UNAVAILABLE",
+                "materialisation policy evaluation failed closed",
+            ) from exc
+        decision = _require_decision(decision)
+        if decision.policy_bundle_digest != context.policy_bundle_digest:
+            raise MemoryRetrievalError(
+                "STALE_POLICY",
+                "POLICY_BUNDLE_MISMATCH",
+                "materialisation decision was not evaluated against the context bundle",
+            )
+        return decision
+
+    def _visible(
+        self,
+        stored: StoredVersion | None,
+        authorization: RetrievalAuthorization,
+        context: GovernedContext,
+        now: datetime,
+    ) -> tuple[GovernedMemoryItem, MemoryPolicyDecision] | None:
+        """The verified item of one committed version, if the caller may read it."""
+
+        if stored is None or stored.state is not VersionState.COMMITTED:
+            return None
+        if not authorization.permitted:
+            return None
+        item = stored.staged.verify()
+        if item.memory_item_id in authorization.denied_memory_item_ids:
+            return None
+        if item.memory_kind not in authorization.memory_kinds:
+            return None
+        if not CAPABILITY_MATRIX[(item.memory_kind, item.memory_scope)]:
+            return None
+        if not _partition_visible(
+            stored.staged.partition, authorization.memory_scopes, context, authorization, self._markings
+        ):
+            return None
+        if not set(item.compartments) <= set(context.compartments):
+            return None
+        try:
+            if not self._markings.dominates(
+                context.classification_marking_ref, item.classification_marking_ref
+            ):
+                return None
+        except MemoryAdmissionError:
+            return None
+        if item.expires_at is not None and item.expires_at <= now:
+            return None
+        decision = self._materialization(item, context)
+        if not decision.permitted:
+            return None
+        return item, decision
+
+    def _read(
+        self,
+        memory_item_id: str,
+        memory_version: int,
+        context: GovernedContext,
+        gcs_digest: str,
+        binding_ref: str,
+    ) -> MemoryItemVersionRead:
+        now = self._clock.now()
+        stop_epoch = self._stop_epoch(context)
+        authorization = self._authorize(memory_item_id, memory_version, context)
+        head_version = _head_version(self._metadata.head(memory_item_id))
+        head = (
+            _stored_version(self._metadata.get(memory_item_id, head_version), memory_item_id, head_version)
+            if head_version
+            else None
+        )
+        visible_head = self._visible(head, authorization, context, now)
+        if visible_head is None:
+            raise MemoryRetrievalError(*_NOT_VISIBLE)
+        head_item = visible_head[0]
+        if head_item.lifecycle_status is not LifecycleStatus.ACTIVE or head_item.deletion_epoch is not None:
+            raise MemoryRetrievalError(*_NOT_VISIBLE)
+        if memory_version > head_version:
+            raise MemoryRetrievalError(
+                "MEMORY_VERSION_NOT_FOUND", "VERSION_NOT_VISIBLE", "no visible memory version"
+            )
+        visible: tuple[GovernedMemoryItem, MemoryPolicyDecision] | None
+        if memory_version == head_version:
+            stored, visible = head, visible_head
+        else:
+            stored = _stored_version(self._metadata.get(memory_item_id, memory_version), memory_item_id, memory_version)
+            visible = self._visible(stored, authorization, context, now)
+        if stored is None or visible is None or visible[0].deletion_epoch is not None:
+            raise MemoryRetrievalError(
+                "MEMORY_VERSION_NOT_FOUND", "VERSION_NOT_VISIBLE", "no visible memory version"
+            )
+        item, decision = visible
+        if self._stop_epoch(context) != stop_epoch:
+            raise MemoryRetrievalError(
+                "STOP_EPOCH_MISMATCH", "STOP_EPOCH_CHANGED", "stop epoch changed during the read"
+            )
+        receipt: dict[str, object] = {
+            "action": "getMemoryItemVersion",
+            "correlation_id": context.correlation_id,
+            "governed_context_digest": gcs_digest,
+            "binding_ref": binding_ref,
+            "memory_version_ref": item.version_ref,
+            "item_digest": item.digest(),
+            "authorization_ref": authorization.decision_ref,
+            "materialization_ref": decision.decision_ref,
+            "stop_epoch": stop_epoch,
+            "evaluated_at": format_utc_timestamp(now),
+        }
+        audit_ref = canonical_digest(receipt)
+        self._record({**receipt, "audit_ref": audit_ref})
+        return MemoryItemVersionRead(item=item, audit_ref=audit_ref)
+
+    def _record(self, event: Mapping[str, object]) -> None:
+        payload = dict(event)
+        payload.setdefault("audit_ref", canonical_digest(payload))
+        try:
+            self._audit.record(MappingProxyType(payload))
+        except Exception as exc:  # noqa: BLE001 -- no audit, no answer
+            raise MemoryRetrievalError(
+                "CONTROL_PLANE_UNAVAILABLE", "AUDIT_UNAVAILABLE", "read audit failed closed"
+            ) from exc
+
+
 __all__ = [
     "DEFAULT_QUERY_CONTRACTS",
     "MemoryHit",
+    "MemoryItemReadService",
+    "MemoryItemVersionRead",
     "MemoryQueryContract",
+    "MemoryReadPolicy",
     "MemoryRetrievalError",
     "MemoryRetrievalPolicy",
     "MemorySearchResponse",

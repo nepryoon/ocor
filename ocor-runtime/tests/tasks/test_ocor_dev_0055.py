@@ -182,6 +182,7 @@ class World(t53.World):
             markings=self.markings,
             clock=self.clock,
             limits=AdmissionLimits(retention_horizons={"retention:standard": HORIZON, "retention:short": timedelta(days=30)}),
+            quota=base.RecordingAdmissionQuota(),
         )
         self.lc_policy = LifecycleGrant()
         self.holds = HoldRegistry()
@@ -478,9 +479,15 @@ INVALID_DELETIONS = [
     ("missing scope", {"deletion_scope": _DROP}, "MEMORY_SCHEMA_INVALID", "ENVELOPE_INVALID"),
     ("undeclared scope", {"deletion_scope": "EVERYTHING"}, "MEMORY_SCHEMA_INVALID", "DELETION_SCOPE_INVALID"),
     ("not a trigger", {"reason_code": "BECAUSE"}, "MEMORY_SCHEMA_INVALID", "FORGETTING_TRIGGER_INVALID"),
-    ("latest only", {"deletion_scope": "LATEST_VERSION"}, "UNSUPPORTED_CAPABILITY", "DELETION_SCOPE_UNSUPPORTED"),
-    ("project scope", {"deletion_scope": "PROJECT_SCOPE"}, "UNSUPPORTED_CAPABILITY", "DELETION_SCOPE_UNSUPPORTED"),
-    ("principal scope", {"deletion_scope": "PRINCIPAL_SCOPE"}, "UNSUPPORTED_CAPABILITY", "DELETION_SCOPE_UNSUPPORTED"),
+]
+
+# NCR-MEMORY-003 (OCOR-DEV-REM-0059; NORMATIVE-CONFORMANCE-PLAN point 5 table, NCP-U11):
+# the three declared scopes the contract enum lists (ocor-governed-memory.openapi.yaml:273,
+# LLD v1.1 docs/OCOR_LLD_v1.1.md:421) moved from INVALID_DELETIONS to a positive deletion test.
+DECLARED_DELETIONS = [
+    ("latest only", {"deletion_scope": "LATEST_VERSION"}),
+    ("project scope", {"deletion_scope": "PROJECT_SCOPE"}),
+    ("principal scope", {"deletion_scope": "PRINCIPAL_SCOPE"}),
 ]
 
 
@@ -499,6 +506,18 @@ def test_invalid_deletion_requests_change_nothing_and_are_audited(label: str, ch
     assert ledger_snapshot(world) == before and content_present(world, record)
     assert world.tombstones.latest_epoch() == 0
     assert denials(world) == [(reason, detail)]
+
+
+@pytest.mark.parametrize(("label", "changes"), DECLARED_DELETIONS, ids=[c[0] for c in DECLARED_DELETIONS])
+def test_declared_deletion_scopes_forget_the_item_through_the_saga(label: str, changes: dict[str, Any]) -> None:
+    world = unit_world()
+    world.admit("item", TEXT)
+    body = world.body(reason_code="AUTHORIZED_REQUEST", deletion_scope="ALL_VERSIONS")
+    body.update(changes)
+    receipt = world.lifecycle.request_deletion("item", body, binding=t52.binding())
+    assert receipt.to_mapping()["status"] == "COMPLETED" and receipt.lifecycle_status == "DELETED"
+    assert world.status("item") == "DELETED" and world.tombstones.latest_epoch() == 1
+    assert denials(world) == []
 
 
 def test_policy_denial_stale_bundle_and_outage_fail_closed_before_any_write() -> None:
@@ -1247,6 +1266,7 @@ def test_lifecycle_state_is_durable_across_fresh_adapters(backends: Backends, tm
     world.admission = MemoryAdmissionService(
         ledger=world.ledger, resolver=t52.Resolver(), policy=LifecycleGuardPolicy(base.Policy(), ledger=world.ledger),
         markings=world.markings, clock=world.clock, limits=AdmissionLimits(retention_horizons={"retention:standard": HORIZON}),
+        quota=base.RecordingAdmissionQuota(),
     )
     world.coordinator = world.build()
     world.lifecycle = world.build_lifecycle()
