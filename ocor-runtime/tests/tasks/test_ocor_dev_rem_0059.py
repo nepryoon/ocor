@@ -468,6 +468,52 @@ def test_ncr_memory_002_consolidation_output_is_counted_against_quota_at_admissi
     ) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
 
 
+NO_QUOTA = ("CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE")
+
+
+@pytest.mark.parametrize("quota", [None, object(), "quota"], ids=["absent", "not-an-authority", "string"])
+def test_ncr_memory_002_admission_without_a_quota_authority_refuses_and_writes_nothing(backends: t52.Backends, quota: Any) -> None:
+    """VF-001: ``admitMemory`` verifies quota before the atomic write on every path (LLD v1.1 §2.8.2 :206).
+
+    NCP-U11-ADMISSION-QUOTA-COMPOSITION (2026-11-09) option A1: without a quota
+    authority, or with a value that is not one, the admission refuses before
+    any write and the refusal is audited.
+    """
+
+    world = backends.world()
+    audit = t52.Audit()
+    extra = {} if quota is None else {"quota": quota}
+    world.admission = MemoryAdmissionService(
+        ledger=world.ledger, resolver=t52.Resolver(), policy=t52.base.Policy(), markings=world.markings,
+        clock=world.clock, limits=AdmissionLimits(retention_horizons=RETENTION), audit=audit, **extra,
+    )
+    assert _admission_refused(lambda: world.admit("a", TEXT)) == NO_QUOTA
+    assert world.ledger.get("a", 1) is None and world.ledger.latest_version("a") == 0 and world.metadata.head("a") == 0
+    assert [(e["reason_code"], e["detail_code"]) for e in audit.events] == [NO_QUOTA]
+
+
+def test_ncr_memory_002_consolidation_through_an_admission_without_quota_writes_no_memory_item(
+    consolidation_backends: t54.Backends,
+) -> None:
+    """VF-001: the consolidation path admits its derived items only through the quota check.
+
+    The six convoy reports are admitted with the quota; the consolidation then
+    runs over an admission without a quota authority: the first derived item
+    is refused at admission and the job writes no memory item.
+    """
+
+    world = _consolidation_world(consolidation_backends, max_items=8)
+    sources = t54.convoy_sources(world)
+    world.admission = MemoryAdmissionService(
+        ledger=world.ledger, resolver=world.references, policy=world.guard, audit=world.admission_audit,
+        markings=world.markings, clock=world.clock, limits=AdmissionLimits(retention_horizons=RETENTION),
+    )
+    request = t54.consolidation_request(t54.refs_of(sources))
+    assert _admission_refused(lambda: world.consolidator().consolidate(request, binding=t52.binding(t54.CTX))) == NO_QUOTA
+    assert _items(world, sources) == 6
+    assert [e["detail_code"] for e in t54.denials(world)] == ["QUOTA_UNAVAILABLE"]
+
+
 # --------------------------------------------------------------------------
 # NCR-MEMORY-005: rebuild of committed full-text and vector projections
 # --------------------------------------------------------------------------
