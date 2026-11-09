@@ -1534,3 +1534,86 @@ def test_ncr_memory_001_postgres_rows_are_type_checked_before_use() -> None:
         assert _code(lambda r=ref: _lexical([[("simple",)], [(r, 0.5)]]).score_entries(part, "v", "q", ["r"])) == (
             "INTERNAL_ERROR", "POINTER_INVALID")
     assert _code(lambda: _pg([[("{}", "x", "COMMITTED")]]).get("mem-p", 1)) == ("INTERNAL_ERROR", "METADATA_INVALID")
+
+
+# SELF-CHECK-CLASS-COVERAGE (2026-11-08) point 2: the journal ledger re-reads stored data
+# (JournalMemoryVersionLedger._catch_up/_apply, reached by records(), the inventory of
+# MemoryAdmissionQuota): decoding, types and finite numbers are checked on every line.
+
+
+def _journal_entry(path: Any) -> dict[str, Any]:
+    from ocor_runtime.kernel.canonical import parse_i_json
+
+    lines = path.read_bytes().splitlines()
+    assert len(lines) == 1
+    entry = parse_i_json(lines[0])
+    assert isinstance(entry, dict)
+    return entry
+
+
+def _write_entry(path: Any, entry: dict[str, Any]) -> None:
+    from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest
+
+    body = {"seq": entry["seq"], "prev": entry["prev"], "record": entry["record"]}
+    path.write_bytes(canonical_bytes(dict(body, entry_digest=canonical_digest(body))) + b"\n")
+
+
+def test_ncr_memory_002_a_journal_entry_whose_chain_fields_have_the_wrong_type_is_refused(tmp_path: Any) -> None:
+    """A boolean is never an integer: a re-chained entry with seq true is refused on re-read and by records()."""
+
+    from ocor_runtime.memory.model import JournalMemoryVersionLedger, MemoryLedgerCorrupted
+
+    path = tmp_path / "versions.jsonl"
+    ledger = JournalMemoryVersionLedger(path)
+    t50.make_world(ledger).admit(t50.candidate())
+    entry = _journal_entry(path)
+    assert entry["seq"] == 1 and len(ledger.records()) == 1
+    for field, value in (("seq", True), ("seq", "1"), ("seq", None), ("prev", 0), ("prev", None), ("record", [])):
+        _write_entry(path, dict(entry, **{field: value}))
+        with pytest.raises(MemoryLedgerCorrupted):
+            JournalMemoryVersionLedger(path)
+    for digest in (1, True, None, ["urn:sha256:" + "0" * 64]):
+        path.write_bytes(json.dumps(dict(entry, entry_digest=digest), sort_keys=True, separators=(",", ":")).encode() + b"\n")
+        with pytest.raises(MemoryLedgerCorrupted):
+            JournalMemoryVersionLedger(path)
+    # A line appended by another process is checked by records() before the inventory answers.
+    _write_entry(path, entry)
+    reopened = JournalMemoryVersionLedger(path)
+    second = dict(entry, seq=True, prev=entry["entry_digest"])
+    from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest
+
+    body = {"seq": second["seq"], "prev": second["prev"], "record": second["record"]}
+    with path.open("ab") as handle:
+        handle.write(canonical_bytes(dict(body, entry_digest=canonical_digest(body))) + b"\n")
+    with pytest.raises(MemoryLedgerCorrupted):
+        reopened.records()
+
+
+def test_ncr_memory_002_a_journal_line_that_is_not_strict_i_json_is_refused(tmp_path: Any) -> None:
+    """Every decoding and parsing error of a re-read journal line, and every non-finite number, is MEMORY_LEDGER_CORRUPTED."""
+
+    from ocor_runtime.memory.model import JournalMemoryVersionLedger, MemoryLedgerCorrupted
+
+    path = tmp_path / "versions.jsonl"
+    t50.make_world(JournalMemoryVersionLedger(path)).admit(t50.candidate())
+    line = path.read_bytes().rstrip(b"\n")
+    assert b'"confidence":0.8' in line
+    variants = [
+        line.replace(b'"confidence":0.8', b'"confidence":NaN'),
+        line.replace(b'"confidence":0.8', b'"confidence":Infinity'),
+        line.replace(b'"confidence":0.8', b'"confidence":-Infinity'),
+        line.replace(b'"confidence":0.8', b'"confidence":1e400'),
+        line.replace(b'"seq":1', b'"seq":1,"seq":1'),
+        line.replace(b'"confidence":0.8', b'"confidence":0.8,"confidence":0.8'),
+        line[:-1] + b"\xff}",
+        line[:-1] + b"\xed\xa0\x80}",
+        b"\xef\xbb\xbf" + line,
+        line[:-1],
+        b"[]",
+        b"",
+    ]
+    for variant in variants:
+        path.write_bytes(variant + b"\n")
+        with pytest.raises(MemoryLedgerCorrupted) as caught:
+            JournalMemoryVersionLedger(path)
+        assert (caught.value.reason_code, caught.value.detail_code) == ("INTERNAL_ERROR", "MEMORY_LEDGER_CORRUPTED"), variant
