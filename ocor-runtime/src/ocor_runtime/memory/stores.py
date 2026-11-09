@@ -920,8 +920,11 @@ class EligibilityPredicate:
 
     A version matches when it is the item's head (not ``superseded``),
     ``ACTIVE``, not deleted, of a requested kind and scope, valid at
-    ``valid_at``, unexpired at ``now`` and accepted by the structured filters.
-    ``accepts`` is the reference semantics every adapter must reproduce.
+    ``valid_at``, unexpired at ``now``, accepted by the structured filters and
+    not among ``excluded_memory_item_ids``, the items the pre-query policy
+    denies inside an authorised partition (LLD v1.1 §2.8.3: they influence
+    neither page, count, rank nor error).  ``accepts`` is the reference
+    semantics every adapter must reproduce.
     """
 
     memory_kinds: frozenset[str]
@@ -932,11 +935,18 @@ class EligibilityPredicate:
     content_schema_refs: frozenset[str] | None = None
     min_confidence: float | None = None
     exclude_taint_labels: frozenset[str] = frozenset()
+    excluded_memory_item_ids: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         if not self.memory_kinds or not self.memory_scopes:
             raise MemoryStoreError(
                 "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "kinds and scopes must not be empty"
+            )
+        if not isinstance(self.excluded_memory_item_ids, frozenset) or not all(
+            isinstance(ref, str) and ref for ref in self.excluded_memory_item_ids
+        ):
+            raise MemoryStoreError(
+                "MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "excluded items must be item identifiers"
             )
         _micros(self.valid_at)
         _micros(self.now)
@@ -952,7 +962,8 @@ class EligibilityPredicate:
     def accepts(self, attributes: Mapping[str, object]) -> bool:
         try:
             if (
-                attributes["superseded"] is not False
+                attributes["memory_item_id"] in self.excluded_memory_item_ids
+                or attributes["superseded"] is not False
                 or attributes["deleted"] is not False
                 or attributes["lifecycle_status"] != "ACTIVE"
                 or attributes["memory_kind"] not in self.memory_kinds
@@ -1002,6 +1013,11 @@ class EligibilityPredicate:
             else sorted(self.content_schema_refs),
             "min_confidence": self.min_confidence,
             "exclude_taint_labels": sorted(self.exclude_taint_labels),
+            **(
+                {"excluded_memory_item_ids": sorted(self.excluded_memory_item_ids)}
+                if self.excluded_memory_item_ids
+                else {}
+            ),
         }
 
 

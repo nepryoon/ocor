@@ -173,6 +173,9 @@ class GrantPolicy:
     permitted: bool = True
     bundle: str | None = None
     denied_items: set[str] = field(default_factory=set)
+    # Denied at materialisation only, after the pre-query partition admitted them
+    # (a live revocation between planning and materialisation).
+    revoked_after_plan: set[str] = field(default_factory=set)
     fail: bool = False
     calls: list[str] = field(default_factory=list)
 
@@ -188,12 +191,13 @@ class GrantPolicy:
             memory_scopes=self.scopes,
             scope_bindings=dict(self.scope_bindings),
             domains=self.domains,
+            denied_memory_item_ids=frozenset(self.denied_items),
         )
 
     def authorize_materialization(self, item: GovernedMemoryItem, ctx: GovernedContext) -> MemoryPolicyDecision:
         self.calls.append(f"materialize:{item.version_ref}")
         return MemoryPolicyDecision(
-            permitted=item.memory_item_id not in self.denied_items,
+            permitted=item.memory_item_id not in self.denied_items | self.revoked_after_plan,
             decision_ref=f"decision:materialize:{item.version_ref}",
             policy_bundle_digest=ctx.policy_bundle_digest,
         )
@@ -694,7 +698,7 @@ def test_ineligible_hits_are_skipped_until_the_pool_is_full_then_backpressure() 
     # Only a post-query drop (here a live policy denial) consumes the bound.
     for n in range(6):
         world.admit(f"denied-{n}", "shared token denied")
-        world.policy.denied_items.add(f"denied-{n}")
+        world.policy.revoked_after_plan.add(f"denied-{n}")
     service = world.service(ranking_profiles=(RankingProfile(candidate_pool=1),), limits=RetrievalLimits(max_candidates=8))
     response = service.search(request(RetrievalMode.FULL_TEXT, text="shared token", top_k=1), binding=binding())
     assert refs(response) == ["urn:ocor:memory:active-1:v1"]

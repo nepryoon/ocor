@@ -131,6 +131,9 @@ def _attribute_sql(column: str, where: EligibilityPredicate) -> tuple[str, list[
     if where.exclude_taint_labels:
         clauses.append(f"NOT ({a}->'taint_labels' ?| %s)")
         params.append(sorted(where.exclude_taint_labels))
+    if where.excluded_memory_item_ids:
+        clauses.append(f"NOT ({a}->>'memory_item_id' = ANY(%s))")
+        params.append(sorted(where.excluded_memory_item_ids))
     return " AND ".join(clauses), params
 
 
@@ -158,6 +161,9 @@ def _item_sql(where: EligibilityPredicate) -> tuple[str, list[Any]]:
     if where.exclude_taint_labels:
         clauses.append(f"NOT ({i}->'taint_labels' ?| %s)")
         params.append(sorted(where.exclude_taint_labels))
+    if where.excluded_memory_item_ids:
+        clauses.append("NOT (v.memory_item_id = ANY(%s))")
+        params.append(sorted(where.excluded_memory_item_ids))
     return " AND ".join(clauses), params
 
 
@@ -585,8 +591,13 @@ class QdrantVectorIndex:
         if where.min_confidence is not None:
             must.append({"key": e + "confidence", "range": {"gte": where.min_confidence}})
         query_filter: dict[str, Any] = {"must": must}
+        must_not: list[dict[str, Any]] = []
         if where.exclude_taint_labels:
-            query_filter["must_not"] = [{"key": e + "taint_labels", "match": {"any": sorted(where.exclude_taint_labels)}}]
+            must_not.append({"key": e + "taint_labels", "match": {"any": sorted(where.exclude_taint_labels)}})
+        if where.excluded_memory_item_ids:
+            must_not.append({"key": e + "memory_item_id", "match": {"any": sorted(where.excluded_memory_item_ids)}})
+        if must_not:
+            query_filter["must_not"] = must_not
         return query_filter
 
     def search_eligible(

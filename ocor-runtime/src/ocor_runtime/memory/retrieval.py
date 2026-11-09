@@ -326,6 +326,13 @@ class RetrievalAuthorization:
     ``task_id``, ``agent_id``, ``team_id``, ``project_id``,
     ``federation_policy_ref``) to the values the caller holds explicit
     Authority for.  ``domains`` lists additional domains (cross-domain Authority).
+    ``denied_memory_item_ids`` completes the authorised partition down to the
+    item: the items the live policy denies inside an authorised partition.
+    They are excluded inside every index and metadata query, so they influence
+    neither page, count, rank, score normalisation nor error (LLD v1.1 §2.8.3,
+    FR-119, FGM-16); the post-query materialisation decision still re-validates
+    every hit.  ``decision_ref`` identifies the decision that lists them: the
+    receipt never does.
     """
 
     permitted: bool
@@ -339,6 +346,7 @@ class RetrievalAuthorization:
     policy_bundle_digests: frozenset[str] = frozenset()
     ontology_release_digests: frozenset[str] = frozenset()
     reason: str = ""
+    denied_memory_item_ids: frozenset[str] = frozenset()
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -958,6 +966,7 @@ class MemorySearchService:
             content_schema_refs=filters.content_schema_refs,
             min_confidence=filters.min_confidence,
             exclude_taint_labels=filters.exclude_taint_labels,
+            excluded_memory_item_ids=authorization.denied_memory_item_ids,
         )
         return _Plan(
             query=query,
@@ -1001,6 +1010,15 @@ class MemorySearchService:
         if not isinstance(authorization, RetrievalAuthorization):
             raise MemoryRetrievalError(
                 "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
+            )
+        denied = authorization.denied_memory_item_ids
+        if not isinstance(denied, frozenset) or not all(
+            isinstance(ref, str) and ref for ref in denied
+        ):
+            raise MemoryRetrievalError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "POLICY_DECISION_INVALID",
+                "the pre-query item partition is not a set of item identifiers",
             )
         if authorization.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
@@ -1078,6 +1096,8 @@ class MemorySearchService:
             return None
         item = stored.staged.verify()
         query, context = plan.query, plan.context
+        if item.memory_item_id in plan.authorization.denied_memory_item_ids:
+            return None  # outside the pre-query partition (an index must not return it)
         if self._metadata.head(item.memory_item_id) != item.memory_version:
             return None  # superseded, corrected or reclassified: never the exact current one
         if item.lifecycle_status is not LifecycleStatus.ACTIVE or item.deletion_epoch is not None:

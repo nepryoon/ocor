@@ -536,7 +536,7 @@ def test_backpressure_is_raised_only_by_the_declared_bound_on_post_query_drops(b
     assert refs(search(world, RetrievalMode.HYBRID, text="minefield marker", service=tight)) == ["urn:ocor:memory:active:v1"]
     for n in range(20):
         world.admit(f"denied-{n:02d}", "minefield marker")
-        world.policy.denied_items.add(f"denied-{n:02d}")
+        world.policy.revoked_after_plan.add(f"denied-{n:02d}")
     assert refs(search(world, RetrievalMode.FULL_TEXT, text="minefield marker")) == ["urn:ocor:memory:active:v1"]
     refused(world, RetrievalMode.FULL_TEXT, "REPRESENTATION_NOT_READY", "RETRIEVAL_BACKPRESSURE",
             text="minefield marker", service={"limits": RetrievalLimits(max_candidates=16)})
