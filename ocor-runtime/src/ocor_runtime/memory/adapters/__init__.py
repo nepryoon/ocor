@@ -114,10 +114,31 @@ def _object(raw: object, detail: str) -> Mapping[str, Any]:
     return value
 
 
+def _finite_number(value: object) -> float | None:
+    """A JSON/SQL number as a finite float, or ``None`` (booleans, non-numbers, NaN, Infinity, overflow)."""
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        number = float(value)
+    except OverflowError:  # an integer beyond the float range
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _ref(value: object) -> str:
+    """A ``store_ref`` column: a non-empty string, never a coerced value."""
+
+    if not isinstance(value, str) or not value:
+        raise MemoryStoreCorrupted("POINTER_INVALID", "the full-text row has no store reference")
+    return value
+
+
 def _rank(value: object) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+    number = _finite_number(value)
+    if number is None:
         raise MemoryStoreCorrupted("POINTER_INVALID", "the full-text rank is not a finite number")
-    return float(value)
+    return number
 
 
 def _http(method: str, url: str, body: Any | None = None, *, headers: Mapping[str, str] | None = None, timeout: float = 5.0) -> tuple[int, Any]:
@@ -132,6 +153,8 @@ def _http(method: str, url: str, body: Any | None = None, *, headers: Mapping[st
     except urllib.error.HTTPError as exc:
         try:
             raw = exc.read()
+        except (OSError, http.client.HTTPException) as read_exc:  # a failure body cut short
+            raise MemoryBackendUnavailable(f"{method} {url}: {type(read_exc).__name__}") from read_exc
         finally:
             exc.close()
         try:
@@ -201,8 +224,8 @@ class OpenBaoTransitCipher:
             {"ciphertext": ciphertext, **self._params(context)},
         )
         try:
-            return base64.b64decode(self._field(data, "plaintext"), validate=True)
-        except binascii.Error as exc:
+            return base64.b64decode(self._field(data, "plaintext").encode("ascii"), validate=True)
+        except (UnicodeEncodeError, binascii.Error) as exc:
             raise MemoryStoreCorrupted("CIPHER_ANSWER_INVALID", "the transit plaintext is not base64") from exc
 
 
@@ -314,6 +337,8 @@ class PostgresStores:
     # -- MemoryMetadataStore -------------------------------------------------
 
     def _row(self, row: tuple[str, str, str, str | None]) -> StoredVersion:
+        if len(row) != 4:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "the version row is malformed")
         body, staged_at, state, committed_at = row
         try:
             version_state = VersionState(state)
@@ -497,7 +522,12 @@ class PostgresContentStore:
                 f'SELECT object_ref FROM "{self._s.schema}".content WHERE partition_digest = %s ORDER BY object_ref',
                 (partition_digest,),
             ).fetchall()
-        return tuple(row[0] for row in rows)
+        refs: list[str] = []
+        for row in rows:
+            if len(row) != 1 or not isinstance(row[0], str) or not row[0]:
+                raise MemoryStoreCorrupted("CONTENT_INVALID", "a content row has no object reference")
+            refs.append(row[0])
+        return tuple(refs)
 
 
 class PostgresLexicalIndex:
@@ -518,7 +548,11 @@ class PostgresLexicalIndex:
         row = conn.execute(
             f'SELECT configuration FROM "{self._s.schema}".lexical_layouts WHERE table_name = %s', (table,)
         ).fetchone()
-        return None if row is None else str(row[0])
+        if row is None:
+            return None
+        if len(row) != 1 or not isinstance(row[0], str) or not row[0]:
+            raise MemoryStoreCorrupted("POINTER_INVALID", "the full-text layout row is malformed")
+        return row[0]
 
     def upsert(
         self, partition: MemoryPartition, profile: LexicalProfile, store_ref: str, payload: Mapping[str, object], document: str,
@@ -556,7 +590,7 @@ class PostgresLexicalIndex:
                 "ORDER BY score DESC, store_ref ASC LIMIT %s OFFSET %s",
                 (config, query, limit, offset),
             ).fetchall()
-        return [IndexHit(row[0], _object(row[1], "POINTER_INVALID"), _rank(row[2])) for row in rows]
+        return [IndexHit(_ref(row[0]), _object(row[1], "POINTER_INVALID"), _rank(row[2])) for row in rows]
 
     def search_eligible(
         self, partition: MemoryPartition, representation_version: str, query: str, *,
@@ -574,7 +608,7 @@ class PostgresLexicalIndex:
                 "ORDER BY score DESC, store_ref ASC LIMIT %s OFFSET %s",
                 (config, query, *params, limit, offset),
             ).fetchall()
-        return [IndexHit(row[0], _object(row[1], "POINTER_INVALID"), _rank(row[2])) for row in rows]
+        return [IndexHit(_ref(row[0]), _object(row[1], "POINTER_INVALID"), _rank(row[2])) for row in rows]
 
     def score_entries(
         self, partition: MemoryPartition, representation_version: str, query: str, store_refs: Sequence[str]
@@ -591,7 +625,7 @@ class PostgresLexicalIndex:
                 "plainto_tsquery(%s::regconfig, %s) AS q WHERE store_ref = ANY(%s)",
                 (config, query, list(store_refs)),
             ).fetchall()
-        return {row[0]: _rank(row[1]) for row in rows}
+        return {_ref(row[0]): _rank(row[1]) for row in rows}
 
     def retire(self, partition: MemoryPartition, representation_version: str, memory_item_id: str, below_version: int) -> None:
         s, table = self._s.schema, self.table(partition, representation_version)
@@ -637,7 +671,7 @@ class PostgresLexicalIndex:
             if self._layout(conn, table) is None:
                 return []
             rows = conn.execute(f'SELECT store_ref, payload FROM "{s}"."{table}" ORDER BY store_ref').fetchall()
-        return [IndexHit(row[0], _object(row[1], "POINTER_INVALID"), 0.0) for row in rows]
+        return [IndexHit(_ref(row[0]), _object(row[1], "POINTER_INVALID"), 0.0) for row in rows]
 
     def remove(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> None:
         s, table = self._s.schema, self.table(partition, representation_version)
@@ -797,14 +831,12 @@ class QdrantVectorIndex:
             point_id = point.get("id")
             payload = point.get("payload")
             payload = {} if payload is None else payload
-            score = point.get("score") if scored else 0.0
+            score = _finite_number(point.get("score") if scored else 0.0)
             if (
                 isinstance(point_id, bool)
                 or not isinstance(point_id, (str, int))
                 or not isinstance(payload, Mapping)
-                or isinstance(score, bool)
-                or not isinstance(score, (int, float))
-                or not math.isfinite(score)
+                or score is None
             ):
                 raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "a Qdrant point is malformed")
             store_ref = payload.get("store_ref")
@@ -813,7 +845,7 @@ class QdrantVectorIndex:
             if not isinstance(store_ref, str) or self.point_id(store_ref) != str(point_id):
                 store_ref = self.UNBOUND_POINT + str(point_id)
             pointer = payload.get("pointer")
-            hits.append(IndexHit(store_ref, pointer if isinstance(pointer, dict) else {}, float(score)))
+            hits.append(IndexHit(store_ref, pointer if isinstance(pointer, dict) else {}, score))
         return hits
 
     def search(self, partition: MemoryPartition, representation_version: str, vector: Sequence[float], *, limit: int, offset: int) -> Sequence[IndexHit]:

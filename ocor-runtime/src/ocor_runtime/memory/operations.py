@@ -47,6 +47,7 @@ from .lifecycle import MemoryLifecycleCoordinator, TombstoneEntry
 from .model import (
     ENVELOPE_FIELDS, AdmittedMemoryVersion, GovernedMemoryItem, LifecycleStatus,
     MemoryAdmissionError, MemoryAdmissionService, MemoryPolicyDecision, MemoryVersionLedger, RepresentationKind,
+    require_policy_decision,
 )
 from .retrieval import RetrievalAuditSink, StopEpochPort
 from .stores import (
@@ -295,8 +296,10 @@ class MemoryOperationsService:
             decision = self._policy.authorize_operations(operation, partition, ctx)
         except Exception as exc:  # noqa: BLE001 -- unavailable policy denies
             raise _error("POLICY_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
-        if not isinstance(decision, MemoryPolicyDecision) or type(decision.permitted) is not bool or not decision.decision_ref:
-            raise _error("POLICY_DECISION_INVALID", "CONTROL_PLANE_UNAVAILABLE")
+        try:
+            decision = require_policy_decision(decision)
+        except MemoryAdmissionError as exc:
+            raise _error("POLICY_DECISION_INVALID", "CONTROL_PLANE_UNAVAILABLE") from exc
         if decision.policy_bundle_digest != ctx.policy_bundle_digest:
             raise _error("STALE_POLICY", "STALE_POLICY")
         if not decision.permitted:
@@ -512,14 +515,46 @@ class MemoryQuotaSerialization(Protocol):
     def hold(self, partition_digest: str) -> AbstractContextManager[None]: ...
 
 
+def _pending_new_items(
+    ledger: MemoryVersionLedger, partition: MemoryPartition, heads: tuple[_Head, ...], candidate: GovernedMemoryItem,
+) -> tuple[GovernedMemoryItem, ...]:
+    """Items admitted to the ledger into ``partition`` with no committed head there yet.
+
+    An admission whose store commit has not happened (or failed) is not a
+    committed head, but it is an admitted item of the partition: it consumes
+    item and index quota from its admission on (LLD v1.1 §2.8.2). The
+    candidate's own item is the demand, never a second item.
+    """
+
+    records = getattr(ledger, "records", None)
+    if not callable(records):
+        raise _error("LEDGER_INVENTORY_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
+    latest: dict[str, AdmittedMemoryVersion] = {}
+    for record in records():
+        if not isinstance(record, AdmittedMemoryVersion):
+            raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
+        current = latest.get(record.item.memory_item_id)
+        if current is None or record.item.memory_version > current.item.memory_version:
+            latest[record.item.memory_item_id] = record
+    committed = {h.record.item.memory_item_id for h in heads}
+    return tuple(
+        record.item for item_id, record in sorted(latest.items())
+        if item_id != candidate.memory_item_id and item_id not in committed
+        and MemoryPartition.for_item(record.item).digest == partition.digest
+        and record.item.lifecycle_status is not LifecycleStatus.DELETED
+    )
+
+
 def _enforce_write_quota(
     limits: MemoryOperationsLimits, heads: tuple[_Head, ...], item: GovernedMemoryItem,
-    payload_bytes: int, embedding_dimensions: int,
+    payload_bytes: int, embedding_dimensions: int, pending: tuple[GovernedMemoryItem, ...] = (),
 ) -> None:
-    """Quota of one new version of ``item`` against the committed heads of its partition."""
+    """Quota of one new version of ``item`` against the committed heads and the pending admissions of its partition."""
 
     previous = next((h for h in heads if h.record.item.memory_item_id == item.memory_item_id), None)
     usage = _usage(heads)
+    usage = replace(usage, items=usage.items + len(pending), index_entries=usage.index_entries + sum(
+        len(p.representation_kinds) for p in pending if p.lifecycle_status is LifecycleStatus.ACTIVE))
     existing_slots = 0
     if previous is not None and previous.record.item.lifecycle_status is LifecycleStatus.ACTIVE:
         existing_slots = len(previous.stored.staged.pointers)
@@ -547,17 +582,18 @@ class MemoryAdmissionQuota:
 
     The trusted ``quota`` port of ``MemoryAdmissionService``: the same quotas
     and demand as ``MemoryQuotaWriter``, evaluated for the candidate against the
-    committed heads of its partition while the serialization domain of that
-    partition is held around the admission's single ledger append. Every
-    admission composed with it -- including the derived items of
-    ``MemoryConsolidationService`` -- is therefore counted at admission. An
-    admitted version not yet committed to the stores is not a committed head:
-    a partition with such a version refuses (``HEAD_NOT_COMMITTED``) when it
-    is an existing item's, and an admission/commit window of a new item belongs
-    to the store commit that follows, as for ``MemoryQuotaWriter``. Embedding
-    demand is the dimension count the candidate digests. A writer already
-    holding the serialization (``MemoryQuotaWriter``) must not compose this
-    port over the same domain: it applies the same quota under its own hold.
+    committed heads of its partition and every item already admitted to the
+    ledger into it without a committed head (an admission whose store commit
+    has not happened yet counts from its admission on), while the
+    serialization domain of that partition is held around the admission's
+    single ledger append. Every admission composed with it -- including the
+    derived items of ``MemoryConsolidationService`` -- is therefore counted at
+    admission. A partition where an existing item has a version admitted and
+    not committed refuses (``HEAD_NOT_COMMITTED``). The ledger must offer its
+    inventory (``records()``). Embedding demand is the dimension count the
+    candidate digests. A writer already holding the serialization
+    (``MemoryQuotaWriter``) must not compose this port over the same domain:
+    it applies the same quota under its own hold.
     """
 
     def __init__(
@@ -566,6 +602,8 @@ class MemoryAdmissionQuota:
     ) -> None:
         if not isinstance(limits, MemoryOperationsLimits):
             raise TypeError("admission quota requires MemoryOperationsLimits")
+        if not callable(getattr(ledger, "records", None)):
+            raise TypeError("admission quota requires a ledger with an inventory (records())")
         self._metadata, self._ledger, self._limits, self._serialization = metadata, ledger, limits, serialization
 
     @contextmanager
@@ -579,8 +617,9 @@ class MemoryAdmissionQuota:
             except Exception as exc:  # noqa: BLE001 -- no unserialized quota check or write
                 raise _error("QUOTA_SERIALIZATION_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
             dimensions = item.embedding_dimensions if RepresentationKind.VECTOR in item.representation_kinds else 0
-            _enforce_write_quota(self._limits, _partition_heads(self._metadata, self._ledger, partition),
-                                 item, len(payload), dimensions or 0)
+            heads = _partition_heads(self._metadata, self._ledger, partition)
+            _enforce_write_quota(self._limits, heads, item, len(payload), dimensions or 0,
+                                 _pending_new_items(self._ledger, partition, heads, item))
             yield
 
 
@@ -652,8 +691,10 @@ class MemoryQuotaWriter:
     ) -> StoreCommitReceipt:
         service = self._operations
         service._check("memoryWrite", plan)  # also after a bounded wait for the lock
-        _enforce_write_quota(service._limits, service._heads(plan.partition), item, len(payload),
-                             len(vector) if vector is not None else 0)
+        heads = service._heads(plan.partition)
+        pending = _pending_new_items(service._ledger, plan.partition, heads, item)
+        _enforce_write_quota(service._limits, heads, item, len(payload),
+                             len(vector) if vector is not None else 0, pending)
         service._check("memoryWrite", plan)
         receipt = self._admission.admit({
             "operation_id": plan.operation_id, "governed_context": plan.context.to_mapping(),

@@ -1461,7 +1461,7 @@ def test_ncr_memory_005_a_drifted_full_text_projection_is_repaired_by_the_rebuil
     assert _store_refused(lambda: world.coordinator.read_version(partition, "x", 1)) == ("REPRESENTATION_NOT_READY", "PROJECTION_DRIFT")
     report = world.coordinator.rebuild_projections(partition, "x", 1, embedding=t52.embed(TEXT))
     assert report.rebuilt == (pointer.store_ref,)
-    assert index.read_back(partition, pointer.representation_version, pointer.store_ref).document == world.coordinator.read_version(
+    assert index.read_back(partition, pointer.representation_version, pointer.store_ref).body == world.coordinator.read_version(
         partition, "x", 1).payload.decode()
     assert _hits(world, RetrievalMode.FULL_TEXT, TEXT) == [record.item.version_ref]
     assert _hits(world, RetrievalMode.FULL_TEXT, "tampered") == []
@@ -1527,3 +1527,10 @@ def test_ncr_memory_001_postgres_rows_are_type_checked_before_use() -> None:
     for rows in ([(7,)], [(None,)], [("",)], [("a", "b")], [("a",), (True,)]):
         assert _code(lambda rows=rows: A.PostgresContentStore(_pg([rows])).refs("part")) == ("INTERNAL_ERROR", "CONTENT_INVALID"), rows
     assert A.PostgresContentStore(_pg([[("a",), ("b",)]])).refs("part") == ("a", "b")
+    for ref in (None, 7, ""):
+        assert _code(lambda r=ref: _lexical([[("simple",)], [(r, "{}", 0.5)]]).search(part, "v", "q", limit=1, offset=0)) == (
+            "INTERNAL_ERROR", "POINTER_INVALID"), ref
+        assert _code(lambda r=ref: _lexical([[("simple",)], [(r, "{}")]]).entries(part, "v")) == ("INTERNAL_ERROR", "POINTER_INVALID")
+        assert _code(lambda r=ref: _lexical([[("simple",)], [(r, 0.5)]]).score_entries(part, "v", "q", ["r"])) == (
+            "INTERNAL_ERROR", "POINTER_INVALID")
+    assert _code(lambda: _pg([[("{}", "x", "COMMITTED")]]).get("mem-p", 1)) == ("INTERNAL_ERROR", "METADATA_INVALID")

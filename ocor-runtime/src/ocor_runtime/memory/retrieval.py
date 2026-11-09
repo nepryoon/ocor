@@ -419,9 +419,15 @@ def _require_decision(decision: object) -> MemoryPolicyDecision:
     return require_policy_decision(decision, MemoryRetrievalError)
 
 
-def _stored_version(value: object) -> StoredVersion | None:
-    if value is not None and not isinstance(value, StoredVersion):
+def _stored_version(value: object, memory_item_id: str, memory_version: int) -> StoredVersion | None:
+    """The metadata answer for one slot: absent, or a stored version of exactly that slot."""
+
+    if value is None:
+        return None
+    if not isinstance(value, StoredVersion):
         raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store returned no stored version")
+    if (value.staged.memory_item_id, value.staged.memory_version) != (memory_item_id, memory_version):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store returned another slot")
     return value
 
 
@@ -1175,7 +1181,7 @@ class MemorySearchService:
     def _eligible(self, plan: _Plan, memory_item_id: str, memory_version: int) -> _Candidate | None:
         """Re-validate one exact committed version against the plan and live policy."""
 
-        stored = _stored_version(self._metadata.get(memory_item_id, memory_version))
+        stored = _stored_version(self._metadata.get(memory_item_id, memory_version), memory_item_id, memory_version)
         if stored is None or stored.state is not VersionState.COMMITTED:
             return None
         partition = stored.staged.partition
@@ -1873,7 +1879,11 @@ class MemoryItemReadService:
         stop_epoch = self._stop_epoch(context)
         authorization = self._authorize(memory_item_id, memory_version, context)
         head_version = _head_version(self._metadata.head(memory_item_id))
-        head = _stored_version(self._metadata.get(memory_item_id, head_version)) if head_version else None
+        head = (
+            _stored_version(self._metadata.get(memory_item_id, head_version), memory_item_id, head_version)
+            if head_version
+            else None
+        )
         visible_head = self._visible(head, authorization, context, now)
         if visible_head is None:
             raise MemoryRetrievalError(*_NOT_VISIBLE)
@@ -1888,7 +1898,7 @@ class MemoryItemReadService:
         if memory_version == head_version:
             stored, visible = head, visible_head
         else:
-            stored = _stored_version(self._metadata.get(memory_item_id, memory_version))
+            stored = _stored_version(self._metadata.get(memory_item_id, memory_version), memory_item_id, memory_version)
             visible = self._visible(stored, authorization, context, now)
         if stored is None or visible is None or visible[0].deletion_epoch is not None:
             raise MemoryRetrievalError(

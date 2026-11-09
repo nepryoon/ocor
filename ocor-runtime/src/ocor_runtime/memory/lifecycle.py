@@ -73,12 +73,13 @@ import os
 import re
 import threading
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import MappingProxyType
-from typing import BinaryIO, Protocol
+from typing import BinaryIO, Protocol, TypeVar
 
 from ..errors import CanonicalizationError
 from ..kernel.canonical import (
@@ -119,6 +120,7 @@ from .model import (
     MemoryVersionLedger,
     RepresentationKind,
     idempotency_key,
+    require_policy_decision,
 )
 from .retrieval import StopEpochPort
 from .stores import (
@@ -139,6 +141,12 @@ from .stores import (
     structured_representation_version,
     vector_digest,
 )
+
+T = TypeVar("T")
+
+
+def _scope_members_digest(members: Sequence[str]) -> str:
+    return canonical_digest({"scope_members": list(members)})
 
 OPERATION_TRANSITION = "transitionMemoryLifecycle"
 OPERATION_DELETE = "requestMemoryDeletion"
@@ -845,6 +853,7 @@ class _Plan:
     legal_hold_ref: str | None = None
     stop_epoch: int | None = None
     deletion_scope: str = "ALL_VERSIONS"
+    scope_members: tuple[str, ...] = ()
 
 
 # --------------------------------------------------------------------------
@@ -1078,12 +1087,29 @@ class MemoryLifecycleCoordinator:
             and dominated
         )
 
+    @staticmethod
+    def _port(read: Callable[[], T]) -> T:
+        """A metadata/ledger read of the resolution: typed refusal, never a raw backend error.
+
+        Used only before the first write of a request (resolution, scope
+        membership, recorded members); saga writes keep their own semantics.
+        """
+
+        try:
+            return read()
+        except MemoryAdmissionError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- an unreadable store resolves nothing
+            raise MemoryLifecycleError(
+                "REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE", "a memory store could not be read"
+            ) from exc
+
     def _committed_head(self, memory_item_id: str, context: GovernedContext) -> AdmittedMemoryVersion:
-        latest = self._ledger.latest_version(memory_item_id)
-        record = self._ledger.get(memory_item_id, latest) if latest else None
+        latest = self._port(lambda: self._ledger.latest_version(memory_item_id))
+        record = self._port(lambda: self._ledger.get(memory_item_id, latest)) if latest else None
         if record is None or not self._visible(record.item, context):
             raise _not_found()
-        if self._metadata.head(memory_item_id) != latest:
+        if self._port(lambda: self._metadata.head(memory_item_id)) != latest:
             raise MemoryLifecycleError(
                 "REPRESENTATION_NOT_READY",
                 "HEAD_NOT_COMMITTED",
@@ -1102,10 +1128,7 @@ class MemoryLifecycleCoordinator:
             raise MemoryLifecycleError(
                 "CONTROL_PLANE_UNAVAILABLE", "POLICY_UNAVAILABLE", "policy evaluation failed closed"
             ) from exc
-        if not isinstance(decision, MemoryPolicyDecision):
-            raise MemoryLifecycleError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        decision = require_policy_decision(decision, MemoryLifecycleError)
         if decision.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryLifecycleError(
                 "STALE_POLICY",
@@ -1395,6 +1418,7 @@ class MemoryLifecycleCoordinator:
             "deletion_epoch": deletion_epoch,
             "phase": suffix or "TRANSITION",
             **({"deletion_scope": plan.deletion_scope} if plan.deletion_scope != "ALL_VERSIONS" else {}),
+            **({"scope_members": list(plan.scope_members)} if plan.scope_members else {}),
         }
         audit_event = {
             "action": plan.action,
@@ -1413,6 +1437,8 @@ class MemoryLifecycleCoordinator:
             "correlation_id": plan.request.context.correlation_id,
             "deletion_epoch": deletion_epoch,
             "at": format_utc_timestamp(now),
+            # The member set of a scoped deletion is bound by the receipt's audit_ref.
+            **({"scope_members_digest": _scope_members_digest(plan.scope_members)} if plan.scope_members else {}),
         }
         return AdmittedMemoryVersion(
             item=item,
@@ -1566,15 +1592,16 @@ class MemoryLifecycleCoordinator:
         else:
             key = item.owner_principal_id
         candidates: set[str] = set()
-        for partition in self._metadata.partitions():
+        for partition in self._port(self._metadata.partitions):
             if partition.tenant_id == item.tenant_id:
-                candidates.update(stored.staged.memory_item_id for stored in self._metadata.versions_in(partition.digest))
+                rows = self._port(partial(self._metadata.versions_in, partition.digest))
+                candidates.update(stored.staged.memory_item_id for stored in rows)
         # Only caller-visible members of the scope count against the bound: items
         # the caller cannot see neither decide the outcome nor reveal themselves.
         members: list[str] = []
         for candidate in sorted(candidates):
-            latest = self._ledger.latest_version(candidate)
-            record = self._ledger.get(candidate, latest) if latest else None
+            latest = self._port(partial(self._ledger.latest_version, candidate))
+            record = self._port(partial(self._ledger.get, candidate, latest)) if latest else None
             if record is None or not self._visible(record.item, context):
                 continue
             head = record.item
@@ -1602,38 +1629,64 @@ class MemoryLifecycleCoordinator:
 
         replayed: dict[str, LifecycleReceipt] = {}
         for candidate in self._recorded_members(request.operation_id, request.context):
+            # ``_replay`` refuses a member recorded under another request digest
+            # (the digest binds the addressed item, scope, reason and context).
             receipt = self._replay(candidate, request, request_digest)
             if receipt is not None:
                 replayed[candidate] = receipt
-        if replayed and memory_item_id not in replayed:
-            raise MemoryLifecycleError(
-                "MEMORY_IDEMPOTENCY_CONFLICT",
-                "OPERATION_REUSED",
-                "operation_id is bound to another lifecycle request",
-            )
         if replayed:
-            # The replay of a request that stopped halfway completes every member
-            # of the scope it did not forget yet, then answers for all of them.
-            latest = self._ledger.latest_version(memory_item_id)
-            addressed = self._ledger.get(memory_item_id, latest) if latest else None
-            if addressed is None:
-                raise _not_found()
-            pending = [m for m in self._scope_members(addressed, scope, request.context) if m not in replayed]
-            receipts = {**replayed, **self._forget_members(self._scope_plans(pending, request, reason, scope, request_digest))}
+            # The replay answers for the member set fixed by the original request,
+            # wherever it stopped: members it did not start are completed, items
+            # admitted since are never added, and the receipt is the original one.
+            members = self._recorded_scope(memory_item_id, request.operation_id, tuple(replayed))
+            pending = [m for m in members if m not in replayed]
+            plans = self._scope_plans(pending, request, reason, scope, request_digest, members)
+            receipts = {**replayed, **self._forget_members(plans)}
             return self._scope_receipt(memory_item_id, request, scope, receipts), True
         addressed = self._committed_head(memory_item_id, request.context)
         if addressed.item.lifecycle_status is S.DELETION_PENDING:
             raise _invalid("DELETION_IN_PROGRESS", "the item is already being deleted")
         self._check_forgettable(addressed.item, request.context)
         members = self._scope_members(addressed, scope, request.context)
-        plans = self._scope_plans(members, request, reason, scope, request_digest)
+        plans = self._scope_plans(members, request, reason, scope, request_digest, members)
         receipts = self._forget_members(plans)
         return self._scope_receipt(memory_item_id, request, scope, receipts), False
 
+    def _recorded_scope(self, memory_item_id: str, operation_id: str, replayed: Sequence[str]) -> tuple[str, ...]:
+        """The member set every started member recorded, identical across them and covering them."""
+
+        recorded: set[tuple[str, ...]] = set()
+        for member in replayed:
+            pending = self._recorded(member, operation_id, "PENDING")
+            if pending is None:
+                raise MemoryLedgerCorrupted("a started member of a scoped deletion has no pending version")
+            pending.verify()
+            value = pending.lifecycle_event.get("scope_members")
+            if (
+                not isinstance(value, (list, tuple))
+                or not value
+                or not all(isinstance(m, str) and m for m in value)
+                or list(value) != sorted(set(value))
+                or pending.audit_event.get("scope_members_digest") != _scope_members_digest(tuple(value))
+            ):
+                raise MemoryLedgerCorrupted("the recorded deletion scope members are malformed")
+            recorded.add(tuple(value))
+        if len(recorded) != 1:
+            raise MemoryLedgerCorrupted("the members of one scoped deletion recorded different scopes")
+        members = recorded.pop()
+        if memory_item_id not in members or not set(replayed) <= set(members):
+            raise MemoryLedgerCorrupted("the recorded deletion scope does not cover the request")
+        return members
+
     def _scope_plans(
-        self, members: Sequence[str], request: _Request, reason: str, scope: str, request_digest: str
+        self, members: Sequence[str], request: _Request, reason: str, scope: str, request_digest: str,
+        scope_members: Sequence[str],
     ) -> list[_Plan]:
-        """Check every member before the first write, so a refusal changes nothing."""
+        """Check every member before the first write, so a refusal changes nothing.
+
+        ``scope_members`` is the whole member set of the request; every saga
+        records it, so a replay answers for exactly that set.
+        """
 
         plans: list[_Plan] = []
         for member in members:
@@ -1651,6 +1704,7 @@ class MemoryLifecycleCoordinator:
                     reason_code=reason,
                     request_digest=request_digest,
                     deletion_scope=scope,
+                    scope_members=tuple(sorted(scope_members)),
                 )
             )
         return plans
@@ -1679,10 +1733,10 @@ class MemoryLifecycleCoordinator:
         """Caller-visible items of the caller's tenant holding a version of ``operation_id``."""
 
         found: set[str] = set()
-        for partition in self._metadata.partitions():
+        for partition in self._port(self._metadata.partitions):
             if partition.tenant_id != context.tenant_id:
                 continue
-            for stored in self._metadata.versions_in(partition.digest):
+            for stored in self._port(partial(self._metadata.versions_in, partition.digest)):
                 item_id = stored.staged.memory_item_id
                 if item_id in found or not self._visible(stored.staged.verify(), context):
                     continue
@@ -1777,6 +1831,9 @@ class MemoryLifecycleCoordinator:
         # for a deletion request, the scope of the verified request being replayed.
         if not isinstance(scope, str) or scope not in DELETION_SCOPES or scope != requested:
             raise MemoryLedgerCorrupted("the stored deletion scope is not the verified request's")
+        members = event.get("scope_members", [])
+        if not isinstance(members, (list, tuple)) or not all(isinstance(m, str) and m for m in members):
+            raise MemoryLedgerCorrupted("the recorded deletion scope members are malformed")
         plan = _Plan(
             action=str(event.get("operation")),
             request=request,
@@ -1785,6 +1842,7 @@ class MemoryLifecycleCoordinator:
             reason_code=str(event.get("reason_code")),
             request_digest=str(event.get("request_digest")),
             deletion_scope=scope,
+            scope_members=tuple(members),
         )
         if done is not None:
             tombstone = self._last_tombstone(item_id)

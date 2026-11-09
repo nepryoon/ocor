@@ -2119,8 +2119,12 @@ class MemoryStoreCoordinator:
         head = self._head(staged.memory_item_id)
         try:
             for pointer in stale:
-                self._write_projection(partition, item, pointer, document, vector)
                 index = self._index(pointer.representation_kind)
+                # A drifted entry is replaced, not kept: an index upsert may leave
+                # an existing entry untouched (PostgreSQL ON CONFLICT DO NOTHING).
+                if pointer.representation_kind is not RepresentationKind.STRUCTURED:
+                    index.remove(partition, pointer.representation_version, pointer.store_ref)
+                self._write_projection(partition, item, pointer, document, vector)
                 if staged.memory_version < head and isinstance(index, EligibilityIndexPort):
                     index.retire(partition, pointer.representation_version, staged.memory_item_id, head)
         except MemoryStoreError:

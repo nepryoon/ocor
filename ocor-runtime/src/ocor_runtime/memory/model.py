@@ -1048,6 +1048,17 @@ class JournalMemoryVersionLedger:
         with self._lock:
             return self._memory.by_idempotency_key(key)
 
+    def records(self) -> tuple[AdmittedMemoryVersion, ...]:
+        """Every acknowledged version in append order, including other processes' appends."""
+
+        with self._lock, self._path.open("rb") as handle:
+            fcntl.flock(handle, fcntl.LOCK_SH)
+            try:
+                self._catch_up(handle)
+            finally:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+            return self._memory.records()
+
     def append(self, record: AdmittedMemoryVersion) -> None:
         record.verify()
         with self._lock, self._path.open("r+b") as handle:
