@@ -1020,10 +1020,19 @@ class JournalMemoryVersionLedger:
             raise MemoryLedgerCorrupted("journal entry is not a closed chain entry")
         if canonical_bytes(entry) != line:
             raise MemoryLedgerCorrupted("journal entry is not in canonical form")
-        body = {"seq": entry["seq"], "prev": entry["prev"], "record": entry["record"]}
-        if entry["seq"] != self._seq + 1 or entry["prev"] != self._head:
+        seq, prev, entry_digest = entry["seq"], entry["prev"], entry["entry_digest"]
+        # Types before comparison: a boolean is never a sequence number.
+        if (
+            isinstance(seq, bool)
+            or not isinstance(seq, int)
+            or not isinstance(prev, str)
+            or not isinstance(entry_digest, str)
+        ):
+            raise MemoryLedgerCorrupted("journal chain fields have the wrong type")
+        body = {"seq": seq, "prev": prev, "record": entry["record"]}
+        if seq != self._seq + 1 or prev != self._head:
             raise MemoryLedgerCorrupted("journal chain is broken or reordered")
-        if not hmac.compare_digest(canonical_digest(body), str(entry["entry_digest"])):
+        if not hmac.compare_digest(canonical_digest(body), entry_digest):
             raise MemoryLedgerCorrupted("journal entry digest mismatch")
         raw_record = entry["record"]
         if not isinstance(raw_record, Mapping):
@@ -1034,7 +1043,7 @@ class JournalMemoryVersionLedger:
         except MemoryAdmissionError as exc:
             raise MemoryLedgerCorrupted(f"journal violates immutability: {exc}") from exc
         self._seq += 1
-        self._head = str(entry["entry_digest"])
+        self._head = entry_digest
 
     def get(self, memory_item_id: str, memory_version: int) -> AdmittedMemoryVersion | None:
         with self._lock:
