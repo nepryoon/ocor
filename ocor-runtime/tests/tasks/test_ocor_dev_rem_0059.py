@@ -1647,3 +1647,89 @@ def test_ncr_memory_005_stored_metadata_bytes_and_library_parse_errors_are_typed
     assert _pg([[(body.encode(), staged_at, "COMMITTED", staged_at)]]).get("mem-p", 1) is not None
     for raw in (deep, deep.encode(), "{" + '"a":' * 50_000 + "1" + "}" * 50_000):
         assert _code(lambda raw=raw: A._strict_json(raw, "INDEX_ANSWER_INVALID")) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
+
+
+@pytest.mark.parametrize("failure", [
+    UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
+    json.JSONDecodeError("Expecting value", "{", 1),
+    RecursionError("maximum recursion depth exceeded while decoding a JSON object"),
+    ValueError("invalid literal"),
+    "psycopg.DataError",
+])
+def test_ncr_memory_005_a_port_decoding_or_parse_error_is_the_typed_store_unavailable_refusal(failure: Any) -> None:
+    """Every decoding and parsing error class a store port can raise on a re-read is typed at the coordinator boundary."""
+
+    if failure == "psycopg.DataError":
+        import psycopg
+
+        failure = psycopg.errors.CharacterNotInRepertoire('invalid byte sequence for encoding "UTF8": 0xff')
+    world, coordinator, record, part, vector = _store_world()
+    item_id = record.item.memory_item_id
+    unavailable = ("REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE")
+    for owner, name in (("metadata", "get"), ("metadata", "head"), ("lexical", "read_back"), ("content", "get")):
+        inner = getattr(getattr(world, owner), name)
+        setattr(getattr(world, owner), name, lambda *a, f=failure, **k: (_ for _ in ()).throw(f))
+        if name != "head":
+            assert _code(lambda: coordinator.read_version(part, item_id, 1)) == unavailable, (owner, name)
+        if owner == "metadata":
+            assert _code(lambda: coordinator.read_latest(part, item_id)) == unavailable, (owner, name)
+        setattr(getattr(world, owner), name, inner)
+    assert coordinator.read_version(part, item_id, 1) is not None
+
+
+class _CountingConnection(_Connection):
+    """A scripted connection that records every release, and can fail its statements."""
+
+    def __init__(self, script: list[list[Any]], ledger: list[str], fail: BaseException | None) -> None:
+        super().__init__(script)
+        self.ledger, self.fail = ledger, fail
+
+    def execute(self, sql: str, params: Any = None) -> _Cursor:
+        if self.fail is not None:
+            raise self.fail
+        return super().execute(sql, params)
+
+    def __enter__(self) -> _Connection:
+        self.ledger.append("enter")
+        return self
+
+    def __exit__(self, *exc: object) -> bool:
+        self.ledger.append("exit")
+        return False
+
+
+def test_ncr_memory_001_postgres_connections_are_released_on_every_exit() -> None:
+    """PostgreSQL adapters: the connection is released after a malformed row and after a failed statement, never kept open."""
+
+    import psycopg
+
+    part = object.__new__(MemoryPartition)
+    for fail in (None, psycopg.OperationalError("server closed the connection"), psycopg.errors.CharacterNotInRepertoire("0xff")):
+        calls: list[tuple[str, Any]] = []
+        for script, action in (
+            ([[("{bad", "x", "COMMITTED", None)]], lambda s: s.get("mem-p", 1)),
+            ([[(True,)]], lambda s: s.head("mem-p")),
+            ([[("{bad", "COMMITTED")]], lambda s: s.pointer("r")),
+            ([[("nope",)]], lambda s: s.partitions()),
+            ([[(7, b"x")]], lambda s: A.PostgresContentStore(s).get("o")),
+            ([[(7,)]], lambda s: A.PostgresContentStore(s).refs("p")),
+        ):
+            calls.append((repr(script), action))
+            ledger: list[str] = []
+            stores = object.__new__(A.PostgresStores)
+            stores.dsn, stores.schema = "postgresql://scripted", "s"
+            stores.connect = lambda sc=script, lg=ledger, f=fail: _CountingConnection(sc, lg, f)  # type: ignore[method-assign]
+            with pytest.raises(Exception):
+                action(stores)
+            assert ledger and ledger.count("enter") == ledger.count("exit") and ledger[-1] == "exit", (script, fail, ledger)
+        ledger = []
+        stores = object.__new__(A.PostgresStores)
+        stores.dsn, stores.schema = "postgresql://scripted", "s"
+        stores.connect = lambda lg=ledger, f=fail: _CountingConnection([[(7,)], [("r", "{}", 0.5)]], lg, f)  # type: ignore[method-assign]
+        index = A.PostgresLexicalIndex(stores)
+        index.table = lambda partition, version: "lex_x"  # type: ignore[method-assign]
+        for action in (lambda: index.search(part, "v", "q", limit=1, offset=0), lambda: index.get(part, "v", "r"),
+                       lambda: index.entries(part, "v")):
+            with pytest.raises(Exception):
+                action()
+        assert ledger.count("enter") == ledger.count("exit") and ledger[-1] == "exit", (fail, ledger)
