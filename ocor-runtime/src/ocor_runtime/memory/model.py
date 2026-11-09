@@ -44,6 +44,7 @@ import os
 import re
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import AbstractContextManager, ExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -1200,8 +1201,24 @@ class MemoryAdmissionAuditSink(Protocol):
         """Append one safe denial event, or fail closed."""
 
 
+class AdmissionQuotaAuthority(Protocol):
+    """Quota authority of ``admitMemory`` (LLD v1.1 §2.8.2), a trusted composition port.
+
+    ``admission_hold`` verifies the configured quotas for this exact candidate
+    and payload in the candidate's partition, raising ``MemoryAdmissionError``
+    on refusal, and keeps the partition serialized while the admission appends
+    its version. It is never caller-provided and never a reservation token.
+    """
+
+    def admission_hold(self, item: GovernedMemoryItem, payload: bytes) -> AbstractContextManager[None]: ...
+
+
 class MemoryAdmissionService:
-    """``MemoryAdmissionPort.admitMemory``: fail-closed, persistence-last admission."""
+    """``MemoryAdmissionPort.admitMemory``: fail-closed, persistence-last admission.
+
+    With a quota authority, quota is verified under its partition serialization
+    immediately before the single ledger append; a refusal appends nothing.
+    """
 
     def __init__(
         self,
@@ -1213,6 +1230,7 @@ class MemoryAdmissionService:
         clock: TrustedClock,
         limits: AdmissionLimits,
         audit: MemoryAdmissionAuditSink | None = None,
+        quota: AdmissionQuotaAuthority | None = None,
     ) -> None:
         self._ledger = ledger
         self._resolver = resolver
@@ -1221,6 +1239,7 @@ class MemoryAdmissionService:
         self._clock = clock
         self._limits = limits
         self._audit = audit
+        self._quota = quota
 
     def admit(
         self,
@@ -1414,8 +1433,19 @@ class MemoryAdmissionService:
             audit_event=MappingProxyType(audit_event),
             receipt=receipt,
         )
-        # 11. Persistence last, as one atomic append.
-        self._ledger.append(record)
+        # 11. Quota, then persistence last, as one atomic append inside the
+        #     quota authority's partition serialization (LLD v1.1 §2.8.2).
+        with ExitStack() as stack:
+            if self._quota is not None:
+                try:
+                    stack.enter_context(self._quota.admission_hold(item, bytes(payload)))
+                except MemoryAdmissionError:
+                    raise
+                except Exception as exc:  # noqa: BLE001 -- no admission without the quota check
+                    raise MemoryAdmissionError(
+                        "CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE", "the quota authority is unavailable"
+                    ) from exc
+            self._ledger.append(record)
         return receipt
 
     def _bind_to_context(

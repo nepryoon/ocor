@@ -8,7 +8,9 @@ have fixed labels and belong to the protected operator plane, never a user respo
 
 ``MemoryQuotaWriter`` applies the configured quotas to real admission + store
 commits, with demand derived from the actual payload/candidate and a trusted
-partition serialization port. ``MemoryBackupService`` captures a signed,
+partition serialization port. ``MemoryAdmissionQuota`` is the quota
+authority of ``admitMemory`` itself (LLD v1.1 §2.8.2), so every admission composed
+with it, consolidation output included, is counted at admission. ``MemoryBackupService`` captures a signed,
 digest-only backup manifest; ``MemoryRestoreGate`` reopens restored memory only
 after custodian authentication, a stale-epoch check, the 0056 tombstone replay
 and an exact projection comparison. Store snapshots themselves remain the
@@ -22,8 +24,8 @@ import hashlib
 import re
 import threading
 from collections import Counter
-from collections.abc import Callable, Mapping, Sequence
-from contextlib import AbstractContextManager, ExitStack
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass, field, fields, replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -173,6 +175,90 @@ T = TypeVar("T")
 ENVELOPE = frozenset({"operation_id", "governed_context", "governed_context_digest", "partition", "deadline"})
 
 
+def _partition_heads(
+    metadata: MemoryMetadataStore, ledger: MemoryVersionLedger, partition: MemoryPartition,
+) -> tuple[_Head, ...]:
+    heads: dict[str, _Head] = {}
+    rows = metadata.versions_in(partition.digest)
+    for stored in rows:
+        item_id = stored.staged.memory_item_id
+        if item_id in heads:
+            continue
+        version = metadata.head(item_id)
+        if ledger.latest_version(item_id) != version:
+            raise _error("HEAD_NOT_COMMITTED", "REPRESENTATION_NOT_READY")
+        head = metadata.get(item_id, version)
+        if head is None or head.state is not VersionState.COMMITTED:
+            raise _error("HEAD_NOT_COMMITTED", "REPRESENTATION_NOT_READY")
+        # A head reclassified into another partition must not be counted here.
+        if head.staged.partition.digest != partition.digest:
+            continue
+        record = ledger.get(item_id, version)
+        first = ledger.get(item_id, 1)
+        if record is None or first is None:
+            raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
+        record.verify()
+        if head.staged.verify().digest() != record.item_digest:
+            raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
+        heads[item_id] = _Head(record, head, first.item.created_at)
+    for item_id, selected in heads.items():
+        version = selected.record.item.memory_version
+        current = metadata.get(item_id, version)
+        if (metadata.head(item_id) != version or ledger.latest_version(item_id) != version
+                or current is None or current.state is not VersionState.COMMITTED
+                or current.staged.stage_digest != selected.stored.staged.stage_digest):
+            raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
+    # Re-read the full membership, not just the heads already selected.
+    # A concurrent admission/reclassification may add/remove an item without
+    # changing any selected head. PENDING and historical rows are not heads.
+    observed = {
+        stored.staged.memory_item_id: (stored.staged.memory_version, stored.staged.stage_digest)
+        for stored in metadata.versions_in(partition.digest)
+        if stored.state is VersionState.COMMITTED
+        and metadata.head(stored.staged.memory_item_id) == stored.staged.memory_version
+    }
+    expected = {item_id: (head.record.item.memory_version, head.stored.staged.stage_digest)
+                for item_id, head in heads.items()}
+    if observed != expected:
+        raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
+    return tuple(heads[k] for k in sorted(heads))
+
+
+def _retained(head: _Head) -> bool:
+    return head.record.item.lifecycle_status is not LifecycleStatus.DELETED
+
+
+def _usage(heads: tuple[_Head, ...]) -> MemoryUsage:
+    retained = [h for h in heads if _retained(h)]
+    return MemoryUsage(
+        items=len(retained),
+        held_items=sum(h.record.item.lifecycle_status is LifecycleStatus.LEGAL_HOLD for h in retained),
+        incomplete_deletions=sum(h.record.item.lifecycle_status in {
+            LifecycleStatus.DELETION_PENDING, LifecycleStatus.DELETION_INCOMPLETE} for h in retained),
+        index_entries=sum(len(h.stored.staged.pointers) for h in retained
+                          if h.record.item.lifecycle_status is LifecycleStatus.ACTIVE),
+        tombstones=sum(h.record.item.deletion_epoch is not None for h in heads),
+    )
+
+
+def _enforce_limits(limits: MemoryOperationsLimits, usage: MemoryUsage, demand: MemoryQuotaDemand) -> None:
+    horizon = limits.retention_horizons.get(demand.retention_policy_ref)
+    if horizon is None:
+        raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
+    checks = (
+        (usage.items + demand.new_items, limits.max_items, "ITEM"),
+        (demand.payload_bytes, limits.max_payload_bytes, "PAYLOAD"),
+        (demand.embedding_dimensions, limits.max_embedding_dimensions, "EMBEDDING"),
+        (demand.top_k, limits.max_top_k, "TOP_K"),
+        (demand.consolidation_concurrency, limits.max_consolidation_concurrency, "CONSOLIDATION"),
+        (usage.index_entries + demand.new_index_entries, limits.max_index_entries, "INDEX"),
+        (demand.retention_seconds, horizon.total_seconds(), "RETENTION"),
+    )
+    for actual, limit, resource in checks:
+        if actual > limit:
+            raise _error(resource + "_QUOTA_EXCEEDED")
+
+
 class MemoryOperationsService:
     """Explicit operational port, with authenticated policy-before-inventory."""
 
@@ -313,66 +399,14 @@ class MemoryOperationsService:
         })
 
     def _heads(self, partition: MemoryPartition) -> tuple[_Head, ...]:
-        heads: dict[str, _Head] = {}
-        rows = self._metadata.versions_in(partition.digest)
-        for stored in rows:
-            item_id = stored.staged.memory_item_id
-            if item_id in heads:
-                continue
-            version = self._metadata.head(item_id)
-            if self._ledger.latest_version(item_id) != version:
-                raise _error("HEAD_NOT_COMMITTED", "REPRESENTATION_NOT_READY")
-            head = self._metadata.get(item_id, version)
-            if head is None or head.state is not VersionState.COMMITTED:
-                raise _error("HEAD_NOT_COMMITTED", "REPRESENTATION_NOT_READY")
-            # A head reclassified into another partition must not be counted here.
-            if head.staged.partition.digest != partition.digest:
-                continue
-            record = self._ledger.get(item_id, version)
-            first = self._ledger.get(item_id, 1)
-            if record is None or first is None:
-                raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
-            record.verify()
-            if head.staged.verify().digest() != record.item_digest:
-                raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
-            heads[item_id] = _Head(record, head, first.item.created_at)
-        for item_id, selected in heads.items():
-            version = selected.record.item.memory_version
-            current = self._metadata.get(item_id, version)
-            if (self._metadata.head(item_id) != version or self._ledger.latest_version(item_id) != version
-                    or current is None or current.state is not VersionState.COMMITTED
-                    or current.staged.stage_digest != selected.stored.staged.stage_digest):
-                raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
-        # Re-read the full membership, not just the heads already selected.
-        # A concurrent admission/reclassification may add/remove an item without
-        # changing any selected head. PENDING and historical rows are not heads.
-        observed = {
-            stored.staged.memory_item_id: (stored.staged.memory_version, stored.staged.stage_digest)
-            for stored in self._metadata.versions_in(partition.digest)
-            if stored.state is VersionState.COMMITTED
-            and self._metadata.head(stored.staged.memory_item_id) == stored.staged.memory_version
-        }
-        expected = {item_id: (head.record.item.memory_version, head.stored.staged.stage_digest)
-                    for item_id, head in heads.items()}
-        if observed != expected:
-            raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
-        return tuple(heads[k] for k in sorted(heads))
+        return _partition_heads(self._metadata, self._ledger, partition)
 
     @staticmethod
     def _retained(head: _Head) -> bool:
-        return head.record.item.lifecycle_status is not LifecycleStatus.DELETED
+        return _retained(head)
 
     def _usage(self, heads: tuple[_Head, ...]) -> MemoryUsage:
-        retained = [h for h in heads if self._retained(h)]
-        return MemoryUsage(
-            items=len(retained),
-            held_items=sum(h.record.item.lifecycle_status is LifecycleStatus.LEGAL_HOLD for h in retained),
-            incomplete_deletions=sum(h.record.item.lifecycle_status in {
-                LifecycleStatus.DELETION_PENDING, LifecycleStatus.DELETION_INCOMPLETE} for h in retained),
-            index_entries=sum(len(h.stored.staged.pointers) for h in retained
-                              if h.record.item.lifecycle_status is LifecycleStatus.ACTIVE),
-            tombstones=sum(h.record.item.deletion_epoch is not None for h in heads),
-        )
+        return _usage(heads)
 
     def monitor(self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None) -> MemoryUsage:
         return self._guard("memoryMonitor", request, binding, lambda p: self._usage(self._heads(p.partition)))
@@ -389,21 +423,7 @@ class MemoryOperationsService:
         return self._guard("memoryQuota", request, binding, check)
 
     def _enforce_quota(self, usage: MemoryUsage, demand: MemoryQuotaDemand) -> None:
-        horizon = self._limits.retention_horizons.get(demand.retention_policy_ref)
-        if horizon is None:
-            raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
-        checks = (
-            (usage.items + demand.new_items, self._limits.max_items, "ITEM"),
-            (demand.payload_bytes, self._limits.max_payload_bytes, "PAYLOAD"),
-            (demand.embedding_dimensions, self._limits.max_embedding_dimensions, "EMBEDDING"),
-            (demand.top_k, self._limits.max_top_k, "TOP_K"),
-            (demand.consolidation_concurrency, self._limits.max_consolidation_concurrency, "CONSOLIDATION"),
-            (usage.index_entries + demand.new_index_entries, self._limits.max_index_entries, "INDEX"),
-            (demand.retention_seconds, horizon.total_seconds(), "RETENTION"),
-        )
-        for actual, limit, resource in checks:
-            if actual > limit:
-                raise _error(resource + "_QUOTA_EXCEEDED")
+        _enforce_limits(self._limits, usage, demand)
 
     def relieve_pressure(
         self, request: Mapping[str, object], *, binding: VerifiedGovernedContextBinding | None,
@@ -492,6 +512,78 @@ class MemoryQuotaSerialization(Protocol):
     def hold(self, partition_digest: str) -> AbstractContextManager[None]: ...
 
 
+def _enforce_write_quota(
+    limits: MemoryOperationsLimits, heads: tuple[_Head, ...], item: GovernedMemoryItem,
+    payload_bytes: int, embedding_dimensions: int,
+) -> None:
+    """Quota of one new version of ``item`` against the committed heads of its partition."""
+
+    previous = next((h for h in heads if h.record.item.memory_item_id == item.memory_item_id), None)
+    usage = _usage(heads)
+    existing_slots = 0
+    if previous is not None and previous.record.item.lifecycle_status is LifecycleStatus.ACTIVE:
+        existing_slots = len(previous.stored.staged.pointers)
+    horizon = limits.retention_horizons.get(item.retention_policy_ref)
+    if horizon is None:
+        raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
+    first_created = previous.first_created_at if previous is not None else item.created_at
+    if item.expires_at is not None and item.expires_at > first_created + horizon:
+        raise _error("RETENTION_QUOTA_EXCEEDED")
+    if previous is not None and item.memory_version == previous.record.item.memory_version:
+        if item.digest() != previous.record.item_digest:
+            raise _error("IDEMPOTENCY_DIGEST_MISMATCH", "MEMORY_IDEMPOTENCY_CONFLICT")
+    elif previous is not None and item.memory_version <= previous.record.item.memory_version:
+        raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
+    _enforce_limits(limits, replace(usage, index_entries=usage.index_entries - existing_slots), MemoryQuotaDemand(
+        new_items=int(previous is None or not _retained(previous)), payload_bytes=payload_bytes,
+        embedding_dimensions=embedding_dimensions,
+        new_index_entries=len(item.representation_kinds) if item.lifecycle_status is LifecycleStatus.ACTIVE else 0,
+        retention_policy_ref=item.retention_policy_ref,
+    ))
+
+
+class MemoryAdmissionQuota:
+    """Partition quota authority of ``admitMemory`` (LLD v1.1 §2.8.2; FGM-19).
+
+    The trusted ``quota`` port of ``MemoryAdmissionService``: the same quotas
+    and demand as ``MemoryQuotaWriter``, evaluated for the candidate against the
+    committed heads of its partition while the serialization domain of that
+    partition is held around the admission's single ledger append. Every
+    admission composed with it -- including the derived items of
+    ``MemoryConsolidationService`` -- is therefore counted at admission. An
+    admitted version not yet committed to the stores is not a committed head:
+    a partition with such a version refuses (``HEAD_NOT_COMMITTED``) when it
+    is an existing item's, and an admission/commit window of a new item belongs
+    to the store commit that follows, as for ``MemoryQuotaWriter``. Embedding
+    demand is the dimension count the candidate digests. A writer already
+    holding the serialization (``MemoryQuotaWriter``) must not compose this
+    port over the same domain: it applies the same quota under its own hold.
+    """
+
+    def __init__(
+        self, *, metadata: MemoryMetadataStore, ledger: MemoryVersionLedger,
+        limits: MemoryOperationsLimits, serialization: MemoryQuotaSerialization,
+    ) -> None:
+        if not isinstance(limits, MemoryOperationsLimits):
+            raise TypeError("admission quota requires MemoryOperationsLimits")
+        self._metadata, self._ledger, self._limits, self._serialization = metadata, ledger, limits, serialization
+
+    @contextmanager
+    def admission_hold(self, item: GovernedMemoryItem, payload: bytes) -> Iterator[None]:
+        if not isinstance(item, GovernedMemoryItem) or not isinstance(payload, bytes):
+            raise _error("DEMAND_INVALID", "MEMORY_SCHEMA_INVALID")
+        partition = MemoryPartition.for_item(item)
+        with ExitStack() as stack:
+            try:
+                stack.enter_context(self._serialization.hold(partition.digest))
+            except Exception as exc:  # noqa: BLE001 -- no unserialized quota check or write
+                raise _error("QUOTA_SERIALIZATION_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE") from exc
+            dimensions = item.embedding_dimensions if RepresentationKind.VECTOR in item.representation_kinds else 0
+            _enforce_write_quota(self._limits, _partition_heads(self._metadata, self._ledger, partition),
+                                 item, len(payload), dimensions or 0)
+            yield
+
+
 class MemoryQuotaWriter:
     """Internal admission + commit port with demand derived from actual input.
 
@@ -560,29 +652,8 @@ class MemoryQuotaWriter:
     ) -> StoreCommitReceipt:
         service = self._operations
         service._check("memoryWrite", plan)  # also after a bounded wait for the lock
-        heads = service._heads(plan.partition)
-        previous = next((h for h in heads if h.record.item.memory_item_id == item.memory_item_id), None)
-        usage = service._usage(heads)
-        existing_slots = 0
-        if previous is not None and previous.record.item.lifecycle_status is LifecycleStatus.ACTIVE:
-            existing_slots = len(previous.stored.staged.pointers)
-        horizon = service._limits.retention_horizons.get(item.retention_policy_ref)
-        if horizon is None:
-            raise _error("RETENTION_UNCONFIGURED", "MEMORY_SCHEMA_INVALID")
-        first_created = previous.first_created_at if previous is not None else item.created_at
-        if item.expires_at is not None and item.expires_at > first_created + horizon:
-            raise _error("RETENTION_QUOTA_EXCEEDED")
-        if previous is not None and item.memory_version == previous.record.item.memory_version:
-            if item.digest() != previous.record.item_digest:
-                raise _error("IDEMPOTENCY_DIGEST_MISMATCH", "MEMORY_IDEMPOTENCY_CONFLICT")
-        elif previous is not None and item.memory_version <= previous.record.item.memory_version:
-            raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
-        service._enforce_quota(replace(usage, index_entries=usage.index_entries - existing_slots), MemoryQuotaDemand(
-            new_items=int(previous is None or not service._retained(previous)), payload_bytes=len(payload),
-            embedding_dimensions=len(vector) if vector is not None else 0,
-            new_index_entries=len(item.representation_kinds) if item.lifecycle_status is LifecycleStatus.ACTIVE else 0,
-            retention_policy_ref=item.retention_policy_ref,
-        ))
+        _enforce_write_quota(service._limits, service._heads(plan.partition), item, len(payload),
+                             len(vector) if vector is not None else 0)
         service._check("memoryWrite", plan)
         receipt = self._admission.admit({
             "operation_id": plan.operation_id, "governed_context": plan.context.to_mapping(),
