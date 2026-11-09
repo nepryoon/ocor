@@ -1470,6 +1470,10 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.json",
         "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.log",
         "reports/evidence/G6/MANIFEST.json",
+        # OCOR-DEV-REM-0059 repair cycle 1 (VF-001 of OCOR-DEV-REM-0059-3425a01a39c1-0): the decision requests
+        # NCP-U11-ADMISSION-QUOTA-COMPOSITION and NCP-U11-ADMISSION-QUOTA-WORLDS (decided on 2026-11-09), byte-identical.
+        "reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-COMPOSITION.md",
+        "reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-WORLDS.md",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
