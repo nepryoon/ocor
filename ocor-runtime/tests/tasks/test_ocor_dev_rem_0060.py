@@ -183,7 +183,10 @@ def test_ncr_tests_002_conforms():
     declared: set[str] = set()
     for node in tree.body:
         if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "COVERED_SURFACE" for t in node.targets):
-            declared = set(ast.literal_eval(node.value))
+            assert isinstance(node.value, ast.Set), "COVERED_SURFACE must be a set literal"
+            for element in node.value.elts:
+                assert isinstance(element, ast.Constant) and isinstance(element.value, str), "COVERED_SURFACE holds strings only"
+                declared.add(element.value)
     assert declared == surface, f"uncovered: {sorted(surface - declared)}; extra: {sorted(declared - surface)}"
     functions = {node.name for node in tree.body if isinstance(node, ast.FunctionDef)}
     for check in ("closed_record", "exact_field_set", "canonical_bytes", "digest", "negative_corpus"):

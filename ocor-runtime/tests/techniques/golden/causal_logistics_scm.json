@@ -1,0 +1,41 @@
+{
+  "derivation": {
+    "estimate_intervention": "Stratified backdoor ATE over the adjustment set {region} that the registered SCM identifies: north treated mean (6+7)/2 = 6.5, control mean (10+11)/2 = 10.5, effect -4; south treated mean (8+9)/2 = 8.5, control mean (12+13)/2 = 12.5, effect -4; strata of equal size, ATE = -4.",
+    "simulate_intervention": "E[delay_hours | do(expedite=x)] = 10 - 4x + 2 E[region] + E[u_delay] with region = u_region ~ Bernoulli(0.5) and u_delay ~ N(0, 1): do(expedite=1) = 7, do(expedite=0) = 11, within the declared tolerance 0.25 of the Monte Carlo estimate."
+  },
+  "expected": {
+    "estimate_intervention": {"effect": "-4", "method": "STRATIFIED_BACKDOOR_ATE", "status": "ESTIMATED"},
+    "simulate_intervention": {"do_0": "11", "do_1": "7", "method": "SCM_DO_MONTE_CARLO", "status": "ESTIMATED"}
+  },
+  "factual_rows": [
+    {"delay_hours": "10", "expedite": 0, "region": "north"},
+    {"delay_hours": "11", "expedite": 0, "region": "north"},
+    {"delay_hours": "6", "expedite": 1, "region": "north"},
+    {"delay_hours": "7", "expedite": 1, "region": "north"},
+    {"delay_hours": "12", "expedite": 0, "region": "south"},
+    {"delay_hours": "13", "expedite": 0, "region": "south"},
+    {"delay_hours": "8", "expedite": 1, "region": "south"},
+    {"delay_hours": "9", "expedite": 1, "region": "south"}
+  ],
+  "intervention": {"treatment": "expedite", "valid_envelope": [0, 1], "value": 1},
+  "model": {
+    "endogenous": {
+      "delay_hours": {"intercept": "10", "mechanism": "linear", "parents": {"expedite": "-4", "region": "2", "u_delay": "1"}},
+      "expedite": {"intercept": "-0.5", "mechanism": "threshold", "parents": {"region": "1", "u_expedite": "1"}},
+      "region": {"intercept": "0", "mechanism": "linear", "parents": {"u_region": "1"}}
+    },
+    "estimand": "ATE",
+    "exogenous": {
+      "u_delay": {"distribution": "normal", "mean": "0", "sd": "1"},
+      "u_expedite": {"distribution": "normal", "mean": "0", "sd": "1"},
+      "u_region": {"distribution": "bernoulli", "p": "0.5"}
+    },
+    "model_id": "synthetic-logistics-scm",
+    "observed": ["region", "expedite", "delay_hours"],
+    "samples": 4000,
+    "sensitivity_shift": "1",
+    "tolerance": "0.25",
+    "version": 1
+  },
+  "seed": 271828
+}
