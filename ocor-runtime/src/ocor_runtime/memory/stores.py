@@ -49,7 +49,6 @@ from __future__ import annotations
 
 import functools
 import hashlib
-import hmac
 import math
 import struct
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -73,6 +72,8 @@ from .model import (
     MemoryScope,
     MemoryVersionLedger,
     RepresentationKind,
+    digests_equal,
+    ledger_record,
     memory_version_ref,
 )
 
@@ -410,7 +411,7 @@ def validate_embedding(item: GovernedMemoryItem, vector: Sequence[float]) -> tup
             "EMBEDDING_INVALID",
             "embedding vanishes at the vector index precision",
         )
-    if item.embedding_digest is None or not hmac.compare_digest(
+    if item.embedding_digest is None or not digests_equal(
         vector_digest(values), item.embedding_digest
     ):
         raise MemoryStoreError(
@@ -694,7 +695,7 @@ class StagedVersion:
             item = GovernedMemoryItem.from_mapping(self.item)
         except MemoryAdmissionError as exc:
             raise MemoryStoreCorrupted("METADATA_INVALID", f"stored item invalid: {exc}") from exc
-        if not hmac.compare_digest(item.digest(), self.item_digest):
+        if not digests_equal(item.digest(), self.item_digest):
             raise MemoryStoreCorrupted("METADATA_DIGEST_MISMATCH", "item digest mismatch")
         if (item.memory_item_id, item.memory_version) != (
             self.memory_item_id,
@@ -1421,6 +1422,15 @@ class MemoryStoreCoordinator:
                 exc.correlation_id = correlation if isinstance(correlation, str) else None
             raise
 
+    @staticmethod
+    def _staged_answer(answer: object, staged: StagedVersion) -> StoredVersion:
+        """The stage/commit answer of the metadata store: a stored version of exactly that slot."""
+
+        stored = _stored_slot(answer, staged.memory_item_id, staged.memory_version)
+        if stored is None:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store answered no stored version")
+        return stored
+
     def _commit(
         self,
         record: AdmittedMemoryVersion,
@@ -1428,7 +1438,7 @@ class MemoryStoreCoordinator:
         embedding: Sequence[float] | None,
     ) -> StoreCommitReceipt:
         staged, document, vector = self._prepare(record, payload, embedding)
-        stored = self._metadata.stage(staged)
+        stored = self._staged_answer(self._metadata.stage(staged), staged)
         if stored.staged.stage_digest != staged.stage_digest:
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata returned another stage")
         if stored.state is VersionState.COMMITTED:
@@ -1463,6 +1473,7 @@ class MemoryStoreCoordinator:
                 "STORE_COMMIT_INCOMPLETE",
                 f"{staged.memory_version_ref} stays PENDING: {type(exc).__name__}",
             ) from exc
+        committed = self._staged_answer(committed, staged)
         if committed.state is not VersionState.COMMITTED:
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata commit was not applied")
         self._retire_predecessors(committed.staged)
@@ -1480,7 +1491,11 @@ class MemoryStoreCoordinator:
             return
         layouts: set[tuple[MemoryPartition, RepresentationKind, str]] = set()
         for stored in (
-            self._metadata.get(staged.memory_item_id, staged.memory_version - 1),
+            _stored_slot(
+                self._metadata.get(staged.memory_item_id, staged.memory_version - 1),
+                staged.memory_item_id,
+                staged.memory_version - 1,
+            ),
             StoredVersion(staged, VersionState.COMMITTED, None),
         ):
             if stored is None:
@@ -1525,18 +1540,19 @@ class MemoryStoreCoordinator:
                 "MEMORY_SCHEMA_INVALID", "RECORD_INVALID", "admitted version does not verify"
             ) from exc
         item = record.item
-        admitted = self._ledger.get(item.memory_item_id, item.memory_version)
+        slot = (item.memory_item_id, item.memory_version)
+        admitted = ledger_record(self._ledger.get(*slot), slot)
         if (
             admitted is None
-            or not hmac.compare_digest(admitted.item_digest, record.item_digest)
-            or not hmac.compare_digest(admitted.receipt.audit_ref, record.receipt.audit_ref)
+            or not digests_equal(admitted.item_digest, record.item_digest)
+            or not digests_equal(admitted.receipt.audit_ref, record.receipt.audit_ref)
         ):
             raise MemoryStoreError(
                 "MEMORY_VERSION_NOT_FOUND",
                 "VERSION_NOT_ADMITTED",
                 "only versions recorded by the admission ledger are stored",
             )
-        if not isinstance(payload, (bytes, bytearray)) or not hmac.compare_digest(
+        if not isinstance(payload, (bytes, bytearray)) or not digests_equal(
             _sha256(bytes(payload)), item.content_digest
         ):
             raise MemoryStoreError(
@@ -1671,7 +1687,7 @@ class MemoryStoreCoordinator:
             )
         except Exception as exc:  # noqa: BLE001 -- any decrypt failure is corruption
             raise MemoryStoreCorrupted("CONTENT_UNSEALABLE", "content does not open") from exc
-        if not hmac.compare_digest(_sha256(plaintext), content_digest):
+        if not digests_equal(_sha256(plaintext), content_digest):
             raise MemoryStoreCorrupted("CONTENT_DIGEST_MISMATCH", "content does not bind digest")
         return plaintext
 
@@ -1756,7 +1772,7 @@ class MemoryStoreCoordinator:
                 )
             except MemoryStoreError:
                 return False
-        return hmac.compare_digest(actual, pointer.representation_digest)
+        return digests_equal(actual, pointer.representation_digest)
 
     def _receipt(self, stored: StoredVersion) -> StoreCommitReceipt:
         staged = stored.staged
@@ -1770,7 +1786,7 @@ class MemoryStoreCoordinator:
                 for p in staged.pointers
             ),
             state=stored.state.value,
-            head_version=self._metadata.head(staged.memory_item_id),
+            head_version=self._head(staged.memory_item_id),
             audit_ref=staged.audit_ref,
         )
 
@@ -2026,7 +2042,7 @@ class MemoryStoreCoordinator:
 
         return sum(
             1
-            for stored in self._metadata.versions_in(partition.digest)
+            for stored in metadata_rows(self._metadata.versions_in(partition.digest))
             if stored.state is VersionState.COMMITTED
         )
 
@@ -2074,7 +2090,7 @@ class MemoryStoreCoordinator:
         rows = sorted(
             (
                 stored
-                for stored in self._metadata.versions_in(partition.digest)
+                for stored in metadata_rows(self._metadata.versions_in(partition.digest))
                 if stored.state is VersionState.COMMITTED
             ),
             key=lambda stored: (stored.staged.memory_item_id, stored.staged.memory_version),
@@ -2106,11 +2122,12 @@ class MemoryStoreCoordinator:
         if self._forgotten_item(staged.memory_item_id):
             raise _not_visible()
         item = self._verify_committed(stored)
-        journal = self._ledger.get(staged.memory_item_id, staged.memory_version)
+        slot = (staged.memory_item_id, staged.memory_version)
+        journal = ledger_record(self._ledger.get(*slot), slot)
         if (
             journal is None
-            or not hmac.compare_digest(journal.item_digest, staged.item_digest)
-            or not hmac.compare_digest(journal.receipt.audit_ref, staged.audit_ref)
+            or not digests_equal(journal.item_digest, staged.item_digest)
+            or not digests_equal(journal.receipt.audit_ref, staged.audit_ref)
         ):
             raise MemoryStoreCorrupted("METADATA_INVALID", "metadata does not match the admission journal")
         try:
@@ -2178,9 +2195,9 @@ class MemoryStoreCoordinator:
         unbound: list[str] = []
         removed_content: list[str] = []
         cutoff = self._clock.now() - self._limits.reconcile_grace
-        for partition in self._metadata.partitions():
+        for partition in metadata_partitions(self._metadata.partitions()):
             versions = sorted(
-                self._metadata.versions_in(partition.digest),
+                metadata_rows(self._metadata.versions_in(partition.digest)),
                 key=lambda s: (s.staged.memory_item_id, s.staged.memory_version),
             )
             in_flight: set[str] = set()
@@ -2201,7 +2218,7 @@ class MemoryStoreCoordinator:
                     # Complete but waiting for its predecessor: keep its projections.
                     deferred.append(staged.memory_version_ref)
                     in_flight.add(staged.memory_version_ref)
-            refreshed = self._metadata.versions_in(partition.digest)
+            refreshed = metadata_rows(self._metadata.versions_in(partition.digest))
             unbound.extend(self._sweep_indexes(partition, refreshed, in_flight))
             removed_content.extend(self._sweep_content(partition, refreshed, in_flight))
         return ReconciliationReport(
@@ -2220,7 +2237,7 @@ class MemoryStoreCoordinator:
         except MemoryStoreError:
             complete = False
         if complete:
-            head = self._metadata.head(staged.memory_item_id)
+            head = self._head(staged.memory_item_id)
             if staged.memory_version != head + 1:
                 return _Outcome.DEFERRED
             self._metadata.commit(

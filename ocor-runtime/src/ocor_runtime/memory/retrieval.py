@@ -72,7 +72,6 @@ creates Authority, Approval, Decision, CapabilityLease or canonical state.
 
 from __future__ import annotations
 
-import hmac
 import math
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -108,6 +107,7 @@ from .model import (
     MemoryScope,
     RepresentationKind,
     SourceKind,
+    digests_equal,
     memory_version_ref,
     parse_memory_version_ref,
     require_policy_decision,
@@ -126,6 +126,8 @@ from .stores import (
     VectorProfile,
     VersionState,
     eligibility_scope,
+    metadata_partitions,
+    metadata_rows,
     vector_digest,
 )
 
@@ -1083,7 +1085,7 @@ class MemorySearchService:
             sorted(
                 (
                     partition
-                    for partition in self._metadata.partitions()
+                    for partition in metadata_partitions(self._metadata.partitions())
                     if self._partition_authorized(partition, query, context, authorization)
                 ),
                 key=lambda partition: partition.digest,
@@ -1281,7 +1283,7 @@ class MemorySearchService:
                         )
                     item_id, version = parse_memory_version_ref(hit.memory_version_ref)
                     candidate = self._eligible(plan, item_id, version)
-                    if candidate is not None and hmac.compare_digest(
+                    if candidate is not None and digests_equal(
                         candidate.stored.staged.item_digest, hit.item_digest
                     ):
                         eligible.append((candidate, hit.score))
@@ -1402,7 +1404,7 @@ class MemorySearchService:
             )
         candidates: list[_Candidate] = []
         for partition in plan.partitions:
-            for stored in metadata.eligible_versions(partition.digest, plan.predicate):
+            for stored in metadata_rows(metadata.eligible_versions(partition.digest, plan.predicate)):
                 staged = stored.staged
                 if (
                     stored.state is not VersionState.COMMITTED
@@ -1503,7 +1505,7 @@ class MemorySearchService:
                 candidate.partition, staged.memory_item_id, staged.memory_version
             )
             item = materialized.item
-            if not hmac.compare_digest(item.digest(), staged.item_digest):
+            if not digests_equal(item.digest(), staged.item_digest):
                 raise MemoryRetrievalError(
                     "INTERNAL_ERROR", "MATERIALIZED_DIGEST_MISMATCH", "item digest mismatch"
                 )

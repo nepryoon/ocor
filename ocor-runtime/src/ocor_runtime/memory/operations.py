@@ -47,12 +47,12 @@ from .lifecycle import MemoryLifecycleCoordinator, TombstoneEntry
 from .model import (
     ENVELOPE_FIELDS, AdmittedMemoryVersion, GovernedMemoryItem, LifecycleStatus,
     MemoryAdmissionError, MemoryAdmissionService, MemoryPolicyDecision, MemoryVersionLedger, RepresentationKind,
-    require_policy_decision,
+    ledger_record, ledger_version, require_policy_decision,
 )
 from .retrieval import RetrievalAuditSink, StopEpochPort
 from .stores import (
     MemoryMetadataStore, MemoryPartition, MemoryStoreCoordinator, StoreCommitReceipt, StoredVersion,
-    VersionState, validate_embedding,
+    VersionState, metadata_head, metadata_rows, metadata_slot, validate_embedding,
 )
 
 
@@ -180,22 +180,23 @@ def _partition_heads(
     metadata: MemoryMetadataStore, ledger: MemoryVersionLedger, partition: MemoryPartition,
 ) -> tuple[_Head, ...]:
     heads: dict[str, _Head] = {}
-    rows = metadata.versions_in(partition.digest)
+    # Every port answer is type-checked before use (shared validators of stores/model).
+    rows = metadata_rows(metadata.versions_in(partition.digest))
     for stored in rows:
         item_id = stored.staged.memory_item_id
         if item_id in heads:
             continue
-        version = metadata.head(item_id)
-        if ledger.latest_version(item_id) != version:
+        version = metadata_head(metadata.head(item_id))
+        if ledger_version(ledger.latest_version(item_id)) != version:
             raise _error("HEAD_NOT_COMMITTED", "REPRESENTATION_NOT_READY")
-        head = metadata.get(item_id, version)
+        head = metadata_slot(metadata.get(item_id, version), item_id, version)
         if head is None or head.state is not VersionState.COMMITTED:
             raise _error("HEAD_NOT_COMMITTED", "REPRESENTATION_NOT_READY")
         # A head reclassified into another partition must not be counted here.
         if head.staged.partition.digest != partition.digest:
             continue
-        record = ledger.get(item_id, version)
-        first = ledger.get(item_id, 1)
+        record = ledger_record(ledger.get(item_id, version), (item_id, version))
+        first = ledger_record(ledger.get(item_id, 1), (item_id, 1))
         if record is None or first is None:
             raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
         record.verify()
@@ -204,8 +205,8 @@ def _partition_heads(
         heads[item_id] = _Head(record, head, first.item.created_at)
     for item_id, selected in heads.items():
         version = selected.record.item.memory_version
-        current = metadata.get(item_id, version)
-        if (metadata.head(item_id) != version or ledger.latest_version(item_id) != version
+        current = metadata_slot(metadata.get(item_id, version), item_id, version)
+        if (metadata_head(metadata.head(item_id)) != version or ledger_version(ledger.latest_version(item_id)) != version
                 or current is None or current.state is not VersionState.COMMITTED
                 or current.staged.stage_digest != selected.stored.staged.stage_digest):
             raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
@@ -214,9 +215,9 @@ def _partition_heads(
     # changing any selected head. PENDING and historical rows are not heads.
     observed = {
         stored.staged.memory_item_id: (stored.staged.memory_version, stored.staged.stage_digest)
-        for stored in metadata.versions_in(partition.digest)
+        for stored in metadata_rows(metadata.versions_in(partition.digest))
         if stored.state is VersionState.COMMITTED
-        and metadata.head(stored.staged.memory_item_id) == stored.staged.memory_version
+        and metadata_head(metadata.head(stored.staged.memory_item_id)) == stored.staged.memory_version
     }
     expected = {item_id: (head.record.item.memory_version, head.stored.staged.stage_digest)
                 for item_id, head in heads.items()}
@@ -476,8 +477,10 @@ class MemoryOperationsService:
                 break
             self._check(operation, plan)
             item = head.record.item
-            current = self._metadata.get(item.memory_item_id, item.memory_version)
-            if self._metadata.head(item.memory_item_id) != item.memory_version or current is None or current.staged.stage_digest != head.stored.staged.stage_digest:
+            current = metadata_slot(
+                self._metadata.get(item.memory_item_id, item.memory_version), item.memory_item_id, item.memory_version
+            )
+            if metadata_head(self._metadata.head(item.memory_item_id)) != item.memory_version or current is None or current.staged.stage_digest != head.stored.staged.stage_digest:
                 raise _error("CANDIDATE_CHANGED", "REPRESENTATION_NOT_READY")
             receipt = self._lifecycle.transition(item.memory_item_id, {
                 "operation_id": plan.operation_id + ":" + canonical_digest([item.version_ref, operation]).removeprefix("urn:sha256:"),
@@ -530,7 +533,10 @@ def _pending_new_items(
     if not callable(records):
         raise _error("LEDGER_INVENTORY_UNAVAILABLE", "CONTROL_PLANE_UNAVAILABLE")
     latest: dict[str, AdmittedMemoryVersion] = {}
-    for record in records():
+    inventory = records()
+    if not isinstance(inventory, (tuple, list)):
+        raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
+    for record in inventory:
         if not isinstance(record, AdmittedMemoryVersion):
             raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
         current = latest.get(record.item.memory_item_id)
@@ -701,7 +707,8 @@ class MemoryQuotaWriter:
             "governed_context_digest": plan.context.digest(), "deadline": format_utc_timestamp(plan.deadline),
             "candidate": item.to_mapping(),
         }, binding=binding, payload=payload)
-        record = service._ledger.get(receipt.memory_item_id, receipt.memory_version)
+        slot = (receipt.memory_item_id, receipt.memory_version)
+        record = ledger_record(service._ledger.get(*slot), slot)
         if record is None or record.item_digest != item.digest():
             raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
         service._check("memoryWrite", plan)
@@ -806,7 +813,8 @@ class MemoryBackupService:
         digests: list[str] = []
         audit_refs: list[str] = []
         for v in range(1, version + 1):
-            record, stored = service._ledger.get(item_id, v), service._metadata.get(item_id, v)
+            record = ledger_record(service._ledger.get(item_id, v), (item_id, v))
+            stored = metadata_slot(service._metadata.get(item_id, v), item_id, v)
             if record is None or stored is None:
                 raise _error("LEDGER_DRIFT", "REPRESENTATION_NOT_READY")
             digests.append(record.item_digest)
@@ -981,16 +989,16 @@ class MemoryRestoreGate:
         partition = body["partition_digest"]
         assert isinstance(entries, list) and isinstance(partition, str)
         recorded = {e["memory_item_id"]: e for e in entries}
-        restored_ids = {s.staged.memory_item_id for s in self._metadata.versions_in(partition)}
+        restored_ids = {s.staged.memory_item_id for s in metadata_rows(self._metadata.versions_in(partition))}
         if not restored_ids <= set(recorded):
             raise _error("PROJECTION_DRIFT", "REPRESENTATION_NOT_READY")
         deleted: list[str] = []
         for item_id in sorted(recorded):
             entry = recorded[item_id]
             tomb = obligations.get(item_id)
-            head = self._metadata.head(item_id)
-            record = self._ledger.get(item_id, head) if head else None
-            stored = self._metadata.get(item_id, head) if head else None
+            head = metadata_head(self._metadata.head(item_id))
+            record = ledger_record(self._ledger.get(item_id, head), (item_id, head)) if head else None
+            stored = metadata_slot(self._metadata.get(item_id, head), item_id, head) if head else None
             epoch = entry["deletion_epoch"]
             if tomb is not None and (epoch is None or tomb.deletion_epoch > epoch):
                 # Deleted after the backup: the replayed authoritative tombstone version is required.
@@ -1006,11 +1014,11 @@ class MemoryRestoreGate:
             if record.item.deletion_epoch != epoch or not isinstance(representations, list) or [
                     p.deletion_epoch for p in stored.staged.pointers] != [x["deletion_epoch"] for x in representations]:
                 raise _error("STALE_DELETION_EPOCH")
-            digests = [r.item_digest if (r := self._ledger.get(item_id, v)) is not None else None
+            digests = [r.item_digest if (r := ledger_record(self._ledger.get(item_id, v), (item_id, v))) is not None else None
                        for v in range(1, head + 1)]
-            audit_refs = [m.staged.audit_ref if (m := self._metadata.get(item_id, v)) is not None else None
-                          for v in range(1, head + 1)]
-            if (head != entry["head_version"] or self._ledger.latest_version(item_id) != head
+            audit_refs = [m.staged.audit_ref if (m := metadata_slot(self._metadata.get(item_id, v), item_id, v)) is not None
+                          else None for v in range(1, head + 1)]
+            if (head != entry["head_version"] or ledger_version(self._ledger.latest_version(item_id)) != head
                     or stored.state is not VersionState.COMMITTED
                     or stored.staged.stage_digest != entry["stage_digest"]
                     or stored.staged.partition.digest != partition
