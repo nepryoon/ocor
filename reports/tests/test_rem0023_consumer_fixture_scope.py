@@ -6,6 +6,12 @@ choice for NCP-U11 (NCR-MEMORY-003, OCOR-DEV-REM-0059) -- the three cases taken 
 INVALID_DELETIONS, compared by value with those of BASE, the DECLARED_DELETIONS
 assignment and the positive deletion test, both compared byte for byte with the texts
 fixed below -- and nothing else.
+
+NCP-U11-ADMISSION-QUOTA-COMPOSITION (2026-11-09, option A1) and
+NCP-U11-ADMISSION-QUOTA-WORLDS (2026-11-09, option 1): every
+MemoryAdmissionService call of both files must also carry exactly the argument
+``quota=`` with the explicit test quota port, compared byte for byte with the
+text fixed below; the guard removes exactly that argument and nothing else.
 """
 from __future__ import annotations
 
@@ -48,6 +54,10 @@ NCP_U11_POSITIVE = (
     '    assert world.status("item") == "DELETED" and world.tombstones.latest_epoch() == 1\n'
     '    assert denials(world) == []'
 )
+
+
+# NCP-U11-ADMISSION-QUOTA-WORLDS option 1: the explicit test quota port, byte for byte.
+NCP_U11_QUOTA_PORT = 'base.RecordingAdmissionQuota()'
 
 
 def dump(node: ast.AST) -> str:
@@ -149,9 +159,22 @@ def strip_ncp_u11(old: ast.Module, new: ast.Module, after: str) -> ast.Module:
     return new
 
 
+def strip_quota_port(new: ast.Module, after: str) -> ast.Module:
+    """Remove the authorised ``quota=`` argument from every MemoryAdmissionService call, or fail."""
+
+    calls = [n for n in ast.walk(new) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'MemoryAdmissionService']
+    assert calls, 'no MemoryAdmissionService call'
+    for call in calls:
+        quotas = [k for k in call.keywords if k.arg == 'quota']
+        assert len(quotas) == 1, 'a MemoryAdmissionService call lacks the quota port'
+        assert ast.get_source_segment(after, quotas[0].value) == NCP_U11_QUOTA_PORT, 'quota differs from the authorised text'
+        call.keywords.remove(quotas[0])
+    return new
+
+
 def compare(before: str, after: str) -> dict[str, object]:
     old = ast.parse(before)
-    new = strip_ncp_u11(old, ast.parse(after), after)
+    new = strip_ncp_u11(old, strip_quota_port(ast.parse(after), after), after)
     assert protected(old) == protected(new), 'test/assert/pytest.raises/decorator changed'
     def functions(tree: ast.Module) -> dict[str, str]:
         result = {}
@@ -201,6 +224,17 @@ class ConsumerFixtureScope(unittest.TestCase):
                 after.replace('world.tombstones.latest_epoch() == 1\n    assert denials(world) == []', 'world.tombstones.latest_epoch() >= 0\n    assert denials(world) == []', 1),
                 after.replace('DECLARED_DELETIONS = [\n', 'DECLARED_DELETIONS = [\n    ("all versions", {"deletion_scope": "ALL_VERSIONS"}),\n', 1),
             ]
+            # NCP-U11-ADMISSION-QUOTA-WORLDS option 1: quota removed, another quota text, another argument
+            # of the same call changed, an argument added next to the quota.
+            quota_mutations = [
+                after.replace('            quota=base.RecordingAdmissionQuota(),\n', '', 1),
+                after.replace('quota=base.RecordingAdmissionQuota()', 'quota=RecordingAdmissionQuota()', 1),
+                after.replace('quota=base.RecordingAdmissionQuota()', 'quota=base.RecordingAdmissionQuota() or None', 1),
+                after.replace('}),\n            quota=base.RecordingAdmissionQuota(),', '}, content_schemas=frozenset()),\n            quota=base.RecordingAdmissionQuota(),', 1),
+                after.replace('quota=base.RecordingAdmissionQuota(),', 'quota=base.RecordingAdmissionQuota(), policy_bundle=None,', 1),
+            ]
+            assert all(m != after for m in quota_mutations), 'a quota mutation does not apply'
+            mutations += quota_mutations
             for mutated in mutations:
                 if mutated == after:
                     continue
