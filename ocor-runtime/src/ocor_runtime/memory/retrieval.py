@@ -110,6 +110,7 @@ from .model import (
     SourceKind,
     memory_version_ref,
     parse_memory_version_ref,
+    require_policy_decision,
 )
 from .stores import (
     BoundHit,
@@ -119,6 +120,7 @@ from .stores import (
     MemoryMetadataStore,
     MemoryPartition,
     MemoryStoreCoordinator,
+    MemoryStoreCorrupted,
     RepresentationPointer,
     StoredVersion,
     VectorProfile,
@@ -363,6 +365,74 @@ class RetrievalAuthorization:
             "policy_bundle_digests": sorted(self.policy_bundle_digests),
             "ontology_release_digests": sorted(self.ontology_release_digests),
         }
+
+
+def _identifiers(value: object) -> bool:
+    return isinstance(value, frozenset) and all(isinstance(v, str) and v for v in value)
+
+
+def _require_authorization(authorization: object) -> RetrievalAuthorization:
+    """A live retrieval/read decision used only when every field has its declared type.
+
+    No field is coerced: a non-bool ``permitted`` is never a grant, a string is
+    never matched as a set of values (SELF-CHECK-CHECKLIST point 2).
+    """
+
+    if not isinstance(authorization, RetrievalAuthorization):
+        raise MemoryRetrievalError(
+            "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
+        )
+    a = authorization
+    bindings = a.scope_bindings
+    if (
+        not isinstance(a.permitted, bool)
+        or not isinstance(a.decision_ref, str)
+        or not a.decision_ref
+        or not isinstance(a.policy_bundle_digest, str)
+        or not isinstance(a.reason, str)
+        or not isinstance(a.memory_kinds, frozenset)
+        or not all(isinstance(kind, MemoryKind) for kind in a.memory_kinds)
+        or not isinstance(a.memory_scopes, frozenset)
+        or not all(isinstance(scope, MemoryScope) for scope in a.memory_scopes)
+        or not isinstance(bindings, Mapping)
+        or not all(isinstance(name, str) and _identifiers(values) for name, values in bindings.items())
+        or not all(
+            _identifiers(values)
+            for values in (
+                a.domains,
+                a.compatible_purposes,
+                a.policy_bundle_digests,
+                a.ontology_release_digests,
+                a.denied_memory_item_ids,
+            )
+        )
+    ):
+        raise MemoryRetrievalError(
+            "CONTROL_PLANE_UNAVAILABLE",
+            "POLICY_DECISION_INVALID",
+            "the policy decision is not a well-formed retrieval authorization",
+        )
+    return a
+
+
+def _require_decision(decision: object) -> MemoryPolicyDecision:
+    return require_policy_decision(decision, MemoryRetrievalError)
+
+
+def _stored_version(value: object) -> StoredVersion | None:
+    if value is not None and not isinstance(value, StoredVersion):
+        raise MemoryStoreCorrupted("METADATA_INVALID", "the metadata store returned no stored version")
+    return value
+
+
+def _head_version(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise MemoryRetrievalError("INTERNAL_ERROR", "HEAD_INVALID", "the metadata head pointer is invalid")
+    return value
+
+
+def _unavailable() -> MemoryRetrievalError:
+    return MemoryRetrievalError("INTERNAL_ERROR", "RETRIEVAL_UNAVAILABLE", "retrieval failed closed")
 
 
 class MemoryRetrievalPolicy(Protocol):
@@ -805,6 +875,11 @@ class MemorySearchService:
                 exc.correlation_id = correlation_id
             self._metrics[(mode_label, exc.reason_code)] += 1
             raise
+        except Exception as exc:  # noqa: BLE001 -- never an untyped refusal
+            error = _unavailable()
+            error.correlation_id = correlation_id
+            self._metrics[(mode_label, error.reason_code)] += 1
+            raise error from exc
         self._metrics[(mode_label, "OK")] += 1
         return response
 
@@ -819,6 +894,10 @@ class MemorySearchService:
         except MemoryAdmissionError as exc:
             self._record_denial(query, context, gcs_digest, binding.binding_ref, exc, now)
             raise
+        except Exception as exc:  # noqa: BLE001 -- an unexpected port failure is a typed, audited refusal
+            error = _unavailable()
+            self._record_denial(query, context, gcs_digest, binding.binding_ref, error, now)
+            raise error from exc
         try:
             with eligibility_scope(plan.predicate):
                 candidates = self._candidates(plan)
@@ -834,6 +913,12 @@ class MemorySearchService:
                 query, context, gcs_digest, binding.binding_ref, exc, self._clock.now()
             )
             raise
+        except Exception as exc:  # noqa: BLE001 -- an unexpected port failure is a typed, audited refusal
+            error = _unavailable()
+            self._record_denial(
+                query, context, gcs_digest, binding.binding_ref, error, self._clock.now()
+            )
+            raise error from exc
 
     # -- request -------------------------------------------------------------
 
@@ -1051,19 +1136,7 @@ class MemorySearchService:
                 "POLICY_UNAVAILABLE",
                 "retrieval policy evaluation failed closed",
             ) from exc
-        if not isinstance(authorization, RetrievalAuthorization):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
-        denied = authorization.denied_memory_item_ids
-        if not isinstance(denied, frozenset) or not all(
-            isinstance(ref, str) and ref for ref in denied
-        ):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE",
-                "POLICY_DECISION_INVALID",
-                "the pre-query item partition is not a set of item identifiers",
-            )
+        authorization = _require_authorization(authorization)
         if authorization.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
                 "STALE_POLICY",
@@ -1102,7 +1175,7 @@ class MemorySearchService:
     def _eligible(self, plan: _Plan, memory_item_id: str, memory_version: int) -> _Candidate | None:
         """Re-validate one exact committed version against the plan and live policy."""
 
-        stored = self._metadata.get(memory_item_id, memory_version)
+        stored = _stored_version(self._metadata.get(memory_item_id, memory_version))
         if stored is None or stored.state is not VersionState.COMMITTED:
             return None
         partition = stored.staged.partition
@@ -1112,7 +1185,7 @@ class MemorySearchService:
         query, context = plan.query, plan.context
         if item.memory_item_id in plan.authorization.denied_memory_item_ids:
             return None  # outside the pre-query partition (an index must not return it)
-        if self._metadata.head(item.memory_item_id) != item.memory_version:
+        if _head_version(self._metadata.head(item.memory_item_id)) != item.memory_version:
             return None  # superseded, corrected or reclassified: never the exact current one
         if item.lifecycle_status is not LifecycleStatus.ACTIVE or item.deletion_epoch is not None:
             return None
@@ -1149,10 +1222,7 @@ class MemorySearchService:
                 "POLICY_UNAVAILABLE",
                 "materialisation policy evaluation failed closed",
             ) from exc
-        if not isinstance(decision, MemoryPolicyDecision):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        decision = _require_decision(decision)
         if decision.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
                 "STALE_POLICY",
@@ -1661,8 +1731,13 @@ class MemoryItemReadService:
         except GovernedContextError as exc:
             raise MemoryRetrievalError("GOVERNED_CONTEXT_MISMATCH", exc.code, str(exc)) from exc
         try:
-            item_id, version = self._parameters(memory_item_id, memory_version)
-            return self._read(item_id, version, context, gcs_digest, binding.binding_ref)
+            try:
+                item_id, version = self._parameters(memory_item_id, memory_version)
+                return self._read(item_id, version, context, gcs_digest, binding.binding_ref)
+            except MemoryAdmissionError:
+                raise
+            except Exception as exc:  # noqa: BLE001 -- an unexpected port failure is a typed, audited refusal
+                raise _unavailable() from exc
         except MemoryAdmissionError as exc:
             if exc.correlation_id is None:
                 exc.correlation_id = context.correlation_id
@@ -1715,17 +1790,7 @@ class MemoryItemReadService:
             raise MemoryRetrievalError(
                 "CONTROL_PLANE_UNAVAILABLE", "POLICY_UNAVAILABLE", "read policy evaluation failed closed"
             ) from exc
-        if not isinstance(authorization, RetrievalAuthorization):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
-        denied = authorization.denied_memory_item_ids
-        if not isinstance(denied, frozenset) or not all(isinstance(r, str) and r for r in denied):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE",
-                "POLICY_DECISION_INVALID",
-                "the pre-read item partition is not a set of item identifiers",
-            )
+        authorization = _require_authorization(authorization)
         if authorization.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
                 "STALE_POLICY",
@@ -1747,10 +1812,7 @@ class MemoryItemReadService:
                 "POLICY_UNAVAILABLE",
                 "materialisation policy evaluation failed closed",
             ) from exc
-        if not isinstance(decision, MemoryPolicyDecision):
-            raise MemoryRetrievalError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        decision = _require_decision(decision)
         if decision.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryRetrievalError(
                 "STALE_POLICY",
@@ -1810,12 +1872,8 @@ class MemoryItemReadService:
         now = self._clock.now()
         stop_epoch = self._stop_epoch(context)
         authorization = self._authorize(memory_item_id, memory_version, context)
-        head_version = self._metadata.head(memory_item_id)
-        if isinstance(head_version, bool) or not isinstance(head_version, int) or head_version < 0:
-            raise MemoryRetrievalError(
-                "INTERNAL_ERROR", "HEAD_INVALID", "the metadata head pointer is invalid"
-            )
-        head = self._metadata.get(memory_item_id, head_version) if head_version else None
+        head_version = _head_version(self._metadata.head(memory_item_id))
+        head = _stored_version(self._metadata.get(memory_item_id, head_version)) if head_version else None
         visible_head = self._visible(head, authorization, context, now)
         if visible_head is None:
             raise MemoryRetrievalError(*_NOT_VISIBLE)
@@ -1830,7 +1888,7 @@ class MemoryItemReadService:
         if memory_version == head_version:
             stored, visible = head, visible_head
         else:
-            stored = self._metadata.get(memory_item_id, memory_version)
+            stored = _stored_version(self._metadata.get(memory_item_id, memory_version))
             visible = self._visible(stored, authorization, context, now)
         if stored is None or visible is None or visible[0].deletion_epoch is not None:
             raise MemoryRetrievalError(

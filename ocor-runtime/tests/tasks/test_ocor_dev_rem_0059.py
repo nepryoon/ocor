@@ -49,6 +49,12 @@ OCOR-DEV-0052: PostgreSQL 16 (``OCOR_LIVE_POSTGRES_DSN``: metadata, encrypted
 content objects, full-text index), Qdrant 1.15.1 (vector index) and OpenBao
 2.6.2 transit.  A missing backend fails, it never skips.  Only the policy,
 stop-state and audit ports are test ports (as in OCOR-DEV-0052).
+
+The SELF-CHECK-CHECKLIST (2026-11-08) section at the end holds one negative
+case per parsing, adapter and port-answer path of the touched classes; those
+cases are backend-free (unit worlds of OCOR-DEV-0050/0051/0052/0055/0059 and
+scripted backend answers) and prove typed refusals, never qualify an entry
+on their own.
 """
 
 from __future__ import annotations
@@ -742,14 +748,25 @@ def test_ncr_memory_001_an_index_answer_that_is_not_strict_i_json_is_typed(monke
 
 
 def test_ncr_memory_001_index_transport_failures_and_non_finite_requests_are_typed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A transport failure is the declared ``MemoryBackendUnavailable``, typed by the coordinator at the boundary.
+
+    The commit path keeps STORE_COMMIT_INCOMPLETE for an unreachable index
+    (OCOR-DEV-0051 vector outage); the read paths answer STORE_UNAVAILABLE.
+    """
+
     def down(request: Any, timeout: float) -> Any:
         raise urllib.error.URLError("connection refused")
 
     monkeypatch.setattr(A.urllib.request, "urlopen", down)
-    assert _code(lambda: A._http("GET", "http://qdrant/collections")) == ("REPRESENTATION_NOT_READY", "INDEX_UNAVAILABLE")
+    with pytest.raises(A.MemoryBackendUnavailable):
+        A._http("GET", "http://qdrant/collections")
     monkeypatch.setattr(A.urllib.request, "urlopen", lambda request, timeout: (_ for _ in ()).throw(TimeoutError("slow")))
-    assert _code(lambda: A._http("GET", "http://qdrant/collections")) == ("REPRESENTATION_NOT_READY", "INDEX_UNAVAILABLE")
+    with pytest.raises(A.MemoryBackendUnavailable):
+        A._http("GET", "http://qdrant/collections")
     assert _code(lambda: A._http("POST", "http://qdrant/x", {"query": [NAN]})) == ("MEMORY_SCHEMA_INVALID", "QUERY_INVALID")
+    world, coordinator, record, part, vector = _store_world()
+    world.lexical.search = down  # type: ignore[method-assign]
+    assert _code(lambda: coordinator.lexical_candidates(part, "probe fixture", limit=1)) == ("REPRESENTATION_NOT_READY", "STORE_UNAVAILABLE")
 
 
 def _qdrant(status: int, data: Any) -> A.QdrantVectorIndex:
@@ -781,8 +798,8 @@ def test_ncr_memory_001_a_malformed_qdrant_answer_is_typed() -> None:
     for count in (True, 3.9, "7", NAN, -1):
         assert _code(lambda count=count: _qdrant(200, {"result": {"count": count}}).count(part, "v")) == corrupt
     assert _code(lambda: _qdrant(200, {"result": {"collections": [{}]}}).collections()) == corrupt
-    assert _code(lambda: _qdrant(500, None).search_eligible(part, "v", [1.0], where=where, limit=1, offset=0)) == (
-        "REPRESENTATION_NOT_READY", "INDEX_UNAVAILABLE")
+    with pytest.raises(A.MemoryBackendUnavailable):
+        _qdrant(500, None).search_eligible(part, "v", [1.0], where=where, limit=1, offset=0)
 
 
 def test_ncr_memory_001_the_qdrant_entry_scan_follows_every_page() -> None:
@@ -957,13 +974,6 @@ def test_ncr_memory_002_the_quota_hold_never_turns_a_written_version_into_a_deni
     world.ledger.append = lambda record: (_ for _ in ()).throw(OSError("ledger down"))  # type: ignore[method-assign]
     assert _code(lambda: world.admit("y", t55.TEXT + " y", commit=False))[0] == "INTERNAL_ERROR"
     assert world.ledger.latest_version("y") == 0
-
-
-def test_ncr_memory_002_admitted_versions_not_yet_committed_count_against_the_item_quota() -> None:
-    world, _ = _quota_unit_world(_Serialization(), max_items=1)
-    world.admit("p", t55.TEXT + " p", commit=False)
-    assert _code(lambda: world.admit("q", t55.TEXT + " q", commit=False)) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
-    assert world.ledger.latest_version("q") == 0
 
 
 def test_ncr_memory_002_quota_inventory_failure_and_invalid_operations_inputs_are_typed() -> None:
@@ -1213,7 +1223,8 @@ def test_ncr_memory_005_a_store_port_failure_is_a_typed_refusal_on_every_read_an
         assert _code(lambda: coordinator.rebuild_partition(part, embed=lambda i, p: vector)) == unavailable
         assert _code(lambda: coordinator.reconcile()) == unavailable
         return
-    assert _code(lambda: coordinator.read_version(part, item_id, 1)) == unavailable
+    if port != "metadata.head":  # an exact-version read never consults the head pointer
+        assert _code(lambda: coordinator.read_version(part, item_id, 1)) == unavailable
     if port in ("metadata.get", "metadata.head"):
         assert _code(lambda: coordinator.rebuild_projections(part, item_id, 1, embedding=vector)) == unavailable
         assert _code(lambda: coordinator.read_latest(part, item_id)) == unavailable

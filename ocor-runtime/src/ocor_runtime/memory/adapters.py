@@ -11,13 +11,23 @@ They moved here from ``tests/tasks/test_ocor_dev_0051.py`` with unchanged
 behaviour (NORMATIVE-CONFORMANCE-PLAN point 2, ADD v1.3 Part II §2.2).  The
 lifecycle of the backends (containers, credentials, disposable schemas) stays
 in the qualification tooling, outside the product path.
+
+Every backend answer is read strictly (SELF-CHECK-CHECKLIST, 2026-11-08):
+UTF-8 and I-JSON only (no NaN/Infinity, no duplicate keys), shapes and types
+checked before use, a malformed answer is ``MemoryStoreCorrupted``.  A backend
+that cannot be reached, or answers with a failure status, raises
+``MemoryBackendUnavailable``, which the store coordinator types at the
+component boundary; failures of the OpenBao client propagate unchanged.
 """
 
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
+import http.client
 import json
+import math
 import urllib.error
 import urllib.request
 import uuid
@@ -26,7 +36,7 @@ from typing import Any, Protocol
 
 import psycopg
 
-from ..kernel.canonical import canonical_bytes
+from ..kernel.canonical import TimestampError, canonical_bytes, parse_utc_timestamp
 from .model import memory_version_ref
 from .stores import (
     EligibilityPredicate,
@@ -34,6 +44,8 @@ from .stores import (
     IndexHit,
     LexicalProfile,
     MemoryPartition,
+    MemoryStoreCorrupted,
+    MemoryStoreError,
     RepresentationPointer,
     SealedContent,
     StagedVersion,
@@ -45,6 +57,7 @@ from .stores import (
 )
 
 __all__ = [
+    "MemoryBackendUnavailable",
     "OpenBaoTransitCipher",
     "PostgresContentStore",
     "PostgresLexicalIndex",
@@ -54,19 +67,80 @@ __all__ = [
 ]
 
 
+class MemoryBackendUnavailable(ConnectionError):
+    """A backend could not be reached or answered with a failure status.
+
+    Typed by the store coordinator at the component boundary
+    (``STORE_UNAVAILABLE`` on reads, ``STORE_COMMIT_INCOMPLETE`` on a commit).
+    """
+
+
+def _non_finite(token: str) -> Any:
+    raise ValueError(f"non-finite JSON number {token}")
+
+
+def _finite_float(text: str) -> float:
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError("non-finite JSON number")
+    return value
+
+
+def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
+def _strict_json(raw: object, detail: str) -> Any:
+    """Strict UTF-8 I-JSON, or ``MemoryStoreCorrupted(detail)``."""
+
+    try:
+        text = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
+        if not isinstance(text, str):
+            raise ValueError("the answer is not text")
+        return json.loads(text, parse_constant=_non_finite, parse_float=_finite_float, object_pairs_hook=_unique_keys)
+    except (UnicodeDecodeError, ValueError) as exc:  # JSONDecodeError is a ValueError
+        raise MemoryStoreCorrupted(detail, "the backend answer is not strict UTF-8 I-JSON") from exc
+
+
+def _object(raw: object, detail: str) -> Mapping[str, Any]:
+    value = _strict_json(raw, detail)
+    if not isinstance(value, Mapping):
+        raise MemoryStoreCorrupted(detail, "the backend answer is not a JSON object")
+    return value
+
+
+def _rank(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise MemoryStoreCorrupted("POINTER_INVALID", "the full-text rank is not a finite number")
+    return float(value)
+
+
 def _http(method: str, url: str, body: Any | None = None, *, headers: Mapping[str, str] | None = None, timeout: float = 5.0) -> tuple[int, Any]:
-    data = None if body is None else json.dumps(body).encode()
+    try:
+        data = None if body is None else json.dumps(body, allow_nan=False).encode()
+    except ValueError as exc:
+        raise MemoryStoreError("MEMORY_SCHEMA_INVALID", "QUERY_INVALID", "the request body is not I-JSON") from exc
     request = urllib.request.Request(url, data=data, method=method, headers={"Content-Type": "application/json", **(headers or {})})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = response.read()
-            return response.status, json.loads(raw) if raw else None
+            status, raw = response.status, response.read()
     except urllib.error.HTTPError as exc:
-        raw = exc.read()
         try:
-            return exc.code, json.loads(raw) if raw else None
-        except json.JSONDecodeError:
-            return exc.code, None
+            raw = exc.read()
+        finally:
+            exc.close()
+        try:
+            return exc.code, _strict_json(raw, "INDEX_ANSWER_INVALID") if raw else None
+        except MemoryStoreCorrupted:
+            return exc.code, None  # a failure status is decided by its code alone
+    except (OSError, http.client.HTTPException) as exc:  # URLError and TimeoutError are OSErrors
+        raise MemoryBackendUnavailable(f"{method} {url}: {type(exc).__name__}") from exc
+    return status, _strict_json(raw, "INDEX_ANSWER_INVALID") if raw else None
 
 
 class TransitClient(Protocol):
@@ -90,21 +164,46 @@ class OpenBaoTransitCipher:
             "associated_data": base64.b64encode(encoded).decode(),
         }
 
+    @property
+    def key_ref(self) -> str:
+        return f"urn:ocor:memory-key:transit:{self._key}"
+
+    @staticmethod
+    def _field(answer: object, name: str) -> str:
+        data = answer.get("data") if isinstance(answer, Mapping) else None
+        value = data.get(name) if isinstance(data, Mapping) else None
+        if not isinstance(value, str) or not value:
+            raise MemoryStoreCorrupted("CIPHER_ANSWER_INVALID", f"the transit answer has no {name}")
+        return value
+
     def seal(self, *, context: Mapping[str, str], plaintext: bytes) -> SealedContent:
         data = self._bao.call(
             "POST",
             f"/v1/ocor-memory-transit/encrypt/{self._key}",
             {"plaintext": base64.b64encode(plaintext).decode(), **self._params(context)},
         )
-        return SealedContent(f"urn:ocor:memory-key:transit:{self._key}", data["data"]["ciphertext"].encode())
+        try:
+            ciphertext = self._field(data, "ciphertext").encode("ascii")
+        except UnicodeEncodeError as exc:
+            raise MemoryStoreCorrupted("CIPHER_ANSWER_INVALID", "the transit ciphertext is not ASCII") from exc
+        return SealedContent(self.key_ref, ciphertext)
 
     def open(self, *, context: Mapping[str, str], sealed: SealedContent) -> bytes:
+        if sealed.key_ref != self.key_ref:
+            raise MemoryStoreCorrupted("CIPHER_ANSWER_INVALID", "the content was sealed under another key")
+        try:
+            ciphertext = bytes(sealed.ciphertext).decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise MemoryStoreCorrupted("CIPHER_ANSWER_INVALID", "the stored ciphertext is not ASCII") from exc
         data = self._bao.call(
             "POST",
             f"/v1/ocor-memory-transit/decrypt/{self._key}",
-            {"ciphertext": sealed.ciphertext.decode(), **self._params(context)},
+            {"ciphertext": ciphertext, **self._params(context)},
         )
-        return base64.b64decode(data["data"]["plaintext"])
+        try:
+            return base64.b64decode(self._field(data, "plaintext"), validate=True)
+        except binascii.Error as exc:
+            raise MemoryStoreCorrupted("CIPHER_ANSWER_INVALID", "the transit plaintext is not base64") from exc
 
 
 
@@ -216,7 +315,21 @@ class PostgresStores:
 
     def _row(self, row: tuple[str, str, str, str | None]) -> StoredVersion:
         body, staged_at, state, committed_at = row
-        return StoredVersion(StagedVersion.from_body(json.loads(body), staged_at), VersionState(state), committed_at)
+        try:
+            version_state = VersionState(state)
+        except ValueError as exc:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "the version state is not declared") from exc
+        if version_state is VersionState.COMMITTED:
+            if not isinstance(committed_at, str):
+                raise MemoryStoreCorrupted("METADATA_INVALID", "a committed version has no commit instant")
+            try:
+                parse_utc_timestamp(committed_at)
+            except TimestampError as exc:
+                raise MemoryStoreCorrupted("METADATA_INVALID", "the commit instant is not canonical") from exc
+        elif committed_at is not None:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "a pending version has a commit instant")
+        staged = StagedVersion.from_body(_strict_json(body, "METADATA_INVALID"), staged_at)
+        return StoredVersion(staged, version_state, committed_at)
 
     def stage(self, staged: StagedVersion) -> StoredVersion:
         s = self.schema
@@ -302,7 +415,11 @@ class PostgresStores:
             row = conn.execute(
                 f'SELECT head_version FROM "{self.schema}".heads WHERE memory_item_id = %s', (memory_item_id,)
             ).fetchone()
-        return 0 if row is None else int(row[0])
+        if row is None:
+            return 0
+        if isinstance(row[0], bool) or not isinstance(row[0], int) or row[0] < 0:
+            raise MemoryStoreCorrupted("METADATA_INVALID", "the head pointer is not a version number")
+        return row[0]
 
     def pointer(self, store_ref: str) -> tuple[RepresentationPointer, VersionState] | None:
         with self.connect() as conn:
@@ -311,7 +428,11 @@ class PostgresStores:
             ).fetchone()
         if row is None:
             return None
-        return RepresentationPointer.from_mapping(json.loads(row[0])), VersionState(row[1])
+        try:
+            state = VersionState(row[1])
+        except ValueError as exc:
+            raise MemoryStoreCorrupted("POINTER_INVALID", "the pointer state is not declared") from exc
+        return RepresentationPointer.from_mapping(_object(row[0], "POINTER_INVALID")), state
 
     def versions_in(self, partition_digest: str) -> tuple[StoredVersion, ...]:
         with self.connect() as conn:
@@ -325,7 +446,7 @@ class PostgresStores:
     def partitions(self) -> tuple[MemoryPartition, ...]:
         with self.connect() as conn:
             rows = conn.execute(f'SELECT body FROM "{self.schema}".partitions ORDER BY partition_digest').fetchall()
-        return tuple(MemoryPartition.from_mapping(json.loads(row[0])) for row in rows)
+        return tuple(MemoryPartition.from_mapping(_object(row[0], "PARTITION_INVALID")) for row in rows)
 
     def eligible_versions(self, partition_digest: str, where: EligibilityPredicate) -> tuple[StoredVersion, ...]:
         """Port v2: committed head versions whose stored item matches ``where``, in the WHERE clause."""
@@ -359,7 +480,12 @@ class PostgresContentStore:
             row = conn.execute(
                 f'SELECT key_ref, ciphertext FROM "{self._s.schema}".content WHERE object_ref = %s', (object_ref,)
             ).fetchone()
-        return None if row is None else SealedContent(row[0], bytes(row[1]))
+        if row is None:
+            return None
+        key_ref, ciphertext = row
+        if not isinstance(key_ref, str) or not key_ref or not isinstance(ciphertext, (bytes, bytearray, memoryview)):
+            raise MemoryStoreCorrupted("CONTENT_INVALID", "the content row is not a sealed object")
+        return SealedContent(key_ref, bytes(ciphertext))
 
     def delete(self, object_ref: str) -> None:
         with self._s.connect() as conn:
@@ -415,7 +541,7 @@ class PostgresLexicalIndex:
                 f'INSERT INTO "{s}"."{table}" VALUES (%s, %s, %s, to_tsvector(%s::regconfig, %s), %s::jsonb) '
                 "ON CONFLICT (store_ref) DO NOTHING",
                 (store_ref, canonical_bytes(dict(payload)).decode(), document,
-                 profile.text_search_configuration, document, json.dumps(dict(attributes or {}))),
+                 profile.text_search_configuration, document, json.dumps(dict(attributes or {}), allow_nan=False)),
             )
 
     def search(self, partition: MemoryPartition, representation_version: str, query: str, *, limit: int, offset: int) -> Sequence[IndexHit]:
@@ -430,7 +556,7 @@ class PostgresLexicalIndex:
                 "ORDER BY score DESC, store_ref ASC LIMIT %s OFFSET %s",
                 (config, query, limit, offset),
             ).fetchall()
-        return [IndexHit(row[0], json.loads(row[1]), float(row[2])) for row in rows]
+        return [IndexHit(row[0], _object(row[1], "POINTER_INVALID"), _rank(row[2])) for row in rows]
 
     def search_eligible(
         self, partition: MemoryPartition, representation_version: str, query: str, *,
@@ -448,7 +574,7 @@ class PostgresLexicalIndex:
                 "ORDER BY score DESC, store_ref ASC LIMIT %s OFFSET %s",
                 (config, query, *params, limit, offset),
             ).fetchall()
-        return [IndexHit(row[0], json.loads(row[1]), float(row[2])) for row in rows]
+        return [IndexHit(row[0], _object(row[1], "POINTER_INVALID"), _rank(row[2])) for row in rows]
 
     def score_entries(
         self, partition: MemoryPartition, representation_version: str, query: str, store_refs: Sequence[str]
@@ -465,7 +591,7 @@ class PostgresLexicalIndex:
                 "plainto_tsquery(%s::regconfig, %s) AS q WHERE store_ref = ANY(%s)",
                 (config, query, list(store_refs)),
             ).fetchall()
-        return {row[0]: float(row[1]) for row in rows}
+        return {row[0]: _rank(row[1]) for row in rows}
 
     def retire(self, partition: MemoryPartition, representation_version: str, memory_item_id: str, below_version: int) -> None:
         s, table = self._s.schema, self.table(partition, representation_version)
@@ -484,7 +610,7 @@ class PostgresLexicalIndex:
             if self._layout(conn, table) is None:
                 return None
             row = conn.execute(f'SELECT payload FROM "{s}"."{table}" WHERE store_ref = %s', (store_ref,)).fetchone()
-        return None if row is None else json.loads(row[0])
+        return None if row is None else _object(row[0], "POINTER_INVALID")
 
     def read_back(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> IndexEntry | None:
         """Payload and searched document; a tsvector not derived from the document is no body."""
@@ -501,7 +627,9 @@ class PostgresLexicalIndex:
             ).fetchone()
         if row is None:
             return None
-        return IndexEntry(json.loads(row[0]), str(row[1]) if row[2] else None)
+        if not isinstance(row[1], str) or not isinstance(row[2], bool):
+            raise MemoryStoreCorrupted("POINTER_INVALID", "the full-text row is malformed")
+        return IndexEntry(_object(row[0], "POINTER_INVALID"), row[1] if row[2] else None)
 
     def entries(self, partition: MemoryPartition, representation_version: str) -> Sequence[IndexHit]:
         s, table = self._s.schema, self.table(partition, representation_version)
@@ -509,7 +637,7 @@ class PostgresLexicalIndex:
             if self._layout(conn, table) is None:
                 return []
             rows = conn.execute(f'SELECT store_ref, payload FROM "{s}"."{table}" ORDER BY store_ref').fetchall()
-        return [IndexHit(row[0], json.loads(row[1]), 0.0) for row in rows]
+        return [IndexHit(row[0], _object(row[1], "POINTER_INVALID"), 0.0) for row in rows]
 
     def remove(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> None:
         s, table = self._s.schema, self.table(partition, representation_version)
@@ -542,7 +670,20 @@ class QdrantVectorIndex:
 
     def _require(self, status: int, what: str) -> None:
         if status != 200:
-            raise RuntimeError(f"Qdrant {what} -> {status}")
+            raise MemoryBackendUnavailable(f"Qdrant {what} -> {status}")
+
+    @staticmethod
+    def _result(data: object, kind: type) -> Any:
+        result = data.get("result") if isinstance(data, Mapping) else None
+        if not isinstance(result, kind):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant answer has no result of the expected shape")
+        return result
+
+    def _points(self, data: object) -> list[Any]:
+        points = self._result(data, Mapping).get("points")
+        if not isinstance(points, list):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant answer has no point list")
+        return points
 
     def upsert(
         self, partition: MemoryPartition, profile: VectorProfile, store_ref: str, payload: Mapping[str, object], vector: Sequence[float],
@@ -613,7 +754,7 @@ class QdrantVectorIndex:
         if status == 404:
             return []
         self._require(status, "filtered query")
-        return self._hits(data["result"]["points"])
+        return self._hits(self._points(data))
 
     def score_entries(
         self, partition: MemoryPartition, representation_version: str, vector: Sequence[float], store_refs: Sequence[str]
@@ -632,7 +773,7 @@ class QdrantVectorIndex:
             return {}
         self._require(status, "scoring query")
         wanted = set(store_refs)
-        return {hit.store_ref: hit.score for hit in self._hits(data["result"]["points"]) if hit.store_ref in wanted}
+        return {hit.store_ref: hit.score for hit in self._hits(self._points(data)) if hit.store_ref in wanted}
 
     def retire(self, partition: MemoryPartition, representation_version: str, memory_item_id: str, below_version: int) -> None:
         name = self.collection(partition, representation_version)
@@ -648,17 +789,31 @@ class QdrantVectorIndex:
 
     UNBOUND_POINT = "urn:ocor:unbound-point:"
 
-    def _hits(self, points: Sequence[Mapping[str, Any]]) -> list[IndexHit]:
+    def _hits(self, points: Sequence[object], *, scored: bool = True) -> list[IndexHit]:
         hits = []
         for point in points:
-            payload = point.get("payload") or {}
+            if not isinstance(point, Mapping):
+                raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "a Qdrant point is not an object")
+            point_id = point.get("id")
+            payload = point.get("payload")
+            payload = {} if payload is None else payload
+            score = point.get("score") if scored else 0.0
+            if (
+                isinstance(point_id, bool)
+                or not isinstance(point_id, (str, int))
+                or not isinstance(payload, Mapping)
+                or isinstance(score, bool)
+                or not isinstance(score, (int, float))
+                or not math.isfinite(score)
+            ):
+                raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "a Qdrant point is malformed")
             store_ref = payload.get("store_ref")
             # A point not stored under its own ref's id is addressed by raw id so
             # that reconciliation can still remove it.
-            if not isinstance(store_ref, str) or self.point_id(store_ref) != str(point["id"]):
-                store_ref = self.UNBOUND_POINT + str(point["id"])
+            if not isinstance(store_ref, str) or self.point_id(store_ref) != str(point_id):
+                store_ref = self.UNBOUND_POINT + str(point_id)
             pointer = payload.get("pointer")
-            hits.append(IndexHit(store_ref, pointer if isinstance(pointer, dict) else {}, float(point.get("score", 0.0))))
+            hits.append(IndexHit(store_ref, pointer if isinstance(pointer, dict) else {}, float(score)))
         return hits
 
     def search(self, partition: MemoryPartition, representation_version: str, vector: Sequence[float], *, limit: int, offset: int) -> Sequence[IndexHit]:
@@ -670,7 +825,7 @@ class QdrantVectorIndex:
         if status == 404:
             return []
         self._require(status, "query")
-        return self._hits(data["result"]["points"])
+        return self._hits(self._points(data))
 
     def get(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> Mapping[str, object] | None:
         name = self.collection(partition, representation_version)
@@ -678,8 +833,15 @@ class QdrantVectorIndex:
         if status == 404:
             return None
         self._require(status, "get point")
-        payload = data["result"]["payload"]
-        return payload["pointer"] if payload.get("store_ref") == store_ref else None
+        payload = self._result(data, Mapping).get("payload")
+        if not isinstance(payload, Mapping):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant point has no payload")
+        if payload.get("store_ref") != store_ref:
+            return None
+        pointer = payload.get("pointer")
+        if not isinstance(pointer, Mapping):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant point has no pointer")
+        return pointer
 
     def read_back(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> IndexEntry | None:
         """Payload and the vector Qdrant persisted and ranks (binary32)."""
@@ -692,22 +854,39 @@ class QdrantVectorIndex:
         if status == 404:
             return None
         self._require(status, "retrieve point")
-        points = data["result"]
+        points = self._result(data, list)
         if not points:
             return None
+        if not isinstance(points[0], Mapping):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "a Qdrant point is not an object")
         payload = points[0].get("payload") or {}
+        if not isinstance(payload, Mapping):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant point payload is not an object")
         if payload.get("store_ref") != store_ref or not isinstance(payload.get("pointer"), dict):
             return None
         vector = points[0].get("vector")
         return IndexEntry(payload["pointer"], tuple(vector) if isinstance(vector, list) else None)
 
     def entries(self, partition: MemoryPartition, representation_version: str) -> Sequence[IndexHit]:
+        """Every point of the collection, following each scroll page."""
+
         name = self.collection(partition, representation_version)
-        status, data = self._call("POST", f"/collections/{name}/points/scroll", {"limit": 10000, "with_payload": True})
-        if status == 404:
-            return []
-        self._require(status, "scroll")
-        return self._hits(data["result"]["points"])
+        hits: list[IndexHit] = []
+        offset: object = None
+        while True:
+            body: dict[str, Any] = {"limit": 10000, "with_payload": True}
+            if offset is not None:
+                body["offset"] = offset
+            status, data = self._call("POST", f"/collections/{name}/points/scroll", body)
+            if status == 404 and offset is None:
+                return []
+            self._require(status, "scroll")
+            hits.extend(self._hits(self._points(data), scored=False))
+            offset = self._result(data, Mapping).get("next_page_offset")
+            if offset is None:
+                return hits
+            if isinstance(offset, bool) or not isinstance(offset, (str, int)):
+                raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant scroll offset is malformed")
 
     def remove(self, partition: MemoryPartition, representation_version: str, store_ref: str) -> None:
         name = self.collection(partition, representation_version)
@@ -722,10 +901,18 @@ class QdrantVectorIndex:
         if status == 404:
             return 0
         self._require(status, "count")
-        return int(data["result"]["count"])
+        count = self._result(data, Mapping).get("count")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant count is not a number of points")
+        return count
 
     def collections(self) -> list[str]:
         status, data = self._call("GET", "/collections")
         self._require(status, "list collections")
-        return sorted(c["name"] for c in data["result"]["collections"] if c["name"].startswith(f"ocor_{self.namespace}_"))
+        collections = self._result(data, Mapping).get("collections")
+        if not isinstance(collections, list) or not all(
+            isinstance(c, Mapping) and isinstance(c.get("name"), str) for c in collections
+        ):
+            raise MemoryStoreCorrupted("INDEX_ANSWER_INVALID", "the Qdrant collection list is malformed")
+        return sorted(c["name"] for c in collections if c["name"].startswith(f"ocor_{self.namespace}_"))
 

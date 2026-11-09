@@ -44,7 +44,7 @@ import os
 import re
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from contextlib import AbstractContextManager, ExitStack
+from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -352,6 +352,18 @@ KIND_TAINT: Mapping[MemoryKind, frozenset[str]] = MappingProxyType(
 )
 
 
+def _release_hold(hold: AbstractContextManager[object], error: BaseException | None) -> BaseException | None:
+    """Exit a quota hold; its return value is ignored and its own failure returned."""
+
+    try:
+        hold.__exit__(
+            None if error is None else type(error), error, None if error is None else error.__traceback__
+        )
+    except Exception as release_error:  # noqa: BLE001 -- reported by the caller, never swallowed
+        return release_error
+    return None
+
+
 class MemoryAdmissionError(OCORError):
     """Fail-closed admission refusal carrying a closed Problem reason code.
 
@@ -372,6 +384,8 @@ class MemoryAdmissionError(OCORError):
         self.reason_code = reason_code
         self.detail_code = detail_code
         self.correlation_id = correlation_id
+        # True only when the refused call had already written its version.
+        self.admitted = False
         super().__init__(f"{reason_code}/{detail_code}: {message}")
 
     def to_problem(self) -> dict[str, object]:
@@ -1117,6 +1131,29 @@ class MemoryPolicyDecision:
     reason: str = ""
 
 
+def require_policy_decision(
+    decision: object, error: type[MemoryAdmissionError] = MemoryAdmissionError
+) -> MemoryPolicyDecision:
+    """A policy answer used only when every field has its declared type.
+
+    A non-bool ``permitted`` is never read as a grant, and a decision without a
+    reference string is never cited by a receipt (SELF-CHECK-CHECKLIST point 2).
+    """
+
+    if (
+        not isinstance(decision, MemoryPolicyDecision)
+        or not isinstance(decision.permitted, bool)
+        or not isinstance(decision.decision_ref, str)
+        or not decision.decision_ref
+        or not isinstance(decision.policy_bundle_digest, str)
+        or not isinstance(decision.reason, str)
+    ):
+        raise error(
+            "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no well-formed policy decision"
+        )
+    return decision
+
+
 class MemoryAdmissionPolicy(Protocol):
     """Policy/Authority port evaluated without treating content as instruction."""
 
@@ -1268,7 +1305,8 @@ class MemoryAdmissionService:
         except MemoryAdmissionError as exc:
             # Error metadata from a downstream port cannot replace the binding.
             exc.correlation_id = correlation_id
-            self._record_denial(request, trusted, exc)
+            if not exc.admitted:  # a written version is never audited as denied
+                self._record_denial(request, trusted, exc)
             raise
         except Exception as exc:  # noqa: BLE001 -- unexpected port failures refuse closed
             error = MemoryAdmissionError(
@@ -1435,17 +1473,36 @@ class MemoryAdmissionService:
         )
         # 11. Quota, then persistence last, as one atomic append inside the
         #     quota authority's partition serialization (LLD v1.1 §2.8.2).
-        with ExitStack() as stack:
-            if self._quota is not None:
-                try:
-                    stack.enter_context(self._quota.admission_hold(item, bytes(payload)))
-                except MemoryAdmissionError:
-                    raise
-                except Exception as exc:  # noqa: BLE001 -- no admission without the quota check
-                    raise MemoryAdmissionError(
-                        "CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE", "the quota authority is unavailable"
-                    ) from exc
+        if self._quota is None:
             self._ledger.append(record)
+            return receipt
+        try:
+            hold = self._quota.admission_hold(item, bytes(payload))
+            hold.__enter__()
+        except MemoryAdmissionError:
+            raise
+        except Exception as exc:  # noqa: BLE001 -- no admission without the quota check
+            raise MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE", "QUOTA_UNAVAILABLE", "the quota authority is unavailable"
+            ) from exc
+        try:
+            self._ledger.append(record)
+        except Exception as exc:
+            # The hold is released but can never suppress the failed write.
+            released = _release_hold(hold, exc)
+            if released is not None:
+                exc.add_note(f"the quota serialization was not released either: {released!r}")
+            raise
+        released = _release_hold(hold, None)
+        if released is not None:
+            error = MemoryAdmissionError(
+                "CONTROL_PLANE_UNAVAILABLE",
+                "QUOTA_RELEASE_FAILED",
+                "the version is admitted but the quota serialization was not released; "
+                "a replay returns its receipt",
+            )
+            error.admitted = True
+            raise error from released
         return receipt
 
     def _bind_to_context(
@@ -1486,7 +1543,11 @@ class MemoryAdmissionService:
         calculated = "urn:sha256:" + hashlib.sha256(payload).hexdigest()
         if not hmac.compare_digest(calculated, item.content_digest):
             raise _schema_error("CONTENT_DIGEST_MISMATCH", "content_digest does not bind payload")
-        text = bytes(payload).decode("utf-8", errors="replace")
+        try:
+            text = bytes(payload).decode("utf-8")
+        except UnicodeDecodeError as exc:
+            # Every registered content class is text; the scan never runs on altered text.
+            raise _schema_error("PAYLOAD_INVALID", "payload must be strict UTF-8") from exc
         for marker, pattern in PROHIBITED_PAYLOAD_PATTERNS:
             if pattern.search(text):
                 raise MemoryAdmissionError(
@@ -1821,10 +1882,7 @@ class MemoryAdmissionService:
                 "POLICY_UNAVAILABLE",
                 "admission policy evaluation failed closed",
             ) from exc
-        if not isinstance(decision, MemoryPolicyDecision):
-            raise MemoryAdmissionError(
-                "CONTROL_PLANE_UNAVAILABLE", "POLICY_DECISION_INVALID", "no policy decision"
-            )
+        decision = require_policy_decision(decision)
         if decision.policy_bundle_digest != context.policy_bundle_digest:
             raise MemoryAdmissionError(
                 "STALE_POLICY",
