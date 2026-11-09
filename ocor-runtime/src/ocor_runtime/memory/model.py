@@ -1009,7 +1009,7 @@ class JournalMemoryVersionLedger:
     def _apply(self, line: bytes) -> None:
         try:
             entry = parse_i_json(line)
-        except (CanonicalizationError, UnicodeError, ValueError) as exc:
+        except (CanonicalizationError, UnicodeError, ValueError, RecursionError) as exc:
             raise MemoryLedgerCorrupted(f"journal entry is not I-JSON: {exc}") from exc
         if not isinstance(entry, Mapping) or set(entry) != {
             "seq",

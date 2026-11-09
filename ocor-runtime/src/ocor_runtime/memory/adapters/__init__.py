@@ -103,7 +103,7 @@ def _strict_json(raw: object, detail: str) -> Any:
         if not isinstance(text, str):
             raise ValueError("the answer is not text")
         return json.loads(text, parse_constant=_non_finite, parse_float=_finite_float, object_pairs_hook=_unique_keys)
-    except (UnicodeDecodeError, ValueError) as exc:  # JSONDecodeError is a ValueError
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:  # JSONDecodeError is a ValueError; nesting beyond the parser limit
         raise MemoryStoreCorrupted(detail, "the backend answer is not strict UTF-8 I-JSON") from exc
 
 
