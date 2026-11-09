@@ -33,6 +33,14 @@ entries NCR-MEMORY-001..005 of ``reports/development/NORMATIVE_CONFORMANCE_REGIS
   version, each item visible to the caller that shares the addressed item's
   ``project_id`` or owner principal, with one saga, tombstone and audit event
   per item and one receipt for the request.
+* NCR-MEMORY-005 -- committed full-text and vector projections are rebuildable
+  projections (ADD v1.3 Part II §2.2 :3763 and storage table :3797-3799; LLD
+  v1.1 §2.8.1 :202): ``MemoryStoreCoordinator.rebuild_projections`` rebuilds a
+  lost or drifted projection of one committed version from its metadata record,
+  its verified content and the admission journal (the embedding is accepted
+  only as the exact one the item digests), and ``rebuild_partition`` does so
+  for every committed version of a partition.  A rebuilt superseded version
+  stays retired and a deleted item is never resurrected.
 
 Each ``test_ncr_memory_<nnn>_conforms`` was written first and run RED on the
 unremediated code (``origin/main`` ``f683aa7``), then GREEN.  Qualifying cases
@@ -59,6 +67,7 @@ import test_ocor_dev_rem_0020 as r20
 from ocor_runtime.kernel.governed_context import GovernedContext
 from ocor_runtime.memory.model import AdmissionLimits, MemoryAdmissionError, MemoryAdmissionService
 from ocor_runtime.memory.retrieval import MemoryRetrievalError, RetrievalAuthorization, RetrievalMode
+from ocor_runtime.memory.stores import MemoryPartition, VectorProfile, index_attributes
 
 # The live worlds of OCOR-DEV-0052: real PostgreSQL, Qdrant and OpenBao.
 live_backends = t52.live_backends
@@ -403,8 +412,6 @@ def _consolidation_world(backends: t54.Backends, **changes: Any) -> t54.CWorld:
 
 
 def _items(world: t54.CWorld, records: list[Any]) -> int:
-    from ocor_runtime.memory.stores import MemoryPartition
-
     partition = MemoryPartition.for_item(records[0].item)
     return len({s.staged.memory_item_id for s in world.metadata.versions_in(partition.digest)})
 
@@ -438,3 +445,112 @@ def test_ncr_memory_002_consolidation_output_is_counted_against_quota_at_admissi
     assert _admission_refused(
         lambda: room.source("late", ("bridge-7", "sector", "north"))
     ) == ("POLICY_DENIED", "ITEM_QUOTA_EXCEEDED")
+
+
+# --------------------------------------------------------------------------
+# NCR-MEMORY-005: rebuild of committed full-text and vector projections
+# --------------------------------------------------------------------------
+
+NOT_VISIBLE = ("MEMORY_VERSION_NOT_FOUND", "VERSION_NOT_VISIBLE")
+
+
+def _pointers(world: Any, item_id: str, version: int = 1) -> dict[str, Any]:
+    stored = world.metadata.get(item_id, version)
+    assert stored is not None
+    return {p.representation_kind.value: p for p in stored.staged.pointers}
+
+
+def _drop(world: Any, record: Any, *kinds: str) -> None:
+    """Lose the native projections ``kinds`` of one version at the index backends."""
+
+    partition = MemoryPartition.for_item(record.item)
+    for kind, pointer in _pointers(world, record.item.memory_item_id, record.item.memory_version).items():
+        if kind in kinds:
+            index = world.lexical if kind == "FULL_TEXT" else world.vector
+            index.inner.remove(partition, pointer.representation_version, pointer.store_ref)
+
+
+def _store_refused(action: Any) -> tuple[str, str]:
+    with pytest.raises(MemoryAdmissionError) as caught:
+        action()
+    return caught.value.reason_code, caught.value.detail_code
+
+
+def _hits(world: t52.World, mode: RetrievalMode, text: str) -> list[str]:
+    return list(t52.refs(r20.search(world, mode, text=text)))
+
+
+def _embed(item: Any, payload: bytes) -> list[float]:
+    return t52.embed(payload.decode())
+
+
+def test_ncr_memory_005_a_lost_or_drifted_projection_is_rebuilt_from_metadata_content_and_journal(
+    backends: t52.Backends,
+) -> None:
+    """NCR-MEMORY-005, one version (ADD v1.3 :3763, :3797-3799; LLD v1.1 :202)."""
+
+    world = backends.world()
+    record = world.admit("x", TEXT)
+    partition = MemoryPartition.for_item(record.item)
+    pointers = _pointers(world, "x")
+    # Lost full-text projection, drifted vector projection.
+    _drop(world, record, "FULL_TEXT")
+    world.vector.inner.upsert(partition, VectorProfile.for_item(record.item), pointers["VECTOR"].store_ref,
+                              pointers["VECTOR"].to_mapping(), t52.embed("tampered"),
+                              attributes=index_attributes(record.item))
+    assert _store_refused(lambda: world.coordinator.read_version(partition, "x", 1)) == (
+        "REPRESENTATION_NOT_READY", "PROJECTION_DRIFT")
+    # The vector body is not derivable from content: only the embedding the item digests is accepted.
+    assert _store_refused(lambda: world.coordinator.rebuild_projections(partition, "x", 1)) == (
+        "MEMORY_SCHEMA_INVALID", "EMBEDDING_MISSING")
+    assert _store_refused(lambda: world.coordinator.rebuild_projections(
+        partition, "x", 1, embedding=t52.embed("tampered"))) == ("MEMORY_SCHEMA_INVALID", "EMBEDDING_DIGEST_MISMATCH")
+    report = world.coordinator.rebuild_projections(partition, "x", 1, embedding=t52.embed(TEXT))
+    assert report.rebuilt == tuple(sorted((pointers["FULL_TEXT"].store_ref, pointers["VECTOR"].store_ref)))
+    assert report.verified == ()
+    assert world.coordinator.read_version(partition, "x", 1).payload == TEXT.encode()
+    for mode in RetrievalMode:
+        assert _hits(world, mode, TEXT) == [record.item.version_ref], mode
+    # A rebuild of bound projections writes nothing.
+    again = world.coordinator.rebuild_projections(partition, "x", 1, embedding=t52.embed(TEXT))
+    assert again.rebuilt == () and again.verified == report.rebuilt
+    # Unknown and foreign versions are not visible.
+    assert _store_refused(lambda: world.coordinator.rebuild_projections(partition, "x", 2)) == NOT_VISIBLE
+
+
+def test_ncr_memory_005_a_lost_partition_index_is_rebuilt_and_superseded_versions_stay_retired(
+    backends: t52.Backends,
+) -> None:
+    """NCR-MEMORY-005, a partition: every committed version, the journal as replay source."""
+
+    world = backends.world()
+    old = world.admit("x", TEXT + " northern ford")
+    new = world.admit("x", TEXT + " southern ford", version=2)
+    other = world.admit("y", TEXT + " eastern ford")
+    for record in (old, new, other):
+        _drop(world, record, "FULL_TEXT", "VECTOR")
+    partition = MemoryPartition.for_item(new.item)
+    report = world.coordinator.rebuild_partition(partition, embed=_embed)
+    assert len(report.rebuilt) == 6 and report.verified == ()
+    for record in (old, new, other):
+        materialized = world.coordinator.read_version(partition, record.item.memory_item_id, record.item.memory_version)
+        assert materialized.item.version_ref == record.item.version_ref
+    for mode in RetrievalMode:
+        assert set(_hits(world, mode, TEXT + " ford")) == {new.item.version_ref, other.item.version_ref}, mode
+        assert old.item.version_ref not in _hits(world, mode, "northern ford"), mode
+
+
+def test_ncr_memory_005_a_deleted_item_is_never_resurrected_by_a_rebuild(lifecycle_backends: t55.Backends) -> None:
+    """NCR-MEMORY-005 with the deletion saga (ADD v1.3 :3836): rebuild never resurrects deleted memory."""
+
+    world = lifecycle_backends.world()
+    gone = world.admit("gone", t55.TEXT + " alpha")
+    keep = world.admit("keep", t55.TEXT)
+    world.delete("gone", op="forget")
+    partition = MemoryPartition.for_item(keep.item)
+    for version in range(1, world.metadata.head("gone") + 1):
+        assert _store_refused(lambda: world.coordinator.rebuild_projections(partition, "gone", version)) == NOT_VISIBLE, version
+    report = world.coordinator.rebuild_partition(partition, embed=_embed)
+    assert report.rebuilt == () and all("gone" not in ref for ref in report.verified)
+    assert "gone" not in _served(world, "alpha") and "keep" in _served(world, t55.TEXT)
+    assert not t55.content_present(world, gone)
