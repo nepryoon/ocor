@@ -2037,3 +2037,80 @@ def test_prereview_p3_a_surrogate_store_ref_never_reaches_the_point_id_encoder(m
     assert _code(lambda: index.search(part, "v", [1.0], limit=1, offset=0)) == ("INTERNAL_ERROR", "INDEX_ANSWER_INVALID")
     # Valid non-ASCII text (a scalar value outside the BMP, written as a surrogate pair escape) stays valid.
     assert A._strict_json(b'{"x":"\\ud83d\\ude00"}', "INDEX_ANSWER_INVALID") == {"x": "\U0001F600"}
+
+
+# P2 twins (SELF-CHECK-PATH-INVENTORY point 2): every other consumer of the same metadata and ledger answers.
+
+BOOL_HEADS = (True, 1.0)
+
+
+@pytest.mark.parametrize(("port", "answers", "action"), [
+    ("versions_in", BAD_SEQUENCES, "committed_count"),
+    ("versions_in", BAD_SEQUENCES, "rebuild_partition"),
+    ("versions_in", BAD_SEQUENCES, "reconcile"),
+    ("partitions", BAD_SEQUENCES, "reconcile"),
+    ("stage", BAD_RECORDS, "replay"),
+    ("head", BAD_COUNTS, "replay"),
+])
+def test_prereview_p2_twin_store_coordinator_metadata_answers_are_checked(port: str, answers: tuple[Any, ...], action: str) -> None:
+    for answer in answers:
+        world, coordinator, record, part, vector = _store_world()
+        payload = b"probe fixture text"
+        calls = {
+            "committed_count": lambda: coordinator.committed_count(part),
+            "rebuild_partition": lambda: coordinator.rebuild_partition(part),
+            "reconcile": lambda: coordinator.reconcile(),
+            "replay": lambda: coordinator.commit(record, payload=payload, embedding=vector),
+        }
+        _patched(world.metadata, port, answer)
+        _code(calls[action])
+
+
+@pytest.mark.parametrize("action", ["replay", "rebuild_projections"])
+@pytest.mark.parametrize("answer", BAD_RECORDS)
+def test_prereview_p2_twin_store_coordinator_ledger_answers_are_checked(action: str, answer: Any) -> None:
+    world, coordinator, record, part, vector = _store_world()
+    item_id = record.item.memory_item_id
+    _patched(world.ledger, "get", answer)
+    if action == "replay":
+        _code(lambda: coordinator.commit(record, payload=b"probe fixture text", embedding=vector))
+    else:
+        _code(lambda: coordinator.rebuild_projections(part, item_id, 1, embedding=vector))
+
+
+@pytest.mark.parametrize(("owner", "port", "answers"), [
+    ("metadata", "versions_in", BAD_SEQUENCES), ("metadata", "head", (*BAD_COUNTS, *BOOL_HEADS)),
+    ("metadata", "get", BAD_RECORDS), ("ledger", "latest_version", (*BAD_COUNTS, *BOOL_HEADS)),
+    ("ledger", "get", BAD_RECORDS), ("ledger", "records", (5, None, "x")),
+])
+def test_prereview_p2_twin_operations_inventory_answers_are_checked(owner: str, port: str, answers: tuple[Any, ...]) -> None:
+    """Operations (monitor, quota) never accept a boolean or float head as version 1, nor a malformed row."""
+
+    from ocor_runtime.memory.operations import MemoryQuotaDemand
+
+    for answer in answers:
+        w = t55.unit_world()
+        partition = t59.seed(w)
+        service, _audit, _policy = t59.setup(w)
+        target = getattr(w, owner)
+        original = _patched(target, port, answer)
+        try:
+            for action in ("monitor", "check_quota"):
+                kwargs = {"demand": MemoryQuotaDemand()} if action == "check_quota" else {}
+                with pytest.raises(MemoryAdmissionError):
+                    t59.invoke(service, w, partition, action, **kwargs)
+        finally:
+            setattr(target, port, original)
+
+
+@pytest.mark.parametrize("answer", BAD_SEQUENCES)
+def test_prereview_p2_twin_retrieval_partition_and_eligibility_answers_are_checked(answer: Any) -> None:
+    for port in ("partitions", "eligible_versions"):
+        world = t55.unit_world()
+        world.admit("x", t55.TEXT)
+        original = _patched(world.metadata, port, answer)
+        try:
+            with pytest.raises(MemoryAdmissionError):
+                world.search(RetrievalMode.STRUCTURED)
+        finally:
+            setattr(world.metadata, port, original)
