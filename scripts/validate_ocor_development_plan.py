@@ -1463,6 +1463,13 @@ def main() -> int:
         "reports/evidence/G5/OCOR-DEV-0059.requalified-rem0059.log",
         "reports/evidence/G6/OCOR-DEV-0061.requalified-rem0059.json",
         "reports/evidence/G6/OCOR-DEV-0061.requalified-rem0059.log",
+        # OCOR-DEV-REM-0059 preventive review P11: the regression-only requalifications of the sealed remediation
+        # units REM-0023 and REM-0036 (supersession of their rem0018 records), and the G6 manifest of the 0061 one.
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0023.requalified-rem0059.log",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.json",
+        "reports/evidence/G5/OCOR-DEV-REM-0036.requalified-rem0059.log",
+        "reports/evidence/G6/MANIFEST.json",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
