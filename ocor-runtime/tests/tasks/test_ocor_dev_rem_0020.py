@@ -557,7 +557,10 @@ def test_f2_policy_denied_items_cost_no_more_index_work_than_before(backends: t5
     for n in range(denied):
         world.admit(f"denied-{n:03d}", "ration convoy schedule")
         world.policy.denied_items.add(f"denied-{n:03d}")
-    baseline = {0: 1, 40: 6, 130: 15}[denied]
+    # NCR-MEMORY-001 (OCOR-DEV-REM-0059): the pre-query policy partition excludes
+    # denied items (LLD v1.1 docs/OCOR_LLD_v1.1.md:214; FR-119 Register v1.1 :268;
+    # FGM-16 LLD v1.1 :397): work and error equal those of the zero-denied case.
+    baseline = {0: 1, 40: 1, 130: 1}[denied]
     try:
         response = search(world, RetrievalMode.FULL_TEXT, text="ration convoy schedule")
         outcome = refs(response)
@@ -567,7 +570,7 @@ def test_f2_policy_denied_items_cost_no_more_index_work_than_before(backends: t5
     record_property("f2_index_lookups", calls)
     record_property("f2_outcome", ",".join(outcome))
     assert calls <= baseline, (denied, calls)
-    assert outcome == (["RETRIEVAL_BACKPRESSURE"] if denied == 130 else ["urn:ocor:memory:allowed:v1"])
+    assert outcome == ["urn:ocor:memory:allowed:v1"]
 
 
 # --------------------------------------------------------------------------
