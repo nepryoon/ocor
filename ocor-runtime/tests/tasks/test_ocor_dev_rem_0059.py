@@ -492,6 +492,52 @@ def test_ncr_memory_002_admission_without_a_quota_authority_refuses_and_writes_n
     assert [(e["reason_code"], e["detail_code"]) for e in audit.events] == [NO_QUOTA]
 
 
+class _EnterOnly:
+    """A hold answer that can be entered but is not a context manager (no ``__exit__``)."""
+
+    def __enter__(self) -> None:
+        return None
+
+
+class _HoldAnswer:
+    """A quota port whose ``admission_hold`` answers a fixed value instead of a context manager."""
+
+    def __init__(self, answer: Any) -> None:
+        self.answer = answer
+
+    def admission_hold(self, item: Any, payload: bytes) -> Any:
+        return self.answer
+
+
+class _HoldAttribute:
+    admission_hold = 1
+
+
+@pytest.mark.parametrize(
+    "quota",
+    [True, 0, b"quota", {"admission_hold": None}, {1: "quota"}, frozenset(), _HoldAttribute(),
+     _HoldAnswer(None), _HoldAnswer(True), _HoldAnswer("hold"), _HoldAnswer(_EnterOnly())],
+    ids=["bool", "int", "bytes", "mapping", "mapping-non-string-key", "set", "hold-not-callable",
+         "hold-none", "hold-bool", "hold-string", "hold-without-exit"],
+)
+def test_ncr_memory_002_a_wrong_typed_quota_authority_or_hold_refuses_before_any_write(
+    backends: t52.Backends, quota: Any
+) -> None:
+    """VF-001 class (SELF-CHECK-CLASS-COVERAGE point 1, types): a quota value of the wrong type, or a
+    port whose ``admission_hold`` does not answer a context manager, refuses
+    ``CONTROL_PLANE_UNAVAILABLE`` / ``QUOTA_UNAVAILABLE`` before any write, audited."""
+
+    world = backends.world()
+    audit = t52.Audit()
+    world.admission = MemoryAdmissionService(
+        ledger=world.ledger, resolver=t52.Resolver(), policy=t52.base.Policy(), markings=world.markings,
+        clock=world.clock, limits=AdmissionLimits(retention_horizons=RETENTION), audit=audit, quota=quota,
+    )
+    assert _admission_refused(lambda: world.admit("a", TEXT)) == NO_QUOTA
+    assert world.ledger.get("a", 1) is None and world.ledger.latest_version("a") == 0 and world.metadata.head("a") == 0
+    assert [(e["reason_code"], e["detail_code"]) for e in audit.events] == [NO_QUOTA]
+
+
 def test_ncr_memory_002_consolidation_through_an_admission_without_quota_writes_no_memory_item(
     consolidation_backends: t54.Backends,
 ) -> None:
