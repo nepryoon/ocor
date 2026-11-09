@@ -1,0 +1,829 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0059-ncp-u11-governed-memory",
+    "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2 and 5 (NCP-U11 row; additional criterion: the real memory adapters of test_ocor_dev_0051.py move into ocor_runtime; the point 5 PO choice for test_ocor_dev_0055.py lines 481-483); NCP-U11-REM0023-CONSUMER-GUARD (2026-11-09) option 1 (decided on full delegation of the PO); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); SELF-CHECK-CHECKLIST (2026-11-08); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) points 3-4; NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30); PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, full suite in four lanes (LOCAL-SUITE-FOUR-LANES (2026-11-07)), independent verification; mandate CC-OCOR-DELIVERY-COMPLETION (DEC-210/DEC-211)",
+    "id": "OCOR-DEV-REM-0059",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0059-RCCAD/OCOR-DEV-REM-0059.json",
+    "repair_cycle": 0
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker network ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.032,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "stack-absent-initial",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-09T08:14:55.136891+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "cwd": ".",
+      "duration_seconds": 44.899,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "bootstrap",
+      "raw_sha256": "9819e5d3a4638b7e56cbd81c93e5aaf2a7922296db87c1c916f8276efe0f27e4",
+      "started_at": "2026-11-09T08:14:55.171710+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --manifest-only",
+      "cwd": ".",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "verify-manifest-only",
+      "raw_sha256": "33cd8f068420cb6c9f7b6c5b791e775f84bf67977c0aa6ecc4c61aa551e8e843",
+      "started_at": "2026-11-09T08:15:40.075533+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "cwd": ".",
+      "duration_seconds": 2.87,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "verify-typed-execute",
+      "raw_sha256": "c7ef5a3a9f329b747d3f8329e81d953db48a5640edff1941b0b4ab0a411472a8",
+      "started_at": "2026-11-09T08:15:40.142636+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/bootstrap_development_environment.py --check",
+      "cwd": ".",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "bootstrap-check",
+      "raw_sha256": "918a8e777662d9f50aa18104ec10c1c50e1f1f266e16a5b7927b7c1c9c25e644",
+      "started_at": "2026-11-09T08:15:43.015937+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/preflight_environment.py",
+      "cwd": ".",
+      "duration_seconds": 0.364,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "preflight",
+      "raw_sha256": "a4bcd8f682f72899eb63d965c1c7cabcf2e52bc345674de1996e3cacce56f065",
+      "started_at": "2026-11-09T08:15:43.194346+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/task-rem0059-run1.xml",
+      "cwd": ".",
+      "duration_seconds": 43.056,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "18fe3cc66e9449801695a9a33fc0c40a2b5d4746c5da3c53c62792ef92e46ab3",
+      "label": "task-rem0059-run1",
+      "raw_sha256": "815ff5000767ebe65ea01ea9cdf7ab5490a5bc9ad97481e68986a390d327c951",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 232,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:15:43.562112+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/task-rem0059-run2.xml",
+      "cwd": ".",
+      "duration_seconds": 44.11,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "f179cce42858fa67aacb23edcb2d5c79a322f4d4a1e9e056fb4754b3ca5b1708",
+      "label": "task-rem0059-run2",
+      "raw_sha256": "b065060d29e2406ef55c783e4efb194703d41b06ef6d5ab84e2677f388f6fe06",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 232,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:16:26.623192+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_rem_0059.py reports/tests/test_normative_conformance_register.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_runtime_evidence_validator.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/task-rem0059-run3.xml",
+      "cwd": ".",
+      "duration_seconds": 43.619,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "d643f6e3bad8925df95a24f57262164c9cd3b908b5b2df98c3402612e1582418",
+      "label": "task-rem0059-run3",
+      "raw_sha256": "335ac8cef14a7c059a777c27c67deeb555a84fed3facc9aafdc458b9f11bb1f8",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 232,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:17:10.738130+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_0051.py ocor-runtime/tests/tasks/test_ocor_dev_0052.py ocor-runtime/tests/tasks/test_ocor_dev_0054.py ocor-runtime/tests/tasks/test_ocor_dev_0055.py ocor-runtime/tests/tasks/test_ocor_dev_0059.py ocor-runtime/tests/conformance/fgm/test_fgm_01_10.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0023.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0036.py reports/tests/test_rem0023_consumer_fixture_scope.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/requalified-modules.xml",
+      "cwd": ".",
+      "duration_seconds": 150.234,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "c3bcd74fb0658b1c792b0da843fc04edb99e4295271e4101a34c1669a3ac64c6",
+      "label": "requalified-modules",
+      "raw_sha256": "2454b35dbc0515770a8cc6fc8d15db9aeee7ab0c888891d531c895b20704ddc6",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 656,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:17:54.362022+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_0053.py ocor-runtime/tests/tasks/test_ocor_dev_0056.py ocor-runtime/tests/tasks/test_ocor_dev_0057.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0020.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0021.py ocor-runtime/tests/tasks/test_ocor_dev_0058.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/consumers.xml",
+      "cwd": ".",
+      "duration_seconds": 287.632,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "4bfe69d3deb1e8e63f157b448d07f0a3a8bcb9de47bb486d10178230ef8a80c3",
+      "label": "consumers",
+      "raw_sha256": "ca452081a523534b1c66b0db27c3ed3b0efdfb0c90fe0f0480c3b57925060c94",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 1273,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:20:24.601456+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest -rP ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/regression.xml",
+      "cwd": ".",
+      "duration_seconds": 4.978,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "cd4d0fef19020bdd643c7e1d15b92be1438790c49dc3cba25293f4768142eef1",
+      "label": "regression",
+      "raw_sha256": "3c14917628fa424e6a3e47f3c9ce977cdd5f123a0f97886f46a33916400a1f9e",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 214,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:25:12.239285+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python ocor-runtime/tools/evidence_manifest.py validate --task OCOR-DEV-0004 --non-skipped --manifest reports/evidence/G0/MANIFEST.json",
+      "cwd": ".",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "evidence-job-g0",
+      "raw_sha256": "e1f31d0d7c78c62feed6c73f3404f8e16553eb975ac080c9db506168fe58da08",
+      "started_at": "2026-11-09T08:25:17.222659+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python -m pytest reports/tests/test_bootstrap_lock_validation.py reports/tests/test_autonomous_tooling_policy.py reports/tests/test_reset_teardown_residue.py reports/tests/test_evidence_input_drift.py reports/tests/test_runtime_evidence_validator.py reports/tests/test_ci_fuseki_archive.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_kind_teardown_observation.py reports/tests/test_generate_contracts_reference_resolution.py reports/tests/test_language_migration_benchmark_harness.py reports/tests/test_fuseki_archive_acquisition.py reports/tests/test_local_lane_campaign.py reports/tests/test_rem0037_0006_teardown_scope.py reports/tests/test_rem0034_secret_registry.py reports/tests/test_ocor_dev_rem_0046.py reports/tests/test_normative_conformance_register.py reports/tests/test_backlog_generator_reality_parity.py -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0059-q/q/reports-portfolio.xml",
+      "cwd": ".",
+      "duration_seconds": 56.269,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "69815f154261581aab9286c7b85bdb4906d25166e28d0a0a9d1cd4311c3beb6d",
+      "label": "reports-portfolio",
+      "raw_sha256": "d053670bf80c41db216936a2db077713f0f27450e379c4f06e9aa179136b43e5",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 760,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:25:17.289897+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --plan",
+      "cwd": ".",
+      "duration_seconds": 1.168,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "lane-plan",
+      "raw_sha256": "f118fcc9061beb1441d16fb5075433271fd32fc9cd313b214c9d670c2dff32b6",
+      "started_at": "2026-11-09T08:26:13.564693+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "ocor-runtime/.venv/bin/python scripts/reset_test_environment.py --execute",
+      "cwd": ".",
+      "duration_seconds": 2.018,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "teardown-after-a",
+      "raw_sha256": "111f609ffa736972687122c67d04e58c4c937e11046f4672dd452a91b834558d",
+      "started_at": "2026-11-09T08:26:14.765996+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker volume ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && test -z \"$(docker network ls -q --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.032,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "stack-absent-after-a",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-09T08:26:16.787758+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.008,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "host-stack-absent-before-lanes",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-09T08:26:16.858105+00:00",
+      "status": "PASS"
+    },
+    {
+      "admission_level": "FOUR_LANE",
+      "campaign_duration_seconds": 1689.243,
+      "campaign_mode": "FOUR_LANE",
+      "campaign_result_raw_sha256": "9643e423c5a8922ac67fe92969d6ee24e50674a8d6fb1734f94603234c0c72d7",
+      "campaign_status": "PASS",
+      "command": "ocor-runtime/.venv/bin/python scripts/run_local_lane_campaign.py --execute /home/luca/.ocor-codex/rem-0059-q/lanes --expected-head 16c24d91fa970704a89b7a92bc29b6d4772da3e3 --tool-bin /home/luca/.ocor-codex/impl-env/rem-0059/bin",
+      "cwd": ".",
+      "duration_seconds": 1689.338,
+      "exact_union": {
+        "collected": 5717,
+        "collection_sha256": "d8f15221395c8882db62e3bbffba61cb32e082b0db480cf1a2c355f3c0844311",
+        "duplicated": [],
+        "executed": 5717,
+        "executed_identity_sha256": "575dd01bacefeafe9e81cddb1894fb2a08a8897bb49debbd1ecc2f9d4d05f1e0",
+        "missing": [],
+        "unexpected": []
+      },
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "junit_raw_sha256": "85a574164ca30e489a157477400f101f2ce435e9259c162d4b0678e521b68dee",
+      "junit_sha256": "85a574164ca30e489a157477400f101f2ce435e9259c162d4b0678e521b68dee",
+      "label": "four-lane-full",
+      "lanes_run": 4,
+      "raw_sha256": "9643e423c5a8922ac67fe92969d6ee24e50674a8d6fb1734f94603234c0c72d7",
+      "result": {
+        "failed": 0,
+        "not_executed": 0,
+        "passed": 5717,
+        "skipped": 0
+      },
+      "started_at": "2026-11-09T08:26:16.868593+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "sh -c test -z \"$(docker ps -aq --filter label=com.docker.compose.project=ocor-bootstrap)\" && echo ocor-bootstrap absent",
+      "cwd": ".",
+      "duration_seconds": 0.008,
+      "exit_code": 0,
+      "head_sha": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+      "label": "host-stack-absent-after-lanes",
+      "raw_sha256": "ca881f262462806c8e3377d059441e9172291064234c1dd8e2e68faff22fcf86",
+      "started_at": "2026-11-09T08:54:26.212327+00:00",
+      "status": "PASS"
+    }
+  ],
+  "commit": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+  "commit_role": "qualified code/test source; the exact publication HEAD is bound by the external verification request",
+  "created_at": "2026-11-09T08:54:41Z",
+  "drifted_inputs": [
+    "ocor-runtime/src/ocor_runtime/memory/retrieval.py",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0052.py"
+  ],
+  "environment": {
+    "backend_images": {
+      "ocor-bootstrap-fuseki-1": {
+        "image_id": "sha256:7e8550f61297865c9b235e1250e4ae7a89c26d00aeef4c06ecabcd6c0f6989cb",
+        "image_ref": "ocor/jena-fuseki:6.2.0",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-kafka-1": {
+        "image_id": "sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "image_ref": "confluentinc/cp-kafka@sha256:24cdd3a7fa89d2bed150560ebea81ff1943badfa61e51d66bb541a6b0d7fb047",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-keycloak-1": {
+        "image_id": "sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "image_ref": "quay.io/keycloak/keycloak@sha256:9d1f1b2b7261ff53c66cb1092dfcdc34a5fb77e81f9e6a6e75b8b6a795de8067",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-opa-1": {
+        "image_id": "sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "image_ref": "openpolicyagent/opa@sha256:39daf255ae7f25d81103f03a0c18308a50b7b5bb67907bed6166f70e24a970ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-openbao-1": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "image_ref": "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-qdrant-1": {
+        "image_id": "sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "image_ref": "qdrant/qdrant@sha256:d122138f76868edba68d36cb0833139c1d1761f00f09e48e61f8314196e6a4c6",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-seaweedfs-1": {
+        "image_id": "sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8",
+        "image_ref": "chrislusf/seaweedfs@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-agent-1": {
+        "image_id": "sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "image_ref": "ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-spire-server-1": {
+        "image_id": "sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "image_ref": "ghcr.io/spiffe/spire-server@sha256:4082f30d3e0ddc4000a171392c4ea174345ee44d161ee917c70b97b2ecfba141",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-temporal-1": {
+        "image_id": "sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049",
+        "image_ref": "temporalio/server@sha256:acecbab5b0b8ae9cf4012b508866ca97feda3709577bf157b537239f40029049",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-temporal-admin-tools-1": {
+        "image_id": "sha256:9ef0dc5b063bf4ffd5c1512de72e0e73e225bd2c7006a18ce69bd592a8862a83",
+        "image_ref": "temporalio/admin-tools@sha256:9ef0dc5b063bf4ffd5c1512de72e0e73e225bd2c7006a18ce69bd592a8862a83",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-temporal-postgresql-1": {
+        "image_id": "sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "image_ref": "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-terminusdb-1": {
+        "image_id": "sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "image_ref": "terminusdb/terminusdb-server@sha256:58f829d5a96b3bc8e63811270c766ea4603fae0c948dced724de481461b4d073",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      },
+      "ocor-bootstrap-typedb-1": {
+        "image_id": "sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "image_ref": "typedb/typedb@sha256:7555df2fffd5354553143facbfc81a58ce7036e4cc8b3b50bc7139faff4a721f",
+        "oom_killed": false,
+        "restart_count": 0,
+        "status": "running"
+      }
+    },
+    "bootstrap_env_sourced": false,
+    "bootstrap_procedure": "task, requalified-module, consumer, regression and portfolio phases: scripts/bootstrap_ci_environment.py --execute --timeout 600 from a fresh worktree-local credential file (VERIFIER-ENV-STANDARD-BOOTSTRAP, VERIFIER-ENV-CLEAN-SHELL), 15 containers, then teardown with the host stack absent; full suite: the same versioned bootstrap inside each lane sandbox, driven by scripts/run_local_lane_campaign.py --execute at the same code commit (memory admission at start, LOCAL-SUITE-FOUR-LANES (2026-11-07))",
+    "branch": "governed/ocor-dev-rem-0059-ncp-u11-governed-memory",
+    "clean_shell": true,
+    "cpu_model": "Intel Core Ultra 9 275HX",
+    "env_exports": [
+      "OCOR_BOOTSTRAP_ENV",
+      "OCOR_LIVE_POSTGRES_DSN"
+    ],
+    "fuseki_max_heap_bytes": 1073741824,
+    "host": "Lenovo Legion Pro 5 16IAX10H (HOST-MIGRATION 2026-10-24), memory upgraded to 64 GB (2026-11-03)",
+    "implementer_cli": "Claude Code (claude-opus-5-5)",
+    "mains_power": true,
+    "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal at the campaign (run.progress, phase C), not at record assembly",
+    "threads": 24,
+    "toolchain": {
+      "docker": {
+        "lock_sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/docker/docker",
+        "sha256": "e45381109c685311cf84c5e33a1aca7da81d6b55c0f9aed74091fc08c3a94f13",
+        "version": "29.7.2"
+      },
+      "gh": {
+        "lock_sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/gh_2.99.0_linux_amd64/bin/gh",
+        "sha256": "d0a901528411dfc2295253ba4183b99788f99c5901e3a6dda9172089c42d3b85",
+        "version": "2.99.0"
+      },
+      "git": {
+        "lock_sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/rem0019-escalation-20261020/isolated-git/usr/lib/git-core/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "version": "2.53.0"
+      },
+      "helm": {
+        "lock_sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0059/.ocor/tools/bin/helm",
+        "sha256": "912d3c044f46dcc43c22d073dec7eacf6ba8701dfc7f60688174b3eaa30d3698",
+        "version": "3.14.4"
+      },
+      "java": {
+        "image": "eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0",
+        "sha256": "db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0"
+      },
+      "kind": {
+        "lock_sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0059/.ocor/tools/bin/kind",
+        "sha256": "c72eda46430f065fb45c5f70e7c957cc9209402ef309294821978677c8fb3284",
+        "version": "0.29.0"
+      },
+      "kubectl": {
+        "lock_sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0059/.ocor/tools/bin/kubectl",
+        "sha256": "5de4e9f2266738fd112b721265a0c1cd7f4e5208b670f811861f699474a100a3",
+        "version": "1.33.1"
+      },
+      "node": {
+        "lock_sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/node-v20.20.2-linux-x64/bin/node",
+        "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "version": "20.20.2"
+      },
+      "python": {
+        "lock_sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/bin/python3.12",
+        "sha256": "ccc93c55c24bb92866cc2f9eff61b124abf5d1ee6c8da0ef9b5eed4d78a21f07",
+        "version": "3.12.11"
+      },
+      "ruff": {
+        "lock_sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.local/share/uv/tools/ruff/bin/ruff",
+        "sha256": "b2576c0128fd8b2200a4b5b19eeb4c1f08f5bfdf67a178d8ed0425089ed7dcdb",
+        "version": "0.13.1"
+      },
+      "tsc": {
+        "lock_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/ts/node_modules/typescript/bin/tsc",
+        "sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+        "version": "7.0.2"
+      },
+      "uv": {
+        "lock_sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "matches_lock": true,
+        "resolved_path": "/home/luca/.ocor-codex/c5resume/toolchain/uv-x86_64-unknown-linux-gnu/uv",
+        "sha256": "b65f23a420c4acc96427efb30e5ed9bc0f7e25d2d712000f6ede77c1a0de5f46",
+        "version": "0.12.5"
+      }
+    },
+    "typescript_sdk": "built in the candidate worktree with the locked PATH before the campaign (npm install --no-audit --no-fund && npm run build; sdk-build.log in the raw log)"
+  },
+  "full_campaign": {
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5717
+    },
+    "diagnostic_attempts": [],
+    "duration_seconds": 1689.243,
+    "exact_union": {
+      "collected": 5717,
+      "collection_sha256": "d8f15221395c8882db62e3bbffba61cb32e082b0db480cf1a2c355f3c0844311",
+      "duplicated": [],
+      "executed": 5717,
+      "executed_identity_sha256": "575dd01bacefeafe9e81cddb1894fb2a08a8897bb49debbd1ecc2f9d4d05f1e0",
+      "missing": [],
+      "unexpected": []
+    },
+    "mode": "FOUR_LANE",
+    "status": "PASS",
+    "valid_attempt": "first run at the code commit (an earlier complete PASS campaign at e113118 is superseded by the allowlist commit 16c24d9; see superseded_campaigns of the unit record)"
+  },
+  "independent_verification": {
+    "head_sha": null,
+    "status": "PENDING_EXTERNAL_LOOP"
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/src/ocor_runtime/memory/retrieval.py": "61884ea79eba968a8607c268a6a6f554d3a2d4b0ffcdd4e5736283d54860727e",
+    "ocor-runtime/tests/tasks/test_ocor_dev_0052.py": "68fb06e3b722cabce702367a86d885378ff3423f830c721d0d3c25d1c43a2199"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (tree della directory inputs/ immutabile)",
+  "module_in_full_suite": {
+    "all_pass": true,
+    "cases": 65,
+    "mode": "FOUR_LANE"
+  },
+  "previous_record": {
+    "inputs": {
+      "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+      "ocor-runtime/src/ocor_runtime/memory/retrieval.py": "72a8de786996d52b3beee3f3c0b516d409480396066005bd32ebe2d94fa41d76",
+      "ocor-runtime/tests/tasks/test_ocor_dev_0052.py": "dec77625fe883e3410ad19403b348fb0dff4afd89bb82bae4e80f1cae62b71cd"
+    },
+    "raw_sha256": "9c2720f3fc6e60d07c8f9a3906766db5f00b3c4ea0f73751418a015cd97bdfd8",
+    "record_id": "OCOR-DEV-0052-requalified-rem0021-0e76db2ac62d",
+    "record_path": "reports/evidence/G5/OCOR-DEV-0052.requalified-rem0021.json",
+    "record_sha256": "9d146f35a8de3eeccc1bd9550af8d1fe06911d1121f96cc1b482400231efe6b6",
+    "status": "SEALED"
+  },
+  "qualification_limits": {
+    "duration_notification_seconds": 3600,
+    "full_seconds": 5400,
+    "full_seconds_authority": "LOCAL-FULL-SUITE-CAP-90 (2026-10-26); applied to the whole four-lane campaign (LOCAL-SUITE-SPLIT point 5, LOCAL-SUITE-FOUR-LANES point 1)",
+    "limits_changed": "none",
+    "task_seconds": 2700
+  },
+  "qualifies_requirements": false,
+  "raw_output_format": "JSONL: una riga per comando/artefatto con label, command, exit_code, sha256 dei byte UTF-8 archiviati e output integrale; le credenziali locali generate (valori di .ocor/bootstrap.env degli stack della campagna e dell'ambiente di sviluppo, assegnazioni OCOR_LOCAL_* degli stack delle corsie) e le password dei DSN sono sostituite da <redacted:NAME> prima dell'archiviazione e dell'hash; lo stesso JSONL della campagna e archiviato, byte-identico, accanto a ciascun record di questo change set",
+  "raw_output_redactions": {
+    "OCOR_LOCAL_POSTGRES_PASSWORD": 27
+  },
+  "raw_output_sha256": "8ad0aacf7f10d3aa5de584b5f70d5344db0c93cc7fb4ed2a8a41b3d3bbfc3ee8",
+  "realigned_tests": {
+    "authority": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) point 5 and NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) point 7",
+    "base": "f683aa7f194871dec1cf13eff60496269342bf64",
+    "docstring_added": false,
+    "entries": [
+      {
+        "commit": "ab65f96",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0052.py",
+        "scope": "GrantPolicy (pre-query partition, revoked_after_plan) and the backpressure precondition at line 697"
+      }
+    ],
+    "head": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+    "syntax_tree_comparison": [
+      {
+        "added": [],
+        "base": "f683aa7f194871dec1cf13eff60496269342bf64",
+        "base_sha256": "dec77625fe883e3410ad19403b348fb0dff4afd89bb82bae4e80f1cae62b71cd",
+        "changed_functions": [
+          {
+            "asserts_base": 2,
+            "asserts_head": 2,
+            "asserts_identical": true,
+            "function": "test_ineligible_hits_are_skipped_until_the_pool_is_full_then_backpressure",
+            "marks_base": [],
+            "marks_head": [],
+            "param_cases_base": [],
+            "param_cases_head": [],
+            "parametrize_identical": true,
+            "raises_base": 0,
+            "raises_head": 0,
+            "raises_identical": true
+          }
+        ],
+        "declared_cases_base": 33,
+        "declared_cases_head": 33,
+        "function_names_identical": true,
+        "head": "16c24d91fa970704a89b7a92bc29b6d4772da3e3",
+        "head_sha256": "68fb06e3b722cabce702367a86d885378ff3423f830c721d0d3c25d1c43a2199",
+        "marks_added": [],
+        "path": "ocor-runtime/tests/tasks/test_ocor_dev_0052.py",
+        "removed": [],
+        "skip_or_xfail_added": false,
+        "test_functions_base": 27,
+        "test_functions_head": 27,
+        "unchanged_functions": 26
+      }
+    ],
+    "syntax_tree_method": "ast_compare.py (outside Git, sha256 119676103089bc0a67f3dde0f076730ece98f95561aaa9a4add97358fe1ad4d8): per module, test function names and counts, declared parametrised cases, pytest marks; per changed function, the sha256 of each assert and pytest.raises node and of each parametrize decorator, at the unit base and at the code head; a construction adaptation (point 5 case 3) leaves every assert, pytest.raises and parametrize identical; the realigned functions are listed in entries[].function with their RED"
+  },
+  "record_id": "OCOR-DEV-0052-requalified-rem0059-16c24d91fa97",
+  "regression_run": {
+    "backing_labels": [
+      "requalified-modules",
+      "four-lane-full"
+    ],
+    "backing_raw_sha256": [
+      "2454b35dbc0515770a8cc6fc8d15db9aeee7ab0c888891d531c895b20704ddc6",
+      "9643e423c5a8922ac67fe92969d6ee24e50674a8d6fb1734f94603234c0c72d7"
+    ],
+    "label": "requalified-modules",
+    "module": "test_ocor_dev_0052",
+    "modules": [
+      "test_ocor_dev_0052"
+    ],
+    "result": {
+      "failed": 0,
+      "not_executed": 0,
+      "passed": 65,
+      "skipped": 0
+    },
+    "status": "PASS",
+    "test_case_sha256": [
+      "6451ca231276a97307990fdd037bd7e08d82bb987e7555876e72ffe964910e51",
+      "5186c358b5e032a74004293b954a10e61eebe4b40abc3cb4015137aa9af121c4",
+      "b548b6171b79e7695daee7504011501934cf8f66b826e664928810b63cf7f0dc",
+      "04f06eac4b87d1ea2a8aa808f659f90a2a83aea61eda05cf3b0ecfa6b117032f",
+      "241dc08d0b413055a582919768720ae2a43df24b2a9591ccfc4963adc56e34e9",
+      "f2ef17d88b7598cc8798ef49ffd8604dfc5c02fe9379fa3253f1879ec55e956a",
+      "6fa6dfb8e0f641d8736ac76a61d4f1dc1807f5910c8489372be6d2810c5af048",
+      "b1aa92acae3bfa7b220a3e6eec83b86c2922e115591063dd87d5141ba4bd0960",
+      "63089d9ad7474875b03d531fa31174411d3fd14a8c60599090f2d8c583ee145a",
+      "99faf6382e227b2ece939ea5dcff3374f1a418212f406bf7861602867b5d53b8",
+      "a37e82d79e9062b3840184564a214f9f2b4374fb628479e560187a6afde33c04",
+      "178bc15cd3116efcb9b1027ab8ec23751ef0edd214997eea8c4ba8485923bc73",
+      "8484b16a220dbe780d978cc3bc4c54c3fc4c367e4488db1b182726408b36ce97",
+      "749198caa6941736c657bb2d51770f52e8d122757b69aa813132dfdc3bc4d3d0",
+      "58d1e7b98b002a457fbad422518bcc3694a46083f80f4aa9ec0bed7db8feea89",
+      "80aa41fa639ce7260ff466056e5056672eae79eff2c0bfa4eb3c09bcc0d80740",
+      "51b971e46bc52316d5a57050013a50b9e58e065bf47a79f37a33e1a8d1545d6c",
+      "60830af3ebac4790d0b4e311d1ce19ab468c3dd00f2693f167d0b0d7716ec302",
+      "57f2d194dc62778e6aff6eb5f70e68635bb2794c9ac9bd8dec81efb92f60527c",
+      "0d90f563f466d4de8a5bb352203577421181f6f5af75775cb097ef49afc64940",
+      "41bc8e9bf0956a7e3490c1030f2c8ded662b2216bfa9d79e1917f092947e8a78",
+      "317b9d02edc5a73d2300adac3dfb87afa1e0bb3ad7d7506f0d9c6ff127de3a9a",
+      "a2fda03731ec3be9d9dd4a6caac8d3bd11921884d534ed19c6e60902c64e8cdd",
+      "98a35a3ea60442a4e498788c2adf272ffe4f3c4fc535d4e5419161b8150bf3d6",
+      "6a640c37d6776d55f5a02514a98e26388a46738455a3ee0da6e90a9e992edc78",
+      "d4552904f1ef5a370aba82e4322d0a1dcbdd75b96d219ed54e6f37fd3b0fd2d1",
+      "fcf6b8b56bcfc910aafad748e2f5b4d7ec4cf8ddce1ee2c9e86734cde8dad596",
+      "b5e80c12949b806e6856afad90c3cb303ae669c0761afd8126e1628c19ac2072",
+      "3307f21793a972aa8e6666b12ac1fa86807e03e3d9ad32ebdf41c1e69c472709",
+      "134a51f33f2a9ea57f43e96fd16ca2a870e272c90fe2ada7f7e5d90207666e87",
+      "3f29e74a8e20be00e055a2acfdf4872b66b836b9ec4248c1c6781fb9f9c2e475",
+      "e3f8920595fc67226403f138220d6e41f790678970daf655d066f4346c63ef35",
+      "552e7a53504cd2ba7cea3885136d0d93762f84b11fae8642ff28d00ca0a5fa19",
+      "789588125f5867f3096301abf5c32065acb1003ea4427973bce698bd3e868d78",
+      "cc095191d47e905bdc7bb6eba415d47587029fc5b2c05dae8bfd3e6d9a6047a4",
+      "13a5709331fd041c3202034ae56b1fe59455691777302b06331a1140b6759497",
+      "935df39d3c7501400c2427e4bacd216d1743e02bf445870247628da1da2bbfc1",
+      "1b837c2c141b9ff95a5a54162c99155ffea02924783ae7ddec93bbd2aced52eb",
+      "275f07e06920007037c8b117f9678966cd5f2d28f015ec1b3ce21908920e0cdf",
+      "61e2835b61498499c6424caf36458acac88f7785e9da5b29fb3fa8cea26c1990",
+      "08f8b5e75506b011f9dcff6a77c971d6c97efb35ca4921ccc6b263b303c953bd",
+      "60be2fa480166110445338d036dac7b4ae5aa4b6d2f773017e4dba2ec863461e",
+      "45b246ce6608bbbd435c1137188f34d4d33acf7b95d1c0161dbb705192d55136",
+      "2e8b69e0d7ff6d3a22455b3378c82a23a9deace558791c0044ffb129fa3d8cb6",
+      "129aa8154d34cc9ceb0de9398260bc10abbb1c0d4301783a409a1c9de50add8d",
+      "d7eaf2303aa5779a647a595672c91d0fdf3a7198ca9c472da2a5fdd081789512",
+      "d851ae61ef7bb71e3010653fc9ad3c4a9eadb75d7b1134a81b4276e3e50137a1",
+      "beecc276a60def7b4f507bc1e98de458f405f9f71bf60b30959282f8301f0a82",
+      "b6fad840aedea532b1186366b1abd352545c494734257d50be94074ad1cd3b1b",
+      "52dfcd84284471d549308f72affbb6ceaff39c901090d0b63263c9d8ee3e9396",
+      "df25ff1a3ecfe0bb6842fbf2d09a71a6a848864dcd845d38f4ef9be5298b6cc3",
+      "334c97fabfc54832e71279a17102eed7650d1cbaaab9c840e6c2fd00e92bd6bd",
+      "45563ebbaaac4c64f0ff937b9178888766830944532531f29076fe8a79eff2a5",
+      "8c4d0801aabaedeb70c3435c97acc5718bf57aba195e8d5ef96b89cd797d0716",
+      "5e51bb14876377dd378c315f488c485a1b7058bdb658fb4700e1326cba344cf8",
+      "122a40e5072cf68e96fe0d4815ae8d2d8f5f409de9fb1c384b0f87be12a6b97c",
+      "4b3373d64e08366a74f8dcdf5242b505ac4f68025c4ef71a218963131d5f4b61",
+      "68b904b875c3ec8e63455f275eb47017fd7887521adf83ff61d3c65612c9a76f",
+      "205861e440e51f3fcac9f9d3583d5cd4c55808ef3cbbad879415761f8272f3f5",
+      "cf0eec3442beee83a8bb1afba729e1011523a14ceb250832cd485d63022ba55f",
+      "4926e5279d41958a0d34b56a5841268eb014a682f6f5dad6f4252b9aaba2a8d0",
+      "64584ea63ba965c98770913644dac7d8db593aceb0a1c96bbd6cecf034612225",
+      "248cc744be23caac724304e510d6ea2ad6cae899eea5bb7be4cfbe08c11de6bc",
+      "c2ed138d35bbd59e04ff64fe6cd2f111116d23e00b479039c6a3594b8860dc16",
+      "109717b5c81421af74f46f7b6d7778df7f953f89b88b300d4071d4b6cdf7cb74"
+    ],
+    "tests": [
+      "test_a_delegation_revoked_or_kill_switch_raised_mid_search_leaves_no_influence",
+      "test_a_lexical_hit_of_another_representation_version_fails_closed",
+      "test_a_materialisation_policy_outage_fails_closed",
+      "test_a_missing_or_foreign_binding_is_refused",
+      "test_a_parallel_embedding_representation_is_searched_only_under_its_own_pin",
+      "test_a_query_matching_only_unauthorized_items_is_indistinguishable_from_no_match",
+      "test_a_stop_epoch_change_before_materialisation_returns_no_hit",
+      "test_a_valid_request_of_every_mode_is_accepted",
+      "test_explicit_authority_opens_cross_project_domain_and_federated_retrieval",
+      "test_full_text_and_vector_retrieval_rank_by_their_own_representation",
+      "test_hits_whose_item_digest_differs_from_the_metadata_are_dropped",
+      "test_hybrid_ranking_records_every_factor_separately",
+      "test_ineligible_hits_are_skipped_until_the_pool_is_full_then_backpressure",
+      "test_invalid_requests_fail_before_policy_or_any_index_read",
+      "test_metrics_use_a_bounded_label_set",
+      "test_partial_and_drifted_projections_are_never_materialised",
+      "test_pre_query_policy_failures_are_audited_and_read_no_candidate",
+      "test_qualifying_backends_are_real_and_pinned",
+      "test_ranking_profile_and_query_contract_digests_pin_every_field",
+      "test_ranking_profiles_are_validated",
+      "test_retrieval_is_durable_across_fresh_adapters",
+      "test_revocation_expiry_and_reclassification_remove_items_from_every_output",
+      "test_structured_retrieval_returns_exact_active_versions_with_pinned_filters",
+      "test_the_receipt_pins_query_representation_ranking_filters_and_exact_versions",
+      "test_unauthorized_items_affect_no_content_existence_rank_count_or_explanation",
+      "test_unit_index_double_is_not_used_by_qualifying_worlds",
+      "test_unknown_stop_state_and_unaudited_answers_fail_closed"
+    ]
+  },
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "docstring_added": false,
+    "requirements": [
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test/dimostrazione",
+        "requirement_id": "BR-003",
+        "title": "Il sistema DEVE dimostrare continuità semantica, decisionale e di audit lungo l’intero mission thread."
+      }
+    ],
+    "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1, 3 and 4"
+  },
+  "residual_risks": [
+    "Regression-only requalification after input changes of OCOR-DEV-REM-0059; not runtime conformance, not BA/FGM evidence, never evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only: proves the task's tests pass at the REM-0059 code head after its input changes; not a re-assessment of its conformance",
+  "roles": {
+    "authority": "LOOP-AGENT-ROTATION (2026-10-16) as amended by LOOP-IMPLEMENTER-ORDER-AUTH-FALLBACK (2026-10-26) and LOOP-FAST-FAIL-FALLBACK (2026-11-01)",
+    "implementers": [
+      {
+        "agent": "Claude Code",
+        "model": "claude-opus-5-5",
+        "provider": "Anthropic",
+        "scope": "all of REM-0059, iterations 1-5: the move of the real memory adapters into ocor_runtime.memory.adapters (9074905, 90e47e8), NCR-MEMORY-001 pre-query partition (RED 7b930a8, GREEN ab65f96), NCR-MEMORY-004 exact version reads (RED 2dd02ec, GREEN 8725b61), NCR-MEMORY-003 scoped forgetting (RED 50fdb6e, GREEN 2a017be), NCR-MEMORY-002 admission quota (RED a837a53, GREEN f527ca4), NCR-MEMORY-005 projection rebuild (RED e374937, GREEN f73b341), the REM-0023 guard of NCP-U11-REM0023-CONSUMER-GUARD option 1 (8d7fee6), the SELF-CHECK-CHECKLIST (RED 573ca0b, GREEN c5952e8), packaging (17bddd8, 50eacbd), the fixes of the preventive review (RED d177078, GREEN 7801c9c, record e113118), PRE-CAMPAIGN-GATE, campaign, requalifications, evidence assembly and verification request, as reserve implementer of the loop rotation; the only implementer that touched the task"
+      }
+    ],
+    "loop_verifier_exclusion": {
+      "loop_implementer_exclusion_set": [
+        "Claude Code (Anthropic)",
+        "Codex CLI (OpenAI)"
+      ],
+      "note": "Il loop esterno conta sempre Codex CLI (OpenAI), implementatore principale della rotazione, fra gli implementatori del task ai soli fini dell esclusione del verifier, e vi aggiunge gli implementatori di riserva effettivamente avviati. Codex non ha scritto alcun commit del change set (e stato il revisore preventivo di riserva): l unico implementatore effettivo resta Claude Code / claude-opus-5-5 / Anthropic (roles.implementers).",
+      "source_finding": "VF-001 di OCOR-DEV-REM-0057-4e1a87c2a49a-0 (applicato in anticipo)"
+    },
+    "preventive_reviewer": {
+      "agent": "Codex CLI",
+      "model": "GPT-6 (Codex)",
+      "note": "PRE-CAMPAIGN-REVIEW (2026-10-26) point 3 and PRE-CAMPAIGN-REVIEW-ROTATION (2026-10-30): consultative, not evidence; reserve reviewer of the rotation; 11 blocking findings: P1-P10 fixed (RED d177078, GREEN 7801c9c; P1 contested in part, open point for the verifier), P11 the REM-0023 and REM-0036 requalifications of this record; 1 advisory (P12) accepted; not repeated after the fixes (point 3); excluded from the final verification",
+      "provider": "OpenAI",
+      "request_id": "OCOR-DEV-REM-0059-90e47e872c3e-pre",
+      "reserve": false,
+      "verdict": "BLOCKING_FINDINGS"
+    },
+    "verifier_excluded_providers": [
+      "Anthropic",
+      "OpenAI"
+    ],
+    "verifier_requested": {
+      "agent": "chosen by the external loop",
+      "constraint": "provider neither Anthropic (implementer) nor OpenAI (preventive reviewer, also counted by the loop among the implementers for exclusion only)",
+      "process": "external loop only, separate clean context"
+    },
+    "verifier_started_by_implementer": false
+  },
+  "rollback_procedure_verified": "Mechanical review: revert the REM-0059 commits; the OCOR-DEV-0052.requalified-rem0021.json record becomes the most recent again once this record is removed with the revert. No data migration, no sealed-history rewrite.",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "supersedes": "OCOR-DEV-0052-requalified-rem0021-0e76db2ac62d",
+  "supersession_scope": "Regression-only after the OCOR-DEV-REM-0059 change of ocor-runtime/src/ocor_runtime/memory/retrieval.py (governed memory change of the unit, NCR-MEMORY-001 to NCR-MEMORY-005); ocor-runtime/tests/tasks/test_ocor_dev_0052.py (GrantPolicy construction adapted to the pre-query partition and the backpressure precondition, NCR-MEMORY-001; no assertion changed); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 3 and 4: no requirement of the task is bindable (the per-requirement Register method and reason are in requirement_classification), so the requalification is regression-only in the non-qualifying class of REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30), with no docstring added; the task's tests are moved, adapted, PO-moved or guard-extended only as listed in realigned_tests, with the syntax-tree comparison. Not a re-assessment of its conformance and never evidence of a requirement: the requirement evidence of the task stays that of the supersedes chain; the new governed memory behaviour is qualified by the unit tests and the requirements by the G6 tasks.",
+  "task_id": "OCOR-DEV-0052",
+  "test_case_identity": "test_case_sha256 = sha256 of the exact pytest node id (ocor-runtime/<classname as path>.py::<name>) of each JUnit testcase stored verbatim in the raw log; tests holds base names",
+  "tests_unchanged_from_base": false
+}
