@@ -33,7 +33,9 @@ import ast
 import hashlib
 import re
 from pathlib import Path
+from typing import Any
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -459,6 +461,95 @@ def test_ncr_tests_004_conforms():
     uncovered = [f"{component} {code} ({source}:{line})" for component, packages, source, line, code in CLOSED_REASON_CODES
                  if not any(code in constants and _credited(test, touched, code) & set(packages) for test, touched, constants in assertions)]
     assert uncovered == [], f"closed reason codes without a negative test asserting them: {uncovered}"
+
+
+# LLD v1.1 :304-305: a refusal of C3 to the command C6 sent (CANONICAL_COMMIT_PENDING) ends the
+# action with ACT-T31a (precondition/invariant failure, EXECUTION_FAILED) or ACT-T31b
+# (revision/GatePackage drift, INVALIDATED) and its reason code. Row: (fault, code, transition).
+C3_REFUSALS_AFTER_THE_SEND = (
+    ("precondition-does-not-hold", "PRECONDITION_FAILED", "ACT-T31a"),
+    ("invariant-does-not-hold", "INVARIANT_VIOLATION", "ACT-T31a"),
+    ("concurrent-commit-on-the-target", "REVISION_CONFLICT", "ACT-T31b"),
+    ("gate-package-not-resolvable-at-c3", "GATE_PACKAGE_MISMATCH", "ACT-T31b"),
+)
+
+
+@pytest.mark.parametrize(("fault", "code", "transition_id"), C3_REFUSALS_AFTER_THE_SEND)
+def test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send(
+    fault: str, code: str, transition_id: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Option D1: the retained C6 engine (c6/engine.py) sends the governed command through the
+    EMISSION-FENCE (ACT-T29) to the real C3 on PostgreSQL, which refuses it with ``code``; the
+    action ends with ``transition_id`` and that reason code, not as an ambiguous send."""
+    import test_ocor_dev_rem_0050 as governed_path
+    import test_ocor_dev_rem_0053 as action_path
+    from ocor_runtime.c3.admission import CommitAdmission, InMemoryGovernanceRecordStore
+    from ocor_runtime.c3.ports import C3Error
+    from ocor_runtime.c6.fsm import load_transitions
+    from ocor_runtime.c7_emission import EmissionFence
+
+    def admission(governed: Any) -> Any:
+        # The C3 admission of the engine suite whose bound precondition or invariant does not
+        # hold on the state, or whose record store does not resolve the frozen GatePackage.
+        def holds(kind: str) -> Any:
+            return lambda state: not fault.startswith(kind)
+
+        return CommitAdmission(
+            records=InMemoryGovernanceRecordStore() if fault.startswith("gate-package") else governed.records,
+            fence=governed.fence,
+            trusted_keys={governed_path.CONSUMER_KEYID: governed_path.CONSUMER_KEY.public_key},
+            clock=governed.clock,
+            preconditions={item: holds("precondition") for item in governed.preconditions},
+            invariants={item: holds("invariant") for item in governed.invariants},
+        )
+
+    monkeypatch.setattr(governed_path.GovernedC3, "admission", admission)
+    suite = action_path.EngineSuite()
+    world = suite.world
+    raced = action_path._admitted(suite) if fault.startswith("concurrent") else None
+    racer = world.engine(commit_port=suite.c3, relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+                         canonical_path=suite.path, emission_outbox=suite.store)
+
+    class RefusingC3(action_path.OrderedC3):
+        """The real C3; for the concurrent commit another action commits on the same target
+        after the fence of this one and before its command reaches C3."""
+
+        def __init__(self, c3: Any, ledger: Any) -> None:
+            super().__init__(c3, ledger)
+            self.refusals: list[str] = []
+
+        def commit(self, command: Any) -> Any:
+            if raced is not None:
+                other, other_set, other_decision = raced
+                racer.execute(other, lease=suite.lease(other, other_decision), approval=other_set,
+                              decision=other_decision, sink=suite.sink, at=action_path.ENGINE_NOW)
+            try:
+                return super().commit(command)
+            except C3Error as error:
+                self.refusals.append(error.reason_code)
+                raise
+
+    c3 = RefusingC3(suite.c3, world.ledger)
+    engine = world.engine(commit_port=c3, relay=EmissionFence(store=suite.store),  # type: ignore[arg-type]
+                          canonical_path=suite.path, emission_outbox=suite.store)
+    proposal, approval_set, decision = action_path._admitted(suite)
+    outcome: object
+    try:
+        outcome = engine.execute(proposal, lease=suite.lease(proposal, decision), approval=approval_set,
+                                 decision=decision, sink=suite.sink, at=action_path.ENGINE_NOW)
+    except Exception as error:  # noqa: BLE001 -- the norm fixes the transition, not the error type
+        outcome = error
+    action = [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
+    # the scenario: the command crossed the fence and C3 refused it with the code
+    assert "ACT-T29" in [effect.transition_id for effect in action]
+    assert c3.refusals == [code]
+    # the norm (LLD v1.1 :304-305)
+    destination = {item.transition_id: item for item in load_transitions()}[transition_id].destination
+    assert world.fsm.current_state(proposal.action_instance_id) == destination, (
+        f"{code}: the action stays {world.fsm.current_state(proposal.action_instance_id)} "
+        f"({type(outcome).__name__}, notes {getattr(outcome, '__notes__', [])})"
+    )
+    assert (action[-1].transition_id, action[-1].context.get("reason_code")) == (transition_id, code)
 
 
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
