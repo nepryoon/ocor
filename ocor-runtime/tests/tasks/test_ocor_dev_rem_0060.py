@@ -31,12 +31,17 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import importlib.util
 import json
 import re
+import subprocess
+import sys
 import uuid
+from functools import cache
 from pathlib import Path
 from typing import Any
 
+import pytest
 import yaml
 
 
@@ -606,3 +611,185 @@ def test_ncr_tests_005_conforms():
     index = _technique_index()
     missing = sorted(technique for technique, modules in index.items() if not modules)
     assert missing == [], f"technique routing not applied: {missing}"
+
+
+# --- SELF-CHECK-CHECKLIST (2026-11-08): file and process inputs of the touched modules -------
+#
+# The unit touches only tests. Their inputs are versioned files of the repository (contracts, ADD,
+# LLD, the authority seal, the register, test sources, the golden dataset) and one process
+# (protoc). A malformed input must fail the test with a typed error, never pass silently or be
+# coerced: strict UTF-8, I-JSON through the kernel codec (duplicate keys, NaN, Infinity and lone
+# surrogates refused), YAML restricted to I-JSON values with unique string keys, checked digest
+# lines, typed protoc failures.
+
+STRICT_PARSERS = (
+    "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+    "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+    "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py",
+    "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
+    "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py",
+    "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py",
+    "ocor-runtime/tests/techniques/test_canonical_kernel_properties.py",
+)
+RAW_PARSERS = frozenset({"json.loads", "json.load", "yaml.safe_load", "yaml.load", "yaml.full_load", "yaml.unsafe_load"})
+JSON_REFUSED = [
+    pytest.param('{"a": NaN}', id="NaN"),
+    pytest.param('{"a": Infinity}', id="Infinity"),
+    pytest.param('{"a": -Infinity}', id="-Infinity"),
+    pytest.param('{"a": [1, {"b": NaN}]}', id="nested-NaN"),
+    pytest.param('{"a": 1, "a": 2}', id="duplicate-key"),
+    pytest.param('{"a": {"b": 1, "b": 1}}', id="nested-duplicate-key"),
+    pytest.param('{"a": "\\ud800"}', id="lone-surrogate-value"),
+    pytest.param('{"\\udc00": 1}', id="lone-surrogate-key"),
+    pytest.param('{"a": ["x", {"b": "\\ud83d"}]}', id="nested-lone-surrogate"),
+    pytest.param('{"a": 1} 2', id="trailing-data"),
+    pytest.param("", id="empty"),
+    pytest.param("{a: 1}", id="not-json"),
+]
+YAML_REFUSED = [
+    pytest.param("a: .nan", id="nan"),
+    pytest.param("a: .inf", id="inf"),
+    pytest.param("a: -.inf", id="minus-inf"),
+    pytest.param("a: [1, {b: .NaN}]", id="nested-nan"),
+    pytest.param("1: a", id="integer-key"),
+    pytest.param("true: a", id="boolean-key"),
+    pytest.param("~: a", id="null-key"),
+    pytest.param("1.5: a", id="float-key"),
+    pytest.param("[a]: b", id="sequence-key"),
+    pytest.param("a: 1\na: 2", id="duplicate-key"),
+    pytest.param("a:\n  b: 1\n  b: 2", id="nested-duplicate-key"),
+    pytest.param("a: 2001-12-14", id="timestamp"),
+    pytest.param("a: !!binary aGVsbG8=", id="binary"),
+    pytest.param("a: !!set {x: null}", id="set"),
+    pytest.param('a: "\\ud800"', id="lone-surrogate-value"),
+    pytest.param('"\\udc00": 1', id="lone-surrogate-key"),
+    pytest.param('a: [x, {b: "\\ud83d"}]', id="nested-lone-surrogate"),
+    pytest.param("", id="empty"),
+    pytest.param("- a", id="not-a-mapping"),
+    pytest.param("a: [1, 2", id="not-yaml"),
+    pytest.param("a: !!python/name:os.system", id="python-tag"),
+]
+LOADER_MODULES = ("meta-corpus", "integrity", "unit")
+
+
+@cache
+def _loaded(path: str) -> Any:
+    spec = importlib.util.spec_from_file_location(f"ocor_rem0060_{Path(path).stem}", ROOT / path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _loader_module(key: str) -> Any:
+    if key == "unit":
+        return sys.modules[__name__]
+    return _loaded({"meta-corpus": STRICT_PARSERS[1], "integrity": STRICT_PARSERS[2]}[key])
+
+
+@pytest.mark.parametrize("key", LOADER_MODULES)
+@pytest.mark.parametrize("text", JSON_REFUSED)
+def test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json(key: str, text: str) -> None:
+    with pytest.raises(ValueError):
+        _loader_module(key)._load_json(text)
+
+
+@pytest.mark.parametrize("key", LOADER_MODULES)
+@pytest.mark.parametrize("text", YAML_REFUSED)
+def test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys(key: str, text: str) -> None:
+    with pytest.raises((ValueError, yaml.YAMLError)):
+        _loader_module(key)._load_yaml(text)
+
+
+@pytest.mark.parametrize("key", LOADER_MODULES)
+def test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted(key: str) -> None:
+    module = _loader_module(key)
+    expected = {"a": "\U0001f600", "b": [1, 2.5, True, None], "c": {"d": "x"}}
+    assert module._load_json('{"a": "\\ud83d\\ude00", "b": [1, 2.5, true, null], "c": {"d": "x"}}') == expected
+    assert module._load_yaml('a: "\\U0001F600"\nb: [1, 2.5, true, null]\nc: {d: x}') == expected
+
+
+def test_ncr_tests_002_touched_modules_read_versioned_files_strictly(tmp_path: Path) -> None:
+    undecodable = tmp_path / "undecodable.txt"
+    undecodable.write_bytes(b"contract \xff\xfe")
+    with pytest.raises(UnicodeDecodeError):
+        undecodable.read_text(encoding="utf-8")
+    violations: list[str] = []
+    for relative in STRICT_PARSERS:
+        tree = _parse(ROOT / relative)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            called = ast.unparse(node.func)
+            where = f"{relative}:{node.lineno}"
+            if called in RAW_PARSERS and not (node.args and isinstance(node.args[0], ast.Call) and ast.unparse(node.args[0].func) == "json.dumps"):
+                violations.append(f"{where} {called} parses outside the strict loaders")
+            if called == "open" or called.endswith(".open"):
+                violations.append(f"{where} {called} opens a file outside read_text/read_bytes")
+            if called.endswith(".read_text") and [ast.unparse(keyword) for keyword in node.keywords] != ["encoding='utf-8'"]:
+                violations.append(f"{where} read_text without exactly encoding='utf-8'")
+            if called.endswith(".decode"):
+                arguments = [ast.unparse(argument) for argument in node.args] + [ast.unparse(keyword) for keyword in node.keywords]
+                if arguments not in (["'utf-8'"], ["'utf-8'", "errors='strict'"]):
+                    violations.append(f"{where} decode is not strict UTF-8: {arguments}")
+    assert violations == []
+
+
+def _fake_protoc(behaviour: str) -> Any:
+    def run(arguments: list[str], **_: Any) -> Any:
+        output = next(Path(argument.split("=", 1)[1]) for argument in arguments if argument.startswith("--descriptor_set_out="))
+        if behaviour == "timeout":
+            raise subprocess.TimeoutExpired(arguments, 120)
+        if behaviour == "cannot-start":
+            raise FileNotFoundError(2, "No such file or directory", arguments[0])
+        if behaviour == "failed-undecodable-stderr":
+            return subprocess.CompletedProcess(arguments, 1, b"", b"protoc \xff\xfe")
+        if behaviour == "failed":
+            return subprocess.CompletedProcess(arguments, 1, b"", b"registry.proto:1: syntax error")
+        if behaviour == "garbage-descriptor":
+            output.write_bytes(b"\xff\xff\xff\xff not a descriptor set")
+        return subprocess.CompletedProcess(arguments, 0, b"", b"")
+
+    return run
+
+
+@pytest.mark.parametrize("behaviour", ["timeout", "cannot-start", "failed", "failed-undecodable-stderr", "garbage-descriptor", "no-descriptor"])
+def test_ncr_tests_002_protoc_failures_of_the_meta_corpus_are_typed_test_failures(behaviour: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _loader_module("meta-corpus")
+    monkeypatch.setattr(module.subprocess, "run", _fake_protoc(behaviour))
+    with pytest.raises(pytest.fail.Exception, match="protoc"):
+        module._proto_pool.__wrapped__()
+
+
+SEAL_LINE_REFUSED = [
+    pytest.param("{digest}", id="no-separator"),
+    pytest.param("  {path}", id="empty-digest"),
+    pytest.param("{short}  {path}", id="short-digest"),
+    pytest.param("{upper}  {path}", id="uppercase-digest"),
+    pytest.param("{non_ascii}  {path}", id="non-ascii-digest"),
+    pytest.param("{digest}x  {path}", id="long-digest"),
+    pytest.param("{digest}  ", id="empty-path"),
+]
+
+
+def _seal_line(template: str) -> str:
+    digest = "0" * 63 + "a"
+    return template.format(
+        digest=digest,
+        short=digest[:63],
+        upper=digest.upper(),
+        non_ascii="\u0661" * 64,
+        path="ocor-runtime/docs/governance_dossier/contracts/ocor_registry.proto",
+    )
+
+
+@pytest.mark.parametrize("key", ["integrity", "unit"])
+@pytest.mark.parametrize("template", SEAL_LINE_REFUSED)
+def test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test(key: str, template: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _loader_module(key)
+    seal = tmp_path / "SHA256SUMS"
+    seal.write_text(_seal_line(template) + "\n", encoding="utf-8")
+    monkeypatch.setattr(module, "AUTHORITY_SEAL", seal)
+    reader = module._sealed if key == "integrity" else module._sealed_digests
+    with pytest.raises(AssertionError, match="malformed seal line"):
+        reader()
