@@ -1,0 +1,380 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "decision": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10) option 1",
+  "implementer": {
+    "agent": "Grok Build",
+    "effort": "xhigh",
+    "model": "grok-4.7",
+    "provider": "xAI"
+  },
+  "input_robustness_self_check": {
+    "applied_improvements": [
+      {
+        "date": "2026-11-09",
+        "first_step": "OCOR-DEV-REM-0061 iteration 1, before the preventive review",
+        "id": "SELF-CHECK-PATH-INVENTORY"
+      },
+      {
+        "date": "2026-11-09",
+        "first_step": "OCOR-DEV-REM-0061 iteration 1, before the preventive review",
+        "id": "SELF-CHECK-CELL-SCAN"
+      },
+      {
+        "date": "2026-11-09",
+        "first_step": "OCOR-DEV-REM-0061 iteration 1, before the preventive review",
+        "id": "TEXT-FORM-AND-PORT-ANSWER-CLASSES"
+      },
+      {
+        "date": "2026-11-09",
+        "first_step": "OCOR-DEV-REM-0061 iteration 1, before the preventive review",
+        "id": "RECORD-ROLES-COHERENCE-SCAN"
+      }
+    ],
+    "columns": {
+      "boundary_digests": "digests recomputed or full-matched before compare",
+      "complete_normative_records": "normative records complete through the kernel codec",
+      "finite_numbers": "NaN and Infinity refused",
+      "processes_and_resources": "typed process errors and release in finally",
+      "strict_decoding": "UTF-8 strict and typed JSON errors",
+      "types_before_conversions": "types checked before conversion; a boolean is not an integer"
+    },
+    "decision": "SELF-CHECK-CHECKLIST (2026-11-08), SELF-CHECK-CLASS-COVERAGE (2026-11-08), SELF-CHECK-PATH-INVENTORY (2026-11-09), SELF-CHECK-CELL-SCAN (2026-11-09), TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09)",
+    "note": "The closed cache schema has no port field. Numeric JSON values are rejected at decode. Unused inspect keys are ignored only after the used fields have passed their type checks.",
+    "path_inventory": {
+      "change_set_rows": {
+        "reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md": "0; generated report, no new parser",
+        "reports/planning/OCOR_PLAN_RUN_STATE.json": "0; generated hashes, no new parser",
+        "reports/tests/test_local_lane_campaign.py": "0; tests, not a production parser",
+        "reports/tests/test_local_lane_image_cache.py": "0; the live proof calls prepare and seed and does not parse a second format",
+        "scripts/local_lane_image_cache.py": 11,
+        "scripts/run_local_lane_campaign.py": 2,
+        "scripts/validate_ocor_development_plan.py": "0; the edit adds allowlist strings and does not add a parser"
+      },
+      "consumers_examined": 13,
+      "functions_examined": [
+        "decode_json",
+        "_reject_duplicate_keys",
+        "_reject_lone_surrogates",
+        "read_lock",
+        "locked_image_pins",
+        "_pin",
+        "parse_host_inspect",
+        "parse_loaded_inspect",
+        "archive_image_id_matches",
+        "_manifest_document",
+        "_entry",
+        "verify_image_cache",
+        "_command_result",
+        "command_text",
+        "_timeout_seconds",
+        "_capture",
+        "prepare_image_cache",
+        "cache_command_timeout",
+        "seed_lane_images"
+      ],
+      "searches": [
+        "ast walk of function definitions in scripts/local_lane_image_cache.py",
+        "functions in scripts/run_local_lane_campaign.py whose names contain cache, seed, prepare_image or timeout"
+      ],
+      "unparsed_callers": "execute_campaign and lifecycle_check call prepare_image_cache and seed_lane_images. They store the returned mapping and do not decode the lock, the inspect text, the manifest or the archive."
+    },
+    "table": [
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest; the digest check is a later row of the same document.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
+          "strict_decoding": "PASS: invalid JSON, duplicate keys and a lone surrogate become CampaignError; a valid surrogate pair is kept.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "decode_json",
+        "paths": "JSON text from a lock, an inspect answer, a manifest or an OCI index",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_duplicate_keys_nan_and_trailing_junk",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare",
+          "reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field"
+        ],
+        "text_form": "JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest; the digest check is a later row of the same document.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "PASS: an unreadable lock is CampaignError and no substitute document is used.",
+          "strict_decoding": "PASS: non-UTF-8 lock bytes are CampaignError before JSON decode.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "read_lock",
+        "paths": "bytes of infra/services.lock.json or a test lock",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_an_existing_destination_a_bad_lock_and_a_hash_mismatch",
+          "reports/tests/test_local_lane_campaign.py::test_cache_repo_lock_pins_the_fuseki_base_and_every_service_image"
+        ],
+        "text_form": "JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare"
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: the pinned reference is full-matched before it is stored or compared.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: a non-string image is refused as a malformed reference; no numeric conversion runs.",
+          "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
+          "strict_decoding": "PASS: the document was decoded by decode_json; this function refuses a non-object before use.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "locked_image_pins, _pin",
+        "paths": "decoded services lock",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_service_with_neither_image_nor_fuseki_base",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare",
+          "reports/tests/test_local_lane_campaign.py::test_cache_repo_lock_pins_the_fuseki_base_and_every_service_image"
+        ],
+        "text_form": "Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare"
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: the image id must equal the locked digest and RepoDigests must contain the exact pin.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
+          "strict_decoding": "PASS: file and process text is strict UTF-8, and an undecodable document is a CampaignError.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "parse_host_inspect, _inspect_object, _require_image_id, _require_repo_digests",
+        "paths": "docker image inspect stdout for a locked reference",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_an_image_id_that_differs_from_the_locked_digest",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_pinned_reference_absent_from_repo_digests",
+          "reports/tests/test_local_lane_campaign.py::test_cache_empty_inspect_is_not_a_miss"
+        ],
+        "text_form": "Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field Inspect answers: null, a null element, an empty object, a bool or float id, and a wrong container are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape"
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: the loaded id is full-matched and compared with the cache id; an absent RepoDigests list is allowed and a present one must be strings.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
+          "strict_decoding": "PASS: file and process text is strict UTF-8, and an undecodable document is a CampaignError.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "parse_loaded_inspect",
+        "paths": "docker image inspect stdout after docker load",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_loaded_inspect_rejects_a_bool_digest_list_and_accepts_no_repo_digests",
+          "reports/tests/test_local_lane_campaign.py::test_cache_seed_skips_load_for_a_miss_and_checks_a_loaded_id",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape"
+        ],
+        "text_form": "Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field Inspect answers: null, a null element, an empty object, a bool or float id, and a wrong container are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape"
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: the image id must be an OCI index manifest digest and the blob must be a tar member; classic Config is not accepted.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "PASS: TarError and OSError become CampaignError and the archive handle closes with the tar context.",
+          "strict_decoding": "PASS: a missing index.json and a non-UTF-8 index are CampaignError.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "archive_image_id_matches",
+        "paths": "OCI image archive read back from disk",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_an_archive_whose_oci_index_digest_differs",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_classic_config_blob_as_the_image_id"
+        ],
+        "text_form": "Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field"
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: a present image id must match its own pinned digest before the pin list is compared.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "PASS: an unreadable manifest is CampaignError.",
+          "strict_decoding": "PASS: non-UTF-8 manifest bytes are CampaignError before JSON decode.",
+          "types_before_conversions": "PASS: extra keys, missing keys, non-strings and a MISS that carries an archive are refused before compare."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "_manifest_document, _entry",
+        "paths": "manifest.json written by prepare and read back by verify",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_manifest_rejects_extra_keys_and_a_miss_that_claims_an_archive",
+          "reports/tests/test_local_lane_campaign.py::test_cache_prepares_a_valid_archive_and_verifies_it",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare"
+        ],
+        "text_form": "Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field"
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: the lock hash is format-checked before compare, then each archive sha256, then the OCI image id.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "PASS: an unreadable cache directory is CampaignError; archives are hashed and closed per file.",
+          "strict_decoding": "PASS: file and process text is strict UTF-8, and an undecodable document is a CampaignError.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "verify_image_cache",
+        "paths": "lock bytes, manifest and present archives on disk",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_an_altered_archive",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_an_existing_destination_a_bad_lock_and_a_hash_mismatch",
+          "reports/tests/test_local_lane_campaign.py::test_cache_prepares_a_valid_archive_and_verifies_it"
+        ],
+        "text_form": "Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare JSON text: a lone surrogate from an escape is refused in keys and nested values, and a valid surrogate pair in an unused field is accepted. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_lone_surrogate_before_digest_compare; reports/tests/test_local_lane_campaign.py::test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest; the digest check is a later row of the same document.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: a float code is refused as a malformed result; no float conversion is applied.",
+          "processes_and_resources": "PASS: the production runner types OSError, SubprocessError and non-UTF-8 stdout as CampaignError before this helper sees them (run_command). A malformed result object is itself CampaignError.",
+          "strict_decoding": "PASS: stdout must already be a str; bytes and None are refused. The production runner decodes stdout as strict UTF-8.",
+          "types_before_conversions": "FIXED (malformed command result: None, bool, float and non-text stdout). The lane load now uses this helper before reading stdout."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "_command_result, command_text",
+        "paths": "return value of the docker runner",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_command_result_that_is_not_a_code_and_text",
+          "reports/tests/test_local_lane_campaign.py::test_seed_refuses_a_docker_result_that_is_not_a_code_and_text"
+        ],
+        "text_form": "Command results: None, a boolean or float code, and a stdout that is not text are refused before use. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_command_result_that_is_not_a_code_and_text; reports/tests/test_local_lane_campaign.py::test_seed_refuses_a_docker_result_that_is_not_a_code_and_text"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest; the digest check is a later row of the same document.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity, a non-positive number and a boolean are refused before any docker command.",
+          "processes_and_resources": "PASS: a refusing callback runs before docker, and prepare deletes the partial directory in finally.",
+          "strict_decoding": "N/A: the timeout is an in-process number, not bytes read from a file, a log or a process.",
+          "types_before_conversions": "PASS: a boolean is rejected before float conversion."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "_timeout_seconds",
+        "paths": "in-process timeout value or callback",
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_stops_before_a_command_when_the_timeout_callback_refuses",
+          "reports/tests/test_local_lane_campaign.py::test_image_cache_transfer_stops_at_the_existing_campaign_deadline"
+        ],
+        "text_form": "N/A: the timeout is not fixed-form text, JSON or a port document."
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: a saved archive is checked with archive_image_id_matches and sha256 before the manifest is trusted.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "PASS: a failure after mkdir deletes the partial tree in finally; a non-zero inspect is a cold miss and does not save or pull.",
+          "strict_decoding": "PASS: file and process text is strict UTF-8, and an undecodable document is a CampaignError.",
+          "types_before_conversions": "PASS: field types are checked before compare, hash or conversion, and a boolean is not a string or an integer."
+        },
+        "file": "scripts/local_lane_image_cache.py",
+        "function": "_capture, prepare_image_cache",
+        "paths": "host docker inspect and docker image save, then the new cache directory",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_cache_missing_image_is_a_cold_miss_without_save_or_pull",
+          "reports/tests/test_local_lane_campaign.py::test_cache_empty_inspect_is_not_a_miss",
+          "reports/tests/test_local_lane_campaign.py::test_cache_does_not_pull_or_build_while_preparing",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_command_result_that_is_not_a_code_and_text",
+          "reports/tests/test_local_lane_campaign.py::test_cache_stops_before_a_command_when_the_timeout_callback_refuses"
+        ],
+        "text_form": "Command results: None, a boolean or float code, and a stdout that is not text are refused before use. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_command_result_that_is_not_a_code_and_text; reports/tests/test_local_lane_campaign.py::test_seed_refuses_a_docker_result_that_is_not_a_code_and_text Inspect answers: null, a null element, an empty object, a bool or float id, and a wrong container are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest; the digest check is a later row of the same document.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: a non-positive, non-finite or boolean timeout is CampaignError and does not move the 5400 s or 600 s budgets.",
+          "processes_and_resources": "PASS: the deadline uses the existing campaign clock and does not start a new timer.",
+          "strict_decoding": "N/A: the timeout is an in-process number, not bytes read from a file, a log or a process.",
+          "types_before_conversions": "PASS: a boolean is rejected before float conversion."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "cache_command_timeout",
+        "paths": "remaining campaign time passed into one cache command",
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_image_cache_transfer_stops_at_the_existing_campaign_deadline",
+          "reports/tests/test_local_lane_campaign.py::test_image_cache_transfer_does_not_restart_the_campaign_clock"
+        ],
+        "text_form": "N/A: the timeout is not fixed-form text, JSON or a port document."
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: verify_image_cache runs before any load, and parse_loaded_inspect compares the loaded id.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: NaN, Infinity and -Infinity are rejected by the JSON decoder before field use.",
+          "processes_and_resources": "PASS: a CampaignError from load or inspect names the service and stops that lane; the campaign teardown still runs.",
+          "strict_decoding": "PASS: file and process text is strict UTF-8, and an undecodable document is a CampaignError.",
+          "types_before_conversions": "FIXED (malformed command result: None, bool, float and non-text stdout). Seed reads stdout only after command_text accepts the result."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "seed_lane_images",
+        "paths": "verified cache manifest and docker load plus inspect inside the lane",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_seed_refuses_a_docker_result_that_is_not_a_code_and_text",
+          "reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_load_error",
+          "reports/tests/test_local_lane_campaign.py::test_cache_seed_skips_load_for_a_miss_and_checks_a_loaded_id",
+          "reports/tests/test_local_lane_campaign.py::test_execute_fails_closed_when_the_image_cache_load_fails",
+          "reports/tests/test_local_lane_image_cache.py::test_transferred_image_satisfies_an_unchanged_pinned_pull"
+        ],
+        "text_form": "Command results: None, a boolean or float code, and a stdout that is not text are refused before use. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_command_result_that_is_not_a_code_and_text; reports/tests/test_local_lane_campaign.py::test_seed_refuses_a_docker_result_that_is_not_a_code_and_text Inspect answers: null, a null element, an empty object, a bool or float id, and a wrong container are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare"
+      }
+    ]
+  },
+  "red": {
+    "commit": "dcfe515545007bc04e7f72874783279c9267c4d1",
+    "failed": 46,
+    "fingerprint_sha256": "f477a92adce5c4180f1648a7462e4fbae41a1e2e492b134a0de6f0800725c17b"
+  },
+  "requalifications_remaining": "REM-0037 and REM-0056 are named by option 1. Their latest completed evidence records do not hash the lane files, so drift does not select them. Their regression records are still required before the qualifying campaign and are not written in this commit.",
+  "requalifications_written": [
+    "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
+    "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
+    "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json"
+  ],
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer"
+      }
+    ],
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_started_by_implementer": false
+  },
+  "schema_version": "ocor-dev-rem-0061-record/v1",
+  "status": "IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0061",
+  "unit_scope": "Local transfer of locked host images into lane sandboxes. Bootstrap pull and build, timers, services, the lock, CI and teardown are unchanged."
+}
