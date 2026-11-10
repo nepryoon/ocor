@@ -826,3 +826,235 @@ def test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test(key: str, 
     reader = module._sealed if key == "integrity" else module._sealed_digests
     with pytest.raises(AssertionError, match="malformed seal line"):
         reader()
+
+
+# --- NCR-TESTS-001: resources and port answers of the mission thread ------------------------
+
+MISSION_THREAD = "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+
+
+@cache
+def _mission_thread() -> Any:
+    """The mission-thread module, registered under its own name (its dataclasses resolve their module)."""
+    name = "ocor_rem0060_mission_thread"
+    spec = importlib.util.spec_from_file_location(name, ROOT / MISSION_THREAD)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+class _Resource:
+    """A backend stand-in that records its acquisition and release and can fail at either."""
+
+    def __init__(self, events: list[str], name: str, fail: str) -> None:
+        self.events, self.name, self.fail = events, name, fail
+        self._step(f"provision-{name}")
+
+    def _step(self, step: str) -> None:
+        self.events.append(step)
+        if step == self.fail:
+            raise OSError(f"{step} failed")
+
+    def destroy(self) -> None:
+        self._step(f"destroy-{self.name}")
+
+    def release(self) -> None:
+        self._step(f"release-{self.name}")
+
+
+def _memory_world(events: list[str], fail: str) -> Any:
+    from types import SimpleNamespace
+
+    class Qdrant:
+        @staticmethod
+        def provision() -> _Resource:
+            return _Resource(events, "qdrant", fail)
+
+    class Bao:
+        @staticmethod
+        def provision() -> _Resource:
+            return _Resource(events, "bao", fail)
+
+    def backends(*, dsn: str, qdrant: _Resource, bao: _Resource) -> _Resource:
+        assert (dsn, qdrant.name, bao.name) == ("dsn", "qdrant", "bao")
+        return _Resource(events, "backends", fail)
+
+    return SimpleNamespace(r=SimpleNamespace(base=SimpleNamespace(QdrantHarness=Qdrant)), OpenBaoHarness=Bao, Backends=backends)
+
+
+# (failing step, expected events): every resource acquired before the failure is released, in reverse order
+MEMORY_SETUP_FAILURES = [
+    pytest.param("provision-qdrant", ["provision-qdrant"], id="qdrant-provision"),
+    pytest.param("provision-bao", ["provision-qdrant", "provision-bao", "destroy-qdrant"], id="openbao-provision"),
+    pytest.param("provision-backends", ["provision-qdrant", "provision-bao", "provision-backends", "destroy-bao", "destroy-qdrant"], id="backends"),
+    pytest.param("body", ["provision-qdrant", "provision-bao", "provision-backends", "body", "release-backends", "destroy-bao", "destroy-qdrant"], id="body"),
+    pytest.param("release-backends", ["provision-qdrant", "provision-bao", "provision-backends", "body", "release-backends", "destroy-bao", "destroy-qdrant"], id="release"),
+    pytest.param("destroy-bao", ["provision-qdrant", "provision-bao", "provision-backends", "body", "release-backends", "destroy-bao", "destroy-qdrant"], id="openbao-destroy"),
+]
+
+
+@pytest.mark.parametrize(("fail", "expected"), MEMORY_SETUP_FAILURES)
+def test_ncr_tests_001_the_memory_backends_of_the_mission_thread_are_released_on_every_exit(fail: str, expected: list[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    thread = _mission_thread()
+    events: list[str] = []
+    monkeypatch.setattr(thread, "memory_world", _memory_world(events, fail))
+    with pytest.raises(OSError, match="failed"):
+        with thread._memory_backends("dsn") as (backends, collection):
+            assert (backends.name, collection) == ("backends", None)
+            events.append("body")
+            raise OSError("body failed")
+    assert events == expected
+
+
+def test_ncr_tests_001_the_memory_backends_of_the_mission_thread_are_released_after_a_clean_exit(monkeypatch: pytest.MonkeyPatch) -> None:
+    thread = _mission_thread()
+    events: list[str] = []
+    monkeypatch.setattr(thread, "memory_world", _memory_world(events, "none"))
+    with thread._memory_backends("dsn") as (backends, _collection):
+        assert backends.name == "backends"
+    assert events == ["provision-qdrant", "provision-bao", "provision-backends", "release-backends", "destroy-bao", "destroy-qdrant"]
+
+
+def _kafka_world(thread: Any, events: list[str], fail: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    class Broker:
+        def create_topic(self, name: str) -> str:
+            events.append("create-topic")
+            if fail == "create-topic":
+                raise OSError("create-topic failed")
+            return name
+
+        def destroy(self, volume: str) -> None:
+            events.append(f"destroy-{volume}")
+
+    class Kafka:
+        @staticmethod
+        def provision(name: str) -> tuple[Broker, str, str]:
+            events.append("provision")
+            if fail == "provision":
+                raise thread.KafkaBrokerError("no broker")
+            return Broker(), "container", "volume"
+
+    def backbone(broker: Broker, topic: str, dsn: str) -> tuple[str, str]:
+        events.append("backbone")
+        if fail == "backbone":
+            raise OSError("backbone failed")
+        return ("backbone", dsn)
+
+    monkeypatch.setattr(thread, "QualificationKafkaBroker", Kafka)
+    monkeypatch.setattr(thread, "_Backbone", backbone)
+
+
+KAFKA_SETUP_FAILURES = [
+    pytest.param("create-topic", ["provision", "create-topic", "destroy-volume"], id="create-topic"),
+    pytest.param("backbone", ["provision", "create-topic", "backbone", "destroy-volume"], id="backbone"),
+    pytest.param("body", ["provision", "create-topic", "backbone", "body", "destroy-volume"], id="body"),
+]
+
+
+@pytest.mark.parametrize(("fail", "expected"), KAFKA_SETUP_FAILURES)
+def test_ncr_tests_001_the_kafka_broker_of_the_mission_thread_is_destroyed_on_every_exit(fail: str, expected: list[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    thread = _mission_thread()
+    events: list[str] = []
+    _kafka_world(thread, events, fail, monkeypatch)
+    with pytest.raises(OSError, match="failed"):
+        with thread._kafka_backbone("dsn") as (backbone, _topic):
+            assert backbone == ("backbone", "dsn")
+            events.append("body")
+            raise OSError("body failed")
+    assert events == expected
+
+
+def test_ncr_tests_001_a_kafka_broker_that_cannot_be_provisioned_fails_the_mission_thread(monkeypatch: pytest.MonkeyPatch) -> None:
+    thread = _mission_thread()
+    events: list[str] = []
+    _kafka_world(thread, events, "provision", monkeypatch)
+    with pytest.raises(pytest.fail.Exception, match="real, isolated Kafka broker"):
+        with thread._kafka_backbone("dsn"):
+            events.append("body")
+    assert events == ["provision"]
+
+
+def _envelope(value: Any) -> Any:
+    """A C5 envelope carrying ``value`` as returned by a port without an exception, unvalidated."""
+    from ocor_runtime.c5.envelope import CanonicalIngestionEnvelope
+
+    envelope = CanonicalIngestionEnvelope.__new__(CanonicalIngestionEnvelope)
+    object.__setattr__(envelope, "_value", value)
+    return envelope
+
+
+_UNSET: Any = object()
+
+
+def _delivered(payload: Any = _UNSET, digest: Any = _UNSET, *, integrity: Any = _UNSET, envelope: Any = _UNSET) -> Any:
+    from ocor_runtime.c5.envelope import payload_digest
+    from ocor_runtime.c5.subscription import DeliveredEvent
+
+    if envelope is _UNSET:
+        value: dict[str, Any] = {"payload": {"phase": "before-restart"} if payload is _UNSET else payload}
+        if integrity is _UNSET:
+            integrity = {"payload_digest": payload_digest({"phase": "before-restart"}) if digest is _UNSET else digest}
+        if integrity is not None:
+            value["integrity"] = integrity
+        envelope = _envelope(value)
+    return DeliveredEvent(subscription_id="urn:ocor:subscription:rem0060", envelope=envelope)
+
+
+GOOD_DIGEST = "sha256:" + hashlib.sha256(b'{"phase":"before-restart"}').hexdigest()
+MALFORMED_C5_ANSWERS = [
+    pytest.param(lambda: None, "events", id="none"),
+    pytest.param(lambda: [_delivered()], "events", id="list-not-tuple"),
+    pytest.param(lambda: (), "events", id="fewer-events"),
+    pytest.param(lambda: (_delivered(), _delivered()), "events", id="more-events"),
+    pytest.param(lambda: (None,), "delivered event", id="none-event"),
+    pytest.param(lambda: ({},), "delivered event", id="empty-mapping-event"),
+    pytest.param(lambda: (_delivered(envelope={"payload": {"phase": "before-restart"}}),), "envelope", id="mapping-envelope"),
+    pytest.param(lambda: (_delivered(envelope=_envelope(None)),), "envelope", id="envelope-of-none"),
+    pytest.param(lambda: (_delivered(envelope=_envelope({"integrity": {"payload_digest": GOOD_DIGEST}})),), "payload", id="no-payload"),
+    pytest.param(lambda: (_delivered([("phase", "before-restart")]),), "payload", id="payload-pairs"),
+    pytest.param(lambda: (_delivered({1: "before-restart"}),), "payload", id="non-string-key"),
+    pytest.param(lambda: (_delivered({"phase": float("nan")}),), "payload", id="nan-value"),
+    pytest.param(lambda: (_delivered({"phase": float("inf")}),), "payload", id="infinity-value"),
+    pytest.param(lambda: (_delivered({"phase": float("-inf")}),), "payload", id="minus-infinity-value"),
+    pytest.param(lambda: (_delivered({"phase": 1}),), "payload", id="integer-value"),
+    pytest.param(lambda: (_delivered({"phase": True}),), "payload", id="boolean-value"),
+    pytest.param(lambda: (_delivered({"phase": None}),), "payload", id="null-value"),
+    pytest.param(lambda: (_delivered({"phase": b"before-restart"}),), "payload", id="bytes-value"),
+    pytest.param(lambda: (_delivered({"phase": {"nested": "x"}}),), "payload", id="nested-value"),
+    pytest.param(lambda: (_delivered({"phase": "\ud800"}),), "payload", id="lone-surrogate-value"),
+    pytest.param(lambda: (_delivered(integrity=None),), "integrity", id="no-integrity"),
+    pytest.param(lambda: (_delivered(integrity=[GOOD_DIGEST]),), "integrity", id="list-integrity"),
+    pytest.param(lambda: (_delivered(integrity={}),), "digest", id="empty-integrity"),
+    pytest.param(lambda: (_delivered(digest=True),), "digest", id="boolean-digest"),
+    pytest.param(lambda: (_delivered(digest=1),), "digest", id="integer-digest"),
+    pytest.param(lambda: (_delivered(integrity={"payload_digest": None}),), "digest", id="null-digest"),
+    pytest.param(lambda: (_delivered(digest=""),), "digest", id="empty-digest"),
+    pytest.param(lambda: (_delivered(digest="sha256:" + "١" * 64),), "digest", id="non-ascii-digest"),
+    pytest.param(lambda: (_delivered(digest=GOOD_DIGEST.upper()),), "digest", id="uppercase-digest"),
+    pytest.param(lambda: (_delivered(digest=GOOD_DIGEST[7:]),), "digest", id="no-prefix-digest"),
+    pytest.param(lambda: (_delivered(digest=GOOD_DIGEST + "0"),), "digest", id="long-digest"),
+    pytest.param(lambda: (_delivered(digest="sha256:" + "0" * 64),), "digest", id="mismatching-digest"),
+]
+
+
+def _backbone_answering(thread: Any, answer: Any) -> Any:
+    from types import SimpleNamespace
+
+    backbone = thread._Backbone.__new__(thread._Backbone)
+    backbone.rig = SimpleNamespace(consume=lambda count: answer)
+    return backbone
+
+
+@pytest.mark.parametrize(("answer", "reason"), MALFORMED_C5_ANSWERS)
+def test_ncr_tests_001_a_malformed_c5_answer_fails_the_mission_thread(answer: Any, reason: str) -> None:
+    thread = _mission_thread()
+    with pytest.raises(pytest.fail.Exception, match=f"C5 answer: .*{reason}"):
+        _backbone_answering(thread, answer()).consume(1)
+
+
+def test_ncr_tests_001_a_well_formed_c5_answer_is_read_by_the_mission_thread() -> None:
+    thread = _mission_thread()
+    (record,) = _backbone_answering(thread, (_delivered(),)).consume(1)
+    assert (record.value, record.payload_digest) == ({"phase": "before-restart"}, GOOD_DIGEST)
