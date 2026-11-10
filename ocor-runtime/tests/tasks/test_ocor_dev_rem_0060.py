@@ -264,6 +264,139 @@ def test_ncr_tests_003_conforms():
         assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == sealed[path]
 
 
+# --- NCR-TESTS-004 -------------------------------------------------------------------------
+
+# NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option D1: the closed reason codes that ADD v1.3, LLD v1.1
+# and the LLD v1.1 par. 0.2 contracts define for C1-C8 and governed memory, with file and line; each needs
+# a negative test of the suite that asserts reason_code equal to it on its component (OCOR_TEST_STRATEGY.md
+# :28-29, "failure codes"). Row: (component, packages the test module exercises, source, line, code).
+GATEWAY_CONTRACT = "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+MEMORY_CONTRACT = "ocor-runtime/docs/governance_dossier/contracts/ocor-governed-memory.openapi.yaml"
+ADD_PATH = "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+LLD_PATH = "docs/OCOR_LLD_v1.1.md"
+CLOSED_REASON_CODES = (
+    ("C2", ('c2',), GATEWAY_CONTRACT, 454, "POLICY_DENIED"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 455, "AUTHORITY_MISSING"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 456, "CAPABILITY_DENIED"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 457, "CONTRACT_NOT_FOUND"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 458, "CONTRACT_DIGEST_MISMATCH"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 459, "SCHEMA_VIOLATION"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 460, "PROJECTION_NOT_READY"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 461, "STALE_CONTEXT"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 462, "RELEASE_MISMATCH"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 463, "UNSUPPORTED_CAPABILITY"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 464, "CAPABILITY_DEFERRED"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 465, "CONTROL_PLANE_UNAVAILABLE"),
+    ("C2", ('c2',), GATEWAY_CONTRACT, 466, "SCENARIO_ISOLATION_VIOLATION"),
+    ("C2/C4", ('c2', 'c4'), LLD_PATH, 67, "MARKING_UNRESOLVED"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "AUTHENTICATION_REQUIRED"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "GOVERNED_CONTEXT_MISMATCH"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "POLICY_DENIED"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "AUTHORITY_DENIED"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "MEMORY_NOT_FOUND"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "MEMORY_VERSION_NOT_FOUND"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "MEMORY_SCHEMA_INVALID"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "MEMORY_IDEMPOTENCY_CONFLICT"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "MEMORY_TAINTED"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "REPRESENTATION_NOT_READY"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "UNSUPPORTED_CAPABILITY"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "LIFECYCLE_TRANSITION_INVALID"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "LEGAL_HOLD_ACTIVE"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "DELETION_INCOMPLETE"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "STALE_POLICY"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "STOP_EPOCH_MISMATCH"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "CONTROL_PLANE_UNAVAILABLE"),
+    ("memory", ('memory',), MEMORY_CONTRACT, 319, "INTERNAL_ERROR"),
+    ("C3", ('c3',), ADD_PATH, 2569, "PRECONDITION_FAILED"),
+    ("C3", ('c3',), ADD_PATH, 2569, "INVARIANT_VIOLATION"),
+    ("C3", ('c3',), ADD_PATH, 2569, "REVISION_CONFLICT"),
+    ("C3", ('c3',), ADD_PATH, 2569, "GATE_PACKAGE_MISMATCH"),
+    ("C3", ('c3',), LLD_PATH, 97, "IDEMPOTENCY_CONFLICT"),
+    ("C6", ('c6',), LLD_PATH, 264, "IDEMPOTENCY_CONFLICT"),
+    ("C6", ('c6',), LLD_PATH, 304, "PRECONDITION_FAILED"),
+    ("C6", ('c6',), LLD_PATH, 304, "INVARIANT_VIOLATION"),
+    ("C6", ('c6',), LLD_PATH, 305, "REVISION_CONFLICT"),
+    ("C6", ('c6',), LLD_PATH, 305, "GATE_PACKAGE_MISMATCH"),
+    ("C6", ('c6',), LLD_PATH, 305, "GOVERNED_CONTEXT_MISMATCH"),
+    ("C6", ('c6',), ADD_PATH, 2753, "SCHEMA_VIOLATION"),
+    ("C6", ('c6',), ADD_PATH, 2753, "CONTRACT_REJECTED"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "LEASE_INVALID"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "LEASE_EXPIRED"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "LEASE_REVOKED"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "LEASE_CONTEXT_MISMATCH"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "STOP_EPOCH_MISMATCH"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "FENCING_TOKEN_STALE"),
+    ("lease", ('kernel.governance', 'c6'), LLD_PATH, 81, "LEASE_ALREADY_CONSUMED"),
+    ("C7", ('c7',), ADD_PATH, 3009, "NOT_IDENTIFIED"),
+    ("C7", ('c7',), ADD_PATH, 3010, "INSUFFICIENT_EVIDENCE"),
+    ("C7", ('c7',), ADD_PATH, 3011, "OUTSIDE_VALIDITY_ENVELOPE"),
+    ("C7", ('c7',), ADD_PATH, 3012, "OUT_OF_DISTRIBUTION"),
+    ("C7", ('c7',), ADD_PATH, 3013, "EXTRAPOLATIVE"),
+    ("C7", ('c7',), ADD_PATH, 3014, "STALE_CONTEXT"),
+    ("C7", ('c7',), ADD_PATH, 3015, "NOT_TRANSPORTABLE"),
+    ("C7", ('c7',), ADD_PATH, 3016, "ASSUMPTION_VIOLATION"),
+    ("C8 (TB-CXT-03)", ('c8',), ADD_PATH, 173, "CAPABILITY_DENIED"),
+)
+# Sets of the same documents left out of the inventory, with the reason: they are not reason codes.
+NOT_REASON_CODES = {
+    "LLD v1.1 :158-163 and ADD v1.3 :850 TRANSIENT/PERMANENT/POLICY_DENIED/POISON": "C5 failure classes, asserted as failure_class",
+    "ADD v1.3 :170-172 DENY/REJECTED/QUARANTINED": "trust-boundary fail states that are outcomes, not codes",
+    "LLD v1.1 :18 LLD_CONFORMANCE_FAILURE": "document conformance outcome, not a runtime code",
+}
+
+
+def _asserts_reason_code(node: ast.AST) -> bool:
+    return any((isinstance(n, ast.Attribute) and n.attr == "reason_code") or (isinstance(n, ast.Constant) and n.value == "reason_code")
+               for n in ast.walk(node))
+
+
+def _exercises(source: str, package: str) -> bool:
+    dotted = re.escape(package)
+    return re.search(rf"ocor_runtime[./]{dotted}\b|[\"']{dotted}[.\"']", source) is not None
+
+
+def _reason_code_assertions() -> list[tuple[str, str, set[str]]]:
+    """(module source, test id, string constants) of every test function that asserts a reason_code,
+    directly or through a helper of its module that asserts or returns one."""
+    found: list[tuple[str, str, set[str]]] = []
+    for base in (RUNTIME_TESTS, ROOT / "reports/tests"):
+        for path in sorted(base.rglob("test_*.py")):
+            if ".venv" in path.parts:
+                continue
+            source = path.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(path))
+            helpers = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and not node.name.startswith("test")
+                       and any(isinstance(inner, (ast.Assert, ast.Return)) and _asserts_reason_code(inner) for inner in ast.walk(node))}
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test")):
+                    continue
+                direct = any(isinstance(inner, ast.Assert) and _asserts_reason_code(inner) for inner in ast.walk(node))
+                helped = any(isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name) and inner.func.id in helpers
+                             for inner in ast.walk(node))
+                if direct or helped:
+                    constants = {inner.value for part in (node, *node.decorator_list) for inner in ast.walk(part)
+                                 if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
+                    found.append((source, f"{path.relative_to(ROOT)}::{node.name}", constants))
+    return found
+
+
+def test_ncr_tests_004_inventory_is_anchored():
+    """Every inventoried code is written at the cited line of its normative source."""
+    for component, _packages, source, line, code in CLOSED_REASON_CODES:
+        text = (ROOT / source).read_text(encoding="utf-8").split("\n")[line - 1]
+        assert re.search(rf"\b{code}\b", text), f"{component} {code} is not at {source}:{line}"
+    assert len({(row[0], row[4]) for row in CLOSED_REASON_CODES}) == len(CLOSED_REASON_CODES)
+
+
+def test_ncr_tests_004_conforms():
+    """OCOR_TEST_STRATEGY.md :28-29 (failure codes), option D1: complete coverage of the inventory."""
+    assertions = _reason_code_assertions()
+    uncovered = [f"{component} {code} ({source}:{line})" for component, packages, source, line, code in CLOSED_REASON_CODES
+                 if not any(code in constants and any(_exercises(text, package) for package in packages)
+                            for text, _test, constants in assertions)]
+    assert uncovered == [], f"closed reason codes without a negative test asserting them: {uncovered}"
+
+
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
 
 
