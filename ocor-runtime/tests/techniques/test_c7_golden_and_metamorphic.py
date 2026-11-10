@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import copy
 import hashlib
-import json
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -29,6 +28,7 @@ import pytest
 
 from ocor_runtime.c7 import runtime as c7
 from ocor_runtime.c7.runtime import CausalOutcome, CausalQuery, canonical_digest, estimate_intervention, verify_reproduction
+from ocor_runtime.kernel.canonical import parse_i_json
 
 GOLDEN = Path(__file__).resolve().parent / "golden/causal_logistics_scm.json"
 GOLDEN_SHA256 = "9d951dcb046ceee7928685d186ad83fdeca00da0ce57b8162e2a8f13fafb20e7"
@@ -38,7 +38,7 @@ RELEASE = "sha256:" + "a" * 64
 def _golden() -> dict[str, Any]:
     raw = GOLDEN.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == GOLDEN_SHA256, "the golden dataset changed"
-    return json.loads(raw.decode("utf-8"))
+    return parse_i_json(raw.decode("utf-8"))
 
 
 def _query(model: Any, rows: Any, intervention: Any, *, seed: int) -> CausalQuery:

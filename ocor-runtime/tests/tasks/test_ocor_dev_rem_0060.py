@@ -32,7 +32,6 @@ from __future__ import annotations
 import ast
 import hashlib
 import importlib.util
-import json
 import re
 import subprocess
 import sys
@@ -44,15 +43,48 @@ from typing import Any
 import pytest
 import yaml
 
+from ocor_runtime.kernel.canonical import canonical_bytes, parse_i_json
+
+
+class _UniqueKeyLoader(yaml.SafeLoader):
+    """SafeLoader whose mappings have unique string keys."""
+
+
+def _unique_string_mapping(loader: _UniqueKeyLoader, node: yaml.MappingNode) -> dict[str, Any]:
+    loader.flatten_mapping(node)
+    mapping: dict[str, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=True)
+        if not isinstance(key, str):
+            raise yaml.constructor.ConstructorError(None, None, f"mapping key {key!r} is not a string", key_node.start_mark)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError(None, None, f"duplicate mapping key {key!r}", key_node.start_mark)
+        mapping[key] = loader.construct_object(value_node, deep=True)
+    return mapping
+
+
+_UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _unique_string_mapping)
+
 
 def _load_json(text: str) -> Any:
-    """Parse the JSON text of a versioned file."""
-    return json.loads(text)
+    """Parse the JSON text of a versioned file as I-JSON with the kernel codec: duplicate keys, NaN,
+    Infinity and lone surrogates are refused (CanonicalizationError, a ValueError)."""
+    return parse_i_json(text)
 
 
-def _load_yaml(text: str) -> Any:
-    """Parse the YAML text of a versioned file."""
-    return yaml.safe_load(text)
+def _load_yaml(text: str) -> dict[str, Any]:
+    """Parse the YAML text of a versioned contract: a mapping with unique string keys and I-JSON values
+    only, checked with the kernel codec (non-finite numbers, timestamps, binary, sets and lone surrogates
+    refused)."""
+    loader = _UniqueKeyLoader(text)
+    try:
+        document = loader.get_single_data()
+    finally:
+        loader.dispose()
+    canonical_bytes(document)
+    if not isinstance(document, dict):
+        raise ValueError("a versioned YAML contract is a mapping")
+    return document
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -179,7 +211,8 @@ def _lld_materialised_contracts() -> set[str]:
 def _sealed_digests() -> dict[str, str]:
     digests: dict[str, str] = {}
     for line in AUTHORITY_SEAL.read_text(encoding="utf-8").splitlines():
-        digest, _, path = line.partition("  ")
+        digest, separator, path = line.partition("  ")
+        assert separator and path.strip() and re.fullmatch(r"[0-9a-f]{64}", digest), f"malformed seal line {line!r}"
         digests[path.strip()] = digest
     return digests
 

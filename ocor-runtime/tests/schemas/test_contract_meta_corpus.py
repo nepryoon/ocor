@@ -39,21 +39,53 @@ import pytest
 import yaml
 from google.protobuf import descriptor_pb2, descriptor_pool, json_format, message_factory
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
+from google.protobuf.message import DecodeError
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
-from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest
+from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest, parse_i_json
+
+
+class _UniqueKeyLoader(yaml.SafeLoader):
+    """SafeLoader whose mappings have unique string keys."""
+
+
+def _unique_string_mapping(loader: _UniqueKeyLoader, node: yaml.MappingNode) -> dict[str, Any]:
+    loader.flatten_mapping(node)
+    mapping: dict[str, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=True)
+        if not isinstance(key, str):
+            raise yaml.constructor.ConstructorError(None, None, f"mapping key {key!r} is not a string", key_node.start_mark)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError(None, None, f"duplicate mapping key {key!r}", key_node.start_mark)
+        mapping[key] = loader.construct_object(value_node, deep=True)
+    return mapping
+
+
+_UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _unique_string_mapping)
 
 
 def _load_json(text: str) -> Any:
-    """Parse the JSON text of a versioned file."""
-    return json.loads(text)
+    """Parse the JSON text of a versioned file as I-JSON with the kernel codec: duplicate keys, NaN,
+    Infinity and lone surrogates are refused (CanonicalizationError, a ValueError)."""
+    return parse_i_json(text)
 
 
-def _load_yaml(text: str) -> Any:
-    """Parse the YAML text of a versioned file."""
-    return yaml.safe_load(text)
+def _load_yaml(text: str) -> dict[str, Any]:
+    """Parse the YAML text of a versioned contract: a mapping with unique string keys and I-JSON values
+    only, checked with the kernel codec (non-finite numbers, timestamps, binary, sets and lone surrogates
+    refused)."""
+    loader = _UniqueKeyLoader(text)
+    try:
+        document = loader.get_single_data()
+    finally:
+        loader.dispose()
+    canonical_bytes(document)
+    if not isinstance(document, dict):
+        raise ValueError("a versioned YAML contract is a mapping")
+    return document
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACTS = ROOT / "ocor-runtime/docs/governance_dossier/contracts"
@@ -431,7 +463,7 @@ def test_canonical_bytes_are_rfc8785_and_independent_of_member_order(surface_id:
     positive = _positive(surface_id)
     reordered = json.loads(json.dumps(positive, sort_keys=True), object_pairs_hook=lambda pairs: dict(reversed(pairs)))
     assert canonical_bytes(reordered) == canonical_bytes(positive)
-    assert canonical_bytes(json.loads(canonical_bytes(positive))) == canonical_bytes(positive)
+    assert canonical_bytes(parse_i_json(canonical_bytes(positive))) == canonical_bytes(positive)
     assert canonical_bytes(positive).decode("utf-8") == json.dumps(positive, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
@@ -491,14 +523,25 @@ def _proto_pool() -> descriptor_pool.DescriptorPool:
     include = Path(grpc_tools.__file__).resolve().parent / "_proto"
     with tempfile.TemporaryDirectory(prefix="ocor-meta-proto-") as directory:
         output = Path(directory) / "registry.pb"
-        result = subprocess.run(
-            [sys.executable, "-m", "grpc_tools.protoc", f"-I{CONTRACTS}", f"-I{include}", f"--descriptor_set_out={output}", "--include_imports", str(CONTRACTS / PROTO)],
-            capture_output=True,
-            check=False,
-            timeout=120,
-        )
-        assert result.returncode == 0, result.stderr.decode("utf-8", errors="strict")
-        file_set = descriptor_pb2.FileDescriptorSet.FromString(output.read_bytes())
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "grpc_tools.protoc", f"-I{CONTRACTS}", f"-I{include}", f"--descriptor_set_out={output}", "--include_imports", str(CONTRACTS / PROTO)],
+                capture_output=True,
+                check=False,
+                timeout=120,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            pytest.fail(f"protoc could not run: {type(exc).__name__}: {exc}")
+        if result.returncode != 0:
+            try:
+                detail = result.stderr.decode("utf-8")
+            except UnicodeDecodeError:
+                pytest.fail(f"protoc failed with exit {result.returncode} and an undecodable stderr")
+            pytest.fail(f"protoc failed with exit {result.returncode}: {detail}")
+        try:
+            file_set = descriptor_pb2.FileDescriptorSet.FromString(output.read_bytes())
+        except (OSError, DecodeError) as exc:
+            pytest.fail(f"protoc produced no readable descriptor set: {type(exc).__name__}: {exc}")
     pool = descriptor_pool.DescriptorPool()
     for file in file_set.file:
         pool.Add(file)

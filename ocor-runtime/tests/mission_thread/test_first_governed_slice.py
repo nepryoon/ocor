@@ -22,7 +22,6 @@ agent and action receipts:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -45,7 +44,7 @@ from ocor_runtime.c6.engine import C3CanonicalOutboxView, GovernedActionError
 from ocor_runtime.c7.runtime import CausalQuery, estimate_intervention, verify_reproduction
 from ocor_runtime.c7.runtime import canonical_digest as causal_pin_digest
 from ocor_runtime.c8.orchestrator import AgentRole
-from ocor_runtime.kernel.canonical import canonical_digest
+from ocor_runtime.kernel.canonical import canonical_digest, parse_i_json
 from ocor_runtime.kernel.governed_context import GovernedContext
 
 # NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option A1: legacy-slice classes only as arguments a retained signature requires.
@@ -326,7 +325,7 @@ def run_mission_thread(
     assert len(sink.calls) == 1
 
     # C7 -- causal runtime; its causation_id is the C6 action's emission event id.
-    golden = json.loads(GOLDEN_SCM.read_text(encoding="utf-8"))
+    golden = parse_i_json(GOLDEN_SCM.read_text(encoding="utf-8"))
     causal_query = CausalQuery(
         baseline_commit=commit_receipt.commit_id,
         scenario_branch="scenario/mission-thread",
@@ -435,7 +434,7 @@ def test_causal_receipt_reproduces_identically_with_the_same_pinned_inputs(
         qdrant=qdrant,
         collection=collection,
     )
-    golden = json.loads(GOLDEN_SCM.read_text(encoding="utf-8"))
+    golden = parse_i_json(GOLDEN_SCM.read_text(encoding="utf-8"))
     second_outcome = estimate_intervention(
         CausalQuery(
             baseline_commit=first.commit_id,
