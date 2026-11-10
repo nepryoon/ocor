@@ -7525,6 +7525,376 @@
         "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send at 689aff288c3fca00f32bbd501bbc1d99434e9966",
         "outcome": "4 failed on the norm assertion (the scenario assertions, ACT-T29 crossed and the C3 refusal code, pass): the action stays CANONICAL_COMMIT_PENDING with the EXECUTION_UNKNOWN note (fingerprint 38bbea9ffdc5). CONFIRMED."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "361-369",
+          "note": "the codes only in the schema text",
+          "path": "ocor-runtime/src/ocor_runtime/c8/tool_contract.py"
+        }
+      ],
+      "component": "C8",
+      "depends_on": [],
+      "id": "NCR-C8-009",
+      "norm_refs": [
+        {
+          "lines": "1769",
+          "note": "Tool Contract error code APPROVAL_EXPIRED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "1776-1777",
+          "note": "Tool Contract error codes COMPENSATION_REQUIRED, COMPENSATION_UNKNOWN",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "255",
+          "note": "FR-108",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
+        "sha256": "066f867a7c5f78872e0ecb68e7587599f914b2d6244e9e98008c29f5d10bd694"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-108"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-108, a P0 PoC requirement",
+      "statement": "The retained C8 tool runtime never produces the closed error codes APPROVAL_EXPIRED, COMPENSATION_REQUIRED and COMPENSATION_UNKNOWN of the MCP Governed Tool Contract: they appear only in the schema text of c8/tool_contract.py. Created by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), options A1 and C1 (decision request commit ed75f85493f3c8814c08e0c162c4dd25d26c962e).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "lines": "671-679",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "861",
+          "note": "G-AUTHORITY refuses with AUTHORITY_DENIED",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "883-895",
+          "note": "lease and approval refusals (AUTHORITY_DENIED, APPROVAL_MISSING)",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "1091-1095",
+          "note": "dispatch refusals with STALE_<field> causes",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-018",
+      "norm_refs": [
+        {
+          "lines": "2332-2339",
+          "note": "Action Type Contract error codes",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2351",
+          "note": "Action Type Contract error code CAPABILITY_LEASE_EXPIRED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
+        "sha256": "066f867a7c5f78872e0ecb68e7587599f914b2d6244e9e98008c29f5d10bd694"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-077, a P0 PoC requirement",
+      "statement": "The retained C6 engine never produces the closed error codes POLICY_DENIED, AUTHORITY_MISSING, APPROVAL_REQUIRED, STALE_CONTEXT, PROJECTION_NOT_READY, RELEASE_MISMATCH and CAPABILITY_LEASE_EXPIRED of the Action Type Contract as the reason code of an FSM transition record: the codes are absent from the c6 package, which refuses with its own vocabulary (AUTHORITY_DENIED, APPROVAL_MISSING, DECISION_MISSING, causes STALE_<field> and LEASE_*). Created by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), options A1 and C1 (decision request commit ed75f85493f3c8814c08e0c162c4dd25d26c962e).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "lines": "671-679",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "888-895",
+          "note": "the ApprovalSet refusal raises without a transition",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "1090-1096",
+          "note": "only stop and drift causes close the action",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "795-816",
+          "note": "the ambiguous send opens the reconciliation without a transition",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "1389-1408",
+          "note": "the reconciliation deadline escalates a status, no transition",
+          "path": "ocor-runtime/src/ocor_runtime/c6/safety.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-019",
+      "norm_refs": [
+        {
+          "lines": "2335",
+          "note": "Action Type Contract error code APPROVAL_EXPIRED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2341-2345",
+          "note": "Action Type Contract error codes AUDIT_UNAVAILABLE to COMPENSATION_INDETERMINATE",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "271",
+          "note": "ACT-T09b expiry, APPROVAL_EXPIRED",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "282-283",
+          "note": "ACT-T18a/ACT-T18b, EXECUTION_UNKNOWN",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "291",
+          "note": "ACT-T21c, COMPENSATION_UNKNOWN",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "297-298",
+          "note": "ACT-T24/ACT-T25, the INDETERMINATE states",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "216",
+          "note": "FR-083",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
+        "sha256": "066f867a7c5f78872e0ecb68e7587599f914b2d6244e9e98008c29f5d10bd694"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-077",
+        "FR-083"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-077 and FR-083, P0 PoC requirements",
+      "statement": "The retained C6 engine produces APPROVAL_EXPIRED (a Human Gate cause), AUDIT_UNAVAILABLE (a dispatch refusal), EXECUTION_UNKNOWN (an engine error) and the reconciliation statuses EXECUTION_INDETERMINATE, COMPENSATION_UNKNOWN and COMPENSATION_INDETERMINATE, but records none of them on an FSM transition: it never applies ACT-T09b, ACT-T18a, ACT-T18b, ACT-T21c, ACT-T24 or ACT-T25, and a dispatch refusal other than a stop or a drift closes no transition. Created by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), options A1 and C1 (decision request commit ed75f85493f3c8814c08e0c162c4dd25d26c962e).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "4f062b2dd4a339d93b6557482276efd1312f8f3e",
+          "lines": "730-747",
+          "note": "RED: test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_its_transition (the expired ApprovalSet, real C3 on PostgreSQL)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        },
+        {
+          "commit": "4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "lines": "671-679",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_its_transition at 4f062b2dd4a339d93b6557482276efd1312f8f3e",
+        "outcome": "fails on the norm assertion: the refusal is (APPROVAL_MISSING, APPROVAL_EXPIRED) but the action stays APPROVAL_PENDING, no ACT-T09b (fingerprint ff106b140500); the other five codes are listed uncovered by the coverage check. CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "116-118",
+          "note": "the codes only in the schema text",
+          "path": "ocor-runtime/src/ocor_runtime/c5/subscription.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "408",
+          "note": "an unauthenticated subscriber is POLICY_DENIED",
+          "path": "ocor-runtime/src/ocor_runtime/c5/backbone.py"
+        }
+      ],
+      "component": "C5",
+      "depends_on": [],
+      "id": "NCR-C5-004",
+      "norm_refs": [
+        {
+          "lines": "2667",
+          "note": "Event Subscription Contract error code AUTHORITY_MISSING",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "2669",
+          "note": "Event Subscription Contract error code RELEASE_MISMATCH",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "199",
+          "note": "FR-069",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "205",
+          "note": "FR-074",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
+        "sha256": "066f867a7c5f78872e0ecb68e7587599f914b2d6244e9e98008c29f5d10bd694"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-069",
+        "FR-074"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-069 and FR-074, P0 PoC requirements",
+      "statement": "The retained C5 backbone never produces the closed error codes AUTHORITY_MISSING and RELEASE_MISMATCH of the Event Subscription Contract: they appear only in the schema text of c5/subscription.py, and an unauthenticated subscriber is refused with POLICY_DENIED. Created by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), options A1 and C1 (decision request commit ed75f85493f3c8814c08e0c162c4dd25d26c962e).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "lines": "671-679",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-009",
+      "norm_refs": [
+        {
+          "lines": "177",
+          "note": "TB-CXT-07 Scenario sandbox fail state SCENARIO_ISOLATION_VIOLATION",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "232",
+          "note": "FR-092",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": {
+        "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
+        "sha256": "066f867a7c5f78872e0ecb68e7587599f914b2d6244e9e98008c29f5d10bd694"
+      },
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-092"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-092, a P0 PoC requirement",
+      "statement": "The retained C7 scenario runtime never produces SCENARIO_ISOLATION_VIOLATION, the fail state of the TB-CXT-07 scenario sandbox: the code is absent from the c7 package. Created by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), options A1 and C1 (decision request commit ed75f85493f3c8814c08e0c162c4dd25d26c962e).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "lines": "671-679",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED."
+      }
     }
   ],
   "g6_g7_proposals": {
@@ -17984,8 +18354,8 @@
     "NCP-U15"
   ],
   "plan_summary": {
-    "entries_resolved_by_plan": 79,
-    "estimate_iterations_total": 53,
+    "entries_resolved_by_plan": 84,
+    "estimate_iterations_total": 55,
     "g6_unblocking": {
       "OCOR-DEV-0060": {
         "decision_required_entries": [
@@ -18145,9 +18515,9 @@
       "NCP-U15"
     ],
     "ncp_u14_note": "MATRIX-ERRATUM-NCP-U14 (2026-11-07): NCP-U14 added (NCR-GOVERNANCE-002, MEDIUM, estimate 2, depends on NCP-U12); counts incremented by the unit; high_entry_units and g6_unblocking unchanged (the entry is MEDIUM and blocks no G6 task)",
-    "ncp_u15_note": "NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) option A1: NCP-U15 added (NCR-C2-014, NCR-C6-015, NCR-C7-008, NCR-C6-016, NCR-C6-017 (NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10), option A1), HIGH, estimate 3, depends on NCP-U12, after NCP-U14); counts incremented by the unit; the G6 tasks the entries block list NCP-U15 as their last plan unit",
+    "ncp_u15_note": "NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) option A1: NCP-U15 added (NCR-C2-014, NCR-C6-015, NCR-C7-008, NCR-C6-016, NCR-C6-017 (NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10), option A1), HIGH, estimate 3, depends on NCP-U12, after NCP-U14); counts incremented by the unit; the G6 tasks the entries block list NCP-U15 as their last plan unit; NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), options A1 and C1: NCR-C8-009, NCR-C6-018, NCR-C6-019, NCR-C5-004, NCR-C7-009 (HIGH) added, estimate 3 -> 5",
     "note": "estimates are planning figures, not commitments; each unit follows the full remediation cycle of point 5",
-    "open_entries": 79,
+    "open_entries": 84,
     "units": 15
   },
   "plan_units": {
@@ -23023,13 +23393,160 @@
           "requirement_ids": [
             "FR-077"
           ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the retained C8 tool runtime produces APPROVAL_EXPIRED, COMPENSATION_REQUIRED and COMPENSATION_UNKNOWN as the Tool Contract defines",
+          "entry": "NCR-C8-009",
+          "norm_refs": [
+            {
+              "lines": "1769",
+              "note": "Tool Contract error code APPROVAL_EXPIRED",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "1776-1777",
+              "note": "Tool Contract error codes COMPENSATION_REQUIRED, COMPENSATION_UNKNOWN",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "255",
+              "note": "FR-108",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-108"
+          ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the retained C6 engine records the seven Action Type Contract codes as the reason code of the FSM transitions of their refusals",
+          "entry": "NCR-C6-018",
+          "norm_refs": [
+            {
+              "lines": "2332-2339",
+              "note": "Action Type Contract error codes",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "2351",
+              "note": "Action Type Contract error code CAPABILITY_LEASE_EXPIRED",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "209",
+              "note": "FR-077",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-077"
+          ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the six codes are the reason code of the FSM transitions ACT-T09b, ACT-T18a/b, ACT-T21c, ACT-T24, ACT-T25 and of the dispatch refusal",
+          "entry": "NCR-C6-019",
+          "norm_refs": [
+            {
+              "lines": "2335",
+              "note": "Action Type Contract error code APPROVAL_EXPIRED",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "2341-2345",
+              "note": "Action Type Contract error codes AUDIT_UNAVAILABLE to COMPENSATION_INDETERMINATE",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "271",
+              "note": "ACT-T09b expiry, APPROVAL_EXPIRED",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "282-283",
+              "note": "ACT-T18a/ACT-T18b, EXECUTION_UNKNOWN",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "291",
+              "note": "ACT-T21c, COMPENSATION_UNKNOWN",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "297-298",
+              "note": "ACT-T24/ACT-T25, the INDETERMINATE states",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "209",
+              "note": "FR-077",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "216",
+              "note": "FR-083",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-077",
+            "FR-083"
+          ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the retained C5 backbone produces AUTHORITY_MISSING and RELEASE_MISMATCH as the Event Subscription Contract defines",
+          "entry": "NCR-C5-004",
+          "norm_refs": [
+            {
+              "lines": "2667",
+              "note": "Event Subscription Contract error code AUTHORITY_MISSING",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "2669",
+              "note": "Event Subscription Contract error code RELEASE_MISMATCH",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "199",
+              "note": "FR-069",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            },
+            {
+              "lines": "205",
+              "note": "FR-074",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-069",
+            "FR-074"
+          ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the retained C7 scenario runtime refuses a breach of the scenario sandbox with SCENARIO_ISOLATION_VIOLATION",
+          "entry": "NCR-C7-009",
+          "norm_refs": [
+            {
+              "lines": "177",
+              "note": "TB-CXT-07 Scenario sandbox fail state SCENARIO_ISOLATION_VIOLATION",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "232",
+              "note": "FR-092",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-092"
+          ]
         }
       ],
       "consumers_to_inventory": {},
       "depends_on_units": [
         "NCP-U12"
       ],
-      "estimate_iterations": 3,
+      "estimate_iterations": 5,
       "existing_tests_to_realign_or_adapt": [],
       "g6_tasks_contributed": [
         "OCOR-DEV-0060",
@@ -23075,6 +23592,41 @@
           "fails_on_current_code_because": "4 failed on the norm assertion (the scenario assertions, ACT-T29 crossed and the C3 refusal code, pass): the action stays CANONICAL_COMMIT_PENDING with the EXECUTION_UNKNOWN note (fingerprint 38bbea9ffdc5). CONFIRMED.",
           "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send at 689aff288c3fca00f32bbd501bbc1d99434e9966",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C8-009",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C6-018",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C6-019",
+          "fails_on_current_code_because": "fails on the norm assertion: the refusal is (APPROVAL_MISSING, APPROVAL_EXPIRED) but the action stays APPROVAL_PENDING, no ACT-T09b (fingerprint ff106b140500); the other five codes are listed uncovered by the coverage check. CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_its_transition at 4f062b2dd4a339d93b6557482276efd1312f8f3e",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_its_transition"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C5-004",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C7-009",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at 4aa955c19edde09eba9cbe782c26dee9c3c06811 the nineteen codes of NCP-U12-CONTRACT-ERROR-CODES are uncovered (outcome fingerprint 2d6a71433f77, live CI stack). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at 4aa955c19edde09eba9cbe782c26dee9c3c06811",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
         }
       ],
       "requalifications": {
@@ -23088,7 +23640,12 @@
         "NCR-C6-015",
         "NCR-C7-008",
         "NCR-C6-016",
-        "NCR-C6-017"
+        "NCR-C6-017",
+        "NCR-C8-009",
+        "NCR-C6-018",
+        "NCR-C6-019",
+        "NCR-C5-004",
+        "NCR-C7-009"
       ],
       "scope": "closed reason codes of the retained components (NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5))",
       "status": "PROPOSED"

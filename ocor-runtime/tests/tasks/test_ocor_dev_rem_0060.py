@@ -36,7 +36,6 @@ import re
 import subprocess
 import sys
 import uuid
-from datetime import timedelta
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -426,7 +425,7 @@ CLOSED_REASON_CODES = (
     ("C5", ('c5',), ADD_PATH, 2673, "CONTROL_PLANE_UNAVAILABLE"),
     ("C5", ('c5',), ADD_PATH, 844, "PRINCIPAL_BINDING_MISMATCH"),
     # fail state of a trust boundary owned by one component (ADD v1.3 par. 1.4)
-    ("C7 (TB-CXT-07)", ('c7',), ADD_PATH, 177, "SCENARIO_ISOLATION_VIOLATION"),
+    ("C7", ('c7',), ADD_PATH, 177, "SCENARIO_ISOLATION_VIOLATION"),  # TB-CXT-07, the register entry is of C7
 )
 # Sets of the same documents left out of the inventory, with the reason: they are not reason codes.
 NOT_REASON_CODES = {
@@ -646,6 +645,27 @@ KNOWN_DIVERGENCES = {
     ("C6", "INVARIANT_VIOLATION"): "NCR-C6-017",
     ("C6", "REVISION_CONFLICT"): "NCR-C6-017",
     ("C6", "GATE_PACKAGE_MISMATCH"): "NCR-C6-017",
+    # Options A1 and C1 of NCP-U12-CONTRACT-ERROR-CODES (2026-11-10): the closed error codes of the ADD v1.3 contracts and the
+    # TB-CXT-07 fail state the retained components do not produce; the RED of ACT-T09b (4f062b2) left the suite with its entry
+    ("C8", "APPROVAL_EXPIRED"): "NCR-C8-009",
+    ("C8", "COMPENSATION_REQUIRED"): "NCR-C8-009",
+    ("C8", "COMPENSATION_UNKNOWN"): "NCR-C8-009",
+    ("C6", "POLICY_DENIED"): "NCR-C6-018",
+    ("C6", "AUTHORITY_MISSING"): "NCR-C6-018",
+    ("C6", "APPROVAL_REQUIRED"): "NCR-C6-018",
+    ("C6", "STALE_CONTEXT"): "NCR-C6-018",
+    ("C6", "PROJECTION_NOT_READY"): "NCR-C6-018",
+    ("C6", "RELEASE_MISMATCH"): "NCR-C6-018",
+    ("C6", "CAPABILITY_LEASE_EXPIRED"): "NCR-C6-018",
+    ("C6", "APPROVAL_EXPIRED"): "NCR-C6-019",
+    ("C6", "AUDIT_UNAVAILABLE"): "NCR-C6-019",
+    ("C6", "EXECUTION_UNKNOWN"): "NCR-C6-019",
+    ("C6", "EXECUTION_INDETERMINATE"): "NCR-C6-019",
+    ("C6", "COMPENSATION_UNKNOWN"): "NCR-C6-019",
+    ("C6", "COMPENSATION_INDETERMINATE"): "NCR-C6-019",
+    ("C5", "AUTHORITY_MISSING"): "NCR-C5-004",
+    ("C5", "RELEASE_MISMATCH"): "NCR-C5-004",
+    ("C7", "SCENARIO_ISOLATION_VIOLATION"): "NCR-C7-009",
 }
 REGISTER = ROOT / "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json"
 
@@ -725,26 +745,6 @@ def test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the
 
 def _action_trace(world: Any, proposal: Any) -> list[Any]:
     return [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
-
-
-def test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_its_transition() -> None:
-    """ADD v1.3 :2335 (Action Type error code APPROVAL_EXPIRED) and LLD v1.1 :271 (ACT-T09b, expiry,
-    destination APPROVAL_EXPIRED); option B2 of NCP-U12-UNPRODUCED-REASON-CODES: an ApprovalSet expired at
-    G-APPROVAL ends the action with ACT-T09b and the code as the reason_code field of its FSM transition
-    record, not only as the cause of the engine error."""
-    import test_ocor_dev_rem_0053 as action_path
-    from ocor_runtime.c6.fsm import load_transitions
-
-    suite = action_path.EngineSuite()
-    world = suite.world
-    proposal, approval_set, decision = action_path._admitted(suite)
-    world.clock.advance(timedelta(minutes=11))  # the R3 ApprovalSet is valid 10 minutes after its last signature
-    assert suite.denial(proposal, approval=approval_set, decision=decision) == ("APPROVAL_MISSING", "APPROVAL_EXPIRED")
-    destination = {item.transition_id: item for item in load_transitions()}["ACT-T09b"].destination
-    action = _action_trace(world, proposal)
-    assert world.fsm.current_state(proposal.action_instance_id) == destination
-    assert (action[-1].transition_id, action[-1].context.get("reason_code")) == ("ACT-T09b", "APPROVAL_EXPIRED")
-    assert suite.untouched()
 
 
 def test_ncr_tests_004_an_emergency_stop_at_the_pre_dispatch_check_cancels_the_action_with_the_code_on_its_transition() -> None:

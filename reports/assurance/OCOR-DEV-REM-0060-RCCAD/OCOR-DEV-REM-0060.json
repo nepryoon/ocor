@@ -138,7 +138,7 @@
       "path": "ocor-runtime/tests/techniques/"
     },
     {
-      "change": "unit module: structural RED/GREEN of the five entries, the 61-code reason-code inventory with its known divergences, the C6 GOVERNED_CONTEXT_MISMATCH case on ACT-T05, the strict loaders and their negative cases",
+      "change": "Unit tests of the five entries, the complete anchored reason-code inventory of option C1, exact known-divergence mapping including nineteen codes under NCP-U12-CONTRACT-ERROR-CODES A1, and positive and negative strict-loader, response-shape, resource-release and static-scan probes. The ACT-T09b RED leaves the suite exactly as A1 authorises and remains at 4f062b2 in history.",
       "function": "test_ncr_tests_001..005 and the SELF-CHECK cases",
       "normative_element": "docs/development_methodology/OCOR_TEST_STRATEGY.md:28-29",
       "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
@@ -214,12 +214,24 @@
       "path": "reports/development/decision_requests/NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS.md",
       "po_decision": "NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10)",
       "sha256": "544e678a18e6a6dbdda3e5de0a9f558625cc09a2f09f2cb91a0404d4a9c9c4c7"
+    },
+    {
+      "branch": "governed/decision-request-ncp-u12-contract-error-codes",
+      "commit": "ed75f85493f3c8814c08e0c162c4dd25d26c962e",
+      "disposition_commit": "95a4f93310e91372f400f76eb3d367727c3ca81b",
+      "disposition_sha256": "066f867a7c5f78872e0ecb68e7587599f914b2d6244e9e98008c29f5d10bd694",
+      "id": "NCP-U12-CONTRACT-ERROR-CODES",
+      "note": "decided on full delegation of the PO, model grok-4.7, effort xhigh",
+      "option": "A1, B1, C1",
+      "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
+      "po_decision": "NCP-U12-CONTRACT-ERROR-CODES (2026-11-10)",
+      "sha256": "c6493ed79363e14aa7213e05fbe3b2dc7ee8e160abd231e42ede7bd89ef11223"
     }
   ],
   "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2 and 5 (NCP-U12 row); NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 4; NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) A1 B1 C1 D1, NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10) option 1, NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10) A1 B2 and NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) A1 B1 (decided on full delegation of the PO); NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10) A1 (normative decision of the PO); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); SELF-CHECK-CHECKLIST (2026-11-08); SELF-CHECK-CLASS-COVERAGE (2026-11-08); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
   "evidence_paths_allowlist_precheck": {
     "method": "temporary detached worktree at the head; a placeholder for each new path, a trailing newline appended to each existing file of the list; scripts/validate_ocor_development_plan.py --base-ref <merge-base with origin/main> --authorized-extension (the command of the plan step of PRE-CAMPAIGN-GATE); worktree removed, no placeholder committed",
-    "path_count": 22,
+    "path_count": 23,
     "paths": [
       "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
       "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.log",
@@ -242,7 +254,8 @@
       "reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md",
       "reports/development/decision_requests/NCP-U12-UNPRODUCED-REASON-CODES.md",
       "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
-      "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json"
+      "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
+      "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md"
     ],
     "rule": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK (2026-11-09), installed 2026-11-09 15:17, in force for this unit from its first iteration",
     "runs": [
@@ -254,7 +267,7 @@
         "result": "PASS {'PASS': 37, 'NOT_EXECUTED': 2}"
       }
     ],
-    "source": "requalifications_planned.classification of this record (0005, 0031, 0050, 0082 with their manifests G0, G3, G5, G2), the unit record with its log and README, the five decision request files of the unit, the register and the reverse traceability index"
+    "source": "requalifications_planned.classification of this record (0005, 0031, 0050, 0082 with their manifests G0, G3, G5, G2), the unit record with its log and README, the five decision request files of the unit, the register and the reverse traceability index; sixth decided request NCP-U12-CONTRACT-ERROR-CODES"
   },
   "existing_tests_ast_comparison": {
     "modules": [
@@ -380,6 +393,15 @@
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
       "role": "implementer of reserve of the loop"
+    },
+    {
+      "agent": "Codex CLI",
+      "iterations": [
+        8
+      ],
+      "model": "GPT-6 (Codex; exact variant not exposed to the session)",
+      "provider": "OpenAI",
+      "role": "implementer resuming the unit through its GO under LOOP-GROK-PRIMARY (2026-11-10)"
     }
   ],
   "input_robustness_self_check": {
@@ -839,11 +861,15 @@
       }
     ]
   },
-  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 6 of estimate 3",
+  "iteration_limit": "Iteration 8 of estimate 3, extension through iteration 13 by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10) option B1; at most two repair cycles and early stop after two iterations without progress remain.",
   "known_divergences_registered": {
     "NCR-C2-014": [
       "C2 CAPABILITY_DENIED",
       "C2 SCENARIO_ISOLATION_VIOLATION"
+    ],
+    "NCR-C5-004": [
+      "C5 AUTHORITY_MISSING",
+      "C5 RELEASE_MISMATCH"
     ],
     "NCR-C6-015": [
       "C6 SCHEMA_VIOLATION",
@@ -858,16 +884,39 @@
       "C6 REVISION_CONFLICT",
       "C6 GATE_PACKAGE_MISMATCH"
     ],
+    "NCR-C6-018": [
+      "C6 POLICY_DENIED",
+      "C6 AUTHORITY_MISSING",
+      "C6 APPROVAL_REQUIRED",
+      "C6 STALE_CONTEXT",
+      "C6 PROJECTION_NOT_READY",
+      "C6 RELEASE_MISMATCH",
+      "C6 CAPABILITY_LEASE_EXPIRED"
+    ],
+    "NCR-C6-019": [
+      "C6 APPROVAL_EXPIRED",
+      "C6 AUDIT_UNAVAILABLE",
+      "C6 EXECUTION_UNKNOWN",
+      "C6 EXECUTION_INDETERMINATE",
+      "C6 COMPENSATION_UNKNOWN",
+      "C6 COMPENSATION_INDETERMINATE"
+    ],
     "NCR-C7-008": [
       "C7 INSUFFICIENT_EVIDENCE",
       "C7 EXTRAPOLATIVE",
       "C7 STALE_CONTEXT",
       "C7 NOT_TRANSPORTABLE"
+    ],
+    "NCR-C7-009": [
+      "C7 SCENARIO_ISOLATION_VIOLATION"
+    ],
+    "NCR-C8-009": [
+      "C8 APPROVAL_EXPIRED",
+      "C8 COMPENSATION_REQUIRED",
+      "C8 COMPENSATION_UNKNOWN"
     ]
   },
-  "open_decision_requests": [
-    "NCP-U12-CONTRACT-ERROR-CODES"
-  ],
+  "open_decision_requests": [],
   "open_points_for_review": [
     "the self-check applies SELF-CHECK-CHECKLIST to test modules (the unit changes no product code): file reads of versioned repository files and the protoc process are treated as external inputs (strict loaders with negative cases)"
   ],
@@ -1009,9 +1058,14 @@
     "NCR-C6-015",
     "NCR-C7-008",
     "NCR-C6-016",
-    "NCR-C6-017"
+    "NCR-C6-017",
+    "NCR-C8-009",
+    "NCR-C6-018",
+    "NCR-C6-019",
+    "NCR-C5-004",
+    "NCR-C7-009"
   ],
-  "register_entries_created_note": "OPEN HIGH entries planned in NCP-U15 by the decided options; the unit resolves none of them",
+  "register_entries_created_note": "OPEN HIGH entries planned in NCP-U15 by the decided options; the unit resolves none of them; NCP-U12-CONTRACT-ERROR-CODES A1 adds five OPEN HIGH entries planned in NCP-U15 (estimate 3 -> 5), with exact component-specific blocks and the ACT-T09b RED at 4f062b2 preserved in history. No runtime file changed.",
   "requalifications_planned": {
     "classification": [
       {

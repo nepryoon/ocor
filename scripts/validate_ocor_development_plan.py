@@ -1500,6 +1500,7 @@ def main() -> int:
         "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0060.json",
         "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0060.log",
         "reports/development/decision_requests/NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS.md",
+        "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
         "reports/development/decision_requests/NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS.md",
         "reports/development/decision_requests/NCP-U12-REASON-CODE-ENTRIES-PLAN.md",
         "reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md",
