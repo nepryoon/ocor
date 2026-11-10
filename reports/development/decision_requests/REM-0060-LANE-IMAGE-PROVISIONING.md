@@ -1,6 +1,6 @@
 # REM-0060-LANE-IMAGE-PROVISIONING
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo.
+Status: `DECIDED_BY_PO`. Livello: operativo.
 Unità bloccata: `OCOR-DEV-REM-0060` (NCP-U12), iterazione 9 di stima 3,
 estensione fino alla tredicesima. Implementatori: Claude Code (Anthropic) e
 Codex (OpenAI); revisore preventivo Codex (OpenAI); verifier finale ammesso di
@@ -134,3 +134,9 @@ Blocca `OCOR-DEV-REM-0060`; i task successivi mantengono le loro dipendenze
 già vigenti. Nessun runtime modificato, nessuna verifica simulata e nessun
 sigillo prodotto. E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED,
 PoC e Production NO-GO invariati. Nessun nuovo DEC.
+
+## Disposition del Product Owner — 2026-11-10
+
+`REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10)` adotta l'opzione 1. Decisa su delega completa del PO, modello grok-4.7, effort xhigh. Vale come decisione del PO a ogni effetto. Il testo delle opzioni non è stato modificato. La richiesta decisa è il file al commit `05531507319e217032bafd475538e65b7cb12def`, sha256 `fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734`, prima di questa disposition. Stato: `DECIDED_BY_PO`.
+
+L'opzione 1 autorizza la remediation governata `OCOR-DEV-REM-0061` prima di riprendere la campagna di `OCOR-DEV-REM-0060`. I due run citati restano diagnostici e i loro conteggi non si trasferiscono. Nessun nuovo `DEC-*`. Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
