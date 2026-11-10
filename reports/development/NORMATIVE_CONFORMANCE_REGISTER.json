@@ -7405,6 +7405,76 @@
         "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict at d307a0bb00fe79d702243eec9774f599e849c6a5",
         "outcome": "fails: no FSM transition of the action records IDEMPOTENCY_CONFLICT after the refusal (fingerprint fa50b1e39297). CONFIRMED."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "1243-1252",
+          "note": "execute: every exception of the send to C3 goes to _unknown",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "1165-1175",
+          "note": "commit_canonical: the same",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "795-816",
+          "note": "_unknown: EXECUTION_UNKNOWN reconciliation, retry suspended",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-017",
+      "norm_refs": [
+        {
+          "lines": "304-305",
+          "note": "LLD v1.1 ACT-T31a (EXECUTION_FAILED) and ACT-T31b (INVALIDATED) from CANONICAL_COMMIT_PENDING",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "2569",
+          "note": "ADD v1.3: C3 maps the four cases deterministically to the four codes",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-077, a P0 PoC requirement",
+      "statement": "After the send (CANONICAL_COMMIT_PENDING) the retained C6 engine treats a typed C3 refusal with PRECONDITION_FAILED, INVARIANT_VIOLATION, REVISION_CONFLICT or GATE_PACKAGE_MISMATCH as an ambiguous send: the EXECUTION_UNKNOWN reconciliation opens, retry is suspended and the action stays CANONICAL_COMMIT_PENDING; it never applies ACT-T31a (EXECUTION_FAILED) or ACT-T31b (INVALIDATED) with the code as the transition reason code. The outcome is fail-closed (no effect, no new send). Created by NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10), option A1 (decision request commit 98030e7a17f636b6f3213a3808ec97cce4a20ae5), planned by NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "689aff288c3fca00f32bbd501bbc1d99434e9966",
+          "lines": "469-552",
+          "note": "RED: test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send (four cases on the real C3 on PostgreSQL)",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send at 689aff288c3fca00f32bbd501bbc1d99434e9966",
+        "outcome": "4 failed on the norm assertion (the scenario assertions, ACT-T29 crossed and the C3 refusal code, pass): the action stays CANONICAL_COMMIT_PENDING with the EXECUTION_UNKNOWN note (fingerprint 38bbea9ffdc5). CONFIRMED."
+      }
     }
   ],
   "g6_g7_proposals": {
@@ -17864,7 +17934,7 @@
     "NCP-U15"
   ],
   "plan_summary": {
-    "entries_resolved_by_plan": 78,
+    "entries_resolved_by_plan": 79,
     "estimate_iterations_total": 53,
     "g6_unblocking": {
       "OCOR-DEV-0060": {
@@ -18025,9 +18095,9 @@
       "NCP-U15"
     ],
     "ncp_u14_note": "MATRIX-ERRATUM-NCP-U14 (2026-11-07): NCP-U14 added (NCR-GOVERNANCE-002, MEDIUM, estimate 2, depends on NCP-U12); counts incremented by the unit; high_entry_units and g6_unblocking unchanged (the entry is MEDIUM and blocks no G6 task)",
-    "ncp_u15_note": "NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) option A1: NCP-U15 added (NCR-C2-014, NCR-C6-015, NCR-C7-008, NCR-C6-016, HIGH, estimate 3, depends on NCP-U12, after NCP-U14); counts incremented by the unit; the G6 tasks the entries block list NCP-U15 as their last plan unit",
+    "ncp_u15_note": "NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) option A1: NCP-U15 added (NCR-C2-014, NCR-C6-015, NCR-C7-008, NCR-C6-016, NCR-C6-017 (NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10), option A1), HIGH, estimate 3, depends on NCP-U12, after NCP-U14); counts incremented by the unit; the G6 tasks the entries block list NCP-U15 as their last plan unit",
     "note": "estimates are planning figures, not commitments; each unit follows the full remediation cycle of point 5",
-    "open_entries": 78,
+    "open_entries": 79,
     "units": 15
   },
   "plan_units": {
@@ -22879,6 +22949,30 @@
           "requirement_ids": [
             "FR-077"
           ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: a typed C3 refusal after the send ends the action with ACT-T31a or ACT-T31b and its reason code",
+          "entry": "NCR-C6-017",
+          "norm_refs": [
+            {
+              "lines": "304-305",
+              "note": "LLD v1.1 ACT-T31a (EXECUTION_FAILED) and ACT-T31b (INVALIDATED) from CANONICAL_COMMIT_PENDING",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "2569",
+              "note": "ADD v1.3: C3 maps the four cases deterministically to the four codes",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "209",
+              "note": "FR-077",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-077"
+          ]
         }
       ],
       "consumers_to_inventory": {},
@@ -22924,6 +23018,13 @@
           "fails_on_current_code_because": "fails: no FSM transition of the action records IDEMPOTENCY_CONFLICT after the refusal (fingerprint fa50b1e39297). CONFIRMED.",
           "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict at d307a0bb00fe79d702243eec9774f599e849c6a5",
           "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C6-017",
+          "fails_on_current_code_because": "4 failed on the norm assertion (the scenario assertions, ACT-T29 crossed and the C3 refusal code, pass): the action stays CANONICAL_COMMIT_PENDING with the EXECUTION_UNKNOWN note (fingerprint 38bbea9ffdc5). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send at 689aff288c3fca00f32bbd501bbc1d99434e9966",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the_send"
         }
       ],
       "requalifications": {
@@ -22936,7 +23037,8 @@
         "NCR-C2-014",
         "NCR-C6-015",
         "NCR-C7-008",
-        "NCR-C6-016"
+        "NCR-C6-016",
+        "NCR-C6-017"
       ],
       "scope": "closed reason codes of the retained components (NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5))",
       "status": "PROPOSED"
