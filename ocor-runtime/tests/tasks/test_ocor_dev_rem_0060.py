@@ -36,6 +36,7 @@ import re
 import subprocess
 import sys
 import uuid
+from datetime import timedelta
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -386,12 +387,56 @@ CLOSED_REASON_CODES = (
     ("C7", ('c7',), ADD_PATH, 3015, "NOT_TRANSPORTABLE"),
     ("C7", ('c7',), ADD_PATH, 3016, "ASSUMPTION_VIOLATION"),
     ("C8 (TB-CXT-03)", ('c8',), ADD_PATH, 173, "CAPABILITY_DENIED"),
+    # NCP-U12 preventive review P2: the closed error_codes of the MCP Governed Tool Contract (ADD v1.3 par. 3.5),
+    # of the Action Type Contract (par. 3.7) and of the Event Subscription Contract (par. 3.8); codes already
+    # inventoried for the same component are not repeated
+    ("C8", ('c8',), ADD_PATH, 1765, "POLICY_DENIED"),
+    ("C8", ('c8',), ADD_PATH, 1766, "AUTHORITY_MISSING"),
+    ("C8", ('c8',), ADD_PATH, 1768, "APPROVAL_REQUIRED"),
+    ("C8", ('c8',), ADD_PATH, 1769, "APPROVAL_EXPIRED"),
+    ("C8", ('c8',), ADD_PATH, 1770, "CAPABILITY_REVOKED"),
+    ("C8", ('c8',), ADD_PATH, 1771, "BUDGET_EXCEEDED"),
+    ("C8", ('c8',), ADD_PATH, 1772, "SCHEMA_VIOLATION"),
+    ("C8", ('c8',), ADD_PATH, 1773, "STALE_CONTEXT"),
+    ("C8", ('c8',), ADD_PATH, 1774, "EMERGENCY_STOP_ACTIVE"),
+    ("C8", ('c8',), ADD_PATH, 1775, "EXECUTION_UNKNOWN"),
+    ("C8", ('c8',), ADD_PATH, 1776, "COMPENSATION_REQUIRED"),
+    ("C8", ('c8',), ADD_PATH, 1777, "COMPENSATION_UNKNOWN"),
+    ("C6", ('c6',), ADD_PATH, 2332, "POLICY_DENIED"),
+    ("C6", ('c6',), ADD_PATH, 2333, "AUTHORITY_MISSING"),
+    ("C6", ('c6',), ADD_PATH, 2334, "APPROVAL_REQUIRED"),
+    ("C6", ('c6',), ADD_PATH, 2335, "APPROVAL_EXPIRED"),
+    ("C6", ('c6',), ADD_PATH, 2337, "STALE_CONTEXT"),
+    ("C6", ('c6',), ADD_PATH, 2338, "PROJECTION_NOT_READY"),
+    ("C6", ('c6',), ADD_PATH, 2339, "RELEASE_MISMATCH"),
+    ("C6", ('c6',), ADD_PATH, 2340, "EMERGENCY_STOP_ACTIVE"),
+    ("C6", ('c6',), ADD_PATH, 2341, "AUDIT_UNAVAILABLE"),
+    ("C6", ('c6',), ADD_PATH, 2342, "EXECUTION_UNKNOWN"),
+    ("C6", ('c6',), ADD_PATH, 2343, "EXECUTION_INDETERMINATE"),
+    ("C6", ('c6',), ADD_PATH, 2344, "COMPENSATION_UNKNOWN"),
+    ("C6", ('c6',), ADD_PATH, 2345, "COMPENSATION_INDETERMINATE"),
+    ("C6", ('c6',), ADD_PATH, 2351, "CAPABILITY_LEASE_EXPIRED"),
+    ("C5", ('c5',), ADD_PATH, 2666, "POLICY_DENIED"),
+    ("C5", ('c5',), ADD_PATH, 2667, "AUTHORITY_MISSING"),
+    ("C5", ('c5',), ADD_PATH, 2668, "SCHEMA_VIOLATION"),
+    ("C5", ('c5',), ADD_PATH, 2669, "RELEASE_MISMATCH"),
+    ("C5", ('c5',), ADD_PATH, 2670, "SUBSCRIPTION_NOT_FOUND"),
+    ("C5", ('c5',), ADD_PATH, 2671, "CURSOR_EXPIRED"),
+    ("C5", ('c5',), ADD_PATH, 2672, "REPLAY_DENIED"),
+    ("C5", ('c5',), ADD_PATH, 2673, "CONTROL_PLANE_UNAVAILABLE"),
+    ("C5", ('c5',), ADD_PATH, 844, "PRINCIPAL_BINDING_MISMATCH"),
+    # fail state of a trust boundary owned by one component (ADD v1.3 par. 1.4)
+    ("C7 (TB-CXT-07)", ('c7',), ADD_PATH, 177, "SCENARIO_ISOLATION_VIOLATION"),
 )
 # Sets of the same documents left out of the inventory, with the reason: they are not reason codes.
 NOT_REASON_CODES = {
     "LLD v1.1 :158-163 and ADD v1.3 :850 TRANSIENT/PERMANENT/POLICY_DENIED/POISON": "C5 failure classes, asserted as failure_class",
     "ADD v1.3 :170-172 DENY/REJECTED/QUARANTINED": "trust-boundary fail states that are outcomes, not codes",
     "LLD v1.1 :18 LLD_CONFORMANCE_FAILURE": "document conformance outcome, not a runtime code",
+    "ADD v1.3 :174-176 TB-CXT-04/05/06 CONTROL_PLANE_UNAVAILABLE/POLICY_DENIED/UNSUPPORTED_CAPABILITY": (
+        "fail states of boundaries that cross every component; the codes are inventoried on the components "
+        "whose contracts define them (C2 gateway, governed memory, C5, C6, C8)"),
+    "ADD v1.3 :179 TB-CXT-09 RELEASE_REJECTED": "fail state of the supply-chain boundary (build and signing), not of a C1-C8 runtime component",
 }
 
 
@@ -407,9 +452,42 @@ COLLABORATOR_CREDITS = {
 }
 
 
+# Credits the static scan gives that do not assert the code on the component (preventive review P2 and P4),
+# each verified by hand. Key: (test module, package, code); value: the reason, with the lines that show it.
+FALSE_CREDITS = {
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py", "c5", "RELEASE_MISMATCH"): (
+        "RELEASE_MISMATCH is asserted on the ProjectorError of the C3/C4 CanonicalStateProjector (:1203-1206); "
+        "the C5 envelope is only its input"
+    ),
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py", "c5", "RELEASE_MISMATCH"): (
+        "RELEASE_MISMATCH is asserted on the C2Error of a C4 adapter read and on the C4 ProjectorError (:242-251)"
+    ),
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0052.py", "c5", "CONTROL_PLANE_UNAVAILABLE"): (
+        "CONTROL_PLANE_UNAVAILABLE is asserted on the C2Error of the C4 Jena, SHACL and TypeDB adapters (:626-633)"
+    ),
+    ("ocor-runtime/tests/tasks/test_ocor_dev_0058.py", "c6", "AUDIT_UNAVAILABLE"): (
+        "AUDIT_UNAVAILABLE is the detail_code the module helper refused checks on a governed-memory "
+        "MemoryPromotionError (:93, :161-165); the asserted reason_code is CONTROL_PLANE_UNAVAILABLE (:94) and no "
+        "C6 FSM transition record is asserted"
+    ),
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py", "c6", "EXECUTION_UNKNOWN"): (
+        "the reason_code of the signed C6_RECONCILIATION audit records of the OutcomeReconciler (:2706-2713), "
+        "not of an FSM transition record (option B2 of NCP-U12-UNPRODUCED-REASON-CODES)"
+    ),
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py", "c6", "COMPENSATION_UNKNOWN"): (
+        "the reason_code of the signed C6_RECONCILIATION audit records of the OutcomeReconciler (:2706-2713), "
+        "not of an FSM transition record (option B2 of NCP-U12-UNPRODUCED-REASON-CODES)"
+    ),
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0053.py", "c6", "COMPENSATION_INDETERMINATE"): (
+        "the reason_code of the signed C6_RECONCILIATION audit records of the OutcomeReconciler (:2706-2713), "
+        "not of an FSM transition record (option B2 of NCP-U12-UNPRODUCED-REASON-CODES)"
+    ),
+}
+
+
 def _credited(test: str, touched: set[str], code: str) -> set[str]:
     module = test.split("::")[0]
-    return {package for package in touched if (module, package, code) not in COLLABORATOR_CREDITS}
+    return {package for package in touched if (module, package, code) not in COLLABORATOR_CREDITS | FALSE_CREDITS}
 
 
 # Option B2 of NCP-U12-UNPRODUCED-REASON-CODES: only reason_code counts. A cause_code assertion does not;
@@ -539,9 +617,9 @@ def test_ncr_tests_004_inventory_is_anchored():
         text = (ROOT / source).read_text(encoding="utf-8").split("\n")[line - 1]
         assert re.search(rf"\b{code}\b", text), f"{component} {code} is not at {source}:{line}"
     assert len({(row[0], row[4]) for row in CLOSED_REASON_CODES}) == len(CLOSED_REASON_CODES)
-    # every collaborator credit removes a credit the scan gives today, so none is stale
+    # every collaborator or false credit removes a credit the scan gives today, so none is stale
     assertions = _reason_code_assertions()
-    for module, package, code in COLLABORATOR_CREDITS:
+    for module, package, code in COLLABORATOR_CREDITS | FALSE_CREDITS:
         assert any(test.startswith(f"{module}::") and package in touched and code in constants
                    for test, touched, constants, _record in assertions), f"stale collaborator credit {module} {package} {code}"
 
@@ -645,6 +723,31 @@ def test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the
     assert suite.untouched()
 
 
+def _action_trace(world: Any, proposal: Any) -> list[Any]:
+    return [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
+
+
+def test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_its_transition() -> None:
+    """ADD v1.3 :2335 (Action Type error code APPROVAL_EXPIRED) and LLD v1.1 :271 (ACT-T09b, expiry,
+    destination APPROVAL_EXPIRED); option B2 of NCP-U12-UNPRODUCED-REASON-CODES: an ApprovalSet expired at
+    G-APPROVAL ends the action with ACT-T09b and the code as the reason_code field of its FSM transition
+    record, not only as the cause of the engine error."""
+    import test_ocor_dev_rem_0053 as action_path
+    from ocor_runtime.c6.fsm import load_transitions
+
+    suite = action_path.EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = action_path._admitted(suite)
+    world.clock.advance(timedelta(minutes=11))  # the R3 ApprovalSet is valid 10 minutes after its last signature
+    assert suite.denial(proposal, approval=approval_set, decision=decision) == ("APPROVAL_MISSING", "APPROVAL_EXPIRED")
+    destination = {item.transition_id: item for item in load_transitions()}["ACT-T09b"].destination
+    action = _action_trace(world, proposal)
+    assert world.fsm.current_state(proposal.action_instance_id) == destination
+    assert (action[-1].transition_id, action[-1].context.get("reason_code")) == ("ACT-T09b", "APPROVAL_EXPIRED")
+    assert suite.untouched()
+
+
+# --- NCR-TESTS-005 -------------------------------------------------------------------------
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
 
 
