@@ -464,37 +464,44 @@ def _reason_code_assertions() -> list[tuple[str, set[str], set[str], bool]]:
             if ".venv" in path.parts:
                 continue
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-            functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
-            definitions: dict[str, ast.AST] = {node.name: node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
-            methods = {item.name: item for node in tree.body if isinstance(node, ast.ClassDef) for item in node.body if isinstance(item, ast.FunctionDef)}
-            helpers = {name for name, node in {**methods, **functions}.items() if not name.startswith("test")
-                       and any(isinstance(inner, (ast.Assert, ast.Return)) and _asserts_reason_code(inner) for inner in ast.walk(node))}
-            imported = {package: _component_names(tree, package) for package in packages}
-            # module-level tables a parametrisation names (for example ``@pytest.mark.parametrize(..., FAULTS)``)
-            tables = {target.id: node.value for node in tree.body if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None
-                      for target in (node.targets if isinstance(node, ast.Assign) else [node.target]) if isinstance(target, ast.Name)}
-            for node in ast.walk(tree):
-                if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test")):
-                    continue
-                called = {inner.func.id if isinstance(inner.func, ast.Name) else inner.func.attr for inner in ast.walk(node)
-                          if isinstance(inner, ast.Call) and isinstance(inner.func, (ast.Name, ast.Attribute))}
-                direct = any(isinstance(inner, ast.Assert) and _asserts_reason_code(inner) for inner in ast.walk(node))
-                if not (direct or called & helpers):
-                    continue
-                parts: list[ast.AST] = [node, *node.decorator_list]
-                parts += [tables[inner.id] for decorator in node.decorator_list for inner in ast.walk(decorator)
-                          if isinstance(inner, ast.Name) and inner.id in tables]
-                # the test, the module-level definitions it names and the fixtures it requests, two levels deep
-                scope: list[ast.AST] = [node]
-                frontier = {inner.id for inner in ast.walk(node) if isinstance(inner, ast.Name)} | {arg.arg for arg in node.args.args}
-                for _level in range(2):
-                    reached = [definitions[name] for name in frontier if name in definitions and definitions[name] not in scope]
-                    scope += reached
-                    frontier = {inner.id for part in reached for inner in ast.walk(part) if isinstance(inner, ast.Name)} | {
-                        arg.arg for part in reached if isinstance(part, ast.FunctionDef) for arg in part.args.args}
-                touched = {package for package in packages if any(_touches(part, imported[package], package) for part in scope)}
-                constants = {inner.value for part in parts for inner in ast.walk(part) if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
-                found.append((f"{path.relative_to(ROOT)}::{node.name}", touched, constants, _asserts_record_reason_code(node)))
+            found += _scan_module(tree, str(path.relative_to(ROOT)), packages)
+    return found
+
+
+def _scan_module(tree: ast.Module, relative: str, packages: list[str]) -> list[tuple[str, set[str], set[str], bool]]:
+    """The reason_code assertions of one test module (see ``_reason_code_assertions``)."""
+    found: list[tuple[str, set[str], set[str], bool]] = []
+    functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+    definitions: dict[str, ast.AST] = {node.name: node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
+    methods = {item.name: item for node in tree.body if isinstance(node, ast.ClassDef) for item in node.body if isinstance(item, ast.FunctionDef)}
+    helpers = {name for name, node in {**methods, **functions}.items() if not name.startswith("test")
+               and any(isinstance(inner, (ast.Assert, ast.Return)) and _asserts_reason_code(inner) for inner in ast.walk(node))}
+    imported = {package: _component_names(tree, package) for package in packages}
+    # module-level tables a parametrisation names (for example ``@pytest.mark.parametrize(..., FAULTS)``)
+    tables = {target.id: node.value for node in tree.body if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None
+              for target in (node.targets if isinstance(node, ast.Assign) else [node.target]) if isinstance(target, ast.Name)}
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test")):
+            continue
+        called = {inner.func.id if isinstance(inner.func, ast.Name) else inner.func.attr for inner in ast.walk(node)
+                  if isinstance(inner, ast.Call) and isinstance(inner.func, (ast.Name, ast.Attribute))}
+        direct = any(isinstance(inner, ast.Assert) and _asserts_reason_code(inner) for inner in ast.walk(node))
+        if not (direct or called & helpers):
+            continue
+        parts: list[ast.AST] = [node, *node.decorator_list]
+        parts += [tables[inner.id] for decorator in node.decorator_list for inner in ast.walk(decorator)
+                  if isinstance(inner, ast.Name) and inner.id in tables]
+        # the test, the module-level definitions it names and the fixtures it requests, two levels deep
+        scope: list[ast.AST] = [node]
+        frontier = {inner.id for inner in ast.walk(node) if isinstance(inner, ast.Name)} | {arg.arg for arg in node.args.args}
+        for _level in range(2):
+            reached = [definitions[name] for name in frontier if name in definitions and definitions[name] not in scope]
+            scope += reached
+            frontier = {inner.id for part in reached for inner in ast.walk(part) if isinstance(inner, ast.Name)} | {
+                arg.arg for part in reached if isinstance(part, ast.FunctionDef) for arg in part.args.args}
+        touched = {package for package in packages if any(_touches(part, imported[package], package) for part in scope)}
+        constants = {inner.value for part in parts for inner in ast.walk(part) if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
+        found.append((f"{relative}::{node.name}", touched, constants, _asserts_record_reason_code(node)))
     return found
 
 
@@ -564,6 +571,28 @@ def test_ncr_tests_004_conforms():
     assert unknown == [], f"closed reason codes without a negative test asserting them: {unknown}"
     stale = sorted(set(KNOWN_DIVERGENCES) - {(component, code) for component, code, _source, _line in uncovered})
     assert stale == [], f"known divergences now covered: {stale}"
+
+
+# Preventive review P4: the scan credits a code only where the condition of an assert compares a
+# reason_code for equality; ``!=``, ``not in``, a truth test and a code only in the message do not count.
+SCAN_PROBES = [
+    pytest.param("assert error.reason_code == 'POLICY_DENIED'", True, id="equality"),
+    pytest.param("assert (event.transition_id, event.context.get('reason_code')) == ('ACT-T05', 'POLICY_DENIED')", True, id="tuple-equality"),
+    pytest.param("assert error.reason_code != 'POLICY_DENIED'", False, id="not-equal"),
+    pytest.param("assert error.reason_code not in {'POLICY_DENIED'}", False, id="not-in"),
+    pytest.param("assert error.reason_code, 'POLICY_DENIED'", False, id="truth-test-with-message"),
+    pytest.param("assert error.reason_code is not None, 'POLICY_DENIED'", False, id="is-not-with-message"),
+    pytest.param("assert error.reason_code == other, 'expected POLICY_DENIED'", False, id="code-only-in-the-message"),
+    pytest.param("assert error.reason_code == other, 'POLICY_DENIED'", False, id="constant-only-in-the-message"),
+]
+
+
+@pytest.mark.parametrize(("snippet", "credited"), SCAN_PROBES)
+def test_ncr_tests_004_the_scan_credits_a_code_only_where_an_assert_compares_reason_code_for_equality(snippet: str, credited: bool) -> None:
+    source = f"from ocor_runtime.c2 import gateway\n\n\ndef test_probe(error, event, other):\n    gateway.refuse()\n    {snippet}\n"
+    found = _scan_module(ast.parse(source), "probe.py", ["c2"])
+    codes = {code for _test, touched, constants, _record in found if "c2" in touched for code in constants}
+    assert ("POLICY_DENIED" in codes) is credited
 
 
 def test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the_code_on_its_transition() -> None:
