@@ -345,6 +345,23 @@ NOT_REASON_CODES = {
 }
 
 
+# Credits the static scan gives through a collaborator: the module builds the package as a
+# collaborator of the component it tests and asserts the code on that component, not on the package.
+# Key: (test module, package, code); value: the reason, with the lines that show it.
+COLLABORATOR_CREDITS = {
+    ("ocor-runtime/tests/tasks/test_ocor_dev_rem_0058.py", "c6", "SCHEMA_VIOLATION"): (
+        "the C8 World builds the C6 OutcomeReconciler as the audited reconciler of the tool runtime "
+        "(audited_reconciler :537-551, World.__init__ :608); SCHEMA_VIOLATION is asserted on the C8 "
+        "ToolRuntimeError (:2949-2951), which c6 does not define"
+    ),
+}
+
+
+def _credited(test: str, touched: set[str], code: str) -> set[str]:
+    module = test.split("::")[0]
+    return {package for package in touched if (module, package, code) not in COLLABORATOR_CREDITS}
+
+
 # The C6 engine records the cause of a refused transition as the reason_code of the FSM transition
 # (ocor-runtime/src/ocor_runtime/c6/engine.py:707), so a cause_code assertion asserts that reason code.
 REASON_FIELDS = frozenset({"reason_code", "cause_code"})
@@ -429,13 +446,18 @@ def test_ncr_tests_004_inventory_is_anchored():
         text = (ROOT / source).read_text(encoding="utf-8").split("\n")[line - 1]
         assert re.search(rf"\b{code}\b", text), f"{component} {code} is not at {source}:{line}"
     assert len({(row[0], row[4]) for row in CLOSED_REASON_CODES}) == len(CLOSED_REASON_CODES)
+    # every collaborator credit removes a credit the scan gives today, so none is stale
+    assertions = _reason_code_assertions()
+    for module, package, code in COLLABORATOR_CREDITS:
+        assert any(test.startswith(f"{module}::") and package in touched and code in constants
+                   for test, touched, constants in assertions), f"stale collaborator credit {module} {package} {code}"
 
 
 def test_ncr_tests_004_conforms():
     """OCOR_TEST_STRATEGY.md :28-29 (failure codes), option D1: complete coverage of the inventory."""
     assertions = _reason_code_assertions()
     uncovered = [f"{component} {code} ({source}:{line})" for component, packages, source, line, code in CLOSED_REASON_CODES
-                 if not any(code in constants and touched & set(packages) for _test, touched, constants in assertions)]
+                 if not any(code in constants and _credited(test, touched, code) & set(packages) for test, touched, constants in assertions)]
     assert uncovered == [], f"closed reason codes without a negative test asserting them: {uncovered}"
 
 
