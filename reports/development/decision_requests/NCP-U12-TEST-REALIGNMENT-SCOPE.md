@@ -46,6 +46,23 @@ test esistenti. Implementatore: Claude Code (Anthropic), implementatore di riser
   componenti mantenuti queste asserzioni non possono restare identiche: l'adattamento di sola costruzione richiede
   «same assertions», il caso 1 parla di un elemento normativo «che la voce realizza» e `NCR-TESTS-001` realizza
   FR-172 (Register v1.1 riga 427) e LLD v1.1 riga 409, non gli stati di C7, C8 o C5.
+- **Altre asserzioni dello stesso tipo (emendamento del 2026-11-10).** Una composizione di prova del thread con i
+  componenti mantenuti, eseguita sullo stack reale dopo l'apertura della richiesta (i cinque test del modulo passano
+  con le sostituzioni descritte qui), mostra altre quattro asserzioni dello stesso file al commit `913b43d` che non
+  possono restare identiche, omesse nella prima stesura: righe 161 `assert outcome.status is
+  ResolutionStatus.IDENTIFIED` e 162 `assert outcome.canonical_id is not None`, perché la risoluzione dell'identità del
+  componente mantenuto (`IdentityBackedAuthority.resolve`, `ocor-runtime/src/ocor_runtime/c2/gateway.py` righe
+  200-215) restituisce l'identificativo canonico come stringa, oppure il valore `ABSTAIN`, e non l'esito della classe
+  legacy; righe 432 `assert receipts.causal_outcome.lineage["correlation_id"] == correlation_id` e 433 `assert
+  receipts.causal_outcome.lineage["causation_id"] == receipts.action_event_id`, perché il runtime causale mantenuto
+  tiene gli identificativi di traccia fuori dalla lineage e dal digest di riproducibilità, nel campo `trace` del
+  risultato (`ocor-runtime/src/ocor_runtime/c7/runtime.py` righe 21-22, 450 e 695; voce `NCR-C7-005`; Register v1.1
+  riga 61, NFR-007; la lineage di LLD v1.1 riga 177 e di ADD v1.3 righe 2980-2990 non comprende la traccia). Gli
+  altri cambiamenti richiesti dalla composizione sono di sola costruzione e non toccano asserzioni: gli input della
+  query causale sono un SCM registrato con il suo insieme fattuale (il modello dello spike non è un SCM ammesso dal
+  runtime mantenuto); il valore di un record letto dal backbone di C5 è il `payload` dell'evento consegnato, così le
+  righe 577 e 583 restano identiche; la proiezione TypeDB non ancora allineata al commit si ottiene osservando il
+  commit senza applicarlo, così la riga 567 resta identica.
 - **Test di integrità degli schemi.** `ocor-runtime/tests/schemas/test_schema_integrity.py` righe 18-19 legge
   `ocor-runtime/schemas` (artefatti della slice legacy) e alla riga 46 asserisce `"no normative JSON schemas found"`,
   cioè presenta quell'insieme come normativo; la voce `NCR-TESTS-003` chiede che l'integrità parta dai sei contratti di
@@ -85,13 +102,16 @@ A2. **Nessuna classe legacy nel test, sostituzione nei componenti.** NCP-U12 sos
 
 ### Opzioni del quesito B
 
-B1. **Riallineamento al valore del componente mantenuto, con RED (raccomandata).** Le asserzioni delle righe 241,
-   429, 430 e 431 si riallineano come nel caso 1 del punto 5 del piano, ciascuna con la citazione della norma in un
-   commento, RED con fingerprint sul thread con i componenti mantenuti e GREEN: riga 431 `== "ESTIMATED"` (ADD v1.3
-   riga 2981); righe 241 e 430 l'esito tipizzato dell'identità prodotto dal ruolo `Fusion/Identity` del kernel C8
-   corrente sopra la risoluzione del gateway, uguale all'identità canonica risolta (ADD v1.3 righe 3057-3064 e
-   3101-3106); riga 429 `payload_digest` nella forma `sha256:` seguita da 64 cifre esadecimali minuscole (LLD v1.1 riga
-   154). Numero di funzioni e di asserzioni invariato, nessun valore accettato in più; tutte le altre righe sono
+B1. **Riallineamento al valore del componente mantenuto, con RED (raccomandata).** Le asserzioni delle righe 161,
+   162, 241, 429, 430, 431, 432 e 433 si riallineano come nel caso 1 del punto 5 del piano, ciascuna con la citazione
+   della norma in un commento, RED con fingerprint sul thread con i componenti mantenuti e GREEN: riga 431
+   `== "ESTIMATED"` (ADD v1.3 riga 2981); righe 241 e 430 l'esito tipizzato dell'identità prodotto dal ruolo
+   `Fusion/Identity` del kernel C8 corrente sopra la risoluzione del gateway, uguale all'identità canonica risolta (ADD
+   v1.3 righe 3057-3064 e 3101-3106); righe 161 e 162 l'identità canonica restituita dalla risoluzione del gateway,
+   uguale a quella registrata e diversa da `ABSTAIN` (`c2/gateway.py` righe 200-215); riga 429 `payload_digest` nella
+   forma `sha256:` seguita da 64 cifre esadecimali minuscole (LLD v1.1 riga 154); righe 432 e 433 gli stessi
+   identificativi letti dal campo `trace` del risultato causale invece che dalla lineage (`NCR-C7-005`, Register v1.1
+   riga 61). Numero di funzioni e di asserzioni invariato, nessun valore accettato in più; tutte le altre righe sono
    adattamenti di sola costruzione con confronto dell'albero sintattico. La riqualifica di `OCOR-DEV-0031` resta con
    supersession, qualificante per i soli requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`.
 B2. **Asserzioni invariate, modulo nuovo.** Il modulo esistente resta invariato e qualificato come legacy nella
