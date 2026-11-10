@@ -1,32 +1,32 @@
 """OCOR-DEV-0031: Integrate first real C1-C8 synthetic mission thread.
 
+NCP-U12 (OCOR-DEV-REM-0060): adapted to the retained components (case 3 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)
+point 5) with the realignments of NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option B1 and
+NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10) option 1; NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 4.
+
 Proves that a single content-addressed fixture, identified by one
-``correlation_id``, crosses every real selected service this delivery
-has built or spiked and produces correlated canonical, projection,
-event, causal, agent and action receipts:
+``correlation_id``, crosses every real selected service through the retained
+C1-C8 components and produces correlated canonical, projection, event, causal,
+agent and action receipts:
 
-  - C1 (compile):      ``ocor_runtime.c1.compiler`` (OCOR-DEV-0028, retained)
-  - C2/C8 (identity):  ``ocor_runtime.c2_identity``/``ocor_runtime.c8_agent`` (retained)
-  - C3 (canonical):    ``ocor_runtime.c3.service`` against real PostgreSQL (OCOR-DEV-0029, retained)
-  - C4 (projection):   real TypeDB exact-at-commit (OCOR-DEV-0017), real
-                        Fuseki marking-safe read (OCOR-DEV-0018), and a
-                        real Qdrant-ranked context assembly (OCOR-DEV-0027)
-  - C5 (event):        real, self-provisioned Kafka (OCOR-DEV-0019)
-  - C6 (action):       ``ocor_runtime.c6.engine`` (OCOR-DEV-0030, retained)
-  - C7 (causal):        the sealed causal-reproducibility oracle (OCOR-DEV-0022)
-
-Every backend is real; no mocks anywhere in the qualifying path. The C6
-action's own ``causation_id`` (its emission event id) becomes the C7
-causal query's ``causation_id``, so the thread is a genuine causal
-chain, not just a shared label. Reuses every sealed/spiked component
-unmodified; this task adds no new production code, only the thread
-itself.
+  - C1 (compile):      ``ocor_runtime.c1`` OaC compiler, generators, DSSE signer and release admission
+  - C2/C8 (identity):  ``ocor_runtime.c2.gateway`` identity resolution, ``ocor_runtime.c8.orchestrator``
+                        Fusion/Identity task of the Coordination Kernel
+  - C3 (canonical):    ``ocor_runtime.c3.service`` against real PostgreSQL
+  - C4 (projection):   ``ocor_runtime.c4`` TypeDB exact-at-commit and Jena/SHACL marking-safe
+                        projections; governed-memory context assembly over Qdrant
+  - C5 (event):        ``ocor_runtime.c5`` canonical event backbone on a real, isolated Kafka broker
+  - C6 (action):       ``ocor_runtime.c6.engine``
+  - C7 (causal):       ``ocor_runtime.c7.runtime``
 """
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import sys
+import tempfile
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -34,77 +34,57 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from ocor_runtime.c1.compiler import RetainedCanonicalIrBuilder
-from ocor_runtime.c1.ports import CompilerRequest, SourceSyntax, SourceUnit
+from ocor_runtime.c1.ports import CompilerRequest
+from ocor_runtime.c2.gateway import IdentityBackedAuthority
 from ocor_runtime.c2.ports import ConsistencyMode, ConsistencyRequirement, NamedQueryRequest
-from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry, ResolutionStatus
 from ocor_runtime.c3.service import PostgresC3Service
-from ocor_runtime.c4_marking import MarkingEngine, MarkingSchemeDefinition, MarkingSet
-from ocor_runtime.c6.engine import (
-    C3CanonicalOutboxView,
-    GovernedActionError,
-)
-from ocor_runtime.c6_capabilities import CapabilityAuthority
-from ocor_runtime.c7_emission import EmissionFence
-from ocor_runtime.c8_agent import AgentDecision, AgentKernel
+from ocor_runtime.c4.jena_adapter import JenaAdapterError
+from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError
+from ocor_runtime.c5.subscription import DeliveredEvent
+from ocor_runtime.c6.engine import C3CanonicalOutboxView, GovernedActionError
+from ocor_runtime.c7.runtime import CausalQuery, estimate_intervention, verify_reproduction
+from ocor_runtime.c7.runtime import canonical_digest as causal_pin_digest
+from ocor_runtime.c8.orchestrator import AgentRole
+from ocor_runtime.kernel.canonical import canonical_digest
 from ocor_runtime.kernel.governed_context import GovernedContext
 
-# The spikes/ package lives at the repository root, a sibling of
-# ocor-runtime/, and is outside ocor-runtime's own pytest pythonpath
-# (["src"]). Explicit insertion here is required and must not depend on
-# collection order: this file sorts alphabetically before
-# ocor-runtime/tests/tasks/, so it cannot rely on another test module's
-# own sys.path.insert side effect running first.
-REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
-if str(REPOSITORY_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPOSITORY_ROOT))
-# NCP-U04 (OCOR-DEV-REM-0050): the governed-path helper of the C3 consumer suites lives
-# in ocor-runtime/tests/tasks/test_ocor_dev_rem_0050.py; inserted explicitly for the
-# same collection-order reason.
+# NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option A1: legacy-slice classes only as arguments a retained signature requires.
+from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry  # legacy: c2/gateway.py:209 IdentityBackedAuthority(identity_registry)
+from ocor_runtime.c7_emission import EmissionFence  # legacy: c6/engine.py:595 relay
+from ocor_runtime.c2_identity import ResolutionStatus  # legacy: RED only, the assertions of 913b43d
+from ocor_runtime.c8_agent import AgentDecision  # legacy: RED only, the assertions of 913b43d
+
 TASK_TESTS = Path(__file__).resolve().parents[1] / "tasks"
 if str(TASK_TESTS) not in sys.path:
     sys.path.insert(0, str(TASK_TESTS))
 
-from spikes.causal_reproducibility.oracle import CausalQuery  # noqa: E402
-from spikes.causal_reproducibility.oracle import canonical_digest as causal_pin_digest  # noqa: E402
-from spikes.causal_reproducibility.oracle import execute as run_causal_query  # noqa: E402
-from spikes.causal_reproducibility.oracle import verify_reproduction  # noqa: E402
-from spikes.context_replay.replay import AssemblyRequest, PinnedItem, assemble_context  # noqa: E402
-from spikes.jena_marking.adapter import JenaAdapterError, JenaMarkingProjectionAdapter  # noqa: E402
-from spikes.kafka_delivery.oracle import KafkaCli  # noqa: E402
-from spikes.typedb_exact_commit.adapter import TypeDBAdapterError, TypeDBExactCommitAdapter  # noqa: E402
-from spikes.vector_partition.oracle import QdrantHarness  # noqa: E402
+import c4_projection_fixture as c4_world  # noqa: E402
+import c5_backbone_fixture as c5_world  # noqa: E402
+import c8_orchestrator_fixture as c8_world  # noqa: E402
+import test_ocor_dev_0057 as memory_world  # noqa: E402
+import test_ocor_dev_rem_0047 as c1_world  # noqa: E402
 import test_ocor_dev_rem_0050 as governed_path  # noqa: E402
+from c5_kafka_qualification import KafkaBrokerError, QualificationKafkaBroker  # noqa: E402
 from c6_action_fixture import ActionWorld  # noqa: E402
 
-COMMIT = "0123456789abcdef0123456789abcdef01234567"
 DIGEST_A = "urn:sha256:" + "a" * 64
 DIGEST_B = "urn:sha256:" + "b" * 64
 DIGEST_C = "urn:sha256:" + "c" * 64
-CLASSIFICATION_SCHEME = MarkingSchemeDefinition("classification", levels=("UNCLASSIFIED", "SECRET"))
 NOW = datetime(2026, 9, 13, 14, 0, 0, tzinfo=UTC)
-# NCP-U04 (OCOR-DEV-REM-0050): C3 admits only commands frozen and signed on the C6
-# governed path, and the C6 engine commits through C3 (LLD v1.1 :85-97, ADD v1.3 :342).
+GOLDEN_SCM = Path(__file__).resolve().parents[1] / "techniques/golden/causal_logistics_scm.json"
 GOVERNED = governed_path.GovernedC3(
     release=DIGEST_B,
     preconditions=("urn:ocor:precondition:revision-0", "urn:ocor:precondition:governed-action"),
     invariants=("urn:ocor:invariant:mission-thread", "urn:ocor:invariant:governed-action"),
 )
-
-
-# NCP-U07 (OCOR-DEV-REM-0053): the engine composes G-CONTRACT, the Human Gate and G-DECISION
-# (NCR-C6-001, NCR-C6-002). The mission action is an R3_HIGH_IMPACT ActionType of the release;
-# its Approvals and its Decision are signed by the Domain and National Approver and the Authority.
 ACTIONS = ActionWorld(now=NOW, release=DIGEST_B)
 MISSION_ACTION = ACTIONS.action_type("urn:ocor:action-type:mission", risk="R3_HIGH_IMPACT", capability="act:mission")
 
 
-def governed_engine(authority: CapabilityAuthority, c3: PostgresC3Service, context: GovernedContext) -> tuple[Any, Any]:
+def governed_engine(c3: PostgresC3Service, context: GovernedContext) -> tuple[Any, Any]:
     outbox_store = C3CanonicalOutboxView(c3, tenant_id=context.tenant_id, aggregate_type="MissionAction")
     fence = EmissionFence(store=outbox_store)  # type: ignore[arg-type]
     path = GOVERNED.engine_path(aggregate_type="MissionAction", governed_context=context)
-    # NCR-C6-004/005 (OCOR-DEV-REM-0053): the engine's EMISSION-FENCE consumes the signed
-    # CapabilityLease of the emission attempt; the C7 fence relays the committed event.
     engine = ACTIONS.engine(commit_port=c3, relay=fence, canonical_path=path, emission_outbox=outbox_store)
     return outbox_store, engine
 
@@ -120,7 +100,7 @@ def postgres_dsn() -> str:
 @pytest.fixture(scope="session")
 def typedb_reachable() -> None:
     try:
-        TypeDBExactCommitAdapter().initialize()
+        c4_world.projection(DIGEST_B).initialize()
     except (TypeDBAdapterError, OSError) as error:
         pytest.fail(f"a real, live TypeDB instance is mandatory qualifying evidence: {error}")
 
@@ -128,36 +108,25 @@ def typedb_reachable() -> None:
 @pytest.fixture(scope="session")
 def fuseki_reachable() -> None:
     try:
-        JenaMarkingProjectionAdapter(MarkingEngine([CLASSIFICATION_SCHEME])).reset()
+        c4_world.jena_projection(DIGEST_B).reset()
     except (JenaAdapterError, OSError) as error:
         pytest.fail(f"a real, live Fuseki instance is mandatory qualifying evidence: {error}")
 
 
 def compile_mission_fixture(mission_id: str) -> Any:
-    source = SourceUnit.create(
-        resource_id=mission_id,
-        version="1",
-        syntax=SourceSyntax.YAML,
-        content=f"id: {mission_id}\nfields:\n  objective: 'first governed mission thread'\n".encode(),
-        source_path="mission.yaml",
-    )
-    request = CompilerRequest(
-        package_id="urn:ocor:package:mission-thread",
-        semantic_version="1.0.0",
-        source_commit=COMMIT,
-        compiler_version="0.1.0",
-        mapping_version="1",
-        release_profile="poc",
-        sources=(source,),
-        dependency_lock=(),
-    )
-    return RetainedCanonicalIrBuilder().build(request)
+    with tempfile.TemporaryDirectory() as workdir:
+        signing = c1_world._Signing(Path(workdir))
+        request: CompilerRequest = c1_world.oac_request()
+        package = c1_world._package(signing, request)
+        signing.admission().verify(package)  # VerifyRelease (ADD v1.3 :523) raises on a package it does not admit
+    return package.signed.release
 
 
 def resolve_operator_identity() -> tuple[IdentityRegistry, str]:
     registry = IdentityRegistry()
     registry.register(IdentityRecord(canonical_id="urn:ocor:operator:alice", aliases={"alice"}))
-    outcome = registry.resolve("alice")
+    probe = make_governed_context(correlation_id=str(uuid.uuid4()), effective_principal_id="alice")
+    outcome = IdentityBackedAuthority(registry).resolve(make_typedb_query(fact_id="operator", context=probe, required_commit=None))
     assert outcome.status is ResolutionStatus.IDENTIFIED
     assert outcome.canonical_id is not None
     return registry, outcome.canonical_id
@@ -200,10 +169,6 @@ def make_typedb_query(*, fact_id: str, context: GovernedContext, required_commit
 
 
 class _SimulatedEffectSink:
-    """A real EventSink implementation (matching ocor_runtime.c7_emission's
-    Protocol exactly) recording the durable event and idempotency key
-    EMISSION-FENCE released for the simulated external effect."""
-
     def __init__(self, kafka_record_digest: str) -> None:
         self.kafka_record_digest = kafka_record_digest
         self.calls: list[tuple[Any, str]] = []
@@ -211,6 +176,41 @@ class _SimulatedEffectSink:
     def emit(self, event: Any, *, idempotency_key: str) -> dict[str, Any]:
         self.calls.append((event, idempotency_key))
         return {"simulated": True, "kafka_record_digest": self.kafka_record_digest}
+
+
+@dataclass(frozen=True, slots=True)
+class _Record:
+    """A delivered C5 event as the thread reads it: the payload and the integrity digest."""
+
+    value: dict[str, Any]
+    payload_digest: str
+
+
+class _Backbone:
+    """The C5 canonical event backbone of one topic on an isolated broker (c5_backbone_fixture.C5Rig)."""
+
+    def __init__(self, broker: QualificationKafkaBroker, topic: str, dsn: str) -> None:
+        self.broker, self.topic, self.dsn = broker, topic, dsn
+        self.rig = c5_world.C5Rig(broker, topic, dsn=dsn, schema=f"ocor_mission_{uuid.uuid4().hex[:12]}")
+        self.revisions: dict[str, int] = {}
+
+    def produce(self, records: list[dict[str, Any]]) -> None:
+        for record in records:
+            ordering_key = str(record["aggregate_id"])
+            self.revisions[ordering_key] = self.revisions.get(ordering_key, 0) + 1
+            self.rig.publish(c5_world.draft(aggregate_ref=ordering_key, sequence=self.revisions[ordering_key],
+                                            correlation_id=str(record["correlation_id"]),
+                                            payload={k: str(v) for k, v in record.items()}))
+
+    def consume(self, count: int) -> list[_Record]:
+        events: tuple[DeliveredEvent, ...] = self.rig.consume(count)
+        return [_Record(value=dict(event.envelope["payload"]), payload_digest=event.envelope["integrity"]["payload_digest"])
+                for event in events]
+
+    def restart_broker(self) -> None:
+        self.broker.stop()
+        self.broker.start()
+        self.rig = self.rig.restarted()
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,27 +222,31 @@ class MissionThreadReceipts:
     context_receipt_digest: str
     kafka_record_digest: str
     action_event_id: str
-    agent_decision: AgentDecision
+    agent_decision: Any
     causal_outcome: Any
 
 
 def run_mission_thread(
-    *, correlation_id: str, postgres_dsn: str, kafka: KafkaCli, topic: str, qdrant: QdrantHarness, collection: str
+    *, correlation_id: str, postgres_dsn: str, kafka: _Backbone, topic: str, qdrant: Any, collection: Any
 ) -> MissionThreadReceipts:
     mission_id = f"urn:ocor:resource:mission-{correlation_id}"
 
-    # C1 -- compile the content-addressed fixture.
+    # C1 -- compile, generate, sign and admit the release.
     release = compile_mission_fixture(mission_id)
 
-    # C2/C8 -- resolve the operator identity, shared by the agent kernel.
+    # C2/C8 -- the gateway resolves the operator identity; the Fusion/Identity task of the kernel reports it.
     registry, effective_principal_id = resolve_operator_identity()
-    agent = AgentKernel(identity_registry=registry, subject=effective_principal_id)
-    agent_response = agent.identify_or_abstain("alice")
+    team = c8_world.TeamWorld(postgres_dsn, members=(("team-lead-1", "COORDINATOR"), ("agent-1", "FUSION_IDENTITY")))
+    identity_task_id = f"urn:ocor:task:mission-identity:{correlation_id}"
+    team.accepted(identity_task_id, "agent-1", role=AgentRole.FUSION_IDENTITY.name)
+    identity_output = {"summary": effective_principal_id}
+    identity_task = team.orchestrator.complete(identity_task_id, output=identity_output, evidence_refs=("urn:ocor:evidence:operator-alias",),
+                                               at=c8_world.NOW, **c8_world.caller("agent-1"))
+    agent_response = identity_task
     assert agent_response.decision is AgentDecision.IDENTIFY
 
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
 
-    # C3 -- real canonical commit against real PostgreSQL.
     c3 = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     c3.initialize()
     command = GOVERNED.command(
@@ -273,55 +277,39 @@ def run_mission_thread(
     )
     commit_receipt = c3.commit(command)
 
-    # C4a -- real TypeDB exact-at-commit projection read.
-    typedb = TypeDBExactCommitAdapter()
+    # C4a -- TypeDB projection exact-at-commit.
+    typedb = c4_world.projection(DIGEST_B)
     typedb.reset()
-    typedb.ingest(correlation_id, commit_receipt.commit_id, release.ir_digest)
-    typedb.advance_watermark(commit_receipt.commit_id)
+    typedb.apply_commit(fact_id=correlation_id, commit_id=commit_receipt.commit_id, payload=release.ir_digest)
     typedb_response = typedb.read(
         make_typedb_query(fact_id=correlation_id, context=context, required_commit=commit_receipt.commit_id)
     )
 
-    # C4b -- real Fuseki marking-safe projection read.
-    jena = JenaMarkingProjectionAdapter(MarkingEngine([CLASSIFICATION_SCHEME]))
+    # C4b -- Jena/SHACL marking-safe projection.
+    jena = c4_world.jena_projection(DIGEST_B)
     jena.reset()
-    jena.ingest_marked(mission_id, "first governed mission thread", "UNCLASSIFIED")
-    authorized = jena.list_authorized(MarkingSet({"classification": "UNCLASSIFIED"}))
+    jena.publish(mission_id, {"label": "first governed mission thread",
+                              "provenanceRef": f"urn:ocor:provenance:mission-thread:{correlation_id}"},
+                 marking=c4_world.classification_marking("UNCLASSIFIED"), commit_id=commit_receipt.commit_id)
+    authorized = jena.list_authorized(c4_world.classification_marking("UNCLASSIFIED"))
     jena_authorized = any(row["resource"] == mission_id for row in authorized)
 
-    # C4c -- real Qdrant-ranked context assembly (reused unmodified from OCOR-DEV-0027).
-    qdrant.request(
-        "PUT",
-        f"/collections/{collection}/points?wait=true",
-        {"points": [{"id": 1, "vector": [1.0, 0.0, 0.0, 0.0], "payload": {"item_id": mission_id}}]},
-    )
-    context_receipt = assemble_context(
-        qdrant,
-        collection,
-        AssemblyRequest(query_vector=(1.0, 0.0, 0.0, 0.0), top_k=1, redact_fields=(), truncation_chars=10_000),
-        (PinnedItem(mission_id, "1", f"objective: first governed mission thread\ncommit: {commit_receipt.commit_id}"),),
-    )
+    # C4c -- governed-memory context assembly over Qdrant (vector), PostgreSQL and OpenBao.
+    world = qdrant.world()
+    world.admit("mission-1", f"objective: first governed mission thread commit: {commit_receipt.commit_id}")
+    audit = qdrant.audit(world)
+    context_receipt = memory_world.assembler(world, audit, memory_world.ContextPolicy()).assemble(
+        memory_world.assembly_request(world, text="first governed mission thread", operation=f"mission-{correlation_id}"),
+        binding=memory_world.binding())
 
-    # C5 -- real, self-provisioned Kafka event.
-    kafka.produce(
-        topic,
-        [
-            {
-                "aggregate_id": mission_id,
-                "correlation_id": correlation_id,
-                "commit_id": commit_receipt.commit_id,
-                "ir_digest": release.ir_digest,
-            }
-        ],
-    )
-    (kafka_record,) = kafka.consume(topic, 1)
+    # C5 -- canonical event backbone.
+    kafka.produce([{"aggregate_id": mission_id, "correlation_id": correlation_id,
+                    "commit_id": commit_receipt.commit_id, "ir_digest": release.ir_digest}])
+    (kafka_record,) = kafka.consume(1)
 
-    # C6 -- the governed-action slice (OCOR-DEV-0030): Authority -> Human
-    # Gate -> Decision -> EMISSION-FENCE -> simulated effect.
-    authority = CapabilityAuthority(issuer="ocor-mission-thread-authority")
-    outbox_store, engine = governed_engine(authority, c3, context)
-    sink = _SimulatedEffectSink(kafka_record.canonical_digest)
-
+    # C6 -- Authority -> Human Gate -> Decision -> EMISSION-FENCE -> simulated effect.
+    outbox_store, engine = governed_engine(c3, context)
+    sink = _SimulatedEffectSink(kafka_record.payload_digest)
     proposal = ACTIONS.proposal(
         MISSION_ACTION,
         action_id=f"urn:ocor:action:mission-thread:{correlation_id}",
@@ -332,77 +320,69 @@ def run_mission_thread(
     approval_set = ACTIONS.approval_set(proposal)
     decision = ACTIONS.decide(proposal, approval_set, rationale="within approved risk ceiling")
     lease = ACTIONS.lease(proposal, decision)
-    action_outcome = engine.execute(
-        proposal,
-        lease=lease,
-        approval=approval_set,
-        decision=decision,
-        sink=sink,
-        at=NOW,
-    )
+    action_outcome = engine.execute(proposal, lease=lease, approval=approval_set, decision=decision, sink=sink, at=NOW)
     assert len(sink.calls) == 1
 
-    # C7 -- the sealed causal-reproducibility oracle. Its causation_id is
-    # the C6 action's own emission event id: a genuine causal chain, not
-    # a shared label.
-    model = {"kind": "stratified-ate", "version": "1"}
-    factual_rows = [
-        {"stratum": "a", "treated": 0, "outcome": "1.0"},
-        {"stratum": "a", "treated": 1, "outcome": "1.5"},
-        {"stratum": "b", "treated": 0, "outcome": "2.0"},
-        {"stratum": "b", "treated": 1, "outcome": "2.4"},
-    ]
-    intervention = {"value": 1, "valid_envelope": [0, 1]}
+    # C7 -- causal runtime; its causation_id is the C6 action's emission event id.
+    golden = json.loads(GOLDEN_SCM.read_text(encoding="utf-8"))
     causal_query = CausalQuery(
-        baseline_commit=COMMIT,
+        baseline_commit=commit_receipt.commit_id,
         scenario_branch="scenario/mission-thread",
-        model_digest=causal_pin_digest(model),
-        data_digest=causal_pin_digest(factual_rows),
-        intervention_digest=causal_pin_digest(intervention),
+        model_digest=causal_pin_digest(golden["model"]),
+        data_digest=causal_pin_digest(golden["factual_rows"]),
+        intervention_digest=causal_pin_digest(golden["intervention"]),
         ontology_release_digest=DIGEST_B,
         expected_release_digest=DIGEST_B,
-        treatment="treated",
-        outcome="outcome",
-        adjustment="stratum",
-        seed=42,
+        treatment="expedite",
+        outcome="delay_hours",
+        seed=golden["seed"],
         correlation_id=correlation_id,
         causation_id=action_outcome.emission_receipt.event_id,
     )
-    causal_outcome = run_causal_query(causal_query, model=model, factual_rows=factual_rows, intervention=intervention)
+    causal_outcome = estimate_intervention(causal_query, model=golden["model"], factual_rows=golden["factual_rows"],
+                                           intervention=golden["intervention"])
 
     return MissionThreadReceipts(
         canonical_ir_digest=release.ir_digest,
         commit_id=commit_receipt.commit_id,
         typedb_result_digest=typedb_response.result_digest,
         jena_authorized=jena_authorized,
-        context_receipt_digest=context_receipt.receipt_digest,
-        kafka_record_digest=kafka_record.canonical_digest,
+        context_receipt_digest=context_receipt.audit_ref,
+        kafka_record_digest=kafka_record.payload_digest,
         action_event_id=action_outcome.emission_receipt.event_id,
-        agent_decision=agent_response.decision,
+        agent_decision=identity_output["summary"],
         causal_outcome=causal_outcome,
     )
 
 
 @pytest.fixture
-def kafka_topic(typedb_reachable: None, fuseki_reachable: None):
-    kafka, volume = KafkaCli.provision()
-    topic = f"ocor-mission-thread-{uuid.uuid4().hex[:12]}"
-    kafka.create_topic(topic)
+def kafka_topic(typedb_reachable: None, fuseki_reachable: None, postgres_dsn: str):
     try:
-        yield kafka, topic
+        broker, _container, volume = QualificationKafkaBroker.provision(f"ocor-mission-thread-{uuid.uuid4().hex[:12]}")
+    except KafkaBrokerError as error:
+        pytest.fail(f"a real, isolated Kafka broker is mandatory qualifying evidence: {error}")
+    topic = broker.create_topic(f"ocor-mission-thread-{uuid.uuid4().hex[:12]}")
+    try:
+        yield _Backbone(broker, topic, postgres_dsn), topic
     finally:
-        kafka.destroy(volume)
+        broker.destroy(volume)
 
 
 @pytest.fixture
-def qdrant_collection():
-    qdrant = QdrantHarness.provision()
-    collection = f"ocor_mission_thread_{uuid.uuid4().hex[:12]}"
-    qdrant.request("PUT", f"/collections/{collection}", {"vectors": {"size": 4, "distance": "Cosine"}})
+def qdrant_collection(postgres_dsn: str):
+    qdrant = memory_world.r.base.QdrantHarness.provision()
+    bao = memory_world.OpenBaoHarness.provision()
+    backends = memory_world.Backends(dsn=postgres_dsn, qdrant=qdrant, bao=bao)
     try:
-        yield qdrant, collection
+        yield backends, None
     finally:
-        qdrant.destroy()
+        try:
+            backends.release()
+        finally:
+            try:
+                bao.destroy()
+            finally:
+                qdrant.destroy()
 
 
 def test_mission_thread_produces_correlated_receipts_across_all_governed_components(
@@ -448,33 +428,25 @@ def test_causal_receipt_reproduces_identically_with_the_same_pinned_inputs(
         qdrant=qdrant,
         collection=collection,
     )
-    # Re-run the pure, in-memory C7 step alone with the identical pinned
-    # query (a second full thread would mint a new commit/event and thus
-    # a genuinely different, not just re-run, causation_id).
-    second_outcome = run_causal_query(
+    golden = json.loads(GOLDEN_SCM.read_text(encoding="utf-8"))
+    second_outcome = estimate_intervention(
         CausalQuery(
-            baseline_commit=COMMIT,
+            baseline_commit=first.commit_id,
             scenario_branch="scenario/mission-thread",
             model_digest=first.causal_outcome.lineage["model_digest"],
             data_digest=first.causal_outcome.lineage["data_digest"],
             intervention_digest=first.causal_outcome.lineage["intervention_digest"],
             ontology_release_digest=DIGEST_B,
             expected_release_digest=DIGEST_B,
-            treatment="treated",
-            outcome="outcome",
-            adjustment="stratum",
-            seed=42,
+            treatment="expedite",
+            outcome="delay_hours",
+            seed=golden["seed"],
             correlation_id=correlation_id,
             causation_id=first.action_event_id,
         ),
-        model={"kind": "stratified-ate", "version": "1"},
-        factual_rows=[
-            {"stratum": "a", "treated": 0, "outcome": "1.0"},
-            {"stratum": "a", "treated": 1, "outcome": "1.5"},
-            {"stratum": "b", "treated": 0, "outcome": "2.0"},
-            {"stratum": "b", "treated": 1, "outcome": "2.4"},
-        ],
-        intervention={"value": 1, "valid_envelope": [0, 1]},
+        model=golden["model"],
+        factual_rows=golden["factual_rows"],
+        intervention=golden["intervention"],
     )
     verify_reproduction(first.causal_outcome, second_outcome)
 
@@ -483,11 +455,10 @@ def test_action_denied_at_authority_halts_the_thread_before_any_effect(postgres_
     correlation_id = str(uuid.uuid4())
     mission_id = f"urn:ocor:resource:mission-{correlation_id}"
     registry, effective_principal_id = resolve_operator_identity()
-    authority = CapabilityAuthority(issuer="ocor-mission-thread-authority")
     c3 = PostgresC3Service(postgres_dsn, admission=GOVERNED.admission())
     c3.initialize()
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
-    outbox_store, engine = governed_engine(authority, c3, context)
+    outbox_store, engine = governed_engine(c3, context)
     calls: list[Any] = []
     proposal = ACTIONS.proposal(
         MISSION_ACTION,
@@ -496,8 +467,6 @@ def test_action_denied_at_authority_halts_the_thread_before_any_effect(postgres_
         target=mission_id,
         governed_context_digest=context.digest(),
     )
-    # A lease granting the WRONG capability -- Authority must deny before
-    # any canonical commit, projection, event or causal step is ever reached.
     lease = ACTIONS.lease(proposal, capability_id="act:read-only")
     approval_set = ACTIONS.approval_set(proposal)
 
@@ -555,12 +524,10 @@ def test_typedb_projection_read_enforces_exact_at_commit_consistency_with_the_re
     )
     commit_receipt = c3.commit(command)
 
-    typedb = TypeDBExactCommitAdapter()
+    typedb = c4_world.projection(DIGEST_B)
     typedb.reset()
-    typedb.ingest(correlation_id, commit_receipt.commit_id, "payload")
-    # Deliberately never advance the watermark to this commit -- a read
-    # demanding EXACT_AT_COMMIT consistency must fail closed, never
-    # silently serve the row as if it were already exact.
+    # The commit is observed but never applied: a read demanding EXACT_AT_COMMIT must fail closed.
+    typedb.observe(commit_receipt.commit_id)
     with pytest.raises(C2Error) as excinfo:
         typedb.read(make_typedb_query(fact_id=correlation_id, context=context, required_commit=commit_receipt.commit_id))
     # NCP-U03 (NCR-C2-012): PROJECTION_NOT_READY, never a downgrade -- docs/OCOR_LLD_v1.1.md:369
@@ -572,12 +539,12 @@ def test_a_real_kafka_broker_restart_during_the_event_step_is_detected_and_recov
     correlation_id = str(uuid.uuid4())
     mission_id = f"urn:ocor:resource:mission-{correlation_id}"
 
-    kafka.produce(topic, [{"aggregate_id": mission_id, "correlation_id": correlation_id, "phase": "before-restart"}])
-    (before,) = kafka.consume(topic, 1)
+    kafka.produce([{"aggregate_id": mission_id, "correlation_id": correlation_id, "phase": "before-restart"}])
+    (before,) = kafka.consume(1)
     assert before.value["phase"] == "before-restart"
 
     kafka.restart_broker()
 
-    kafka.produce(topic, [{"aggregate_id": mission_id, "correlation_id": correlation_id, "phase": "after-restart"}])
-    records = kafka.consume(topic, 2)
+    kafka.produce([{"aggregate_id": mission_id, "correlation_id": correlation_id, "phase": "after-restart"}])
+    records = kafka.consume(2)
     assert [record.value["phase"] for record in records] == ["before-restart", "after-restart"]
