@@ -1494,6 +1494,16 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0060.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0060.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0060.log",
+        # OCOR-DEV-REM-0060: the regression-only requalification of 0031 (mission thread adapted under
+        # NCP-U12-TEST-REALIGNMENT-SCOPE and NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS; BR-003 not bindable,
+        # NCP-UNBINDABLE-REQUALIFICATIONS point 3) and the five decision requests of the unit, byte-identical.
+        "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0060.json",
+        "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0060.log",
+        "reports/development/decision_requests/NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS.md",
+        "reports/development/decision_requests/NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS.md",
+        "reports/development/decision_requests/NCP-U12-REASON-CODE-ENTRIES-PLAN.md",
+        "reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md",
+        "reports/development/decision_requests/NCP-U12-UNPRODUCED-REASON-CODES.md",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
