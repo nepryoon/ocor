@@ -2703,6 +2703,20 @@ def test_cache_stops_before_a_command_when_the_timeout_callback_refuses(tmp_path
     assert runner.calls == []
 
 
+def test_cache_rejects_a_command_result_that_is_not_a_code_and_text(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+
+    class BadRunner:
+        def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+            del argv, cwd, env, input, timeout, check
+            return type('Result', (), {'returncode': True, 'stdout': ''})()
+
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache command result is malformed'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', BadRunner(), timeout=5)
+    assert not (tmp_path / 'image-cache').exists()
+
+
 def test_cache_does_not_pull_or_build_while_preparing(tmp_path):
     lock = tmp_path / 'services.lock.json'
     write_lock(lock, [{'id': 'fuseki', 'build': {'base_image': FUSEKI_BASE}}])
