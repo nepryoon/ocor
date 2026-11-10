@@ -1,6 +1,6 @@
 # NCP-U12-CONTRACT-ERROR-CODES
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060` (NCP-U12 di
+Status: `DECIDED_BY_PO`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060` (NCP-U12 di
 `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, test; branch `governed/ocor-dev-rem-0060-ncp-u12-tests`, head `4aa955c`) e la
 voce `NCR-TESTS-004` di `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json`. Implementatore: Claude Code
 (Anthropic), implementatore di riserva.
@@ -140,3 +140,20 @@ l'inventario dell'unità (codici in prosa e `TB-CXT-03`), ed è la lettura più 
   runtime toccati.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, limiti e claim invariati (`E1=0`, `E2=0`, `Verified=0`, runtime
   `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-10
+
+`NCP-U12-CONTRACT-ERROR-CODES (2026-11-10)` — decisione del PO,
+ decisa su delega completa del PO, modello `grok-4.7`, effort `xhigh`.
+Opzioni adottate: **A1, B1, C1**, esattamente come descritte in questa richiesta
+al commit `ed75f85493f3c8814c08e0c162c4dd25d26c962e`, sha256
+`c6493ed79363e14aa7213e05fbe3b2dc7ee8e160abd231e42ede7bd89ef11223`.
+
+Cinque nuove voci `OPEN` `HIGH`, con i primi identificativi liberi verificati,
+pianificate in NCP-U15 (stima 3 → 5), e diciannove codici come divergenze note nel
+controllo di copertura. Il RED di `APPROVAL_EXPIRED` resta nella storia ed esce dalla
+suite. Perimetro C1 confermato. Per REM-0060 estensione fino alla tredicesima
+iterazione, massimo due cicli di riparazione e stop anticipato invariati.
+Nessun file di runtime cambia; nessuna riqualifica aggiuntiva.
+Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED,
+PoC e Production NO-GO. Nessun nuovo DEC.
