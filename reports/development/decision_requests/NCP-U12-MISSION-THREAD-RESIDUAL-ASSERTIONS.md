@@ -1,6 +1,6 @@
 # NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
+Status: `DECIDED_BY_PO` (era `OPEN_PO_NORMATIVE_DECISION_REQUIRED`). Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
 (NCP-U12 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, test; branch `governed/ocor-dev-rem-0060-ncp-u12-tests`, head
 `496d745d9e97610c8fe6bd21e2db94844e22920c`) e la voce `NCR-TESTS-001` di
 `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json`. Implementatore: Claude Code (Anthropic), implementatore di
@@ -76,3 +76,16 @@ L'opzione 2 conserva un esito ottenuto da un metodo legacy, che A1 esclude.
   supersession, qualificante per i soli requisiti legabili).
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, registri normativi, limiti e claim invariati
   (`E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-10
+
+Decisione del PO su delega completa: `NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10)`, **opzione 1**, come descritta in questo file al commit `a09370d7ef0e26b447a2ea5020bd67555dcc2ffa` (sha256 `1506d2d678b830e1137c169b30431ddd16031f2e6a111f094782e484a68b5e36`, verificata prima dell'attuazione); decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS` (branch `governed/decision-request-ncp-u12-mission-thread-residual-assertions`, commit `a09370d7ef0e26b447a2ea5020bd67555dcc2ffa`, file `reports/development/decision_requests/NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS.md`, sha256 `1506d2d678b830e1137c169b30431ddd16031f2e6a111f094782e484a68b5e36`) adottando l'**opzione 1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
