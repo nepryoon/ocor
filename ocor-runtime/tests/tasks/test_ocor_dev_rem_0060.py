@@ -345,8 +345,13 @@ NOT_REASON_CODES = {
 }
 
 
+# The C6 engine records the cause of a refused transition as the reason_code of the FSM transition
+# (ocor-runtime/src/ocor_runtime/c6/engine.py:707), so a cause_code assertion asserts that reason code.
+REASON_FIELDS = frozenset({"reason_code", "cause_code"})
+
+
 def _asserts_reason_code(node: ast.AST) -> bool:
-    return any((isinstance(n, ast.Attribute) and n.attr == "reason_code") or (isinstance(n, ast.Constant) and n.value == "reason_code")
+    return any((isinstance(n, ast.Attribute) and n.attr in REASON_FIELDS) or (isinstance(n, ast.Constant) and n.value in REASON_FIELDS)
                for n in ast.walk(node))
 
 
@@ -386,7 +391,8 @@ def _reason_code_assertions() -> list[tuple[str, set[str], set[str]]]:
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
             definitions: dict[str, ast.AST] = {node.name: node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
-            helpers = {name for name, node in functions.items() if not name.startswith("test")
+            methods = {item.name: item for node in tree.body if isinstance(node, ast.ClassDef) for item in node.body if isinstance(item, ast.FunctionDef)}
+            helpers = {name for name, node in {**methods, **functions}.items() if not name.startswith("test")
                        and any(isinstance(inner, (ast.Assert, ast.Return)) and _asserts_reason_code(inner) for inner in ast.walk(node))}
             imported = {package: _component_names(tree, package) for package in packages}
             # module-level tables a parametrisation names (for example ``@pytest.mark.parametrize(..., FAULTS)``)
@@ -395,7 +401,8 @@ def _reason_code_assertions() -> list[tuple[str, set[str], set[str]]]:
             for node in ast.walk(tree):
                 if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test")):
                     continue
-                called = {inner.func.id for inner in ast.walk(node) if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name)}
+                called = {inner.func.id if isinstance(inner.func, ast.Name) else inner.func.attr for inner in ast.walk(node)
+                          if isinstance(inner, ast.Call) and isinstance(inner.func, (ast.Name, ast.Attribute))}
                 direct = any(isinstance(inner, ast.Assert) and _asserts_reason_code(inner) for inner in ast.walk(node))
                 if not (direct or called & helpers):
                     continue
