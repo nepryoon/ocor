@@ -747,7 +747,70 @@ def test_ncr_tests_004_an_expired_approval_set_ends_the_action_with_the_code_on_
     assert suite.untouched()
 
 
-# --- NCR-TESTS-005 -------------------------------------------------------------------------
+def test_ncr_tests_004_an_emergency_stop_at_the_pre_dispatch_check_cancels_the_action_with_the_code_on_its_transition() -> None:
+    """ADD v1.3 :2340 (Action Type error code EMERGENCY_STOP_ACTIVE) and LLD v1.1 :295 (ACT-T23a, cancel/stop
+    at PRE_DISPATCH_CHECK, destination CANCELLED); option B2 of NCP-U12-UNPRODUCED-REASON-CODES: the code is
+    the reason_code field of the FSM transition record; nothing reaches C3 or the sink."""
+    import test_ocor_dev_rem_0053 as action_path
+    from ocor_runtime.c6.fsm import load_transitions
+
+    suite = action_path.EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = action_path._admitted(suite)
+    lease = suite.lease(proposal, decision)
+    suite.governed.fence.stop()
+    assert suite.denial(proposal, approval=approval_set, decision=decision, lease=lease) == ("INVALIDATED", "EMERGENCY_STOP_ACTIVE")
+    destination = {item.transition_id: item for item in load_transitions()}["ACT-T23a"].destination
+    action = _action_trace(world, proposal)
+    assert world.fsm.current_state(proposal.action_instance_id) == destination
+    assert (action[-1].transition_id, action[-1].context.get("reason_code")) == ("ACT-T23a", "EMERGENCY_STOP_ACTIVE")
+    assert suite.untouched()
+
+
+def test_ncr_tests_004_the_c5_backbone_refuses_an_unknown_subscription_and_an_unwritable_audit() -> None:
+    """ADD v1.3 :2670 and :2673 (Event Subscription Contract error codes SUBSCRIPTION_NOT_FOUND and
+    CONTROL_PLANE_UNAVAILABLE): on the real C5 backbone (isolated Kafka broker, PostgreSQL store and audit) a
+    poll of a subscription that does not exist is SUBSCRIPTION_NOT_FOUND, a known one polls; an admission
+    whose audit record cannot be written is CONTROL_PLANE_UNAVAILABLE and nothing is published."""
+    import os
+
+    import psycopg
+    import test_ocor_dev_rem_0051 as backbone_cases
+    from c5_kafka_qualification import KafkaBrokerError, QualificationKafkaBroker
+    from ocor_runtime.c5.envelope import BackboneError
+
+    dsn = os.environ.get("OCOR_LIVE_POSTGRES_DSN", "")
+    if not dsn:
+        pytest.fail("OCOR_LIVE_POSTGRES_DSN is mandatory: the C5 store and audit are durable on PostgreSQL")
+    schema = f"ocor_rem0060_{uuid.uuid4().hex[:12]}"
+    try:
+        broker, _container, volume = QualificationKafkaBroker.provision(f"ocor-rem0060-{uuid.uuid4().hex[:12]}")
+    except KafkaBrokerError as error:
+        pytest.fail(f"a real, isolated Kafka broker is mandatory qualifying evidence: {error}")
+    try:
+        topic = broker.create_topic(f"ocor-rem0060-{uuid.uuid4().hex[:12]}")
+        rig = backbone_cases.build_rig(broker, topic, dsn, schema)
+        subscription = rig.backbone.subscribe(backbone_cases.subscription_contract(), principal=backbone_cases.CONSUMER)
+        assert rig.backbone.poll(subscription, cursor=None, max_records=1, timeout_s=1).events == ()
+        with pytest.raises(BackboneError) as unknown:
+            rig.backbone.poll(f"{subscription}-unknown", cursor=None, max_records=1, timeout_s=1)
+        assert unknown.value.reason_code == "SUBSCRIPTION_NOT_FOUND"
+
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            connection.execute(f'DROP SCHEMA "{schema}_audit" CASCADE')
+        with pytest.raises(BackboneError) as unavailable:
+            rig.backbone.publish(rig.signed(), transport_principal=backbone_cases.CONSUMER)
+        assert unavailable.value.reason_code == "CONTROL_PLANE_UNAVAILABLE"
+        assert rig.topic_records() == 0
+    finally:
+        try:
+            broker.destroy(volume)
+        finally:
+            with psycopg.connect(dsn, autocommit=True) as connection:
+                connection.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+                connection.execute(f'DROP SCHEMA IF EXISTS "{schema}_audit" CASCADE')
+
+
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
 
 
