@@ -45,6 +45,16 @@ from referencing.jsonschema import DRAFT202012
 
 from ocor_runtime.kernel.canonical import canonical_bytes, canonical_digest
 
+
+def _load_json(text: str) -> Any:
+    """Parse the JSON text of a versioned file."""
+    return json.loads(text)
+
+
+def _load_yaml(text: str) -> Any:
+    """Parse the YAML text of a versioned file."""
+    return yaml.safe_load(text)
+
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACTS = ROOT / "ocor-runtime/docs/governance_dossier/contracts"
 ADD = ROOT / "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
@@ -176,7 +186,7 @@ WRONG_KINDS: tuple[Any, ...] = (None, True, 7, 1.5, "x", [], {})
 def _contract_resources() -> tuple[tuple[str, Resource], ...]:
     resources = []
     for path in sorted(CONTRACTS.glob("*.schema.json")):
-        document = json.loads(path.read_text(encoding="utf-8"))
+        document = _load_json(path.read_text(encoding="utf-8"))
         resources.append((path.resolve().as_uri(), Resource.from_contents(document, default_specification=DRAFT202012)))
     return tuple(resources)
 
@@ -193,7 +203,7 @@ def _add_schemas() -> tuple[dict[str, Any], ...]:
                 end += 1
             body = "\n".join(lines[index + 1 : end])
             if '"$schema"' in body:
-                schemas.append(json.loads(body))
+                schemas.append(_load_json(body))
             index = end
         index += 1
     return tuple(schemas)
@@ -222,7 +232,7 @@ class Surface:
 def _json_surfaces() -> dict[str, Surface]:
     surfaces: dict[str, Surface] = {}
     for name in (GATEWAY, MEMORY):
-        document = yaml.safe_load((CONTRACTS / name).read_text(encoding="utf-8"))
+        document = _load_yaml((CONTRACTS / name).read_text(encoding="utf-8"))
         uri = (CONTRACTS / name).resolve().as_uri()
         for component, node in document["components"]["schemas"].items():
             surface_id = f"{name}#/components/schemas/{component}"

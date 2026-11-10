@@ -35,8 +35,20 @@ import json
 import re
 import uuid
 from pathlib import Path
+from typing import Any
 
 import yaml
+
+
+def _load_json(text: str) -> Any:
+    """Parse the JSON text of a versioned file."""
+    return json.loads(text)
+
+
+def _load_yaml(text: str) -> Any:
+    """Parse the YAML text of a versioned file."""
+    return yaml.safe_load(text)
+
 
 ROOT = Path(__file__).resolve().parents[3]
 RUNTIME_TESTS = ROOT / "ocor-runtime/tests"
@@ -126,7 +138,7 @@ def _test_modules() -> list[Path]:
 def _openapi_component_schemas() -> set[str]:
     surface: set[str] = set()
     for name in ("ocor-named-query-gateway.openapi.yaml", "ocor-governed-memory.openapi.yaml"):
-        document = yaml.safe_load((CONTRACTS / name).read_text(encoding="utf-8"))
+        document = _load_yaml((CONTRACTS / name).read_text(encoding="utf-8"))
         surface.update(f"{name}#/components/schemas/{schema}" for schema in document["components"]["schemas"])
     return surface
 
@@ -137,8 +149,6 @@ def _proto_messages() -> set[str]:
 
 
 def _add_embedded_schemas() -> set[str]:
-    import json
-
     lines = ADD.read_text(encoding="utf-8").split("\n")
     found: set[str] = set()
     index = 0
@@ -150,7 +160,7 @@ def _add_embedded_schemas() -> set[str]:
                 end += 1
             body = "\n".join(lines[index + 1 : end])
             if '"$schema"' in body:
-                found.add(f"ADD#{json.loads(body)['$id']}")
+                found.add(f"ADD#{_load_json(body)['$id']}")
             index = end
         index += 1
     return found
@@ -498,7 +508,7 @@ def _uncovered() -> list[tuple[str, str, str, int]]:
 
 def test_ncr_tests_004_known_divergences_are_open_register_entries():
     """Every known divergence is an inventoried code and names an OPEN entry of its component in the register."""
-    entries = {entry["id"]: entry for entry in json.loads(REGISTER.read_text(encoding="utf-8"))["entries"]}
+    entries = {entry["id"]: entry for entry in _load_json(REGISTER.read_text(encoding="utf-8"))["entries"]}
     inventoried = {(row[0], row[4]) for row in CLOSED_REASON_CODES}
     for (component, code), entry_id in KNOWN_DIVERGENCES.items():
         assert (component, code) in inventoried, f"{component} {code} is not inventoried"

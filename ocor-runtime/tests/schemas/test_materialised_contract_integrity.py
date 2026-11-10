@@ -23,6 +23,16 @@ import pytest
 import yaml
 from jsonschema import Draft202012Validator
 
+
+def _load_json(text: str) -> Any:
+    """Parse the JSON text of a versioned file."""
+    return json.loads(text)
+
+
+def _load_yaml(text: str) -> Any:
+    """Parse the YAML text of a versioned file."""
+    return yaml.safe_load(text)
+
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACTS = ROOT / "ocor-runtime/docs/governance_dossier/contracts"
 LLD = ROOT / "docs/OCOR_LLD_v1.1.md"
@@ -116,17 +126,17 @@ def test_generator_refuses_a_source_set_with_an_unmanifested_or_missing_file(tmp
 
 @pytest.mark.parametrize("name", [name for name in MATERIALISED if name.endswith(".schema.json")])
 def test_json_schema_contracts_are_draft_2020_12_closed_and_uniquely_identified(name: str):
-    schema = json.loads((CONTRACTS / name).read_text(encoding="utf-8"))
+    schema = _load_json((CONTRACTS / name).read_text(encoding="utf-8"))
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     Draft202012Validator.check_schema(schema)
     assert schema["type"] == "object" and schema["additionalProperties"] is False
-    identifiers = [json.loads((CONTRACTS / other).read_text(encoding="utf-8"))["$id"] for other in MATERIALISED if other.endswith(".schema.json")]
+    identifiers = [_load_json((CONTRACTS / other).read_text(encoding="utf-8"))["$id"] for other in MATERIALISED if other.endswith(".schema.json")]
     assert len(set(identifiers)) == len(identifiers)
 
 
 @pytest.mark.parametrize("name", [name for name in MATERIALISED if name.endswith(".openapi.yaml")])
 def test_openapi_contracts_are_3_1_with_resolvable_references(name: str):
-    document = yaml.safe_load((CONTRACTS / name).read_text(encoding="utf-8"))
+    document = _load_yaml((CONTRACTS / name).read_text(encoding="utf-8"))
     assert re.fullmatch(r"3\.1\.\d+", document["openapi"])
 
     def walk(node: Any):
@@ -146,7 +156,7 @@ def test_openapi_contracts_are_3_1_with_resolvable_references(name: str):
         if target:
             target = target.removeprefix("./")
             assert "/" not in target and target in MATERIALISED, f"{name} references the unmanifested file {target}"
-            base = json.loads((CONTRACTS / target).read_text(encoding="utf-8")) if target.endswith(".json") else yaml.safe_load((CONTRACTS / target).read_text(encoding="utf-8"))
+            base = _load_json((CONTRACTS / target).read_text(encoding="utf-8")) if target.endswith(".json") else _load_yaml((CONTRACTS / target).read_text(encoding="utf-8"))
         for part in [segment for segment in pointer.split("/") if segment]:
             base = base[part.replace("~1", "/").replace("~0", "~")]
         assert base is not None
