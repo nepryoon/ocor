@@ -364,9 +364,11 @@ def _credited(test: str, touched: set[str], code: str) -> set[str]:
     return {package for package in touched if (module, package, code) not in COLLABORATOR_CREDITS}
 
 
-# The C6 engine records the cause of a refused transition as the reason_code of the FSM transition
-# (ocor-runtime/src/ocor_runtime/c6/engine.py:707), so a cause_code assertion asserts that reason code.
-REASON_FIELDS = frozenset({"reason_code", "cause_code"})
+# Option B2 of NCP-U12-UNPRODUCED-REASON-CODES: only reason_code counts. A cause_code assertion does not;
+# for C6 the code must be asserted as the reason_code field of the FSM transition record (the context the
+# engine persists with the transition, c6/engine.py:648-667, :707), not as the cause of the engine error.
+REASON_FIELDS = frozenset({"reason_code"})
+RECORD_FIELD_COMPONENTS = frozenset({"C6"})
 
 
 def _asserts_reason_code(node: ast.AST) -> bool:
@@ -397,12 +399,18 @@ def _touches(node: ast.AST, names: set[str], package: str) -> bool:
                for inner in ast.walk(node))
 
 
-def _reason_code_assertions() -> list[tuple[str, set[str], set[str]]]:
-    """(test id, packages the test touches, string constants) of every test function that asserts a
-    reason_code, directly or through a helper of its module that asserts or returns one; a package is
+def _asserts_record_reason_code(node: ast.AST) -> bool:
+    """The test asserts the ``reason_code`` field of a record (a mapping key), as the FSM transition record."""
+    return any(isinstance(inner, ast.Assert) and any(isinstance(n, ast.Constant) and n.value == "reason_code" for n in ast.walk(inner))
+               for inner in ast.walk(node))
+
+
+def _reason_code_assertions() -> list[tuple[str, set[str], set[str], bool]]:
+    """(test id, packages the test touches, string constants, whether it asserts the reason_code field of
+    a record) of every test function that asserts a reason_code, directly or through a helper of its module that asserts or returns one; a package is
     touched when the test or one of the helpers it calls names an import of it or loads it by name."""
     packages = sorted({package for row in CLOSED_REASON_CODES for package in row[1]})
-    found: list[tuple[str, set[str], set[str]]] = []
+    found: list[tuple[str, set[str], set[str], bool]] = []
     for base in (RUNTIME_TESTS, ROOT / "reports/tests"):
         for path in sorted(base.rglob("test_*.py")):
             if ".venv" in path.parts:
@@ -438,7 +446,7 @@ def _reason_code_assertions() -> list[tuple[str, set[str], set[str]]]:
                         arg.arg for part in reached if isinstance(part, ast.FunctionDef) for arg in part.args.args}
                 touched = {package for package in packages if any(_touches(part, imported[package], package) for part in scope)}
                 constants = {inner.value for part in parts for inner in ast.walk(part) if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
-                found.append((f"{path.relative_to(ROOT)}::{node.name}", touched, constants))
+                found.append((f"{path.relative_to(ROOT)}::{node.name}", touched, constants, _asserts_record_reason_code(node)))
     return found
 
 
@@ -452,14 +460,15 @@ def test_ncr_tests_004_inventory_is_anchored():
     assertions = _reason_code_assertions()
     for module, package, code in COLLABORATOR_CREDITS:
         assert any(test.startswith(f"{module}::") and package in touched and code in constants
-                   for test, touched, constants in assertions), f"stale collaborator credit {module} {package} {code}"
+                   for test, touched, constants, _record in assertions), f"stale collaborator credit {module} {package} {code}"
 
 
 def test_ncr_tests_004_conforms():
     """OCOR_TEST_STRATEGY.md :28-29 (failure codes), option D1: complete coverage of the inventory."""
     assertions = _reason_code_assertions()
     uncovered = [f"{component} {code} ({source}:{line})" for component, packages, source, line, code in CLOSED_REASON_CODES
-                 if not any(code in constants and _credited(test, touched, code) & set(packages) for test, touched, constants in assertions)]
+                 if not any(code in constants and _credited(test, touched, code) & set(packages)
+                            and (record or component not in RECORD_FIELD_COMPONENTS) for test, touched, constants, record in assertions)]
     assert uncovered == [], f"closed reason codes without a negative test asserting them: {uncovered}"
 
 
