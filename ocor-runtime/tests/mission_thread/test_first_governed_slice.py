@@ -27,6 +27,8 @@ import re
 import sys
 import tempfile
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -356,8 +358,9 @@ def run_mission_thread(
     )
 
 
-@pytest.fixture
-def kafka_topic(typedb_reachable: None, fuseki_reachable: None, postgres_dsn: str):
+@contextmanager
+def _kafka_backbone(postgres_dsn: str) -> Iterator[tuple[_Backbone, str]]:
+    """An isolated Kafka broker with one topic and the C5 backbone over it, destroyed on exit."""
     try:
         broker, _container, volume = QualificationKafkaBroker.provision(f"ocor-mission-thread-{uuid.uuid4().hex[:12]}")
     except KafkaBrokerError as error:
@@ -369,8 +372,9 @@ def kafka_topic(typedb_reachable: None, fuseki_reachable: None, postgres_dsn: st
         broker.destroy(volume)
 
 
-@pytest.fixture
-def qdrant_collection(postgres_dsn: str):
+@contextmanager
+def _memory_backends(postgres_dsn: str) -> Iterator[tuple[Any, None]]:
+    """Qdrant, OpenBao and the governed-memory backends over them, released on exit."""
     qdrant = memory_world.r.base.QdrantHarness.provision()
     bao = memory_world.OpenBaoHarness.provision()
     backends = memory_world.Backends(dsn=postgres_dsn, qdrant=qdrant, bao=bao)
@@ -384,6 +388,18 @@ def qdrant_collection(postgres_dsn: str):
                 bao.destroy()
             finally:
                 qdrant.destroy()
+
+
+@pytest.fixture
+def kafka_topic(typedb_reachable: None, fuseki_reachable: None, postgres_dsn: str):
+    with _kafka_backbone(postgres_dsn) as backbone:
+        yield backbone
+
+
+@pytest.fixture
+def qdrant_collection(postgres_dsn: str):
+    with _memory_backends(postgres_dsn) as backends:
+        yield backends
 
 
 def test_mission_thread_produces_correlated_receipts_across_all_governed_components(
