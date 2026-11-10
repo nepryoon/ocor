@@ -1,6 +1,6 @@
 # NCP-U12-TEST-REALIGNMENT-SCOPE
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
+Status: `DECIDED_BY_PO` (era `OPEN_PO_NORMATIVE_DECISION_REQUIRED`). Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
 (NCP-U12 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, test; branch `governed/ocor-dev-rem-0060-ncp-u12-tests`, base
 `913b43d59017468ba694c1f638ec370c889c8bfb`, RED `6604033`) e le voci `NCR-TESTS-001`, `NCR-TESTS-003` e
 `NCR-TESTS-004` di `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json`. Aperta all'avvio dell'unità secondo
@@ -46,23 +46,6 @@ test esistenti. Implementatore: Claude Code (Anthropic), implementatore di riser
   componenti mantenuti queste asserzioni non possono restare identiche: l'adattamento di sola costruzione richiede
   «same assertions», il caso 1 parla di un elemento normativo «che la voce realizza» e `NCR-TESTS-001` realizza
   FR-172 (Register v1.1 riga 427) e LLD v1.1 riga 409, non gli stati di C7, C8 o C5.
-- **Altre asserzioni dello stesso tipo (emendamento del 2026-11-10).** Una composizione di prova del thread con i
-  componenti mantenuti, eseguita sullo stack reale dopo l'apertura della richiesta (i cinque test del modulo passano
-  con le sostituzioni descritte qui), mostra altre quattro asserzioni dello stesso file al commit `913b43d` che non
-  possono restare identiche, omesse nella prima stesura: righe 161 `assert outcome.status is
-  ResolutionStatus.IDENTIFIED` e 162 `assert outcome.canonical_id is not None`, perché la risoluzione dell'identità del
-  componente mantenuto (`IdentityBackedAuthority.resolve`, `ocor-runtime/src/ocor_runtime/c2/gateway.py` righe
-  200-215) restituisce l'identificativo canonico come stringa, oppure il valore `ABSTAIN`, e non l'esito della classe
-  legacy; righe 432 `assert receipts.causal_outcome.lineage["correlation_id"] == correlation_id` e 433 `assert
-  receipts.causal_outcome.lineage["causation_id"] == receipts.action_event_id`, perché il runtime causale mantenuto
-  tiene gli identificativi di traccia fuori dalla lineage e dal digest di riproducibilità, nel campo `trace` del
-  risultato (`ocor-runtime/src/ocor_runtime/c7/runtime.py` righe 21-22, 450 e 695; voce `NCR-C7-005`; Register v1.1
-  riga 61, NFR-007; la lineage di LLD v1.1 riga 177 e di ADD v1.3 righe 2980-2990 non comprende la traccia). Gli
-  altri cambiamenti richiesti dalla composizione sono di sola costruzione e non toccano asserzioni: gli input della
-  query causale sono un SCM registrato con il suo insieme fattuale (il modello dello spike non è un SCM ammesso dal
-  runtime mantenuto); il valore di un record letto dal backbone di C5 è il `payload` dell'evento consegnato, così le
-  righe 577 e 583 restano identiche; la proiezione TypeDB non ancora allineata al commit si ottiene osservando il
-  commit senza applicarlo, così la riga 567 resta identica.
 - **Test di integrità degli schemi.** `ocor-runtime/tests/schemas/test_schema_integrity.py` righe 18-19 legge
   `ocor-runtime/schemas` (artefatti della slice legacy) e alla riga 46 asserisce `"no normative JSON schemas found"`,
   cioè presenta quell'insieme come normativo; la voce `NCR-TESTS-003` chiede che l'integrità parta dai sei contratti di
@@ -102,16 +85,13 @@ A2. **Nessuna classe legacy nel test, sostituzione nei componenti.** NCP-U12 sos
 
 ### Opzioni del quesito B
 
-B1. **Riallineamento al valore del componente mantenuto, con RED (raccomandata).** Le asserzioni delle righe 161,
-   162, 241, 429, 430, 431, 432 e 433 si riallineano come nel caso 1 del punto 5 del piano, ciascuna con la citazione
-   della norma in un commento, RED con fingerprint sul thread con i componenti mantenuti e GREEN: riga 431
-   `== "ESTIMATED"` (ADD v1.3 riga 2981); righe 241 e 430 l'esito tipizzato dell'identità prodotto dal ruolo
-   `Fusion/Identity` del kernel C8 corrente sopra la risoluzione del gateway, uguale all'identità canonica risolta (ADD
-   v1.3 righe 3057-3064 e 3101-3106); righe 161 e 162 l'identità canonica restituita dalla risoluzione del gateway,
-   uguale a quella registrata e diversa da `ABSTAIN` (`c2/gateway.py` righe 200-215); riga 429 `payload_digest` nella
-   forma `sha256:` seguita da 64 cifre esadecimali minuscole (LLD v1.1 riga 154); righe 432 e 433 gli stessi
-   identificativi letti dal campo `trace` del risultato causale invece che dalla lineage (`NCR-C7-005`, Register v1.1
-   riga 61). Numero di funzioni e di asserzioni invariato, nessun valore accettato in più; tutte le altre righe sono
+B1. **Riallineamento al valore del componente mantenuto, con RED (raccomandata).** Le asserzioni delle righe 241,
+   429, 430 e 431 si riallineano come nel caso 1 del punto 5 del piano, ciascuna con la citazione della norma in un
+   commento, RED con fingerprint sul thread con i componenti mantenuti e GREEN: riga 431 `== "ESTIMATED"` (ADD v1.3
+   riga 2981); righe 241 e 430 l'esito tipizzato dell'identità prodotto dal ruolo `Fusion/Identity` del kernel C8
+   corrente sopra la risoluzione del gateway, uguale all'identità canonica risolta (ADD v1.3 righe 3057-3064 e
+   3101-3106); riga 429 `payload_digest` nella forma `sha256:` seguita da 64 cifre esadecimali minuscole (LLD v1.1 riga
+   154). Numero di funzioni e di asserzioni invariato, nessun valore accettato in più; tutte le altre righe sono
    adattamenti di sola costruzione con confronto dell'albero sintattico. La riqualifica di `OCOR-DEV-0031` resta con
    supersession, qualificante per i soli requisiti legabili secondo `NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02)`.
 B2. **Asserzioni invariate, modulo nuovo.** Il modulo esistente resta invariato e qualificato come legacy nella
@@ -167,3 +147,16 @@ moduli sigillati.
   task toccati.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, registri normativi, limiti e claim invariati
   (`E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-10
+
+Decisione del PO su delega completa: `NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10)`, **opzioni A1, B1, C1 e D1**, come descritte in questo file al commit `035b76f9ec82026b21baaa447f47b4184f01b716` (sha256 `3b668f06d27a6dce6f689f63eb3b4dfdeaf8f90fd28a20d3d085135036896652`, verificata prima dell'attuazione); decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh. Il testo di questo file è quello del commit deciso: l'emendamento del commit `bb1cea02370d0f8adfa89bbd7ac95de14ddbbf82`, pubblicato mentre la decisione era in corso e non deciso, è ritirato da questo commit; le quattro asserzioni che aggiungeva (righe 161, 162, 432 e 433) vanno oltre l'opzione B1 decisa e sono oggetto della decision request `NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS`, come prescrive il punto 2 della decisione. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U12-TEST-REALIGNMENT-SCOPE` (branch `governed/decision-request-ncp-u12-test-realignment-scope`, commit `035b76f9ec82026b21baaa447f47b4184f01b716`, file `reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md`, sha256 `3b668f06d27a6dce6f689f63eb3b4dfdeaf8f90fd28a20d3d085135036896652`) adottando per il quesito A l'**opzione A1**; per il quesito B l'**opzione B1**; per il quesito C l'**opzione C1**; per il quesito D l'**opzione D1**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
