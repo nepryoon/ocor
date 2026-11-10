@@ -229,6 +229,8 @@
     }
   ],
   "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2 and 5 (NCP-U12 row); NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 4; NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) A1 B1 C1 D1, NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10) option 1, NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10) A1 B2 and NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) A1 B1 (decided on full delegation of the PO); NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10) A1 (normative decision of the PO); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); SELF-CHECK-CHECKLIST (2026-11-08); SELF-CHECK-CLASS-COVERAGE (2026-11-08); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "diagnostic_raw_output_format": "JSONL of original diagnostic run data with generated credentials redacted; every item retains both the original digest and the archived-output digest. Partial test counts are excluded from qualification.",
+  "diagnostic_raw_output_sha256": "f257405580e90b46cc2e983b02aab5a968b6993764e7e9ac213d8c1dd044930c",
   "evidence_paths_allowlist_precheck": {
     "method": "temporary detached worktree at the head; a placeholder for each new path, a trailing newline appended to each existing file of the list; scripts/validate_ocor_development_plan.py --base-ref <merge-base with origin/main> --authorized-extension (the command of the plan step of PRE-CAMPAIGN-GATE); worktree removed, no placeholder committed",
     "path_count": 23,
@@ -404,7 +406,8 @@
     {
       "agent": "Codex CLI",
       "iterations": [
-        8
+        8,
+        9
       ],
       "model": "GPT-6 (Codex; exact variant not exposed to the session)",
       "provider": "OpenAI",
@@ -881,7 +884,7 @@
       }
     ]
   },
-  "iteration_limit": "Iteration 8 of estimate 3, extension through iteration 13 by NCP-U12-CONTRACT-ERROR-CODES (2026-11-10) option B1; at most two repair cycles and early stop after two iterations without progress remain.",
+  "iteration_limit": "Iteration 9 of estimate 3, extension through iteration 13 under NCP-U12-CONTRACT-ERROR-CODES (2026-11-10), B1. No repair cycle consumed by the infrastructure attempts.",
   "known_divergences_registered": {
     "NCR-C2-014": [
       "C2 CAPABILITY_DENIED",
@@ -1064,6 +1067,116 @@
     "every surface of the materialised contracts has a closed-record, exact-field-set, canonical-bytes, digest and negative-corpus check",
     "the reason-code inventory makes every closed code of ADD v1.3 and LLD v1.1 either asserted by a negative test or an open register entry"
   ],
+  "qualification_infrastructure": {
+    "assertion_failures_observed": 0,
+    "attempts": [
+      {
+        "attempt": 1,
+        "counts_transferred": false,
+        "diagnosis_sha256": "d774bd8dd5f4ce352fc3bd1443050bd2a1e436c8786cb296aa6510205f3ae929"
+      },
+      {
+        "attempt": 2,
+        "counts_transferred": false,
+        "diagnosis_sha256": "733f292b2c56bbf0284d3add72fcf40182e2bfc455b5e45465509917985a8c85"
+      }
+    ],
+    "code_head": "4be4bdd14773de0522e65b960c2bb64043f52ece",
+    "full_suite": "NOT_COMPLETED; no qualifying full-suite result",
+    "last_attempt": {
+      "duration_seconds": 645.202,
+      "host_residue": {
+        "containers": [],
+        "networks": [],
+        "root_image": false,
+        "volumes": []
+      },
+      "lanes_run": 4,
+      "mode": "FOUR_LANE",
+      "power_end": {
+        "read_at": "2026-11-10T18:54:05Z",
+        "source": "MAINS",
+        "supplies": {
+          "ADP0": {
+            "online": "1",
+            "type": "Mains"
+          },
+          "BAT0": {
+            "status": "Not charging",
+            "type": "Battery"
+          },
+          "hidpp_battery_12": {
+            "online": "1",
+            "status": "Discharging",
+            "type": "Battery"
+          },
+          "ucsi-source-psy-USBC000:001": {
+            "online": "0",
+            "status": "Not charging",
+            "type": "USB"
+          },
+          "ucsi-source-psy-USBC000:002": {
+            "online": "0",
+            "status": "Not charging",
+            "type": "USB"
+          }
+        }
+      },
+      "power_start": {
+        "read_at": "2026-11-10T18:43:19Z",
+        "source": "MAINS",
+        "supplies": {
+          "ADP0": {
+            "online": "1",
+            "type": "Mains"
+          },
+          "BAT0": {
+            "status": "Not charging",
+            "type": "Battery"
+          },
+          "hidpp_battery_12": {
+            "online": "1",
+            "status": "Discharging",
+            "type": "Battery"
+          },
+          "ucsi-source-psy-USBC000:001": {
+            "online": "0",
+            "status": "Not charging",
+            "type": "USB"
+          },
+          "ucsi-source-psy-USBC000:002": {
+            "online": "0",
+            "status": "Not charging",
+            "type": "USB"
+          }
+        }
+      },
+      "teardown": [
+        {
+          "lane": 1,
+          "sandbox_found": true,
+          "status": "PASS"
+        },
+        {
+          "lane": 2,
+          "sandbox_found": true,
+          "status": "PASS"
+        },
+        {
+          "lane": 3,
+          "sandbox_found": true,
+          "status": "PASS"
+        },
+        {
+          "lane": 4,
+          "sandbox_found": true,
+          "status": "PASS"
+        }
+      ]
+    },
+    "next_action": "No further infrastructure rerun. Request a PO decision on a governed remedy for repeated pinned-image acquisition within the unchanged 600-second bootstrap budget. No verifier request and no seal.",
+    "status": "BLOCKED_RECURRENT_PROVISIONING_BUDGET_EXHAUSTION"
+  },
   "record_coherence_scan": {
     "command": "python3 ~/.ocor-codex/rem-0060/iter6/coherence_scan.py reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json (script sha256 fa17106063c170651cfe60201342097dbe47fcd69922129de962c3cdb3c498ff)",
     "compares": "agent identities and keys of implementers (and of the preventive reviewer and roles when present), decision request commits and sha256 at the request and disposition commits and byte identity on the head, TDD and self-check commits in the head history, latest records of the requalifications, language of free texts",
