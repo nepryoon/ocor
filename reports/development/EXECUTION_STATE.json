@@ -1,26 +1,18 @@
 {
   "active_iteration": {
-    "baseline_commit": "78dcf2b256b9257b8b94482ee21fbf58e148844c",
-    "branch": "governed/state-sync-rem0060-iter9-close-20261110",
+    "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
+    "branch": "governed/state-sync-rem0061-pre-20261110",
     "campaign_background_processes_remaining": false,
-    "change_set": "CC-OCOR-DELIVERY-COMPLETION",
-    "executor": "Grok Build grok-4.7 / xAI, riserva dopo quota Codex esaurita; preparazione del checkpoint Codex CLI 0.164.0 / OpenAI",
+    "change_set": "OCOR-DEV-REM-0061",
+    "executor": "Grok Build grok-4.7 / xAI",
     "host_memory_at_sync": {
-      "MemAvailable": 50813400,
+      "MemAvailable": 47701028,
       "MemTotal": 64199668
     },
-    "next_action": "Attendere la disposition di REM-0060-LANE-IMAGE-PROVISIONING (draft PR #591, commit 05531507319e217032bafd475538e65b7cb12def, sha256 fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734). Rilettura di ~/.ocor-codex/openhands_preamble.md alle 2026-11-10T19:56:06.944628+00:00: nessuna sezione decide la richiesta (sha256 4d26a992c9e93e719835b1a282bea726ca806e475404109576c719afc14194c4, mtime 2026-11-10 18:20:02 +0100). PR #592 mergiata: head 4a36046e288db53ed00f8617b35a0baf1432a405, merge 78dcf2b256b9257b8b94482ee21fbf58e148844c, 13 check obbligatori success. Nessun ulteriore rerun della campagna attuale: due esaurimenti del provisioning di 600 s sullo stesso codice/test/harness. Con opzione 1: assegnare la prima REM libera alla cache locale verificata delle immagini, inventario, RED/GREEN e ciclo completo nel perimetro esatto della richiesta; poi riprendere NCP-U12 dal WIP b869cc9c0e92b6d23b386cf5162c07d3ebc12aec, branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, allineamento non distruttivo e nuova campagna dopo il merge della remediation. Con opzione 2: nessun tentativo prima della misura esterna richiesta. NCP-U12 iterazione 9 di stima 3, estensione fino alla tredicesima, massimo due cicli di riparazione; nessuna verifica o sigillo finch\u00e9 manca la full qualificante. Implementatori del task: Claude Code/Anthropic e Codex/OpenAI; chiusura CI della PR #592: Grok Build grok-4.7 / xAI, riserva per quota. Revisore preventivo Codex/OpenAI; verifier solo xAI o Google. Dopo NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT e change set G7/NCP-U14/NCP-U15 prima di G6. Claim invariati.",
-    "phase": "REM_0060_STATE_SYNC_CI_CLOSE",
-    "preamble_recheck": {
-      "decision_id": "REM-0060-LANE-IMAGE-PROVISIONING",
-      "observed_at": "2026-11-10T19:56:06.944628+00:00",
-      "path": "~/.ocor-codex/openhands_preamble.md",
-      "result": "NO_MATCHING_SECTION",
-      "sha256": "4d26a992c9e93e719835b1a282bea726ca806e475404109576c719afc14194c4",
-      "source_mtime": "2026-11-10T17:20:02+00:00"
-    },
-    "started_at": "2026-11-10T19:56:06.944628+00:00",
-    "unit": "OCOR-DEV-REM-0060"
+    "next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+    "phase": "REM_0061_PRE_CAMPAIGN_REVIEW",
+    "started_at": "2026-11-10T23:03:06.683153+00:00",
+    "unit": "OCOR-DEV-REM-0061"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1748,7 +1740,7 @@
       }
     }
   },
-  "baseline_commit": "78dcf2b256b9257b8b94482ee21fbf58e148844c",
+  "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
   "blockers": [
     {
       "id": "GITHUB-BRANCH-PROTECTION-001",
@@ -8258,14 +8250,25 @@
       "evidence": {
         "branch": "governed/decision-request-rem0060-lane-image-provisioning",
         "commit": "05531507319e217032bafd475538e65b7cb12def",
+        "disposition_commit": "55fb1d0e42afc87163b1c3bde3472954756200bb",
+        "disposition_header": "DECIDED_BY_PO",
         "path": "reports/development/decision_requests/REM-0060-LANE-IMAGE-PROVISIONING.md",
         "pr": 591,
         "sha256": "fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734"
       },
       "finding": "Run full-1: timeout build Fuseki dopo acquisizione immagini; run full-2: total provisioning budget exhausted dopo pull Kafka osservato ancora attivo a 478 s e acquisizione SeaweedFS. Nessuna asserzione fallita osservata, zero conteggi trasferiti, teardown di quattro corsie PASS e zero residui.",
       "id": "REM-0060-LANE-IMAGE-PROVISIONING",
+      "po_decision": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10), opzione 1, decisa su delega completa del PO, modello grok-4.7, effort xhigh",
       "recommendation": "Option 1: remediation separata per cache locale verificata di sole immagini gi\u00e0 presenti, pull ufficiali e budget invariati; poi nuova campagna NCP-U12 sul nuovo HEAD.",
-      "status": "OPEN_PO_DECISION_REQUIRED"
+      "resolution": "Opzione 1 adottata. La remediation OCOR-DEV-REM-0061 e in corso sul branch governed/ocor-dev-rem-0061-lane-image-cache, head 26d8f30c6dbd7ed40736bfedebb26bf6794f4d09. OCOR-DEV-REM-0060 resta bloccato fino al merge di REM-0061 e alla nuova campagna di NCP-U12. I due run citati restano diagnostici e i loro conteggi non si trasferiscono. Il commit e lo sha256 di evidence restano quelli del file prima della disposition. La disposition e sul commit 55fb1d0e42afc87163b1c3bde3472954756200bb, intestazione DECIDED_BY_PO. Nessun nuovo DEC. Claim invariati.",
+      "status": "DECIDED_BY_PO",
+      "status_history": [
+        {
+          "status": "OPEN_PO_DECISION_REQUIRED",
+          "until": "2026-11-10T23:03:06.683153+00:00"
+        }
+      ],
+      "updated_at": "2026-11-10T23:03:06.683153+00:00"
     }
   ],
   "checkpoint_consolidation": {
@@ -10424,7 +10427,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Attendere la disposition di REM-0060-LANE-IMAGE-PROVISIONING (draft PR #591, commit 05531507319e217032bafd475538e65b7cb12def, sha256 fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734). Rilettura di ~/.ocor-codex/openhands_preamble.md alle 2026-11-10T19:56:06.944628+00:00: nessuna sezione decide la richiesta (sha256 4d26a992c9e93e719835b1a282bea726ca806e475404109576c719afc14194c4, mtime 2026-11-10 18:20:02 +0100). PR #592 mergiata: head 4a36046e288db53ed00f8617b35a0baf1432a405, merge 78dcf2b256b9257b8b94482ee21fbf58e148844c, 13 check obbligatori success. Nessun ulteriore rerun della campagna attuale: due esaurimenti del provisioning di 600 s sullo stesso codice/test/harness. Con opzione 1: assegnare la prima REM libera alla cache locale verificata delle immagini, inventario, RED/GREEN e ciclo completo nel perimetro esatto della richiesta; poi riprendere NCP-U12 dal WIP b869cc9c0e92b6d23b386cf5162c07d3ebc12aec, branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, allineamento non distruttivo e nuova campagna dopo il merge della remediation. Con opzione 2: nessun tentativo prima della misura esterna richiesta. NCP-U12 iterazione 9 di stima 3, estensione fino alla tredicesima, massimo due cicli di riparazione; nessuna verifica o sigillo finch\u00e9 manca la full qualificante. Implementatori del task: Claude Code/Anthropic e Codex/OpenAI; chiusura CI della PR #592: Grok Build grok-4.7 / xAI, riserva per quota. Revisore preventivo Codex/OpenAI; verifier solo xAI o Google. Dopo NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT e change set G7/NCP-U14/NCP-U15 prima di G6. Claim invariati.",
+  "next_executable_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -41450,10 +41453,10 @@
     "decision_requests": [
       "REM-0060-LANE-IMAGE-PROVISIONING"
     ],
-    "loop_status": "TERMINAL_BLOCKED",
-    "next_action": "Attendere la disposition di REM-0060-LANE-IMAGE-PROVISIONING (draft PR #591, commit 05531507319e217032bafd475538e65b7cb12def, sha256 fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734). Rilettura di ~/.ocor-codex/openhands_preamble.md alle 2026-11-10T19:56:06.944628+00:00: nessuna sezione decide la richiesta (sha256 4d26a992c9e93e719835b1a282bea726ca806e475404109576c719afc14194c4, mtime 2026-11-10 18:20:02 +0100). PR #592 mergiata: head 4a36046e288db53ed00f8617b35a0baf1432a405, merge 78dcf2b256b9257b8b94482ee21fbf58e148844c, 13 check obbligatori success. Nessun ulteriore rerun della campagna attuale: due esaurimenti del provisioning di 600 s sullo stesso codice/test/harness. Con opzione 1: assegnare la prima REM libera alla cache locale verificata delle immagini, inventario, RED/GREEN e ciclo completo nel perimetro esatto della richiesta; poi riprendere NCP-U12 dal WIP b869cc9c0e92b6d23b386cf5162c07d3ebc12aec, branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, allineamento non distruttivo e nuova campagna dopo il merge della remediation. Con opzione 2: nessun tentativo prima della misura esterna richiesta. NCP-U12 iterazione 9 di stima 3, estensione fino alla tredicesima, massimo due cicli di riparazione; nessuna verifica o sigillo finch\u00e9 manca la full qualificante. Implementatori del task: Claude Code/Anthropic e Codex/OpenAI; chiusura CI della PR #592: Grok Build grok-4.7 / xAI, riserva per quota. Revisore preventivo Codex/OpenAI; verifier solo xAI o Google. Dopo NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT e change set G7/NCP-U14/NCP-U15 prima di G6. Claim invariati.",
-    "reason": "Nessuna unita indipendente pronta: NCP-U12 attende decisione sulla ricorrenza infrastrutturale; coda successiva dipendente dalla sua integrazione. Rilettura del preambolo senza disposition.",
-    "recorded_at": "2026-11-10T19:56:06.944628+00:00"
+    "loop_status": "CONTINUE",
+    "next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+    "reason": "L'opzione 1 e decisa. OCOR-DEV-REM-0061 ha il PRE-CAMPAIGN-GATE verde e attende la revisione preventiva. La suite a quattro corsie non e avviata. OCOR-DEV-REM-0060 non e terminale.",
+    "recorded_at": "2026-11-10T23:03:06.683153+00:00"
   },
   "updated_at": "2026-11-10T19:56:06.944628+00:00",
   "verification_queue": [
