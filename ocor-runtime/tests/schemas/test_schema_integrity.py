@@ -1,4 +1,11 @@
-"""Normative schema integrity and Anti-RV-01 regression checks."""
+"""Schema integrity and Anti-RV-01 regression checks of the legacy-slice schemas.
+
+The schemas of ``ocor-runtime/schemas`` are artefacts of the legacy slice, not normative contracts:
+the normative contracts are the six files materialised under
+``ocor-runtime/docs/governance_dossier/contracts`` that LLD v1.1 §0.2 lists (docs/OCOR_LLD_v1.1.md:20-31),
+whose integrity ``test_materialised_contract_integrity.py`` proves (NCP-U12-TEST-REALIGNMENT-SCOPE
+(2026-11-10) option C1; the checks of this module are unchanged).
+"""
 
 from __future__ import annotations
 
@@ -43,7 +50,7 @@ def _registry(schemas: list[dict[str, Any]]) -> Registry:
 
 
 def test_all_normative_json_schemas_are_draft_2020_12_and_metaschema_valid():
-    assert JSON_SCHEMA_FILES, "no normative JSON schemas found"
+    assert JSON_SCHEMA_FILES, "no legacy-slice JSON schemas found (non-normative; LLD v1.1 :20-31)"
     ids: set[str] = set()
     for path in JSON_SCHEMA_FILES:
         schema = _load(path)
