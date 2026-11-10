@@ -2390,7 +2390,12 @@ def test_image_cache_transfer_stops_at_the_existing_campaign_deadline(host_world
     assert 'sandbox' not in names and 'launch' not in names
 
 
-def test_seed_refuses_a_docker_result_that_is_not_a_code_and_text(tmp_path, monkeypatch):
+@pytest.mark.parametrize('result', [None, True, 1.5, SimpleNamespace(returncode=True, stdout=''),
+                                     SimpleNamespace(returncode=1.5, stdout=''),
+                                     SimpleNamespace(returncode=0, stdout=None),
+                                     SimpleNamespace(returncode=0, stdout=b'ok'),
+                                     SimpleNamespace(returncode=None, stdout='')])
+def test_seed_refuses_a_docker_result_that_is_not_a_code_and_text(tmp_path, monkeypatch, result):
     cache = tmp_path / 'cache'
     cache.mkdir()
     lock = tmp_path / 'services.lock.json'
@@ -2405,7 +2410,7 @@ def test_seed_refuses_a_docker_result_that_is_not_a_code_and_text(tmp_path, monk
     monkeypatch.setattr(LANES.image_cache, 'verify_image_cache', verify)
 
     def runner(argv, **kwargs):
-        return SimpleNamespace(returncode=True, stdout='')
+        return result
 
     lane = LANES.Lane(index=1, campaign='a' * 12 + '-1', root=tmp_path / 'lane', home=tmp_path / 'home', uid=1, gid=1)
     with pytest.raises(CAMPAIGN.CampaignError, match='image cache load failed: opa: image cache command result is malformed'):
@@ -2726,14 +2731,19 @@ def test_cache_stops_before_a_command_when_the_timeout_callback_refuses(tmp_path
     assert runner.calls == []
 
 
-def test_cache_rejects_a_command_result_that_is_not_a_code_and_text(tmp_path):
+@pytest.mark.parametrize('result', [None, True, 1.5, SimpleNamespace(returncode=True, stdout=''),
+                                     SimpleNamespace(returncode=1.5, stdout=''),
+                                     SimpleNamespace(returncode=0, stdout=None),
+                                     SimpleNamespace(returncode=0, stdout=b'ok'),
+                                     SimpleNamespace(returncode=None, stdout='')])
+def test_cache_rejects_a_command_result_that_is_not_a_code_and_text(tmp_path, result):
     lock = tmp_path / 'services.lock.json'
     write_lock(lock, services_for(('opa', PIN_A)))
 
     class BadRunner:
         def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
             del argv, cwd, env, input, timeout, check
-            return type('Result', (), {'returncode': True, 'stdout': ''})()
+            return result
 
     with pytest.raises(CAMPAIGN.CampaignError, match='image cache command result is malformed'):
         IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', BadRunner(), timeout=5)
