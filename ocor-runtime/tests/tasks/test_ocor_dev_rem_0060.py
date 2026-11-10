@@ -585,6 +585,29 @@ def test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the
     assert suite.untouched()
 
 
+def test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict() -> None:
+    """Option B2 for C6 IDEMPOTENCY_CONFLICT (LLD v1.1 :264: same key, different fingerprint): the action
+    instance admitted with one Decision is presented again with another Decision for the same proposal;
+    the retained C6 engine refuses it, and the code must be the reason_code field of an FSM transition
+    record of the action, not only the cause of the engine error."""
+    import test_ocor_dev_rem_0053 as action_path
+    from ocor_runtime.c6.engine import GovernedActionError
+
+    suite = action_path.EngineSuite()
+    world = suite.world
+    proposal, approval_set, decision = action_path._admitted(suite)
+    suite.execute(proposal, approval=approval_set, decision=decision)
+    before = [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
+    late = world.decide(proposal, approval_set)
+    # the scenario: the engine refuses the second Decision because of the idempotency conflict
+    with pytest.raises(GovernedActionError) as refused:
+        suite.execute(proposal, approval=approval_set, decision=late)
+    assert refused.value.cause_code == "IDEMPOTENCY_CONFLICT"
+    action = [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
+    assert "IDEMPOTENCY_CONFLICT" in [effect.context.get("reason_code") for effect in action[len(before):]], (
+        f"no FSM transition records the code: transitions after the refusal {[effect.transition_id for effect in action[len(before):]]}"
+    )
+
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
 
 
