@@ -1,0 +1,1098 @@
+{
+  "acceptance_criteria_results": [
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: FR-172: the PoC must really execute every critical OCOR capability of the mission thread; trace and log prove the real passage through Gateway, Canonical State/projections, Causal/Scenario, Agent Kernel, Action Engine; LLD v1.1 \u00a77.4: the versioned synthetic fixture really crosses C1-C8",
+      "entry": "NCR-TESTS-001",
+      "norm_refs": [
+        {
+          "lines": "427",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        },
+        {
+          "lines": "409",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [
+        "FR-172"
+      ],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_conforms",
+        "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a77: schema/meta tests verify closed records, exact field set, canonical bytes, digest and negative corpus; LLD v1.1 \u00a70.2: the materialised contracts",
+      "entry": "NCR-TESTS-002",
+      "norm_refs": [
+        {
+          "lines": "378",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "20-31",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_protoc_failures_of_the_meta_corpus_are_typed_test_failures",
+        "ocor-runtime/tests/schemas/test_contract_meta_corpus.py"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: LLD v1.1 \u00a70.2: materialised contracts; generation and fixtures start exclusively from the manifested files",
+      "entry": "NCR-TESTS-003",
+      "norm_refs": [
+        {
+          "lines": "20-31",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test",
+        "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: OCOR test strategy (DEC-210 methodology): requirements, invariants, guards, 44 transitions, failure codes and rollback are mandatory",
+      "entry": "NCR-TESTS-004",
+      "norm_refs": [
+        {
+          "lines": "28-29",
+          "path": "docs/development_methodology/OCOR_TEST_STRATEGY.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_inventory_is_anchored",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_known_divergences_are_open_register_entries",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the_code_on_its_transition"
+      ]
+    },
+    {
+      "criterion": "The divergence no longer reproduces and the code realises the normative elements cited: OCOR test strategy technique routing (DEC-210 methodology): property tests, stateful properties, reference model and bounded model checking, golden data and metamorphic tests",
+      "entry": "NCR-TESTS-005",
+      "norm_refs": [
+        {
+          "lines": "18-24",
+          "path": "docs/development_methodology/OCOR_TEST_STRATEGY.md"
+        }
+      ],
+      "outcome": "PENDING_CAMPAIGN",
+      "requirement_ids": [],
+      "tests": [
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_005_conforms",
+        "ocor-runtime/tests/techniques/test_canonical_kernel_properties.py",
+        "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py",
+        "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py"
+      ]
+    }
+  ],
+  "ambiguities_resolved_fail_closed": [
+    "estimate: the handoff of the NCP-U11 integration wrote 'estimate 5, stop at 15' for NCP-U12; plan_units.NCP-U12.estimate_iterations in the register is 3, so the stop of NCP-THROUGHPUT-RULES point 2 is at 9 (the register is the source; most restrictive reading)",
+    "bounded model checking is realised as explicit-state exhaustive enumeration of every operation sequence (lease) or path (FSM) up to a declared bound, each on a fresh instance, without a new dependency; the bound of each check is the constant in the module",
+    "the unit RED reads COVERED_SURFACE with a strict AST walker instead of ast.literal_eval, because the supply-chain scanner blocks any eval( call in tracked Python (adapted before any GREEN of 002)"
+  ],
+  "change_anchors": [
+    {
+      "change": "construction adapted to the retained C1-C8 components on the real stack (conforming C1 pipeline, C2 gateway, C8 Coordination Kernel, C3, C4 TypeDB and Jena/SHACL projections, governed memory, C5 backbone on an isolated broker, C6 engine, C7 runtime); eight assertions realigned as decided (161-162, 241, 429-433 of 913b43d); golden reads through the kernel I-JSON codec",
+      "function": "run_mission_thread, resolve_operator_identity, _Backbone and the five thread tests",
+      "normative_element": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md FR-172 :427; docs/OCOR_LLD_v1.1.md:409",
+      "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+    },
+    {
+      "change": "new module: closed records, exact field set, canonical bytes, digest and negative corpus for every surface of the materialised contracts",
+      "function": "the schema/meta corpus over the 25 gateway, 16 memory, 19 ADD and 5 registry Proto surfaces",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:378, :20-31",
+      "path": "ocor-runtime/tests/schemas/test_contract_meta_corpus.py"
+    },
+    {
+      "change": "new module: the LLD table, the authority seal and the contract directory name the same six contracts; bytes match the sealed digests; the generator pins and validates exactly them",
+      "function": "integrity of the six LLD v1.1 par. 0.2 contracts",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:20-31",
+      "path": "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py"
+    },
+    {
+      "change": "qualified as checks of the legacy-slice schemas (option C1); syntax tree unchanged",
+      "function": "module docstring, message of the line 46 assertion",
+      "normative_element": "docs/OCOR_LLD_v1.1.md:20-31",
+      "path": "ocor-runtime/tests/schemas/test_schema_integrity.py"
+    },
+    {
+      "change": "new modules of the technique routing; Hypothesis was already in the lock (no uv.lock change)",
+      "function": "canonical kernel properties, C6 FSM and lease stateful models with bounded model checking, C7 golden and metamorphic tests",
+      "normative_element": "docs/development_methodology/OCOR_TEST_STRATEGY.md:18-24",
+      "path": "ocor-runtime/tests/techniques/"
+    },
+    {
+      "change": "unit module: structural RED/GREEN of the five entries, the 61-code reason-code inventory with its known divergences, the C6 GOVERNED_CONTEXT_MISMATCH case on ACT-T05, the strict loaders and their negative cases",
+      "function": "test_ncr_tests_001..005 and the SELF-CHECK cases",
+      "normative_element": "docs/development_methodology/OCOR_TEST_STRATEGY.md:28-29",
+      "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+    }
+  ],
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "consumers_inventory": {},
+  "consumers_inventory_note": "the unit changes no product module (no file under ocor-runtime/src); its consumers are the test modules themselves",
+  "decided_requests": [
+    {
+      "branch": "governed/decision-request-ncp-u12-test-realignment-scope",
+      "commit": "035b76f9ec82026b21baaa447f47b4184f01b716",
+      "disposition_commit": "bdfae0334fbe7ee65ea513c30eab1098bbe93a30",
+      "disposition_sha256": "20e83bb7e471556823fc5ece88a010f1b5b76b5df774f311cd5422d3e637311d",
+      "id": "NCP-U12-TEST-REALIGNMENT-SCOPE",
+      "note": "decided on full delegation of the PO, model claude-opus-5-5, effort xhigh",
+      "option": "A1, B1, C1, D1",
+      "path": "reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md",
+      "po_decision": "NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10)",
+      "sha256": "3b668f06d27a6dce6f689f63eb3b4dfdeaf8f90fd28a20d3d085135036896652"
+    },
+    {
+      "branch": "governed/decision-request-ncp-u12-mission-thread-residual-assertions",
+      "commit": "a09370d7ef0e26b447a2ea5020bd67555dcc2ffa",
+      "disposition_commit": "d475cabe463feae76ef348f2db3e8242a4ab28b3",
+      "disposition_sha256": "746101346943b35764303c00656c0aa82792bed39087c6a72f566eb03291489e",
+      "id": "NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS",
+      "note": "decided on full delegation of the PO, model claude-opus-5-5, effort xhigh",
+      "option": "1",
+      "path": "reports/development/decision_requests/NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS.md",
+      "po_decision": "NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10)",
+      "sha256": "1506d2d678b830e1137c169b30431ddd16031f2e6a111f094782e484a68b5e36"
+    },
+    {
+      "branch": "governed/decision-request-ncp-u12-unproduced-reason-codes",
+      "commit": "92cdcc2949d9ee5a1135243f03b6919b3b5afd01",
+      "disposition_commit": "52ffb3998679fd2c9bb409e29b71855fafc3102d",
+      "disposition_sha256": "7fcace374c9462843a202b4c70b56ac578b3ca8134ff245d01ac3afa04ed25ac",
+      "id": "NCP-U12-UNPRODUCED-REASON-CODES",
+      "note": "decided on full delegation of the PO, model claude-opus-5-5, effort xhigh",
+      "option": "A1, B2",
+      "path": "reports/development/decision_requests/NCP-U12-UNPRODUCED-REASON-CODES.md",
+      "po_decision": "NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10)",
+      "sha256": "a9a1fae055d118053fefb3b47f3a1f89783da8f4d4a6965f5b7ed1848e36bbff"
+    },
+    {
+      "branch": "governed/decision-request-ncp-u12-reason-code-entries-plan",
+      "commit": "a53d4da23a8239cf17e8036d4f3baed834e1b2b5",
+      "disposition_commit": "6b8b63d21e001c3767629e0b8f42368d4913b350",
+      "disposition_sha256": "19c51bb688ad67681a2ce04a852e1e77b8ea21a061bb420e0079eb7eb02f1bc2",
+      "id": "NCP-U12-REASON-CODE-ENTRIES-PLAN",
+      "note": "decided on full delegation of the PO, model claude-opus-5-5, effort xhigh",
+      "option": "A1, B1",
+      "path": "reports/development/decision_requests/NCP-U12-REASON-CODE-ENTRIES-PLAN.md",
+      "po_decision": "NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10)",
+      "sha256": "69ff5e59463bbc0b4537625fb919e7bad3b1b6e40335c0c5b276aeeed8440bb9"
+    },
+    {
+      "branch": "governed/decision-request-ncp-u12-c6-commit-refusal-transitions",
+      "commit": "98030e7a17f636b6f3213a3808ec97cce4a20ae5",
+      "disposition_commit": "3d2c54ecc6b404e68e27f154a2ef7d94dbd54a1d",
+      "disposition_sha256": "062eb3900e093df4097ccd195f59b7d882543fa1bb95ae1798bcb62877c961bd",
+      "id": "NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS",
+      "note": "normative decision of the PO (not on delegation); question B does not apply",
+      "option": "A1",
+      "path": "reports/development/decision_requests/NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS.md",
+      "po_decision": "NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10)",
+      "sha256": "544e678a18e6a6dbdda3e5de0a9f558625cc09a2f09f2cb91a0404d4a9c9c4c7"
+    }
+  ],
+  "decision": "NORMATIVE-CONFORMANCE-PLAN (2026-10-30) points 1, 2 and 5 (NCP-U12 row); NCP-U01-RETAINED-C1-BUILDERS (2026-11-01) point 4; NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) A1 B1 C1 D1, NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (2026-11-10) option 1, NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10) A1 B2 and NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) A1 B1 (decided on full delegation of the PO); NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10) A1 (normative decision of the PO); NORMATIVE-CONFORMANCE-PROGRAMME (2026-10-29) points 5-8; NCP-THROUGHPUT-RULES (2026-11-05); SELF-CHECK-CHECKLIST (2026-11-08); SELF-CHECK-CLASS-COVERAGE (2026-11-08); NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)",
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "differences": [
+          {
+            "function": "consume",
+            "only_in": "head"
+          },
+          {
+            "function": "produce",
+            "only_in": "head"
+          },
+          {
+            "asserts": [
+              2,
+              2
+            ],
+            "changed_assert_lines_at_head": [
+              129,
+              130
+            ],
+            "decorators_same": true,
+            "function": "resolve_operator_identity",
+            "raises_same": true
+          },
+          {
+            "function": "restart_broker",
+            "only_in": "head"
+          },
+          {
+            "asserts": [
+              2,
+              2
+            ],
+            "changed_assert_lines_at_head": [
+              246
+            ],
+            "decorators_same": true,
+            "function": "run_mission_thread",
+            "raises_same": true
+          },
+          {
+            "asserts": [
+              10,
+              10
+            ],
+            "changed_assert_lines_at_head": [
+              411,
+              413,
+              415,
+              418,
+              419
+            ],
+            "decorators_same": true,
+            "function": "test_mission_thread_produces_correlated_receipts_across_all_governed_components",
+            "raises_same": true
+          }
+        ],
+        "functions": [
+          18,
+          21
+        ],
+        "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "same_names": false
+      },
+      {
+        "differences": [],
+        "functions": [
+          10,
+          10
+        ],
+        "path": "ocor-runtime/tests/schemas/test_schema_integrity.py",
+        "same_names": true
+      }
+    ],
+    "note": "mission thread: the eight changed assertions are exactly the decided lines (head lines 129-130 = base 161-162; 246 = 241; 411-419 = 429-433), assertion counts per function unchanged, same pytest.raises and parametrisations; the three functions only at head (consume, produce, restart_broker) are methods of the C5 adapter class of the adapted construction; test_schema_integrity.py: no assertion condition changed (option C1 changes only the docstring and one message)",
+    "tool": "~/.ocor-codex/rem-0060/iter6/ast_detail.py against the unit base 913b43d (every function: asserts with their lines, pytest.raises, decorators)"
+  },
+  "existing_tests_note": "no test removed, skipped, marked or weakened; the two RED tests that the decisions moved out of the suite stay in the branch history as the RED of their register entries (d307a0b lines 588-609 for NCR-C6-016, 689aff2 lines 469-552 for NCR-C6-017)",
+  "existing_tests_realigned_or_adapted": {
+    "adapted": [
+      {
+        "decisions": "NCP-U12-TEST-REALIGNMENT-SCOPE A1 (construction), B1 (241, 429, 430, 431), NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS option 1 (161, 162, 432, 433)",
+        "green": "e17dfd4",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "red": "c8a5ee1"
+      },
+      {
+        "commit": "e9bd490",
+        "decisions": "NCP-U12-TEST-REALIGNMENT-SCOPE C1",
+        "kind": "QUALIFY_LEGACY",
+        "path": "ocor-runtime/tests/schemas/test_schema_integrity.py"
+      }
+    ],
+    "realigned": []
+  },
+  "implementers": [
+    {
+      "agent": "Claude Code",
+      "iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "role": "implementer of reserve of the loop"
+    }
+  ],
+  "input_robustness_self_check": {
+    "accepted_residuals": [],
+    "columns": {
+      "boundary_digests": "digests, signatures and bindings recomputed at the boundary",
+      "complete_normative_records": "normative records complete through the kernel codec",
+      "finite_numbers": "NaN and Infinity refused",
+      "processes_and_resources": "typed process and resource errors, release in finally",
+      "strict_decoding": "UTF-8 strict, typed error",
+      "types_before_conversions": "types checked before conversion, bool never an int, missing/extra/empty refused"
+    },
+    "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1 extended by SELF-CHECK-CHECKLIST (2026-11-08), SELF-CHECK-CLASS-COVERAGE (2026-11-08), SELF-CHECK-PATH-INVENTORY (2026-11-09) and TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09): every file, process-output and port-answer path of the touched test modules",
+    "green": [
+      "20b7316"
+    ],
+    "note": "for a test module the typed outcome of a malformed input is a test failure with its cause (an exception of the strict loader or pytest.fail), never a silent pass or a coerced value; FIXED marks a gap found by the self-check and closed with RED/GREEN; the table informs the preventive review and does not replace it",
+    "path_inventory": {
+      "change_set_files": [
+        {
+          "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+          "rows": 2
+        },
+        {
+          "path": "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+          "rows": 4
+        },
+        {
+          "path": "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py",
+          "rows": 3
+        },
+        {
+          "no_row_reason": "touched only in the module docstring and the message of one assertion under option C1 of NCP-U12-TEST-REALIGNMENT-SCOPE, which allows no other change: no parsing path of the module is touched",
+          "path": "ocor-runtime/tests/schemas/test_schema_integrity.py",
+          "rows": 0
+        },
+        {
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
+          "rows": 3
+        },
+        {
+          "no_row_reason": "data, no code; its readers are rows 11 and 12",
+          "path": "ocor-runtime/tests/techniques/golden/causal_logistics_scm.json",
+          "rows": 0
+        },
+        {
+          "path": "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py",
+          "rows": 1
+        },
+        {
+          "path": "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py",
+          "rows": 1
+        },
+        {
+          "no_row_reason": "reads no file, process output or port answer: Hypothesis generates the values in process and the kernel codec is the module under test",
+          "path": "ocor-runtime/tests/techniques/test_canonical_kernel_properties.py",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code; its reader is row 8",
+          "path": "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code (decision request, record or evidence file)",
+          "path": "reports/development/decision_requests/NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS.md",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code (decision request, record or evidence file)",
+          "path": "reports/development/decision_requests/NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS.md",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code (decision request, record or evidence file)",
+          "path": "reports/development/decision_requests/NCP-U12-REASON-CODE-ENTRIES-PLAN.md",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code (decision request, record or evidence file)",
+          "path": "reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code (decision request, record or evidence file)",
+          "path": "reports/development/decision_requests/NCP-U12-UNPRODUCED-REASON-CODES.md",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code (plan validator self-hash)",
+          "path": "reports/planning/OCOR_PLAN_RUN_STATE.json",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "data, no code",
+          "path": "reports/traceability/OCOR_TEST_REVERSE_TRACEABILITY_INDEX.json",
+          "rows": 0
+        },
+        {
+          "no_row_reason": "only paths added to the allowlist constant; no parsing path changed",
+          "path": "scripts/validate_ocor_development_plan.py",
+          "rows": 0
+        }
+      ],
+      "consumption_points": 14,
+      "functions_examined": {
+        "ocor-runtime/tests/mission_thread/test_first_governed_slice.py": 22,
+        "ocor-runtime/tests/schemas/test_contract_meta_corpus.py": 35,
+        "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py": 16,
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py": 43,
+        "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py": 22,
+        "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py": 15
+      },
+      "rule": "SELF-CHECK-PATH-INVENTORY (2026-11-09), first applied in iteration 6 (packaging) of the unit",
+      "searches": [
+        "git grep -nE 'json\\.load|yaml\\.(safe_)?load|read_text|read_bytes|open\\(|subprocess|\\.decode\\(|ast\\.parse' over the seven parsing modules of the change set",
+        "git diff --name-only 913b43d..HEAD (change-set files)",
+        "git grep -n 'def consume|def produce|def restart_broker|C5Rig' ocor-runtime/tests/mission_thread (port answers)"
+      ]
+    },
+    "red": [
+      "c7abc0f"
+    ],
+    "refactor": "010c222",
+    "table": [
+      {
+        "checks": {
+          "boundary_digests": "N/A: the input is a versioned file of the repository read by the test, not a value passed across a component boundary; the six contracts, ADD v1.3 and LLD v1.1 are listed in the authority seal, whose contract digests row 6 checks",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "FIXED (NaN, Infinity and -Infinity, top-level and nested, were accepted by json.loads; now refused by parse_i_json)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "FIXED (JSON decoding: lone UTF-16 surrogates from \\u escapes in values, keys and nested values were accepted by json.loads; now refused by the kernel codec parse_i_json, valid surrogate pairs accepted; the file text is read with read_text(encoding='utf-8'), strict, and an undecodable file raises UnicodeDecodeError, guarded by the structural test)",
+          "types_before_conversions": "FIXED (duplicate keys, also nested, were silently merged by json.loads; now refused by parse_i_json; trailing data, empty and non-JSON text refused; every other field is consumed by jsonschema, referencing or the assertions, which fail the test on a wrong type)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+        "function": "_load_json (callers _contract_resources, _add_schemas)",
+        "paths": "versioned JSON re-read from files: the contract *.schema.json files and the json blocks of ADD v1.3 that declare $schema",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py::test_covered_surface_is_the_whole_contract_surface"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the input is a versioned file of the repository read by the test, not a value passed across a component boundary; the six contracts, ADD v1.3 and LLD v1.1 are listed in the authority seal, whose contract digests row 6 checks",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "FIXED (.nan, .inf and -.inf, top-level and nested, were accepted by yaml.safe_load; now refused by the kernel canonical check)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "FIXED (YAML decoding: lone UTF-16 surrogates from \\u escapes in double-quoted keys, values and nested values were accepted by yaml.safe_load; now refused by the kernel canonical check of _load_yaml; the file text is read with read_text(encoding='utf-8'), strict)",
+          "types_before_conversions": "FIXED (non-string mapping keys -- integer, boolean, null, float, sequence --, duplicate keys also nested, timestamps, binary, sets and empty or non-mapping documents were accepted by yaml.safe_load; now refused by the unique-string-key SafeLoader, the kernel canonical check and the mapping check; python tags and invalid YAML stay refused)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+        "function": "_load_yaml (caller _json_surfaces)",
+        "paths": "versioned YAML re-read from files: the two OpenAPI contracts of LLD v1.1 par. 0.2",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py::test_positive_instance_is_synthesised_from_the_manifested_schema"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: protoc compiles the versioned contract file; the contract bytes are pinned to the authority seal by row 6",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it compiles the sealed registry contract into a descriptor pool the tests use",
+          "finite_numbers": "PASS (the descriptor set is decoded by protobuf; the test converts no number of it: field numbers stay protobuf integers and no float is read)",
+          "processes_and_resources": "FIXED (process start, wait and timeout: TimeoutExpired, FileNotFoundError/OSError at start and a non-zero exit were raw exceptions or a bare assertion; now pytest.fail with the cause; the temporary directory is released by its context manager on every path, the process is reaped by subprocess.run also on timeout)",
+          "strict_decoding": "FIXED (process output decoding: an undecodable protoc stderr raised a raw UnicodeDecodeError inside the assertion message; now a typed test failure naming the exit code, never a substituted text)",
+          "types_before_conversions": "FIXED (unreadable descriptor set: a garbage or missing descriptor file raised a raw DecodeError or FileNotFoundError; now a typed test failure; the descriptor set is parsed only by FileDescriptorSet.FromString, which refuses malformed bytes)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+        "function": "_proto_pool",
+        "paths": "process output: grpc_tools.protoc run with a 120 s timeout, its exit code and stderr, and the descriptor set file it writes, re-read from a temporary directory",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_protoc_failures_of_the_meta_corpus_are_typed_test_failures",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py::test_proto_exact_field_set_matches_the_contract_text",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py::test_proto_closed_record_rejects_an_unknown_field"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the input is a versioned file of the repository read by the test, not a value passed across a component boundary; the six contracts, ADD v1.3 and LLD v1.1 are listed in the authority seal, whose contract digests row 6 checks",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "PASS (no number of the text is converted: field numbers are matched by the pattern but not read as values)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "PASS (read_text(encoding='utf-8'), strict: an undecodable file raises UnicodeDecodeError; guarded by the structural test)",
+          "types_before_conversions": "PASS (the text is matched with anchored regular expressions; a missing message body fails 'assert body is not None' and the field set is compared with the compiled descriptor, never converted)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+        "function": "_declared_fields, test_covered_surface_is_the_whole_contract_surface (proto text)",
+        "paths": "versioned text re-read from a file: ocor_registry.proto, matched with regular expressions",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py::test_proto_exact_field_set_matches_the_contract_text",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py::test_covered_surface_is_the_whole_contract_surface"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (the bytes of every contract it parses are compared with the sealed digest by test_contract_bytes_match_the_sealed_digest; the $ref targets must be manifested contracts)",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "FIXED (NaN, Infinity and -Infinity, top-level and nested, were accepted by json.loads; now refused by parse_i_json); FIXED (.nan, .inf and -.inf, top-level and nested, were accepted by yaml.safe_load; now refused by the kernel canonical check)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "FIXED (JSON and YAML decoding: lone UTF-16 surrogates from \\u escapes in values, keys and nested values were accepted by json.loads; now refused by the kernel codec parse_i_json, valid surrogate pairs accepted; the file text is read with read_text(encoding='utf-8'), strict, and an undecodable file raises UnicodeDecodeError, guarded by the structural test)",
+          "types_before_conversions": "FIXED (duplicate keys, also nested, were silently merged by json.loads; now refused by parse_i_json; trailing data, empty and non-JSON text refused; every other field is consumed by jsonschema, referencing or the assertions, which fail the test on a wrong type); FIXED (non-string mapping keys -- integer, boolean, null, float, sequence --, duplicate keys also nested, timestamps, binary, sets and empty or non-mapping documents were accepted by yaml.safe_load; now refused by the unique-string-key SafeLoader, the kernel canonical check and the mapping check; python tags and invalid YAML stay refused)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py",
+        "function": "_load_json, _load_yaml (callers: the JSON-schema test, the OpenAPI reference test and its $ref targets)",
+        "paths": "versioned JSON and YAML re-read from files: the six materialised contracts and the targets of their $ref",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py::test_json_schema_contracts_are_draft_2020_12_closed_and_uniquely_identified",
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py::test_openapi_contracts_are_3_1_with_resolvable_references"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (each contract's bytes are hashed by the test and compared with the sealed digest; the generator's pins are compared with the seal)",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "PASS (no number is read: digests stay text and are compared with the computed hexdigest)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "PASS (read_text(encoding='utf-8'), strict; contract bytes are hashed, not decoded; guarded by the structural test)",
+          "types_before_conversions": "FIXED (fixed-form seal lines: a line with an empty path after the separator was accepted; separator and digest form -- 64 lowercase ASCII hex, refusing empty, short, uppercase, non-ASCII and long digests -- were already checked and keep their negative cases)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py",
+        "function": "_sealed, _lld_table, test_contract_bytes_match_the_sealed_digest",
+        "paths": "versioned text re-read from files: the authority seal (digest lines) and the LLD v1.1 par. 0.2 table; contract bytes hashed",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py::test_contract_bytes_match_the_sealed_digest",
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py::test_lld_table_and_authority_seal_name_the_same_six_contracts"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (test_generator_pins_exactly_the_sealed_digests compares the generator's pins with the seal)",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "PASS (no number of the module is read: the tests compare digests and file sets)",
+          "processes_and_resources": "PASS (importlib reads and closes the file; no process)",
+          "strict_decoding": "PASS (the import system decodes the source strictly; an undecodable or invalid source raises SyntaxError and fails the test)",
+          "types_before_conversions": "PASS (the tests call the generator's functions and compare their results; a missing function or a wrong result fails the test)"
+        },
+        "file": "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py",
+        "function": "_generator",
+        "paths": "versioned source re-read from a file: ocor-runtime/tools/generate_contracts.py loaded with importlib",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py::test_generator_pins_exactly_the_sealed_digests",
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py::test_generator_refuses_a_contract_that_differs_from_the_seal"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the input is a versioned file of the repository read by the test, not a value passed across a component boundary; the six contracts, ADD v1.3 and LLD v1.1 are listed in the authority seal, whose contract digests row 6 checks",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "FIXED (NaN, Infinity and -Infinity, top-level and nested, were accepted by json.loads; now refused by parse_i_json); FIXED (.nan, .inf and -.inf, top-level and nested, were accepted by yaml.safe_load; now refused by the kernel canonical check)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "FIXED (JSON and YAML decoding: lone UTF-16 surrogates from \\u escapes in values, keys and nested values were accepted by json.loads; now refused by the kernel codec parse_i_json, valid surrogate pairs accepted; the file text is read with read_text(encoding='utf-8'), strict, and an undecodable file raises UnicodeDecodeError, guarded by the structural test)",
+          "types_before_conversions": "FIXED (duplicate keys, also nested, were silently merged by json.loads; now refused by parse_i_json; trailing data, empty and non-JSON text refused; every other field is consumed by jsonschema, referencing or the assertions, which fail the test on a wrong type); FIXED (non-string mapping keys -- integer, boolean, null, float, sequence --, duplicate keys also nested, timestamps, binary, sets and empty or non-mapping documents were accepted by yaml.safe_load; now refused by the unique-string-key SafeLoader, the kernel canonical check and the mapping check; python tags and invalid YAML stay refused)"
+        },
+        "file": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
+        "function": "_load_json, _load_yaml (callers _openapi_component_schemas, _add_embedded_schemas, test_ncr_tests_004_known_divergences_are_open_register_entries)",
+        "paths": "versioned JSON and YAML re-read from files: the two OpenAPI contracts, the json blocks of ADD v1.3 and the normative conformance register",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_conforms",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_known_divergences_are_open_register_entries"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (test_ncr_tests_003_conforms hashes every sealed contract file and compares it with the sealed digest)",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "PASS (no number is read: digests stay text and are compared with the computed hexdigest)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "PASS (read_text(encoding='utf-8'), strict; sealed files are hashed, not decoded; guarded by the structural test)",
+          "types_before_conversions": "FIXED (fixed-form seal lines: lines were split without checking the separator, the path or the digest form; empty, short, uppercase, non-ASCII or long digests, a missing separator and an empty path were accepted; now refused before use)"
+        },
+        "file": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
+        "function": "_sealed_digests, _lld_materialised_contracts, test_ncr_tests_003_conforms",
+        "paths": "versioned text re-read from files: the authority seal and the LLD v1.1 par. 0.2 rows; sealed files hashed",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_conforms"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the scan reads test sources of the repository to classify them, no value crosses a component boundary",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "PASS (no number of the files is converted: line numbers come from constants of the module and from ast nodes)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "PASS (read_text(encoding='utf-8'), strict; an undecodable file raises UnicodeDecodeError; guarded by the structural test)",
+          "types_before_conversions": "PASS (sources are parsed by ast.parse, which refuses an invalid source with SyntaxError; the scan classifies nodes by their ast class with isinstance before reading their fields; anchored lines are compared as text)"
+        },
+        "file": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
+        "function": "_parse, _test_modules, the NCR-TESTS-004 coverage scan (_reason_code_coverage and its helpers), test_ncr_tests_004_inventory_is_anchored, test_ncr_tests_001_conforms, test_ncr_tests_003_conforms (source reads)",
+        "paths": "versioned sources and texts re-read from files: every test module (syntax trees), the mission-thread source, the integrity module text and the anchored lines of ADD, LLD and source files",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_inventory_is_anchored",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_conforms"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (sha256 of the bytes compared with GOLDEN_SHA256 before parsing)",
+          "complete_normative_records": "N/A: the golden dataset is a test fixture; the causal queries built from it are validated by the C7 runtime codec",
+          "finite_numbers": "FIXED (NaN and Infinity accepted by json.loads; now refused by parse_i_json)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "FIXED (JSON decoding: after the digest pin the bytes were decoded strictly but parsed by json.loads, which accepts lone surrogates from escapes; now parse_i_json, the kernel codec the cited negative cases exercise)",
+          "types_before_conversions": "FIXED (duplicate keys accepted by json.loads; now refused by parse_i_json; the fields are read by the tests, which fail on a wrong type or value)"
+        },
+        "file": "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py",
+        "function": "_golden",
+        "paths": "versioned JSON re-read from a file: the causal golden dataset, pinned by sha256 before parsing",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py::test_golden_backdoor_estimate_matches_the_analytical_value",
+          "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py::test_identical_pinned_inputs_reproduce_the_same_outcome_digest"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (the C7 query carries the canonical digests of model, data and intervention computed from the parsed dataset; the same file is pinned by sha256 in row 11)",
+          "complete_normative_records": "N/A: the dataset is a fixture; the CausalQuery built from it is the retained C7 record, validated by the C7 runtime",
+          "finite_numbers": "FIXED (NaN and Infinity accepted by json.loads; now refused by parse_i_json)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "FIXED (JSON decoding: json.loads accepted lone surrogates from escapes; now parse_i_json, construction only, no assertion changed; read_text(encoding='utf-8'), strict)",
+          "types_before_conversions": "FIXED (duplicate keys accepted by json.loads; now refused by parse_i_json; model, rows and intervention are pinned by their canonical digests in the C7 query)"
+        },
+        "file": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "function": "run_mission_thread, test_causal_receipt_reproduces_identically_with_the_same_pinned_inputs (golden reads)",
+        "paths": "versioned JSON re-read from a file: the causal golden dataset used as the registered SCM of the thread",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_mission_thread_produces_correlated_receipts_across_all_governed_components",
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_causal_receipt_reproduces_identically_with_the_same_pinned_inputs"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS (the C5 producer computes integrity.payload_digest as the sha256 of the RFC 8785 payload bytes and signs the envelope, c5/envelope.py:10-14; the thread asserts the digest form)",
+          "complete_normative_records": "PASS (the drafts become signed canonical envelopes admitted by the retained C5 backbone, which validates the closed envelope schema, c5/envelope.py:5-8)",
+          "finite_numbers": "PASS (the thread reads only string values of the payload and the payload_digest string, whose form it asserts; it converts no number of the answer)",
+          "processes_and_resources": "PASS (the kafka_topic fixture destroys the isolated broker and its volume in finally, test_first_governed_slice.py:366-369; restart_broker stops and starts that broker and rebuilds the rig)",
+          "strict_decoding": "PASS (the retained C5 backbone decodes every journal record before delivery: a record without body or not JSON is SCHEMA_VIOLATION, ocor_runtime/c5/backbone.py:350-359, and the envelope is validated against the closed ADD v1.3 schema by CanonicalIngestionEnvelope.from_mapping, c5/envelope.py:5-8; the thread receives Python objects, never bytes)",
+          "types_before_conversions": "PASS (the rig checks the delivered count, c5_backbone_fixture.py:416-418; payload and integrity.payload_digest come from envelopes validated by C5; the thread asserts the digest form sha256: plus 64 lowercase hex and the record values, so a malformed answer fails the test; produce converts only values the thread built itself)"
+        },
+        "file": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "function": "_Backbone.consume, _Backbone.produce, _Backbone.restart_broker",
+        "paths": "port answer: events delivered by the retained C5 backbone through c5_backbone_fixture.C5Rig.consume (:414-419) from a real Kafka broker",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_mission_thread_produces_correlated_receipts_across_all_governed_components",
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_a_real_kafka_broker_restart_during_the_event_step_is_detected_and_recovers"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the input is a versioned file of the repository read by the test, not a value passed across a component boundary; the six contracts, ADD v1.3 and LLD v1.1 are listed in the authority seal, whose contract digests row 6 checks",
+          "complete_normative_records": "N/A: the path builds no record the norm defines; it reads a versioned file that the tests check as it is",
+          "finite_numbers": "PASS (no number of the table is converted)",
+          "processes_and_resources": "PASS (Path.read_text/read_bytes open and close the file on every path; no process, connection or transaction)",
+          "strict_decoding": "PASS (read_text(encoding='utf-8'), strict; guarded by the structural test)",
+          "types_before_conversions": "PASS (table rows are matched as text and compared with the runtime transition table; a malformed or missing row fails the 44-transition assertion)"
+        },
+        "file": "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py",
+        "function": "_approved_table (LLD read) and the reference table test",
+        "paths": "versioned text re-read from a file: the LLD v1.1 transition table",
+        "reads_stored_data": true,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py::test_the_reference_table_has_the_44_approved_transitions_and_matches_the_runtime"
+        ]
+      }
+    ]
+  },
+  "iteration_limit": "NCP-THROUGHPUT-RULES (2026-11-05) point 2: stop with a decision request after three times the estimate of 3 iterations (9), earlier after two consecutive iterations without progress; iteration 6 of estimate 3",
+  "known_divergences_registered": {
+    "NCR-C2-014": [
+      "C2 CAPABILITY_DENIED",
+      "C2 SCENARIO_ISOLATION_VIOLATION"
+    ],
+    "NCR-C6-015": [
+      "C6 SCHEMA_VIOLATION",
+      "C6 CONTRACT_REJECTED"
+    ],
+    "NCR-C6-016": [
+      "C6 IDEMPOTENCY_CONFLICT"
+    ],
+    "NCR-C6-017": [
+      "C6 PRECONDITION_FAILED",
+      "C6 INVARIANT_VIOLATION",
+      "C6 REVISION_CONFLICT",
+      "C6 GATE_PACKAGE_MISMATCH"
+    ],
+    "NCR-C7-008": [
+      "C7 INSUFFICIENT_EVIDENCE",
+      "C7 EXTRAPOLATIVE",
+      "C7 STALE_CONTEXT",
+      "C7 NOT_TRANSPORTABLE"
+    ]
+  },
+  "open_decision_requests": [],
+  "open_points_for_review": [
+    "the self-check applies SELF-CHECK-CHECKLIST to test modules (the unit changes no product code): file reads of versioned repository files and the protoc process are treated as external inputs (strict loaders with negative cases)"
+  ],
+  "open_points_resolved_during_the_unit": [
+    "NCP-U12-TEST-REALIGNMENT-SCOPE: decided (A1, B1, C1, D1) and applied",
+    "NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS: decided (1) and applied",
+    "NCP-U12-UNPRODUCED-REASON-CODES: decided (A1, B2) and applied",
+    "NCP-U12-REASON-CODE-ENTRIES-PLAN: decided (A1, B1) and applied",
+    "NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS: decided (A1) and applied"
+  ],
+  "plan_unit": "NCP-U12",
+  "preventive_review": null,
+  "process_improvements_applied": [
+    {
+      "date": "2026-11-09",
+      "first_applied": "iteration 6 (packaging)",
+      "id": "SELF-CHECK-PATH-INVENTORY"
+    },
+    {
+      "date": "2026-11-09",
+      "first_applied": "iteration 6 (before the preventive review request)",
+      "id": "SELF-CHECK-CELL-SCAN"
+    },
+    {
+      "date": "2026-11-09",
+      "first_applied": "iteration 6 (self-check rows 6 and 9: fixed-form seal lines; rows 1, 2, 5, 8, 11, 12: lone surrogates from JSON/YAML escapes; row 13: port answers of C5)",
+      "id": "TEXT-FORM-AND-PORT-ANSWER-CLASSES"
+    },
+    {
+      "date": "2026-11-09",
+      "first_applied": "iteration 6 (before the preventive review request)",
+      "id": "RECORD-ROLES-COHERENCE-SCAN"
+    },
+    {
+      "date": "2026-11-09",
+      "first_applied": "iteration 5 (allowlist completed with the requalification and decision request paths, c0334cd); proof on the evidence tree in iteration 6",
+      "id": "EVIDENCE-PATHS-ALLOWLIST-PRECHECK"
+    },
+    {
+      "date": "2026-11-09",
+      "first_applied": "iteration 1 (every state sync of the unit)",
+      "id": "DR-STATUS-CLOSURE-SYNC"
+    }
+  ],
+  "product_orientation": [
+    "the mission thread crosses the retained C1-C8 product components on real backends, so it qualifies the product, not the legacy slice",
+    "every surface of the materialised contracts has a closed-record, exact-field-set, canonical-bytes, digest and negative-corpus check",
+    "the reason-code inventory makes every closed code of ADD v1.3 and LLD v1.1 either asserted by a negative test or an open register entry"
+  ],
+  "register_entries_created": [
+    "NCR-C2-014",
+    "NCR-C6-015",
+    "NCR-C7-008",
+    "NCR-C6-016",
+    "NCR-C6-017"
+  ],
+  "register_entries_created_note": "OPEN HIGH entries planned in NCP-U15 by the decided options; the unit resolves none of them",
+  "requalifications_planned": {
+    "classification": [
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0059.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0005",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "ast_comparison": {
+          "differences": [
+            {
+              "function": "consume",
+              "only_in": "head"
+            },
+            {
+              "function": "produce",
+              "only_in": "head"
+            },
+            {
+              "asserts": [
+                2,
+                2
+              ],
+              "changed_assert_lines_at_head": [
+                129,
+                130
+              ],
+              "decorators_same": true,
+              "function": "resolve_operator_identity",
+              "raises_same": true
+            },
+            {
+              "function": "restart_broker",
+              "only_in": "head"
+            },
+            {
+              "asserts": [
+                2,
+                2
+              ],
+              "changed_assert_lines_at_head": [
+                246
+              ],
+              "decorators_same": true,
+              "function": "run_mission_thread",
+              "raises_same": true
+            },
+            {
+              "asserts": [
+                10,
+                10
+              ],
+              "changed_assert_lines_at_head": [
+                411,
+                413,
+                415,
+                418,
+                419
+              ],
+              "decorators_same": true,
+              "function": "test_mission_thread_produces_correlated_receipts_across_all_governed_components",
+              "raises_same": true
+            }
+          ],
+          "functions": [
+            18,
+            21
+          ],
+          "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+          "same_names": false
+        },
+        "bindable_requirements": [],
+        "change": "construction adapted to the retained C1-C8 components (NCP-U12-TEST-REALIGNMENT-SCOPE A1) and eight assertions realigned (B1 and NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS option 1); golden reads through parse_i_json",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+        ],
+        "latest_record": "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0053.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [
+          {
+            "bindable": false,
+            "method_kind": "MIXED",
+            "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+            "register_method": "test/dimostrazione",
+            "requirement_id": "BR-003"
+          }
+        ],
+        "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1 and 3",
+        "task_id": "OCOR-DEV-0031",
+        "tests_realigned_or_adapted": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0059.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0050",
+        "tests_realigned_or_adapted": null
+      },
+      {
+        "bindable_requirements": [],
+        "change": "tests unchanged",
+        "docstring_added": false,
+        "drifted_inputs": [
+          "scripts/validate_ocor_development_plan.py"
+        ],
+        "latest_record": "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0059.json",
+        "qualifies_requirements": false,
+        "requalification_kind": "regression",
+        "requirements": [],
+        "rule": "always regression-only (scripts/validate_ocor_development_plan.py allowlist); NCP-U01-SUPERSESSION-REQUALIFICATIONS (2026-11-02) point 3 (A1); REM-0046-REGRESSION-REQUALIFICATION-RECORDS",
+        "task_id": "OCOR-DEV-0082",
+        "tests_realigned_or_adapted": null
+      }
+    ],
+    "note": "drifted tasks at the packaging head (scripts/validate_evidence_input_drift.py): 0005, 0050 and 0082 for the plan allowlist, 0031 for the adapted mission thread (BR-003, MIXED, not bindable)",
+    "qualifying": [],
+    "regression_only": [
+      "OCOR-DEV-0005",
+      "OCOR-DEV-0031",
+      "OCOR-DEV-0050",
+      "OCOR-DEV-0082"
+    ]
+  },
+  "required_backend": "selected real C1-C8 service stack (as OCOR-DEV-0065) -- realised as the CI stack bootstrapped in the unit worktree (scripts/bootstrap_ci_environment.py: PostgreSQL, TypeDB, Fuseki, Qdrant, OpenBao, OPA, TerminusDB, Kafka, Keycloak, SPIRE, Temporal, SeaweedFS) plus the isolated qualification Kafka broker of the mission thread",
+  "resolution_probes": [
+    {
+      "entry": "NCR-TESTS-001",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_conforms ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+    },
+    {
+      "entry": "NCR-TESTS-002",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_protoc_failures_of_the_meta_corpus_are_typed_test_failures ocor-runtime/tests/schemas/test_contract_meta_corpus.py"
+    },
+    {
+      "entry": "NCR-TESTS-003",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test ocor-runtime/tests/schemas/test_materialised_contract_integrity.py"
+    },
+    {
+      "entry": "NCR-TESTS-004",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_inventory_is_anchored ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_known_divergences_are_open_register_entries ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the_code_on_its_transition"
+    },
+    {
+      "entry": "NCR-TESTS-005",
+      "outcome": "PENDING_CAMPAIGN",
+      "probe": "ocor-runtime/.venv/bin/python -m pytest -q -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_005_conforms ocor-runtime/tests/techniques/test_canonical_kernel_properties.py ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py"
+    }
+  ],
+  "resolved_register_entries": [
+    "NCR-TESTS-001",
+    "NCR-TESTS-002",
+    "NCR-TESTS-003",
+    "NCR-TESTS-004",
+    "NCR-TESTS-005"
+  ],
+  "resolved_register_entries_note": "listed for resolution by this unit; resolution is established only by the sealed record at a verified head on main",
+  "rollback_procedure": "revert the REM-0060 commits: the new test modules (schema/meta corpus, materialised contract integrity, techniques with the golden dataset) and the unit module disappear; the mission thread and test_schema_integrity.py return to the base; the register entries NCR-C2-014, NCR-C6-015, NCR-C6-016, NCR-C6-017, NCR-C7-008, the plan unit NCP-U15 and the IN_REMEDIATION flip of NCR-TESTS-001..005 return to the base; the plan allowlist, the five decision request files and the reverse traceability index return to the base; the previous records of the requalified tasks become the most recent again",
+  "schema_version": "1.0",
+  "status": "CANDIDATE_IN_PROGRESS",
+  "task_id": "OCOR-DEV-REM-0060",
+  "tdd": {
+    "B2_GREEN_GOVERNED_CONTEXT_MISMATCH": {
+      "commit": "e6d2ba0",
+      "fingerprint": "602226e0027a5a86b20f504d1d7aa5fdb5f606d7e2990b88da88cb23d3fa822a",
+      "summary": "C6 GOVERNED_CONTEXT_MISMATCH on ACT-T05 with the reason_code of the FSM record"
+    },
+    "B2_RED_IDEMPOTENCY_CONFLICT": {
+      "commit": "d307a0b",
+      "fingerprint": "fa50b1e3929759d0acc6dfb975bc71d0156d67230aa616f0bd9a64184455bae1",
+      "summary": "C6 IDEMPOTENCY_CONFLICT recorded on no FSM transition (later NCR-C6-016)"
+    },
+    "B2_SCAN": {
+      "commit": "88bbe39",
+      "fingerprint": "38bbea9ffdc5169dd2bd1b9fb0715ab4ae358a799329e1039034e42e871b3567",
+      "summary": "only reason_code counts (option B2 of NCP-U12-UNPRODUCED-REASON-CODES)"
+    },
+    "C1_LEGACY_QUALIFICATION": {
+      "commit": "e9bd490",
+      "fingerprint": "e3c5d621e1dd6fc0449e9dbb1295e409717aa76e4c338d25769a415e04e0a3f2",
+      "summary": "test_schema_integrity.py qualified as legacy-slice checks, syntax tree unchanged"
+    },
+    "GREEN_001": {
+      "commit": "e17dfd4",
+      "fingerprint": "bdaaaf8b17785b0818a5aedc2594c96a86c4a5f406ea0c5f2d384c35b696714f",
+      "summary": "thread 5 passed, test_ncr_tests_001_conforms passes (004 still RED)"
+    },
+    "GREEN_002": {
+      "commit": "0049871",
+      "fingerprint": "47953f397b6c1ee8115ba775fbe6738c589b6e882cbb37fbd49a4e9e9ea2edba",
+      "summary": "test_ncr_tests_002_conforms + meta corpus: 371 passed"
+    },
+    "GREEN_003": {
+      "commit": "ebb992b",
+      "fingerprint": "d46b07e928e5a2d6e9e46227b10d674f9b20bcf215a6ed411b9af07d1ed04e8a",
+      "summary": "test_ncr_tests_003_conforms + integrity module: 22 passed"
+    },
+    "GREEN_004_T31_KNOWN_DIVERGENCES": {
+      "commit": "86e4f57",
+      "fingerprint": "7109641d3a9aaa6c64239b5dfa38a7575ce6c21e8aaeb12b1620334b14da1bed",
+      "summary": "unit module 8 passed, 0 failed"
+    },
+    "GREEN_005": {
+      "commit": "4be6851",
+      "fingerprint": "f4ab31e23c33ab29704753f96ee8a2ba82a6d1a367b38b8c91c84700315de680",
+      "summary": "unit module, techniques, integrity, meta corpus: 421 passed, 1 failed (001)"
+    },
+    "GREEN_COVERAGE_CHECK_KNOWN_DIVERGENCES": {
+      "commit": "725da3f",
+      "fingerprint": "6d6cfb1ae9aa50a40ba88ccf34fbde00490f43d892e962ad88e9dc1693989560",
+      "summary": "coverage check GREEN in the known-divergence form; four ACT-T31 cases still RED"
+    },
+    "GREEN_SELF_CHECK": {
+      "commit": "20b7316",
+      "fingerprint": "d611fe6552315c2ffbbf567566d3e508a566bebbe83ca37870cc54be02d242ad",
+      "summary": "unit module, schemas, techniques and mission thread 561 passed, 0 failed"
+    },
+    "RED": {
+      "commit": "6604033",
+      "fingerprint": "70289170096fee0c72f167b185db2d1664eaad3e5320a2648e8aa0aa21ca9164",
+      "summary": "unit module: 4 failed (001, 002, 003, 005)"
+    },
+    "RED_001": {
+      "commit": "c8a5ee1",
+      "fingerprint": "a740a90589386b04b4c2f4f3e8f5f876109b907c7e8a2a6ab1351635db056c0c",
+      "summary": "mission thread through the retained C1-C8 components with the assertions of 913b43d: 4 failed, 1 passed"
+    },
+    "RED_004": {
+      "commit": "f2a197b",
+      "fingerprint": "b3780b2858ef274c607b4fdb25504f15dc83f88f438cd6c3c0cbf09616f7419b",
+      "summary": "61-row reason-code inventory, coverage check RED (corrections f1fcfea, 4fbcf16 before any GREEN)"
+    },
+    "RED_004_C6_T31": {
+      "commit": "689aff2",
+      "fingerprint": "38bbea9ffdc5169dd2bd1b9fb0715ab4ae358a799329e1039034e42e871b3567",
+      "summary": "four ACT-T31a/b cases with a typed C3 refusal: the engine leaves CANONICAL_COMMIT_PENDING (later NCR-C6-017)"
+    },
+    "RED_004_CORRECTION_3": {
+      "commit": "bc76560",
+      "fingerprint": "818b8e2729e58b1692ed6f964f731c2476b1309484b1384e9bc9bb83ddf3f2e5",
+      "summary": "COLLABORATOR_CREDITS; 12 codes uncovered"
+    },
+    "RED_A1_ADAPTATION": {
+      "commit": "9d15f46",
+      "fingerprint": "a14a566f6e4156c9734cdc03ba8b34535db2357176ecc3f6ce66c977cbcdcc9c",
+      "summary": "unit module 1 failed (001), 3 passed: legacy argument classes admitted only as A1 decides"
+    },
+    "RED_SELF_CHECK": {
+      "commit": "c7abc0f",
+      "fingerprint": "75d4f4cf6aa20933cd892ec5516a6d8614adace1a275a85c9d6b0c00bc652037",
+      "summary": "96 failed for the right reason, 27 passed (already refused cases and positive controls)"
+    },
+    "REFACTOR_SELF_CHECK_LOADERS": {
+      "commit": "010c222",
+      "fingerprint": "56e962274fd31e16d6c32b1512f59a5aaa98f7f1bf505a274e477b2cd63d7b35",
+      "summary": "file parses routed through module loaders, behaviour unchanged: 426 passed"
+    },
+    "fingerprint_command": "sha256 of the sorted 'classname::name outcome' lines of the JUnit XML (~/.ocor-codex/rem-0060/redgreen.sh, iter2/live.sh on the CI stack)"
+  }
+}

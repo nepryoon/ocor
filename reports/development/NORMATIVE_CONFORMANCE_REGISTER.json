@@ -5886,16 +5886,24 @@
       ],
       "plan_unit": "NCP-U12",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
+      "remediation_unit": "OCOR-DEV-REM-0060",
       "requirement_ids": [
         "FR-172"
       ],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_conforms"
+      },
       "seed_ref": null,
       "severity": "HIGH",
       "severity_basis": "FR-172 is P0 PoC",
       "statement": "The qualified mission-thread test does not run the retained components end to end. It resolves identity with the legacy c2_identity.IdentityRegistry, deliberates with the legacy c8_agent.AgentKernel, composes the C6 engine with the legacy c6_capabilities.CapabilityAuthority, c3_store.AtomicOutboxStore and c7_emission.EmissionFence, and uses spike adapters and oracles (spikes.*) for TypeDB, Jena, Kafka, Qdrant, context assembly and the causal query. It imports neither the C2 gateway nor the retained c4, c5, c7 or c8 packages; it does use the retained C1 builder, the C3 PostgreSQL service and the C6 engine.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_ref": "NCP-S01",
       "test_refs": [
         {
@@ -5949,14 +5957,27 @@
       ],
       "plan_unit": "NCP-U12",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
+      "remediation_unit": "OCOR-DEV-REM-0060",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_json_is_parsed_as_strict_i_json",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_versioned_yaml_is_restricted_to_i_json_values_with_unique_string_keys",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_well_formed_versioned_json_and_yaml_are_accepted",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_protoc_failures_of_the_meta_corpus_are_typed_test_failures",
+          "ocor-runtime/tests/schemas/test_contract_meta_corpus.py"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_conforms"
+      },
       "seed_ref": null,
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a77 (schema/meta tests); no P0 PoC requirement is violated by the runtime",
       "statement": "Schema/meta tests with closed records, exact field set and negative corpus exist only for the three standalone JSON Schemas of LLD v1.1 \u00a70.2 (governed context, capability lease, governed memory item), all covered by the authoritative meta-test. The component schemas of the two OpenAPI contracts (26 in the Named Query Gateway, 16 in the Governed Memory API), the messages of ocor_registry.proto and the five JSON Schemas embedded in ADD v1.3 have no such tests: the task tests that load those contracts check generation, reference resolution and round trips, not a closed-record negative corpus. Corrected scope: every standalone .schema.json contract is covered; the gap is the OpenAPI, Proto and ADD-embedded schemas.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_ref": "NCP-S02",
       "test_refs": [
         {
@@ -5993,14 +6014,23 @@
       ],
       "plan_unit": "NCP-U12",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
+      "remediation_unit": "OCOR-DEV-REM-0060",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test",
+          "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_003_conforms"
+      },
       "seed_ref": null,
       "severity": "MEDIUM",
       "severity_basis": "closed element of LLD v1.1 \u00a70.2; test-only, no runtime behaviour",
       "statement": "The schema-integrity test of the runtime suite loads every *.schema.json of ocor-runtime/schemas (the legacy-slice set) and asserts it as the normative schema set ('no normative JSON schemas found'); it does not load the contracts materialised by LLD v1.1 \u00a70.2, from which generation and fixtures must start exclusively. Related to NCR-C1-007 (the legacy artefact presenting itself as normative).",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_ref": "NCP-S03",
       "test_refs": [
         {
@@ -6037,14 +6067,24 @@
       ],
       "plan_unit": "NCP-U12",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
+      "remediation_unit": "OCOR-DEV-REM-0060",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_inventory_is_anchored",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_known_divergences_are_open_register_entries",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the_code_on_its_transition"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+      },
       "seed_ref": null,
       "severity": "LOW",
       "severity_basis": "test hygiene without observable runtime effect",
       "statement": "Many negative tests assert the exception message (pytest.raises with match=) without asserting the reason code that the norm defines for the failure: 249 pytest.raises(..., match=) occurrences in ocor-runtime/tests and reports/tests, 242 of them with no reason_code assertion in the following 600 characters (static heuristic; the external estimate was about 145 tests). Corrected count and anchor: the mandatory coverage of failure codes in the test strategy.",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "supplement_ref": "NCP-S11",
       "test_refs": [
         {
@@ -6075,14 +6115,24 @@
       ],
       "plan_unit": "NCP-U12",
       "po_decision_ref": null,
-      "remediation_record": "",
-      "remediation_unit": "",
+      "remediation_record": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
+      "remediation_unit": "OCOR-DEV-REM-0060",
       "requirement_ids": [],
+      "resolution_proof": {
+        "additional_tests": [
+          "ocor-runtime/tests/techniques/test_canonical_kernel_properties.py",
+          "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py",
+          "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py"
+        ],
+        "note": "the entry is resolved only when the unit record is SEALED with GO_FOR_EVIDENCE_SEAL at a head in the history of main and lists the entry in resolved_register_entries at that head (programme definition of a resolved entry)",
+        "record_field": "resolution_probes",
+        "red_test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_005_conforms"
+      },
       "seed_ref": "OBS-TEST-TECHNIQUES",
       "severity": "MEDIUM",
       "severity_basis": "the routing is a DEC-210 methodology rule, not an element of ADD, LLD, the Register or the contracts; recorded as MEDIUM under the most restrictive reading (iteration log, 2026-10-30)",
       "statement": "The technique routing of the test strategy is not applied: there are no property-based tests (no Hypothesis, no @given), no metamorphic tests, no causal golden dataset and no bounded model checking anywhere in ocor-runtime/tests or reports/tests. A reference model exists only for the lease (InMemoryLeaseState in OCOR-DEV-0009 and REM-0039), and a differential oracle exists for the canonical kernel (JCS against Node.js in OCOR-DEV-0007 and the TypeScript SDK conformance test). Property tests would need a new test dependency, which requires a PO decision (programme decision point 6).",
-      "status": "OPEN",
+      "status": "IN_REMEDIATION",
       "test_refs": [
         {
           "commit": "e8d73370acb970de2aca55a1316551d59e5b81cb",
