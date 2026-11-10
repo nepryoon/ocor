@@ -419,9 +419,35 @@ REASON_FIELDS = frozenset({"reason_code"})
 RECORD_FIELD_COMPONENTS = frozenset({"C6"})
 
 
-def _asserts_reason_code(node: ast.AST) -> bool:
+def _names_reason_field(node: ast.AST) -> bool:
     return any((isinstance(n, ast.Attribute) and n.attr in REASON_FIELDS) or (isinstance(n, ast.Constant) and n.value in REASON_FIELDS)
                for n in ast.walk(node))
+
+
+def _asserts_reason_code(node: ast.AST) -> bool:
+    """An assert whose condition (not its message) compares a reason_code for equality, or a return of one.
+    Preventive review P4: ``!=``, a reason_code that is only truth-tested and a code only in the message
+    of the assert do not count."""
+    if isinstance(node, ast.Return):
+        return node.value is not None and _names_reason_field(node.value)
+    if isinstance(node, ast.Assert):
+        return any(isinstance(inner, ast.Compare) and all(isinstance(op, ast.Eq) for op in inner.ops) and _names_reason_field(inner)
+                   for inner in ast.walk(node.test))
+    return False
+
+
+def _excluded_constants(node: ast.AST) -> set[int]:
+    """Ids of the constant nodes that never assert a code: the messages of asserts and the operands of
+    ``!=`` and ``not in`` comparisons."""
+    excluded: set[int] = set()
+    for inner in ast.walk(node):
+        parts: list[ast.AST] = []
+        if isinstance(inner, ast.Assert) and inner.msg is not None:
+            parts.append(inner.msg)
+        if isinstance(inner, ast.Compare) and any(isinstance(op, ast.NotEq | ast.NotIn | ast.IsNot) for op in inner.ops):
+            parts += [inner.left, *inner.comparators]
+        excluded.update(id(constant) for part in parts for constant in ast.walk(part) if isinstance(constant, ast.Constant))
+    return excluded
 
 
 def _component_names(tree: ast.Module, package: str) -> set[str]:
@@ -500,7 +526,9 @@ def _scan_module(tree: ast.Module, relative: str, packages: list[str]) -> list[t
             frontier = {inner.id for part in reached for inner in ast.walk(part) if isinstance(inner, ast.Name)} | {
                 arg.arg for part in reached if isinstance(part, ast.FunctionDef) for arg in part.args.args}
         touched = {package for package in packages if any(_touches(part, imported[package], package) for part in scope)}
-        constants = {inner.value for part in parts for inner in ast.walk(part) if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
+        excluded = {constant for part in parts for constant in _excluded_constants(part)}
+        constants = {inner.value for part in parts for inner in ast.walk(part)
+                     if isinstance(inner, ast.Constant) and isinstance(inner.value, str) and id(inner) not in excluded}
         found.append((f"{relative}::{node.name}", touched, constants, _asserts_record_reason_code(node)))
     return found
 
