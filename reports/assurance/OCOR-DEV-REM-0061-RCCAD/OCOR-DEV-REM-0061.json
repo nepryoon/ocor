@@ -106,7 +106,7 @@
       "errors_found_and_corrected": [],
       "fields_compared": 8,
       "head": "d9564267412ef7ea37306a768d7797d1e33f93f0",
-      "note": "The preventive review has not been requested, so there is no reviewer identity to compare. The implementer is Grok Build / grok-4.7 / xAI in both the record header and roles, and xAI is in verifier_excluded_providers.",
+      "note": "Preventive review OCOR-DEV-REM-0061-26d8f30c6dbd-pre is NO_BLOCKING_FINDINGS. The reviewer is Cursor / cursor-grok-4.6-xhigh / xAI, the same provider as the implementer Grok Build / grok-4.7 / xAI, and xAI is in verifier_excluded_providers. The scan head is refreshed in the following commit; this note does not change the table.",
       "output_sha256": "c572a4777e90682c3622f1efdce04ce4052d4920b66358a710a4a0d0a8bbfac2"
     },
     "table": [
@@ -390,11 +390,13 @@
     "failed": 46,
     "fingerprint_sha256": "f477a92adce5c4180f1648a7462e4fbae41a1e2e492b134a0de6f0800725c17b"
   },
-  "requalifications_remaining": "REM-0037 and REM-0056 are named by option 1. Their latest completed evidence records do not hash the lane files, so drift does not select them. Their regression records are still required before the qualifying campaign and are not written in this commit.",
+  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json, which supersedes OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3, and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json, which supersedes OCOR-DEV-REM-0056-de79d986d7f3. Both previous records hash the lane files, the plan validator and the plan run state. completed_evidence_tasks does not list these two tasks, so the drift validator does not select them; that is not because the hashes are absent.",
   "requalifications_written": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
     "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
-    "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json"
+    "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json",
+    "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json",
+    "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json"
   ],
   "roles": {
     "implementers": [
@@ -405,6 +407,14 @@
         "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer"
       }
     ],
+    "preventive_reviewer": {
+      "agent": "Cursor",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "request_id": "OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+      "reserve": true,
+      "result": "NO_BLOCKING_FINDINGS"
+    },
     "verifier_excluded_providers": [
       "xAI"
     ],
@@ -413,5 +423,34 @@
   "schema_version": "ocor-dev-rem-0061-record/v1",
   "status": "IN_PROGRESS",
   "task_id": "OCOR-DEV-REM-0061",
-  "unit_scope": "Local transfer of locked host images into lane sandboxes. Bootstrap pull and build, timers, services, the lock, CI and teardown are unchanged."
+  "unit_scope": "Local transfer of locked host images into lane sandboxes. Bootstrap pull and build, timers, services, the lock, CI and teardown are unchanged.",
+  "preventive_review": {
+    "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
+    "dispositions": [
+      {
+        "decision": "ACCEPTED_AND_FIXED. The cell scan and the roles scan are repeated on the commit that contains this text. The self-check table is unchanged.",
+        "id": "P1",
+        "severity": "advisory"
+      },
+      {
+        "decision": "ACCEPTED_AND_FIXED. The records supersede OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3. Both previous records hash the lane files.",
+        "id": "P2",
+        "severity": "advisory"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 2,
+      "blocking": 0
+    },
+    "outcome_sha256": "510193e777e9aa5bce9d01a5fa4662d91b80da0052f6992c9dcf20af189eb90b",
+    "request_id": "OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+    "result": "NO_BLOCKING_FINDINGS",
+    "reviewed_head": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
+    "reviewer": {
+      "agent": "Cursor",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "reserve": true
+    }
+  }
 }

@@ -1,0 +1,114 @@
+{
+  "change_set": {
+    "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
+    "decision": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10) option 1",
+    "id": "OCOR-DEV-REM-0061",
+    "remediation_record": "reports/assurance/OCOR-DEV-REM-0061-RCCAD/OCOR-DEV-REM-0061.json"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line reports/tests/test_local_lane_campaign.py reports/tests/test_rem0037_0006_teardown_scope.py reports/tests/test_kind_teardown_observation.py reports/tests/test_qualifying_campaign_guard.py reports/tests/test_local_lane_image_cache.py",
+      "cwd": ".",
+      "duration_seconds": 37.37,
+      "exit_code": 0,
+      "failed": 0,
+      "head_sha": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
+      "label": "regression-rem0061-lane",
+      "not_executed": 0,
+      "passed": 589,
+      "raw_sha256": "1b6d7efeb176386a507357d5322a579c8a6385a62485dbcd862db6bd9b67c30a",
+      "skipped": 0,
+      "started_at": "2026-11-10T23:25:27Z",
+      "status": "PASS",
+      "subtests_passed": 105,
+      "xfailed": 0
+    }
+  ],
+  "commit": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
+  "commit_role": "code and tests at which this regression command ran; the record commit adds the allowlist paths and these records and does not change the orchestrator or the tests",
+  "created_at": "2026-11-10T23:26:30Z",
+  "drifted_inputs": [
+    "reports/planning/OCOR_PLAN_RUN_STATE.json",
+    "reports/tests/test_local_lane_campaign.py",
+    "reports/tests/test_local_lane_image_cache.py",
+    "scripts/local_lane_image_cache.py",
+    "scripts/run_local_lane_campaign.py",
+    "scripts/validate_ocor_development_plan.py"
+  ],
+  "environment": {
+    "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
+    "clean_shell": true,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "host": "Lenovo Legion Pro 5 16IAX10H",
+    "implementer_cli": "Grok Build (grok-4.7)",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "qualification_source_commit": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
+    "ram_bytes": 65740460032,
+    "ram_source": "MemTotal at the regression command",
+    "threads": 24
+  },
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "reports/development/decision_requests/NCR-GOVERNANCE-002-MATRIX-ERRATUM.md": "d020b18e3ca09aff6ea34f2890067db1a6450f6b9153ba1f464551401787d7b1",
+    "reports/planning/OCOR_PLAN_RUN_STATE.json": "baee0617de6dfd5806413a49e098a94482041de5ec9fc1b4a112828b7fa1f07a",
+    "reports/tests/test_local_lane_campaign.py": "b8aa073ce6653b552e58a93987d95fc9b65c1d36b3445aae127c30addf2a777e",
+    "scripts/run_local_lane_campaign.py": "60d521d323d8cc70514ab6cfacb38cc9ea2fc84fa3ef1990f7f03841436cacc0",
+    "scripts/validate_ocor_development_plan.py": "e6d749029fa30d3fc7d82eacf8c83e22928b08510a87fdcd2404187bcb87c7e1",
+    "scripts/local_lane_image_cache.py": "08c2587cb122a61a4f3169d39790ec10dc45b3cb7b669632eec26d9fe308b436",
+    "reports/tests/test_local_lane_image_cache.py": "c28f6ed7651fb597d25cc49383fd3585e55280f259dd0db6ad0840ca59c9f85f"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs (immutable inputs/ tree)",
+  "previous_record": {
+    "record_id": "OCOR-DEV-REM-0056-de79d986d7f3",
+    "record_path": "reports/assurance/OCOR-DEV-REM-0056-RCCAD/OCOR-DEV-REM-0056.json",
+    "record_sha256": "b734f3e864acc7b69e6b7e68c440abd85033177b77a49bf797ce11bf26d6bc8d",
+    "status": "SEALED"
+  },
+  "qualification_limits": "Regression-only requalification after OCOR-DEV-REM-0061 changed the lane orchestrator, its tests and the plan allowlist. It does not rerun the four-lane suite and it is not evidence of a requirement. Claims stay E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC and Production NO-GO.",
+  "qualifies_requirements": false,
+  "raw_output_format": "pytest -q stdout plus the wrapper line EXIT:0",
+  "raw_output_sha256": "1b6d7efeb176386a507357d5322a579c8a6385a62485dbcd862db6bd9b67c30a",
+  "record_id": "OCOR-DEV-REM-0056-requalified-rem0061-26d8f30c6dbd",
+  "requalification_class": "REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30) point 1: declared non-qualifying class; no case bound to a requirement",
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "bindable_requirements": [],
+    "requirements": [],
+    "rule": "always regression-only; REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10) option 1 and REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30)"
+  },
+  "residual_risks": [
+    "Regression-only requalification after the lane image cache of OCOR-DEV-REM-0061. Not runtime conformance and not evidence of a requirement."
+  ],
+  "result": "PASS",
+  "review_scope": "regression-only: the lane modules of REM-0037 and REM-0056 passed together at the REM-0061 head after the image-cache change; not a re-assessment of conformance",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0061 regression requalification of OCOR-DEV-REM-0056"
+      }
+    ],
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_started_by_implementer": false
+  },
+  "schema_version": "1.0",
+  "status": "PASS",
+  "supersedes": "OCOR-DEV-REM-0056-de79d986d7f3",
+  "supersession_scope": "Regression-only after the OCOR-DEV-REM-0061 change of the lane orchestrator, its tests and scripts/validate_ocor_development_plan.py. Existing cases were not removed, skipped or weakened. Not a re-assessment of conformance and never evidence of a requirement.",
+  "task_id": "OCOR-DEV-REM-0056",
+  "tests_unchanged_from_base": false,
+  "tests_unchanged_note": "reports/tests/test_local_lane_campaign.py and the new reports/tests/test_local_lane_image_cache.py add the cache cases required by option 1. No previous case was removed, skipped, xfailed or weakened."
+}

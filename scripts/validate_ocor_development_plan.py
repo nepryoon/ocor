@@ -850,7 +850,7 @@ def main() -> int:
         # OCOR-DEV-REM-0061 (REM-0060-LANE-IMAGE-PROVISIONING option 1): local
         # transfer of locked host images into lane sandboxes, its live proof,
         # the unit record and the regression-only requalifications of 0005,
-        # 0050 and 0082 forced by this allowlist.
+        # 0050, 0082, REM-0037 and REM-0056 forced by this allowlist.
         "scripts/local_lane_image_cache.py",
         "reports/tests/test_local_lane_image_cache.py",
         "reports/assurance/OCOR-DEV-REM-0061-RCCAD/README.md",
@@ -862,6 +862,10 @@ def main() -> int:
         "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.log",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
         "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.log",
+        "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json",
+        "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.log",
         "reports/assurance/OCOR-DEV-REM-0037-RCCAD/lane_weights.json",
         "reports/assurance/OCOR-DEV-REM-0037-RCCAD/preimplementation_measurement.json",
         # OCOR-DEV-REM-0037 candidate: remediation record (inventory, memory and the
