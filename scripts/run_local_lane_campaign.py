@@ -50,6 +50,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, Protocol, TypeGuard
 
 import bootstrap_ci_environment as bootstrap_ci
+import local_lane_image_cache as image_cache
 import observe_kind_teardown as kind_observer
 import run_qualifying_campaign as campaign
 from run_qualifying_campaign import CampaignError
@@ -529,6 +530,54 @@ def start_sandbox(lane: Lane, mounts: list[Path], runner: Runner, *, output_root
             "delegated_controllers": delegated}
 
 
+def cache_command_timeout(timeout: float | Callable[[], float]) -> float:
+    """Positive finite seconds for one cache command, from a value or a fresh callback."""
+    value = timeout() if callable(timeout) else timeout
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+        raise CampaignError("image cache command timeout is not a positive finite number")
+    return float(value)
+
+
+def prepare_image_cache(lock_path: Path, destination: Path, runner: Runner, *,
+                        timeout: float | Callable[[], float]) -> dict[str, Any]:
+    """Save locked images that are already on the host daemon. Never pulls."""
+    return image_cache.prepare_image_cache(lock_path, destination, runner, timeout=timeout)
+
+
+def seed_lane_images(lane: Lane, path: str, cache_dir: Path, lock_path: Path, runner: Runner, *,
+                     timeout: float | Callable[[], float]) -> dict[str, Any]:
+    """Verify every archive, then load present images into one private daemon."""
+    manifest = image_cache.verify_image_cache(cache_dir, lock_path)
+    images = manifest["images"]
+    if not isinstance(images, list):
+        raise CampaignError("image cache manifest is malformed")
+    loaded: list[str] = []
+    misses: list[str] = []
+    for entry in images:
+        if not isinstance(entry, dict):
+            raise CampaignError("image cache manifest is malformed")
+        status, service_id = entry.get("status"), entry.get("service_id")
+        if not isinstance(service_id, str):
+            raise CampaignError("image cache manifest is malformed")
+        if status == "MISS":
+            misses.append(service_id)
+            continue
+        archive_name, image_id = entry.get("archive"), entry.get("image_id")
+        if status != "PRESENT" or not isinstance(archive_name, str) or not isinstance(image_id, str):
+            raise CampaignError("image cache manifest is malformed")
+        archive = cache_dir / archive_name
+        try:
+            runner(sandbox_exec_argv(lane, path, ["docker", "load", "-i", str(archive)], {}),
+                   timeout=cache_command_timeout(timeout))
+            inspected = runner(sandbox_exec_argv(lane, path, ["docker", "image", "inspect", image_id], {}),
+                               timeout=cache_command_timeout(timeout))
+        except CampaignError as exc:
+            raise CampaignError(f"image cache load failed: {service_id}: {exc}") from exc
+        image_cache.parse_loaded_inspect(inspected.stdout, image_id)
+        loaded.append(service_id)
+    return {"loaded": loaded, "misses": misses}
+
+
 def teardown_lane(lane: Lane, path: str, runner: Runner) -> dict[str, Any]:
     """Stack, inner residue check, sandbox, volumes and clone; every step runs, then fail closed."""
     errors: list[str] = []
@@ -805,12 +854,18 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     try:
         campaign.verify_revision(source, head)
         ensure_root_image(runner, host_usr_links())
+        lock_path = source / "infra/services.lock.json"
+        cache_dir = work / "image-cache"
+        report["image_cache"] = prepare_image_cache(
+            lock_path, cache_dir, runner, timeout=lambda: float(PROVISION_TIMEOUT_SECONDS))
         for lane in lane_set:
             entry: dict[str, Any] = {"lane": lane.index, "provision": provision_lane(
                 lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
             entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["image_cache"] = seed_lane_images(
+                lane, paths[lane.index], cache_dir, lock_path, runner, timeout=lambda: float(PROVISION_TIMEOUT_SECONDS))
             probes = {"head": ["git", "rev-parse", "HEAD"], "python": ["python", "-c", "import sys; print(sys.version.split()[0])"],
                       "docker": ["docker", "info", "--format", "{{.ServerVersion}} {{.CgroupVersion}}"], "kind": ["kind", "version"],
                       "node": ["node", "--version"], "uid": ["id", "-u"]}
@@ -1214,6 +1269,16 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
                                 "lane_estimated_seconds": lane_loads(parts, weights),
                                 "lower_bound_seconds": max(case_weight(node, weights) for node in collected)}
         ensure_root_image(runner, host_usr_links())
+        lock_path = source / "infra/services.lock.json"
+        cache_dir = work / "image-cache"
+
+        def campaign_cache_timeout() -> float:
+            remaining = FULL_SUITE_LIMIT_SECONDS - (time.time() - started)
+            if remaining <= 0:
+                raise CampaignError("campaign deadline exhausted during image cache transfer")
+            return remaining
+
+        result["image_cache"] = prepare_image_cache(lock_path, cache_dir, runner, timeout=campaign_cache_timeout)
         specs = {}
         for lane, part in zip(lanes, parts, strict=True):
             provision_start = time.monotonic()
@@ -1222,6 +1287,8 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
             entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["image_cache"] = seed_lane_images(
+                lane, paths[lane.index], cache_dir, lock_path, runner, timeout=campaign_cache_timeout)
             entry["provisioning_seconds"] = round(time.monotonic() - provision_start, 3)
             specs[lane.index] = write_lane_spec(lane, head, part, started)
             result["lanes"].append(entry)

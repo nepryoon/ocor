@@ -12,9 +12,12 @@ supervision, results and teardown work on the lane count admitted at start.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import io
 import json
 import sys
+import tarfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -22,6 +25,11 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+CACHE_SPEC = importlib.util.spec_from_file_location('local_lane_image_cache', ROOT / 'scripts/local_lane_image_cache.py')
+assert CACHE_SPEC is not None and CACHE_SPEC.loader is not None
+IMAGE_CACHE = importlib.util.module_from_spec(CACHE_SPEC)
+sys.modules['local_lane_image_cache'] = IMAGE_CACHE
+CACHE_SPEC.loader.exec_module(IMAGE_CACHE)
 SPEC = importlib.util.spec_from_file_location('ocor_local_lanes', ROOT / 'scripts/run_local_lane_campaign.py')
 assert SPEC is not None and SPEC.loader is not None
 LANES = importlib.util.module_from_spec(SPEC)
@@ -1346,6 +1354,18 @@ def host_world(tmp_path, monkeypatch):
         world['calls'].append(('collect', str(directory), list(selection)))
         return list(world['collected'])
 
+    def prepare_image_cache(lock_path, destination, runner, *, timeout):
+        world['calls'].append(('prepare_image_cache', str(lock_path)))
+        if callable(timeout):
+            timeout()
+        return {'images': [], 'lock_sha256': '0' * 64, 'schema': 'ocor-local-lane-image-cache/v1'}
+
+    def seed_lane_images(item, path, cache_dir, lock_path, runner, *, timeout):
+        world['calls'].append(('image_cache', item.index))
+        if callable(timeout):
+            timeout()
+        return {'loaded': [], 'misses': [], 'status': 'COLD'}
+
     def provision_lane(item, source_path, head, runner, env):
         world['calls'].append(('provision', item.index))
         if world['fail_provision'] == item.index:
@@ -1386,6 +1406,8 @@ def host_world(tmp_path, monkeypatch):
     monkeypatch.setattr(CAMPAIGN, 'verify_revision', verify_revision)
     monkeypatch.setattr(CAMPAIGN, 'collect_nodeids', collect_nodeids)
     monkeypatch.setattr(LANES, 'load_weights', weights)
+    monkeypatch.setattr(LANES, 'prepare_image_cache', prepare_image_cache)
+    monkeypatch.setattr(LANES, 'seed_lane_images', seed_lane_images)
     monkeypatch.setattr(LANES, 'provision_lane', provision_lane)
     monkeypatch.setattr(LANES, 'start_sandbox', start_sandbox)
     monkeypatch.setattr(LANES, 'ensure_root_image', lambda runner, links: world['calls'].append(('root_image',)))
@@ -2196,6 +2218,500 @@ def test_power_reading_with_an_undecodable_supply_is_not_executed(tmp_path):
     root = power_supplies(tmp_path, AC={'type': 'Mains', 'online': '1'})
     (root / 'AC/online').write_bytes(b'\xff\n')
     assert LANES.power_reading(root)['source'] == 'NOT_EXECUTED'
+
+
+# --- local image cache: transfer locked host images, never pull (OCOR-DEV-REM-0061) ---
+# Archives are OCI layouts. The image id is an index.json manifest digest plus
+# its blob, never the classic manifest.json Config. A miss is an absent host
+# image. An empty or inconsistent document fails closed.
+
+DIGEST_A = 'ab' * 32
+DIGEST_B = 'cd' * 32
+PIN_A = f'openpolicyagent/opa@sha256:{DIGEST_A}'
+PIN_B = f'ghcr.io/spiffe/spire-agent@sha256:{DIGEST_B}'
+ID_A = f'sha256:{DIGEST_A}'
+ID_B = f'sha256:{DIGEST_B}'
+FUSEKI_BASE = 'eclipse-temurin@sha256:db1689535962d757a5adabf57387584ed543d38c0b9d1fe870123ea362ad73b0'
+
+
+def canonical(document):
+    return json.dumps(document, indent=2, sort_keys=True) + '\n'
+
+
+def write_lock(path, services):
+    path.write_text(canonical({'schema_version': '1.0', 'services': services}), encoding='utf-8')
+
+
+def oci_tar(image_id, *, index_digest=None, include_index=True, include_blob=True, classic_config=None):
+    """OCI layout whose index manifest digest defaults to image_id. Classic Config is a different blob."""
+    claimed = index_digest or image_id
+    hex_id = claimed.split(':', 1)[1]
+    config_hex = classic_config or ('c' * 64)
+    index = {'manifests': [{'digest': claimed, 'mediaType': 'application/vnd.oci.image.manifest.v1+json', 'size': 2}],
+             'schemaVersion': 2}
+    classic = [{'Config': f'blobs/sha256/{config_hex}', 'Layers': [], 'RepoTags': None}]
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode='w') as archive:
+        def add(name, payload):
+            data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+        add('oci-layout', {'imageLayoutVersion': '1.0.0'})
+        if include_index:
+            add('index.json', index)
+        add('manifest.json', classic)
+        if include_blob:
+            add(f'blobs/sha256/{hex_id}', b'{}')
+        add(f'blobs/sha256/{config_hex}', b'{"architecture":"amd64"}')
+    return buffer.getvalue()
+
+
+class CacheRunner:
+    """Scripts host inspect and save. Save writes an OCI tar; it never pulls."""
+
+    def __init__(self, images, *, tar_for=None, empty_inspect=()):
+        self.calls = []
+        self.images = images
+        self.tar_for = tar_for or {}
+        self.empty_inspect = set(empty_inspect)
+
+    def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+        argv = [str(item) for item in argv]
+        self.calls.append(argv)
+        if argv[:3] == ['docker', 'image', 'inspect'] and len(argv) == 4:
+            reference = argv[3]
+            if reference in self.empty_inspect:
+                return LANES.CommandResult(0, '')
+            spec = self.images.get(reference)
+            if spec is None or spec[0] != 0:
+                if check:
+                    raise CAMPAIGN.CampaignError(f'command failed (1): {argv[:6]}')
+                return LANES.CommandResult(1, '')
+            _code, image_id, digests, extra = spec
+            document = {'Id': image_id, 'RepoDigests': digests, 'Os': 'linux'}
+            document.update(extra)
+            return LANES.CommandResult(0, json.dumps([document]))
+        if argv[:4] == ['docker', 'image', 'save', '-o'] and len(argv) == 6:
+            archive, reference = Path(argv[4]), argv[5]
+            image_id = self.tar_for.get(reference, self.images[reference][1])
+            archive.write_bytes(image_id if isinstance(image_id, bytes) else oci_tar(image_id))
+            return LANES.CommandResult(0, '')
+        raise CAMPAIGN.CampaignError(f'unexpected command: {argv}')
+
+
+def present(reference, digest, *, digests=None, extra=None):
+    return (0, f'sha256:{digest}', list(digests if digests is not None else [reference]), extra or {})
+
+
+def services_for(*pins):
+    return [{'id': service_id, 'image': reference} for service_id, reference in pins]
+
+
+def test_serial_fallback_does_not_prepare_an_image_cache(host_world):
+    host_world['meminfo'].write_text(meminfo(31743008, 1000))
+    result = execute(host_world)
+    assert result['status'] == 'SERIAL_FALLBACK'
+    assert not [call for call in host_world['calls'] if call[0] in ('prepare_image_cache', 'image_cache')]
+
+
+def test_each_lane_is_seeded_after_its_sandbox_and_before_launch(host_world):
+    execute(host_world, selection=nodes())
+    calls = [call[0] for call in host_world['calls']]
+    assert calls.count('prepare_image_cache') == 1
+    assert calls.index('root_image') < calls.index('prepare_image_cache') < calls.index('provision')
+    pending = False
+    seeds = 0
+    for call in calls:
+        if call == 'sandbox':
+            pending = True
+        elif call == 'image_cache':
+            assert pending
+            pending = False
+            seeds += 1
+        elif call == 'launch':
+            assert not pending
+    assert seeds == 2 and calls.count('launch') == 2
+
+
+def test_lifecycle_seeds_every_sandbox_before_bootstrap(life_world):
+    report = lifecycle(life_world)
+    assert report['status'] == 'PASS', report.get('error')
+    calls = [call[0] for call in life_world['calls']]
+    assert calls.count('prepare_image_cache') == 1 and calls.count('image_cache') == 4
+    assert calls.index('prepare_image_cache') < calls.index('sandbox')
+    assert max(i for i, call in enumerate(calls) if call == 'image_cache') < calls.index('bootstrap')
+
+
+def test_bootstrap_pull_and_the_lane_bootstrap_budget_stay_unchanged():
+    source = (ROOT / 'scripts/bootstrap_ci_environment.py').read_text(encoding='utf-8')
+    assert '["docker", "pull", service["image"]]' in source
+    assert '"--pull"' in source
+    assert LANES.LANE_BOOTSTRAP == (
+        ['scripts/bootstrap_ci_environment.py', '--teardown', '--execute'],
+        ['scripts/bootstrap_ci_environment.py', '--execute', '--timeout', '600'])
+    assert LANES.FULL_SUITE_LIMIT_SECONDS == 5400 and LANES.PROVISION_TIMEOUT_SECONDS == 1200
+    cache_source = (ROOT / 'scripts/local_lane_image_cache.py').read_text(encoding='utf-8')
+    lane_source = (ROOT / 'scripts/run_local_lane_campaign.py').read_text(encoding='utf-8')
+    assert '"docker", "pull"' not in cache_source and '"docker", "build"' not in cache_source
+    assert 'FULL_SUITE_LIMIT_SECONDS = campaign.FULL_SUITE_LIMIT_SECONDS' in lane_source
+
+
+def test_image_cache_transfer_does_not_restart_the_campaign_clock(host_world, monkeypatch):
+    ticks = {'n': 0}
+    base = LANES.time.time()
+
+    def now():
+        ticks['n'] += 1
+        return base + ticks['n']
+
+    monkeypatch.setattr(LANES.time, 'time', now)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['campaign_start'] == base + 1 and ticks['n'] > 1
+
+
+def test_image_cache_transfer_stops_at_the_existing_campaign_deadline(host_world, monkeypatch):
+    calls = {'n': 0}
+
+    def now():
+        calls['n'] += 1
+        if calls['n'] == 1:
+            return 5_000.0
+        return 5_000.0 + LANES.FULL_SUITE_LIMIT_SECONDS + 1
+
+    monkeypatch.setattr(LANES.time, 'time', now)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert result['error'] == 'campaign deadline exhausted during image cache transfer'
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' in names
+    assert 'sandbox' not in names and 'launch' not in names
+
+
+def test_execute_fails_closed_when_the_image_cache_load_fails(host_world, monkeypatch):
+    def seed(item, path, cache_dir, lock_path, runner, *, timeout):
+        host_world['calls'].append(('image_cache', item.index))
+        raise CAMPAIGN.CampaignError('image cache load failed: opa: command failed (1)')
+
+    monkeypatch.setattr(LANES, 'seed_lane_images', seed)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL' and 'image cache load failed: opa' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'launch' not in names and names.count('teardown') == 2
+
+
+def test_cache_repo_lock_pins_the_fuseki_base_and_every_service_image():
+    document = json.loads((ROOT / 'infra/services.lock.json').read_text(encoding='utf-8'))
+    pins = IMAGE_CACHE.locked_image_pins(document)
+    expected = []
+    for service in document['services']:
+        if 'image' in service:
+            expected.append((service['id'], 'pinned_pull', service['image']))
+        if service['id'] == 'fuseki':
+            expected.append((service['id'], 'fuseki_base', service['build']['base_image']))
+    assert [(item['service_id'], item['role'], item['pinned_reference']) for item in pins] == expected
+    assert len(pins) == 14
+    fuseki = next(item for item in pins if item['service_id'] == 'fuseki')
+    assert fuseki['role'] == 'fuseki_base' and fuseki['pinned_reference'] == FUSEKI_BASE
+    assert all('ocor/jena-fuseki' not in item['pinned_reference'] for item in pins)
+
+
+def test_cache_rejects_a_service_with_neither_image_nor_fuseki_base():
+    with pytest.raises(CAMPAIGN.CampaignError, match='neither a pinned image nor a Fuseki base image'):
+        IMAGE_CACHE.locked_image_pins({'services': [{'id': 'orphan'}]})
+    with pytest.raises(CAMPAIGN.CampaignError, match='Fuseki base image is missing'):
+        IMAGE_CACHE.locked_image_pins({'services': [{'id': 'fuseki', 'build': {}}]})
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed pinned reference'):
+        IMAGE_CACHE.locked_image_pins({'services': [{'id': 'fuseki', 'build': {'base_image': 'ocor/jena-fuseki:6.2.0'}}]})
+
+
+@pytest.mark.parametrize('reference', [
+    '',
+    'openpolicyagent/opa:latest',
+    'openpolicyagent/opa@sha256:' + 'AB' * 32,
+    'openpolicyagent/opa@sha256:' + 'ab' * 31,
+    'openpolicyagent/opa@sha256:' + 'gg' * 32,
+    'pä@sha256:' + 'ab' * 32,
+    'Openpolicyagent/opa@sha256:' + 'ab' * 32,
+    'opa@sha256:' + 'ab' * 32 + ' ',
+])
+def test_cache_rejects_a_malformed_pinned_reference_before_compare(reference):
+    text = json.dumps([{'Id': ID_A, 'RepoDigests': [reference]}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed pinned reference'):
+        IMAGE_CACHE.parse_host_inspect(text, reference)
+
+
+def test_cache_prepares_a_valid_archive_and_verifies_it(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A), ('spire-agent', PIN_B)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A), PIN_B: present(PIN_B, DIGEST_B, extra={'Size': 3})})
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=1200)
+    assert manifest['schema'] == 'ocor-local-lane-image-cache/v1'
+    assert manifest['lock_sha256'] == hashlib.sha256(lock.read_bytes()).hexdigest()
+    assert [item['status'] for item in manifest['images']] == ['PRESENT', 'PRESENT']
+    assert manifest['images'][0]['image_id'] == ID_A
+    assert manifest['images'][0]['archive'] == 'opa-pinned_pull.tar'
+    stored = json.loads((tmp_path / 'image-cache' / 'manifest.json').read_text(encoding='utf-8'))
+    assert stored == manifest
+    assert (tmp_path / 'image-cache' / 'manifest.json').read_text(encoding='utf-8') == canonical(manifest)
+    verified = IMAGE_CACHE.verify_image_cache(tmp_path / 'image-cache', lock)
+    assert verified == manifest
+    assert not any('pull' in argv or 'build' in argv for argv in runner.calls)
+
+
+def test_cache_missing_image_is_a_cold_miss_without_save_or_pull(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({})
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=lambda: 30)
+    assert manifest['images'] == [{
+        'pinned_reference': PIN_A, 'role': 'pinned_pull', 'service_id': 'opa', 'status': 'MISS'}]
+    assert runner.calls == [['docker', 'image', 'inspect', PIN_A]]
+    assert list((tmp_path / 'image-cache').iterdir()) == [tmp_path / 'image-cache' / 'manifest.json']
+
+
+def test_cache_empty_inspect_is_not_a_miss(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)}, empty_inspect={PIN_A})
+    with pytest.raises(CAMPAIGN.CampaignError, match='not valid JSON'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+    assert not (tmp_path / 'image-cache').exists()
+    assert not any(argv[2] == 'save' for argv in runner.calls if len(argv) > 2)
+
+
+def test_cache_rejects_an_image_id_that_differs_from_the_locked_digest(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_B, digests=[PIN_A])})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image id does not match the locked digest'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+    assert not any(len(argv) > 2 and argv[2] == 'save' for argv in runner.calls)
+
+
+def test_cache_rejects_a_pinned_reference_absent_from_repo_digests():
+    text = json.dumps([{'Id': ID_A, 'RepoDigests': [PIN_B], 'RepoTags': ['opa:local']}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='pinned reference is absent from RepoDigests'):
+        IMAGE_CACHE.parse_host_inspect(text, PIN_A)
+
+
+def test_cache_rejects_an_altered_archive(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    cache = tmp_path / 'image-cache'
+    IMAGE_CACHE.prepare_image_cache(lock, cache, runner, timeout=30)
+    archive = cache / 'opa-pinned_pull.tar'
+    archive.write_bytes(archive.read_bytes()[:-1] + bytes([archive.read_bytes()[-1] ^ 0x01]))
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache archive is altered'):
+        IMAGE_CACHE.verify_image_cache(cache, lock)
+
+
+def test_cache_rejects_an_archive_whose_oci_index_digest_differs(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)}, tar_for={PIN_A: oci_tar(ID_A, index_digest=ID_B)})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache archive image id does not match'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+    assert not (tmp_path / 'image-cache').exists()
+
+
+def test_cache_rejects_a_classic_config_blob_as_the_image_id(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    payload = oci_tar(ID_A, index_digest=ID_B, classic_config=DIGEST_A)
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)}, tar_for={PIN_A: payload})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache archive image id does not match'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=30)
+
+
+def test_cache_rejects_a_load_error(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    builder = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    cache = tmp_path / 'image-cache'
+    IMAGE_CACHE.prepare_image_cache(lock, cache, builder, timeout=30)
+
+    class LoadRunner:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+            argv = [str(item) for item in argv]
+            self.calls.append(argv)
+            if 'load' in argv:
+                raise CAMPAIGN.CampaignError(f'command failed (1): {argv[:6]}')
+            if argv[-3:] == ['docker', 'image', 'inspect']:
+                return LANES.CommandResult(0, json.dumps([{'Id': ID_A, 'RepoDigests': []}]))
+            raise CAMPAIGN.CampaignError(f'unexpected command: {argv}')
+
+    runner = LoadRunner()
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache load failed: opa'):
+        LANES.seed_lane_images(lane(tmp_path), '/usr/bin', cache, lock, runner, timeout=1200)
+    assert runner.calls and 'load' in runner.calls[0]
+    assert all('pull' not in argv for argv in runner.calls)
+
+
+def test_cache_seed_skips_load_for_a_miss_and_checks_a_loaded_id(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A), ('spire-agent', PIN_B)))
+    builder = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    cache = tmp_path / 'image-cache'
+    IMAGE_CACHE.prepare_image_cache(lock, cache, builder, timeout=30)
+
+    class SeedRunner:
+        def __init__(self, ident):
+            self.ident = ident
+            self.calls = []
+
+        def __call__(self, argv, *, cwd=None, env=None, input=None, timeout=600, check=True):
+            argv = [str(item) for item in argv]
+            self.calls.append(argv)
+            if 'load' in argv:
+                return LANES.CommandResult(0, '')
+            return LANES.CommandResult(0, json.dumps([{'Id': self.ident, 'Os': 'linux'}]))
+
+    loaded = SeedRunner(ID_A)
+    seeded = LANES.seed_lane_images(lane(tmp_path), '/usr/bin', cache, lock, loaded, timeout=lambda: 50)
+    assert seeded == {'loaded': ['opa'], 'misses': ['spire-agent']}
+    assert len(loaded.calls) == 2 and 'load' in loaded.calls[0] and loaded.calls[1][-1] == ID_A
+    mismatched = SeedRunner(ID_B)
+    with pytest.raises(CAMPAIGN.CampaignError, match='loaded image id does not match the cache'):
+        LANES.seed_lane_images(lane(tmp_path), '/usr/bin', cache, lock, mismatched, timeout=50)
+
+
+@pytest.mark.parametrize(('document', 'match'), [
+    ('null', 'one-element list'),
+    ('{}', 'one-element list'),
+    ('[]', 'one-element list'),
+    (json.dumps([{'Id': ID_A}, {'Id': ID_A}]), 'one-element list'),
+    ('[null]', 'element is null'),
+    ('[{}]', 'image id is missing'),
+    (json.dumps([{'RepoDigests': [PIN_A]}]), 'image id is missing'),
+    (json.dumps([{'Id': True, 'RepoDigests': [PIN_A]}]), 'image id is not a string'),
+    (json.dumps([{'Id': 1, 'RepoDigests': [PIN_A]}]), 'image id is not a string'),
+    (json.dumps([{'Id': 1.5, 'RepoDigests': [PIN_A]}]), 'image id is not a string'),
+    (json.dumps([{'Id': '', 'RepoDigests': [PIN_A]}]), 'image id is not a digest'),
+    (json.dumps([{'Id': 'sha256:' + 'AB' * 32, 'RepoDigests': [PIN_A]}]), 'image id is not a digest'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': {}}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': None}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': [None]}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': [{}]}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A}]), 'RepoDigests is not a list of strings'),
+    (json.dumps([{'Id': ID_A, 'RepoDigests': [PIN_A]}]) + '\n{}', 'not valid JSON'),
+])
+def test_cache_rejects_inspect_documents_with_the_wrong_shape(document, match):
+    with pytest.raises(CAMPAIGN.CampaignError, match=match):
+        IMAGE_CACHE.parse_host_inspect(document, PIN_A)
+
+
+def test_cache_rejects_a_lone_surrogate_before_digest_compare():
+    raw = '[{"Id": "%s", "RepoDigests": ["%s"], "nested": {"labels": ["\\uD800"]}}]' % (ID_A, PIN_B)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lone surrogate'):
+        IMAGE_CACHE.parse_host_inspect(raw, PIN_A)
+    key = '[{"Id": "%s", "RepoDigests": ["%s"], "\\uD800": 1}]' % (ID_A, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='lone surrogate'):
+        IMAGE_CACHE.parse_host_inspect(key, PIN_A)
+
+
+def test_cache_accepts_a_valid_surrogate_pair_in_an_unused_field():
+    raw = '[{"Id": "%s", "RepoDigests": ["%s"], "note": "\\uD800\\uDC00"}]' % (ID_A, PIN_A)
+    assert IMAGE_CACHE.parse_host_inspect(raw, PIN_A) == ID_A
+    loaded = '[{"Id": "%s", "RepoDigests": [], "note": "\\uD800\\uDC00"}]' % ID_A
+    IMAGE_CACHE.parse_loaded_inspect(loaded, ID_A)
+
+
+def test_cache_rejects_duplicate_keys_nan_and_trailing_junk():
+    duplicate = '[{"Id": "%s", "Id": "%s", "RepoDigests": ["%s"]}]' % (ID_A, ID_B, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='duplicate key'):
+        IMAGE_CACHE.parse_host_inspect(duplicate, PIN_A)
+    nan = '[{"Id": "%s", "RepoDigests": ["%s"], "Size": NaN}]' % (ID_A, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='non-finite JSON number'):
+        IMAGE_CACHE.parse_host_inspect(nan, PIN_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='not valid JSON'):
+        IMAGE_CACHE.parse_host_inspect('', PIN_A)
+
+
+def test_cache_loaded_inspect_rejects_a_bool_digest_list_and_accepts_no_repo_digests():
+    with pytest.raises(CAMPAIGN.CampaignError, match='RepoDigests is not a list of strings'):
+        IMAGE_CACHE.parse_loaded_inspect(json.dumps([{'Id': ID_A, 'RepoDigests': True}]), ID_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='element is null'):
+        IMAGE_CACHE.parse_loaded_inspect('[null]', ID_A)
+    IMAGE_CACHE.parse_loaded_inspect(json.dumps([{'Id': ID_A, 'RepoDigests': []}]), ID_A)
+    with pytest.raises(CAMPAIGN.CampaignError, match='image id is not a digest'):
+        IMAGE_CACHE.parse_loaded_inspect(json.dumps([{'Id': ID_A}]), 'sha256:' + 'AB' * 32)
+
+
+def test_cache_rejects_an_existing_destination_a_bad_lock_and_a_hash_mismatch(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    destination = tmp_path / 'image-cache'
+    destination.mkdir()
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache destination exists'):
+        IMAGE_CACHE.prepare_image_cache(lock, destination, runner, timeout=30)
+    assert destination.exists() and runner.calls == []
+    destination.rmdir()
+    lock.write_bytes(b'\xff{"services": []}')
+    with pytest.raises(CAMPAIGN.CampaignError, match='not UTF-8'):
+        IMAGE_CACHE.prepare_image_cache(lock, destination, runner, timeout=30)
+    write_lock(lock, services_for(('opa', PIN_A)))
+    IMAGE_CACHE.prepare_image_cache(lock, destination, runner, timeout=30)
+    original = lock.read_bytes()
+    lock.write_text(canonical({'schema_version': '1.0', 'services': services_for(('opa', PIN_B))}), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache lock hash does not match'):
+        IMAGE_CACHE.verify_image_cache(destination, lock)
+    lock.write_bytes(original)
+    manifest_path = destination / 'manifest.json'
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    manifest['images'][0]['pinned_reference'] = PIN_B
+    manifest['images'][0]['image_id'] = ID_B
+    manifest_path.write_text(canonical(manifest), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache pin list does not match the lock'):
+        IMAGE_CACHE.verify_image_cache(destination, lock)
+
+
+def test_cache_manifest_rejects_extra_keys_and_a_miss_that_claims_an_archive(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({})
+    cache = tmp_path / 'image-cache'
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, cache, runner, timeout=30)
+    manifest['extra'] = 1
+    (cache / 'manifest.json').write_text(canonical(manifest), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed'):
+        IMAGE_CACHE.verify_image_cache(cache, lock)
+    del manifest['extra']
+    manifest['images'][0]['archive'] = 'opa-pinned_pull.tar'
+    (cache / 'manifest.json').write_text(canonical(manifest), encoding='utf-8')
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed'):
+        IMAGE_CACHE.verify_image_cache(cache, lock)
+
+
+def test_cache_stops_before_a_command_when_the_timeout_callback_refuses(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, services_for(('opa', PIN_A)))
+    runner = CacheRunner({PIN_A: present(PIN_A, DIGEST_A)})
+
+    def refuse():
+        raise CAMPAIGN.CampaignError('campaign deadline exhausted during image cache transfer')
+
+    with pytest.raises(CAMPAIGN.CampaignError, match='campaign deadline exhausted during image cache transfer'):
+        IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=refuse)
+    assert not (tmp_path / 'image-cache').exists()
+    assert runner.calls == []
+
+
+def test_cache_does_not_pull_or_build_while_preparing(tmp_path):
+    lock = tmp_path / 'services.lock.json'
+    write_lock(lock, [{'id': 'fuseki', 'build': {'base_image': FUSEKI_BASE}}])
+    runner = CacheRunner({FUSEKI_BASE: present(FUSEKI_BASE, FUSEKI_BASE.rsplit(':', 1)[1])})
+    manifest = IMAGE_CACHE.prepare_image_cache(lock, tmp_path / 'image-cache', runner, timeout=15)
+    assert manifest['images'][0]['role'] == 'fuseki_base'
+    assert manifest['images'][0]['archive'] == 'fuseki-fuseki_base.tar'
+    assert all(argv[:3] == ['docker', 'image', 'inspect'] or argv[:4] == ['docker', 'image', 'save', '-o'] for argv in runner.calls)
+    assert not any('pull' in argv or 'build' in argv for argv in runner.calls)
 
 
 @pytest.mark.parametrize('check', [True, False])
