@@ -4,13 +4,13 @@
     "FGM-14 'use' of procedural memory is retrieval and context assembly, where the live retrieval capability (memory kinds), materialisation and context policy and the stop epoch are re-evaluated; no runtime component consumes memory instruction eligibility for tool execution.",
     "Policy, hold, approval and context-policy authorities are explicit test ports of the sealed G5 modules (as in OCOR-DEV-0061); OPA is real only in the C6 promotion path of FGM-15."
   ],
-  "base_sha": "50fce3cc303bf7b4c1a08c8cb6f7fa67bd7896b9",
-  "baseline_commit": "50fce3cc303bf7b4c1a08c8cb6f7fa67bd7896b9",
-  "branch": "governed/state-sync-rem0060-iter2-20261110",
+  "base_sha": "b3f68b0e8da52f73c2d66d602f957531a02b0918",
+  "baseline_commit": "b3f68b0e8da52f73c2d66d602f957531a02b0918",
+  "branch": "governed/state-sync-rem0060-iter2b-20261110",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0060-ncp-u12-tests",
-    "head_sha": "496d745d9e97610c8fe6bd21e2db94844e22920c",
-    "note": "REM-0060 work in progress (NCR-TESTS-002/005 GREEN, 003 partly, reverse index and plan allowlist), not a candidate, no evidence",
+    "head_sha": "e17dfd44cd8c6d60626e85f403f15ce4bc43e35c",
+    "note": "REM-0060 work in progress (001/002/003/005 GREEN, 004 RED), not a candidate, no evidence",
     "paths": []
   },
   "changed_paths": [
@@ -33,56 +33,51 @@
       "summary": "8/8 OK"
     },
     {
-      "command": "git push origin --delete governed/state-sync-rem0060-iter1-20261110 (REPO-HYGIENE point 3)",
+      "command": "merge of the intermediate state sync PR #577",
       "exit_code": 0,
-      "summary": "head 6f356a6bdb372d185dd60272de720dcbe412ca78 in the history of main, no open PR, named by no open entry; local branch deleted too"
+      "summary": "merge commit b3f68b0e8da52f73c2d66d602f957531a02b0918"
     },
     {
-      "command": "python3 ~/.ocor-codex/rem-0046/build_reverse_index.py <worktree> curated.json (four curated bases added)",
-      "exit_code": 0,
-      "summary": "index with the six new test modules (0c57eb0); validate_test_reverse_traceability.py PASS; reports/tests/test_ocor_dev_rem_0046.py 19 passed"
+      "command": "unit module after A1 (9d15f46)",
+      "exit_code": 1,
+      "summary": "1 failed (001 RED), 3 passed (a14a566f6e41)"
     },
     {
-      "command": "scripts/validate_ocor_development_plan.py --base-ref origin/main --authorized-extension",
+      "command": "tests/schemas/test_schema_integrity.py after C1 (e9bd490)",
       "exit_code": 0,
-      "summary": "PASS 37, NOT_EXECUTED 2 after the unit allowlist and the self-hash line (496d745)"
+      "summary": "7 passed (e3c5d621e1dd); AST: functions and assertion conditions identical"
     },
     {
-      "command": "scripts/bootstrap_ci_environment.py --execute --timeout 600 (unit worktree, clean shell, locked PATH)",
-      "exit_code": 0,
-      "summary": "15 containers, typed health PASS; Docker Hub quota 100/100 before"
+      "command": "unit module after the D1 RED and its corrections (4fbcf16)",
+      "exit_code": 1,
+      "summary": "2 failed (001, 004), 4 passed; 11 codes uncovered (b3780b2858ef)"
     },
     {
-      "command": "pytest ocor-runtime/tests/mission_thread/ (current module, live stack)",
-      "exit_code": 0,
-      "summary": "5 passed in 35.97 s (baseline)"
+      "command": "scripts/validate_evidence_input_drift.py --root . (unit branch)",
+      "exit_code": 1,
+      "summary": "only 0005, 0050 and 0082 drift (plan validator allowlist), requalifications planned"
     },
     {
-      "command": "pytest of the trial composition of the adapted module (outside Git, live stack)",
+      "command": "new decision request NCP-U12-UNPRODUCED-REASON-CODES",
       "exit_code": 0,
-      "summary": "5 passed in 36.57 s"
+      "summary": "commit 92cdcc2949d9ee5a1135243f03b6919b3b5afd01 (sha256 a9a1fae055d118053fefb3b47f3a1f89783da8f4d4a6965f5b7ed1848e36bbff), draft PR #578"
     },
     {
-      "command": "sha256sum of reports/development/decision_requests/NCP-U12-TEST-REALIGNMENT-SCOPE.md at 035b76f9ec82",
+      "command": "mission thread RED c8a5ee1 and GREEN e17dfd4 on the live CI stack",
       "exit_code": 0,
-      "summary": "3b668f06d27a6dce6f689f63eb3b4dfdeaf8f90fd28a20d3d085135036896652 = the sha256 of the decision (point 1)"
+      "summary": "RED 4 failed 1 passed (a740a9058938); GREEN thread 5 passed, unit module 001 passes, 004 RED (bdaaaf8b1778)"
     },
     {
-      "command": "disposition commit on governed/decision-request-ncp-u12-test-realignment-scope",
+      "command": "disposition commit on governed/decision-request-ncp-u12-mission-thread-residual-assertions",
       "exit_code": 0,
-      "summary": "bdfae0334fbe7ee65ea513c30eab1098bbe93a30 (sha256 20e83bb7e471556823fc5ece88a010f1b5b76b5df774f311cd5422d3e637311d): status DECIDED_BY_PO, text of the decided commit, undecided amendment bb1cea02370d withdrawn"
-    },
-    {
-      "command": "new decision request NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS",
-      "exit_code": 0,
-      "summary": "commit a09370d7ef0e26b447a2ea5020bd67555dcc2ffa (sha256 1506d2d678b830e1137c169b30431ddd16031f2e6a111f094782e484a68b5e36), draft PR #576"
+      "summary": "d475cabe463feae76ef348f2db3e8242a4ab28b3 (sha256 746101346943b35764303c00656c0aa82792bed39087c6a72f566eb03291489e), status DECIDED_BY_PO"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0060:implementation (NCP-U12, iteration 2 in progress; A1/C1/D1 executable, the NCR-TESTS-001 mission thread waits for NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS)",
+  "current_task": "OCOR-DEV-REM-0060:implementation (NCP-U12, iteration 2 done; 004 partly waits for NCP-U12-UNPRODUCED-REASON-CODES)",
   "evidence_paths": [],
-  "exact_next_action": "Resume OCOR-DEV-REM-0060 (NCP-U12) on governed/ocor-dev-rem-0060-ncp-u12-tests (.ocor/worktrees/rem-0060, head 496d745d9e97, kit ~/.ocor-codex/rem-0060 with NOTES.md, redgreen.sh, ast_compare.py; iter2/ with live.sh and the CI stack credentials of the unit worktree; proto/ with the trial composition test_first_governed_slice.adapted.py, 5 passed on the real stack): first re-read the preamble for the disposition of NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS (draft PR #576) and apply it; continue the decided options of NCP-U12-TEST-REALIGNMENT-SCOPE (A1 unit RED adaptation, C1, D1 failure-code inventory and tests of NCR-TESTS-004); then NCR-TESTS-001 from the trial composition (B1 realignments of lines 241, 429, 430, 431 and of 161, 162, 432, 433 as decided, RED fingerprint, the payload digest checked as sha256: plus 64 lowercase hex digits, helper assertions without additions); then packaging (AST comparisons, requalifications with 0005/0050/0082 always and 0031 as decided, unit record, register flip, plan allowlist with the decided request file and the requalification paths, SELF-CHECK tables, EVIDENCE-PATHS-ALLOWLIST-PRECHECK), PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, qualifying full suite with the versioned four-lane orchestrator (Docker Hub pull budget read before every pulling step), independent verification, seal, merge. Iteration 2 of estimate 3 (stop at 9) in progress (NCP-THROUGHPUT-RULES point 2). After the NCP-U12 integration: the decision request NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT (NORMATIVE-CONFORMANCE-PLAN point 6) and, before OCOR-DEV-0060, the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14; G6 0060/0062-0067 only under NORMATIVE-CONFORMANCE-PLAN point 11; 0068/0069 blocked. No new DEC; claims unchanged.",
-  "head_sha": "496d745d9e97610c8fe6bd21e2db94844e22920c",
+  "exact_next_action": "Resume OCOR-DEV-REM-0060 (NCP-U12) on governed/ocor-dev-rem-0060-ncp-u12-tests (.ocor/worktrees/rem-0060, head e17dfd44cd8c, kit ~/.ocor-codex/rem-0060 with NOTES.md (iteration 2 section), redgreen.sh, ast_compare.py, iter2/live.sh, proto/ with the trial composition (5 passed on the real stack) and the D1 inventory prototype; the CI stack bootstrapped in the unit worktree is up: archive .ocor/bootstrap.env, .ocor/spire and .ocor/ci-resources.yaml before any campaign): first re-read the preamble for the disposition of NCP-U12-UNPRODUCED-REASON-CODES (draft PR #578) and apply it (disposition on its branch, PR closed as resolved in the state sync); NCR-TESTS-001 is GREEN at e17dfd4 (NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS applied); meanwhile the new negative tests of NCR-TESTS-004 for C6 PRECONDITION_FAILED, INVARIANT_VIOLATION, REVISION_CONFLICT and GATE_PACKAGE_MISMATCH through the retained C6 engine with a C3 refusal (ACT-T31a/b), and the fix of the scan attribution that counts a C8 test as C6 SCHEMA_VIOLATION coverage; then NCR-TESTS-004 as decided in NCP-U12-UNPRODUCED-REASON-CODES; then packaging (requalifications 0005/0050/0082 regression and 0031 with supersession, unit record, register flip, plan allowlist with the decided request files, reverse index, SELF-CHECK tables, EVIDENCE-PATHS-ALLOWLIST-PRECHECK), PRE-CAMPAIGN-GATE, PRE-CAMPAIGN-REVIEW, qualifying full suite with the versioned four-lane orchestrator (Docker Hub pull budget read before every pulling step), independent verification, seal, merge. Iteration 2 of estimate 3 (stop at 9) used. Never amend a decision request after it is in the registry. After the NCP-U12 integration: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT and, before OCOR-DEV-0060, the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 with NCP-U14; 0068/0069 blocked. No new DEC; claims unchanged.",
+  "head_sha": "e17dfd44cd8c6d60626e85f403f15ce4bc43e35c",
   "head_sha_role": "REM-0060 work-in-progress head (not a candidate)",
   "independent_verification": {
     "findings": [],
@@ -231,14 +226,14 @@
   },
   "local_gate_results": {
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "the plan allowlist change makes 0005/0050/0082 drift: their regression-only requalifications are planned in the unit",
+    "evidence_input_drift": "0005/0050/0082 drift from the plan allowlist; their regression-only requalifications are planned",
     "pre_campaign_gate": "NOT_EXECUTED for the unit (not at a candidate boundary)",
-    "unit_tests": "mission thread baseline and trial composition on the live CI stack as in commands; full suite NOT_EXECUTED"
+    "unit_tests": "unit module, schema integrity and the trial composition on the live CI stack as in commands; full suite NOT_EXECUTED"
   },
-  "next_task": "OCOR-DEV-REM-0060 iteration 2 (continued)",
+  "next_task": "OCOR-DEV-REM-0060 iteration 3",
   "phase": "REM_0060_NCP_U12_IN_PROGRESS",
   "po_decisions_pending": [
-    "NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS"
+    "NCP-U12-UNPRODUCED-REASON-CODES"
   ],
   "raw_evidence_location": "~/.ocor-codex/rem-0056 (iter3: environment-diagnosis.json, ratelimit.log, verify_request.json) and ~/.ocor-codex/rem-0056-q",
   "requirement_ids": [
@@ -259,7 +254,7 @@
         "agent": "Claude Code",
         "model": "claude-opus-5-5",
         "provider": "Anthropic",
-        "scope": "OCOR-DEV-REM-0060 iterations 1 and 2 (unit start, RED/GREEN, decision requests and dispositions, index and allowlist) and these state syncs, as the backup implementer of the loop"
+        "scope": "OCOR-DEV-REM-0060 iterations 1 and 2 (unit start, RED/GREEN, A1/C1/D1, decision requests and dispositions, index and allowlist) and these state syncs, as the backup implementer of the loop"
       }
     ]
   },
@@ -302,6 +297,6 @@
   "unresolved_blockers": [
     "NORMATIVE-CONFORMANCE-PROGRAMME (G6/G7 start conditions of NORMATIVE-CONFORMANCE-PLAN point 11)"
   ],
-  "updated_at": "2026-11-10T00:32:51.916077+00:00",
+  "updated_at": "2026-11-10T01:56:13.459826+00:00",
   "worktree": ".ocor/worktrees/rem-0060"
 }
