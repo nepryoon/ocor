@@ -350,33 +350,69 @@ def _asserts_reason_code(node: ast.AST) -> bool:
                for n in ast.walk(node))
 
 
-def _exercises(source: str, package: str) -> bool:
-    dotted = re.escape(package)
-    return re.search(rf"ocor_runtime[./]{dotted}\b|[\"']{dotted}[.\"']", source) is not None
+def _component_names(tree: ast.Module, package: str) -> set[str]:
+    """Names a module imports from ``ocor_runtime.<package>`` (and its submodules)."""
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            if node.module == f"ocor_runtime.{package}" or node.module.startswith(f"ocor_runtime.{package}."):
+                names.update(alias.asname or alias.name for alias in node.names)
+            elif node.module == "ocor_runtime" and any(alias.name == package.split(".")[0] for alias in node.names):
+                names.update(alias.asname or alias.name for alias in node.names if alias.name == package.split(".")[0])
+        elif isinstance(node, ast.Import):
+            names.update((alias.asname or alias.name).split(".")[0] for alias in node.names
+                         if alias.name == f"ocor_runtime.{package}" or alias.name.startswith(f"ocor_runtime.{package}."))
+    return names
 
 
-def _reason_code_assertions() -> list[tuple[str, str, set[str]]]:
-    """(module source, test id, string constants) of every test function that asserts a reason_code,
-    directly or through a helper of its module that asserts or returns one."""
-    found: list[tuple[str, str, set[str]]] = []
+def _touches(node: ast.AST, names: set[str], package: str) -> bool:
+    """The function names a component import, or loads the component dynamically by its dotted name."""
+    dotted = re.compile(rf"^(?:ocor_runtime\.)?{re.escape(package)}(?:\.|$)")
+    return any((isinstance(inner, ast.Name) and inner.id in names)
+               or (isinstance(inner, ast.Constant) and isinstance(inner.value, str) and dotted.match(inner.value) is not None)
+               for inner in ast.walk(node))
+
+
+def _reason_code_assertions() -> list[tuple[str, set[str], set[str]]]:
+    """(test id, packages the test touches, string constants) of every test function that asserts a
+    reason_code, directly or through a helper of its module that asserts or returns one; a package is
+    touched when the test or one of the helpers it calls names an import of it or loads it by name."""
+    packages = sorted({package for row in CLOSED_REASON_CODES for package in row[1]})
+    found: list[tuple[str, set[str], set[str]]] = []
     for base in (RUNTIME_TESTS, ROOT / "reports/tests"):
         for path in sorted(base.rglob("test_*.py")):
             if ".venv" in path.parts:
                 continue
-            source = path.read_text(encoding="utf-8")
-            tree = ast.parse(source, filename=str(path))
-            helpers = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and not node.name.startswith("test")
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+            definitions: dict[str, ast.AST] = {node.name: node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
+            helpers = {name for name, node in functions.items() if not name.startswith("test")
                        and any(isinstance(inner, (ast.Assert, ast.Return)) and _asserts_reason_code(inner) for inner in ast.walk(node))}
+            imported = {package: _component_names(tree, package) for package in packages}
+            # module-level tables a parametrisation names (for example ``@pytest.mark.parametrize(..., FAULTS)``)
+            tables = {target.id: node.value for node in tree.body if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None
+                      for target in (node.targets if isinstance(node, ast.Assign) else [node.target]) if isinstance(target, ast.Name)}
             for node in ast.walk(tree):
                 if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test")):
                     continue
+                called = {inner.func.id for inner in ast.walk(node) if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name)}
                 direct = any(isinstance(inner, ast.Assert) and _asserts_reason_code(inner) for inner in ast.walk(node))
-                helped = any(isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name) and inner.func.id in helpers
-                             for inner in ast.walk(node))
-                if direct or helped:
-                    constants = {inner.value for part in (node, *node.decorator_list) for inner in ast.walk(part)
-                                 if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
-                    found.append((source, f"{path.relative_to(ROOT)}::{node.name}", constants))
+                if not (direct or called & helpers):
+                    continue
+                parts: list[ast.AST] = [node, *node.decorator_list]
+                parts += [tables[inner.id] for decorator in node.decorator_list for inner in ast.walk(decorator)
+                          if isinstance(inner, ast.Name) and inner.id in tables]
+                # the test, the module-level definitions it names and the fixtures it requests, two levels deep
+                scope: list[ast.AST] = [node]
+                frontier = {inner.id for inner in ast.walk(node) if isinstance(inner, ast.Name)} | {arg.arg for arg in node.args.args}
+                for _level in range(2):
+                    reached = [definitions[name] for name in frontier if name in definitions and definitions[name] not in scope]
+                    scope += reached
+                    frontier = {inner.id for part in reached for inner in ast.walk(part) if isinstance(inner, ast.Name)} | {
+                        arg.arg for part in reached if isinstance(part, ast.FunctionDef) for arg in part.args.args}
+                touched = {package for package in packages if any(_touches(part, imported[package], package) for part in scope)}
+                constants = {inner.value for part in parts for inner in ast.walk(part) if isinstance(inner, ast.Constant) and isinstance(inner.value, str)}
+                found.append((f"{path.relative_to(ROOT)}::{node.name}", touched, constants))
     return found
 
 
@@ -392,8 +428,7 @@ def test_ncr_tests_004_conforms():
     """OCOR_TEST_STRATEGY.md :28-29 (failure codes), option D1: complete coverage of the inventory."""
     assertions = _reason_code_assertions()
     uncovered = [f"{component} {code} ({source}:{line})" for component, packages, source, line, code in CLOSED_REASON_CODES
-                 if not any(code in constants and any(_exercises(text, package) for package in packages)
-                            for text, _test, constants in assertions)]
+                 if not any(code in constants and touched & set(packages) for _test, touched, constants in assertions)]
     assert uncovered == [], f"closed reason codes without a negative test asserting them: {uncovered}"
 
 
