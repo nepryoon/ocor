@@ -7171,6 +7171,240 @@
         "command": "python3 -c \"s=open('ocor-runtime/src/ocor_runtime/c8/tool_runtime.py').read(); print('C8-8 tool runtime imports the legacy lease:', 'from ..c6_capabilities import CapabilityAuthority, CapabilityLease' in s, '| unaudited default reconciler:', 'OutcomeReconciler() if reconciler is None' in s)\"",
         "outcome": "prints 'C8-8 tool runtime imports the legacy lease: True | unaudited default reconciler: True'; line 358 consumes the legacy lease at authorisation (consume=True) and lines 432-438 re-authorise it on the legacy authority at every dispatch. CONFIRMED at 6e116249ae0a9e313b795ecdd9ac18be3b9020f9."
       }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "24-52",
+          "note": "the two codes only in the problem tables",
+          "path": "ocor-runtime/src/ocor_runtime/c2/problem.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "505-506",
+          "note": "a scenario read is refused with UNSUPPORTED_CAPABILITY",
+          "path": "ocor-runtime/src/ocor_runtime/c2/gateway.py"
+        }
+      ],
+      "component": "C2",
+      "depends_on": [],
+      "id": "NCR-C2-014",
+      "norm_refs": [
+        {
+          "lines": "456",
+          "note": "gateway contract closed reason code CAPABILITY_DENIED",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        },
+        {
+          "lines": "466",
+          "note": "gateway contract closed reason code SCENARIO_ISOLATION_VIOLATION",
+          "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates a contract of LLD v1.1 par. 0.2 (the named-query gateway contract)",
+      "statement": "The retained C2 Named Query Gateway never produces the closed reason codes CAPABILITY_DENIED and SCENARIO_ISOLATION_VIOLATION of the gateway contract: they appear only in the problem tables of c2/problem.py, and the gateway refuses a scenario read with UNSUPPORTED_CAPABILITY. Created by NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10), option A1 (decision request commit 92cdcc2949d9ee5a1135243f03b6919b3b5afd01), planned by NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "lines": "467-473",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at d307a0bb00fe79d702243eec9774f599e849c6a5",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at d307a0bb00fe79d702243eec9774f599e849c6a5 the eight codes of option A1 of NCP-U12-UNPRODUCED-REASON-CODES are uncovered (outcome fingerprint fa50b1e39297). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "43-46",
+          "note": "G-CONTRACT refusal codes",
+          "path": "ocor-runtime/src/ocor_runtime/c6/contract.py"
+        },
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "829-834",
+          "note": "the engine refuses with CONTRACT_INVALID",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-015",
+      "norm_refs": [
+        {
+          "lines": "2753",
+          "note": "ADD v1.3 SubmitProposal pre-admission gate: SCHEMA_VIOLATION or CONTRACT_REJECTED",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-077, a P0 PoC requirement",
+      "statement": "The pre-admission gate of SubmitProposal must return SCHEMA_VIOLATION or CONTRACT_REJECTED; the G-CONTRACT gate of the retained C6 engine refuses with CONTRACT_INVALID and the causes SCHEMA_INVALID, ACTION_TYPE_UNKNOWN, ACTION_TYPE_SIGNATURE_INVALID, ACTION_TYPE_INACTIVE, ACTION_TYPE_MISMATCH and PARAMETERS_INVALID, so neither code is produced. Created by NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10), option A1 (decision request commit 92cdcc2949d9ee5a1135243f03b6919b3b5afd01), planned by NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "lines": "467-473",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at d307a0bb00fe79d702243eec9774f599e849c6a5",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at d307a0bb00fe79d702243eec9774f599e849c6a5 the eight codes of option A1 of NCP-U12-UNPRODUCED-REASON-CODES are uncovered (outcome fingerprint fa50b1e39297). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0065"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "825-846",
+          "note": "the abstentions the runtime produces",
+          "path": "ocor-runtime/src/ocor_runtime/c7/runtime.py"
+        }
+      ],
+      "component": "C7",
+      "depends_on": [],
+      "id": "NCR-C7-008",
+      "norm_refs": [
+        {
+          "lines": "3010",
+          "note": "ADD v1.3 ABSTAIN INSUFFICIENT_EVIDENCE",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "3013-3015",
+          "note": "ADD v1.3 ABSTAIN EXTRAPOLATIVE, STALE_CONTEXT, NOT_TRANSPORTABLE",
+          "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+        },
+        {
+          "lines": "177",
+          "note": "LLD v1.1 CausalQuery fields",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "239",
+          "note": "FR-098",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-098"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-098, a P0 PoC requirement",
+      "statement": "The retained causal runtime abstains only with ASSUMPTION_VIOLATION, NOT_IDENTIFIED, OUTSIDE_VALIDITY_ENVELOPE and OUT_OF_DISTRIBUTION; the closed ABSTAIN reason codes INSUFFICIENT_EVIDENCE, EXTRAPOLATIVE, STALE_CONTEXT and NOT_TRANSPORTABLE are never produced, and its CausalQuery carries none of the inputs they depend on (Evidence quality, authorised extrapolation, freshness policy, target population or domain). Created by NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10), option A1 (decision request commit 92cdcc2949d9ee5a1135243f03b6919b3b5afd01), planned by NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "lines": "467-473",
+          "note": "NCR-TESTS-004 coverage check (option D1 of NCP-U12-TEST-REALIGNMENT-SCOPE): the codes are listed uncovered",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "MISSING",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at d307a0bb00fe79d702243eec9774f599e849c6a5",
+        "outcome": "fails listing the closed reason codes without a negative test asserting them; at d307a0bb00fe79d702243eec9774f599e849c6a5 the eight codes of option A1 of NCP-U12-UNPRODUCED-REASON-CODES are uncovered (outcome fingerprint fa50b1e39297). CONFIRMED."
+      }
+    },
+    {
+      "blocks": [
+        "OCOR-DEV-0063"
+      ],
+      "code_refs": [
+        {
+          "commit": "913b43d59017468ba694c1f638ec370c889c8bfb",
+          "lines": "917-924",
+          "note": "the refusal raises without an FSM transition",
+          "path": "ocor-runtime/src/ocor_runtime/c6/engine.py"
+        }
+      ],
+      "component": "C6",
+      "depends_on": [],
+      "id": "NCR-C6-016",
+      "norm_refs": [
+        {
+          "lines": "264",
+          "note": "LLD v1.1 ACT-T03: same key, different fingerprint, reason code IDEMPOTENCY_CONFLICT, DENIED",
+          "path": "docs/OCOR_LLD_v1.1.md"
+        },
+        {
+          "lines": "209",
+          "note": "FR-077",
+          "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        }
+      ],
+      "plan_unit": "NCP-U15",
+      "po_decision_ref": null,
+      "remediation_record": "",
+      "remediation_unit": "",
+      "requirement_ids": [
+        "FR-077"
+      ],
+      "seed_ref": null,
+      "severity": "HIGH",
+      "severity_basis": "violates FR-077, a P0 PoC requirement",
+      "statement": "An action instance already admitted with one Decision and presented again with another Decision (same key, different fingerprint) is refused by the retained C6 engine with GovernedActionError DECISION_MISSING and cause IDEMPOTENCY_CONFLICT, but no FSM transition records the code: LLD v1.1 ACT-T03 prescribes reason code IDEMPOTENCY_CONFLICT and destination DENIED. Created by NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5) (option B1).",
+      "status": "OPEN",
+      "test_refs": [
+        {
+          "commit": "d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "lines": "588-609",
+          "note": "RED: test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict",
+          "path": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py"
+        }
+      ],
+      "type": "DIVERGENT",
+      "verification": {
+        "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict at d307a0bb00fe79d702243eec9774f599e849c6a5",
+        "outcome": "fails: no FSM transition of the action records IDEMPOTENCY_CONFLICT after the refusal (fingerprint fa50b1e39297). CONFIRMED."
+      }
     }
   ],
   "g6_g7_proposals": {
@@ -17626,18 +17860,19 @@
     "NCP-U10",
     "NCP-U11",
     "NCP-U12",
-    "NCP-U14"
+    "NCP-U14",
+    "NCP-U15"
   ],
   "plan_summary": {
-    "entries_resolved_by_plan": 74,
-    "estimate_iterations_total": 50,
+    "entries_resolved_by_plan": 78,
+    "estimate_iterations_total": 53,
     "g6_unblocking": {
       "OCOR-DEV-0060": {
         "decision_required_entries": [
           "NCR-C7-002",
           "NCR-LEGACY-001"
         ],
-        "last_plan_unit": "NCP-U09",
+        "last_plan_unit": "NCP-U15",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)",
           "OCOR-DEV-0060-BA-RUNTIME-GAPS"
@@ -17648,7 +17883,8 @@
           "NCP-U05",
           "NCP-U07",
           "NCP-U08",
-          "NCP-U09"
+          "NCP-U09",
+          "NCP-U15"
         ]
       },
       "OCOR-DEV-0061": {
@@ -17679,7 +17915,7 @@
         "decision_required_entries": [
           "NCR-LEGACY-001"
         ],
-        "last_plan_unit": "NCP-U08",
+        "last_plan_unit": "NCP-U15",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)"
         ],
@@ -17689,12 +17925,13 @@
           "NCP-U02",
           "NCP-U04",
           "NCP-U07",
-          "NCP-U08"
+          "NCP-U08",
+          "NCP-U15"
         ]
       },
       "OCOR-DEV-0064": {
         "decision_required_entries": [],
-        "last_plan_unit": "NCP-U10",
+        "last_plan_unit": "NCP-U15",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)"
         ],
@@ -17706,7 +17943,8 @@
           "NCP-U05",
           "NCP-U07",
           "NCP-U08",
-          "NCP-U10"
+          "NCP-U10",
+          "NCP-U15"
         ]
       },
       "OCOR-DEV-0065": {
@@ -17715,7 +17953,7 @@
           "NCR-C7-002",
           "NCR-C8-006"
         ],
-        "last_plan_unit": "NCP-U12",
+        "last_plan_unit": "NCP-U15",
         "other_po_decisions": [
           "NORMATIVE-CONFORMANCE-PLAN (PO decision on this plan, point 5)",
           "OCOR-DEV-0060-BA-RUNTIME-GAPS"
@@ -17732,7 +17970,8 @@
           "NCP-U09",
           "NCP-U10",
           "NCP-U11",
-          "NCP-U12"
+          "NCP-U12",
+          "NCP-U15"
         ]
       },
       "OCOR-DEV-0066": {
@@ -17782,12 +18021,14 @@
       "NCP-U09",
       "NCP-U10",
       "NCP-U11",
-      "NCP-U12"
+      "NCP-U12",
+      "NCP-U15"
     ],
     "ncp_u14_note": "MATRIX-ERRATUM-NCP-U14 (2026-11-07): NCP-U14 added (NCR-GOVERNANCE-002, MEDIUM, estimate 2, depends on NCP-U12); counts incremented by the unit; high_entry_units and g6_unblocking unchanged (the entry is MEDIUM and blocks no G6 task)",
+    "ncp_u15_note": "NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10) option A1: NCP-U15 added (NCR-C2-014, NCR-C6-015, NCR-C7-008, NCR-C6-016, HIGH, estimate 3, depends on NCP-U12, after NCP-U14); counts incremented by the unit; the G6 tasks the entries block list NCP-U15 as their last plan unit",
     "note": "estimates are planning figures, not commitments; each unit follows the full remediation cycle of point 5",
-    "open_entries": 74,
-    "units": 14
+    "open_entries": 78,
+    "units": 15
   },
   "plan_units": {
     "NCP-U01": {
@@ -22551,6 +22792,153 @@
         "NCR-GOVERNANCE-002"
       ],
       "scope": "Governed erratum of the normative traceability matrix (JSON and Markdown) regenerated from the Requirement Register v1.1, with ERRATA file, RED parity test and consumer hashes (MATRIX-ERRATUM-NCP-U14 (2026-11-07) point 2)",
+      "status": "PROPOSED"
+    },
+    "NCP-U15": {
+      "acceptance_criteria": [
+        {
+          "criterion": "The divergence no longer reproduces: the retained C2 gateway produces CAPABILITY_DENIED and SCENARIO_ISOLATION_VIOLATION as the gateway contract defines",
+          "entry": "NCR-C2-014",
+          "norm_refs": [
+            {
+              "lines": "456",
+              "note": "gateway contract closed reason code CAPABILITY_DENIED",
+              "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+            },
+            {
+              "lines": "466",
+              "note": "gateway contract closed reason code SCENARIO_ISOLATION_VIOLATION",
+              "path": "ocor-runtime/docs/governance_dossier/contracts/ocor-named-query-gateway.openapi.yaml"
+            }
+          ],
+          "requirement_ids": []
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the SubmitProposal pre-admission gate of C6 returns SCHEMA_VIOLATION or CONTRACT_REJECTED as ADD v1.3 defines",
+          "entry": "NCR-C6-015",
+          "norm_refs": [
+            {
+              "lines": "2753",
+              "note": "ADD v1.3 SubmitProposal pre-admission gate: SCHEMA_VIOLATION or CONTRACT_REJECTED",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "209",
+              "note": "FR-077",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-077"
+          ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the C7 runtime abstains with INSUFFICIENT_EVIDENCE, EXTRAPOLATIVE, STALE_CONTEXT and NOT_TRANSPORTABLE on their conditions",
+          "entry": "NCR-C7-008",
+          "norm_refs": [
+            {
+              "lines": "3010",
+              "note": "ADD v1.3 ABSTAIN INSUFFICIENT_EVIDENCE",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "3013-3015",
+              "note": "ADD v1.3 ABSTAIN EXTRAPOLATIVE, STALE_CONTEXT, NOT_TRANSPORTABLE",
+              "path": "ocor-runtime/docs/governance_dossier/OCOR_ADD_v1.3_APPROVED_BASELINE.md"
+            },
+            {
+              "lines": "177",
+              "note": "LLD v1.1 CausalQuery fields",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "239",
+              "note": "FR-098",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-098"
+          ]
+        },
+        {
+          "criterion": "The divergence no longer reproduces: the C6 idempotency conflict is recorded as ACT-T03 with reason code IDEMPOTENCY_CONFLICT and destination DENIED",
+          "entry": "NCR-C6-016",
+          "norm_refs": [
+            {
+              "lines": "264",
+              "note": "LLD v1.1 ACT-T03: same key, different fingerprint, reason code IDEMPOTENCY_CONFLICT, DENIED",
+              "path": "docs/OCOR_LLD_v1.1.md"
+            },
+            {
+              "lines": "209",
+              "note": "FR-077",
+              "path": "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+            }
+          ],
+          "requirement_ids": [
+            "FR-077"
+          ]
+        }
+      ],
+      "consumers_to_inventory": {},
+      "depends_on_units": [
+        "NCP-U12"
+      ],
+      "estimate_iterations": 3,
+      "existing_tests_to_realign_or_adapt": [],
+      "g6_tasks_contributed": [
+        "OCOR-DEV-0060",
+        "OCOR-DEV-0063",
+        "OCOR-DEV-0064",
+        "OCOR-DEV-0065"
+      ],
+      "g6_tasks_unblocked": [],
+      "order": 15,
+      "rationale": "Added to the plan by NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5): one unit for the closed codes of the retained components; run after the NCP-U12 integration, in the change set of G7-REVIEW-AND-CANDIDATE-CRITERIA (2026-11-07) point 6 (before OCOR-DEV-0060), with the full remediation cycle; acceptance criteria and RED are the tests NCP-U12 leaves as known divergences.",
+      "red_tests": [
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C2-014",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at d307a0bb00fe79d702243eec9774f599e849c6a5 the eight codes of option A1 of NCP-U12-UNPRODUCED-REASON-CODES are uncovered (outcome fingerprint fa50b1e39297). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C6-015",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at d307a0bb00fe79d702243eec9774f599e849c6a5 the eight codes of option A1 of NCP-U12-UNPRODUCED-REASON-CODES are uncovered (outcome fingerprint fa50b1e39297). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C7-008",
+          "fails_on_current_code_because": "fails listing the closed reason codes without a negative test asserting them; at d307a0bb00fe79d702243eec9774f599e849c6a5 the eight codes of option A1 of NCP-U12-UNPRODUCED-REASON-CODES are uncovered (outcome fingerprint fa50b1e39297). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms at d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms"
+        },
+        {
+          "asserts": "the prescribed behaviour of the criterion of the same entry, on its norm_refs",
+          "entry": "NCR-C6-016",
+          "fails_on_current_code_because": "fails: no FSM transition of the action records IDEMPOTENCY_CONFLICT after the refusal (fingerprint fa50b1e39297). CONFIRMED.",
+          "reproduction": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict at d307a0bb00fe79d702243eec9774f599e849c6a5",
+          "test": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict"
+        }
+      ],
+      "requalifications": {
+        "always_regression_only": [],
+        "method": "fixed at the unit RED head from the files actually changed",
+        "with_supersession_candidates": {}
+      },
+      "required_backend": "the real stack",
+      "resolves": [
+        "NCR-C2-014",
+        "NCR-C6-015",
+        "NCR-C7-008",
+        "NCR-C6-016"
+      ],
+      "scope": "closed reason codes of the retained components (NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10), options A1 and B1 (decision request commit a53d4da23a8239cf17e8036d4f3baed834e1b2b5))",
       "status": "PROPOSED"
     }
   },
