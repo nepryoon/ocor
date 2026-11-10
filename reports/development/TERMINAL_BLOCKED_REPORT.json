@@ -1,9 +1,9 @@
 {
   "background_activities_remaining": false,
-  "baseline_commit": "405676d6957eab01956fdefbd8f0a335b52749bb",
+  "baseline_commit": "4184c028a526b0f87cad92dc5363d616d06f5e2b",
   "blocker_manifest": {
     "path": "reports/development/EXECUTION_STATE.json",
-    "sha256": "1aa231d88bc2513d0389ba96486bfd9767ffec0eb70cb6787edd16ce8d5169ad"
+    "sha256": "57b2d3737c96ce9a98e34252cbadf4477ff223887b1d66af8ecb7e7116b20fca"
   },
   "blocking_tasks": [
     "OCOR-DEV-REM-0060",
@@ -22,47 +22,40 @@
     "E2": 0,
     "PoC_GO": "NO-GO",
     "Production_readiness": "NO-GO",
+    "Verified": 0,
     "runtime_conformance": "NOT_ESTABLISHED"
   },
   "completed_evidence_tasks": 75,
   "decision_requests": [
     {
-      "blocked_scope": "the known divergences of the nineteen codes, the GREEN of NCR-TESTS-004, the full suite, the qualifying campaign and the verification of OCOR-DEV-REM-0060",
+      "blocked_scope": "Campagna completa, verifica e integrazione di NCP-U12 dopo due esaurimenti del budget di provisioning su codice e harness identici.",
       "blocked_tasks": [
         "OCOR-DEV-REM-0060"
       ],
-      "created_at": "2026-11-10T10:22:27.377119+00:00",
-      "decision": "NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) point 2 and the rule in force for decision requests (what the chosen options do not describe: open a new decision request); NORMATIVE-QUESTIONS-EARLY-DR (2026-11-09) point 4 (one request for the linked questions: the codes, the plan of the new entries, the iteration budget and the perimeter)",
-      "decision_level": "NORMATIVE",
-      "does_not_block": [
-        "the rest of the unit under the decisions in force"
-      ],
-      "evidence": {
-        "branch": "governed/decision-request-ncp-u12-contract-error-codes",
-        "commit": "ed75f85493f3c8814c08e0c162c4dd25d26c962e",
-        "path": "reports/development/decision_requests/NCP-U12-CONTRACT-ERROR-CODES.md",
-        "pr": 587,
-        "publication": "DRAFT_PR_OPEN; the decided file enters main byte-identical with the NCP-U12 change set (allowlisted path)",
-        "sha256": "c6493ed79363e14aa7213e05fbe3b2dc7ee8e160abd231e42ede7bd89ef11223"
+      "created_at": "2026-11-10T19:01:26.107453+00:00",
+      "decision": "QUALIFICATION-CAMPAIGN-INFRA-RERUN (2026-10-12), ricorrenza della causa su pi\u00f9 run; LOCAL-SUITE-FOUR-LANES (2026-11-07), nessuna riduzione forzata delle corsie n\u00e9 variazione dei timer.",
+      "decision_level": "OPERATIVE",
+      "diagnostic_evidence": {
+        "branch": "governed/ocor-dev-rem-0060-ncp-u12-tests",
+        "commit": "b869cc9c0e92b6d23b386cf5162c07d3ebc12aec",
+        "raw_log": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.log",
+        "raw_log_sha256": "f257405580e90b46cc2e983b02aab5a968b6993764e7e9ac213d8c1dd044930c",
+        "record": "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json"
       },
-      "finding": "after the preventive review the option D1 inventory of NCR-TESTS-004 gained the closed error_codes of the ADD v1.3 Tool Contract (:1765-1777), Action Type Contract (:2332-2351) and Event Subscription Contract (:2666-2673), C5 PRINCIPAL_BINDING_MISMATCH (:844) and the TB-CXT-07 fail state (:177); after the GREEN of the produced codes (4aa955c) nineteen are not produced: C8 APPROVAL_EXPIRED, COMPENSATION_REQUIRED, COMPENSATION_UNKNOWN (Tool Contract, only in the schema text of c8/tool_contract.py); C6 POLICY_DENIED, AUTHORITY_MISSING, APPROVAL_REQUIRED, STALE_CONTEXT, PROJECTION_NOT_READY, RELEASE_MISMATCH, CAPABILITY_LEASE_EXPIRED (Action Type Contract, absent from the c6 package); C6 APPROVAL_EXPIRED, AUDIT_UNAVAILABLE, EXECUTION_UNKNOWN, EXECUTION_INDETERMINATE, COMPENSATION_UNKNOWN, COMPENSATION_INDETERMINATE (produced as a cause, a dispatch refusal or a reconciliation status, but the engine applies no ACT-T09b, ACT-T18a/b, ACT-T21c, ACT-T24 or ACT-T25 transition that records them); C5 AUTHORITY_MISSING, RELEASE_MISMATCH (Subscription Contract, only in the schema text of c5/subscription.py); C7 SCENARIO_ISOLATION_VIOLATION (TB-CXT-07, absent from the c7 package); RED of ACT-T09b at 4f062b2; the earlier decisions of the unit describe only the codes they name",
-      "id": "NCP-U12-CONTRACT-ERROR-CODES",
-      "implementer": "Claude Code (Anthropic), backup implementer",
-      "options": [
-        "A1. five new OPEN HIGH register entries (C8 Tool Contract codes; C6 codes absent from the engine; C6 codes produced without an FSM transition, red_tests the RED of 4f062b2; C5 Subscription Contract codes; C7 SCENARIO_ISOLATION_VIOLATION), plan_unit NCP-U15 with blocks per component, NCP-U15 estimate 3 -> 5, known divergences in the coverage check, the RED leaves the suite, no runtime change (recommended)",
-        "A2. extend NCP-U12 to the components (c5, c6, c7, c8 runtime files) with RED/GREEN and the requalifications of the touched inputs",
-        "A3. NCR-TESTS-004 stays IN_REMEDIATION; the coverage check stays out of the qualifying suite until it passes",
-        "B1. up to four iterations beyond the ninth (tenth to thirteenth) for the application, the campaign, the verification with at most two repair cycles and the integration; the early stop stays (recommended)",
-        "B2. no extension: stop at 9",
-        "C1. the perimeter as at 4f062b2: contract enums, codes named in prose for one component, fail states of boundaries owned by one component (TB-CXT-03, TB-CXT-07) (recommended)",
-        "C2. contract enums and codes in prose only: the trust-boundary fail states leave the inventory and the C7 entry of A1 is not created"
-      ],
-      "recommendation": "A1, B1, C1",
-      "status": "OPEN_PO_NORMATIVE_DECISION_REQUIRED",
-      "updated_at": "2026-11-10T10:22:27.377119+00:00"
+      "evidence": {
+        "branch": "governed/decision-request-rem0060-lane-image-provisioning",
+        "commit": "05531507319e217032bafd475538e65b7cb12def",
+        "path": "reports/development/decision_requests/REM-0060-LANE-IMAGE-PROVISIONING.md",
+        "pr": 591,
+        "sha256": "fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734"
+      },
+      "finding": "Run full-1: timeout build Fuseki dopo acquisizione immagini; run full-2: total provisioning budget exhausted dopo pull Kafka osservato ancora attivo a 478 s e acquisizione SeaweedFS. Nessuna asserzione fallita osservata, zero conteggi trasferiti, teardown di quattro corsie PASS e zero residui.",
+      "id": "REM-0060-LANE-IMAGE-PROVISIONING",
+      "recommendation": "Option 1: remediation separata per cache locale verificata di sole immagini gi\u00e0 presenti, pull ufficiali e budget invariati; poi nuova campagna NCP-U12 sul nuovo HEAD.",
+      "status": "OPEN_PO_DECISION_REQUIRED"
     }
   ],
-  "direct_ready_disposition": "Nessun task eseguibile: prerequisiti normativi e dipendenze ancora insoddisfatti.",
+  "direct_ready_disposition": "Pronti nel DAG ma non eseguibili per le condizioni del programma e la coda pre-G6.",
   "direct_ready_tasks": [
     "OCOR-DEV-0060",
     "OCOR-DEV-0062",
@@ -71,37 +64,35 @@
   ],
   "in_progress_unit": {
     "branch": "governed/ocor-dev-rem-0060-ncp-u12-tests",
-    "estimate_iterations": 3,
-    "head": "a3365c6b4c4e29fc92aba01cabbb2edab2d13e44",
-    "id": "OCOR-DEV-REM-0060",
-    "iterations_used": 7,
-    "plan_unit": "NCP-U12",
-    "status": "PREVENTIVE_REVIEW_DISPOSED_AWAITING_PO_DECISION",
-    "stop_at_iterations": 9
+    "head_sha": "b869cc9c0e92b6d23b386cf5162c07d3ebc12aec",
+    "status": "BLOCKED_OPEN_PO_DECISION_REQUIRED",
+    "task_id": "OCOR-DEV-REM-0060"
   },
   "independent_reachable_tasks_after_excluding_blocked_roots": [],
   "local_controls": {
     "checksum": "PASS 8/8",
-    "evidence_input_drift": "PASS sullo state sync integrato; quattro riqualifiche pianificate sul branch dell\u2019unit\u00e0",
-    "full_suite": "NOT_EXECUTED: integrazione di soli metadati; NCP-U12 in attesa di decisione; CI obbligatoria eseguita separatamente",
-    "harness": "PASS 14/14",
-    "preflight": "PASS"
+    "drift": "PASS, 241 input e 75 task, zero drift",
+    "full_suite": "NOT_COMPLETED, seconda ricorrenza del provisioning; nessun conteggio trasferito",
+    "harness": "PASS 14",
+    "pre_campaign_gate": "55 PASS riusati sullo stesso codice/test/harness, nessuna modifica di esecuzione",
+    "targeted_regression": "214 PASS storici sullo stesso albero",
+    "task": "630 PASS e 1007 subtest storici sullo stesso albero"
   },
-  "minimal_unblock_action": "Decisione del PO su NCP-U12-CONTRACT-ERROR-CODES (PR #587), poi applicazione puntuale delle opzioni.",
-  "next_executable_action": "Riprendere OCOR-DEV-REM-0060 (NCP-U12) sul branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, HEAD esatto 4be4bdd14773de0522e65b960c2bb64043f52ece, senza riscrivere storia. Ripetere soltanto la campagna completa con lo stesso codice/test/input/harness secondo QUALIFICATION-CAMPAIGN-INFRA-RERUN: il tentativo attempts/full-1 \u00e8 diagnostico (timeout della build Fuseki nel provisioning della corsia 4, nessuna asserzione fallita, zero conteggi trasferiti, teardown pulito); diagnosis.json sha256 d774bd8dd5f4ce352fc3bd1443050bd2a1e436c8786cb296aa6510205f3ae929. Prima della ripetizione verificare quota ufficiale Docker Hub sufficiente (budget prudenziale 57 pull; ultima lettura 49/100 alle 17:45Z), identit\u00e0 degli script versionati e assenza di risorse. Kit ~/.ocor-codex/rem-0060/iter8: full_run.py ripete reset --env-file task3-credentials/bootstrap.env e il comando versionato invariato, con log in full_run.out/full.log e lanes/. PRE-CAMPAIGN-GATE 55/55 PASS, scansioni, precheck 23 percorsi e test mirati gi\u00e0 PASS sullo stesso albero: non ripeterli senza nuova modifica. Una ricorrenza della stessa causa richiede decision request, nessun ulteriore tentativo. Con full PASS: completare i record candidati (build_final.py \u00e8 una bozza da verificare, mai eseguita), scansioni finali, gate prima del push, poi richiesta di verifica esterna; nessuna richiesta esiste ora. Implementatori Claude Code/Anthropic e Codex/OpenAI, revisore preventivo Codex/OpenAI: verifier solo xAI o Google. Codex continua fino al GO secondo LOOP-GROK-PRIMARY. Iterazione 8 di stima 3, estensione fino alla tredicesima; massimo due cicli di riparazione. Dopo integrazione NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT, poi change set G7/NCP-U14/NCP-U15 prima di G6; nessun nuovo DEC e claim invariati.",
+  "minimal_unblock_action": "Attendere la disposition di REM-0060-LANE-IMAGE-PROVISIONING (draft PR #591, commit 05531507319e217032bafd475538e65b7cb12def, sha256 fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734). Rileggere la sezione pertinente prima di ogni arresto. Nessun ulteriore rerun della campagna attuale: due esaurimenti del provisioning di 600 s sullo stesso codice/test/harness. Con opzione 1: assegnare la prima REM libera alla cache locale verificata delle immagini, inventario, RED/GREEN e ciclo completo nel perimetro esatto della richiesta; poi riprendere NCP-U12 dal WIP b869cc9c0e92b6d23b386cf5162c07d3ebc12aec, branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, allineamento non distruttivo e nuova campagna dopo il merge della remediation. Con opzione 2: nessun tentativo prima della misura esterna richiesta. NCP-U12 iterazione 9 di stima 3, estensione fino alla tredicesima, massimo due cicli di riparazione; nessuna verifica o sigillo finch\u00e9 manca la full qualificante. Implementatori Claude Code/Anthropic e Codex/OpenAI; revisore preventivo Codex/OpenAI; verifier solo xAI o Google. Dopo NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT e change set G7/NCP-U14/NCP-U15 prima di G6. Claim invariati.",
+  "next_executable_action": "Attendere la disposition di REM-0060-LANE-IMAGE-PROVISIONING (draft PR #591, commit 05531507319e217032bafd475538e65b7cb12def, sha256 fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734). Rileggere la sezione pertinente prima di ogni arresto. Nessun ulteriore rerun della campagna attuale: due esaurimenti del provisioning di 600 s sullo stesso codice/test/harness. Con opzione 1: assegnare la prima REM libera alla cache locale verificata delle immagini, inventario, RED/GREEN e ciclo completo nel perimetro esatto della richiesta; poi riprendere NCP-U12 dal WIP b869cc9c0e92b6d23b386cf5162c07d3ebc12aec, branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, allineamento non distruttivo e nuova campagna dopo il merge della remediation. Con opzione 2: nessun tentativo prima della misura esterna richiesta. NCP-U12 iterazione 9 di stima 3, estensione fino alla tredicesima, massimo due cicli di riparazione; nessuna verifica o sigillo finch\u00e9 manca la full qualificante. Implementatori Claude Code/Anthropic e Codex/OpenAI; revisore preventivo Codex/OpenAI; verifier solo xAI o Google. Dopo NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT e change set G7/NCP-U14/NCP-U15 prima di G6. Claim invariati.",
   "previous_report": {
     "commit": "405676d6957eab01956fdefbd8f0a335b52749bb",
     "path": "reports/development/TERMINAL_BLOCKED_REPORT.json",
     "sha256": "f9643f2d0098c1f03304b06489df2ce695497568d806288fb0476fe484dc179a"
   },
-  "previous_status": "TERMINAL_BLOCKED_PENDING_PO_DECISION",
-  "reason": "Il residuo di NCP-U12 dipende dalla decisione NCP-U12-CONTRACT-ERROR-CODES; le unit\u00e0 seguenti partono dopo la sua integrazione.",
-  "recorded_at": "2026-11-10T11:26:54.785453+00:00",
+  "previous_status": "RESUMED_DECISION_APPLIED_QUALIFICATION_IN_PROGRESS",
+  "reason": "Nessuna unit\u00e0 indipendente pronta: NCP-U12 attende decisione sulla ricorrenza infrastrutturale; coda successiva dipendente dalla sua integrazione.",
+  "recorded_at": "2026-11-10T19:01:26.107453+00:00",
   "remaining_backlog_tasks": 9,
-  "resolution": "NCP-U12-CONTRACT-ERROR-CODES (2026-11-10) A1/B1/C1 attuata; test mirati e gate verdi, full non qualificante per timeout infrastrutturale; ripetizione limitata al rinnovo della quota.",
+  "resolution": "Pendiente REM-0060-LANE-IMAGE-PROVISIONING; nessun ulteriore rerun senza disposition e relativa attuazione.",
   "schema_version": "1.0",
-  "session_resources_created": false,
-  "status": "RESUMED_DECISION_APPLIED_QUALIFICATION_IN_PROGRESS",
-  "terminal_state": "CONTINUE",
-  "updated_at": "2026-11-10T17:49:47.035873+00:00"
+  "session_resources_created": "Quattro sandbox e relativi stack smontati; zero residui. Branch/worktree diagnostici e documentali preservati.",
+  "status": "TERMINAL_BLOCKED",
+  "terminal_state": "TERMINAL_BLOCKED",
+  "updated_at": "2026-11-10T19:01:26.107453+00:00"
 }
