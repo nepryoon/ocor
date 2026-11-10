@@ -567,13 +567,15 @@ def seed_lane_images(lane: Lane, path: str, cache_dir: Path, lock_path: Path, ru
             raise CampaignError("image cache manifest is malformed")
         archive = cache_dir / archive_name
         try:
-            runner(sandbox_exec_argv(lane, path, ["docker", "load", "-i", str(archive)], {}),
-                   timeout=cache_command_timeout(timeout))
-            inspected = runner(sandbox_exec_argv(lane, path, ["docker", "image", "inspect", image_id], {}),
-                               timeout=cache_command_timeout(timeout))
+            image_cache.command_text(
+                runner, sandbox_exec_argv(lane, path, ["docker", "load", "-i", str(archive)], {}),
+                timeout=cache_command_timeout(timeout))
+            inspected = image_cache.command_text(
+                runner, sandbox_exec_argv(lane, path, ["docker", "image", "inspect", image_id], {}),
+                timeout=cache_command_timeout(timeout))
         except CampaignError as exc:
             raise CampaignError(f"image cache load failed: {service_id}: {exc}") from exc
-        image_cache.parse_loaded_inspect(inspected.stdout, image_id)
+        image_cache.parse_loaded_inspect(inspected, image_id)
         loaded.append(service_id)
     return {"loaded": loaded, "misses": misses}
 

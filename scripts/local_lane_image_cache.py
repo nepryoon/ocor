@@ -52,6 +52,12 @@ def _command_result(runner: Any, argv: list[str], *, timeout: float, check: bool
     return returncode, stdout
 
 
+def command_text(runner: Any, argv: list[str], *, timeout: float) -> str:
+    """Stdout of one cache command after the result shape has been checked."""
+    _returncode, stdout = _command_result(runner, argv, timeout=timeout)
+    return stdout
+
+
 def _refuse_constant(name: str) -> object:
     raise ValueError(f"non-finite JSON number {name}")
 

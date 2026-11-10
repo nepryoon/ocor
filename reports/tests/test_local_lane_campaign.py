@@ -20,6 +20,7 @@ import sys
 import tarfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -2387,6 +2388,28 @@ def test_image_cache_transfer_stops_at_the_existing_campaign_deadline(host_world
     names = [call[0] for call in host_world['calls']]
     assert 'prepare_image_cache' in names
     assert 'sandbox' not in names and 'launch' not in names
+
+
+def test_seed_refuses_a_docker_result_that_is_not_a_code_and_text(tmp_path, monkeypatch):
+    cache = tmp_path / 'cache'
+    cache.mkdir()
+    lock = tmp_path / 'services.lock.json'
+    lock.write_text('{}\n', encoding='utf-8')
+    image_id = 'sha256:' + 'ab' * 32
+
+    def verify(cache_dir, lock_path):
+        return {'images': [{
+            'archive': 'opa-pinned_pull.tar', 'image_id': image_id, 'service_id': 'opa', 'status': 'PRESENT',
+        }]}
+
+    monkeypatch.setattr(LANES.image_cache, 'verify_image_cache', verify)
+
+    def runner(argv, **kwargs):
+        return SimpleNamespace(returncode=True, stdout='')
+
+    lane = LANES.Lane(index=1, campaign='a' * 12 + '-1', root=tmp_path / 'lane', home=tmp_path / 'home', uid=1, gid=1)
+    with pytest.raises(CAMPAIGN.CampaignError, match='image cache load failed: opa: image cache command result is malformed'):
+        LANES.seed_lane_images(lane, '/usr/bin:/bin', cache, lock, runner, timeout=5)
 
 
 def test_execute_fails_closed_when_the_image_cache_load_fails(host_world, monkeypatch):
