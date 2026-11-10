@@ -27,7 +27,7 @@ import re
 import sys
 import tempfile
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -41,6 +41,8 @@ from ocor_runtime.c2.ports import ConsistencyMode, ConsistencyRequirement, Named
 from ocor_runtime.c3.service import PostgresC3Service
 from ocor_runtime.c4.jena_adapter import JenaAdapterError
 from ocor_runtime.c4.typedb_adapter import TypeDBAdapterError
+from ocor_runtime.c5.envelope import CanonicalIngestionEnvelope
+from ocor_runtime.c5.envelope import payload_digest as c5_payload_digest
 from ocor_runtime.c5.subscription import DeliveredEvent
 from ocor_runtime.c6.engine import C3CanonicalOutboxView, GovernedActionError
 from ocor_runtime.c7.runtime import CausalQuery, estimate_intervention, verify_reproduction
@@ -187,6 +189,39 @@ class _Record:
     payload_digest: str
 
 
+_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+
+
+def _delivered_record(event: Any) -> _Record:
+    """The thread's view of one C5 delivery, after checking the answer: a DeliveredEvent with a canonical
+    ingestion envelope whose payload is the mapping of strings the thread produced and whose integrity
+    digest is the sha256 digest of that payload; any other answer fails the thread."""
+    if not isinstance(event, DeliveredEvent):
+        pytest.fail(f"C5 answer: a delivered event expected, got {type(event).__name__}")
+    envelope = event.envelope
+    if not isinstance(envelope, CanonicalIngestionEnvelope):
+        pytest.fail(f"C5 answer: a canonical ingestion envelope expected, got {type(envelope).__name__}")
+    try:
+        payload, integrity = envelope["payload"], envelope["integrity"]
+    except (KeyError, TypeError) as error:
+        pytest.fail(f"C5 answer: unreadable envelope, missing payload or integrity: {error!r}")
+    if not isinstance(payload, Mapping) or not payload or not all(isinstance(k, str) and isinstance(v, str) for k, v in payload.items()):
+        pytest.fail(f"C5 answer: the payload is not a non-empty mapping of strings: {payload!r}")
+    if not isinstance(integrity, Mapping):
+        pytest.fail(f"C5 answer: the integrity is not a mapping: {integrity!r}")
+    digest = integrity.get("payload_digest")
+    if not isinstance(digest, str) or _DIGEST.fullmatch(digest) is None:
+        pytest.fail(f"C5 answer: the payload digest is not a sha256 digest: {digest!r}")
+    value = dict(payload)
+    try:
+        expected = c5_payload_digest(value)
+    except ValueError as error:
+        pytest.fail(f"C5 answer: the payload is not canonical I-JSON: {error}")
+    if digest != expected:
+        pytest.fail(f"C5 answer: the payload digest {digest} is not the digest of the payload ({expected})")
+    return _Record(value=value, payload_digest=digest)
+
+
 class _Backbone:
     """The C5 canonical event backbone of one topic on an isolated broker (c5_backbone_fixture.C5Rig)."""
 
@@ -204,9 +239,11 @@ class _Backbone:
                                             payload={k: str(v) for k, v in record.items()}))
 
     def consume(self, count: int) -> list[_Record]:
-        events: tuple[DeliveredEvent, ...] = self.rig.consume(count)
-        return [_Record(value=dict(event.envelope["payload"]), payload_digest=event.envelope["integrity"]["payload_digest"])
-                for event in events]
+        events = self.rig.consume(count)
+        if not isinstance(events, tuple) or len(events) != count:
+            size = len(events) if isinstance(events, tuple | list) else "no"
+            pytest.fail(f"C5 answer: {count} delivered events expected in a tuple, got a {type(events).__name__} of {size} events")
+        return [_delivered_record(event) for event in events]
 
     def restart_broker(self) -> None:
         self.broker.stop()
@@ -365,8 +402,8 @@ def _kafka_backbone(postgres_dsn: str) -> Iterator[tuple[_Backbone, str]]:
         broker, _container, volume = QualificationKafkaBroker.provision(f"ocor-mission-thread-{uuid.uuid4().hex[:12]}")
     except KafkaBrokerError as error:
         pytest.fail(f"a real, isolated Kafka broker is mandatory qualifying evidence: {error}")
-    topic = broker.create_topic(f"ocor-mission-thread-{uuid.uuid4().hex[:12]}")
     try:
+        topic = broker.create_topic(f"ocor-mission-thread-{uuid.uuid4().hex[:12]}")
         yield _Backbone(broker, topic, postgres_dsn), topic
     finally:
         broker.destroy(volume)
@@ -376,18 +413,18 @@ def _kafka_backbone(postgres_dsn: str) -> Iterator[tuple[_Backbone, str]]:
 def _memory_backends(postgres_dsn: str) -> Iterator[tuple[Any, None]]:
     """Qdrant, OpenBao and the governed-memory backends over them, released on exit."""
     qdrant = memory_world.r.base.QdrantHarness.provision()
-    bao = memory_world.OpenBaoHarness.provision()
-    backends = memory_world.Backends(dsn=postgres_dsn, qdrant=qdrant, bao=bao)
     try:
-        yield backends, None
-    finally:
+        bao = memory_world.OpenBaoHarness.provision()
         try:
-            backends.release()
-        finally:
+            backends = memory_world.Backends(dsn=postgres_dsn, qdrant=qdrant, bao=bao)
             try:
-                bao.destroy()
+                yield backends, None
             finally:
-                qdrant.destroy()
+                backends.release()
+        finally:
+            bao.destroy()
+    finally:
+        qdrant.destroy()
 
 
 @pytest.fixture

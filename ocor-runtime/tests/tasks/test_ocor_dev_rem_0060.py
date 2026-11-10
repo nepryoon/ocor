@@ -830,14 +830,11 @@ def test_ncr_tests_003_a_malformed_authority_seal_line_fails_the_test(key: str, 
 
 # --- NCR-TESTS-001: resources and port answers of the mission thread ------------------------
 
-MISSION_THREAD = "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
-
-
 @cache
 def _mission_thread() -> Any:
     """The mission-thread module, registered under its own name (its dataclasses resolve their module)."""
     name = "ocor_rem0060_mission_thread"
-    spec = importlib.util.spec_from_file_location(name, ROOT / MISSION_THREAD)
+    spec = importlib.util.spec_from_file_location(name, MISSION_THREAD)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
