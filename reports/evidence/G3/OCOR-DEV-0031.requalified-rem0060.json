@@ -1,0 +1,363 @@
+{
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "commands": [
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0060/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --teardown --execute",
+      "duration_seconds": 0.064,
+      "exit_code": 0,
+      "head_sha": "60eb8bfe2198f850b1275b3c41c375d99127dbce",
+      "label": "absence",
+      "raw_sha256": "9ce61139d09e0de97312cc91861802962073cf86bea24a708b0afda6ac314af2",
+      "started_at": "2026-11-10T17:27:57.511123+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0060/ocor-runtime/.venv/bin/python scripts/bootstrap_ci_environment.py --execute --timeout 600",
+      "duration_seconds": 53.539,
+      "exit_code": 0,
+      "head_sha": "60eb8bfe2198f850b1275b3c41c375d99127dbce",
+      "label": "bootstrap",
+      "raw_sha256": "e70b29d1e927c0a3f286c0988b2e1906778254b7900cb6482eeb57b3f2974130",
+      "started_at": "2026-11-10T17:27:57.575087+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0060/ocor-runtime/.venv/bin/python scripts/verify_external_services.py --execute --typed",
+      "duration_seconds": 3.022,
+      "exit_code": 0,
+      "head_sha": "60eb8bfe2198f850b1275b3c41c375d99127dbce",
+      "label": "typed-health",
+      "raw_sha256": "266a6bb4ef7e1f233df6080c88aaf7bfb4c0a52b1de58c834af3c38b635ac007",
+      "started_at": "2026-11-10T17:28:51.113980+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0060/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0060/iter8/task3/task.xml ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py ocor-runtime/tests/schemas ocor-runtime/tests/techniques ocor-runtime/tests/mission_thread/test_first_governed_slice.py reports/tests/test_normative_conformance_register.py",
+      "duration_seconds": 69.622,
+      "exit_code": 0,
+      "head_sha": "60eb8bfe2198f850b1275b3c41c375d99127dbce",
+      "label": "task",
+      "raw_sha256": "6567c66eb398d49b8895bcb957481c9acdb729937b1c535dfe027cd2426b2e7d",
+      "started_at": "2026-11-10T17:28:54.136603+00:00",
+      "status": "PASS"
+    },
+    {
+      "command": "/home/luca/projects/ocor-detailed-design/.ocor/worktrees/rem-0060/ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=short --junitxml=/home/luca/.ocor-codex/rem-0060/iter8/task3/regression.xml ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+      "duration_seconds": 5.175,
+      "exit_code": 0,
+      "head_sha": "60eb8bfe2198f850b1275b3c41c375d99127dbce",
+      "label": "regression",
+      "raw_sha256": "015a088192b20618f7f8bc5b556a3854464eee0a276f8122a4eadba2a6c49269",
+      "started_at": "2026-11-10T17:30:03.758757+00:00",
+      "status": "PASS"
+    }
+  ],
+  "commit": "60eb8bfe2198f850b1275b3c41c375d99127dbce",
+  "commit_role": "Code and test HEAD of the targeted regression; publication bound by the independent verification request.",
+  "created_at": "2026-11-10T17:30:23.600304+00:00",
+  "environment": {
+    "bootstrap_procedure": "scripts/bootstrap_ci_environment.py --execute --timeout 600; clean shell with OCOR_BOOTSTRAP_ENV and OCOR_LIVE_POSTGRES_DSN only; no bootstrap.env sourced",
+    "branch": "governed/ocor-dev-rem-0060-ncp-u12-tests",
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 275HX",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.12.11",
+    "ram_kib": 64199668,
+    "threads": 24,
+    "toolchain_preflight_sha256": "c2d39c3348fa1cf5471327828cdeb422e52ec7de869bab0d60ada0115b110fcd"
+  },
+  "existing_tests_ast_comparison": {
+    "modules": [
+      {
+        "differences": [
+          {
+            "function": "_delivered_record",
+            "only_in": "head"
+          },
+          {
+            "function": "_kafka_backbone",
+            "only_in": "head"
+          },
+          {
+            "function": "_memory_backends",
+            "only_in": "head"
+          },
+          {
+            "function": "consume",
+            "only_in": "head"
+          },
+          {
+            "function": "produce",
+            "only_in": "head"
+          },
+          {
+            "asserts": [
+              2,
+              2
+            ],
+            "changed_assert_lines_at_head": [
+              133,
+              134
+            ],
+            "decorators_same": true,
+            "function": "resolve_operator_identity",
+            "raises_same": true
+          },
+          {
+            "function": "restart_broker",
+            "only_in": "head"
+          },
+          {
+            "asserts": [
+              2,
+              2
+            ],
+            "changed_assert_lines_at_head": [
+              285
+            ],
+            "decorators_same": true,
+            "function": "run_mission_thread",
+            "raises_same": true
+          },
+          {
+            "asserts": [
+              10,
+              10
+            ],
+            "changed_assert_lines_at_head": [
+              464,
+              466,
+              468,
+              471,
+              472
+            ],
+            "decorators_same": true,
+            "function": "test_mission_thread_produces_correlated_receipts_across_all_governed_components",
+            "raises_same": true
+          }
+        ],
+        "functions": [
+          18,
+          24
+        ],
+        "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "same_names": false
+      },
+      {
+        "differences": [],
+        "functions": [
+          10,
+          10
+        ],
+        "path": "ocor-runtime/tests/schemas/test_schema_integrity.py",
+        "same_names": true
+      }
+    ],
+    "note": "mission thread: the eight changed assertions are exactly the decided lines (head lines 129-130 = base 161-162; 246 = 241; 411-419 = 429-433), assertion counts per function unchanged, same pytest.raises and parametrisations; the three functions only at head (consume, produce, restart_broker) are methods of the C5 adapter class of the adapted construction; test_schema_integrity.py: no assertion condition changed (option C1 changes only the docstring and one message)",
+    "tool": "~/.ocor-codex/rem-0060/iter6/ast_detail.py (rerun in iteration 7 at 0f86246 after the P1/P3 fixes) against the unit base 913b43d (every function: asserts with their lines, pytest.raises, decorators)"
+  },
+  "existing_tests_realigned_or_adapted": {
+    "adapted": [
+      {
+        "decisions": "NCP-U12-TEST-REALIGNMENT-SCOPE A1 (construction), B1 (241, 429, 430, 431), NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS option 1 (161, 162, 432, 433)",
+        "green": "e17dfd4",
+        "kind": "ADAPT_CONSTRUCTION",
+        "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "red": "c8a5ee1"
+      },
+      {
+        "commit": "e9bd490",
+        "decisions": "NCP-U12-TEST-REALIGNMENT-SCOPE C1",
+        "kind": "QUALIFY_LEGACY",
+        "path": "ocor-runtime/tests/schemas/test_schema_integrity.py"
+      }
+    ],
+    "realigned": []
+  },
+  "full_campaign_status": "PENDING; this record currently attests only the completed targeted regression.",
+  "inputs": {
+    "inputs_tree": "60a73de8e47b38e94aeb0e2b8dedc689fab6eb35",
+    "ocor-runtime/tests/mission_thread/test_first_governed_slice.py": "016a070ec5e6eaa6957f9fc9eb4699aba634cc662d53ac5fa10f80df216b2204"
+  },
+  "inputs_tree_definition": "git rev-parse <commit>:inputs; tree of the immutable inputs/ directory",
+  "previous_record": {
+    "record_id": "OCOR-DEV-0031-requalified-rem0053-90028ba369a5",
+    "record_path": "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0053.json",
+    "record_sha256": "57b86ef17401ce4f17112178beed640423baa2f959658923933953d172e5aedb"
+  },
+  "qualifies_requirements": false,
+  "raw_output_format": "JSONL of executed commands and their UTF-8 output plus original JUnit XML, with generated credentials redacted before archival; test-case identities appear only as sha256 in the record.",
+  "raw_output_sha256": "a8a36ec9cd419801728da123b1419199543ff205c7f3d094de328bfb8055026d",
+  "record_id": "OCOR-DEV-0031-requalified-rem0060-60eb8bfe2198",
+  "regression_run": {
+    "module": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+    "result": {
+      "failed": 0,
+      "not_executed": 0,
+      "passed": 5,
+      "skipped": 0,
+      "xfailed": 0
+    },
+    "status": "PASS",
+    "test_case_sha256": [
+      "2174892b57eb08eb4f216d1eb46ce157035d037cd92b95b576ec01facd696c3a",
+      "5de54bad5facfa5332c8cc51da9f1859388674d7a1979d2b4fbba0a6b85bfc0a",
+      "be7d361080122175fca17b79b9ea54feeacd8e2472ae8655d9b1d4359a0440a0",
+      "ca2df1d640978aac65c0eebbcaedf71b260f189d54237e9fc93ab8877e8504ca",
+      "34bcea13fb899e4ea8bd398eadec382af0ac00176ec20bd8151b4324b4710136"
+    ]
+  },
+  "requalification_kind": "regression",
+  "requirement_classification": {
+    "ast_comparison": {
+      "differences": [
+        {
+          "function": "_delivered_record",
+          "only_in": "head"
+        },
+        {
+          "function": "_kafka_backbone",
+          "only_in": "head"
+        },
+        {
+          "function": "_memory_backends",
+          "only_in": "head"
+        },
+        {
+          "function": "consume",
+          "only_in": "head"
+        },
+        {
+          "function": "produce",
+          "only_in": "head"
+        },
+        {
+          "asserts": [
+            2,
+            2
+          ],
+          "changed_assert_lines_at_head": [
+            133,
+            134
+          ],
+          "decorators_same": true,
+          "function": "resolve_operator_identity",
+          "raises_same": true
+        },
+        {
+          "function": "restart_broker",
+          "only_in": "head"
+        },
+        {
+          "asserts": [
+            2,
+            2
+          ],
+          "changed_assert_lines_at_head": [
+            285
+          ],
+          "decorators_same": true,
+          "function": "run_mission_thread",
+          "raises_same": true
+        },
+        {
+          "asserts": [
+            10,
+            10
+          ],
+          "changed_assert_lines_at_head": [
+            464,
+            466,
+            468,
+            471,
+            472
+          ],
+          "decorators_same": true,
+          "function": "test_mission_thread_produces_correlated_receipts_across_all_governed_components",
+          "raises_same": true
+        }
+      ],
+      "functions": [
+        18,
+        24
+      ],
+      "path": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+      "same_names": false
+    },
+    "bindable_requirements": [],
+    "change": "construction adapted to the retained C1-C8 components (NCP-U12-TEST-REALIGNMENT-SCOPE A1) and eight assertions realigned (B1 and NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS option 1); golden reads through parse_i_json; preventive review P1/P3 (iteration 7): resources protected as soon as acquired (_kafka_backbone, _memory_backends) and the C5 answer checked before use (_delivered_record), construction only, no assertion changed",
+    "docstring_added": false,
+    "drifted_inputs": [
+      "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+    ],
+    "latest_record": "reports/evidence/G3/OCOR-DEV-0031.requalified-rem0053.json",
+    "qualifies_requirements": false,
+    "requalification_kind": "regression",
+    "requirements": [
+      {
+        "bindable": false,
+        "method_kind": "MIXED",
+        "reason": "Register method 'test/dimostrazione' is MIXED, not AUTOMATED_TEST (point 1, first condition)",
+        "register_method": "test/dimostrazione",
+        "requirement_id": "BR-003"
+      }
+    ],
+    "rule": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02) points 1 and 3",
+    "task_id": "OCOR-DEV-0031",
+    "tests_realigned_or_adapted": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py"
+  },
+  "result": "PASS",
+  "review_scope": "Non-qualifying regression only, never evidence of any requirement; full-suite qualification of the unit remains pending.",
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Claude Code",
+        "iterations": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "model": "claude-opus-5-5",
+        "provider": "Anthropic",
+        "role": "implementer of reserve of the loop"
+      },
+      {
+        "agent": "Codex CLI",
+        "iterations": [
+          8
+        ],
+        "model": "GPT-6 (Codex; exact variant not exposed to the session)",
+        "provider": "OpenAI",
+        "role": "implementer resuming the unit through its GO under LOOP-GROK-PRIMARY (2026-11-10)"
+      }
+    ],
+    "preventive_reviewer": {
+      "agent": "Codex CLI",
+      "model": "GPT-6 (Codex; exact variant not exposed to the session, as the outcome states)",
+      "provider": "OpenAI",
+      "reserve_reviewer": true
+    },
+    "verifier_excluded_providers": [
+      "Anthropic",
+      "OpenAI"
+    ],
+    "verifier_started_by_implementer": false,
+    "verifier_status": "PENDING_EXTERNAL_LOOP"
+  },
+  "schema_version": "1.0",
+  "status": "CANDIDATE_AWAITING_INDEPENDENT_VERIFICATION",
+  "supersedes": "OCOR-DEV-0031-requalified-rem0053-90028ba369a5",
+  "supersession_scope": "NCP-UNBINDABLE-REQUALIFICATIONS (2026-11-02); REM-0046-REGRESSION-REQUALIFICATION-RECORDS (2026-10-30). Prior sealed records remain historical.",
+  "task_id": "OCOR-DEV-0031",
+  "tests_unchanged_from_base": false
+}
