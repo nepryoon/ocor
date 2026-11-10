@@ -51,8 +51,6 @@ from ocor_runtime.kernel.governed_context import GovernedContext
 # NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option A1: legacy-slice classes only as arguments a retained signature requires.
 from ocor_runtime.c2_identity import IdentityRecord, IdentityRegistry  # legacy: c2/gateway.py:209 IdentityBackedAuthority(identity_registry)
 from ocor_runtime.c7_emission import EmissionFence  # legacy: c6/engine.py:595 relay
-from ocor_runtime.c2_identity import ResolutionStatus  # legacy: RED only, the assertions of 913b43d
-from ocor_runtime.c8_agent import AgentDecision  # legacy: RED only, the assertions of 913b43d
 
 TASK_TESTS = Path(__file__).resolve().parents[1] / "tasks"
 if str(TASK_TESTS) not in sys.path:
@@ -126,10 +124,12 @@ def resolve_operator_identity() -> tuple[IdentityRegistry, str]:
     registry = IdentityRegistry()
     registry.register(IdentityRecord(canonical_id="urn:ocor:operator:alice", aliases={"alice"}))
     probe = make_governed_context(correlation_id=str(uuid.uuid4()), effective_principal_id="alice")
-    outcome = IdentityBackedAuthority(registry).resolve(make_typedb_query(fact_id="operator", context=probe, required_commit=None))
-    assert outcome.status is ResolutionStatus.IDENTIFIED
-    assert outcome.canonical_id is not None
-    return registry, outcome.canonical_id
+    canonical_id = IdentityBackedAuthority(registry).resolve(make_typedb_query(fact_id="operator", context=probe, required_commit=None))
+    # NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS option 1: the canonical id the retained gateway resolution returns
+    # (c2/gateway.py:200-215), equal to the registered one and never the ABSTAIN value.
+    assert canonical_id == "urn:ocor:operator:alice"
+    assert canonical_id != "ABSTAIN"
+    return registry, canonical_id
 
 
 def make_governed_context(*, correlation_id: str, effective_principal_id: str) -> GovernedContext:
@@ -242,8 +242,10 @@ def run_mission_thread(
     identity_output = {"summary": effective_principal_id}
     identity_task = team.orchestrator.complete(identity_task_id, output=identity_output, evidence_refs=("urn:ocor:evidence:operator-alias",),
                                                at=c8_world.NOW, **c8_world.caller("agent-1"))
-    agent_response = identity_task
-    assert agent_response.decision is AgentDecision.IDENTIFY
+    # NCP-U12-TEST-REALIGNMENT-SCOPE option B1: the typed outcome of the Fusion/Identity role of the current C8 kernel over the
+    # gateway resolution (ADD v1.3 :3057-3064, :3101-3106): a completed FusionIdentityFinding@1 bound to the validated output.
+    assert (identity_task.state.value, identity_task.output_type, identity_task.output_digest) == (
+        "COMPLETED", "FusionIdentityFinding@1", canonical_digest(identity_output))
 
     context = make_governed_context(correlation_id=correlation_id, effective_principal_id=effective_principal_id)
 
@@ -406,11 +408,16 @@ def test_mission_thread_produces_correlated_receipts_across_all_governed_compone
     assert receipts.typedb_result_digest.startswith("urn:sha256:")
     assert receipts.jena_authorized is True
     assert receipts.context_receipt_digest.startswith("urn:sha256:")
-    assert len(receipts.kafka_record_digest) == 64  # KafkaRecord.canonical_digest is raw lowercase hex, no URN prefix
-    assert receipts.agent_decision is AgentDecision.IDENTIFY
-    assert receipts.causal_outcome.status == "IDENTIFIED"
-    assert receipts.causal_outcome.lineage["correlation_id"] == correlation_id
-    assert receipts.causal_outcome.lineage["causation_id"] == receipts.action_event_id
+    # B1: the C5 envelope integrity.payload_digest, sha256: followed by 64 lowercase hex digits (LLD v1.1 :154).
+    assert re.fullmatch(r"sha256:[0-9a-f]{64}", receipts.kafka_record_digest)
+    # B1: the identity in the typed output of the Fusion/Identity role, the canonical one resolved (ADD v1.3 :3057-3064).
+    assert receipts.agent_decision == "urn:ocor:operator:alice"
+    # B1: the retained causal runtime returns ESTIMATED for an identified estimand (ADD v1.3 :2981).
+    assert receipts.causal_outcome.status == "ESTIMATED"
+    # NCP-U12-MISSION-THREAD-RESIDUAL-ASSERTIONS option 1: the trace identifiers, outside the lineage and the
+    # reproducibility digest (NCR-C7-005; Register v1.1 :61).
+    assert receipts.causal_outcome.trace["correlation_id"] == correlation_id
+    assert receipts.causal_outcome.trace["causation_id"] == receipts.action_event_id
 
 
 def test_causal_receipt_reproduces_identically_with_the_same_pinned_inputs(
