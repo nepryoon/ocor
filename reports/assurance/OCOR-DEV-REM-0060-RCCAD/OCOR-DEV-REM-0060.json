@@ -362,7 +362,8 @@
         3,
         4,
         5,
-        6
+        6,
+        7
       ],
       "model": "claude-opus-5-5",
       "provider": "Anthropic",
@@ -403,6 +404,11 @@
     "decision": "NCP-THROUGHPUT-RULES (2026-11-05) point 1 extended by SELF-CHECK-CHECKLIST (2026-11-08), SELF-CHECK-CLASS-COVERAGE (2026-11-08), SELF-CHECK-PATH-INVENTORY (2026-11-09) and TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09): every file, process-output and port-answer path of the touched test modules",
     "green": [
       "20b7316"
+    ],
+    "green_preventive_review": [
+      "5657fb3",
+      "cfedf38",
+      "4aa955c"
     ],
     "note": "for a test module the typed outcome of a malformed input is a test failure with its cause (an exception of the strict loader or pytest.fail), never a silent pass or a coerced value; FIXED marks a gap found by the self-check and closed with RED/GREEN; the table informs the preventive review and does not replace it",
     "path_inventory": {
@@ -511,7 +517,15 @@
     "red": [
       "c7abc0f"
     ],
+    "red_preventive_review": [
+      "3a6c64b",
+      "64f53f8",
+      "4f062b2"
+    ],
     "refactor": "010c222",
+    "refactor_preventive_review": [
+      "0e6d87f"
+    ],
     "table": [
       {
         "checks": {
@@ -702,14 +716,15 @@
           "types_before_conversions": "PASS (sources are parsed by ast.parse, which refuses an invalid source with SyntaxError; the scan classifies nodes by their ast class with isinstance before reading their fields; anchored lines are compared as text)"
         },
         "file": "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
-        "function": "_parse, _test_modules, the NCR-TESTS-004 coverage scan (_reason_code_coverage and its helpers), test_ncr_tests_004_inventory_is_anchored, test_ncr_tests_001_conforms, test_ncr_tests_003_conforms (source reads)",
+        "function": "_parse, _test_modules, the NCR-TESTS-004 coverage scan (_reason_code_coverage and its helpers: _scan_module, _asserts_reason_code, _excluded_constants), test_ncr_tests_004_inventory_is_anchored, test_ncr_tests_001_conforms, test_ncr_tests_003_conforms (source reads)",
         "paths": "versioned sources and texts re-read from files: every test module (syntax trees), the mission-thread source, the integrity module text and the anchored lines of ADD, LLD and source files",
         "reads_stored_data": true,
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_conforms",
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_inventory_is_anchored",
-          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_conforms"
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_conforms",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_004_the_scan_credits_a_code_only_where_an_assert_compares_reason_code_for_equality"
         ]
       },
       {
@@ -754,20 +769,22 @@
       },
       {
         "checks": {
-          "boundary_digests": "PASS (the C5 producer computes integrity.payload_digest as the sha256 of the RFC 8785 payload bytes and signs the envelope, c5/envelope.py:10-14; the thread asserts the digest form)",
+          "boundary_digests": "FIXED (the integrity digest of the answer is recomputed with the C5 payload_digest of the payload and compared, a mismatching or malformed digest fails the thread, _delivered_record)",
           "complete_normative_records": "PASS (the drafts become signed canonical envelopes admitted by the retained C5 backbone, which validates the closed envelope schema, c5/envelope.py:5-8)",
-          "finite_numbers": "PASS (the thread reads only string values of the payload and the payload_digest string, whose form it asserts; it converts no number of the answer)",
+          "finite_numbers": "FIXED (NaN, Infinity and -Infinity in the payload of a C5 answer: refused by the string-value check before any conversion or digest, _delivered_record)",
           "processes_and_resources": "PASS (the kafka_topic fixture destroys the isolated broker and its volume in finally, test_first_governed_slice.py:366-369; restart_broker stops and starts that broker and rebuilds the rig)",
-          "strict_decoding": "PASS (the retained C5 backbone decodes every journal record before delivery: a record without body or not JSON is SCHEMA_VIOLATION, ocor_runtime/c5/backbone.py:350-359, and the envelope is validated against the closed ADD v1.3 schema by CanonicalIngestionEnvelope.from_mapping, c5/envelope.py:5-8; the thread receives Python objects, never bytes)",
-          "types_before_conversions": "PASS (the rig checks the delivered count, c5_backbone_fixture.py:416-418; payload and integrity.payload_digest come from envelopes validated by C5; the thread asserts the digest form sha256: plus 64 lowercase hex and the record values, so a malformed answer fails the test; produce converts only values the thread built itself)"
+          "strict_decoding": "PASS (the retained C5 backbone decodes every journal record before delivery, c5/backbone.py:350-359; a payload that is not canonical I-JSON, such as a lone surrogate, fails the thread when its digest is recomputed, _delivered_record)",
+          "types_before_conversions": "FIXED (port answer returned without an exception but malformed: not a tuple, wrong count, None or mapping events, a mapping envelope, a payload that is not a non-empty mapping of strings, integer, boolean, null, bytes or nested values, missing or non-mapping integrity, a digest that is boolean, integer, null, empty, non-ASCII, uppercase, unprefixed or long; each fails the thread with a C5 answer message, _delivered_record)"
         },
         "file": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
-        "function": "_Backbone.consume, _Backbone.produce, _Backbone.restart_broker",
+        "function": "_Backbone.consume, _delivered_record, _Backbone.produce, _Backbone.restart_broker",
         "paths": "port answer: events delivered by the retained C5 backbone through c5_backbone_fixture.C5Rig.consume (:414-419) from a real Kafka broker",
         "reads_stored_data": true,
         "tests": [
           "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_mission_thread_produces_correlated_receipts_across_all_governed_components",
-          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_a_real_kafka_broker_restart_during_the_event_step_is_detected_and_recovers"
+          "ocor-runtime/tests/mission_thread/test_first_governed_slice.py::test_a_real_kafka_broker_restart_during_the_event_step_is_detected_and_recovers",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_a_malformed_c5_answer_fails_the_mission_thread",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_a_well_formed_c5_answer_is_read_by_the_mission_thread"
         ]
       },
       {
@@ -786,6 +803,26 @@
         "tests": [
           "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_002_touched_modules_read_versioned_files_strictly",
           "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py::test_the_reference_table_has_the_44_approved_transitions_and_matches_the_runtime"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: the fixtures acquire and release backends and bind no digest, signature or release.",
+          "complete_normative_records": "N/A: the fixtures build no record the norm defines; the backends they create are the components' own.",
+          "finite_numbers": "N/A: no numeric input is received or re-read by the fixtures, only harness handles.",
+          "processes_and_resources": "FIXED (a failure halfway through the setup: OpenBao provision, the Backends constructor, the topic creation or the C5 rig; each resource is protected as soon as it is acquired and released in reverse order, also when a release fails)",
+          "strict_decoding": "N/A: the fixtures decode no bytes; provisioning errors are typed by the harness (KafkaBrokerError becomes a test failure).",
+          "types_before_conversions": "N/A: the fixtures convert no field of an external answer; they pass harness handles to the backends unchanged."
+        },
+        "file": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py",
+        "function": "_kafka_backbone, _memory_backends (fixtures kafka_topic, qdrant_collection)",
+        "paths": "acquisition and release of the isolated Kafka broker and topic, Qdrant, OpenBao and the governed-memory backends",
+        "reads_stored_data": false,
+        "tests": [
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_the_memory_backends_of_the_mission_thread_are_released_on_every_exit",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_the_memory_backends_of_the_mission_thread_are_released_after_a_clean_exit",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_the_kafka_broker_of_the_mission_thread_is_destroyed_on_every_exit",
+          "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py::test_ncr_tests_001_a_kafka_broker_that_cannot_be_provisioned_fails_the_mission_thread"
         ]
       }
     ]
@@ -816,7 +853,9 @@
       "C7 NOT_TRANSPORTABLE"
     ]
   },
-  "open_decision_requests": [],
+  "open_decision_requests": [
+    "NCP-U12-CONTRACT-ERROR-CODES"
+  ],
   "open_points_for_review": [
     "the self-check applies SELF-CHECK-CHECKLIST to test modules (the unit changes no product code): file reads of versioned repository files and the protoc process are treated as external inputs (strict loaders with negative cases)"
   ],
@@ -828,7 +867,84 @@
     "NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS: decided (A1) and applied"
   ],
   "plan_unit": "NCP-U12",
-  "preventive_review": null,
+  "preventive_review": {
+    "advisory_dispositions": [
+      {
+        "disposition": "FIXED: the scan credits a code only where the condition of an assert compares a reason_code for equality; message constants and operands of !=, not in and is not are dropped (RED 64f53f8, GREEN cfedf38); seven credits verified by hand as false are listed in FALSE_CREDITS (4f062b2)",
+        "id": "P4"
+      },
+      {
+        "disposition": "NO CHANGE: the free texts of this record are in English like the rest of the record and the other unit records (RECORD-ROLES-COHERENCE-SCAN (2026-11-09) point 4, language of the rest of the record)",
+        "id": "P5"
+      }
+    ],
+    "blocking_dispositions": [
+      {
+        "disposition": "FIXED: the fixtures delegate to _kafka_backbone and _memory_backends, which protect each resource as soon as it is acquired (REFACTOR 0e6d87f, RED 3a6c64b, GREEN 5657fb3)",
+        "id": "P1"
+      },
+      {
+        "disposition": "INVENTORY COMPLETED: the closed error_codes of the ADD v1.3 Tool, Action Type and Event Subscription contracts, C5 PRINCIPAL_BINDING_MISMATCH and the TB-CXT-07 fail state enter CLOSED_REASON_CODES (RED 4f062b2); the produced codes get negative tests (GREEN 4aa955c); the nineteen codes the retained components do not produce are the subject of the normative decision request NCP-U12-CONTRACT-ERROR-CODES, opened in iteration 7 before the full suite (NORMATIVE-QUESTIONS-EARLY-DR (2026-11-09) point 2); not contested",
+        "id": "P2"
+      },
+      {
+        "disposition": "FIXED: _Backbone.consume checks the C5 answer before use through _delivered_record and fails the thread with a C5 answer message (RED 3a6c64b, GREEN 5657fb3)",
+        "id": "P3"
+      }
+    ],
+    "contested_findings": [],
+    "findings_by_severity": {
+      "advisory": 2,
+      "blocking": 3
+    },
+    "head_sha": "3d6a01d329d11da60dd12424dc2d76417c899d27",
+    "independence_limits": "reserve reviewer of PRE-CAMPAIGN-REVIEW-ROTATION (Codex, OpenAI): nominal main implementer of the loop, not started as implementer of this task; the final verifier stays of a vendor other than Anthropic and OpenAI",
+    "normative_questions": [
+      {
+        "decision_request": "NCP-U12-CONTRACT-ERROR-CODES",
+        "finding": "P2",
+        "note": "the finding is not contested (option D1 names the contracts); the nineteen unproduced codes it uncovers are a question no decided option describes",
+        "opened_in_iteration": 7,
+        "touches_the_norm": true
+      }
+    ],
+    "note": "consultative (PRE-CAMPAIGN-REVIEW (2026-10-26) point 4): no finding text is copied; the fixes are covered by the campaign and the independent verification",
+    "outcome_file_sha256": "89a767c858b124a376291e83579dbbbde4c9fb569bc4b8ad9e2fac44f2188ca9",
+    "request_id": "OCOR-DEV-REM-0060-3d6a01d329d1-pre",
+    "reserve_reviewer": true,
+    "reviewer": {
+      "agent": "Codex CLI",
+      "model": "GPT-6 (Codex; exact variant not exposed to the session, as the outcome states)",
+      "provider": "OpenAI"
+    },
+    "self_check_checklist_point_3": [
+      {
+        "category": "processes and resources",
+        "cell_state_at_review": "PASS",
+        "finding": "P1",
+        "row_that_should_have_caught_it": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py _Backbone row (row 13: kafka_topic named, qdrant_collection absent)"
+      },
+      {
+        "category": "types before conversions, finite numbers, port answers (TEXT-FORM-AND-PORT-ANSWER-CLASSES (2026-11-09) point 3)",
+        "cell_state_at_review": "PASS (types_before_conversions, finite_numbers)",
+        "finding": "P3",
+        "row_that_should_have_caught_it": "ocor-runtime/tests/mission_thread/test_first_governed_slice.py _Backbone row (row 13)"
+      },
+      {
+        "category": "none of point 2 (perimeter of the option D1 inventory)",
+        "cell_state_at_review": "not applicable",
+        "finding": "P2",
+        "row_that_should_have_caught_it": "none"
+      },
+      {
+        "category": "none of point 2 (precision of the static scan)",
+        "cell_state_at_review": "not applicable",
+        "finding": "P4",
+        "row_that_should_have_caught_it": "none"
+      }
+    ],
+    "verdict": "BLOCKING_FINDINGS"
+  },
   "process_improvements_applied": [
     {
       "date": "2026-11-09",
@@ -1118,6 +1234,21 @@
       "fingerprint": "6d6cfb1ae9aa50a40ba88ccf34fbde00490f43d892e962ad88e9dc1693989560",
       "summary": "coverage check GREEN in the known-divergence form; four ACT-T31 cases still RED"
     },
+    "GREEN_P1_P3": {
+      "commit": "5657fb3",
+      "fingerprint": "e68ddb195b2d12e1272e2b91746504e4ef1ab6f55306b3461363442213b15ad8",
+      "summary": "44 passed; mission thread and unit module 180 passed on the live CI stack"
+    },
+    "GREEN_P2_PRODUCED_CODES": {
+      "commit": "4aa955c",
+      "fingerprint": "2d6a71433f77dd58d68f6898a8595aacc4165553eeb6fc6b241a1706649a87b1",
+      "summary": "C6 EMERGENCY_STOP_ACTIVE and C5 SUBSCRIPTION_NOT_FOUND, CONTROL_PLANE_UNAVAILABLE pass; coverage check (19 codes) pending NCP-U12-CONTRACT-ERROR-CODES"
+    },
+    "GREEN_P4_SCAN": {
+      "commit": "cfedf38",
+      "fingerprint": "d48b3767a1710ebdca67a7cc131f095c3601246a717f1232a991926c703a0cab",
+      "summary": "11 passed, coverage of the previous inventory unchanged"
+    },
     "GREEN_SELF_CHECK": {
       "commit": "20b7316",
       "fingerprint": "d611fe6552315c2ffbbf567566d3e508a566bebbe83ca37870cc54be02d242ad",
@@ -1153,10 +1284,30 @@
       "fingerprint": "a14a566f6e4156c9734cdc03ba8b34535db2357176ecc3f6ce66c977cbcdcc9c",
       "summary": "unit module 1 failed (001), 3 passed: legacy argument classes admitted only as A1 decides"
     },
+    "RED_P1_P3": {
+      "commit": "3a6c64b",
+      "fingerprint": "e143fa81e4ee30131990afde314b2b19bd50ed069eecc7642baab421767e8697",
+      "summary": "35 failed for the right reason, 9 passed"
+    },
+    "RED_P2_INVENTORY": {
+      "commit": "4f062b2",
+      "fingerprint": "ff106b140500e2aea46fd38914f6b11398ab21d25de15d9571800befc0891dd1",
+      "summary": "coverage check (21 codes) and the ACT-T09b RED of C6 APPROVAL_EXPIRED fail"
+    },
+    "RED_P4_SCAN": {
+      "commit": "64f53f8",
+      "fingerprint": "d20ab74e7a9d2041b64009be3df6e659293b9e86b6313b17944ff5ea7314e439",
+      "summary": "5 failed for the right reason, 3 passed"
+    },
     "RED_SELF_CHECK": {
       "commit": "c7abc0f",
       "fingerprint": "75d4f4cf6aa20933cd892ec5516a6d8614adace1a275a85c9d6b0c00bc652037",
       "summary": "96 failed for the right reason, 27 passed (already refused cases and positive controls)"
+    },
+    "REFACTOR_P1_FIXTURES": {
+      "commit": "0e6d87f",
+      "fingerprint": "6bae8f9489be441a9fac3bdd90d2610bc0f3c5a817f87ee40997a0ed0c09f538",
+      "summary": "mission thread 5 passed, behaviour unchanged"
     },
     "REFACTOR_SELF_CHECK_LOADERS": {
       "commit": "010c222",
