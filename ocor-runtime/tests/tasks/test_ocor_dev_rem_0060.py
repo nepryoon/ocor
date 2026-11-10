@@ -73,6 +73,18 @@ RETAINED_PACKAGES = (
     "ocor_runtime.c8",
 )
 RETAINED_C1_BUILDERS = frozenset({"RetainedCanonicalIrBuilder", "FrontendCanonicalIrBuilder"})
+# NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option A1: the mission thread exercises every capability
+# through the retained component and may import from the legacy slice only the classes a retained
+# signature requires as an argument, each with a comment that qualifies it as legacy and cites file and
+# line of that signature; no method of those classes yields an outcome of the thread. No spikes module.
+LEGACY_ARGUMENT_CLASSES = {
+    "ocor_runtime.c2_identity": frozenset({"IdentityRegistry", "IdentityRecord"}),
+    "ocor_runtime.c7_emission": frozenset({"EmissionFence"}),
+    "ocor_runtime.c6_capabilities": frozenset({"CapabilityAuthority"}),
+    "ocor_runtime.c4_marking": frozenset({"MarkingSet", "MarkingSchemeDefinition"}),
+}
+LEGACY_SETUP_METHODS = frozenset({"register"})
+SIGNATURE_CITATION = re.compile(r"#.*\blegacy\b.*\b(?:c[1-8]|memory)/[a-z_]+\.py:\d+")
 
 
 def _imported_modules(tree: ast.Module) -> set[str]:
@@ -158,12 +170,54 @@ def _sealed_digests() -> dict[str, str]:
 # --- NCR-TESTS-001 -------------------------------------------------------------------------
 
 
+def _legacy_imports(tree: ast.Module, lines: list[str]) -> tuple[list[str], set[str]]:
+    """The legacy or spike imports outside option A1 and the legacy names A1 admits."""
+    refused: list[str] = []
+    admitted: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            refused.extend(alias.name for alias in node.names
+                           if alias.name in LEGACY_MODULES or alias.name.split(".")[0] == "spikes")
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            if node.module.split(".")[0] == "spikes":
+                refused.append(node.module)
+            elif node.module in LEGACY_MODULES:
+                allowed = LEGACY_ARGUMENT_CLASSES.get(node.module, frozenset())
+                outside = [alias.name for alias in node.names if alias.name not in allowed or alias.asname]
+                cited = SIGNATURE_CITATION.search(lines[node.lineno - 1])
+                refused.extend(f"{node.module}.{name}" for name in outside)
+                if not cited:
+                    refused.append(f"{node.module} (line {node.lineno}: no legacy comment citing the retained signature)")
+                admitted.update(alias.name for alias in node.names if alias.name in allowed)
+    return refused, admitted
+
+
+def _legacy_method_calls(tree: ast.Module, admitted: set[str]) -> list[str]:
+    """Calls of methods of legacy objects other than their set-up (A1: no legacy outcome)."""
+    instances = {target.id for node in ast.walk(tree) if isinstance(node, ast.Assign)
+                 and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id in admitted
+                 for target in node.targets if isinstance(target, ast.Name)}
+    calls: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute):
+            owner = node.value
+            legacy_owner = (isinstance(owner, ast.Name) and owner.id in instances | admitted) or (
+                isinstance(owner, ast.Call) and isinstance(owner.func, ast.Name) and owner.func.id in admitted)
+            if legacy_owner and node.attr not in LEGACY_SETUP_METHODS:
+                calls.append(f"line {node.lineno}: {ast.unparse(node)}")
+    return calls
+
+
 def test_ncr_tests_001_conforms():
-    """FR-172 (Register v1.1 :427), LLD v1.1 :409, NCP-U01-RETAINED-C1-BUILDERS point 4."""
+    """FR-172 (Register v1.1 :427), LLD v1.1 :409, NCP-U01-RETAINED-C1-BUILDERS point 4,
+    NCP-U12-TEST-REALIGNMENT-SCOPE (2026-11-10) option A1."""
+    source = MISSION_THREAD.read_text(encoding="utf-8")
     tree = _parse(MISSION_THREAD)
     modules = _imported_modules(tree)
-    legacy = sorted(module for module in modules if module in LEGACY_MODULES or module.split(".")[0] == "spikes")
-    assert legacy == [], f"the mission thread imports legacy-slice or spike modules: {legacy}"
+    legacy, admitted = _legacy_imports(tree, source.split("\n"))
+    assert legacy == [], f"the mission thread imports legacy-slice or spike modules outside option A1: {legacy}"
+    calls = _legacy_method_calls(tree, admitted)
+    assert calls == [], f"the mission thread obtains an outcome from a legacy class: {calls}"
     missing = [package for package in RETAINED_PACKAGES if not any(m == package or m.startswith(package + ".") for m in modules)]
     assert missing == [], f"the mission thread does not import the retained packages {missing}"
     builders = sorted(RETAINED_C1_BUILDERS & _names(tree))
