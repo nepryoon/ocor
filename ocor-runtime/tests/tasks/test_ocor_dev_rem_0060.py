@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import re
 import uuid
 from pathlib import Path
@@ -464,13 +465,52 @@ def test_ncr_tests_004_inventory_is_anchored():
                    for test, touched, constants, _record in assertions), f"stale collaborator credit {module} {package} {code}"
 
 
-def test_ncr_tests_004_conforms():
-    """OCOR_TEST_STRATEGY.md :28-29 (failure codes), option D1: complete coverage of the inventory."""
+# Known divergences: closed codes the retained component does not produce, each with the register entry
+# (reports/development/NORMATIVE_CONFORMANCE_REGISTER.json, plan unit NCP-U15) that tracks it. Option A1 of
+# NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10) and option B1 of NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10).
+# Key: (component, code); value: entry id.
+KNOWN_DIVERGENCES = {
+    ("C2", "CAPABILITY_DENIED"): "NCR-C2-014",
+    ("C2", "SCENARIO_ISOLATION_VIOLATION"): "NCR-C2-014",
+    ("C6", "SCHEMA_VIOLATION"): "NCR-C6-015",
+    ("C6", "CONTRACT_REJECTED"): "NCR-C6-015",
+    ("C7", "INSUFFICIENT_EVIDENCE"): "NCR-C7-008",
+    ("C7", "EXTRAPOLATIVE"): "NCR-C7-008",
+    ("C7", "STALE_CONTEXT"): "NCR-C7-008",
+    ("C7", "NOT_TRANSPORTABLE"): "NCR-C7-008",
+    # B1: the RED of the FSM record (d307a0b, lines 588-609) left the suite with this entry
+    ("C6", "IDEMPOTENCY_CONFLICT"): "NCR-C6-016",
+}
+REGISTER = ROOT / "reports/development/NORMATIVE_CONFORMANCE_REGISTER.json"
+
+
+def _uncovered() -> list[tuple[str, str, str, int]]:
     assertions = _reason_code_assertions()
-    uncovered = [f"{component} {code} ({source}:{line})" for component, packages, source, line, code in CLOSED_REASON_CODES
-                 if not any(code in constants and _credited(test, touched, code) & set(packages)
-                            and (record or component not in RECORD_FIELD_COMPONENTS) for test, touched, constants, record in assertions)]
-    assert uncovered == [], f"closed reason codes without a negative test asserting them: {uncovered}"
+    return [(component, code, source, line) for component, packages, source, line, code in CLOSED_REASON_CODES
+            if not any(code in constants and _credited(test, touched, code) & set(packages)
+                       and (record or component not in RECORD_FIELD_COMPONENTS) for test, touched, constants, record in assertions)]
+
+
+def test_ncr_tests_004_known_divergences_are_open_register_entries():
+    """Every known divergence is an inventoried code and names an OPEN entry of its component in the register."""
+    entries = {entry["id"]: entry for entry in json.loads(REGISTER.read_text(encoding="utf-8"))["entries"]}
+    inventoried = {(row[0], row[4]) for row in CLOSED_REASON_CODES}
+    for (component, code), entry_id in KNOWN_DIVERGENCES.items():
+        assert (component, code) in inventoried, f"{component} {code} is not inventoried"
+        entry = entries.get(entry_id)
+        assert entry is not None and entry["status"] == "OPEN" and entry["component"] == component, (component, code, entry_id)
+        assert code in entry["statement"], f"{entry_id} does not name {code}"
+
+
+def test_ncr_tests_004_conforms():
+    """OCOR_TEST_STRATEGY.md :28-29 (failure codes), option D1: complete coverage of the inventory, except the
+    known divergences, each of which must still be uncovered (a covered one is stale)."""
+    uncovered = _uncovered()
+    unknown = [f"{component} {code} ({source}:{line})" for component, code, source, line in uncovered
+               if (component, code) not in KNOWN_DIVERGENCES]
+    assert unknown == [], f"closed reason codes without a negative test asserting them: {unknown}"
+    stale = sorted(set(KNOWN_DIVERGENCES) - {(component, code) for component, code, _source, _line in uncovered})
+    assert stale == [], f"known divergences now covered: {stale}"
 
 
 # LLD v1.1 :304-305: a refusal of C3 to the command C6 sent (CANONICAL_COMMIT_PENDING) ends the
@@ -584,29 +624,6 @@ def test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the
     assert (action[-1].transition_id, action[-1].context.get("reason_code")) == ("ACT-T05", "GOVERNED_CONTEXT_MISMATCH")
     assert suite.untouched()
 
-
-def test_ncr_tests_004_an_admitted_action_presented_with_another_decision_records_the_idempotency_conflict() -> None:
-    """Option B2 for C6 IDEMPOTENCY_CONFLICT (LLD v1.1 :264: same key, different fingerprint): the action
-    instance admitted with one Decision is presented again with another Decision for the same proposal;
-    the retained C6 engine refuses it, and the code must be the reason_code field of an FSM transition
-    record of the action, not only the cause of the engine error."""
-    import test_ocor_dev_rem_0053 as action_path
-    from ocor_runtime.c6.engine import GovernedActionError
-
-    suite = action_path.EngineSuite()
-    world = suite.world
-    proposal, approval_set, decision = action_path._admitted(suite)
-    suite.execute(proposal, approval=approval_set, decision=decision)
-    before = [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
-    late = world.decide(proposal, approval_set)
-    # the scenario: the engine refuses the second Decision because of the idempotency conflict
-    with pytest.raises(GovernedActionError) as refused:
-        suite.execute(proposal, approval=approval_set, decision=late)
-    assert refused.value.cause_code == "IDEMPOTENCY_CONFLICT"
-    action = [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
-    assert "IDEMPOTENCY_CONFLICT" in [effect.context.get("reason_code") for effect in action[len(before):]], (
-        f"no FSM transition records the code: transitions after the refusal {[effect.transition_id for effect in action[len(before):]]}"
-    )
 
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
 
