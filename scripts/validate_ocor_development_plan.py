@@ -1474,6 +1474,26 @@ def main() -> int:
         # NCP-U11-ADMISSION-QUOTA-COMPOSITION and NCP-U11-ADMISSION-QUOTA-WORLDS (decided on 2026-11-09), byte-identical.
         "reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-COMPOSITION.md",
         "reports/development/decision_requests/NCP-U11-ADMISSION-QUOTA-WORLDS.md",
+        # OCOR-DEV-REM-0060 (NCP-U12 of NORMATIVE-CONFORMANCE-PLAN (2026-10-30)): tests (the schema/meta corpus and the
+        # materialised contract integrity over the LLD v1.1 par. 0.2 contracts, the technique routing modules with the
+        # causal golden dataset), the unit test module, the unit record, and the regression-only requalifications of
+        # 0005, 0050 and 0082 forced by this allowlist.
+        "ocor-runtime/tests/schemas/test_contract_meta_corpus.py",
+        "ocor-runtime/tests/schemas/test_materialised_contract_integrity.py",
+        "ocor-runtime/tests/tasks/test_ocor_dev_rem_0060.py",
+        "ocor-runtime/tests/techniques/golden/causal_logistics_scm.json",
+        "ocor-runtime/tests/techniques/test_c6_fsm_and_lease_state_models.py",
+        "ocor-runtime/tests/techniques/test_c7_golden_and_metamorphic.py",
+        "ocor-runtime/tests/techniques/test_canonical_kernel_properties.py",
+        "reports/assurance/OCOR-DEV-REM-0060-RCCAD/README.md",
+        "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.json",
+        "reports/assurance/OCOR-DEV-REM-0060-RCCAD/OCOR-DEV-REM-0060.log",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0060.json",
+        "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0060.log",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0060.json",
+        "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0060.log",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0060.json",
+        "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0060.log",
         "reports/tests/check_rem0022_ci_evidence.py",
         # REM-0022 repair 1: distinct candidate paths, preserved sealed history.
         'reports/tests/test_rem0022_case_identity.py',
