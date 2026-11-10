@@ -1,6 +1,6 @@
 # NCP-U12-UNPRODUCED-REASON-CODES
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
+Status: `DECIDED_BY_PO` (era `OPEN_PO_NORMATIVE_DECISION_REQUIRED`). Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
 (NCP-U12 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, test; branch `governed/ocor-dev-rem-0060-ncp-u12-tests`, head
 `4fbcf16`) e la voce `NCR-TESTS-004` di `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json`. Implementatore:
 Claude Code (Anthropic), implementatore di riserva.
@@ -91,3 +91,16 @@ la copertura sul valore che il componente registra davvero.
 - Riqualifiche: con A1 e A3 nessuna nuova; con A2 quelle dei task toccati.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, limiti e claim invariati (`E1=0`, `E2=0`, `Verified=0`, runtime
   `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-10
+
+Decisione del PO su delega completa: `NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10)`, **opzioni A1 e B2**, come descritte in questo file al commit `92cdcc2949d9ee5a1135243f03b6919b3b5afd01` (sha256 `a9a1fae055d118053fefb3b47f3a1f89783da8f4d4a6965f5b7ed1848e36bbff`, verificata prima dell'attuazione); decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U12-UNPRODUCED-REASON-CODES (2026-11-10) — decisione del PO, su delega completa
+
+Decisa su delega completa del PO secondo `DELEGA-COMPLETA (2026-11-02)`, con il modello `claude-opus-5-5` ed effort `xhigh` (scelta di `claude-opus-5-5` con effort `medium`, delicatezza ALTA). Il PO risolve la decision request `NCP-U12-UNPRODUCED-REASON-CODES` (branch `governed/decision-request-ncp-u12-unproduced-reason-codes`, commit `92cdcc2949d9ee5a1135243f03b6919b3b5afd01`, file `reports/development/decision_requests/NCP-U12-UNPRODUCED-REASON-CODES.md`, sha256 `a9a1fae055d118053fefb3b47f3a1f89783da8f4d4a6965f5b7ed1848e36bbff`) adottando per il quesito A l'**opzione A1**; per il quesito B l'**opzione B2**.
+
+1. Applica le opzioni scelte esattamente come descritte nel file indicato, a quel commit. Se il file che leggi a quel commit non ha quello sha256, non applicarle e apri una decision request.
+2. Se l'attuazione richiede di andare oltre quanto le opzioni scelte descrivono esplicitamente, fermati e apri una decision request: la deciderà la stessa delega.
+3. Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione, con la nota «decisa su delega completa del PO, modello claude-opus-5-5, effort xhigh») e nell'`ITERATION_LOG.md`, con lo stesso trattamento di una decisione del PO. Vale come decisione del PO a ogni effetto, anche dove una regola chiede una decisione del PO non presa su delega.
+4. Le altre decisioni e regole vigenti restano invariate, salvo quanto le opzioni scelte cambiano esplicitamente.
