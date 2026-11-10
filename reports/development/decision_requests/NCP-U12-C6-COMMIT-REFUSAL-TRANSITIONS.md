@@ -1,6 +1,6 @@
 # NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS
 
-Status: `OPEN_PO_NORMATIVE_DECISION_REQUIRED`. Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
+Status: `DECIDED_BY_PO` (era `OPEN_PO_NORMATIVE_DECISION_REQUIRED`). Livello: normativo. Riguarda l'unità `OCOR-DEV-REM-0060`
 (NCP-U12 di `NORMATIVE-CONFORMANCE-PLAN (2026-10-30)`, test; branch `governed/ocor-dev-rem-0060-ncp-u12-tests`, head
 `689aff288c3fca00f32bbd501bbc1d99434e9966`) e la voce `NCR-TESTS-004` di
 `reports/development/NORMATIVE_CONFORMANCE_REGISTER.json`. Implementatore: Claude Code (Anthropic), implementatore di
@@ -104,3 +104,16 @@ A3 lascerebbe la suite con un RED permanente. B1 non introduce comportamenti che
 - Riqualifiche: con A1 e A3 nessuna nuova; con A2 quella di `OCOR-DEV-0030` e degli altri record interessati.
 - Nessun nuovo `DEC-*`; ADD, LLD, contratti, schemi, limiti e claim invariati (`E1=0`, `E2=0`, `Verified=0`, runtime
   `NOT_ESTABLISHED`, PoC e Production `NO-GO`).
+
+## Disposition del Product Owner — 2026-11-10
+
+Decisione normativa del PO: `NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10)`, **opzione A1** (il quesito B non si applica), come descritta in questo file al commit `98030e7a17f636b6f3213a3808ec97cce4a20ae5` (sha256 `544e678a18e6a6dbdda3e5de0a9f558625cc09a2f09f2cb91a0404d4a9c9c4c7`, verificata prima dell'attuazione); presa dal PO con istruzione esplicita, non su delega. Il testo integrale della decisione, riportato qui sotto senza modifiche salvo il livello del titolo, è la disposition di questa richiesta. Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati.
+
+### NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS (2026-11-10) — decisione normativa del PO
+
+Decisione **di livello normativo**, presa dal PO con istruzione esplicita il 2026-11-10. Il PO risolve la decision request `NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS` (branch `governed/decision-request-ncp-u12-c6-commit-refusal-transitions`, commit `98030e7a17f636b6f3213a3808ec97cce4a20ae5`, file `reports/development/decision_requests/NCP-U12-C6-COMMIT-REFUSAL-TRANSITIONS.md`, sha256 `544e678a18e6a6dbdda3e5de0a9f558625cc09a2f09f2cb91a0404d4a9c9c4c7`, draft PR #580) con l'**opzione A1**, come raccomandata e descritta in quel file a quel commit. Il quesito B non si applica, perché riguarda solo l'opzione A2.
+
+1. **Opzione A1.** Attua l'opzione A1 esattamente come la descrive il file: la divergenza dei quattro codici di C6 sul percorso `ACT-T31a`/`ACT-T31b` (`PRECONDITION_FAILED`, `INVARIANT_VIOLATION`, `REVISION_CONFLICT`, `GATE_PACKAGE_MISMATCH`) entra nel registro di conformità come voce nuova `OPEN` del componente C6, con gravità secondo `severity_rule`, le ancore della richiesta e come `red_tests` il test del commit `689aff288c3fca00f32bbd501bbc1d99434e9966` citato con commit, percorso e righe; la sua pianificazione segue la regola del registro per le voci aperte. Nel modulo dell'unità il test esce dalla suite in un commit successivo e resta nella storia del branch come RED della voce nuova; il controllo di copertura elenca i quattro codici come divergenze note con l'identificativo della voce nuova e fallisce per ogni altro codice scoperto. Nessun file di runtime cambia; nessuna riqualifica aggiuntiva.
+2. **Identificativo.** La voce nuova prende il primo identificativo `NCR-C6-*` libero nel registro al momento della registrazione: il file indica `NCR-C6-015`, ma `NCR-C6-015` e `NCR-C6-016` sono stati assegnati dopo, da `NCP-U12-REASON-CODE-ENTRIES-PLAN (2026-11-10)`. Questa è l'unica differenza ammessa rispetto al testo del file.
+3. **Registrazione.** Registra la disposition nel file della decision request, nel registro `blockers` di `EXECUTION_STATE.json` (`po_decision` uguale a questa decisione; `evidence` con il commit `98030e7a17f636b6f3213a3808ec97cce4a20ae5` e il suo sha256 completi) e nell'`ITERATION_LOG.md`, secondo la prassi e l'allowlist vigenti; chiudi la draft PR come risolta, come per le decisioni precedenti dell'unità.
+4. Nessun nuovo `DEC-*`. Oltre a quanto descrive l'opzione A1, nessun test, guard, limite di tempo, soglia, workflow, contratto, schema o file di runtime cambia. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
