@@ -32,6 +32,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -559,6 +560,29 @@ def test_ncr_tests_004_the_c6_engine_ends_the_action_on_the_c3_refusal_after_the
         f"({type(outcome).__name__}, notes {getattr(outcome, '__notes__', [])})"
     )
     assert (action[-1].transition_id, action[-1].context.get("reason_code")) == (transition_id, code)
+
+
+
+def test_ncr_tests_004_a_proposal_of_another_governed_context_is_denied_with_the_code_on_its_transition() -> None:
+    """Option B2 for C6 GOVERNED_CONTEXT_MISMATCH: the retained C6 engine denies at G-AUTHORITY a proposal
+    bound to another GovernedContext and ends it with ACT-T05 (LLD v1.1 :266, fail-closed reason code);
+    the code is the reason_code field of the FSM transition record, not only the cause of the error."""
+    import test_ocor_dev_rem_0053 as action_path
+    from ocor_runtime.c6.fsm import load_transitions
+
+    suite = action_path.EngineSuite()
+    world = suite.world
+    proposal = world.proposal(suite.types["R3_HIGH_IMPACT"], action_id=f"urn:ocor:action:rem0060:{uuid.uuid4()}",
+                              proposer=action_path.OPERATOR, target=action_path.TARGET,
+                              governed_context_digest=action_path._sha("other-gcs"))
+    approval_set = world.approval_set(proposal)
+    decision = world.decide(proposal, approval_set)
+    suite.denial(proposal, approval=approval_set, decision=decision, lease=suite.lease(proposal, decision))
+    action = [effect for effect in world.trace.effects if effect.correlation_id == proposal.action_instance_id]
+    destination = {item.transition_id: item for item in load_transitions()}["ACT-T05"].destination
+    assert world.fsm.current_state(proposal.action_instance_id) == destination
+    assert (action[-1].transition_id, action[-1].context.get("reason_code")) == ("ACT-T05", "GOVERNED_CONTEXT_MISMATCH")
+    assert suite.untouched()
 
 
 # --- NCR-TESTS-005 -------------------------------------------------------------------------
