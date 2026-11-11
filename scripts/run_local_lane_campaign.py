@@ -23,8 +23,11 @@ the CI parts and the verifier procedure keep their behaviour.
   every lane uses a sandbox, so the host daemon's development stack is untouched.
 - Before provisioning, a work directory on the /tmp user quota is refused when
   the measured lane budget does not fit. Filesystem free space is not that
-  quota. SIGTERM and SIGHUP run the same teardown and, only in that quota case,
-  remove the shared image cache. The result file and the lane logs stay.
+  quota. An unset hard limit is unlimited: it is not copied into the admission
+  figure and it is not refused from the filesystem figure. An unreadable quota
+  and a finite quota that is short still refuse. SIGTERM and SIGHUP run the
+  same teardown and, only in that quota case, remove the shared image cache.
+  The result file and the lane logs stay.
 """
 from __future__ import annotations
 
@@ -997,7 +1000,11 @@ def measure_tmp_space(path: Path = Path("/tmp")) -> dict[str, Any]:
         reading["free_bytes"] = None
         return reading
     reading["quota"] = quota
-    reading["free_bytes"] = filesystem_free if quota["free_bytes"] is None else quota["free_bytes"]
+    # hard_kib 0 is an unset limit (quota_free_bytes returns None). Do not
+    # substitute filesystem free: that figure is not the user quota.
+    unlimited = quota["hard_kib"] == 0 and quota["free_bytes"] is None
+    reading["quota_unlimited"] = unlimited
+    reading["free_bytes"] = None if unlimited else quota["free_bytes"]
     return reading
 
 
@@ -1023,8 +1030,18 @@ def require_tmp_space_for_lanes(work: Path, lanes: int) -> dict[str, Any]:
     if not same or not record["usrquota"]:
         return record
     record["applies"] = True
+    quota = record["quota"] if isinstance(record["quota"], dict) else {}
+    if record["quota_error"] is not None:
+        raise CampaignError(
+            "tmp space is not enough: user quota on /tmp is unreadable "
+            f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
+            f"filesystem free {record['filesystem_free_bytes']} bytes")
+    if quota.get("hard_kib") == 0 and quota.get("free_bytes") is None:
+        record["quota_unlimited"] = True
+        record["decision"] = "enough"
+        return record
     free = record["free_bytes"]
-    if record["quota_error"] is not None or free is None:
+    if free is None:
         raise CampaignError(
             "tmp space is not enough: user quota on /tmp is unreadable "
             f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "

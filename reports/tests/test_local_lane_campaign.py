@@ -2866,6 +2866,9 @@ def test_usrquota_follows_the_longest_mount_and_the_super_options():
     assert LANES.usrquota_in_mountinfo(plain, Path('/tmp')) is False
     escaped = '40 25 0:33 / /tmp/lane\\040a rw,usrquota - tmpfs tmpfs rw\n'
     assert LANES.usrquota_in_mountinfo(escaped, Path('/tmp/lane a/repo')) is True
+    assert LANES.usrquota_in_mountinfo('', Path('/tmp')) is False
+    assert LANES.usrquota_in_mountinfo('not a mount line\n', Path('/tmp')) is False
+    assert LANES.usrquota_in_mountinfo('36 25 0:32 / /tmp rw,usrquota\n', Path('/tmp')) is False
 
 
 def test_quota_free_bytes_treats_the_hard_limit_as_kibibytes():
@@ -2874,6 +2877,100 @@ def test_quota_free_bytes_treats_the_hard_limit_as_kibibytes():
     assert LANES.quota_free_bytes(10, 10 * 1024 + 5, 0x3F) == 0
     with pytest.raises(CAMPAIGN.CampaignError, match='not valid'):
         LANES.quota_free_bytes(1, 0, 0)
+    with pytest.raises(CAMPAIGN.CampaignError, match='malformed'):
+        LANES.quota_free_bytes(True, 0, 0x3F)
+
+
+def _hook_unlimited_tmp_quota(monkeypatch, filesystem_free):
+    """usrquota on, hard limit unset, filesystem free forced. The real measure runs."""
+
+    class Stats:
+        f_bavail = filesystem_free
+        f_frsize = 1
+
+    monkeypatch.setattr(LANES.os, 'statvfs', lambda path: Stats())
+    monkeypatch.setattr(LANES, 'mount_has_usrquota', lambda path: True)
+    monkeypatch.setattr(LANES, '_read_user_quota', lambda path: {
+        'hard_kib': 0, 'hard_bytes': None, 'used_bytes': 0, 'free_bytes': None, 'valid': 0x3F,
+    })
+
+
+def test_read_user_quota_refuses_a_failed_syscall(monkeypatch, tmp_path):
+    def failed(number, descriptor, command, uid, ref):
+        del number, descriptor, command, uid, ref
+        LANES.ctypes.set_errno(1)
+        return -1
+
+    class Lib:
+        syscall = staticmethod(failed)
+
+    monkeypatch.setattr(LANES.ctypes, 'CDLL', lambda name, use_errno=True: Lib())
+    monkeypatch.setattr(LANES.os, 'uname', lambda: type('Uname', (), {'machine': 'x86_64'})())
+    with pytest.raises(CAMPAIGN.CampaignError, match='quotactl_fd failed: errno 1'):
+        LANES._read_user_quota(tmp_path)
+
+
+def test_read_user_quota_reports_an_unset_hard_limit_as_unlimited(monkeypatch, tmp_path):
+    def succeed(number, descriptor, command, uid, ref):
+        del number, descriptor, command, uid
+        block = ref._obj
+        block.dqb_bhardlimit = 0
+        block.dqb_curspace = 0
+        block.dqb_valid = LANES.QIF_BLIMITS | LANES.QIF_SPACE
+        return 0
+
+    class Lib:
+        syscall = staticmethod(succeed)
+
+    monkeypatch.setattr(LANES.ctypes, 'CDLL', lambda name, use_errno=True: Lib())
+    monkeypatch.setattr(LANES.os, 'uname', lambda: type('Uname', (), {'machine': 'x86_64'})())
+    quota = LANES._read_user_quota(tmp_path)
+    assert quota['hard_kib'] == 0 and quota['hard_bytes'] is None and quota['free_bytes'] is None
+
+
+def test_measure_tmp_space_keeps_an_unlimited_quota_distinct_from_filesystem_free(monkeypatch):
+    _hook_unlimited_tmp_quota(monkeypatch, 1)
+    reading = LANES.measure_tmp_space(Path('/tmp'))
+    assert reading['filesystem_free_bytes'] == 1
+    assert reading['usrquota'] is True and reading['quota_error'] is None
+    assert reading['quota']['hard_kib'] == 0 and reading['quota']['free_bytes'] is None
+    assert reading['free_bytes'] is None
+    assert reading['quota_unlimited'] is True
+
+
+def test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget(host_world, monkeypatch):
+    _hook_unlimited_tmp_quota(monkeypatch, 1)
+    monkeypatch.setattr(LANES, '_same_device', lambda left, right: True, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is True and result['tmp_space']['decision'] == 'enough'
+    assert result['tmp_space']['quota_unlimited'] is True
+    assert result['tmp_space']['filesystem_free_bytes'] == 1
+    assert 'tmp space is not enough' not in result.get('error', '')
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_above_the_budget(host_world, monkeypatch):
+    _hook_unlimited_tmp_quota(monkeypatch, tmp_budget(2) + 1)
+    monkeypatch.setattr(LANES, '_same_device', lambda left, right: True, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['decision'] == 'enough' and result['tmp_space']['quota_unlimited'] is True
+    assert result['tmp_space']['filesystem_free_bytes'] == tmp_budget(2) + 1
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset(host_world, monkeypatch):
+    """The admission figure is the quota, not filesystem free copied into free_bytes."""
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
+        'quota': {'hard_kib': 0, 'hard_bytes': None, 'used_bytes': 0, 'free_bytes': None},
+        'quota_error': None, 'free_bytes': 1,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['decision'] == 'enough' and result['tmp_space']['quota_unlimited'] is True
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
 
 
 def test_measure_tmp_space_reads_filesystem_free_and_user_quota_when_enabled():
@@ -2886,7 +2983,8 @@ def test_measure_tmp_space_reads_filesystem_free_and_user_quota_when_enabled():
         quota = reading['quota']
         assert quota['valid'] & (LANES.QIF_BLIMITS | LANES.QIF_SPACE) == (LANES.QIF_BLIMITS | LANES.QIF_SPACE)
         if quota['hard_kib'] == 0:
-            assert reading['free_bytes'] == reading['filesystem_free_bytes']
+            assert quota['free_bytes'] is None and reading['free_bytes'] is None
+            assert reading['quota_unlimited'] is True
         else:
             assert quota['hard_bytes'] == quota['hard_kib'] * 1024
             assert reading['free_bytes'] == max(0, quota['hard_bytes'] - quota['used_bytes'])

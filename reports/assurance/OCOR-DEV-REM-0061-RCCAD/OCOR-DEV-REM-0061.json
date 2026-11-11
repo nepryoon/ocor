@@ -66,19 +66,20 @@
       }
     ],
     "cell_scan": {
-      "cells": 78,
+      "cells": 102,
       "citation": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "cited_tests_collected": 28,
+      "cited_tests_collected": 39,
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "counts": {
         "FIXED": 2,
-        "N/A": 24,
-        "PASS": 52
+        "N/A": 33,
+        "PASS": 67
       },
       "errors_found_and_corrected": [],
       "head": "d22884b224b9095d863c6fb3a4cf4b19b0c0cd53",
-      "output_sha256": "3cc914dddba7ab419a862ec8b7276c7ccd5e7efeb3efcde90a1cc36e34004abf",
-      "rows": 13
+      "note": "Repair cycle 2 adds the mount, quota and admission rows. The head is replaced by the commit that contains this table once that commit exists. The output digest is of the scan of the table and the role fields, which this note does not change.",
+      "output_sha256": "7a5676849ca739865b6bef6f16f4047dc0507cbf5ba131c2ec89852a6f70e0a5",
+      "rows": 17
     },
     "columns": {
       "boundary_digests": "digests recomputed or full-matched before compare",
@@ -97,10 +98,10 @@
         "reports/tests/test_local_lane_campaign.py": "0; tests, not a production parser",
         "reports/tests/test_local_lane_image_cache.py": "0; the live proof calls prepare and seed and does not parse a second format",
         "scripts/local_lane_image_cache.py": 11,
-        "scripts/run_local_lane_campaign.py": 2,
+        "scripts/run_local_lane_campaign.py": 6,
         "scripts/validate_ocor_development_plan.py": "0; the edit adds allowlist strings and does not add a parser"
       },
-      "consumers_examined": 13,
+      "consumers_examined": 17,
       "functions_examined": [
         "decode_json",
         "_reject_duplicate_keys",
@@ -120,11 +121,19 @@
         "_capture",
         "prepare_image_cache",
         "cache_command_timeout",
-        "seed_lane_images"
+        "seed_lane_images",
+        "usrquota_in_mountinfo",
+        "_unescape_mount",
+        "mount_has_usrquota",
+        "quota_free_bytes",
+        "_read_user_quota",
+        "measure_tmp_space",
+        "require_tmp_space_for_lanes"
       ],
       "searches": [
         "ast walk of function definitions in scripts/local_lane_image_cache.py",
-        "functions in scripts/run_local_lane_campaign.py whose names contain cache, seed, prepare_image or timeout"
+        "functions in scripts/run_local_lane_campaign.py whose names contain cache, seed, prepare_image or timeout",
+        "functions in scripts/run_local_lane_campaign.py that parse mountinfo, the quotactl_fd result, or the lane admission figure"
       ],
       "unparsed_callers": "execute_campaign and lifecycle_check call prepare_image_cache and seed_lane_images. They store the returned mapping and do not decode the lock, the inspect text, the manifest or the archive."
     },
@@ -397,6 +406,85 @@
           "reports/tests/test_local_lane_image_cache.py::test_transferred_image_satisfies_an_unchanged_pinned_pull"
         ],
         "text_form": "Command results: None, a boolean or float code, and a stdout that is not text are refused before use. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_command_result_that_is_not_a_code_and_text; reports/tests/test_local_lane_campaign.py::test_seed_refuses_a_docker_result_that_is_not_a_code_and_text Inspect answers: null, a null element, an empty object, a bool or float id, and a wrong container are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_inspect_documents_with_the_wrong_shape Fixed-form pinned reference and image id: empty, non-ASCII and wrong format are refused before compare. reports/tests/test_local_lane_campaign.py::test_cache_rejects_a_malformed_pinned_reference_before_compare"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: mount options are text; a size field is not converted to a number.",
+          "processes_and_resources": "N/A: this function does not start a process, hold a pipe, or own a file that outlives the call.",
+          "strict_decoding": "PASS: an empty table, a line without the separator and a short line do not match; escaped spaces are unescaped before the longest-mount compare. An unreadable mount table is CampaignError in mount_has_usrquota.",
+          "types_before_conversions": "PASS: fields are split and compared as text; no integer conversion runs."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "usrquota_in_mountinfo, _unescape_mount, mount_has_usrquota",
+        "paths": "mountinfo text for the longest mount that covers /tmp",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_usrquota_follows_the_longest_mount_and_the_super_options"
+        ],
+        "text_form": "Mount table text: an empty table, a line without the separator and a short line do not match; an escaped space is unescaped. reports/tests/test_local_lane_campaign.py::test_usrquota_follows_the_longest_mount_and_the_super_options"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: a boolean is not an integer; a negative field is refused before the free-byte subtraction.",
+          "processes_and_resources": "PASS: a failed quotactl_fd is CampaignError and the directory descriptor is closed.",
+          "strict_decoding": "PASS: a failed syscall is CampaignError and no zero record is returned; block-limit flags must both be valid.",
+          "types_before_conversions": "PASS: hard, used and valid are checked as integers before the kibibyte conversion, and a boolean is refused."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "quota_free_bytes, _read_user_quota",
+        "paths": "quotactl_fd dqblk for the current user on the /tmp mount",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_quota_free_bytes_treats_the_hard_limit_as_kibibytes",
+          "reports/tests/test_local_lane_campaign.py::test_read_user_quota_refuses_a_failed_syscall",
+          "reports/tests/test_local_lane_campaign.py::test_read_user_quota_reports_an_unset_hard_limit_as_unlimited"
+        ],
+        "text_form": "Quota fields: a boolean hard limit is refused before conversion, and a failed syscall returns no record. reports/tests/test_local_lane_campaign.py::test_quota_free_bytes_treats_the_hard_limit_as_kibibytes; reports/tests/test_local_lane_campaign.py::test_read_user_quota_refuses_a_failed_syscall"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: filesystem free is an integer product of statvfs fields; an unlimited quota is not replaced by that integer.",
+          "processes_and_resources": "PASS: an unreadable mount table or statvfs is CampaignError and no substitute free figure is used.",
+          "strict_decoding": "PASS: the quota object is the syscall result; an unset hard limit stays None and is not the filesystem free figure.",
+          "types_before_conversions": "PASS: hard_kib is an integer before the unlimited decision, and a boolean is refused by quota_free_bytes."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "measure_tmp_space",
+        "paths": "statvfs free bytes plus the user quota when the mount carries usrquota",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_measure_tmp_space_keeps_an_unlimited_quota_distinct_from_filesystem_free",
+          "reports/tests/test_local_lane_campaign.py::test_measure_tmp_space_reads_filesystem_free_and_user_quota_when_enabled"
+        ],
+        "text_form": "Quota reading: an unset hard limit is None and is not replaced by filesystem free. reports/tests/test_local_lane_campaign.py::test_measure_tmp_space_keeps_an_unlimited_quota_distinct_from_filesystem_free"
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: this function does not compare or hash a digest.",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "PASS: a finite free figure is an integer compared with the lane budget; an unlimited quota is not that comparison.",
+          "processes_and_resources": "PASS: a short finite quota and an unreadable quota raise CampaignError before provisioning.",
+          "strict_decoding": "PASS: admission uses the quota object. An unset hard limit is enough. A filesystem figure copied into free_bytes is not the quota.",
+          "types_before_conversions": "PASS: a non-integer finite free figure is refused, and hard_kib is read as an integer before the unlimited decision."
+        },
+        "file": "scripts/run_local_lane_campaign.py",
+        "function": "require_tmp_space_for_lanes",
+        "paths": "admission of the lane budget against the /tmp user quota",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_above_the_budget",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_when_tmp_quota_cannot_hold_the_lanes",
+          "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_when_the_tmp_user_quota_is_unreadable"
+        ],
+        "text_form": "Admission: filesystem free below or above the budget does not refuse an unset hard limit, and a filesystem figure stored as free_bytes is ignored when the hard limit is unset. reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget; reports/tests/test_local_lane_campaign.py::test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset"
       }
     ]
   },
