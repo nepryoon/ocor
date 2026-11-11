@@ -76,8 +76,8 @@
         "PASS": 67
       },
       "errors_found_and_corrected": [],
-      "head": "d22884b224b9095d863c6fb3a4cf4b19b0c0cd53",
-      "note": "Repair cycle 2 adds the mount, quota and admission rows. The head is replaced by the commit that contains this table once that commit exists. The output digest is of the scan of the table and the role fields, which this note does not change.",
+      "head": "b22debf2e08e805db56643030b17efafdd5e4da5",
+      "note": "Repair cycle 2 adds the mount, quota and admission rows. The head is b22debf2e08e805db56643030b17efafdd5e4da5, the commit that contains this table. A later commit may record this head and does not change the table or the role identity. The output digest is of the scan of the table and the role fields.",
       "output_sha256": "7a5676849ca739865b6bef6f16f4047dc0507cbf5ba131c2ec89852a6f70e0a5",
       "rows": 17
     },
@@ -142,9 +142,9 @@
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "errors_found_and_corrected": [],
       "fields_compared": 26,
-      "head": "d22884b224b9095d863c6fb3a4cf4b19b0c0cd53",
-      "note": "Scan of d22884b224b9095d863c6fb3a4cf4b19b0c0cd53 read the same 13 rows and 78 cells and compared the same 26 role fields. The output sha256 matches the scan of a2b6376. The reviewed head 26d8f30 and the campaign gate head 6c0a233 are different runs. This commit records the scan and does not change the table.",
-      "output_sha256": "3cc914dddba7ab419a862ec8b7276c7ccd5e7efeb3efcde90a1cc36e34004abf"
+      "head": "b22debf2e08e805db56643030b17efafdd5e4da5",
+      "note": "Repeated with the cell scan after the repair-cycle-2 rows, on the table contained in b22debf2e08e805db56643030b17efafdd5e4da5. The command compared 26 role fields and found no error. The earlier scan of d22884b224b9095d863c6fb3a4cf4b19b0c0cd53 compared the same 26 fields on 13 rows; its output sha256 was 3cc914dddba7ab419a862ec8b7276c7ccd5e7efeb3efcde90a1cc36e34004abf.",
+      "output_sha256": "7a5676849ca739865b6bef6f16f4047dc0507cbf5ba131c2ec89852a6f70e0a5"
     },
     "table": [
       {
@@ -591,8 +591,15 @@
     "failed": 46,
     "fingerprint_sha256": "f477a92adce5c4180f1648a7462e4fbae41a1e2e492b134a0de6f0800725c17b"
   },
-  "repair_cycle": 1,
-  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json, which supersedes OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3, and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json, which supersedes OCOR-DEV-REM-0056-de79d986d7f3. Both previous records hash the lane files, the plan validator and the plan run state. completed_evidence_tasks does not list these two tasks, so the drift validator does not select them; that is not because the hashes are absent.",
+  "red_repair_cycle_2": {
+    "failed": 4,
+    "fingerprint_sha256": "e50d6a688b40de2019f61e8ad31ac3a438702c3c08963e2b25a89c961ba40d35",
+    "log": "/home/luca/.ocor-codex/rem-0061/red-cycle2-unlimited-quota.log",
+    "note": "No separate red commit. The four failing tests and the fix are together in b22debf2e08e805db56643030b17efafdd5e4da5. The historical red fingerprint f477a92adce5c4180f1648a7462e4fbae41a1e2e492b134a0de6f0800725c17b is not reused.",
+    "separate_commit": false
+  },
+  "repair_cycle": 2,
+  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-b22debf2e08e) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-b22debf2e08e). Both cite commit b22debf2e08e805db56643030b17efafdd5e4da5, the commit on which the regression command ran, and replace the unsealed records on the same paths that cited 83d9b74648c14a2afb14904a2a83183274ece7c9. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. Both sealed records hash the lane files, the plan validator and the plan run state. completed_evidence_tasks does not list these two tasks, so the drift validator does not select them; that is not because the hashes are absent.",
   "requalifications_written": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
     "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
@@ -622,7 +629,7 @@
       "effort": "xhigh",
       "model": "NOT_EXPOSED_BY_RUNTIME",
       "provider": "OpenAI",
-      "request_id": "OCOR-DEV-REM-0061-69bbc51fb031-0",
+      "request_id": "OCOR-DEV-REM-0061-1c8a94b9e71e-1",
       "result": "NO_GO"
     },
     "verifier_excluded_providers": [
@@ -643,6 +650,18 @@
     },
     "head_sha": "69bbc51fb031e06f11b1bd442985b88b4b639d51",
     "request_id": "OCOR-DEV-REM-0061-69bbc51fb031-0",
+    "result": "NO_GO",
+    "severity": "high"
+  },
+  "verification_cycle_1": {
+    "findings_by_severity": {
+      "critical": 0,
+      "high": 2,
+      "low": 0,
+      "medium": 1
+    },
+    "head_sha": "1c8a94b9e71e9c60e8d4b3c4365b43e402715e2f",
+    "request_id": "OCOR-DEV-REM-0061-1c8a94b9e71e-1",
     "result": "NO_GO",
     "severity": "high"
   }
