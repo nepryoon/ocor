@@ -21,11 +21,16 @@ the CI parts and the verifier procedure keep their behaviour.
   at the same absolute path. The stack keeps its default names and ports
   (ocor-bootstrap, ocor-poc, 127.0.0.1) because daemon and network are private;
   every lane uses a sandbox, so the host daemon's development stack is untouched.
+- Before provisioning, a work directory on the /tmp user quota is refused when
+  the measured lane budget does not fit. Filesystem free space is not that
+  quota. SIGTERM and SIGHUP run the same teardown and, only in that quota case,
+  remove the shared image cache. The result file and the lane logs stay.
 """
 from __future__ import annotations
 
 import argparse
 import calendar
+import ctypes
 import datetime
 import hashlib
 import heapq
@@ -87,6 +92,22 @@ LANE_SYSTEM_PATH = ("/usr/local/bin", "/usr/bin", "/bin")
 EMPTY_ROOT_DIRS = ("dev", "etc", "home", "proc", "root", "run", "sys", "tmp", "usr", "var", "var/lib", "var/lib/docker")
 USR_MERGED_LINKS = ("bin", "sbin", "lib", "lib64", "lib32", "libx32")
 PROVISION_TIMEOUT_SECONDS = 1200
+# TMP-RESIDUI-CAMPAGNA (2026-11-11). Image cache: campaign-46835be, 1_790_746_974
+# bytes. Checkout without its venv and the venv: rem-0061 worktree at 2baa4aa,
+# 1_242_693_615 and 1_052_242_023 bytes. Tools: the published 181 MiB mount.
+# The margin is 1 GiB. Compared with the /tmp user quota, which df does not show.
+TMP_IMAGE_CACHE_BYTES = 1_790_746_974
+TMP_LANE_CHECKOUT_BYTES = 1_242_693_615
+TMP_LANE_VENV_BYTES = 1_052_242_023
+TMP_LANE_TOOLS_BYTES = 181 * 1024 * 1024
+TMP_LANE_MARGIN_BYTES = 1024 * 1024 * 1024
+# Linux dqblk: the hard block limit is in 1 KiB units; dqb_curspace is bytes.
+# x86_64 __NR_quotactl_fd is 443. Q_GETQUOTA is 0x800007 and USRQUOTA is 0.
+QIF_BLIMITS = 1
+QIF_SPACE = 2
+_Q_GETQUOTA = 0x800007
+_USRQUOTA = 0
+_QUOTACTL_FD_SYSCALL = {"x86_64": 443}
 # A docker exec that reaches the sandbox before the delegation lands in its root
 # cgroup and makes the subtree_control write fail; the init moves late
 # processes and retries, bounded, then refuses to start dockerd.
@@ -852,6 +873,240 @@ def judge_lane_bootstrap(lane: Lane, outcome: dict[str, Any]) -> tuple[dict[str,
     return record, errors
 
 
+class _Dqblk(ctypes.Structure):
+    _fields_ = (
+        ("dqb_bhardlimit", ctypes.c_uint64),
+        ("dqb_bsoftlimit", ctypes.c_uint64),
+        ("dqb_curspace", ctypes.c_uint64),
+        ("dqb_ihardlimit", ctypes.c_uint64),
+        ("dqb_isoftlimit", ctypes.c_uint64),
+        ("dqb_curinodes", ctypes.c_uint64),
+        ("dqb_btime", ctypes.c_uint64),
+        ("dqb_itime", ctypes.c_uint64),
+        ("dqb_valid", ctypes.c_uint32),
+    )
+
+
+def tmp_lane_budget_bytes(lanes: int) -> int:
+    """Shared cache, plus each lane's checkout, venv and tools, plus 1 GiB."""
+    if type(lanes) is not int or lanes not in ADMITTED_LANE_COUNTS:
+        raise CampaignError(f"the local suite runs in {' or '.join(map(str, ADMITTED_LANE_COUNTS))} lanes, not {lanes!r}")
+    per_lane = TMP_LANE_CHECKOUT_BYTES + TMP_LANE_VENV_BYTES + TMP_LANE_TOOLS_BYTES
+    return TMP_IMAGE_CACHE_BYTES + lanes * per_lane + TMP_LANE_MARGIN_BYTES
+
+
+def _unescape_mount(value: str) -> str:
+    return (value.replace("\\040", " ").replace("\\011", "\t").replace("\\012", "\n").replace("\\134", "\\"))
+
+
+def _mount_covers(mount_point: str, path: str) -> bool:
+    if mount_point == "/":
+        return path.startswith("/")
+    return path == mount_point or path.startswith(mount_point + "/")
+
+
+def usrquota_in_mountinfo(text: str, path: Path) -> bool:
+    """True when the longest mount covering path carries usrquota."""
+    resolved = os.path.abspath(path)
+    best = ""
+    found = False
+    for line in text.splitlines():
+        fields = line.split()
+        if "-" not in fields:
+            continue
+        separator = fields.index("-")
+        if separator < 6 or len(fields) < separator + 4:
+            continue
+        mount_point = _unescape_mount(fields[4])
+        if not _mount_covers(mount_point, resolved) or len(mount_point) < len(best):
+            continue
+        options = fields[5].split(",")
+        super_options = fields[separator + 3].split(",")
+        best = mount_point
+        found = "usrquota" in options or "usrquota" in super_options
+    return found
+
+
+def mount_has_usrquota(path: Path) -> bool:
+    try:
+        text = Path("/proc/self/mountinfo").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CampaignError(f"mount table unreadable: {exc}") from exc
+    return usrquota_in_mountinfo(text, path)
+
+
+def quota_free_bytes(hard_kib: int, used_bytes: int, valid: int) -> int | None:
+    """Free bytes under the hard limit. None means the hard limit is unset."""
+    if (type(hard_kib) is not int or type(used_bytes) is not int or type(valid) is not int
+            or hard_kib < 0 or used_bytes < 0 or valid < 0):
+        raise CampaignError("user quota fields are malformed")
+    if valid & (QIF_BLIMITS | QIF_SPACE) != (QIF_BLIMITS | QIF_SPACE):
+        raise CampaignError("user quota block limits are not valid")
+    if hard_kib == 0:
+        return None
+    hard_bytes = hard_kib * 1024
+    if used_bytes >= hard_bytes:
+        return 0
+    return hard_bytes - used_bytes
+
+
+def _read_user_quota(path: Path) -> dict[str, Any]:
+    machine = os.uname().machine
+    number = _QUOTACTL_FD_SYSCALL.get(machine)
+    if number is None:
+        raise CampaignError(f"user quota syscall is not known for {machine}")
+    libc = ctypes.CDLL("libc.so.6", use_errno=True)
+    syscall = libc.syscall
+    syscall.restype = ctypes.c_long
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        buffer = _Dqblk()
+        ctypes.set_errno(0)
+        rc = syscall(number, descriptor, (_Q_GETQUOTA << 8) | _USRQUOTA, os.getuid(), ctypes.byref(buffer))
+        error = ctypes.get_errno()
+    finally:
+        os.close(descriptor)
+    if rc != 0:
+        raise CampaignError(f"quotactl_fd failed: errno {error}")
+    hard = int(buffer.dqb_bhardlimit)
+    used = int(buffer.dqb_curspace)
+    valid = int(buffer.dqb_valid)
+    free = quota_free_bytes(hard, used, valid)
+    return {"hard_kib": hard, "hard_bytes": None if hard == 0 else hard * 1024,
+            "used_bytes": used, "free_bytes": free, "valid": valid}
+
+
+def measure_tmp_space(path: Path = Path("/tmp")) -> dict[str, Any]:
+    """Filesystem free space plus the user quota when the mount enables it."""
+    path = Path(path)
+    try:
+        stats = os.statvfs(path)
+        filesystem_free = int(stats.f_bavail) * int(stats.f_frsize)
+        usrquota = mount_has_usrquota(path)
+    except (OSError, CampaignError) as exc:
+        raise CampaignError(f"tmp space is not measurable: {exc}") from exc
+    reading: dict[str, Any] = {
+        "path": str(path), "filesystem_free_bytes": filesystem_free, "usrquota": usrquota,
+        "quota": None, "quota_error": None, "free_bytes": filesystem_free}
+    if not usrquota:
+        return reading
+    try:
+        quota = _read_user_quota(path)
+    except (CampaignError, OSError) as exc:
+        reading["quota_error"] = str(exc)
+        reading["free_bytes"] = None
+        return reading
+    reading["quota"] = quota
+    reading["free_bytes"] = filesystem_free if quota["free_bytes"] is None else quota["free_bytes"]
+    return reading
+
+
+def _same_device(left: Path, right: Path) -> bool:
+    return os.stat(left).st_dev == os.stat(right).st_dev
+
+
+def require_tmp_space_for_lanes(work: Path, lanes: int) -> dict[str, Any]:
+    """Refuse before checkout when this work directory consumes a short /tmp user quota."""
+    budget = tmp_lane_budget_bytes(lanes)
+    reading = measure_tmp_space(Path("/tmp"))
+    try:
+        work.mkdir(parents=True, exist_ok=True)
+        same = _same_device(work, Path("/tmp"))
+    except OSError as exc:
+        raise CampaignError(f"tmp space is not enough: work directory is not usable: {exc}") from exc
+    record: dict[str, Any] = {
+        "path": "/tmp", "filesystem_free_bytes": reading.get("filesystem_free_bytes"),
+        "usrquota": bool(reading.get("usrquota")), "quota": reading.get("quota"),
+        "quota_error": reading.get("quota_error"), "free_bytes": reading.get("free_bytes"),
+        "lanes": lanes, "required_bytes": budget, "work": str(work),
+        "applies": False, "decision": "not_applicable"}
+    if not same or not record["usrquota"]:
+        return record
+    record["applies"] = True
+    free = record["free_bytes"]
+    if record["quota_error"] is not None or free is None:
+        raise CampaignError(
+            "tmp space is not enough: user quota on /tmp is unreadable "
+            f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
+            f"filesystem free {record['filesystem_free_bytes']} bytes")
+    if type(free) is not int or free < budget:
+        quota = record["quota"] if isinstance(record["quota"], dict) else {}
+        raise CampaignError(
+            "tmp space is not enough: "
+            f"free {free} bytes, required {budget} bytes for {lanes} lanes; "
+            f"filesystem free {record['filesystem_free_bytes']} bytes; "
+            f"quota hard {quota.get('hard_bytes')} bytes, used {quota.get('used_bytes')} bytes")
+    record["decision"] = "enough"
+    return record
+
+
+def discard_script_work_trees(work: Path, lanes: list[Lane], *, consumes_tmp_quota: bool) -> None:
+    """Remove checkouts. Remove the image cache only when it consumed the /tmp user quota."""
+    errors: list[str] = []
+    for lane in lanes:
+        try:
+            if lane.repository.exists():
+                shutil.rmtree(lane.repository)
+        except OSError as exc:
+            errors.append(f"lane {lane.index} checkout removal failed: {exc}")
+    if consumes_tmp_quota:
+        cache = work / "image-cache"
+        try:
+            if cache.is_dir():
+                shutil.rmtree(cache)
+            elif cache.exists():
+                cache.unlink()
+        except OSError as exc:
+            errors.append(f"image cache removal failed: {exc}")
+    if errors:
+        raise CampaignError("script work removal incomplete: " + "; ".join(errors))
+
+
+def finish_lane_host(work: Path, lanes: list[Lane], paths: dict[int, str], runner: Runner, record: dict[str, Any],
+                     campaign_name: str, *, consumes_tmp_quota: bool, redact: bool) -> None:
+    """One teardown pass: sandboxes, checkouts, residue, then a tmp-quota image cache."""
+    for lane in lanes:
+        if redact:
+            log = lane.output / "lane_runner.log"
+            if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
+                bootstrap_ci.redact_campaign_log(lane.repository, log)
+        try:
+            record["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
+        except CampaignError as exc:
+            record["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
+            record["status"] = "FAIL"
+    try:
+        remove_root_image(runner)
+        record["host_residue"] = check_host_residue(campaign_name, runner)
+    except CampaignError as exc:
+        record["host_residue"] = {"error": str(exc)}
+        record["status"] = "FAIL"
+    try:
+        discard_script_work_trees(work, lanes, consumes_tmp_quota=consumes_tmp_quota)
+    except CampaignError as exc:
+        record["work_removal"] = {"status": "FAIL", "error": str(exc)}
+        record["status"] = "FAIL"
+
+
+def bind_campaign_stop_signals(callback: Callable[[], None]) -> Callable[[], None]:
+    """Run callback on SIGTERM and SIGHUP, then exit. Returns the restorer. SIGINT stays as KeyboardInterrupt."""
+    previous: dict[int, Any] = {}
+
+    def handler(signum: int, frame: Any) -> None:
+        del frame
+        callback()
+        raise SystemExit(128 + int(signum))
+
+    for signum in (signal.SIGTERM, signal.SIGHUP):
+        previous[int(signum)] = signal.signal(signum, handler)
+
+    def restore() -> None:
+        for signum, old in previous.items():
+            signal.signal(signum, old)
+
+    return restore
+
+
 def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner = run_command, *, source: Path | None = None,
                     launcher: Callable[[list[str], Path], LaneProcess] | None = None, meminfo_path: Path = Path("/proc/meminfo"),
                     lanes: int = LANE_COUNT, wall: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
@@ -873,7 +1128,22 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     report["campaign"] = name
     lane_set = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, lanes + 1)]
     paths = {lane.index: lane_path(lane, tool_bins) for lane in lane_set}
+    consumes_tmp_quota = False
+    released = False
+
+    def release_host() -> None:
+        nonlocal released
+        if released:
+            return
+        released = True
+        finish_lane_host(work, lane_set, paths, runner, report, name,
+                         consumes_tmp_quota=consumes_tmp_quota, redact=False)
+
+    restore_signals = bind_campaign_stop_signals(release_host)
     try:
+        space = require_tmp_space_for_lanes(work, lanes)
+        report["tmp_space"] = space
+        consumes_tmp_quota = bool(space["applies"])
         campaign.verify_revision(source, head)
         ensure_root_image(runner, host_usr_links())
         lock_path = source / "infra/services.lock.json"
@@ -909,18 +1179,8 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
     except (CampaignError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
         report["error"] = str(exc)
     finally:
-        for lane in lane_set:
-            try:
-                report["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
-            except CampaignError as exc:
-                report["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
-                report["status"] = "FAIL"
-        try:
-            remove_root_image(runner)
-            report["host_residue"] = check_host_residue(name, runner)
-        except CampaignError as exc:
-            report["host_residue"] = {"error": str(exc)}
-            report["status"] = "FAIL"
+        restore_signals()
+        release_host()
     return report
 
 
@@ -1283,7 +1543,22 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
     result["campaign"] = name
     lanes = [Lane(index, name, work / f"lane-{index}", Path.home(), os.getuid(), os.getgid()) for index in range(1, count + 1)]
     paths = {lane.index: lane_path(lane, tool_bins) for lane in lanes}
+    consumes_tmp_quota = False
+    released = False
+
+    def release_host() -> None:
+        nonlocal released
+        if released:
+            return
+        released = True
+        finish_lane_host(work, lanes, paths, runner, result, name,
+                         consumes_tmp_quota=consumes_tmp_quota, redact=True)
+
+    restore_signals = bind_campaign_stop_signals(release_host)
     try:
+        space = require_tmp_space_for_lanes(work, count)
+        result["tmp_space"] = space
+        consumes_tmp_quota = bool(space["applies"])
         campaign.verify_revision(source, head)
         collected = campaign.collect_nodeids(suite, selection)
         weights = load_weights()
@@ -1346,21 +1621,8 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
     except (CampaignError, OSError, ValueError, KeyError, TypeError, ET.ParseError, subprocess.SubprocessError) as exc:
         result["error"] = str(exc)
     finally:
-        for lane in lanes:
-            log = lane.output / "lane_runner.log"
-            if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
-                bootstrap_ci.redact_campaign_log(lane.repository, log)
-            try:
-                result["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
-            except CampaignError as exc:
-                result["teardown"].append({"lane": lane.index, "status": "FAIL", "error": str(exc)})
-                result["status"] = "FAIL"
-        try:
-            remove_root_image(runner)
-            result["host_residue"] = check_host_residue(name, runner)
-        except CampaignError as exc:
-            result["host_residue"] = {"error": str(exc)}
-            result["status"] = "FAIL"
+        restore_signals()
+        release_host()
         result["power_end"] = power_reading(power_root)
         result["total_duration_seconds"] = round(time.monotonic() - monotonic_start, 3)
         result.setdefault("po_decision_required", result["total_duration_seconds"] > PO_DECISION_THRESHOLD_SECONDS)
