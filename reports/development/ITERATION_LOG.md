@@ -9179,3 +9179,5 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
 - Prossima azione: riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. Non avviare la suite a quattro corsie prima di quell'esito. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Non integrare la PR 595. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.
 - La PR di stato #597 resta bozza e non va integrata: la sua next action attende ancora il verdetto del ciclo 1.
+
+- PR di state sync #598 aperta su governed/state-sync-rem0061-cycle2-pre-20261111. I check obbligatori non sono ancora attestati su questo HEAD. Registrato alle 2026-11-11T13:38:15.561039+00:00.
