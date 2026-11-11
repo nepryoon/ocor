@@ -9,6 +9,10 @@ is a blocking finding: a sealed evidence record whose inputs no longer describe 
 code it was produced from is no longer a faithful witness.
 
 This validator never modifies a record and never converts a mismatch into PASS.
+
+``--execution-commit`` checks named records against ``git show <commit>:<path>``
+of the commit the record declares, and checks a preserved raw log against
+``raw_output_sha256``. It does not replace the HEAD scan above.
 """
 
 from __future__ import annotations
@@ -16,9 +20,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
+import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
+
+_REVISION = re.compile(r"[0-9a-f]{40}\Z")
 
 # Directories under reports/evidence that hold non-qualifying or historical records;
 # they are not the canonical evidence for a completed task.
@@ -115,6 +123,101 @@ def drift_for_record(root: Path, record_path: Path) -> list[dict[str, Any]]:
     return findings
 
 
+def _relative_input_path(path_str: str) -> bool:
+    if not path_str or path_str.startswith(("/", "-")) or "\\" in path_str or "\n" in path_str:
+        return False
+    return all(part not in ("", ".", "..") for part in path_str.split("/"))
+
+
+def execution_commit_findings(root: Path, record_path: Path) -> list[dict[str, Any]]:
+    """Compare declared input digests with ``git show`` of the record's commit."""
+    try:
+        record: dict[str, Any] = json.loads(record_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [{"path": record_path.name, "reason": f"record unreadable: {exc}", "task_id": ""}]
+    task_id = str(record.get("task_id", ""))
+    commit = record.get("commit")
+    if not isinstance(commit, str) or not _REVISION.fullmatch(commit):
+        return [{
+            "path": None,
+            "reason": "execution commit is not a 40-character revision",
+            "task_id": task_id,
+        }]
+    inputs = record.get("inputs", {})
+    findings: list[dict[str, Any]] = []
+    if not isinstance(inputs, dict):
+        findings.append({"path": "inputs", "reason": "inputs is not an object", "task_id": task_id})
+    else:
+        for path_str, recorded in inputs.items():
+            if path_str == "inputs_tree" or not isinstance(recorded, str):
+                continue
+            if not _relative_input_path(path_str):
+                findings.append({
+                    "path": path_str,
+                    "reason": "input path is not a relative repository path",
+                    "recorded_sha256": recorded,
+                    "task_id": task_id,
+                })
+                continue
+            shown = subprocess.run(
+                ["git", "-C", str(root), "show", f"{commit}:{path_str}"],
+                capture_output=True,
+                check=False,
+            )
+            if shown.returncode != 0:
+                findings.append({
+                    "execution_commit": commit,
+                    "path": path_str,
+                    "reason": "file missing at execution commit",
+                    "recorded_sha256": recorded,
+                    "task_id": task_id,
+                })
+                continue
+            digest = hashlib.sha256(shown.stdout).hexdigest()
+            if digest != recorded:
+                findings.append({
+                    "execution_commit": commit,
+                    "execution_sha256": digest,
+                    "path": path_str,
+                    "reason": "input hash mismatch",
+                    "recorded_sha256": recorded,
+                    "task_id": task_id,
+                })
+    raw = record.get("raw_output_sha256")
+    if isinstance(raw, str):
+        log_path = record_path.with_suffix(".log")
+        if not log_path.is_file():
+            findings.append({"path": log_path.name, "reason": "raw log missing", "task_id": task_id})
+        else:
+            actual = sha256_of(log_path)
+            if actual != raw:
+                findings.append({
+                    "file_sha256": actual,
+                    "path": log_path.name,
+                    "reason": "raw log hash mismatch",
+                    "recorded_sha256": raw,
+                    "task_id": task_id,
+                })
+    return findings
+
+
+def _execution_commit_report(root: Path, records: Sequence[Path]) -> int:
+    if not records:
+        print(json.dumps({"error": "no records", "findings": [], "status": "FAIL"}, indent=2, sort_keys=True))
+        return 1
+    findings: list[dict[str, Any]] = []
+    for record in records:
+        path = record if record.is_absolute() else root / record
+        findings.extend(execution_commit_findings(root, path))
+    payload = {
+        "checked_records": len(records),
+        "findings": findings,
+        "status": "PASS" if not findings else "FAIL",
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if not findings else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -135,8 +238,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=None,
         help="evidence directory (default: <root>/reports/evidence)",
     )
+    parser.add_argument(
+        "--execution-commit",
+        action="store_true",
+        help="check --record inputs against git show of each record's declared commit",
+    )
+    parser.add_argument(
+        "--record",
+        action="append",
+        default=[],
+        type=Path,
+        help="evidence or requalification record to check with --execution-commit",
+    )
     args = parser.parse_args(argv)
     root = args.root.resolve()
+    if args.execution_commit:
+        return _execution_commit_report(root, args.record)
     state_path = args.state or root / "reports/development/EXECUTION_STATE.json"
     evidence_dir = args.evidence_dir or root / "reports/evidence"
 
