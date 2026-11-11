@@ -45,6 +45,11 @@
     "records": 5,
     "red_fingerprint_sha256": "bafad105c363b74e575b3c274795c5831117e0de7ef1b523bbe4f35031b26ecd",
     "red_log": "/home/luca/.ocor-codex/rem-0061/red-execution-commit-digest.log",
+    "rerun_at_commit": "7bb8ee685cfcea053444e78a393f098c47d76172",
+    "rerun_note": "Re-run with the parser that refuses a malformed digest. Five records, findings empty, same output digest as the check at 62be586f2d3f. The recording commit does not change the validator or the five records.",
+    "rerun_output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
+    "rerun_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-7bb8ee685cfc.json",
+    "rerun_status": "PASS",
     "status": "PASS"
   },
   "implementer": {
@@ -550,13 +555,13 @@
     "citation": "PRE-CAMPAIGN-GATE (2026-10-26)",
     "executed_steps": 54,
     "failed_steps": 0,
-    "gates_json_sha256": "ecc83df6e7edd4a742c1e8b188240763d0f92015d37fbd896457f7a69fef8208",
-    "head": "a68c47dad3610a1c284020e0ea28ef0c85c6be57",
-    "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-a68c47dad361",
+    "gates_json_sha256": "eccb3ee798c7acf62955a0792e5f857c3ebcc4a22523582a99c7a172d3d1bd5a",
+    "head": "7bb8ee685cfcea053444e78a393f098c47d76172",
+    "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-7bb8ee685cfc",
     "node": "v20.20.2",
     "not_executed": "CI-only steps that need repository secrets, the CI bootstrap and the four-lane suite are outside this local gate and were not started.",
     "result": "PASS",
-    "stdout_sha256": "b560046374fc839573b4649e833d3c7b35d6c712292a0618c192cc9f830212f5"
+    "stdout_sha256": "d65b2594d9e1eabd5aa8a57c24201a91e26bc4201c1d3a425415314f88f53365"
   },
   "preventive_review": {
     "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
@@ -572,7 +577,7 @@
         "severity": "advisory"
       },
       {
-        "decision": "ACCEPTED. The gate field and the README are updated after the gate on the code head of this repair.",
+        "decision": "ACCEPTED_AND_FIXED. The gate field cites 7bb8ee685cfcea053444e78a393f098c47d76172 and the README cites repair cycle 2. The cycle-1 gate stays historical.",
         "id": "P3",
         "severity": "advisory"
       }
@@ -591,6 +596,19 @@
       "provider": "xAI",
       "reserve": true
     }
+  },
+  "previous_pre_campaign_gate": {
+    "base": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
+    "citation": "PRE-CAMPAIGN-GATE (2026-10-26)",
+    "executed_steps": 54,
+    "failed_steps": 0,
+    "gates_json_sha256": "ecc83df6e7edd4a742c1e8b188240763d0f92015d37fbd896457f7a69fef8208",
+    "head": "a68c47dad3610a1c284020e0ea28ef0c85c6be57",
+    "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-a68c47dad361",
+    "node": "v20.20.2",
+    "not_executed": "CI-only steps that need repository secrets, the CI bootstrap and the four-lane suite are outside this local gate and were not started.",
+    "result": "PASS",
+    "stdout_sha256": "b560046374fc839573b4649e833d3c7b35d6c712292a0618c192cc9f830212f5"
   },
   "previous_preventive_review": {
     "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
@@ -622,6 +640,51 @@
     }
   },
   "qualifying_campaign": {
+    "citation": "LOCAL-FULL-SUITE-CAP-90",
+    "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+    "duration_seconds": 1770.213,
+    "head": "7bb8ee685cfcea053444e78a393f098c47d76172",
+    "image_cache": {
+      "fuseki_base": "PRESENT",
+      "images": 14,
+      "mount": "read-only",
+      "present": 14
+    },
+    "junit": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "lanes_run": 4,
+    "limit_seconds": 5400,
+    "margin_to_limit_seconds": 3629.787,
+    "margin_to_notification_seconds": 1829.787,
+    "mode": "FOUR_LANE",
+    "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225",
+    "po_decision_required": false,
+    "power_end": {
+      "read_at": "2026-11-11T23:54:00Z",
+      "source": "MAINS"
+    },
+    "power_start": {
+      "read_at": "2026-11-11T23:24:29Z",
+      "source": "MAINS"
+    },
+    "residue": "Four lane teardowns passed and the host residue check found no containers, networks, volumes or root image. The work directory is on the home filesystem, so the image cache was kept. Lane checkouts were removed.",
+    "result": "PASS",
+    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-7bb8ee685cfc/campaign_result.json",
+    "result_sha256": "db8c68c061a9cb008e1476b6391c9557700695ea8d214d20aa57efd055a92ab1",
+    "runs": "Qualifying run of repair cycle 2 on 7bb8ee685cfcea053444e78a393f098c47d76172, after the execution-commit parser fix. The cycle-1 run on a68c47dad3610a1c284020e0ea28ef0c85c6be57 and the run on 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3 do not qualify this head. The run on 73e5c4ad18e4ce3747548bafa7acea53e824551d stays diagnostic. Collection and partition digests are unchanged. The shared image cache was mounted read-only in all four lanes. Fourteen locked host images, including the Fuseki base, were transferred and not pulled. The work directory is under the home filesystem, so the /tmp user-quota check was recorded and did not apply. Duration 1770.213 s, 3629.787 s under the 5400 s cap and 1829.787 s under the 3600 s notification. Power was MAINS at both readings. The commit that records this paragraph is not the executed head.",
+    "union": {
+      "collected": 5826,
+      "duplicated": 0,
+      "executed": 5826,
+      "missing": 0,
+      "unexpected": 0
+    }
+  },
+  "qualifying_campaign_cycle_1": {
     "citation": "LOCAL-FULL-SUITE-CAP-90",
     "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
     "duration_seconds": 1779.773,
