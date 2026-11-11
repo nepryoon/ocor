@@ -401,11 +401,14 @@
     ]
   },
   "open_decision_request": {
+    "decision": "TMP-RESIDUI-CAMPAGNA (2026-11-11), neither option 1 nor option 2",
+    "historical_pin_commit": "83d9b74648c14a2afb14904a2a83183274ece7c9",
+    "historical_pin_sha256": "89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed",
     "id": "REM-0061-VERIFIER-TMP-QUOTA",
     "level": "operational",
     "path": "reports/development/decision_requests/REM-0061-VERIFIER-TMP-QUOTA.md",
-    "sha256": "89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed",
-    "status": "OPEN_PO_DECISION_REQUIRED",
+    "sha256": "68996279450a5a50b74acdd9198e83f91cbb6db48c01f50d7c811c773306420d",
+    "status": "DECIDED_BY_PO",
     "verification_requested": false
   },
   "pre_campaign_gate": {
@@ -413,13 +416,13 @@
     "citation": "PRE-CAMPAIGN-GATE (2026-10-26)",
     "executed_steps": 54,
     "failed_steps": 0,
-    "gates_json_sha256": "a97cfded4c6c599f64b64d16003a6edfebb016325250760a4d51abac53483014",
-    "head": "46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
-    "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-46835befb1a3",
+    "gates_json_sha256": "ecc83df6e7edd4a742c1e8b188240763d0f92015d37fbd896457f7a69fef8208",
+    "head": "a68c47dad3610a1c284020e0ea28ef0c85c6be57",
+    "log_dir": "/home/luca/.ocor-codex/rem-0061/gate/gates-a68c47dad361",
     "node": "v20.20.2",
     "not_executed": "CI-only steps that need repository secrets, the CI bootstrap and the four-lane suite are outside this local gate and were not started.",
     "result": "PASS",
-    "stdout_sha256": "3991992961b75663593b4b191d733995cd923308d7c8f11357f63065052ee57e"
+    "stdout_sha256": "b560046374fc839573b4649e833d3c7b35d6c712292a0618c192cc9f830212f5"
   },
   "preventive_review": {
     "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
@@ -453,8 +456,8 @@
   "qualifying_campaign": {
     "citation": "LOCAL-FULL-SUITE-CAP-90",
     "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
-    "duration_seconds": 1774.172,
-    "head": "46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "duration_seconds": 1779.773,
+    "head": "a68c47dad3610a1c284020e0ea28ef0c85c6be57",
     "image_cache": {
       "fuseki_base": "PRESENT",
       "images": 14,
@@ -469,22 +472,24 @@
     },
     "lanes_run": 4,
     "limit_seconds": 5400,
+    "margin_to_limit_seconds": 3620.227,
+    "margin_to_notification_seconds": 1820.227,
     "mode": "FOUR_LANE",
     "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225",
     "po_decision_required": false,
     "power_end": {
-      "read_at": "2026-11-11T08:27:00Z",
+      "read_at": "2026-11-11T11:28:39Z",
       "source": "MAINS"
     },
     "power_start": {
-      "read_at": "2026-11-11T07:57:25Z",
+      "read_at": "2026-11-11T10:58:59Z",
       "source": "MAINS"
     },
-    "residue": "Four lane teardowns passed and the host residue check found no containers, networks, volumes or root image.",
+    "residue": "Four lane teardowns passed and the host residue check found no containers, networks, volumes or root image. The work directory is on the root filesystem, so the image cache was kept. Lane checkouts were removed.",
     "result": "PASS",
-    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-46835be/campaign_result.json",
-    "result_sha256": "c1fde140460a14c03570a82bd8bc952a05a7d8f8e32dc56454c407699cf38ba0",
-    "runs": "Qualifying run of repair cycle 1 on this head. The shared image cache was mounted read-only in all four lanes. Fourteen locked host images, including the Fuseki base, were transferred and not pulled. Earlier executions on 6c0a233fe21c9cffd4ae914a5daf36e109502dab are diagnostic and do not qualify this head: the second ended with pytest exit code 1 and a teardown failure, so the infrastructure-rerun exception does not apply, and the third passed before the read-only mount.",
+    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-a68c47dad361/campaign_result.json",
+    "result_sha256": "5458cdfc18373752ed9f4331dcccb0f0b43710cfeb9ed7133c05d9bd18d1a4ec",
+    "runs": "Qualifying run of repair cycle 1 on a68c47dad3610a1c284020e0ea28ef0c85c6be57, after the tmp quota pre-check and signal cleanup. The run on 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3 does not qualify this head. Collection and partition digests are unchanged. The shared image cache was mounted read-only in all four lanes. Fourteen locked host images, including the Fuseki base, were transferred and not pulled. The work directory is under the home filesystem, so the /tmp user-quota check was recorded and did not apply: usrquota was present, free quota was 26183036928 bytes and the four-lane budget was 12803400374 bytes. Duration 1779.773 s, 3620.227 s under the 5400 s cap and 1820.227 s under the 3600 s notification. Power was MAINS at both readings. Earlier executions on 6c0a233fe21c9cffd4ae914a5daf36e109502dab stay diagnostic. The commit that records this paragraph is not the executed head.",
     "union": {
       "collected": 5826,
       "duplicated": 0,
