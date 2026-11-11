@@ -12,7 +12,9 @@ This validator never modifies a record and never converts a mismatch into PASS.
 
 ``--execution-commit`` checks named records against ``git show <commit>:<path>``
 of the commit the record declares, and checks a preserved raw log against
-``raw_output_sha256``. It does not replace the HEAD scan above.
+``raw_output_sha256``. A digest that is not a lowercase SHA-256 hex string, a
+non-finite JSON number, a lone surrogate, or a record that is not strict UTF-8
+is a finding before any comparison. It does not replace the HEAD scan above.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 _REVISION = re.compile(r"[0-9a-f]{40}\Z")
+_SHA256_HEX = re.compile(r"[0-9a-f]{64}\Z")
 
 # Directories under reports/evidence that hold non-qualifying or historical records;
 # they are not the canonical evidence for a completed task.
@@ -37,6 +40,98 @@ def sha256_of(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _reject_non_finite(token: str) -> float:
+    raise json.JSONDecodeError(f"non-finite number {token}", token, 0)
+
+
+def _lone_surrogate(value: object) -> bool:
+    if isinstance(value, str):
+        return any(0xD800 <= ord(character) <= 0xDFFF for character in value)
+    if isinstance(value, dict):
+        return any(_lone_surrogate(key) or _lone_surrogate(item) for key, item in value.items())
+    if isinstance(value, list):
+        return any(_lone_surrogate(item) for item in value)
+    return False
+
+
+def _read_json_object(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """Return a JSON object, or an error that names the decode failure."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+    try:
+        data = json.loads(text, parse_constant=_reject_non_finite)
+    except json.JSONDecodeError as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+    if not isinstance(data, dict):
+        return None, f"{type(data).__name__} is not an object"
+    if _lone_surrogate(data):
+        return None, "lone surrogate in record JSON"
+    return data, None
+
+
+def _task_id(record: dict[str, Any]) -> str:
+    task_id = record.get("task_id", "")
+    return task_id if isinstance(task_id, str) else ""
+
+
+def _shape_findings(task_id: str, path_str: object, recorded: object) -> list[dict[str, Any]]:
+    """Refuse one inputs entry before it is compared. Empty means it may be compared."""
+    if not isinstance(path_str, str) or (path_str != "inputs_tree" and not _relative_input_path(path_str)):
+        shown = path_str if isinstance(path_str, str) else None
+        return [{
+            "path": shown,
+            "reason": "input path is not a relative repository path",
+            "task_id": task_id,
+        }]
+    if not isinstance(recorded, str):
+        return [{
+            "path": path_str,
+            "reason": "recorded digest is not a string",
+            "task_id": task_id,
+        }]
+    if path_str == "inputs_tree":
+        return []
+    if not _SHA256_HEX.fullmatch(recorded):
+        return [{
+            "path": path_str,
+            "reason": "recorded digest is not a lowercase sha256 hex digest",
+            "recorded_sha256": recorded,
+            "task_id": task_id,
+        }]
+    return []
+
+
+def _raw_findings(task_id: str, record: dict[str, Any], record_path: Path) -> list[dict[str, Any]]:
+    if "raw_output_sha256" not in record:
+        return []
+    raw = record.get("raw_output_sha256")
+    log_name = record_path.with_suffix(".log").name
+    if not isinstance(raw, str):
+        return [{"path": log_name, "reason": "raw output digest is not a string", "task_id": task_id}]
+    if not _SHA256_HEX.fullmatch(raw):
+        return [{
+            "path": log_name,
+            "reason": "raw output digest is not a lowercase sha256 hex digest",
+            "recorded_sha256": raw,
+            "task_id": task_id,
+        }]
+    log_path = record_path.with_suffix(".log")
+    if not log_path.is_file():
+        return [{"path": log_name, "reason": "raw log missing", "task_id": task_id}]
+    actual = sha256_of(log_path)
+    if actual != raw:
+        return [{
+            "file_sha256": actual,
+            "path": log_name,
+            "reason": "raw log hash mismatch",
+            "recorded_sha256": raw,
+            "task_id": task_id,
+        }]
+    return []
+
+
 def discover_records(evidence_dir: Path) -> dict[str, list[Path]]:
     """Index every canonical evidence record by ``task_id``."""
     records: dict[str, list[Path]] = {}
@@ -45,9 +140,8 @@ def discover_records(evidence_dir: Path) -> dict[str, list[Path]]:
             continue
         if _EXCLUDED_PARTS & set(path.parts):
             continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        data, error = _read_json_object(path)
+        if error is not None or data is None:
             continue
         task_id = data.get("task_id")
         if isinstance(task_id, str) and task_id:
@@ -68,9 +162,8 @@ def select_most_recent(paths: Sequence[Path]) -> Path:
         return paths[0]
     entries: list[tuple[str, dict[str, Any], Path]] = []
     for path in paths:
-        try:
-            data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        data, error = _read_json_object(path)
+        if error is not None or data is None:
             data = {}
         ident = data.get("record_id") or data.get("commit") or str(path)
         entries.append((str(ident), data, path))
@@ -88,16 +181,23 @@ def select_most_recent(paths: Sequence[Path]) -> Path:
 
 def drift_for_record(root: Path, record_path: Path) -> list[dict[str, Any]]:
     """Return drift findings for the ``inputs`` hashes of one evidence record."""
-    record: dict[str, Any] = json.loads(record_path.read_text(encoding="utf-8"))
-    task_id = str(record.get("task_id", ""))
+    record, error = _read_json_object(record_path)
+    if error is not None or record is None:
+        return [{"path": record_path.name, "reason": f"record unreadable: {error}", "task_id": ""}]
+    task_id = _task_id(record)
     findings: list[dict[str, Any]] = []
-    for path_str, recorded in record.get("inputs", {}).items():
+    inputs = record.get("inputs", {})
+    if not isinstance(inputs, dict):
+        return [{"path": "inputs", "reason": "inputs is not an object", "task_id": task_id}]
+    for path_str, recorded in inputs.items():
+        shape = _shape_findings(task_id, path_str, recorded)
+        if shape:
+            findings.extend(shape)
+            continue
         if path_str == "inputs_tree":
             # Tree-level digest, not a per-file hash; per-file hashes are checked below.
             continue
-        if not isinstance(recorded, str):
-            continue
-        file_path = root / path_str
+        file_path = root / str(path_str)
         if not file_path.is_file():
             findings.append(
                 {
@@ -124,18 +224,17 @@ def drift_for_record(root: Path, record_path: Path) -> list[dict[str, Any]]:
 
 
 def _relative_input_path(path_str: str) -> bool:
-    if not path_str or path_str.startswith(("/", "-")) or "\\" in path_str or "\n" in path_str:
+    if not path_str or not path_str.isascii() or path_str.startswith(("/", "-")) or "\\" in path_str or "\n" in path_str:
         return False
     return all(part not in ("", ".", "..") for part in path_str.split("/"))
 
 
 def execution_commit_findings(root: Path, record_path: Path) -> list[dict[str, Any]]:
     """Compare declared input digests with ``git show`` of the record's commit."""
-    try:
-        record: dict[str, Any] = json.loads(record_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return [{"path": record_path.name, "reason": f"record unreadable: {exc}", "task_id": ""}]
-    task_id = str(record.get("task_id", ""))
+    record, error = _read_json_object(record_path)
+    if error is not None or record is None:
+        return [{"path": record_path.name, "reason": f"record unreadable: {error}", "task_id": ""}]
+    task_id = _task_id(record)
     commit = record.get("commit")
     if not isinstance(commit, str) or not _REVISION.fullmatch(commit):
         return [{
@@ -149,21 +248,26 @@ def execution_commit_findings(root: Path, record_path: Path) -> list[dict[str, A
         findings.append({"path": "inputs", "reason": "inputs is not an object", "task_id": task_id})
     else:
         for path_str, recorded in inputs.items():
-            if path_str == "inputs_tree" or not isinstance(recorded, str):
+            shape = _shape_findings(task_id, path_str, recorded)
+            if shape:
+                findings.extend(shape)
                 continue
-            if not _relative_input_path(path_str):
+            if path_str == "inputs_tree":
+                continue
+            try:
+                shown = subprocess.run(
+                    ["git", "-C", str(root), "show", f"{commit}:{path_str}"],
+                    capture_output=True,
+                    check=False,
+                )
+            except OSError as exc:
                 findings.append({
                     "path": path_str,
-                    "reason": "input path is not a relative repository path",
+                    "reason": f"execution commit unreadable: {type(exc).__name__}: {exc}",
                     "recorded_sha256": recorded,
                     "task_id": task_id,
                 })
                 continue
-            shown = subprocess.run(
-                ["git", "-C", str(root), "show", f"{commit}:{path_str}"],
-                capture_output=True,
-                check=False,
-            )
             if shown.returncode != 0:
                 findings.append({
                     "execution_commit": commit,
@@ -183,21 +287,7 @@ def execution_commit_findings(root: Path, record_path: Path) -> list[dict[str, A
                     "recorded_sha256": recorded,
                     "task_id": task_id,
                 })
-    raw = record.get("raw_output_sha256")
-    if isinstance(raw, str):
-        log_path = record_path.with_suffix(".log")
-        if not log_path.is_file():
-            findings.append({"path": log_path.name, "reason": "raw log missing", "task_id": task_id})
-        else:
-            actual = sha256_of(log_path)
-            if actual != raw:
-                findings.append({
-                    "file_sha256": actual,
-                    "path": log_path.name,
-                    "reason": "raw log hash mismatch",
-                    "recorded_sha256": raw,
-                    "task_id": task_id,
-                })
+    findings.extend(_raw_findings(task_id, record, record_path))
     return findings
 
 
@@ -275,9 +365,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             missing_record_tasks.append(task_id)
             continue
         record_path = select_most_recent(records[task_id])
-        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record, error = _read_json_object(record_path)
+        if error is not None or record is None:
+            findings.append({
+                "path": record_path.name,
+                "reason": f"record unreadable: {error}",
+                "task_id": task_id,
+            })
+            continue
         inputs = record.get("inputs", {})
-        checked_inputs += sum(1 for k, v in inputs.items() if k != "inputs_tree" and isinstance(v, str))
+        if isinstance(inputs, dict):
+            checked_inputs += sum(
+                1 for key, value in inputs.items() if key != "inputs_tree" and isinstance(value, str)
+            )
         findings.extend(drift_for_record(root, record_path))
         checked_tasks += 1
 
