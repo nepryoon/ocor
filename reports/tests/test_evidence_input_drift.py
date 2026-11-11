@@ -9,6 +9,7 @@ files) without depending on the drift state of the real repository.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -16,6 +17,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -114,6 +116,42 @@ class EvidenceInputDriftValidatorTests(unittest.TestCase):
             result = _run_validator(base)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
             self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
+    def test_head_scan_rejects_a_non_string_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            target = base / "module.py"
+            target.write_bytes(_CONTENT)
+            _build_fixture(base, {"module.py": _sha256(_CONTENT)}, [_TASK])
+            record_path = base / "reports" / "evidence" / "G9" / f"{_TASK}.json"
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["inputs"]["module.py"] = True
+            record_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            result = _run_validator(base)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            self.assertTrue(
+                any(
+                    item["path"] == "module.py" and item["reason"] == "recorded digest is not a string"
+                    for item in payload["findings"]
+                )
+            )
+
+    def test_head_scan_rejects_a_non_utf8_record_without_a_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            target = base / "module.py"
+            target.write_bytes(_CONTENT)
+            _build_fixture(base, {"module.py": _sha256(_CONTENT)}, [_TASK])
+            record_path = base / "reports" / "evidence" / "G9" / f"{_TASK}.json"
+            record_path.write_bytes(b"\xff\xfe")
+            result = _run_validator(base)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            self.assertTrue(any(item["task_id"] == _TASK for item in payload["findings"]))
 
 
 def _git(base: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -259,6 +297,179 @@ class ExecutionCommitDigestTests(unittest.TestCase):
         )
         self.assertNotEqual(0, result.returncode)
         self.assertEqual("FAIL", json.loads(result.stdout)["status"])
+
+    def test_rejects_non_string_input_digests(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            record = {
+                "commit": "0" * 40,
+                "created_at": "2026-11-12T00:00:00Z",
+                "inputs": {
+                    "bool.py": True,
+                    "float.py": 1.0,
+                    "inputs_tree": None,
+                    "int.py": 123,
+                    "list.py": ["abc"],
+                    "none.py": None,
+                    "object.py": {"sha256": "x"},
+                },
+                "task_id": _TASK,
+            }
+            path = _write_object_record(base, record)
+            result = _run_execution_commit(base, path)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            reasons = {(item["path"], item["reason"]) for item in payload["findings"]}
+            for name in ("inputs_tree", "none.py", "int.py", "float.py", "bool.py", "object.py", "list.py"):
+                self.assertIn((name, "recorded digest is not a string"), reasons)
+            self.assertFalse(any(item["reason"] == "input hash mismatch" for item in payload["findings"]))
+
+    def test_rejects_a_record_that_is_not_utf8(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            evidence = base / "reports" / "evidence" / "G9"
+            evidence.mkdir(parents=True)
+            path = evidence / f"{_TASK}.json"
+            path.write_bytes(b"\xff\xfe")
+            result = _run_execution_commit(base, path)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            self.assertTrue(
+                any(
+                    "record unreadable" in item["reason"] and "UnicodeDecodeError" in item["reason"]
+                    for item in payload["findings"]
+                )
+            )
+
+    def test_rejects_nan_and_infinities_before_use(self) -> None:
+        for literal in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(literal=literal):
+                with tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    evidence = base / "reports" / "evidence" / "G9"
+                    evidence.mkdir(parents=True)
+                    path = evidence / f"{_TASK}.json"
+                    path.write_text(
+                        '{"commit": "' + ("0" * 40) + '", "inputs": {"nan.py": ' + literal + '}, "task_id": "' + _TASK + '"}',
+                        encoding="utf-8",
+                    )
+                    result = _run_execution_commit(base, path)
+                    self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+                    payload = json.loads(result.stdout)
+                    self.assertEqual("FAIL", payload["status"])
+                    self.assertTrue(
+                        any("record unreadable" in item["reason"] and "JSONDecodeError" in item["reason"] for item in payload["findings"])
+                    )
+
+    def test_rejects_a_lone_surrogate_in_a_key_and_in_a_nested_value(self) -> None:
+        lone = json.loads('"\\uD800"')
+        cases = (
+            {"commit": "0" * 40, "inputs": {"module.py": "a" * 64}, "note": {"inner": lone}, "task_id": _TASK},
+            {"commit": "0" * 40, "inputs": {lone: "a" * 64}, "task_id": _TASK},
+        )
+        for record in cases:
+            with self.subTest(record=sorted(record)):
+                with tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    path = _write_object_record(base, record)
+                    result = _run_execution_commit(base, path)
+                    self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                    payload = json.loads(result.stdout)
+                    self.assertEqual("FAIL", payload["status"])
+                    self.assertTrue(any("lone surrogate" in item["reason"] for item in payload["findings"]))
+                    self.assertFalse(any(item["reason"] == "input hash mismatch" for item in payload["findings"]))
+
+    def test_accepts_a_valid_surrogate_pair_in_an_unused_field(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            revision = _commit_blob(base, "module.py", _CONTENT)
+            path = _write_execution_record(base, revision, {"module.py": _sha256(_CONTENT)})
+            record = json.loads(path.read_text(encoding="utf-8"))
+            record["note"] = json.loads('"\\uD83D\\uDE00"')
+            path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            result = _run_execution_commit(base, path)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
+    def test_rejects_digest_text_that_is_empty_non_ascii_or_the_wrong_shape(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            record = {
+                "commit": "0" * 40,
+                "created_at": "2026-11-12T00:00:00Z",
+                "inputs": {
+                    "empty.py": "",
+                    "inputs_tree": "a" * 40,
+                    "nonascii.py": "é" + ("a" * 63),
+                    "short.py": "abc",
+                    "upper.py": "A" * 64,
+                },
+                "task_id": _TASK,
+            }
+            path = _write_object_record(base, record)
+            result = _run_execution_commit(base, path)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual("FAIL", payload["status"])
+            reasons = {(item["path"], item["reason"]) for item in payload["findings"]}
+            expected = "recorded digest is not a lowercase sha256 hex digest"
+            for name in ("empty.py", "nonascii.py", "short.py", "upper.py"):
+                self.assertIn((name, expected), reasons)
+            self.assertNotIn(("inputs_tree", expected), reasons)
+            self.assertFalse(any(item["reason"] == "input hash mismatch" for item in payload["findings"]))
+
+    def test_rejects_raw_output_digests_that_are_not_sha256_text(self) -> None:
+        non_strings = (None, True, 1, 1.0, {"sha256": "x"}, ["x"])
+        for raw in (*non_strings, "", "not-a-digest", "É" + ("a" * 63)):
+            with self.subTest(raw=raw):
+                with tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    revision = _commit_blob(base, "module.py", _CONTENT)
+                    path = _write_execution_record(base, revision, {"module.py": _sha256(_CONTENT)})
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    record["raw_output_sha256"] = raw
+                    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                    result = _run_execution_commit(base, path)
+                    self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                    payload = json.loads(result.stdout)
+                    self.assertEqual("FAIL", payload["status"])
+                    if isinstance(raw, str):
+                        reason = "raw output digest is not a lowercase sha256 hex digest"
+                    else:
+                        reason = "raw output digest is not a string"
+                    self.assertTrue(any(item["reason"] == reason for item in payload["findings"]))
+
+    def test_git_invocation_errors_are_findings(self) -> None:
+        module = _validator_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            path = _write_execution_record(base, "0" * 40, {"module.py": _sha256(_CONTENT)})
+            with mock.patch.object(module.subprocess, "run", side_effect=OSError("git missing")):
+                findings = module.execution_commit_findings(base, path)
+            self.assertTrue(
+                any(item["reason"].startswith("execution commit unreadable: OSError:") for item in findings)
+            )
+
+
+def _write_object_record(base: Path, record: dict[str, object]) -> Path:
+    evidence = base / "reports" / "evidence" / "G9"
+    evidence.mkdir(parents=True, exist_ok=True)
+    path = evidence / f"{_TASK}.json"
+    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def _validator_module() -> object:
+    spec = importlib.util.spec_from_file_location("rem0061_evidence_input_drift", VALIDATOR)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("validator module is not loadable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 if __name__ == "__main__":
