@@ -1,6 +1,6 @@
 # REM-0061-VERIFIER-TMP-QUOTA
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
 Riguarda la verifica indipendente di `OCOR-DEV-REM-0061`, ciclo di riparazione 1, non il codice del
 trasferimento delle immagini. La questione riguarda l'ambiente di verifica indipendente, che sta fuori
 da questo repository: la richiesta resta al Product Owner.
@@ -70,3 +70,15 @@ la campagna. Non è bloccato il repair del mount in sola lettura, né la campagn
 sul filesystem radice. `OCOR-DEV-REM-0060` (NCP-U12) resta in coda fino al sigillo di `OCOR-DEV-REM-0061`.
 Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
 Nessuna modifica a `inputs/`.
+
+## Disposition
+
+Decisione operativa del PO `TMP-RESIDUI-CAMPAGNA (2026-11-11)`, letta in questo turno prima della richiesta di verifica. Non è l'opzione 1 e non è l'opzione 2. La richiesta decisa è il file al commit `83d9b74648c14a2afb14904a2a83183274ece7c9`, sha256 `89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed` (verificata prima dell'attuazione). Stato: `DECIDED_BY_PO`. Nessun nuovo `DEC-*`; claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+Il PO ha rimosso a mano i residui sotto `/tmp` (16 directory, 19,2 GB) che avevano causato `Disk quota exceeded` nel checkout della seconda corsia. La decisione chiede, in questa riparazione:
+
+1. ogni script che crea directory di lavoro in `/tmp` per campagne, gate o preparazione delle corsie le rimuove a fine run, anche su errore o interruzione (`try/finally` e segnali); in alternativa le crea sotto `~/.ocor-codex/<unità>/` con la stessa rimozione; le evidenze restano fuori da quelle directory;
+2. prima di lanciare le corsie, lo script misura lo spazio libero di `/tmp`, quota utente compresa, e se non basta per le corsie previste si ferma con una diagnosi esplicita;
+3. test RED/GREEN e i controlli della pipeline.
+
+La pulizia periodica dei residui non usati da più di sei ore resta al PO. Questa unità non alza la quota di `/tmp` e non sposta la directory di lavoro della verifica.
