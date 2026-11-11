@@ -1,23 +1,24 @@
 {
   "assumptions": [
-    "Nessun conteggio parziale della campagna interrotta \u00e8 evidenza qualificante.",
-    "Gli esiti dei test mirati e dei gate sono riusati solo sul medesimo albero di codice/test/harness, come registrato."
+    "Le esecuzioni a quattro corsie sull'head 6c0a233fe21c9cffd4ae914a5daf36e109502dab restano diagnostiche e non qualificano il ciclo di riparazione 1.",
+    "La campagna qualificante del ciclo di riparazione 1 \u00e8 stata eseguita sull'head 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3. Il commit di record 2baa4aaa71136203863b61130ad9c772fad1e9c0 non cambia quegli input."
   ],
   "base_sha": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
   "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
-  "branch": "governed/state-sync-rem0061-pre-20261110",
+  "branch": "governed/state-sync-rem0061-repair-20261111",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
-    "head_sha": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
-    "note": "Unita in corso, non un candidato qualificante. Nessuna verifica e nessun sigillo.",
-    "pre_campaign_gate": "54 steps, 0 failures, at this head and at parent c54032c07b20",
-    "request_id": "OCOR-DEV-REM-0061-26d8f30c6dbd-pre"
+    "draft_pr": 595,
+    "head_sha": "2baa4aaa71136203863b61130ad9c772fad1e9c0",
+    "note": "Unit\u00e0 in corso, non sigillata. La suite qualificante \u00e8 sull'head 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3. Nessuna verifica richiesta: REM-0061-VERIFIER-TMP-QUOTA \u00e8 aperta.",
+    "pre_campaign_gate": "54 steps, 0 failures, at 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "qualifying_campaign_head": "46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "repair_cycle": 1
   },
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
-    "reports/development/MODEL_HANDOFF.json",
     "reports/development/ITERATION_LOG.md",
-    "reports/development/TERMINAL_BLOCKED_REPORT.json"
+    "reports/development/MODEL_HANDOFF.json"
   ],
   "checkpoint_integration": {
     "branch": "governed/state-sync-rem0060-iter9-20261110",
@@ -46,10 +47,194 @@
   },
   "commands": [],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0061, revisione preventiva richiesta",
+  "current_task": "OCOR-DEV-REM-0061, ciclo di riparazione 1, in attesa della decisione sulla quota dell'ambiente di verifica",
   "evidence_paths": [],
-  "exact_next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+  "exact_next_action": "Attendere la decisione del PO su REM-0061-VERIFIER-TMP-QUOTA (branch governed/ocor-dev-rem-0061-lane-image-cache, commit 83d9b74648c14a2afb14904a2a83183274ece7c9, path reports/development/decision_requests/REM-0061-VERIFIER-TMP-QUOTA.md, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed). Non richiedere la verifica indipendente prima di quella decisione. La campagna qualificante del ciclo di riparazione 1 \u00e8 PASS sull'head 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3; l'head del branch \u00e8 2baa4aaa71136203863b61130ad9c772fad1e9c0. Non avviare NCP-U12.",
   "full_campaign": {
+    "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "duration_seconds": 1774.172,
+    "head": "46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "host_residue": {
+      "containers": [],
+      "networks": [],
+      "root_image": false,
+      "volumes": []
+    },
+    "image_cache_images": 14,
+    "image_cache_mount": "read-only",
+    "lanes_run": 4,
+    "limit_seconds": 5400,
+    "mode": "FOUR_LANE",
+    "po_decision_required": false,
+    "power_end": {
+      "read_at": "2026-11-11T08:27:00Z",
+      "source": "MAINS"
+    },
+    "power_start": {
+      "read_at": "2026-11-11T07:57:25Z",
+      "source": "MAINS"
+    },
+    "qualifying": true,
+    "record_head": "2baa4aaa71136203863b61130ad9c772fad1e9c0",
+    "result_path": "/home/luca/.ocor-codex/rem-0061/campaign-46835be/campaign_result.json",
+    "result_sha256": "c1fde140460a14c03570a82bd8bc952a05a7d8f8e32dc56454c407699cf38ba0",
+    "selection_scope": "FULL_SUITE",
+    "status": "PASS",
+    "teardown": [
+      {
+        "lane": 1,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 2,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 3,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 4,
+        "sandbox_found": true,
+        "status": "PASS"
+      }
+    ],
+    "threshold_seconds": 3600,
+    "union": {
+      "collected": 5826,
+      "duplicated": 0,
+      "executed": 5826,
+      "missing": 0,
+      "unexpected": 0
+    }
+  },
+  "head_sha": "2baa4aaa71136203863b61130ad9c772fad1e9c0",
+  "head_sha_role": "unit head after the repair-cycle-1 record; the qualifying four-lane campaign ran on 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3; not a sealed candidate",
+  "historical_seal_hashes": {
+    "requalified": {
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
+        "candidate_json_sha256": "a075bf02ba09249384b2cccac36bccecf62f574de763a454fad4e2cee4d6bde8",
+        "sealed_json_sha256": "192397579831677ebbdd4e2b68a5a5f6908cd56d69e13ef8fc1d20208d150e83"
+      },
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0057.json": {
+        "candidate_json_sha256": "2156ca3efe7b57f352edc0b7ec4c5c824c9952f493bbb0fc6f1743d520268670",
+        "sealed_json_sha256": "6f85e51b5708b9694faec9a1f547187418d4b7d962b6369e162ff4c5a9b8dd55"
+      },
+      "reports/evidence/G4/OCOR-DEV-0045.requalified-rem0057.json": {
+        "candidate_json_sha256": "e881ec47b4f17ac9a7be8a0334a926a56d72be899f096c8bca32081d2d643c6c",
+        "sealed_json_sha256": "1a5e9d8eb2a4924bf3c19634c12fbb82df8eed929f4c577211e945b05e1654c2"
+      },
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.json": {
+        "candidate_json_sha256": "e89f850a7da133e9808071fcd351df4b6aba39ee3a8b14b3e2d4bccdca6a10d9",
+        "sealed_json_sha256": "15181a833d2d307cee50c85300ad857070df7e66045b3d1e1ee8c92443e9adca"
+      }
+    },
+    "unit": [
+      "6f5db778725edc5a2f9a3a4deef8f0e2ed660eb4a4fef0265ce0b3fe8d299c25",
+      "081827d532e2c99b146417be10964b7ea9f2f6594cbc1f9b1cd4de7ab6556d5d"
+    ]
+  },
+  "independent_verification": {
+    "cycle_0": {
+      "excluded_providers": [
+        "xAI"
+      ],
+      "request_id": "OCOR-DEV-REM-0061-69bbc51fb031-0",
+      "result": "NO_GO",
+      "verifier": "Codex / OpenAI",
+      "verifier_started_by_implementer": false
+    },
+    "decision_request": "REM-0061-VERIFIER-TMP-QUOTA",
+    "excluded_providers": [
+      "xAI"
+    ],
+    "repair_cycle": 1,
+    "status": "NOT_REQUESTED_PENDING_PO_DECISION"
+  },
+  "latest_ci_evidence": {
+    "bad_checks": [],
+    "campaign_artifacts": [
+      {
+        "github_digest": "sha256:44228468981bb7679a672c6d052a57ea18f386f140a8403c85c62316a4fc8618",
+        "id": 12647119291,
+        "name": "ocor-rccad-full-5bd8896f3a602062e79853008ccb5b761b3a15ac",
+        "run_id": "40313546922"
+      },
+      {
+        "github_digest": "sha256:b3de9203d93d0c91387b6699375abd9de43ba97440582276c28782df62716e88",
+        "id": 12647890886,
+        "name": "ocor-activation-full-5bd8896f3a602062e79853008ccb5b761b3a15ac",
+        "run_id": "40313547037"
+      },
+      {
+        "github_digest": "sha256:3aaac87b2e2bf0962c9dc42883c06707feab38f306ec807d8590beae5849be42",
+        "id": 12648070143,
+        "name": "ocor-validation-closure-5bd8896f3a602062e79853008ccb5b761b3a15ac",
+        "run_id": "40313547003"
+      },
+      {
+        "github_digest": "sha256:bf1d1311e0642d0d5db4ebaa2343e02bcbb0389458a5c6aa53fd2a1a4b9f9c21",
+        "id": 12647302373,
+        "name": "ocor-conditional-0049-5bd8896f3a602062e79853008ccb5b761b3a15ac",
+        "run_id": "40313547003"
+      }
+    ],
+    "head_sha": "85f4982b79fbd421f18cb6ef3ad872b08b42ae40",
+    "merge_commit": "3a3087dd8e47cd85f0bdafba0e285d188a718605",
+    "note": "artifact digests as reported by the GitHub API; archives not downloaded in this iteration",
+    "observed_at": "2026-10-26T11:56:42.724763+00:00",
+    "pr": 354,
+    "required_checks": [
+      "contract",
+      "unit",
+      "integration-postgresql",
+      "backend-compatibility-not-ba-evidence",
+      "evidence",
+      "mandatory-gates",
+      "rccad-methodology",
+      "delivery-activation",
+      "validation-closure",
+      "supply-chain",
+      "type-and-lint-gate",
+      "tooling-policy",
+      "fgm-contract-readiness-not-runtime-evidence"
+    ],
+    "reruns": 0,
+    "run_ids": [
+      "40313546922",
+      "40313546931",
+      "40313546966",
+      "40313546973",
+      "40313547003",
+      "40313547037"
+    ],
+    "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
+  },
+  "local_gate_results": {
+    "confirmation_gates_json_sha256": "a97cfded4c6c599f64b64d16003a6edfebb016325250760a4d51abac53483014",
+    "confirmation_head": "46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "executed_steps": 54,
+    "failed_steps": 0,
+    "four_lane_suite": "PASS",
+    "pre_campaign_gate": "PASS 54/54",
+    "stdout_sha256": "3991992961b75663593b4b191d733995cd923308d7c8f11357f63065052ee57e"
+  },
+  "next_task": "Attendere la decisione del PO su REM-0061-VERIFIER-TMP-QUOTA (branch governed/ocor-dev-rem-0061-lane-image-cache, commit 83d9b74648c14a2afb14904a2a83183274ece7c9, path reports/development/decision_requests/REM-0061-VERIFIER-TMP-QUOTA.md, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed). Non richiedere la verifica indipendente prima di quella decisione. La campagna qualificante del ciclo di riparazione 1 \u00e8 PASS sull'head 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3; l'head del branch \u00e8 2baa4aaa71136203863b61130ad9c772fad1e9c0. Non avviare NCP-U12.",
+  "phase": "REM_0061_REPAIR_CYCLE_1_AWAITING_VERIFIER_QUOTA_DECISION",
+  "po_decisions_pending": [
+    "REM-0061-VERIFIER-TMP-QUOTA"
+  ],
+  "previous_exact_next_action": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+  "previous_full_campaign": {
     "attempts": 2,
     "counts_transferred": false,
     "diagnosis": "/home/luca/.ocor-codex/rem-0060/iter8/attempts/full-2/diagnosis.json",
@@ -149,111 +334,13 @@
       }
     ]
   },
-  "head_sha": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
-  "head_sha_role": "unit head gated before the preventive review; not a qualifying candidate",
-  "historical_seal_hashes": {
-    "requalified": {
-      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
-        "candidate_json_sha256": "a075bf02ba09249384b2cccac36bccecf62f574de763a454fad4e2cee4d6bde8",
-        "sealed_json_sha256": "192397579831677ebbdd4e2b68a5a5f6908cd56d69e13ef8fc1d20208d150e83"
-      },
-      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0057.json": {
-        "candidate_json_sha256": "2156ca3efe7b57f352edc0b7ec4c5c824c9952f493bbb0fc6f1743d520268670",
-        "sealed_json_sha256": "6f85e51b5708b9694faec9a1f547187418d4b7d962b6369e162ff4c5a9b8dd55"
-      },
-      "reports/evidence/G4/OCOR-DEV-0045.requalified-rem0057.json": {
-        "candidate_json_sha256": "e881ec47b4f17ac9a7be8a0334a926a56d72be899f096c8bca32081d2d643c6c",
-        "sealed_json_sha256": "1a5e9d8eb2a4924bf3c19634c12fbb82df8eed929f4c577211e945b05e1654c2"
-      },
-      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0057.json": {
-        "candidate_json_sha256": "e89f850a7da133e9808071fcd351df4b6aba39ee3a8b14b3e2d4bccdca6a10d9",
-        "sealed_json_sha256": "15181a833d2d307cee50c85300ad857070df7e66045b3d1e1ee8c92443e9adca"
-      }
-    },
-    "unit": [
-      "6f5db778725edc5a2f9a3a4deef8f0e2ed660eb4a4fef0265ce0b3fe8d299c25",
-      "081827d532e2c99b146417be10964b7ea9f2f6594cbc1f9b1cd4de7ab6556d5d"
-    ]
-  },
-  "independent_verification": {
+  "previous_independent_verification": {
     "excluded_providers": [
       "Anthropic",
       "OpenAI"
     ],
     "status": "NOT_REQUESTED_PENDING_QUALIFYING_FULL_SUITE"
   },
-  "latest_ci_evidence": {
-    "bad_checks": [],
-    "campaign_artifacts": [
-      {
-        "github_digest": "sha256:44228468981bb7679a672c6d052a57ea18f386f140a8403c85c62316a4fc8618",
-        "id": 12647119291,
-        "name": "ocor-rccad-full-5bd8896f3a602062e79853008ccb5b761b3a15ac",
-        "run_id": "40313546922"
-      },
-      {
-        "github_digest": "sha256:b3de9203d93d0c91387b6699375abd9de43ba97440582276c28782df62716e88",
-        "id": 12647890886,
-        "name": "ocor-activation-full-5bd8896f3a602062e79853008ccb5b761b3a15ac",
-        "run_id": "40313547037"
-      },
-      {
-        "github_digest": "sha256:3aaac87b2e2bf0962c9dc42883c06707feab38f306ec807d8590beae5849be42",
-        "id": 12648070143,
-        "name": "ocor-validation-closure-5bd8896f3a602062e79853008ccb5b761b3a15ac",
-        "run_id": "40313547003"
-      },
-      {
-        "github_digest": "sha256:bf1d1311e0642d0d5db4ebaa2343e02bcbb0389458a5c6aa53fd2a1a4b9f9c21",
-        "id": 12647302373,
-        "name": "ocor-conditional-0049-5bd8896f3a602062e79853008ccb5b761b3a15ac",
-        "run_id": "40313547003"
-      }
-    ],
-    "head_sha": "85f4982b79fbd421f18cb6ef3ad872b08b42ae40",
-    "merge_commit": "3a3087dd8e47cd85f0bdafba0e285d188a718605",
-    "note": "artifact digests as reported by the GitHub API; archives not downloaded in this iteration",
-    "observed_at": "2026-10-26T11:56:42.724763+00:00",
-    "pr": 354,
-    "required_checks": [
-      "contract",
-      "unit",
-      "integration-postgresql",
-      "backend-compatibility-not-ba-evidence",
-      "evidence",
-      "mandatory-gates",
-      "rccad-methodology",
-      "delivery-activation",
-      "validation-closure",
-      "supply-chain",
-      "type-and-lint-gate",
-      "tooling-policy",
-      "fgm-contract-readiness-not-runtime-evidence"
-    ],
-    "reruns": 0,
-    "run_ids": [
-      "40313546922",
-      "40313546931",
-      "40313546966",
-      "40313546973",
-      "40313547003",
-      "40313547037"
-    ],
-    "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
-  },
-  "local_gate_results": {
-    "confirmation_gates_json_sha256": "12caf839d4c4e9cc6512bb95181c60bf578a020bdded9b4e5a842e81026d24b6",
-    "confirmation_head": "26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
-    "failed_steps": 0,
-    "four_lane_suite": "NOT_STARTED",
-    "parent_gates_json_sha256": "57cea82d968172c699a7b502adf562866154dc2ef485af98a0df6170159dc269",
-    "parent_head": "c54032c07b20b35933eda1e57c528d247bda6d4b",
-    "pre_campaign_gate": "PASS 54/54"
-  },
-  "next_task": "riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
-  "phase": "REM_0061_PRE_CAMPAIGN_REVIEW",
-  "po_decisions_pending": [],
-  "previous_exact_next_action": "Attendere la disposition di REM-0060-LANE-IMAGE-PROVISIONING (draft PR #591, commit 05531507319e217032bafd475538e65b7cb12def, sha256 fae0821796e40064f4913dda4e5dd6f379e4c1bb610d3f3083308ae288653734). Rilettura di ~/.ocor-codex/openhands_preamble.md alle 2026-11-10T19:56:06.944628+00:00: nessuna sezione decide la richiesta (sha256 4d26a992c9e93e719835b1a282bea726ca806e475404109576c719afc14194c4, mtime 2026-11-10 18:20:02 +0100). PR #592 mergiata: head 4a36046e288db53ed00f8617b35a0baf1432a405, merge 78dcf2b256b9257b8b94482ee21fbf58e148844c, 13 check obbligatori success. Nessun ulteriore rerun della campagna attuale: due esaurimenti del provisioning di 600 s sullo stesso codice/test/harness. Con opzione 1: assegnare la prima REM libera alla cache locale verificata delle immagini, inventario, RED/GREEN e ciclo completo nel perimetro esatto della richiesta; poi riprendere NCP-U12 dal WIP b869cc9c0e92b6d23b386cf5162c07d3ebc12aec, branch governed/ocor-dev-rem-0060-ncp-u12-tests, worktree .ocor/worktrees/rem-0060, allineamento non distruttivo e nuova campagna dopo il merge della remediation. Con opzione 2: nessun tentativo prima della misura esterna richiesta. NCP-U12 iterazione 9 di stima 3, estensione fino alla tredicesima, massimo due cicli di riparazione; nessuna verifica o sigillo finch\u00e9 manca la full qualificante. Implementatori del task: Claude Code/Anthropic e Codex/OpenAI; chiusura CI della PR #592: Grok Build grok-4.7 / xAI, riserva per quota. Revisore preventivo Codex/OpenAI; verifier solo xAI o Google. Dopo NCP-U12: NORMATIVE-CONFORMANCE-LEGACY-RETIREMENT e change set G7/NCP-U14/NCP-U15 prima di G6. Claim invariati.",
   "previous_task_roles": {
     "implementers": [
       {
@@ -301,19 +388,21 @@
   "raw_evidence_location": "~/.ocor-codex/rem-0060/iter8/attempts/full-1 e full-2; kit iter9; copia diagnostica redatta nel WIP b869cc9",
   "requirement_ids": [],
   "roles": {
+    "cycle_0_verifier": "Codex / OpenAI, result NO_GO, request OCOR-DEV-REM-0061-69bbc51fb031-0; verifier_started_by_implementer false",
     "implementers": [
       {
         "agent": "Grok Build",
         "model": "grok-4.7",
         "provider": "xAI",
-        "scope": "OCOR-DEV-REM-0061 from the first iteration; no earlier implementer of this unit"
+        "repair_cycle": 1,
+        "scope": "OCOR-DEV-REM-0061 from the first iteration and this repair; no earlier implementer of this unit"
       }
     ],
-    "preventive_reviewer": "NOT_ASSIGNED",
+    "preventive_reviewer": "Cursor / cursor-grok-4.6-xhigh / xAI, reserve, request OCOR-DEV-REM-0061-26d8f30c6dbd-pre, result NO_BLOCKING_FINDINGS, reviewed head 26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
     "verifier_excluded_providers": [
       "xAI"
     ],
-    "verifier_status": "NOT_REQUESTED"
+    "verifier_status": "NOT_REQUESTED_PENDING_PO_DECISION"
   },
   "rollback_result": "Nessun codice di runtime cambiato in NCP-U12; preservare la storia e, se richiesto, annullare le modifiche di test con un nuovo commit. Nessuna migrazione di dati.",
   "schema_version": "1.0",
@@ -323,20 +412,20 @@
     "Every lane's private dockerd starts empty and pulls each pinned image from its registry: a four-lane campaign costs about four times the Docker Hub pulls of a serial one, and the unauthenticated limit of this host's address is 100 pulls per hour; a four-lane run right after another pulling run can fail at setup with 429 (the diagnostic attempt of this unit). Counter-measure applied: one pulling campaign per hour; a pull-through cache or seeding the lanes from the host image store (digest-pinned) would remove the risk and is a separate decision."
   ],
   "state_sync_ci": {
-    "branch": "governed/state-sync-rem0061-pre-20261110",
-    "note": "PR #594 aperta. Nessun check dichiarato prima dell esito sull HEAD esatto.",
-    "pr": 594,
-    "status": "PUSHED_CHECKS_NOT_ATTESTED"
+    "branch": "governed/state-sync-rem0061-repair-20261111",
+    "note": "PR non ancora aperta al momento di questo commit. Nessun check dichiarato prima dell'esito sull'HEAD esatto.",
+    "status": "COMMITTED_PR_NOT_OPENED",
+    "task_draft_pr": 595
   },
   "test_results": {
-    "four_lane_suite": "NOT_STARTED",
-    "live_proof": "PASS at the confirmation gate",
-    "pre_campaign_gate": "PASS 54/54 at 26d8f30c6dbd and at c54032c07b20",
-    "task_suite": "PASS at the confirmation gate"
+    "four_lane_suite": "PASS 5826/5826, zero skip, exact union, 1774.172 s, head 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "pre_campaign_gate": "PASS 54/54 at 46835befb1a30e1bdf9ec0f9c87e2e6abac8c6e3",
+    "repair_cycle": 1
   },
   "unresolved_blockers": [
-    "OCOR-DEV-REM-0060"
+    "OCOR-DEV-REM-0060",
+    "REM-0061-VERIFIER-TMP-QUOTA"
   ],
-  "updated_at": "2026-11-10T23:03:06.683153+00:00",
+  "updated_at": "2026-11-11T08:39:47.003960+00:00",
   "worktree": ".ocor/worktrees/rem-0061"
 }
