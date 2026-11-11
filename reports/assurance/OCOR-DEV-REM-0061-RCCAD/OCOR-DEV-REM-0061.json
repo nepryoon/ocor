@@ -77,20 +77,20 @@
       }
     ],
     "cell_scan": {
-      "cells": 102,
+      "cells": 108,
       "citation": "SELF-CHECK-CELL-SCAN (2026-11-09)",
-      "cited_tests_collected": 39,
+      "cited_tests_collected": 49,
       "command": "python3 /home/luca/.ocor-codex/rem-0061/scan_self_check.py",
       "counts": {
-        "FIXED": 2,
-        "N/A": 33,
+        "FIXED": 7,
+        "N/A": 34,
         "PASS": 67
       },
       "errors_found_and_corrected": [],
       "head": "b22debf2e08e805db56643030b17efafdd5e4da5",
-      "note": "Repair cycle 2 adds the mount, quota and admission rows. The head is b22debf2e08e805db56643030b17efafdd5e4da5, the commit that contains this table. A later commit may record this head and does not change the table or the role identity. The output digest is of the scan of the table and the role fields.",
+      "note": "Repair cycle 2 adds the execution-commit parser row on top of the mount, quota and admission rows. The head is the commit that contains this table. A later commit may record this head and the scan digest and does not change the table or the role identity. The output digest is of the scan of the table and the role fields.",
       "output_sha256": "7a5676849ca739865b6bef6f16f4047dc0507cbf5ba131c2ec89852a6f70e0a5",
-      "rows": 17
+      "rows": 18
     },
     "columns": {
       "boundary_digests": "digests recomputed or full-matched before compare",
@@ -106,13 +106,15 @@
       "change_set_rows": {
         "reports/planning/OCOR_PLANNING_VALIDATION_REPORT.md": "0; generated report, no new parser",
         "reports/planning/OCOR_PLAN_RUN_STATE.json": "0; generated hashes, no new parser",
+        "reports/tests/test_evidence_input_drift.py": "0; tests, not a production parser",
         "reports/tests/test_local_lane_campaign.py": "0; tests, not a production parser",
         "reports/tests/test_local_lane_image_cache.py": "0; the live proof calls prepare and seed and does not parse a second format",
         "scripts/local_lane_image_cache.py": 11,
         "scripts/run_local_lane_campaign.py": 6,
+        "scripts/validate_evidence_input_drift.py": 1,
         "scripts/validate_ocor_development_plan.py": "0; the edit adds allowlist strings and does not add a parser"
       },
-      "consumers_examined": 17,
+      "consumers_examined": 18,
       "functions_examined": [
         "decode_json",
         "_reject_duplicate_keys",
@@ -139,12 +141,18 @@
         "quota_free_bytes",
         "_read_user_quota",
         "measure_tmp_space",
-        "require_tmp_space_for_lanes"
+        "require_tmp_space_for_lanes",
+        "_read_json_object",
+        "_shape_findings",
+        "_raw_findings",
+        "drift_for_record",
+        "execution_commit_findings"
       ],
       "searches": [
         "ast walk of function definitions in scripts/local_lane_image_cache.py",
         "functions in scripts/run_local_lane_campaign.py whose names contain cache, seed, prepare_image or timeout",
-        "functions in scripts/run_local_lane_campaign.py that parse mountinfo, the quotactl_fd result, or the lane admission figure"
+        "functions in scripts/run_local_lane_campaign.py that parse mountinfo, the quotactl_fd result, or the lane admission figure",
+        "functions in scripts/validate_evidence_input_drift.py that read a record, an inputs digest, or raw_output_sha256"
       ],
       "unparsed_callers": "execute_campaign and lifecycle_check call prepare_image_cache and seed_lane_images. They store the returned mapping and do not decode the lock, the inspect text, the manifest or the archive."
     },
@@ -154,7 +162,7 @@
       "errors_found_and_corrected": [],
       "fields_compared": 26,
       "head": "b22debf2e08e805db56643030b17efafdd5e4da5",
-      "note": "Repeated with the cell scan after the repair-cycle-2 rows, on the table contained in b22debf2e08e805db56643030b17efafdd5e4da5. The command compared 26 role fields and found no error. The earlier scan of d22884b224b9095d863c6fb3a4cf4b19b0c0cd53 compared the same 26 fields on 13 rows; its output sha256 was 3cc914dddba7ab419a862ec8b7276c7ccd5e7efeb3efcde90a1cc36e34004abf.",
+      "note": "Repeated with the cell scan on the commit that contains the execution-commit parser row. A later commit may record this head and the scan digest and does not change the table or the role identity.",
       "output_sha256": "7a5676849ca739865b6bef6f16f4047dc0507cbf5ba131c2ec89852a6f70e0a5"
     },
     "table": [
@@ -496,6 +504,33 @@
           "reports/tests/test_local_lane_campaign.py::test_lane_launch_refuses_when_the_tmp_user_quota_is_unreadable"
         ],
         "text_form": "Admission: filesystem free below or above the budget does not refuse an unset hard limit, and a filesystem figure stored as free_bytes is ignored when the hard limit is unset. reports/tests/test_local_lane_campaign.py::test_lane_launch_admits_an_unlimited_quota_when_filesystem_free_is_below_the_budget; reports/tests/test_local_lane_campaign.py::test_lane_launch_ignores_a_filesystem_figure_when_the_hard_limit_is_unset"
+      },
+      {
+        "checks": {
+          "boundary_digests": "FIXED: empty, non-ASCII, wrong-length and uppercase digests are findings before git show (test_rejects_digest_text_that_is_empty_non_ascii_or_the_wrong_shape).",
+          "complete_normative_records": "N/A: this path does not build a normative record defined by the ADD or the LLD.",
+          "finite_numbers": "FIXED: NaN, Infinity and -Infinity are refused at decode (test_rejects_nan_and_infinities_before_use), and a float digest is not a string.",
+          "processes_and_resources": "FIXED: OSError from git is a finding (test_git_invocation_errors_are_findings), and a non-zero git show stays a missing-file finding.",
+          "strict_decoding": "FIXED: UnicodeDecodeError, JSONDecodeError and a lone surrogate are findings before compare (test_rejects_a_record_that_is_not_utf8; test_rejects_a_lone_surrogate_in_a_key_and_in_a_nested_value).",
+          "types_before_conversions": "FIXED: null, bool, int, float, object and list digests are findings before compare (test_rejects_non_string_input_digests), including a non-string raw digest."
+        },
+        "file": "scripts/validate_evidence_input_drift.py",
+        "function": "execution_commit_findings, drift_for_record, _read_json_object",
+        "paths": "evidence records read by --execution-commit and by the HEAD scan",
+        "rereads_stored_data": true,
+        "tests": [
+          "reports/tests/test_evidence_input_drift.py::EvidenceInputDriftValidatorTests::test_head_scan_rejects_a_non_string_digest",
+          "reports/tests/test_evidence_input_drift.py::EvidenceInputDriftValidatorTests::test_head_scan_rejects_a_non_utf8_record_without_a_traceback",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_non_string_input_digests",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_a_record_that_is_not_utf8",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_nan_and_infinities_before_use",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_a_lone_surrogate_in_a_key_and_in_a_nested_value",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_accepts_a_valid_surrogate_pair_in_an_unused_field",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_digest_text_that_is_empty_non_ascii_or_the_wrong_shape",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_raw_output_digests_that_are_not_sha256_text",
+          "reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_git_invocation_errors_are_findings"
+        ],
+        "text_form": "Record JSON: a non-string digest (null, bool, int, float, object, list), a non-UTF-8 body, NaN, Infinity, -Infinity and a lone surrogate are findings before compare, and a valid surrogate pair in an unused field is accepted. reports/tests/test_evidence_input_drift.py::EvidenceInputDriftValidatorTests::test_head_scan_rejects_a_non_string_digest; reports/tests/test_evidence_input_drift.py::EvidenceInputDriftValidatorTests::test_head_scan_rejects_a_non_utf8_record_without_a_traceback; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_non_string_input_digests; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_a_record_that_is_not_utf8; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_nan_and_infinities_before_use; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_a_lone_surrogate_in_a_key_and_in_a_nested_value; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_accepts_a_valid_surrogate_pair_in_an_unused_field Fixed-form digest: empty, non-ASCII, wrong-length and uppercase text is a finding before git show. reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_digest_text_that_is_empty_non_ascii_or_the_wrong_shape; reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_rejects_raw_output_digests_that_are_not_sha256_text Process errors: OSError from git is a finding. reports/tests/test_evidence_input_drift.py::ExecutionCommitDigestTests::test_git_invocation_errors_are_findings"
       }
     ]
   },
@@ -524,6 +559,40 @@
     "stdout_sha256": "b560046374fc839573b4649e833d3c7b35d6c712292a0618c192cc9f830212f5"
   },
   "preventive_review": {
+    "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
+    "dispositions": [
+      {
+        "decision": "ACCEPTED_AND_FIXED. Non-string digests, a non-UTF-8 record and a non-string raw digest are findings before compare. The tests name the class.",
+        "id": "P1",
+        "severity": "blocking"
+      },
+      {
+        "decision": "ACCEPTED. The cell scan and the roles scan are repeated on the commit that contains the new parser row.",
+        "id": "P2",
+        "severity": "advisory"
+      },
+      {
+        "decision": "ACCEPTED. The gate field and the README are updated after the gate on the code head of this repair.",
+        "id": "P3",
+        "severity": "advisory"
+      }
+    ],
+    "findings_by_severity": {
+      "advisory": 2,
+      "blocking": 1
+    },
+    "outcome_sha256": "adbe38fd2806a924527391122361b9aead8265bc89c2176d3efc20545733880e",
+    "request_id": "OCOR-DEV-REM-0061-55c3272cf1ef-pre",
+    "result": "BLOCKING_FINDINGS",
+    "reviewed_head": "55c3272cf1efaaa35403c89dcade965053caf2bc",
+    "reviewer": {
+      "agent": "Cursor",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "reserve": true
+    }
+  },
+  "previous_preventive_review": {
     "citation": "PRE-CAMPAIGN-REVIEW (2026-10-26)",
     "dispositions": [
       {
@@ -602,6 +671,15 @@
     "failed": 46,
     "fingerprint_sha256": "f477a92adce5c4180f1648a7462e4fbae41a1e2e492b134a0de6f0800725c17b"
   },
+  "red_execution_commit_parser": {
+    "commit": "9160bc0873ab66e63a253e215adf6864a6db911a",
+    "failed": 20,
+    "fingerprint_sha256": "36a5430459bd21e5370987912d32ac4c96af8cda6cba021fa4a07fd75205171f",
+    "fix_commit": "ed3d5b463881dedf1dd6c994e776e0a2689db932",
+    "log": "/home/luca/.ocor-codex/rem-0061/red-execution-commit-types.log",
+    "note": "Captured on 55c3272cf1ef before the validator change. Twenty tests failed. The historical fingerprints are not reused.",
+    "separate_commit": true
+  },
   "red_repair_cycle_2": {
     "failed": 4,
     "fingerprint_sha256": "e50d6a688b40de2019f61e8ad31ac3a438702c3c08963e2b25a89c961ba40d35",
@@ -631,9 +709,9 @@
       "agent": "Cursor",
       "model": "cursor-grok-4.6-xhigh",
       "provider": "xAI",
-      "request_id": "OCOR-DEV-REM-0061-26d8f30c6dbd-pre",
+      "request_id": "OCOR-DEV-REM-0061-55c3272cf1ef-pre",
       "reserve": true,
-      "result": "NO_BLOCKING_FINDINGS"
+      "result": "BLOCKING_FINDINGS"
     },
     "verifier": {
       "agent": "Codex",
