@@ -395,7 +395,25 @@ def sandbox_init(lane: Lane) -> str:
             f"exec /usr/bin/dockerd --host unix:///run/docker.sock --group {lane.gid} --data-root /var/lib/docker")
 
 
-def sandbox_run_argv(lane: Lane, mounts: list[Path], *, output_root: Path) -> list[str]:
+def readonly_mount_arguments(output_root: Path, readonly_mounts: list[Path] | None) -> list[str]:
+    """Bind the shared image cache read-only after the writable campaign output.
+
+    A nested mount is applied after the parent, so the cache stays read-only while
+    lane output under the same work directory stays writable. A mount of the output
+    itself, or of one of its parents, would hide that writable tree and is refused.
+    """
+    arguments: list[str] = []
+    for mount in readonly_mounts or []:
+        if not isinstance(mount, Path) or not mount.is_absolute():
+            raise CampaignError("readonly mount is not an absolute path")
+        if mount == output_root or output_root.is_relative_to(mount):
+            raise CampaignError("readonly mount would hide the writable campaign output")
+        arguments += ["-v", f"{mount}:{mount}:ro"]
+    return arguments
+
+
+def sandbox_run_argv(lane: Lane, mounts: list[Path], *, output_root: Path,
+                     readonly_mounts: list[Path] | None = None) -> list[str]:
     argv = ["docker", "run", "-d", "--name", lane.name, "--label", f"{LANE_LABEL}={lane.campaign}",
             "--privileged", "--cgroupns=private",
             "-v", "/usr:/usr:ro", "-v", "/etc:/etc:ro",
@@ -403,6 +421,7 @@ def sandbox_run_argv(lane: Lane, mounts: list[Path], *, output_root: Path) -> li
     for mount in mounts:
         argv += ["-v", f"{mount}:{mount}:ro"]
     argv += ["-v", f"{lane.root}:{lane.root}", "-v", f"{output_root}:{output_root}",
+             *readonly_mount_arguments(output_root, readonly_mounts),
              "--tmpfs", "/run", "--tmpfs", "/tmp:exec,mode=1777", "--tmpfs", "/root",
              "-e", f"PATH={SANDBOX_PATH}", SANDBOX_ROOT_IMAGE, "/bin/sh", "-c", sandbox_init(lane)]
     return argv
@@ -508,11 +527,12 @@ def inner_daemon_contents(lane: Lane, runner: Runner) -> dict[str, list[str]]:
 
 
 def start_sandbox(lane: Lane, mounts: list[Path], runner: Runner, *, output_root: Path,
+                  readonly_mounts: list[Path] | None = None,
                   sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
     """Labelled volumes, the privileged sandbox, then a fail-closed wait for an empty private daemon."""
     for volume in lane.volumes:
         runner(["docker", "volume", "create", "--label", f"{LANE_LABEL}={lane.campaign}", volume])
-    runner(sandbox_run_argv(lane, mounts, output_root=output_root))
+    runner(sandbox_run_argv(lane, mounts, output_root=output_root, readonly_mounts=readonly_mounts))
     waited = 0
     probe = ["docker", "exec", lane.name, "docker", "info", "--format", "{{.ServerVersion}}"]
     while (reply := runner(probe, check=False)).returncode:
@@ -865,7 +885,9 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
                 lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
-            entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["sandbox"] = start_sandbox(
+                lane, mounts, runner, output_root=work, readonly_mounts=[cache_dir])
+            entry["image_cache_mount"] = {"path": str(cache_dir), "mode": "read-only"}
             entry["image_cache"] = seed_lane_images(
                 lane, paths[lane.index], cache_dir, lock_path, runner, timeout=lambda: float(PROVISION_TIMEOUT_SECONDS))
             probes = {"head": ["git", "rev-parse", "HEAD"], "python": ["python", "-c", "import sys; print(sys.version.split()[0])"],
@@ -1288,7 +1310,9 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
                 lane, source, head, runner, {"HOME": str(lane.home), "PATH": paths[lane.index]})}
             mounts = tool_mounts([*tool_bins, lane.repository / "ocor-runtime/.venv/bin/python"], lane.home)
             entry["mounts"] = [str(mount) for mount in mounts]
-            entry["sandbox"] = start_sandbox(lane, mounts, runner, output_root=work)
+            entry["sandbox"] = start_sandbox(
+                lane, mounts, runner, output_root=work, readonly_mounts=[cache_dir])
+            entry["image_cache_mount"] = {"path": str(cache_dir), "mode": "read-only"}
             entry["image_cache"] = seed_lane_images(
                 lane, paths[lane.index], cache_dir, lock_path, runner, timeout=campaign_cache_timeout)
             entry["provisioning_seconds"] = round(time.monotonic() - provision_start, 3)

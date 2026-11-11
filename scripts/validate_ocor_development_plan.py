@@ -851,6 +851,9 @@ def main() -> int:
         # transfer of locked host images into lane sandboxes, its live proof,
         # the unit record and the regression-only requalifications of 0005,
         # 0050, 0082, REM-0037 and REM-0056 forced by this allowlist.
+        # REM-0061-VERIFIER-TMP-QUOTA: operational request, verification environment
+        # outside this repository. The repair does not change lanes, services or timers.
+        "reports/development/decision_requests/REM-0061-VERIFIER-TMP-QUOTA.md",
         "scripts/local_lane_image_cache.py",
         "reports/tests/test_local_lane_image_cache.py",
         "reports/assurance/OCOR-DEV-REM-0061-RCCAD/README.md",

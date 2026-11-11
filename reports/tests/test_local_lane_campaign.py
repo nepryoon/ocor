@@ -556,6 +556,31 @@ def test_tool_mounts_reject_tools_outside_home_and_usr(tmp_path):
         LANES.tool_mounts([bindir], home)
 
 
+def test_shared_image_cache_is_mounted_read_only_after_the_writable_output(tmp_path):
+    """A lane sees the campaign output writable and the shared image cache read-only."""
+    item = lane(tmp_path)
+    output = tmp_path / 'out'
+    cache = output / 'image-cache'
+    argv = LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[cache])
+    output_mount = f'{output}:{output}'
+    cache_mount = f'{cache}:{cache}:ro'
+    assert output_mount in argv
+    assert cache_mount in argv
+    assert argv.index(output_mount) < argv.index(cache_mount)
+    assert f'{cache}:{cache}' not in argv
+
+
+def test_readonly_mount_cannot_hide_the_writable_campaign_output(tmp_path):
+    item = lane(tmp_path)
+    output = tmp_path / 'out'
+    with pytest.raises(CAMPAIGN.CampaignError, match='writable campaign output'):
+        LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[output])
+    with pytest.raises(CAMPAIGN.CampaignError, match='writable campaign output'):
+        LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[tmp_path])
+    with pytest.raises(CAMPAIGN.CampaignError, match='absolute path'):
+        LANES.sandbox_run_argv(item, [], output_root=output, readonly_mounts=[Path('image-cache')])
+
+
 def test_sandbox_run_argv_has_the_exact_mount_set_and_the_campaign_label(tmp_path):
     item = lane(tmp_path)
     mounts = [Path('/home/luca/.local/share/uv'), Path('/home/luca/.ocor-codex/impl-env/unit')]
@@ -1375,8 +1400,10 @@ def host_world(tmp_path, monkeypatch):
         item.repository.mkdir(parents=True)
         return {'lane': item.index, 'head': head, 'repository': str(item.repository)}
 
-    def start_sandbox(item, mounts, runner, *, output_root, sleep=None):
+    def start_sandbox(item, mounts, runner, *, output_root, readonly_mounts=None, sleep=None):
         world['calls'].append(('sandbox', item.index))
+        world.setdefault('readonly_mounts', []).append(
+            (item.index, [str(path) for path in (readonly_mounts or [])]))
         return {'lane': item.index, 'sandbox': item.name}
 
     def launcher(argv, log):
@@ -2314,6 +2341,19 @@ def test_serial_fallback_does_not_prepare_an_image_cache(host_world):
     result = execute(host_world)
     assert result['status'] == 'SERIAL_FALLBACK'
     assert not [call for call in host_world['calls'] if call[0] in ('prepare_image_cache', 'image_cache')]
+
+
+def test_each_lane_receives_the_shared_cache_as_a_read_only_mount(host_world):
+    execute(host_world, selection=nodes())
+    cache = str(host_world['work'] / 'image-cache')
+    assert host_world['readonly_mounts'] == [(1, [cache]), (2, [cache])]
+
+
+def test_lifecycle_mounts_the_shared_cache_read_only_for_every_lane(life_world):
+    report = lifecycle(life_world)
+    assert report['status'] == 'PASS', report.get('error')
+    cache = str(life_world['work'] / 'image-cache')
+    assert life_world['readonly_mounts'] == [(index, [cache]) for index in range(1, 5)]
 
 
 def test_each_lane_is_seeded_after_its_sandbox_and_before_launch(host_world):

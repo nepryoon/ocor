@@ -10,9 +10,11 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,7 +29,6 @@ CAMPAIGN = sys.modules['run_qualifying_campaign']
 
 PIN = 'ghcr.io/spiffe/spire-agent@sha256:41b0dcd8b258a69db9e2768292a060766fb76fd866e4bc925849981ea1b825ff'
 HEAD = 'a' * 40
-WORK = Path('/home/luca/.ocor-codex/rem-0061/live-proof')
 
 
 def _combined(argv: list[str], *, timeout: float) -> tuple[int, str, str]:
@@ -35,18 +36,78 @@ def _combined(argv: list[str], *, timeout: float) -> tuple[int, str, str]:
     return completed.returncode, completed.stdout.decode('utf-8', 'replace'), completed.stderr.decode('utf-8', 'replace')
 
 
-def test_transferred_image_satisfies_an_unchanged_pinned_pull() -> None:
-    if WORK.exists():
-        shutil.rmtree(WORK)
-    WORK.mkdir(parents=True)
-    lock = WORK / 'services.lock.json'
-    lock.write_text(json.dumps({'services': [{'id': 'spire-agent', 'image': PIN}]}, indent=2, sort_keys=True) + '\n',
-                    encoding='utf-8')
-    cache = WORK / 'image-cache'
-    item = LANES.Lane(index=1, campaign=LANES.campaign_id(HEAD, 1793000000), root=WORK / 'lane-1',
+def _root_image_present() -> bool:
+    return LANES.run_command(
+        ['docker', 'image', 'inspect', LANES.SANDBOX_ROOT_IMAGE], check=False).returncode == 0
+
+
+def _release(items: list, work: Path, *, created_root: bool) -> None:
+    """Remove only the sandboxes, volumes and root image this run created."""
+    for item in items:
+        LANES.run_command(['docker', 'rm', '-f', item.name], check=False)
+        LANES.run_command(['docker', 'volume', 'rm', '-f', *item.volumes], check=False)
+    if work.exists():
+        shutil.rmtree(work, ignore_errors=True)
+    users = LANES.run_command(
+        ['docker', 'ps', '-aq', '--filter', f'ancestor={LANES.SANDBOX_ROOT_IMAGE}'], check=False)
+    if created_root and users.stdout.strip() == '':
+        LANES.remove_root_image(LANES.run_command)
+    for item in items:
+        residue = LANES.run_command(['docker', 'ps', '-aq', '--filter', f'name={item.name}'], check=False)
+        volumes = LANES.run_command(['docker', 'volume', 'ls', '-q', '--filter', f'name={item.name}'], check=False)
+        assert residue.stdout.strip() == ''
+        assert volumes.stdout.strip() == ''
+    if created_root and users.stdout.strip() == '':
+        assert _root_image_present() is False
+
+
+def _lane(work: Path, index: int, campaign: str):
+    item = LANES.Lane(index=index, campaign=campaign, root=work / f'lane-{index}',
                       home=Path.home(), uid=os.getuid(), gid=os.getgid())
     item.repository.mkdir(parents=True)
     item.output.mkdir(parents=True)
+    return item
+
+
+def test_lanes_cannot_change_the_shared_image_cache(tmp_path: Path) -> None:
+    """Two lanes of one campaign can read the shared cache and cannot modify it."""
+    work = tmp_path / 'cache-proof'
+    cache = work / 'image-cache'
+    cache.mkdir(parents=True)
+    marker = cache / 'marker'
+    marker.write_text('sealed\n', encoding='utf-8')
+    campaign = LANES.campaign_id(HEAD, time.time_ns())
+    items = [_lane(work, 1, campaign), _lane(work, 2, campaign)]
+    created_root = not _root_image_present()
+    try:
+        LANES.ensure_root_image(LANES.run_command, LANES.host_usr_links())
+        for item in items:
+            LANES.start_sandbox(item, [], LANES.run_command, output_root=work, readonly_mounts=[cache])
+            quoted = shlex.quote(str(marker))
+            sibling = shlex.quote(str(cache / f'lane-{item.index}.new'))
+            code, stdout, stderr = _combined(LANES.sandbox_exec_argv(
+                item, '/usr/bin:/bin', ['sh', '-c', f'printf x >> {quoted}; touch {sibling}'], {}), timeout=60)
+            assert code != 0, stdout + stderr
+            assert marker.read_text(encoding='utf-8') == 'sealed\n'
+            assert not (cache / f'lane-{item.index}.new').exists()
+            note = item.output / 'writable.txt'
+            note_code, note_out, note_err = _combined(LANES.sandbox_exec_argv(
+                item, '/usr/bin:/bin', ['sh', '-c', f'printf ok > {shlex.quote(str(note))}'], {}), timeout=60)
+            assert note_code == 0, note_out + note_err
+            assert note.read_text(encoding='utf-8') == 'ok'
+    finally:
+        _release(items, work, created_root=created_root)
+
+
+def test_transferred_image_satisfies_an_unchanged_pinned_pull(tmp_path: Path) -> None:
+    work = tmp_path / 'live-proof'
+    work.mkdir()
+    lock = work / 'services.lock.json'
+    lock.write_text(json.dumps({'services': [{'id': 'spire-agent', 'image': PIN}]}, indent=2, sort_keys=True) + '\n',
+                    encoding='utf-8')
+    cache = work / 'image-cache'
+    item = _lane(work, 1, LANES.campaign_id(HEAD, time.time_ns()))
+    created_root = not _root_image_present()
     try:
         manifest = IMAGE_CACHE.prepare_image_cache(lock, cache, LANES.run_command, timeout=180)
         assert manifest['images'][0]['status'] == 'PRESENT'
@@ -54,7 +115,7 @@ def test_transferred_image_satisfies_an_unchanged_pinned_pull() -> None:
         image_id = manifest['images'][0]['image_id']
         assert image_id == 'sha256:' + PIN.rsplit(':', 1)[1]
         LANES.ensure_root_image(LANES.run_command, LANES.host_usr_links())
-        LANES.start_sandbox(item, [], LANES.run_command, output_root=WORK)
+        LANES.start_sandbox(item, [], LANES.run_command, output_root=work, readonly_mounts=[cache])
         seeded = LANES.seed_lane_images(item, '/usr/bin:/bin', cache, lock, LANES.run_command, timeout=lambda: 180)
         assert seeded == {'loaded': ['spire-agent'], 'misses': []}
         pull = LANES.sandbox_exec_argv(item, '/usr/bin:/bin', ['docker', 'pull', PIN], {})
@@ -79,8 +140,4 @@ def test_transferred_image_satisfies_an_unchanged_pinned_pull() -> None:
         assert bad_code != 0
         assert 'Download complete' not in bad_out + bad_err
     finally:
-        LANES.run_command(['docker', 'rm', '-f', item.name], check=False)
-        LANES.run_command(['docker', 'volume', 'rm', '-f', *item.volumes], check=False)
-        shutil.rmtree(WORK, ignore_errors=True)
-        residue = LANES.run_command(['docker', 'ps', '-aq', '--filter', f'name={item.name}'], check=False)
-        assert residue.stdout.strip() == ''
+        _release([item], work, created_root=created_root)
