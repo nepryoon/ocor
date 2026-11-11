@@ -9194,3 +9194,5 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - Richiesta di verifica: `OCOR-DEV-REM-0061-42b5840f35ab-2`, repair_cycle 2, review_type REMEDIATION. Il verifier non e avviato dall'implementatore.
 - Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
 - Prossima azione: Il loop esegue la verifica indipendente OCOR-DEV-REM-0061-42b5840f35ab-2 sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94. Non ripetere la revisione preventiva. Non integrare la PR 595 prima del verdetto GO_FOR_EVIDENCE_SEAL. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 e l'ultimo ciclo di riparazione ordinario.
+
+- PR di state sync #600 aperta su governed/state-sync-rem0061-cycle2-verify-20261112. I check obbligatori non sono ancora attestati su questo HEAD.
