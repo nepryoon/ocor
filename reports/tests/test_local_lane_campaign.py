@@ -9,6 +9,10 @@ falls back to the serial suite below the measured start threshold.
 PO LOCAL-SUITE-FOUR-LANES (2026-11-07): four lanes, admitted in three levels
 (FOUR_LANE, TWO_LANE with the unchanged threshold, SERIAL); partition, union,
 supervision, results and teardown work on the lane count admitted at start.
+
+PO TMP-RESIDUI-CAMPAGNA (2026-11-11): before any lane checkout, a work directory
+on the /tmp user quota is refused when the measured lane budget does not fit;
+SIGTERM and SIGHUP remove the script-created trees and leave the result file.
 """
 from __future__ import annotations
 
@@ -16,6 +20,8 @@ import hashlib
 import importlib.util
 import io
 import json
+import signal
+import subprocess
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
@@ -2806,3 +2812,284 @@ def test_command_output_is_decoded_as_strict_utf8(check):
     assert LANES.run_command([sys.executable, '-c', 'print("SERVING")'], check=check) == LANES.CommandResult(0, 'SERVING\n')
     with pytest.raises(CAMPAIGN.CampaignError, match='UTF-8'):
         LANES.run_command([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(b"SERV\\xffING")'], check=check)
+
+
+# Measured on campaign-46835be (image cache) and the rem-0061 worktree at 2baa4aa
+# (checkout without the venv, and the venv). Tools is the published 181 MiB mount.
+TMP_IMAGE_CACHE_BYTES = 1_790_746_974
+TMP_LANE_CHECKOUT_BYTES = 1_242_693_615
+TMP_LANE_VENV_BYTES = 1_052_242_023
+TMP_LANE_TOOLS_BYTES = 181 * 1024 * 1024
+TMP_LANE_MARGIN_BYTES = 1024 ** 3
+
+
+def tmp_budget(lanes):
+    per_lane = TMP_LANE_CHECKOUT_BYTES + TMP_LANE_VENV_BYTES + TMP_LANE_TOOLS_BYTES
+    return TMP_IMAGE_CACHE_BYTES + lanes * per_lane + TMP_LANE_MARGIN_BYTES
+
+
+def tight_tmp_reading():
+    return {
+        'path': '/tmp', 'filesystem_free_bytes': 30_000_000_000, 'usrquota': True,
+        'quota': {'hard_bytes': 8_000_000_000, 'used_bytes': 7_000_000_000, 'free_bytes': 1_000_000_000},
+        'quota_error': None, 'free_bytes': 1_000_000_000,
+    }
+
+
+def patch_tmp_space(monkeypatch, reading, *, same):
+    monkeypatch.setattr(LANES, 'measure_tmp_space', lambda path=Path('/tmp'): reading, raising=False)
+    monkeypatch.setattr(LANES, '_same_device', lambda left, right: same, raising=False)
+
+
+def test_tmp_lane_budget_uses_the_measured_sizes():
+    assert LANES.TMP_IMAGE_CACHE_BYTES == TMP_IMAGE_CACHE_BYTES
+    assert LANES.TMP_LANE_CHECKOUT_BYTES == TMP_LANE_CHECKOUT_BYTES
+    assert LANES.TMP_LANE_VENV_BYTES == TMP_LANE_VENV_BYTES
+    assert LANES.TMP_LANE_TOOLS_BYTES == TMP_LANE_TOOLS_BYTES
+    assert LANES.TMP_LANE_MARGIN_BYTES == TMP_LANE_MARGIN_BYTES
+    assert LANES.tmp_lane_budget_bytes(2) == tmp_budget(2)
+    assert LANES.tmp_lane_budget_bytes(4) == tmp_budget(4)
+    with pytest.raises(CAMPAIGN.CampaignError):
+        LANES.tmp_lane_budget_bytes(3)
+
+
+def test_usrquota_follows_the_longest_mount_and_the_super_options():
+    table = (
+        '25 1 8:1 / / rw,relatime - ext4 /dev/sda1 rw\n'
+        '36 25 0:32 / /tmp rw,nosuid,nodev shared:16 - tmpfs tmpfs '
+        'rw,nosuid,nodev,size=32099836k,nr_inodes=1048576,inode64,usrquota\n'
+    )
+    assert LANES.usrquota_in_mountinfo(table, Path('/tmp')) is True
+    assert LANES.usrquota_in_mountinfo(table, Path('/tmp/ocor-verify/lane-2')) is True
+    assert LANES.usrquota_in_mountinfo(table, Path('/home/luca')) is False
+    plain = '36 25 0:32 / /tmp rw,nosuid,nodev - tmpfs tmpfs rw,nosuid,nodev,size=32099836k\n'
+    assert LANES.usrquota_in_mountinfo(plain, Path('/tmp')) is False
+    escaped = '40 25 0:33 / /tmp/lane\\040a rw,usrquota - tmpfs tmpfs rw\n'
+    assert LANES.usrquota_in_mountinfo(escaped, Path('/tmp/lane a/repo')) is True
+
+
+def test_quota_free_bytes_treats_the_hard_limit_as_kibibytes():
+    assert LANES.quota_free_bytes(25679868, 1_143_410_688, 0x3F) == 25679868 * 1024 - 1_143_410_688
+    assert LANES.quota_free_bytes(0, 10, 0x3F) is None
+    assert LANES.quota_free_bytes(10, 10 * 1024 + 5, 0x3F) == 0
+    with pytest.raises(CAMPAIGN.CampaignError, match='not valid'):
+        LANES.quota_free_bytes(1, 0, 0)
+
+
+def test_measure_tmp_space_reads_filesystem_free_and_user_quota_when_enabled():
+    reading = LANES.measure_tmp_space(Path('/tmp'))
+    assert reading['path'] == '/tmp'
+    assert type(reading['filesystem_free_bytes']) is int and reading['filesystem_free_bytes'] >= 0
+    assert reading['usrquota'] is LANES.mount_has_usrquota(Path('/tmp'))
+    if reading['usrquota']:
+        assert reading['quota_error'] is None
+        quota = reading['quota']
+        assert quota['valid'] & (LANES.QIF_BLIMITS | LANES.QIF_SPACE) == (LANES.QIF_BLIMITS | LANES.QIF_SPACE)
+        if quota['hard_kib'] == 0:
+            assert reading['free_bytes'] == reading['filesystem_free_bytes']
+        else:
+            assert quota['hard_bytes'] == quota['hard_kib'] * 1024
+            assert reading['free_bytes'] == max(0, quota['hard_bytes'] - quota['used_bytes'])
+    else:
+        assert reading['quota'] is None and reading['free_bytes'] == reading['filesystem_free_bytes']
+
+
+def test_lane_launch_refuses_when_tmp_quota_cannot_hold_the_lanes(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error']
+    assert f"free 1000000000 bytes, required {tmp_budget(2)} bytes for 2 lanes" in result['error']
+    assert 'filesystem free 30000000000 bytes' in result['error']
+    assert 'quota hard 8000000000 bytes, used 7000000000 bytes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+
+
+def test_lane_launch_refuses_when_the_tmp_user_quota_is_unreadable(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 30_000_000_000, 'usrquota': True,
+        'quota': None, 'quota_error': 'quotactl_fd failed: errno 1', 'free_bytes': None,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'tmp space is not enough' in result['error'] and 'unreadable' in result['error']
+    assert 'quotactl_fd failed: errno 1' in result['error']
+    assert f'required {tmp_budget(2)} bytes for 2 lanes' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names
+
+
+def test_lane_launch_proceeds_when_the_tmp_quota_holds_the_lanes(host_world, monkeypatch):
+    reading = tight_tmp_reading()
+    reading['free_bytes'] = 100_000_000_000
+    reading['quota'] = {'hard_bytes': 200_000_000_000, 'used_bytes': 100_000_000_000, 'free_bytes': 100_000_000_000}
+    patch_tmp_space(monkeypatch, reading, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is True and result['tmp_space']['decision'] == 'enough'
+    assert result['tmp_space']['required_bytes'] == tmp_budget(2)
+    assert result == stored_result(host_world)
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_does_not_compare_filesystem_free_when_usrquota_is_absent(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': False,
+        'quota': None, 'quota_error': None, 'free_bytes': 1,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is False and result['tmp_space']['decision'] == 'not_applicable'
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def test_lane_launch_ignores_tmp_quota_when_work_is_on_another_device(host_world, monkeypatch):
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is False and result['tmp_space']['decision'] == 'not_applicable'
+
+
+def test_serial_fallback_does_not_consult_tmp_quota(host_world, monkeypatch):
+    host_world['meminfo'].write_text(meminfo(31743008, 1000))
+
+    def boom(path=Path('/tmp')):
+        raise AssertionError(f'tmp quota consulted for {path}')
+
+    monkeypatch.setattr(LANES, 'measure_tmp_space', boom, raising=False)
+    result = execute(host_world)
+    assert result['status'] == 'SERIAL_FALLBACK'
+    assert 'tmp_space' not in result
+
+
+def test_lifecycle_refuses_before_provision_when_tmp_quota_cannot_hold_the_lanes(life_world, monkeypatch):
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=True)
+    report = lifecycle(life_world)
+    assert report['status'] == 'FAIL'
+    assert 'tmp space is not enough' in report['error']
+    assert f'required {tmp_budget(4)} bytes for 4 lanes' in report['error']
+    names = [call[0] for call in life_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'bootstrap' not in names
+
+
+def test_execute_binds_stop_signals_around_the_lanes(host_world, monkeypatch):
+    seen = {}
+
+    def bind(callback):
+        seen['callback'] = callback
+        return lambda: seen.setdefault('restored', True)
+
+    monkeypatch.setattr(LANES, 'bind_campaign_stop_signals', bind, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert seen.get('restored') is True and callable(seen.get('callback'))
+
+
+def test_stop_signal_handler_releases_then_exits():
+    calls = []
+    restore = LANES.bind_campaign_stop_signals(lambda: calls.append('go'))
+    try:
+        handler = signal.getsignal(signal.SIGTERM)
+        with pytest.raises(SystemExit) as caught:
+            handler(signal.SIGTERM, None)
+        assert caught.value.code == 128 + signal.SIGTERM
+        assert calls == ['go']
+        hangup = signal.getsignal(signal.SIGHUP)
+        with pytest.raises(SystemExit) as caught_hup:
+            hangup(signal.SIGHUP, None)
+        assert caught_hup.value.code == 128 + signal.SIGHUP
+    finally:
+        restore()
+
+
+def _lane_residue(tmp_path):
+    work = tmp_path / 'work'
+    cache = work / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    repo = work / 'lane-1' / 'repo'
+    repo.mkdir(parents=True)
+    (repo / 'f').write_text('checkout')
+    out = work / 'lane-1' / 'out'
+    out.mkdir()
+    (out / 'lane_runner.log').write_text('log\n')
+    (work / 'campaign_result.json').write_text('{}\n')
+    lane = LANES.Lane(1, 'aaaaaaaaaaaa-1', work / 'lane-1', tmp_path / 'home', 1, 1)
+    return work, cache, repo, out, lane
+
+
+def test_discard_removes_a_tmp_quota_cache_and_keeps_the_result(tmp_path):
+    work, cache, repo, out, lane = _lane_residue(tmp_path)
+    LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=True)
+    LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=True)
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+def test_discard_keeps_the_image_cache_when_work_does_not_consume_tmp_quota(tmp_path):
+    work, cache, repo, out, lane = _lane_residue(tmp_path)
+    LANES.discard_script_work_trees(work, [lane], consumes_tmp_quota=False)
+    assert cache.is_dir() and (cache / 'blob').read_text() == 'image'
+    assert not repo.exists()
+    assert (work / 'campaign_result.json').is_file() and (out / 'lane_runner.log').is_file()
+
+
+def test_a_delivered_sigterm_removes_tmp_trees_and_keeps_the_result(tmp_path):
+    work, cache, repo, out, _lane = _lane_residue(tmp_path)
+    code = (
+        'import os, signal, sys\n'
+        'from pathlib import Path\n'
+        'sys.path.insert(0, sys.argv[1])\n'
+        'import run_local_lane_campaign as lanes\n'
+        'work = Path(sys.argv[2])\n'
+        'lane = lanes.Lane(1, "aaaaaaaaaaaa-1", work / "lane-1", work / "home", 1, 1)\n'
+        'def release():\n'
+        '    lanes.discard_script_work_trees(work, [lane], consumes_tmp_quota=True)\n'
+        'lanes.bind_campaign_stop_signals(release)\n'
+        'os.kill(os.getpid(), signal.SIGTERM)\n'
+        'print("STILL_ALIVE", flush=True)\n'
+    )
+    proc = subprocess.run([sys.executable, '-c', code, str(ROOT / 'scripts'), str(work)],
+                          cwd=ROOT, capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 128 + signal.SIGTERM, proc.stderr
+    assert 'STILL_ALIVE' not in proc.stdout
+    assert not cache.exists() and not repo.exists()
+    assert (work / 'campaign_result.json').read_text() == '{}\n'
+    assert (out / 'lane_runner.log').read_text() == 'log\n'
+
+
+def test_execute_release_removes_only_a_tmp_quota_cache(host_world, monkeypatch):
+    """The release bound to SIGTERM drops the cache only when the pre-check applied."""
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'kept').write_text('archive')
+    seen = {}
+
+    def bind(callback):
+        seen['callback'] = callback
+        return lambda: seen.setdefault('restored', True)
+
+    monkeypatch.setattr(LANES, 'bind_campaign_stop_signals', bind, raising=False)
+    patch_tmp_space(monkeypatch, {
+        'path': '/tmp', 'filesystem_free_bytes': 100_000_000_000, 'usrquota': True,
+        'quota': {'hard_bytes': 200_000_000_000, 'used_bytes': 1, 'free_bytes': 100_000_000_000},
+        'quota_error': None, 'free_bytes': 100_000_000_000,
+    }, same=True)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert seen.get('restored') is True and not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+    seen['callback']()
+    assert not cache.exists()
+
+
+def test_execute_release_keeps_the_cache_when_tmp_quota_does_not_apply(host_world, monkeypatch):
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'kept').write_text('archive')
+    patch_tmp_space(monkeypatch, tight_tmp_reading(), same=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert (cache / 'kept').read_text() == 'archive'
