@@ -1,20 +1,22 @@
 {
   "assumptions": [
-    "Il verdetto OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO. I conteggi della campagna non si trasferiscono a un ciclo successivo.",
-    "Il ciclo 2 e l'ultimo ciclo di riparazione ordinario. Il ciclo 3 non e avviato.",
+    "Il verdetto OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO. I conteggi della campagna del ciclo 2 non si trasferiscono al ciclo 3.",
+    "REM-0061-REPAIR-BUDGET (2026-11-12) opzione 1 autorizza un solo ciclo 3, dal commit 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94.",
     "La PR 595 resta bozza e non si integra senza GO_FOR_EVIDENCE_SEAL.",
-    "La decision request REM-0061-REPAIR-BUDGET resta aperta. Il preambolo non contiene una sezione che la decide. Le opzioni non hanno il titolo in grassetto richiesto dal formato vigente, quindi la decisione resta al Product Owner.",
-    "Non resta altro lavoro eseguibile: OCOR-DEV-REM-0060 e NCP-U12 attendono il merge di REM-0061 e i task G6 restano sospesi."
+    "La richiesta di verifica del ciclo 3 dichiarera gli implementatori Grok Build (xAI) e Codex (OpenAI). Il verifier e di fornitore diverso da xAI e da OpenAI.",
+    "OCOR-DEV-REM-0060 e NCP-U12 attendono il merge di REM-0061. I task G6 restano sospesi."
   ],
   "base_sha": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
   "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
-  "branch": "governed/state-sync-rem0061-terminal-20261112",
+  "branch": "governed/state-sync-rem0061-cycle3-pre-20261112",
   "candidate_branch_evidence": {
     "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
     "draft_pr": 595,
-    "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
+    "head_sha": "cf3739600e1ffa59f6b332fcf915f45f6543b5d4",
     "integration": "NOT_AUTHORIZED",
-    "repair_cycle": 2,
+    "preventive_review_request_id": "OCOR-DEV-REM-0061-cf3739600e1f-pre",
+    "repair_cycle": 3,
+    "started_from": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
     "verdict": "NO_GO",
     "verdict_request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
     "verdict_sha256": "6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f"
@@ -22,7 +24,8 @@
   "changed_paths": [
     "reports/development/EXECUTION_STATE.json",
     "reports/development/ITERATION_LOG.md",
-    "reports/development/MODEL_HANDOFF.json"
+    "reports/development/MODEL_HANDOFF.json",
+    "reports/development/TERMINAL_BLOCKED_REPORT.json"
   ],
   "checkpoint_integration": {
     "branch": "governed/state-sync-rem0060-iter9-20261110",
@@ -56,12 +59,19 @@
       "output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
       "reconfirmed_at_commit": "55c3272cf1efaaa35403c89dcade965053caf2bc",
       "status": "PASS"
+    },
+    {
+      "command": "git diff --name-only 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94..cf3739600e1ffa59f6b332fcf915f45f6543b5d4 -- reports/evidence reports/assurance reports/development",
+      "executed_at_commit": "cf3739600e1ffa59f6b332fcf915f45f6543b5d4",
+      "output_sha256": "5c5e08181a50370d7f004a509ed546069e831f29b7859efeb155abf8ee23bbed",
+      "related_command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root .",
+      "status": "PASS_NO_NEW_RECORDS"
     }
   ],
   "context_manifest_sha256": "2ad43a733bb86b64de70ea15b9a34544d510c9ae57afe5958e349de4b21c5b77",
-  "current_task": "OCOR-DEV-REM-0061, ciclo 2 NO_GO, stop in attesa di REM-0061-REPAIR-BUDGET",
+  "current_task": "OCOR-DEV-REM-0061, ciclo 3, in attesa della revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre",
   "evidence_paths": [],
-  "exact_next_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Rilettura del preambolo alle 2026-11-12T02:27:03+00:00: nessuna sezione decide la richiesta (sha256 f9fe72775a4e3332943c19d88acf0321f1e20387186aece1ba588284beff5c30, mtime 2026-11-11T22:58:00+00:00). Le opzioni del file non hanno il titolo in grassetto richiesto dal formato vigente, quindi la decisione resta al Product Owner. Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Nessun altro lavoro eseguibile.",
+  "exact_next_action": "Riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre. Non avviare la suite completa prima di quell'esito. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Se il verdetto del ciclo 3 resta NO_GO non c'e un ciclo 4.",
   "full_campaign": {
     "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
     "counts": {
@@ -131,8 +141,8 @@
       "unexpected": 0
     }
   },
-  "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
-  "head_sha_role": "cycle 2 head, verdict NO_GO, not a sealed candidate",
+  "head_sha": "cf3739600e1ffa59f6b332fcf915f45f6543b5d4",
+  "head_sha_role": "cycle 3 head awaiting preventive review, not a sealed candidate",
   "historical_seal_hashes": {
     "requalified": {
       "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0057.json": {
@@ -205,8 +215,8 @@
       "xAI"
     ],
     "po_decision": "TMP-RESIDUI-CAMPAGNA (2026-11-11)",
-    "repair_cycle": 2,
-    "status": "NO_GO_REPAIR_BUDGET_EXHAUSTED"
+    "repair_cycle": 3,
+    "status": "AWAITING_PREVENTIVE_REVIEW"
   },
   "latest_ci_evidence": {
     "bad_checks": [],
@@ -268,20 +278,18 @@
     "status": "PASS_13_REQUIRED_CHECKS_EXACT_HEAD_MERGED"
   },
   "local_gate_results": {
-    "confirmation_gates_json_sha256": "220c3b620ea9f4cab44e6210f50ef27c4873235fc06bbd682c30a27a5f1ee6e1",
-    "confirmation_head": "55c3272cf1efaaa35403c89dcade965053caf2bc",
+    "confirmation_gates_json_sha256": "9423f340c352362b6ad9a7da71e1e425458c39b501d80d6c67a9d0f4ca22ac66",
+    "confirmation_head": "cf3739600e1ffa59f6b332fcf915f45f6543b5d4",
     "executed_steps": 54,
     "failed_steps": 0,
     "four_lane_suite": "NOT_STARTED",
     "pre_campaign_gate": "PASS 54/54",
-    "stdout_sha256": "d7f7ec484570c9a0ecab9e7f58641f81ebbeb0e3e2bd165b1d65bf46f345f88d"
+    "task_suite": "454 passed, 14 subtests passed, reports/tests/test_evidence_input_drift.py and reports/tests/test_local_lane_campaign.py"
   },
-  "next_task": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Rilettura del preambolo alle 2026-11-12T02:27:03+00:00: nessuna sezione decide la richiesta (sha256 f9fe72775a4e3332943c19d88acf0321f1e20387186aece1ba588284beff5c30, mtime 2026-11-11T22:58:00+00:00). Le opzioni del file non hanno il titolo in grassetto richiesto dal formato vigente, quindi la decisione resta al Product Owner. Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Nessun altro lavoro eseguibile.",
-  "phase": "REM_0061_TERMINAL_BLOCKED",
-  "po_decisions_pending": [
-    "REM-0061-REPAIR-BUDGET"
-  ],
-  "previous_exact_next_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.",
+  "next_task": "Riprendere OCOR-DEV-REM-0061 dopo la revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre. Non avviare la suite completa prima di quell'esito. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Se il verdetto del ciclo 3 resta NO_GO non c'e un ciclo 4.",
+  "phase": "REM_0061_CYCLE3_AWAITING_PREREVIEW",
+  "po_decisions_pending": [],
+  "previous_exact_next_action": "Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Rilettura del preambolo alle 2026-11-12T02:27:03+00:00: nessuna sezione decide la richiesta (sha256 f9fe72775a4e3332943c19d88acf0321f1e20387186aece1ba588284beff5c30, mtime 2026-11-11T22:58:00+00:00). Le opzioni del file non hanno il titolo in grassetto richiesto dal formato vigente, quindi la decisione resta al Product Owner. Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Nessun altro lavoro eseguibile.",
   "previous_full_campaign": {
     "attempts": 2,
     "counts_transferred": false,
@@ -474,12 +482,21 @@
         "provider": "xAI",
         "repair_cycle": 2,
         "scope": "OCOR-DEV-REM-0061 from the first iteration through repair cycle 2; no earlier implementer of this unit"
+      },
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "repair_cycle": 3,
+        "scope": "OCOR-DEV-REM-0061 repair cycle 3, VF-001 through VF-004 of verdict OCOR-DEV-REM-0061-42b5840f35ab-2"
       }
     ],
     "preventive_review_cycle_2": "OCOR-DEV-REM-0061-55c3272cf1ef-pre, BLOCKING_FINDINGS corrected before the campaign, sha256 adbe38fd2806a924527391122361b9aead8265bc89c2176d3efc20545733880e, not repeated",
+    "preventive_review_cycle_3": "OCOR-DEV-REM-0061-cf3739600e1f-pre, REQUESTED, outcome not written by the implementer",
     "preventive_reviewer": "Cursor / cursor-grok-4.6-xhigh / xAI, reserve, request OCOR-DEV-REM-0061-26d8f30c6dbd-pre, result NO_BLOCKING_FINDINGS, reviewed head 26d8f30c6dbd7ed40736bfedebb26bf6794f4d09",
     "verifier_excluded_providers": [
-      "xAI"
+      "xAI",
+      "OpenAI"
     ],
     "verifier_status": "NOT_REQUESTED_PENDING_PREVENTIVE_REVIEW"
   },
@@ -508,6 +525,6 @@
     "OCOR-DEV-REM-0061",
     "OCOR-DEV-REM-0060"
   ],
-  "updated_at": "2026-11-12T02:27:03+00:00",
+  "updated_at": "2026-11-12T05:23:15+00:00",
   "worktree": ".ocor/worktrees/state-sync-rem0061-terminal"
 }
