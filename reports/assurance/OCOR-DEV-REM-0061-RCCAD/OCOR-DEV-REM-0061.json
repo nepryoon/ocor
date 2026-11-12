@@ -46,7 +46,7 @@
     "cycle_3_rerun_status": "PASS",
     "cycle_4_command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root . --execution-commit --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
     "cycle_4_executed_at_commit": "1d36603b5119092d65ec1db79cddcf9ffe402819",
-    "cycle_4_note": "Five records changed on this branch versus the merge-base. Findings empty. REM-0037 and REM-0056 cite 1d36603, the regression commit. Their input bytes match git show of that commit and are unchanged at that HEAD. The other three records still match their declared commits. The preserved file includes the EXIT:0 line.",
+    "cycle_4_note": "Five records changed on this branch versus the merge-base. Findings empty at 1d36603b5119092d65ec1db79cddcf9ffe402819. REM-0037 and REM-0056 cited that commit. A later commit changed reports/tests/test_local_lane_campaign.py, which both records list as an input, so this check does not close the final head. The preserved file includes the EXIT:0 line.",
     "cycle_4_output_sha256": "6f8be2db9d653b11cd387787d88b1aef87e5ef6b621d5c585a93bce5bbe92a55",
     "cycle_4_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-1d36603b5119.json",
     "cycle_4_records": [
@@ -68,7 +68,23 @@
     "rerun_output_sha256": "35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c",
     "rerun_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-7bb8ee685cfc.json",
     "rerun_status": "PASS",
-    "status": "PASS"
+    "status": "PASS",
+    "cycle_4_regenerated_command": "ocor-runtime/.venv/bin/python scripts/validate_evidence_input_drift.py --root . --execution-commit --record reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json --record reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json --record reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
+    "cycle_4_regenerated_declared_head": "eae4bb6fc382db7a1f975d9d686bf3bdd527d7a8",
+    "cycle_4_regenerated_note": "REM-0037 and REM-0056 were regenerated from the regression command on eae4bb6fc382db7a1f975d9d686bf3bdd527d7a8 (642 passed, 105 subtests, raw sha256 82837ea78387bfe6c31b42f2cf8cbe249172d2e2387b51a273962b9267f369cd). Only reports/tests/test_local_lane_campaign.py changed among their inputs. The other three records still declare 83d9b74648c14a2afb14904a2a83183274ece7c9. The check was run on the worktree at eae4bb6fc382db7a1f975d9d686bf3bdd527d7a8 after the record files were rewritten and before the commit that adds them. Findings empty. No input path differs between each record's declared commit and eae4bb6fc382db7a1f975d9d686bf3bdd527d7a8. The preserved file includes the EXIT:0 line. The output digest matches the earlier empty-finding check.",
+    "cycle_4_regenerated_output_sha256": "6f8be2db9d653b11cd387787d88b1aef87e5ef6b621d5c585a93bce5bbe92a55",
+    "cycle_4_regenerated_part_b": "PASS",
+    "cycle_4_regenerated_preserved_output": "/home/luca/.ocor-codex/rem-0061/execution-digest-eae4bb6fc382.json",
+    "cycle_4_regenerated_records": [
+      "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
+      "reports/evidence/G2/OCOR-DEV-0082.requalified-rem0061.json",
+      "reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json",
+      "reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json",
+      "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json"
+    ],
+    "cycle_4_regenerated_regression_log": "/home/luca/.ocor-codex/rem-0061/regression/lane-rem0061-eae4bb6.stdout",
+    "cycle_4_regenerated_regression_sha256": "82837ea78387bfe6c31b42f2cf8cbe249172d2e2387b51a273962b9267f369cd",
+    "cycle_4_regenerated_status": "PASS"
   },
   "implementer": {
     "agent": "Grok Build",
@@ -1005,7 +1021,7 @@
     "separate_commit": false
   },
   "repair_cycle": 4,
-  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-1d36603b5119) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-1d36603b5119). Both cite commit 1d36603b5119092d65ec1db79cddcf9ffe402819, the commit on which the regression command ran (635 passed, 105 subtests, raw sha256 0f40968f0e56839015b80a8725207f2235f51f049adc80962cf2f2438ada41d4), and replace the unsealed records on the same paths that cited b22debf2e08e805db56643030b17efafdd5e4da5. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. completed_evidence_tasks does not list these two tasks, so the head drift scan does not select them.",
+  "requalifications_remaining": "None. The regression records are reports/evidence/G2/OCOR-DEV-REM-0037.requalified-rem0061.json (record_id OCOR-DEV-REM-0037-requalified-rem0061-eae4bb6fc382) and reports/evidence/G2/OCOR-DEV-REM-0056.requalified-rem0061.json (record_id OCOR-DEV-REM-0056-requalified-rem0061-eae4bb6fc382). Both cite commit eae4bb6fc382db7a1f975d9d686bf3bdd527d7a8, the commit on which the repeated regression command ran (642 passed, 105 subtests, raw sha256 82837ea78387bfe6c31b42f2cf8cbe249172d2e2387b51a273962b9267f369cd), because reports/tests/test_local_lane_campaign.py changed after 1d36603b5119092d65ec1db79cddcf9ffe402819. They replace the unsealed records on the same paths that cited b22debf2e08e805db56643030b17efafdd5e4da5 and the intermediate unsealed text that cited 1d36603b5119092d65ec1db79cddcf9ffe402819. supersedes still names the sealed predecessors OCOR-DEV-REM-0037-requalified-rem0056-de79d986d7f3 and OCOR-DEV-REM-0056-de79d986d7f3; those files are unchanged. completed_evidence_tasks does not list these two tasks, so the head drift scan does not select them.",
   "requalifications_written": [
     "reports/evidence/G0/OCOR-DEV-0005.requalified-rem0061.json",
     "reports/evidence/G5/OCOR-DEV-0050.requalified-rem0061.json",
