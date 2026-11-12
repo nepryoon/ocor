@@ -1,0 +1,356 @@
+{
+  "cell_scan": {
+    "exit_code": 0,
+    "note": "stdout_sha256 is the scan report printed before this field was written. The scan does not read this field.",
+    "script_path": "/home/luca/.ocor-codex/rem-0062/scan_self_check.py",
+    "script_sha256": "58386d0957961ea94e482670f94b0b81e62ab37403599561b54599d96e618cfe",
+    "stdout_sha256": "3d13c7853b21ab8258b6c76221f78044533a3eabef436d8af3c7b505556e2b50"
+  },
+  "claims": {
+    "E1": 0,
+    "E2": 0,
+    "PoC_GO": "NO-GO",
+    "Production_readiness": "NO-GO",
+    "Verified": 0,
+    "runtime_conformance": "NOT_ESTABLISHED"
+  },
+  "created_at": "2026-11-12T19:46:47Z",
+  "decision": "FABLE52-POST-POC-PROGRAMME (2026-11-11) point 3",
+  "execution_commit": "23920375388961d699560cd3eeb9f6c51e49dd82",
+  "full_campaign": {
+    "campaign_id": "239203753889-1794510380",
+    "collection": {
+      "collected": 5826,
+      "collected_sha256": "f382c46eadf64628aeece441309a87d632ef1094c4f8ab8df8cfb8f9adbceb5a",
+      "lane_cases": [
+        1,
+        1854,
+        2436,
+        1535
+      ],
+      "lane_estimated_seconds": [
+        1329.129,
+        1079.112,
+        1079.136,
+        1079.103
+      ],
+      "lower_bound_seconds": 1329.129,
+      "partition_sha256": "da2d8a2a4f9ec13f127a633a1a51ffbb37f189f4923f0e23115319075eac2225"
+    },
+    "counts": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5826
+    },
+    "duration_seconds": 1782.375,
+    "head": "23920375388961d699560cd3eeb9f6c51e49dd82",
+    "host_residue": {
+      "containers": [],
+      "networks": [],
+      "root_image": false,
+      "volumes": []
+    },
+    "junit_path": "/home/luca/.ocor-codex/rem-0062/campaign-239203753889/runtime_junit_post_approval.xml",
+    "junit_sha256": "5488723ce175d27fe6f3074d8a8b30f72d756a98c7f18791c72ca6ce7d48ecc4",
+    "lanes_run": 4,
+    "memory": {
+      "mem_available_kib": 55044896,
+      "mode": "FOUR_LANE"
+    },
+    "mode": "FOUR_LANE",
+    "power_end": "MAINS",
+    "power_start": "MAINS",
+    "result_path": "/home/luca/.ocor-codex/rem-0062/campaign-239203753889/campaign_result.json",
+    "result_sha256": "f0108b141764bd41350660da1f2a3ba5ce16463987305313e7bd7a15a6c74009",
+    "stack_hygiene": "Host STACK-HYGIENE reset and bootstrap were not run. Each lane used a private dockerd. The host development stack stayed down.",
+    "status": "PASS",
+    "supervision_returncodes": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0
+    },
+    "teardown": [
+      {
+        "lane": 1,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 2,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 3,
+        "sandbox_found": true,
+        "status": "PASS"
+      },
+      {
+        "lane": 4,
+        "sandbox_found": true,
+        "status": "PASS"
+      }
+    ],
+    "union": {
+      "collected": 5826,
+      "duplicated": [],
+      "executed": 5826,
+      "lanes": [
+        1,
+        1854,
+        2436,
+        1535
+      ],
+      "missing": [],
+      "unexpected": []
+    }
+  },
+  "id": "OCOR-DEV-REM-0062",
+  "implementer": {
+    "agent": "Grok Build",
+    "model": "grok-4.7",
+    "provider": "xAI"
+  },
+  "input_robustness_self_check": {
+    "residual": "No module test feeds malformed JSON, non-UTF-8 bytes, an empty object, or a null element to _load_json. Those classes stay untested. This commit does not add them.",
+    "table": [
+      {
+        "checks": {
+          "boundary_digests": "N/A: _load_json does not compute or compare digests. Digest checks of approved inputs belong to other tests.",
+          "complete_normative_records": "N/A: _load_json only requires a JSON object with string keys. Field completeness is validate_documents.",
+          "finite_numbers": "N/A: _load_json does not convert numbers. No numeric bound is applied in this function.",
+          "processes_and_resources": "N/A: _load_json reads one repository file and starts no process, container, or service.",
+          "strict_decoding": "N/A: no module test feeds malformed JSON or non-UTF-8 bytes to _load_json, so that class is not claimed PASS.",
+          "types_before_conversions": "PASS: test_real_plan_is_the_generated_plan_and_passes loads the four documents through _load_json and compares objects."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "_load_json",
+        "paths": [
+          "docs/development_plan/post_poc/*.json"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_real_plan_is_the_generated_plan_and_passes"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: load_documents does not hash files. Equality with the generated objects is the tested boundary.",
+          "complete_normative_records": "PASS: test_real_plan_is_the_generated_plan_and_passes requires the four loaded documents to equal the generated plan.",
+          "finite_numbers": "N/A: load_documents does not convert numbers. Numeric task fields are checked by later functions.",
+          "processes_and_resources": "N/A: load_documents reads four repository files and starts no process, container, or service.",
+          "strict_decoding": "N/A: no module test supplies malformed JSON, non-UTF-8, an empty object, or a null element, so those classes are not claimed PASS.",
+          "types_before_conversions": "PASS: test_real_plan_is_the_generated_plan_and_passes requires the loaded documents to equal the generated objects."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "load_documents",
+        "paths": [
+          "docs/development_plan/post_poc/OCOR_POST_POC_BACKLOG.json",
+          "docs/development_plan/post_poc/OCOR_POST_POC_DEPENDENCY_GRAPH.json",
+          "docs/development_plan/post_poc/OCOR_POST_POC_EXTERNAL_DECISIONS.json",
+          "docs/development_plan/post_poc/OCOR_POST_POC_REQUIREMENT_ALLOCATION.json"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_real_plan_is_the_generated_plan_and_passes"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: test_approved_plan_files_are_not_rewritten_by_the_builder pins the approved backlog sha256 around load_workstreams.",
+          "complete_normative_records": "PASS: test_real_plan_is_the_generated_plan_and_passes loads the approved workstream catalogue and builds the plan from it.",
+          "finite_numbers": "N/A: load_workstreams copies strings and does not convert numbers or apply a numeric bound.",
+          "processes_and_resources": "N/A: load_workstreams reads the approved backlog and starts no process, container, or service.",
+          "strict_decoding": "N/A: malformed JSON and non-UTF-8 bytes of the approved backlog have no module test, so that class is not claimed PASS.",
+          "types_before_conversions": "PASS: test_real_plan_is_the_generated_plan_and_passes and the builder pin test load the workstream map as strings."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "load_workstreams",
+        "paths": [
+          "docs/development_plan/OCOR_IMPLEMENTATION_BACKLOG.json"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_real_plan_is_the_generated_plan_and_passes",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_approved_plan_files_are_not_rewritten_by_the_builder"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: load_register does not hash the Register. This function has no digest comparison.",
+          "complete_normative_records": "PASS: test_register_matches_traceability_on_release requires 285 rows whose releases match the traceability plan.",
+          "finite_numbers": "N/A: the only integer conversion is the requirement number after a full regex match, and no test supplies a non-finite value.",
+          "processes_and_resources": "N/A: load_register reads the Register markdown and starts no process, container, or service.",
+          "strict_decoding": "PASS: identifiers must match the requirement regex before the number is converted; the register test reads all 285 rows.",
+          "types_before_conversions": "PASS: register cells stay strings until the identifier regex matches; the register test checks release alignment."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "load_register",
+        "paths": [
+          "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_register_matches_traceability_on_release",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_gate_assignment_pins",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_poc_requirement_is_rejected"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "PASS: test_approved_plan_files_are_not_rewritten_by_the_builder pins the traceability CSV sha256 and load_traceability reads that file.",
+          "complete_normative_records": "PASS: test_register_matches_traceability_on_release requires the CSV identifier set and release to match the Register.",
+          "finite_numbers": "N/A: load_traceability keeps cells as strings and does not parse numbers or numeric bounds.",
+          "processes_and_resources": "N/A: load_traceability reads one CSV and starts no process, container, or service.",
+          "strict_decoding": "PASS: test_register_matches_traceability_on_release loads CSV cells as strings and compares them with the Register.",
+          "types_before_conversions": "PASS: register_method, register_release, and workstream stay strings in the traceability test."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "load_traceability",
+        "paths": [
+          "docs/development_plan/OCOR_TRACEABILITY_PLAN.csv"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_register_matches_traceability_on_release",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_approved_plan_files_are_not_rewritten_by_the_builder"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: assign_gate does not hash inputs. It classifies a release string and a type string.",
+          "complete_normative_records": "PASS: test_gate_assignment_pins covers the governed type and release pairs used to allocate G8 through G11.",
+          "finite_numbers": "N/A: assign_gate does not parse numeric bounds. Requirement numbers are not an input of this function.",
+          "processes_and_resources": "N/A: assign_gate is a pure string classification and starts no process, container, or service.",
+          "strict_decoding": "PASS: test_gate_assignment_pins maps release and type cells to G8-G11, and the PoC release test rejects a PoC row.",
+          "types_before_conversions": "PASS: assign_gate reads string type and release cells; the pin test covers BR, FR, Funzionale, NFR, and Non funzionale."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "assign_gate",
+        "paths": [
+          "ocor-runtime/docs/governance_dossier/registers/OCOR_Requirement_Register_v1.1_APPROVED.md",
+          "docs/development_plan/OCOR_TRACEABILITY_PLAN.csv"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_gate_assignment_pins",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_poc_requirement_is_rejected"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: validate_documents does not compare file digests. It checks graph shape, allocation, and claim text.",
+          "complete_normative_records": "PASS: the missing-requirement, field, cycle, and G6 tests require complete task fields, allocation, and an acyclic graph.",
+          "finite_numbers": "N/A: validate_documents does not accept non-finite numbers. No module test supplies NaN or an out-of-range wave.",
+          "processes_and_resources": "N/A: validate_documents checks in-memory documents and starts no process, container, or service.",
+          "strict_decoding": "N/A: validate_documents receives objects that are already loaded. It does not decode bytes, so byte decoding is not claimed here.",
+          "types_before_conversions": "PASS: test_status_and_missing_field_are_rejected reports STATUS for a non-planned status and FIELD for a missing rollback procedure."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "validate_documents",
+        "paths": [
+          "docs/development_plan/post_poc/*.json"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_missing_requirement_is_rejected",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_poc_requirement_is_rejected",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_cycle_is_rejected",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_status_and_missing_field_are_rejected",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_g4_task_and_weak_g6_are_rejected",
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_prohibited_claim_and_local_path_are_rejected"
+        ]
+      },
+      {
+        "checks": {
+          "boundary_digests": "N/A: validate_repository does not compare digests. No test calls this function, so no digest result is claimed.",
+          "complete_normative_records": "N/A: no test calls validate_repository. The decision-request test reads the same file without calling this function.",
+          "finite_numbers": "N/A: validate_repository counts option headings as text lines and does not parse finite numeric bounds.",
+          "processes_and_resources": "N/A: validate_repository reads two repository texts and starts no process, container, or service.",
+          "strict_decoding": "N/A: no test calls validate_repository with malformed text. The decision-request test is not a call of this function.",
+          "types_before_conversions": "N/A: no test calls validate_repository. A text check in the decision-request test does not exercise this function."
+        },
+        "file": "scripts/validate_post_poc_plan.py",
+        "function": "validate_repository",
+        "paths": [
+          "docs/development_plan/post_poc/README.md",
+          "reports/development/decision_requests/POST-POC-BACKLOG-ACTIVATION.md"
+        ],
+        "rereads_stored_data": false,
+        "tests": [
+          "reports/tests/test_validate_post_poc_plan.py::PostPocPlanTests::test_decision_request_has_no_timing_recommendation"
+        ]
+      }
+    ],
+    "text_form_cases_tested": [
+      "CYCLE",
+      "FIELD",
+      "G4_TASK",
+      "G6_CRITERIA",
+      "LOCAL_PATH",
+      "MISSING_REQUIREMENT",
+      "POC_REQUIREMENT",
+      "PROHIBITED_CLAIM",
+      "STATUS"
+    ]
+  },
+  "pre_campaign_gate": {
+    "head": "23920375388961d699560cd3eeb9f6c51e49dd82",
+    "log": "reports/assurance/OCOR-DEV-REM-0062-RCCAD/pre-campaign.log",
+    "result": "PASS",
+    "same_fact_as_review": true
+  },
+  "preventive_review": {
+    "disposition": "The missing unit record was written after the qualifying campaign and before verification. No code change was made for the advisory.",
+    "findings_by_severity": {
+      "advisory": 1,
+      "blocking": 0
+    },
+    "outcome_sha256": "f5074a8b7c8b39b1b5d988a40c7b91eaa3aa24d83531833cd741150f114972da",
+    "request_id": "OCOR-DEV-REM-0062-239203753889-pre",
+    "result": "NO_BLOCKING_FINDINGS",
+    "reviewed_head": "23920375388961d699560cd3eeb9f6c51e49dd82",
+    "reviewer": {
+      "agent": "Cursor CLI",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "reserve": true
+    }
+  },
+  "regression": {
+    "command": "ocor-runtime/.venv/bin/python -m pytest -p no:cacheprovider -q -rfEs --tb=line ocor-runtime/tests/tasks/test_ocor_dev_0005.py ocor-runtime/tests/tasks/test_ocor_dev_0050.py ocor-runtime/tests/tasks/test_ocor_dev_0082.py",
+    "duration_seconds": 4.99,
+    "exit_code": 0,
+    "passed": 214,
+    "raw_sha256": "3e2961e0243883a02b975799c850e2ead47a61c60fc956474f9c81b1c6d54f87",
+    "skipped": 0,
+    "started_at": "2026-11-12T19:37:34Z"
+  },
+  "roles": {
+    "implementers": [
+      {
+        "agent": "Grok Build",
+        "model": "grok-4.7",
+        "provider": "xAI",
+        "scope": "OCOR-DEV-REM-0062 post-PoC plan, regression records, and this unit record"
+      }
+    ],
+    "preventive_reviewer": {
+      "agent": "Cursor CLI",
+      "model": "cursor-grok-4.6-xhigh",
+      "provider": "xAI",
+      "request_id": "OCOR-DEV-REM-0062-239203753889-pre",
+      "reserve": true,
+      "result": "NO_BLOCKING_FINDINGS"
+    },
+    "verifier_excluded_providers": [
+      "xAI"
+    ],
+    "verifier_started_by_implementer": false
+  },
+  "schema_version": "1.0",
+  "status": "PASS",
+  "task_id": "OCOR-DEV-REM-0062"
+}
