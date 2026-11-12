@@ -569,6 +569,106 @@ class CanonicalSupersessionDecodeTests(unittest.TestCase):
         current["unused"] = "\ud800"
         self._assert_unreadable_successor(json.dumps(current).encode(), "lone surrogate")
 
+    def _assert_listed_successor_fails(self, successor: bytes | None, reason: str) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            payload = b"{}" if successor is None else successor
+            _write_supersession_chain(base, payload)
+            if successor is None:
+                (base / "reports" / "evidence" / "G0" / "latest.json").unlink()
+            result = _run_validator(base)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            decoded = json.loads(result.stdout)
+            self.assertEqual("FAIL", decoded["status"])
+            self.assertTrue(
+                any(
+                    item.get("task_id") == "OCOR-DEV-0005" and reason in str(item.get("reason"))
+                    for item in decoded["findings"]
+                ),
+                decoded,
+            )
+            self.assertFalse(any(item.get("reason") == "input hash mismatch" for item in decoded["findings"]))
+
+    def test_a_missing_listed_successor_is_not_replaced_by_its_predecessor(self) -> None:
+        self._assert_listed_successor_fails(None, "record missing")
+
+    def test_an_empty_object_successor_is_not_replaced_by_its_predecessor(self) -> None:
+        self._assert_listed_successor_fails(b"{}", "record task_id is not a non-empty string")
+
+    def test_a_null_or_non_string_task_id_is_not_replaced_by_its_predecessor(self) -> None:
+        for task_id in (None, 5, True):
+            with self.subTest(task_id=task_id):
+                current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+                current["task_id"] = task_id
+                self._assert_listed_successor_fails(
+                    json.dumps(current).encode(),
+                    "record task_id is not a non-empty string",
+                )
+
+    def test_a_manifest_whose_artifacts_are_not_a_list_fails_closed(self) -> None:
+        current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_supersession_chain(base, json.dumps(current).encode() + b"\xff")
+            manifest_path = base / "reports" / "evidence" / "G0" / "MANIFEST.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["artifacts"] = None
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            result = _run_validator(base)
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            decoded = json.loads(result.stdout)
+            self.assertEqual("FAIL", decoded["status"])
+            self.assertTrue(
+                any(item.get("reason") == "manifest artifacts is not a list" for item in decoded["findings"]),
+                decoded,
+            )
+
+    def test_an_empty_or_missing_inputs_successor_does_not_pass(self) -> None:
+        cases = (
+            ("inputs is empty", {"inputs": {}}),
+            ("inputs is missing", {}),
+        )
+        for reason, override in cases:
+            with self.subTest(reason=reason):
+                current = _supersession_successor(self._previous(), {"module.py": "0" * 64})
+                current.pop("inputs")
+                current.update(override)
+                self._assert_listed_successor_fails(json.dumps(current).encode(), reason)
+
+    def test_a_sole_record_without_inputs_stays_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "reports" / "development").mkdir(parents=True)
+            evidence = base / "reports" / "evidence" / "G0"
+            evidence.mkdir(parents=True)
+            (base / "reports" / "development" / "EXECUTION_STATE.json").write_text(
+                json.dumps({"completed_evidence_tasks": ["OCOR-DEV-0001"]}) + "\n",
+                encoding="utf-8",
+            )
+            record = {
+                "created_at": "2026-01-01T00:00:00Z",
+                "record_id": "only",
+                "task_id": "OCOR-DEV-0001",
+            }
+            body = json.dumps(record).encode()
+            (evidence / "OCOR-DEV-0001.json").write_bytes(body)
+            manifest = {
+                "artifacts": [
+                    {
+                        "path": "OCOR-DEV-0001.json",
+                        "sha256": hashlib.sha256(body).hexdigest(),
+                        "task_id": "OCOR-DEV-0001",
+                    }
+                ],
+                "gate": "G0",
+            }
+            (evidence / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+            result = _run_validator(base)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
 
 def _write_object_record(base: Path, record: dict[str, object]) -> Path:
     evidence = base / "reports" / "evidence" / "G9"
