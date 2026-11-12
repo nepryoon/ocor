@@ -1,6 +1,9 @@
 # REM-0061-CYCLE3-MERIT-NO-GO
 
-Status: `OPEN_PO_DECISION_REQUIRED`. Livello: operativo. Nessun nuovo `DEC-*`.
+Status: `DECIDED_BY_PO`. Livello: operativo. Nessun nuovo `DEC-*`.
+Opzione adottata: **1**, con le precisazioni dei punti 2 e 3 della decisione
+`REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12)`. Il testo della richiesta, sopra la
+disposition, resta quello aperto al commit `6c2bb7995b29228abd700a52e986651436c4a2f6`.
 
 ## Contesto
 
@@ -118,3 +121,37 @@ Senza una decisione restano bloccati `OCOR-DEV-REM-0061` e, per la coda già dec
 `OCOR-DEV-REM-0060`. I task G6 restano sospesi come già deciso. La PR #595 non si
 integra. Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`,
 PoC e Production `NO-GO`. Nessuna modifica a `inputs/`.
+
+## Disposition
+
+`DECIDED_BY_PO` il 2026-11-12, istruzione esplicita del Product Owner, opzione 1,
+come raccomandata in questo file al commit `6c2bb7995b29228abd700a52e986651436c4a2f6`
+(sha256 `731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835`), con le
+precisazioni dei punti 2 e 3 della decisione `REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12)`.
+Dove il riassunto e questo file differiscono, vale questo file. Le precisazioni restano
+dentro i finding del verdetto e non cambiano test, gate, timer, tetti, partizioni o criteri.
+
+Il ciclo 4 è stato eseguito sul branch `governed/ocor-dev-rem-0061-lane-image-cache`,
+dall'HEAD `a65649022b29a59edece529fd40b4ef872dcba15`, senza rebase, reset o force-push.
+HEAD del ciclo: `d45161f3b86feb588b0f66d1f1b6b2729a375e6f`.
+
+Verdetto `OCOR-DEV-REM-0061-d45161f3b86f-4`: `NO_GO`. Sha256 del file
+`d36d8ac2f89ea6f2e88c22075c06d4f2f4cf0047ebdeb8b59e6a049dd82be589`. Due finding high
+bloccanti, entrambi la classe di VF-001 del verdetto di merito del ciclo 3 ancora aperta:
+VF-001, un path di manifest che non è una stringa non produce finding e il predecessore
+resta PASS; VF-002, un record elencato il cui `task_id` non coincide con quello del
+manifest e non è un task completato esce dall'indice e il predecessore resta PASS.
+VF-002, VF-003, VF-004, VF-005, VF-006 e VF-007 del verdetto
+`OCOR-DEV-REM-0061-a65649022b29-3-reassign` risultano chiusi sui controlli rieseguiti.
+ENV-001 resta fuori perimetro. La campagna FOUR_LANE del verifier sull'HEAD è PASS:
+5826 test, zero skip, zero fallimenti, unione esatta, 1770,243 s, tetto 5400 s.
+
+Verifier di riserva: Cursor, modello grok-4.7-xhigh, fornitore xAI, stesso fornitore
+dell'implementatore Grok Build (xAI). `independent_verification: SAME_VENDOR_FALLBACK`,
+riferimento `VERIFIER-CLAUDE-OPUS (2026-11-12)` punto 2 e `VERIFIER-RISERVA (2026-11-11)`.
+Il verdetto è di merito e vale. Implementatori dichiarati: Grok Build (xAI), con tutti i
+commit del branch compreso il ciclo 4, e Codex (OpenAI), senza commit sul branch.
+
+Come dice l'opzione 1: il verdetto è ancora `NO_GO`, non c'è un ciclo 5, nuova
+escalation, il task resta bloccato. La PR #595 non si integra. `OCOR-DEV-REM-0060` resta
+in coda fino al merge di `OCOR-DEV-REM-0061`. Nessun nuovo `DEC-*`. Claim invariati.

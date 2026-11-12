@@ -1,6 +1,7 @@
 # Escalation record — OCOR-DEV-REM-0061 (repair budget exhausted)
 
-- **Status**: `BLOCKED_REPAIR_BUDGET_EXHAUSTED`
+- **Status**: `BLOCKED_CYCLE4_MERIT_NO_GO_NO_CYCLE_5`
+- **Status precedente**: `BLOCKED_REPAIR_BUDGET_EXHAUSTED`, poi ciclo 4 autorizzato da `REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12)` opzione 1 e chiuso da `NO_GO`
 - **Unità**: `OCOR-DEV-REM-0061`
 - **Branch**: `governed/ocor-dev-rem-0061-lane-image-cache`
 - **HEAD del ciclo 2**: `42b5840f35ab94c3b5d53c346f2f508b7dcbbb94`
@@ -97,3 +98,22 @@ Il verdetto ha due finding high bloccanti, due medium e quattro low. La campagna
 Nessun ciclo 4 è autorizzato. L'azione minima, se una nuova decisione la autorizza, è un solo ciclo 4 limitato ai finding di `OCOR-DEV-REM-0061-a65649022b29-3-reassign`, con RED e GREEN, campagna nuova e verifica di un fornitore diverso da xAI e da OpenAI. Senza quella decisione il codice non si modifica e la PR #595 non si integra. `OCOR-DEV-REM-0060` resta in coda fino al merge di `OCOR-DEV-REM-0061`. I task G6 restano sospesi. L'adozione della PR #599 resta dopo un GO di `OCOR-DEV-REM-0061`, secondo `ADOZIONE-PR599-FABLE52 (2026-11-11)`.
 
 Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`.
+
+## 2026-11-12 — Ciclo 4 NO_GO; nessun ciclo 5
+
+La decisione `REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12)`, opzione 1, ha autorizzato un solo ciclo 4 dall'HEAD `a65649022b29a59edece529fd40b4ef872dcba15`. Il ciclo è stato eseguito. HEAD `d45161f3b86feb588b0f66d1f1b6b2729a375e6f`. Il verdetto `OCOR-DEV-REM-0061-d45161f3b86f-4` è `NO_GO`. Sha256 `d36d8ac2f89ea6f2e88c22075c06d4f2f4cf0047ebdeb8b59e6a049dd82be589`.
+
+Verifier di riserva: Cursor, modello grok-4.7-xhigh, fornitore xAI, stesso fornitore dell'implementatore Grok Build (xAI). `independent_verification: SAME_VENDOR_FALLBACK`, riferimento `VERIFIER-CLAUDE-OPUS (2026-11-12)` punto 2 e `VERIFIER-RISERVA (2026-11-11)`. Il verdetto è di merito. Codex (OpenAI) resta fra gli implementatori dichiarati e non ha commit sul branch. Implementatore del ciclo 4: Grok Build, modello grok-4.7, fornitore xAI.
+
+La campagna FOUR_LANE del verifier è PASS: 5826 test, zero skip, zero fallimenti, unione esatta, 1770,243 s, tetto 5400 s. Non chiude i finding.
+
+1. VF-001, high, bloccante, `scripts/validate_evidence_input_drift.py` riga 215. Un path di manifest che non è una stringa (null, numero, lista, booleano) è scartato senza finding. Se il successore elencato manca dal disco, il predecessore dà PASS. Il commento promette un finding per ogni path che non sia un nome nudo; il codice lo applica solo alle stringhe.
+2. VF-002, high, bloccante, `scripts/validate_evidence_input_drift.py` riga 260. Un record elencato il cui `task_id` non coincide con quello del manifest non è indicizzato sotto il `task_id` del record. Se il `task_id` del manifest non è un task completato, il finding è scartato e il predecessore dà PASS. Un digest per file errato del successore diventa così PASS del predecessore.
+
+VF-002, VF-003, VF-004, VF-005, VF-006 e VF-007 del verdetto `OCOR-DEV-REM-0061-a65649022b29-3-reassign` risultano chiusi sui controlli rieseguiti. ENV-001 resta fuori perimetro.
+
+### Azione minima di sblocco corrente
+
+Non c'è un ciclo 5. L'opzione 1 della decisione `REM-0061-CYCLE3-MERIT-NO-GO (2026-11-12)` lo esclude. Il task resta bloccato. La PR #595 non si integra. Il codice non si modifica. `OCOR-DEV-REM-0060` resta in coda fino al merge di `OCOR-DEV-REM-0061`. I task G6 restano sospesi. L'adozione della PR #599 resta dopo un GO di `OCOR-DEV-REM-0061`. Una ripresa richiede una decisione successiva del Product Owner; questa escalation non la chiede e non apre un ciclo. L'azione minima del ciclo 3, sopra, è storica: il ciclo 4 che descriveva è stato eseguito ed è `NO_GO`.
+
+Claim invariati: `E1=0`, `E2=0`, `Verified=0`, runtime `NOT_ESTABLISHED`, PoC e Production `NO-GO`. Nessun nuovo `DEC-*`.
