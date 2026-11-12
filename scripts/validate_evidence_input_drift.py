@@ -132,8 +132,23 @@ def _raw_findings(task_id: str, record: dict[str, Any], record_path: Path) -> li
     return []
 
 
+def _canonical_record_name(relative: object) -> bool:
+    """A manifest record path is one bare ``*.json`` name, never a log or a traversal."""
+    return (
+        isinstance(relative, str)
+        and relative.endswith(".json")
+        and "/" not in relative
+        and not relative.startswith(".")
+        and relative != "MANIFEST.json"
+    )
+
+
 def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], list[dict[str, Any]]]:
-    """Map a manifest-listed JSON record to its task ids. An unreadable manifest is a finding."""
+    """Map a manifest-listed JSON record to its task ids. An unreadable manifest is a finding.
+
+    A non-object artifact, or a ``*.json`` path that is not a bare name, is a finding.
+    Dropping it would leave the predecessor as a silent PASS. Log paths are not records.
+    """
     index: dict[Path, set[str]] = {}
     findings: list[dict[str, Any]] = []
     for manifest in sorted(evidence_dir.rglob("MANIFEST.json")):
@@ -157,14 +172,24 @@ def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], li
             continue
         for artifact in artifacts:
             if not isinstance(artifact, dict):
+                findings.append({
+                    "path": manifest.name,
+                    "reason": "manifest artifact is not an object",
+                    "task_id": "",
+                })
                 continue
             task_id = artifact.get("task_id")
             relative = artifact.get("path")
-            if (not isinstance(task_id, str) or not task_id or not isinstance(relative, str)
-                    or "/" in relative or relative.startswith(".") or not relative.endswith(".json")
-                    or relative == "MANIFEST.json"):
+            if isinstance(relative, str) and relative.endswith(".json") and not _canonical_record_name(relative):
+                findings.append({
+                    "path": relative,
+                    "reason": "manifest artifact path is not canonical",
+                    "task_id": task_id if isinstance(task_id, str) and task_id else "",
+                })
                 continue
-            index.setdefault((manifest.parent / relative).resolve(), set()).add(task_id)
+            if not isinstance(task_id, str) or not task_id or not _canonical_record_name(relative):
+                continue
+            index.setdefault((manifest.parent / str(relative)).resolve(), set()).add(task_id)
     return index, findings
 
 
@@ -196,15 +221,28 @@ def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[di
                 })
             continue
         record_task = data.get("task_id")
-        if isinstance(record_task, str) and record_task:
-            records.setdefault(record_task, []).append(path)
+        usable = isinstance(record_task, str) and bool(record_task)
+        if listed_tasks:
+            # CONTROL: record-task-id-matches-manifest
+            # A listed record is indexed only under a manifest task it actually names.
+            for task_id in sorted(listed_tasks):
+                if not usable:
+                    findings.append({
+                        "path": path.name,
+                        "reason": "record task_id is not a non-empty string",
+                        "task_id": task_id,
+                    })
+                elif task_id != record_task:
+                    findings.append({
+                        "path": path.name,
+                        "reason": "record task_id does not match the manifest task_id",
+                        "task_id": task_id,
+                    })
+            if usable and record_task in listed_tasks:
+                records.setdefault(str(record_task), []).append(path)
             continue
-        for task_id in sorted(listed_tasks):
-            findings.append({
-                "path": path.name,
-                "reason": "record task_id is not a non-empty string",
-                "task_id": task_id,
-            })
+        if usable:
+            records.setdefault(str(record_task), []).append(path)
     for resolved, task_ids in sorted(listed.items(), key=lambda item: str(item[0])):
         if resolved in seen:
             continue
@@ -215,6 +253,43 @@ def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[di
                 "task_id": task_id,
             })
     return records, findings
+
+
+def _per_file_digest_present(inputs: object) -> bool:
+    """True when inputs carries at least one per-file SHA-256. ``inputs_tree`` does not count."""
+    if not isinstance(inputs, dict):
+        return False
+    return any(
+        isinstance(key, str)
+        and key != "inputs_tree"
+        and isinstance(value, str)
+        and _SHA256_HEX.fullmatch(value) is not None
+        for key, value in inputs.items()
+    )
+
+
+def _unselected_created_at_findings(task_id: str, paths: Sequence[Path], selected: Path) -> list[dict[str, Any]]:
+    """CONTROL: unselected-record-created-at
+
+    A record that lost selection and has no created_at was not superseded by an
+    ordering the gate can defend. Ignoring it lets the predecessor PASS.
+    """
+    findings: list[dict[str, Any]] = []
+    for path in paths:
+        if path == selected:
+            continue
+        data, error = _read_json_object(path)
+        if error is not None or data is None:
+            continue
+        created = data.get("created_at", "")
+        if isinstance(created, str) and created:
+            continue
+        findings.append({
+            "path": path.name,
+            "reason": "unselected record has no created_at",
+            "task_id": task_id,
+        })
+    return findings
 
 
 def select_most_recent(paths: Sequence[Path]) -> Path:
@@ -456,6 +531,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             continue
         # A hollow successor must not retire another record of the same task.
         # A sole historical record without inputs stays accepted.
+        # CONTROL: per-file-digest-when-multiple
         if len(records[task_id]) > 1 and ("inputs" not in record or record.get("inputs") == {}):
             findings.append({
                 "path": "inputs",
@@ -463,6 +539,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "task_id": task_id,
             })
             continue
+        if len(records[task_id]) > 1 and isinstance(record.get("inputs"), dict) and not _per_file_digest_present(record.get("inputs")):
+            findings.append({
+                "path": "inputs",
+                "reason": "inputs has no per-file digest",
+                "task_id": task_id,
+            })
+            continue
+        findings.extend(_unselected_created_at_findings(task_id, records[task_id], record_path))
         inputs = record.get("inputs", {})
         if isinstance(inputs, dict):
             checked_inputs += sum(

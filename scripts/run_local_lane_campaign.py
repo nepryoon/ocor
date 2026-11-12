@@ -507,6 +507,56 @@ def verify_lane_tools(repository: Path) -> None:
             raise CampaignError(f"qualification tool {tool['id']} differs from its lock")
 
 
+def locked_tool_declarations(tool_bins: list[Path], lock_path: Path) -> list[dict[str, str]]:
+    """Names in a tool bin must be toolchain-lock commands and must match integrity.
+
+    The digest is the file bytes. ``read_bytes`` follows a symlink to its target.
+    An empty directory declares no tools. A missing directory, an unknown name,
+    or a different digest fails closed. Lock entries without a command, such as
+    container images, are not compared here.
+    """
+    document = load_json_document(lock_path, "toolchain lock")
+    tools = document.get("tools") if isinstance(document, dict) else None
+    if not isinstance(tools, list):
+        raise CampaignError(f"toolchain lock has no tools array: {lock_path}")
+    expected: dict[str, str] = {}
+    for item in tools:
+        if not isinstance(item, dict):
+            raise CampaignError(f"toolchain lock tool is not an object: {lock_path}")
+        command = item.get("command")
+        if not isinstance(command, str) or not command:
+            continue
+        integrity = item.get("integrity")
+        if not isinstance(integrity, str) or SHA256_HEX.fullmatch(integrity) is None:
+            raise CampaignError(f"toolchain lock integrity is not a sha256: {command}")
+        if command in expected and expected[command] != integrity:
+            raise CampaignError(f"toolchain lock repeats {command} with a different integrity")
+        expected[command] = integrity
+    declared: list[dict[str, str]] = []
+    for directory in tool_bins:
+        if not isinstance(directory, Path) or not directory.is_dir():
+            raise CampaignError(f"tool bin is not a directory: {directory}")
+        try:
+            entries = sorted(directory.iterdir(), key=lambda item: item.name)
+        except OSError as exc:
+            raise CampaignError(f"tool bin is not readable: {directory}: {exc}") from exc
+        for entry in entries:
+            command = entry.name
+            if command not in expected:
+                raise CampaignError(f"tool bin entry is not a locked command: {entry}")
+            try:
+                # CONTROL: locked-tool-digest
+                digest = hashlib.sha256(entry.read_bytes()).hexdigest()
+            except OSError as exc:
+                raise CampaignError(f"locked tool is not readable: {entry}: {exc}") from exc
+            if digest != expected[command]:
+                raise CampaignError(
+                    f"locked tool digest mismatch: {command} at {entry}: "
+                    f"sha256 {digest} is not the lock integrity {expected[command]}")
+            declared.append({"command": command, "path": str(entry), "sha256": digest})
+    return declared
+
+
 def provision_steps(lane: Lane, source: Path, head: str) -> list[tuple[list[str], Path | None]]:
     repository, sdk = lane.repository, lane.repository / "ocor-runtime/sdk/typescript"
     return [
@@ -1153,13 +1203,16 @@ def finish_lane_host(work: Path, lanes: list[Lane], paths: dict[int, str], runne
     redaction_errors: list[str] = []
     for lane in lanes:
         if redact:
-            log = lane.output / "lane_runner.log"
-            if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
-                try:
+            # CONTROL: redaction-existence-inside-try
+            # is_file raises when the output directory is not searchable. That
+            # is a redaction failure: record it and still tear the lane down.
+            try:
+                log = lane.output / "lane_runner.log"
+                if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
                     redact_lane_log(lane.repository, log)
-                except (OSError, UnicodeError, ValueError) as exc:
-                    redaction_errors.append(f"lane {lane.index} log redaction failed: {type(exc).__name__}")
-                    record["status"] = "FAIL"
+            except (OSError, UnicodeError, ValueError) as exc:
+                redaction_errors.append(f"lane {lane.index} log redaction failed: {type(exc).__name__}")
+                record["status"] = "FAIL"
         try:
             record["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
         except CampaignError as exc:
@@ -1236,6 +1289,7 @@ def lifecycle_check(work: Path, head: str, tool_bins: list[Path], runner: Runner
 
     restore_signals = bind_campaign_stop_signals(release_host)
     try:
+        report["locked_tools"] = locked_tool_declarations(tool_bins, source / "infra/toolchain.lock.json")
         space = require_tmp_space_for_lanes(work, lanes)
         report["tmp_space"] = space
         consumes_tmp_quota = bool(space["applies"])
@@ -1651,6 +1705,7 @@ def execute_campaign(work: Path, head: str, tool_bins: list[Path], selection: li
 
     restore_signals = bind_campaign_stop_signals(release_host)
     try:
+        result["locked_tools"] = locked_tool_declarations(tool_bins, source / "infra/toolchain.lock.json")
         space = require_tmp_space_for_lanes(work, count)
         result["tmp_space"] = space
         consumes_tmp_quota = bool(space["applies"])

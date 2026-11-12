@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import itertools
 import json
 import os
 import subprocess
@@ -668,6 +669,165 @@ class CanonicalSupersessionDecodeTests(unittest.TestCase):
             result = _run_validator(base)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
             self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
+
+def _apply_successor_perturbation(name: str, successor: dict[str, object], context: dict[str, object]) -> None:
+    """Mutate one listed successor. Broken supersession also drops created_at.
+
+    A later created_at would still select the successor. The class that passes
+    on the predecessor is the one where ordering cannot rescue a broken link.
+    """
+    task_id = str(successor["task_id"])
+    if name == "task_id_one_character":
+        successor["task_id"] = task_id[:-1] + ("6" if task_id[-1] != "6" else "7")
+    elif name == "supersedes_absent":
+        successor.pop("supersedes", None)
+        successor.pop("created_at", None)
+    elif name == "supersedes_empty":
+        successor["supersedes"] = ""
+        successor.pop("created_at", None)
+    elif name == "supersedes_not_listed":
+        successor["supersedes"] = "not-a-listed-record"
+        successor.pop("created_at", None)
+    elif name == "inputs_not_per_file":
+        successor["inputs"] = {"inputs_tree": "0" * 40}
+    elif name == "inputs_absent":
+        successor.pop("inputs", None)
+    elif name == "manifest_not_canonical":
+        context["manifest_path"] = "./latest.json"
+    elif name == "manifest_not_object":
+        context["manifest_entry"] = "latest.json"
+    elif name == "record_absent":
+        context["drop"] = True
+    elif name == "record_unreadable":
+        context["corrupt"] = True
+    else:
+        raise AssertionError(name)
+
+
+_SUCCESSOR_PERTURBATIONS = (
+    "task_id_one_character",
+    "supersedes_absent",
+    "supersedes_empty",
+    "supersedes_not_listed",
+    "inputs_not_per_file",
+    "inputs_absent",
+    "manifest_not_canonical",
+    "manifest_not_object",
+    "record_absent",
+    "record_unreadable",
+)
+
+
+class ListedSuccessorClassTests(unittest.TestCase):
+    """A listed successor is validated in full, or the manifest task fails.
+
+    The predecessor must not be a PASS stand-in. Perturbations and their
+    pairwise combinations are generated here, not listed by hand.
+    """
+
+    def _assert_not_predecessor_pass(self, names: tuple[str, ...], *, good_hash: bool = False) -> None:
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        bad = "0" * 64
+        successor = _supersession_successor(
+            {
+                "created_at": "2026-01-01T00:00:00Z",
+                "inputs": {"module.py": digest},
+                "record_id": "previous",
+                "task_id": "OCOR-DEV-0005",
+            },
+            {"module.py": digest if good_hash else bad},
+        )
+        context: dict[str, object] = {}
+        for name in names:
+            _apply_successor_perturbation(name, successor, context)
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            body = json.dumps(successor).encode()
+            if context.get("corrupt") is True:
+                body += b"\xff"
+            _write_supersession_chain(base, body)
+            evidence = base / "reports" / "evidence" / "G0"
+            if context.get("drop") is True:
+                (evidence / "latest.json").unlink()
+            manifest_path = evidence / "MANIFEST.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if "manifest_entry" in context:
+                manifest["artifacts"][0] = context["manifest_entry"]
+            elif "manifest_path" in context:
+                manifest["artifacts"][0]["path"] = context["manifest_path"]
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            result = _run_validator(base)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("FAIL", payload["status"], payload)
+        self.assertTrue(payload["findings"], payload)
+        self.assertTrue(
+            any(item.get("task_id") in {"", "OCOR-DEV-0005"} for item in payload["findings"]),
+            payload,
+        )
+
+    def test_a_matching_listed_successor_still_passes(self) -> None:
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        current = _supersession_successor(
+            {
+                "created_at": "2026-01-01T00:00:00Z",
+                "inputs": {"module.py": digest},
+                "record_id": "previous",
+                "task_id": "OCOR-DEV-0005",
+            },
+            {"module.py": digest},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            _write_supersession_chain(base, json.dumps(current).encode())
+            result = _run_validator(base)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("PASS", json.loads(result.stdout)["status"])
+
+    def test_each_listed_successor_perturbation_and_each_pair_refuses_the_predecessor(self) -> None:
+        names = _SUCCESSOR_PERTURBATIONS
+        cases = [(name,) for name in names]
+        cases.extend(itertools.combinations(names, 2))
+        for case in cases:
+            with self.subTest(case=case):
+                self._assert_not_predecessor_pass(case)
+
+    def test_task_id_space_case_and_a_matching_hash_do_not_pass_on_the_predecessor(self) -> None:
+        digest = hashlib.sha256(b"current input\n").hexdigest()
+        for label, task_id, good_hash in (
+            ("trailing-space", "OCOR-DEV-0005 ", False),
+            ("lowercase", "ocor-dev-0005", False),
+            ("other-task-matching-hash", "OCOR-DEV-0099", True),
+        ):
+            with self.subTest(label=label):
+                successor = _supersession_successor(
+                    {
+                        "created_at": "2026-01-01T00:00:00Z",
+                        "inputs": {"module.py": digest},
+                        "record_id": "previous",
+                        "task_id": "OCOR-DEV-0005",
+                    },
+                    {"module.py": digest if good_hash else "0" * 64},
+                )
+                successor["task_id"] = task_id
+                with tempfile.TemporaryDirectory() as tmp:
+                    base = Path(tmp)
+                    _write_supersession_chain(base, json.dumps(successor).encode())
+                    result = _run_validator(base)
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual("FAIL", payload["status"], payload)
+                self.assertTrue(
+                    any(
+                        item.get("task_id") == "OCOR-DEV-0005"
+                        and "task_id" in str(item.get("reason"))
+                        for item in payload["findings"]
+                    ),
+                    payload,
+                )
 
 
 def _write_object_record(base: Path, record: dict[str, object]) -> Path:

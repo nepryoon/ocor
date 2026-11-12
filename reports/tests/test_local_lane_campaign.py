@@ -1461,10 +1461,38 @@ def host_world(tmp_path, monkeypatch):
     return world
 
 
+_REAL_SAME_DEVICE = LANES._same_device
+
+
+def _campaign_tool_bin(world):
+    """An empty tool directory and a lock, unless the test planted its own."""
+    tool_bin = world['work'] / 'tool-bin'
+    tool_bin.mkdir(parents=True, exist_ok=True)
+    lock = world['source'] / 'infra/toolchain.lock.json'
+    if not lock.exists():
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_text('{"tools": []}\n')
+    return tool_bin
+
+
+def _call_without_host_tmp_budget(function):
+    """Ignore the host /tmp budget unless the test already replaced _same_device."""
+    replaced = LANES._same_device is _REAL_SAME_DEVICE
+    if replaced:
+        LANES._same_device = lambda left, right: False
+    try:
+        return function()
+    finally:
+        if replaced:
+            LANES._same_device = _REAL_SAME_DEVICE
+
+
 def execute(world, selection=('tests/',)):
-    return LANES.execute_campaign(world['work'], HEAD, [Path('/home/luca/.ocor-codex/impl-env/x/bin')], list(selection),
-                                  source=world['source'], runner=FakeRunner(), launcher=world['launcher'],
-                                  meminfo_path=world['meminfo'], power_root=world['power'])
+    tool_bin = _campaign_tool_bin(world)
+    return _call_without_host_tmp_budget(lambda: LANES.execute_campaign(
+        world['work'], HEAD, [tool_bin], list(selection),
+        source=world['source'], runner=FakeRunner(), launcher=world['launcher'],
+        meminfo_path=world['meminfo'], power_root=world['power']))
 
 
 def stored_result(world):
@@ -1730,9 +1758,11 @@ def test_temporal_observation_is_bounded(tmp_path):
 
 
 def lifecycle(world, runner=None, *, lanes=4):
-    return LANES.lifecycle_check(world['work'], HEAD, [Path('/home/luca/.ocor-codex/impl-env/x/bin')], runner or temporal_runner(),
-                                 source=world['source'], launcher=world['bootstrap_launcher'], meminfo_path=world['meminfo'],
-                                 wall=lambda: SERVING_WALL, sleep=lambda seconds: None, lanes=lanes)
+    tool_bin = _campaign_tool_bin(world)
+    return _call_without_host_tmp_budget(lambda: LANES.lifecycle_check(
+        world['work'], HEAD, [tool_bin], runner or temporal_runner(),
+        source=world['source'], launcher=world['bootstrap_launcher'], meminfo_path=world['meminfo'],
+        wall=lambda: SERVING_WALL, sleep=lambda seconds: None, lanes=lanes))
 
 
 @pytest.fixture
@@ -1862,9 +1892,11 @@ def test_lifecycle_check_kills_every_running_bootstrap_when_the_wait_fails(life_
         calls['n'] += 1
         if calls['n'] > 2:
             raise OSError('host clock unavailable')
-    report = LANES.lifecycle_check(life_world['work'], HEAD, [Path('/x/bin')], temporal_runner(serving=False), source=life_world['source'],
-                                   launcher=life_world['bootstrap_launcher'], meminfo_path=life_world['meminfo'],
-                                   wall=lambda: SERVING_WALL, sleep=failing_sleep, lanes=4)
+    tool_bin = _campaign_tool_bin(life_world)
+    report = _call_without_host_tmp_budget(lambda: LANES.lifecycle_check(
+        life_world['work'], HEAD, [tool_bin], temporal_runner(serving=False), source=life_world['source'],
+        launcher=life_world['bootstrap_launcher'], meminfo_path=life_world['meminfo'],
+        wall=lambda: SERVING_WALL, sleep=failing_sleep, lanes=4))
     assert report['status'] == 'FAIL' and 'host clock unavailable' in report['error']
     assert all(process.killed for process in stuck)
     assert [call[0] for call in life_world['calls']].count('teardown') == 4
@@ -3102,6 +3134,93 @@ def test_lane_launch_ignores_tmp_quota_when_work_is_on_another_device(host_world
     assert result['tmp_space']['applies'] is False and result['tmp_space']['decision'] == 'not_applicable'
 
 
+def test_unpatched_lane_launch_does_not_apply_a_short_host_tmp_budget(host_world, monkeypatch):
+    """VF-005: a test that does not replace _same_device must not fail on the host quota."""
+    monkeypatch.setattr(LANES, 'measure_tmp_space', lambda path=Path('/tmp'): {
+        'path': '/tmp', 'filesystem_free_bytes': 1, 'usrquota': True,
+        'quota': {'hard_kib': 1, 'hard_bytes': 1, 'used_bytes': 0, 'free_bytes': 1},
+        'quota_error': None, 'free_bytes': 1,
+    }, raising=False)
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['tmp_space']['applies'] is False
+    assert result['tmp_space']['decision'] == 'not_applicable'
+    assert 'prepare_image_cache' in [call[0] for call in host_world['calls']]
+
+
+def _write_tool_lock(directory, tools):
+    path = directory / 'toolchain.lock.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({'tools': tools}, indent=2, sort_keys=True) + '\n')
+    return path
+
+
+def test_locked_tool_declarations_refuse_a_digest_that_is_not_the_lock(tmp_path):
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    payload = b'not-the-lock\n'
+    (tool_bin / 'uv').write_bytes(payload)
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'b' * 64}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='digest mismatch'):
+        LANES.locked_tool_declarations([tool_bin], lock)
+
+
+def test_locked_tool_declarations_record_a_matching_symlink_target(tmp_path):
+    payload = b'locked-uv\n'
+    target = tmp_path / 'real-uv'
+    target.write_bytes(payload)
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    (tool_bin / 'uv').symlink_to(target)
+    digest = hashlib.sha256(payload).hexdigest()
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': digest}, {'id': 'java', 'integrity': 'c' * 64}])
+    declared = LANES.locked_tool_declarations([tool_bin], lock)
+    assert declared == [{'command': 'uv', 'path': str(tool_bin / 'uv'), 'sha256': digest}]
+
+
+def test_locked_tool_declarations_accept_an_empty_directory(tmp_path):
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'a' * 64}])
+    assert LANES.locked_tool_declarations([tool_bin], lock) == []
+
+
+def test_locked_tool_declarations_refuse_a_missing_directory_and_an_unknown_name(tmp_path):
+    lock = _write_tool_lock(tmp_path, [{'command': 'uv', 'integrity': 'a' * 64}])
+    with pytest.raises(CAMPAIGN.CampaignError, match='not a directory'):
+        LANES.locked_tool_declarations([tmp_path / 'missing'], lock)
+    tool_bin = tmp_path / 'bin'
+    tool_bin.mkdir()
+    (tool_bin / 'not-locked').write_bytes(b'x')
+    with pytest.raises(CAMPAIGN.CampaignError, match='not a locked command'):
+        LANES.locked_tool_declarations([tool_bin], lock)
+
+
+def test_execute_refuses_a_tool_bin_digest_before_provision(host_world):
+    tool_bin = host_world['work'] / 'tool-bin'
+    tool_bin.mkdir(parents=True)
+    (tool_bin / 'uv').write_bytes(b'wrong\n')
+    _write_tool_lock(host_world['source'] / 'infra', [{'command': 'uv', 'integrity': 'b' * 64}])
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'FAIL'
+    assert 'digest mismatch' in result['error']
+    names = [call[0] for call in host_world['calls']]
+    assert 'prepare_image_cache' not in names and 'provision' not in names and 'root_image' not in names
+    assert (host_world['work'] / 'campaign_result.json').is_file()
+
+
+def test_execute_records_a_locked_tool_whose_digest_matches(host_world):
+    payload = b'locked-uv\n'
+    tool_bin = host_world['work'] / 'tool-bin'
+    tool_bin.mkdir(parents=True)
+    (tool_bin / 'uv').write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+    _write_tool_lock(host_world['source'] / 'infra', [{'command': 'uv', 'integrity': digest}])
+    result = execute(host_world, selection=nodes())
+    assert result['status'] == 'PASS', result.get('error')
+    assert result['locked_tools'] == [{'command': 'uv', 'path': str(tool_bin / 'uv'), 'sha256': digest}]
+
+
 def test_serial_fallback_does_not_consult_tmp_quota(host_world, monkeypatch):
     host_world['meminfo'].write_text(meminfo(31743008, 1000))
 
@@ -3386,3 +3505,42 @@ def test_a_redactor_io_error_does_not_skip_teardown_or_expose_the_secret(host_wo
     log = host_world['work'] / 'lane-1' / 'out' / 'lane_runner.log'
     assert log.is_file()
     assert _LANE_SECRET.encode() not in log.read_bytes()
+
+
+def test_an_unsearchable_lane_output_does_not_skip_teardown(host_world, monkeypatch):
+    """VF-003: mode 000 on a lane output directory is a redaction error, not a skipped teardown."""
+    cache = host_world['work'] / 'image-cache'
+    cache.mkdir(parents=True)
+    (cache / 'blob').write_text('image')
+    _enough_tmp(monkeypatch, usrquota=False)
+    output = {}
+    real = host_world['launcher']
+
+    def launcher(argv, log):
+        process = real(argv, log)
+        index = int(argv[argv.index('--run-lane') + 1].split('/lane-')[-1].split('/')[0])
+        if index != 1:
+            return process
+        item = next(entry for entry in host_world['lanes'] if entry.index == index)
+        (item.repository / '.ocor').mkdir(parents=True, exist_ok=True)
+        (item.repository / '.ocor/bootstrap.env').write_text(
+            f'OCOR_LOCAL_POSTGRES_PASSWORD={_LANE_SECRET}\n')
+        log.write_bytes(b'password ' + _LANE_SECRET.encode() + b'\n')
+        output['dir'] = item.output
+        item.output.chmod(0)
+        return process
+
+    host_world['launcher'] = launcher
+    try:
+        result = execute(host_world, selection=nodes())
+    finally:
+        if output.get('dir') is not None:
+            output['dir'].chmod(0o755)
+    rendered = json.dumps(result)
+    assert result['status'] == 'FAIL'
+    assert 'PermissionError' in result['error']
+    assert _LANE_SECRET not in rendered
+    assert [call[0] for call in host_world['calls']].count('teardown') == 2
+    assert 'remove_root_image' in [call[0] for call in host_world['calls']]
+    assert not cache.exists()
+    assert (host_world['work'] / 'campaign_result.json').is_file()
