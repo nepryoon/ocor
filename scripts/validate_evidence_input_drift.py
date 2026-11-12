@@ -132,9 +132,41 @@ def _raw_findings(task_id: str, record: dict[str, Any], record_path: Path) -> li
     return []
 
 
-def discover_records(evidence_dir: Path) -> dict[str, list[Path]]:
-    """Index every canonical evidence record by ``task_id``."""
+def _manifest_record_tasks(evidence_dir: Path) -> tuple[dict[Path, set[str]], list[dict[str, Any]]]:
+    """Map a manifest-listed JSON record to its task ids. An unreadable manifest is a finding."""
+    index: dict[Path, set[str]] = {}
+    findings: list[dict[str, Any]] = []
+    for manifest in sorted(evidence_dir.rglob("MANIFEST.json")):
+        if _EXCLUDED_PARTS & set(manifest.parts):
+            continue
+        data, error = _read_json_object(manifest)
+        if error is not None or data is None:
+            findings.append({
+                "path": manifest.name,
+                "reason": f"manifest unreadable: {error}",
+                "task_id": "",
+            })
+            continue
+        artifacts = data.get("artifacts")
+        if not isinstance(artifacts, list):
+            continue
+        for artifact in artifacts:
+            if not isinstance(artifact, dict):
+                continue
+            task_id = artifact.get("task_id")
+            relative = artifact.get("path")
+            if (not isinstance(task_id, str) or not task_id or not isinstance(relative, str)
+                    or "/" in relative or relative.startswith(".") or not relative.endswith(".json")
+                    or relative == "MANIFEST.json"):
+                continue
+            index.setdefault((manifest.parent / relative).resolve(), set()).add(task_id)
+    return index, findings
+
+
+def discover_records(evidence_dir: Path) -> tuple[dict[str, list[Path]], list[dict[str, Any]]]:
+    """Index canonical evidence records. Decode errors of manifest-listed records are findings."""
     records: dict[str, list[Path]] = {}
+    listed, findings = _manifest_record_tasks(evidence_dir)
     for path in sorted(evidence_dir.rglob("*.json")):
         if path.name == "MANIFEST.json":
             continue
@@ -142,11 +174,17 @@ def discover_records(evidence_dir: Path) -> dict[str, list[Path]]:
             continue
         data, error = _read_json_object(path)
         if error is not None or data is None:
+            for task_id in sorted(listed.get(path.resolve(), ())):
+                findings.append({
+                    "path": path.name,
+                    "reason": f"record unreadable: {error}",
+                    "task_id": task_id,
+                })
             continue
         task_id = data.get("task_id")
         if isinstance(task_id, str) and task_id:
             records.setdefault(task_id, []).append(path)
-    return records
+    return records, findings
 
 
 def select_most_recent(paths: Sequence[Path]) -> Path:
@@ -157,14 +195,19 @@ def select_most_recent(paths: Sequence[Path]) -> Path:
     identifier of another record supersedes it; the most recent record is the one
     that is not referenced by any ``supersedes`` value. Records lacking an explicit
     identifier fall back to their path so the selection stays deterministic.
+    An unreadable record is not treated as empty: that would let a predecessor
+    stand in for a successor the gate could not read.
     """
     if len(paths) == 1:
+        data, error = _read_json_object(paths[0])
+        if error is not None or data is None:
+            raise ValueError(f"record unreadable: {error}")
         return paths[0]
     entries: list[tuple[str, dict[str, Any], Path]] = []
     for path in paths:
         data, error = _read_json_object(path)
         if error is not None or data is None:
-            data = {}
+            raise ValueError(f"record unreadable: {error}")
         ident = data.get("record_id") or data.get("commit") or str(path)
         entries.append((str(ident), data, path))
     superseded = {
@@ -354,17 +397,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     completed = state.get("completed_evidence_tasks", [])
-    records = discover_records(evidence_dir)
+    records, decode_findings = discover_records(evidence_dir)
+    blocked = {str(item["task_id"]) for item in decode_findings if item.get("task_id")}
 
     findings: list[dict[str, Any]] = []
     checked_tasks = 0
     checked_inputs = 0
     missing_record_tasks: list[str] = []
     for task_id in sorted(set(completed)):
+        if task_id in blocked:
+            findings.extend(item for item in decode_findings if item.get("task_id") == task_id)
+            continue
         if task_id not in records:
             missing_record_tasks.append(task_id)
             continue
-        record_path = select_most_recent(records[task_id])
+        try:
+            record_path = select_most_recent(records[task_id])
+        except ValueError as exc:
+            findings.append({"path": None, "reason": str(exc), "task_id": task_id})
+            continue
         record, error = _read_json_object(record_path)
         if error is not None or record is None:
             findings.append({
@@ -383,6 +434,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     for task_id in missing_record_tasks:
         findings.append({"task_id": task_id, "path": None, "reason": "no evidence record found"})
+    findings.extend(item for item in decode_findings if not item.get("task_id"))
 
     drifted_tasks = sorted({str(f["task_id"]) for f in findings})
     payload = {

@@ -21,13 +21,13 @@ the CI parts and the verifier procedure keep their behaviour.
   at the same absolute path. The stack keeps its default names and ports
   (ocor-bootstrap, ocor-poc, 127.0.0.1) because daemon and network are private;
   every lane uses a sandbox, so the host daemon's development stack is untouched.
-- Before provisioning, a work directory on the /tmp user quota is refused when
-  the measured lane budget does not fit. Filesystem free space is not that
-  quota. An unset hard limit is unlimited: it is not copied into the admission
-  figure and it is not refused from the filesystem figure. An unreadable quota
-  and a finite quota that is short still refuse. SIGTERM and SIGHUP run the
-  same teardown and, only in that quota case, remove the shared image cache.
-  The result file and the lane logs stay.
+- Before provisioning, a work directory on the same device as /tmp is refused
+  when filesystem free space is below the lane budget. A finite user quota on
+  that mount is a second limit. An unset hard limit removes only the quota
+  limit. An absent usrquota does not remove the filesystem limit. An unreadable
+  quota still refuses. SIGTERM and SIGHUP run the same teardown and always
+  remove the shared image cache. The result file and the lane logs stay. A
+  redaction or log-read failure is recorded and does not skip teardown.
 """
 from __future__ import annotations
 
@@ -98,7 +98,8 @@ PROVISION_TIMEOUT_SECONDS = 1200
 # TMP-RESIDUI-CAMPAGNA (2026-11-11). Image cache: campaign-46835be, 1_790_746_974
 # bytes. Checkout without its venv and the venv: rem-0061 worktree at 2baa4aa,
 # 1_242_693_615 and 1_052_242_023 bytes. Tools: the published 181 MiB mount.
-# The margin is 1 GiB. Compared with the /tmp user quota, which df does not show.
+# The margin is 1 GiB. Admission compares filesystem free space and, when the
+# hard limit is finite, the /tmp user quota. df does not show the quota.
 TMP_IMAGE_CACHE_BYTES = 1_790_746_974
 TMP_LANE_CHECKOUT_BYTES = 1_242_693_615
 TMP_LANE_VENV_BYTES = 1_052_242_023
@@ -1013,7 +1014,11 @@ def _same_device(left: Path, right: Path) -> bool:
 
 
 def require_tmp_space_for_lanes(work: Path, lanes: int) -> dict[str, Any]:
-    """Refuse before checkout when this work directory consumes a short /tmp user quota."""
+    """Refuse before checkout when /tmp cannot hold this work directory.
+
+    The filesystem limit always applies when work is on the /tmp device. A finite
+    user quota is a second limit. An unlimited quota removes only the quota limit.
+    """
     budget = tmp_lane_budget_bytes(lanes)
     reading = measure_tmp_space(Path("/tmp"))
     try:
@@ -1021,44 +1026,108 @@ def require_tmp_space_for_lanes(work: Path, lanes: int) -> dict[str, Any]:
         same = _same_device(work, Path("/tmp"))
     except OSError as exc:
         raise CampaignError(f"tmp space is not enough: work directory is not usable: {exc}") from exc
+    filesystem_free = reading.get("filesystem_free_bytes")
     record: dict[str, Any] = {
-        "path": "/tmp", "filesystem_free_bytes": reading.get("filesystem_free_bytes"),
+        "path": "/tmp", "filesystem_free_bytes": filesystem_free,
         "usrquota": bool(reading.get("usrquota")), "quota": reading.get("quota"),
         "quota_error": reading.get("quota_error"), "free_bytes": reading.get("free_bytes"),
         "lanes": lanes, "required_bytes": budget, "work": str(work),
         "applies": False, "decision": "not_applicable"}
-    if not same or not record["usrquota"]:
+    if not same:
         return record
     record["applies"] = True
+    if type(filesystem_free) is not int:
+        raise CampaignError(
+            "tmp space is not enough: filesystem free on /tmp is not a finite byte count; "
+            f"required {budget} bytes for {lanes} lanes")
     quota = record["quota"] if isinstance(record["quota"], dict) else {}
-    if record["quota_error"] is not None:
-        raise CampaignError(
-            "tmp space is not enough: user quota on /tmp is unreadable "
-            f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
-            f"filesystem free {record['filesystem_free_bytes']} bytes")
-    if quota.get("hard_kib") == 0 and quota.get("free_bytes") is None:
-        record["quota_unlimited"] = True
-        record["decision"] = "enough"
-        return record
+    quota_short = False
     free = record["free_bytes"]
-    if free is None:
-        raise CampaignError(
-            "tmp space is not enough: user quota on /tmp is unreadable "
-            f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
-            f"filesystem free {record['filesystem_free_bytes']} bytes")
-    if type(free) is not int or free < budget:
-        quota = record["quota"] if isinstance(record["quota"], dict) else {}
-        raise CampaignError(
+    if record["usrquota"]:
+        if record["quota_error"] is not None:
+            raise CampaignError(
+                "tmp space is not enough: user quota on /tmp is unreadable "
+                f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
+                f"filesystem free {filesystem_free} bytes")
+        if quota.get("hard_kib") == 0 and quota.get("free_bytes") is None:
+            record["quota_unlimited"] = True
+        elif free is None:
+            raise CampaignError(
+                "tmp space is not enough: user quota on /tmp is unreadable "
+                f"({record['quota_error']}); required {budget} bytes for {lanes} lanes; "
+                f"filesystem free {filesystem_free} bytes")
+        elif type(free) is not int or free < budget:
+            quota_short = True
+    filesystem_short = filesystem_free < budget
+    if quota_short:
+        message = (
             "tmp space is not enough: "
             f"free {free} bytes, required {budget} bytes for {lanes} lanes; "
-            f"filesystem free {record['filesystem_free_bytes']} bytes; "
+            f"filesystem free {filesystem_free} bytes; "
             f"quota hard {quota.get('hard_bytes')} bytes, used {quota.get('used_bytes')} bytes")
+        if filesystem_short:
+            message += f"; filesystem free {filesystem_free} bytes is below the required {budget} bytes"
+        raise CampaignError(message)
+    if filesystem_short:
+        if record.get("quota_unlimited"):
+            detail = "user quota on /tmp is unlimited and does not replace the filesystem limit"
+        elif not record["usrquota"]:
+            detail = "/tmp has no user quota"
+        else:
+            detail = f"quota free {free} bytes remains above the budget"
+        raise CampaignError(
+            "tmp space is not enough: "
+            f"filesystem free {filesystem_free} bytes, required {budget} bytes for {lanes} lanes; "
+            f"{detail}")
     record["decision"] = "enough"
     return record
 
 
+_PEM_BLOCK = re.compile(
+    br"-----BEGIN (?:RSA |EC )?PRIVATE KEY-----.*?-----END (?:RSA |EC )?PRIVATE KEY-----",
+    re.DOTALL,
+)
+
+
+def _redact_lane_log_bytes(repository: Path, log: Path) -> None:
+    env_bytes = (repository / ".ocor/bootstrap.env").read_bytes()
+    redacted = log.read_bytes()
+    for line in env_bytes.splitlines():
+        if b"=" not in line:
+            continue
+        key, value = line.split(b"=", 1)
+        if key.endswith((b"TOKEN", b"PASSWORD")) and value:
+            redacted = redacted.replace(value, b"[REDACTED]")
+    log.write_bytes(_PEM_BLOCK.sub(b"[REDACTED PRIVATE KEY]", redacted))
+
+
+def _blank_lane_log(log: Path) -> None:
+    try:
+        log.write_bytes(b"[REDACTION FAILED]\n")
+    except OSError:
+        return
+
+
+def redact_lane_log(repository: Path, log: Path) -> None:
+    """Redact one lane log. Decode and I/O failures still remove secret bytes."""
+    try:
+        bootstrap_ci.redact_campaign_log(repository, log)
+    except UnicodeDecodeError:
+        try:
+            _redact_lane_log_bytes(repository, log)
+        except OSError:
+            _blank_lane_log(log)
+            raise
+        raise
+    except OSError:
+        _blank_lane_log(log)
+        raise
+
+
 def discard_script_work_trees(work: Path, lanes: list[Lane], *, consumes_tmp_quota: bool) -> None:
-    """Remove checkouts. Remove the image cache only when it consumed the /tmp user quota."""
+    """Remove checkouts and the run image cache. The quota flag does not keep the cache."""
+    if type(consumes_tmp_quota) is not bool:
+        raise CampaignError("consumes_tmp_quota is not a boolean")
     errors: list[str] = []
     for lane in lanes:
         try:
@@ -1066,27 +1135,31 @@ def discard_script_work_trees(work: Path, lanes: list[Lane], *, consumes_tmp_quo
                 shutil.rmtree(lane.repository)
         except OSError as exc:
             errors.append(f"lane {lane.index} checkout removal failed: {exc}")
-    if consumes_tmp_quota:
-        cache = work / "image-cache"
-        try:
-            if cache.is_dir():
-                shutil.rmtree(cache)
-            elif cache.exists():
-                cache.unlink()
-        except OSError as exc:
-            errors.append(f"image cache removal failed: {exc}")
+    cache = work / "image-cache"
+    try:
+        if cache.is_dir():
+            shutil.rmtree(cache)
+        elif cache.exists():
+            cache.unlink()
+    except OSError as exc:
+        errors.append(f"image cache removal failed: {exc}")
     if errors:
         raise CampaignError("script work removal incomplete: " + "; ".join(errors))
 
 
 def finish_lane_host(work: Path, lanes: list[Lane], paths: dict[int, str], runner: Runner, record: dict[str, Any],
                      campaign_name: str, *, consumes_tmp_quota: bool, redact: bool) -> None:
-    """One teardown pass: sandboxes, checkouts, residue, then a tmp-quota image cache."""
+    """One teardown pass. Redaction failures are recorded and do not skip release."""
+    redaction_errors: list[str] = []
     for lane in lanes:
         if redact:
             log = lane.output / "lane_runner.log"
             if log.is_file() and (lane.repository / ".ocor/bootstrap.env").is_file():
-                bootstrap_ci.redact_campaign_log(lane.repository, log)
+                try:
+                    redact_lane_log(lane.repository, log)
+                except (OSError, UnicodeError, ValueError) as exc:
+                    redaction_errors.append(f"lane {lane.index} log redaction failed: {type(exc).__name__}")
+                    record["status"] = "FAIL"
         try:
             record["teardown"].append(teardown_lane(lane, paths[lane.index], runner))
         except CampaignError as exc:
@@ -1103,6 +1176,11 @@ def finish_lane_host(work: Path, lanes: list[Lane], paths: dict[int, str], runne
     except CampaignError as exc:
         record["work_removal"] = {"status": "FAIL", "error": str(exc)}
         record["status"] = "FAIL"
+    if redaction_errors:
+        record["redaction"] = {"status": "FAIL", "errors": redaction_errors}
+        note = "; ".join(redaction_errors)
+        previous = record.get("error")
+        record["error"] = f"{previous}; {note}" if isinstance(previous, str) and previous else note
 
 
 def bind_campaign_stop_signals(callback: Callable[[], None]) -> Callable[[], None]:
