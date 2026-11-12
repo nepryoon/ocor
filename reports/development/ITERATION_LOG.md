@@ -9181,3 +9181,26 @@ Il primo candidato non ancora sottoposto al verifier, `2d146fb905cd23b7b21504e28
 - La PR di stato #597 resta bozza e non va integrata: la sua next action attende ancora il verdetto del ciclo 1.
 
 - PR di state sync #598 aperta su governed/state-sync-rem0061-cycle2-pre-20261111. I check obbligatori non sono ancora attestati su questo HEAD. Registrato alle 2026-11-11T13:38:15.561039+00:00.
+
+## 2026-11-11T23:59:11.786649+00:00 — OCOR-DEV-REM-0061 ciclo 2: correzione del controllo digest, campagna e richiesta di verifica
+
+- Implementatore: Grok Build grok-4.7 (xAI). Revisore preventivo di riserva: Cursor cursor-grok-4.6-xhigh (xAI). Verifier previsto: non xAI.
+- Revisione preventiva `OCOR-DEV-REM-0061-55c3272cf1ef-pre`: `BLOCKING_FINDINGS` (1 bloccante, 2 consultivi), sha256 dell'esito `adbe38fd2806a924527391122361b9aead8265bc89c2176d3efc20545733880e`. Non e ripetuta.
+- Il bloccante e accettato e corretto: un digest malformato nel controllo del commit di esecuzione e un finding prima del confronto. Test RED `9160bc0873ab66e63a253e215adf6864a6db911a`, fix `ed3d5b463881dedf1dd6c994e776e0a2689db932`. I due consultivi sono accettati: scansione di autocontrollo ripetuta su `18e76b0c1e3cbaedca6ed083f9201b0a248258f9`; gate e README aggiornati.
+- PRE-CAMPAIGN-GATE su `7bb8ee685cfcea053444e78a393f098c47d76172`: 54 passi, zero fallimenti. gates.json sha256 `eccb3ee798c7acf62955a0792e5f857c3ebcc4a22523582a99c7a172d3d1bd5a`.
+- Campagna a quattro corsie PASS sullo stesso head: 5826 test, zero skip, unione esatta, cache in sola lettura, 14 immagini, teardown PASS, residuo host vuoto, 1770,213 s. Risultato sha256 `db8c68c061a9cb008e1476b6391c9557700695ea8d214d20aa57efd055a92ab1`. Alimentazione MAINS. Le campagne del ciclo 1 non qualificano questo head.
+- Controllo dei digest di esecuzione: PASS, 5 record, findings vuoti, stdout sha256 `35f87442e05679f150ff4c08bb1ba9781ae9d7da7bb582755e683ae20b363b9c`.
+- Head pubblicato del candidato: `42b5840f35ab94c3b5d53c346f2f508b7dcbbb94`, branch `governed/ocor-dev-rem-0061-lane-image-cache`, PR bozza #595 non integrata.
+- Richiesta di verifica: `OCOR-DEV-REM-0061-42b5840f35ab-2`, repair_cycle 2, review_type REMEDIATION. Il verifier non e avviato dall'implementatore.
+- Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO.
+- Prossima azione registrata in quel momento: il loop esegue la verifica indipendente. Questa voce e storica. La PR di stato #600, che la conteneva, non e integrata: `tooling-policy` ha rifiutato JSON non canonico e il verdetto successivo la supera.
+
+## 2026-11-12T00:43:45.863461+00:00 — OCOR-DEV-REM-0061 ciclo 2: NO_GO, budget di riparazione esaurito
+
+- Esecutore di questa registrazione: Grok Build, modello grok-4.7, fornitore xAI. Implementatore del ciclo 2. Revisore preventivo del ciclo: Cursor / cursor-grok-4.6-xhigh / xAI. Verifier del ciclo 2: Codex / OpenAI, non avviato dall'implementatore. Codex e contato fra gli implementatori. I fornitori esclusi da un eventuale verifier del ciclo 3 sono xAI e OpenAI.
+- Verdetto `OCOR-DEV-REM-0061-42b5840f35ab-2`: NO_GO sull'head `42b5840f35ab94c3b5d53c346f2f508b7dcbbb94`. Finding high bloccanti: VF-001 filesystem e quota, VF-002 cache non rimossa, VF-003 teardown saltato dopo errore di redazione, VF-004 record illeggibile accettato dal gate dei digest. Sha256 del verdetto `6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f`. La campagna del verifier e PASS e non chiude i finding.
+- Il ciclo 2 e il secondo ciclo di riparazione e l'ultimo del budget ordinario. Il ciclo 3 non e avviato. La PR #595 non si integra.
+- Record di escalation e decision request operativa, commit `f5f7656e17c656e9505b3b65d983abb5a3aba857`, branch `governed/decision-request-rem0061-repair-budget`, PR #601 bozza e non da integrare perche i due percorsi non sono nell'allowlist del piano. Escalation sha256 `3dbb1536dd7b63723d3f877485352d0d10819e974c90e706fd56697ce23d077c`. Request sha256 `362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1`.
+- La PR di stato #600 e superata da questa registrazione e non va integrata.
+- Claim invariati: E1=0, E2=0, Verified=0, runtime NOT_ESTABLISHED, PoC e Production NO-GO. Nessun nuovo DEC.
+- Prossima azione: Attendere la decisione del PO su REM-0061-REPAIR-BUDGET (branch governed/decision-request-rem0061-repair-budget, commit f5f7656e17c656e9505b3b65d983abb5a3aba857, path reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md, sha256 362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1, PR #601 bozza e non da integrare). Non avviare il ciclo 3. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061. Il ciclo 2 ha esaurito il budget ordinario di riparazione.
