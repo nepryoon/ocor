@@ -4,7 +4,7 @@
     "assignment_verdict_scope": "ASSIGNMENT_ONLY_TECHNICAL_CONTROLS_NOT_EXECUTED",
     "assignment_verdict_sha256": "7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713",
     "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
-    "branch": "governed/state-sync-rem0061-cycle3-reassign-20261112",
+    "branch": "governed/state-sync-rem0061-cycle3-merit-nogo-20261112",
     "campaign_background_processes_remaining": false,
     "change_set": "OCOR-DEV-REM-0061",
     "executor": "Grok Build grok-4.7 / xAI",
@@ -19,22 +19,25 @@
       "MemAvailable": 54854384,
       "MemTotal": 64199668
     },
-    "next_action": "Il verdetto OCOR-DEV-REM-0061-a65649022b29-3 e NO_GO solo per conflitto di assegnazione (verifier Codex / OpenAI, escluso; controlli tecnici NOT_EXECUTED). Non giudica il codice del ciclo 3 e non apre il ciclo 4. La verifica di merito va riassegnata a Claude Code con Claude Fable 5.2, effort max, richiesta nuova OCOR-DEV-REM-0061-a65649022b29-3-reassign sullo stesso head a65649022b29a59edece529fd40b4ef872dcba15. La richiesta non e ancora scritta: va messa in ~/.ocor-codex/verify_request.json solo dopo un preflight di quel modello che risponde. Non inviarla mentre Claude e al limite di sessione, perche la catena selezionerebbe di nuovo Codex. All'invio, .impl_actual deve elencare anche codex cosi la sezione Ruoli dichiara Grok Build (xAI) e Codex (OpenAI); non modificare ocor-loop2.sh. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061.",
-    "phase": "REM_0061_CYCLE3_AWAITING_REASSIGNED_VERIFICATION",
+    "merit_verdict": "NO_GO",
+    "merit_verdict_request_id": "OCOR-DEV-REM-0061-a65649022b29-3-reassign",
+    "merit_verdict_sha256": "4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6",
+    "next_action": "Attendere la decisione sulla richiesta REM-0061-CYCLE3-MERIT-NO-GO (branch governed/decision-request-rem0061-cycle3-merit-nogo, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, path reports/development/decision_requests/REM-0061-CYCLE3-MERIT-NO-GO.md, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare: i percorsi non sono nell'allowlist del piano). Il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6. REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060, NCP-U12 ne l'adozione della PR 599 prima di quella decisione. Nessun altro lavoro eseguibile.",
+    "phase": "REM_0061_CYCLE3_MERIT_NO_GO_BLOCKED",
     "preventive_review_request_id": "OCOR-DEV-REM-0061-cf3739600e1f-pre",
     "preventive_review_result": "BLOCKING_FINDINGS",
     "preventive_review_sha256": "d71bd093f83c9e6b3f1d8f71f8d8aa8adbeb57b6218e627c9591fce444881567",
     "qualifying_campaign_head": "8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa",
     "qualifying_campaign_note": "Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa: 5826 test, zero skip, unione esatta, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe. Non sigilla l'head a65649022b29a59edece529fd40b4ef872dcba15: i commit dopo il codice sono solo documentazione. Non e un sigillo di evidenza.",
     "reassignment_request_id": "OCOR-DEV-REM-0061-a65649022b29-3-reassign",
-    "reassignment_request_status": "NOT_SUBMITTED_PENDING_CLAUDE_PREFLIGHT",
+    "reassignment_request_status": "VERDICT_NO_GO",
     "repair_cycle": 3,
     "stack_at_sync": "NOT_RUNNING, 0 container",
     "started_at": "2026-11-12T09:09:44+00:00",
     "state_sync_pr": null,
     "unit": "OCOR-DEV-REM-0061",
     "unit_head": "a65649022b29a59edece529fd40b4ef872dcba15",
-    "verification_request_id": null
+    "verification_request_id": "OCOR-DEV-REM-0061-a65649022b29-3-reassign"
   },
   "backlog_escalations": {
     "OCOR-DEV-0048": {
@@ -1769,23 +1772,33 @@
         "scope": "ASSIGNMENT_ONLY_TECHNICAL_CONTROLS_NOT_EXECUTED",
         "sha256": "7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713"
       },
-      "cycle3_note": "I due cicli ordinari restano esauriti dal NO_GO di merito del ciclo 2. Il ciclo 3 e quello autorizzato da REM-0061-REPAIR-BUDGET e non e chiuso da questo NO_GO di assegnazione.",
+      "cycle3_merit_verdict": {
+        "head_sha": "a65649022b29a59edece529fd40b4ef872dcba15",
+        "request_id": "OCOR-DEV-REM-0061-a65649022b29-3-reassign",
+        "result": "NO_GO",
+        "sha256": "4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6",
+        "verifier": "Claude Code / claude-opus-5-5 / Anthropic"
+      },
+      "cycle3_note": "Il ciclo 3 autorizzato da REM-0061-REPAIR-BUDGET e chiuso da NO_GO di merito. Il NO_GO di sola assegnazione non consuma il ciclo. Non c'e un ciclo 4.",
       "cycles_exhausted": 2,
       "decision_request": "reports/development/decision_requests/REM-0061-REPAIR-BUDGET.md",
       "decision_request_commit": "f5f7656e17c656e9505b3b65d983abb5a3aba857",
+      "decision_request_cycle3": "reports/development/decision_requests/REM-0061-CYCLE3-MERIT-NO-GO.md",
+      "decision_request_cycle3_commit": "6c2bb7995b29228abd700a52e986651436c4a2f6",
+      "decision_request_cycle3_sha256": "731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835",
       "decision_request_sha256": "362d0695bb8418c3437bdf99750d1e992a3d84032d4244936445ff83a80169d1",
       "escalation_record": "reports/development/OCOR_DEV_REM_0061_ESCALATION.md",
-      "escalation_record_commit": "f5f7656e17c656e9505b3b65d983abb5a3aba857",
-      "escalation_record_sha256": "3dbb1536dd7b63723d3f877485352d0d10819e974c90e706fd56697ce23d077c",
+      "escalation_record_commit": "6c2bb7995b29228abd700a52e986651436c4a2f6",
+      "escalation_record_sha256": "17b315122841ff1f83e941586e0532b8eb9004ec29b28298de6928fde8b43b8d",
       "final_verdict": {
         "head_sha": "42b5840f35ab94c3b5d53c346f2f508b7dcbbb94",
         "request_id": "OCOR-DEV-REM-0061-42b5840f35ab-2",
         "result": "NO_GO",
         "sha256": "6585d51d9f02d17d2acdedc309ada4f6f935138de9a375ef74bf2769817cae7f"
       },
-      "minimal_unblock_action": "Riassegnare la verifica di merito del ciclo 3 a Claude Code (Anthropic), richiesta OCOR-DEV-REM-0061-a65649022b29-3-reassign, head a65649022b29a59edece529fd40b4ef872dcba15. Il verdetto OCOR-DEV-REM-0061-a65649022b29-3 non e un NO_GO di merito e non apre il ciclo 4. Non integrare la PR 595.",
-      "status": "CYCLE3_ASSIGNMENT_NO_GO_REASSIGNMENT_REQUIRED",
-      "terminal_disposition": "CONTINUE"
+      "minimal_unblock_action": "Nessun ciclo 4 e autorizzato. L'azione minima, se una nuova decisione la autorizza, e un solo ciclo 4 limitato ai finding di OCOR-DEV-REM-0061-a65649022b29-3-reassign. Senza quella decisione non modificare il codice e non integrare la PR 595.",
+      "status": "BLOCKED_CYCLE3_MERIT_NO_GO_NO_CYCLE_4",
+      "terminal_disposition": "TERMINAL_BLOCKED"
     }
   },
   "baseline_commit": "207967ba48a33d466e96dfb6a70ee60ad0e8b6c5",
@@ -8308,7 +8321,7 @@
       "id": "REM-0060-LANE-IMAGE-PROVISIONING",
       "po_decision": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10), opzione 1, decisa su delega completa del PO, modello grok-4.7, effort xhigh",
       "recommendation": "Option 1: remediation separata per cache locale verificata di sole immagini gi\u00e0 presenti, pull ufficiali e budget invariati; poi nuova campagna NCP-U12 sul nuovo HEAD.",
-      "resolution": "Opzione 1 adottata. OCOR-DEV-REM-0060 resta bloccato fino al merge di REM-0061 e alla nuova campagna di NCP-U12. I due run citati restano diagnostici e i loro conteggi non si trasferiscono. Il commit e lo sha256 di evidence restano quelli del file prima della disposition. La disposition e sul commit 55fb1d0e42afc87163b1c3bde3472954756200bb, intestazione DECIDED_BY_PO. Nessun nuovo DEC. Claim invariati. Aggiornamento 2026-11-11: il verdetto del ciclo 1 di OCOR-DEV-REM-0061 e NO_GO (OCOR-DEV-REM-0061-1c8a94b9e71e-1). Il ciclo 2 e in corso sul branch governed/ocor-dev-rem-0061-lane-image-cache, head 55c3272cf1efaaa35403c89dcade965053caf2bc, in attesa della revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. Aggiornamento 2026-11-12: il verdetto del ciclo 2 OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, quattro finding high. Il budget ordinario e esaurito. Il ciclo 3 non e avviato. La decision request REM-0061-REPAIR-BUDGET e aperta sul commit f5f7656e17c656e9505b3b65d983abb5a3aba857. Aggiornamento 2026-11-12T05:23:15+00:00: REM-0061-REPAIR-BUDGET (2026-11-12) opzione 1 autorizza un solo ciclo 3. Head cf3739600e1ffa59f6b332fcf915f45f6543b5d4, in attesa della revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre. La suite completa non e avviata. La PR 595 non si integra. Aggiornamento 2026-11-12T09:09:44+00:00: revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre BLOCKING_FINDINGS (P1 corretto nei commit 678f30c e 8f90b93; P2 advisory registrato nei commit di documentazione 2876968 e a656490). Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, 5826 test, zero fallimenti, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe; non sigilla i commit successivi. Head candidato a65649022b29a59edece529fd40b4ef872dcba15. Verdetto OCOR-DEV-REM-0061-a65649022b29-3 NO_GO di sola assegnazione, sha256 7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713; controlli tecnici NOT_EXECUTED; non apre il ciclo 4. La PR 595 non si integra.",
+      "resolution": "Opzione 1 adottata. OCOR-DEV-REM-0060 resta bloccato fino al merge di REM-0061 e alla nuova campagna di NCP-U12. I due run citati restano diagnostici e i loro conteggi non si trasferiscono. Il commit e lo sha256 di evidence restano quelli del file prima della disposition. La disposition e sul commit 55fb1d0e42afc87163b1c3bde3472954756200bb, intestazione DECIDED_BY_PO. Nessun nuovo DEC. Claim invariati. Aggiornamento 2026-11-11: il verdetto del ciclo 1 di OCOR-DEV-REM-0061 e NO_GO (OCOR-DEV-REM-0061-1c8a94b9e71e-1). Il ciclo 2 e in corso sul branch governed/ocor-dev-rem-0061-lane-image-cache, head 55c3272cf1efaaa35403c89dcade965053caf2bc, in attesa della revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. Aggiornamento 2026-11-12: il verdetto del ciclo 2 OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, quattro finding high. Il budget ordinario e esaurito. Il ciclo 3 non e avviato. La decision request REM-0061-REPAIR-BUDGET e aperta sul commit f5f7656e17c656e9505b3b65d983abb5a3aba857. Aggiornamento 2026-11-12T05:23:15+00:00: REM-0061-REPAIR-BUDGET (2026-11-12) opzione 1 autorizza un solo ciclo 3. Head cf3739600e1ffa59f6b332fcf915f45f6543b5d4, in attesa della revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre. La suite completa non e avviata. La PR 595 non si integra. Aggiornamento 2026-11-12T09:09:44+00:00: revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre BLOCKING_FINDINGS (P1 corretto nei commit 678f30c e 8f90b93; P2 advisory registrato nei commit di documentazione 2876968 e a656490). Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, 5826 test, zero fallimenti, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe; non sigilla i commit successivi. Head candidato a65649022b29a59edece529fd40b4ef872dcba15. Verdetto OCOR-DEV-REM-0061-a65649022b29-3 NO_GO di sola assegnazione, sha256 7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713; controlli tecnici NOT_EXECUTED; non apre il ciclo 4. La PR 595 non si integra. Aggiornamento 2026-11-12T11:29:24+00:00: il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6, verifier Claude Code / claude-opus-5-5 / Anthropic. Due finding high bloccanti (VF-001 classe del successore elencato, VF-002 riqualifiche REM-0037 e REM-0056 non riferite all'HEAD). REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Nuova richiesta REM-0061-CYCLE3-MERIT-NO-GO, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare. La PR 595 non si integra.",
       "status": "DECIDED_BY_PO",
       "status_history": [
         {
@@ -8316,7 +8329,7 @@
           "until": "2026-11-10T23:03:06.683153+00:00"
         }
       ],
-      "updated_at": "2026-11-12T09:09:44+00:00"
+      "updated_at": "2026-11-12T11:29:24+00:00"
     },
     {
       "blocked_scope": "Nessun task resta bloccato da questa voce. NCP-U12 resta in coda fino al merge di REM-0061.",
@@ -8338,7 +8351,7 @@
       "id": "REM-0061-VERIFIER-TMP-QUOTA",
       "po_decision": "TMP-RESIDUI-CAMPAGNA (2026-11-11)",
       "recommendation": "Opzione 1 del file: quota sufficiente sulla directory temporanea, poi lo stesso comando di verifica. L'opzione 2 tiene la quota e sposta la directory di lavoro sul filesystem radice.",
-      "resolution": "TMP-RESIDUI-CAMPAGNA (2026-11-11) decide la voce. Non e l'opzione 1 ne l'opzione 2. Il pin storico del file aperto resta il commit 83d9b74648c14a2afb14904a2a83183274ece7c9, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed. La disposition e sul commit a68c47dad3610a1c284020e0ea28ef0c85c6be57, intestazione DECIDED_BY_PO, sha256 68996279450a5a50b74acdd9198e83f91cbb6db48c01f50d7c811c773306420d. Nessun nuovo DEC. Claim invariati. La verifica del ciclo 1 OCOR-DEV-REM-0061-1c8a94b9e71e-1, verifier Codex / OpenAI, e NO_GO (VF-001 high, VF-002 high, VF-003 medium) sull'head 1c8a94b9e71e9c60e8d4b3c4365b43e402715e2f. Il ciclo 2, ultimo ciclo di riparazione ordinario, e all'head 55c3272cf1efaaa35403c89dcade965053caf2bc e attende la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. La corsa su 73e5c4ad18e4ce3747548bafa7acea53e824551d e diagnostica e non qualifica. Aggiornamento 2026-11-12: il verdetto del ciclo 2 OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, quattro finding high. Il budget ordinario e esaurito. Il ciclo 3 non e avviato. La decision request REM-0061-REPAIR-BUDGET e aperta sul commit f5f7656e17c656e9505b3b65d983abb5a3aba857. Aggiornamento 2026-11-12T05:23:15+00:00: REM-0061-REPAIR-BUDGET (2026-11-12) opzione 1 autorizza un solo ciclo 3. Head cf3739600e1ffa59f6b332fcf915f45f6543b5d4, in attesa della revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre. La suite completa non e avviata. La PR 595 non si integra. Aggiornamento 2026-11-12T09:09:44+00:00: revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre BLOCKING_FINDINGS (P1 corretto nei commit 678f30c e 8f90b93; P2 advisory registrato nei commit di documentazione 2876968 e a656490). Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, 5826 test, zero fallimenti, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe; non sigilla i commit successivi. Head candidato a65649022b29a59edece529fd40b4ef872dcba15. Verdetto OCOR-DEV-REM-0061-a65649022b29-3 NO_GO di sola assegnazione, sha256 7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713; controlli tecnici NOT_EXECUTED; non apre il ciclo 4. La PR 595 non si integra.",
+      "resolution": "TMP-RESIDUI-CAMPAGNA (2026-11-11) decide la voce. Non e l'opzione 1 ne l'opzione 2. Il pin storico del file aperto resta il commit 83d9b74648c14a2afb14904a2a83183274ece7c9, sha256 89b7412b40ff2188c1c02e93bc5445fcf012f0447e97bd63c05160fa07b44bed. La disposition e sul commit a68c47dad3610a1c284020e0ea28ef0c85c6be57, intestazione DECIDED_BY_PO, sha256 68996279450a5a50b74acdd9198e83f91cbb6db48c01f50d7c811c773306420d. Nessun nuovo DEC. Claim invariati. La verifica del ciclo 1 OCOR-DEV-REM-0061-1c8a94b9e71e-1, verifier Codex / OpenAI, e NO_GO (VF-001 high, VF-002 high, VF-003 medium) sull'head 1c8a94b9e71e9c60e8d4b3c4365b43e402715e2f. Il ciclo 2, ultimo ciclo di riparazione ordinario, e all'head 55c3272cf1efaaa35403c89dcade965053caf2bc e attende la revisione preventiva OCOR-DEV-REM-0061-55c3272cf1ef-pre. La suite a quattro corsie di questo ciclo non e avviata. La corsa su 73e5c4ad18e4ce3747548bafa7acea53e824551d e diagnostica e non qualifica. Aggiornamento 2026-11-12: il verdetto del ciclo 2 OCOR-DEV-REM-0061-42b5840f35ab-2 e NO_GO sull'head 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, quattro finding high. Il budget ordinario e esaurito. Il ciclo 3 non e avviato. La decision request REM-0061-REPAIR-BUDGET e aperta sul commit f5f7656e17c656e9505b3b65d983abb5a3aba857. Aggiornamento 2026-11-12T05:23:15+00:00: REM-0061-REPAIR-BUDGET (2026-11-12) opzione 1 autorizza un solo ciclo 3. Head cf3739600e1ffa59f6b332fcf915f45f6543b5d4, in attesa della revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre. La suite completa non e avviata. La PR 595 non si integra. Aggiornamento 2026-11-12T09:09:44+00:00: revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre BLOCKING_FINDINGS (P1 corretto nei commit 678f30c e 8f90b93; P2 advisory registrato nei commit di documentazione 2876968 e a656490). Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, 5826 test, zero fallimenti, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe; non sigilla i commit successivi. Head candidato a65649022b29a59edece529fd40b4ef872dcba15. Verdetto OCOR-DEV-REM-0061-a65649022b29-3 NO_GO di sola assegnazione, sha256 7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713; controlli tecnici NOT_EXECUTED; non apre il ciclo 4. La PR 595 non si integra. Aggiornamento 2026-11-12T11:29:24+00:00: il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6, verifier Claude Code / claude-opus-5-5 / Anthropic. Due finding high bloccanti (VF-001 classe del successore elencato, VF-002 riqualifiche REM-0037 e REM-0056 non riferite all'HEAD). REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Nuova richiesta REM-0061-CYCLE3-MERIT-NO-GO, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare. La PR 595 non si integra.",
       "status": "DECIDED_BY_PO",
       "status_history": [
         {
@@ -8346,10 +8359,10 @@
           "until": "2026-11-11T13:36:25.984889+00:00"
         }
       ],
-      "updated_at": "2026-11-12T09:09:44+00:00"
+      "updated_at": "2026-11-12T11:29:24+00:00"
     },
     {
-      "blocked_scope": "OCOR-DEV-REM-0060 resta in coda fino al merge di REM-0061. Il ciclo 3 di REM-0061 e autorizzato. La PR 595 non si integra senza GO_FOR_EVIDENCE_SEAL.",
+      "blocked_scope": "OCOR-DEV-REM-0060 resta in coda fino al merge di REM-0061. Il ciclo 3 e chiuso da NO_GO di merito. Non c'e un ciclo 4. La PR 595 non si integra senza GO_FOR_EVIDENCE_SEAL.",
       "blocked_tasks": [
         "OCOR-DEV-REM-0060"
       ],
@@ -8369,6 +8382,7 @@
       },
       "finding": "Verdetto NO_GO del ciclo 2, quattro finding high su filesystem e quota, pulizia della cache, teardown dopo errore di redazione, e record illeggibili nel gate dei digest. Budget ordinario di due cicli esaurito.",
       "id": "REM-0061-REPAIR-BUDGET",
+      "latest_observation": "2026-11-12T11:29:24+00:00 Verdetto di merito NO_GO. Richiesta REM-0061-CYCLE3-MERIT-NO-GO aperta.",
       "po_decision": "REM-0061-REPAIR-BUDGET (2026-11-12), opzione 1",
       "preamble_recheck": {
         "observed_at": "2026-11-12T09:09:44+00:00",
@@ -8378,7 +8392,7 @@
         "source_mtime": "2026-11-12T05:01:12+00:00"
       },
       "recommendation": "Option 1: un solo ciclo di riparazione 3 di OCOR-DEV-REM-0061, limitato a VF-001, VF-002, VF-003 e VF-004 del verdetto OCOR-DEV-REM-0061-42b5840f35ab-2.",
-      "resolution": "Opzione 1 adottata. Un solo ciclo 3 di OCOR-DEV-REM-0061, dal commit 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, senza rebase, reset o force-push. Perimetro VF-001, VF-002, VF-003 e VF-004 del verdetto OCOR-DEV-REM-0061-42b5840f35ab-2. RED prima del codice e GREEN dopo. La campagna del ciclo 2 non si trasferisce. Head del ciclo 3 cf3739600e1ffa59f6b332fcf915f45f6543b5d4. Revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre richiesta; la suite completa non e avviata. Se il verdetto resta NO_GO non c'e un ciclo 4. PR 601 resta bozza e non si integra. Nessun nuovo DEC. Claim invariati. Aggiornamento 2026-11-12T09:09:44+00:00: revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre BLOCKING_FINDINGS (P1 corretto nei commit 678f30c e 8f90b93; P2 advisory registrato nei commit di documentazione 2876968 e a656490). Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, 5826 test, zero fallimenti, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe; non sigilla i commit successivi. Head candidato a65649022b29a59edece529fd40b4ef872dcba15. Verdetto OCOR-DEV-REM-0061-a65649022b29-3 NO_GO di sola assegnazione, sha256 7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713; controlli tecnici NOT_EXECUTED; non apre il ciclo 4. La PR 595 non si integra.",
+      "resolution": "Opzione 1 adottata. Un solo ciclo 3 di OCOR-DEV-REM-0061, dal commit 42b5840f35ab94c3b5d53c346f2f508b7dcbbb94, senza rebase, reset o force-push. Perimetro VF-001, VF-002, VF-003 e VF-004 del verdetto OCOR-DEV-REM-0061-42b5840f35ab-2. RED prima del codice e GREEN dopo. La campagna del ciclo 2 non si trasferisce. Head del ciclo 3 cf3739600e1ffa59f6b332fcf915f45f6543b5d4. Revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre richiesta; la suite completa non e avviata. Se il verdetto resta NO_GO non c'e un ciclo 4. PR 601 resta bozza e non si integra. Nessun nuovo DEC. Claim invariati. Aggiornamento 2026-11-12T09:09:44+00:00: revisione preventiva OCOR-DEV-REM-0061-cf3739600e1f-pre BLOCKING_FINDINGS (P1 corretto nei commit 678f30c e 8f90b93; P2 advisory registrato nei commit di documentazione 2876968 e a656490). Campagna FOUR_LANE PASS su 8f90b9386e07b4cf8fd53ba77037f0e3bd52dcfa, 5826 test, zero fallimenti, 1775.039 s, sha256 ec6d8d01e73597e419f18214d97cf3046f1dfcc4045c99d81dfc822b8c2615fe; non sigilla i commit successivi. Head candidato a65649022b29a59edece529fd40b4ef872dcba15. Verdetto OCOR-DEV-REM-0061-a65649022b29-3 NO_GO di sola assegnazione, sha256 7e8b3c9a8d8132160aa5c6eb77fc27cb9021471e39256c45c88e4b7b6e6e8713; controlli tecnici NOT_EXECUTED; non apre il ciclo 4. La PR 595 non si integra. Aggiornamento 2026-11-12T11:29:24+00:00: il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6, verifier Claude Code / claude-opus-5-5 / Anthropic. Due finding high bloccanti (VF-001 classe del successore elencato, VF-002 riqualifiche REM-0037 e REM-0056 non riferite all'HEAD). REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Nuova richiesta REM-0061-CYCLE3-MERIT-NO-GO, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare. La PR 595 non si integra.",
       "status": "DECIDED_BY_PO",
       "status_history": [
         {
@@ -8390,7 +8404,43 @@
           "updated_at": "2026-11-12T05:23:15+00:00"
         }
       ],
-      "updated_at": "2026-11-12T09:09:44+00:00"
+      "updated_at": "2026-11-12T11:29:24+00:00"
+    },
+    {
+      "blocked_scope": "OCOR-DEV-REM-0061 resta bloccato: nessun ciclo 4 e autorizzato. OCOR-DEV-REM-0060 e NCP-U12 restano in coda fino al merge di REM-0061. La PR 595 non si integra. L'adozione della PR 599 non parte.",
+      "blocked_tasks": [
+        "OCOR-DEV-REM-0060",
+        "OCOR-DEV-REM-0061"
+      ],
+      "created_at": "2026-11-12T11:29:24+00:00",
+      "decision_level": "OPERATIVE",
+      "evidence": {
+        "branch": "governed/decision-request-rem0061-cycle3-merit-nogo",
+        "commit": "6c2bb7995b29228abd700a52e986651436c4a2f6",
+        "escalation_path": "reports/development/OCOR_DEV_REM_0061_ESCALATION.md",
+        "escalation_sha256": "17b315122841ff1f83e941586e0532b8eb9004ec29b28298de6928fde8b43b8d",
+        "format_check": "grep -cE '^[A-Z]?[0-9]{1,2}\\. \\*\\*' = 3, options 1..3",
+        "path": "reports/development/decision_requests/REM-0061-CYCLE3-MERIT-NO-GO.md",
+        "pr": 606,
+        "pr_disposition": "DRAFT_NOT_FOR_MERGE_PATHS_NOT_ALLOWLISTED",
+        "sha256": "731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835",
+        "verdict_request_id": "OCOR-DEV-REM-0061-a65649022b29-3-reassign",
+        "verdict_sha256": "4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6"
+      },
+      "finding": "Verdetto NO_GO di merito del ciclo 3. VF-001 high: un successore elencato con task_id diverso dal manifest puo lasciare PASS il predecessore. VF-002 high: le riqualifiche non sigillate di REM-0037 e REM-0056 citano il codice del ciclo 2. REM-0061-REPAIR-BUDGET (2026-11-12) non autorizza un ciclo 4.",
+      "id": "REM-0061-CYCLE3-MERIT-NO-GO",
+      "preamble_recheck": {
+        "observed_at": "2026-11-12T11:29:24+00:00",
+        "openhands_preamble_mtime": "2026-11-12T10:10:33+00:00",
+        "openhands_preamble_sha256": "8e888f3d01e244b9fda9df432152394a3d89b613727480983e94dd041cdbcd0e",
+        "result": "NO_MATCHING_SECTION",
+        "standing_decision": "REM-0061-REPAIR-BUDGET (2026-11-12), opzione 1, punto 4",
+        "task_file_mtime": "2026-11-12T11:21:46+00:00",
+        "task_file_sha256": "31d72ff8a27d6f69100266acf7091a93b65be7c260a9d8991a35d00a5c6a0272"
+      },
+      "recommendation": "Opzione 1: un solo ciclo 4 limitato ai finding VF-001..VF-007 del verdetto di merito.",
+      "status": "OPEN_PO_DECISION_REQUIRED",
+      "updated_at": "2026-11-12T11:29:24+00:00"
     }
   ],
   "checkpoint_consolidation": {
@@ -10549,7 +10599,7 @@
     "verifier_for_reserve_implementer_tasks": "First eligible provider in the verifier order; all implementers and providers declared in evidence/request; actual process/model/provider in the verdict"
   },
   "mandate_phase_status": "NORMATIVE_CONFORMANCE_PLAN_APPROVED_REMEDIATION_UNITS_IN_ORDER_G6_BEHIND_POINT_11",
-  "next_executable_action": "Il verdetto OCOR-DEV-REM-0061-a65649022b29-3 e NO_GO solo per conflitto di assegnazione (verifier Codex / OpenAI, escluso; controlli tecnici NOT_EXECUTED). Non giudica il codice del ciclo 3 e non apre il ciclo 4. La verifica di merito va riassegnata a Claude Code con Claude Fable 5.2, effort max, richiesta nuova OCOR-DEV-REM-0061-a65649022b29-3-reassign sullo stesso head a65649022b29a59edece529fd40b4ef872dcba15. La richiesta non e ancora scritta: va messa in ~/.ocor-codex/verify_request.json solo dopo un preflight di quel modello che risponde. Non inviarla mentre Claude e al limite di sessione, perche la catena selezionerebbe di nuovo Codex. All'invio, .impl_actual deve elencare anche codex cosi la sezione Ruoli dichiara Grok Build (xAI) e Codex (OpenAI); non modificare ocor-loop2.sh. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061.",
+  "next_executable_action": "Attendere la decisione sulla richiesta REM-0061-CYCLE3-MERIT-NO-GO (branch governed/decision-request-rem0061-cycle3-merit-nogo, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, path reports/development/decision_requests/REM-0061-CYCLE3-MERIT-NO-GO.md, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare: i percorsi non sono nell'allowlist del piano). Il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6. REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060, NCP-U12 ne l'adozione della PR 599 prima di quella decisione. Nessun altro lavoro eseguibile.",
   "ocor_dev_0055_status": {
     "branch": "task/OCOR-DEV-0055-retention-expiry-revocation-forgetting-legal-hold",
     "candidate_head": "48705277f453d8574eb6fe66c1b035e2f8a506f1",
@@ -11106,16 +11156,17 @@
       "OCOR-DEV-0063",
       "OCOR-DEV-0064"
     ],
-    "blocked_by_po_decision": [],
-    "completed_evidence_tasks_count": 75,
-    "executable_now": [],
-    "executable_now_note": "Il verdetto OCOR-DEV-REM-0061-a65649022b29-3 e NO_GO solo per conflitto di assegnazione (verifier Codex / OpenAI, escluso; controlli tecnici NOT_EXECUTED). Non giudica il codice del ciclo 3 e non apre il ciclo 4. La verifica di merito va riassegnata a Claude Code con Claude Fable 5.2, effort max, richiesta nuova OCOR-DEV-REM-0061-a65649022b29-3-reassign sullo stesso head a65649022b29a59edece529fd40b4ef872dcba15. La richiesta non e ancora scritta: va messa in ~/.ocor-codex/verify_request.json solo dopo un preflight di quel modello che risponde. Non inviarla mentre Claude e al limite di sessione, perche la catena selezionerebbe di nuovo Codex. All'invio, .impl_actual deve elencare anche codex cosi la sezione Ruoli dichiara Grok Build (xAI) e Codex (OpenAI); non modificare ocor-loop2.sh. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061.",
-    "in_progress": [],
-    "in_verification": [
+    "blocked_by_po_decision": [
+      "OCOR-DEV-REM-0060",
       "OCOR-DEV-REM-0061"
     ],
+    "completed_evidence_tasks_count": 75,
+    "executable_now": [],
+    "executable_now_note": "Attendere la decisione sulla richiesta REM-0061-CYCLE3-MERIT-NO-GO (branch governed/decision-request-rem0061-cycle3-merit-nogo, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, path reports/development/decision_requests/REM-0061-CYCLE3-MERIT-NO-GO.md, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare: i percorsi non sono nell'allowlist del piano). Il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6. REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060, NCP-U12 ne l'adozione della PR 599 prima di quella decisione. Nessun altro lavoro eseguibile.",
+    "in_progress": [],
+    "in_verification": [],
     "mandatory_remediations_prevent_g6_start": [],
-    "observed_at": "2026-11-12T09:09:44+00:00",
+    "observed_at": "2026-11-12T11:29:24+00:00",
     "open_po_decision_requests_non_blocking": {},
     "queue_before_g6": [
       "NCP-U12"
@@ -40156,6 +40207,19 @@
       "updated_at": "2026-11-12T00:43:45.863461+00:00",
       "worktree": ".ocor/worktrees/rem-0060"
     },
+    "REM_0061_LANE_IMAGE_CACHE": {
+      "authority": "REM-0060-LANE-IMAGE-PROVISIONING (2026-11-10), opzione 1; REM-0061-REPAIR-BUDGET (2026-11-12), opzione 1",
+      "branch": "governed/ocor-dev-rem-0061-lane-image-cache",
+      "draft_pr": 595,
+      "head": "a65649022b29a59edece529fd40b4ef872dcba15",
+      "integration": "NOT_AUTHORIZED",
+      "merit_verdict_request_id": "OCOR-DEV-REM-0061-a65649022b29-3-reassign",
+      "merit_verdict_result": "NO_GO",
+      "merit_verdict_sha256": "4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6",
+      "repair_cycle": 3,
+      "status": "BLOCKED_CYCLE3_MERIT_NO_GO_NO_CYCLE_4",
+      "updated_at": "2026-11-12T11:29:24+00:00"
+    },
     "WORKSTATION_TOOLS_ARCHIVE": {
       "authority": "WORKSTATION-TOOLS-ARCHIVE (2026-10-28), normative PO decision; recorded with the manifest sha256 bebea25099393b9c558fecb0200f6663fd7dc2f2639df23f0a038dad321c5bef (point 8)",
       "blocker": "WORKSTATION-TOOLS-ARCHIVE-GATES",
@@ -41486,6 +41550,18 @@
       {
         "command": [
           "ocor-runtime/.venv/bin/python",
+          "scripts/validate_ocor_change_scope.py",
+          "--base",
+          "origin/main",
+          "--branch",
+          "governed/state-sync-rem0061-cycle3-merit-nogo-20261112"
+        ],
+        "exit_code": 0,
+        "raw_sha256": "008238e162643a7731ce850a1bdb9c0ff1dc787fb1a592a4fa1ca7550a503d32"
+      },
+      {
+        "command": [
+          "ocor-runtime/.venv/bin/python",
           "scripts/validate_runtime_evidence.py",
           "--task",
           "OCOR-DEV-0005",
@@ -41540,17 +41616,19 @@
     "planning_optional_checks": "2 NOT_EXECUTED; not counted as PASS",
     "status": "PASS"
   },
-  "status": "REM_0061_CYCLE3_AWAITING_REASSIGNED_VERIFICATION",
+  "status": "TERMINAL_BLOCKED_REM_0061_CYCLE3_MERIT_NO_GO",
   "terminal_loop_disposition": {
     "decision": "REM-0061-REPAIR-BUDGET (2026-11-12), opzione 1",
+    "decision_request": "REM-0061-CYCLE3-MERIT-NO-GO",
     "lifted_at": "2026-11-12T05:23:15+00:00",
-    "loop_status": "CONTINUE",
-    "next_action": "Il verdetto OCOR-DEV-REM-0061-a65649022b29-3 e NO_GO solo per conflitto di assegnazione (verifier Codex / OpenAI, escluso; controlli tecnici NOT_EXECUTED). Non giudica il codice del ciclo 3 e non apre il ciclo 4. La verifica di merito va riassegnata a Claude Code con Claude Fable 5.2, effort max, richiesta nuova OCOR-DEV-REM-0061-a65649022b29-3-reassign sullo stesso head a65649022b29a59edece529fd40b4ef872dcba15. La richiesta non e ancora scritta: va messa in ~/.ocor-codex/verify_request.json solo dopo un preflight di quel modello che risponde. Non inviarla mentre Claude e al limite di sessione, perche la catena selezionerebbe di nuovo Codex. All'invio, .impl_actual deve elencare anche codex cosi la sezione Ruoli dichiara Grok Build (xAI) e Codex (OpenAI); non modificare ocor-loop2.sh. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060 ne NCP-U12 prima del merge di REM-0061.",
-    "previous_loop_status": "TERMINAL_BLOCKED",
-    "previous_recorded_at": "2026-11-12T02:27:03+00:00",
-    "reason": "Il preambolo decide REM-0061-REPAIR-BUDGET con l'opzione 1. Lo stop TERMINAL_BLOCKED del 2026-11-12T02:27:03+00:00 resta superato. Il verdetto OCOR-DEV-REM-0061-a65649022b29-3 e NO_GO di sola assegnazione e non chiude il ciclo 3 sul merito. La verifica di merito va riassegnata a Claude Code. Non c'e un ciclo 4."
+    "loop_status": "TERMINAL_BLOCKED",
+    "next_action": "Attendere la decisione sulla richiesta REM-0061-CYCLE3-MERIT-NO-GO (branch governed/decision-request-rem0061-cycle3-merit-nogo, commit 6c2bb7995b29228abd700a52e986651436c4a2f6, path reports/development/decision_requests/REM-0061-CYCLE3-MERIT-NO-GO.md, sha256 731d084e8c0e0692756c5beb89c501b0bbdcae110e1355e3032e54b292b44835, PR 606 bozza e non da integrare: i percorsi non sono nell'allowlist del piano). Il verdetto di merito OCOR-DEV-REM-0061-a65649022b29-3-reassign e NO_GO sull'head a65649022b29a59edece529fd40b4ef872dcba15, sha256 4e70cd80a7cd9991c4d407ce357c3402321060b81db4a9ba26b52e2f3b46a6a6. REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. Non integrare la PR 595. Non avviare OCOR-DEV-REM-0060, NCP-U12 ne l'adozione della PR 599 prima di quella decisione. Nessun altro lavoro eseguibile.",
+    "previous_loop_status": "CONTINUE",
+    "previous_recorded_at": "2026-11-12T09:09:44+00:00",
+    "reason": "Il verdetto di merito del ciclo 3 e NO_GO. REM-0061-REPAIR-BUDGET (2026-11-12) punto 4 non autorizza un ciclo 4. La richiesta REM-0061-CYCLE3-MERIT-NO-GO non ha ancora una decisione. Non resta altro lavoro eseguibile.",
+    "recorded_at": "2026-11-12T11:29:24+00:00"
   },
-  "updated_at": "2026-11-12T09:09:44+00:00",
+  "updated_at": "2026-11-12T11:29:24+00:00",
   "verification_queue": [
     {
       "head_sha": "6abdaf37bd5a87fffdaf14652782cf813e7c93ad",
